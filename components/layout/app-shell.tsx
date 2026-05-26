@@ -109,10 +109,10 @@ function ProfileCard({
           <img
             src={profile.avatar_url}
             alt={profile.display_name}
-            className="w-9 h-9 rounded-full object-cover shrink-0"
+            className="w-10 h-10 rounded-full object-cover shrink-0"
           />
         ) : (
-          <div className="w-9 h-9 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 text-sm font-semibold flex items-center justify-center shrink-0 select-none">
+          <div className="w-10 h-10 rounded-full bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-sm font-bold flex items-center justify-center shrink-0 select-none">
             {getInitials(profile.display_name)}
           </div>
         )}
@@ -171,7 +171,7 @@ function AccountDropdown({
       <button
         onClick={() => setOpen((v) => !v)}
         aria-label="Account menu"
-        className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs font-bold hover:bg-gray-700 dark:hover:bg-gray-300 transition-colors select-none shrink-0"
+        className="flex items-center justify-center w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-[11px] font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors select-none shrink-0"
       >
         {getInitials(profile.display_name)}
       </button>
@@ -303,8 +303,8 @@ export default function AppShell({
       {/* ── Top bar ───────────────────────────────────────── */}
       <header className="h-14 shrink-0 flex items-stretch bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 z-30">
 
-        {/* Logo section — matches sidebar width (w-52) to create visual column alignment */}
-        <div className="flex items-center px-5 md:w-52 md:shrink-0 md:border-r md:border-gray-200 md:dark:border-gray-800">
+        {/* Logo — full-width header, no vertical divider */}
+        <div className="flex items-center px-5">
           <Link href="/feed" className="flex items-center">
             <img
               src="/frequency-logo.png"

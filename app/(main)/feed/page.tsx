@@ -52,9 +52,21 @@ export default async function FeedPage() {
       : []
 
   return (
-    <div className="px-4 py-6 max-w-2xl mx-auto">
+    <div className="px-4 py-8 max-w-2xl mx-auto">
+
+      {/* ── Page header ──────────────────────────────────────── */}
+      <div className="mb-7">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Feed</h1>
+        <p className="text-sm text-gray-400 mt-1">
+          {myCircleIds.length > 0
+            ? "What's happening in your circles"
+            : "Share what's on your mind"}
+        </p>
+      </div>
+
+      {/* ── Composer ─────────────────────────────────────────── */}
       {composerScopeId ? (
-        <>
+        <div className="mb-6">
           <Composer
             scopeId={composerScopeId}
             visibility={composerVisibility}
@@ -65,22 +77,30 @@ export default async function FeedPage() {
             }
           />
           {!primaryCircleId && (
-            <p className="text-xs text-gray-400 -mt-2 mb-4 px-1">
+            <p className="text-xs text-gray-400 -mt-2 px-1">
               <Link href="/circles" className="text-indigo-500 hover:underline">
                 Join a circle
               </Link>{' '}
               to post to your group instead.
             </p>
           )}
-        </>
+        </div>
       ) : null}
 
+      {/* ── Upcoming events ──────────────────────────────────── */}
       <UpcomingEventsWidget scopeIds={myCircleIds} />
 
-      <FeedList
-        scopeIds={feedScopeIds}
-        myProfileId={myProfileId}
-      />
+      {/* ── Posts ────────────────────────────────────────────── */}
+      <section className="mt-8">
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-600 mb-4">
+          Recent
+        </h2>
+        <FeedList
+          scopeIds={feedScopeIds}
+          myProfileId={myProfileId}
+        />
+      </section>
+
     </div>
   )
 }

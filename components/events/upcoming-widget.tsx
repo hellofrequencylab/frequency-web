@@ -64,9 +64,11 @@ export async function UpcomingEventsWidget({
   if (events.length === 0) return null
 
   return (
-    <section className="mt-8 border-t border-gray-100 pt-6">
+    <section>
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-gray-700">Upcoming Events</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-600">
+          Upcoming
+        </h2>
         <Link
           href="/events"
           className="text-xs text-indigo-500 hover:text-indigo-700 transition-colors"
@@ -75,16 +77,18 @@ export async function UpcomingEventsWidget({
         </Link>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-2 mb-2">
         {events.map((event) => (
           <Link
             key={event.id}
             href={`/events/${event.slug}`}
-            className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white px-3 py-2.5 hover:border-indigo-200 hover:bg-indigo-50/30 transition-colors"
+            className="flex items-center gap-3 rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-3 hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-indigo-50/30 dark:hover:bg-indigo-950/20 transition-colors"
           >
             <DateChip iso={event.starts_at} />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">{event.title}</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-gray-50 truncate">
+                {event.title}
+              </p>
               <div className="flex items-center gap-2 flex-wrap mt-0.5">
                 <span className="text-xs text-gray-400">
                   {formatShort(event.starts_at)} · {formatTime(event.starts_at)}
@@ -97,6 +101,7 @@ export async function UpcomingEventsWidget({
                 )}
               </div>
             </div>
+            <span className="text-xs text-gray-300 dark:text-gray-600 shrink-0">→</span>
           </Link>
         ))}
       </div>

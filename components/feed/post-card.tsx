@@ -80,8 +80,8 @@ export function PostCard({
 
   return (
     <article
-      className={`bg-white rounded-xl border p-4 mb-3 ${
-        post.is_pinned ? 'border-indigo-200' : 'border-gray-200'
+      className={`bg-white dark:bg-gray-900 rounded-xl border p-4 ${
+        post.is_pinned ? 'border-indigo-200 dark:border-indigo-800' : 'border-gray-200 dark:border-gray-800'
       }`}
     >
       {post.is_pinned && (
