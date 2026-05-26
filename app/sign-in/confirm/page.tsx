@@ -22,8 +22,8 @@ export default function ConfirmPage() {
           Check your email
         </h1>
         <p className="text-sm text-gray-500">
-          We sent a magic link to your email address. Click the link to sign in
-          — it expires in 60 minutes.
+          We sent a magic link to your email address. Click the link to sign in.
+          It expires in 60 minutes.
         </p>
         <p className="text-xs text-gray-400">
           Didn&apos;t get it? Check your spam folder or{' '}

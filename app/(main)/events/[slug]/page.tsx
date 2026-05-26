@@ -204,7 +204,7 @@ export default async function EventDetailPage({
                   : 'bg-indigo-600 text-white hover:bg-indigo-700'
               }`}
             >
-              {myRsvpStatus === 'going' ? "✓ Going (click to undo)" : "RSVP — I'm going"}
+              {myRsvpStatus === 'going' ? "✓ Going (click to undo)" : "RSVP: I'm going"}
             </button>
           </form>
 

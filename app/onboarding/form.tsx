@@ -118,7 +118,7 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
       .upload(path, avatarFile, { upsert: true })
 
     if (error) {
-      setUploadError('Upload failed — you can add a photo later from your profile.')
+      setUploadError('Upload failed. You can add a photo later from your profile.')
       setUploading(false)
       return ''
     }
@@ -412,7 +412,7 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
               </label>
               {regions.length === 0 ? (
                 <p className="text-sm text-gray-400 italic">
-                  No regions available yet — check back soon.
+                  No regions available yet. Check back soon.
                 </p>
               ) : (
                 <select

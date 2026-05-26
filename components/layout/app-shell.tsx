@@ -131,11 +131,12 @@ export default function AppShell({
       <aside className="hidden md:flex w-60 flex-col shrink-0 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
 
         {/* Logo */}
-        <div className="flex items-center gap-2.5 h-16 px-5 border-b border-gray-100 dark:border-gray-800 shrink-0">
-          <Radio className="w-5 h-5 text-indigo-600" strokeWidth={2.5} />
-          <span className="text-[15px] font-semibold tracking-tight text-gray-900 dark:text-gray-50">
-            frequency
-          </span>
+        <div className="flex items-center h-16 px-5 border-b border-gray-100 dark:border-gray-800 shrink-0">
+          <img
+            src="/frequency-logo.png"
+            alt="Frequency"
+            className="h-8 w-auto dark:invert"
+          />
         </div>
 
         {/* Primary nav */}
@@ -264,11 +265,12 @@ export default function AppShell({
 
         {/* Mobile top bar */}
         <header className="md:hidden flex items-center justify-between h-14 px-4 shrink-0 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
-          <div className="flex items-center gap-2">
-            <Radio className="w-4 h-4 text-indigo-600" strokeWidth={2.5} />
-            <span className="text-sm font-semibold tracking-tight text-gray-900 dark:text-gray-50">
-              frequency
-            </span>
+          <div className="flex items-center">
+            <img
+              src="/frequency-logo.png"
+              alt="Frequency"
+              className="h-6 w-auto dark:invert"
+            />
           </div>
           <div className="flex items-center gap-1">
             <button

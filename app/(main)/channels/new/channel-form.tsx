@@ -153,7 +153,7 @@ export function ChannelForm({ scopeOptions }: { scopeOptions: ScopeOption[] }) {
           />
         </button>
         <span className="text-sm text-gray-700">
-          {isPublic ? 'Public — discoverable in your nexus' : 'Private — invite only'}
+          {isPublic ? 'Public: discoverable in your nexus' : 'Private: invite only'}
         </span>
       </div>
 

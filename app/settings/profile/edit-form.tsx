@@ -108,7 +108,7 @@ export default function EditProfileForm({
       .upload(path, avatarFile, { upsert: true })
 
     if (error) {
-      setUploadError('Upload failed — your other changes were still saved.')
+      setUploadError('Upload failed. Your other changes were still saved.')
       setUploading(false)
       return avatarUrl // fall back to existing URL
     }

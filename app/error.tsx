@@ -26,7 +26,7 @@ export default function Error({
           Something went wrong
         </h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-8">
-          An unexpected error occurred. Try again — if it keeps happening, refresh the page.
+          An unexpected error occurred. Try again. If it keeps happening, refresh the page.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <button
