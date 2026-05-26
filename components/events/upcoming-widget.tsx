@@ -53,6 +53,7 @@ export async function UpcomingEventsWidget({
     .from('events')
     .select('id, title, slug, location, starts_at, scope_id')
     .in('scope_id', scopeIds)
+    .in('scope_type', ['circle', 'group'])  // accept both during transition
     .eq('is_cancelled', false)
     .gte('starts_at', now)
     .order('starts_at', { ascending: true })

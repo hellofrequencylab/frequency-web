@@ -7,36 +7,23 @@ type EventRow = {
   id: string
   title: string
   slug: string
-  description: string | null
   location: string | null
   starts_at: string
   ends_at: string | null
   is_cancelled: boolean
   scope_id: string
   scope_type: string
-  host: {
-    id: string
-    display_name: string
-    handle: string
-  } | null
-  _rsvp_count?: number
+  host: { id: string; display_name: string; handle: string } | null
 }
 
 function formatDate(iso: string) {
-  const d = new Date(iso)
-  return d.toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
+  return new Date(iso).toLocaleDateString('en-US', {
+    weekday: 'short', month: 'short', day: 'numeric',
   })
 }
 
 function formatTime(iso: string) {
-  const d = new Date(iso)
-  return d.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-  })
+  return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 }
 
 function DateBlock({ iso }: { iso: string }) {
@@ -60,7 +47,7 @@ export default async function EventsPage() {
   } = await supabase.auth.getUser()
 
   let myProfileId: string | null = null
-  let myGroupIds: string[] = []
+  let myCircleIds: string[] = []
   let isCrew = false
 
   if (user) {
@@ -72,39 +59,19 @@ export default async function EventsPage() {
 
     if (profile) {
       myProfileId = profile.id
-      const crewRoles = ['crew', 'host', 'guide', 'mentor']
-      isCrew = crewRoles.includes(profile.community_role)
+      isCrew = ['crew', 'host', 'guide', 'mentor'].includes(profile.community_role)
 
       const { data: memberships } = await admin
-        .from('group_memberships')
-        .select('group_id')
+        .from('memberships')
+        .select('circle_id')
         .eq('profile_id', profile.id)
+        .eq('status', 'active')
 
-      myGroupIds = (memberships ?? []).map((m) => m.group_id as string)
+      myCircleIds = (memberships ?? []).map((m) => m.circle_id as string)
     }
   }
 
-  // Fetch upcoming events (next 60 days) for user's groups
-  const now = new Date().toISOString()
-  const future = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString()
-
-  let eventsQuery = admin
-    .from('events')
-    .select(
-      `id, title, slug, description, location, starts_at, ends_at, is_cancelled,
-       scope_id, scope_type,
-       host:profiles!host_id ( id, display_name, handle )`
-    )
-    .eq('is_cancelled', false)
-    .gte('starts_at', now)
-    .lte('starts_at', future)
-    .order('starts_at', { ascending: true })
-    .limit(30)
-
-  if (myGroupIds.length > 0) {
-    eventsQuery = eventsQuery.in('scope_id', myGroupIds)
-  } else {
-    // No groups — show nothing
+  if (myCircleIds.length === 0) {
     return (
       <div className="px-4 py-8 max-w-2xl mx-auto">
         <div className="flex items-center justify-between mb-6">
@@ -113,8 +80,8 @@ export default async function EventsPage() {
         <div className="rounded-xl border border-dashed border-gray-200 p-12 text-center">
           <CalendarDays className="w-8 h-8 text-gray-300 mx-auto mb-3" />
           <p className="text-sm text-gray-500">
-            <Link href="/groups" className="text-indigo-600 hover:underline">
-              Join a group
+            <Link href="/circles" className="text-indigo-600 hover:underline">
+              Join a circle
             </Link>{' '}
             to see events.
           </p>
@@ -123,29 +90,43 @@ export default async function EventsPage() {
     )
   }
 
-  const { data: rawEvents } = await eventsQuery
+  const now = new Date().toISOString()
+  const future = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString()
+
+  const { data: rawEvents } = await admin
+    .from('events')
+    .select(
+      `id, title, slug, location, starts_at, ends_at, is_cancelled,
+       scope_id, scope_type,
+       host:profiles!host_id ( id, display_name, handle )`
+    )
+    .in('scope_id', myCircleIds)
+    .eq('is_cancelled', false)
+    .gte('starts_at', now)
+    .lte('starts_at', future)
+    .order('starts_at', { ascending: true })
+    .limit(30)
+
   const events = (rawEvents ?? []) as unknown as EventRow[]
 
-  // Fetch group names for scope_ids
-  const groupScopeIds = events
-    .filter((e) => e.scope_type === 'group')
-    .map((e) => e.scope_id)
-  const uniqueGroupIds = [...new Set(groupScopeIds)]
-
-  let groupNames: Record<string, string> = {}
-  if (uniqueGroupIds.length > 0) {
-    const { data: groups } = await admin
-      .from('groups')
+  // Fetch circle names for scope_ids
+  const circleIds = [...new Set(events.map((e) => e.scope_id))]
+  let circleNames: Record<string, string> = {}
+  if (circleIds.length > 0) {
+    const { data: circles } = await admin
+      .from('circles')
       .select('id, name')
-      .in('id', uniqueGroupIds)
-    ;(groups ?? []).forEach((g: { id: string; name: string }) => {
-      groupNames[g.id] = g.name
+      .in('id', circleIds)
+    ;(circles ?? []).forEach((c: { id: string; name: string }) => {
+      circleNames[c.id] = c.name
     })
   }
 
-  // Fetch RSVP counts
+  // RSVP data
   const eventIds = events.map((e) => e.id)
   let rsvpCounts: Record<string, number> = {}
+  let myRsvps = new Set<string>()
+
   if (eventIds.length > 0) {
     const { data: rsvps } = await admin
       .from('event_rsvps')
@@ -155,18 +136,16 @@ export default async function EventsPage() {
     ;(rsvps ?? []).forEach((r: { event_id: string }) => {
       rsvpCounts[r.event_id] = (rsvpCounts[r.event_id] ?? 0) + 1
     })
-  }
 
-  // Fetch my RSVPs
-  let myRsvps: Set<string> = new Set()
-  if (myProfileId && eventIds.length > 0) {
-    const { data: mine } = await admin
-      .from('event_rsvps')
-      .select('event_id')
-      .in('event_id', eventIds)
-      .eq('profile_id', myProfileId)
-      .eq('status', 'going')
-    ;(mine ?? []).forEach((r: { event_id: string }) => myRsvps.add(r.event_id))
+    if (myProfileId) {
+      const { data: mine } = await admin
+        .from('event_rsvps')
+        .select('event_id')
+        .in('event_id', eventIds)
+        .eq('profile_id', myProfileId)
+        .eq('status', 'going')
+      ;(mine ?? []).forEach((r: { event_id: string }) => myRsvps.add(r.event_id))
+    }
   }
 
   return (
@@ -189,65 +168,51 @@ export default async function EventsPage() {
           <CalendarDays className="w-8 h-8 text-gray-300 mx-auto mb-3" />
           <p className="text-sm text-gray-500">No upcoming events in the next 60 days.</p>
           {isCrew && (
-            <Link
-              href="/events/new"
-              className="mt-3 inline-block text-xs text-indigo-600 hover:underline"
-            >
+            <Link href="/events/new" className="mt-3 inline-block text-xs text-indigo-600 hover:underline">
               Create the first one →
             </Link>
           )}
         </div>
       ) : (
         <div className="space-y-2">
-          {events.map((event) => {
-            const groupName = groupNames[event.scope_id] ?? null
-            const rsvpCount = rsvpCounts[event.id] ?? 0
-            const going = myRsvps.has(event.id)
-
-            return (
-              <Link
-                key={event.id}
-                href={`/events/${event.slug}`}
-                className="flex items-start gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 hover:border-indigo-200 hover:bg-indigo-50/30 transition-colors"
-              >
-                <DateBlock iso={event.starts_at} />
-
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 truncate">
-                    {event.title}
-                  </p>
-                  <div className="flex items-center gap-2 flex-wrap mt-0.5">
-                    <span className="text-xs text-gray-500">
-                      {formatDate(event.starts_at)} · {formatTime(event.starts_at)}
+          {events.map((event) => (
+            <Link
+              key={event.id}
+              href={`/events/${event.slug}`}
+              className="flex items-start gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 hover:border-indigo-200 hover:bg-indigo-50/30 transition-colors"
+            >
+              <DateBlock iso={event.starts_at} />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-900 truncate">{event.title}</p>
+                <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                  <span className="text-xs text-gray-500">
+                    {formatDate(event.starts_at)} · {formatTime(event.starts_at)}
+                  </span>
+                  {event.location && (
+                    <span className="flex items-center gap-0.5 text-xs text-gray-400">
+                      <MapPin className="w-3 h-3" />
+                      {event.location}
                     </span>
-                    {event.location && (
-                      <span className="flex items-center gap-0.5 text-xs text-gray-400">
-                        <MapPin className="w-3 h-3" />
-                        {event.location}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 flex-wrap mt-1">
-                    {groupName && (
-                      <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-medium">
-                        {groupName}
-                      </span>
-                    )}
-                    {rsvpCount > 0 && (
-                      <span className="text-[11px] text-gray-400">
-                        {rsvpCount} going
-                      </span>
-                    )}
-                    {going && (
-                      <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">
-                        ✓ Going
-                      </span>
-                    )}
-                  </div>
+                  )}
                 </div>
-              </Link>
-            )
-          })}
+                <div className="flex items-center gap-2 flex-wrap mt-1">
+                  {circleNames[event.scope_id] && (
+                    <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-medium">
+                      {circleNames[event.scope_id]}
+                    </span>
+                  )}
+                  {rsvpCounts[event.id] > 0 && (
+                    <span className="text-[11px] text-gray-400">{rsvpCounts[event.id]} going</span>
+                  )}
+                  {myRsvps.has(event.id) && (
+                    <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">
+                      ✓ Going
+                    </span>
+                  )}
+                </div>
+              </div>
+            </Link>
+          ))}
         </div>
       )}
     </div>

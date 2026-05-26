@@ -25,10 +25,11 @@ const ROLE_BADGE: Record<CommunityRole, { label: string; cls: string }> = {
 }
 
 const SIDEBAR_NAV = [
-  { href: '/feed',   label: 'Feed',      Icon: Home },
-  { href: '/groups', label: 'My Group',  Icon: Users },
-  { href: '/events', label: 'Events',    Icon: CalendarDays },
-  { href: '/people', label: 'Directory', Icon: Globe },
+  { href: '/feed',     label: 'Feed',      Icon: Home },
+  { href: '/circles',  label: 'Circles',   Icon: Users },
+  { href: '/channels', label: 'Channels',  Icon: Radio },
+  { href: '/events',   label: 'Events',    Icon: CalendarDays },
+  { href: '/people',   label: 'Directory', Icon: Globe },
 ]
 
 function getInitials(name: string) {
@@ -61,6 +62,8 @@ export default function AppShell({
 
   function isActive(href: string) {
     if (href === '/feed') return pathname === '/feed'
+    if (href === '/circles') return pathname === '/circles' || pathname.startsWith('/circles/') || pathname.startsWith('/hubs/') || pathname.startsWith('/nexuses/')
+    if (href === '/channels') return pathname === '/channels' || pathname.startsWith('/channels/')
     return pathname === href || pathname.startsWith(href + '/')
   }
 
@@ -105,8 +108,8 @@ export default function AppShell({
             )
           })}
 
-          {/* Admin — mentor only */}
-          {role === 'mentor' && (
+          {/* Admin — host+ */}
+          {(role === 'host' || role === 'guide' || role === 'mentor') && (
             <Link
               href="/admin"
               className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -220,9 +223,9 @@ export default function AppShell({
       <nav className="md:hidden fixed inset-x-0 bottom-0 z-40 flex h-16 items-stretch bg-white border-t border-gray-200">
         {(
           [
-            { href: '/feed',    label: 'Feed',    Icon: Home },
-            { href: '/groups',  label: 'Group',   Icon: Users },
-            { href: '/events',  label: 'Events',  Icon: CalendarDays },
+            { href: '/feed',     label: 'Feed',    Icon: Home },
+            { href: '/circles',  label: 'Circles', Icon: Users },
+            { href: '/events',   label: 'Events',  Icon: CalendarDays },
             { href: profileHref, label: 'Profile', Icon: User },
           ] as const
         ).map(({ href, label, Icon }) => {

@@ -13,8 +13,8 @@ export default async function FeedPage() {
 
   const admin = createAdminClient()
   let myProfileId: string | null = null
-  let myGroupIds: string[] = []
-  let primaryGroupId: string | null = null
+  let myCircleIds: string[] = []
+  let primaryCircleId: string | null = null
 
   if (user) {
     const { data: profile } = await admin
@@ -27,35 +27,36 @@ export default async function FeedPage() {
       myProfileId = profile.id
 
       const { data: memberships } = await admin
-        .from('group_memberships')
-        .select('group_id')
+        .from('memberships')
+        .select('circle_id')
         .eq('profile_id', profile.id)
+        .eq('status', 'active')
         .order('joined_at', { ascending: true })
 
-      myGroupIds = (memberships ?? []).map((m) => m.group_id as string)
-      primaryGroupId = myGroupIds[0] ?? null
+      myCircleIds = (memberships ?? []).map((m) => m.circle_id as string)
+      primaryCircleId = myCircleIds[0] ?? null
     }
   }
 
   return (
     <div className="px-4 py-6 max-w-2xl mx-auto">
-      {primaryGroupId ? (
-        <Composer scopeId={primaryGroupId} visibility="group" />
+      {primaryCircleId ? (
+        <Composer scopeId={primaryCircleId} visibility="group" />
       ) : (
         <div className="rounded-xl border border-dashed border-gray-200 p-4 mb-4 text-center">
           <p className="text-sm text-gray-500">
-            <Link href="/groups" className="text-indigo-600 hover:underline">
-              Join a group
+            <Link href="/circles" className="text-indigo-600 hover:underline">
+              Join a circle
             </Link>{' '}
             to start posting.
           </p>
         </div>
       )}
 
-      <UpcomingEventsWidget scopeIds={myGroupIds} />
+      <UpcomingEventsWidget scopeIds={myCircleIds} />
 
       <FeedList
-        scopeIds={myGroupIds}
+        scopeIds={myCircleIds}
         myProfileId={myProfileId}
       />
     </div>

@@ -37,35 +37,21 @@ type RSVPRow = {
 
 function formatFull(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
+    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
   })
 }
 
 function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-  })
+  return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 }
 
 function googleCalendarUrl(event: EventDetail) {
-  const start = new Date(event.starts_at)
-    .toISOString()
-    .replace(/[-:]/g, '')
-    .replace('.000', '')
+  const fmt = (iso: string) =>
+    new Date(iso).toISOString().replace(/[-:]/g, '').replace('.000', '')
+  const start = fmt(event.starts_at)
   const end = event.ends_at
-    ? new Date(event.ends_at)
-        .toISOString()
-        .replace(/[-:]/g, '')
-        .replace('.000', '')
-    : new Date(new Date(event.starts_at).getTime() + 60 * 60 * 1000)
-        .toISOString()
-        .replace(/[-:]/g, '')
-        .replace('.000', '')
-
+    ? fmt(event.ends_at)
+    : fmt(new Date(new Date(event.starts_at).getTime() + 60 * 60 * 1000).toISOString())
   const params = new URLSearchParams({
     action: 'TEMPLATE',
     text: event.title,
@@ -77,12 +63,7 @@ function googleCalendarUrl(event: EventDetail) {
 }
 
 function getInitials(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0].toUpperCase())
-    .join('')
+  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('')
 }
 
 export default async function EventDetailPage({
@@ -107,33 +88,24 @@ export default async function EventDetailPage({
   if (!rawEvent) notFound()
   const event = rawEvent as unknown as EventDetail
 
-  // Fetch RSVPs
   const { data: rawRsvps } = await admin
     .from('event_rsvps')
-    .select(
-      `id, status,
-       profile:profiles!profile_id ( id, display_name, handle, avatar_url )`
-    )
+    .select('id, status, profile:profiles!profile_id ( id, display_name, handle, avatar_url )')
     .eq('event_id', event.id)
     .order('created_at', { ascending: true })
 
   const rsvps = (rawRsvps ?? []) as unknown as RSVPRow[]
   const goingRsvps = rsvps.filter((r) => r.status === 'going')
 
-  // Fetch group name
-  let groupName: string | null = null
-  let groupSlug: string | null = null
-  if (event.scope_type === 'group') {
-    const { data: g } = await admin
-      .from('groups')
-      .select('name, slug')
-      .eq('id', event.scope_id)
-      .maybeSingle()
-    groupName = g?.name ?? null
-    groupSlug = g?.slug ?? null
+  // Resolve scope name — circle
+  let scopeName: string | null = null
+  let scopeSlug: string | null = null
+  if (event.scope_type === 'circle') {
+    const { data: c } = await admin.from('circles').select('name, slug').eq('id', event.scope_id).maybeSingle()
+    scopeName = c?.name ?? null
+    scopeSlug = c?.slug ?? null
   }
 
-  // Current user
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -153,9 +125,7 @@ export default async function EventDetailPage({
     if (profile) {
       myProfileId = profile.id
       isHost = event.host?.id === myProfileId
-      const crewRoles = ['crew', 'host', 'guide', 'mentor']
-      isCrew = crewRoles.includes(profile.community_role)
-
+      isCrew = ['crew', 'host', 'guide', 'mentor'].includes(profile.community_role)
       const myRsvp = rsvps.find((r) => r.profile.id === myProfileId)
       myRsvpStatus = myRsvp?.status ?? null
     }
@@ -198,18 +168,15 @@ export default async function EventDetailPage({
             </div>
           )}
 
-          {groupName && (
+          {scopeName && (
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <Users className="w-4 h-4 text-gray-400 shrink-0" />
-              {groupSlug ? (
-                <Link
-                  href={`/groups/${groupSlug}`}
-                  className="text-indigo-600 hover:underline"
-                >
-                  {groupName}
+              {scopeSlug ? (
+                <Link href={`/circles/${scopeSlug}`} className="text-indigo-600 hover:underline">
+                  {scopeName}
                 </Link>
               ) : (
-                <span>{groupName}</span>
+                <span>{scopeName}</span>
               )}
             </div>
           )}
@@ -217,10 +184,7 @@ export default async function EventDetailPage({
           {event.host && (
             <p className="text-sm text-gray-500">
               Hosted by{' '}
-              <Link
-                href={`/people/${event.host.handle}`}
-                className="text-indigo-600 hover:underline"
-              >
+              <Link href={`/people/${event.host.handle}`} className="text-indigo-600 hover:underline">
                 {event.host.display_name}
               </Link>
             </p>
@@ -240,7 +204,7 @@ export default async function EventDetailPage({
                   : 'bg-indigo-600 text-white hover:bg-indigo-700'
               }`}
             >
-              {myRsvpStatus === 'going' ? '✓ Going (click to undo)' : 'RSVP — I\'m going'}
+              {myRsvpStatus === 'going' ? "✓ Going (click to undo)" : "RSVP — I'm going"}
             </button>
           </form>
 
@@ -280,15 +244,12 @@ export default async function EventDetailPage({
       <section>
         <h2 className="text-sm font-semibold text-gray-700 mb-3">
           Attendees
-          <span className="ml-2 text-xs font-normal text-gray-400">
-            {goingRsvps.length} going
-          </span>
+          <span className="ml-2 text-xs font-normal text-gray-400">{goingRsvps.length} going</span>
         </h2>
 
         {goingRsvps.length === 0 ? (
           <p className="text-sm text-gray-400">No RSVPs yet.</p>
         ) : isCrew ? (
-          // Crew+ see attendee list
           <div className="space-y-0.5">
             {goingRsvps.map(({ profile }) => (
               <Link
@@ -297,27 +258,20 @@ export default async function EventDetailPage({
                 className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-50 transition-colors -mx-3"
               >
                 {profile.avatar_url ? (
-                  <img
-                    src={profile.avatar_url}
-                    alt={profile.display_name}
-                    className="w-7 h-7 rounded-full object-cover shrink-0"
-                  />
+                  <img src={profile.avatar_url} alt={profile.display_name} className="w-7 h-7 rounded-full object-cover shrink-0" />
                 ) : (
                   <div className="w-7 h-7 rounded-full bg-indigo-100 text-indigo-600 text-xs font-semibold flex items-center justify-center shrink-0 select-none">
                     {getInitials(profile.display_name)}
                   </div>
                 )}
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">
-                    {profile.display_name}
-                  </p>
+                  <p className="text-sm font-medium text-gray-900 truncate">{profile.display_name}</p>
                   <p className="text-xs text-gray-400">@{profile.handle}</p>
                 </div>
               </Link>
             ))}
           </div>
         ) : (
-          // Members see count only
           <p className="text-sm text-gray-500">
             {goingRsvps.length} {goingRsvps.length === 1 ? 'person' : 'people'} going.
           </p>

@@ -32,7 +32,6 @@ export async function createEvent(formData: FormData) {
   const description = (formData.get('description') as string | null)?.trim() || null
   const location = (formData.get('location') as string | null)?.trim() || null
   const scopeId = formData.get('scopeId') as string | null
-  const scopeType = (formData.get('scopeType') as string | null) ?? 'group'
   const startsAt = formData.get('startsAt') as string | null
   const endsAt = (formData.get('endsAt') as string | null) || null
 
@@ -43,7 +42,7 @@ export async function createEvent(formData: FormData) {
 
   const admin = createAdminClient()
 
-  // Generate a unique slug
+  // Unique slug generation
   const base = slugify(title) + '-' + startsAt.slice(0, 10)
   let slug = base
   const { data: existing } = await admin
@@ -61,7 +60,7 @@ export async function createEvent(formData: FormData) {
     description,
     location,
     scope_id: scopeId,
-    scope_type: scopeType,
+    scope_type: 'circle',   // always circle-scoped now
     starts_at: new Date(startsAt).toISOString(),
     ends_at: endsAt ? new Date(endsAt).toISOString() : null,
     host_id: myProfileId,
@@ -75,7 +74,7 @@ export async function createEvent(formData: FormData) {
 
   revalidatePath('/events')
   revalidatePath('/feed')
-  revalidatePath('/groups', 'layout')
+  revalidatePath('/circles', 'layout')
   redirect(`/events/${slug}`)
 }
 
@@ -86,7 +85,6 @@ export async function toggleRSVP(eventId: string, currentStatus: string | null) 
   const admin = createAdminClient()
   const supabase = await createClient()
 
-  // Check current RSVP
   const { data: existing } = await admin
     .from('event_rsvps')
     .select('id, status')
@@ -95,19 +93,10 @@ export async function toggleRSVP(eventId: string, currentStatus: string | null) 
     .maybeSingle()
 
   if (existing) {
-    if (existing.status === 'going') {
-      // Toggle off → not_going (or delete)
-      await supabase
-        .from('event_rsvps')
-        .update({ status: 'not_going' })
-        .eq('id', existing.id)
-    } else {
-      // Toggle back to going
-      await supabase
-        .from('event_rsvps')
-        .update({ status: 'going' })
-        .eq('id', existing.id)
-    }
+    await supabase
+      .from('event_rsvps')
+      .update({ status: existing.status === 'going' ? 'not_going' : 'going' })
+      .eq('id', existing.id)
   } else {
     await supabase.from('event_rsvps').insert({
       event_id: eventId,
@@ -118,7 +107,7 @@ export async function toggleRSVP(eventId: string, currentStatus: string | null) 
 
   revalidatePath('/events')
   revalidatePath('/feed')
-  revalidatePath('/groups', 'layout')
+  revalidatePath('/circles', 'layout')
 }
 
 export async function cancelEvent(eventId: string) {
@@ -130,9 +119,9 @@ export async function cancelEvent(eventId: string) {
     .from('events')
     .update({ is_cancelled: true })
     .eq('id', eventId)
-    .eq('host_id', myProfileId) // RLS also enforces, belt-and-suspenders
+    .eq('host_id', myProfileId)
 
   revalidatePath('/events')
   revalidatePath('/feed')
-  revalidatePath('/groups', 'layout')
+  revalidatePath('/circles', 'layout')
 }

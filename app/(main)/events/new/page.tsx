@@ -13,7 +13,6 @@ export default async function NewEventPage() {
   if (!user) notFound()
 
   const admin = createAdminClient()
-
   const { data: profile } = await admin
     .from('profiles')
     .select('id, community_role')
@@ -22,27 +21,27 @@ export default async function NewEventPage() {
 
   if (!profile) notFound()
 
-  // Only crew+ can create events
   const crewRoles = ['crew', 'host', 'guide', 'mentor']
   if (!crewRoles.includes(profile.community_role)) notFound()
 
-  // Fetch groups the user belongs to
+  // Fetch circles the user is a member of (scope for events)
   const { data: memberships } = await admin
-    .from('group_memberships')
-    .select('group_id')
+    .from('memberships')
+    .select('circle_id')
     .eq('profile_id', profile.id)
+    .eq('status', 'active')
 
-  const groupIds = (memberships ?? []).map((m) => m.group_id as string)
+  const circleIds = (memberships ?? []).map((m) => m.circle_id as string)
 
-  let groups: { id: string; name: string }[] = []
-  if (groupIds.length > 0) {
-    const { data: groupRows } = await admin
-      .from('groups')
+  let circles: { id: string; name: string }[] = []
+  if (circleIds.length > 0) {
+    const { data: circleRows } = await admin
+      .from('circles')
       .select('id, name')
-      .in('id', groupIds)
-      .eq('is_active', true)
+      .in('id', circleIds)
+      .neq('status', 'archived')
       .order('name', { ascending: true })
-    groups = (groupRows ?? []) as { id: string; name: string }[]
+    circles = (circleRows ?? []) as { id: string; name: string }[]
   }
 
   return (
@@ -57,7 +56,7 @@ export default async function NewEventPage() {
       <h1 className="text-xl font-semibold text-gray-900 mb-6">Create an Event</h1>
 
       <div className="rounded-xl border border-gray-200 bg-white p-5">
-        <EventForm groups={groups} />
+        <EventForm groups={circles} />
       </div>
     </div>
   )
