@@ -43,7 +43,7 @@ export default async function ProfilePage({
       bio,
       avatar_url,
       community_role,
-      nexus_regions ( name )
+      nexus_regions!nexus_region_id ( name )
     `)
     .eq('handle', handle)
     .eq('is_active', true)
