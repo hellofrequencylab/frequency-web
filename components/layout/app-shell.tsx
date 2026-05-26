@@ -19,7 +19,9 @@ import {
   Settings,
   Zap,
   Search,
-  ChevronDown,
+  CreditCard,
+  BellRing,
+  SlidersHorizontal,
 } from 'lucide-react'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor'
@@ -33,12 +35,12 @@ const ROLE_BADGE: Record<CommunityRole, { label: string; cls: string }> = {
 }
 
 const SIDEBAR_NAV = [
-  { href: '/feed',      label: 'Feed',      Icon: Home },
-  { href: '/circles',   label: 'Circles',   Icon: Users },
-  { href: '/channels',  label: 'Channels',  Icon: Radio },
-  { href: '/events',    label: 'Events',    Icon: CalendarDays },
-  { href: '/messages',  label: 'Messages',  Icon: MessageSquare },
-  { href: '/people',    label: 'Directory', Icon: Globe },
+  { href: '/feed',     label: 'Feed',      Icon: Home },
+  { href: '/circles',  label: 'Circles',   Icon: Users },
+  { href: '/channels', label: 'Channels',  Icon: Radio },
+  { href: '/events',   label: 'Events',    Icon: CalendarDays },
+  { href: '/messages', label: 'Messages',  Icon: MessageSquare },
+  { href: '/people',   label: 'Directory', Icon: Globe },
 ]
 
 function getInitials(name: string) {
@@ -87,19 +89,68 @@ function useTheme() {
   return { theme, setTheme }
 }
 
-// ── User dropdown ─────────────────────────────────────────────────────────────
+// ── Profile card (sidebar bottom) ─────────────────────────────────────────────
+// Public-facing identity: avatar · name · role badge → profile + member settings
+// This is the engagement anchor — badges, rank, etc. will live here as we grow.
 
-function UserDropdown({
+function ProfileCard({
   profile,
   badge,
   profileHref,
+}: {
+  profile: Profile
+  badge: { label: string; cls: string }
+  profileHref: string
+}) {
+  return (
+    <div className="flex items-center gap-2 rounded-xl p-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group">
+      <Link href={profileHref} className="flex items-center gap-2.5 flex-1 min-w-0">
+        {profile.avatar_url ? (
+          <img
+            src={profile.avatar_url}
+            alt={profile.display_name}
+            className="w-9 h-9 rounded-full object-cover shrink-0"
+          />
+        ) : (
+          <div className="w-9 h-9 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 text-sm font-semibold flex items-center justify-center shrink-0 select-none">
+            {getInitials(profile.display_name)}
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-gray-900 dark:text-gray-50 truncate leading-tight">
+            {profile.display_name}
+          </p>
+          <span
+            className={`inline-block mt-0.5 text-[10px] px-1.5 py-px rounded-full font-medium leading-tight ${badge.cls}`}
+          >
+            {badge.label}
+          </span>
+        </div>
+      </Link>
+
+      {/* Member settings — gear reveals on hover */}
+      <Link
+        href="/settings"
+        aria-label="Member settings"
+        className="shrink-0 p-1.5 rounded-lg text-gray-300 dark:text-gray-700 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 opacity-0 group-hover:opacity-100 transition-all"
+      >
+        <Settings className="w-4 h-4" />
+      </Link>
+    </div>
+  )
+}
+
+// ── Account dropdown (top-right) ──────────────────────────────────────────────
+// Admin layer: account settings, billing, notifications, theme, sign out.
+// Always shows initials — keeps it feeling functional/admin vs. personal.
+
+function AccountDropdown({
+  profile,
   themeLabel,
   ThemeIcon,
   cycleTheme,
 }: {
   profile: Profile
-  badge: { label: string; cls: string }
-  profileHref: string
   themeLabel: string
   ThemeIcon: React.ElementType
   cycleTheme: () => void
@@ -119,55 +170,55 @@ function UserDropdown({
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-        aria-label="User menu"
+        aria-label="Account menu"
+        className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs font-bold hover:bg-gray-700 dark:hover:bg-gray-300 transition-colors select-none shrink-0"
       >
-        {profile.avatar_url ? (
-          <img
-            src={profile.avatar_url}
-            alt={profile.display_name}
-            className="w-7 h-7 rounded-full object-cover"
-          />
-        ) : (
-          <div className="w-7 h-7 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 text-xs font-semibold flex items-center justify-center select-none">
-            {getInitials(profile.display_name)}
-          </div>
-        )}
-        <ChevronDown
-          className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-150 ${open ? 'rotate-180' : ''}`}
-        />
+        {getInitials(profile.display_name)}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1.5 w-56 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-xl shadow-black/5 py-1 z-50">
-          {/* Identity */}
+        <div className="absolute right-0 top-full mt-2 w-56 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-xl shadow-black/5 py-1 z-50">
+
+          {/* Header */}
           <div className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-800">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-0.5">
+              Account
+            </p>
             <p className="text-sm font-semibold text-gray-900 dark:text-gray-50 truncate">
               {profile.display_name}
             </p>
-            <span className={`inline-block mt-0.5 text-[11px] px-1.5 py-px rounded-full font-medium leading-tight ${badge.cls}`}>
-              {badge.label}
-            </span>
           </div>
 
-          {/* Links */}
+          {/* Account links */}
           <div className="py-1">
-            <Link
-              href={profileHref}
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-            >
-              <User className="w-4 h-4 text-gray-400" />
-              Profile
-            </Link>
             <Link
               href="/settings"
               onClick={() => setOpen(false)}
               className="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             >
-              <Settings className="w-4 h-4 text-gray-400" />
-              Settings
+              <SlidersHorizontal className="w-4 h-4 text-gray-400" />
+              Account Settings
             </Link>
+            <Link
+              href="/settings/billing"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            >
+              <CreditCard className="w-4 h-4 text-gray-400" />
+              Billing & Plans
+            </Link>
+            <Link
+              href="/settings/notifications"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            >
+              <BellRing className="w-4 h-4 text-gray-400" />
+              Notifications
+            </Link>
+          </div>
+
+          {/* Theme */}
+          <div className="border-t border-gray-100 dark:border-gray-800 py-1">
             <button
               onClick={() => { cycleTheme(); setOpen(false) }}
               className="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 w-full text-left transition-colors"
@@ -182,9 +233,9 @@ function UserDropdown({
             <form action="/auth/signout" method="POST">
               <button
                 type="submit"
-                className="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 w-full text-left transition-colors"
+                className="flex items-center gap-2.5 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 w-full text-left transition-colors"
               >
-                <LogOut className="w-4 h-4 text-gray-400" />
+                <LogOut className="w-4 h-4" />
                 Sign out
               </button>
             </form>
@@ -243,72 +294,75 @@ export default function AppShell({
   }
 
   const ThemeIcon = theme === 'dark' ? Moon : Sun
-  const themeLabel = theme === 'dark' ? 'Dark mode' : theme === 'light' ? 'Light mode' : 'System theme'
+  const themeLabel =
+    theme === 'dark' ? 'Dark mode' : theme === 'light' ? 'Light mode' : 'System theme'
 
   return (
     <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-950 overflow-hidden">
 
-      {/* ── Top bar (all screens) ─────────────────────── */}
-      <header className="h-14 shrink-0 flex items-center gap-2 px-4 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 z-30">
+      {/* ── Top bar ───────────────────────────────────────── */}
+      <header className="h-14 shrink-0 flex items-stretch bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 z-30">
 
-        {/* Logo */}
-        <Link href="/feed" className="shrink-0 mr-1">
-          <img
-            src="/frequency-logo.png"
-            alt="Frequency"
-            className="h-6 w-auto dark:invert"
+        {/* Logo section — matches sidebar width (w-52) to create visual column alignment */}
+        <div className="flex items-center px-5 md:w-52 md:shrink-0 md:border-r md:border-gray-200 md:dark:border-gray-800">
+          <Link href="/feed" className="flex items-center">
+            <img
+              src="/frequency-logo.png"
+              alt="Frequency"
+              className="h-7 md:h-8 w-auto dark:invert"
+            />
+          </Link>
+        </div>
+
+        {/* Right section: search · notifications · account */}
+        <div className="flex flex-1 items-center justify-end gap-1 px-3">
+
+          {/* Search pill — desktop */}
+          <Link
+            href="/search"
+            className="hidden sm:flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-1.5 text-sm text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 transition-colors mr-1"
+          >
+            <Search className="w-3.5 h-3.5" />
+            <span>Search</span>
+            <kbd className="text-[10px] rounded px-1 border border-gray-200 dark:border-gray-700 text-gray-300 dark:text-gray-600">
+              ⌘K
+            </kbd>
+          </Link>
+
+          {/* Search icon — mobile */}
+          <Link
+            href="/search"
+            aria-label="Search"
+            className="sm:hidden p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          >
+            <Search className="w-5 h-5" />
+          </Link>
+
+          {/* Notifications placeholder */}
+          <button
+            aria-label="Notifications"
+            className="p-2 rounded-lg text-gray-400 dark:text-gray-600 hover:text-gray-600 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          >
+            <Bell className="w-4 h-4" />
+          </button>
+
+          {/* Account dropdown — initials, admin/account layer */}
+          <AccountDropdown
+            profile={profile}
+            themeLabel={themeLabel}
+            ThemeIcon={ThemeIcon}
+            cycleTheme={cycleTheme}
           />
-        </Link>
-
-        <div className="flex-1" />
-
-        {/* Search pill — desktop */}
-        <Link
-          href="/search"
-          className="hidden sm:flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-1.5 text-sm text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
-        >
-          <Search className="w-3.5 h-3.5" />
-          <span>Search</span>
-          <kbd className="text-[10px] rounded px-1 border border-gray-200 dark:border-gray-700 text-gray-300 dark:text-gray-600">
-            ⌘K
-          </kbd>
-        </Link>
-
-        {/* Search icon — mobile */}
-        <Link
-          href="/search"
-          aria-label="Search"
-          className="sm:hidden p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-        >
-          <Search className="w-5 h-5" />
-        </Link>
-
-        {/* Notifications placeholder */}
-        <button
-          aria-label="Notifications"
-          className="p-2 rounded-lg text-gray-400 dark:text-gray-600 hover:text-gray-600 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-        >
-          <Bell className="w-4 h-4" />
-        </button>
-
-        {/* User dropdown */}
-        <UserDropdown
-          profile={profile}
-          badge={badge}
-          profileHref={profileHref}
-          themeLabel={themeLabel}
-          ThemeIcon={ThemeIcon}
-          cycleTheme={cycleTheme}
-        />
+        </div>
       </header>
 
-      {/* ── Body ─────────────────────────────────────── */}
+      {/* ── Body ──────────────────────────────────────────── */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
 
         {/* Desktop sidebar */}
         <aside className="hidden md:flex w-52 flex-col shrink-0 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
 
-          {/* Primary nav */}
+          {/* Primary nav — fills available space */}
           <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
             {SIDEBAR_NAV.map(({ href, label, Icon }) => {
               const active = isActive(href)
@@ -344,7 +398,9 @@ export default function AppShell({
                 }`}
               >
                 <Zap
-                  className={`w-[18px] h-[18px] shrink-0 ${pathname === '/crew' ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400 dark:text-gray-600'}`}
+                  className={`w-[18px] h-[18px] shrink-0 ${
+                    pathname === '/crew' ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400 dark:text-gray-600'
+                  }`}
                   strokeWidth={pathname === '/crew' ? 2.5 : 2}
                 />
                 Crew
@@ -362,7 +418,9 @@ export default function AppShell({
                 }`}
               >
                 <Shield
-                  className={`w-[18px] h-[18px] shrink-0 ${pathname.startsWith('/admin') ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400 dark:text-gray-600'}`}
+                  className={`w-[18px] h-[18px] shrink-0 ${
+                    pathname.startsWith('/admin') ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400 dark:text-gray-600'
+                  }`}
                   strokeWidth={pathname.startsWith('/admin') ? 2.5 : 2}
                 />
                 Admin
@@ -370,10 +428,12 @@ export default function AppShell({
             )}
           </nav>
 
-          {/* Upgrade to Crew CTA — member only */}
+          {/* Upgrade to Crew CTA — members only */}
           {role === 'member' && (
             <div className="mx-3 mb-3 rounded-xl border border-indigo-100 dark:border-indigo-900 bg-gradient-to-br from-indigo-50 to-violet-50 dark:from-indigo-950 dark:to-violet-950 p-3.5">
-              <p className="text-xs font-semibold text-indigo-900 dark:text-indigo-100 mb-1">Upgrade to Crew</p>
+              <p className="text-xs font-semibold text-indigo-900 dark:text-indigo-100 mb-1">
+                Upgrade to Crew
+              </p>
               <p className="text-xs text-indigo-600 dark:text-indigo-400 leading-snug mb-3">
                 Get full access to the feed, events, and your group.
               </p>
@@ -385,6 +445,13 @@ export default function AppShell({
               </a>
             </div>
           )}
+
+          {/* Profile card — public identity anchor */}
+          {/* Avatar · name · role badge → public profile · member settings */}
+          {/* Grows into: points, rank, badges as we build out engagement */}
+          <div className="border-t border-gray-100 dark:border-gray-800 p-3">
+            <ProfileCard profile={profile} badge={badge} profileHref={profileHref} />
+          </div>
         </aside>
 
         {/* Page content */}
@@ -393,7 +460,7 @@ export default function AppShell({
         </main>
       </div>
 
-      {/* ── Mobile bottom nav ────────────────────────── */}
+      {/* ── Mobile bottom nav ─────────────────────────────── */}
       <nav className="md:hidden fixed inset-x-0 bottom-0 z-40 flex h-16 items-stretch bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
         {(
           [
