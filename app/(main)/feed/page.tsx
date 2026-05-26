@@ -1,11 +1,60 @@
-// Feed is an authenticated page wrapped by app/(main)/layout.tsx.
-// The nav shell, auth check, and profile fetch all happen in the layout —
-// this page only needs to render its content.
-export default function FeedPage() {
+import Link from 'next/link'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
+import { Composer } from '@/components/feed/composer'
+import { FeedList } from '@/components/feed/feed-list'
+
+export default async function FeedPage() {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  const admin = createAdminClient()
+  let myProfileId: string | null = null
+  let myGroupIds: string[] = []
+  let primaryGroupId: string | null = null
+
+  if (user) {
+    const { data: profile } = await admin
+      .from('profiles')
+      .select('id')
+      .eq('auth_user_id', user.id)
+      .maybeSingle()
+
+    if (profile) {
+      myProfileId = profile.id
+
+      const { data: memberships } = await admin
+        .from('group_memberships')
+        .select('group_id')
+        .eq('profile_id', profile.id)
+        .order('joined_at', { ascending: true })
+
+      myGroupIds = (memberships ?? []).map((m) => m.group_id as string)
+      primaryGroupId = myGroupIds[0] ?? null
+    }
+  }
+
   return (
-    <div className="px-4 py-8 max-w-2xl mx-auto">
-      <h1 className="text-xl font-semibold text-gray-900 mb-2">Feed</h1>
-      <p className="text-sm text-gray-500">Posts will appear here.</p>
+    <div className="px-4 py-6 max-w-2xl mx-auto">
+      {primaryGroupId ? (
+        <Composer scopeId={primaryGroupId} visibility="group" />
+      ) : (
+        <div className="rounded-xl border border-dashed border-gray-200 p-4 mb-4 text-center">
+          <p className="text-sm text-gray-500">
+            <Link href="/groups" className="text-indigo-600 hover:underline">
+              Join a group
+            </Link>{' '}
+            to start posting.
+          </p>
+        </div>
+      )}
+
+      <FeedList
+        scopeIds={myGroupIds}
+        myProfileId={myProfileId}
+      />
     </div>
   )
 }

@@ -4,6 +4,8 @@ import { Users, MapPin } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { leaveGroup } from '../actions'
+import { Composer } from '@/components/feed/composer'
+import { FeedList } from '@/components/feed/feed-list'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor'
 
@@ -301,12 +303,21 @@ export default async function GroupPage({
         </p>
       </section>
 
-      {/* ── Feed (placeholder) ───────────────────────── */}
+      {/* ── Group feed ───────────────────────────────── */}
       <section className="mt-8 border-t border-gray-100 pt-6">
-        <h2 className="text-sm font-semibold text-gray-700 mb-3">Group Feed</h2>
-        <p className="text-sm text-gray-400">
-          Posts scoped to this group will appear here.
-        </p>
+        <h2 className="text-sm font-semibold text-gray-700 mb-4">Group Feed</h2>
+        {isMember && (
+          <Composer
+            scopeId={group.id}
+            visibility="group"
+            placeholder={`Share something with ${group.name}…`}
+          />
+        )}
+        <FeedList
+          scopeIds={[group.id]}
+          myProfileId={myProfileId}
+          emptyMessage="No posts yet. Be the first to share something with the group."
+        />
       </section>
 
     </div>
