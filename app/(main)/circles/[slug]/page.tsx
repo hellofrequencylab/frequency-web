@@ -1,9 +1,10 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { Users } from 'lucide-react'
+import { Users, MessageSquare } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { leaveCircle } from '../actions'
+import { startConversation } from '@/app/(main)/messages/actions'
 import { Composer } from '@/components/feed/composer'
 import { FeedList } from '@/components/feed/feed-list'
 import { UpcomingEventsWidget } from '@/components/events/upcoming-widget'
@@ -274,47 +275,65 @@ export default async function CirclePage({
               const role = (profile.community_role ?? 'member') as CommunityRole
               const badge = ROLE_BADGE[role] ?? ROLE_BADGE.member
               const volBadge = volunteer_role ? ROLE_BADGE[volunteer_role] : null
+              const isSelf = profile.id === myProfileId
 
               return (
-                <Link
+                <div
                   key={profile.id}
-                  href={`/people/${profile.handle}`}
-                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-gray-50 transition-colors -mx-3"
+                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-gray-50 transition-colors -mx-3 group"
                 >
-                  {profile.avatar_url ? (
-                    <img
-                      src={profile.avatar_url}
-                      alt={profile.display_name}
-                      className="w-8 h-8 rounded-full object-cover shrink-0"
-                    />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 text-xs font-semibold flex items-center justify-center shrink-0 select-none">
-                      {getInitials(profile.display_name)}
-                    </div>
-                  )}
+                  <Link
+                    href={`/people/${profile.handle}`}
+                    className="flex items-center gap-3 flex-1 min-w-0"
+                  >
+                    {profile.avatar_url ? (
+                      <img
+                        src={profile.avatar_url}
+                        alt={profile.display_name}
+                        className="w-8 h-8 rounded-full object-cover shrink-0"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 text-xs font-semibold flex items-center justify-center shrink-0 select-none">
+                        {getInitials(profile.display_name)}
+                      </div>
+                    )}
 
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-sm font-medium text-gray-900 truncate">
-                        {profile.display_name}
-                      </span>
-                      {memberIsHost && (
-                        <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">
-                          Host
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-sm font-medium text-gray-900 truncate">
+                          {profile.display_name}
                         </span>
-                      )}
-                      {volBadge && !memberIsHost && (
-                        <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${volBadge.cls}`}>
-                          {volBadge.label}
+                        {memberIsHost && (
+                          <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">
+                            Host
+                          </span>
+                        )}
+                        {volBadge && !memberIsHost && (
+                          <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${volBadge.cls}`}>
+                            {volBadge.label}
+                          </span>
+                        )}
+                        <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${badge.cls}`}>
+                          {badge.label}
                         </span>
-                      )}
-                      <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${badge.cls}`}>
-                        {badge.label}
-                      </span>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-0.5">@{profile.handle}</p>
                     </div>
-                    <p className="text-xs text-gray-400 mt-0.5">@{profile.handle}</p>
-                  </div>
-                </Link>
+                  </Link>
+
+                  {/* Message icon — visible on hover, hidden for self */}
+                  {!isSelf && isMember && (
+                    <form action={startConversation.bind(null, profile.id)}>
+                      <button
+                        type="submit"
+                        title={`Message ${profile.display_name}`}
+                        className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                      </button>
+                    </form>
+                  )}
+                </div>
               )
             })}
           </div>

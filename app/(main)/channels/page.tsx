@@ -106,7 +106,11 @@ export default async function ChannelsPage() {
   if (!myNexusId && !myHubId) {
     return (
       <div className="px-4 py-8 max-w-2xl mx-auto">
-        <h1 className="text-xl font-semibold text-gray-900 mb-6">Channels</h1>
+        <h1 className="text-xl font-semibold text-gray-900 mb-1">Channels</h1>
+        <p className="text-sm text-gray-500 leading-relaxed mb-6 max-w-lg">
+          Focused spaces beyond your circle. Channels are where the community organises around a
+          topic, event, or conversation — open to anyone in your area.
+        </p>
         <div className="rounded-xl border border-dashed border-gray-200 p-12 text-center">
           <Hash className="w-8 h-8 text-gray-300 mx-auto mb-3" />
           <p className="text-sm text-gray-500">
@@ -182,17 +186,23 @@ export default async function ChannelsPage() {
 
   return (
     <div className="px-4 py-8 max-w-2xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold text-gray-900">Channels</h1>
-        {isCreator && (
-          <Link
-            href="/channels/new"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            New Channel
-          </Link>
-        )}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-1">
+          <h1 className="text-xl font-semibold text-gray-900">Channels</h1>
+          {isCreator && (
+            <Link
+              href="/channels/new"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              New Channel
+            </Link>
+          )}
+        </div>
+        <p className="text-sm text-gray-500 leading-relaxed max-w-lg">
+          Focused spaces beyond your circle. Channels are where the community organises around a
+          topic, event, or conversation — open to anyone in your area.
+        </p>
       </div>
 
       {myChannels.length > 0 && (

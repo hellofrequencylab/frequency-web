@@ -38,25 +38,47 @@ export default async function FeedPage() {
     }
   }
 
+  // When not in any circle yet, scope posts to the user's own profile ID
+  // with public visibility so they still show in this feed.
+  const composerScopeId = primaryCircleId ?? myProfileId
+  const composerVisibility: 'group' | 'public' = primaryCircleId ? 'group' : 'public'
+
+  // FeedList scope: circle IDs + profile-scoped public posts as fallback
+  const feedScopeIds =
+    myCircleIds.length > 0
+      ? myCircleIds
+      : myProfileId
+      ? [myProfileId]
+      : []
+
   return (
     <div className="px-4 py-6 max-w-2xl mx-auto">
-      {primaryCircleId ? (
-        <Composer scopeId={primaryCircleId} visibility="group" />
-      ) : (
-        <div className="rounded-xl border border-dashed border-gray-200 p-4 mb-4 text-center">
-          <p className="text-sm text-gray-500">
-            <Link href="/circles" className="text-indigo-600 hover:underline">
-              Join a circle
-            </Link>{' '}
-            to start posting.
-          </p>
-        </div>
-      )}
+      {composerScopeId ? (
+        <>
+          <Composer
+            scopeId={composerScopeId}
+            visibility={composerVisibility}
+            placeholder={
+              primaryCircleId
+                ? 'Share something with your circle…'
+                : 'Share something…'
+            }
+          />
+          {!primaryCircleId && (
+            <p className="text-xs text-gray-400 -mt-2 mb-4 px-1">
+              <Link href="/circles" className="text-indigo-500 hover:underline">
+                Join a circle
+              </Link>{' '}
+              to post to your group instead.
+            </p>
+          )}
+        </>
+      ) : null}
 
       <UpcomingEventsWidget scopeIds={myCircleIds} />
 
       <FeedList
-        scopeIds={myCircleIds}
+        scopeIds={feedScopeIds}
         myProfileId={myProfileId}
       />
     </div>

@@ -84,7 +84,11 @@ export default async function CirclesPage() {
 
   return (
     <div className="px-4 py-8 max-w-2xl mx-auto">
-      <h1 className="text-xl font-semibold text-gray-900 mb-6">Circles</h1>
+      <h1 className="text-xl font-semibold text-gray-900 mb-1">Circles</h1>
+      <p className="text-sm text-gray-500 leading-relaxed mb-6 max-w-lg">
+        Your local crew. Circles are where you post, connect, and show up — regular rides, shared
+        updates, and the people you&apos;ll see week to week. Join one to get started.
+      </p>
 
       {/* ── Your circles ────────────────────────────── */}
       {myCircles.length > 0 && (

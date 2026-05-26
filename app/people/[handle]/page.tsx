@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { startConversation } from '@/app/(main)/messages/actions'
+import { Composer } from '@/components/feed/composer'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor'
 
@@ -61,11 +63,35 @@ export default async function ProfilePage({
   const initials = getInitials(profile.display_name)
   const regionName = (profile.nexus_regions as unknown as { name: string } | null)?.name
 
+  // For the owner: determine which scope to use for the composer.
+  // Prefer their primary circle; fall back to their profile ID (public post).
+  let composerScopeId: string | null = null
+  let composerVisibility: 'group' | 'public' = 'public'
+
+  if (isOwner) {
+    const { data: membership } = await admin
+      .from('memberships')
+      .select('circle_id')
+      .eq('profile_id', profile.id as string)
+      .eq('status', 'active')
+      .order('joined_at', { ascending: true })
+      .limit(1)
+      .maybeSingle()
+
+    if (membership?.circle_id) {
+      composerScopeId = membership.circle_id as string
+      composerVisibility = 'group'
+    } else {
+      composerScopeId = profile.id as string
+      composerVisibility = 'public'
+    }
+  }
+
   return (
     <main className="min-h-screen bg-white flex items-start justify-center px-4 pt-16 pb-12">
       <div className="w-full max-w-md">
 
-        {/* Header: avatar + identity + edit button */}
+        {/* Header: avatar + identity + edit/message button */}
         <div className="flex items-start justify-between gap-4 mb-6">
           <div className="flex items-center gap-4">
             {profile.avatar_url ? (
@@ -92,17 +118,28 @@ export default async function ProfilePage({
             </div>
           </div>
 
-          {isOwner && (
-            <Link
-              href="/settings/profile"
-              className="shrink-0 rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              Edit
-            </Link>
-          )}
+          <div className="flex items-center gap-2 shrink-0">
+            {isOwner ? (
+              <Link
+                href="/settings/profile"
+                className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Edit
+              </Link>
+            ) : user ? (
+              <form action={startConversation.bind(null, profile.id as string)}>
+                <button
+                  type="submit"
+                  className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700 hover:bg-indigo-100 transition-colors"
+                >
+                  Message
+                </button>
+              </form>
+            ) : null}
+          </div>
         </div>
 
-        {/* Body: bio + region */}
+        {/* Bio + region */}
         {(profile.bio || regionName) && (
           <div className="border-t border-gray-100 pt-5 space-y-3">
             {profile.bio && (
@@ -132,6 +169,25 @@ export default async function ProfilePage({
                   />
                 </svg>
                 {regionName}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Post composer — owner only */}
+        {isOwner && composerScopeId && (
+          <div className="mt-6 border-t border-gray-100 pt-5">
+            <Composer
+              scopeId={composerScopeId}
+              visibility={composerVisibility}
+              placeholder="Share something…"
+            />
+            {composerVisibility === 'public' && (
+              <p className="text-xs text-gray-400 -mt-2 px-1">
+                <Link href="/circles" className="text-indigo-500 hover:underline">
+                  Join a circle
+                </Link>{' '}
+                to post to your group.
               </p>
             )}
           </div>

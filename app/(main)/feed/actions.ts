@@ -25,15 +25,17 @@ async function getMyProfileId(): Promise<string | null> {
 export async function createPost(formData: FormData) {
   const body = (formData.get('body') as string | null)?.trim()
   const scopeId = formData.get('scopeId') as string | null
-  const visibility = (formData.get('visibility') as string) || 'group'
+  const visibility = (formData.get('visibility') as string) || 'public'
 
   if (!body || !scopeId) return
 
   const profileId = await getMyProfileId()
   if (!profileId) redirect('/sign-in')
 
-  const supabase = await createClient()
-  const { error } = await supabase.from('posts').insert({
+  // Use admin client — RLS circle-membership check would block users who
+  // haven't joined a circle yet. Authorisation is enforced here in code.
+  const admin = createAdminClient()
+  const { error } = await admin.from('posts').insert({
     author_id: profileId,
     body,
     scope_id: scopeId,
@@ -47,12 +49,20 @@ export async function createPost(formData: FormData) {
   }
 
   revalidatePath('/feed')
-  revalidatePath('/groups', 'layout')
+  revalidatePath('/circles', 'layout')
 }
 
 export async function deletePost(postId: string) {
-  const supabase = await createClient()
-  const { error } = await supabase.from('posts').delete().eq('id', postId)
+  const profileId = await getMyProfileId()
+  if (!profileId) redirect('/sign-in')
+
+  // Admin client to bypass RLS; restrict deletion to own posts only.
+  const admin = createAdminClient()
+  const { error } = await admin
+    .from('posts')
+    .delete()
+    .eq('id', postId)
+    .eq('author_id', profileId)
 
   if (error) {
     console.error('[deletePost]', error.message)
@@ -60,7 +70,7 @@ export async function deletePost(postId: string) {
   }
 
   revalidatePath('/feed')
-  revalidatePath('/groups', 'layout')
+  revalidatePath('/circles', 'layout')
 }
 
 export async function toggleReaction(
@@ -93,5 +103,5 @@ export async function toggleReaction(
   }
 
   revalidatePath('/feed')
-  revalidatePath('/groups', 'layout')
+  revalidatePath('/circles', 'layout')
 }

@@ -12,6 +12,7 @@ import {
   Bell,
   LogOut,
   Shield,
+  MessageSquare,
 } from 'lucide-react'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor'
@@ -29,6 +30,7 @@ const SIDEBAR_NAV = [
   { href: '/circles',  label: 'Circles',   Icon: Users },
   { href: '/channels', label: 'Channels',  Icon: Radio },
   { href: '/events',   label: 'Events',    Icon: CalendarDays },
+  { href: '/messages', label: 'Messages',  Icon: MessageSquare },
   { href: '/people',   label: 'Directory', Icon: Globe },
 ]
 
@@ -64,6 +66,7 @@ export default function AppShell({
     if (href === '/feed') return pathname === '/feed'
     if (href === '/circles') return pathname === '/circles' || pathname.startsWith('/circles/') || pathname.startsWith('/hubs/') || pathname.startsWith('/nexuses/')
     if (href === '/channels') return pathname === '/channels' || pathname.startsWith('/channels/')
+    if (href === '/messages') return pathname === '/messages' || pathname.startsWith('/messages/')
     return pathname === href || pathname.startsWith(href + '/')
   }
 
@@ -223,10 +226,11 @@ export default function AppShell({
       <nav className="md:hidden fixed inset-x-0 bottom-0 z-40 flex h-16 items-stretch bg-white border-t border-gray-200">
         {(
           [
-            { href: '/feed',     label: 'Feed',    Icon: Home },
-            { href: '/circles',  label: 'Circles', Icon: Users },
-            { href: '/events',   label: 'Events',  Icon: CalendarDays },
-            { href: profileHref, label: 'Profile', Icon: User },
+            { href: '/feed',     label: 'Feed',     Icon: Home },
+            { href: '/circles',  label: 'Circles',  Icon: Users },
+            { href: '/events',   label: 'Events',   Icon: CalendarDays },
+            { href: '/messages', label: 'Messages', Icon: MessageSquare },
+            { href: profileHref, label: 'Profile',  Icon: User },
           ] as const
         ).map(({ href, label, Icon }) => {
           const active =
