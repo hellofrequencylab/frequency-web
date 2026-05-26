@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import {
   Radio,
@@ -18,6 +18,7 @@ import {
   Sun,
   Settings,
   Zap,
+  Search,
 } from 'lucide-react'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor'
@@ -37,6 +38,7 @@ const SIDEBAR_NAV = [
   { href: '/events',    label: 'Events',    Icon: CalendarDays },
   { href: '/messages',  label: 'Messages',  Icon: MessageSquare },
   { href: '/people',    label: 'Directory', Icon: Globe },
+  { href: '/search',    label: 'Search',    Icon: Search },
   { href: '/settings',  label: 'Settings',  Icon: Settings },
 ]
 
@@ -99,10 +101,23 @@ export default function AppShell({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
+  const router = useRouter()
   const role = (profile.community_role ?? 'member') as CommunityRole
   const badge = ROLE_BADGE[role] ?? ROLE_BADGE.member
   const profileHref = `/people/${profile.handle}`
   const { theme, setTheme } = useTheme()
+
+  // ⌘K / Ctrl+K → navigate to search
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        router.push('/search')
+      }
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [router])
 
   function isActive(href: string) {
     if (href === '/feed') return pathname === '/feed'
@@ -111,6 +126,7 @@ export default function AppShell({
     if (href === '/messages') return pathname === '/messages' || pathname.startsWith('/messages/')
     if (href === '/settings') return pathname === '/settings' || pathname.startsWith('/settings/')
     if (href === '/crew')     return pathname === '/crew'
+    if (href === '/search')   return pathname === '/search'
     return pathname === href || pathname.startsWith(href + '/')
   }
 
