@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { Composer } from '@/components/feed/composer'
 import { FeedList } from '@/components/feed/feed-list'
+import { UpcomingEventsWidget } from '@/components/events/upcoming-widget'
 
 export default async function FeedPage() {
   const supabase = await createClient()
@@ -50,6 +51,8 @@ export default async function FeedPage() {
           </p>
         </div>
       )}
+
+      <UpcomingEventsWidget scopeIds={myGroupIds} />
 
       <FeedList
         scopeIds={myGroupIds}

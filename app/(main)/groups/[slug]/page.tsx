@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { leaveGroup } from '../actions'
 import { Composer } from '@/components/feed/composer'
 import { FeedList } from '@/components/feed/feed-list'
+import { UpcomingEventsWidget } from '@/components/events/upcoming-widget'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor'
 
@@ -295,13 +296,8 @@ export default async function GroupPage({
         )}
       </section>
 
-      {/* ── Upcoming events (placeholder) ────────────── */}
-      <section className="mt-8 border-t border-gray-100 pt-6">
-        <h2 className="text-sm font-semibold text-gray-700 mb-3">Upcoming Events</h2>
-        <p className="text-sm text-gray-400">
-          Events will appear here once the events feature is built.
-        </p>
-      </section>
+      {/* ── Upcoming events ──────────────────────────── */}
+      <UpcomingEventsWidget scopeIds={[group.id]} />
 
       {/* ── Group feed ───────────────────────────────── */}
       <section className="mt-8 border-t border-gray-100 pt-6">
