@@ -109,10 +109,10 @@ function ProfileCard({
           <img
             src={profile.avatar_url}
             alt={profile.display_name}
-            className="w-10 h-10 rounded-full object-cover shrink-0"
+            className="w-12 h-12 rounded-full object-cover shrink-0"
           />
         ) : (
-          <div className="w-10 h-10 rounded-full bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-sm font-bold flex items-center justify-center shrink-0 select-none">
+          <div className="w-12 h-12 rounded-full bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-sm font-bold flex items-center justify-center shrink-0 select-none">
             {getInitials(profile.display_name)}
           </div>
         )}
@@ -171,7 +171,7 @@ function AccountDropdown({
       <button
         onClick={() => setOpen((v) => !v)}
         aria-label="Account menu"
-        className="flex items-center justify-center w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-[11px] font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors select-none shrink-0"
+        className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-[11px] font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors select-none shrink-0"
       >
         {getInitials(profile.display_name)}
       </button>
@@ -362,8 +362,8 @@ export default function AppShell({
         {/* Desktop sidebar */}
         <aside className="hidden md:flex w-52 flex-col shrink-0 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
 
-          {/* Primary nav — fills available space */}
-          <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
+          {/* Primary nav — pt-8 matches feed page's py-8 so items align with page headings */}
+          <nav className="flex-1 overflow-y-auto px-3 pt-8 pb-3 space-y-0.5">
             {SIDEBAR_NAV.map(({ href, label, Icon }) => {
               const active = isActive(href)
               return (
