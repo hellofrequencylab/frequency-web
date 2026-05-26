@@ -61,6 +61,7 @@ type MemberRow = {
   id: string
   volunteer_role: CommunityRole | null
   joined_at: string
+  is_crew_lead: boolean
   profile: {
     id: string
     display_name: string
@@ -106,7 +107,7 @@ export default async function CirclePage({
   const { data: rawMembers } = await admin
     .from('memberships')
     .select(
-      `id, volunteer_role, joined_at,
+      `id, volunteer_role, joined_at, is_crew_lead,
        profile:profiles!profile_id ( id, display_name, handle, avatar_url, community_role )`
     )
     .eq('circle_id', circle.id)
@@ -270,7 +271,7 @@ export default async function CirclePage({
           <p className="text-sm text-gray-400">No members yet.</p>
         ) : (
           <div className="space-y-0.5">
-            {sorted.map(({ profile, volunteer_role }) => {
+            {sorted.map(({ profile, volunteer_role, is_crew_lead }) => {
               const memberIsHost = circle.host?.id === profile.id
               const role = (profile.community_role ?? 'member') as CommunityRole
               const badge = ROLE_BADGE[role] ?? ROLE_BADGE.member
@@ -306,6 +307,11 @@ export default async function CirclePage({
                         {memberIsHost && (
                           <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">
                             Host
+                          </span>
+                        )}
+                        {is_crew_lead && !memberIsHost && (
+                          <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">
+                            Crew Lead
                           </span>
                         )}
                         {volBadge && !memberIsHost && (

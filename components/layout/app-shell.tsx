@@ -17,6 +17,7 @@ import {
   Moon,
   Sun,
   Settings,
+  Zap,
 } from 'lucide-react'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor'
@@ -109,6 +110,7 @@ export default function AppShell({
     if (href === '/channels') return pathname === '/channels' || pathname.startsWith('/channels/')
     if (href === '/messages') return pathname === '/messages' || pathname.startsWith('/messages/')
     if (href === '/settings') return pathname === '/settings' || pathname.startsWith('/settings/')
+    if (href === '/crew')     return pathname === '/crew'
     return pathname === href || pathname.startsWith(href + '/')
   }
 
@@ -165,6 +167,28 @@ export default function AppShell({
               </Link>
             )
           })}
+
+          {/* Crew — crew+ */}
+          {(role === 'crew' || role === 'host' || role === 'guide' || role === 'mentor') && (
+            <Link
+              href="/crew"
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                pathname === '/crew'
+                  ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-50'
+              }`}
+            >
+              <Zap
+                className={`w-[18px] h-[18px] shrink-0 ${
+                  pathname === '/crew'
+                    ? 'text-indigo-600 dark:text-indigo-400'
+                    : 'text-gray-400 dark:text-gray-600'
+                }`}
+                strokeWidth={pathname === '/crew' ? 2.5 : 2}
+              />
+              Crew
+            </Link>
+          )}
 
           {/* Admin — host+ */}
           {(role === 'host' || role === 'guide' || role === 'mentor') && (
