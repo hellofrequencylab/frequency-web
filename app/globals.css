@@ -1,8 +1,19 @@
 @import "tailwindcss";
 
+/* ── Dark mode variant ──────────────────────────────────────────────────────
+   Responds to the .dark class on <html>. The theme script in layout.tsx sets
+   this before first paint based on localStorage or prefers-color-scheme.     */
+@variant dark (&:where(.dark, .dark *));
+
+/* ── Design tokens ─────────────────────────────────────────────────────────── */
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #111827;
+}
+
+.dark {
+  --background: #0a0a0f;
+  --foreground: #f9fafb;
 }
 
 @theme inline {
@@ -12,15 +23,8 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans, Arial, Helvetica, sans-serif);
 }
