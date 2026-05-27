@@ -138,7 +138,7 @@ export default async function BroadcastPage() {
     .limit(5)
 
   return (
-    <div className="px-8 py-8">
+    <div>
 
       {/* ── Header ─────────────────────────────────────────── */}
       <div className="mb-8">

@@ -103,7 +103,7 @@ export default async function FeedPage({
   const composerVisibility: 'public' | 'group' = primaryCircleId ? 'group' : 'public'
 
   return (
-    <div className="px-6 py-8 max-w-2xl mx-auto">
+    <div>
 
       {/* Header */}
       <div className="mb-7">

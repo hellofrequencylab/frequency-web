@@ -45,7 +45,7 @@ export default async function NewEventPage() {
   }
 
   return (
-    <div className="px-4 py-8 max-w-xl mx-auto">
+    <div>
       <Link
         href="/events"
         className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 mb-5 transition-colors"

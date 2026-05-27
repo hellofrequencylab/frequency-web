@@ -83,7 +83,7 @@ export default async function CirclesPage() {
   const otherCircles = circles.filter((c) => !myCircleIds.includes(c.id))
 
   return (
-    <div className="px-6 py-8 max-w-2xl mx-auto">
+    <div>
       <h1 className="text-xl font-semibold text-gray-900 mb-1">Circles</h1>
       <p className="text-sm text-gray-500 leading-relaxed mb-6">
         Your local crew. Circles are where you post, connect, and show up. Regular rides, shared

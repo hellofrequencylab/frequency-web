@@ -76,7 +76,7 @@ export default async function NexusPage({
   ].filter(Boolean) as { label: string; href?: string }[]
 
   return (
-    <div className="px-4 py-8 max-w-2xl mx-auto">
+    <div>
       <Link
         href="/circles"
         className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 mb-4 transition-colors"

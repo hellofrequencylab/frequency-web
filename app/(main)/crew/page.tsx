@@ -125,7 +125,7 @@ export default async function CrewPage() {
   const isCrewLead = (membership as { is_crew_lead: boolean } | null)?.is_crew_lead ?? false
 
   return (
-    <div className="px-6 py-8 max-w-2xl mx-auto">
+    <div>
       <div className="mb-6">
         <div className="flex items-center gap-2 flex-wrap">
           <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50">Crew Dashboard</h1>
