@@ -46,18 +46,14 @@ const POST_SELECT = `
 `
 
 export async function FeedList({
-  circleIds,
-  communityProfileIds = [],
-  isAdmin = false,
+  circleIds = [],
   myProfileId,
   sort = 'relevant',
   showPublicLayer = true,
   emptyMessage = 'Nothing posted yet. Be the first to share something.',
   viewerRole,
 }: {
-  circleIds: string[]
-  communityProfileIds?: string[]
-  isAdmin?: boolean
+  circleIds?: string[]
   myProfileId: string | null
   sort?: 'recent' | 'relevant'
   /** false on circle/channel detail pages — show only scoped posts, not the global public feed */
@@ -69,66 +65,25 @@ export async function FeedList({
   const order = sort === 'relevant' ? 'engagement_score' : 'created_at'
 
   // ── Posts ──────────────────────────────────────────────────────────────────
-  // Composed from up to 3 layers depending on role, then merged + sorted.
+  // All logged-in users see all posts. Visibility scoping will be re-added
+  // when the Friends feature lands.
 
   let rawPosts: RawPost[] = []
 
-  if (isAdmin) {
-    // Janitor sees everything
-    const { data } = await admin
+  if (myProfileId) {
+    let query = admin
       .from('posts')
       .select(POST_SELECT)
       .is('parent_id', null)
       .order(order, { ascending: false })
       .limit(30)
+
+    if (!showPublicLayer && circleIds.length > 0) {
+      query = query.in('scope_id', circleIds)
+    }
+
+    const { data } = await query
     rawPosts = (data ?? []) as unknown as RawPost[]
-  } else {
-    const promises: Promise<{ data: RawPost[] | null }>[] = []
-
-    // Layer 1 — public posts from everyone (main feed only; suppressed on circle/channel pages)
-    if (showPublicLayer) {
-      promises.push(
-        admin
-          .from('posts')
-          .select(POST_SELECT)
-          .eq('visibility', 'public')
-          .is('parent_id', null)
-          .order(order, { ascending: false })
-          .limit(30) as unknown as Promise<{ data: RawPost[] | null }>
-      )
-    }
-
-    // Layer 2 — circle-scoped posts from circles the viewer is in (Crew+)
-    if (circleIds.length > 0) {
-      promises.push(
-        admin
-          .from('posts')
-          .select(POST_SELECT)
-          .eq('visibility', 'group')
-          .in('scope_id', circleIds)
-          .is('parent_id', null)
-          .order(order, { ascending: false })
-          .limit(30) as unknown as Promise<{ data: RawPost[] | null }>
-      )
-    }
-
-    // Layer 3 — all posts by members of managed community (Host/Guide/Mentor)
-    // This surfaces group posts the manager isn't a direct member of,
-    // giving hosts/guides/mentors a pulse on their whole community.
-    if (communityProfileIds.length > 0) {
-      promises.push(
-        admin
-          .from('posts')
-          .select(POST_SELECT)
-          .in('author_id', communityProfileIds)
-          .is('parent_id', null)
-          .order(order, { ascending: false })
-          .limit(30) as unknown as Promise<{ data: RawPost[] | null }>
-      )
-    }
-
-    const results = await Promise.all(promises)
-    rawPosts = results.flatMap((r: { data: RawPost[] | null }) => (r.data ?? []))
   }
 
   // Dedupe + sort
@@ -144,7 +99,7 @@ export async function FeedList({
     .map((p: RawPost) => ({ ...p, replyCount: p.comment_count ?? 0 })) as FeedPost[]
 
   // ── Dispatches ────────────────────────────────────────────────────────────
-  // Show the single most recent dispatch relevant to the viewer inline.
+  // All logged-in users see the latest published dispatch pinned to top.
   let dispatches: DispatchItem[] = []
 
   const dispatchSelect = `
@@ -153,61 +108,15 @@ export async function FeedList({
     linked_task:crew_tasks!linked_task_id ( id, name )
   `
 
-  const hubIds: string[] = []
-  const nexusIds: string[] = []
-
-  if (circleIds.length > 0) {
-    const { data: circles } = await admin
-      .from('circles').select('hub_id').in('id', circleIds)
-    const hids = (circles ?? []).map((c: { hub_id: string | null }) => c.hub_id).filter(Boolean) as string[]
-    hubIds.push(...hids)
-  }
-  if (hubIds.length > 0) {
-    const { data: hubs } = await admin
-      .from('hubs').select('nexus_id').in('id', hubIds)
-    const nids = (hubs ?? []).map((h: { nexus_id: string | null }) => h.nexus_id).filter(Boolean) as string[]
-    nexusIds.push(...nids)
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const dispatchPromises: Promise<{ data: DispatchItem[] | null }>[] = [
-    admin
-      .from('dispatches').select(dispatchSelect)
-      .eq('status', 'published').eq('audience_scope', 'circle')
-      .in('audience_id', circleIds.length > 0 ? circleIds : ['__none__'])
-      .order('published_at', { ascending: false }).limit(5) as unknown as Promise<{ data: DispatchItem[] | null }>,
-  ]
   if (myProfileId) {
-    dispatchPromises.push(
-      admin.from('dispatches').select(dispatchSelect)
-        .eq('status', 'published').eq('author_id', myProfileId)
-        .order('published_at', { ascending: false }).limit(5) as unknown as Promise<{ data: DispatchItem[] | null }>
-    )
+    const { data } = await admin
+      .from('dispatches')
+      .select(dispatchSelect)
+      .eq('status', 'published')
+      .order('published_at', { ascending: false })
+      .limit(1)
+    dispatches = (data ?? []) as unknown as DispatchItem[]
   }
-  if (hubIds.length > 0) {
-    dispatchPromises.push(
-      admin.from('dispatches').select(dispatchSelect)
-        .eq('status', 'published').eq('audience_scope', 'hub')
-        .in('audience_id', hubIds)
-        .order('published_at', { ascending: false }).limit(5) as unknown as Promise<{ data: DispatchItem[] | null }>
-    )
-  }
-  if (nexusIds.length > 0) {
-    dispatchPromises.push(
-      admin.from('dispatches').select(dispatchSelect)
-        .eq('status', 'published').eq('audience_scope', 'nexus')
-        .in('audience_id', nexusIds)
-        .order('published_at', { ascending: false }).limit(5) as unknown as Promise<{ data: DispatchItem[] | null }>
-    )
-  }
-
-  const dispatchResults = await Promise.all(dispatchPromises)
-  const allDispatches = dispatchResults.flatMap(r => r.data ?? [])
-  const dSeen = new Set<string>()
-  dispatches = allDispatches
-    .filter((d: DispatchItem) => { if (dSeen.has(d.id)) return false; dSeen.add(d.id); return true })
-    .sort((a: DispatchItem, b: DispatchItem) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime())
-    .slice(0, 1)
 
   // ── Merge + render ────────────────────────────────────────────────────────
   type FeedItem =

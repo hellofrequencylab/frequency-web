@@ -20,11 +20,8 @@ export default async function FeedPage({
   const admin = createAdminClient()
   let myProfileId: string | null = null
   let myRole: CommunityRole = 'member'
-  let myCircleIds: string[] = []
   let primaryCircleId: string | null = null
   let canAnnounce = false
-  let communityProfileIds: string[] = []
-  let isAdmin = false
 
   if (user) {
     const { data: profile } = await admin
@@ -37,70 +34,23 @@ export default async function FeedPage({
       myProfileId = profile.id
       myRole = (profile.community_role ?? 'member') as CommunityRole
       canAnnounce = ['host', 'guide', 'mentor', 'janitor'].includes(myRole)
-      isAdmin = myRole === 'janitor'
 
-      const { data: memberships } = await admin
+      const { data: membership } = await admin
         .from('memberships')
         .select('circle_id')
         .eq('profile_id', profile.id)
         .eq('status', 'active')
         .order('joined_at', { ascending: true })
+        .limit(1)
+        .maybeSingle()
 
-      myCircleIds = (memberships ?? []).map((m: any) => m.circle_id as string)
-      primaryCircleId = myCircleIds[0] ?? null
-
-      // Build community profile ID list for Host/Guide/Mentor so their feeds
-      // include all posts by people in their managed community.
-      if (!isAdmin) {
-        if (myRole === 'host') {
-          const { data: hostedCircles } = await admin
-            .from('circles').select('id').eq('host_id', profile.id)
-          const ids = (hostedCircles ?? []).map((c: any) => c.id)
-          if (ids.length > 0) {
-            const { data: ms } = await admin
-              .from('memberships').select('profile_id').in('circle_id', ids).eq('status', 'active')
-            communityProfileIds = [...new Set((ms ?? []).map((m: any) => m.profile_id as string))]
-          }
-        } else if (myRole === 'guide') {
-          const { data: guidedHubs } = await admin
-            .from('hubs').select('id').eq('guide_id', profile.id)
-          const hubIds = (guidedHubs ?? []).map((h: any) => h.id)
-          if (hubIds.length > 0) {
-            const { data: circles } = await admin
-              .from('circles').select('id').in('hub_id', hubIds)
-            const cids = (circles ?? []).map((c: any) => c.id)
-            if (cids.length > 0) {
-              const { data: ms } = await admin
-                .from('memberships').select('profile_id').in('circle_id', cids).eq('status', 'active')
-              communityProfileIds = [...new Set((ms ?? []).map((m: any) => m.profile_id as string))]
-            }
-          }
-        } else if (myRole === 'mentor') {
-          const { data: nexuses } = await admin
-            .from('nexuses').select('id').eq('mentor_id', profile.id)
-          const nexusIds = (nexuses ?? []).map((n: any) => n.id)
-          if (nexusIds.length > 0) {
-            const { data: hubs } = await admin
-              .from('hubs').select('id').in('nexus_id', nexusIds)
-            const hubIds = (hubs ?? []).map((h: any) => h.id)
-            if (hubIds.length > 0) {
-              const { data: circles } = await admin
-                .from('circles').select('id').in('hub_id', hubIds)
-              const cids = (circles ?? []).map((c: any) => c.id)
-              if (cids.length > 0) {
-                const { data: ms } = await admin
-                  .from('memberships').select('profile_id').in('circle_id', cids).eq('status', 'active')
-                communityProfileIds = [...new Set((ms ?? []).map((m: any) => m.profile_id as string))]
-              }
-            }
-          }
-        }
-      }
+      primaryCircleId = (membership?.circle_id as string) ?? null
     }
   }
 
   const composerScopeId = primaryCircleId ?? myProfileId
   const composerVisibility: 'public' | 'group' = primaryCircleId ? 'group' : 'public'
+  const hasCircle = !!primaryCircleId
 
   return (
     <div className="max-w-2xl mx-auto w-full">
@@ -109,7 +59,7 @@ export default async function FeedPage({
       <div className="mb-7">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Feed</h1>
         <p className="text-sm text-gray-400 mt-1">
-          {myCircleIds.length > 0 ? "What's happening in your circles" : "What's happening"}
+          {hasCircle ? "What's happening in your circles" : "What's happening"}
         </p>
       </div>
 
@@ -164,9 +114,6 @@ export default async function FeedPage({
         </div>
 
         <FeedList
-          circleIds={myCircleIds}
-          communityProfileIds={communityProfileIds}
-          isAdmin={isAdmin}
           myProfileId={myProfileId}
           sort={sort}
           viewerRole={myRole}
