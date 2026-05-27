@@ -341,6 +341,122 @@ export async function deleteCrewTask(id: string) {
   revalidatePath('/crew')
 }
 
+// ── Dispatches ───────────────────────────────────────────────────────────────
+
+type DispatchScope = 'circle' | 'hub' | 'nexus'
+
+function makeExcerpt(body: string, maxLen = 200): string {
+  // Strip markdown syntax for the plain-text excerpt
+  const plain = body
+    .replace(/#{1,6}\s+/g, '')
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/\*(.+?)\*/g, '$1')
+    .replace(/\[(.+?)\]\(.+?\)/g, '$1')
+    .replace(/`(.+?)`/g, '$1')
+    .replace(/\n+/g, ' ')
+    .trim()
+  return plain.length <= maxLen ? plain : plain.slice(0, maxLen).trimEnd() + '…'
+}
+
+export async function createDispatch(fd: FormData): Promise<{ id: string }> {
+  const caller = await getCallerProfile()
+  if (!caller || !hasRole(caller.community_role, 'host')) throw new Error('Unauthorized')
+
+  const title          = (fd.get('title') as string).trim()
+  const body           = (fd.get('body') as string).trim()
+  const audience_scope = fd.get('audience_scope') as DispatchScope
+  const audience_id    = (fd.get('audience_id') as string).trim()
+  const linked_task_id = (fd.get('linked_task_id') as string) || null
+  const excerpt        = makeExcerpt(body)
+
+  if (!title || !body || !audience_scope || !audience_id) throw new Error('Missing required fields')
+
+  const admin = createAdminClient()
+  const { data, error } = await admin
+    .from('dispatches')
+    .insert({ title, body, excerpt, audience_scope, audience_id, linked_task_id, author_id: caller.id })
+    .select('id')
+    .single()
+  if (error) throw new Error(error.message)
+
+  revalidatePath('/admin/dispatches')
+  revalidatePath('/broadcast')
+  return { id: data.id }
+}
+
+export async function updateDispatch(id: string, fd: FormData) {
+  const caller = await getCallerProfile()
+  if (!caller || !hasRole(caller.community_role, 'host')) throw new Error('Unauthorized')
+
+  const body    = (fd.get('body') as string).trim()
+  const excerpt = makeExcerpt(body)
+  const linked_task_id = (fd.get('linked_task_id') as string) || null
+
+  const admin = createAdminClient()
+  const { error } = await admin.from('dispatches').update({
+    title:          (fd.get('title') as string).trim(),
+    body,
+    excerpt,
+    audience_scope: fd.get('audience_scope') as DispatchScope,
+    audience_id:    (fd.get('audience_id') as string).trim(),
+    linked_task_id,
+    updated_at:     new Date().toISOString(),
+  }).eq('id', id)
+  if (error) throw new Error(error.message)
+
+  revalidatePath('/admin/dispatches')
+  revalidatePath('/broadcast')
+  revalidatePath(`/broadcast/${id}`)
+}
+
+export async function publishDispatch(id: string) {
+  const caller = await getCallerProfile()
+  if (!caller || !hasRole(caller.community_role, 'host')) throw new Error('Unauthorized')
+
+  const admin = createAdminClient()
+  const { error } = await admin.from('dispatches').update({
+    status:       'published',
+    published_at: new Date().toISOString(),
+    updated_at:   new Date().toISOString(),
+  }).eq('id', id)
+  if (error) throw new Error(error.message)
+
+  revalidatePath('/admin/dispatches')
+  revalidatePath('/broadcast')
+  revalidatePath(`/broadcast/${id}`)
+  revalidatePath('/feed')
+}
+
+export async function unpublishDispatch(id: string) {
+  const caller = await getCallerProfile()
+  if (!caller || !hasRole(caller.community_role, 'host')) throw new Error('Unauthorized')
+
+  const admin = createAdminClient()
+  const { error } = await admin
+    .from('dispatches')
+    .update({ status: 'draft', updated_at: new Date().toISOString() })
+    .eq('id', id)
+  if (error) throw new Error(error.message)
+
+  revalidatePath('/admin/dispatches')
+  revalidatePath('/broadcast')
+  revalidatePath(`/broadcast/${id}`)
+  revalidatePath('/feed')
+}
+
+export async function deleteDispatch(id: string) {
+  const caller = await getCallerProfile()
+  if (!caller || !hasRole(caller.community_role, 'host')) throw new Error('Unauthorized')
+
+  const admin = createAdminClient()
+  const { error } = await admin.from('dispatches').delete().eq('id', id)
+  if (error) throw new Error(error.message)
+
+  revalidatePath('/admin/dispatches')
+  revalidatePath('/broadcast')
+  revalidatePath('/feed')
+}
+
 // ── Events ────────────────────────────────────────────────────────────────────
 
 export async function toggleCancelEvent(id: string, cancel: boolean) {

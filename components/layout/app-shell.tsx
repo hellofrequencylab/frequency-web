@@ -22,6 +22,7 @@ import {
   CreditCard,
   BellRing,
   SlidersHorizontal,
+  Megaphone,
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 
@@ -36,12 +37,13 @@ const ROLE_BADGE: Record<CommunityRole, { label: string; cls: string }> = {
 }
 
 const SIDEBAR_NAV = [
-  { href: '/feed',     label: 'Feed',      Icon: Home },
-  { href: '/circles',  label: 'Circles',   Icon: Users },
-  { href: '/channels', label: 'Channels',  Icon: Radio },
-  { href: '/events',   label: 'Events',    Icon: CalendarDays },
-  { href: '/messages', label: 'Messages',  Icon: MessageSquare },
-  { href: '/people',   label: 'Directory', Icon: Globe },
+  { href: '/feed',      label: 'Feed',      Icon: Home },
+  { href: '/broadcast', label: 'Broadcast', Icon: Megaphone },
+  { href: '/circles',   label: 'Circles',   Icon: Users },
+  { href: '/channels',  label: 'Channels',  Icon: Radio },
+  { href: '/events',    label: 'Events',    Icon: CalendarDays },
+  { href: '/messages',  label: 'Messages',  Icon: MessageSquare },
+  { href: '/people',    label: 'Directory', Icon: Globe },
 ]
 
 interface Profile {
