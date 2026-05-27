@@ -12,6 +12,7 @@ import { UpcomingEventsWidget } from '@/components/events/upcoming-widget'
 import { HierarchyBreadcrumb } from '@/components/hierarchy/breadcrumb'
 import { StatusBadge } from '@/components/groups/status-badge'
 import { HostInviteButton } from '@/components/circles/host-invite-button'
+import { getInitials } from '@/lib/utils'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor'
 
@@ -21,15 +22,6 @@ const ROLE_BADGE: Record<CommunityRole, { label: string; cls: string }> = {
   host:   { label: 'Host',   cls: 'bg-green-100 text-green-700' },
   guide:  { label: 'Guide',  cls: 'bg-purple-100 text-purple-700' },
   mentor: { label: 'Mentor', cls: 'bg-amber-100 text-amber-700' },
-}
-
-function getInitials(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0].toUpperCase())
-    .join('')
 }
 
 type CircleDetail = {

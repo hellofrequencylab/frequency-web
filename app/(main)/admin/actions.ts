@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { sendDispatchNotificationEmail } from '@/lib/email'
+import { slugify } from '@/lib/utils'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
@@ -25,10 +26,6 @@ async function getCallerProfile(): Promise<{ id: string; community_role: Communi
 
 function hasRole(callerRole: CommunityRole, minRole: CommunityRole): boolean {
   return HIERARCHY.indexOf(callerRole) >= HIERARCHY.indexOf(minRole)
-}
-
-function slugify(s: string): string {
-  return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 }
 
 // ── Member management ─────────────────────────────────────────────────────────
