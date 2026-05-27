@@ -127,7 +127,7 @@ export default async function CirclesPage() {
       )}
 
       {circles.length === 0 && (
-        <div className="rounded-xl border border-dashed border-gray-200 p-12 text-center">
+        <div className="rounded-2xl border border-dashed border-gray-200/60 bg-gray-50/50 dark:bg-gray-900/50 p-12 text-center">
           <Users className="w-8 h-8 text-gray-300 mx-auto mb-3" />
           <p className="text-sm text-gray-500">No circles yet. Check back soon.</p>
         </div>
@@ -150,7 +150,7 @@ function CircleCard({
   const nexusName = circle.hub?.nexus?.name ?? null
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4">
+    <div className="rounded-2xl border border-gray-200/60 bg-white shadow-sm p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">

@@ -161,7 +161,7 @@ export default async function BroadcastPage() {
         {/* ── Dispatches (main column) ───────────────────────── */}
         <div className="lg:col-span-2 space-y-1">
           {dispatches.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-800 p-12 text-center">
+            <div className="rounded-2xl border border-dashed border-gray-200/60 dark:border-gray-800/60 bg-gray-50/50 dark:bg-gray-900/50 p-12 text-center">
               <Megaphone className="w-8 h-8 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">No dispatches yet</p>
               <p className="text-xs text-gray-400 mt-1">Your hosts and guides will post here.</p>
@@ -177,8 +177,8 @@ export default async function BroadcastPage() {
         <div className="space-y-5">
 
           {/* Upcoming events */}
-          <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
-            <div className="flex items-center gap-1.5 px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+          <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
+            <div className="flex items-center gap-1.5 px-4 py-3 border-b border-gray-100/80 dark:border-gray-800/50">
               <CalendarDays className="w-3.5 h-3.5 text-gray-400" />
               <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 tracking-wide uppercase">Upcoming</span>
             </div>
@@ -209,15 +209,15 @@ export default async function BroadcastPage() {
                 })}
               </ul>
             )}
-            <div className="px-4 py-2 border-t border-gray-50 dark:border-gray-800">
+            <div className="px-4 py-2 border-t border-gray-100/80 dark:border-gray-800/50">
               <Link href="/events" className="text-xs text-indigo-500 hover:underline">View all events →</Link>
             </div>
           </div>
 
           {/* Active challenges */}
           {tasks && tasks.length > 0 && (
-            <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
-              <div className="flex items-center gap-1.5 px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+            <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
+              <div className="flex items-center gap-1.5 px-4 py-3 border-b border-gray-100/80 dark:border-gray-800/50">
                 <Zap className="w-3.5 h-3.5 text-amber-400" />
                 <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 tracking-wide uppercase">Active Challenges</span>
               </div>
@@ -231,7 +231,7 @@ export default async function BroadcastPage() {
                   </li>
                 ))}
               </ul>
-              <div className="px-4 py-2 border-t border-gray-50 dark:border-gray-800">
+              <div className="px-4 py-2 border-t border-gray-100/80 dark:border-gray-800/50">
                 <Link href="/crew" className="text-xs text-indigo-500 hover:underline">All challenges →</Link>
               </div>
             </div>
@@ -246,7 +246,7 @@ function DispatchCard({ dispatch: d }: { dispatch: DispatchRow }) {
   return (
     <Link
       href={`/broadcast/${d.id}`}
-      className="group block rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-5 py-4 hover:border-indigo-200 dark:hover:border-indigo-800 hover:shadow-sm transition-all"
+      className="group block rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm px-5 py-4 hover:border-indigo-200 dark:hover:border-indigo-800 hover:shadow-md transition-all"
     >
       {/* Scope badge */}
       <div className="flex items-center gap-2 mb-2">

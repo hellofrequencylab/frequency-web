@@ -52,7 +52,7 @@ export async function GettingStartedChecklist({ profileId }: { profileId: string
   const pct = Math.round((doneCount / items.length) * 100)
 
   return (
-    <div className="rounded-xl border border-indigo-200 dark:border-indigo-900 bg-white dark:bg-gray-900 overflow-hidden">
+    <div className="rounded-2xl border border-indigo-200 dark:border-indigo-900 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
       {/* Header */}
       <div className="px-4 py-3 border-b border-indigo-100 dark:border-indigo-900 flex items-center justify-between">
         <div className="flex items-center gap-1.5">

@@ -35,7 +35,7 @@ export function CrewGateButton({ isCrew, label, buttonClassName, children }: Cre
           onClick={() => setOpen(false)}
         >
           <div
-            className="relative w-full max-w-sm rounded-2xl bg-white dark:bg-gray-900 shadow-xl border border-gray-100 dark:border-gray-800 p-6"
+            className="relative w-full max-w-sm rounded-2xl bg-white dark:bg-gray-900 shadow-xl border border-gray-100/80 dark:border-gray-800/60 p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <button

@@ -244,7 +244,7 @@ export default async function EventDetailPage({
 
       {/* ── Description ────────────────────────────── */}
       {event.description && (
-        <div className="mb-6 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+        <div className="mb-6 rounded-2xl border border-gray-100/80 bg-gray-50 shadow-sm px-4 py-3">
           <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
             {event.description}
           </p>

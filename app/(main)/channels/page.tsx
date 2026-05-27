@@ -111,7 +111,7 @@ export default async function ChannelsPage() {
           Focused spaces beyond your circle. Channels are where the community organises around a
           topic, event, or conversation, open to anyone in your area.
         </p>
-        <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-800 p-12 text-center">
+        <div className="rounded-2xl border border-dashed border-gray-200/60 dark:border-gray-800/60 bg-gray-50/50 dark:bg-gray-900/50 p-12 text-center">
           <Hash className="w-8 h-8 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
           <p className="text-sm text-gray-500 dark:text-gray-400">
             <Link href="/circles" className="text-indigo-600 hover:underline">
@@ -242,7 +242,7 @@ export default async function ChannelsPage() {
       )}
 
       {allChannels.length === 0 && (
-        <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-800 p-12 text-center">
+        <div className="rounded-2xl border border-dashed border-gray-200/60 dark:border-gray-800/60 bg-gray-50/50 dark:bg-gray-900/50 p-12 text-center">
           <Hash className="w-8 h-8 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
           <p className="text-sm text-gray-500 dark:text-gray-400">No channels in your area yet.</p>
           {isCreator && (
@@ -274,7 +274,7 @@ function ChannelCard({
   return (
     <Link
       href={`/channels/${channel.id}`}
-      className="flex items-start gap-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-indigo-50/30 dark:hover:bg-indigo-950/20 transition-colors"
+      className="flex items-start gap-3 rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm px-4 py-3 hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-indigo-50/30 dark:hover:bg-indigo-950/20 transition-colors"
     >
       <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-gray-50 dark:bg-gray-800 shrink-0">
         <Icon className="w-4 h-4 text-gray-500 dark:text-gray-400" />

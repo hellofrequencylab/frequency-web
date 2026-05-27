@@ -244,7 +244,7 @@ function DispatchFeedCard({ dispatch: d }: { dispatch: DispatchItem }) {
   return (
     <Link
       href={`/broadcast/${d.id}`}
-      className="group block rounded-xl border border-indigo-100 dark:border-indigo-900/60 bg-indigo-50/50 dark:bg-indigo-950/10 px-4 py-3.5 hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors"
+      className="group block rounded-2xl border border-indigo-100 dark:border-indigo-900/60 bg-indigo-50/50 dark:bg-indigo-950/10 shadow-sm px-4 py-3.5 hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors"
     >
       <div className="flex items-start gap-3">
         <div className="shrink-0 w-7 h-7 rounded-lg bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center mt-0.5">
@@ -281,7 +281,7 @@ function DispatchFeedCard({ dispatch: d }: { dispatch: DispatchItem }) {
 
 function EmptyState({ message }: { message: string }) {
   return (
-    <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-800 p-12 text-center">
+    <div className="rounded-2xl border border-dashed border-gray-200/60 dark:border-gray-800/60 bg-gray-50/50 dark:bg-gray-900/50 p-12 text-center">
       <MessageSquare className="w-8 h-8 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
       <p className="text-sm text-gray-500 dark:text-gray-400">{message}</p>
     </div>

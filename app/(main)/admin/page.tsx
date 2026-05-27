@@ -60,7 +60,7 @@ function StatCard({
   Icon: React.ElementType
 }) {
   return (
-    <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+    <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm p-4">
       <div className="flex items-center gap-2 mb-1">
         <Icon className="w-4 h-4 text-gray-400 dark:text-gray-500" />
         <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{label}</span>
@@ -137,7 +137,7 @@ async function JanitorPanel({ profileId }: { profileId: string }) {
             <Link
               key={circle.id}
               href={`/circles/${circle.slug}`}
-              className="flex items-center justify-between rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors"
+              className="flex items-center justify-between rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm px-4 py-3 hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors"
             >
               <div>
                 <div className="flex items-center gap-2">
@@ -161,7 +161,7 @@ async function JanitorPanel({ profileId }: { profileId: string }) {
           <span className="ml-2 text-xs font-normal text-gray-400">{members.length}</span>
         </h2>
         {members.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-800 p-8 text-center">
+          <div className="rounded-2xl border border-dashed border-gray-200/60 dark:border-gray-800/60 bg-gray-50/50 dark:bg-gray-900/50 p-8 text-center">
             <p className="text-sm text-gray-500 dark:text-gray-400">No members yet.</p>
           </div>
         ) : (
@@ -238,7 +238,7 @@ async function HostPanel({ profileId }: { profileId: string }) {
       <section>
         <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Your Circles</h2>
         {hostCircles.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-800 p-8 text-center">
+          <div className="rounded-2xl border border-dashed border-gray-200/60 dark:border-gray-800/60 bg-gray-50/50 dark:bg-gray-900/50 p-8 text-center">
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">No circles yet.</p>
             <Link
               href="/admin/circles"
@@ -254,7 +254,7 @@ async function HostPanel({ profileId }: { profileId: string }) {
               <Link
                 key={circle.id}
                 href={`/circles/${circle.slug}`}
-                className="flex items-center justify-between rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors"
+                className="flex items-center justify-between rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm px-4 py-3 hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors"
               >
                 <div>
                   <div className="flex items-center gap-2">
@@ -279,7 +279,7 @@ async function HostPanel({ profileId }: { profileId: string }) {
           <span className="ml-2 text-xs font-normal text-gray-400">{members.length}</span>
         </h2>
         {members.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-800 p-8 text-center">
+          <div className="rounded-2xl border border-dashed border-gray-200/60 dark:border-gray-800/60 bg-gray-50/50 dark:bg-gray-900/50 p-8 text-center">
             <p className="text-sm text-gray-500 dark:text-gray-400">No members yet. Share your circle link to get started.</p>
           </div>
         ) : (
@@ -376,7 +376,7 @@ async function GuidePanel({ profileId }: { profileId: string }) {
           </div>
 
           {hub.circles.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-800 p-6 text-center">
+            <div className="rounded-2xl border border-dashed border-gray-200/60 dark:border-gray-800/60 bg-gray-50/50 dark:bg-gray-900/50 p-6 text-center">
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">No circles in this hub yet.</p>
               <Link
                 href="/admin/circles"
@@ -392,7 +392,7 @@ async function GuidePanel({ profileId }: { profileId: string }) {
                 <Link
                   key={circle.id}
                   href={`/circles/${circle.slug}`}
-                  className="flex items-center justify-between rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors"
+                  className="flex items-center justify-between rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm px-4 py-3 hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors"
                 >
                   <div>
                     <div className="flex items-center gap-2">
@@ -414,7 +414,7 @@ async function GuidePanel({ profileId }: { profileId: string }) {
       ))}
 
       {typedHubs.length === 0 && (
-        <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-800 p-8 text-center">
+        <div className="rounded-2xl border border-dashed border-gray-200/60 dark:border-gray-800/60 bg-gray-50/50 dark:bg-gray-900/50 p-8 text-center">
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">No hubs assigned yet.</p>
           <Link
             href="/admin/hubs"
@@ -557,7 +557,7 @@ async function MentorPanel({ profileId }: { profileId: string }) {
                   <Link
                     key={hub.id}
                     href={`/hubs/${hub.slug}`}
-                    className="flex items-center justify-between rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors"
+                    className="flex items-center justify-between rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm px-4 py-3 hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors"
                   >
                     <div>
                       <div className="flex items-center gap-2">
@@ -579,7 +579,7 @@ async function MentorPanel({ profileId }: { profileId: string }) {
       })}
 
       {typedNexuses.length === 0 && (
-        <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-800 p-8 text-center">
+        <div className="rounded-2xl border border-dashed border-gray-200/60 dark:border-gray-800/60 bg-gray-50/50 dark:bg-gray-900/50 p-8 text-center">
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">No nexuses assigned yet.</p>
           <Link
             href="/admin/nexuses"

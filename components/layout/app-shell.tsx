@@ -304,10 +304,10 @@ export default function AppShell({
     theme === 'dark' ? 'Dark mode' : theme === 'light' ? 'Light mode' : 'System theme'
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-950 overflow-hidden">
+    <div className="flex flex-col h-screen bg-gray-50/80 dark:bg-gray-950 overflow-hidden">
 
       {/* ── Top bar ───────────────────────────────────────── */}
-      <header className="h-14 shrink-0 flex items-stretch bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 z-30">
+      <header className="h-14 shrink-0 flex items-stretch bg-white/90 dark:bg-gray-900/95 backdrop-blur-sm border-b border-gray-200/60 dark:border-gray-800/60 z-30">
 
         {/* Logo — full-width header, no vertical divider */}
         <div className="flex items-center px-5">
@@ -361,7 +361,7 @@ export default function AppShell({
       <div className="flex flex-1 min-h-0 overflow-hidden">
 
         {/* Left nav */}
-        <aside className="hidden md:flex w-52 flex-col shrink-0 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+        <aside className="hidden md:flex w-52 flex-col shrink-0 border-r border-gray-200/60 dark:border-gray-800/60 bg-white/80 dark:bg-gray-900/90 backdrop-blur-sm">
 
           {/* Primary nav */}
           <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
@@ -467,7 +467,7 @@ export default function AppShell({
 
           {/* Right sidebar — only on lg+, hidden on admin/settings */}
           {showSidebar && (
-            <aside className="hidden lg:block w-72 shrink-0 overflow-y-auto border-l border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+            <aside className="hidden lg:block w-72 shrink-0 overflow-y-auto border-l border-gray-200/60 dark:border-gray-800/60 bg-white/80 dark:bg-gray-900/90 backdrop-blur-sm">
               {sidebar}
             </aside>
           )}
@@ -475,7 +475,7 @@ export default function AppShell({
       </div>
 
       {/* ── Mobile bottom nav ─────────────────────────────── */}
-      <nav className="md:hidden fixed inset-x-0 bottom-0 z-40 flex h-16 items-stretch bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
+      <nav className="md:hidden fixed inset-x-0 bottom-0 z-40 flex h-16 items-stretch bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-t border-gray-200/60 dark:border-gray-800/60">
         {(
           [
             { href: '/feed',     label: 'Feed',     Icon: Home },
