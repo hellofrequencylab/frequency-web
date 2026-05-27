@@ -88,6 +88,7 @@ export async function createPost(formData: FormData) {
 
   revalidatePath('/feed')
   revalidatePath('/circles', 'layout')
+  revalidatePath('/people', 'layout')
 }
 
 export async function deletePost(postId: string) {
@@ -109,6 +110,7 @@ export async function deletePost(postId: string) {
 
   revalidatePath('/feed')
   revalidatePath('/circles', 'layout')
+  revalidatePath('/people', 'layout')
 }
 
 export async function createReply(parentId: string, body: string) {
@@ -138,6 +140,7 @@ export async function createReply(parentId: string, body: string) {
 
   revalidatePath('/feed')
   revalidatePath('/circles', 'layout')
+  revalidatePath('/people', 'layout')
 }
 
 export async function fetchReplies(parentId: string) {
@@ -190,6 +193,7 @@ export async function toggleReaction(
 
   revalidatePath('/feed')
   revalidatePath('/circles', 'layout')
+  revalidatePath('/people', 'layout')
 }
 
 const HOST_PLUS = ['host', 'guide', 'mentor', 'janitor']

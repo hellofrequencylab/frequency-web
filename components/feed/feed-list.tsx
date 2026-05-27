@@ -217,17 +217,20 @@ export async function FeedList({
   const pinned  = posts.filter(p => p.is_pinned)
   const regular = posts.filter(p => !p.is_pinned)
 
+  const latestDispatch = dispatches[0] ?? null
+
   const items: FeedItem[] = [
     ...regular.map(p => ({ kind: 'post'     as const, data: p, date: new Date(p.created_at).getTime() })),
-    ...dispatches.map(d => ({ kind: 'dispatch' as const, data: d, date: new Date(d.published_at).getTime() })),
+    ...dispatches.slice(1).map(d => ({ kind: 'dispatch' as const, data: d, date: new Date(d.published_at).getTime() })),
   ].sort((a, b) => b.date - a.date)
 
-  if (pinned.length === 0 && items.length === 0) {
+  if (!latestDispatch && pinned.length === 0 && items.length === 0) {
     return <EmptyState message={emptyMessage} />
   }
 
   return (
     <div className="space-y-4">
+      {latestDispatch && <DispatchFeedCard dispatch={latestDispatch} />}
       {pinned.map(post => (
         <PostCard key={post.id} post={post} myProfileId={myProfileId} viewerRole={viewerRole} />
       ))}
