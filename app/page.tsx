@@ -85,7 +85,7 @@ export default async function RootPage() {
             className="h-14 sm:h-20 w-auto invert mb-8 sm:mb-10"
           />
 
-          <h1 className="text-4xl sm:text-6xl font-black text-white tracking-tight leading-tight mb-5">
+          <h1 className="text-4xl sm:text-7xl font-black text-white tracking-tight leading-none mb-5 whitespace-nowrap">
             Your Community Revolution
           </h1>
           <p className="text-base sm:text-lg text-gray-300 max-w-xl leading-relaxed mb-10">
