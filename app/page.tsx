@@ -78,7 +78,7 @@ export default async function RootPage() {
         {/* Dark overlay */}
         <div className="absolute inset-0 bg-black/60" />
 
-        <div className="relative z-10 flex flex-col items-center max-w-2xl">
+        <div className="relative z-10 flex flex-col items-center max-w-3xl">
           <img
             src="/frequency-logo.png"
             alt="Frequency"
@@ -88,7 +88,7 @@ export default async function RootPage() {
           <h1 className="text-4xl sm:text-6xl font-black text-white tracking-tight leading-tight mb-5">
             Your Community Revolution
           </h1>
-          <p className="text-base sm:text-lg text-gray-300 max-w-md leading-relaxed mb-10">
+          <p className="text-base sm:text-lg text-gray-300 max-w-xl leading-relaxed mb-10">
             Join local circles, show up for real-world events, and build lasting
             friendships with people who actually live near you. Frequency
             connects neighborhoods into a worldwide movement of human connection.
@@ -167,7 +167,7 @@ export default async function RootPage() {
       {/* ── Upcoming events ────────────────────────────────────── */}
       {upcomingEvents.length > 0 && (
         <section className="bg-white dark:bg-gray-950 px-6 py-16">
-          <div className="max-w-lg mx-auto">
+          <div className="max-w-2xl mx-auto">
             <h2 className="text-center text-xs font-semibold uppercase tracking-widest text-gray-400 mb-8">
               Upcoming events
             </h2>
@@ -210,7 +210,7 @@ export default async function RootPage() {
       {/* ── Feed preview ───────────────────────────────────────── */}
       {posts.length > 0 && (
         <section className="bg-gray-50 dark:bg-gray-900 px-4 py-16">
-          <div className="max-w-lg mx-auto">
+          <div className="max-w-2xl mx-auto">
             <h2 className="text-center text-xs font-semibold uppercase tracking-widest text-gray-400 mb-8">
               From the community
             </h2>
