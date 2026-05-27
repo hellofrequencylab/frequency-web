@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getInitials } from '@/lib/utils'
 
-type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor'
+export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor'
 
 interface RightSidebarProps {
   profileId: string
@@ -37,15 +38,6 @@ function WidgetCard({
 }
 
 // ── Active Members ────────────────────────────────────────────────────────────
-
-function getInitials(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0].toUpperCase())
-    .join('')
-}
 
 async function ActiveMembersWidget({ profileId }: { profileId: string }) {
   const admin = createAdminClient()
@@ -110,6 +102,14 @@ async function ActiveMembersWidget({ profileId }: { profileId: string }) {
             </span>
           </Link>
         ))}
+      </div>
+      <div className="px-4 py-2.5 border-t border-gray-100 dark:border-gray-800">
+        <Link
+          href="/people"
+          className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
+        >
+          View directory →
+        </Link>
       </div>
     </WidgetCard>
   )

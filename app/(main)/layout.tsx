@@ -3,7 +3,7 @@ import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import AppShell from '@/components/layout/app-shell'
-import RightSidebar from '@/components/sidebar/right-sidebar'
+import RightSidebar, { type CommunityRole } from '@/components/sidebar/right-sidebar'
 
 // Authenticated app layout — wraps Feed, Groups, Events, Admin.
 // Pages outside this group (onboarding, settings, sign-in, /people) render
@@ -35,7 +35,7 @@ export default async function MainLayout({
     <Suspense fallback={<RightSidebarSkeleton />}>
       <RightSidebar
         profileId={profile.id}
-        role={profile.community_role as any}
+        role={profile.community_role as CommunityRole}
       />
     </Suspense>
   )
@@ -50,13 +50,9 @@ export default async function MainLayout({
 function RightSidebarSkeleton() {
   return (
     <div className="px-4 py-6 space-y-4">
-      {[80, 160, 128].map((h, i) => (
-        <div
-          key={i}
-          className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 animate-pulse"
-          style={{ height: h }}
-        />
-      ))}
+      <div className="h-48 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 animate-pulse" />
+      <div className="h-36 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 animate-pulse" />
+      <div className="h-28 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 animate-pulse" />
     </div>
   )
 }

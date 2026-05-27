@@ -23,6 +23,7 @@ import {
   BellRing,
   SlidersHorizontal,
 } from 'lucide-react'
+import { getInitials } from '@/lib/utils'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor'
 
@@ -42,15 +43,6 @@ const SIDEBAR_NAV = [
   { href: '/messages', label: 'Messages',  Icon: MessageSquare },
   { href: '/people',   label: 'Directory', Icon: Globe },
 ]
-
-function getInitials(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0].toUpperCase())
-    .join('')
-}
 
 interface Profile {
   display_name: string
@@ -289,8 +281,12 @@ export default function AppShell({
 
   const profileActive = pathname === profileHref || pathname.startsWith('/people/')
 
-  // Hide right sidebar on admin + settings — those pages are self-contained
-  const showSidebar = !!sidebar && !pathname.startsWith('/admin') && !pathname.startsWith('/settings')
+  // Hide right sidebar on pages where it would crowd the UI or doesn't add value
+  const showSidebar =
+    !!sidebar &&
+    !pathname.startsWith('/admin') &&
+    !pathname.startsWith('/settings') &&
+    !pathname.startsWith('/messages')
 
   function cycleTheme() {
     if (theme === 'system') setTheme('dark')
