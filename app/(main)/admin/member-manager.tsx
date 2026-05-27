@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { UserX, Star } from 'lucide-react'
 import { assignRole, deactivateMember, toggleSeasonComplete, assignLuminary } from './actions'
 import type { SeasonRank } from '@/lib/season-ranks'
+import { getInitials } from '@/lib/utils'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
@@ -32,15 +33,6 @@ const ROLE_LABEL: Record<CommunityRole, string> = {
   guide:   'Guide',
   mentor:  'Mentor',
   janitor: 'Janitor',
-}
-
-function getInitials(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0].toUpperCase())
-    .join('')
 }
 
 export function MemberManager({ members }: { members: MemberItem[] }) {

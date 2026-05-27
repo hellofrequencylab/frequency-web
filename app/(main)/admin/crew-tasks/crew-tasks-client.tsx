@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { Plus, Pencil, Trash2, Check, X, ShieldCheck, ShieldX } from 'lucide-react'
 import { createCrewTask, updateCrewTask, deleteCrewTask, approveVerification, rejectVerification } from '../actions'
+import { getInitials } from '@/lib/utils'
 
 const TASK_TYPES = [
   'attendance', 'hosting', 'volunteering', 'content', 'referral', 'other',
@@ -136,10 +137,6 @@ type PendingVerification = {
   zaps_earned: number
   task: { id: string; name: string; zaps_value: number } | null
   member: { id: string; display_name: string; handle: string; avatar_url: string | null } | null
-}
-
-function getInitials(name: string) {
-  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('')
 }
 
 function VerificationQueue({ items }: { items: PendingVerification[] }) {
