@@ -1,7 +1,20 @@
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { Plus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { CirclesClient } from './circles-client'
+
+function SidebarCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
+      <div className="px-4 py-2.5 border-b border-gray-100/80 dark:border-gray-800/50">
+        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">{title}</h3>
+      </div>
+      {children}
+    </div>
+  )
+}
 
 type CommunityRole = 'host' | 'guide' | 'mentor' | 'janitor'
 
@@ -116,11 +129,32 @@ export default async function AdminCirclesPage() {
         </p>
       </div>
 
-      <CirclesClient
-        circles={circles}
-        hubs={hubs}
-        hosts={hostProfiles ?? []}
-      />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main content */}
+        <div className="lg:col-span-2">
+          <CirclesClient
+            circles={circles}
+            hubs={hubs}
+            hosts={hostProfiles ?? []}
+          />
+        </div>
+
+        {/* Sidebar */}
+        <div className="space-y-4">
+          <SidebarCard title="Quick Actions">
+            <div className="p-2 space-y-0.5">
+              <Link href="/circles/new" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                <Plus className="w-4 h-4 text-gray-400" /> New Circle
+              </Link>
+              <Link href="/admin/hubs" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                <Plus className="w-4 h-4 text-gray-400" /> Manage Hubs
+              </Link>
+            </div>
+            <hr className="border-gray-100/80 dark:border-gray-800/50" />
+            <p className="px-4 py-3 text-xs text-gray-400">Archiving hides a circle from discovery but preserves all data.</p>
+          </SidebarCard>
+        </div>
+      </div>
     </div>
   )
 }

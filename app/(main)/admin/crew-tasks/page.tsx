@@ -3,6 +3,17 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { CrewTasksClient } from './crew-tasks-client'
 
+function SidebarCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
+      <div className="px-4 py-2.5 border-b border-gray-100/80 dark:border-gray-800/50">
+        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">{title}</h3>
+      </div>
+      {children}
+    </div>
+  )
+}
+
 export default async function AdminCrewTasksPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -70,10 +81,22 @@ export default async function AdminCrewTasksPage() {
         </p>
       </div>
 
-      <CrewTasksClient
-        tasks={tasksRes.data ?? []}
-        pendingVerifications={filteredPending}
-      />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main content */}
+        <div className="lg:col-span-2">
+          <CrewTasksClient
+            tasks={tasksRes.data ?? []}
+            pendingVerifications={filteredPending}
+          />
+        </div>
+
+        {/* Sidebar */}
+        <div className="space-y-4">
+          <SidebarCard title="Quick Actions">
+            <p className="px-4 py-3 text-xs text-gray-400">Tasks that require verification must be manually approved here before zaps are awarded. Repeatable tasks can be completed multiple times per season.</p>
+          </SidebarCard>
+        </div>
+      </div>
     </div>
   )
 }

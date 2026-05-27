@@ -9,6 +9,17 @@ import type { SeasonRank } from '@/lib/season-ranks'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
+function SidebarCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
+      <div className="px-4 py-2.5 border-b border-gray-100/80 dark:border-gray-800/50">
+        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">{title}</h3>
+      </div>
+      {children}
+    </div>
+  )
+}
+
 export default async function AdminPage() {
   const supabase = await createClient()
   const {
@@ -48,18 +59,40 @@ export default async function AdminPage() {
         )}
       </p>
 
-      {/* Quick stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-        <StatCard label="Members"     value={membersCount.count ?? 0}    Icon={Users} />
-        <StatCard label="Circles"     value={circlesCount.count ?? 0}    Icon={Layers} />
-        <StatCard label="Events"      value={eventsCount.count ?? 0}     Icon={CalendarDays} />
-        <StatCard label="Dispatches"  value={dispatchesCount.count ?? 0} Icon={Megaphone} />
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main content */}
+        <div className="lg:col-span-2 space-y-8">
+          {/* Quick stats */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <StatCard label="Members"     value={membersCount.count ?? 0}    Icon={Users} />
+            <StatCard label="Circles"     value={circlesCount.count ?? 0}    Icon={Layers} />
+            <StatCard label="Events"      value={eventsCount.count ?? 0}     Icon={CalendarDays} />
+            <StatCard label="Dispatches"  value={dispatchesCount.count ?? 0} Icon={Megaphone} />
+          </div>
 
-      {role === 'janitor' && <JanitorPanel profileId={profile.id} />}
-      {role === 'host'    && <HostPanel    profileId={profile.id} />}
-      {role === 'guide'   && <GuidePanel   profileId={profile.id} />}
-      {role === 'mentor'  && <MentorPanel  profileId={profile.id} />}
+          {role === 'janitor' && <JanitorPanel profileId={profile.id} />}
+          {role === 'host'    && <HostPanel    profileId={profile.id} />}
+          {role === 'guide'   && <GuidePanel   profileId={profile.id} />}
+          {role === 'mentor'  && <MentorPanel  profileId={profile.id} />}
+        </div>
+
+        {/* Sidebar */}
+        <div className="space-y-4">
+          <SidebarCard title="Quick Actions">
+            <div className="p-2 space-y-0.5">
+              <Link href="/events/new" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                <CalendarDays className="w-4 h-4 text-gray-400" /> New Event
+              </Link>
+              <Link href="/broadcast" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                <Megaphone className="w-4 h-4 text-gray-400" /> New Dispatch
+              </Link>
+              <Link href="/admin/moderation" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                <ShieldAlert className="w-4 h-4 text-gray-400" /> Moderation Queue
+              </Link>
+            </div>
+          </SidebarCard>
+        </div>
+      </div>
     </div>
   )
 }

@@ -1,7 +1,20 @@
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { Megaphone } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { DispatchesClient } from './dispatches-client'
+
+function SidebarCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
+      <div className="px-4 py-2.5 border-b border-gray-100/80 dark:border-gray-800/50">
+        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">{title}</h3>
+      </div>
+      {children}
+    </div>
+  )
+}
 
 type AdminRole = 'host' | 'guide' | 'mentor' | 'janitor'
 const ADMIN_ROLES: string[] = ['host', 'guide', 'mentor', 'janitor']
@@ -84,26 +97,43 @@ export default async function AdminDispatchesPage() {
         </p>
       </div>
 
-      <DispatchesClient
-        dispatches={(dispatches ?? []) as unknown as Array<{
-          id: string
-          title: string
-          excerpt: string | null
-          dispatch_type: 'post' | 'poll' | 'challenge' | 'article'
-          audience_scope: 'circle' | 'hub' | 'nexus'
-          audience_id: string
-          status: 'draft' | 'published'
-          published_at: string | null
-          scheduled_for: string | null
-          created_at: string
-          linked_task: { id: string; name: string } | null
-        }>}
-        role={role}
-        circles={circles}
-        hubs={hubs}
-        nexuses={nexuses}
-        tasks={tasks ?? []}
-      />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main content */}
+        <div className="lg:col-span-2">
+          <DispatchesClient
+            dispatches={(dispatches ?? []) as unknown as Array<{
+              id: string
+              title: string
+              excerpt: string | null
+              dispatch_type: 'post' | 'poll' | 'challenge' | 'article'
+              audience_scope: 'circle' | 'hub' | 'nexus'
+              audience_id: string
+              status: 'draft' | 'published'
+              published_at: string | null
+              scheduled_for: string | null
+              created_at: string
+              linked_task: { id: string; name: string } | null
+            }>}
+            role={role}
+            circles={circles}
+            hubs={hubs}
+            nexuses={nexuses}
+            tasks={tasks ?? []}
+          />
+        </div>
+
+        {/* Sidebar */}
+        <div className="space-y-4">
+          <SidebarCard title="Quick Actions">
+            <div className="p-2 space-y-0.5">
+              <Link href="/broadcast" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                <Megaphone className="w-4 h-4 text-gray-400" /> New Dispatch
+              </Link>
+            </div>
+            <p className="px-4 py-3 text-xs text-gray-400">Target dispatches to a specific circle, hub, or nexus. Published dispatches are visible to all members in the selected audience.</p>
+          </SidebarCard>
+        </div>
+      </div>
     </div>
   )
 }
