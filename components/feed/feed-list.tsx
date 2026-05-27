@@ -53,6 +53,7 @@ export async function FeedList({
   sort = 'relevant',
   showPublicLayer = true,
   emptyMessage = 'Nothing posted yet. Be the first to share something.',
+  viewerRole,
 }: {
   circleIds: string[]
   communityProfileIds?: string[]
@@ -62,6 +63,7 @@ export async function FeedList({
   /** false on circle/channel detail pages — show only scoped posts, not the global public feed */
   showPublicLayer?: boolean
   emptyMessage?: string
+  viewerRole?: string
 }) {
   const admin = createAdminClient()
   const order = sort === 'relevant' ? 'engagement_score' : 'created_at'
@@ -227,11 +229,11 @@ export async function FeedList({
   return (
     <div className="space-y-4">
       {pinned.map(post => (
-        <PostCard key={post.id} post={post} myProfileId={myProfileId} />
+        <PostCard key={post.id} post={post} myProfileId={myProfileId} viewerRole={viewerRole} />
       ))}
       {items.map(item =>
         item.kind === 'post' ? (
-          <PostCard key={item.data.id} post={item.data} myProfileId={myProfileId} />
+          <PostCard key={item.data.id} post={item.data} myProfileId={myProfileId} viewerRole={viewerRole} />
         ) : (
           <DispatchFeedCard key={item.data.id} dispatch={item.data} />
         )
