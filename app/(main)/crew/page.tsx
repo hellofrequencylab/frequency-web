@@ -52,6 +52,8 @@ export default async function CrewPage() {
 
   if (!profile) notFound()
 
+  const isCrew = ['crew', 'host', 'guide', 'mentor', 'janitor'].includes((profile as any).community_role ?? '')
+
   const currentSeasonZaps: number = (profile as any).current_season_zaps ?? 0
   const currentSeasonRank: SeasonRank = ((profile as any).current_season_rank ?? 'crew') as SeasonRank
   const challengesComplete: boolean  = (profile as any).season_challenges_complete ?? false
@@ -334,6 +336,7 @@ export default async function CrewPage() {
                       isDone={isDone}
                       isRepeatable={task.is_repeatable ?? false}
                       requiresVerification={task.requires_verification ?? false}
+                      isCrew={isCrew}
                     />
                   </div>
                 </div>

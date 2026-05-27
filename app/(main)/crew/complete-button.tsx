@@ -3,15 +3,17 @@
 import { useTransition } from 'react'
 import { CheckCircle, Loader2, RotateCcw } from 'lucide-react'
 import { logCompletion } from './actions'
+import { CrewGateButton } from '@/components/crew-gate-button'
 
 interface CompleteButtonProps {
   taskId: string
   isDone: boolean
   isRepeatable: boolean
   requiresVerification: boolean
+  isCrew: boolean
 }
 
-export function CompleteButton({ taskId, isDone, isRepeatable, requiresVerification }: CompleteButtonProps) {
+export function CompleteButton({ taskId, isDone, isRepeatable, requiresVerification, isCrew }: CompleteButtonProps) {
   const [isPending, startTransition] = useTransition()
 
   // Non-repeatable + already done — show static state
@@ -19,15 +21,25 @@ export function CompleteButton({ taskId, isDone, isRepeatable, requiresVerificat
     return null
   }
 
+  const label = requiresVerification
+    ? isDone ? 'Submit again' : 'Submit for review'
+    : isDone ? 'Log again' : 'Mark complete'
+
+  if (!isCrew) {
+    return (
+      <CrewGateButton
+        isCrew={false}
+        label={label}
+        buttonClassName="shrink-0 flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+      />
+    )
+  }
+
   function handleClick() {
     startTransition(async () => {
       await logCompletion(taskId)
     })
   }
-
-  const label = requiresVerification
-    ? isDone ? 'Submit again' : 'Submit for review'
-    : isDone ? 'Log again' : 'Mark complete'
 
   return (
     <button

@@ -4,6 +4,7 @@ import { CalendarDays, MapPin, Users, ExternalLink } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { toggleRSVP, cancelEvent } from '../actions'
+import { CrewGateButton } from '@/components/crew-gate-button'
 
 type EventDetail = {
   id: string
@@ -195,18 +196,28 @@ export default async function EventDetailPage({
       {/* ── Actions ────────────────────────────────── */}
       {!event.is_cancelled && !isPast && myProfileId && (
         <div className="flex items-center gap-3 mb-6 flex-wrap">
-          <form action={toggleRSVP.bind(null, event.id, myRsvpStatus)}>
-            <button
-              type="submit"
-              className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-                myRsvpStatus === 'going'
-                  ? 'bg-green-100 text-green-700 hover:bg-red-50 hover:text-red-600'
-                  : 'bg-indigo-600 text-white hover:bg-indigo-700'
-              }`}
-            >
-              {myRsvpStatus === 'going' ? "✓ Going (click to undo)" : "RSVP: I'm going"}
-            </button>
-          </form>
+          <CrewGateButton
+            isCrew={isCrew}
+            label={myRsvpStatus === 'going' ? "✓ Going (click to undo)" : "RSVP: I'm going"}
+            buttonClassName={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors inline-flex items-center gap-1.5 ${
+              myRsvpStatus === 'going'
+                ? 'bg-green-100 text-green-700 hover:bg-red-50 hover:text-red-600'
+                : 'bg-indigo-600 text-white hover:bg-indigo-700'
+            }`}
+          >
+            <form action={toggleRSVP.bind(null, event.id, myRsvpStatus)}>
+              <button
+                type="submit"
+                className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
+                  myRsvpStatus === 'going'
+                    ? 'bg-green-100 text-green-700 hover:bg-red-50 hover:text-red-600'
+                    : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                }`}
+              >
+                {myRsvpStatus === 'going' ? "✓ Going (click to undo)" : "RSVP: I'm going"}
+              </button>
+            </form>
+          </CrewGateButton>
 
           <a
             href={googleCalendarUrl(event)}

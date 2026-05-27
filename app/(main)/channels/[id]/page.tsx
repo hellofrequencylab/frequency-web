@@ -4,6 +4,7 @@ import { Hash, CalendarDays, MessageSquare, Users } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { joinChannel, leaveChannel } from '../actions'
+import { CrewGateButton } from '@/components/crew-gate-button'
 import { Composer } from '@/components/feed/composer'
 import { FeedList } from '@/components/feed/feed-list'
 
@@ -175,14 +176,20 @@ export default async function ChannelPage({
                 </button>
               </form>
             ) : (
-              <form action={joinChannel.bind(null, channel.id)}>
-                <button
-                  type="submit"
-                  className="shrink-0 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors"
-                >
-                  Join
-                </button>
-              </form>
+              <CrewGateButton
+                isCrew={isCrew}
+                label="Join"
+                buttonClassName="shrink-0 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors inline-flex items-center gap-1"
+              >
+                <form action={joinChannel.bind(null, channel.id)}>
+                  <button
+                    type="submit"
+                    className="shrink-0 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors"
+                  >
+                    Join
+                  </button>
+                </form>
+              </CrewGateButton>
             )
           )}
         </div>

@@ -3,7 +3,8 @@ import Link from 'next/link'
 import { Users, MessageSquare, Settings2 } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
-import { leaveCircle } from '../actions'
+import { leaveCircle, joinCircle } from '../actions'
+import { CrewGateButton } from '@/components/crew-gate-button'
 import { startConversation } from '@/app/(main)/messages/actions'
 import { Composer } from '@/components/feed/composer'
 import { FeedList } from '@/components/feed/feed-list'
@@ -125,17 +126,19 @@ export default async function CirclePage({
   let myProfileId: string | null = null
   let isMember = false
   let isHost = false
+  let isCrew = false
 
   if (user) {
     const { data: myProfile } = await admin
       .from('profiles')
-      .select('id')
+      .select('id, community_role')
       .eq('auth_user_id', user.id)
       .maybeSingle()
     if (myProfile) {
       myProfileId = myProfile.id
       isMember = members.some((m) => m.profile.id === myProfileId)
       isHost = circle.host?.id === myProfileId
+      isCrew = ['crew', 'host', 'guide', 'mentor', 'janitor'].includes((myProfile as any).community_role ?? '')
     }
   }
 
@@ -216,6 +219,29 @@ export default async function CirclePage({
                 Leave
               </button>
             </form>
+          )}
+
+          {!isMember && myProfileId && !full && (
+            <CrewGateButton
+              isCrew={isCrew}
+              label="Join circle"
+              buttonClassName="shrink-0 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors inline-flex items-center gap-1"
+            >
+              <form action={joinCircle.bind(null, circle.id, circle.slug)}>
+                <button
+                  type="submit"
+                  className="shrink-0 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors"
+                >
+                  Join circle
+                </button>
+              </form>
+            </CrewGateButton>
+          )}
+
+          {!isMember && myProfileId && full && (
+            <span className="shrink-0 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-400 cursor-not-allowed">
+              Circle full
+            </span>
           )}
         </div>
 
