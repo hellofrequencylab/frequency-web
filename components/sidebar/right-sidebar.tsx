@@ -1,8 +1,8 @@
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getInitials } from '@/lib/utils'
-import { CalendarDays, MapPin } from 'lucide-react'
+import { getInitials, relativeTime } from '@/lib/utils'
+import { CalendarDays, MapPin, Megaphone, Zap } from 'lucide-react'
 import { GettingStartedChecklist } from '@/components/feed/getting-started'
 
 export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
@@ -181,6 +181,100 @@ async function ActiveMembersWidget({ profileId, circleIds }: { profileId: string
   )
 }
 
+// ── Recent Dispatches ─────────────────────────────────────────────────────────
+
+async function RecentDispatchesWidget({
+  profileId,
+  circleIds,
+}: {
+  profileId: string
+  circleIds: string[]
+}) {
+  const admin = createAdminClient()
+
+  // Resolve hub → nexus IDs for the user's circles
+  let hubIds: string[] = []
+  let nexusIds: string[] = []
+  if (circleIds.length > 0) {
+    const { data: circles } = await admin.from('circles').select('hub_id').in('id', circleIds)
+    hubIds = (circles ?? []).map((c: any) => c.hub_id).filter(Boolean) as string[]
+  }
+  if (hubIds.length > 0) {
+    const { data: hubs } = await admin.from('hubs').select('nexus_id').in('id', hubIds)
+    nexusIds = (hubs ?? []).map((h: any) => h.nexus_id).filter(Boolean) as string[]
+  }
+
+  const select = `id, title, audience_scope, published_at,
+    author:profiles!author_id ( display_name ),
+    linked_task:crew_tasks!linked_task_id ( id, name )`
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const promises: any[] = [
+    admin.from('dispatches').select(select).eq('status', 'published').eq('author_id', profileId)
+      .order('published_at', { ascending: false }).limit(5),
+  ]
+  if (circleIds.length > 0)
+    promises.push(admin.from('dispatches').select(select).eq('status', 'published')
+      .eq('audience_scope', 'circle').in('audience_id', circleIds)
+      .order('published_at', { ascending: false }).limit(5))
+  if (hubIds.length > 0)
+    promises.push(admin.from('dispatches').select(select).eq('status', 'published')
+      .eq('audience_scope', 'hub').in('audience_id', hubIds)
+      .order('published_at', { ascending: false }).limit(5))
+  if (nexusIds.length > 0)
+    promises.push(admin.from('dispatches').select(select).eq('status', 'published')
+      .eq('audience_scope', 'nexus').in('audience_id', nexusIds)
+      .order('published_at', { ascending: false }).limit(5))
+
+  const results = await Promise.all(promises)
+  const combined = results.flatMap((r: any) => r.data ?? [])
+  const seen = new Set<string>()
+  const dispatches = combined
+    .filter((d: any) => { if (seen.has(d.id)) return false; seen.add(d.id); return true })
+    .sort((a: any, b: any) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime())
+    .slice(0, 5)
+
+  if (dispatches.length === 0) return null
+
+  return (
+    <WidgetCard title="Dispatches">
+      <div className="divide-y divide-gray-50 dark:divide-gray-800">
+        {dispatches.map((d: any) => (
+          <Link
+            key={d.id}
+            href={`/broadcast/${d.id}`}
+            className="flex items-start gap-2.5 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          >
+            <div className="shrink-0 w-6 h-6 rounded-md bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center mt-0.5">
+              {d.linked_task ? (
+                <Zap className="w-3 h-3 text-amber-500" />
+              ) : (
+                <Megaphone className="w-3 h-3 text-indigo-500" />
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-gray-900 dark:text-gray-50 line-clamp-1 leading-snug">
+                {d.title}
+              </p>
+              <p className="text-[10px] text-gray-400 mt-0.5">
+                {d.author?.display_name} · {relativeTime(d.published_at)}
+              </p>
+            </div>
+          </Link>
+        ))}
+      </div>
+      <div className="px-4 py-2.5 border-t border-gray-100 dark:border-gray-800">
+        <Link
+          href="/broadcast"
+          className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
+        >
+          View all broadcasts →
+        </Link>
+      </div>
+    </WidgetCard>
+  )
+}
+
 // ── Leaderboard stub ──────────────────────────────────────────────────────────
 
 function LeaderboardWidget() {
@@ -223,6 +317,9 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
       <Suspense fallback={null}>
         <GettingStartedChecklist profileId={profileId} />
       </Suspense>
+
+      {/* Recent Dispatches */}
+      <RecentDispatchesWidget profileId={profileId} circleIds={circleIds} />
 
       {/* Upcoming Events */}
       <UpcomingEventsWidget circleIds={circleIds} />

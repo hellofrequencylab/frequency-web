@@ -113,7 +113,7 @@ export async function FeedList({
   dispatches = allDispatches
     .filter((d: any) => { if (seen.has(d.id)) return false; seen.add(d.id); return true })
     .sort((a: any, b: any) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime())
-    .slice(0, 5)
+    .slice(0, 1) // Only the single most recent dispatch appears inline in the feed
 
   // ── Merge posts + dispatch cards, sort by date ─────────────────────────────
   type FeedItem =
