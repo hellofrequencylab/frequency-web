@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { startConversation } from '@/app/(main)/messages/actions'
 import { Composer } from '@/components/feed/composer'
+import { ProfileFeed } from '@/components/feed/profile-feed'
 import { getInitials } from '@/lib/utils'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
@@ -24,9 +25,6 @@ export default async function ProfilePage({
 }) {
   const { handle } = await params
 
-  // Use the admin client so the public profile is readable regardless of the
-  // viewer's community_role. RLS would block member-role users from seeing
-  // anyone outside their region — not appropriate for a public profile URL.
   const admin = createAdminClient()
   const { data: profile } = await admin
     .from('profiles')
@@ -46,8 +44,6 @@ export default async function ProfilePage({
 
   if (!profile) notFound()
 
-  // Separate auth check to know if the viewer owns this profile.
-  // (main)/layout.tsx guarantees a logged-in user, but we still need the ID.
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   const isOwner = !!user && profile.auth_user_id === user.id
@@ -57,27 +53,18 @@ export default async function ProfilePage({
   const initials = getInitials(profile.display_name)
   const regionName = (profile.nexus_regions as unknown as { name: string } | null)?.name
 
-  // For the owner: determine which scope to use for the composer.
-  // Prefer their primary circle; fall back to their profile ID (public post).
-  let composerScopeId: string | null = null
-  let composerVisibility: 'group' | 'public' = 'public'
+  let myProfileId: string | null = null
+  let myRole: CommunityRole = 'member'
 
-  if (isOwner) {
-    const { data: membership } = await admin
-      .from('memberships')
-      .select('circle_id')
-      .eq('profile_id', profile.id as string)
-      .eq('status', 'active')
-      .order('joined_at', { ascending: true })
-      .limit(1)
+  if (user) {
+    const { data: viewer } = await admin
+      .from('profiles')
+      .select('id, community_role')
+      .eq('auth_user_id', user.id)
       .maybeSingle()
-
-    if (membership?.circle_id) {
-      composerScopeId = membership.circle_id as string
-      composerVisibility = 'group'
-    } else {
-      composerScopeId = profile.id as string
-      composerVisibility = 'public'
+    if (viewer) {
+      myProfileId = viewer.id as string
+      myRole = (viewer.community_role ?? 'member') as CommunityRole
     }
   }
 
@@ -170,24 +157,33 @@ export default async function ProfilePage({
         )}
       </div>
 
-      {/* Post composer — owner only */}
-      {isOwner && composerScopeId && (
-        <div>
+      {/* Wall composer — everyone can post */}
+      {myProfileId && (
+        <div className="mb-6">
           <Composer
-            scopeId={composerScopeId}
-            visibility={composerVisibility}
-            placeholder="Share something…"
+            scopeId={profile.id as string}
+            visibility="public"
+            placeholder={
+              isOwner
+                ? 'Share something...'
+                : `Write on ${profile.display_name}'s wall...`
+            }
           />
-          {composerVisibility === 'public' && (
-            <p className="text-xs text-gray-400 -mt-2 px-1">
-              <Link href="/circles" className="text-indigo-500 hover:underline">
-                Join a circle
-              </Link>{' '}
-              to post to your group.
-            </p>
-          )}
         </div>
       )}
+
+      {/* Timeline */}
+      <section>
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-600 mb-4">
+          Timeline
+        </h2>
+        <ProfileFeed
+          profileId={profile.id as string}
+          profileHandle={profile.handle as string}
+          myProfileId={myProfileId}
+          viewerRole={myRole}
+        />
+      </section>
     </div>
   )
 }
