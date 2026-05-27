@@ -73,7 +73,7 @@ export default async function EventsPage() {
 
   if (myCircleIds.length === 0) {
     return (
-      <div className="px-6 py-8 max-w-2xl">
+      <div className="px-6 py-8 max-w-2xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Events</h1>
         </div>
@@ -149,7 +149,7 @@ export default async function EventsPage() {
   }
 
   return (
-    <div className="px-6 py-8 max-w-2xl">
+    <div className="px-6 py-8 max-w-2xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Events</h1>
         {isCrew && (

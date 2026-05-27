@@ -124,7 +124,7 @@ export default async function ChannelPage({
   }
 
   return (
-    <div className="px-6 py-8 max-w-2xl">
+    <div className="px-6 py-8 max-w-2xl mx-auto">
       <Link
         href="/channels"
         className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 mb-5 transition-colors"

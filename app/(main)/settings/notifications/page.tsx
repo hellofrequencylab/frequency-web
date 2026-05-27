@@ -2,7 +2,7 @@ import { BellRing } from 'lucide-react'
 
 export default function NotificationsPage() {
   return (
-    <div className="px-6 py-8 max-w-2xl">
+    <div className="px-6 py-8 max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-1">Notifications</h1>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">
         Control how and when Frequency contacts you.

@@ -281,10 +281,11 @@ export default function AppShell({
 
   const profileActive = pathname === profileHref || pathname.startsWith('/people/')
 
-  // Hide right sidebar on pages where it would crowd the UI or doesn't add value
+  // Hide right sidebar only on pages where it would crowd or distract
+  // /settings — narrow focused forms, sidebar adds noise
+  // /messages — chat thread needs full width
   const showSidebar =
     !!sidebar &&
-    !pathname.startsWith('/admin') &&
     !pathname.startsWith('/settings') &&
     !pathname.startsWith('/messages')
 

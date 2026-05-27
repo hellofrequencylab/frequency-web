@@ -105,7 +105,7 @@ export default async function ChannelsPage() {
 
   if (!myNexusId && !myHubId) {
     return (
-      <div className="px-6 py-8 max-w-2xl">
+      <div className="px-6 py-8 max-w-2xl mx-auto">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-1">Channels</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-6">
           Focused spaces beyond your circle. Channels are where the community organises around a
@@ -185,7 +185,7 @@ export default async function ChannelsPage() {
   const discoverChannels = allChannels.filter((c) => !myChannelIds.has(c.id))
 
   return (
-    <div className="px-6 py-8 max-w-2xl">
+    <div className="px-6 py-8 max-w-2xl mx-auto">
       <div className="mb-6">
         <div className="flex items-center justify-between mb-1">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Channels</h1>

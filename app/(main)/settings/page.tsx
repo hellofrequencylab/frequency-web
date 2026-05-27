@@ -54,7 +54,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="px-6 py-8 max-w-2xl">
+    <div className="px-6 py-8 max-w-2xl mx-auto">
       <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50 mb-1">Settings</h1>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">
         Manage your preferences.

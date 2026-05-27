@@ -52,7 +52,7 @@ export default async function FeedPage() {
       : []
 
   return (
-    <div className="px-6 py-8 max-w-2xl">
+    <div className="px-6 py-8 max-w-2xl mx-auto">
 
       {/* ── Page header ──────────────────────────────────────── */}
       <div className="mb-7">

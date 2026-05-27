@@ -29,7 +29,7 @@ export default async function AdminPage() {
   if (!['host', 'guide', 'mentor'].includes(role)) notFound()
 
   return (
-    <div className="px-6 py-8 max-w-5xl">
+    <div className="px-6 py-8 max-w-5xl mx-auto">
       <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-2">Admin Panel</h1>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">
         Scoped to your{' '}
