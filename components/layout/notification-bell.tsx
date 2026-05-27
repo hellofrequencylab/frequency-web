@@ -7,10 +7,13 @@ import { getMyNotifications, markAllRead } from '@/app/(main)/notifications/acti
 import type { NotificationItem } from '@/app/(main)/notifications/actions'
 
 const TYPE_ICON: Record<string, string> = {
-  reaction: '❤️',
-  comment:  '💬',
-  mention:  '@',
-  dispatch: '📣',
+  reaction:       '❤️',
+  comment:        '💬',
+  mention:        '@',
+  dispatch:       '📣',
+  lifecycle_day1: '👋',
+  lifecycle_day3: '📅',
+  lifecycle_day7: '🎉',
 }
 
 function relativeTime(iso: string): string {

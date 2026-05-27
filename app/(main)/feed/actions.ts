@@ -26,6 +26,8 @@ export async function createPost(formData: FormData) {
   const body = (formData.get('body') as string | null)?.trim()
   const scopeId = formData.get('scopeId') as string | null
   const visibility = (formData.get('visibility') as string) || 'public'
+  const postType = (formData.get('post_type') as string | null) || 'feed'
+  const isAnnouncement = postType === 'announcement'
 
   if (!body || !scopeId) return
 
@@ -40,7 +42,8 @@ export async function createPost(formData: FormData) {
     body,
     scope_id: scopeId,
     visibility,
-    post_type: 'feed',
+    post_type: postType,
+    is_pinned: isAnnouncement,
   }).select('id').single()
 
   if (error) {

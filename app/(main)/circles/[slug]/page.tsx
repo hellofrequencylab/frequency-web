@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { Users, MessageSquare } from 'lucide-react'
+import { Users, MessageSquare, Settings2 } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { leaveCircle } from '../actions'
@@ -10,6 +10,7 @@ import { FeedList } from '@/components/feed/feed-list'
 import { UpcomingEventsWidget } from '@/components/events/upcoming-widget'
 import { HierarchyBreadcrumb } from '@/components/hierarchy/breadcrumb'
 import { StatusBadge } from '@/components/groups/status-badge'
+import { HostInviteButton } from '@/components/circles/host-invite-button'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor'
 
@@ -260,6 +261,21 @@ export default async function CirclePage({
         </div>
       ) : null}
 
+      {/* ── Host tools ─────────────────────────────── */}
+      {isHost && (
+        <div className="mb-6 rounded-xl border border-indigo-100 dark:border-indigo-900/50 bg-indigo-50/40 dark:bg-indigo-950/10 px-4 py-3">
+          <div className="flex items-center gap-1.5 mb-2.5">
+            <Settings2 className="w-3.5 h-3.5 text-indigo-500" />
+            <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
+              Host Tools
+            </span>
+          </div>
+          <div className="flex items-center flex-wrap gap-2">
+            <HostInviteButton circleId={circle.id} />
+          </div>
+        </div>
+      )}
+
       {/* ── Members ────────────────────────────────── */}
       <section>
         <h2 className="text-sm font-semibold text-gray-700 mb-3">
@@ -357,6 +373,7 @@ export default async function CirclePage({
             scopeId={circle.id}
             visibility="group"
             placeholder={`Share something with ${circle.name}…`}
+            canAnnounce={isHost}
           />
         )}
         <FeedList

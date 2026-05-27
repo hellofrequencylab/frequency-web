@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { Suspense } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getInitials, relativeTime } from '@/lib/utils'
-import { CalendarDays, MapPin, Megaphone, Zap } from 'lucide-react'
+import { CalendarDays, MapPin, Megaphone, Zap, Trophy } from 'lucide-react'
 import { GettingStartedChecklist } from '@/components/feed/getting-started'
 
 export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
@@ -275,20 +275,95 @@ async function RecentDispatchesWidget({
   )
 }
 
-// ── Leaderboard stub ──────────────────────────────────────────────────────────
+// ── Leaderboard ───────────────────────────────────────────────────────────────
 
-function LeaderboardWidget() {
+const RANK_COLORS: Record<string, string> = {
+  crew:        'bg-gray-400',
+  deshi:       'bg-indigo-400',
+  sempai:      'bg-indigo-500',
+  sensei:      'bg-purple-500',
+  sifu:        'bg-amber-500',
+  bodhisattva: 'bg-rose-500',
+}
+
+async function LeaderboardWidget({ profileId, circleIds }: { profileId: string; circleIds: string[] }) {
+  if (circleIds.length === 0) return null
+
+  const admin = createAdminClient()
+
+  // Get all member IDs in the viewer's circles
+  const { data: circleMembers } = await admin
+    .from('memberships')
+    .select('profile_id')
+    .in('circle_id', circleIds)
+    .eq('status', 'active')
+
+  const memberIds = [...new Set((circleMembers ?? []).map((m: any) => m.profile_id as string))]
+  if (memberIds.length === 0) return null
+
+  const { data: profiles } = await admin
+    .from('profiles')
+    .select('id, display_name, handle, avatar_url, current_season_zaps, current_season_rank')
+    .in('id', memberIds)
+    .order('current_season_zaps', { ascending: false })
+    .limit(5)
+
+  const top = (profiles ?? []) as {
+    id: string; display_name: string; handle: string; avatar_url: string | null;
+    current_season_zaps: number; current_season_rank: string
+  }[]
+
+  if (top.length === 0) return null
+
+  const rankColors = ['text-amber-500', 'text-gray-400', 'text-orange-400', 'text-gray-300 dark:text-gray-600', 'text-gray-300 dark:text-gray-600']
+
   return (
-    <WidgetCard title="Leaderboard" badge="Soon">
+    <WidgetCard title="Leaderboard">
       <div className="p-2">
-        {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="flex items-center gap-2.5 px-2 py-1.5 opacity-30 pointer-events-none">
-            <span className="text-xs font-bold text-gray-400 w-4 shrink-0 tabular-nums">{i}</span>
-            <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 shrink-0" />
-            <div className="h-2 rounded-full bg-gray-200 dark:bg-gray-700 flex-1" />
-            <div className="h-2 rounded-full bg-gray-100 dark:bg-gray-800 w-8 shrink-0" />
-          </div>
-        ))}
+        {top.map((member, i) => {
+          const isSelf = member.id === profileId
+          const rankColor = RANK_COLORS[member.current_season_rank] ?? 'bg-gray-400'
+          return (
+            <Link
+              key={member.id}
+              href={`/people/${member.handle}`}
+              className={`flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
+                isSelf ? 'bg-indigo-50/60 dark:bg-indigo-950/20' : ''
+              }`}
+            >
+              <span className={`text-xs font-bold w-4 shrink-0 tabular-nums ${rankColors[i]}`}>{i + 1}</span>
+              {member.avatar_url ? (
+                <img src={member.avatar_url} alt={member.display_name} className="w-6 h-6 rounded-full object-cover shrink-0" />
+              ) : (
+                <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-[10px] font-bold text-gray-500 shrink-0">
+                  {getInitials(member.display_name ?? '')}
+                </div>
+              )}
+              <span className={`text-xs flex-1 truncate ${isSelf ? 'font-semibold text-indigo-700 dark:text-indigo-300' : 'text-gray-700 dark:text-gray-300'}`}>
+                {member.display_name}
+              </span>
+              <div className="flex items-center gap-1 shrink-0">
+                <span className={`text-[9px] font-bold px-1 py-0.5 rounded-full text-white capitalize ${rankColor}`}>
+                  {member.current_season_rank}
+                </span>
+                <div className="flex items-center gap-0.5">
+                  <Zap className="w-2.5 h-2.5 text-amber-400" />
+                  <span className="text-[11px] font-semibold text-gray-600 dark:text-gray-400">
+                    {(member.current_season_zaps ?? 0).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            </Link>
+          )
+        })}
+      </div>
+      <div className="px-4 py-2.5 border-t border-gray-100 dark:border-gray-800">
+        <Link
+          href="/crew"
+          className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
+        >
+          Full leaderboard →
+        </Link>
       </div>
     </WidgetCard>
   )
@@ -327,7 +402,7 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
       {/* Active Members */}
       <ActiveMembersWidget profileId={profileId} circleIds={circleIds} />
 
-      {isCrew && <LeaderboardWidget />}
+      {isCrew && <LeaderboardWidget profileId={profileId} circleIds={circleIds} />}
     </div>
   )
 }

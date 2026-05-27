@@ -14,16 +14,18 @@ export default async function FeedPage() {
   let myProfileId: string | null = null
   let myCircleIds: string[] = []
   let primaryCircleId: string | null = null
+  let canAnnounce = false
 
   if (user) {
     const { data: profile } = await admin
       .from('profiles')
-      .select('id')
+      .select('id, community_role')
       .eq('auth_user_id', user.id)
       .maybeSingle()
 
     if (profile) {
       myProfileId = profile.id
+      canAnnounce = ['host', 'guide', 'mentor', 'janitor'].includes((profile as any).community_role ?? '')
 
       const { data: memberships } = await admin
         .from('memberships')
@@ -74,6 +76,7 @@ export default async function FeedPage() {
                 ? 'Share something with your circle…'
                 : 'Share something…'
             }
+            canAnnounce={canAnnounce}
           />
           {!primaryCircleId && (
             <p className="text-xs text-gray-400 -mt-2 px-1">

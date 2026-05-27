@@ -1,5 +1,6 @@
 'use server'
 
+import { randomBytes } from 'crypto'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
@@ -90,6 +91,45 @@ export async function joinCircle(circleId: string, circleSlug: string) {
   revalidatePath('/circles')
   revalidatePath('/feed')
   redirect(`/circles/${circleSlug}`)
+}
+
+// ── Host invite link ──────────────────────────────────────────────────────────
+// Hosts can generate an invite link for their own circle without needing admin access.
+
+export async function createHostInviteLink(circleId: string): Promise<{ token: string }> {
+  const myProfileId = await getMyProfileId()
+  if (!myProfileId) throw new Error('Not authenticated')
+
+  const admin = createAdminClient()
+
+  // Verify the caller is the host of this circle
+  const { data: circle } = await admin
+    .from('circles')
+    .select('host_id')
+    .eq('id', circleId)
+    .maybeSingle()
+
+  if (!circle) throw new Error('Circle not found')
+  if (circle.host_id !== myProfileId) throw new Error('Only the host can generate invite links')
+
+  const token = randomBytes(12).toString('base64url')
+
+  // Deactivate any previous active link for this circle
+  await admin
+    .from('invite_links')
+    .update({ is_active: false })
+    .eq('circle_id', circleId)
+    .eq('is_active', true)
+
+  const { error } = await admin.from('invite_links').insert({
+    token,
+    circle_id:  circleId,
+    created_by: myProfileId,
+  })
+  if (error) throw new Error(error.message)
+
+  revalidatePath(`/circles`)
+  return { token }
 }
 
 export async function leaveCircle(circleId: string) {

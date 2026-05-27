@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition, useRef, useEffect, useCallback } from 'react'
+import { Megaphone } from 'lucide-react'
 import { createPost } from '@/app/(main)/feed/actions'
 
 type HandleResult = { id: string; handle: string; display_name: string; avatar_url: string | null }
@@ -13,12 +14,15 @@ export function Composer({
   scopeId,
   visibility = 'group',
   placeholder = 'Share something with your group…',
+  canAnnounce = false,
 }: {
   scopeId: string
   visibility?: 'public' | 'region' | 'cluster' | 'group'
   placeholder?: string
+  canAnnounce?: boolean
 }) {
   const [body, setBody] = useState('')
+  const [isAnnouncement, setIsAnnouncement] = useState(false)
   const [isPending, startTransition] = useTransition()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -37,10 +41,12 @@ export function Composer({
     fd.set('body', trimmed)
     fd.set('scopeId', scopeId)
     fd.set('visibility', visibility)
+    fd.set('post_type', isAnnouncement ? 'announcement' : 'feed')
 
     startTransition(async () => {
       await createPost(fd)
       setBody('')
+      setIsAnnouncement(false)
       setSuggestions([])
       setMentionQuery(null)
     })
@@ -172,13 +178,34 @@ export function Composer({
       )}
 
       <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
-        <p className="text-[11px] text-gray-400">⌘↵ to post · @ to mention</p>
+        <div className="flex items-center gap-3">
+          <p className="text-[11px] text-gray-400">⌘↵ to post · @ to mention</p>
+          {canAnnounce && (
+            <button
+              type="button"
+              onClick={() => setIsAnnouncement(v => !v)}
+              className={`inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold transition-colors ${
+                isAnnouncement
+                  ? 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300'
+                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800'
+              }`}
+              title="Toggle announcement (pinned, highlighted)"
+            >
+              <Megaphone className="w-3 h-3" />
+              Announce
+            </button>
+          )}
+        </div>
         <button
           onClick={submit}
           disabled={!body.trim() || isPending}
-          className="rounded-lg bg-indigo-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className={`rounded-lg px-4 py-1.5 text-xs font-semibold text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
+            isAnnouncement
+              ? 'bg-amber-500 hover:bg-amber-600'
+              : 'bg-indigo-600 hover:bg-indigo-700'
+          }`}
         >
-          {isPending ? 'Posting…' : 'Post'}
+          {isPending ? 'Posting…' : isAnnouncement ? 'Announce' : 'Post'}
         </button>
       </div>
     </div>

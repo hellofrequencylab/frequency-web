@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Heart, ThumbsUp, MessageSquare, Trash2 } from 'lucide-react'
+import { Heart, ThumbsUp, MessageSquare, Trash2, Megaphone } from 'lucide-react'
 import { deletePost, toggleReaction } from '@/app/(main)/feed/actions'
 
 function renderBodyWithMentions(body: string): React.ReactNode[] {
@@ -94,13 +94,27 @@ export function PostCard({
   )
   const isOwn = author.id === myProfileId
 
+  const isAnnouncement = post.post_type === 'announcement'
+
   return (
     <article
       className={`bg-white dark:bg-gray-900 rounded-xl border p-4 ${
-        post.is_pinned ? 'border-indigo-200 dark:border-indigo-800' : 'border-gray-200 dark:border-gray-800'
+        isAnnouncement
+          ? 'border-amber-200 dark:border-amber-800 bg-amber-50/30 dark:bg-amber-950/10'
+          : post.is_pinned
+          ? 'border-indigo-200 dark:border-indigo-800'
+          : 'border-gray-200 dark:border-gray-800'
       }`}
     >
-      {post.is_pinned && (
+      {isAnnouncement && (
+        <div className="flex items-center gap-1.5 mb-2.5">
+          <Megaphone className="w-3 h-3 text-amber-500" />
+          <p className="text-[11px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+            Announcement
+          </p>
+        </div>
+      )}
+      {!isAnnouncement && post.is_pinned && (
         <p className="text-[11px] font-medium text-indigo-500 mb-2.5">
           📌 Pinned
         </p>

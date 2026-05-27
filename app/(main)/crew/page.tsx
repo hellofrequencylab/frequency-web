@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Star, CheckCircle, Zap, Trophy } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { CompleteButton } from './complete-button'
 
 // ── Season rank definitions ───────────────────────────────────────────────────
 
@@ -319,13 +320,21 @@ export default async function CrewPage() {
                     )}
                   </div>
 
-                  <div className="flex items-center gap-0.5 shrink-0">
-                    <Zap className={`w-3.5 h-3.5 ${isDone ? 'text-green-500 dark:text-green-400' : 'text-amber-400'}`} />
-                    <span className={`text-sm font-semibold ${
-                      isDone ? 'text-green-700 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'
-                    }`}>
-                      +{(task as any).zaps_value}
-                    </span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-0.5">
+                      <Zap className={`w-3.5 h-3.5 ${isDone ? 'text-green-500 dark:text-green-400' : 'text-amber-400'}`} />
+                      <span className={`text-sm font-semibold ${
+                        isDone ? 'text-green-700 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'
+                      }`}>
+                        +{(task as any).zaps_value}
+                      </span>
+                    </div>
+                    <CompleteButton
+                      taskId={task.id}
+                      isDone={isDone}
+                      isRepeatable={task.is_repeatable ?? false}
+                      requiresVerification={task.requires_verification ?? false}
+                    />
                   </div>
                 </div>
               )
