@@ -183,10 +183,10 @@ export async function joinViaInviteLink(token: string): Promise<{ circleId: stri
     .maybeSingle()
 
   if (!existing) {
-    const { error: joinError } = await admin.from('circle_memberships').insert({
+    const { error: joinError } = await admin.from('memberships').insert({
       circle_id:  link.circle_id,
       profile_id: profile.id,
-      role:       'member',
+      status:     'active',
     })
     if (joinError) throw new Error(joinError.message)
 

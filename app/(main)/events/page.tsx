@@ -59,7 +59,7 @@ export default async function EventsPage() {
 
     if (profile) {
       myProfileId = profile.id
-      isCrew = ['crew', 'host', 'guide', 'mentor'].includes(profile.community_role)
+      isCrew = ['crew', 'host', 'guide', 'mentor', 'janitor'].includes(profile.community_role)
 
       const { data: memberships } = await admin
         .from('memberships')

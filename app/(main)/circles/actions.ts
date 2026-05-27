@@ -74,12 +74,18 @@ export async function joinCircle(circleId: string, circleSlug: string) {
     }
   }
 
-  const supabase = await createClient()
-  await supabase.from('memberships').insert({
+  // Use admin client — RLS only permits crew+ to self-join via policy, but new
+  // members (role = 'member') should be able to join circles directly.
+  // Authorization is enforced above in code (capacity, auth check).
+  const { error } = await admin.from('memberships').insert({
     profile_id: myProfileId,
     circle_id: circleId,
     status: 'active',
   })
+  if (error) {
+    console.error('[joinCircle]', error.message)
+    return
+  }
 
   revalidatePath('/circles')
   revalidatePath('/feed')
@@ -90,8 +96,8 @@ export async function leaveCircle(circleId: string) {
   const myProfileId = await getMyProfileId()
   if (!myProfileId) return
 
-  const supabase = await createClient()
-  await supabase
+  const admin = createAdminClient()
+  await admin
     .from('memberships')
     .delete()
     .eq('profile_id', myProfileId)

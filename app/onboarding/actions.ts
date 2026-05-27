@@ -44,5 +44,5 @@ export async function completeOnboarding(data: {
     sendWelcomeEmail({ to: user.email, displayName: data.displayName }).catch(() => {})
   }
 
-  redirect('/feed')
+  redirect('/circles')
 }
