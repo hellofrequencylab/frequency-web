@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { Users, Layers, Building2, Plus, CalendarDays, Megaphone } from 'lucide-react'
+import { Users, Layers, Building2, Plus, CalendarDays, Megaphone, ShieldAlert } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { StatusBadge } from '@/components/groups/status-badge'
