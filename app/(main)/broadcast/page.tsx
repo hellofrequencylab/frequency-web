@@ -75,8 +75,12 @@ export default async function BroadcastPage() {
       .order('published_at', { ascending: false })
       .limit(40)
 
-  // Collect all visible dispatches
-  const promises = []
+  // Collect all visible dispatches — by audience targeting + own authored dispatches
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const promises: any[] = [
+    // Always include dispatches this user authored (creators see their own content)
+    baseQuery().eq('author_id', profile.id),
+  ]
 
   if (circleIds.length > 0)
     promises.push(baseQuery().eq('audience_scope', 'circle').in('audience_id', circleIds))
@@ -85,16 +89,14 @@ export default async function BroadcastPage() {
   if (nexusIds.length > 0)
     promises.push(baseQuery().eq('audience_scope', 'nexus').in('audience_id', nexusIds))
 
-  if (promises.length > 0) {
-    const results = await Promise.all(promises)
-    const combined = results.flatMap(r => r.data ?? [])
-    // Dedupe + sort by published_at
-    const seen = new Set<string>()
-    dispatches = combined
-      .filter((d: any) => { if (seen.has(d.id)) return false; seen.add(d.id); return true })
-      .sort((a: any, b: any) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime())
-      .slice(0, 20) as unknown as DispatchRow[]
-  }
+  const results = await Promise.all(promises)
+  const combined = results.flatMap(r => r.data ?? [])
+  // Dedupe + sort by published_at
+  const seen = new Set<string>()
+  dispatches = combined
+    .filter((d: any) => { if (seen.has(d.id)) return false; seen.add(d.id); return true })
+    .sort((a: any, b: any) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime())
+    .slice(0, 20) as unknown as DispatchRow[]
 
   // Upcoming events (next 5)
   const { data: events } = await admin
@@ -113,7 +115,7 @@ export default async function BroadcastPage() {
     .limit(5)
 
   return (
-    <div className="px-6 py-8 max-w-3xl mx-auto">
+    <div className="px-8 py-8">
 
       {/* ── Header ─────────────────────────────────────────── */}
       <div className="mb-8">

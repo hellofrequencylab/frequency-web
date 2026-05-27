@@ -51,13 +51,16 @@ export async function FeedList({
     nexusIds = (hubs ?? []).map((h: any) => h.nexus_id).filter(Boolean) as string[]
   }
 
-  // Fetch dispatches for all audience scopes in parallel
-  const dispatchPromises = [
+  const dispatchSelect = `id, title, excerpt, audience_scope, published_at,
+               author:profiles!author_id ( display_name ),
+               linked_task:crew_tasks!linked_task_id ( id, name )`
+
+  // Fetch dispatches for all audience scopes + own authored dispatches in parallel
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const dispatchPromises: any[] = [
     admin
       .from('dispatches')
-      .select(`id, title, excerpt, audience_scope, published_at,
-               author:profiles!author_id ( display_name ),
-               linked_task:crew_tasks!linked_task_id ( id, name )`)
+      .select(dispatchSelect)
       .eq('status', 'published')
       .eq('audience_scope', 'circle')
       .in('audience_id', scopeIds)
@@ -65,13 +68,24 @@ export async function FeedList({
       .limit(5),
   ]
 
+  // Always include dispatches authored by the viewer (they see their own content)
+  if (myProfileId) {
+    dispatchPromises.push(
+      admin
+        .from('dispatches')
+        .select(dispatchSelect)
+        .eq('status', 'published')
+        .eq('author_id', myProfileId)
+        .order('published_at', { ascending: false })
+        .limit(5)
+    )
+  }
+
   if (hubIds.length > 0) {
     dispatchPromises.push(
       admin
         .from('dispatches')
-        .select(`id, title, excerpt, audience_scope, published_at,
-                 author:profiles!author_id ( display_name ),
-                 linked_task:crew_tasks!linked_task_id ( id, name )`)
+        .select(dispatchSelect)
         .eq('status', 'published')
         .eq('audience_scope', 'hub')
         .in('audience_id', hubIds)
@@ -84,9 +98,7 @@ export async function FeedList({
     dispatchPromises.push(
       admin
         .from('dispatches')
-        .select(`id, title, excerpt, audience_scope, published_at,
-                 author:profiles!author_id ( display_name ),
-                 linked_task:crew_tasks!linked_task_id ( id, name )`)
+        .select(dispatchSelect)
         .eq('status', 'published')
         .eq('audience_scope', 'nexus')
         .in('audience_id', nexusIds)
