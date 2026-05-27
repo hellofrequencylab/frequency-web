@@ -251,9 +251,11 @@ function AccountDropdown({
 export default function AppShell({
   profile,
   children,
+  sidebar,
 }: {
   profile: Profile
   children: React.ReactNode
+  sidebar?: React.ReactNode
 }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -286,6 +288,9 @@ export default function AppShell({
   }
 
   const profileActive = pathname === profileHref || pathname.startsWith('/people/')
+
+  // Hide right sidebar on admin + settings — those pages are self-contained
+  const showSidebar = !!sidebar && !pathname.startsWith('/admin') && !pathname.startsWith('/settings')
 
   function cycleTheme() {
     if (theme === 'system') setTheme('dark')
@@ -359,7 +364,7 @@ export default function AppShell({
       {/* ── Body ──────────────────────────────────────────── */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
 
-        {/* Desktop sidebar */}
+        {/* Left nav */}
         <aside className="hidden md:flex w-52 flex-col shrink-0 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
 
           {/* Primary nav */}
@@ -454,10 +459,21 @@ export default function AppShell({
           </div>
         </aside>
 
-        {/* Page content */}
-        <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
-          {children}
-        </main>
+        {/* Center + right column */}
+        <div className="flex flex-1 min-h-0 min-w-0 overflow-hidden">
+
+          {/* Page content */}
+          <main className="flex-1 overflow-y-auto pb-16 md:pb-0 min-w-0">
+            {children}
+          </main>
+
+          {/* Right sidebar — only on lg+, hidden on admin/settings */}
+          {showSidebar && (
+            <aside className="hidden lg:block w-72 shrink-0 overflow-y-auto border-l border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+              {sidebar}
+            </aside>
+          )}
+        </div>
       </div>
 
       {/* ── Mobile bottom nav ─────────────────────────────── */}

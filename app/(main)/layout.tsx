@@ -1,7 +1,9 @@
 import { redirect } from 'next/navigation'
+import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import AppShell from '@/components/layout/app-shell'
+import RightSidebar from '@/components/sidebar/right-sidebar'
 
 // Authenticated app layout — wraps Feed, Groups, Events, Admin.
 // Pages outside this group (onboarding, settings, sign-in, /people) render
@@ -21,12 +23,40 @@ export default async function MainLayout({
   const admin = createAdminClient()
   const { data: profile } = await admin
     .from('profiles')
-    .select('display_name, handle, avatar_url, community_role')
+    .select('id, display_name, handle, avatar_url, community_role')
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
   // No profile row means the trigger hasn't run yet — send to onboarding.
   if (!profile) redirect('/onboarding')
 
-  return <AppShell profile={profile}>{children}</AppShell>
+  // Right sidebar streams in independently — doesn't block page render
+  const sidebar = (
+    <Suspense fallback={<RightSidebarSkeleton />}>
+      <RightSidebar
+        profileId={profile.id}
+        role={profile.community_role as any}
+      />
+    </Suspense>
+  )
+
+  return (
+    <AppShell profile={profile} sidebar={sidebar}>
+      {children}
+    </AppShell>
+  )
+}
+
+function RightSidebarSkeleton() {
+  return (
+    <div className="px-4 py-6 space-y-4">
+      {[80, 160, 128].map((h, i) => (
+        <div
+          key={i}
+          className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 animate-pulse"
+          style={{ height: h }}
+        />
+      ))}
+    </div>
+  )
 }
