@@ -152,7 +152,7 @@ export default async function SearchPage({
       </form>
 
       {/* ── Tabs ─────────────────────────────────────────────── */}
-      <div className="flex gap-1 mb-6 border-b border-gray-100 dark:border-gray-800">
+      <div className="flex gap-1 mb-6 border-b border-gray-100/80 dark:border-gray-800/50">
         {TABS.map((t) => {
           const icons = { people: Users, posts: FileText, events: CalendarDays }
           const Icon = icons[t]
@@ -262,7 +262,7 @@ export default async function SearchPage({
                 return (
                   <div
                     key={post.id}
-                    className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3"
+                    className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm px-4 py-3"
                   >
                     <div className="flex items-center gap-2.5 mb-2">
                       {a?.avatar_url ? (
@@ -320,7 +320,7 @@ export default async function SearchPage({
                 <Link
                   key={event.id}
                   href={`/events/${event.slug}`}
-                  className="flex items-start gap-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors"
+                  className="flex items-start gap-3 rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm px-4 py-3 hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors"
                 >
                   {/* Date block */}
                   <div className="shrink-0 w-10 flex flex-col items-center rounded-lg bg-gray-50 dark:bg-gray-800 py-1.5 text-center">

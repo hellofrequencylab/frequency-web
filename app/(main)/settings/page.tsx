@@ -64,7 +64,7 @@ export default function SettingsPage() {
         </h2>
         <Link
           href="/settings/profile"
-          className="flex items-center gap-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-indigo-50/30 dark:hover:bg-indigo-950/30 transition-colors"
+          className="flex items-center gap-3 rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm px-4 py-3 hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-indigo-50/30 dark:hover:bg-indigo-950/30 transition-colors"
         >
           <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-gray-50 dark:bg-gray-800 shrink-0">
             <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
@@ -84,7 +84,7 @@ export default function SettingsPage() {
         <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
           Appearance
         </h2>
-        <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800 overflow-hidden">
+        <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm divide-y divide-gray-100/80 dark:divide-gray-800/50 overflow-hidden">
           {THEME_OPTIONS.map(({ value, label, description, Icon }) => {
             const active = theme === value
             return (

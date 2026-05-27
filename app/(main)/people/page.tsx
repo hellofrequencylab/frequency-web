@@ -154,7 +154,7 @@ export default async function DirectoryPage({
 
       {/* Grid */}
       {filtered.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-800 p-12 text-center">
+        <div className="rounded-2xl border border-dashed border-gray-200/60 dark:border-gray-800/60 bg-gray-50/50 dark:bg-gray-900/50 p-12 text-center">
           <Globe className="w-8 h-8 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
           <p className="text-sm text-gray-500 dark:text-gray-400">No members match these filters.</p>
         </div>
@@ -167,7 +167,7 @@ export default async function DirectoryPage({
               <Link
                 key={p.id}
                 href={`/people/${p.handle}`}
-                className="group flex items-start gap-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 hover:border-indigo-200 dark:hover:border-indigo-800 hover:shadow-sm transition-all"
+                className="group flex items-start gap-3 rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm p-4 hover:border-indigo-200 dark:hover:border-indigo-800 hover:shadow-md transition-all"
               >
                 {p.avatar_url ? (
                   <img

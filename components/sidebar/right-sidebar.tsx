@@ -25,8 +25,8 @@ function WidgetCard({
   children: React.ReactNode
 }) {
   return (
-    <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
-      <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+    <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
+      <div className="px-4 py-3 border-b border-gray-100/80 dark:border-gray-800/50 flex items-center justify-between">
         <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
           {title}
         </h3>
@@ -102,7 +102,7 @@ async function UpcomingEventsWidget({ circleIds }: { circleIds: string[] }) {
           </Link>
         ))}
       </div>
-      <div className="px-4 py-2.5 border-t border-gray-100 dark:border-gray-800">
+      <div className="px-4 py-2.5 border-t border-gray-100/80 dark:border-gray-800/50">
         <Link
           href="/events"
           className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
@@ -176,7 +176,7 @@ async function ActiveMembersWidget({ profileId, circleIds }: { profileId: string
           </Link>
         ))}
       </div>
-      <div className="px-4 py-2.5 border-t border-gray-100 dark:border-gray-800">
+      <div className="px-4 py-2.5 border-t border-gray-100/80 dark:border-gray-800/50">
         <Link
           href="/people"
           className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
@@ -278,7 +278,7 @@ async function RecentDispatchesWidget({
           </Link>
         ))}
       </div>
-      <div className="px-4 py-2.5 border-t border-gray-100 dark:border-gray-800">
+      <div className="px-4 py-2.5 border-t border-gray-100/80 dark:border-gray-800/50">
         <Link
           href="/broadcast"
           className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
@@ -363,7 +363,7 @@ async function LeaderboardWidget({ profileId, circleIds }: { profileId: string; 
           )
         })}
       </div>
-      <div className="px-4 py-2.5 border-t border-gray-100 dark:border-gray-800">
+      <div className="px-4 py-2.5 border-t border-gray-100/80 dark:border-gray-800/50">
         <Link
           href="/crew"
           className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"

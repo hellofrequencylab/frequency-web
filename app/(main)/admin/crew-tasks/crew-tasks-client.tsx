@@ -66,7 +66,7 @@ function TaskForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/40 dark:bg-indigo-950/20">
+    <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-2xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/40 dark:bg-indigo-950/20 shadow-sm">
       <div className="sm:col-span-2">
         <label className={label}>Task name *</label>
         <input
@@ -162,7 +162,7 @@ function VerificationQueue({ items }: { items: PendingVerification[] }) {
       </h2>
       <div className="space-y-2">
         {items.map((c) => (
-          <div key={c.id} className="flex items-center gap-3 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50/40 dark:bg-amber-950/20 px-4 py-3">
+          <div key={c.id} className="flex items-center gap-3 rounded-2xl border border-amber-200 dark:border-amber-800 bg-amber-50/40 dark:bg-amber-950/20 shadow-sm px-4 py-3">
             {c.member?.avatar_url ? (
               <img src={c.member.avatar_url} alt={c.member.display_name} className="w-7 h-7 rounded-full object-cover shrink-0" />
             ) : (
@@ -268,7 +268,7 @@ export function CrewTasksClient({ tasks, pendingVerifications = [] }: { tasks: C
               isPending={isPending}
             />
           ) : (
-            <div className="flex items-center gap-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 group">
+            <div className="flex items-center gap-3 rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm px-4 py-3 group">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{task.name}</span>

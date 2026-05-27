@@ -99,12 +99,12 @@ export function PostCard({
 
   return (
     <article
-      className={`bg-white dark:bg-gray-900 rounded-xl border ${
+      className={`bg-white dark:bg-gray-900/80 rounded-2xl border shadow-sm hover:shadow-md transition-shadow ${
         isAnnouncement
-          ? 'border-amber-200 dark:border-amber-800 bg-amber-50/30 dark:bg-amber-950/10'
+          ? 'border-amber-200/70 dark:border-amber-800/50 bg-amber-50/20 dark:bg-amber-950/10'
           : post.is_pinned
-          ? 'border-indigo-200 dark:border-indigo-800'
-          : 'border-gray-200 dark:border-gray-800'
+          ? 'border-indigo-200/70 dark:border-indigo-800/50'
+          : 'border-gray-200/60 dark:border-gray-800/60'
       }`}
     >
       <div className="flex">
@@ -212,7 +212,7 @@ export function PostCard({
         </div>
 
         {/* ── Stats sidebar (desktop only) ─────────── */}
-        <div className="hidden md:flex w-44 shrink-0 flex-col gap-3 border-l border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-950/30 rounded-r-xl p-3">
+        <div className="hidden md:flex w-44 shrink-0 flex-col gap-3 border-l border-gray-100/80 dark:border-gray-800/50 bg-indigo-50/20 dark:bg-indigo-950/10 rounded-r-2xl p-3">
           {/* Post type */}
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">Type</p>

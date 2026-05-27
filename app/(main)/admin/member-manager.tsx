@@ -94,7 +94,7 @@ export function MemberManager({ members }: { members: MemberItem[] }) {
           onClick={() => setConfirmId(null)}
         >
           <div
-            className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-6 max-w-sm mx-4 w-full"
+            className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200/60 dark:border-gray-800/60 p-6 max-w-sm mx-4 w-full"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-50 mb-2">

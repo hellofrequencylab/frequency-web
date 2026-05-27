@@ -268,20 +268,20 @@ export default async function CirclePage({
 
       {/* ── About ──────────────────────────────────── */}
       {circle.about ? (
-        <div className="mb-6 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+        <div className="mb-6 rounded-2xl border border-gray-100/80 bg-gray-50 shadow-sm px-4 py-3">
           <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
             {circle.about}
           </p>
         </div>
       ) : isHost ? (
-        <div className="mb-6 rounded-xl border border-dashed border-gray-200 px-4 py-3">
+        <div className="mb-6 rounded-2xl border border-dashed border-gray-200/60 bg-gray-50/50 dark:bg-gray-900/50 px-4 py-3">
           <p className="text-xs text-gray-400">+ Add a description for your circle</p>
         </div>
       ) : null}
 
       {/* ── Host tools ─────────────────────────────── */}
       {isHost && (
-        <div className="mb-6 rounded-xl border border-indigo-100 dark:border-indigo-900/50 bg-indigo-50/40 dark:bg-indigo-950/10 px-4 py-3">
+        <div className="mb-6 rounded-2xl border border-indigo-100 dark:border-indigo-900/50 bg-indigo-50/40 dark:bg-indigo-950/10 shadow-sm px-4 py-3">
           <div className="flex items-center gap-1.5 mb-2.5">
             <Settings2 className="w-3.5 h-3.5 text-indigo-500" />
             <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
@@ -384,7 +384,7 @@ export default async function CirclePage({
       <UpcomingEventsWidget scopeIds={[circle.id]} />
 
       {/* ── Feed ───────────────────────────────────── */}
-      <section className="mt-8 border-t border-gray-100 pt-6">
+      <section className="mt-8 border-t border-gray-100/80 dark:border-gray-800/50 pt-6">
         <h2 className="text-sm font-semibold text-gray-700 mb-4">Circle Feed</h2>
         {isMember && (
           <Composer

@@ -6,23 +6,22 @@
 @variant dark (&:where(.dark, .dark *));
 
 /* ── Brand color palette ────────────────────────────────────────────────────
-   Frequency brand: charcoal/black primary, white backgrounds.
-   We remap the "indigo" scale to the brand's dark charcoal so every
-   bg-indigo-*, text-indigo-*, border-indigo-* class in the app automatically
-   uses brand colors with zero component edits required.                       */
+   Frequency brand: warm violet-indigo accents, clean backgrounds.
+   Indigo is restored to real color values so buttons, links, active states,
+   and badges have visual warmth. Charcoal text uses Tailwind's gray scale.   */
 @theme {
-  /* Charcoal scale — light to dark */
-  --color-indigo-50:  #f2f2f2;
-  --color-indigo-100: #e8e8e8;
-  --color-indigo-200: #d0d0d0;
-  --color-indigo-300: #a8a8a8;
-  --color-indigo-400: #7a7a7a;
-  --color-indigo-500: #525252;
-  --color-indigo-600: #2b2b2b;   /* primary: buttons, active states  */
-  --color-indigo-700: #1a1a1a;   /* hover / deeper                   */
-  --color-indigo-800: #111111;
-  --color-indigo-900: #0a0a0a;
-  --color-indigo-950: #050505;
+  /* Warm indigo — slightly violet-shifted for community warmth */
+  --color-indigo-50:  #eef2ff;
+  --color-indigo-100: #e0e7ff;
+  --color-indigo-200: #c7d2fe;
+  --color-indigo-300: #a5b4fc;
+  --color-indigo-400: #818cf8;
+  --color-indigo-500: #6366f1;
+  --color-indigo-600: #4f46e5;   /* primary: buttons, active states  */
+  --color-indigo-700: #4338ca;   /* hover / deeper                   */
+  --color-indigo-800: #3730a3;
+  --color-indigo-900: #312e81;
+  --color-indigo-950: #1e1b4b;
 
   /* Font */
   --font-sans: var(--font-nunito);
@@ -31,13 +30,13 @@
 
 /* ── Background / foreground tokens ────────────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #111827;
+  --background: #fafafa;
+  --foreground: #1a1a2e;
 }
 
 .dark {
-  --background: #0c0c0c;
-  --foreground: #f2f2f2;
+  --background: #0a0a0f;
+  --foreground: #f0f0f5;
 }
 
 @theme inline {

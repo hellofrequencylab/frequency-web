@@ -190,7 +190,7 @@ export default async function DispatchDetailPage({ params }: Props) {
 
         {/* Linked Challenge CTA */}
         {linkedTask && (
-          <div className="mt-10 rounded-xl border-2 border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/20 px-5 py-4">
+          <div className="mt-10 rounded-2xl border-2 border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/20 shadow-sm px-5 py-4">
             <div className="flex items-center gap-2 mb-1">
               <Zap className="w-4 h-4 text-amber-500" />
               <span className="text-xs font-black uppercase tracking-[0.12em] text-amber-600 dark:text-amber-400">
@@ -214,7 +214,7 @@ export default async function DispatchDetailPage({ params }: Props) {
         )}
 
         {/* ── Engagement bar ───────────────────────────────── */}
-        <div className="mt-10 pt-6 border-t border-gray-100 dark:border-gray-800">
+        <div className="mt-10 pt-6 border-t border-gray-100/80 dark:border-gray-800/50">
           <LikeButton
             dispatchId={id}
             initialCount={likeCount}

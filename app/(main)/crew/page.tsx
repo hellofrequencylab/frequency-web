@@ -166,7 +166,7 @@ export default async function CrewPage() {
       </div>
 
       {/* ── Season rank progression ─────────────────── */}
-      <div className="mb-8 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+      <div className="mb-8 rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm p-4">
         <div className="flex items-center justify-between mb-3">
           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
             {currentSeasonRank === 'luminary'
@@ -237,7 +237,7 @@ export default async function CrewPage() {
         </h2>
 
         {(tasks ?? []).length === 0 ? (
-          <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-700 p-10 text-center">
+          <div className="rounded-2xl border border-dashed border-gray-200/60 dark:border-gray-700/60 bg-gray-50/50 dark:bg-gray-900/50 p-10 text-center">
             <Star className="w-7 h-7 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
             <p className="text-sm text-gray-400 dark:text-gray-500">No tasks available yet.</p>
           </div>
@@ -252,10 +252,10 @@ export default async function CrewPage() {
               return (
                 <div
                   key={task.id}
-                  className={`rounded-xl border px-4 py-3 flex items-start gap-3 transition-colors ${
+                  className={`rounded-2xl border px-4 py-3 flex items-start gap-3 shadow-sm transition-colors ${
                     isDone
                       ? 'border-green-100 dark:border-green-900 bg-green-50/50 dark:bg-green-950/30'
-                      : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900'
+                      : 'border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900'
                   }`}
                 >
                   <div className={`flex items-center justify-center w-8 h-8 rounded-lg shrink-0 ${
@@ -340,7 +340,7 @@ export default async function CrewPage() {
               <span className="font-normal text-gray-400 dark:text-gray-500">— {circleName}</span>
             )}
           </h2>
-          <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
+          <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
             {leaderboard.map((member, i) => {
               const isSelf = member.profileId === profile.id
               const memberRankDef = getRankDef(member.seasonRank)
@@ -354,7 +354,7 @@ export default async function CrewPage() {
                 <div
                   key={member.profileId}
                   className={`flex items-center gap-3 px-4 py-3 ${
-                    i < leaderboard.length - 1 ? 'border-b border-gray-100 dark:border-gray-800' : ''
+                    i < leaderboard.length - 1 ? 'border-b border-gray-100/80 dark:border-gray-800/50' : ''
                   } ${isSelf ? 'bg-indigo-50/60 dark:bg-indigo-950/30' : ''}`}
                 >
                   <span className={`text-sm font-bold w-5 shrink-0 ${rankColor}`}>{i + 1}</span>
@@ -411,7 +411,7 @@ function StatCard({
   colorCls: string
 }) {
   return (
-    <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-3">
+    <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm p-3">
       <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2 ${colorCls}`}>
         <Icon className="w-4 h-4" />
       </div>
