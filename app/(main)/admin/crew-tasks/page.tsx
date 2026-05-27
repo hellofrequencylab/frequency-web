@@ -19,16 +19,16 @@ export default async function AdminCrewTasksPage() {
 
   const { data: tasks } = await admin
     .from('crew_tasks')
-    .select('id, name, task_type, points_value, is_repeatable, requires_verification')
+    .select('id, name, task_type, zaps_value, is_repeatable, requires_verification')
     .order('task_type')
-    .order('points_value', { ascending: false })
+    .order('zaps_value', { ascending: false })
 
   return (
     <div className="px-8 py-8">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Crew Tasks</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Define the tasks members can complete to earn points. Changes apply immediately across the app.
+          Define the tasks members can complete to earn zaps. Changes apply immediately across the app.
         </p>
       </div>
 

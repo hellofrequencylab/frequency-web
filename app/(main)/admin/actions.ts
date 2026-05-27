@@ -306,7 +306,7 @@ export async function createCrewTask(fd: FormData) {
   const { error } = await admin.from('crew_tasks').insert({
     name:                  (fd.get('name') as string).trim(),
     task_type:             fd.get('task_type') as string,
-    points_value:          parseInt(fd.get('points_value') as string) || 10,
+    zaps_value:            parseInt(fd.get('zaps_value') as string) || 10,
     is_repeatable:         fd.get('is_repeatable') === 'true',
     requires_verification: fd.get('requires_verification') === 'true',
   })
@@ -322,7 +322,7 @@ export async function updateCrewTask(id: string, fd: FormData) {
   const { error } = await admin.from('crew_tasks').update({
     name:                  (fd.get('name') as string).trim(),
     task_type:             fd.get('task_type') as string,
-    points_value:          parseInt(fd.get('points_value') as string) || 10,
+    zaps_value:            parseInt(fd.get('zaps_value') as string) || 10,
     is_repeatable:         fd.get('is_repeatable') === 'true',
     requires_verification: fd.get('requires_verification') === 'true',
   }).eq('id', id)

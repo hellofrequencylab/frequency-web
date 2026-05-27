@@ -12,7 +12,7 @@ type CrewTask = {
   id: string
   name: string
   task_type: string
-  points_value: number
+  zaps_value: number
   is_repeatable: boolean
   requires_verification: boolean
 }
@@ -49,7 +49,7 @@ function TaskForm({
 }) {
   const [name,    setName]    = useState(initial?.name ?? '')
   const [type,    setType]    = useState(initial?.task_type ?? 'attendance')
-  const [points,  setPoints]  = useState(String(initial?.points_value ?? 10))
+  const [points,  setPoints]  = useState(String(initial?.zaps_value ?? 10))
   const [repeat,  setRepeat]  = useState(initial?.is_repeatable ?? false)
   const [verify,  setVerify]  = useState(initial?.requires_verification ?? false)
 
@@ -58,7 +58,7 @@ function TaskForm({
     const fd = new FormData()
     fd.set('name', name)
     fd.set('task_type', type)
-    fd.set('points_value', points)
+    fd.set('zaps_value', points)
     fd.set('is_repeatable', String(repeat))
     fd.set('requires_verification', String(verify))
     onSave(fd)
@@ -89,7 +89,7 @@ function TaskForm({
       </div>
 
       <div>
-        <label className={label}>Points</label>
+        <label className={label}>Zaps</label>
         <input
           type="number"
           min="1"
@@ -211,7 +211,7 @@ export function CrewTasksClient({ tasks }: { tasks: CrewTask[] }) {
               </div>
 
               <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400 shrink-0">
-                +{task.points_value} pts
+                +{task.zaps_value} zaps
               </span>
 
               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

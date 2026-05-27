@@ -39,7 +39,7 @@ export default async function DispatchDetailPage({ params }: Props) {
       .select(`
         id, title, body, audience_scope, audience_id, status, dispatch_type, published_at, created_at,
         author:profiles!author_id ( id, display_name, handle, avatar_url, community_role ),
-        linked_task:crew_tasks!linked_task_id ( id, name, points_value, task_type )
+        linked_task:crew_tasks!linked_task_id ( id, name, zaps_value, task_type )
       `)
       .eq('id', id)
       .eq('status', 'published')
@@ -201,7 +201,7 @@ export default async function DispatchDetailPage({ params }: Props) {
             <div className="flex items-center justify-between">
               <span className="text-xs text-gray-500 capitalize">{linkedTask.task_type}</span>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-black text-amber-500">{linkedTask.points_value} pts</span>
+                <span className="text-sm font-black text-amber-500">{(linkedTask as any).zaps_value} zaps</span>
                 <Link
                   href="/crew"
                   className="inline-flex items-center gap-1 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white hover:bg-amber-600 transition-colors"

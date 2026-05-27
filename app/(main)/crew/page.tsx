@@ -4,15 +4,22 @@ import { Star, CheckCircle, Zap, Trophy } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 
-// ── Tier definitions ──────────────────────────────────────────────────────────
+// ── Season rank definitions ───────────────────────────────────────────────────
 
-const TIERS = [
-  { role: 'member', label: 'Member', minPoints: 0,    color: 'bg-gray-400'    },
-  { role: 'crew',   label: 'Crew',   minPoints: 100,  color: 'bg-indigo-500'  },
-  { role: 'host',   label: 'Host',   minPoints: 500,  color: 'bg-green-500'   },
-  { role: 'guide',  label: 'Guide',  minPoints: 1500, color: 'bg-purple-500'  },
-  { role: 'mentor', label: 'Mentor', minPoints: 5000, color: 'bg-amber-500'   },
+const SEASON_RANKS = [
+  { rank: 'crew',        label: 'Crew',        minZaps: 0,    color: 'bg-gray-400',    text: 'text-gray-500'    },
+  { rank: 'deshi',       label: 'Deshi',       minZaps: 100,  color: 'bg-indigo-400',  text: 'text-indigo-500'  },
+  { rank: 'sempai',      label: 'Sempai',      minZaps: 300,  color: 'bg-indigo-500',  text: 'text-indigo-600'  },
+  { rank: 'sensei',      label: 'Sensei',      minZaps: 750,  color: 'bg-purple-500',  text: 'text-purple-600'  },
+  { rank: 'sifu',        label: 'Sifu',        minZaps: 1500, color: 'bg-amber-500',   text: 'text-amber-600'   },
+  { rank: 'bodhisattva', label: 'Bodhisattva', minZaps: 3000, color: 'bg-rose-500',    text: 'text-rose-600'    },
 ] as const
+
+type SeasonRank = typeof SEASON_RANKS[number]['rank']
+
+function getRankDef(rank: SeasonRank) {
+  return SEASON_RANKS.find(r => r.rank === rank) ?? SEASON_RANKS[0]
+}
 
 const TASK_TYPE_LABEL: Record<string, string> = {
   attendance:   'Attendance',
@@ -24,43 +31,50 @@ const TASK_TYPE_LABEL: Record<string, string> = {
 }
 
 function getInitials(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0].toUpperCase())
-    .join('')
+  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('')
 }
 
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function CrewPage() {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
   if (!user) notFound()
 
   const admin = createAdminClient()
 
   const { data: profile } = await admin
     .from('profiles')
-    .select('id, display_name, handle, community_role, avatar_url')
+    .select('id, display_name, handle, community_role, avatar_url, current_season_rank, current_season_zaps, season_challenges_complete')
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
   if (!profile) notFound()
 
+  const currentSeasonZaps: number = (profile as any).current_season_zaps ?? 0
+  const currentSeasonRank: SeasonRank = ((profile as any).current_season_rank ?? 'crew') as SeasonRank
+  const challengesComplete: boolean  = (profile as any).season_challenges_complete ?? false
+  const rankDef = getRankDef(currentSeasonRank)
+
+  // Next rank for progress bar
+  const rankIdx  = SEASON_RANKS.findIndex(r => r.rank === currentSeasonRank)
+  const nextRank = rankIdx < SEASON_RANKS.length - 1 ? SEASON_RANKS[rankIdx + 1] : null
+  const rankProgress = nextRank
+    ? Math.min(100, Math.round(
+        ((currentSeasonZaps - rankDef.minZaps) / (nextRank.minZaps - rankDef.minZaps)) * 100
+      ))
+    : 100
+
   // Available tasks
   const { data: tasks } = await admin
     .from('crew_tasks')
-    .select('id, name, task_type, points_value, is_repeatable, requires_verification')
-    .order('points_value', { ascending: false })
+    .select('id, name, task_type, zaps_value, is_repeatable, requires_verification')
+    .order('zaps_value', { ascending: false })
 
-  // My completions
+  // My completions (all-time, for task state)
   const { data: completions } = await admin
     .from('crew_completions')
-    .select('id, task_id, points_earned, completed_at, verified_by')
+    .select('id, task_id, zaps_earned, completed_at, verified_by')
     .eq('profile_id', profile.id)
     .order('completed_at', { ascending: false })
 
@@ -70,47 +84,25 @@ export default async function CrewPage() {
     completionsByTask[c.task_id]!.push(c)
   })
 
-  const totalPoints = (completions ?? []).reduce(
-    (sum, c) => sum + (c.points_earned ?? 0),
-    0
-  )
   const completedTaskCount = new Set((completions ?? []).map((c) => c.task_id)).size
 
-  // Tier progress
-  const currentTier =
-    [...TIERS].reverse().find((t) => totalPoints >= t.minPoints) ?? TIERS[0]
-  const nextTierIndex = TIERS.findIndex((t) => t.role === currentTier.role) + 1
-  const nextTier = nextTierIndex < TIERS.length ? TIERS[nextTierIndex] : null
-  const tierProgress = nextTier
-    ? Math.min(
-        100,
-        Math.round(
-          ((totalPoints - currentTier.minPoints) /
-            (nextTier.minPoints - currentTier.minPoints)) *
-            100
-        )
-      )
-    : 100
-
-  // My first active circle membership (for crew lead badge + leaderboard scope)
+  // My first active circle membership
   const { data: membership } = await admin
     .from('memberships')
-    .select(
-      `circle_id, is_crew_lead,
-       circle:circles!circle_id ( id, name, slug )`
-    )
+    .select(`circle_id, is_crew_lead, circle:circles!circle_id ( id, name, slug )`)
     .eq('profile_id', profile.id)
     .eq('status', 'active')
     .limit(1)
     .maybeSingle()
 
-  // Circle leaderboard — top 5 in same circle
+  // Season leaderboard — top 5 in same circle by current_season_zaps
   let leaderboard: Array<{
     profileId: string
     displayName: string
     handle: string
     avatarUrl: string | null
-    totalPoints: number
+    seasonZaps: number
+    seasonRank: SeasonRank
   }> = []
 
   if (membership?.circle_id) {
@@ -123,22 +115,10 @@ export default async function CrewPage() {
     const memberIds = (circleMembers ?? []).map((m) => m.profile_id as string)
 
     if (memberIds.length > 0) {
-      const [{ data: allCompletions }, { data: profileData }] = await Promise.all([
-        admin
-          .from('crew_completions')
-          .select('profile_id, points_earned')
-          .in('profile_id', memberIds),
-        admin
-          .from('profiles')
-          .select('id, display_name, handle, avatar_url')
-          .in('id', memberIds),
-      ])
-
-      const pointsByProfile: Record<string, number> = {}
-      ;(allCompletions ?? []).forEach((c) => {
-        pointsByProfile[c.profile_id] =
-          (pointsByProfile[c.profile_id] ?? 0) + (c.points_earned ?? 0)
-      })
+      const { data: profileData } = await admin
+        .from('profiles')
+        .select('id, display_name, handle, avatar_url, current_season_zaps, current_season_rank')
+        .in('id', memberIds)
 
       leaderboard = (profileData ?? [])
         .map((p) => ({
@@ -146,9 +126,10 @@ export default async function CrewPage() {
           displayName: p.display_name,
           handle:      p.handle,
           avatarUrl:   p.avatar_url,
-          totalPoints: pointsByProfile[p.id] ?? 0,
+          seasonZaps:  (p as any).current_season_zaps ?? 0,
+          seasonRank:  ((p as any).current_season_rank ?? 'crew') as SeasonRank,
         }))
-        .sort((a, b) => b.totalPoints - a.totalPoints)
+        .sort((a, b) => b.seasonZaps - a.seasonZaps)
         .slice(0, 5)
     }
   }
@@ -168,7 +149,7 @@ export default async function CrewPage() {
           )}
         </div>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Track your contributions and progress in the community.
+          Track your contributions and season progress.
           {circleName && (
             <> You&apos;re in <span className="font-medium text-gray-700 dark:text-gray-300">{circleName}</span>.</>
           )}
@@ -178,9 +159,9 @@ export default async function CrewPage() {
       {/* ── Stats ──────────────────────────────────── */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         <StatCard
-          label="Points"
-          value={totalPoints.toLocaleString()}
-          Icon={Star}
+          label="Zaps"
+          value={currentSeasonZaps.toLocaleString()}
+          Icon={Zap}
           colorCls="text-amber-600 bg-amber-50 dark:bg-amber-950 dark:text-amber-400"
         />
         <StatCard
@@ -190,46 +171,73 @@ export default async function CrewPage() {
           colorCls="text-green-600 bg-green-50 dark:bg-green-950 dark:text-green-400"
         />
         <StatCard
-          label="Tier"
-          value={currentTier.label}
-          Icon={Zap}
+          label="Season Rank"
+          value={rankDef.label}
+          Icon={Star}
           colorCls="text-indigo-600 bg-indigo-50 dark:bg-indigo-950 dark:text-indigo-400"
         />
       </div>
 
-      {/* ── Tier progress ──────────────────────────── */}
+      {/* ── Season rank progression ─────────────────── */}
       <div className="mb-8 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-3">
           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            {nextTier ? `Progress to ${nextTier.label}` : 'Max tier reached'}
+            {currentSeasonRank === 'bodhisattva'
+              ? 'Maximum rank achieved'
+              : currentSeasonRank === 'sifu' && !challengesComplete
+              ? `Progress to Bodhisattva — complete season challenges to unlock`
+              : nextRank
+              ? `Progress to ${nextRank.label}`
+              : 'Max rank'}
           </span>
-          {nextTier && (
+          {nextRank && currentSeasonRank !== 'sifu' && (
             <span className="text-xs text-gray-400 dark:text-gray-500">
-              {totalPoints.toLocaleString()} / {nextTier.minPoints.toLocaleString()} pts
+              {currentSeasonZaps.toLocaleString()} / {nextRank.minZaps.toLocaleString()} zaps
             </span>
           )}
         </div>
-        <div className="h-2 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
+
+        {/* Progress bar */}
+        <div className="h-2 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden mb-4">
           <div
-            className={`h-full rounded-full transition-all ${currentTier.color}`}
-            style={{ width: `${tierProgress}%` }}
+            className={`h-full rounded-full transition-all ${rankDef.color}`}
+            style={{ width: `${rankProgress}%` }}
           />
         </div>
-        {/* Tier milestones */}
-        <div className="flex justify-between mt-3">
-          {TIERS.map((t) => (
-            <div key={t.role} className="flex flex-col items-center gap-1">
-              <div
-                className={`w-2.5 h-2.5 rounded-full ${
-                  totalPoints >= t.minPoints ? t.color : 'bg-gray-200 dark:bg-gray-700'
-                }`}
-              />
-              <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">
-                {t.label}
-              </span>
-            </div>
-          ))}
+
+        {/* Rank milestones */}
+        <div className="flex justify-between">
+          {SEASON_RANKS.map((r) => {
+            const achieved = currentSeasonZaps >= r.minZaps &&
+              (r.rank !== 'bodhisattva' || challengesComplete)
+            const isCurrent = r.rank === currentSeasonRank
+            return (
+              <div key={r.rank} className="flex flex-col items-center gap-1">
+                <div
+                  className={`w-2.5 h-2.5 rounded-full ring-2 transition-all ${
+                    isCurrent
+                      ? `${r.color} ring-current ring-offset-1`
+                      : achieved
+                      ? `${r.color} ring-transparent`
+                      : 'bg-gray-200 dark:bg-gray-700 ring-transparent'
+                  }`}
+                />
+                <span className={`text-[9px] font-semibold leading-none ${
+                  isCurrent ? r.text : 'text-gray-400 dark:text-gray-500'
+                }`}>
+                  {r.label}
+                </span>
+              </div>
+            )
+          })}
         </div>
+
+        {/* Bodhisattva gate note */}
+        {currentSeasonRank === 'sifu' && !challengesComplete && (
+          <p className="mt-3 text-[11px] text-gray-400 dark:text-gray-500 text-center">
+            Complete all season challenges to unlock Bodhisattva rank.
+          </p>
+        )}
       </div>
 
       {/* ── Tasks ──────────────────────────────────── */}
@@ -263,13 +271,9 @@ export default async function CrewPage() {
                       : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900'
                   }`}
                 >
-                  <div
-                    className={`flex items-center justify-center w-8 h-8 rounded-lg shrink-0 ${
-                      isDone
-                        ? 'bg-green-100 dark:bg-green-900'
-                        : 'bg-gray-50 dark:bg-gray-800'
-                    }`}
-                  >
+                  <div className={`flex items-center justify-center w-8 h-8 rounded-lg shrink-0 ${
+                    isDone ? 'bg-green-100 dark:bg-green-900' : 'bg-gray-50 dark:bg-gray-800'
+                  }`}>
                     {isDone ? (
                       <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
                     ) : (
@@ -279,13 +283,9 @@ export default async function CrewPage() {
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span
-                        className={`text-sm font-medium ${
-                          isDone
-                            ? 'text-green-800 dark:text-green-300'
-                            : 'text-gray-900 dark:text-gray-50'
-                        }`}
-                      >
+                      <span className={`text-sm font-medium ${
+                        isDone ? 'text-green-800 dark:text-green-300' : 'text-gray-900 dark:text-gray-50'
+                      }`}>
                         {task.name}
                       </span>
                       <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 font-medium">
@@ -307,9 +307,7 @@ export default async function CrewPage() {
                       <p className="text-xs text-green-600 dark:text-green-400 mt-0.5">
                         Completed{' '}
                         {new Date(lastCompletion.completed_at).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day:   'numeric',
-                          year:  'numeric',
+                          month: 'short', day: 'numeric', year: 'numeric',
                         })}
                         {isVerified
                           ? ' · Verified'
@@ -321,13 +319,14 @@ export default async function CrewPage() {
                     )}
                   </div>
 
-                  <span
-                    className={`text-sm font-semibold shrink-0 ${
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    <Zap className={`w-3.5 h-3.5 ${isDone ? 'text-green-500 dark:text-green-400' : 'text-amber-400'}`} />
+                    <span className={`text-sm font-semibold ${
                       isDone ? 'text-green-700 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'
-                    }`}
-                  >
-                    +{task.points_value}
-                  </span>
+                    }`}>
+                      +{(task as any).zaps_value}
+                    </span>
+                  </div>
                 </div>
               )
             })}
@@ -340,7 +339,7 @@ export default async function CrewPage() {
         <section>
           <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-1.5">
             <Trophy className="w-4 h-4 text-amber-500" />
-            Circle Leaderboard
+            Season Leaderboard
             {circleName && (
               <span className="font-normal text-gray-400 dark:text-gray-500">— {circleName}</span>
             )}
@@ -348,32 +347,24 @@ export default async function CrewPage() {
           <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
             {leaderboard.map((member, i) => {
               const isSelf = member.profileId === profile.id
+              const memberRankDef = getRankDef(member.seasonRank)
               const rankColor =
-                i === 0
-                  ? 'text-amber-500'
-                  : i === 1
-                  ? 'text-gray-400'
-                  : i === 2
-                  ? 'text-orange-400'
-                  : 'text-gray-300 dark:text-gray-600'
+                i === 0 ? 'text-amber-500'
+                : i === 1 ? 'text-gray-400'
+                : i === 2 ? 'text-orange-400'
+                : 'text-gray-300 dark:text-gray-600'
 
               return (
                 <div
                   key={member.profileId}
                   className={`flex items-center gap-3 px-4 py-3 ${
-                    i < leaderboard.length - 1
-                      ? 'border-b border-gray-100 dark:border-gray-800'
-                      : ''
+                    i < leaderboard.length - 1 ? 'border-b border-gray-100 dark:border-gray-800' : ''
                   } ${isSelf ? 'bg-indigo-50/60 dark:bg-indigo-950/30' : ''}`}
                 >
                   <span className={`text-sm font-bold w-5 shrink-0 ${rankColor}`}>{i + 1}</span>
 
                   {member.avatarUrl ? (
-                    <img
-                      src={member.avatarUrl}
-                      alt={member.displayName}
-                      className="w-7 h-7 rounded-full object-cover shrink-0"
-                    />
+                    <img src={member.avatarUrl} alt={member.displayName} className="w-7 h-7 rounded-full object-cover shrink-0" />
                   ) : (
                     <div className="w-7 h-7 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 text-xs font-semibold flex items-center justify-center shrink-0 select-none">
                       {getInitials(member.displayName)}
@@ -384,23 +375,25 @@ export default async function CrewPage() {
                     <Link
                       href={`/people/${member.handle}`}
                       className={`text-sm font-medium truncate hover:underline ${
-                        isSelf
-                          ? 'text-indigo-700 dark:text-indigo-300'
-                          : 'text-gray-900 dark:text-gray-50'
+                        isSelf ? 'text-indigo-700 dark:text-indigo-300' : 'text-gray-900 dark:text-gray-50'
                       }`}
                     >
                       {member.displayName}
-                      {isSelf && (
-                        <span className="ml-1 text-xs text-indigo-400 dark:text-indigo-500 font-normal">
-                          (you)
-                        </span>
-                      )}
+                      {isSelf && <span className="ml-1 text-xs text-indigo-400 dark:text-indigo-500 font-normal">(you)</span>}
                     </Link>
                   </div>
 
-                  <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 shrink-0">
-                    {member.totalPoints.toLocaleString()} pts
-                  </span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${memberRankDef.color} text-white`}>
+                      {memberRankDef.label}
+                    </span>
+                    <div className="flex items-center gap-0.5">
+                      <Zap className="w-3 h-3 text-amber-400" />
+                      <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        {member.seasonZaps.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               )
             })}
@@ -414,10 +407,7 @@ export default async function CrewPage() {
 // ── Stat card ────────────────────────────────────────────────────────────────
 
 function StatCard({
-  label,
-  value,
-  Icon,
-  colorCls,
+  label, value, Icon, colorCls,
 }: {
   label:    string
   value:    string

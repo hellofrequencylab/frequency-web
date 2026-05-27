@@ -110,8 +110,8 @@ export default async function BroadcastPage() {
   // Active crew tasks (5)
   const { data: tasks } = await admin
     .from('crew_tasks')
-    .select('id, name, points_value, task_type')
-    .order('points_value', { ascending: false })
+    .select('id, name, zaps_value, task_type')
+    .order('zaps_value', { ascending: false })
     .limit(5)
 
   return (
@@ -198,7 +198,7 @@ export default async function BroadcastPage() {
                   <li key={t.id}>
                     <Link href="/crew" className="flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                       <span className="text-xs text-gray-700 dark:text-gray-300 line-clamp-1">{t.name}</span>
-                      <span className="text-[11px] font-semibold text-amber-500 shrink-0 ml-2">{t.points_value}pts</span>
+                      <span className="text-[11px] font-semibold text-amber-500 shrink-0 ml-2">{(t as any).zaps_value} zaps</span>
                     </Link>
                   </li>
                 ))}

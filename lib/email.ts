@@ -155,7 +155,7 @@ function welcomeHtml({ displayName }: { displayName: string }): string {
       <li><a href="${BASE_URL}/circles" style="color:#4f46e5;">Circles</a> — your local group</li>
       <li><a href="${BASE_URL}/events" style="color:#4f46e5;">Events</a> — what's on near you</li>
       <li><a href="${BASE_URL}/broadcast" style="color:#4f46e5;">Broadcast</a> — announcements from your community</li>
-      <li><a href="${BASE_URL}/crew" style="color:#4f46e5;">Crew</a> — earn points for showing up</li>
+      <li><a href="${BASE_URL}/crew" style="color:#4f46e5;">Crew</a> — earn zaps for showing up</li>
     </ul>
   `)
 }
@@ -171,7 +171,7 @@ A few things to explore:
 - Circles (your local group): ${BASE_URL}/circles
 - Events (what's on near you): ${BASE_URL}/events
 - Broadcast (announcements): ${BASE_URL}/broadcast
-- Crew (earn points): ${BASE_URL}/crew
+- Crew (earn zaps): ${BASE_URL}/crew
 
 See you out there.
 — The Frequency Team
