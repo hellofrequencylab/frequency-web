@@ -85,7 +85,19 @@ export default async function AdminDispatchesPage() {
       </div>
 
       <DispatchesClient
-        dispatches={(dispatches ?? []) as any}
+        dispatches={(dispatches ?? []) as unknown as Array<{
+          id: string
+          title: string
+          excerpt: string | null
+          dispatch_type: 'post' | 'poll' | 'challenge' | 'article'
+          audience_scope: 'circle' | 'hub' | 'nexus'
+          audience_id: string
+          status: 'draft' | 'published'
+          published_at: string | null
+          scheduled_for: string | null
+          created_at: string
+          linked_task: { id: string; name: string } | null
+        }>}
         role={role}
         circles={circles}
         hubs={hubs}

@@ -132,12 +132,18 @@ async function ActiveMembersWidget({ profileId, circleIds }: { profileId: string
     .order('joined_at', { ascending: false })
     .limit(30)
 
+  type MemberRow = {
+    profile_id: string
+    joined_at: string
+    profile: { id: string; display_name: string; handle: string; avatar_url: string | null }
+  }
+
   const seen = new Set<string>()
-  const members: any[] = []
+  const members: MemberRow[] = []
   for (const row of rawRows ?? []) {
     if (!seen.has(row.profile_id)) {
       seen.add(row.profile_id)
-      members.push(row)
+      members.push(row as unknown as MemberRow)
       if (members.length >= 8) break
     }
   }
@@ -147,7 +153,7 @@ async function ActiveMembersWidget({ profileId, circleIds }: { profileId: string
   return (
     <WidgetCard title="Members">
       <div className="p-2">
-        {members.map((m: any) => (
+        {members.map((m: MemberRow) => (
           <Link
             key={m.profile_id}
             href={`/people/${m.profile.handle}`}
@@ -198,41 +204,49 @@ async function RecentDispatchesWidget({
   let nexusIds: string[] = []
   if (circleIds.length > 0) {
     const { data: circles } = await admin.from('circles').select('hub_id').in('id', circleIds)
-    hubIds = (circles ?? []).map((c: any) => c.hub_id).filter(Boolean) as string[]
+    hubIds = (circles ?? []).map((c: { hub_id: string | null }) => c.hub_id).filter(Boolean) as string[]
   }
   if (hubIds.length > 0) {
     const { data: hubs } = await admin.from('hubs').select('nexus_id').in('id', hubIds)
-    nexusIds = (hubs ?? []).map((h: any) => h.nexus_id).filter(Boolean) as string[]
+    nexusIds = (hubs ?? []).map((h: { nexus_id: string | null }) => h.nexus_id).filter(Boolean) as string[]
   }
 
   const select = `id, title, audience_scope, published_at,
     author:profiles!author_id ( display_name ),
     linked_task:crew_tasks!linked_task_id ( id, name )`
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const promises: any[] = [
+  type DispatchRow = {
+    id: string
+    title: string
+    audience_scope: string
+    published_at: string
+    author: { display_name: string } | null
+    linked_task: { id: string; name: string } | null
+  }
+
+  const promises: Promise<{ data: DispatchRow[] | null }>[] = [
     admin.from('dispatches').select(select).eq('status', 'published').eq('author_id', profileId)
-      .order('published_at', { ascending: false }).limit(5),
+      .order('published_at', { ascending: false }).limit(5) as unknown as Promise<{ data: DispatchRow[] | null }>,
   ]
   if (circleIds.length > 0)
     promises.push(admin.from('dispatches').select(select).eq('status', 'published')
       .eq('audience_scope', 'circle').in('audience_id', circleIds)
-      .order('published_at', { ascending: false }).limit(5))
+      .order('published_at', { ascending: false }).limit(5) as unknown as Promise<{ data: DispatchRow[] | null }>)
   if (hubIds.length > 0)
     promises.push(admin.from('dispatches').select(select).eq('status', 'published')
       .eq('audience_scope', 'hub').in('audience_id', hubIds)
-      .order('published_at', { ascending: false }).limit(5))
+      .order('published_at', { ascending: false }).limit(5) as unknown as Promise<{ data: DispatchRow[] | null }>)
   if (nexusIds.length > 0)
     promises.push(admin.from('dispatches').select(select).eq('status', 'published')
       .eq('audience_scope', 'nexus').in('audience_id', nexusIds)
-      .order('published_at', { ascending: false }).limit(5))
+      .order('published_at', { ascending: false }).limit(5) as unknown as Promise<{ data: DispatchRow[] | null }>)
 
   const results = await Promise.all(promises)
-  const combined = results.flatMap((r: any) => r.data ?? [])
+  const combined = results.flatMap((r) => r.data ?? [])
   const seen = new Set<string>()
   const dispatches = combined
-    .filter((d: any) => { if (seen.has(d.id)) return false; seen.add(d.id); return true })
-    .sort((a: any, b: any) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime())
+    .filter((d: DispatchRow) => { if (seen.has(d.id)) return false; seen.add(d.id); return true })
+    .sort((a: DispatchRow, b: DispatchRow) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime())
     .slice(0, 5)
 
   if (dispatches.length === 0) return null
@@ -240,7 +254,7 @@ async function RecentDispatchesWidget({
   return (
     <WidgetCard title="Dispatches">
       <div className="divide-y divide-gray-50 dark:divide-gray-800">
-        {dispatches.map((d: any) => (
+        {dispatches.map((d: DispatchRow) => (
           <Link
             key={d.id}
             href={`/broadcast/${d.id}`}
@@ -290,7 +304,7 @@ async function LeaderboardWidget({ profileId, circleIds }: { profileId: string; 
     .in('circle_id', circleIds)
     .eq('status', 'active')
 
-  const memberIds = [...new Set((circleMembers ?? []).map((m: any) => m.profile_id as string))]
+  const memberIds = [...new Set((circleMembers ?? []).map((m: { profile_id: string }) => m.profile_id as string))]
   if (memberIds.length === 0) return null
 
   const { data: profiles } = await admin
@@ -373,7 +387,7 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
     .eq('profile_id', profileId)
     .eq('status', 'active')
 
-  const circleIds = (myMemberships ?? []).map((m: any) => m.circle_id as string)
+  const circleIds = (myMemberships ?? []).map((m: { circle_id: string }) => m.circle_id as string)
 
   const isCrew    = ['crew', 'host', 'guide', 'mentor', 'janitor'].includes(role)
   const isHost    = ['host', 'guide', 'mentor', 'janitor'].includes(role)

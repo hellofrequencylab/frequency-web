@@ -95,7 +95,7 @@ export default async function ChannelsPage() {
         .maybeSingle()
 
       if (membership) {
-        const m = membership as any
+        const m = membership as unknown as { circle: { hub: { id: string; nexus: { id: string; outpost: { id: string } | null } | null } | null } | null }
         myHubId = m.circle?.hub?.id ?? null
         myNexusId = m.circle?.hub?.nexus?.id ?? null
         myOutpostId = m.circle?.hub?.nexus?.outpost?.id ?? null

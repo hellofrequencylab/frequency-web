@@ -34,10 +34,15 @@ export default async function AdminEventsPage() {
     .select('id')
     .eq('host_id', profile.id)
 
-  const circleIds = (hostedCircles ?? []).map((c: any) => c.id)
+  type EventRow = {
+    id: string; title: string; slug: string; starts_at: string; ends_at: string | null;
+    location: string | null; is_cancelled: boolean; host: { display_name: string } | null;
+  }
+
+  const circleIds = (hostedCircles ?? []).map((c: { id: string }) => c.id)
 
   // Also events where user is the host directly
-  let events: any[] = []
+  let events: EventRow[] = []
 
   if (circleIds.length > 0) {
     const { data } = await admin
@@ -46,7 +51,7 @@ export default async function AdminEventsPage() {
                host:profiles!host_id ( display_name )`)
       .in('scope_id', circleIds)
       .order('starts_at', { ascending: false })
-    events = data ?? []
+    events = (data ?? []) as unknown as EventRow[]
   }
 
   // Also include events hosted directly by this profile (not scoped to their circles)
@@ -58,15 +63,15 @@ export default async function AdminEventsPage() {
     .order('starts_at', { ascending: false })
 
   // Merge, dedupe
-  const seen = new Set(events.map((e: any) => e.id))
-  for (const e of directHosted ?? []) {
+  const seen = new Set(events.map((e) => e.id))
+  for (const e of (directHosted ?? []) as unknown as EventRow[]) {
     if (!seen.has(e.id)) events.push(e)
   }
   events.sort((a, b) => new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime())
 
   const now = new Date()
-  const upcoming = events.filter((e: any) => new Date(e.starts_at) >= now)
-  const past     = events.filter((e: any) => new Date(e.starts_at) < now)
+  const upcoming = events.filter((e) => new Date(e.starts_at) >= now)
+  const past     = events.filter((e) => new Date(e.starts_at) < now)
 
   return (
     <div className="px-8 py-8">
@@ -91,7 +96,7 @@ export default async function AdminEventsPage() {
         <section className="mb-8">
           <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-600 mb-3">Upcoming</h2>
           <div className="space-y-2">
-            {upcoming.map((event: any) => (
+            {upcoming.map((event) => (
               <EventRow key={event.id} event={event} />
             ))}
           </div>
@@ -103,7 +108,7 @@ export default async function AdminEventsPage() {
         <section>
           <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-600 mb-3">Past</h2>
           <div className="space-y-2 opacity-70">
-            {past.slice(0, 20).map((event: any) => (
+            {past.slice(0, 20).map((event) => (
               <EventRow key={event.id} event={event} />
             ))}
           </div>
@@ -120,7 +125,7 @@ export default async function AdminEventsPage() {
   )
 }
 
-function EventRow({ event }: { event: any }) {
+function EventRow({ event }: { event: { id: string; title: string; slug: string; starts_at: string; ends_at: string | null; location: string | null; is_cancelled: boolean; host: { display_name: string } | null } }) {
   return (
     <div className="flex items-center gap-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3">
       {/* Date chip */}

@@ -36,11 +36,11 @@ export default async function CrewPage() {
 
   if (!profile) notFound()
 
-  const isCrew = ['crew', 'host', 'guide', 'mentor', 'janitor'].includes((profile as any).community_role ?? '')
+  const isCrew = ['crew', 'host', 'guide', 'mentor', 'janitor'].includes((profile as { community_role: string }).community_role ?? '')
 
-  const currentSeasonZaps: number = (profile as any).current_season_zaps ?? 0
-  const currentSeasonRank: SeasonRank = ((profile as any).current_season_rank ?? 'ghost') as SeasonRank
-  const challengesComplete: boolean  = (profile as any).season_challenges_complete ?? false
+  const currentSeasonZaps: number = (profile as { current_season_zaps: number }).current_season_zaps ?? 0
+  const currentSeasonRank: SeasonRank = ((profile as { current_season_rank: string | null }).current_season_rank ?? 'ghost') as SeasonRank
+  const challengesComplete: boolean = (profile as { season_challenges_complete: boolean }).season_challenges_complete ?? false
   const rankDef = getRankDef(currentSeasonRank)
 
   // Next rank for progress bar
@@ -113,16 +113,16 @@ export default async function CrewPage() {
           displayName: p.display_name,
           handle:      p.handle,
           avatarUrl:   p.avatar_url,
-          seasonZaps:  (p as any).current_season_zaps ?? 0,
-          seasonRank:  ((p as any).current_season_rank ?? 'ghost') as SeasonRank,
+          seasonZaps:  (p as { current_season_zaps: number }).current_season_zaps ?? 0,
+          seasonRank:  ((p as { current_season_rank: string | null }).current_season_rank ?? 'ghost') as SeasonRank,
         }))
         .sort((a, b) => b.seasonZaps - a.seasonZaps)
         .slice(0, 5)
     }
   }
 
-  const circleName = (membership as any)?.circle?.name ?? null
-  const isCrewLead = (membership as any)?.is_crew_lead ?? false
+  const circleName = (membership as { circle: { name: string } | null } | null)?.circle?.name ?? null
+  const isCrewLead = (membership as { is_crew_lead: boolean } | null)?.is_crew_lead ?? false
 
   return (
     <div className="px-6 py-8 max-w-2xl mx-auto">
@@ -312,7 +312,7 @@ export default async function CrewPage() {
                       <span className={`text-sm font-semibold ${
                         isDone ? 'text-green-700 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'
                       }`}>
-                        +{(task as any).zaps_value}
+                        +{(task as { zaps_value: number }).zaps_value}
                       </span>
                     </div>
                     <CompleteButton

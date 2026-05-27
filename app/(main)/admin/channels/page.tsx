@@ -32,8 +32,13 @@ export default async function AdminChannelsPage() {
              creator:profiles!creator_id ( display_name )`)
     .order('created_at', { ascending: false })
 
-  const visible  = (channels ?? []).filter((c: any) => c.is_public)
-  const hidden   = (channels ?? []).filter((c: any) => !c.is_public)
+  type ChannelRow = {
+    id: string; name: string; description: string | null; type: string;
+    scope: string; is_public: boolean; created_at: string; creator: { display_name: string } | null;
+  }
+  const typedChannels = (channels ?? []) as unknown as ChannelRow[]
+  const visible  = typedChannels.filter((c) => c.is_public)
+  const hidden   = typedChannels.filter((c) => !c.is_public)
 
   return (
     <div className="px-8 py-8">
@@ -58,7 +63,7 @@ export default async function AdminChannelsPage() {
         {visible.length === 0 && (
           <p className="text-sm text-gray-400 py-6 text-center">No public channels yet.</p>
         )}
-        {visible.map((ch: any) => (
+        {visible.map((ch) => (
           <div key={ch.id} className="flex items-center gap-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 group">
             <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-50 dark:bg-gray-800 shrink-0">
               <Hash className="w-4 h-4 text-gray-400" />
@@ -97,7 +102,7 @@ export default async function AdminChannelsPage() {
             {hidden.length} hidden channel{hidden.length > 1 ? 's' : ''}
           </summary>
           <div className="space-y-2 mt-2 opacity-60">
-            {hidden.map((ch: any) => (
+            {hidden.map((ch) => (
               <div key={ch.id} className="flex items-center gap-3 rounded-xl border border-gray-100 dark:border-gray-800 px-4 py-3">
                 <Hash className="w-4 h-4 text-gray-400 shrink-0" />
                 <span className="text-sm text-gray-500 flex-1">{ch.name}</span>

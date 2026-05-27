@@ -130,7 +130,7 @@ export default async function CirclePage({
       myProfileId = myProfile.id
       isMember = members.some((m) => m.profile.id === myProfileId)
       isHost = circle.host?.id === myProfileId
-      isCrew = ['crew', 'host', 'guide', 'mentor', 'janitor'].includes((myProfile as any).community_role ?? '')
+      isCrew = ['crew', 'host', 'guide', 'mentor', 'janitor'].includes((myProfile as { community_role: string }).community_role ?? '')
     }
   }
 
@@ -183,7 +183,7 @@ export default async function CirclePage({
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl font-semibold text-gray-900">{circle.name}</h1>
-              <StatusBadge status={circle.status as any} />
+              <StatusBadge status={circle.status} />
               <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 font-medium">
                 {circle.type}
               </span>
