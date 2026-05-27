@@ -55,14 +55,13 @@ export default async function DispatchDetailPage({ params }: Props) {
   const myProfileId = myProfileRes.data?.id ?? null
 
   // Audience name, likes, comments, poll options — all parallel
-  let audienceName = ''
-  const [_audience, likesRes, myLikeRes, commentsRes, pollOptionsRes] = await Promise.all([
+  const [audienceRes, likesRes, myLikeRes, commentsRes, pollOptionsRes] = await Promise.all([
     (async () => {
       const table =
         dispatch.audience_scope === 'circle' ? 'circles' :
         dispatch.audience_scope === 'hub'    ? 'hubs'    : 'nexuses'
       const { data } = await admin.from(table as any).select('name').eq('id', dispatch.audience_id).maybeSingle()
-      audienceName = (data as any)?.name ?? ''
+      return (data as any)?.name ?? ''
     })(),
     admin.from('dispatch_likes').select('id', { count: 'exact', head: true }).eq('dispatch_id', id),
     myProfileId
@@ -83,6 +82,7 @@ export default async function DispatchDetailPage({ params }: Props) {
       : Promise.resolve({ data: [] }),
   ])
 
+  const audienceName = audienceRes as string
   const likeCount  = likesRes.count ?? 0
   const hasLiked   = !!myLikeRes.data
   const comments   = (commentsRes.data ?? []) as any[]

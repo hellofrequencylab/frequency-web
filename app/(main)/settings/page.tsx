@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Moon, Sun, Monitor, Check, User } from 'lucide-react'
 
 type Theme = 'light' | 'dark' | 'system'
@@ -28,14 +28,11 @@ const THEME_OPTIONS: { value: Theme; label: string; description: string; Icon: t
 ]
 
 export default function SettingsPage() {
-  const [theme, setThemeState] = useState<Theme>('system')
-
-  useEffect(() => {
+  const [theme, setThemeState] = useState<Theme>(() => {
+    if (typeof window === 'undefined') return 'system'
     const saved = localStorage.getItem('theme') as Theme | null
-    if (saved === 'dark' || saved === 'light') {
-      setThemeState(saved)
-    }
-  }, [])
+    return saved === 'dark' || saved === 'light' ? saved : 'system'
+  })
 
   function applyTheme(next: Theme) {
     setThemeState(next)

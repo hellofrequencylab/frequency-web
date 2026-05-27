@@ -59,12 +59,11 @@ interface Profile {
 type Theme = 'light' | 'dark' | 'system'
 
 function useTheme() {
-  const [theme, setThemeState] = useState<Theme>('system')
-
-  useEffect(() => {
+  const [theme, setThemeState] = useState<Theme>(() => {
+    if (typeof window === 'undefined') return 'system'
     const saved = localStorage.getItem('theme') as Theme | null
-    if (saved === 'dark' || saved === 'light') setThemeState(saved)
-  }, [])
+    return saved === 'dark' || saved === 'light' ? saved : 'system'
+  })
 
   function setTheme(next: Theme) {
     setThemeState(next)
