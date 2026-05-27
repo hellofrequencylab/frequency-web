@@ -11,7 +11,7 @@ const PROTECTED_PATHS = [
   '/settings',
 ]
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   // Start with a plain pass-through response. We may replace it below once
   // the Supabase cookie handler needs to write updated session cookies.
   let supabaseResponse = NextResponse.next({ request })

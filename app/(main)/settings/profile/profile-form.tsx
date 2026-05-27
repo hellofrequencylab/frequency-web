@@ -66,9 +66,17 @@ export function ProfileForm({
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+
+    const MAX_BYTES = 5 * 1024 * 1024 // 5 MB
+    if (file.size > MAX_BYTES) {
+      setUploadError(`File is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum is 5 MB.`)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+
+    setUploadError('')
     setAvatarFile(file)
     setAvatarPreview(URL.createObjectURL(file))
-    setUploadError('')
   }
 
   async function uploadAvatar(): Promise<string> {

@@ -5,9 +5,9 @@ import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 
-type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor'
+type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
-const HIERARCHY: CommunityRole[] = ['member', 'crew', 'host', 'guide', 'mentor']
+const HIERARCHY: CommunityRole[] = ['member', 'crew', 'host', 'guide', 'mentor', 'janitor']
 
 async function getCallerProfile(): Promise<{ id: string; community_role: CommunityRole } | null> {
   const supabase = await createClient()
@@ -364,9 +364,13 @@ export async function createDispatch(fd: FormData): Promise<{ id: string }> {
 
   const title          = (fd.get('title') as string).trim()
   const body           = (fd.get('body') as string).trim()
+  const dispatch_type  = (fd.get('dispatch_type') as string) || 'post'
   const audience_scope = fd.get('audience_scope') as DispatchScope
   const audience_id    = (fd.get('audience_id') as string).trim()
   const linked_task_id = (fd.get('linked_task_id') as string) || null
+  const scheduled_raw  = fd.get('scheduled_for') as string | null
+  const scheduled_for  = scheduled_raw ? new Date(scheduled_raw).toISOString() : null
+  const pollOptionsRaw = fd.get('poll_options') as string | null
   const excerpt        = makeExcerpt(body)
 
   if (!title || !body || !audience_scope || !audience_id) throw new Error('Missing required fields')
@@ -374,10 +378,21 @@ export async function createDispatch(fd: FormData): Promise<{ id: string }> {
   const admin = createAdminClient()
   const { data, error } = await admin
     .from('dispatches')
-    .insert({ title, body, excerpt, audience_scope, audience_id, linked_task_id, author_id: caller.id })
+    .insert({ title, body, excerpt, dispatch_type, audience_scope, audience_id, linked_task_id, scheduled_for, author_id: caller.id })
     .select('id')
     .single()
   if (error) throw new Error(error.message)
+
+  // Save poll options when type is 'poll'
+  if (dispatch_type === 'poll' && pollOptionsRaw) {
+    const options: string[] = JSON.parse(pollOptionsRaw)
+    const validOptions = options.map(s => s.trim()).filter(Boolean)
+    if (validOptions.length >= 2) {
+      await admin.from('dispatch_poll_options').insert(
+        validOptions.map((label, position) => ({ dispatch_id: data.id, label, position }))
+      )
+    }
+  }
 
   revalidatePath('/admin/dispatches')
   revalidatePath('/broadcast')
@@ -388,21 +403,39 @@ export async function updateDispatch(id: string, fd: FormData) {
   const caller = await getCallerProfile()
   if (!caller || !hasRole(caller.community_role, 'host')) throw new Error('Unauthorized')
 
-  const body    = (fd.get('body') as string).trim()
-  const excerpt = makeExcerpt(body)
+  const body           = (fd.get('body') as string).trim()
+  const excerpt        = makeExcerpt(body)
+  const dispatch_type  = (fd.get('dispatch_type') as string) || 'post'
   const linked_task_id = (fd.get('linked_task_id') as string) || null
+  const scheduled_raw  = fd.get('scheduled_for') as string | null
+  const scheduled_for  = scheduled_raw ? new Date(scheduled_raw).toISOString() : null
+  const pollOptionsRaw = fd.get('poll_options') as string | null
 
   const admin = createAdminClient()
   const { error } = await admin.from('dispatches').update({
     title:          (fd.get('title') as string).trim(),
     body,
     excerpt,
+    dispatch_type,
     audience_scope: fd.get('audience_scope') as DispatchScope,
     audience_id:    (fd.get('audience_id') as string).trim(),
     linked_task_id,
+    scheduled_for,
     updated_at:     new Date().toISOString(),
   }).eq('id', id)
   if (error) throw new Error(error.message)
+
+  // Replace poll options on update
+  if (dispatch_type === 'poll' && pollOptionsRaw) {
+    const options: string[] = JSON.parse(pollOptionsRaw)
+    const validOptions = options.map(s => s.trim()).filter(Boolean)
+    if (validOptions.length >= 2) {
+      await admin.from('dispatch_poll_options').delete().eq('dispatch_id', id)
+      await admin.from('dispatch_poll_options').insert(
+        validOptions.map((label, position) => ({ dispatch_id: id, label, position }))
+      )
+    }
+  }
 
   revalidatePath('/admin/dispatches')
   revalidatePath('/broadcast')

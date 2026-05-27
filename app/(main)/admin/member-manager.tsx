@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { UserX } from 'lucide-react'
 import { assignRole, deactivateMember } from './actions'
 
-type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor'
+type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
 export type MemberItem = {
   membershipId: string
@@ -19,14 +19,15 @@ export type MemberItem = {
   isCrewLead: boolean
 }
 
-const ROLES: CommunityRole[] = ['member', 'crew', 'host', 'guide', 'mentor']
+const ROLES: CommunityRole[] = ['member', 'crew', 'host', 'guide', 'mentor', 'janitor']
 
 const ROLE_LABEL: Record<CommunityRole, string> = {
-  member: 'Member',
-  crew:   'Crew',
-  host:   'Host',
-  guide:  'Guide',
-  mentor: 'Mentor',
+  member:  'Member',
+  crew:    'Crew',
+  host:    'Host',
+  guide:   'Guide',
+  mentor:  'Mentor',
+  janitor: 'Janitor',
 }
 
 function getInitials(name: string) {

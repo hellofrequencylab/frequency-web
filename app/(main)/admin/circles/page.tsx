@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { CirclesClient } from './circles-client'
 
-type CommunityRole = 'host' | 'guide' | 'mentor'
+type CommunityRole = 'host' | 'guide' | 'mentor' | 'janitor'
 
 export default async function AdminCirclesPage() {
   const supabase = await createClient()
@@ -17,14 +17,23 @@ export default async function AdminCirclesPage() {
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
-  if (!profile || !['host', 'guide', 'mentor'].includes(profile.community_role)) notFound()
+  if (!profile || !['host', 'guide', 'mentor', 'janitor'].includes(profile.community_role)) notFound()
 
   const role = profile.community_role as CommunityRole
 
   // Fetch circles scoped to role
   let circles: any[] = []
 
-  if (role === 'host') {
+  if (role === 'janitor') {
+    // Mega-admin: all circles
+    const { data } = await admin
+      .from('circles')
+      .select(`id, name, about, type, status, member_count, member_cap, hub_id, host_id,
+               hub:hubs!hub_id ( id, name ),
+               host:profiles!host_id ( id, display_name )`)
+      .order('name')
+    circles = data ?? []
+  } else if (role === 'host') {
     const { data } = await admin
       .from('circles')
       .select(`id, name, about, type, status, member_count, member_cap, hub_id, host_id,
@@ -80,7 +89,7 @@ export default async function AdminCirclesPage() {
   const { data: hostProfiles } = await admin
     .from('profiles')
     .select('id, display_name')
-    .in('community_role', ['host', 'guide', 'mentor'])
+    .in('community_role', ['host', 'guide', 'mentor', 'janitor'])
     .eq('is_active', true)
     .order('display_name')
 

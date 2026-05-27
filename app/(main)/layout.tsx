@@ -3,7 +3,9 @@ import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import AppShell from '@/components/layout/app-shell'
-import RightSidebar, { type CommunityRole } from '@/components/sidebar/right-sidebar'
+import RightSidebar from '@/components/sidebar/right-sidebar'
+import type { CommunityRole } from '@/components/sidebar/right-sidebar'
+import { getUnreadCount } from '@/app/(main)/notifications/actions'
 
 // Authenticated app layout — wraps Feed, Groups, Events, Admin.
 // Pages outside this group (onboarding, settings, sign-in, /people) render
@@ -30,6 +32,9 @@ export default async function MainLayout({
   // No profile row means the trigger hasn't run yet — send to onboarding.
   if (!profile) redirect('/onboarding')
 
+  // Unread notification count — non-blocking, falls back to 0 on error
+  const unreadCount = await getUnreadCount().catch(() => 0)
+
   // Right sidebar streams in independently — doesn't block page render
   const sidebar = (
     <Suspense fallback={<RightSidebarSkeleton />}>
@@ -41,7 +46,7 @@ export default async function MainLayout({
   )
 
   return (
-    <AppShell profile={profile} sidebar={sidebar}>
+    <AppShell profile={profile} sidebar={sidebar} unreadCount={unreadCount}>
       {children}
     </AppShell>
   )

@@ -10,7 +10,6 @@ import {
   CalendarDays,
   Globe,
   User,
-  Bell,
   LogOut,
   Shield,
   MessageSquare,
@@ -25,15 +24,17 @@ import {
   Megaphone,
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
+import { NotificationBell } from '@/components/layout/notification-bell'
 
-type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor'
+type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
 const ROLE_BADGE: Record<CommunityRole, { label: string; cls: string }> = {
-  member: { label: 'Member', cls: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' },
-  crew:   { label: 'Crew',   cls: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400' },
-  host:   { label: 'Host',   cls: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400' },
-  guide:  { label: 'Guide',  cls: 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-400' },
-  mentor: { label: 'Mentor', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400' },
+  member:  { label: 'Member',  cls: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' },
+  crew:    { label: 'Crew',    cls: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400' },
+  host:    { label: 'Host',    cls: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400' },
+  guide:   { label: 'Guide',   cls: 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-400' },
+  mentor:  { label: 'Mentor',  cls: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400' },
+  janitor: { label: 'Janitor', cls: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400' },
 }
 
 const SIDEBAR_NAV = [
@@ -246,10 +247,12 @@ export default function AppShell({
   profile,
   children,
   sidebar,
+  unreadCount = 0,
 }: {
   profile: Profile
   children: React.ReactNode
   sidebar?: React.ReactNode
+  unreadCount?: number
 }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -342,13 +345,8 @@ export default function AppShell({
             <Search className="w-5 h-5" />
           </Link>
 
-          {/* Notifications placeholder */}
-          <button
-            aria-label="Notifications"
-            className="p-2 rounded-lg text-gray-400 dark:text-gray-600 hover:text-gray-600 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-          >
-            <Bell className="w-4 h-4" />
-          </button>
+          {/* Notifications */}
+          <NotificationBell initialUnread={unreadCount} />
 
           {/* Account dropdown — initials, admin/account layer */}
           <AccountDropdown
@@ -392,7 +390,7 @@ export default function AppShell({
             })}
 
             {/* Crew — crew+ */}
-            {(role === 'crew' || role === 'host' || role === 'guide' || role === 'mentor') && (
+            {(role === 'crew' || role === 'host' || role === 'guide' || role === 'mentor' || role === 'janitor') && (
               <Link
                 href="/crew"
                 className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -412,7 +410,7 @@ export default function AppShell({
             )}
 
             {/* Admin — host+ */}
-            {(role === 'host' || role === 'guide' || role === 'mentor') && (
+            {(role === 'host' || role === 'guide' || role === 'mentor' || role === 'janitor') && (
               <Link
                 href="/admin"
                 className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -432,7 +430,7 @@ export default function AppShell({
             )}
           </nav>
 
-          {/* Upgrade to Crew CTA — members only */}
+          {/* Upgrade to Crew CTA — members only (not janitor) */}
           {role === 'member' && (
             <div className="mx-3 mb-3 rounded-xl border border-indigo-100 dark:border-indigo-900 bg-gradient-to-br from-indigo-50 to-violet-50 dark:from-indigo-950 dark:to-violet-950 p-3.5">
               <p className="text-xs font-semibold text-indigo-900 dark:text-indigo-100 mb-1">

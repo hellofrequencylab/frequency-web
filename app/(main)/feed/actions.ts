@@ -35,17 +35,47 @@ export async function createPost(formData: FormData) {
   // Use admin client — RLS circle-membership check would block users who
   // haven't joined a circle yet. Authorisation is enforced here in code.
   const admin = createAdminClient()
-  const { error } = await admin.from('posts').insert({
+  const { data: post, error } = await admin.from('posts').insert({
     author_id: profileId,
     body,
     scope_id: scopeId,
     visibility,
     post_type: 'feed',
-  })
+  }).select('id').single()
 
   if (error) {
     console.error('[createPost]', error.message)
     return
+  }
+
+  // Extract @mentions and create notification rows (best-effort, non-blocking)
+  const handles = [...new Set(Array.from(body.matchAll(/@([a-zA-Z0-9_]+)/g), m => m[1].toLowerCase()))]
+  if (handles.length > 0 && post) {
+    const { data: mentioned } = await admin
+      .from('profiles')
+      .select('id, handle')
+      .in('handle', handles)
+
+    if (mentioned && mentioned.length > 0) {
+      const mentionInserts = mentioned
+        .filter((p: { id: string; handle: string }) => p.id !== profileId)
+        .map((p: { id: string }) => ({ post_id: post.id, profile_id: p.id }))
+
+      if (mentionInserts.length > 0) {
+        try { await admin.from('post_mentions').insert(mentionInserts) } catch { /* non-critical */ }
+
+        // Create notification for each mentioned user
+        const notifInserts = mentionInserts.map((m: { profile_id: string }) => ({
+          recipient_id:   m.profile_id,
+          actor_id:       profileId,
+          type:           'mention',
+          reference_type: 'post',
+          reference_id:   post.id,
+          body:           'mentioned you in a post',
+        }))
+        try { await admin.from('notifications').insert(notifInserts) } catch { /* non-critical */ }
+      }
+    }
   }
 
   revalidatePath('/feed')

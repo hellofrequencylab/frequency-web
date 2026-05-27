@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { StatusBadge } from '@/components/groups/status-badge'
 import { MemberManager, type MemberItem } from './member-manager'
 
-type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor'
+type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
 export default async function AdminPage() {
   const supabase = await createClient()
@@ -26,19 +26,23 @@ export default async function AdminPage() {
 
   const role = profile.community_role as CommunityRole
 
-  if (!['host', 'guide', 'mentor'].includes(role)) notFound()
+  if (!['host', 'guide', 'mentor', 'janitor'].includes(role)) notFound()
 
   return (
     <div className="px-8 py-8">
       <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-2">Admin Panel</h1>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">
-        Scoped to your{' '}
-        <span className="font-medium capitalize">{role}</span> level.
+        {role === 'janitor' ? (
+          <span className="font-medium text-red-600 dark:text-red-400">Janitor — full platform access</span>
+        ) : (
+          <>Scoped to your <span className="font-medium capitalize">{role}</span> level.</>
+        )}
       </p>
 
-      {role === 'host'   && <HostPanel   profileId={profile.id} />}
-      {role === 'guide'  && <GuidePanel  profileId={profile.id} />}
-      {role === 'mentor' && <MentorPanel profileId={profile.id} />}
+      {role === 'janitor' && <JanitorPanel profileId={profile.id} />}
+      {role === 'host'    && <HostPanel    profileId={profile.id} />}
+      {role === 'guide'   && <GuidePanel   profileId={profile.id} />}
+      {role === 'mentor'  && <MentorPanel  profileId={profile.id} />}
     </div>
   )
 }
@@ -63,6 +67,92 @@ function StatCard({
       <p className="text-2xl font-bold text-gray-900 dark:text-gray-50 leading-none">
         {typeof value === 'number' ? value.toLocaleString() : value}
       </p>
+    </div>
+  )
+}
+
+// ── Janitor: Full platform overview ──────────────────────────────────────────
+
+async function JanitorPanel({ profileId }: { profileId: string }) {
+  const admin = createAdminClient()
+
+  const [circlesRes, hubsRes, nexusesRes, membersRes] = await Promise.all([
+    admin.from('circles').select('id, name, slug, status, type, member_count, member_cap, hub:hubs!hub_id(name)').order('name'),
+    admin.from('hubs').select('id, name, slug, status').order('name'),
+    admin.from('nexuses').select('id, name, slug, status').order('name'),
+    admin.from('memberships').select(
+      `id, volunteer_role, joined_at, is_crew_lead,
+       profile:profiles!profile_id ( id, display_name, handle, avatar_url, community_role ),
+       circle:circles!circle_id ( name )`
+    ).eq('status', 'active').order('joined_at', { ascending: true }).limit(200),
+  ])
+
+  const circles  = circlesRes.data  ?? []
+  const hubs     = hubsRes.data     ?? []
+  const nexuses  = nexusesRes.data  ?? []
+  const rawMembers = membersRes.data ?? []
+
+  const members: MemberItem[] = rawMembers.map((m: any) => ({
+    membershipId: m.id,
+    profileId:    m.profile.id,
+    displayName:  m.profile.display_name,
+    handle:       m.profile.handle,
+    avatarUrl:    m.profile.avatar_url,
+    role:         m.profile.community_role as CommunityRole,
+    circleName:   m.circle?.name ?? undefined,
+    joinedAt:     m.joined_at,
+    isCrewLead:   m.is_crew_lead ?? false,
+  }))
+
+  return (
+    <div className="space-y-8">
+      {/* Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <StatCard label="Nexuses" value={nexuses.length} Icon={Building2} />
+        <StatCard label="Hubs"    value={hubs.length}    Icon={Building2} />
+        <StatCard label="Circles" value={circles.length} Icon={Layers}    />
+        <StatCard label="Members" value={members.length} Icon={Users}     />
+      </div>
+
+      {/* All circles */}
+      <section>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">All Circles</h2>
+        <div className="space-y-2">
+          {circles.map((circle: any) => (
+            <Link
+              key={circle.id}
+              href={`/circles/${circle.slug}`}
+              className="flex items-center justify-between rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors"
+            >
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{circle.name}</span>
+                  <StatusBadge status={circle.status} />
+                </div>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {circle.member_count} / {circle.member_cap} · {(circle.hub as any)?.name}
+                </p>
+              </div>
+              <span className="text-xs text-gray-400">→</span>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* Member management */}
+      <section>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+          All Members
+          <span className="ml-2 text-xs font-normal text-gray-400">{members.length}</span>
+        </h2>
+        {members.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-800 p-8 text-center">
+            <p className="text-sm text-gray-500 dark:text-gray-400">No members yet.</p>
+          </div>
+        ) : (
+          <MemberManager members={members} />
+        )}
+      </section>
     </div>
   )
 }

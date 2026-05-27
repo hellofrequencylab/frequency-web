@@ -3,7 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { DispatchesClient } from './dispatches-client'
 
-type CommunityRole = 'host' | 'guide' | 'mentor'
+type AdminRole = 'host' | 'guide' | 'mentor' | 'janitor'
+const ADMIN_ROLES: string[] = ['host', 'guide', 'mentor', 'janitor']
 
 export default async function AdminDispatchesPage() {
   const supabase = await createClient()
@@ -17,25 +18,35 @@ export default async function AdminDispatchesPage() {
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
-  if (!profile || !['host', 'guide', 'mentor'].includes(profile.community_role)) notFound()
-  const role = profile.community_role as CommunityRole
+  if (!profile || !ADMIN_ROLES.includes(profile.community_role)) notFound()
+  const role = profile.community_role as AdminRole
 
   // Fetch dispatches authored by this user
   const { data: dispatches } = await admin
     .from('dispatches')
     .select(`
-      id, title, excerpt, audience_scope, audience_id, status, published_at, created_at,
+      id, title, excerpt, dispatch_type, audience_scope, audience_id, status, published_at, scheduled_for, created_at,
       linked_task:crew_tasks!linked_task_id ( id, name )
     `)
     .eq('author_id', profile.id)
     .order('created_at', { ascending: false })
 
-  // Audience options based on role
+  // Audience options — janitor gets everything; others scoped to their org
   let circles: { id: string; name: string }[] = []
   let hubs:    { id: string; name: string }[] = []
   let nexuses: { id: string; name: string }[] = []
 
-  if (role === 'host') {
+  if (role === 'janitor') {
+    // Mega-admin: all circles, hubs, nexuses
+    const [cRes, hRes, nRes] = await Promise.all([
+      admin.from('circles').select('id, name').order('name'),
+      admin.from('hubs').select('id, name').order('name'),
+      admin.from('nexuses').select('id, name').order('name'),
+    ])
+    circles = cRes.data ?? []
+    hubs    = hRes.data ?? []
+    nexuses = nRes.data ?? []
+  } else if (role === 'host') {
     const { data } = await admin.from('circles').select('id, name').eq('host_id', profile.id).order('name')
     circles = data ?? []
   } else if (role === 'guide') {
@@ -59,7 +70,6 @@ export default async function AdminDispatchesPage() {
     }
   }
 
-  // Tasks for linking
   const { data: tasks } = await admin
     .from('crew_tasks')
     .select('id, name')
@@ -70,7 +80,7 @@ export default async function AdminDispatchesPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Dispatches</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Publish announcements to your community. Dispatches appear on the Broadcast page and drop a card into the main feed.
+          Publish announcements to your community. Dispatches appear on the Broadcast page and drop into the main feed.
         </p>
       </div>
 

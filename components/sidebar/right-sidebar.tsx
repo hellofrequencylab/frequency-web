@@ -1,8 +1,11 @@
 import Link from 'next/link'
+import { Suspense } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getInitials } from '@/lib/utils'
+import { CalendarDays, MapPin } from 'lucide-react'
+import { GettingStartedChecklist } from '@/components/feed/getting-started'
 
-export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor'
+export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
 interface RightSidebarProps {
   profileId: string
@@ -37,22 +40,86 @@ function WidgetCard({
   )
 }
 
-// ── Active Members ────────────────────────────────────────────────────────────
+// ── Upcoming Events ───────────────────────────────────────────────────────────
 
-async function ActiveMembersWidget({ profileId }: { profileId: string }) {
-  const admin = createAdminClient()
+function DateChip({ iso }: { iso: string }) {
+  const d = new Date(iso)
+  const month = d.toLocaleDateString('en-US', { month: 'short' })
+  const day = d.getDate()
+  return (
+    <div className="flex flex-col items-center justify-center w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 shrink-0">
+      <span className="text-[9px] font-semibold uppercase leading-none">{month}</span>
+      <span className="text-sm font-bold leading-tight">{day}</span>
+    </div>
+  )
+}
 
-  // Circles I belong to
-  const { data: myMemberships } = await admin
-    .from('memberships')
-    .select('circle_id')
-    .eq('profile_id', profileId)
-    .eq('status', 'active')
-
-  const circleIds = (myMemberships ?? []).map((m: any) => m.circle_id)
+async function UpcomingEventsWidget({ circleIds }: { circleIds: string[] }) {
   if (circleIds.length === 0) return null
 
-  // Recently joined members across those circles (over-fetch to dedupe)
+  const admin = createAdminClient()
+  const now = new Date().toISOString()
+
+  const { data: raw } = await admin
+    .from('events')
+    .select('id, title, slug, location, starts_at')
+    .in('scope_id', circleIds)
+    .in('scope_type', ['circle', 'group'])
+    .eq('is_cancelled', false)
+    .gte('starts_at', now)
+    .order('starts_at', { ascending: true })
+    .limit(3)
+
+  const events = (raw ?? []) as {
+    id: string; title: string; slug: string; location: string | null; starts_at: string
+  }[]
+
+  if (events.length === 0) return null
+
+  return (
+    <WidgetCard title="Upcoming Events">
+      <div className="p-2">
+        {events.map((event) => (
+          <Link
+            key={event.id}
+            href={`/events/${event.slug}`}
+            className="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          >
+            <DateChip iso={event.starts_at} />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-gray-900 dark:text-gray-50 truncate">{event.title}</p>
+              <p className="text-[11px] text-gray-400 mt-0.5">
+                {new Date(event.starts_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                {event.location && (
+                  <span className="ml-1.5 inline-flex items-center gap-0.5">
+                    <MapPin className="w-2.5 h-2.5 inline" />
+                    {event.location}
+                  </span>
+                )}
+              </p>
+            </div>
+          </Link>
+        ))}
+      </div>
+      <div className="px-4 py-2.5 border-t border-gray-100 dark:border-gray-800">
+        <Link
+          href="/events"
+          className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
+        >
+          See all events →
+        </Link>
+      </div>
+    </WidgetCard>
+  )
+}
+
+// ── Active Members ────────────────────────────────────────────────────────────
+
+async function ActiveMembersWidget({ profileId, circleIds }: { profileId: string; circleIds: string[] }) {
+  if (circleIds.length === 0) return null
+
+  const admin = createAdminClient()
+
   const { data: rawRows } = await admin
     .from('memberships')
     .select(
@@ -64,7 +131,6 @@ async function ActiveMembersWidget({ profileId }: { profileId: string }) {
     .order('joined_at', { ascending: false })
     .limit(30)
 
-  // Dedupe by profile_id, cap at 8
   const seen = new Set<string>()
   const members: any[] = []
   for (const row of rawRows ?? []) {
@@ -134,40 +200,37 @@ function LeaderboardWidget() {
   )
 }
 
-// ── Announcements stub ────────────────────────────────────────────────────────
-
-function AnnouncementsWidget() {
-  return (
-    <WidgetCard title="Announcements" badge="Soon">
-      <div className="p-4 space-y-3">
-        {[1, 2].map((i) => (
-          <div key={i} className="space-y-1.5 opacity-30 pointer-events-none">
-            <div className="h-2.5 rounded-full bg-gray-200 dark:bg-gray-700 w-3/4" />
-            <div className="h-2 rounded-full bg-gray-100 dark:bg-gray-800 w-full" />
-            <div className="h-2 rounded-full bg-gray-100 dark:bg-gray-800 w-5/6" />
-          </div>
-        ))}
-      </div>
-    </WidgetCard>
-  )
-}
-
 // ── Right sidebar ─────────────────────────────────────────────────────────────
-// Role-aware widget composition. Adding a new widget = new component + add here.
-//
-// member  → Members
-// crew    → Members · Leaderboard
-// host+   → Members · Leaderboard · Announcements
 
 export default async function RightSidebar({ profileId, role }: RightSidebarProps) {
-  const isCrew    = ['crew', 'host', 'guide', 'mentor'].includes(role)
-  const isHost    = ['host', 'guide', 'mentor'].includes(role)
+  const admin = createAdminClient()
+
+  // Fetch circle memberships once — used by multiple widgets
+  const { data: myMemberships } = await admin
+    .from('memberships')
+    .select('circle_id')
+    .eq('profile_id', profileId)
+    .eq('status', 'active')
+
+  const circleIds = (myMemberships ?? []).map((m: any) => m.circle_id as string)
+
+  const isCrew    = ['crew', 'host', 'guide', 'mentor', 'janitor'].includes(role)
+  const isHost    = ['host', 'guide', 'mentor', 'janitor'].includes(role)
 
   return (
     <div className="px-4 py-6 space-y-4">
-      <ActiveMembersWidget profileId={profileId} />
+      {/* Getting Started — auto-hides when all items complete */}
+      <Suspense fallback={null}>
+        <GettingStartedChecklist profileId={profileId} />
+      </Suspense>
+
+      {/* Upcoming Events */}
+      <UpcomingEventsWidget circleIds={circleIds} />
+
+      {/* Active Members */}
+      <ActiveMembersWidget profileId={profileId} circleIds={circleIds} />
+
       {isCrew && <LeaderboardWidget />}
-      {isHost && <AnnouncementsWidget />}
     </div>
   )
 }

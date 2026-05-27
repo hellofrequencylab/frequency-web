@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { AdminSubNav } from './sub-nav'
 
-type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor'
+type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -17,7 +17,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
-  if (!profile || !['host', 'guide', 'mentor'].includes(profile.community_role as string)) {
+  if (!profile || !['host', 'guide', 'mentor', 'janitor'].includes(profile.community_role as string)) {
     notFound()
   }
 

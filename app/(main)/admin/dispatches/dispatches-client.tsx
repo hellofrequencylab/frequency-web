@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
-import { Plus, Pencil, Send, EyeOff, Trash2, Check, X, ChevronDown } from 'lucide-react'
+import { Plus, Pencil, Send, EyeOff, Trash2, Check, X, Clock } from 'lucide-react'
 import {
   createDispatch,
   updateDispatch,
@@ -11,19 +11,37 @@ import {
   deleteDispatch,
 } from '../actions'
 
+type DispatchType = 'post' | 'poll' | 'challenge' | 'article'
+
 type DispatchRow = {
   id: string
   title: string
   excerpt: string | null
+  dispatch_type: DispatchType
   audience_scope: 'circle' | 'hub' | 'nexus'
   audience_id: string
   status: 'draft' | 'published'
   published_at: string | null
+  scheduled_for: string | null
   created_at: string
   linked_task: { id: string; name: string } | null
 }
 
-type CommunityRole = 'host' | 'guide' | 'mentor'
+const TYPE_LABELS: Record<DispatchType, string> = {
+  post:      'Post',
+  poll:      'Poll',
+  challenge: 'Challenge',
+  article:   'Article',
+}
+
+const TYPE_COLORS: Record<DispatchType, string> = {
+  post:      'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300',
+  poll:      'bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-300',
+  challenge: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
+  article:   'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300',
+}
+
+type CommunityRole = 'host' | 'guide' | 'mentor' | 'janitor'
 
 const input = 'w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-50 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 disabled:opacity-50 placeholder:text-gray-400'
 const lbl   = 'block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1'
@@ -53,12 +71,15 @@ function DispatchForm({
     (role === 'mentor' && nexuses.length > 0 ? 'nexus' :
      role === 'guide'  && hubs.length > 0    ? 'hub'   : 'circle')
 
-  const [title,  setTitle]  = useState(initial?.title ?? '')
-  const [body,   setBody]   = useState('')   // body not returned in list query
-  const [scope,  setScope]  = useState<'circle' | 'hub' | 'nexus'>(defaultScope as any)
-  const [audId,  setAudId]  = useState(initial?.audience_id ?? '')
-  const [taskId, setTaskId] = useState(initial?.linked_task?.id ?? '')
-  const [preview, setPreview] = useState(false)
+  const [title,        setTitle]        = useState(initial?.title ?? '')
+  const [body,         setBody]         = useState('')
+  const [dispatchType, setDispatchType] = useState<DispatchType>(initial?.dispatch_type ?? 'post')
+  const [scope,        setScope]        = useState<'circle' | 'hub' | 'nexus'>(defaultScope as any)
+  const [audId,        setAudId]        = useState(initial?.audience_id ?? '')
+  const [taskId,       setTaskId]       = useState(initial?.linked_task?.id ?? '')
+  const [preview,      setPreview]      = useState(false)
+  const [scheduledFor, setScheduledFor] = useState(initial?.scheduled_for ? initial.scheduled_for.slice(0, 16) : '')
+  const [pollOptions,  setPollOptions]  = useState<string[]>(['', ''])
 
   const audienceOptions =
     scope === 'circle' ? circles :
@@ -69,9 +90,12 @@ function DispatchForm({
     const fd = new FormData()
     fd.set('title', title)
     fd.set('body', body)
+    fd.set('dispatch_type', dispatchType)
     fd.set('audience_scope', scope)
     fd.set('audience_id', audId)
     fd.set('linked_task_id', taskId)
+    if (scheduledFor) fd.set('scheduled_for', scheduledFor)
+    if (dispatchType === 'poll') fd.set('poll_options', JSON.stringify(pollOptions))
     onSave(fd)
   }
 
@@ -89,6 +113,27 @@ function DispatchForm({
           disabled={isPending}
           className={input}
         />
+      </div>
+
+      {/* Type */}
+      <div>
+        <label className={lbl}>Type</label>
+        <div className="flex gap-2 flex-wrap">
+          {(['post', 'poll', 'challenge', 'article'] as DispatchType[]).map(t => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setDispatchType(t)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                dispatchType === t
+                  ? 'border-indigo-400 bg-indigo-600 text-white'
+                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:border-indigo-300'
+              }`}
+            >
+              {TYPE_LABELS[t]}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Body */}
@@ -119,6 +164,49 @@ function DispatchForm({
           />
         )}
       </div>
+
+      {/* Poll options — only when type=poll */}
+      {dispatchType === 'poll' && (
+        <div>
+          <label className={lbl}>Poll Options <span className="text-gray-400 font-normal">(min 2)</span></label>
+          <div className="space-y-2">
+            {pollOptions.map((opt, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={opt}
+                  onChange={e => {
+                    const next = [...pollOptions]
+                    next[i] = e.target.value
+                    setPollOptions(next)
+                  }}
+                  placeholder={`Option ${i + 1}`}
+                  disabled={isPending}
+                  className={input}
+                />
+                {pollOptions.length > 2 && (
+                  <button
+                    type="button"
+                    onClick={() => setPollOptions(pollOptions.filter((_, j) => j !== i))}
+                    className="shrink-0 p-1 text-gray-400 hover:text-red-500 transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            ))}
+            {pollOptions.length < 6 && (
+              <button
+                type="button"
+                onClick={() => setPollOptions([...pollOptions, ''])}
+                className="text-xs text-indigo-500 hover:text-indigo-700 flex items-center gap-1 transition-colors"
+              >
+                <Plus className="w-3 h-3" /> Add option
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Scope + Audience */}
       <div className="grid grid-cols-2 gap-3">
@@ -169,6 +257,21 @@ function DispatchForm({
           </select>
         </div>
       )}
+
+      {/* Schedule (optional) */}
+      <div>
+        <label className={lbl}>
+          <Clock className="w-3 h-3 inline mr-1" />
+          Schedule publish <span className="text-gray-400 font-normal">(optional — leave blank to save as draft)</span>
+        </label>
+        <input
+          type="datetime-local"
+          value={scheduledFor}
+          onChange={e => setScheduledFor(e.target.value)}
+          disabled={isPending}
+          className={input}
+        />
+      </div>
 
       <div className="flex items-center gap-2 pt-1">
         <button
@@ -223,36 +326,66 @@ export function DispatchesClient({
   const [showCreate,  setShowCreate]  = useState(false)
   const [editingId,   setEditingId]   = useState<string | null>(null)
   const [isPending,   startTransition] = useTransition()
+  const [actionError, setActionError] = useState<string | null>(null)
 
   function handleCreate(fd: FormData) {
+    setActionError(null)
     startTransition(async () => {
-      await createDispatch(fd)
-      setShowCreate(false)
+      try {
+        await createDispatch(fd)
+        setShowCreate(false)
+      } catch (e) {
+        setActionError(e instanceof Error ? e.message : 'Failed to save dispatch. Check the DB migration has been applied.')
+      }
     })
   }
 
   function handleUpdate(id: string, fd: FormData) {
+    setActionError(null)
     startTransition(async () => {
-      await updateDispatch(id, fd)
-      setEditingId(null)
+      try {
+        await updateDispatch(id, fd)
+        setEditingId(null)
+      } catch (e) {
+        setActionError(e instanceof Error ? e.message : 'Failed to update dispatch.')
+      }
     })
   }
 
   function handlePublish(id: string) {
-    startTransition(async () => { await publishDispatch(id) })
+    setActionError(null)
+    startTransition(async () => {
+      try { await publishDispatch(id) }
+      catch (e) { setActionError(e instanceof Error ? e.message : 'Failed to publish.') }
+    })
   }
 
   function handleUnpublish(id: string) {
-    startTransition(async () => { await unpublishDispatch(id) })
+    setActionError(null)
+    startTransition(async () => {
+      try { await unpublishDispatch(id) }
+      catch (e) { setActionError(e instanceof Error ? e.message : 'Failed to unpublish.') }
+    })
   }
 
   function handleDelete(id: string) {
     if (!confirm('Delete this dispatch permanently?')) return
-    startTransition(async () => { await deleteDispatch(id) })
+    setActionError(null)
+    startTransition(async () => {
+      try { await deleteDispatch(id) }
+      catch (e) { setActionError(e instanceof Error ? e.message : 'Failed to delete.') }
+    })
   }
 
   return (
     <div>
+      {actionError && (
+        <div className="mb-4 flex items-start gap-2 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 px-4 py-3 text-sm text-red-700 dark:text-red-300">
+          <span className="shrink-0 font-semibold">Error:</span>
+          <span className="flex-1">{actionError}</span>
+          <button onClick={() => setActionError(null)} className="shrink-0 text-red-400 hover:text-red-600 transition-colors">✕</button>
+        </div>
+      )}
       {showCreate ? (
         <DispatchForm
           role={role} circles={circles} hubs={hubs} nexuses={nexuses} tasks={tasks}
@@ -296,6 +429,11 @@ export function DispatchesClient({
                     <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium capitalize ${STATUS_COLOR[d.status]}`}>
                       {d.status}
                     </span>
+                    {d.dispatch_type && (
+                      <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${TYPE_COLORS[d.dispatch_type]}`}>
+                        {TYPE_LABELS[d.dispatch_type]}
+                      </span>
+                    )}
                     <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 font-medium capitalize">
                       → {d.audience_scope}
                     </span>

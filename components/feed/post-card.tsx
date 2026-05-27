@@ -2,14 +2,30 @@ import Link from 'next/link'
 import { Heart, ThumbsUp, MessageSquare, Trash2 } from 'lucide-react'
 import { deletePost, toggleReaction } from '@/app/(main)/feed/actions'
 
-type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor'
+function renderBodyWithMentions(body: string): React.ReactNode[] {
+  const parts = body.split(/(@[a-zA-Z0-9_]+)/g)
+  return parts.map((part, i) => {
+    if (/^@[a-zA-Z0-9_]+$/.test(part)) {
+      const handle = part.slice(1)
+      return (
+        <Link key={i} href={`/people/${handle}`} className="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">
+          {part}
+        </Link>
+      )
+    }
+    return part
+  })
+}
+
+type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
 const ROLE_BADGE: Record<CommunityRole, { label: string; cls: string }> = {
-  member: { label: 'Member', cls: 'bg-gray-100 text-gray-600' },
-  crew:   { label: 'Crew',   cls: 'bg-blue-100 text-blue-700' },
-  host:   { label: 'Host',   cls: 'bg-green-100 text-green-700' },
-  guide:  { label: 'Guide',  cls: 'bg-purple-100 text-purple-700' },
-  mentor: { label: 'Mentor', cls: 'bg-amber-100 text-amber-700' },
+  member:  { label: 'Member',  cls: 'bg-gray-100 text-gray-600' },
+  crew:    { label: 'Crew',    cls: 'bg-blue-100 text-blue-700' },
+  host:    { label: 'Host',    cls: 'bg-green-100 text-green-700' },
+  guide:   { label: 'Guide',   cls: 'bg-purple-100 text-purple-700' },
+  mentor:  { label: 'Mentor',  cls: 'bg-amber-100 text-amber-700' },
+  janitor: { label: 'Janitor', cls: 'bg-red-100 text-red-700' },
 }
 
 function getInitials(name: string) {
@@ -141,8 +157,8 @@ export function PostCard({
 
       {/* ── Body ────────────────────────────────────── */}
       {post.body && (
-        <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap mb-3">
-          {post.body}
+        <p className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed whitespace-pre-wrap mb-3">
+          {renderBodyWithMentions(post.body)}
         </p>
       )}
 

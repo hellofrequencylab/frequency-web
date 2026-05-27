@@ -3,22 +3,22 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
-type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor'
+type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
 export function AdminSubNav({ role }: { role: CommunityRole }) {
   const pathname = usePathname()
 
   const tabs = [
-    { href: '/admin',              label: 'Overview',   exact: true  },
+    { href: '/admin',             label: 'Overview',   exact: true  },
     { href: '/admin/dispatches',  label: 'Dispatches', exact: false },
     { href: '/admin/circles',     label: 'Circles',    exact: false },
     { href: '/admin/channels',    label: 'Channels',   exact: false },
     { href: '/admin/events',      label: 'Events',     exact: false },
     { href: '/admin/crew-tasks',  label: 'Crew Tasks', exact: false },
-    ...(role === 'guide' || role === 'mentor'
+    ...(role === 'guide' || role === 'mentor' || role === 'janitor'
       ? [{ href: '/admin/hubs', label: 'Hubs', exact: false }]
       : []),
-    ...(role === 'mentor'
+    ...(role === 'mentor' || role === 'janitor'
       ? [{ href: '/admin/nexuses', label: 'Nexuses', exact: false }]
       : []),
   ]
