@@ -5,6 +5,17 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { archiveChannel } from '../actions'
 
+function SidebarCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
+      <div className="px-4 py-2.5 border-b border-gray-100/80 dark:border-gray-800/50">
+        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">{title}</h3>
+      </div>
+      {children}
+    </div>
+  )
+}
+
 const TYPE_COLOR: Record<string, string> = {
   group:  'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300',
   event:  'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
@@ -42,76 +53,84 @@ export default async function AdminChannelsPage() {
 
   return (
     <div>
-      <div className="flex items-start justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Channels</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Manage channels across your scope. Archiving hides from discovery.
-          </p>
-        </div>
-        <Link
-          href="/channels/new"
-          className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors shrink-0"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          New channel
-        </Link>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Channels</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          Manage channels across your scope. Archiving hides from discovery.
+        </p>
       </div>
 
-      {/* Active */}
-      <div className="space-y-2 mb-6">
-        {visible.length === 0 && (
-          <p className="text-sm text-gray-400 py-6 text-center">No public channels yet.</p>
-        )}
-        {visible.map((ch) => (
-          <div key={ch.id} className="flex items-center gap-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 group">
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-50 dark:bg-gray-800 shrink-0">
-              <Hash className="w-4 h-4 text-gray-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{ch.name}</span>
-                <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium capitalize ${TYPE_COLOR[ch.type] ?? TYPE_COLOR.group}`}>
-                  {ch.type}
-                </span>
-                <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 font-medium capitalize">
-                  {ch.scope}
-                </span>
-              </div>
-              {ch.description && (
-                <p className="text-xs text-gray-400 mt-0.5 truncate">{ch.description}</p>
-              )}
-            </div>
-            <form action={archiveChannel.bind(null, ch.id)}>
-              <button
-                type="submit"
-                title="Hide from discovery"
-                className="p-1.5 rounded-lg text-gray-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-all"
-              >
-                <EyeOff className="w-3.5 h-3.5" />
-              </button>
-            </form>
-          </div>
-        ))}
-      </div>
-
-      {/* Hidden */}
-      {hidden.length > 0 && (
-        <details>
-          <summary className="text-xs font-medium text-gray-400 cursor-pointer hover:text-gray-600 select-none">
-            {hidden.length} hidden channel{hidden.length > 1 ? 's' : ''}
-          </summary>
-          <div className="space-y-2 mt-2 opacity-60">
-            {hidden.map((ch) => (
-              <div key={ch.id} className="flex items-center gap-3 rounded-xl border border-gray-100 dark:border-gray-800 px-4 py-3">
-                <Hash className="w-4 h-4 text-gray-400 shrink-0" />
-                <span className="text-sm text-gray-500 flex-1">{ch.name}</span>
-                <span className="text-xs text-gray-400">hidden</span>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main content */}
+        <div className="lg:col-span-2">
+          {/* Active */}
+          <div className="space-y-2 mb-6">
+            {visible.length === 0 && (
+              <p className="text-sm text-gray-400 py-6 text-center">No public channels yet.</p>
+            )}
+            {visible.map((ch) => (
+              <div key={ch.id} className="flex items-center gap-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 group">
+                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-50 dark:bg-gray-800 shrink-0">
+                  <Hash className="w-4 h-4 text-gray-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{ch.name}</span>
+                    <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium capitalize ${TYPE_COLOR[ch.type] ?? TYPE_COLOR.group}`}>
+                      {ch.type}
+                    </span>
+                    <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 font-medium capitalize">
+                      {ch.scope}
+                    </span>
+                  </div>
+                  {ch.description && (
+                    <p className="text-xs text-gray-400 mt-0.5 truncate">{ch.description}</p>
+                  )}
+                </div>
+                <form action={archiveChannel.bind(null, ch.id)}>
+                  <button
+                    type="submit"
+                    title="Hide from discovery"
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-all"
+                  >
+                    <EyeOff className="w-3.5 h-3.5" />
+                  </button>
+                </form>
               </div>
             ))}
           </div>
-        </details>
-      )}
+
+          {/* Hidden */}
+          {hidden.length > 0 && (
+            <details>
+              <summary className="text-xs font-medium text-gray-400 cursor-pointer hover:text-gray-600 select-none">
+                {hidden.length} hidden channel{hidden.length > 1 ? 's' : ''}
+              </summary>
+              <div className="space-y-2 mt-2 opacity-60">
+                {hidden.map((ch) => (
+                  <div key={ch.id} className="flex items-center gap-3 rounded-xl border border-gray-100 dark:border-gray-800 px-4 py-3">
+                    <Hash className="w-4 h-4 text-gray-400 shrink-0" />
+                    <span className="text-sm text-gray-500 flex-1">{ch.name}</span>
+                    <span className="text-xs text-gray-400">hidden</span>
+                  </div>
+                ))}
+              </div>
+            </details>
+          )}
+        </div>
+
+        {/* Sidebar */}
+        <div className="space-y-4">
+          <SidebarCard title="Quick Actions">
+            <div className="p-2 space-y-0.5">
+              <Link href="/channels/new" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                <Plus className="w-4 h-4 text-gray-400" /> New Channel
+              </Link>
+            </div>
+            <p className="px-4 py-3 text-xs text-gray-400">Hidden channels are removed from discovery but remain accessible via direct link.</p>
+          </SidebarCard>
+        </div>
+      </div>
     </div>
   )
 }

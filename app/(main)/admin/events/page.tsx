@@ -5,6 +5,17 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { CancelToggle } from './events-client'
 
+function SidebarCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
+      <div className="px-4 py-2.5 border-b border-gray-100/80 dark:border-gray-800/50">
+        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">{title}</h3>
+      </div>
+      {children}
+    </div>
+  )
+}
+
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', {
     weekday: 'short', month: 'short', day: 'numeric',
@@ -75,52 +86,60 @@ export default async function AdminEventsPage() {
 
   return (
     <div>
-      <div className="flex items-start justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Events</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Manage events across your circles. Cancel or reinstate from here.
-          </p>
-        </div>
-        <Link
-          href="/events/new"
-          className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors shrink-0"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          New event
-        </Link>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Events</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          Manage events across your circles. Cancel or reinstate from here.
+        </p>
       </div>
 
-      {/* Upcoming */}
-      {upcoming.length > 0 && (
-        <section className="mb-8">
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-600 mb-3">Upcoming</h2>
-          <div className="space-y-2">
-            {upcoming.map((event) => (
-              <EventRow key={event.id} event={event} />
-            ))}
-          </div>
-        </section>
-      )}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main content */}
+        <div className="lg:col-span-2">
+          {/* Upcoming */}
+          {upcoming.length > 0 && (
+            <section className="mb-8">
+              <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-600 mb-3">Upcoming</h2>
+              <div className="space-y-2">
+                {upcoming.map((event) => (
+                  <EventRow key={event.id} event={event} />
+                ))}
+              </div>
+            </section>
+          )}
 
-      {/* Past */}
-      {past.length > 0 && (
-        <section>
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-600 mb-3">Past</h2>
-          <div className="space-y-2 opacity-70">
-            {past.slice(0, 20).map((event) => (
-              <EventRow key={event.id} event={event} />
-            ))}
-          </div>
-        </section>
-      )}
+          {/* Past */}
+          {past.length > 0 && (
+            <section>
+              <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-600 mb-3">Past</h2>
+              <div className="space-y-2 opacity-70">
+                {past.slice(0, 20).map((event) => (
+                  <EventRow key={event.id} event={event} />
+                ))}
+              </div>
+            </section>
+          )}
 
-      {events.length === 0 && (
-        <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-800 p-12 text-center">
-          <CalendarDays className="w-8 h-8 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
-          <p className="text-sm text-gray-500">No events yet.</p>
+          {events.length === 0 && (
+            <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-800 p-12 text-center">
+              <CalendarDays className="w-8 h-8 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
+              <p className="text-sm text-gray-500">No events yet.</p>
+            </div>
+          )}
         </div>
-      )}
+
+        {/* Sidebar */}
+        <div className="space-y-4">
+          <SidebarCard title="Quick Actions">
+            <div className="p-2 space-y-0.5">
+              <Link href="/events/new" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                <Plus className="w-4 h-4 text-gray-400" /> New Event
+              </Link>
+            </div>
+            <p className="px-4 py-3 text-xs text-gray-400">Cancelling an event notifies RSVPed members and marks it on the events page.</p>
+          </SidebarCard>
+        </div>
+      </div>
     </div>
   )
 }
