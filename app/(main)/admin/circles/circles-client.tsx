@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { Plus, Pencil, Archive, Check, X } from 'lucide-react'
 import { createCircle, updateCircle, archiveCircle } from '../actions'
+import { InviteLinkButton } from './invite-link-button'
 
 type CircleRow = {
   id: string
@@ -219,6 +220,7 @@ export function CirclesClient({
                   </p>
                 </div>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <InviteLinkButton circleId={circle.id} />
                   <button onClick={() => setEditingId(circle.id)} className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-colors" aria-label="Edit">
                     <Pencil className="w-3.5 h-3.5" />
                   </button>

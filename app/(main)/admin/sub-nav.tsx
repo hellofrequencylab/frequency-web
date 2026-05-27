@@ -24,7 +24,7 @@ export function AdminSubNav({ role }: { role: CommunityRole }) {
 
   return (
     <div className="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 sticky top-0 z-20">
-      <nav className="flex gap-0 px-4 overflow-x-auto max-w-5xl mx-auto">
+      <nav className="flex gap-0 px-6 overflow-x-auto justify-center">
         {tabs.map(({ href, label, exact }) => {
           const active = exact ? pathname === href : pathname.startsWith(href)
           return (

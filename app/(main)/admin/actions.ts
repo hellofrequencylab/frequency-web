@@ -1,5 +1,6 @@
 'use server'
 
+import { randomBytes } from 'crypto'
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
@@ -104,6 +105,114 @@ export async function archiveCircle(id: string) {
   if (error) throw new Error(error.message)
   revalidatePath('/admin/circles')
   revalidatePath('/circles')
+}
+
+// ── Invite links ─────────────────────────────────────────────────────────────
+
+export async function createInviteLink(circleId: string): Promise<{ token: string }> {
+  const caller = await getCallerProfile()
+  if (!caller || !hasRole(caller.community_role, 'host')) throw new Error('Unauthorized')
+
+  const token = randomBytes(12).toString('base64url')
+  const admin = createAdminClient()
+
+  // Deactivate any previous active link for this circle
+  await admin
+    .from('invite_links')
+    .update({ is_active: false })
+    .eq('circle_id', circleId)
+    .eq('is_active', true)
+
+  const { error } = await admin.from('invite_links').insert({
+    token,
+    circle_id:  circleId,
+    created_by: caller.id,
+  })
+  if (error) throw new Error(error.message)
+
+  revalidatePath('/admin/circles')
+  return { token }
+}
+
+export async function revokeInviteLink(id: string) {
+  const caller = await getCallerProfile()
+  if (!caller || !hasRole(caller.community_role, 'host')) throw new Error('Unauthorized')
+
+  const admin = createAdminClient()
+  const { error } = await admin
+    .from('invite_links')
+    .update({ is_active: false })
+    .eq('id', id)
+  if (error) throw new Error(error.message)
+  revalidatePath('/admin/circles')
+}
+
+// Public action — no role check, but validates token
+export async function joinViaInviteLink(token: string): Promise<{ circleId: string }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  const admin = createAdminClient()
+
+  // Fetch and validate link
+  const { data: link } = await admin
+    .from('invite_links')
+    .select('id, circle_id, max_uses, used_count, expires_at, is_active')
+    .eq('token', token)
+    .maybeSingle()
+
+  if (!link || !link.is_active) throw new Error('Invite link is invalid or no longer active')
+  if (link.expires_at && new Date(link.expires_at) < new Date()) throw new Error('Invite link has expired')
+  if (link.max_uses > 0 && link.used_count >= link.max_uses) throw new Error('Invite link has reached its maximum uses')
+
+  // Get caller profile
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('id')
+    .eq('auth_user_id', user.id)
+    .maybeSingle()
+  if (!profile) throw new Error('Profile not found')
+
+  // Check not already a member
+  const { data: existing } = await admin
+    .from('circle_memberships')
+    .select('id')
+    .eq('circle_id', link.circle_id)
+    .eq('profile_id', profile.id)
+    .maybeSingle()
+
+  if (!existing) {
+    const { error: joinError } = await admin.from('circle_memberships').insert({
+      circle_id:  link.circle_id,
+      profile_id: profile.id,
+      role:       'member',
+    })
+    if (joinError) throw new Error(joinError.message)
+
+    // Increment used_count and update circle member_count
+    await admin
+      .from('invite_links')
+      .update({ used_count: link.used_count + 1 })
+      .eq('id', link.id)
+
+    // Best-effort member count increment — manual update since we may not have the RPC
+    const { data: circleData } = await admin
+      .from('circles')
+      .select('member_count')
+      .eq('id', link.circle_id)
+      .maybeSingle()
+    if (circleData) {
+      await admin
+        .from('circles')
+        .update({ member_count: (circleData.member_count ?? 0) + 1 })
+        .eq('id', link.circle_id)
+    }
+  }
+
+  revalidatePath('/circles')
+  revalidatePath('/feed')
+  return { circleId: link.circle_id }
 }
 
 // ── Channels ──────────────────────────────────────────────────────────────────
