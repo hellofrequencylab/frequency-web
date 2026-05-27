@@ -121,7 +121,7 @@ export function ContextActions({ role, context }: ContextActionsProps) {
         onClick={() => setOpen((v) => !v)}
         aria-label="More actions"
         disabled={isPending}
-        className="p-1.5 rounded-md text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
+        className="p-1.5 rounded-md text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
       >
         <MoreHorizontal className="w-4 h-4" />
       </button>

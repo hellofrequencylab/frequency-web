@@ -139,11 +139,14 @@ export default async function BroadcastPage() {
     .order('zaps_value', { ascending: false })
     .limit(5)
 
+  const upcomingEventCount = events?.length ?? 0
+  const activeChallengeCount = tasks?.length ?? 0
+
   return (
     <div>
 
       {/* ── Header ─────────────────────────────────────────── */}
-      <div className="mb-8">
+      <div className="mb-6">
         <div className="flex items-center justify-between gap-2 mb-1">
           <div className="flex items-center gap-2">
             <Megaphone className="w-5 h-5 text-indigo-500" />
@@ -158,10 +161,38 @@ export default async function BroadcastPage() {
         </p>
       </div>
 
+      {/* ── Section tiles ──────────────────────────────────── */}
+      <div className="grid grid-cols-3 gap-3 mb-7">
+        <a href="#dispatches" className="group rounded-2xl border border-indigo-100 dark:border-indigo-900 bg-indigo-50 dark:bg-indigo-950/40 p-4 hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors">
+          <div className="flex items-center gap-2 mb-1.5">
+            <Megaphone className="w-4 h-4 text-indigo-500" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">Dispatches</span>
+          </div>
+          <p className="text-2xl font-black text-indigo-700 dark:text-indigo-300">{dispatches.length}</p>
+          <p className="text-[11px] text-indigo-500 dark:text-indigo-500 mt-0.5">announcements</p>
+        </a>
+        <a href="#events" className="group rounded-2xl border border-amber-100 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/40 p-4 hover:border-amber-300 dark:hover:border-amber-700 transition-colors">
+          <div className="flex items-center gap-2 mb-1.5">
+            <CalendarDays className="w-4 h-4 text-amber-500" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">Events</span>
+          </div>
+          <p className="text-2xl font-black text-amber-700 dark:text-amber-300">{upcomingEventCount}</p>
+          <p className="text-[11px] text-amber-500 dark:text-amber-500 mt-0.5">upcoming</p>
+        </a>
+        <a href="#challenges" className="group rounded-2xl border border-green-100 dark:border-green-900 bg-green-50 dark:bg-green-950/40 p-4 hover:border-green-300 dark:hover:border-green-700 transition-colors">
+          <div className="flex items-center gap-2 mb-1.5">
+            <Zap className="w-4 h-4 text-green-500" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-green-600 dark:text-green-400">Challenges</span>
+          </div>
+          <p className="text-2xl font-black text-green-700 dark:text-green-300">{activeChallengeCount}</p>
+          <p className="text-[11px] text-green-500 dark:text-green-500 mt-0.5">active</p>
+        </a>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {/* ── Dispatches (main column) ───────────────────────── */}
-        <div className="lg:col-span-2 space-y-1">
+        <div id="dispatches" className="lg:col-span-2 space-y-1">
           {dispatches.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-gray-200/60 dark:border-gray-800/60 bg-gray-50/50 dark:bg-gray-900/50 p-12 text-center">
               <Megaphone className="w-8 h-8 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
@@ -179,7 +210,7 @@ export default async function BroadcastPage() {
         <div className="space-y-5">
 
           {/* Upcoming events */}
-          <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
+          <div id="events" className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
             <div className="flex items-center gap-1.5 px-4 py-3 border-b border-gray-100/80 dark:border-gray-800/50">
               <CalendarDays className="w-3.5 h-3.5 text-gray-400" />
               <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 tracking-wide uppercase">Upcoming</span>
@@ -218,7 +249,7 @@ export default async function BroadcastPage() {
 
           {/* Active challenges */}
           {tasks && tasks.length > 0 && (
-            <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
+            <div id="challenges" className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
               <div className="flex items-center gap-1.5 px-4 py-3 border-b border-gray-100/80 dark:border-gray-800/50">
                 <Zap className="w-3.5 h-3.5 text-amber-400" />
                 <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 tracking-wide uppercase">Active Challenges</span>

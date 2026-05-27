@@ -47,6 +47,7 @@ export default async function ProfilePage({
   if (!profile) notFound()
 
   // Separate auth check to know if the viewer owns this profile.
+  // (main)/layout.tsx guarantees a logged-in user, but we still need the ID.
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   const isOwner = !!user && profile.auth_user_id === user.id
@@ -81,10 +82,11 @@ export default async function ProfilePage({
   }
 
   return (
-    <main className="min-h-screen bg-white flex items-start justify-center px-4 pt-16 pb-12">
-      <div className="w-full max-w-md">
+    <div className="max-w-2xl mx-auto">
+      {/* Profile header card */}
+      <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm p-6 mb-6">
 
-        {/* Header: avatar + identity + edit/message button */}
+        {/* Avatar + identity + edit/message button */}
         <div className="flex items-start justify-between gap-4 mb-6">
           <div className="flex items-center gap-4">
             {profile.avatar_url ? (
@@ -99,7 +101,7 @@ export default async function ProfilePage({
               </div>
             )}
             <div>
-              <h1 className="text-xl font-bold text-gray-900 leading-tight">
+              <h1 className="text-xl font-bold text-gray-900 dark:text-gray-50 leading-tight">
                 {profile.display_name}
               </h1>
               <p className="text-sm text-gray-500 mt-0.5">@{profile.handle}</p>
@@ -134,9 +136,9 @@ export default async function ProfilePage({
 
         {/* Bio + region */}
         {(profile.bio || regionName) && (
-          <div className="border-t border-gray-100 pt-5 space-y-3">
+          <div className="border-t border-gray-100 dark:border-gray-800 pt-5 space-y-3">
             {profile.bio && (
-              <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+              <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
                 {profile.bio}
               </p>
             )}
@@ -166,27 +168,26 @@ export default async function ProfilePage({
             )}
           </div>
         )}
-
-        {/* Post composer — owner only */}
-        {isOwner && composerScopeId && (
-          <div className="mt-6 border-t border-gray-100 pt-5">
-            <Composer
-              scopeId={composerScopeId}
-              visibility={composerVisibility}
-              placeholder="Share something…"
-            />
-            {composerVisibility === 'public' && (
-              <p className="text-xs text-gray-400 -mt-2 px-1">
-                <Link href="/circles" className="text-indigo-500 hover:underline">
-                  Join a circle
-                </Link>{' '}
-                to post to your group.
-              </p>
-            )}
-          </div>
-        )}
-
       </div>
-    </main>
+
+      {/* Post composer — owner only */}
+      {isOwner && composerScopeId && (
+        <div>
+          <Composer
+            scopeId={composerScopeId}
+            visibility={composerVisibility}
+            placeholder="Share something…"
+          />
+          {composerVisibility === 'public' && (
+            <p className="text-xs text-gray-400 -mt-2 px-1">
+              <Link href="/circles" className="text-indigo-500 hover:underline">
+                Join a circle
+              </Link>{' '}
+              to post to your group.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
   )
 }
