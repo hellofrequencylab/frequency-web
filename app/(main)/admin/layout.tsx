@@ -22,12 +22,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <div className="flex min-h-full -mx-6 -my-6">
-      {/* Sidebar sub-nav (desktop) + horizontal tabs (mobile) rendered by AdminSubNav */}
+    <div className="-mx-6 -my-6 flex flex-col min-h-full">
+      {/* Horizontal top nav bar — sits right under the main app header */}
       <AdminSubNav role={profile.community_role as CommunityRole} />
 
-      {/* Content area */}
-      <div className="flex-1 min-w-0 px-6 py-6">
+      {/* Page content */}
+      <div className="flex-1 px-6 py-6">
         {children}
       </div>
     </div>

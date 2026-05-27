@@ -286,17 +286,13 @@ export default function AppShell({
 
   const profileActive = pathname === profileHref || pathname.startsWith('/people/')
 
-  // Hide right sidebar only on pages where it would crowd or distract
-  // /settings — narrow focused forms, sidebar adds noise
+  // Hide right sidebar only where it would crowd or distract
+  // /settings — narrow focused forms
   // /messages — chat thread needs full width
   const showSidebar =
     !!sidebar &&
     !pathname.startsWith('/settings') &&
-    !pathname.startsWith('/messages') &&
-    pathname !== '/circles' &&
-    pathname !== '/channels' &&
-    pathname !== '/events' &&
-    pathname !== '/crew'
+    !pathname.startsWith('/messages')
 
   function cycleTheme() {
     if (theme === 'system') setTheme('dark')
