@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Heart, ThumbsUp, Trash2, Megaphone, Clock, MessageCircle, TrendingUp } from 'lucide-react'
 import { deletePost, toggleReaction } from '@/app/(main)/feed/actions'
 import { PostReplies } from './post-replies'
+import { PostReportButton } from './post-report-button'
 import { getInitials, relativeTime } from '@/lib/utils'
 
 function renderBodyWithMentions(body: string): React.ReactNode[] {
@@ -157,7 +158,7 @@ export function PostCard({
               </p>
             </div>
 
-            {isOwn && (
+            {isOwn ? (
               <form action={deletePost.bind(null, post.id)}>
                 <button
                   type="submit"
@@ -167,7 +168,9 @@ export function PostCard({
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </form>
-            )}
+            ) : myProfileId ? (
+              <PostReportButton targetType="post" targetId={post.id} />
+            ) : null}
           </div>
 
           {/* Body */}
@@ -175,6 +178,18 @@ export function PostCard({
             <p className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed whitespace-pre-wrap mb-3">
               {renderBodyWithMentions(post.body)}
             </p>
+          )}
+
+          {/* Post image */}
+          {post.media_urls?.length > 0 && (
+            <div className="rounded-xl overflow-hidden mb-3">
+              <img
+                src={post.media_urls[0]}
+                alt="Post attachment"
+                loading="lazy"
+                className="max-h-96 object-cover w-full"
+              />
+            </div>
           )}
 
           {/* Reactions */}
