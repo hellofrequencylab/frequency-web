@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { MessageSquare } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { getInitials, relativeTime } from '@/lib/utils'
 
 type Profile = {
   id: string
@@ -18,27 +19,6 @@ type ConversationRow = {
   lastMessage: { body: string; sender_id: string; created_at: string } | null
   unreadCount: number
   myLastReadAt: string | null
-}
-
-function getInitials(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0].toUpperCase())
-    .join('')
-}
-
-function relativeTime(iso: string) {
-  const diff = Date.now() - new Date(iso).getTime()
-  const mins = Math.floor(diff / 60_000)
-  if (mins < 1) return 'just now'
-  if (mins < 60) return `${mins}m ago`
-  const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return `${hrs}h ago`
-  const days = Math.floor(hrs / 24)
-  if (days < 7) return `${days}d ago`
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
 export default async function MessagesPage() {

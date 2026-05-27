@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { completeOnboarding } from './actions'
+import { getInitials } from '@/lib/utils'
 
 type Region = { id: string; name: string }
 type HandleStatus = 'idle' | 'checking' | 'available' | 'taken'
@@ -21,15 +22,6 @@ function suggestHandle(name: string): string {
     .replace(/\s+/g, '_')
     .replace(/[^a-z0-9_]/g, '')
     .slice(0, 30)
-}
-
-function getInitials(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0].toUpperCase())
-    .join('')
 }
 
 const HANDLE_RE = /^[a-z0-9_]+$/

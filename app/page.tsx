@@ -4,6 +4,7 @@ import { ChevronDown } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { SiteHeader } from '@/components/layout/site-header'
+import { getInitials } from '@/lib/utils'
 
 type PostPreviewRow = {
   id: string
@@ -22,15 +23,6 @@ const ROLE_COLOR: Record<string, string> = {
   host:   'bg-green-100 text-green-700',
   guide:  'bg-purple-100 text-purple-700',
   mentor: 'bg-amber-100 text-amber-700',
-}
-
-function getInitials(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0].toUpperCase())
-    .join('')
 }
 
 export default async function RootPage() {

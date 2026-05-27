@@ -4,6 +4,7 @@ import { Users } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { HierarchyBreadcrumb } from '@/components/hierarchy/breadcrumb'
 import { StatusBadge } from '@/components/groups/status-badge'
+import { getInitials } from '@/lib/utils'
 
 type HubDetail = {
   id: string
@@ -32,10 +33,6 @@ type CircleRow = {
   member_cap: number
   status: string
   host: { display_name: string; handle: string } | null
-}
-
-function getInitials(name: string) {
-  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('')
 }
 
 export default async function HubPage({

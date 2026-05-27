@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { toggleRSVP, cancelEvent } from '../actions'
 import { CrewGateButton } from '@/components/crew-gate-button'
+import { getInitials } from '@/lib/utils'
 
 type EventDetail = {
   id: string
@@ -61,10 +62,6 @@ function googleCalendarUrl(event: EventDetail) {
     ...(event.location ? { location: event.location } : {}),
   })
   return `https://calendar.google.com/calendar/render?${params}`
-}
-
-function getInitials(name: string) {
-  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('')
 }
 
 export default async function EventDetailPage({
