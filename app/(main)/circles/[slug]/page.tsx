@@ -377,7 +377,7 @@ export default async function CirclePage({
           />
         )}
         <FeedList
-          scopeIds={[circle.id]}
+          circleIds={[circle.id]} showPublicLayer={false}
           myProfileId={myProfileId}
           emptyMessage="No posts yet. Be the first to share something."
         />

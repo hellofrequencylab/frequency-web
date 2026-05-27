@@ -61,6 +61,9 @@ export type FeedPost = {
   created_at: string
   media_urls: string[]
   replyCount?: number
+  reaction_count?: number
+  comment_count?: number
+  engagement_score?: number
   author: {
     id: string
     display_name: string

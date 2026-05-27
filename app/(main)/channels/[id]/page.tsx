@@ -234,7 +234,7 @@ export default async function ChannelPage({
             />
           )}
           <FeedList
-            scopeIds={[channel.id]}
+            circleIds={[channel.id]} showPublicLayer={false}
             myProfileId={myProfileId}
             emptyMessage="No posts yet in this channel."
           />
@@ -252,7 +252,7 @@ export default async function ChannelPage({
             />
           )}
           <FeedList
-            scopeIds={[channel.id]}
+            circleIds={[channel.id]} showPublicLayer={false}
             myProfileId={myProfileId}
             emptyMessage="Start the conversation."
           />
@@ -282,7 +282,7 @@ export default async function ChannelPage({
             />
           )}
           <FeedList
-            scopeIds={[channel.id]}
+            circleIds={[channel.id]} showPublicLayer={false}
             myProfileId={myProfileId}
             emptyMessage="No updates yet."
           />

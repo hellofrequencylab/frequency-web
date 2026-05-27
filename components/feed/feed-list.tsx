@@ -4,136 +4,175 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { relativeTime } from '@/lib/utils'
 import { PostCard, FeedPost } from './post-card'
 
+const POST_SELECT = `
+  id, body, post_type, is_pinned, created_at, media_urls,
+  reaction_count, comment_count, engagement_score,
+  author:profiles!author_id ( id, display_name, handle, avatar_url, community_role ),
+  reactions:post_reactions ( id, reaction_type, profile_id )
+`
+
 export async function FeedList({
-  scopeIds,
+  circleIds,
+  communityProfileIds = [],
+  isAdmin = false,
   myProfileId,
+  sort = 'relevant',
+  showPublicLayer = true,
   emptyMessage = 'Nothing posted yet. Be the first to share something.',
 }: {
-  scopeIds: string[]
+  circleIds: string[]
+  communityProfileIds?: string[]
+  isAdmin?: boolean
   myProfileId: string | null
+  sort?: 'recent' | 'relevant'
+  /** false on circle/channel detail pages — show only scoped posts, not the global public feed */
+  showPublicLayer?: boolean
   emptyMessage?: string
 }) {
-  if (scopeIds.length === 0) {
-    return <EmptyState message="Join a group to see posts here." />
-  }
-
   const admin = createAdminClient()
+  const order = sort === 'relevant' ? 'engagement_score' : 'created_at'
 
   // ── Posts ──────────────────────────────────────────────────────────────────
-  const { data: raw } = await admin
-    .from('posts')
-    .select(
-      `id, body, post_type, is_pinned, created_at, media_urls,
-       author:profiles!author_id ( id, display_name, handle, avatar_url, community_role ),
-       reactions:post_reactions ( id, reaction_type, profile_id )`
-    )
-    .in('scope_id', scopeIds)
-    .order('is_pinned', { ascending: false })
-    .order('created_at', { ascending: false })
-    .limit(20)
+  // Composed from up to 3 layers depending on role, then merged + sorted.
 
-  const rawPosts = (raw ?? []) as unknown as FeedPost[]
+  let rawPosts: any[] = []
 
-  // Fetch reply counts for all posts
-  const postIds = rawPosts.map((p) => p.id)
-  let replyCountMap = new Map<string, number>()
-  if (postIds.length > 0) {
-    const { data: replyRows } = await admin
+  if (isAdmin) {
+    // Janitor sees everything
+    const { data } = await admin
       .from('posts')
-      .select('parent_id')
-      .in('parent_id', postIds)
-    for (const r of replyRows ?? []) {
-      replyCountMap.set(r.parent_id, (replyCountMap.get(r.parent_id) ?? 0) + 1)
+      .select(POST_SELECT)
+      .is('parent_id', null)
+      .order(order, { ascending: false })
+      .limit(30)
+    rawPosts = data ?? []
+  } else {
+    const promises: Promise<{ data: any[] | null }>[] = []
+
+    // Layer 1 — public posts from everyone (main feed only; suppressed on circle/channel pages)
+    if (showPublicLayer) {
+      promises.push(
+        admin
+          .from('posts')
+          .select(POST_SELECT)
+          .eq('visibility', 'public')
+          .is('parent_id', null)
+          .order(order, { ascending: false })
+          .limit(30) as any
+      )
     }
+
+    // Layer 2 — circle-scoped posts from circles the viewer is in (Crew+)
+    if (circleIds.length > 0) {
+      promises.push(
+        admin
+          .from('posts')
+          .select(POST_SELECT)
+          .eq('visibility', 'group')
+          .in('scope_id', circleIds)
+          .is('parent_id', null)
+          .order(order, { ascending: false })
+          .limit(30) as any
+      )
+    }
+
+    // Layer 3 — all posts by members of managed community (Host/Guide/Mentor)
+    // This surfaces group posts the manager isn't a direct member of,
+    // giving hosts/guides/mentors a pulse on their whole community.
+    if (communityProfileIds.length > 0) {
+      promises.push(
+        admin
+          .from('posts')
+          .select(POST_SELECT)
+          .in('author_id', communityProfileIds)
+          .is('parent_id', null)
+          .order(order, { ascending: false })
+          .limit(30) as any
+      )
+    }
+
+    const results = await Promise.all(promises)
+    rawPosts = results.flatMap(r => r.data ?? [])
   }
 
-  const posts: FeedPost[] = rawPosts.map((p) => ({
-    ...p,
-    replyCount: replyCountMap.get(p.id) ?? 0,
-  }))
+  // Dedupe + sort
+  const seen = new Set<string>()
+  const posts: FeedPost[] = rawPosts
+    .filter((p: any) => { if (seen.has(p.id)) return false; seen.add(p.id); return true })
+    .sort((a: any, b: any) =>
+      sort === 'relevant'
+        ? (b.engagement_score ?? 0) - (a.engagement_score ?? 0)
+        : new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    )
+    .slice(0, 20)
+    .map((p: any) => ({ ...p, replyCount: p.comment_count ?? 0 })) as FeedPost[]
 
-  // ── Dispatches scoped to user's communities ────────────────────────────────
+  // ── Dispatches ────────────────────────────────────────────────────────────
+  // Show the single most recent dispatch relevant to the viewer inline.
   let dispatches: any[] = []
 
-  // Get hub IDs for the user's circles
-  const { data: circles } = await admin
-    .from('circles')
-    .select('hub_id')
-    .in('id', scopeIds)
-  const hubIds = (circles ?? []).map((c: any) => c.hub_id).filter(Boolean) as string[]
+  const dispatchSelect = `
+    id, title, excerpt, audience_scope, published_at,
+    author:profiles!author_id ( display_name ),
+    linked_task:crew_tasks!linked_task_id ( id, name )
+  `
 
-  // Get nexus IDs for those hubs
-  let nexusIds: string[] = []
+  const hubIds: string[] = []
+  const nexusIds: string[] = []
+
+  if (circleIds.length > 0) {
+    const { data: circles } = await admin
+      .from('circles').select('hub_id').in('id', circleIds)
+    const hids = (circles ?? []).map((c: any) => c.hub_id).filter(Boolean) as string[]
+    hubIds.push(...hids)
+  }
   if (hubIds.length > 0) {
-    const { data: hubs } = await admin.from('hubs').select('nexus_id').in('id', hubIds)
-    nexusIds = (hubs ?? []).map((h: any) => h.nexus_id).filter(Boolean) as string[]
+    const { data: hubs } = await admin
+      .from('hubs').select('nexus_id').in('id', hubIds)
+    const nids = (hubs ?? []).map((h: any) => h.nexus_id).filter(Boolean) as string[]
+    nexusIds.push(...nids)
   }
 
-  const dispatchSelect = `id, title, excerpt, audience_scope, published_at,
-               author:profiles!author_id ( display_name ),
-               linked_task:crew_tasks!linked_task_id ( id, name )`
-
-  // Fetch dispatches for all audience scopes + own authored dispatches in parallel
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const dispatchPromises: any[] = [
     admin
-      .from('dispatches')
-      .select(dispatchSelect)
-      .eq('status', 'published')
-      .eq('audience_scope', 'circle')
-      .in('audience_id', scopeIds)
-      .order('published_at', { ascending: false })
-      .limit(5),
+      .from('dispatches').select(dispatchSelect)
+      .eq('status', 'published').eq('audience_scope', 'circle')
+      .in('audience_id', circleIds.length > 0 ? circleIds : ['__none__'])
+      .order('published_at', { ascending: false }).limit(5),
   ]
-
-  // Always include dispatches authored by the viewer (they see their own content)
   if (myProfileId) {
     dispatchPromises.push(
-      admin
-        .from('dispatches')
-        .select(dispatchSelect)
-        .eq('status', 'published')
-        .eq('author_id', myProfileId)
-        .order('published_at', { ascending: false })
-        .limit(5)
+      admin.from('dispatches').select(dispatchSelect)
+        .eq('status', 'published').eq('author_id', myProfileId)
+        .order('published_at', { ascending: false }).limit(5)
     )
   }
-
   if (hubIds.length > 0) {
     dispatchPromises.push(
-      admin
-        .from('dispatches')
-        .select(dispatchSelect)
-        .eq('status', 'published')
-        .eq('audience_scope', 'hub')
+      admin.from('dispatches').select(dispatchSelect)
+        .eq('status', 'published').eq('audience_scope', 'hub')
         .in('audience_id', hubIds)
-        .order('published_at', { ascending: false })
-        .limit(5)
+        .order('published_at', { ascending: false }).limit(5)
     )
   }
-
   if (nexusIds.length > 0) {
     dispatchPromises.push(
-      admin
-        .from('dispatches')
-        .select(dispatchSelect)
-        .eq('status', 'published')
-        .eq('audience_scope', 'nexus')
+      admin.from('dispatches').select(dispatchSelect)
+        .eq('status', 'published').eq('audience_scope', 'nexus')
         .in('audience_id', nexusIds)
-        .order('published_at', { ascending: false })
-        .limit(5)
+        .order('published_at', { ascending: false }).limit(5)
     )
   }
 
   const dispatchResults = await Promise.all(dispatchPromises)
   const allDispatches = dispatchResults.flatMap(r => r.data ?? [])
-  const seen = new Set<string>()
+  const dSeen = new Set<string>()
   dispatches = allDispatches
-    .filter((d: any) => { if (seen.has(d.id)) return false; seen.add(d.id); return true })
+    .filter((d: any) => { if (dSeen.has(d.id)) return false; dSeen.add(d.id); return true })
     .sort((a: any, b: any) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime())
-    .slice(0, 1) // Only the single most recent dispatch appears inline in the feed
+    .slice(0, 1)
 
-  // ── Merge posts + dispatch cards, sort by date ─────────────────────────────
+  // ── Merge + render ────────────────────────────────────────────────────────
   type FeedItem =
     | { kind: 'post';     data: FeedPost; date: number }
     | { kind: 'dispatch'; data: any;      date: number }
@@ -142,7 +181,7 @@ export async function FeedList({
   const regular = posts.filter(p => !p.is_pinned)
 
   const items: FeedItem[] = [
-    ...regular.map(p => ({ kind: 'post' as const, data: p, date: new Date(p.created_at).getTime() })),
+    ...regular.map(p => ({ kind: 'post'     as const, data: p, date: new Date(p.created_at).getTime() })),
     ...dispatches.map(d => ({ kind: 'dispatch' as const, data: d, date: new Date(d.published_at).getTime() })),
   ].sort((a, b) => b.date - a.date)
 
