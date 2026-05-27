@@ -86,7 +86,7 @@ export default async function AdminChannelsPage() {
               <button
                 type="submit"
                 title="Hide from discovery"
-                className="p-1.5 rounded-lg text-gray-400 opacity-0 group-hover:opacity-100 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-all"
+                className="p-1.5 rounded-lg text-gray-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-all"
               >
                 <EyeOff className="w-3.5 h-3.5" />
               </button>

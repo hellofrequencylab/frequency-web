@@ -292,7 +292,11 @@ export default function AppShell({
   const showSidebar =
     !!sidebar &&
     !pathname.startsWith('/settings') &&
-    !pathname.startsWith('/messages')
+    !pathname.startsWith('/messages') &&
+    pathname !== '/circles' &&
+    pathname !== '/channels' &&
+    pathname !== '/events' &&
+    pathname !== '/crew'
 
   function cycleTheme() {
     if (theme === 'system') setTheme('dark')
@@ -466,7 +470,7 @@ export default function AppShell({
 
           {/* Page content */}
           <main className="flex-1 overflow-y-auto pb-16 md:pb-0 min-w-0">
-            <div className="max-w-5xl mx-auto w-full px-6 py-6">
+            <div className="w-full px-6 py-6">
               {children}
             </div>
           </main>

@@ -48,6 +48,17 @@ function formatEventDate(iso: string) {
   })
 }
 
+function SidebarCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
+      <div className="px-4 py-2.5 border-b border-gray-100/80 dark:border-gray-800/50">
+        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">{title}</h3>
+      </div>
+      {children}
+    </div>
+  )
+}
+
 export default async function ChannelsPage() {
   const admin = createAdminClient()
   const supabase = await createClient()
@@ -205,56 +216,117 @@ export default async function ChannelsPage() {
         </p>
       </div>
 
-      {myChannels.length > 0 && (
-        <section className="mb-8">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-            Joined
-          </h2>
-          <div className="space-y-2">
-            {myChannels.map((ch) => (
-              <ChannelCard
-                key={ch.id}
-                channel={ch}
-                memberCount={memberCounts[ch.id] ?? 0}
-                isMember
-              />
-            ))}
-          </div>
-        </section>
-      )}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-      {discoverChannels.length > 0 && (
-        <section>
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-            Discover
-          </h2>
-          <div className="space-y-2">
-            {discoverChannels.map((ch) => (
-              <ChannelCard
-                key={ch.id}
-                channel={ch}
-                memberCount={memberCounts[ch.id] ?? 0}
-                isMember={false}
-              />
-            ))}
-          </div>
-        </section>
-      )}
+        {/* ── Main column: channels list ───────────────────────── */}
+        <div className="lg:col-span-2">
 
-      {allChannels.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-gray-200/60 dark:border-gray-800/60 bg-gray-50/50 dark:bg-gray-900/50 p-12 text-center">
-          <Hash className="w-8 h-8 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
-          <p className="text-sm text-gray-500 dark:text-gray-400">No channels in your area yet.</p>
-          {isCreator && (
-            <Link
-              href="/channels/new"
-              className="mt-3 inline-block text-xs text-indigo-600 hover:underline"
-            >
-              Create the first one →
-            </Link>
+          {myChannels.length > 0 && (
+            <section className="mb-8">
+              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                Joined
+              </h2>
+              <div className="space-y-2">
+                {myChannels.map((ch) => (
+                  <ChannelCard
+                    key={ch.id}
+                    channel={ch}
+                    memberCount={memberCounts[ch.id] ?? 0}
+                    isMember
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {discoverChannels.length > 0 && (
+            <section>
+              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                Discover
+              </h2>
+              <div className="space-y-2">
+                {discoverChannels.map((ch) => (
+                  <ChannelCard
+                    key={ch.id}
+                    channel={ch}
+                    memberCount={memberCounts[ch.id] ?? 0}
+                    isMember={false}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {allChannels.length === 0 && (
+            <div className="rounded-2xl border border-dashed border-gray-200/60 dark:border-gray-800/60 bg-gray-50/50 dark:bg-gray-900/50 p-12 text-center">
+              <Hash className="w-8 h-8 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
+              <p className="text-sm text-gray-500 dark:text-gray-400">No channels in your area yet.</p>
+              {isCreator && (
+                <Link
+                  href="/channels/new"
+                  className="mt-3 inline-block text-xs text-indigo-600 hover:underline"
+                >
+                  Create the first one →
+                </Link>
+              )}
+            </div>
           )}
         </div>
-      )}
+
+        {/* ── Sidebar ─────────────────────────────────────────── */}
+        <div className="space-y-4">
+
+          {/* My Channels quick-links */}
+          <SidebarCard title="My Channels">
+            {myChannels.length === 0 ? (
+              <p className="px-4 py-4 text-xs text-gray-400 dark:text-gray-500 text-center">
+                No channels joined
+              </p>
+            ) : (
+              <ul className="divide-y divide-gray-50 dark:divide-gray-800">
+                {myChannels.map((ch) => {
+                  const typeColor = TYPE_COLOR[ch.type] ?? TYPE_COLOR.group
+                  return (
+                    <li key={ch.id}>
+                      <Link
+                        href={`/channels/${ch.id}`}
+                        className="flex items-center justify-between px-4 py-2.5 gap-2 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                      >
+                        <span className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">
+                          {ch.name}
+                        </span>
+                        <span className={`shrink-0 text-[11px] px-1.5 py-0.5 rounded-full font-medium ${typeColor}`}>
+                          {TYPE_LABEL[ch.type]}
+                        </span>
+                      </Link>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+          </SidebarCard>
+
+          {/* Admin card */}
+          {isCreator && (
+            <SidebarCard title="Admin">
+              <div className="px-4 py-3 space-y-2">
+                <Link
+                  href="/channels/new"
+                  className="flex items-center justify-between text-xs font-medium text-indigo-600 hover:underline"
+                >
+                  New Channel →
+                </Link>
+                <Link
+                  href="/admin/channels"
+                  className="flex items-center justify-between text-xs font-medium text-gray-600 dark:text-gray-400 hover:underline"
+                >
+                  Manage Channels
+                </Link>
+              </div>
+            </SidebarCard>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

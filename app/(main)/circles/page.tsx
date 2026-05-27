@@ -28,6 +28,17 @@ type CircleRow = {
   } | null
 }
 
+function SidebarCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
+      <div className="px-4 py-2.5 border-b border-gray-100/80 dark:border-gray-800/50">
+        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">{title}</h3>
+      </div>
+      {children}
+    </div>
+  )
+}
+
 export default async function CirclesPage() {
   const admin = createAdminClient()
   const supabase = await createClient()
@@ -38,16 +49,18 @@ export default async function CirclesPage() {
 
   let myProfileId: string | null = null
   let myCircleIds: string[] = []
+  let isAdmin = false
 
   if (user) {
     const { data: profile } = await admin
       .from('profiles')
-      .select('id')
+      .select('id, community_role')
       .eq('auth_user_id', user.id)
       .maybeSingle()
 
     if (profile) {
       myProfileId = profile.id
+      isAdmin = ['host', 'guide', 'mentor', 'janitor'].includes(profile?.community_role ?? '')
       const { data: mems } = await admin
         .from('memberships')
         .select('circle_id')
@@ -90,48 +103,106 @@ export default async function CirclesPage() {
         updates, and the people you&apos;ll see week to week. Join one to get started.
       </p>
 
-      {/* ── Your circles ────────────────────────────── */}
-      {myCircles.length > 0 && (
-        <section className="mb-8">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-            Your Circles
-          </h2>
-          <div className="space-y-2">
-            {myCircles.map((circle) => (
-              <CircleCard
-                key={circle.id}
-                circle={circle}
-                isMember
-              />
-            ))}
-          </div>
-        </section>
-      )}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-      {/* ── Discover ────────────────────────────────── */}
-      {otherCircles.length > 0 && (
-        <section>
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-            {myCircles.length > 0 ? 'Other Circles' : 'All Circles'}
-          </h2>
-          <div className="space-y-2">
-            {otherCircles.map((circle) => (
-              <CircleCard
-                key={circle.id}
-                circle={circle}
-                isMember={false}
-              />
-            ))}
-          </div>
-        </section>
-      )}
+        {/* ── Main column: circles list ────────────────────────── */}
+        <div className="lg:col-span-2">
 
-      {circles.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-gray-200/60 bg-gray-50/50 dark:bg-gray-900/50 p-12 text-center">
-          <Users className="w-8 h-8 text-gray-300 mx-auto mb-3" />
-          <p className="text-sm text-gray-500">No circles yet. Check back soon.</p>
+          {/* ── Your circles ────────────────────────────── */}
+          {myCircles.length > 0 && (
+            <section className="mb-8">
+              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                Your Circles
+              </h2>
+              <div className="space-y-2">
+                {myCircles.map((circle) => (
+                  <CircleCard
+                    key={circle.id}
+                    circle={circle}
+                    isMember
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* ── Discover ────────────────────────────────── */}
+          {otherCircles.length > 0 && (
+            <section>
+              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                {myCircles.length > 0 ? 'Other Circles' : 'All Circles'}
+              </h2>
+              <div className="space-y-2">
+                {otherCircles.map((circle) => (
+                  <CircleCard
+                    key={circle.id}
+                    circle={circle}
+                    isMember={false}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {circles.length === 0 && (
+            <div className="rounded-2xl border border-dashed border-gray-200/60 bg-gray-50/50 dark:bg-gray-900/50 p-12 text-center">
+              <Users className="w-8 h-8 text-gray-300 mx-auto mb-3" />
+              <p className="text-sm text-gray-500">No circles yet. Check back soon.</p>
+            </div>
+          )}
         </div>
-      )}
+
+        {/* ── Sidebar ─────────────────────────────────────────── */}
+        <div className="space-y-4">
+
+          {/* My Circles quick-links */}
+          <SidebarCard title="My Circles">
+            {myCircles.length === 0 ? (
+              <p className="px-4 py-4 text-xs text-gray-400 dark:text-gray-500 text-center">
+                No circles yet – join one!
+              </p>
+            ) : (
+              <ul className="divide-y divide-gray-50 dark:divide-gray-800">
+                {myCircles.map((circle) => (
+                  <li key={circle.id}>
+                    <div className="flex items-center justify-between px-4 py-2.5 gap-2">
+                      <span className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">
+                        {circle.name}
+                      </span>
+                      <Link
+                        href={`/circles/${circle.slug}`}
+                        className="shrink-0 text-[11px] font-medium text-indigo-600 hover:underline"
+                      >
+                        View →
+                      </Link>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </SidebarCard>
+
+          {/* Admin card */}
+          {isAdmin && (
+            <SidebarCard title="Admin">
+              <div className="px-4 py-3 space-y-2">
+                <Link
+                  href="/circles/new"
+                  className="flex items-center justify-between text-xs font-medium text-indigo-600 hover:underline"
+                >
+                  Create Circle →
+                </Link>
+                <Link
+                  href="/admin/circles"
+                  className="flex items-center justify-between text-xs font-medium text-gray-600 dark:text-gray-400 hover:underline"
+                >
+                  Manage Circles
+                </Link>
+              </div>
+            </SidebarCard>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
