@@ -33,7 +33,7 @@ export default async function AdminPage() {
       <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-2">Admin Panel</h1>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">
         {role === 'janitor' ? (
-          <span className="font-medium text-red-600 dark:text-red-400">Janitor — full platform access</span>
+          <span className="font-medium text-violet-600 dark:text-violet-400">Janitor — full platform access</span>
         ) : (
           <>Scoped to your <span className="font-medium capitalize">{role}</span> level.</>
         )}
