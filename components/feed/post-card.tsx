@@ -26,7 +26,7 @@ const ROLE_BADGE: Record<CommunityRole, { label: string; cls: string }> = {
   host:    { label: 'Host',    cls: 'bg-green-100 text-green-700' },
   guide:   { label: 'Guide',   cls: 'bg-purple-100 text-purple-700' },
   mentor:  { label: 'Mentor',  cls: 'bg-amber-100 text-amber-700' },
-  janitor: { label: 'Janitor', cls: 'bg-red-100 text-red-700' },
+  janitor: { label: 'Janitor', cls: 'bg-violet-100 text-violet-700' },
 }
 
 function getInitials(name: string) {

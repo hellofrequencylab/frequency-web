@@ -34,7 +34,7 @@ const ROLE_BADGE: Record<CommunityRole, { label: string; cls: string }> = {
   host:    { label: 'Host',    cls: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400' },
   guide:   { label: 'Guide',   cls: 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-400' },
   mentor:  { label: 'Mentor',  cls: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400' },
-  janitor: { label: 'Janitor', cls: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400' },
+  janitor: { label: 'Janitor', cls: 'bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-400' },
 }
 
 const SIDEBAR_NAV = [
