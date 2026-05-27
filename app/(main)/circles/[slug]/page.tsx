@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Users, MessageSquare, Settings2 } from 'lucide-react'
+import { ContextActions } from '@/components/context-actions'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { leaveCircle, joinCircle } from '../actions'
@@ -202,6 +203,13 @@ export default async function CirclePage({
             )}
           </div>
 
+          {isHost && (
+            <ContextActions
+              role="host"
+              context={{ type: 'circle', id: circle.id, slug: circle.slug, isHost: true }}
+            />
+          )}
+
           {isMember && !isHost && (
             <form action={leaveCircle.bind(null, circle.id)}>
               <button
@@ -397,6 +405,7 @@ export default async function CirclePage({
         <FeedList
           circleIds={[circle.id]} showPublicLayer={false}
           myProfileId={myProfileId}
+          viewerRole={isHost ? 'host' : isCrew ? 'crew' : 'member'}
           emptyMessage="No posts yet. Be the first to share something."
         />
       </section>

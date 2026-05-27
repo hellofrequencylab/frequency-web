@@ -25,6 +25,7 @@ import {
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { NotificationBell } from '@/components/layout/notification-bell'
+import { ComposeButton } from '@/components/compose-button'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
@@ -346,6 +347,11 @@ export default function AppShell({
 
           {/* Notifications */}
           <NotificationBell initialUnread={unreadCount} />
+
+          {/* Compose — unified create button for crew+ */}
+          {(role === 'crew' || role === 'host' || role === 'guide' || role === 'mentor' || role === 'janitor') && (
+            <ComposeButton role={role} />
+          )}
 
           {/* Account dropdown — initials, admin/account layer */}
           <AccountDropdown

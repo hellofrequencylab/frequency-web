@@ -1,8 +1,8 @@
 import Link from 'next/link'
-import { Heart, ThumbsUp, Trash2, Megaphone, Clock, MessageCircle, TrendingUp } from 'lucide-react'
-import { deletePost, toggleReaction } from '@/app/(main)/feed/actions'
+import { Heart, ThumbsUp, Megaphone, Clock, MessageCircle, TrendingUp } from 'lucide-react'
+import { toggleReaction } from '@/app/(main)/feed/actions'
 import { PostReplies } from './post-replies'
-import { PostReportButton } from './post-report-button'
+import { ContextActions } from '@/components/context-actions'
 import { getInitials, relativeTime } from '@/lib/utils'
 
 function renderBodyWithMentions(body: string): React.ReactNode[] {
@@ -76,9 +76,11 @@ export type FeedPost = {
 export function PostCard({
   post,
   myProfileId,
+  viewerRole = 'member',
 }: {
   post: FeedPost
   myProfileId: string | null
+  viewerRole?: string
 }) {
   const { author, reactions } = post
   const role = (author.community_role ?? 'member') as CommunityRole
@@ -158,19 +160,10 @@ export function PostCard({
               </p>
             </div>
 
-            {isOwn ? (
-              <form action={deletePost.bind(null, post.id)}>
-                <button
-                  type="submit"
-                  aria-label="Delete post"
-                  className="p-1.5 rounded-md text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </form>
-            ) : myProfileId ? (
-              <PostReportButton targetType="post" targetId={post.id} />
-            ) : null}
+            <ContextActions
+              role={(viewerRole ?? 'member') as any}
+              context={{ type: 'post', id: post.id, isPinned: post.is_pinned, isOwn, postType: post.post_type }}
+            />
           </div>
 
           {/* Body */}

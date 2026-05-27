@@ -169,6 +169,7 @@ export default async function FeedPage({
           isAdmin={isAdmin}
           myProfileId={myProfileId}
           sort={sort}
+          viewerRole={myRole}
         />
       </section>
     </div>
