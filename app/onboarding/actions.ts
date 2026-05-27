@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { sendWelcomeEmail } from '@/lib/email'
 
 export async function completeOnboarding(data: {
   displayName: string
@@ -36,6 +37,11 @@ export async function completeOnboarding(data: {
       throw new Error('That handle was just taken. Go back and choose another.')
     }
     throw new Error(error.message)
+  }
+
+  // Fire welcome email — non-blocking, never throws
+  if (user.email) {
+    sendWelcomeEmail({ to: user.email, displayName: data.displayName }).catch(() => {})
   }
 
   redirect('/feed')

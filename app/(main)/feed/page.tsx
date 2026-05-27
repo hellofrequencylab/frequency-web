@@ -1,9 +1,11 @@
 import Link from 'next/link'
+import { Suspense } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { Composer } from '@/components/feed/composer'
 import { FeedList } from '@/components/feed/feed-list'
 import { UpcomingEventsWidget } from '@/components/events/upcoming-widget'
+import { GettingStartedChecklist } from '@/components/feed/getting-started'
 
 export default async function FeedPage() {
   const supabase = await createClient()
@@ -86,6 +88,13 @@ export default async function FeedPage() {
           )}
         </div>
       ) : null}
+
+      {/* ── Getting started checklist (new members) ──────────── */}
+      {myProfileId && (
+        <Suspense fallback={null}>
+          <GettingStartedChecklist profileId={myProfileId} />
+        </Suspense>
+      )}
 
       {/* ── Upcoming events ──────────────────────────────────── */}
       <UpcomingEventsWidget scopeIds={myCircleIds} />
