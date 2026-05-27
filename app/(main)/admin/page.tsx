@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { StatusBadge } from '@/components/groups/status-badge'
 import { MemberManager, type MemberItem } from './member-manager'
+import type { SeasonRank } from '@/lib/season-ranks'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
@@ -92,7 +93,13 @@ async function JanitorPanel({ profileId }: { profileId: string }) {
   const nexuses  = nexusesRes.data  ?? []
   const rawMembers = membersRes.data ?? []
 
-  const members: MemberItem[] = rawMembers.map((m: any) => ({
+  const typedMembers = rawMembers as unknown as Array<{
+    id: string; volunteer_role: string | null; joined_at: string; is_crew_lead: boolean;
+    profile: { id: string; display_name: string; handle: string; avatar_url: string | null; community_role: string; current_season_rank: string | null; current_season_zaps: number; season_challenges_complete: boolean };
+    circle: { name: string } | null;
+  }>
+
+  const members: MemberItem[] = typedMembers.map((m) => ({
     membershipId: m.id,
     profileId:                m.profile.id,
     displayName:              m.profile.display_name,
@@ -102,10 +109,15 @@ async function JanitorPanel({ profileId }: { profileId: string }) {
     circleName:               m.circle?.name ?? undefined,
     joinedAt:                 m.joined_at,
     isCrewLead:               m.is_crew_lead ?? false,
-    currentSeasonRank:        m.profile.current_season_rank ?? undefined,
+    currentSeasonRank:        (m.profile.current_season_rank ?? undefined) as SeasonRank | undefined,
     currentSeasonZaps:        m.profile.current_season_zaps ?? 0,
     seasonChallengesComplete: m.profile.season_challenges_complete ?? false,
   }))
+
+  const typedCircles = circles as unknown as Array<{
+    id: string; name: string; slug: string; status: string; type: string;
+    member_count: number; member_cap: number; hub: { name: string } | null;
+  }>
 
   return (
     <div className="space-y-8">
@@ -113,7 +125,7 @@ async function JanitorPanel({ profileId }: { profileId: string }) {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <StatCard label="Nexuses" value={nexuses.length} Icon={Building2} />
         <StatCard label="Hubs"    value={hubs.length}    Icon={Building2} />
-        <StatCard label="Circles" value={circles.length} Icon={Layers}    />
+        <StatCard label="Circles" value={typedCircles.length} Icon={Layers}    />
         <StatCard label="Members" value={members.length} Icon={Users}     />
       </div>
 
@@ -121,7 +133,7 @@ async function JanitorPanel({ profileId }: { profileId: string }) {
       <section>
         <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">All Circles</h2>
         <div className="space-y-2">
-          {circles.map((circle: any) => (
+          {typedCircles.map((circle) => (
             <Link
               key={circle.id}
               href={`/circles/${circle.slug}`}
@@ -133,7 +145,7 @@ async function JanitorPanel({ profileId }: { profileId: string }) {
                   <StatusBadge status={circle.status} />
                 </div>
                 <p className="text-xs text-gray-400 mt-0.5">
-                  {circle.member_count} / {circle.member_cap} · {(circle.hub as any)?.name}
+                  {circle.member_count} / {circle.member_cap} · {circle.hub?.name}
                 </p>
               </div>
               <span className="text-xs text-gray-400">→</span>
@@ -187,7 +199,13 @@ async function HostPanel({ profileId }: { profileId: string }) {
     .eq('status', 'active')
     .order('joined_at', { ascending: true })
 
-  const members: MemberItem[] = (rawMembers ?? []).map((m: any) => ({
+  type MembershipRow = {
+    id: string; volunteer_role: string | null; joined_at: string; is_crew_lead: boolean;
+    profile: { id: string; display_name: string; handle: string; avatar_url: string | null; community_role: string; current_season_rank: string | null; current_season_zaps: number; season_challenges_complete: boolean };
+    circle: { name: string } | null;
+  }
+  const hostMembers = (rawMembers ?? []) as unknown as MembershipRow[]
+  const members: MemberItem[] = hostMembers.map((m) => ({
     membershipId:             m.id,
     profileId:                m.profile.id,
     displayName:              m.profile.display_name,
@@ -197,23 +215,29 @@ async function HostPanel({ profileId }: { profileId: string }) {
     circleName:               m.circle?.name ?? undefined,
     joinedAt:                 m.joined_at,
     isCrewLead:               m.is_crew_lead ?? false,
-    currentSeasonRank:        m.profile.current_season_rank ?? undefined,
+    currentSeasonRank:        (m.profile.current_season_rank ?? undefined) as SeasonRank | undefined,
     currentSeasonZaps:        m.profile.current_season_zaps ?? 0,
     seasonChallengesComplete: m.profile.season_challenges_complete ?? false,
   }))
+
+  type HostCircleRow = {
+    id: string; name: string; slug: string; status: string; type: string;
+    member_count: number; member_cap: number; hub: { name: string; slug: string } | null;
+  }
+  const hostCircles = (circles ?? []) as unknown as HostCircleRow[]
 
   return (
     <div className="space-y-8">
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3">
-        <StatCard label="Circles"  value={(circles ?? []).length}  Icon={Layers} />
+        <StatCard label="Circles"  value={hostCircles.length}  Icon={Layers} />
         <StatCard label="Members"  value={members.length}          Icon={Users}  />
       </div>
 
       {/* Circles */}
       <section>
         <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Your Circles</h2>
-        {(circles ?? []).length === 0 ? (
+        {hostCircles.length === 0 ? (
           <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-800 p-8 text-center">
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">No circles yet.</p>
             <Link
@@ -226,7 +250,7 @@ async function HostPanel({ profileId }: { profileId: string }) {
           </div>
         ) : (
           <div className="space-y-2">
-            {(circles ?? []).map((circle: any) => (
+            {hostCircles.map((circle) => (
               <Link
                 key={circle.id}
                 href={`/circles/${circle.slug}`}
@@ -282,11 +306,15 @@ async function GuidePanel({ profileId }: { profileId: string }) {
     .eq('guide_id', profileId)
     .order('name')
 
-  const allCircleIds = (hubs ?? []).flatMap((h: any) => h.circles.map((c: any) => c.id))
+  type GuideCircle = { id: string; name: string; slug: string; status: string; member_count: number; member_cap: number; type: string; host: { display_name: string; handle: string } | null }
+  type GuideHub = { id: string; name: string; slug: string; status: string; nexus: { name: string; slug: string } | null; circles: GuideCircle[] }
+  const typedHubs = (hubs ?? []) as unknown as GuideHub[]
+
+  const allCircleIds = typedHubs.flatMap((h) => h.circles.map((c) => c.id))
   const totalCircles = allCircleIds.length
-  const totalMembers = (hubs ?? []).reduce(
-    (sum: number, h: any) =>
-      sum + h.circles.reduce((s: number, c: any) => s + (c.member_count ?? 0), 0),
+  const totalMembers = typedHubs.reduce(
+    (sum: number, h) =>
+      sum + h.circles.reduce((s: number, c) => s + (c.member_count ?? 0), 0),
     0
   )
 
@@ -301,7 +329,13 @@ async function GuidePanel({ profileId }: { profileId: string }) {
     .eq('status', 'active')
     .order('joined_at', { ascending: true })
 
-  const members: MemberItem[] = (rawMembers ?? []).map((m: any) => ({
+  type GuideMemberRow = {
+    id: string; volunteer_role: string | null; joined_at: string; is_crew_lead: boolean;
+    profile: { id: string; display_name: string; handle: string; avatar_url: string | null; community_role: string; current_season_rank: string | null; current_season_zaps: number; season_challenges_complete: boolean };
+    circle: { name: string } | null;
+  }
+  const guideMembers = (rawMembers ?? []) as unknown as GuideMemberRow[]
+  const members: MemberItem[] = guideMembers.map((m) => ({
     membershipId:             m.id,
     profileId:                m.profile.id,
     displayName:              m.profile.display_name,
@@ -311,7 +345,7 @@ async function GuidePanel({ profileId }: { profileId: string }) {
     circleName:               m.circle?.name ?? undefined,
     joinedAt:                 m.joined_at,
     isCrewLead:               m.is_crew_lead ?? false,
-    currentSeasonRank:        m.profile.current_season_rank ?? undefined,
+    currentSeasonRank:        (m.profile.current_season_rank ?? undefined) as SeasonRank | undefined,
     currentSeasonZaps:        m.profile.current_season_zaps ?? 0,
     seasonChallengesComplete: m.profile.season_challenges_complete ?? false,
   }))
@@ -320,13 +354,13 @@ async function GuidePanel({ profileId }: { profileId: string }) {
     <div className="space-y-8">
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
-        <StatCard label="Hubs"    value={(hubs ?? []).length} Icon={Building2} />
+        <StatCard label="Hubs"    value={typedHubs.length} Icon={Building2} />
         <StatCard label="Circles" value={totalCircles}        Icon={Layers}    />
         <StatCard label="Members" value={totalMembers}        Icon={Users}     />
       </div>
 
       {/* Hubs + circles */}
-      {(hubs ?? []).map((hub: any) => (
+      {typedHubs.map((hub) => (
         <section key={hub.id}>
           <div className="flex items-center gap-2 mb-3">
             <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">{hub.name}</h2>
@@ -354,7 +388,7 @@ async function GuidePanel({ profileId }: { profileId: string }) {
             </div>
           ) : (
             <div className="space-y-2">
-              {hub.circles.map((circle: any) => (
+              {hub.circles.map((circle) => (
                 <Link
                   key={circle.id}
                   href={`/circles/${circle.slug}`}
@@ -379,7 +413,7 @@ async function GuidePanel({ profileId }: { profileId: string }) {
         </section>
       ))}
 
-      {(hubs ?? []).length === 0 && (
+      {typedHubs.length === 0 && (
         <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-800 p-8 text-center">
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">No hubs assigned yet.</p>
           <Link
@@ -425,10 +459,15 @@ async function MentorPanel({ profileId }: { profileId: string }) {
     .eq('mentor_id', profileId)
     .order('name')
 
-  const allHubIds = (nexuses ?? []).flatMap((n: any) => n.hubs.map((h: any) => h.id))
+  type MentorCircle = { id: string; member_count: number }
+  type MentorHub = { id: string; name: string; slug: string; status: string; guide: { display_name: string; handle: string } | null; circles: MentorCircle[] }
+  type MentorNexus = { id: string; name: string; slug: string; status: string; member_cap: number; outpost: { name: string } | null; hubs: MentorHub[] }
+  const typedNexuses = (nexuses ?? []) as unknown as MentorNexus[]
+
+  const allHubIds = typedNexuses.flatMap((n) => n.hubs.map((h) => h.id))
   const allCircleIds: string[] = []
 
-  for (const nexus of nexuses ?? []) {
+  for (const nexus of typedNexuses) {
     for (const hub of nexus.hubs ?? []) {
       for (const circle of hub.circles ?? []) {
         allCircleIds.push(circle.id)
@@ -436,12 +475,12 @@ async function MentorPanel({ profileId }: { profileId: string }) {
     }
   }
 
-  const totalMembers = (nexuses ?? []).reduce(
-    (sum: number, n: any) =>
+  const totalMembers = typedNexuses.reduce(
+    (sum: number, n) =>
       sum +
       n.hubs.reduce(
-        (hs: number, h: any) =>
-          hs + h.circles.reduce((cs: number, c: any) => cs + (c.member_count ?? 0), 0),
+        (hs: number, h) =>
+          hs + h.circles.reduce((cs: number, c) => cs + (c.member_count ?? 0), 0),
         0
       ),
     0
@@ -460,7 +499,13 @@ async function MentorPanel({ profileId }: { profileId: string }) {
     .eq('status', 'active')
     .order('joined_at', { ascending: true })
 
-  const members: MemberItem[] = (rawMembers ?? []).map((m: any) => ({
+  type MentorMemberRow = {
+    id: string; volunteer_role: string | null; joined_at: string; is_crew_lead: boolean;
+    profile: { id: string; display_name: string; handle: string; avatar_url: string | null; community_role: string; current_season_rank: string | null; current_season_zaps: number; season_challenges_complete: boolean };
+    circle: { name: string } | null;
+  }
+  const mentorMembers = (rawMembers ?? []) as unknown as MentorMemberRow[]
+  const members: MemberItem[] = mentorMembers.map((m) => ({
     membershipId:             m.id,
     profileId:                m.profile.id,
     displayName:              m.profile.display_name,
@@ -470,7 +515,7 @@ async function MentorPanel({ profileId }: { profileId: string }) {
     circleName:               m.circle?.name ?? undefined,
     joinedAt:                 m.joined_at,
     isCrewLead:               m.is_crew_lead ?? false,
-    currentSeasonRank:        m.profile.current_season_rank ?? undefined,
+    currentSeasonRank:        (m.profile.current_season_rank ?? undefined) as SeasonRank | undefined,
     currentSeasonZaps:        m.profile.current_season_zaps ?? 0,
     seasonChallengesComplete: m.profile.season_challenges_complete ?? false,
   }))
@@ -479,17 +524,17 @@ async function MentorPanel({ profileId }: { profileId: string }) {
     <div className="space-y-8">
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <StatCard label="Nexuses" value={(nexuses ?? []).length} Icon={Building2} />
+        <StatCard label="Nexuses" value={typedNexuses.length} Icon={Building2} />
         <StatCard label="Hubs"    value={totalHubs}              Icon={Building2} />
         <StatCard label="Circles" value={totalCircles}           Icon={Layers}    />
         <StatCard label="Members" value={totalMembers}           Icon={Users}     />
       </div>
 
       {/* Nexus / hub overview */}
-      {(nexuses ?? []).map((nexus: any) => {
+      {typedNexuses.map((nexus) => {
         const nexusTotal = nexus.hubs.reduce(
-          (sum: number, h: any) =>
-            sum + h.circles.reduce((s: number, c: any) => s + (c.member_count ?? 0), 0),
+          (sum: number, h) =>
+            sum + h.circles.reduce((s: number, c) => s + (c.member_count ?? 0), 0),
           0
         )
         return (
@@ -503,9 +548,9 @@ async function MentorPanel({ profileId }: { profileId: string }) {
             </p>
 
             <div className="space-y-2">
-              {nexus.hubs.map((hub: any) => {
+              {nexus.hubs.map((hub) => {
                 const hubTotal = hub.circles.reduce(
-                  (s: number, c: any) => s + (c.member_count ?? 0),
+                  (s: number, c) => s + (c.member_count ?? 0),
                   0
                 )
                 return (
@@ -533,7 +578,7 @@ async function MentorPanel({ profileId }: { profileId: string }) {
         )
       })}
 
-      {(nexuses ?? []).length === 0 && (
+      {typedNexuses.length === 0 && (
         <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-800 p-8 text-center">
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">No nexuses assigned yet.</p>
           <Link

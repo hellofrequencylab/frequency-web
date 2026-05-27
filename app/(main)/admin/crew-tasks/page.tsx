@@ -36,7 +36,15 @@ export default async function AdminCrewTasksPage() {
   ])
 
   // Filter to only completions where the task requires verification
-  const allPending = (pendingRes.data ?? []) as any[]
+  type PendingRow = {
+    id: string
+    completed_at: string
+    zaps_earned: number
+    task: { id: string; name: string; zaps_value: number } | null
+    member: { id: string; display_name: string; handle: string; avatar_url: string | null } | null
+  }
+
+  const allPending = (pendingRes.data ?? []) as unknown as PendingRow[]
   const pendingVerifications = allPending.filter((c) => {
     // task is an object with id/name from the join; check parent requires_verification
     return c.task !== null
@@ -49,7 +57,7 @@ export default async function AdminCrewTasksPage() {
       .map((t) => t.id)
   )
 
-  const filteredPending = pendingVerifications.filter((c: any) =>
+  const filteredPending = pendingVerifications.filter((c: PendingRow) =>
     verificationTaskIds.has(c.task?.id)
   )
 

@@ -4,6 +4,40 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { relativeTime } from '@/lib/utils'
 import { PostCard, FeedPost } from './post-card'
 
+interface RawPost {
+  id: string
+  body: string | null
+  post_type: string
+  is_pinned: boolean
+  created_at: string
+  media_urls: string[]
+  reaction_count: number | null
+  comment_count: number | null
+  engagement_score: number | null
+  author: {
+    id: string
+    display_name: string
+    handle: string
+    avatar_url: string | null
+    community_role: string
+  }
+  reactions: Array<{
+    id: string
+    reaction_type: string
+    profile_id: string
+  }>
+}
+
+interface DispatchItem {
+  id: string
+  title: string
+  excerpt: string | null
+  audience_scope: string
+  published_at: string
+  author: { display_name: string } | null
+  linked_task: { id: string; name: string } | null
+}
+
 const POST_SELECT = `
   id, body, post_type, is_pinned, created_at, media_urls,
   reaction_count, comment_count, engagement_score,
@@ -35,7 +69,7 @@ export async function FeedList({
   // ── Posts ──────────────────────────────────────────────────────────────────
   // Composed from up to 3 layers depending on role, then merged + sorted.
 
-  let rawPosts: any[] = []
+  let rawPosts: RawPost[] = []
 
   if (isAdmin) {
     // Janitor sees everything
@@ -45,9 +79,9 @@ export async function FeedList({
       .is('parent_id', null)
       .order(order, { ascending: false })
       .limit(30)
-    rawPosts = data ?? []
+    rawPosts = (data ?? []) as unknown as RawPost[]
   } else {
-    const promises: Promise<{ data: any[] | null }>[] = []
+    const promises: Promise<{ data: RawPost[] | null }>[] = []
 
     // Layer 1 — public posts from everyone (main feed only; suppressed on circle/channel pages)
     if (showPublicLayer) {
@@ -58,7 +92,7 @@ export async function FeedList({
           .eq('visibility', 'public')
           .is('parent_id', null)
           .order(order, { ascending: false })
-          .limit(30) as any
+          .limit(30) as unknown as Promise<{ data: RawPost[] | null }>
       )
     }
 
@@ -72,7 +106,7 @@ export async function FeedList({
           .in('scope_id', circleIds)
           .is('parent_id', null)
           .order(order, { ascending: false })
-          .limit(30) as any
+          .limit(30) as unknown as Promise<{ data: RawPost[] | null }>
       )
     }
 
@@ -87,29 +121,29 @@ export async function FeedList({
           .in('author_id', communityProfileIds)
           .is('parent_id', null)
           .order(order, { ascending: false })
-          .limit(30) as any
+          .limit(30) as unknown as Promise<{ data: RawPost[] | null }>
       )
     }
 
     const results = await Promise.all(promises)
-    rawPosts = results.flatMap(r => r.data ?? [])
+    rawPosts = results.flatMap((r: { data: RawPost[] | null }) => (r.data ?? []))
   }
 
   // Dedupe + sort
   const seen = new Set<string>()
   const posts: FeedPost[] = rawPosts
-    .filter((p: any) => { if (seen.has(p.id)) return false; seen.add(p.id); return true })
-    .sort((a: any, b: any) =>
+    .filter((p: RawPost) => { if (seen.has(p.id)) return false; seen.add(p.id); return true })
+    .sort((a: RawPost, b: RawPost) =>
       sort === 'relevant'
         ? (b.engagement_score ?? 0) - (a.engagement_score ?? 0)
         : new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     )
     .slice(0, 20)
-    .map((p: any) => ({ ...p, replyCount: p.comment_count ?? 0 })) as FeedPost[]
+    .map((p: RawPost) => ({ ...p, replyCount: p.comment_count ?? 0 })) as FeedPost[]
 
   // ── Dispatches ────────────────────────────────────────────────────────────
   // Show the single most recent dispatch relevant to the viewer inline.
-  let dispatches: any[] = []
+  let dispatches: DispatchItem[] = []
 
   const dispatchSelect = `
     id, title, excerpt, audience_scope, published_at,
@@ -123,28 +157,29 @@ export async function FeedList({
   if (circleIds.length > 0) {
     const { data: circles } = await admin
       .from('circles').select('hub_id').in('id', circleIds)
-    const hids = (circles ?? []).map((c: any) => c.hub_id).filter(Boolean) as string[]
+    const hids = (circles ?? []).map((c: { hub_id: string | null }) => c.hub_id).filter(Boolean) as string[]
     hubIds.push(...hids)
   }
   if (hubIds.length > 0) {
     const { data: hubs } = await admin
       .from('hubs').select('nexus_id').in('id', hubIds)
-    const nids = (hubs ?? []).map((h: any) => h.nexus_id).filter(Boolean) as string[]
+    const nids = (hubs ?? []).map((h: { nexus_id: string | null }) => h.nexus_id).filter(Boolean) as string[]
     nexusIds.push(...nids)
   }
 
-  const dispatchPromises: any[] = [
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const dispatchPromises: Promise<{ data: DispatchItem[] | null }>[] = [
     admin
       .from('dispatches').select(dispatchSelect)
       .eq('status', 'published').eq('audience_scope', 'circle')
       .in('audience_id', circleIds.length > 0 ? circleIds : ['__none__'])
-      .order('published_at', { ascending: false }).limit(5),
+      .order('published_at', { ascending: false }).limit(5) as unknown as Promise<{ data: DispatchItem[] | null }>,
   ]
   if (myProfileId) {
     dispatchPromises.push(
       admin.from('dispatches').select(dispatchSelect)
         .eq('status', 'published').eq('author_id', myProfileId)
-        .order('published_at', { ascending: false }).limit(5)
+        .order('published_at', { ascending: false }).limit(5) as unknown as Promise<{ data: DispatchItem[] | null }>
     )
   }
   if (hubIds.length > 0) {
@@ -152,7 +187,7 @@ export async function FeedList({
       admin.from('dispatches').select(dispatchSelect)
         .eq('status', 'published').eq('audience_scope', 'hub')
         .in('audience_id', hubIds)
-        .order('published_at', { ascending: false }).limit(5)
+        .order('published_at', { ascending: false }).limit(5) as unknown as Promise<{ data: DispatchItem[] | null }>
     )
   }
   if (nexusIds.length > 0) {
@@ -160,7 +195,7 @@ export async function FeedList({
       admin.from('dispatches').select(dispatchSelect)
         .eq('status', 'published').eq('audience_scope', 'nexus')
         .in('audience_id', nexusIds)
-        .order('published_at', { ascending: false }).limit(5)
+        .order('published_at', { ascending: false }).limit(5) as unknown as Promise<{ data: DispatchItem[] | null }>
     )
   }
 
@@ -168,14 +203,14 @@ export async function FeedList({
   const allDispatches = dispatchResults.flatMap(r => r.data ?? [])
   const dSeen = new Set<string>()
   dispatches = allDispatches
-    .filter((d: any) => { if (dSeen.has(d.id)) return false; dSeen.add(d.id); return true })
-    .sort((a: any, b: any) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime())
+    .filter((d: DispatchItem) => { if (dSeen.has(d.id)) return false; dSeen.add(d.id); return true })
+    .sort((a: DispatchItem, b: DispatchItem) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime())
     .slice(0, 1)
 
   // ── Merge + render ────────────────────────────────────────────────────────
   type FeedItem =
     | { kind: 'post';     data: FeedPost; date: number }
-    | { kind: 'dispatch'; data: any;      date: number }
+    | { kind: 'dispatch'; data: DispatchItem; date: number }
 
   const pinned  = posts.filter(p => p.is_pinned)
   const regular = posts.filter(p => !p.is_pinned)
@@ -205,7 +240,7 @@ export async function FeedList({
   )
 }
 
-function DispatchFeedCard({ dispatch: d }: { dispatch: any }) {
+function DispatchFeedCard({ dispatch: d }: { dispatch: DispatchItem }) {
   return (
     <Link
       href={`/broadcast/${d.id}`}

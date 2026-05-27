@@ -21,7 +21,7 @@ export function ChannelForm({ scopeOptions }: { scopeOptions: ScopeOption[] }) {
 
   function handleScopeChange(val: string) {
     const [scope, scopeId] = val.split('|')
-    setSelectedScope(scope as any)
+    setSelectedScope(scope as 'hub' | 'nexus' | 'outpost')
     setSelectedScopeId(scopeId)
   }
 

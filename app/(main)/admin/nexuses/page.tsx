@@ -24,7 +24,12 @@ export default async function AdminNexusesPage() {
              hubs ( id )`)
     .order('name')
 
-  const nexuses = (rawNexuses ?? []).map((n: any) => ({
+  type RawNexusRow = {
+    id: string; name: string; status: string; member_cap: number; mentor_id: string | null;
+    mentor: { id: string; display_name: string } | null; hubs: { id: string }[];
+  }
+  const typedRawNexuses = (rawNexuses ?? []) as unknown as RawNexusRow[]
+  const nexuses = typedRawNexuses.map((n) => ({
     ...n,
     _hub_count: n.hubs?.length ?? 0,
   }))
@@ -44,7 +49,7 @@ export default async function AdminNexusesPage() {
           Top-level geographic groupings. Each nexus contains hubs, which contain circles.
         </p>
       </div>
-      <NexusesClient nexuses={nexuses as any} mentors={mentors ?? []} />
+      <NexusesClient nexuses={nexuses} mentors={mentors ?? []} />
     </div>
   )
 }

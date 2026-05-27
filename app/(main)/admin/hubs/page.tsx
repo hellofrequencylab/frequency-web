@@ -25,7 +25,13 @@ export default async function AdminHubsPage() {
              circles ( id )`)
     .order('name')
 
-  const hubs = (rawHubs ?? []).map((h: any) => ({
+  type RawHubRow = {
+    id: string; name: string; status: string; nexus_id: string | null; guide_id: string | null;
+    nexus: { id: string; name: string } | null; guide: { id: string; display_name: string } | null;
+    circles: { id: string }[];
+  }
+  const typedRawHubs = (rawHubs ?? []) as unknown as RawHubRow[]
+  const hubs = typedRawHubs.map((h) => ({
     ...h,
     _circle_count: h.circles?.length ?? 0,
   }))
@@ -50,7 +56,7 @@ export default async function AdminHubsPage() {
           Hubs group circles within a nexus. Assign a guide to each hub.
         </p>
       </div>
-      <HubsClient hubs={hubs as any} nexuses={nexuses ?? []} guides={guides ?? []} />
+      <HubsClient hubs={hubs} nexuses={nexuses ?? []} guides={guides ?? []} />
     </div>
   )
 }

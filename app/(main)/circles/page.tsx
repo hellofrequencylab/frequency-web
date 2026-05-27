@@ -160,7 +160,7 @@ function CircleCard({
             >
               {circle.name}
             </Link>
-            <StatusBadge status={circle.status as any} />
+            <StatusBadge status={circle.status} />
             <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 font-medium">
               {circle.type}
             </span>

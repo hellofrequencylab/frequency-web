@@ -146,7 +146,12 @@ export async function fetchReplies(parentId: string) {
     .eq('parent_id', parentId)
     .order('created_at', { ascending: true })
     .limit(50)
-  return (data ?? []) as any[]
+  return (data ?? []) as unknown as Array<{
+    id: string
+    body: string | null
+    created_at: string
+    author: { id: string; display_name: string; handle: string; avatar_url: string | null; community_role: string }
+  }>
 }
 
 export async function toggleReaction(

@@ -132,7 +132,7 @@ export default async function DirectoryPage({
             >
               All
             </Link>
-            {regions.map((reg: any) => (
+            {regions.map((reg: { id: string; name: string }) => (
               <Link
                 key={reg.id}
                 href={filterHref({ role: roleFilter, region: reg.name })}

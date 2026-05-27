@@ -50,7 +50,7 @@ export default async function NewChannelPage() {
     .limit(1)
     .maybeSingle()
 
-  const m = membership as any
+  const m = membership as { circle: { hub: { id: string; name: string; nexus: { id: string; name: string; outpost: { id: string; name: string } | null } | null } | null } | null } | null
   const hubId = m?.circle?.hub?.id ?? null
   const hubName = m?.circle?.hub?.name ?? null
   const nexusId = m?.circle?.hub?.nexus?.id ?? null

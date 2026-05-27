@@ -90,7 +90,7 @@ export default async function NexusPage({
       <div className="mb-6">
         <div className="flex items-center gap-2">
           <h1 className="text-xl font-semibold text-gray-900">{nexus.name}</h1>
-          <StatusBadge status={nexus.status as any} />
+          <StatusBadge status={nexus.status} />
         </div>
 
         {nexus.mentor && (
@@ -139,7 +139,7 @@ export default async function NexusPage({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-gray-900">{hub.name}</span>
-                      <StatusBadge status={hub.status as any} />
+                      <StatusBadge status={hub.status} />
                     </div>
                     <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-400">
                       {hub.guide && <span>Guide: {hub.guide.display_name}</span>}

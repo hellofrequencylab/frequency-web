@@ -22,7 +22,21 @@ export default async function AdminCirclesPage() {
   const role = profile.community_role as CommunityRole
 
   // Fetch circles scoped to role
-  let circles: any[] = []
+  type CircleRow = {
+    id: string
+    name: string
+    about: string | null
+    type: string
+    status: string
+    member_count: number
+    member_cap: number
+    hub_id: string | null
+    host_id: string | null
+    hub: { id: string; name: string } | null
+    host: { id: string; display_name: string } | null
+  }
+
+  let circles: CircleRow[] = []
 
   if (role === 'janitor') {
     // Mega-admin: all circles
@@ -32,7 +46,7 @@ export default async function AdminCirclesPage() {
                hub:hubs!hub_id ( id, name ),
                host:profiles!host_id ( id, display_name )`)
       .order('name')
-    circles = data ?? []
+    circles = (data ?? []) as unknown as CircleRow[]
   } else if (role === 'host') {
     const { data } = await admin
       .from('circles')
@@ -41,10 +55,10 @@ export default async function AdminCirclesPage() {
                host:profiles!host_id ( id, display_name )`)
       .eq('host_id', profile.id)
       .order('name')
-    circles = data ?? []
+    circles = (data ?? []) as unknown as CircleRow[]
   } else if (role === 'guide') {
     const { data: hubs } = await admin.from('hubs').select('id').eq('guide_id', profile.id)
-    const hubIds = (hubs ?? []).map((h: any) => h.id)
+    const hubIds = (hubs ?? []).map((h: { id: string }) => h.id)
     if (hubIds.length > 0) {
       const { data } = await admin
         .from('circles')
@@ -53,15 +67,15 @@ export default async function AdminCirclesPage() {
                  host:profiles!host_id ( id, display_name )`)
         .in('hub_id', hubIds)
         .order('name')
-      circles = data ?? []
+      circles = (data ?? []) as unknown as CircleRow[]
     }
   } else {
     // mentor — all circles across their nexuses
     const { data: nexuses } = await admin.from('nexuses').select('id').eq('mentor_id', profile.id)
-    const nexusIds = (nexuses ?? []).map((n: any) => n.id)
+    const nexusIds = (nexuses ?? []).map((n: { id: string }) => n.id)
     if (nexusIds.length > 0) {
       const { data: hubs } = await admin.from('hubs').select('id').in('nexus_id', nexusIds)
-      const hubIds = (hubs ?? []).map((h: any) => h.id)
+      const hubIds = (hubs ?? []).map((h: { id: string }) => h.id)
       if (hubIds.length > 0) {
         const { data } = await admin
           .from('circles')
@@ -70,7 +84,7 @@ export default async function AdminCirclesPage() {
                    host:profiles!host_id ( id, display_name )`)
           .in('hub_id', hubIds)
           .order('name')
-        circles = data ?? []
+        circles = (data ?? []) as unknown as CircleRow[]
       }
     }
   }
@@ -103,7 +117,7 @@ export default async function AdminCirclesPage() {
       </div>
 
       <CirclesClient
-        circles={circles as any}
+        circles={circles}
         hubs={hubs}
         hosts={hostProfiles ?? []}
       />
