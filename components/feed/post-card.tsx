@@ -1,6 +1,7 @@
 import Link from 'next/link'
-import { Heart, ThumbsUp, MessageSquare, Trash2, Megaphone } from 'lucide-react'
+import { Heart, ThumbsUp, Trash2, Megaphone } from 'lucide-react'
 import { deletePost, toggleReaction } from '@/app/(main)/feed/actions'
+import { PostReplies } from './post-replies'
 
 function renderBodyWithMentions(body: string): React.ReactNode[] {
   const parts = body.split(/(@[a-zA-Z0-9_]+)/g)
@@ -59,6 +60,7 @@ export type FeedPost = {
   is_pinned: boolean
   created_at: string
   media_urls: string[]
+  replyCount?: number
   author: {
     id: string
     display_name: string
@@ -212,11 +214,7 @@ export function PostCard({
           </button>
         </form>
 
-        {/* Reply — placeholder for Category 10b */}
-        <button className="ml-auto flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-400 hover:bg-gray-50 hover:text-gray-600 transition-colors">
-          <MessageSquare className="w-3.5 h-3.5" />
-          Reply
-        </button>
+        <PostReplies postId={post.id} initialCount={post.replyCount ?? 0} />
       </div>
     </article>
   )

@@ -4,6 +4,7 @@ import { randomBytes } from 'crypto'
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { sendDispatchNotificationEmail } from '@/lib/email'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
@@ -458,6 +459,69 @@ export async function publishDispatch(id: string) {
   revalidatePath('/broadcast')
   revalidatePath(`/broadcast/${id}`)
   revalidatePath('/feed')
+
+  // Fire-and-forget email fan-out — never block publish on email failure
+  ;(async () => {
+    try {
+      const { data: dispatch } = await admin
+        .from('dispatches')
+        .select('id, title, excerpt, audience_scope, audience_id, author:profiles!author_id(display_name)')
+        .eq('id', id)
+        .maybeSingle()
+      if (!dispatch) return
+
+      const authorName  = (dispatch.author as any)?.display_name ?? 'A host'
+      const excerpt     = dispatch.excerpt ?? ''
+      const appUrl      = process.env.NEXT_PUBLIC_APP_URL ?? 'https://hellofrequency.com'
+      const dispatchUrl = `${appUrl}/broadcast/${id}`
+
+      let profileIds: string[] = []
+      if (dispatch.audience_scope === 'circle') {
+        const { data } = await admin.from('memberships').select('profile_id').eq('circle_id', dispatch.audience_id).eq('status', 'active')
+        profileIds = (data ?? []).map((m: any) => m.profile_id)
+      } else if (dispatch.audience_scope === 'hub') {
+        const { data: circles } = await admin.from('circles').select('id').eq('hub_id', dispatch.audience_id)
+        const cids = (circles ?? []).map((c: any) => c.id)
+        if (cids.length > 0) {
+          const { data } = await admin.from('memberships').select('profile_id').in('circle_id', cids).eq('status', 'active')
+          profileIds = (data ?? []).map((m: any) => m.profile_id)
+        }
+      } else if (dispatch.audience_scope === 'nexus') {
+        const { data: hubs } = await admin.from('hubs').select('id').eq('nexus_id', dispatch.audience_id)
+        const hids = (hubs ?? []).map((h: any) => h.id)
+        if (hids.length > 0) {
+          const { data: circles } = await admin.from('circles').select('id').in('hub_id', hids)
+          const cids = (circles ?? []).map((c: any) => c.id)
+          if (cids.length > 0) {
+            const { data } = await admin.from('memberships').select('profile_id').in('circle_id', cids).eq('status', 'active')
+            profileIds = (data ?? []).map((m: any) => m.profile_id)
+          }
+        }
+      }
+
+      profileIds = [...new Set(profileIds)]
+      if (!profileIds.length) return
+
+      const { data: profiles } = await admin.from('profiles').select('display_name, auth_user_id').in('id', profileIds)
+      if (!profiles?.length) return
+
+      for (const profile of profiles) {
+        if (!profile.auth_user_id) continue
+        const { data: { user } } = await admin.auth.admin.getUserById(profile.auth_user_id)
+        if (!user?.email) continue
+        await sendDispatchNotificationEmail({
+          to:            user.email,
+          recipientName: profile.display_name,
+          authorName,
+          dispatchTitle: dispatch.title,
+          excerpt,
+          dispatchUrl,
+        })
+      }
+    } catch (err) {
+      console.error('[publishDispatch] email fan-out failed:', err)
+    }
+  })()
 }
 
 export async function unpublishDispatch(id: string) {
@@ -520,4 +584,58 @@ export async function updateEventDetails(id: string, fd: FormData) {
   revalidatePath('/admin/events')
   revalidatePath('/events')
   revalidatePath('/feed')
+}
+
+// ── Season rank controls ──────────────────────────────────────────────────────
+
+export async function toggleSeasonComplete(profileId: string, complete: boolean) {
+  const caller = await getCallerProfile()
+  if (!caller || !hasRole(caller.community_role, 'guide')) throw new Error('Unauthorized')
+  const admin = createAdminClient()
+  const { error } = await admin
+    .from('profiles')
+    .update({ season_challenges_complete: complete })
+    .eq('id', profileId)
+  if (error) throw new Error(error.message)
+  revalidatePath('/admin')
+}
+
+export async function assignBodhisattva(profileId: string) {
+  const caller = await getCallerProfile()
+  if (!caller || !hasRole(caller.community_role, 'guide')) throw new Error('Unauthorized')
+  const admin = createAdminClient()
+  const { error } = await admin
+    .from('profiles')
+    .update({ current_season_rank: 'bodhisattva', season_challenges_complete: true })
+    .eq('id', profileId)
+  if (error) throw new Error(error.message)
+  revalidatePath('/admin')
+}
+
+// ── Crew task verification ────────────────────────────────────────────────────
+
+export async function approveVerification(completionId: string) {
+  const caller = await getCallerProfile()
+  if (!caller || !hasRole(caller.community_role, 'host')) throw new Error('Unauthorized')
+  const admin = createAdminClient()
+  const { error } = await admin
+    .from('crew_completions')
+    .update({ verified_by: caller.id })
+    .eq('id', completionId)
+    .is('verified_by', null)
+  if (error) throw new Error(error.message)
+  revalidatePath('/admin/crew-tasks')
+}
+
+export async function rejectVerification(completionId: string) {
+  const caller = await getCallerProfile()
+  if (!caller || !hasRole(caller.community_role, 'host')) throw new Error('Unauthorized')
+  const admin = createAdminClient()
+  const { error } = await admin
+    .from('crew_completions')
+    .delete()
+    .eq('id', completionId)
+    .is('verified_by', null)
+  if (error) throw new Error(error.message)
+  revalidatePath('/admin/crew-tasks')
 }

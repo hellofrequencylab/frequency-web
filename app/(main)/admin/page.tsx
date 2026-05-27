@@ -82,7 +82,7 @@ async function JanitorPanel({ profileId }: { profileId: string }) {
     admin.from('nexuses').select('id, name, slug, status').order('name'),
     admin.from('memberships').select(
       `id, volunteer_role, joined_at, is_crew_lead,
-       profile:profiles!profile_id ( id, display_name, handle, avatar_url, community_role ),
+       profile:profiles!profile_id ( id, display_name, handle, avatar_url, community_role, current_season_rank, current_season_zaps, season_challenges_complete ),
        circle:circles!circle_id ( name )`
     ).eq('status', 'active').order('joined_at', { ascending: true }).limit(200),
   ])
@@ -94,14 +94,17 @@ async function JanitorPanel({ profileId }: { profileId: string }) {
 
   const members: MemberItem[] = rawMembers.map((m: any) => ({
     membershipId: m.id,
-    profileId:    m.profile.id,
-    displayName:  m.profile.display_name,
-    handle:       m.profile.handle,
-    avatarUrl:    m.profile.avatar_url,
-    role:         m.profile.community_role as CommunityRole,
-    circleName:   m.circle?.name ?? undefined,
-    joinedAt:     m.joined_at,
-    isCrewLead:   m.is_crew_lead ?? false,
+    profileId:                m.profile.id,
+    displayName:              m.profile.display_name,
+    handle:                   m.profile.handle,
+    avatarUrl:                m.profile.avatar_url,
+    role:                     m.profile.community_role as CommunityRole,
+    circleName:               m.circle?.name ?? undefined,
+    joinedAt:                 m.joined_at,
+    isCrewLead:               m.is_crew_lead ?? false,
+    currentSeasonRank:        m.profile.current_season_rank ?? undefined,
+    currentSeasonZaps:        m.profile.current_season_zaps ?? 0,
+    seasonChallengesComplete: m.profile.season_challenges_complete ?? false,
   }))
 
   return (
@@ -177,7 +180,7 @@ async function HostPanel({ profileId }: { profileId: string }) {
     .from('memberships')
     .select(
       `id, volunteer_role, joined_at, is_crew_lead,
-       profile:profiles!profile_id ( id, display_name, handle, avatar_url, community_role ),
+       profile:profiles!profile_id ( id, display_name, handle, avatar_url, community_role, current_season_rank, current_season_zaps, season_challenges_complete ),
        circle:circles!circle_id ( name )`
     )
     .in('circle_id', circleIds.length > 0 ? circleIds : ['__none__'])
@@ -185,15 +188,18 @@ async function HostPanel({ profileId }: { profileId: string }) {
     .order('joined_at', { ascending: true })
 
   const members: MemberItem[] = (rawMembers ?? []).map((m: any) => ({
-    membershipId:  m.id,
-    profileId:     m.profile.id,
-    displayName:   m.profile.display_name,
-    handle:        m.profile.handle,
-    avatarUrl:     m.profile.avatar_url,
-    role:          m.profile.community_role as CommunityRole,
-    circleName:    m.circle?.name ?? undefined,
-    joinedAt:      m.joined_at,
-    isCrewLead:    m.is_crew_lead ?? false,
+    membershipId:             m.id,
+    profileId:                m.profile.id,
+    displayName:              m.profile.display_name,
+    handle:                   m.profile.handle,
+    avatarUrl:                m.profile.avatar_url,
+    role:                     m.profile.community_role as CommunityRole,
+    circleName:               m.circle?.name ?? undefined,
+    joinedAt:                 m.joined_at,
+    isCrewLead:               m.is_crew_lead ?? false,
+    currentSeasonRank:        m.profile.current_season_rank ?? undefined,
+    currentSeasonZaps:        m.profile.current_season_zaps ?? 0,
+    seasonChallengesComplete: m.profile.season_challenges_complete ?? false,
   }))
 
   return (
@@ -288,7 +294,7 @@ async function GuidePanel({ profileId }: { profileId: string }) {
     .from('memberships')
     .select(
       `id, volunteer_role, joined_at, is_crew_lead,
-       profile:profiles!profile_id ( id, display_name, handle, avatar_url, community_role ),
+       profile:profiles!profile_id ( id, display_name, handle, avatar_url, community_role, current_season_rank, current_season_zaps, season_challenges_complete ),
        circle:circles!circle_id ( name )`
     )
     .in('circle_id', allCircleIds.length > 0 ? allCircleIds : ['__none__'])
@@ -296,15 +302,18 @@ async function GuidePanel({ profileId }: { profileId: string }) {
     .order('joined_at', { ascending: true })
 
   const members: MemberItem[] = (rawMembers ?? []).map((m: any) => ({
-    membershipId:  m.id,
-    profileId:     m.profile.id,
-    displayName:   m.profile.display_name,
-    handle:        m.profile.handle,
-    avatarUrl:     m.profile.avatar_url,
-    role:          m.profile.community_role as CommunityRole,
-    circleName:    m.circle?.name ?? undefined,
-    joinedAt:      m.joined_at,
-    isCrewLead:    m.is_crew_lead ?? false,
+    membershipId:             m.id,
+    profileId:                m.profile.id,
+    displayName:              m.profile.display_name,
+    handle:                   m.profile.handle,
+    avatarUrl:                m.profile.avatar_url,
+    role:                     m.profile.community_role as CommunityRole,
+    circleName:               m.circle?.name ?? undefined,
+    joinedAt:                 m.joined_at,
+    isCrewLead:               m.is_crew_lead ?? false,
+    currentSeasonRank:        m.profile.current_season_rank ?? undefined,
+    currentSeasonZaps:        m.profile.current_season_zaps ?? 0,
+    seasonChallengesComplete: m.profile.season_challenges_complete ?? false,
   }))
 
   return (
@@ -444,7 +453,7 @@ async function MentorPanel({ profileId }: { profileId: string }) {
     .from('memberships')
     .select(
       `id, volunteer_role, joined_at, is_crew_lead,
-       profile:profiles!profile_id ( id, display_name, handle, avatar_url, community_role ),
+       profile:profiles!profile_id ( id, display_name, handle, avatar_url, community_role, current_season_rank, current_season_zaps, season_challenges_complete ),
        circle:circles!circle_id ( name )`
     )
     .in('circle_id', allCircleIds.length > 0 ? allCircleIds : ['__none__'])
@@ -452,15 +461,18 @@ async function MentorPanel({ profileId }: { profileId: string }) {
     .order('joined_at', { ascending: true })
 
   const members: MemberItem[] = (rawMembers ?? []).map((m: any) => ({
-    membershipId:  m.id,
-    profileId:     m.profile.id,
-    displayName:   m.profile.display_name,
-    handle:        m.profile.handle,
-    avatarUrl:     m.profile.avatar_url,
-    role:          m.profile.community_role as CommunityRole,
-    circleName:    m.circle?.name ?? undefined,
-    joinedAt:      m.joined_at,
-    isCrewLead:    m.is_crew_lead ?? false,
+    membershipId:             m.id,
+    profileId:                m.profile.id,
+    displayName:              m.profile.display_name,
+    handle:                   m.profile.handle,
+    avatarUrl:                m.profile.avatar_url,
+    role:                     m.profile.community_role as CommunityRole,
+    circleName:               m.circle?.name ?? undefined,
+    joinedAt:                 m.joined_at,
+    isCrewLead:               m.is_crew_lead ?? false,
+    currentSeasonRank:        m.profile.current_season_rank ?? undefined,
+    currentSeasonZaps:        m.profile.current_season_zaps ?? 0,
+    seasonChallengesComplete: m.profile.season_challenges_complete ?? false,
   }))
 
   return (

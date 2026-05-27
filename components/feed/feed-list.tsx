@@ -32,7 +32,25 @@ export async function FeedList({
     .order('created_at', { ascending: false })
     .limit(20)
 
-  const posts = (raw ?? []) as unknown as FeedPost[]
+  const rawPosts = (raw ?? []) as unknown as FeedPost[]
+
+  // Fetch reply counts for all posts
+  const postIds = rawPosts.map((p) => p.id)
+  let replyCountMap = new Map<string, number>()
+  if (postIds.length > 0) {
+    const { data: replyRows } = await admin
+      .from('posts')
+      .select('parent_id')
+      .in('parent_id', postIds)
+    for (const r of replyRows ?? []) {
+      replyCountMap.set(r.parent_id, (replyCountMap.get(r.parent_id) ?? 0) + 1)
+    }
+  }
+
+  const posts: FeedPost[] = rawPosts.map((p) => ({
+    ...p,
+    replyCount: replyCountMap.get(p.id) ?? 0,
+  }))
 
   // ── Dispatches scoped to user's communities ────────────────────────────────
   let dispatches: any[] = []

@@ -3,15 +3,24 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 const PROTECTED_PATHS = [
   '/feed',
-  '/groups',
+  '/broadcast',
+  '/circles',
+  '/channels',
   '/events',
+  '/messages',
+  '/people',
+  '/search',
+  '/crew',
+  '/groups',
+  '/hubs',
+  '/nexuses',
   '/profile',
   '/admin',
   '/onboarding',
   '/settings',
 ]
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   // Start with a plain pass-through response. We may replace it below once
   // the Supabase cookie handler needs to write updated session cookies.
   let supabaseResponse = NextResponse.next({ request })

@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Plus, Pencil, Trash2, Check, X } from 'lucide-react'
-import { createCrewTask, updateCrewTask, deleteCrewTask } from '../actions'
+import { Plus, Pencil, Trash2, Check, X, ShieldCheck, ShieldX } from 'lucide-react'
+import { createCrewTask, updateCrewTask, deleteCrewTask, approveVerification, rejectVerification } from '../actions'
 
 const TASK_TYPES = [
   'attendance', 'hosting', 'volunteering', 'content', 'referral', 'other',
@@ -130,7 +130,86 @@ function TaskForm({
   )
 }
 
-export function CrewTasksClient({ tasks }: { tasks: CrewTask[] }) {
+type PendingVerification = {
+  id: string
+  completed_at: string
+  zaps_earned: number
+  task: { id: string; name: string; zaps_value: number } | null
+  member: { id: string; display_name: string; handle: string; avatar_url: string | null } | null
+}
+
+function getInitials(name: string) {
+  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('')
+}
+
+function VerificationQueue({ items }: { items: PendingVerification[] }) {
+  const [isPending, startTransition] = useTransition()
+
+  function handleApprove(id: string) {
+    startTransition(async () => { await approveVerification(id) })
+  }
+
+  function handleReject(id: string) {
+    if (!confirm('Reject and delete this completion?')) return
+    startTransition(async () => { await rejectVerification(id) })
+  }
+
+  if (items.length === 0) return null
+
+  return (
+    <div className="mb-8">
+      <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+        <ShieldCheck className="w-4 h-4 text-amber-500" />
+        Pending Verification
+        <span className="text-xs font-normal text-gray-400 bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded-full">{items.length}</span>
+      </h2>
+      <div className="space-y-2">
+        {items.map((c) => (
+          <div key={c.id} className="flex items-center gap-3 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50/40 dark:bg-amber-950/20 px-4 py-3">
+            {c.member?.avatar_url ? (
+              <img src={c.member.avatar_url} alt={c.member.display_name} className="w-7 h-7 rounded-full object-cover shrink-0" />
+            ) : (
+              <div className="w-7 h-7 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-600 text-xs font-semibold flex items-center justify-center shrink-0">
+                {getInitials(c.member?.display_name ?? '?')}
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-50">
+                {c.member?.display_name ?? 'Unknown'}
+                <span className="text-gray-400 dark:text-gray-500 font-normal"> submitted </span>
+                {c.task?.name ?? 'Unknown task'}
+              </p>
+              <p className="text-xs text-gray-400">
+                {new Date(c.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                {' · '}{c.zaps_earned} zaps pending
+              </p>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                onClick={() => handleApprove(c.id)}
+                disabled={isPending}
+                title="Approve"
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-green-600 text-white text-xs font-semibold hover:bg-green-700 disabled:opacity-50 transition-colors"
+              >
+                <ShieldCheck className="w-3.5 h-3.5" /> Approve
+              </button>
+              <button
+                onClick={() => handleReject(c.id)}
+                disabled={isPending}
+                title="Reject"
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-xs font-semibold hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-50 transition-colors"
+              >
+                <ShieldX className="w-3.5 h-3.5" /> Reject
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export function CrewTasksClient({ tasks, pendingVerifications = [] }: { tasks: CrewTask[]; pendingVerifications?: PendingVerification[] }) {
   const [showCreate, setShowCreate] = useState(false)
   const [editingId,  setEditingId]  = useState<string | null>(null)
   const [isPending,  startTransition] = useTransition()
@@ -158,6 +237,8 @@ export function CrewTasksClient({ tasks }: { tasks: CrewTask[] }) {
 
   return (
     <div className="space-y-3">
+      <VerificationQueue items={pendingVerifications} />
+
       {/* Create form / button */}
       {showCreate ? (
         <TaskForm

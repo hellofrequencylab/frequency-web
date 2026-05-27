@@ -4,6 +4,10 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Megaphone, CalendarDays, Zap, ArrowRight } from 'lucide-react'
 import { relativeTime } from '@/lib/utils'
+import { BroadcastCompose } from './broadcast-compose'
+
+type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
+const HOST_PLUS: CommunityRole[] = ['host', 'guide', 'mentor', 'janitor']
 
 type DispatchRow = {
   id: string
@@ -25,7 +29,7 @@ export default async function BroadcastPage() {
   // Get caller's profile + memberships
   const { data: profile } = await admin
     .from('profiles')
-    .select('id')
+    .select('id, community_role')
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
@@ -98,6 +102,25 @@ export default async function BroadcastPage() {
     .sort((a: any, b: any) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime())
     .slice(0, 20) as unknown as DispatchRow[]
 
+  // Audience options for host+ compose form
+  const isHost = HOST_PLUS.includes((profile as any).community_role as CommunityRole)
+  let namedCircles: { id: string; name: string }[] = []
+  let namedHubs:    { id: string; name: string }[] = []
+  let namedNexuses: { id: string; name: string }[] = []
+
+  if (isHost && circleIds.length > 0) {
+    const { data: cRes } = await admin.from('circles').select('id, name').in('id', circleIds)
+    namedCircles = cRes ?? []
+  }
+  if (isHost && hubIds.length > 0) {
+    const { data: hRes } = await admin.from('hubs').select('id, name').in('id', hubIds)
+    namedHubs = hRes ?? []
+  }
+  if (isHost && nexusIds.length > 0) {
+    const { data: nRes } = await admin.from('nexuses').select('id, name').in('id', nexusIds)
+    namedNexuses = nRes ?? []
+  }
+
   // Upcoming events (next 5)
   const { data: events } = await admin
     .from('events')
@@ -119,9 +142,14 @@ export default async function BroadcastPage() {
 
       {/* ── Header ─────────────────────────────────────────── */}
       <div className="mb-8">
-        <div className="flex items-center gap-2 mb-1">
-          <Megaphone className="w-5 h-5 text-indigo-500" />
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Broadcast</h1>
+        <div className="flex items-center justify-between gap-2 mb-1">
+          <div className="flex items-center gap-2">
+            <Megaphone className="w-5 h-5 text-indigo-500" />
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Broadcast</h1>
+          </div>
+          {isHost && (namedCircles.length > 0 || namedHubs.length > 0 || namedNexuses.length > 0) && (
+            <BroadcastCompose circles={namedCircles} hubs={namedHubs} nexuses={namedNexuses} />
+          )}
         </div>
         <p className="text-sm text-gray-500 dark:text-gray-400">
           Announcements, events, and challenges from your community.

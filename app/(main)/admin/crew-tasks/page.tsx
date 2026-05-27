@@ -11,17 +11,47 @@ export default async function AdminCrewTasksPage() {
   const admin = createAdminClient()
   const { data: profile } = await admin
     .from('profiles')
-    .select('community_role')
+    .select('id, community_role')
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
-  if (!profile || !['host', 'guide', 'mentor'].includes(profile.community_role)) notFound()
+  if (!profile || !['host', 'guide', 'mentor', 'janitor'].includes(profile.community_role)) notFound()
 
-  const { data: tasks } = await admin
-    .from('crew_tasks')
-    .select('id, name, task_type, zaps_value, is_repeatable, requires_verification')
-    .order('task_type')
-    .order('zaps_value', { ascending: false })
+  const [tasksRes, pendingRes] = await Promise.all([
+    admin
+      .from('crew_tasks')
+      .select('id, name, task_type, zaps_value, is_repeatable, requires_verification')
+      .order('task_type')
+      .order('zaps_value', { ascending: false }),
+    admin
+      .from('crew_completions')
+      .select(`
+        id, completed_at, zaps_earned,
+        task:crew_tasks!task_id ( id, name, zaps_value ),
+        member:profiles!profile_id ( id, display_name, handle, avatar_url )
+      `)
+      .is('verified_by', null)
+      .order('completed_at', { ascending: true })
+      .limit(50),
+  ])
+
+  // Filter to only completions where the task requires verification
+  const allPending = (pendingRes.data ?? []) as any[]
+  const pendingVerifications = allPending.filter((c) => {
+    // task is an object with id/name from the join; check parent requires_verification
+    return c.task !== null
+  })
+
+  // Re-fetch tasks that require verification to cross-reference
+  const verificationTaskIds = new Set(
+    (tasksRes.data ?? [])
+      .filter((t) => t.requires_verification)
+      .map((t) => t.id)
+  )
+
+  const filteredPending = pendingVerifications.filter((c: any) =>
+    verificationTaskIds.has(c.task?.id)
+  )
 
   return (
     <div className="px-8 py-8">
@@ -32,7 +62,10 @@ export default async function AdminCrewTasksPage() {
         </p>
       </div>
 
-      <CrewTasksClient tasks={tasks ?? []} />
+      <CrewTasksClient
+        tasks={tasksRes.data ?? []}
+        pendingVerifications={filteredPending}
+      />
     </div>
   )
 }

@@ -106,6 +106,49 @@ export async function deletePost(postId: string) {
   revalidatePath('/circles', 'layout')
 }
 
+export async function createReply(parentId: string, body: string) {
+  const trimmed = body.trim()
+  if (!trimmed) return
+
+  const profileId = await getMyProfileId()
+  if (!profileId) redirect('/sign-in')
+
+  // Inherit scope from the parent post so RLS scoping remains consistent
+  const admin = createAdminClient()
+  const { data: parent } = await admin
+    .from('posts')
+    .select('scope_id, visibility')
+    .eq('id', parentId)
+    .maybeSingle()
+  if (!parent) return
+
+  await admin.from('posts').insert({
+    author_id:  profileId,
+    body:       trimmed,
+    scope_id:   parent.scope_id,
+    visibility: parent.visibility,
+    post_type:  'feed',
+    parent_id:  parentId,
+  })
+
+  revalidatePath('/feed')
+  revalidatePath('/circles', 'layout')
+}
+
+export async function fetchReplies(parentId: string) {
+  const admin = createAdminClient()
+  const { data } = await admin
+    .from('posts')
+    .select(
+      `id, body, created_at,
+       author:profiles!author_id ( id, display_name, handle, avatar_url, community_role )`
+    )
+    .eq('parent_id', parentId)
+    .order('created_at', { ascending: true })
+    .limit(50)
+  return (data ?? []) as any[]
+}
+
 export async function toggleReaction(
   postId: string,
   reactionType: 'heart' | 'plus_one'

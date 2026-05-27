@@ -8,6 +8,31 @@ import { updateProfile } from './actions'
 
 type HandleStatus = 'idle' | 'checking' | 'available' | 'taken'
 
+function resizeToJpeg(file: File, size = 512): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      const canvas = document.createElement('canvas')
+      canvas.width = size
+      canvas.height = size
+      const ctx = canvas.getContext('2d')!
+      const scale = Math.max(size / img.width, size / img.height)
+      const w = img.width * scale
+      const h = img.height * scale
+      ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h)
+      canvas.toBlob(
+        blob => blob ? resolve(blob) : reject(new Error('Canvas export failed')),
+        'image/jpeg',
+        0.92
+      )
+    }
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not decode image')) }
+    img.src = url
+  })
+}
+
 const HANDLE_RE = /^[a-z0-9_]+$/
 
 const input = 'w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-50 placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50'
@@ -84,13 +109,21 @@ export function ProfileForm({
     setUploading(true)
     setUploadError('')
 
+    let blob: Blob
+    try {
+      blob = await resizeToJpeg(avatarFile, 512)
+    } catch {
+      setUploadError('Could not process image. Try a different file.')
+      setUploading(false)
+      return avatarUrl
+    }
+
     const supabase = createClient()
-    const ext  = avatarFile.name.split('.').pop() ?? 'jpg'
-    const path = `${userId}/avatar.${ext}`
+    const path = `${userId}/avatar.jpg`
 
     const { error } = await supabase.storage
       .from('avatars')
-      .upload(path, avatarFile, { upsert: true })
+      .upload(path, blob, { upsert: true, contentType: 'image/jpeg' })
 
     if (error) {
       setUploadError('Upload failed — your other changes were still saved.')
@@ -99,9 +132,10 @@ export function ProfileForm({
     }
 
     const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path)
-    setAvatarUrl(publicUrl)
+    const bustedUrl = `${publicUrl}?t=${Date.now()}`
+    setAvatarUrl(bustedUrl)
     setUploading(false)
-    return publicUrl
+    return bustedUrl
   }
 
   const canSave =
@@ -182,7 +216,7 @@ export function ProfileForm({
                 Revert
               </button>
             )}
-            <p className="text-xs text-gray-400">JPG, PNG, GIF up to 5 MB</p>
+            <p className="text-xs text-gray-400">Any image format up to 5 MB · resized to 512×512</p>
           </div>
           <input
             ref={fileInputRef}
