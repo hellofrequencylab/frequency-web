@@ -75,7 +75,7 @@ export default async function DirectoryPage({
   }
 
   return (
-    <div className="px-8 py-8">
+    <div>
 
       {/* Header */}
       <div className="mb-6">

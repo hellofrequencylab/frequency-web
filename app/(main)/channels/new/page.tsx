@@ -77,7 +77,7 @@ export default async function NewChannelPage() {
 
   if (scopeOptions.length === 0) {
     return (
-      <div className="px-4 py-8 max-w-xl mx-auto">
+      <div>
         <p className="text-sm text-gray-500">
           You need to be in a circle to create a channel.{' '}
           <Link href="/circles" className="text-indigo-600 hover:underline">
@@ -89,7 +89,7 @@ export default async function NewChannelPage() {
   }
 
   return (
-    <div className="px-4 py-8 max-w-xl mx-auto">
+    <div>
       <Link
         href="/channels"
         className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 mb-5 transition-colors"

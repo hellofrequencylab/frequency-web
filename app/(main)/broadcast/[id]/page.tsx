@@ -113,7 +113,7 @@ export default async function DispatchDetailPage({ params }: Props) {
   const dispType   = dispatch.dispatch_type ?? 'post'
 
   return (
-    <div className="px-6 py-8 max-w-2xl mx-auto">
+    <div>
 
       {/* Back */}
       <Link

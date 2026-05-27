@@ -74,7 +74,7 @@ export default async function AdminEventsPage() {
   const past     = events.filter((e) => new Date(e.starts_at) < now)
 
   return (
-    <div className="px-8 py-8">
+    <div>
       <div className="flex items-start justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Events</h1>

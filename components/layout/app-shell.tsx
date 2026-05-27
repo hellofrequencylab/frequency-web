@@ -460,7 +460,9 @@ export default function AppShell({
 
           {/* Page content */}
           <main className="flex-1 overflow-y-auto pb-16 md:pb-0 min-w-0">
-            {children}
+            <div className="max-w-5xl mx-auto w-full px-6 py-6">
+              {children}
+            </div>
           </main>
 
           {/* Right sidebar — only on lg+, hidden on admin/settings */}
