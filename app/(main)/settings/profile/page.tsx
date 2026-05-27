@@ -1,0 +1,37 @@
+import { notFound } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { ProfileForm } from './profile-form'
+
+export default async function ProfileSettingsPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) notFound()
+
+  const admin = createAdminClient()
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('display_name, handle, bio, avatar_url')
+    .eq('auth_user_id', user.id)
+    .maybeSingle()
+
+  if (!profile) notFound()
+
+  return (
+    <div className="px-6 py-8 max-w-2xl mx-auto">
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-1">Edit Profile</h1>
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">
+        Update your display name, handle, bio, and photo.
+      </p>
+      <ProfileForm
+        userId={user.id}
+        initial={{
+          displayName: profile.display_name ?? '',
+          handle:      profile.handle ?? '',
+          bio:         profile.bio ?? '',
+          avatarUrl:   profile.avatar_url ?? '',
+        }}
+      />
+    </div>
+  )
+}
