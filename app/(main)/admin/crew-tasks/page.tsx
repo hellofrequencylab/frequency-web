@@ -24,9 +24,9 @@ export default async function AdminCrewTasksPage() {
     .order('points_value', { ascending: false })
 
   return (
-    <div className="px-4 py-8 max-w-3xl mx-auto">
+    <div className="px-6 py-8 max-w-5xl">
       <div className="mb-6">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-50">Crew Tasks</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Crew Tasks</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           Define the tasks members can complete to earn points. Changes apply immediately across the app.
         </p>

@@ -37,9 +37,9 @@ const TYPE_LABEL = {
 }
 
 const TYPE_COLOR: Record<string, string> = {
-  group:  'bg-indigo-100 text-indigo-700',
-  event:  'bg-amber-100 text-amber-700',
-  thread: 'bg-gray-100 text-gray-600',
+  group:  'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300',
+  event:  'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
+  thread: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
 }
 
 function formatEventDate(iso: string) {
@@ -105,15 +105,15 @@ export default async function ChannelsPage() {
 
   if (!myNexusId && !myHubId) {
     return (
-      <div className="px-4 py-8 max-w-2xl mx-auto">
-        <h1 className="text-xl font-semibold text-gray-900 mb-1">Channels</h1>
-        <p className="text-sm text-gray-500 leading-relaxed mb-6">
+      <div className="px-6 py-8 max-w-2xl">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-1">Channels</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-6">
           Focused spaces beyond your circle. Channels are where the community organises around a
           topic, event, or conversation, open to anyone in your area.
         </p>
-        <div className="rounded-xl border border-dashed border-gray-200 p-12 text-center">
-          <Hash className="w-8 h-8 text-gray-300 mx-auto mb-3" />
-          <p className="text-sm text-gray-500">
+        <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-800 p-12 text-center">
+          <Hash className="w-8 h-8 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             <Link href="/circles" className="text-indigo-600 hover:underline">
               Join a circle
             </Link>{' '}
@@ -185,10 +185,10 @@ export default async function ChannelsPage() {
   const discoverChannels = allChannels.filter((c) => !myChannelIds.has(c.id))
 
   return (
-    <div className="px-4 py-8 max-w-2xl mx-auto">
+    <div className="px-6 py-8 max-w-2xl">
       <div className="mb-6">
         <div className="flex items-center justify-between mb-1">
-          <h1 className="text-xl font-semibold text-gray-900">Channels</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Channels</h1>
           {isCreator && (
             <Link
               href="/channels/new"
@@ -199,7 +199,7 @@ export default async function ChannelsPage() {
             </Link>
           )}
         </div>
-        <p className="text-sm text-gray-500 leading-relaxed max-w-lg">
+        <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed max-w-lg">
           Focused spaces beyond your circle. Channels are where the community organises around a
           topic, event, or conversation — open to anyone in your area.
         </p>
@@ -242,9 +242,9 @@ export default async function ChannelsPage() {
       )}
 
       {allChannels.length === 0 && (
-        <div className="rounded-xl border border-dashed border-gray-200 p-12 text-center">
-          <Hash className="w-8 h-8 text-gray-300 mx-auto mb-3" />
-          <p className="text-sm text-gray-500">No channels in your area yet.</p>
+        <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-800 p-12 text-center">
+          <Hash className="w-8 h-8 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
+          <p className="text-sm text-gray-500 dark:text-gray-400">No channels in your area yet.</p>
           {isCreator && (
             <Link
               href="/channels/new"
@@ -274,15 +274,15 @@ function ChannelCard({
   return (
     <Link
       href={`/channels/${channel.id}`}
-      className="flex items-start gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 hover:border-indigo-200 hover:bg-indigo-50/30 transition-colors"
+      className="flex items-start gap-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-indigo-50/30 dark:hover:bg-indigo-950/20 transition-colors"
     >
-      <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-gray-50 shrink-0">
-        <Icon className="w-4 h-4 text-gray-500" />
+      <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-gray-50 dark:bg-gray-800 shrink-0">
+        <Icon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
       </div>
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-medium text-gray-900">{channel.name}</span>
+          <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{channel.name}</span>
           <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${typeColor}`}>
             {TYPE_LABEL[channel.type]}
           </span>

@@ -31,7 +31,7 @@ function DateBlock({ iso }: { iso: string }) {
   const month = d.toLocaleDateString('en-US', { month: 'short' })
   const day = d.getDate()
   return (
-    <div className="flex flex-col items-center justify-center w-11 h-11 rounded-xl bg-indigo-50 text-indigo-700 shrink-0">
+    <div className="flex flex-col items-center justify-center w-11 h-11 rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 shrink-0">
       <span className="text-[10px] font-semibold uppercase leading-none">{month}</span>
       <span className="text-lg font-bold leading-tight">{day}</span>
     </div>
@@ -73,13 +73,13 @@ export default async function EventsPage() {
 
   if (myCircleIds.length === 0) {
     return (
-      <div className="px-4 py-8 max-w-2xl mx-auto">
+      <div className="px-6 py-8 max-w-2xl">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-xl font-semibold text-gray-900">Events</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Events</h1>
         </div>
-        <div className="rounded-xl border border-dashed border-gray-200 p-12 text-center">
-          <CalendarDays className="w-8 h-8 text-gray-300 mx-auto mb-3" />
-          <p className="text-sm text-gray-500">
+        <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-800 p-12 text-center">
+          <CalendarDays className="w-8 h-8 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             <Link href="/circles" className="text-indigo-600 hover:underline">
               Join a circle
             </Link>{' '}
@@ -149,9 +149,9 @@ export default async function EventsPage() {
   }
 
   return (
-    <div className="px-4 py-8 max-w-2xl mx-auto">
+    <div className="px-6 py-8 max-w-2xl">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold text-gray-900">Events</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Events</h1>
         {isCrew && (
           <Link
             href="/events/new"
@@ -164,9 +164,9 @@ export default async function EventsPage() {
       </div>
 
       {events.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-gray-200 p-12 text-center">
-          <CalendarDays className="w-8 h-8 text-gray-300 mx-auto mb-3" />
-          <p className="text-sm text-gray-500">No upcoming events in the next 60 days.</p>
+        <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-800 p-12 text-center">
+          <CalendarDays className="w-8 h-8 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
+          <p className="text-sm text-gray-500 dark:text-gray-400">No upcoming events in the next 60 days.</p>
           {isCrew && (
             <Link href="/events/new" className="mt-3 inline-block text-xs text-indigo-600 hover:underline">
               Create the first one →
@@ -179,11 +179,11 @@ export default async function EventsPage() {
             <Link
               key={event.id}
               href={`/events/${event.slug}`}
-              className="flex items-start gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 hover:border-indigo-200 hover:bg-indigo-50/30 transition-colors"
+              className="flex items-start gap-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-indigo-50/30 dark:hover:bg-indigo-950/20 transition-colors"
             >
               <DateBlock iso={event.starts_at} />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-900 truncate">{event.title}</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-50 truncate">{event.title}</p>
                 <div className="flex items-center gap-2 flex-wrap mt-0.5">
                   <span className="text-xs text-gray-500">
                     {formatDate(event.starts_at)} · {formatTime(event.starts_at)}

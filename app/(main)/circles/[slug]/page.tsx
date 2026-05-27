@@ -168,7 +168,7 @@ export default async function CirclePage({
   ].filter(Boolean) as { label: string; href?: string }[]
 
   return (
-    <div className="px-4 py-8 max-w-2xl mx-auto">
+    <div className="px-6 py-8 max-w-2xl">
 
       {/* Back */}
       <Link

@@ -43,9 +43,9 @@ export default async function AdminHubsPage() {
     .order('display_name')
 
   return (
-    <div className="px-4 py-8 max-w-3xl mx-auto">
+    <div className="px-6 py-8 max-w-5xl">
       <div className="mb-6">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-50">Hubs</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Hubs</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           Hubs group circles within a nexus. Assign a guide to each hub.
         </p>

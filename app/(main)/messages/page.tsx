@@ -68,7 +68,7 @@ export default async function MessagesPage() {
 
   if (!myParts || myParts.length === 0) {
     return (
-      <div className="px-4 py-12 max-w-lg mx-auto text-center">
+      <div className="px-6 py-12 max-w-lg text-center">
         <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
           <MessageSquare className="w-6 h-6 text-gray-400" />
         </div>
@@ -156,7 +156,7 @@ export default async function MessagesPage() {
   const totalUnread = conversations.reduce((sum, c) => sum + c.unreadCount, 0)
 
   return (
-    <div className="px-4 py-6 max-w-lg mx-auto">
+    <div className="px-6 py-6 max-w-lg">
       <div className="flex items-center justify-between mb-5">
         <h1 className="text-lg font-semibold text-gray-900">
           Messages

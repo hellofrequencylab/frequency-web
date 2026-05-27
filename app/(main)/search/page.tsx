@@ -131,7 +131,7 @@ export default async function SearchPage({
   const resultCount = { people: people.length, posts: posts.length, events: events.length }
 
   return (
-    <div className="px-4 py-8 max-w-2xl mx-auto">
+    <div className="px-6 py-8 max-w-2xl">
       <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50 mb-4">Search</h1>
 
       {/* ── Search form ──────────────────────────────────────── */}

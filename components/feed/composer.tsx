@@ -31,7 +31,7 @@ export function Composer({
   }
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 mb-4">
+    <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 mb-4">
       <textarea
         value={body}
         onChange={(e) => setBody(e.target.value)}
@@ -41,9 +41,9 @@ export function Composer({
         placeholder={placeholder}
         rows={3}
         disabled={isPending}
-        className="w-full resize-none text-sm text-gray-900 placeholder-gray-400 outline-none leading-relaxed disabled:opacity-60"
+        className="w-full resize-none bg-transparent text-sm text-gray-900 dark:text-gray-50 placeholder-gray-400 dark:placeholder-gray-600 outline-none leading-relaxed disabled:opacity-60"
       />
-      <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+      <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
         <p className="text-[11px] text-gray-400">⌘↵ to post</p>
         <button
           onClick={submit}

@@ -134,7 +134,7 @@ export default async function EventDetailPage({
   const isPast = new Date(event.starts_at) < new Date()
 
   return (
-    <div className="px-4 py-8 max-w-2xl mx-auto">
+    <div className="px-6 py-8 max-w-2xl">
       <Link
         href="/events"
         className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 mb-5 transition-colors"

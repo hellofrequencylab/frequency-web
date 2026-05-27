@@ -362,8 +362,8 @@ export default function AppShell({
         {/* Desktop sidebar */}
         <aside className="hidden md:flex w-52 flex-col shrink-0 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
 
-          {/* Primary nav — pt-8 matches feed page's py-8 so items align with page headings */}
-          <nav className="flex-1 overflow-y-auto px-3 pt-8 pb-3 space-y-0.5">
+          {/* Primary nav */}
+          <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
             {SIDEBAR_NAV.map(({ href, label, Icon }) => {
               const active = isActive(href)
               return (

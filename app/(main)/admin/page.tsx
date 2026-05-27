@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { Users, Layers, Building2 } from 'lucide-react'
+import { Users, Layers, Building2, Plus } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { StatusBadge } from '@/components/groups/status-badge'
@@ -29,8 +29,8 @@ export default async function AdminPage() {
   if (!['host', 'guide', 'mentor'].includes(role)) notFound()
 
   return (
-    <div className="px-4 py-8 max-w-2xl mx-auto">
-      <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50 mb-2">Admin Panel</h1>
+    <div className="px-6 py-8 max-w-5xl">
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-2">Admin Panel</h1>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">
         Scoped to your{' '}
         <span className="font-medium capitalize">{role}</span> level.
@@ -118,7 +118,16 @@ async function HostPanel({ profileId }: { profileId: string }) {
       <section>
         <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Your Circles</h2>
         {(circles ?? []).length === 0 ? (
-          <p className="text-sm text-gray-400">No circles assigned.</p>
+          <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-800 p-8 text-center">
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">No circles yet.</p>
+            <Link
+              href="/admin/circles"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Create a circle
+            </Link>
+          </div>
         ) : (
           <div className="space-y-2">
             {(circles ?? []).map((circle: any) => (
@@ -150,7 +159,9 @@ async function HostPanel({ profileId }: { profileId: string }) {
           <span className="ml-2 text-xs font-normal text-gray-400">{members.length}</span>
         </h2>
         {members.length === 0 ? (
-          <p className="text-sm text-gray-400">No members yet.</p>
+          <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-800 p-8 text-center">
+            <p className="text-sm text-gray-500 dark:text-gray-400">No members yet. Share your circle link to get started.</p>
+          </div>
         ) : (
           <MemberManager members={members} />
         )}
@@ -232,7 +243,16 @@ async function GuidePanel({ profileId }: { profileId: string }) {
           </div>
 
           {hub.circles.length === 0 ? (
-            <p className="text-sm text-gray-400">No circles yet.</p>
+            <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-800 p-6 text-center">
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">No circles in this hub yet.</p>
+              <Link
+                href="/admin/circles"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Add a circle
+              </Link>
+            </div>
           ) : (
             <div className="space-y-2">
               {hub.circles.map((circle: any) => (
@@ -261,7 +281,16 @@ async function GuidePanel({ profileId }: { profileId: string }) {
       ))}
 
       {(hubs ?? []).length === 0 && (
-        <p className="text-sm text-gray-400">No hubs assigned.</p>
+        <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-800 p-8 text-center">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">No hubs assigned yet.</p>
+          <Link
+            href="/admin/hubs"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Set up a hub
+          </Link>
+        </div>
       )}
 
       {/* Members */}
@@ -403,7 +432,16 @@ async function MentorPanel({ profileId }: { profileId: string }) {
       })}
 
       {(nexuses ?? []).length === 0 && (
-        <p className="text-sm text-gray-400">No nexuses assigned.</p>
+        <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-800 p-8 text-center">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">No nexuses assigned yet.</p>
+          <Link
+            href="/admin/nexuses"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Create a nexus
+          </Link>
+        </div>
       )}
 
       {/* Full member management */}
