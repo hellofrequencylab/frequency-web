@@ -126,7 +126,7 @@ export function ProfileForm({
       .upload(path, blob, { upsert: true, contentType: 'image/jpeg' })
 
     if (error) {
-      setUploadError('Upload failed — your other changes were still saved.')
+      setUploadError(`Upload failed: ${error.message}`)
       setUploading(false)
       return avatarUrl
     }
