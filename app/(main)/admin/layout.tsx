@@ -22,9 +22,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <div className="flex flex-col min-h-full">
+    <div className="flex min-h-full -mx-6 -my-6">
+      {/* Sidebar sub-nav (desktop) + horizontal tabs (mobile) rendered by AdminSubNav */}
       <AdminSubNav role={profile.community_role as CommunityRole} />
-      {children}
+
+      {/* Content area */}
+      <div className="flex-1 min-w-0 px-6 py-6">
+        {children}
+      </div>
     </div>
   )
 }

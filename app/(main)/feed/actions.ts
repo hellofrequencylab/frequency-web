@@ -27,23 +27,27 @@ export async function createPost(formData: FormData) {
   const scopeId = formData.get('scopeId') as string | null
   const visibility = (formData.get('visibility') as string) || 'public'
   const postType = (formData.get('post_type') as string | null) || 'feed'
+  const imageUrl = (formData.get('imageUrl') as string | null)?.trim() || null
   const isAnnouncement = postType === 'announcement'
 
-  if (!body || !scopeId) return
+  if ((!body && !imageUrl) || !scopeId) return
 
   const profileId = await getMyProfileId()
   if (!profileId) redirect('/sign-in')
+
+  const mediaUrls = imageUrl ? [imageUrl] : []
 
   // Use admin client — RLS circle-membership check would block users who
   // haven't joined a circle yet. Authorisation is enforced here in code.
   const admin = createAdminClient()
   const { data: post, error } = await admin.from('posts').insert({
     author_id: profileId,
-    body,
+    body: body || '',
     scope_id: scopeId,
     visibility,
     post_type: postType,
     is_pinned: isAnnouncement,
+    media_urls: mediaUrls,
   }).select('id').single()
 
   if (error) {
@@ -52,7 +56,8 @@ export async function createPost(formData: FormData) {
   }
 
   // Extract @mentions and create notification rows (best-effort, non-blocking)
-  const handles = [...new Set(Array.from(body.matchAll(/@([a-zA-Z0-9_]+)/g), m => m[1].toLowerCase()))]
+  const bodyText = body || ''
+  const handles = [...new Set(Array.from(bodyText.matchAll(/@([a-zA-Z0-9_]+)/g), m => m[1].toLowerCase()))]
   if (handles.length > 0 && post) {
     const { data: mentioned } = await admin
       .from('profiles')
@@ -185,4 +190,26 @@ export async function toggleReaction(
 
   revalidatePath('/feed')
   revalidatePath('/circles', 'layout')
+}
+
+const HOST_PLUS = ['host', 'guide', 'mentor', 'janitor']
+
+export async function pinPost(postId: string) {
+  const profileId = await getMyProfileId()
+  if (!profileId) return
+  const admin = createAdminClient()
+  const { data: profile } = await admin.from('profiles').select('community_role').eq('id', profileId).maybeSingle()
+  if (!profile || !HOST_PLUS.includes(profile.community_role)) return
+  await admin.from('posts').update({ is_pinned: true }).eq('id', postId)
+  revalidatePath('/feed')
+}
+
+export async function unpinPost(postId: string) {
+  const profileId = await getMyProfileId()
+  if (!profileId) return
+  const admin = createAdminClient()
+  const { data: profile } = await admin.from('profiles').select('community_role').eq('id', profileId).maybeSingle()
+  if (!profile || !HOST_PLUS.includes(profile.community_role)) return
+  await admin.from('posts').update({ is_pinned: false }).eq('id', postId)
+  revalidatePath('/feed')
 }

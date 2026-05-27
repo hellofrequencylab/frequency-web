@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { Users, Layers, Building2, Plus } from 'lucide-react'
+import { Users, Layers, Building2, Plus, CalendarDays, Megaphone } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { StatusBadge } from '@/components/groups/status-badge'
@@ -29,16 +29,32 @@ export default async function AdminPage() {
 
   if (!['host', 'guide', 'mentor', 'janitor'].includes(role)) notFound()
 
+  // Overview stat counts — quick aggregate for all admin roles
+  const [membersCount, circlesCount, eventsCount, dispatchesCount] = await Promise.all([
+    admin.from('memberships').select('id', { count: 'exact', head: true }).eq('status', 'active'),
+    admin.from('circles').select('id', { count: 'exact', head: true }),
+    admin.from('events').select('id', { count: 'exact', head: true }),
+    admin.from('dispatches').select('id', { count: 'exact', head: true }),
+  ])
+
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-2">Admin Panel</h1>
-      <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-2">Overview</h1>
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
         {role === 'janitor' ? (
           <span className="font-medium text-violet-600 dark:text-violet-400">Janitor — full platform access</span>
         ) : (
           <>Scoped to your <span className="font-medium capitalize">{role}</span> level.</>
         )}
       </p>
+
+      {/* Quick stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+        <StatCard label="Members"     value={membersCount.count ?? 0}    Icon={Users} />
+        <StatCard label="Circles"     value={circlesCount.count ?? 0}    Icon={Layers} />
+        <StatCard label="Events"      value={eventsCount.count ?? 0}     Icon={CalendarDays} />
+        <StatCard label="Dispatches"  value={dispatchesCount.count ?? 0} Icon={Megaphone} />
+      </div>
 
       {role === 'janitor' && <JanitorPanel profileId={profile.id} />}
       {role === 'host'    && <HostPanel    profileId={profile.id} />}

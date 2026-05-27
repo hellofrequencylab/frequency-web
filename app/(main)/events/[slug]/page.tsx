@@ -3,8 +3,9 @@ import Link from 'next/link'
 import { CalendarDays, MapPin, Users, ExternalLink } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
-import { toggleRSVP, cancelEvent } from '../actions'
+import { toggleRSVP } from '../actions'
 import { CrewGateButton } from '@/components/crew-gate-button'
+import { ContextActions } from '@/components/context-actions'
 import { getInitials } from '@/lib/utils'
 
 type EventDetail = {
@@ -112,6 +113,7 @@ export default async function EventDetailPage({
   let myRsvpStatus: string | null = null
   let isHost = false
   let isCrew = false
+  let myRole: 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor' = 'member'
 
   if (user) {
     const { data: profile } = await admin
@@ -122,6 +124,7 @@ export default async function EventDetailPage({
 
     if (profile) {
       myProfileId = profile.id
+      myRole = (profile.community_role ?? 'member') as typeof myRole
       isHost = event.host?.id === myProfileId
       isCrew = ['crew', 'host', 'guide', 'mentor', 'janitor'].includes(profile.community_role)
       const myRsvp = rsvps.find((r) => r.profile.id === myProfileId)
@@ -148,7 +151,19 @@ export default async function EventDetailPage({
           </div>
         )}
 
-        <h1 className="text-xl font-semibold text-gray-900">{event.title}</h1>
+        <div className="flex items-start justify-between gap-2">
+          <h1 className="text-xl font-semibold text-gray-900">{event.title}</h1>
+          <ContextActions
+            role={myRole}
+            context={{
+              type: 'event',
+              id: event.id,
+              slug: event.slug,
+              isHost,
+              isCancelled: event.is_cancelled,
+            }}
+          />
+        </div>
 
         <div className="mt-3 space-y-1.5">
           <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -226,16 +241,6 @@ export default async function EventDetailPage({
             Add to Google Calendar
           </a>
 
-          {isHost && (
-            <form action={cancelEvent.bind(null, event.id)}>
-              <button
-                type="submit"
-                className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-red-600 hover:border-red-200 hover:bg-red-50 transition-colors"
-              >
-                Cancel event
-              </button>
-            </form>
-          )}
         </div>
       )}
 

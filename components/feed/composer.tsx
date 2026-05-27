@@ -1,9 +1,12 @@
 'use client'
 
 import { useState, useTransition, useRef, useEffect, useCallback } from 'react'
-import { Megaphone } from 'lucide-react'
+import { Megaphone, ImagePlus, X } from 'lucide-react'
 import { createPost } from '@/app/(main)/feed/actions'
+import { createClient } from '@/lib/supabase/client'
 import { getInitials } from '@/lib/utils'
+
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024 // 5 MB
 
 type HandleResult = { id: string; handle: string; display_name: string; avatar_url: string | null }
 
@@ -23,6 +26,12 @@ export function Composer({
   const [isPending, startTransition] = useTransition()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
+  // Image upload state
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [imageError, setImageError] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   // Mention autocomplete state
   const [mentionQuery, setMentionQuery] = useState<string | null>(null)
   const [mentionStart, setMentionStart] = useState<number>(0)
@@ -30,20 +39,83 @@ export function Composer({
   const [activeSuggestion, setActiveSuggestion] = useState(0)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (file.size > MAX_IMAGE_BYTES) {
+      setImageError(`File is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum is 5 MB.`)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+
+    if (!file.type.startsWith('image/')) {
+      setImageError('Only image files are allowed.')
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+
+    setImageError('')
+    setImageFile(file)
+    setImagePreview(URL.createObjectURL(file))
+  }
+
+  function removeImage() {
+    if (imagePreview) URL.revokeObjectURL(imagePreview)
+    setImageFile(null)
+    setImagePreview(null)
+    setImageError('')
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  async function uploadImage(): Promise<string | null> {
+    if (!imageFile) return null
+
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      setImageError('You must be signed in to upload images.')
+      return null
+    }
+
+    const safeName = imageFile.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+    const path = `${user.id}/${Date.now()}-${safeName}`
+
+    const { error } = await supabase.storage
+      .from('posts')
+      .upload(path, imageFile, { contentType: imageFile.type })
+
+    if (error) {
+      setImageError(`Upload failed: ${error.message}`)
+      return null
+    }
+
+    const { data: { publicUrl } } = supabase.storage.from('posts').getPublicUrl(path)
+    return publicUrl
+  }
+
   function submit() {
     const trimmed = body.trim()
-    if (!trimmed || isPending) return
-
-    const fd = new FormData()
-    fd.set('body', trimmed)
-    fd.set('scopeId', scopeId)
-    fd.set('visibility', visibility)
-    fd.set('post_type', isAnnouncement ? 'announcement' : 'feed')
+    if ((!trimmed && !imageFile) || isPending) return
 
     startTransition(async () => {
+      let imageUrl: string | null = null
+      if (imageFile) {
+        imageUrl = await uploadImage()
+        if (imageFile && !imageUrl) return // upload failed, abort
+      }
+
+      const fd = new FormData()
+      fd.set('body', trimmed)
+      fd.set('scopeId', scopeId)
+      fd.set('visibility', visibility)
+      fd.set('post_type', isAnnouncement ? 'announcement' : 'feed')
+      if (imageUrl) fd.set('imageUrl', imageUrl)
+
       await createPost(fd)
       setBody('')
       setIsAnnouncement(false)
+      removeImage()
       setSuggestions([])
       setMentionQuery(null)
     })
@@ -141,6 +213,26 @@ export function Composer({
         className="w-full resize-none bg-transparent text-sm text-gray-900 dark:text-gray-50 placeholder-gray-400 dark:placeholder-gray-600 outline-none leading-relaxed disabled:opacity-60"
       />
 
+      {/* Image preview */}
+      {imagePreview && (
+        <div className="relative mt-2 inline-block">
+          <img
+            src={imagePreview}
+            alt="Upload preview"
+            className="rounded-xl max-h-48 object-cover border border-gray-200 dark:border-gray-700"
+          />
+          <button
+            type="button"
+            onClick={removeImage}
+            className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors"
+            aria-label="Remove image"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+      {imageError && <p className="mt-1.5 text-xs text-red-600">{imageError}</p>}
+
       {/* @mention autocomplete dropdown */}
       {suggestions.length > 0 && mentionQuery !== null && (
         <div
@@ -174,9 +266,31 @@ export function Composer({
         </div>
       )}
 
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleImageSelect}
+      />
+
       <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
         <div className="flex items-center gap-3">
           <p className="text-[11px] text-gray-400">⌘↵ to post · @ to mention</p>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isPending}
+            className={`inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold transition-colors ${
+              imageFile
+                ? 'bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400'
+                : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800'
+            } disabled:opacity-40`}
+            title="Attach image"
+          >
+            <ImagePlus className="w-3.5 h-3.5" />
+          </button>
           {canAnnounce && (
             <button
               type="button"
@@ -195,7 +309,7 @@ export function Composer({
         </div>
         <button
           onClick={submit}
-          disabled={!body.trim() || isPending}
+          disabled={(!body.trim() && !imageFile) || isPending}
           className={`rounded-lg px-4 py-1.5 text-xs font-semibold text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
             isAnnouncement
               ? 'bg-amber-500 hover:bg-amber-600'

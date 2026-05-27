@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { Megaphone, CalendarDays, Zap, ArrowRight } from 'lucide-react'
 import { relativeTime } from '@/lib/utils'
 import { BroadcastCompose } from './broadcast-compose'
+import { ContextActions } from '@/components/context-actions'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 const HOST_PLUS: CommunityRole[] = ['host', 'guide', 'mentor', 'janitor']
@@ -13,6 +14,7 @@ type DispatchRow = {
   id: string
   title: string
   excerpt: string | null
+  author_id: string
   audience_scope: string
   published_at: string
   author: { display_name: string; avatar_url: string | null } | null
@@ -71,7 +73,7 @@ export default async function BroadcastPage() {
     admin
       .from('dispatches')
       .select(`
-        id, title, excerpt, audience_scope, published_at,
+        id, title, excerpt, audience_scope, published_at, author_id,
         author:profiles!author_id ( display_name, avatar_url ),
         linked_task:crew_tasks!linked_task_id ( id, name )
       `)
@@ -168,7 +170,7 @@ export default async function BroadcastPage() {
             </div>
           ) : (
             dispatches.map(d => (
-              <DispatchCard key={d.id} dispatch={d} />
+              <DispatchCard key={d.id} dispatch={d} viewerRole={(profile as any).community_role as CommunityRole} myProfileId={profile.id} />
             ))
           )}
         </div>
@@ -242,47 +244,57 @@ export default async function BroadcastPage() {
   )
 }
 
-function DispatchCard({ dispatch: d }: { dispatch: DispatchRow }) {
+function DispatchCard({ dispatch: d, viewerRole, myProfileId }: { dispatch: DispatchRow; viewerRole: CommunityRole; myProfileId: string }) {
+  const isAuthor = d.author_id === myProfileId
+  const showActions = isAuthor || HOST_PLUS.includes(viewerRole)
+
   return (
-    <Link
-      href={`/broadcast/${d.id}`}
-      className="group block rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm px-5 py-4 hover:border-indigo-200 dark:hover:border-indigo-800 hover:shadow-md transition-all"
-    >
-      {/* Scope badge */}
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-500">
-          {d.audience_scope} dispatch
-        </span>
-        {d.linked_task && (
-          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-500 flex items-center gap-0.5">
-            <Zap className="w-2.5 h-2.5" /> Challenge
-          </span>
-        )}
-      </div>
-
-      {/* Title */}
-      <h2 className="text-base font-black text-gray-900 dark:text-gray-50 leading-snug group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors mb-1">
-        {d.title}
-      </h2>
-
-      {/* Excerpt */}
-      {d.excerpt && (
-        <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed">
-          {d.excerpt}
-        </p>
-      )}
-
-      {/* Footer */}
-      <div className="flex items-center justify-between mt-3">
-        <div className="flex items-center gap-1.5 text-xs text-gray-400">
-          {d.author && (
-            <span className="font-medium text-gray-500 dark:text-gray-400">{d.author.display_name}</span>
-          )}
-          <span>·</span>
-          <span>{relativeTime(d.published_at)}</span>
+    <div className="group relative rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm px-5 py-4 hover:border-indigo-200 dark:hover:border-indigo-800 hover:shadow-md transition-all">
+      {showActions && (
+        <div className="absolute top-3 right-3 z-10">
+          <ContextActions
+            role={viewerRole}
+            context={{ type: 'dispatch', id: d.id, isAuthor }}
+          />
         </div>
-        <ArrowRight className="w-3.5 h-3.5 text-gray-300 dark:text-gray-600 group-hover:text-indigo-400 transition-colors" />
-      </div>
-    </Link>
+      )}
+      <Link href={`/broadcast/${d.id}`} className="block">
+        {/* Scope badge */}
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-500">
+            {d.audience_scope} dispatch
+          </span>
+          {d.linked_task && (
+            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-500 flex items-center gap-0.5">
+              <Zap className="w-2.5 h-2.5" /> Challenge
+            </span>
+          )}
+        </div>
+
+        {/* Title */}
+        <h2 className="text-base font-black text-gray-900 dark:text-gray-50 leading-snug group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors mb-1">
+          {d.title}
+        </h2>
+
+        {/* Excerpt */}
+        {d.excerpt && (
+          <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed">
+            {d.excerpt}
+          </p>
+        )}
+
+        {/* Footer */}
+        <div className="flex items-center justify-between mt-3">
+          <div className="flex items-center gap-1.5 text-xs text-gray-400">
+            {d.author && (
+              <span className="font-medium text-gray-500 dark:text-gray-400">{d.author.display_name}</span>
+            )}
+            <span>·</span>
+            <span>{relativeTime(d.published_at)}</span>
+          </div>
+          <ArrowRight className="w-3.5 h-3.5 text-gray-300 dark:text-gray-600 group-hover:text-indigo-400 transition-colors" />
+        </div>
+      </Link>
+    </div>
   )
 }

@@ -122,11 +122,11 @@ function ProfileCard({
         </div>
       </Link>
 
-      {/* Member settings — gear reveals on hover */}
+      {/* Member settings — always visible gear icon */}
       <Link
         href="/settings"
         aria-label="Member settings"
-        className="shrink-0 p-1.5 rounded-lg text-gray-300 dark:text-gray-700 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 opacity-0 group-hover:opacity-100 transition-all"
+        className="shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 dark:text-gray-500 dark:hover:text-indigo-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
       >
         <Settings className="w-4 h-4" />
       </Link>
@@ -482,7 +482,7 @@ export default function AppShell({
             { href: '/circles',  label: 'Circles',  Icon: Users },
             { href: '/events',   label: 'Events',   Icon: CalendarDays },
             { href: '/messages', label: 'Messages', Icon: MessageSquare },
-            { href: profileHref, label: 'Profile',  Icon: User },
+            { href: '/settings', label: 'Settings', Icon: Settings },
           ] as const
         ).map(({ href, label, Icon }) => {
           const active = href === profileHref ? profileActive : isActive(href)
