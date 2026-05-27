@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Suspense } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getInitials, relativeTime } from '@/lib/utils'
+import { RANK_COLORS, RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
 import { CalendarDays, MapPin, Megaphone, Zap, Trophy } from 'lucide-react'
 import { GettingStartedChecklist } from '@/components/feed/getting-started'
 
@@ -277,15 +278,6 @@ async function RecentDispatchesWidget({
 
 // ── Leaderboard ───────────────────────────────────────────────────────────────
 
-const RANK_COLORS: Record<string, string> = {
-  crew:        'bg-gray-400',
-  deshi:       'bg-indigo-400',
-  sempai:      'bg-indigo-500',
-  sensei:      'bg-purple-500',
-  sifu:        'bg-amber-500',
-  bodhisattva: 'bg-rose-500',
-}
-
 async function LeaderboardWidget({ profileId, circleIds }: { profileId: string; circleIds: string[] }) {
   if (circleIds.length === 0) return null
 
@@ -310,7 +302,7 @@ async function LeaderboardWidget({ profileId, circleIds }: { profileId: string; 
 
   const top = (profiles ?? []) as {
     id: string; display_name: string; handle: string; avatar_url: string | null;
-    current_season_zaps: number; current_season_rank: string
+    current_season_zaps: number; current_season_rank: SeasonRank
   }[]
 
   if (top.length === 0) return null
@@ -322,7 +314,7 @@ async function LeaderboardWidget({ profileId, circleIds }: { profileId: string; 
       <div className="p-2">
         {top.map((member, i) => {
           const isSelf = member.id === profileId
-          const rankColor = RANK_COLORS[member.current_season_rank] ?? 'bg-gray-400'
+          const rankColor = RANK_COLORS[member.current_season_rank] ?? 'bg-slate-400'
           return (
             <Link
               key={member.id}
@@ -343,8 +335,8 @@ async function LeaderboardWidget({ profileId, circleIds }: { profileId: string; 
                 {member.display_name}
               </span>
               <div className="flex items-center gap-1 shrink-0">
-                <span className={`text-[9px] font-bold px-1 py-0.5 rounded-full text-white capitalize ${rankColor}`}>
-                  {member.current_season_rank}
+                <span className={`text-[9px] font-bold px-1 py-0.5 rounded-full text-white ${rankColor}`}>
+                  {RANK_LABELS[member.current_season_rank] ?? member.current_season_rank}
                 </span>
                 <div className="flex items-center gap-0.5">
                   <Zap className="w-2.5 h-2.5 text-amber-400" />

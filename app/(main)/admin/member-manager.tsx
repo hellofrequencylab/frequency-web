@@ -3,7 +3,8 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { UserX, Star } from 'lucide-react'
-import { assignRole, deactivateMember, toggleSeasonComplete, assignBodhisattva } from './actions'
+import { assignRole, deactivateMember, toggleSeasonComplete, assignLuminary } from './actions'
+import type { SeasonRank } from '@/lib/season-ranks'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
@@ -17,7 +18,7 @@ export type MemberItem = {
   circleName?: string
   joinedAt: string
   isCrewLead: boolean
-  currentSeasonRank?: string
+  currentSeasonRank?: SeasonRank
   currentSeasonZaps?: number
   seasonChallengesComplete?: boolean
 }
@@ -73,9 +74,9 @@ export function MemberManager({ members }: { members: MemberItem[] }) {
     })
   }
 
-  function handleBodhisattva(profileId: string) {
+  function handleLuminary(profileId: string) {
     startTransition(async () => {
-      await assignBodhisattva(profileId)
+      await assignLuminary(profileId)
     })
   }
 
@@ -136,9 +137,9 @@ export function MemberManager({ members }: { members: MemberItem[] }) {
       ) : (
         <div className="space-y-0.5">
           {filtered.map((m) => {
-            const isSifu = m.currentSeasonRank === 'sifu'
-            const isBodhisattva = m.currentSeasonRank === 'bodhisattva'
-            const canPromote = isSifu && m.seasonChallengesComplete && !isBodhisattva
+            const isConduit = m.currentSeasonRank === 'conduit'
+            const isLuminary = m.currentSeasonRank === 'luminary'
+            const canPromote = isConduit && m.seasonChallengesComplete && !isLuminary
 
             return (
               <div
@@ -172,9 +173,9 @@ export function MemberManager({ members }: { members: MemberItem[] }) {
                         Crew Lead
                       </span>
                     )}
-                    {isBodhisattva && (
-                      <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 font-medium flex items-center gap-0.5">
-                        <Star className="w-2.5 h-2.5" /> Bodhisattva
+                    {isLuminary && (
+                      <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-yellow-100 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-300 font-medium flex items-center gap-0.5">
+                        <Star className="w-2.5 h-2.5" /> Luminary
                       </span>
                     )}
                   </div>
@@ -193,7 +194,7 @@ export function MemberManager({ members }: { members: MemberItem[] }) {
                         year: 'numeric',
                       })}
                     </span>
-                    {m.currentSeasonRank && m.currentSeasonRank !== 'crew' && (
+                    {m.currentSeasonRank && m.currentSeasonRank !== 'ghost' && (
                       <>
                         <span>·</span>
                         <span className="capitalize text-indigo-500 dark:text-indigo-400">{m.currentSeasonRank}</span>
@@ -222,15 +223,15 @@ export function MemberManager({ members }: { members: MemberItem[] }) {
                       {m.seasonChallengesComplete ? '✓ Challenges' : 'Mark complete'}
                     </button>
                   )}
-                  {/* Bodhisattva promotion — sifu + challenges complete */}
+                  {/* Luminary promotion — conduit + challenges complete */}
                   {canPromote && (
                     <button
-                      onClick={() => handleBodhisattva(m.profileId)}
+                      onClick={() => handleLuminary(m.profileId)}
                       disabled={isPending}
-                      title="Promote to Bodhisattva"
-                      className="text-[11px] px-2 py-1 rounded-lg border border-purple-300 bg-purple-50 text-purple-700 dark:border-purple-800 dark:bg-purple-950/30 dark:text-purple-400 font-medium hover:bg-purple-100 dark:hover:bg-purple-950/50 transition-colors disabled:opacity-50"
+                      title="Promote to Luminary"
+                      className="text-[11px] px-2 py-1 rounded-lg border border-yellow-300 bg-yellow-50 text-yellow-700 dark:border-yellow-800 dark:bg-yellow-950/30 dark:text-yellow-400 font-medium hover:bg-yellow-100 dark:hover:bg-yellow-950/50 transition-colors disabled:opacity-50"
                     >
-                      → Bodhisattva
+                      → Luminary
                     </button>
                   )}
                   <select

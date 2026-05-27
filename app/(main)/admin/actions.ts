@@ -600,13 +600,13 @@ export async function toggleSeasonComplete(profileId: string, complete: boolean)
   revalidatePath('/admin')
 }
 
-export async function assignBodhisattva(profileId: string) {
+export async function assignLuminary(profileId: string) {
   const caller = await getCallerProfile()
   if (!caller || !hasRole(caller.community_role, 'guide')) throw new Error('Unauthorized')
   const admin = createAdminClient()
   const { error } = await admin
     .from('profiles')
-    .update({ current_season_rank: 'bodhisattva', season_challenges_complete: true })
+    .update({ current_season_rank: 'luminary', season_challenges_complete: true })
     .eq('id', profileId)
   if (error) throw new Error(error.message)
   revalidatePath('/admin')

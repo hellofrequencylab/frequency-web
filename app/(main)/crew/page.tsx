@@ -3,24 +3,8 @@ import Link from 'next/link'
 import { Star, CheckCircle, Zap, Trophy } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { SEASON_RANKS, getRankDef, type SeasonRank } from '@/lib/season-ranks'
 import { CompleteButton } from './complete-button'
-
-// ── Season rank definitions ───────────────────────────────────────────────────
-
-const SEASON_RANKS = [
-  { rank: 'crew',        label: 'Crew',        minZaps: 0,    color: 'bg-gray-400',    text: 'text-gray-500'    },
-  { rank: 'deshi',       label: 'Deshi',       minZaps: 100,  color: 'bg-indigo-400',  text: 'text-indigo-500'  },
-  { rank: 'sempai',      label: 'Sempai',      minZaps: 300,  color: 'bg-indigo-500',  text: 'text-indigo-600'  },
-  { rank: 'sensei',      label: 'Sensei',      minZaps: 750,  color: 'bg-purple-500',  text: 'text-purple-600'  },
-  { rank: 'sifu',        label: 'Sifu',        minZaps: 1500, color: 'bg-amber-500',   text: 'text-amber-600'   },
-  { rank: 'bodhisattva', label: 'Bodhisattva', minZaps: 3000, color: 'bg-rose-500',    text: 'text-rose-600'    },
-] as const
-
-type SeasonRank = typeof SEASON_RANKS[number]['rank']
-
-function getRankDef(rank: SeasonRank) {
-  return SEASON_RANKS.find(r => r.rank === rank) ?? SEASON_RANKS[0]
-}
 
 const TASK_TYPE_LABEL: Record<string, string> = {
   attendance:   'Attendance',
@@ -55,7 +39,7 @@ export default async function CrewPage() {
   const isCrew = ['crew', 'host', 'guide', 'mentor', 'janitor'].includes((profile as any).community_role ?? '')
 
   const currentSeasonZaps: number = (profile as any).current_season_zaps ?? 0
-  const currentSeasonRank: SeasonRank = ((profile as any).current_season_rank ?? 'crew') as SeasonRank
+  const currentSeasonRank: SeasonRank = ((profile as any).current_season_rank ?? 'ghost') as SeasonRank
   const challengesComplete: boolean  = (profile as any).season_challenges_complete ?? false
   const rankDef = getRankDef(currentSeasonRank)
 
@@ -130,7 +114,7 @@ export default async function CrewPage() {
           handle:      p.handle,
           avatarUrl:   p.avatar_url,
           seasonZaps:  (p as any).current_season_zaps ?? 0,
-          seasonRank:  ((p as any).current_season_rank ?? 'crew') as SeasonRank,
+          seasonRank:  ((p as any).current_season_rank ?? 'ghost') as SeasonRank,
         }))
         .sort((a, b) => b.seasonZaps - a.seasonZaps)
         .slice(0, 5)
@@ -185,15 +169,15 @@ export default async function CrewPage() {
       <div className="mb-8 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
         <div className="flex items-center justify-between mb-3">
           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            {currentSeasonRank === 'bodhisattva'
+            {currentSeasonRank === 'luminary'
               ? 'Maximum rank achieved'
-              : currentSeasonRank === 'sifu' && !challengesComplete
-              ? `Progress to Bodhisattva — complete season challenges to unlock`
+              : currentSeasonRank === 'conduit' && !challengesComplete
+              ? `Progress to Luminary — complete season challenges to unlock`
               : nextRank
               ? `Progress to ${nextRank.label}`
               : 'Max rank'}
           </span>
-          {nextRank && currentSeasonRank !== 'sifu' && (
+          {nextRank && currentSeasonRank !== 'conduit' && (
             <span className="text-xs text-gray-400 dark:text-gray-500">
               {currentSeasonZaps.toLocaleString()} / {nextRank.minZaps.toLocaleString()} zaps
             </span>
@@ -212,7 +196,7 @@ export default async function CrewPage() {
         <div className="flex justify-between">
           {SEASON_RANKS.map((r) => {
             const achieved = currentSeasonZaps >= r.minZaps &&
-              (r.rank !== 'bodhisattva' || challengesComplete)
+              (r.rank !== 'luminary' || challengesComplete)
             const isCurrent = r.rank === currentSeasonRank
             return (
               <div key={r.rank} className="flex flex-col items-center gap-1">
@@ -235,10 +219,10 @@ export default async function CrewPage() {
           })}
         </div>
 
-        {/* Bodhisattva gate note */}
-        {currentSeasonRank === 'sifu' && !challengesComplete && (
+        {/* Luminary gate note */}
+        {currentSeasonRank === 'conduit' && !challengesComplete && (
           <p className="mt-3 text-[11px] text-gray-400 dark:text-gray-500 text-center">
-            Complete all season challenges to unlock Bodhisattva rank.
+            Complete all season challenges to unlock Luminary rank.
           </p>
         )}
       </div>
