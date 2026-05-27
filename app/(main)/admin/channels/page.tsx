@@ -23,7 +23,7 @@ export default async function AdminChannelsPage() {
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
-  if (!profile || !['host', 'guide', 'mentor'].includes(profile.community_role)) notFound()
+  if (!profile || !['host', 'guide', 'mentor', 'janitor'].includes(profile.community_role)) notFound()
 
   // Fetch all channels the admin has scope over
   const { data: channels } = await admin
