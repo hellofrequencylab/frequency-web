@@ -3,20 +3,12 @@
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { User, Settings, LogOut, ChevronDown } from 'lucide-react'
+import { getInitials } from '@/lib/utils'
 
 export type UserMenuProfile = {
   display_name: string
   handle: string
   avatar_url: string | null
-}
-
-function getInitials(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0].toUpperCase())
-    .join('')
 }
 
 // ── Unauthenticated buttons ───────────────────────────────────────────────────

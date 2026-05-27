@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Search, Users, FileText, CalendarDays } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { getInitials } from '@/lib/utils'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -38,15 +39,6 @@ const ROLE_COLOR: Record<string, string> = {
   host:   'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400',
   guide:  'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-400',
   mentor: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400',
-}
-
-function getInitials(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0].toUpperCase())
-    .join('')
 }
 
 function formatDate(iso: string) {

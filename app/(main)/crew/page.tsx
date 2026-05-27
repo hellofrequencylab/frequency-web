@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { SEASON_RANKS, getRankDef, type SeasonRank } from '@/lib/season-ranks'
 import { CompleteButton } from './complete-button'
+import { getInitials } from '@/lib/utils'
 
 const TASK_TYPE_LABEL: Record<string, string> = {
   attendance:   'Attendance',
@@ -13,10 +14,6 @@ const TASK_TYPE_LABEL: Record<string, string> = {
   content:      'Content',
   referral:     'Referral',
   other:        'Other',
-}
-
-function getInitials(name: string) {
-  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('')
 }
 
 // ── Page ─────────────────────────────────────────────────────────────────────

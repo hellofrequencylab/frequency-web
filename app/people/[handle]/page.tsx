@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { startConversation } from '@/app/(main)/messages/actions'
 import { Composer } from '@/components/feed/composer'
+import { getInitials } from '@/lib/utils'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
@@ -14,15 +15,6 @@ const ROLE_BADGE: Record<CommunityRole, { label: string; cls: string }> = {
   guide:   { label: 'Guide',   cls: 'bg-purple-100 text-purple-700' },
   mentor:  { label: 'Mentor',  cls: 'bg-amber-100 text-amber-700' },
   janitor: { label: 'Janitor', cls: 'bg-violet-100 text-violet-700' },
-}
-
-function getInitials(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0].toUpperCase())
-    .join('')
 }
 
 export default async function ProfilePage({

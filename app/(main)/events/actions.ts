@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { slugify } from '@/lib/utils'
 
 async function getMyProfileId(): Promise<string | null> {
   const supabase = await createClient()
@@ -18,13 +19,6 @@ async function getMyProfileId(): Promise<string | null> {
     .eq('auth_user_id', user.id)
     .maybeSingle()
   return data?.id ?? null
-}
-
-function slugify(str: string) {
-  return str
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '')
 }
 
 export async function createEvent(formData: FormData) {

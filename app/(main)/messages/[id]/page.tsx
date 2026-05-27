@@ -4,15 +4,7 @@ import { ChevronLeft } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { MessageThread, type Message } from '@/components/messages/thread'
-
-function getInitials(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0].toUpperCase())
-    .join('')
-}
+import { getInitials } from '@/lib/utils'
 
 export default async function ConversationPage({
   params,

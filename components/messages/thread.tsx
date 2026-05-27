@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { sendMessage } from '@/app/(main)/messages/actions'
+import { getInitials } from '@/lib/utils'
 
 export type Message = {
   id: string
@@ -17,15 +18,6 @@ type Participant = {
   display_name: string
   handle: string
   avatar_url: string | null
-}
-
-function getInitials(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0].toUpperCase())
-    .join('')
 }
 
 function formatTime(iso: string) {

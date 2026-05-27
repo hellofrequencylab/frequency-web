@@ -3,12 +3,9 @@
 import { useState, useTransition, useRef, useEffect, useCallback } from 'react'
 import { Megaphone } from 'lucide-react'
 import { createPost } from '@/app/(main)/feed/actions'
+import { getInitials } from '@/lib/utils'
 
 type HandleResult = { id: string; handle: string; display_name: string; avatar_url: string | null }
-
-function getInitials(name: string) {
-  return name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('')
-}
 
 export function Composer({
   scopeId,

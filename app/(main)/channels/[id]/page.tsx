@@ -7,6 +7,7 @@ import { joinChannel, leaveChannel } from '../actions'
 import { CrewGateButton } from '@/components/crew-gate-button'
 import { Composer } from '@/components/feed/composer'
 import { FeedList } from '@/components/feed/feed-list'
+import { getInitials } from '@/lib/utils'
 
 type ChannelDetail = {
   id: string
@@ -47,10 +48,6 @@ function formatEventDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', {
     weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
   })
-}
-
-function getInitials(name: string) {
-  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('')
 }
 
 export default async function ChannelPage({

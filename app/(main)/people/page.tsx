@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Globe } from 'lucide-react'
+import { getInitials } from '@/lib/utils'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
@@ -13,10 +14,6 @@ const ROLE_BADGE: Record<CommunityRole, { label: string; cls: string }> = {
   guide:   { label: 'Guide',   cls: 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-400' },
   mentor:  { label: 'Mentor',  cls: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400' },
   janitor: { label: 'Janitor', cls: 'bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-400' },
-}
-
-function getInitials(name: string): string {
-  return name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('')
 }
 
 type Profile = {
