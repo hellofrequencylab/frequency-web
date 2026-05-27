@@ -43,10 +43,9 @@ export default async function RootPage() {
         `id, body, created_at, media_urls,
          author:profiles!author_id ( display_name, handle, avatar_url, community_role )`
       )
-      .eq('visibility', 'public')
       .is('parent_id', null)
       .order('created_at', { ascending: false })
-      .limit(4),
+      .limit(5),
     admin
       .from('profiles')
       .select('id', { count: 'exact', head: true })

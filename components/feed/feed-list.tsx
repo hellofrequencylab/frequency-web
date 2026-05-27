@@ -90,11 +90,13 @@ export async function FeedList({
   const seen = new Set<string>()
   const posts: FeedPost[] = rawPosts
     .filter((p: RawPost) => { if (seen.has(p.id)) return false; seen.add(p.id); return true })
-    .sort((a: RawPost, b: RawPost) =>
-      sort === 'relevant'
-        ? (b.engagement_score ?? 0) - (a.engagement_score ?? 0)
-        : new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    )
+    .sort((a: RawPost, b: RawPost) => {
+      if (sort === 'relevant') {
+        const diff = (b.engagement_score ?? 0) - (a.engagement_score ?? 0)
+        if (diff !== 0) return diff
+      }
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    })
     .slice(0, 20)
     .map((p: RawPost) => ({ ...p, replyCount: p.comment_count ?? 0 })) as FeedPost[]
 
