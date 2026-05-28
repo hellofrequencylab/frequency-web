@@ -266,6 +266,15 @@ export default async function EventDetailPage({
             Add to Google Calendar
           </a>
 
+          <a
+            href={`/events/${event.slug}/event.ics`}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:border-gray-300 hover:bg-gray-50 transition-colors"
+            title="Apple Calendar, Outlook, and any iCal-compatible app"
+          >
+            <CalendarDays className="w-3.5 h-3.5" />
+            Add to Calendar (.ics)
+          </a>
+
         </div>
       )}
 
