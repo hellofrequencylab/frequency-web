@@ -50,21 +50,17 @@ export default async function AdminGamificationPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <div className="flex items-center gap-3">
-          <Link href="/admin" className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">Admin</Link>
-          <span className="text-gray-300 dark:text-gray-600">/</span>
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50">Gamification</h1>
-        </div>
-        <div className="flex items-center justify-between mt-1">
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+      <div className="flex items-end justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Gamification</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Overview of achievements, challenges, and engagement stats.
           </p>
-          <AwardDialog
-            achievements={(achievements ?? []).map(a => ({ id: a.id, name: a.name, tier: a.tier }))}
-            members={(allMembers ?? []).map(m => ({ id: m.id, display_name: m.display_name, handle: m.handle }))}
-          />
         </div>
+        <AwardDialog
+          achievements={(achievements ?? []).map(a => ({ id: a.id, name: a.name, tier: a.tier }))}
+          members={(allMembers ?? []).map(m => ({ id: m.id, display_name: m.display_name, handle: m.handle }))}
+        />
       </div>
 
       {/* Stats grid */}

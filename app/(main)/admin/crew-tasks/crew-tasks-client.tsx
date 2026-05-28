@@ -207,16 +207,8 @@ function VerificationQueue({ items }: { items: PendingVerification[] }) {
 }
 
 export function CrewTasksClient({ tasks, pendingVerifications = [] }: { tasks: CrewTask[]; pendingVerifications?: PendingVerification[] }) {
-  const [showCreate, setShowCreate] = useState(false)
   const [editingId,  setEditingId]  = useState<string | null>(null)
   const [isPending,  startTransition] = useTransition()
-
-  function handleCreate(fd: FormData) {
-    startTransition(async () => {
-      await createCrewTask(fd)
-      setShowCreate(false)
-    })
-  }
 
   function handleUpdate(id: string, fd: FormData) {
     startTransition(async () => {
@@ -236,26 +228,9 @@ export function CrewTasksClient({ tasks, pendingVerifications = [] }: { tasks: C
     <div className="space-y-3">
       <VerificationQueue items={pendingVerifications} />
 
-      {/* Create form / button */}
-      {showCreate ? (
-        <TaskForm
-          onSave={handleCreate}
-          onCancel={() => setShowCreate(false)}
-          isPending={isPending}
-        />
-      ) : (
-        <button
-          onClick={() => setShowCreate(true)}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-gray-300 dark:border-gray-700 px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:border-indigo-300 hover:text-indigo-600 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          New task
-        </button>
-      )}
-
       {/* Task list */}
-      {tasks.length === 0 && !showCreate && (
-        <p className="text-sm text-gray-400 py-6 text-center">No crew tasks yet — create one above.</p>
+      {tasks.length === 0 && (
+        <p className="text-sm text-gray-400 py-6 text-center">No crew tasks yet.</p>
       )}
 
       {tasks.map((task) => (

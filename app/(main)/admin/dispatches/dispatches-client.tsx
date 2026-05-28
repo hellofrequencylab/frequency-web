@@ -323,22 +323,9 @@ export function DispatchesClient({
   nexuses: { id: string; name: string }[]
   tasks:   { id: string; name: string }[]
 }) {
-  const [showCreate,  setShowCreate]  = useState(false)
   const [editingId,   setEditingId]   = useState<string | null>(null)
   const [isPending,   startTransition] = useTransition()
   const [actionError, setActionError] = useState<string | null>(null)
-
-  function handleCreate(fd: FormData) {
-    setActionError(null)
-    startTransition(async () => {
-      try {
-        await createDispatch(fd)
-        setShowCreate(false)
-      } catch (e) {
-        setActionError(e instanceof Error ? e.message : 'Failed to save dispatch. Check the DB migration has been applied.')
-      }
-    })
-  }
 
   function handleUpdate(id: string, fd: FormData) {
     setActionError(null)
@@ -386,24 +373,9 @@ export function DispatchesClient({
           <button onClick={() => setActionError(null)} className="shrink-0 text-red-400 hover:text-red-600 transition-colors">✕</button>
         </div>
       )}
-      {showCreate ? (
-        <DispatchForm
-          role={role} circles={circles} hubs={hubs} nexuses={nexuses} tasks={tasks}
-          onSave={handleCreate} onCancel={() => setShowCreate(false)} isPending={isPending}
-        />
-      ) : (
-        <button
-          onClick={() => setShowCreate(true)}
-          className="mb-5 inline-flex items-center gap-1.5 rounded-lg border border-dashed border-gray-300 dark:border-gray-700 px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:border-indigo-300 hover:text-indigo-600 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          New dispatch
-        </button>
-      )}
-
       <div className="space-y-2">
-        {dispatches.length === 0 && !showCreate && (
-          <p className="text-sm text-gray-400 py-8 text-center">No dispatches yet. Create your first one above.</p>
+        {dispatches.length === 0 && (
+          <p className="text-sm text-gray-400 py-8 text-center">No dispatches yet.</p>
         )}
 
         {dispatches.map(d => (

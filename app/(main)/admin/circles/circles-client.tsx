@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Plus, Pencil, Archive, Check, X } from 'lucide-react'
-import { createCircle, updateCircle, archiveCircle } from '../actions'
+import { Pencil, Archive, Check, X } from 'lucide-react'
+import { updateCircle, archiveCircle } from '../actions'
 import { InviteLinkButton } from './invite-link-button'
 
 type CircleRow = {
@@ -145,16 +145,8 @@ export function CirclesClient({
   hubs:    HubOption[]
   hosts:   HostOption[]
 }) {
-  const [showCreate, setShowCreate] = useState(false)
   const [editingId,  setEditingId]  = useState<string | null>(null)
   const [isPending,  startTransition] = useTransition()
-
-  function handleCreate(fd: FormData) {
-    startTransition(async () => {
-      await createCircle(fd)
-      setShowCreate(false)
-    })
-  }
 
   function handleUpdate(id: string, fd: FormData) {
     startTransition(async () => {
@@ -175,19 +167,9 @@ export function CirclesClient({
 
   return (
     <div>
-      {/* Create */}
-      {showCreate ? (
-        <CircleForm hubs={hubs} hosts={hosts} onSave={handleCreate} onCancel={() => setShowCreate(false)} isPending={isPending} />
-      ) : (
-        <button onClick={() => setShowCreate(true)} className="mb-4 inline-flex items-center gap-1.5 rounded-lg border border-dashed border-gray-300 dark:border-gray-700 px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:border-indigo-300 hover:text-indigo-600 transition-colors">
-          <Plus className="w-4 h-4" />
-          New circle
-        </button>
-      )}
-
       {/* Active list */}
       <div className="space-y-2">
-        {active.length === 0 && !showCreate && (
+        {active.length === 0 && (
           <p className="text-sm text-gray-400 py-6 text-center">No circles yet.</p>
         )}
         {active.map(circle => (

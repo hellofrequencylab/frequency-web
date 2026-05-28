@@ -122,10 +122,12 @@ export default async function ModerationPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-2">Moderation Queue</h1>
-      <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-        Review reports submitted by community members.
-      </p>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Moderation</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          Review reports submitted by community members.
+        </p>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main content */}
