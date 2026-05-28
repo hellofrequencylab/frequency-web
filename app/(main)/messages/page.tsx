@@ -288,7 +288,8 @@ export default async function MessagesPage({
             )}
           </h1>
           <p className="text-sm text-muted leading-relaxed max-w-lg">
-            One hub for every conversation — direct messages, group threads, and rooms with the community.
+            Every conversation in one place. Direct messages, group threads,
+            and rooms with the wider community.
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap justify-end">
@@ -373,7 +374,7 @@ export default async function MessagesPage({
             )}
           </section>
 
-          {/* Discover — only when not filtered to DMs */}
+          {/* Discover. Only when not filtered to DMs */}
           {filter !== 'dms' && discoverRooms.length > 0 && (
             <section>
               <div className="flex items-center gap-1.5 mb-3">
@@ -410,7 +411,7 @@ export default async function MessagesPage({
         {/* ── In-page context column ───────────────────────────── */}
         <div className="space-y-4">
 
-          {/* Welcome them — conversation prompt */}
+          {/* Welcome them. Conversation prompt */}
           {newMembers.length > 0 && (
             <SidebarCard title="Say hi" icon={Sparkles}>
               <div className="px-4 py-3">

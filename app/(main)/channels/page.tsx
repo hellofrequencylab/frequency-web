@@ -15,6 +15,7 @@ import type { LucideIcon } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { TuneInButton, TunedInButton } from './channel-toggle'
+import { NewChannelCompose } from './new-channel-compose'
 
 type TopicalChannel = {
   id: string
@@ -55,13 +56,16 @@ export default async function ChannelsPage() {
   } = await supabase.auth.getUser()
 
   let myProfileId: string | null = null
+  let canCreate = false
   if (user) {
     const { data: profile } = await admin
       .from('profiles')
-      .select('id')
+      .select('id, community_role')
       .eq('auth_user_id', user.id)
       .maybeSingle()
     myProfileId = profile?.id ?? null
+    const role = (profile as { community_role?: string } | null)?.community_role
+    canCreate = role === 'host' || role === 'guide' || role === 'mentor' || role === 'janitor'
   }
 
   const { data: channels } = await admin
@@ -114,15 +118,19 @@ export default async function ChannelsPage() {
 
   return (
     <div>
-      <div className="mb-8">
-        <div className="flex items-center gap-2 mb-1">
-          <Radio className="w-5 h-5 text-primary-strong" />
-          <h1 className="text-2xl font-bold text-text">Channels</h1>
+      <div className="flex items-end justify-between gap-4 mb-8">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <Radio className="w-5 h-5 text-primary-strong" />
+            <h1 className="text-2xl font-bold text-text">Channels</h1>
+          </div>
+          <p className="text-sm text-muted leading-relaxed max-w-xl">
+            Channels are global topics anyone can tune into. Each one carries a
+            seasonal practice that Circles run locally. Pick what you&apos;re into,
+            then find the people doing it near you.
+          </p>
         </div>
-        <p className="text-sm text-muted leading-relaxed max-w-xl">
-          Topical forums anyone in the world can tune into. Each Channel carries a seasonal
-          practice that Circles run locally — find your topics, then find your people.
-        </p>
+        {canCreate && <NewChannelCompose />}
       </div>
 
       {tunedIn.length > 0 && (

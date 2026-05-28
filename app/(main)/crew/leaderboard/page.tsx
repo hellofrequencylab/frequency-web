@@ -229,7 +229,7 @@ export default async function LeaderboardPage({
                       <Flame className="w-3 h-3" />{entry.streak}
                     </span>
                   ) : (
-                    <span className="text-subtle">—</span>
+                    <span className="text-subtle">-</span>
                   )}
                 </span>
 
@@ -239,7 +239,7 @@ export default async function LeaderboardPage({
                       <Award className="w-3 h-3" />{entry.achievements}
                     </span>
                   ) : (
-                    <span className="text-subtle">—</span>
+                    <span className="text-subtle">-</span>
                   )}
                 </span>
 

@@ -91,7 +91,7 @@ export default async function CrewPage() {
     .limit(1)
     .maybeSingle()
 
-  // Season leaderboard — top 5 in same circle by current_season_zaps
+  // Season leaderboard. Top 5 in same circle by current_season_zaps
   let leaderboard: Array<{
     profileId: string
     displayName: string
@@ -146,7 +146,8 @@ export default async function CrewPage() {
           )}
         </div>
         <p className="text-sm text-muted mt-1">
-          Track your contributions and season progress.
+          Your contributions and season progress. Keep showing up and the rank
+          comes with it.
           {circleName && (
             <> You&apos;re in <span className="font-medium text-text">{circleName}</span>.</>
           )}
@@ -370,7 +371,7 @@ export default async function CrewPage() {
 
           {/* Leaderboard */}
           {leaderboard.length > 0 && (
-            <SidebarCard title={circleName ? `Leaderboard — ${circleName}` : 'Season Leaderboard'}>
+            <SidebarCard title={circleName ? `Leaderboard. ${circleName}` : 'Season Leaderboard'}>
               <div>
                 {leaderboard.map((member, i) => {
                   const isSelf = member.profileId === profile.id

@@ -58,7 +58,7 @@ export async function FeedList({
   circleIds?: string[]
   myProfileId: string | null
   sort?: 'recent' | 'relevant'
-  /** false on circle/channel detail pages — show only scoped posts, not the global public feed */
+  /** false on circle/channel detail pages. Show only scoped posts, not the global public feed */
   showPublicLayer?: boolean
   emptyMessage?: string
   viewerRole?: string
@@ -72,7 +72,7 @@ export async function FeedList({
 
   if (myProfileId) {
     if (!showPublicLayer && circleIds.length > 0) {
-      // Circle/channel detail page — show only scoped posts
+      // Circle/channel detail page. Show only scoped posts
       const { data } = await admin
         .from('posts')
         .select(POST_SELECT)
@@ -209,7 +209,7 @@ export async function FeedList({
   )
 }
 
-// Dispatch banner — teal signal palette. Reads as "broadcast / official"
+// Dispatch banner. Teal signal palette. Reads as "broadcast / official"
 // and stays visually distinct from the green event card and the amber
 // announcement post type further down the feed.
 function DispatchFeedCard({ dispatch: d }: { dispatch: DispatchItem }) {
@@ -251,7 +251,7 @@ function DispatchFeedCard({ dispatch: d }: { dispatch: DispatchItem }) {
   )
 }
 
-// Event banner — green success palette. Reads as "happening / alive / show
+// Event banner. Green success palette. Reads as "happening / alive / show
 // up" and stays visually distinct from the teal dispatch above and the
 // amber announcement below.
 function EventFeedCard({ event: e }: { event: { id: string; title: string; starts_at: string; location: string | null; slug: string } }) {

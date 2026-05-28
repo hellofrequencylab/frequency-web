@@ -96,7 +96,7 @@ export default async function EventDetailPage({
   const rsvps = (rawRsvps ?? []) as unknown as RSVPRow[]
   const goingRsvps = rsvps.filter((r) => r.status === 'going')
 
-  // Resolve scope name — circle
+  // Resolve scope name. Circle
   let scopeName: string | null = null
   let scopeSlug: string | null = null
   if (event.scope_type === 'circle') {

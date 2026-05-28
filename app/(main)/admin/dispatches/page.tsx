@@ -45,7 +45,7 @@ export default async function AdminDispatchesPage() {
     .eq('author_id', profile.id)
     .order('created_at', { ascending: false })
 
-  // Audience options — janitor gets everything; others scoped to their org
+  // Audience options. Janitor gets everything; others scoped to their org
   let circles: { id: string; name: string }[] = []
   let hubs:    { id: string; name: string }[] = []
   let nexuses: { id: string; name: string }[] = []

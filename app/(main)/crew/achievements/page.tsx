@@ -71,7 +71,7 @@ export default async function AchievementsPage() {
           <h1 className="text-xl font-semibold text-text">Achievements</h1>
         </div>
         <p className="text-sm text-muted mt-1">
-          Earn badges by engaging with your community. Some are secret — keep exploring to find them all.
+          Earn badges by engaging with your community. Some are secret. Keep exploring to find them all.
         </p>
       </div>
 

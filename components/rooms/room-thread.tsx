@@ -54,7 +54,7 @@ export function RoomThread({
         { event: 'INSERT', schema: 'public', table: 'room_messages', filter: `room_id=eq.${roomId}` },
         async (payload) => {
           const m = payload.new as RoomMessage
-          // Skip if it's my own message — already added optimistically
+          // Skip if it's my own message. Already added optimistically
           if (m.author_id === myProfileId && messages.some(x => x.id === m.id)) return
 
           // Fetch the author info for the new message

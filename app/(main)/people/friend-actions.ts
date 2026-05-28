@@ -48,7 +48,7 @@ export async function sendFriendRequest(targetProfileId: string): Promise<{ erro
     return { error: error.message }
   }
 
-  // Notify the target — but only if the row was newly inserted
+  // Notify the target. But only if the row was newly inserted
   if (!error) {
     await admin.from('notifications').insert({
       recipient_id: targetProfileId,

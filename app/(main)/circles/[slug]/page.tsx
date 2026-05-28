@@ -422,7 +422,7 @@ export default async function CirclePage({
                     </div>
                   </Link>
 
-                  {/* Message icon — visible on hover, hidden for self */}
+                  {/* Message icon. Visible on hover, hidden for self */}
                   {!isSelf && isMember && (
                     <form action={startConversation.bind(null, profile.id)}>
                       <button

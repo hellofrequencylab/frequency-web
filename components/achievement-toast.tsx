@@ -90,7 +90,7 @@ function AchievementToastCard({ achievement, onDismiss }: ToastProps) {
   )
 }
 
-// Global toast container — rendered once in the layout
+// Global toast container. Rendered once in the layout
 export function AchievementToastContainer() {
   const [toasts, setToasts] = useState<AchievementUnlock[]>([])
 

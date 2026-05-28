@@ -61,7 +61,7 @@ export default async function FeedPage({
         <div>
           <h1 className="text-2xl font-bold text-text">Feed</h1>
           <p className="text-sm text-subtle mt-1">
-            {hasCircle ? "What's happening in your circles" : "What's happening"}
+            {hasCircle ? "Here's what your circles are up to right now." : "What's happening across the community."}
           </p>
         </div>
         <CreateMenu role={myRole} />

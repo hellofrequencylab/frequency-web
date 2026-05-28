@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy — Frequency',
+  title: 'Privacy Policy. Frequency',
   description: 'How Frequency collects, uses, and protects your personal information.',
 }
 
@@ -63,11 +63,11 @@ export default function PrivacyPage() {
               that help us operate the platform:
             </p>
             <ul className="text-muted space-y-2 list-disc list-inside">
-              <li><strong className="text-text">Supabase</strong> — database and authentication</li>
-              <li><strong className="text-text">Vercel</strong> — hosting</li>
-              <li><strong className="text-text">Google</strong> — OAuth sign-in (if you choose Google login)</li>
-              <li><strong className="text-text">Stripe</strong> — payment processing (when applicable)</li>
-              <li><strong className="text-text">Resend</strong> — transactional email delivery</li>
+              <li><strong className="text-text">Supabase</strong>. Database and authentication</li>
+              <li><strong className="text-text">Vercel</strong>. Hosting</li>
+              <li><strong className="text-text">Google</strong>. OAuth sign-in (if you choose Google login)</li>
+              <li><strong className="text-text">Stripe</strong>. Payment processing (when applicable)</li>
+              <li><strong className="text-text">Resend</strong>. Transactional email delivery</li>
             </ul>
           </section>
 

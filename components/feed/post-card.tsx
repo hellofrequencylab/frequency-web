@@ -138,7 +138,7 @@ export function PostCard({
 
           {/* Author row */}
           <div className="flex items-start gap-3 mb-3">
-            {/* Avatars — stacked for wall posts, single for everything else */}
+            {/* Avatars. Stacked for wall posts, single for everything else */}
             <Link href={`/people/${author.handle}`} className="shrink-0 relative">
               {author.avatar_url ? (
                 <img src={author.avatar_url} alt={author.display_name} className="w-8 h-8 rounded-full object-cover" />

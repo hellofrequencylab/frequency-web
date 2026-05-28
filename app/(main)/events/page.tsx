@@ -179,7 +179,8 @@ export default async function EventsPage() {
         <div>
           <h1 className="text-2xl font-bold text-text mb-1">Events</h1>
           <p className="text-sm text-muted leading-relaxed max-w-lg">
-            Group rides, gatherings, and meetups happening in your community. RSVP to see who is going and add events to your calendar.
+            Group rides, gatherings, and meetups happening in your community.
+            RSVP to see who&apos;s coming, then drop it on your calendar.
           </p>
         </div>
         {isCrew && <EventCompose groups={myCircles} />}

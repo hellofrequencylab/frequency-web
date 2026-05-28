@@ -140,7 +140,7 @@ export async function reviewReport(
         await admin.from('dispatches').delete().eq('id', report.target_id)
       }
       // For 'member' and 'event' types, we just mark the report as actioned
-      // without auto-deleting — admins can handle those manually.
+      // without auto-deleting. Admins can handle those manually.
     }
   }
 

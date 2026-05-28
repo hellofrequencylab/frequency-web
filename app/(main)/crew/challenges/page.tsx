@@ -70,7 +70,7 @@ export default async function ChallengesPage() {
         </div>
         {stats.completed === stats.total && stats.total > 0 && (
           <p className="text-sm font-semibold text-signal-strong mt-3 text-center">
-            All challenges complete — Luminary rank unlocked!
+            All challenges complete. Luminary rank unlocked!
           </p>
         )}
       </div>

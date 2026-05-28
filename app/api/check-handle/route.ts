@@ -2,11 +2,11 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
 // Handle uniqueness check. Uses the handle_is_available SECURITY DEFINER RPC
-// (added in 20240204000000) so the caller's role doesn't matter — anyone
+// (added in 20240204000000) so the caller's role doesn't matter. Anyone
 // can check whether a handle is taken without seeing whose row holds it.
 //
 // The `userId` query param lets the signup flow keep its own auto-generated
-// handle when it re-checks — without this, the user would see "taken" on
+// handle when it re-checks. Without this, the user would see "taken" on
 // their own handle.
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -30,7 +30,7 @@ export async function GET(request: Request) {
   if (error) return NextResponse.json({ available: false })
   if (available) return NextResponse.json({ available: true })
 
-  // Not globally free — check whether the only owner is the excluded user.
+  // Not globally free. Check whether the only owner is the excluded user.
   if (excludeUserId) {
     const { data: { user } } = await supabase.auth.getUser()
     if (user?.id === excludeUserId) {
