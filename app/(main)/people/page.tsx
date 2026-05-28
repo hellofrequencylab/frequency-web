@@ -90,7 +90,7 @@ export default async function DirectoryPage({
             <Globe className="w-5 h-5 text-primary-strong" />
             <h1 className="text-2xl font-bold text-text">Directory</h1>
           </div>
-          <p className="text-sm text-muted">
+          <p className="text-sm text-muted leading-relaxed max-w-2xl">
             Everyone in the community. Browse, find someone interesting,
             say hi.
           </p>

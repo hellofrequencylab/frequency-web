@@ -136,22 +136,24 @@ export default async function CrewPage() {
   return (
     <div>
       {/* ── Header ──────────────────────────────────── */}
-      <div className="mb-6">
-        <div className="flex items-center gap-2 flex-wrap">
-          <h1 className="text-xl font-semibold text-text">Crew Dashboard</h1>
-          {isCrewLead && (
-            <span className="text-[11px] px-2 py-0.5 rounded-md bg-warning-bg dark:bg-warning-bg text-warning font-semibold">
-              Crew Lead
-            </span>
-          )}
+      <div className="flex items-end justify-between gap-4 mb-6">
+        <div>
+          <div className="flex items-center gap-2 flex-wrap mb-1">
+            <h1 className="text-2xl font-bold text-text">Crew Dashboard</h1>
+            {isCrewLead && (
+              <span className="text-[11px] px-2 py-0.5 rounded-md bg-warning-bg dark:bg-warning-bg text-warning font-semibold">
+                Crew Lead
+              </span>
+            )}
+          </div>
+          <p className="text-sm text-muted leading-relaxed max-w-2xl">
+            Your contributions and season progress. Keep showing up and the rank
+            comes with it.
+            {circleName && (
+              <> You&apos;re in <span className="font-medium text-text">{circleName}</span>.</>
+            )}
+          </p>
         </div>
-        <p className="text-sm text-muted mt-1">
-          Your contributions and season progress. Keep showing up and the rank
-          comes with it.
-          {circleName && (
-            <> You&apos;re in <span className="font-medium text-text">{circleName}</span>.</>
-          )}
-        </p>
       </div>
 
       {/* ── Season Progress (full width, top) ────────── */}

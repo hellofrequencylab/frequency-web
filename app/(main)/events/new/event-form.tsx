@@ -140,7 +140,7 @@ export function EventForm({ groups }: { groups: Group[] }) {
         <button
           type="submit"
           disabled={!title.trim() || !scopeId || !startsAt || isPending || groups.length === 0}
-          className="rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           {isPending ? 'Creating…' : 'Create Event'}
         </button>
