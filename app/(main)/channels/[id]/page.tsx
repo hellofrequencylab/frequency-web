@@ -1,54 +1,69 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { Hash, CalendarDays, MessageSquare, Users } from 'lucide-react'
+import {
+  Sparkles,
+  Activity,
+  Heart,
+  MessagesSquare,
+  Megaphone,
+  Palette,
+  Briefcase,
+  Radio,
+  Users,
+  Circle as CircleIcon,
+  MapPin,
+} from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
-import { joinChannel, leaveChannel } from '../actions'
-import { CrewGateButton } from '@/components/crew-gate-button'
+import { tuneInChannel, tuneOutChannel } from '../actions'
 import { Composer } from '@/components/feed/composer'
 import { FeedList } from '@/components/feed/feed-list'
-import { getInitials } from '@/lib/utils'
 
-type ChannelDetail = {
+type TopicalChannel = {
   id: string
   name: string
+  slug: string
+  category: string
   description: string | null
-  type: 'group' | 'event' | 'thread'
-  scope: 'hub' | 'nexus' | 'outpost'
-  scope_id: string
-  member_cap: number | null
-  is_public: boolean
-  event_date: string | null
-  created_at: string
-  creator: {
-    id: string
-    display_name: string
-    handle: string
-    avatar_url: string | null
-    community_role: string
-  } | null
+  cover_image: string | null
+  is_active: boolean
 }
 
-type MemberRow = {
-  profile: {
-    id: string
-    display_name: string
-    handle: string
-    avatar_url: string | null
-  }
+type CircleRow = {
+  id: string
+  name: string
+  slug: string
+  type: 'in-person' | 'online'
+  member_count: number
+  member_cap: number
+  status: string
+  city: string | null
+  neighborhood: string | null
+  host: { display_name: string; handle: string } | null
 }
 
-const TYPE_ICON = {
-  group: Hash,
-  event: CalendarDays,
-  thread: MessageSquare,
+const CATEGORY_ICON: Record<string, LucideIcon> = {
+  spirituality:     Sparkles,
+  movement:         Activity,
+  'holistic-health': Heart,
+  'human-relating': MessagesSquare,
+  activism:         Megaphone,
+  creative:         Palette,
+  'business-support': Briefcase,
 }
 
-function formatEventDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-US', {
-    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
-  })
+const CATEGORY_ACCENT: Record<string, string> = {
+  spirituality:     'text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/40',
+  movement:         'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40',
+  'holistic-health': 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40',
+  'human-relating': 'text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40',
+  activism:         'text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/40',
+  creative:         'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40',
+  'business-support': 'text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-950/40',
 }
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export default async function ChannelPage({
   params,
@@ -59,67 +74,63 @@ export default async function ChannelPage({
   const admin = createAdminClient()
   const supabase = await createClient()
 
+  const matchField = UUID_RE.test(id) ? 'id' : 'slug'
   const { data: rawChannel } = await admin
-    .from('channels')
-    .select(
-      `id, name, description, type, scope, scope_id, member_cap, is_public, event_date, created_at,
-       creator:profiles!creator_id ( id, display_name, handle, avatar_url, community_role )`
-    )
-    .eq('id', id)
+    .from('topical_channels')
+    .select('id, name, slug, category, description, cover_image, is_active')
+    .eq(matchField, id)
     .maybeSingle()
 
-  if (!rawChannel) notFound()
-  const channel = rawChannel as unknown as ChannelDetail
+  if (!rawChannel || !rawChannel.is_active) notFound()
+  const channel = rawChannel as TopicalChannel
 
-  // Fetch members
-  const { data: rawMembers } = await admin
-    .from('channel_memberships')
-    .select('profile:profiles!profile_id ( id, display_name, handle, avatar_url )')
-    .eq('channel_id', channel.id)
-    .eq('status', 'active')
-    .order('joined_at', { ascending: true })
-
-  const members = (rawMembers ?? []) as unknown as MemberRow[]
-
-  // Current user
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
   let myProfileId: string | null = null
-  let isMember = false
-  let isCreator = false
-  let isCrew = false
+  let isTunedIn = false
 
   if (user) {
     const { data: profile } = await admin
       .from('profiles')
-      .select('id, community_role')
+      .select('id')
       .eq('auth_user_id', user.id)
       .maybeSingle()
 
     if (profile) {
       myProfileId = profile.id
-      isCreator = channel.creator?.id === myProfileId
-      isCrew = ['crew', 'host', 'guide', 'mentor', 'janitor'].includes(profile.community_role)
-      isMember = members.some((m) => m.profile.id === myProfileId)
+      const { data: membership } = await admin
+        .from('topical_channel_memberships')
+        .select('id')
+        .eq('topical_channel_id', channel.id)
+        .eq('profile_id', myProfileId)
+        .maybeSingle()
+      isTunedIn = !!membership
     }
   }
 
-  const Icon = TYPE_ICON[channel.type] ?? Hash
+  const [{ count: memberCount }, { data: rawCircles }] = await Promise.all([
+    admin
+      .from('topical_channel_memberships')
+      .select('id', { count: 'exact', head: true })
+      .eq('topical_channel_id', channel.id),
+    admin
+      .from('circles')
+      .select(
+        `id, name, slug, type, member_count, member_cap, status, city, neighborhood,
+         host:profiles!host_id ( display_name, handle )`
+      )
+      .eq('topical_channel_id', channel.id)
+      .neq('status', 'archived')
+      .order('member_count', { ascending: false })
+      .limit(12),
+  ])
 
-  // Fetch scope name (hub/nexus/outpost)
-  let scopeName: string | null = null
-  if (channel.scope === 'hub') {
-    const { data: hub } = await admin.from('hubs').select('name, slug').eq('id', channel.scope_id).maybeSingle()
-    scopeName = hub?.name ?? null
-  } else if (channel.scope === 'nexus') {
-    const { data: nexus } = await admin.from('nexuses').select('name, slug').eq('id', channel.scope_id).maybeSingle()
-    scopeName = nexus?.name ?? null
-  } else if (channel.scope === 'outpost') {
-    const { data: outpost } = await admin.from('outposts').select('name').eq('id', channel.scope_id).maybeSingle()
-    scopeName = outpost?.name ?? null
-  }
+  const circles = (rawCircles ?? []) as unknown as CircleRow[]
+
+  const Icon = CATEGORY_ICON[channel.category] ?? Radio
+  const accent = CATEGORY_ACCENT[channel.category] ?? 'text-gray-600 bg-gray-50'
 
   return (
     <div>
@@ -131,167 +142,129 @@ export default async function ChannelPage({
       </Link>
 
       {/* ── Header ─────────────────────────────────── */}
-      <div className="mb-6">
+      <div className="mb-8">
         <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100">
-                <Icon className="w-4 h-4 text-gray-600" />
+          <div className="flex items-start gap-3 min-w-0">
+            <div className={`flex items-center justify-center w-12 h-12 rounded-xl shrink-0 ${accent}`}>
+              <Icon className="w-6 h-6" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 leading-tight">
+                {channel.name}
+              </h1>
+              <div className="flex items-center gap-2 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                <Users className="w-3 h-3" />
+                <span>{(memberCount ?? 0).toLocaleString()} tuned in</span>
+                <span className="text-gray-300 dark:text-gray-700">·</span>
+                <CircleIcon className="w-3 h-3" />
+                <span>{circles.length} {circles.length === 1 ? 'Circle' : 'Circles'} practicing</span>
               </div>
-              <h1 className="text-xl font-semibold text-gray-900">{channel.name}</h1>
             </div>
-
-            <div className="flex items-center gap-2 flex-wrap mt-1.5 text-xs text-gray-500">
-              <span className="capitalize">{channel.type} channel</span>
-              {scopeName && <><span>·</span><span>{scopeName}</span></>}
-              {channel.event_date && (
-                <><span>·</span><span>{formatEventDate(channel.event_date)}</span></>
-              )}
-              <><span>·</span><span>{members.length} member{members.length !== 1 ? 's' : ''}</span></>
-              {channel.member_cap && <span>/ {channel.member_cap} max</span>}
-            </div>
-
-            {channel.creator && (
-              <p className="mt-1 text-xs text-gray-400">
-                Created by{' '}
-                <Link href={`/people/${channel.creator.handle}`} className="text-indigo-600 hover:underline">
-                  {channel.creator.display_name}
-                </Link>
-              </p>
-            )}
           </div>
 
-          {/* Join / Leave */}
           {myProfileId && (
-            isMember ? (
-              <form action={leaveChannel.bind(null, channel.id)}>
+            isTunedIn ? (
+              <form action={tuneOutChannel.bind(null, channel.id)}>
                 <button
                   type="submit"
-                  className="shrink-0 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-red-600 hover:border-red-200 hover:bg-red-50 transition-colors"
+                  className="shrink-0 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-red-600 hover:border-red-200 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
                 >
-                  Leave
+                  Tuned in
                 </button>
               </form>
             ) : (
-              <CrewGateButton
-                isCrew={isCrew}
-                label="Join"
-                buttonClassName="shrink-0 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors inline-flex items-center gap-1"
-              >
-                <form action={joinChannel.bind(null, channel.id)}>
-                  <button
-                    type="submit"
-                    className="shrink-0 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors"
-                  >
-                    Join
-                  </button>
-                </form>
-              </CrewGateButton>
+              <form action={tuneInChannel.bind(null, channel.id)}>
+                <button
+                  type="submit"
+                  className="shrink-0 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors"
+                >
+                  Tune in
+                </button>
+              </form>
             )
           )}
         </div>
 
         {channel.description && (
-          <div className="mt-3 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
-            <p className="text-sm text-gray-700 leading-relaxed">{channel.description}</p>
-          </div>
+          <p className="mt-4 text-sm text-gray-600 dark:text-gray-400 leading-relaxed max-w-2xl">
+            {channel.description}
+          </p>
         )}
       </div>
 
-      {/* ── Members (crew+ see list) ────────────────── */}
-      {isCrew && members.length > 0 && (
-        <section className="mb-8">
-          <h2 className="text-sm font-semibold text-gray-700 mb-3">
-            Members
-            <span className="ml-2 text-xs font-normal text-gray-400">{members.length}</span>
-          </h2>
-          <div className="flex flex-wrap gap-2">
-            {members.map(({ profile }) => (
-              <Link
-                key={profile.id}
-                href={`/people/${profile.handle}`}
-                className="flex items-center gap-1.5 rounded-full border border-gray-100 bg-white px-2.5 py-1 hover:border-indigo-200 hover:bg-indigo-50/30 transition-colors"
-              >
-                {profile.avatar_url ? (
-                  <img src={profile.avatar_url} alt={profile.display_name} className="w-5 h-5 rounded-full object-cover" />
-                ) : (
-                  <div className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-600 text-[9px] font-semibold flex items-center justify-center select-none">
-                    {getInitials(profile.display_name)}
-                  </div>
-                )}
-                <span className="text-xs text-gray-700">{profile.display_name}</span>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-      {/* ── Feed (group-type channels) ─────────────── */}
-      {channel.type === 'group' && (
-        <section className="border-t border-gray-100 pt-6">
-          <h2 className="text-sm font-semibold text-gray-700 mb-4">Feed</h2>
-          {isMember && (
+        {/* ── Main: forum feed ─────────────────────── */}
+        <div className="lg:col-span-2 border-t border-gray-100 dark:border-gray-800 pt-6">
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Forum</h2>
+          {isTunedIn && (
             <Composer
               scopeId={channel.id}
-              visibility="group"
+              visibility="public"
               placeholder={`Post to ${channel.name}…`}
             />
           )}
           <FeedList
-            circleIds={[channel.id]} showPublicLayer={false}
+            circleIds={[channel.id]}
+            showPublicLayer={false}
             myProfileId={myProfileId}
-            emptyMessage="No posts yet in this channel."
+            emptyMessage={
+              isTunedIn
+                ? 'No posts yet — start the conversation.'
+                : 'Tune in to see and join the conversation.'
+            }
           />
-        </section>
-      )}
+        </div>
 
-      {/* ── Thread type ────────────────────────────── */}
-      {channel.type === 'thread' && (
-        <section className="border-t border-gray-100 pt-6">
-          {isMember && (
-            <Composer
-              scopeId={channel.id}
-              visibility="group"
-              placeholder={`Reply to ${channel.name}…`}
-            />
-          )}
-          <FeedList
-            circleIds={[channel.id]} showPublicLayer={false}
-            myProfileId={myProfileId}
-            emptyMessage="Start the conversation."
-          />
-        </section>
-      )}
-
-      {/* ── Event type ─────────────────────────────── */}
-      {channel.type === 'event' && channel.event_date && (
-        <section className="border-t border-gray-100 pt-6">
-          <div className="rounded-xl border border-gray-200 bg-white p-4 mb-4">
-            <div className="flex items-center gap-2 mb-2">
-              <CalendarDays className="w-4 h-4 text-gray-400" />
-              <span className="text-sm font-medium text-gray-700">
-                {formatEventDate(channel.event_date)}
-              </span>
+        {/* ── Sidebar: Circles practicing this Channel ─ */}
+        <div>
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
+            Circles practicing {channel.name}
+          </h2>
+          {circles.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-gray-200/60 dark:border-gray-800/60 bg-gray-50/50 dark:bg-gray-900/50 p-6 text-center">
+              <CircleIcon className="w-6 h-6 text-gray-300 dark:text-gray-700 mx-auto mb-2" />
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                No Circles practicing this Channel yet.
+              </p>
             </div>
-            <p className="text-sm text-gray-500">
-              {members.length} attending
-              {channel.member_cap ? ` · ${channel.member_cap} max` : ''}
-            </p>
-          </div>
-          {isMember && (
-            <Composer
-              scopeId={channel.id}
-              visibility="group"
-              placeholder="Share details or questions…"
-            />
+          ) : (
+            <div className="space-y-2">
+              {circles.map((c) => (
+                <Link
+                  key={c.id}
+                  href={`/circles/${c.slug}`}
+                  className="block rounded-xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 px-3 py-2.5 hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-medium text-gray-900 dark:text-gray-50 truncate">
+                      {c.name}
+                    </span>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${
+                      c.type === 'in-person'
+                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
+                        : 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300'
+                    }`}>
+                      {c.type === 'in-person' ? 'In-person' : 'Online'}
+                    </span>
+                  </div>
+                  <div className="mt-1 flex items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400">
+                    {(c.city || c.neighborhood) && (
+                      <span className="flex items-center gap-0.5">
+                        <MapPin className="w-2.5 h-2.5" />
+                        {c.neighborhood || c.city}
+                      </span>
+                    )}
+                    <span>
+                      {c.member_count}/{c.member_cap} members
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
           )}
-          <FeedList
-            circleIds={[channel.id]} showPublicLayer={false}
-            myProfileId={myProfileId}
-            emptyMessage="No updates yet."
-          />
-        </section>
-      )}
+        </div>
+      </div>
     </div>
   )
 }

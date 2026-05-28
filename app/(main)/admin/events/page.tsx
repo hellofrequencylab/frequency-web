@@ -111,26 +111,25 @@ export default async function AdminEventsPage() {
         <div className="lg:col-span-2">
           {/* Upcoming */}
           {upcoming.length > 0 && (
-            <section className="mb-8">
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-600 mb-3">Upcoming</h2>
-              <div className="space-y-2">
-                {upcoming.map((event) => (
-                  <EventRow key={event.id} event={event} />
-                ))}
-              </div>
-            </section>
+            <div className="space-y-2 mb-6">
+              {upcoming.map((event) => (
+                <EventRow key={event.id} event={event} />
+              ))}
+            </div>
           )}
 
           {/* Past */}
           {past.length > 0 && (
-            <section>
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-600 mb-3">Past</h2>
-              <div className="space-y-2 opacity-70">
+            <details>
+              <summary className="text-xs font-medium text-gray-400 cursor-pointer hover:text-gray-600 select-none">
+                {past.length} past event{past.length > 1 ? 's' : ''}
+              </summary>
+              <div className="space-y-2 mt-2 opacity-70">
                 {past.slice(0, 20).map((event) => (
                   <EventRow key={event.id} event={event} />
                 ))}
               </div>
-            </section>
+            </details>
           )}
 
           {events.length === 0 && (

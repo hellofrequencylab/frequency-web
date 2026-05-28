@@ -89,22 +89,13 @@ function NexusForm({ initial, mentors, onSave, onCancel, isPending }: {
 }
 
 export function NexusesClient({ nexuses, mentors }: { nexuses: NexusRow[]; mentors: MentorOption[] }) {
-  const [showCreate, setShowCreate]  = useState(false)
   const [editingId,  setEditingId]   = useState<string | null>(null)
   const [isPending,  startTransition] = useTransition()
 
   return (
     <div>
-      {showCreate ? (
-        <NexusForm mentors={mentors} onSave={(fd) => { startTransition(async () => { await createNexus(fd); setShowCreate(false) }) }} onCancel={() => setShowCreate(false)} isPending={isPending} />
-      ) : (
-        <button onClick={() => setShowCreate(true)} className="mb-4 inline-flex items-center gap-1.5 rounded-lg border border-dashed border-gray-300 dark:border-gray-700 px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:border-indigo-300 hover:text-indigo-600 transition-colors">
-          <Plus className="w-4 h-4" />
-          New nexus
-        </button>
-      )}
       <div className="space-y-2">
-        {nexuses.length === 0 && !showCreate && (
+        {nexuses.length === 0 && (
           <p className="text-sm text-gray-400 py-6 text-center">No nexuses yet.</p>
         )}
         {nexuses.map(nexus => (

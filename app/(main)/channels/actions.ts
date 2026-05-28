@@ -26,6 +26,13 @@ async function getMyProfile(): Promise<{
   return data ?? null
 }
 
+async function getMyProfileId(): Promise<string | null> {
+  const profile = await getMyProfile()
+  return profile?.id ?? null
+}
+
+// ─── Legacy hub/nexus-scoped channels (will be renamed to "focus groups" in Phase 3.6) ───
+
 export async function createChannel(formData: FormData) {
   const name = (formData.get('name') as string | null)?.trim()
   const description = (formData.get('description') as string | null)?.trim() || null
@@ -107,6 +114,39 @@ export async function leaveChannel(channelId: string) {
     .delete()
     .eq('channel_id', channelId)
     .eq('profile_id', profile.id)
+
+  revalidatePath('/channels')
+  revalidatePath(`/channels/${channelId}`)
+}
+
+// ─── Topical Channels (Hierarchy v3, global topical layer) ───
+
+export async function tuneInChannel(channelId: string) {
+  const profileId = await getMyProfileId()
+  if (!profileId) return
+
+  const supabase = await createClient()
+  await supabase
+    .from('topical_channel_memberships')
+    .upsert(
+      { topical_channel_id: channelId, profile_id: profileId },
+      { onConflict: 'topical_channel_id,profile_id' },
+    )
+
+  revalidatePath('/channels')
+  revalidatePath(`/channels/${channelId}`)
+}
+
+export async function tuneOutChannel(channelId: string) {
+  const profileId = await getMyProfileId()
+  if (!profileId) return
+
+  const supabase = await createClient()
+  await supabase
+    .from('topical_channel_memberships')
+    .delete()
+    .eq('topical_channel_id', channelId)
+    .eq('profile_id', profileId)
 
   revalidatePath('/channels')
   revalidatePath(`/channels/${channelId}`)

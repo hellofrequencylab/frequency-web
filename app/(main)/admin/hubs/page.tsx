@@ -4,6 +4,17 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { HubsClient } from './hubs-client'
 import { NewHubCompose } from '@/components/compose/new-hub-compose'
 
+function SidebarCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
+      <div className="px-4 py-2.5 border-b border-gray-100/80 dark:border-gray-800/50">
+        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">{title}</h3>
+      </div>
+      {children}
+    </div>
+  )
+}
+
 export default async function AdminHubsPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -60,7 +71,16 @@ export default async function AdminHubsPage() {
         </div>
         <NewHubCompose nexuses={nexuses ?? []} />
       </div>
-      <HubsClient hubs={hubs} nexuses={nexuses ?? []} guides={guides ?? []} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <HubsClient hubs={hubs} nexuses={nexuses ?? []} guides={guides ?? []} />
+        </div>
+        <div className="space-y-4">
+          <SidebarCard title="About Hubs">
+            <p className="px-4 py-3 text-xs text-gray-400">Each hub is contained within a nexus and groups multiple circles. Assign a guide to oversee the hub.</p>
+          </SidebarCard>
+        </div>
+      </div>
     </div>
   )
 }

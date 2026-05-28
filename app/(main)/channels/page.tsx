@@ -1,63 +1,49 @@
 import Link from 'next/link'
-import { Hash, Plus, Users, CalendarDays, MessageSquare } from 'lucide-react'
+import {
+  Sparkles,
+  Activity,
+  Heart,
+  MessagesSquare,
+  Megaphone,
+  Palette,
+  Briefcase,
+  Radio,
+  Users,
+  Circle as CircleIcon,
+} from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
-import { NewChannelCompose } from '@/components/compose/new-channel-compose'
+import { tuneInChannel, tuneOutChannel } from './actions'
 
-type ChannelRow = {
+type TopicalChannel = {
   id: string
   name: string
+  slug: string
+  category: string
   description: string | null
-  type: 'group' | 'event' | 'thread'
-  scope: 'hub' | 'nexus' | 'outpost'
-  scope_id: string
-  member_cap: number | null
-  is_public: boolean
-  event_date: string | null
-  created_at: string
-  creator: {
-    id: string
-    display_name: string
-    handle: string
-    community_role: string
-  } | null
-  _member_count?: number
-  _is_member?: boolean
+  cover_image: string | null
+  display_order: number
 }
 
-const TYPE_ICON = {
-  group:  Hash,
-  event:  CalendarDays,
-  thread: MessageSquare,
+const CATEGORY_ICON: Record<string, LucideIcon> = {
+  spirituality:     Sparkles,
+  movement:         Activity,
+  'holistic-health': Heart,
+  'human-relating': MessagesSquare,
+  activism:         Megaphone,
+  creative:         Palette,
+  'business-support': Briefcase,
 }
 
-const TYPE_LABEL = {
-  group: 'Group',
-  event: 'Event',
-  thread: 'Thread',
-}
-
-const TYPE_COLOR: Record<string, string> = {
-  group:  'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300',
-  event:  'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
-  thread: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
-}
-
-function formatEventDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-US', {
-    weekday: 'short', month: 'short', day: 'numeric',
-  })
-}
-
-function SidebarCard({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
-      <div className="px-4 py-2.5 border-b border-gray-100/80 dark:border-gray-800/50">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">{title}</h3>
-      </div>
-      {children}
-    </div>
-  )
+const CATEGORY_ACCENT: Record<string, string> = {
+  spirituality:     'from-violet-500/20 to-fuchsia-500/10  text-violet-600 dark:text-violet-400',
+  movement:         'from-emerald-500/20 to-teal-500/10    text-emerald-600 dark:text-emerald-400',
+  'holistic-health': 'from-rose-500/20 to-pink-500/10       text-rose-600 dark:text-rose-400',
+  'human-relating': 'from-sky-500/20 to-blue-500/10        text-sky-600 dark:text-sky-400',
+  activism:         'from-orange-500/20 to-red-500/10      text-orange-600 dark:text-orange-400',
+  creative:         'from-amber-500/20 to-yellow-500/10    text-amber-600 dark:text-amber-400',
+  'business-support': 'from-slate-500/20 to-zinc-500/10    text-slate-600 dark:text-slate-400',
 }
 
 export default async function ChannelsPage() {
@@ -69,270 +55,113 @@ export default async function ChannelsPage() {
   } = await supabase.auth.getUser()
 
   let myProfileId: string | null = null
-  let myNexusId: string | null = null
-  let myHubId: string | null = null
-  let myOutpostId: string | null = null
-  let isCreator = false
-
   if (user) {
     const { data: profile } = await admin
       .from('profiles')
-      .select('id, community_role')
+      .select('id')
       .eq('auth_user_id', user.id)
       .maybeSingle()
-
-    if (profile) {
-      myProfileId = profile.id
-      isCreator = ['host', 'guide', 'mentor', 'janitor'].includes(profile.community_role)
-
-      // Derive nexus/hub/outpost from membership chain
-      const { data: membership } = await admin
-        .from('memberships')
-        .select(
-          `circle_id,
-           circle:circles!circle_id (
-             hub:hubs!hub_id (
-               id,
-               nexus:nexuses!nexus_id (
-                 id,
-                 outpost:outposts!outpost_id ( id )
-               )
-             )
-           )`
-        )
-        .eq('profile_id', profile.id)
-        .eq('status', 'active')
-        .order('joined_at', { ascending: true })
-        .limit(1)
-        .maybeSingle()
-
-      if (membership) {
-        const m = membership as unknown as { circle: { hub: { id: string; nexus: { id: string; outpost: { id: string } | null } | null } | null } | null }
-        myHubId = m.circle?.hub?.id ?? null
-        myNexusId = m.circle?.hub?.nexus?.id ?? null
-        myOutpostId = m.circle?.hub?.nexus?.outpost?.id ?? null
-      }
-    }
+    myProfileId = profile?.id ?? null
   }
 
-  // Build scope options for the create-channel modal
-  const scopeOptions: { scope: 'hub' | 'nexus' | 'outpost'; scopeId: string; label: string }[] = []
-  if (myHubId || myNexusId || myOutpostId) {
-    const [hubR, nexusR, outpostR] = await Promise.all([
-      myHubId ? admin.from('hubs').select('name').eq('id', myHubId).maybeSingle() : Promise.resolve({ data: null }),
-      myNexusId ? admin.from('nexuses').select('name').eq('id', myNexusId).maybeSingle() : Promise.resolve({ data: null }),
-      myOutpostId ? admin.from('outposts').select('name').eq('id', myOutpostId).maybeSingle() : Promise.resolve({ data: null }),
-    ])
-    if (myHubId && hubR.data) scopeOptions.push({ scope: 'hub', scopeId: myHubId, label: `Hub: ${(hubR.data as { name: string }).name}` })
-    if (myNexusId && nexusR.data) scopeOptions.push({ scope: 'nexus', scopeId: myNexusId, label: `Nexus: ${(nexusR.data as { name: string }).name}` })
-    if (myOutpostId && outpostR.data) scopeOptions.push({ scope: 'outpost', scopeId: myOutpostId, label: `Outpost: ${(outpostR.data as { name: string }).name}` })
-  }
+  const { data: channels } = await admin
+    .from('topical_channels')
+    .select('id, name, slug, category, description, cover_image, display_order')
+    .eq('is_active', true)
+    .order('display_order', { ascending: true })
 
-  if (!myNexusId && !myHubId) {
-    return (
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-1">Channels</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-6">
-          Focused spaces beyond your circle. Channels are where the community organises around a
-          topic, event, or conversation, open to anyone in your area.
-        </p>
-        <div className="rounded-2xl border border-dashed border-gray-200/60 dark:border-gray-800/60 bg-gray-50/50 dark:bg-gray-900/50 p-12 text-center">
-          <Hash className="w-8 h-8 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            <Link href="/circles" className="text-indigo-600 hover:underline">
-              Join a circle
-            </Link>{' '}
-            to discover channels.
-          </p>
-        </div>
-      </div>
-    )
-  }
+  const channelList = (channels ?? []) as TopicalChannel[]
+  const channelIds = channelList.map((c) => c.id)
 
-  // Channel discovery: public channels within nexus scope
-  // (nexus-scoped + hub-scoped within nexus + outpost-scoped)
-  const scopeConditions: { scope: string; scope_id: string }[] = []
-  if (myNexusId) scopeConditions.push({ scope: 'nexus', scope_id: myNexusId })
-  if (myHubId) scopeConditions.push({ scope: 'hub', scope_id: myHubId })
-  if (myOutpostId) scopeConditions.push({ scope: 'outpost', scope_id: myOutpostId })
-
-  // We'll fetch channels for each scope and merge
-  const allChannelIds = new Set<string>()
-  const allChannels: ChannelRow[] = []
-
-  for (const { scope, scope_id } of scopeConditions) {
-    const { data: rows } = await admin
-      .from('channels')
-      .select(
-        `id, name, description, type, scope, scope_id, member_cap, is_public, event_date, created_at,
-         creator:profiles!creator_id ( id, display_name, handle, community_role )`
-      )
-      .eq('scope', scope)
-      .eq('scope_id', scope_id)
-      .eq('is_public', true)
-      .order('created_at', { ascending: false })
-
-    for (const row of rows ?? []) {
-      if (!allChannelIds.has(row.id)) {
-        allChannelIds.add(row.id)
-        allChannels.push(row as unknown as ChannelRow)
-      }
-    }
-  }
-
-  // Fetch member counts + my memberships
-  const channelIds = allChannels.map((c) => c.id)
-  let memberCounts: Record<string, number> = {}
-  let myChannelIds = new Set<string>()
+  const memberCounts: Record<string, number> = {}
+  const circleCounts: Record<string, number> = {}
+  const myChannelIds = new Set<string>()
 
   if (channelIds.length > 0) {
-    const { data: counts } = await admin
-      .from('channel_memberships')
-      .select('channel_id')
-      .in('channel_id', channelIds)
-      .eq('status', 'active')
-    ;(counts ?? []).forEach((r: { channel_id: string }) => {
-      memberCounts[r.channel_id] = (memberCounts[r.channel_id] ?? 0) + 1
+    const [{ data: members }, { data: circles }] = await Promise.all([
+      admin
+        .from('topical_channel_memberships')
+        .select('topical_channel_id')
+        .in('topical_channel_id', channelIds),
+      admin
+        .from('circles')
+        .select('topical_channel_id')
+        .in('topical_channel_id', channelIds)
+        .neq('status', 'archived'),
+    ])
+
+    ;(members ?? []).forEach((m: { topical_channel_id: string }) => {
+      memberCounts[m.topical_channel_id] = (memberCounts[m.topical_channel_id] ?? 0) + 1
+    })
+    ;(circles ?? []).forEach((c: { topical_channel_id: string | null }) => {
+      if (c.topical_channel_id) {
+        circleCounts[c.topical_channel_id] = (circleCounts[c.topical_channel_id] ?? 0) + 1
+      }
     })
 
     if (myProfileId) {
       const { data: mine } = await admin
-        .from('channel_memberships')
-        .select('channel_id')
-        .in('channel_id', channelIds)
+        .from('topical_channel_memberships')
+        .select('topical_channel_id')
+        .in('topical_channel_id', channelIds)
         .eq('profile_id', myProfileId)
-        .eq('status', 'active')
-      ;(mine ?? []).forEach((r: { channel_id: string }) => myChannelIds.add(r.channel_id))
+      ;(mine ?? []).forEach((m: { topical_channel_id: string }) => myChannelIds.add(m.topical_channel_id))
     }
   }
 
-  const myChannels = allChannels.filter((c) => myChannelIds.has(c.id))
-  const discoverChannels = allChannels.filter((c) => !myChannelIds.has(c.id))
+  const tunedIn  = channelList.filter((c) => myChannelIds.has(c.id))
+  const explore  = channelList.filter((c) => !myChannelIds.has(c.id))
 
   return (
     <div>
-      <div className="flex items-end justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-1">Channels</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed max-w-lg">
-            Focused spaces beyond your circle. Channels are where the community organises around a
-            topic, event, or conversation, open to anyone in your area.
-          </p>
+      <div className="mb-8">
+        <div className="flex items-center gap-2 mb-1">
+          <Radio className="w-5 h-5 text-indigo-500" />
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Channels</h1>
         </div>
-        {isCreator && scopeOptions.length > 0 && <NewChannelCompose scopeOptions={scopeOptions} />}
+        <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed max-w-xl">
+          Topical forums anyone in the world can tune into. Each Channel carries a seasonal
+          practice that Circles run locally — find your topics, then find your people.
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {tunedIn.length > 0 && (
+        <section className="mb-10">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-3">
+            Tuned in
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {tunedIn.map((ch) => (
+              <ChannelCard
+                key={ch.id}
+                channel={ch}
+                memberCount={memberCounts[ch.id] ?? 0}
+                circleCount={circleCounts[ch.id] ?? 0}
+                isTunedIn
+                canToggle={!!myProfileId}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
-        {/* ── Main column: channels list ───────────────────────── */}
-        <div className="lg:col-span-2">
-
-          {myChannels.length > 0 && (
-            <section className="mb-8">
-              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                Joined
-              </h2>
-              <div className="space-y-2">
-                {myChannels.map((ch) => (
-                  <ChannelCard
-                    key={ch.id}
-                    channel={ch}
-                    memberCount={memberCounts[ch.id] ?? 0}
-                    isMember
-                  />
-                ))}
-              </div>
-            </section>
-          )}
-
-          {discoverChannels.length > 0 && (
-            <section>
-              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                Discover
-              </h2>
-              <div className="space-y-2">
-                {discoverChannels.map((ch) => (
-                  <ChannelCard
-                    key={ch.id}
-                    channel={ch}
-                    memberCount={memberCounts[ch.id] ?? 0}
-                    isMember={false}
-                  />
-                ))}
-              </div>
-            </section>
-          )}
-
-          {allChannels.length === 0 && (
-            <div className="rounded-2xl border border-dashed border-gray-200/60 dark:border-gray-800/60 bg-gray-50/50 dark:bg-gray-900/50 p-12 text-center">
-              <Hash className="w-8 h-8 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
-              <p className="text-sm text-gray-500 dark:text-gray-400">No channels in your area yet.</p>
-              {isCreator && (
-                <Link
-                  href="/channels/new"
-                  className="mt-3 inline-block text-xs text-indigo-600 hover:underline"
-                >
-                  Create the first one →
-                </Link>
-              )}
-            </div>
-          )}
+      <section>
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-3">
+          {tunedIn.length > 0 ? 'Explore more' : 'Explore'}
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {explore.map((ch) => (
+            <ChannelCard
+              key={ch.id}
+              channel={ch}
+              memberCount={memberCounts[ch.id] ?? 0}
+              circleCount={circleCounts[ch.id] ?? 0}
+              isTunedIn={false}
+              canToggle={!!myProfileId}
+            />
+          ))}
         </div>
-
-        {/* ── Sidebar ─────────────────────────────────────────── */}
-        <div className="space-y-4">
-
-          {/* My Channels quick-links */}
-          <SidebarCard title="My Channels">
-            {myChannels.length === 0 ? (
-              <p className="px-4 py-4 text-xs text-gray-400 dark:text-gray-500 text-center">
-                No channels joined
-              </p>
-            ) : (
-              <ul className="divide-y divide-gray-50 dark:divide-gray-800">
-                {myChannels.map((ch) => {
-                  const typeColor = TYPE_COLOR[ch.type] ?? TYPE_COLOR.group
-                  return (
-                    <li key={ch.id}>
-                      <Link
-                        href={`/channels/${ch.id}`}
-                        className="flex items-center justify-between px-4 py-2.5 gap-2 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-                      >
-                        <span className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">
-                          {ch.name}
-                        </span>
-                        <span className={`shrink-0 text-[11px] px-1.5 py-0.5 rounded-full font-medium ${typeColor}`}>
-                          {TYPE_LABEL[ch.type]}
-                        </span>
-                      </Link>
-                    </li>
-                  )
-                })}
-              </ul>
-            )}
-          </SidebarCard>
-
-          {/* Admin card */}
-          {isCreator && (
-            <SidebarCard title="Admin">
-              <div className="px-4 py-3 space-y-2">
-                <Link
-                  href="/channels/new"
-                  className="flex items-center justify-between text-xs font-medium text-indigo-600 hover:underline"
-                >
-                  New Channel →
-                </Link>
-                <Link
-                  href="/admin/channels"
-                  className="flex items-center justify-between text-xs font-medium text-gray-600 dark:text-gray-400 hover:underline"
-                >
-                  Manage Channels
-                </Link>
-              </div>
-            </SidebarCard>
-          )}
-        </div>
-      </div>
+      </section>
     </div>
   )
 }
@@ -340,59 +169,74 @@ export default async function ChannelsPage() {
 function ChannelCard({
   channel,
   memberCount,
-  isMember,
+  circleCount,
+  isTunedIn,
+  canToggle,
 }: {
-  channel: ChannelRow
+  channel: TopicalChannel
   memberCount: number
-  isMember: boolean
+  circleCount: number
+  isTunedIn: boolean
+  canToggle: boolean
 }) {
-  const Icon = TYPE_ICON[channel.type] ?? Hash
-  const typeColor = TYPE_COLOR[channel.type] ?? TYPE_COLOR.group
+  const Icon = CATEGORY_ICON[channel.category] ?? Radio
+  const accent = CATEGORY_ACCENT[channel.category] ?? 'from-gray-500/10 to-gray-500/5 text-gray-600 dark:text-gray-400'
 
   return (
-    <Link
-      href={`/channels/${channel.id}`}
-      className="flex items-start gap-3 rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm px-4 py-3 hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-indigo-50/30 dark:hover:bg-indigo-950/20 transition-colors"
-    >
-      <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-gray-50 dark:bg-gray-800 shrink-0">
-        <Icon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-      </div>
+    <div className="group relative overflow-hidden rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors">
+      <div className={`absolute inset-0 bg-gradient-to-br ${accent} opacity-40 pointer-events-none`} />
+      <div className="relative p-5">
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <Link href={`/channels/${channel.slug}`} className="flex items-start gap-3 min-w-0 flex-1">
+            <div className={`flex items-center justify-center w-11 h-11 rounded-xl bg-white/80 dark:bg-gray-950/40 backdrop-blur-sm shrink-0 ${CATEGORY_ACCENT[channel.category]?.split(' ').filter((c) => c.startsWith('text-')).join(' ')}`}>
+              <Icon className="w-5 h-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h3 className="text-base font-semibold text-gray-900 dark:text-gray-50 leading-tight">
+                {channel.name}
+              </h3>
+              {channel.description && (
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 line-clamp-2 leading-relaxed">
+                  {channel.description}
+                </p>
+              )}
+            </div>
+          </Link>
+          {canToggle && (
+            isTunedIn ? (
+              <form action={tuneOutChannel.bind(null, channel.id)}>
+                <button
+                  type="submit"
+                  className="shrink-0 rounded-full border border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/80 px-2.5 py-1 text-[11px] font-medium text-gray-600 dark:text-gray-300 hover:text-red-600 hover:border-red-200 transition-colors"
+                >
+                  Tuned in
+                </button>
+              </form>
+            ) : (
+              <form action={tuneInChannel.bind(null, channel.id)}>
+                <button
+                  type="submit"
+                  className="shrink-0 rounded-full bg-indigo-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-indigo-700 transition-colors"
+                >
+                  Tune in
+                </button>
+              </form>
+            )
+          )}
+        </div>
 
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{channel.name}</span>
-          <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${typeColor}`}>
-            {TYPE_LABEL[channel.type]}
+        <div className="flex items-center gap-3 text-[11px] text-gray-500 dark:text-gray-400">
+          <span className="flex items-center gap-1">
+            <Users className="w-3 h-3" />
+            {memberCount.toLocaleString()} tuned in
           </span>
-          {isMember && (
-            <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">
-              Joined
-            </span>
-          )}
-        </div>
-
-        {channel.description && (
-          <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{channel.description}</p>
-        )}
-
-        <div className="flex items-center gap-2 mt-1 text-xs text-gray-400">
-          {channel.event_date && (
-            <span>{formatEventDate(channel.event_date)}</span>
-          )}
-          {memberCount > 0 && (
-            <span className="flex items-center gap-0.5">
-              <Users className="w-3 h-3" />
-              {memberCount}
-            </span>
-          )}
-          {channel.member_cap && (
-            <span>/ {channel.member_cap} max</span>
-          )}
-          {channel.creator && (
-            <span>by {channel.creator.display_name}</span>
-          )}
+          <span className="text-gray-300 dark:text-gray-700">·</span>
+          <span className="flex items-center gap-1">
+            <CircleIcon className="w-3 h-3" />
+            {circleCount} {circleCount === 1 ? 'Circle' : 'Circles'}
+          </span>
         </div>
       </div>
-    </Link>
+    </div>
   )
 }
