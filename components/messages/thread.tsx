@@ -137,7 +137,7 @@ export function MessageThread({
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {groups.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-subtle">
               No messages yet. Say hello!
             </p>
           </div>
@@ -162,7 +162,7 @@ export function MessageThread({
                       className="w-7 h-7 rounded-full object-cover"
                     />
                   ) : (
-                    <div className="w-7 h-7 rounded-full bg-indigo-100 text-indigo-600 text-[10px] font-bold flex items-center justify-center select-none">
+                    <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-[10px] font-bold flex items-center justify-center select-none">
                       {sender ? getInitials(sender.display_name) : '?'}
                     </div>
                   )
@@ -177,7 +177,7 @@ export function MessageThread({
                 }`}
               >
                 {!isMine && sender && (
-                  <span className="text-[11px] text-gray-400 px-1 mb-0.5">
+                  <span className="text-[11px] text-subtle px-1 mb-0.5">
                     {sender.display_name}
                   </span>
                 )}
@@ -188,7 +188,7 @@ export function MessageThread({
                     <div key={msg.id} className="group flex items-end gap-1.5">
                       {isMine && (
                         <span
-                          className={`text-[10px] text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity ${
+                          className={`text-[10px] text-subtle opacity-0 group-hover:opacity-100 transition-opacity ${
                             isLast ? '' : 'invisible'
                           }`}
                         >
@@ -198,8 +198,8 @@ export function MessageThread({
                       <div
                         className={`px-3 py-2 text-sm leading-relaxed break-words ${
                           isMine
-                            ? 'bg-indigo-600 text-white rounded-2xl rounded-br-md'
-                            : 'bg-gray-100 text-gray-900 rounded-2xl rounded-bl-md'
+                            ? 'bg-primary text-on-primary rounded-2xl rounded-br-md'
+                            : 'bg-surface-elevated text-text rounded-2xl rounded-bl-md'
                         } ${isFirst && !isMine ? 'rounded-tl-2xl' : ''} ${
                           isFirst && isMine ? 'rounded-tr-2xl' : ''
                         }`}
@@ -208,7 +208,7 @@ export function MessageThread({
                       </div>
                       {!isMine && (
                         <span
-                          className={`text-[10px] text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity ${
+                          className={`text-[10px] text-subtle opacity-0 group-hover:opacity-100 transition-opacity ${
                             isLast ? '' : 'invisible'
                           }`}
                         >
@@ -226,7 +226,7 @@ export function MessageThread({
       </div>
 
       {/* ── Composer ──────────────────────────────── */}
-      <div className="shrink-0 border-t border-gray-100 bg-white px-4 py-3">
+      <div className="shrink-0 border-t border-border bg-white px-4 py-3">
         <div className="flex items-end gap-2">
           <textarea
             ref={textareaRef}
@@ -236,13 +236,13 @@ export function MessageThread({
             placeholder="Message…"
             rows={1}
             disabled={isPending}
-            className="flex-1 resize-none text-sm text-gray-900 placeholder-gray-400 outline-none leading-relaxed bg-gray-50 rounded-xl px-3 py-2.5 max-h-32 disabled:opacity-60"
+            className="flex-1 resize-none text-sm text-text placeholder-subtle outline-none leading-relaxed bg-surface rounded-xl px-3 py-2.5 max-h-32 disabled:opacity-60"
             style={{ minHeight: '42px' }}
           />
           <button
             onClick={submit}
             disabled={!body.trim() || isPending}
-            className="shrink-0 w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="shrink-0 w-9 h-9 rounded-xl bg-primary flex items-center justify-center hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             aria-label="Send message"
           >
             <svg
@@ -259,7 +259,7 @@ export function MessageThread({
             </svg>
           </button>
         </div>
-        <p className="text-[10px] text-gray-300 mt-1.5 text-right">Enter to send · Shift+Enter for new line</p>
+        <p className="text-[10px] text-subtle mt-1.5 text-right">Enter to send · Shift+Enter for new line</p>
       </div>
     </div>
   )

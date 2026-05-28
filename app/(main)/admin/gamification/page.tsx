@@ -58,8 +58,8 @@ export default async function AdminGamificationPage() {
     <div>
       <div className="flex items-end justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Gamification</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <h1 className="text-2xl font-bold text-text">Gamification</h1>
+          <p className="text-sm text-muted mt-1">
             Overview of achievements, challenges, and engagement stats.
           </p>
         </div>
@@ -71,17 +71,17 @@ export default async function AdminGamificationPage() {
 
       {/* Stats grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-        <StatCard label="Achievements" value={String(totalAchievements ?? 0)} Icon={Award} color="text-violet-600 bg-violet-50 dark:bg-violet-950 dark:text-violet-400" />
-        <StatCard label="Times Unlocked" value={String(totalUnlocked ?? 0)} Icon={Trophy} color="text-amber-600 bg-amber-50 dark:bg-amber-950 dark:text-amber-400" />
-        <StatCard label="Season Challenges" value={String(totalChallenges ?? 0)} Icon={Target} color="text-indigo-600 bg-indigo-50 dark:bg-indigo-950 dark:text-indigo-400" />
-        <StatCard label="Challenges Completed" value={String(totalChallengesCompleted ?? 0)} Icon={Flame} color="text-orange-600 bg-orange-50 dark:bg-orange-950 dark:text-orange-400" />
+        <StatCard label="Achievements" value={String(totalAchievements ?? 0)} Icon={Award} color="text-signal-strong bg-signal-bg dark:text-signal" />
+        <StatCard label="Times Unlocked" value={String(totalUnlocked ?? 0)} Icon={Trophy} color="text-warning bg-warning-bg dark:text-primary" />
+        <StatCard label="Season Challenges" value={String(totalChallenges ?? 0)} Icon={Target} color="text-primary-strong bg-primary-bg dark:text-primary-strong" />
+        <StatCard label="Challenges Completed" value={String(totalChallengesCompleted ?? 0)} Icon={Flame} color="text-warning bg-warning-bg dark:text-primary" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top achievers */}
-        <section className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100/80 dark:border-gray-800/50">
-            <h2 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 flex items-center gap-2">
+        <section className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
+          <div className="px-4 py-3 border-b border-border">
+            <h2 className="text-[11px] font-semibold uppercase tracking-wider text-subtle flex items-center gap-2">
               <Users className="w-3.5 h-3.5" />
               Top Achievers
             </h2>
@@ -91,41 +91,41 @@ export default async function AdminGamificationPage() {
               <div
                 key={p.id}
                 className={`flex items-center gap-3 px-4 py-3 ${
-                  i < (topEarners?.length ?? 0) - 1 ? 'border-b border-gray-100/80 dark:border-gray-800/50' : ''
+                  i < (topEarners?.length ?? 0) - 1 ? 'border-b border-border' : ''
                 }`}
               >
-                <span className="text-sm font-bold text-gray-300 w-5">{i + 1}</span>
+                <span className="text-sm font-bold text-subtle w-5">{i + 1}</span>
                 <div className="flex-1 min-w-0">
-                  <Link href={`/people/${p.handle}`} className="text-sm font-medium text-gray-900 dark:text-gray-50 hover:underline truncate block">
+                  <Link href={`/people/${p.handle}`} className="text-sm font-medium text-text hover:underline truncate block">
                     {p.display_name}
                   </Link>
                 </div>
-                <div className="flex items-center gap-3 shrink-0 text-xs text-gray-500">
+                <div className="flex items-center gap-3 shrink-0 text-xs text-muted">
                   <span className="flex items-center gap-1">
-                    <Award className="w-3 h-3 text-violet-400" />
+                    <Award className="w-3 h-3 text-signal" />
                     {p.achievement_count ?? 0}
                   </span>
                   <span className="flex items-center gap-1">
-                    <Zap className="w-3 h-3 text-amber-400" />
+                    <Zap className="w-3 h-3 text-primary" />
                     {(p.lifetime_zaps ?? 0).toLocaleString()}
                   </span>
                   <span className="flex items-center gap-1">
-                    <Flame className="w-3 h-3 text-orange-400" />
+                    <Flame className="w-3 h-3 text-primary" />
                     {p.current_streak ?? 0}w
                   </span>
                 </div>
               </div>
             ))}
             {!(topEarners?.length) && (
-              <div className="px-4 py-8 text-center text-sm text-gray-400">No achievements earned yet.</div>
+              <div className="px-4 py-8 text-center text-sm text-subtle">No achievements earned yet.</div>
             )}
           </div>
         </section>
 
         {/* Achievement list */}
-        <section className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100/80 dark:border-gray-800/50">
-            <h2 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 flex items-center gap-2">
+        <section className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
+          <div className="px-4 py-3 border-b border-border">
+            <h2 className="text-[11px] font-semibold uppercase tracking-wider text-subtle flex items-center gap-2">
               <Award className="w-3.5 h-3.5" />
               All Achievements ({achievements?.length ?? 0})
             </h2>
@@ -134,14 +134,14 @@ export default async function AdminGamificationPage() {
             {(achievements ?? []).map(a => {
               const tier = TIER_CONFIG[a.tier as AchievementTier]
               return (
-                <div key={a.id} className="flex items-center gap-3 px-4 py-2 border-b border-gray-50 dark:border-gray-800/30 last:border-0">
+                <div key={a.id} className="flex items-center gap-3 px-4 py-2 border-b border-border dark:border-border/30 last:border-0">
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${tier.bg} ${tier.color}`}>
                     {tier.label}
                   </span>
-                  <span className="text-xs text-gray-900 dark:text-gray-50 flex-1 truncate">{a.name}</span>
+                  <span className="text-xs text-text flex-1 truncate">{a.name}</span>
                   {a.zaps_reward > 0 && (
-                    <span className="text-[11px] text-gray-400 flex items-center gap-0.5">
-                      <Zap className="w-2.5 h-2.5 text-amber-400" />+{a.zaps_reward}
+                    <span className="text-[11px] text-subtle flex items-center gap-0.5">
+                      <Zap className="w-2.5 h-2.5 text-primary" />+{a.zaps_reward}
                     </span>
                   )}
                 </div>
@@ -151,14 +151,14 @@ export default async function AdminGamificationPage() {
         </section>
 
         {/* Season challenges list */}
-        <section className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden lg:col-span-2">
-          <div className="px-4 py-3 border-b border-gray-100/80 dark:border-gray-800/50">
-            <h2 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 flex items-center gap-2">
+        <section className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden lg:col-span-2">
+          <div className="px-4 py-3 border-b border-border">
+            <h2 className="text-[11px] font-semibold uppercase tracking-wider text-subtle flex items-center gap-2">
               <Target className="w-3.5 h-3.5" />
               Season 1 Challenges ({challenges?.length ?? 0})
             </h2>
           </div>
-          <div className="divide-y divide-gray-50 dark:divide-gray-800/30">
+          <div className="divide-y divide-border/30">
             {(challenges ?? []).map(c => {
               const diff = DIFFICULTY_CONFIG[c.difficulty as ChallengeDifficulty]
               return (
@@ -166,10 +166,10 @@ export default async function AdminGamificationPage() {
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${diff.bg} ${diff.color}`}>
                     {diff.label}
                   </span>
-                  <span className="text-xs text-gray-900 dark:text-gray-50 flex-1">{c.name}</span>
-                  <span className="text-[11px] text-gray-400">Target: {c.target}</span>
-                  <span className="text-[11px] text-gray-400 flex items-center gap-0.5">
-                    <Zap className="w-2.5 h-2.5 text-amber-400" />+{c.zaps_reward}
+                  <span className="text-xs text-text flex-1">{c.name}</span>
+                  <span className="text-[11px] text-subtle">Target: {c.target}</span>
+                  <span className="text-[11px] text-subtle flex items-center gap-0.5">
+                    <Zap className="w-2.5 h-2.5 text-primary" />+{c.zaps_reward}
                   </span>
                 </div>
               )
@@ -183,12 +183,12 @@ export default async function AdminGamificationPage() {
 
 function StatCard({ label, value, Icon, color }: { label: string; value: string; Icon: React.ElementType; color: string }) {
   return (
-    <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm p-3">
+    <div className="rounded-2xl border border-border bg-surface shadow-sm p-3">
       <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2 ${color}`}>
         <Icon className="w-4 h-4" />
       </div>
-      <div className="text-xl font-bold text-gray-900 dark:text-gray-50 leading-none">{value}</div>
-      <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{label}</div>
+      <div className="text-xl font-bold text-text leading-none">{value}</div>
+      <div className="text-xs text-muted mt-0.5">{label}</div>
     </div>
   )
 }

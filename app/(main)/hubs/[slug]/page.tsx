@@ -86,7 +86,7 @@ export default async function HubPage({
     <div>
       <Link
         href="/circles"
-        className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 mb-4 transition-colors"
+        className="inline-flex items-center gap-1 text-xs text-subtle hover:text-muted mb-4 transition-colors"
       >
         ← Circles
       </Link>
@@ -98,23 +98,23 @@ export default async function HubPage({
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-semibold text-gray-900">{hub.name}</h1>
+              <h1 className="text-xl font-semibold text-text">{hub.name}</h1>
               <StatusBadge status={hub.status as any} />
             </div>
 
             {hub.guide && (
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-muted">
                 Guide:{' '}
                 <Link
                   href={`/people/${hub.guide.handle}`}
-                  className="text-indigo-600 hover:underline"
+                  className="text-primary-strong hover:underline"
                 >
                   {hub.guide.display_name}
                 </Link>
               </p>
             )}
 
-            <div className="flex items-center gap-1.5 mt-2 text-sm text-gray-500">
+            <div className="flex items-center gap-1.5 mt-2 text-sm text-muted">
               <Users className="w-4 h-4" />
               <span>
                 {totalMembers} members across {circles.length} / 5 circles
@@ -126,9 +126,9 @@ export default async function HubPage({
 
       {/* ── Circles ────────────────────────────────── */}
       <section>
-        <h2 className="text-sm font-semibold text-gray-700 mb-3">Circles</h2>
+        <h2 className="text-sm font-semibold text-text mb-3">Circles</h2>
         {circles.length === 0 ? (
-          <p className="text-sm text-gray-400">No circles yet.</p>
+          <p className="text-sm text-subtle">No circles yet.</p>
         ) : (
           <div className="space-y-2">
             {circles.map((circle) => {
@@ -139,34 +139,34 @@ export default async function HubPage({
                 <Link
                   key={circle.id}
                   href={`/circles/${circle.slug}`}
-                  className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 hover:border-indigo-200 hover:bg-indigo-50/30 transition-colors"
+                  className="flex items-center gap-3 rounded-xl border border-border bg-white px-4 py-3 hover:border-primary-bg hover:bg-primary-bg/30 transition-colors"
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-medium text-gray-900">{circle.name}</span>
+                      <span className="text-sm font-medium text-text">{circle.name}</span>
                       <StatusBadge status={circle.status as any} />
-                      <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 font-medium">
+                      <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-surface-elevated text-muted font-medium">
                         {circle.type}
                       </span>
                     </div>
                     {circle.host && (
-                      <p className="text-xs text-gray-400 mt-0.5">
+                      <p className="text-xs text-subtle mt-0.5">
                         Host: {circle.host.display_name}
                       </p>
                     )}
                     <div className="mt-1.5 flex items-center gap-2">
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-subtle">
                         {circle.member_count} / {circle.member_cap}
                       </span>
-                      <div className="h-1 w-20 rounded-full bg-gray-100 overflow-hidden">
+                      <div className="h-1 w-20 rounded-full bg-surface-elevated overflow-hidden">
                         <div
-                          className={`h-full rounded-full ${full ? 'bg-red-400' : 'bg-indigo-400'}`}
+                          className={`h-full rounded-full ${full ? 'bg-danger' : 'bg-primary'}`}
                           style={{ width: `${pct}%` }}
                         />
                       </div>
                     </div>
                   </div>
-                  <span className="text-xs text-gray-400">→</span>
+                  <span className="text-xs text-subtle">→</span>
                 </Link>
               )
             })}

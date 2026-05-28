@@ -88,10 +88,10 @@ export default async function ConversationPage({
   return (
     <div className="-mx-6 -my-6 flex flex-col h-[calc(100vh-3.5rem)]">
       {/* Header */}
-      <header className="shrink-0 flex items-center gap-3 px-5 py-3 border-b border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900">
+      <header className="shrink-0 flex items-center gap-3 px-5 py-3 border-b border-border bg-surface">
         <Link
           href="/messages"
-          className="md:hidden p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          className="md:hidden p-1.5 rounded-lg text-subtle hover:text-muted hover:bg-surface-elevated transition-colors"
           aria-label="Back"
         >
           <ChevronLeft className="w-5 h-5" />
@@ -99,15 +99,15 @@ export default async function ConversationPage({
 
         {isGroup ? (
           <div className="flex items-center gap-3 flex-1 min-w-0">
-            <div className="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center shrink-0">
-              <UsersRound className="w-4 h-4 text-indigo-500" />
+            <div className="w-9 h-9 rounded-lg bg-primary-bg flex items-center justify-center shrink-0">
+              <UsersRound className="w-4 h-4 text-primary-strong" />
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <h1 className="text-base font-bold text-gray-900 dark:text-gray-50 truncate">{displayName}</h1>
+                <h1 className="text-base font-bold text-text truncate">{displayName}</h1>
                 <ConversationRenameButton conversationId={conversationId} currentName={conv.name as string | null} />
               </div>
-              <p className="text-xs text-gray-400">{participants.length} people</p>
+              <p className="text-xs text-subtle">{participants.length} people</p>
             </div>
           </div>
         ) : others[0] ? (
@@ -118,24 +118,24 @@ export default async function ConversationPage({
             {others[0].avatar_url ? (
               <img src={others[0].avatar_url} alt={others[0].display_name} className="w-9 h-9 rounded-full object-cover shrink-0" />
             ) : (
-              <div className="w-9 h-9 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-xs font-semibold flex items-center justify-center shrink-0 select-none">
+              <div className="w-9 h-9 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none">
                 {getInitials(others[0].display_name)}
               </div>
             )}
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-gray-900 dark:text-gray-50 truncate leading-tight">{others[0].display_name}</p>
-              <p className="text-[11px] text-gray-400">@{others[0].handle}</p>
+              <p className="text-sm font-semibold text-text truncate leading-tight">{others[0].display_name}</p>
+              <p className="text-[11px] text-subtle">@{others[0].handle}</p>
             </div>
           </Link>
         ) : (
-          <span className="text-sm font-semibold text-gray-900 dark:text-gray-50 flex-1">Conversation</span>
+          <span className="text-sm font-semibold text-text flex-1">Conversation</span>
         )}
 
         {isGroup && (
           <form action={leaveConversation.bind(null, conversationId)}>
             <button
               type="submit"
-              className="flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted hover:bg-surface-elevated transition-colors"
             >
               <LogOut className="w-3 h-3" /> Leave
             </button>
@@ -156,29 +156,29 @@ export default async function ConversationPage({
 
         {/* Members sidebar (group DMs only, desktop) */}
         {isGroup && (
-          <aside className="hidden lg:flex w-64 shrink-0 flex-col border-l border-gray-200/60 dark:border-gray-800/60 bg-gray-50/30 dark:bg-gray-900/30">
-            <div className="px-4 py-3 border-b border-gray-200/60 dark:border-gray-800/60">
-              <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+          <aside className="hidden lg:flex w-64 shrink-0 flex-col border-l border-border bg-surface/30 dark:bg-canvas/30">
+            <div className="px-4 py-3 border-b border-border">
+              <h3 className="text-[11px] font-semibold uppercase tracking-wider text-subtle">
                 People ({participants.length})
               </h3>
             </div>
-            <ul className="flex-1 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-800/50">
+            <ul className="flex-1 overflow-y-auto divide-y divide-border/50">
               {participants.map(p => (
                 <li key={p.id}>
                   <Link
                     href={`/people/${p.handle}`}
-                    className="flex items-center gap-2.5 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
+                    className="flex items-center gap-2.5 px-4 py-2 hover:bg-surface-elevated/50 transition-colors"
                   >
                     {p.avatar_url ? (
                       <img src={p.avatar_url} alt={p.display_name} className="w-7 h-7 rounded-full object-cover shrink-0" />
                     ) : (
-                      <div className="w-7 h-7 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-[10px] font-semibold flex items-center justify-center shrink-0 select-none">
+                      <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-[10px] font-semibold flex items-center justify-center shrink-0 select-none">
                         {getInitials(p.display_name)}
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">{p.display_name}</p>
-                      {p.id === myProfileId && <p className="text-[10px] text-gray-400">You</p>}
+                      <p className="text-xs font-medium text-text truncate">{p.display_name}</p>
+                      {p.id === myProfileId && <p className="text-[10px] text-subtle">You</p>}
                     </div>
                   </Link>
                 </li>

@@ -60,7 +60,7 @@ export function InviteToRoomButton({ roomId }: { roomId: string }) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/30 px-3 py-1.5 text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-950/50 transition-colors"
+        className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-primary-bg bg-primary-bg px-3 py-1.5 text-xs font-semibold text-primary-strong hover:bg-primary-bg dark:hover:bg-primary-bg/50 transition-colors"
       >
         <UserPlus className="w-3.5 h-3.5" />
         Invite member
@@ -75,7 +75,7 @@ export function InviteToRoomButton({ roomId }: { roomId: string }) {
         <div>
           <label className={cmLabel}>Search by name or handle</label>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-subtle" />
             <input
               type="text" value={query} onChange={e => { setQuery(e.target.value); setSelected(null) }}
               placeholder="Start typing…"
@@ -86,7 +86,7 @@ export function InviteToRoomButton({ roomId }: { roomId: string }) {
         </div>
 
         {results.length > 0 && (
-          <div className="rounded-lg border border-gray-200 dark:border-gray-700 max-h-64 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-800">
+          <div className="rounded-lg border border-border max-h-64 overflow-y-auto divide-y divide-border">
             {results.map(r => {
               const isSelected = selected?.id === r.id
               const wasInvited = invited.has(r.id)
@@ -97,24 +97,24 @@ export function InviteToRoomButton({ roomId }: { roomId: string }) {
                   onClick={() => setSelected(r)}
                   className={`flex items-center gap-2.5 w-full px-3 py-2.5 text-left transition-colors ${
                     isSelected
-                      ? 'bg-indigo-50 dark:bg-indigo-950/30'
+                      ? 'bg-primary-bg'
                       : wasInvited
                       ? 'opacity-50'
-                      : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                      : 'hover:bg-surface-elevated'
                   }`}
                 >
                   {r.avatar_url ? (
                     <img src={r.avatar_url} alt={r.display_name} className="w-7 h-7 rounded-full object-cover shrink-0" />
                   ) : (
-                    <div className="w-7 h-7 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-[10px] font-semibold flex items-center justify-center shrink-0">
+                    <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-[10px] font-semibold flex items-center justify-center shrink-0">
                       {getInitials(r.display_name)}
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-gray-900 dark:text-gray-50 truncate">{r.display_name}</p>
-                    <p className="text-[11px] text-gray-400 truncate">@{r.handle}</p>
+                    <p className="text-xs font-semibold text-text truncate">{r.display_name}</p>
+                    <p className="text-[11px] text-subtle truncate">@{r.handle}</p>
                   </div>
-                  {wasInvited && <Check className="w-4 h-4 text-green-500 shrink-0" />}
+                  {wasInvited && <Check className="w-4 h-4 text-success shrink-0" />}
                 </button>
               )
             })}
@@ -122,11 +122,11 @@ export function InviteToRoomButton({ roomId }: { roomId: string }) {
         )}
 
         {query && results.length === 0 && (
-          <p className="text-xs text-gray-400 text-center py-4">No matches.</p>
+          <p className="text-xs text-subtle text-center py-4">No matches.</p>
         )}
 
         {invited.size > 0 && (
-          <p className="text-[11px] text-green-600 dark:text-green-400 flex items-center gap-1">
+          <p className="text-[11px] text-success flex items-center gap-1">
             <Check className="w-3 h-3" /> Invited {invited.size} {invited.size === 1 ? 'member' : 'members'}
           </p>
         )}

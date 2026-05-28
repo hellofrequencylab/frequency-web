@@ -32,7 +32,7 @@ function DateChip({ iso }: { iso: string }) {
   const month = d.toLocaleDateString('en-US', { month: 'short' })
   const day = d.getDate()
   return (
-    <div className="flex flex-col items-center justify-center w-9 h-9 rounded-lg bg-indigo-50 text-indigo-700 shrink-0">
+    <div className="flex flex-col items-center justify-center w-9 h-9 rounded-lg bg-primary-bg text-primary-strong shrink-0">
       <span className="text-[9px] font-semibold uppercase leading-none">{month}</span>
       <span className="text-sm font-bold leading-tight">{day}</span>
     </div>
@@ -66,12 +66,12 @@ export async function UpcomingEventsWidget({
   return (
     <section>
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-600">
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-subtle">
           Upcoming
         </h2>
         <Link
           href="/events"
-          className="text-xs text-indigo-500 hover:text-indigo-700 transition-colors"
+          className="text-xs text-primary-strong hover:text-primary-strong transition-colors"
         >
           See all →
         </Link>
@@ -82,26 +82,26 @@ export async function UpcomingEventsWidget({
           <Link
             key={event.id}
             href={`/events/${event.slug}`}
-            className="flex items-center gap-3 rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-3 hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-indigo-50/30 dark:hover:bg-indigo-950/20 transition-colors"
+            className="flex items-center gap-3 rounded-xl border border-border bg-surface px-3 py-3 hover:border-primary-bg dark:hover:border-primary hover:bg-primary-bg/30 dark:hover:bg-primary-bg transition-colors"
           >
             <DateChip iso={event.starts_at} />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-900 dark:text-gray-50 truncate">
+              <p className="text-sm font-semibold text-text truncate">
                 {event.title}
               </p>
               <div className="flex items-center gap-2 flex-wrap mt-0.5">
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-subtle">
                   {formatShort(event.starts_at)} · {formatTime(event.starts_at)}
                 </span>
                 {event.location && (
-                  <span className="flex items-center gap-0.5 text-xs text-gray-400">
+                  <span className="flex items-center gap-0.5 text-xs text-subtle">
                     <MapPin className="w-3 h-3" />
                     {event.location}
                   </span>
                 )}
               </div>
             </div>
-            <span className="text-xs text-gray-300 dark:text-gray-600 shrink-0">→</span>
+            <span className="text-xs text-subtle shrink-0">→</span>
           </Link>
         ))}
       </div>

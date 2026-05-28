@@ -83,16 +83,16 @@ export function CreateMenu({ role }: { role: CommunityRole }) {
         onClick={() => setOpen((v) => !v)}
         aria-label="Create"
         aria-expanded={open}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-3 py-1.5 shadow-sm transition-colors"
+        className="inline-flex items-center gap-1.5 rounded-lg bg-primary hover:bg-primary-hover text-white text-sm font-semibold px-3 py-1.5 shadow-sm transition-colors"
       >
         <Plus className="w-4 h-4" strokeWidth={2.5} />
         Create
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-64 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-xl shadow-black/5 py-1 z-50">
-          <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-800">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+        <div className="absolute right-0 top-full mt-2 w-64 rounded-xl border border-border bg-surface shadow-xl shadow-black/5 py-1 z-50">
+          <div className="px-3 py-2 border-b border-border">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-subtle">
               Quick Create
             </p>
           </div>
@@ -102,12 +102,12 @@ export function CreateMenu({ role }: { role: CommunityRole }) {
                 key={href}
                 href={href}
                 onClick={() => setOpen(false)}
-                className="flex items-start gap-2.5 px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                className="flex items-start gap-2.5 px-3 py-2 hover:bg-surface-elevated transition-colors"
               >
-                <Icon className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
+                <Icon className="w-4 h-4 text-subtle mt-0.5 shrink-0" />
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{label}</p>
-                  <p className="text-[11px] text-gray-400 leading-tight">{hint}</p>
+                  <p className="text-sm font-medium text-text dark:text-subtle/60">{label}</p>
+                  <p className="text-[11px] text-subtle leading-tight">{hint}</p>
                 </div>
               </Link>
             ))}

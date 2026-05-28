@@ -213,34 +213,34 @@ function DispatchFeedCard({ dispatch: d }: { dispatch: DispatchItem }) {
   return (
     <Link
       href={`/broadcast/${d.id}`}
-      className="group block rounded-2xl border border-indigo-100 dark:border-indigo-900/60 bg-indigo-50/50 dark:bg-indigo-950/10 shadow-sm px-4 py-3.5 hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors"
+      className="group block rounded-2xl border border-primary-bg/60 bg-primary-bg/50 dark:bg-primary-bg/10 shadow-sm px-4 py-3.5 hover:border-primary-bg dark:hover:border-primary transition-colors"
     >
       <div className="flex items-start gap-3">
-        <div className="shrink-0 w-7 h-7 rounded-lg bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center mt-0.5">
-          <Megaphone className="w-3.5 h-3.5 text-indigo-500" />
+        <div className="shrink-0 w-7 h-7 rounded-lg bg-primary-bg flex items-center justify-center mt-0.5">
+          <Megaphone className="w-3.5 h-3.5 text-primary-strong" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-0.5">
-            <span className="text-[10px] font-black uppercase tracking-widest text-indigo-500">
+            <span className="text-[10px] font-black uppercase tracking-widest text-primary-strong">
               {d.audience_scope} dispatch
             </span>
             {d.linked_task && (
-              <span className="text-[10px] font-bold text-amber-500 flex items-center gap-0.5">
+              <span className="text-[10px] font-bold text-primary flex items-center gap-0.5">
                 <Zap className="w-2.5 h-2.5" /> Challenge
               </span>
             )}
           </div>
-          <p className="text-sm font-bold text-gray-900 dark:text-gray-50 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-1">
+          <p className="text-sm font-bold text-text group-hover:text-primary-strong dark:group-hover:text-primary-strong transition-colors line-clamp-1">
             {d.title}
           </p>
           {d.excerpt && (
-            <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">{d.excerpt}</p>
+            <p className="text-xs text-muted line-clamp-1 mt-0.5">{d.excerpt}</p>
           )}
           <div className="flex items-center justify-between mt-1.5">
-            <span className="text-[11px] text-gray-400">
+            <span className="text-[11px] text-subtle">
               {d.author?.display_name} · {relativeTime(d.published_at)}
             </span>
-            <ArrowRight className="w-3 h-3 text-indigo-300 dark:text-indigo-700 group-hover:text-indigo-500 transition-colors" />
+            <ArrowRight className="w-3 h-3 text-primary-strong dark:text-primary-strong group-hover:text-primary-strong transition-colors" />
           </div>
         </div>
       </div>
@@ -257,31 +257,31 @@ function EventFeedCard({ event: e }: { event: { id: string; title: string; start
   return (
     <Link
       href={`/events/${e.slug}`}
-      className="group block rounded-2xl border border-amber-100 dark:border-amber-900/40 bg-amber-50/30 dark:bg-amber-950/10 shadow-sm px-4 py-3.5 hover:border-amber-200 dark:hover:border-amber-800 transition-colors"
+      className="group block rounded-2xl border border-warning-bg bg-warning-bg/30 dark:bg-warning-bg/10 shadow-sm px-4 py-3.5 hover:border-warning transition-colors"
     >
       <div className="flex items-center gap-3">
-        <div className="shrink-0 w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-950 flex flex-col items-center justify-center">
-          <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 leading-none">{month}</span>
-          <span className="text-sm font-bold text-amber-700 dark:text-amber-300 leading-tight">{day}</span>
+        <div className="shrink-0 w-10 h-10 rounded-lg bg-warning-bg dark:bg-warning-bg flex flex-col items-center justify-center">
+          <span className="text-[9px] font-bold text-warning leading-none">{month}</span>
+          <span className="text-sm font-bold text-warning leading-tight">{day}</span>
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-0.5">
-            <CalendarDays className="w-3 h-3 text-amber-500" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-amber-500">Upcoming event</span>
+            <CalendarDays className="w-3 h-3 text-primary" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-primary">Upcoming event</span>
           </div>
-          <p className="text-sm font-bold text-gray-900 dark:text-gray-50 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors line-clamp-1">
+          <p className="text-sm font-bold text-text group-hover:text-warning dark:group-hover:text-primary transition-colors line-clamp-1">
             {e.title}
           </p>
           <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-[11px] text-gray-400">{dateStr}</span>
+            <span className="text-[11px] text-subtle">{dateStr}</span>
             {e.location && (
-              <span className="text-[11px] text-gray-400 flex items-center gap-0.5">
+              <span className="text-[11px] text-subtle flex items-center gap-0.5">
                 <MapPin className="w-2.5 h-2.5" /> {e.location}
               </span>
             )}
           </div>
         </div>
-        <ArrowRight className="w-3.5 h-3.5 text-amber-300 dark:text-amber-700 group-hover:text-amber-500 transition-colors shrink-0" />
+        <ArrowRight className="w-3.5 h-3.5 text-warning dark:text-warning group-hover:text-primary transition-colors shrink-0" />
       </div>
     </Link>
   )
@@ -289,9 +289,9 @@ function EventFeedCard({ event: e }: { event: { id: string; title: string; start
 
 function EmptyState({ message }: { message: string }) {
   return (
-    <div className="rounded-2xl border border-dashed border-gray-200/60 dark:border-gray-800/60 bg-gray-50/50 dark:bg-gray-900/50 p-12 text-center">
-      <MessageSquare className="w-8 h-8 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
-      <p className="text-sm text-gray-500 dark:text-gray-400">{message}</p>
+    <div className="rounded-2xl border border-dashed border-border bg-surface/50 dark:bg-canvas/50 p-12 text-center">
+      <MessageSquare className="w-8 h-8 text-subtle/60 mx-auto mb-3" />
+      <p className="text-sm text-muted">{message}</p>
     </div>
   )
 }

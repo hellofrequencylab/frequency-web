@@ -23,11 +23,11 @@ type ReportItem = {
 }
 
 const REASON_BADGE: Record<string, { label: string; cls: string }> = {
-  spam:           { label: 'Spam',           cls: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300' },
-  harassment:     { label: 'Harassment',     cls: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300' },
-  inappropriate:  { label: 'Inappropriate',  cls: 'bg-pink-100 text-pink-700 dark:bg-pink-950 dark:text-pink-300' },
-  misinformation: { label: 'Misinformation', cls: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300' },
-  other:          { label: 'Other',          cls: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' },
+  spam:           { label: 'Spam',           cls: 'bg-warning-bg text-warning dark:text-primary' },
+  harassment:     { label: 'Harassment',     cls: 'bg-danger-bg text-danger dark:bg-danger-bg dark:text-danger' },
+  inappropriate:  { label: 'Inappropriate',  cls: 'bg-pink-100 text-signal-strong' },
+  misinformation: { label: 'Misinformation', cls: 'bg-warning-bg text-warning' },
+  other:          { label: 'Other',          cls: 'bg-surface-elevated text-muted dark:bg-surface-elevated dark:text-subtle' },
 }
 
 const TARGET_LABEL: Record<string, string> = {
@@ -56,7 +56,7 @@ export function ModerationQueue({ reports }: { reports: ReportItem[] }) {
         return (
           <div
             key={report.id}
-            className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm p-4"
+            className="rounded-2xl border border-border bg-surface shadow-sm p-4"
           >
             {/* Header: reporter + timestamp */}
             <div className="flex items-start gap-3 mb-3">
@@ -67,31 +67,31 @@ export function ModerationQueue({ reports }: { reports: ReportItem[] }) {
                   className="w-8 h-8 rounded-full object-cover shrink-0"
                 />
               ) : (
-                <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 text-xs font-semibold flex items-center justify-center shrink-0 select-none">
+                <div className="w-8 h-8 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none">
                   {getInitials(report.reporter.display_name)}
                 </div>
               )}
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-sm font-medium text-gray-900 dark:text-gray-50">
+                  <span className="text-sm font-medium text-text">
                     {report.reporter.display_name}
                   </span>
-                  <span className="text-xs text-gray-400 dark:text-gray-500">
+                  <span className="text-xs text-subtle">
                     @{report.reporter.handle}
                   </span>
                 </div>
-                <p className="text-xs text-gray-400 dark:text-gray-500">
+                <p className="text-xs text-subtle">
                   Reported {relativeTime(report.created_at)}
                 </p>
               </div>
 
-              <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+              <AlertTriangle className="w-4 h-4 text-primary shrink-0 mt-0.5" />
             </div>
 
             {/* Target type + reason */}
             <div className="flex items-center gap-2 mb-2 flex-wrap">
-              <span className="text-[11px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 font-medium">
+              <span className="text-[11px] px-2 py-0.5 rounded-full bg-primary-bg text-primary-strong dark:bg-primary-bg dark:text-primary-strong font-medium">
                 {targetLabel}
               </span>
               <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${reasonInfo.cls}`}>
@@ -100,8 +100,8 @@ export function ModerationQueue({ reports }: { reports: ReportItem[] }) {
             </div>
 
             {/* Content preview */}
-            <div className="rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800 p-3 mb-3">
-              <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+            <div className="rounded-lg bg-surface-elevated border border-border p-3 mb-3">
+              <p className="text-sm text-text leading-relaxed">
                 {report.preview}
               </p>
             </div>
@@ -109,21 +109,21 @@ export function ModerationQueue({ reports }: { reports: ReportItem[] }) {
             {/* Details */}
             {report.details && (
               <div className="mb-3">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-subtle mb-1">
                   Reporter&apos;s note
                 </p>
-                <p className="text-sm text-gray-600 dark:text-gray-400 italic">
+                <p className="text-sm text-muted italic">
                   &ldquo;{report.details}&rdquo;
                 </p>
               </div>
             )}
 
             {/* Action buttons */}
-            <div className="flex gap-2 pt-3 border-t border-gray-100 dark:border-gray-800">
+            <div className="flex gap-2 pt-3 border-t border-border">
               <button
                 disabled={isPending}
                 onClick={() => handleAction(report.id, 'actioned')}
-                className="flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50 transition-colors"
+                className="flex items-center gap-1.5 rounded-lg bg-danger px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-colors"
               >
                 <CheckCircle className="w-3.5 h-3.5" />
                 Take Action
@@ -131,7 +131,7 @@ export function ModerationQueue({ reports }: { reports: ReportItem[] }) {
               <button
                 disabled={isPending}
                 onClick={() => handleAction(report.id, 'dismissed')}
-                className="flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-text hover:bg-surface-elevated disabled:opacity-50 transition-colors"
               >
                 <XCircle className="w-3.5 h-3.5" />
                 Dismiss

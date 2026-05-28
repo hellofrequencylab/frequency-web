@@ -21,8 +21,8 @@ export function UpgradeToggle({ isCrew }: { isCrew: boolean }) {
   if (isCrew) {
     return (
       <div className="space-y-3">
-        <div className="rounded-xl bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900/50 px-4 py-3 text-center">
-          <p className="text-sm font-semibold text-green-700 dark:text-green-400 flex items-center justify-center gap-2">
+        <div className="rounded-xl bg-success-bg/30 border border-success/50 px-4 py-3 text-center">
+          <p className="text-sm font-semibold text-success flex items-center justify-center gap-2">
             <Zap className="w-4 h-4" />
             You are a Crew member
           </p>
@@ -30,7 +30,7 @@ export function UpgradeToggle({ isCrew }: { isCrew: boolean }) {
         <button
           onClick={handleToggle}
           disabled={isPending}
-          className="flex items-center justify-center gap-2 w-full rounded-xl border border-gray-200 dark:border-gray-700 px-4 py-3 text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
+          className="flex items-center justify-center gap-2 w-full rounded-xl border border-border px-4 py-3 text-sm font-medium text-muted hover:text-text hover:bg-surface-elevated transition-colors disabled:opacity-50"
         >
           {isPending ? (
             <Loader2 className="w-4 h-4 animate-spin" />
@@ -47,7 +47,7 @@ export function UpgradeToggle({ isCrew }: { isCrew: boolean }) {
     <button
       onClick={handleToggle}
       disabled={isPending}
-      className="flex items-center justify-center gap-2 w-full rounded-xl bg-indigo-600 px-4 py-3.5 text-sm font-bold text-white hover:bg-indigo-500 transition-colors shadow-lg shadow-indigo-600/20 disabled:opacity-50"
+      className="flex items-center justify-center gap-2 w-full rounded-xl bg-primary px-4 py-3.5 text-sm font-bold text-white hover:bg-primary transition-colors shadow-lg shadow-indigo-600/20 disabled:opacity-50"
     >
       {isPending ? (
         <Loader2 className="w-4 h-4 animate-spin" />

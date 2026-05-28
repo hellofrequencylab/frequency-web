@@ -2,7 +2,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 
 function CircleCardSkeleton() {
   return (
-    <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+    <div className="rounded-xl border border-border bg-surface p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0 space-y-2">
           <div className="flex items-center gap-2">

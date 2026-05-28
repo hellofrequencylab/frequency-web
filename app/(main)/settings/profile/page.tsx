@@ -17,8 +17,8 @@ export default async function ProfileSettingsPage() {
 
   return (
     <div className="px-6 py-8 max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-1">Edit Profile</h1>
-      <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">
+      <h1 className="text-2xl font-bold text-text mb-1">Edit Profile</h1>
+      <p className="text-sm text-muted mb-8">
         Update your display name, handle, bio, and photo.
       </p>
       <ProfileForm
