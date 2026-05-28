@@ -39,8 +39,8 @@ export function EventForm({ groups }: { groups: Group[] }) {
     <form onSubmit={submit} className="space-y-5">
       {/* Title */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-          Event title <span className="text-red-500">*</span>
+        <label className="block text-sm font-medium text-text mb-1.5">
+          Event title <span className="text-danger">*</span>
         </label>
         <input
           type="text"
@@ -49,24 +49,24 @@ export function EventForm({ groups }: { groups: Group[] }) {
           placeholder="e.g. Wednesday Morning Ride"
           required
           disabled={isPending}
-          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 disabled:opacity-60"
+          className="w-full rounded-lg border border-border px-3 py-2 text-sm text-text placeholder-subtle outline-none focus:border-primary focus:ring-2 focus:ring-primary/40 disabled:opacity-60"
         />
       </div>
 
       {/* Group */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-          Group <span className="text-red-500">*</span>
+        <label className="block text-sm font-medium text-text mb-1.5">
+          Group <span className="text-danger">*</span>
         </label>
         {groups.length === 0 ? (
-          <p className="text-sm text-gray-500">You must be in a group to create an event.</p>
+          <p className="text-sm text-muted">You must be in a group to create an event.</p>
         ) : (
           <select
             value={scopeId}
             onChange={(e) => setScopeId(e.target.value)}
             required
             disabled={isPending}
-            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 disabled:opacity-60"
+            className="w-full rounded-lg border border-border px-3 py-2 text-sm text-text outline-none focus:border-primary focus:ring-2 focus:ring-primary/40 disabled:opacity-60"
           >
             {groups.map((g) => (
               <option key={g.id} value={g.id}>
@@ -79,8 +79,8 @@ export function EventForm({ groups }: { groups: Group[] }) {
 
       {/* Start */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-          Starts at <span className="text-red-500">*</span>
+        <label className="block text-sm font-medium text-text mb-1.5">
+          Starts at <span className="text-danger">*</span>
         </label>
         <input
           type="datetime-local"
@@ -88,28 +88,28 @@ export function EventForm({ groups }: { groups: Group[] }) {
           onChange={(e) => setStartsAt(e.target.value)}
           required
           disabled={isPending}
-          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 disabled:opacity-60"
+          className="w-full rounded-lg border border-border px-3 py-2 text-sm text-text outline-none focus:border-primary focus:ring-2 focus:ring-primary/40 disabled:opacity-60"
         />
       </div>
 
       {/* End */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-          Ends at <span className="text-xs text-gray-400 font-normal">(optional)</span>
+        <label className="block text-sm font-medium text-text mb-1.5">
+          Ends at <span className="text-xs text-subtle font-normal">(optional)</span>
         </label>
         <input
           type="datetime-local"
           value={endsAt}
           onChange={(e) => setEndsAt(e.target.value)}
           disabled={isPending}
-          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 disabled:opacity-60"
+          className="w-full rounded-lg border border-border px-3 py-2 text-sm text-text outline-none focus:border-primary focus:ring-2 focus:ring-primary/40 disabled:opacity-60"
         />
       </div>
 
       {/* Location */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-          Location <span className="text-xs text-gray-400 font-normal">(optional)</span>
+        <label className="block text-sm font-medium text-text mb-1.5">
+          Location <span className="text-xs text-subtle font-normal">(optional)</span>
         </label>
         <input
           type="text"
@@ -117,14 +117,14 @@ export function EventForm({ groups }: { groups: Group[] }) {
           onChange={(e) => setLocation(e.target.value)}
           placeholder="e.g. Balboa Park, San Diego"
           disabled={isPending}
-          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 disabled:opacity-60"
+          className="w-full rounded-lg border border-border px-3 py-2 text-sm text-text placeholder-subtle outline-none focus:border-primary focus:ring-2 focus:ring-primary/40 disabled:opacity-60"
         />
       </div>
 
       {/* Description */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-          Description <span className="text-xs text-gray-400 font-normal">(optional)</span>
+        <label className="block text-sm font-medium text-text mb-1.5">
+          Description <span className="text-xs text-subtle font-normal">(optional)</span>
         </label>
         <textarea
           value={description}
@@ -132,7 +132,7 @@ export function EventForm({ groups }: { groups: Group[] }) {
           placeholder="Details, what to bring, meetup point…"
           rows={4}
           disabled={isPending}
-          className="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 leading-relaxed disabled:opacity-60"
+          className="w-full resize-none rounded-lg border border-border px-3 py-2 text-sm text-text placeholder-subtle outline-none focus:border-primary focus:ring-2 focus:ring-primary/40 leading-relaxed disabled:opacity-60"
         />
       </div>
 
@@ -140,13 +140,13 @@ export function EventForm({ groups }: { groups: Group[] }) {
         <button
           type="submit"
           disabled={!title.trim() || !scopeId || !startsAt || isPending || groups.length === 0}
-          className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           {isPending ? 'Creating…' : 'Create Event'}
         </button>
         <a
           href="/events"
-          className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+          className="text-sm text-muted hover:text-text transition-colors"
         >
           Cancel
         </a>

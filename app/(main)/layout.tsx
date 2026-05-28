@@ -57,9 +57,9 @@ export default async function MainLayout({
 function RightSidebarSkeleton() {
   return (
     <div className="px-4 py-6 space-y-4">
-      <div className="h-48 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 animate-pulse" />
-      <div className="h-36 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 animate-pulse" />
-      <div className="h-28 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 animate-pulse" />
+      <div className="h-48 rounded-xl border border-border bg-surface animate-pulse" />
+      <div className="h-36 rounded-xl border border-border bg-surface animate-pulse" />
+      <div className="h-28 rounded-xl border border-border bg-surface animate-pulse" />
     </div>
   )
 }

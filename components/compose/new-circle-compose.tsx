@@ -10,7 +10,7 @@ interface HubOption { id: string; name: string }
 export function NewCircleCompose({
   hubs = [],
   buttonLabel = 'New Circle',
-  buttonClass = 'inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors whitespace-nowrap',
+  buttonClass = 'inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover transition-colors whitespace-nowrap',
 }: {
   hubs?: HubOption[]
   buttonLabel?: string
@@ -68,7 +68,7 @@ export function NewCircleCompose({
             placeholder="e.g. Encinitas Tuesday Ride" required disabled={isPending} className={cmInput} />
         </div>
         <div>
-          <label className={cmLabel}>About <span className="text-gray-400 font-normal">(optional)</span></label>
+          <label className={cmLabel}>About <span className="text-subtle font-normal">(optional)</span></label>
           <textarea value={about} onChange={e => setAbout(e.target.value)}
             placeholder="What is this circle about?" rows={3} disabled={isPending}
             className={`${cmInput} resize-y leading-relaxed`} />
@@ -91,7 +91,7 @@ export function NewCircleCompose({
         </div>
         {hubs.length > 0 && (
           <div>
-            <label className={cmLabel}>Hub <span className="text-gray-400 font-normal">(optional)</span></label>
+            <label className={cmLabel}>Hub <span className="text-subtle font-normal">(optional)</span></label>
             <select value={hubId} onChange={e => setHubId(e.target.value)}
               disabled={isPending} className={cmInput}>
               <option value="">— None —</option>

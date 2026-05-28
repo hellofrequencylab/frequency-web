@@ -11,7 +11,7 @@ function renderBodyWithMentions(body: string): React.ReactNode[] {
     if (/^@[a-zA-Z0-9_]+$/.test(part)) {
       const handle = part.slice(1)
       return (
-        <Link key={i} href={`/people/${handle}`} className="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">
+        <Link key={i} href={`/people/${handle}`} className="text-primary-strong hover:underline font-medium">
           {part}
         </Link>
       )
@@ -23,19 +23,19 @@ function renderBodyWithMentions(body: string): React.ReactNode[] {
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
 const ROLE_BADGE: Record<CommunityRole, { label: string; cls: string }> = {
-  member:  { label: 'Member',  cls: 'bg-gray-100 text-gray-600' },
-  crew:    { label: 'Crew',    cls: 'bg-blue-100 text-blue-700' },
-  host:    { label: 'Host',    cls: 'bg-green-100 text-green-700' },
-  guide:   { label: 'Guide',   cls: 'bg-purple-100 text-purple-700' },
-  mentor:  { label: 'Mentor',  cls: 'bg-amber-100 text-amber-700' },
-  janitor: { label: 'Janitor', cls: 'bg-violet-100 text-violet-700' },
+  member:  { label: 'Member',  cls: 'bg-surface-elevated text-muted' },
+  crew:    { label: 'Crew',    cls: 'bg-signal-bg text-signal-strong' },
+  host:    { label: 'Host',    cls: 'bg-success-bg text-success' },
+  guide:   { label: 'Guide',   cls: 'bg-signal-bg text-signal-strong' },
+  mentor:  { label: 'Mentor',  cls: 'bg-warning-bg text-warning' },
+  janitor: { label: 'Janitor', cls: 'bg-signal-bg text-signal-strong' },
 }
 
 const POST_TYPE_LABEL: Record<string, { label: string; cls: string }> = {
-  feed:         { label: 'Post',         cls: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' },
-  announcement: { label: 'Announcement', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300' },
-  blog:         { label: 'Blog',         cls: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300' },
-  recap:        { label: 'Recap',        cls: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300' },
+  feed:         { label: 'Post',         cls: 'bg-surface-elevated text-muted dark:bg-surface-elevated dark:text-subtle' },
+  announcement: { label: 'Announcement', cls: 'bg-warning-bg text-warning dark:bg-warning-bg dark:text-warning' },
+  blog:         { label: 'Blog',         cls: 'bg-primary-bg text-primary-strong dark:bg-primary-bg dark:text-primary-strong' },
+  recap:        { label: 'Recap',        cls: 'bg-success-bg text-success dark:bg-success-bg' },
 }
 
 function formatPostTime(iso: string): string {
@@ -111,12 +111,12 @@ export function PostCard({
 
   return (
     <article
-      className={`bg-white dark:bg-gray-900/80 rounded-2xl border shadow-sm hover:shadow-md transition-shadow ${
+      className={`bg-surface/80 rounded-2xl border shadow-sm hover:shadow-md transition-shadow ${
         isAnnouncement
-          ? 'border-amber-200/70 dark:border-amber-800/50 bg-amber-50/20 dark:bg-amber-950/10'
+          ? 'border-warning/70 bg-warning-bg/20 dark:bg-warning-bg/10'
           : post.is_pinned
-          ? 'border-indigo-200/70 dark:border-indigo-800/50'
-          : 'border-gray-200/60 dark:border-gray-800/60'
+          ? 'border-primary-bg/70 dark:border-primary/50'
+          : 'border-border'
       }`}
     >
       <div className="flex">
@@ -124,14 +124,14 @@ export function PostCard({
         <div className="flex-1 min-w-0 p-4">
           {isAnnouncement && (
             <div className="flex items-center gap-1.5 mb-2.5">
-              <Megaphone className="w-3 h-3 text-amber-500" />
-              <p className="text-[11px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+              <Megaphone className="w-3 h-3 text-primary" />
+              <p className="text-[11px] font-bold uppercase tracking-wider text-warning">
                 Announcement
               </p>
             </div>
           )}
           {!isAnnouncement && post.is_pinned && (
-            <p className="text-[11px] font-medium text-indigo-500 mb-2.5">
+            <p className="text-[11px] font-medium text-primary-strong mb-2.5">
               📌 Pinned
             </p>
           )}
@@ -143,16 +143,16 @@ export function PostCard({
               {author.avatar_url ? (
                 <img src={author.avatar_url} alt={author.display_name} className="w-8 h-8 rounded-full object-cover" />
               ) : (
-                <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 text-xs font-semibold flex items-center justify-center select-none">
+                <div className="w-8 h-8 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center select-none">
                   {getInitials(author.display_name)}
                 </div>
               )}
               {post.scopeContext?.type === 'wall' && (
-                <Link href={post.scopeContext.href} className="absolute -bottom-1 -right-1.5 ring-2 ring-white dark:ring-gray-900 rounded-full">
+                <Link href={post.scopeContext.href} className="absolute -bottom-1 -right-1.5 ring-2 ring-surface rounded-full">
                   {post.scopeContext.avatar_url ? (
                     <img src={post.scopeContext.avatar_url} alt={post.scopeContext.name} className="w-5 h-5 rounded-full object-cover" />
                   ) : (
-                    <div className="w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-500 text-[8px] font-bold flex items-center justify-center">
+                    <div className="w-5 h-5 rounded-full bg-border-strong text-muted text-[8px] font-bold flex items-center justify-center">
                       {getInitials(post.scopeContext.name)}
                     </div>
                   )}
@@ -164,7 +164,7 @@ export function PostCard({
               <div className="flex items-center gap-1.5 flex-wrap">
                 <Link
                   href={`/people/${author.handle}`}
-                  className="text-sm font-semibold text-gray-900 dark:text-gray-50 hover:underline"
+                  className="text-sm font-semibold text-text hover:underline"
                 >
                   {author.display_name}
                 </Link>
@@ -173,10 +173,10 @@ export function PostCard({
                 </span>
                 {post.scopeContext && (
                   <>
-                    <ArrowRight className="w-3 h-3 text-gray-300 dark:text-gray-600 shrink-0" />
+                    <ArrowRight className="w-3 h-3 text-subtle shrink-0" />
                     <Link
                       href={post.scopeContext.href}
-                      className="text-sm text-gray-500 dark:text-gray-400 hover:underline truncate"
+                      className="text-sm text-muted hover:underline truncate"
                     >
                       {post.scopeContext.type === 'wall'
                         ? `${post.scopeContext.name}'s wall`
@@ -185,7 +185,7 @@ export function PostCard({
                   </>
                 )}
               </div>
-              <p className="text-xs text-gray-400 mt-0.5">
+              <p className="text-xs text-subtle mt-0.5">
                 @{author.handle} · {relativeTime(post.created_at)}
               </p>
             </div>
@@ -198,7 +198,7 @@ export function PostCard({
 
           {/* Body */}
           {post.body && (
-            <p className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed whitespace-pre-wrap mb-3">
+            <p className="text-sm text-text dark:text-subtle/60 leading-relaxed whitespace-pre-wrap mb-3">
               {renderBodyWithMentions(post.body)}
             </p>
           )}
@@ -216,14 +216,14 @@ export function PostCard({
           )}
 
           {/* Reactions */}
-          <div className="flex items-center gap-1 pt-2.5 border-t border-gray-100 dark:border-gray-800">
+          <div className="flex items-center gap-1 pt-2.5 border-t border-border">
             <form action={toggleReaction.bind(null, post.id, 'heart')}>
               <button
                 type="submit"
                 className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${
                   myHeart
-                    ? 'bg-red-50 dark:bg-red-950/30 text-red-500'
-                    : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-600'
+                    ? 'bg-danger-bg/30 text-danger'
+                    : 'text-subtle hover:bg-surface-elevated hover:text-muted'
                 }`}
               >
                 <Heart className={`w-3.5 h-3.5 ${myHeart ? 'fill-current' : ''}`} />
@@ -236,8 +236,8 @@ export function PostCard({
                 type="submit"
                 className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${
                   myPlus
-                    ? 'bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600'
-                    : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-600'
+                    ? 'bg-primary-bg text-primary-strong'
+                    : 'text-subtle hover:bg-surface-elevated hover:text-muted'
                 }`}
               >
                 <ThumbsUp className={`w-3.5 h-3.5 ${myPlus ? 'fill-current' : ''}`} />
@@ -250,56 +250,56 @@ export function PostCard({
         </div>
 
         {/* ── Stats sidebar (desktop only) ─────────── */}
-        <div className="hidden md:flex w-44 shrink-0 flex-col border-l border-gray-100/80 dark:border-gray-800/50 rounded-r-2xl p-3">
+        <div className="hidden md:flex w-44 shrink-0 flex-col border-l border-border rounded-r-2xl p-3">
           {/* Date + scope type */}
           <div className="mb-2.5">
-            <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">{formatPostDate(post.created_at)}</p>
-            <p className="text-[10px] text-gray-400 dark:text-gray-500">{formatPostTime(post.created_at)}</p>
+            <p className="text-[10px] text-muted font-medium">{formatPostDate(post.created_at)}</p>
+            <p className="text-[10px] text-subtle">{formatPostTime(post.created_at)}</p>
             {post.scopeContext && (
               <div className="flex items-center gap-1 mt-1.5">
-                {post.scopeContext.type === 'wall' && <Users className="w-2.5 h-2.5 text-indigo-400" />}
-                {post.scopeContext.type === 'circle' && <Users className="w-2.5 h-2.5 text-green-400" />}
-                {post.scopeContext.type === 'channel' && <Radio className="w-2.5 h-2.5 text-blue-400" />}
-                <span className="text-[10px] text-gray-400 capitalize">{post.scopeContext.type === 'wall' ? 'Wall post' : post.scopeContext.type}</span>
+                {post.scopeContext.type === 'wall' && <Users className="w-2.5 h-2.5 text-primary-strong" />}
+                {post.scopeContext.type === 'circle' && <Users className="w-2.5 h-2.5 text-success" />}
+                {post.scopeContext.type === 'channel' && <Radio className="w-2.5 h-2.5 text-signal-strong" />}
+                <span className="text-[10px] text-subtle capitalize">{post.scopeContext.type === 'wall' ? 'Wall post' : post.scopeContext.type}</span>
               </div>
             )}
             {post.is_pinned && (
-              <p className="text-[10px] text-indigo-500 font-medium mt-1">📌 Pinned</p>
+              <p className="text-[10px] text-primary-strong font-medium mt-1">📌 Pinned</p>
             )}
           </div>
 
           {/* Engagement stats */}
           {(totalReactions > 0 || replyCount > 0) && (
-            <div className="py-2.5 border-t border-gray-100 dark:border-gray-800 space-y-1.5">
+            <div className="py-2.5 border-t border-border space-y-1.5">
               {totalReactions > 0 && (
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                    <Heart className="w-3 h-3 text-red-300" />{totalReactions}
+                  <span className="text-[10px] text-muted flex items-center gap-1">
+                    <Heart className="w-3 h-3 text-danger" />{totalReactions}
                   </span>
-                  <span className="text-[10px] font-medium text-amber-500">{totalReactions} zap{totalReactions !== 1 ? 's' : ''}</span>
+                  <span className="text-[10px] font-medium text-primary">{totalReactions} zap{totalReactions !== 1 ? 's' : ''}</span>
                 </div>
               )}
               {replyCount > 0 && (
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                    <MessageCircle className="w-3 h-3 text-blue-300" />{replyCount}
+                  <span className="text-[10px] text-muted flex items-center gap-1">
+                    <MessageCircle className="w-3 h-3 text-signal-strong" />{replyCount}
                   </span>
-                  <span className="text-[10px] font-medium text-amber-500">{replyCount * 2} zaps</span>
+                  <span className="text-[10px] font-medium text-primary">{replyCount * 2} zaps</span>
                 </div>
               )}
             </div>
           )}
 
           {/* Zap earn rates */}
-          <div className="mt-auto pt-2.5 border-t border-gray-100 dark:border-gray-800 space-y-1">
-            <p className="text-[9px] font-semibold uppercase tracking-wider text-gray-300 dark:text-gray-600 mb-1">Earn</p>
+          <div className="mt-auto pt-2.5 border-t border-border space-y-1">
+            <p className="text-[9px] font-semibold uppercase tracking-wider text-subtle mb-1">Earn</p>
             <div className="flex items-center justify-between">
-              <span className="text-[10px] text-gray-400">React</span>
-              <span className="text-[10px] font-medium text-amber-400/60">+1</span>
+              <span className="text-[10px] text-subtle">React</span>
+              <span className="text-[10px] font-medium text-primary/60">+1</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-[10px] text-gray-400">Reply</span>
-              <span className="text-[10px] font-medium text-amber-400/60">+2</span>
+              <span className="text-[10px] text-subtle">Reply</span>
+              <span className="text-[10px] font-medium text-primary/60">+2</span>
             </div>
           </div>
         </div>

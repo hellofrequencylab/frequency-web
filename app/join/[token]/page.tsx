@@ -60,38 +60,38 @@ export default async function JoinPage({ params }: Props) {
     : null
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col items-center justify-center px-4 py-16">
+    <div className="min-h-screen bg-canvas flex flex-col items-center justify-center px-4 py-16">
       {/* Brand header */}
       <div className="mb-8 text-center">
-        <span className="text-2xl font-black tracking-tight text-gray-900 dark:text-gray-50">
+        <span className="text-2xl font-black tracking-tight text-text">
           frequency
         </span>
       </div>
 
       <div className="w-full max-w-md">
-        <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
+        <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
           {/* Circle card */}
           <div className="p-8">
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 capitalize">
+              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary-bg text-primary-strong capitalize">
                 {circle.type}
               </span>
               {circle.hub?.name && (
-                <span className="text-xs text-gray-400">{circle.hub.name}</span>
+                <span className="text-xs text-subtle">{circle.hub.name}</span>
               )}
             </div>
 
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mt-3 mb-2">
+            <h1 className="text-2xl font-bold text-text mt-3 mb-2">
               {circle.name}
             </h1>
 
             {circle.about && (
-              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-4">
+              <p className="text-sm text-muted leading-relaxed mb-4">
                 {circle.about}
               </p>
             )}
 
-            <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-800 pt-4">
+            <div className="flex items-center gap-4 text-xs text-muted border-t border-border pt-4">
               <span>{circle.member_count ?? 0} member{circle.member_count !== 1 ? 's' : ''}</span>
               {spotsLeft !== null && spotsLeft > 0 && (
                 <span>{spotsLeft} spot{spotsLeft !== 1 ? 's' : ''} left</span>
@@ -103,12 +103,12 @@ export default async function JoinPage({ params }: Props) {
           <div className="px-8 pb-8">
             {alreadyMember ? (
               <div className="text-center space-y-3">
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="text-sm text-muted">
                   You're already a member of this circle.
                 </p>
                 <Link
                   href="/circles"
-                  className="block w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white text-center hover:bg-indigo-700 transition-colors"
+                  className="block w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white text-center hover:bg-primary-hover transition-colors"
                 >
                   Go to Circles →
                 </Link>
@@ -119,13 +119,13 @@ export default async function JoinPage({ params }: Props) {
               <div className="space-y-3">
                 <Link
                   href={`/sign-in?next=/join/${token}`}
-                  className="block w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white text-center hover:bg-indigo-700 transition-colors"
+                  className="block w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white text-center hover:bg-primary-hover transition-colors"
                 >
                   Sign in to join
                 </Link>
-                <p className="text-xs text-center text-gray-400">
+                <p className="text-xs text-center text-subtle">
                   Don't have an account?{' '}
-                  <Link href={`/sign-in?next=/join/${token}`} className="text-indigo-500 hover:underline">
+                  <Link href={`/sign-in?next=/join/${token}`} className="text-primary-strong hover:underline">
                     Get started
                   </Link>
                 </p>
@@ -134,7 +134,7 @@ export default async function JoinPage({ params }: Props) {
           </div>
         </div>
 
-        <p className="text-xs text-center text-gray-400 mt-6">
+        <p className="text-xs text-center text-subtle mt-6">
           You were invited to join Frequency. By joining, you agree to our community guidelines.
         </p>
       </div>

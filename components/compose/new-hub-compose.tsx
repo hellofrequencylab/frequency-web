@@ -10,7 +10,7 @@ interface NexusOption { id: string; name: string }
 export function NewHubCompose({
   nexuses = [],
   buttonLabel = 'New Hub',
-  buttonClass = 'inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors whitespace-nowrap',
+  buttonClass = 'inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover transition-colors whitespace-nowrap',
 }: {
   nexuses?: NexusOption[]
   buttonLabel?: string
@@ -63,7 +63,7 @@ export function NewHubCompose({
         </div>
         {nexuses.length > 0 && (
           <div>
-            <label className={cmLabel}>Nexus <span className="text-gray-400 font-normal">(optional)</span></label>
+            <label className={cmLabel}>Nexus <span className="text-subtle font-normal">(optional)</span></label>
             <select value={nexusId} onChange={e => setNexusId(e.target.value)}
               disabled={isPending} className={cmInput}>
               <option value="">— None —</option>

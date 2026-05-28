@@ -32,14 +32,14 @@ export function InviteLinkButton({ circleId }: { circleId: string }) {
     <button
       onClick={handleClick}
       disabled={isPending}
-      className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 disabled:opacity-50 transition-colors"
+      className="p-1.5 rounded-lg text-subtle hover:text-primary-strong hover:bg-primary-bg dark:hover:bg-primary-bg disabled:opacity-50 transition-colors"
       aria-label={copied ? 'Link copied!' : 'Copy invite link'}
       title={copied ? 'Link copied!' : 'Copy invite link'}
     >
       {isPending ? (
         <Loader2 className="w-3.5 h-3.5 animate-spin" />
       ) : copied ? (
-        <Check className="w-3.5 h-3.5 text-green-500" />
+        <Check className="w-3.5 h-3.5 text-success" />
       ) : (
         <Link2 className="w-3.5 h-3.5" />
       )}

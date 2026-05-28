@@ -42,8 +42,8 @@ export function LikeButton({
       title={isLoggedIn ? (liked ? 'Unlike' : 'Like') : 'Sign in to like'}
       className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition-colors disabled:opacity-50 ${
         liked
-          ? 'border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400'
-          : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400 hover:border-rose-200 hover:text-rose-500 dark:hover:text-rose-400'
+          ? 'border-rose-300 bg-danger-bg text-danger'
+          : 'border-border bg-surface text-muted hover:border-danger hover:text-danger dark:hover:text-danger'
       }`}
     >
       <Heart className={`w-4 h-4 ${liked ? 'fill-current' : ''}`} />

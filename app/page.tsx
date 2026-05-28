@@ -19,10 +19,10 @@ type PostPreviewRow = {
 }
 
 const ROLE_COLOR: Record<string, string> = {
-  crew:   'bg-blue-100 text-blue-700',
-  host:   'bg-green-100 text-green-700',
-  guide:  'bg-purple-100 text-purple-700',
-  mentor: 'bg-amber-100 text-amber-700',
+  crew:   'bg-signal-bg text-signal-strong',
+  host:   'bg-success-bg text-success',
+  guide:  'bg-signal-bg text-signal-strong',
+  mentor: 'bg-warning-bg text-warning',
 }
 
 export default async function RootPage() {
@@ -89,7 +89,7 @@ export default async function RootPage() {
           <div className="flex items-center gap-4 flex-wrap justify-center">
             <Link
               href="/sign-in"
-              className="rounded-full bg-indigo-600 px-10 py-4 text-base font-bold text-white hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-600/25 hover:shadow-indigo-500/40"
+              className="rounded-full bg-primary px-10 py-4 text-base font-bold text-white hover:bg-primary transition-all shadow-xl shadow-indigo-600/25 hover:shadow-indigo-500/40"
             >
               Get started
             </Link>
@@ -112,15 +112,15 @@ export default async function RootPage() {
       </section>
 
       {/* ── How it works ───────────────────────────────────────── */}
-      <section className="bg-white dark:bg-gray-950 px-6 py-24">
+      <section className="bg-surface px-6 py-24">
         <div className="max-w-5xl mx-auto">
-          <p className="text-center text-xs font-semibold uppercase tracking-widest text-indigo-600 dark:text-indigo-400 mb-3">
+          <p className="text-center text-xs font-semibold uppercase tracking-widest text-primary-strong mb-3">
             Built for real life
           </p>
-          <h2 className="text-center text-3xl sm:text-4xl font-bold text-gray-900 dark:text-gray-50 mb-4">
+          <h2 className="text-center text-3xl sm:text-4xl font-bold text-text mb-4">
             How Frequency works
           </h2>
-          <p className="text-center text-gray-500 dark:text-gray-400 mb-16 max-w-lg mx-auto leading-relaxed">
+          <p className="text-center text-muted mb-16 max-w-lg mx-auto leading-relaxed">
             Not another social network. A community platform designed around
             showing up, in person, for people you actually know.
           </p>
@@ -155,7 +155,7 @@ export default async function RootPage() {
       </section>
 
       {/* ── Stats bar ──────────────────────────────────────────── */}
-      <section className="bg-gray-950 px-6 py-14">
+      <section className="bg-canvas px-6 py-14">
         <div className="max-w-4xl mx-auto flex items-center justify-center gap-16 sm:gap-24 flex-wrap">
           <StatItem value={memberCount} label="Members" />
           <StatItem value={circleCount} label="Circles" />
@@ -166,12 +166,12 @@ export default async function RootPage() {
 
       {/* ── Upcoming events ────────────────────────────────────── */}
       {upcomingEvents.length > 0 && (
-        <section className="bg-white dark:bg-gray-950 px-6 py-20">
+        <section className="bg-surface px-6 py-20">
           <div className="max-w-2xl mx-auto">
-            <p className="text-center text-xs font-semibold uppercase tracking-widest text-amber-600 dark:text-amber-400 mb-3">
+            <p className="text-center text-xs font-semibold uppercase tracking-widest text-warning mb-3">
               Coming up
             </p>
-            <h2 className="text-center text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-50 mb-10">
+            <h2 className="text-center text-2xl sm:text-3xl font-bold text-text mb-10">
               Upcoming events
             </h2>
             <div className="space-y-3">
@@ -183,22 +183,22 @@ export default async function RootPage() {
                 return (
                   <div
                     key={event.id}
-                    className="flex items-center gap-4 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 px-5 py-4 hover:border-amber-200 dark:hover:border-amber-800 transition-colors"
+                    className="flex items-center gap-4 rounded-2xl border border-border bg-surface px-5 py-4 hover:border-warning transition-colors"
                   >
-                    <div className="shrink-0 w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-950/30 flex flex-col items-center justify-center">
-                      <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 leading-none">{month}</span>
-                      <span className="text-base font-bold text-amber-700 dark:text-amber-300 leading-tight">{day}</span>
+                    <div className="shrink-0 w-12 h-12 rounded-xl bg-warning-bg/30 flex flex-col items-center justify-center">
+                      <span className="text-[9px] font-bold text-warning leading-none">{month}</span>
+                      <span className="text-base font-bold text-warning leading-tight">{day}</span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-900 dark:text-gray-50 truncate">{event.title}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">
+                      <p className="text-sm font-semibold text-text truncate">{event.title}</p>
+                      <p className="text-xs text-subtle mt-0.5">
                         {dateStr}
                         {event.location && <> &middot; {event.location}</>}
                       </p>
                     </div>
                     <Link
                       href="/sign-in"
-                      className="flex items-center gap-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline shrink-0"
+                      className="flex items-center gap-1 text-xs font-semibold text-primary-strong hover:underline shrink-0"
                     >
                       RSVP <ArrowRight className="w-3 h-3" />
                     </Link>
@@ -212,12 +212,12 @@ export default async function RootPage() {
 
       {/* ── Feed preview ───────────────────────────────────────── */}
       {posts.length > 0 && (
-        <section className="bg-gray-50 dark:bg-gray-900 px-6 py-20">
+        <section className="bg-surface px-6 py-20">
           <div className="max-w-2xl mx-auto">
-            <p className="text-center text-xs font-semibold uppercase tracking-widest text-indigo-600 dark:text-indigo-400 mb-3">
+            <p className="text-center text-xs font-semibold uppercase tracking-widest text-primary-strong mb-3">
               What people are saying
             </p>
-            <h2 className="text-center text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-50 mb-10">
+            <h2 className="text-center text-2xl sm:text-3xl font-bold text-text mb-10">
               From the community
             </h2>
 
@@ -228,19 +228,19 @@ export default async function RootPage() {
             </div>
 
             <div className="relative mt-3">
-              <div className="absolute -top-16 inset-x-0 h-16 bg-gradient-to-b from-transparent to-gray-50 dark:to-gray-900 pointer-events-none" />
+              <div className="absolute -top-16 inset-x-0 h-16 bg-gradient-to-b from-transparent to-canvas dark:to-canvas pointer-events-none" />
 
-              <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 p-10 text-center shadow-sm">
-                <p className="text-xl font-bold text-gray-900 dark:text-gray-50 mb-2">
+              <div className="rounded-2xl border border-border bg-surface p-10 text-center shadow-sm">
+                <p className="text-xl font-bold text-text mb-2">
                   Join to see more
                 </p>
-                <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-6 max-w-sm mx-auto">
+                <p className="text-sm text-muted leading-relaxed mb-6 max-w-sm mx-auto">
                   Create a free account to access the full feed, events, and
                   your local circle.
                 </p>
                 <Link
                   href="/sign-in"
-                  className="inline-block rounded-full bg-indigo-600 px-8 py-3 text-sm font-bold text-white hover:bg-indigo-500 transition-colors shadow-lg shadow-indigo-600/20"
+                  className="inline-block rounded-full bg-primary px-8 py-3 text-sm font-bold text-white hover:bg-primary transition-colors shadow-lg shadow-indigo-600/20"
                 >
                   Get started
                 </Link>
@@ -251,25 +251,25 @@ export default async function RootPage() {
       )}
 
       {/* ── Final CTA ──────────────────────────────────────────── */}
-      <section className="relative bg-gray-950 px-6 py-24 text-center overflow-hidden">
+      <section className="relative bg-canvas px-6 py-24 text-center overflow-hidden">
         <div
           className="absolute inset-0 opacity-10 pointer-events-none"
           style={{
             background:
-              'radial-gradient(ellipse 60% 50% at 50% 50%, #4f46e5 0%, transparent 70%)',
+              'radial-gradient(ellipse 60% 50% at 50% 50%, var(--color-primary) 0%, transparent 70%)',
           }}
         />
         <div className="relative max-w-lg mx-auto">
           <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
             Ready to find your people?
           </h2>
-          <p className="text-gray-400 mb-10 leading-relaxed text-lg">
+          <p className="text-subtle mb-10 leading-relaxed text-lg">
             Frequency is free to join. Sign up, find a circle near you, and
             start showing up for your community this week.
           </p>
           <Link
             href="/sign-in"
-            className="inline-block rounded-full bg-indigo-600 px-10 py-4 text-base font-bold text-white hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-600/25 hover:shadow-indigo-500/40"
+            className="inline-block rounded-full bg-primary px-10 py-4 text-base font-bold text-white hover:bg-primary transition-all shadow-xl shadow-indigo-600/25 hover:shadow-indigo-500/40"
           >
             Join Frequency
           </Link>
@@ -277,15 +277,15 @@ export default async function RootPage() {
       </section>
 
       {/* ── Footer ─────────────────────────────────────────────── */}
-      <footer className="bg-gray-950 border-t border-gray-800/60 px-6 py-10">
+      <footer className="bg-canvas border-t border-border/60 px-6 py-10">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-4">
             <img src="/frequency-logo.png" alt="Frequency" className="h-5 w-auto invert opacity-40" />
-            <span className="text-xs text-gray-600">&copy; {new Date().getFullYear()} Frequency Labs Holdings</span>
+            <span className="text-xs text-muted">&copy; {new Date().getFullYear()} Frequency Labs Holdings</span>
           </div>
-          <div className="flex items-center gap-8 text-xs text-gray-500">
-            <Link href="/privacy" className="hover:text-gray-300 transition-colors">Privacy</Link>
-            <a href="mailto:hello@findafreq.com" className="hover:text-gray-300 transition-colors">Contact</a>
+          <div className="flex items-center gap-8 text-xs text-muted">
+            <Link href="/privacy" className="hover:text-subtle transition-colors">Privacy</Link>
+            <a href="mailto:hello@findafreq.com" className="hover:text-subtle transition-colors">Contact</a>
           </div>
         </div>
       </footer>
@@ -294,10 +294,10 @@ export default async function RootPage() {
 }
 
 const FEATURE_COLORS: Record<string, { bg: string; icon: string }> = {
-  indigo: { bg: 'bg-indigo-50 dark:bg-indigo-950/30', icon: 'text-indigo-600 dark:text-indigo-400' },
-  amber:  { bg: 'bg-amber-50 dark:bg-amber-950/30',   icon: 'text-amber-600 dark:text-amber-400' },
-  green:  { bg: 'bg-green-50 dark:bg-green-950/30',   icon: 'text-green-600 dark:text-green-400' },
-  violet: { bg: 'bg-violet-50 dark:bg-violet-950/30', icon: 'text-violet-600 dark:text-violet-400' },
+  indigo: { bg: 'bg-primary-bg', icon: 'text-primary-strong' },
+  amber:  { bg: 'bg-warning-bg/30',   icon: 'text-warning' },
+  green:  { bg: 'bg-success-bg/30',   icon: 'text-success' },
+  violet: { bg: 'bg-signal-bg/30', icon: 'text-signal-strong' },
 }
 
 function FeatureCard({
@@ -317,8 +317,8 @@ function FeatureCard({
       <div className={`inline-flex items-center justify-center w-12 h-12 rounded-2xl ${c.bg} mb-5`}>
         <Icon className={`w-5 h-5 ${c.icon}`} />
       </div>
-      <h3 className="text-base font-bold text-gray-900 dark:text-gray-50 mb-2">{title}</h3>
-      <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{description}</p>
+      <h3 className="text-base font-bold text-text mb-2">{title}</h3>
+      <p className="text-sm text-muted leading-relaxed">{description}</p>
     </div>
   )
 }
@@ -327,7 +327,7 @@ function StatItem({ value, label }: { value: number | string; label: string }) {
   return (
     <div className="text-center">
       <p className="text-3xl sm:text-4xl font-bold text-white">{value}</p>
-      <p className="text-xs text-gray-500 mt-1.5 uppercase tracking-widest font-medium">{label}</p>
+      <p className="text-xs text-muted mt-1.5 uppercase tracking-widest font-medium">{label}</p>
     </div>
   )
 }
@@ -338,7 +338,7 @@ function PostPreviewCard({ post }: { post: PostPreviewRow }) {
   const initials = a?.display_name ? getInitials(a.display_name) : '?'
 
   return (
-    <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 px-5 py-4 hover:shadow-md transition-shadow">
+    <div className="rounded-2xl border border-border bg-surface px-5 py-4 hover:shadow-md transition-shadow">
       <div className="flex items-center gap-3 mb-3">
         {a?.avatar_url ? (
           <img
@@ -347,12 +347,12 @@ function PostPreviewCard({ post }: { post: PostPreviewRow }) {
             className="w-9 h-9 rounded-full object-cover shrink-0"
           />
         ) : (
-          <div className="w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 text-xs font-semibold flex items-center justify-center shrink-0 select-none">
+          <div className="w-9 h-9 rounded-full bg-surface-elevated text-muted text-xs font-semibold flex items-center justify-center shrink-0 select-none">
             {initials}
           </div>
         )}
         <div className="flex items-center gap-2 flex-wrap min-w-0">
-          <span className="text-sm font-semibold text-gray-900 dark:text-gray-50 truncate">
+          <span className="text-sm font-semibold text-text truncate">
             {a?.display_name ?? 'Community member'}
           </span>
           {roleCls && (
@@ -361,14 +361,14 @@ function PostPreviewCard({ post }: { post: PostPreviewRow }) {
             </span>
           )}
         </div>
-        <span className="ml-auto text-xs text-gray-400 shrink-0">
+        <span className="ml-auto text-xs text-subtle shrink-0">
           {new Date(post.created_at).toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',
           })}
         </span>
       </div>
-      <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed line-clamp-3">
+      <p className="text-sm text-text leading-relaxed line-clamp-3">
         {post.body}
       </p>
       {post.media_urls?.length > 0 && (

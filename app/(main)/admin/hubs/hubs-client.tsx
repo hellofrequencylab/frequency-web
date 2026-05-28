@@ -19,14 +19,14 @@ type NexusOption = { id: string; name: string }
 type GuideOption = { id: string; display_name: string }
 
 const STATUSES = ['forming', 'active', 'paused', 'archived'] as const
-const input = 'w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-50 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 disabled:opacity-50 placeholder:text-gray-400'
-const lbl   = 'block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1'
+const input = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-primary focus:ring-2 focus:ring-primary/40 dark:focus:ring-primary/30 disabled:opacity-50 placeholder:text-subtle'
+const lbl   = 'block text-xs font-medium text-muted mb-1'
 
 const STATUS_COLOR: Record<string, string> = {
-  forming:  'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
-  active:   'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300',
-  paused:   'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
-  archived: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400',
+  forming:  'bg-signal-bg text-signal-strong',
+  active:   'bg-success-bg text-success dark:bg-success-bg',
+  paused:   'bg-warning-bg text-warning dark:bg-warning-bg dark:text-warning',
+  archived: 'bg-surface-elevated text-muted dark:bg-surface-elevated dark:text-subtle',
 }
 
 function HubForm({
@@ -60,7 +60,7 @@ function HubForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/40 dark:bg-indigo-950/20 mb-4">
+    <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-xl border border-primary-bg bg-primary-bg/40 dark:bg-primary-bg mb-4">
       <div className="sm:col-span-2">
         <label className={lbl}>Hub name *</label>
         <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. North County Hub" required disabled={isPending} className={input} />
@@ -90,11 +90,11 @@ function HubForm({
         </select>
       </div>
       <div className="sm:col-span-2 flex items-center gap-2 pt-1">
-        <button type="submit" disabled={!name.trim() || isPending} className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-40 transition-colors">
+        <button type="submit" disabled={!name.trim() || isPending} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary-hover disabled:opacity-40 transition-colors">
           <Check className="w-3.5 h-3.5" />
           {isPending ? 'Saving…' : initial ? 'Save changes' : 'Create hub'}
         </button>
-        <button type="button" onClick={onCancel} disabled={isPending} className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+        <button type="button" onClick={onCancel} disabled={isPending} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-xs font-medium text-muted hover:bg-surface-elevated transition-colors">
           <X className="w-3.5 h-3.5" />
           Cancel
         </button>
@@ -111,7 +111,7 @@ export function HubsClient({ hubs, nexuses, guides }: { hubs: HubRow[]; nexuses:
     <div>
       <div className="space-y-2">
         {hubs.length === 0 && (
-          <p className="text-sm text-gray-400 py-6 text-center">No hubs yet.</p>
+          <p className="text-sm text-subtle py-6 text-center">No hubs yet.</p>
         )}
         {hubs.map(hub => (
           <div key={hub.id}>
@@ -125,21 +125,21 @@ export function HubsClient({ hubs, nexuses, guides }: { hubs: HubRow[]; nexuses:
                 isPending={isPending}
               />
             ) : (
-              <div className="flex items-center gap-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 group">
+              <div className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 group">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{hub.name}</span>
+                    <span className="text-sm font-medium text-text">{hub.name}</span>
                     <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium capitalize ${STATUS_COLOR[hub.status] ?? STATUS_COLOR.forming}`}>
                       {hub.status}
                     </span>
                   </div>
-                  <p className="text-xs text-gray-400 mt-0.5">
+                  <p className="text-xs text-subtle mt-0.5">
                     {hub._circle_count} circle{hub._circle_count !== 1 ? 's' : ''}
                     {hub.nexus && ` · ${hub.nexus.name}`}
                     {hub.guide && ` · Guide: ${hub.guide.display_name}`}
                   </p>
                 </div>
-                <button onClick={() => setEditingId(hub.id)} className="p-1.5 rounded-lg text-gray-400 opacity-0 group-hover:opacity-100 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-all" aria-label="Edit">
+                <button onClick={() => setEditingId(hub.id)} className="p-1.5 rounded-lg text-subtle opacity-0 group-hover:opacity-100 hover:text-primary-strong hover:bg-primary-bg dark:hover:bg-primary-bg transition-all" aria-label="Edit">
                   <Pencil className="w-3.5 h-3.5" />
                 </button>
               </div>

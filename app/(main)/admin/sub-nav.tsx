@@ -49,7 +49,7 @@ export function AdminSubNav({ role }: { role: CommunityRole }) {
   ]
 
   return (
-    <div className="border-b border-gray-200/60 dark:border-gray-800/60 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm sticky top-0 z-20">
+    <div className="border-b border-border bg-surface/95 backdrop-blur-sm sticky top-0 z-20">
       <nav className="flex overflow-x-auto px-4 gap-0 scrollbar-none">
         {tabs.map(({ href, label, Icon, exact }) => {
           const active = exact ? pathname === href : pathname.startsWith(href)
@@ -59,12 +59,12 @@ export function AdminSubNav({ role }: { role: CommunityRole }) {
               href={href}
               className={`flex items-center gap-1.5 px-3 py-3 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors shrink-0 ${
                 active
-                  ? 'border-indigo-600 text-indigo-700 dark:border-indigo-400 dark:text-indigo-300'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600'
+                  ? 'border-primary text-primary-strong dark:border-primary dark:text-primary-strong'
+                  : 'border-transparent text-muted hover:text-text hover:border-border-strong dark:hover:border-border-strong'
               }`}
             >
               <Icon
-                className={`w-3.5 h-3.5 shrink-0 ${active ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400 dark:text-gray-500'}`}
+                className={`w-3.5 h-3.5 shrink-0 ${active ? 'text-primary-strong' : 'text-subtle'}`}
                 strokeWidth={active ? 2.5 : 2}
               />
               {label}

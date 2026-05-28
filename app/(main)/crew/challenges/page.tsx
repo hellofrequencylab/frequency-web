@@ -31,45 +31,45 @@ export default async function ChallengesPage() {
         <div className="flex items-center gap-3">
           <Link
             href="/crew"
-            className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            className="text-sm text-subtle hover:text-muted dark:hover:text-subtle transition-colors"
           >
             Crew
           </Link>
-          <span className="text-gray-300 dark:text-gray-600">/</span>
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50">Season Challenges</h1>
+          <span className="text-subtle">/</span>
+          <h1 className="text-xl font-semibold text-text">Season Challenges</h1>
         </div>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+        <p className="text-sm text-muted mt-1">
           Complete challenges this season to earn bonus zaps and unlock Luminary rank.
           Each season runs 13 weeks.
         </p>
       </div>
 
       {/* Progress overview */}
-      <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm p-5 mb-8">
+      <div className="rounded-2xl border border-border bg-surface shadow-sm p-5 mb-8">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center">
-              <Target className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            <div className="w-10 h-10 rounded-xl bg-primary-bg flex items-center justify-center">
+              <Target className="w-5 h-5 text-primary-strong" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-gray-900 dark:text-gray-50">
+              <p className="text-sm font-semibold text-text">
                 Season 1 Progress
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
+              <p className="text-xs text-muted">
                 {stats.completed} of {stats.total} challenges completed
               </p>
             </div>
           </div>
-          <span className="text-2xl font-bold text-gray-900 dark:text-gray-50">{completedPct}%</span>
+          <span className="text-2xl font-bold text-text">{completedPct}%</span>
         </div>
-        <div className="h-3 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
+        <div className="h-3 rounded-full bg-surface-elevated overflow-hidden">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all"
+            className="h-full rounded-full bg-gradient-to-r bg-primary transition-all"
             style={{ width: `${completedPct}%` }}
           />
         </div>
         {stats.completed === stats.total && stats.total > 0 && (
-          <p className="text-sm font-semibold text-violet-600 dark:text-violet-400 mt-3 text-center">
+          <p className="text-sm font-semibold text-signal-strong mt-3 text-center">
             All challenges complete — Luminary rank unlocked!
           </p>
         )}
@@ -85,7 +85,7 @@ export default async function ChallengesPage() {
           return (
             <section key={difficulty}>
               <div className="flex items-center gap-2 mb-3">
-                <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                <h2 className="text-sm font-semibold text-text">
                   {diff.label}
                 </h2>
                 <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-semibold ${diff.bg} ${diff.color}`}>
@@ -103,30 +103,30 @@ export default async function ChallengesPage() {
                       key={challenge.id}
                       className={`rounded-2xl border px-4 py-3 transition-all ${
                         isComplete
-                          ? 'border-green-100 dark:border-green-900 bg-green-50/50 dark:bg-green-950/30'
-                          : 'border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900'
+                          ? 'border-success bg-success-bg/50 dark:bg-success-bg/30'
+                          : 'border-border bg-surface'
                       }`}
                     >
                       <div className="flex items-start gap-3">
                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                          isComplete ? 'bg-green-100 dark:bg-green-900' : 'bg-gray-50 dark:bg-gray-800'
+                          isComplete ? 'bg-success-bg' : 'bg-surface-elevated'
                         }`}>
                           {isComplete ? (
-                            <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
+                            <CheckCircle className="w-4 h-4 text-success" />
                           ) : (
-                            <Circle className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                            <Circle className="w-4 h-4 text-subtle" />
                           )}
                         </div>
 
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className={`text-sm font-medium ${
-                              isComplete ? 'text-green-800 dark:text-green-300' : 'text-gray-900 dark:text-gray-50'
+                              isComplete ? 'text-success' : 'text-text'
                             }`}>
                               {challenge.name}
                             </span>
                           </div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                          <p className="text-xs text-muted mt-0.5">
                             {challenge.description}
                           </p>
 
@@ -134,12 +134,12 @@ export default async function ChallengesPage() {
                           {!isComplete && (
                             <div className="mt-2">
                               <div className="flex items-center justify-between mb-1">
-                                <span className="text-[11px] text-gray-400">
+                                <span className="text-[11px] text-subtle">
                                   {challenge.current} / {challenge.target}
                                 </span>
-                                <span className="text-[11px] text-gray-400">{progress}%</span>
+                                <span className="text-[11px] text-subtle">{progress}%</span>
                               </div>
-                              <div className="h-1.5 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
+                              <div className="h-1.5 rounded-full bg-surface-elevated overflow-hidden">
                                 <div
                                   className={`h-full rounded-full transition-all ${diff.bar}`}
                                   style={{ width: `${progress}%` }}
@@ -149,7 +149,7 @@ export default async function ChallengesPage() {
                           )}
 
                           {isComplete && challenge.completedAt && (
-                            <p className="text-[11px] text-green-600 dark:text-green-400 mt-1">
+                            <p className="text-[11px] text-success mt-1">
                               Completed {new Date(challenge.completedAt).toLocaleDateString('en-US', {
                                 month: 'short', day: 'numeric',
                               })}
@@ -158,9 +158,9 @@ export default async function ChallengesPage() {
                         </div>
 
                         <div className="flex items-center gap-1 shrink-0">
-                          <Zap className={`w-3.5 h-3.5 ${isComplete ? 'text-green-500' : 'text-amber-400'}`} />
+                          <Zap className={`w-3.5 h-3.5 ${isComplete ? 'text-success' : 'text-primary'}`} />
                           <span className={`text-sm font-semibold ${
-                            isComplete ? 'text-green-700 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'
+                            isComplete ? 'text-success' : 'text-muted'
                           }`}>
                             +{challenge.zaps_reward}
                           </span>

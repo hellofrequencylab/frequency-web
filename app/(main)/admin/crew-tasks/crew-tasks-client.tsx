@@ -18,9 +18,9 @@ type CrewTask = {
   requires_verification: boolean
 }
 
-const input = 'w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-50 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 disabled:opacity-50 placeholder:text-gray-400'
+const input = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-primary focus:ring-2 focus:ring-primary/40 dark:focus:ring-primary/30 disabled:opacity-50 placeholder:text-subtle'
 const select = input
-const label = 'block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1'
+const label = 'block text-xs font-medium text-muted mb-1'
 
 function Toggle({ value, onChange, disabled }: { value: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
   return (
@@ -30,7 +30,7 @@ function Toggle({ value, onChange, disabled }: { value: boolean; onChange: (v: b
       aria-checked={value}
       onClick={() => onChange(!value)}
       disabled={disabled}
-      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors disabled:opacity-50 ${value ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-700'}`}
+      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors disabled:opacity-50 ${value ? 'bg-primary' : 'bg-border-strong'}`}
     >
       <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${value ? 'translate-x-4' : 'translate-x-0'}`} />
     </button>
@@ -66,7 +66,7 @@ function TaskForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-2xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/40 dark:bg-indigo-950/20 shadow-sm">
+    <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-2xl border border-primary-bg bg-primary-bg/40 dark:bg-primary-bg shadow-sm">
       <div className="sm:col-span-2">
         <label className={label}>Task name *</label>
         <input
@@ -105,24 +105,24 @@ function TaskForm({
 
       <div className="flex items-center gap-3">
         <Toggle value={repeat} onChange={setRepeat} disabled={isPending} />
-        <span className="text-sm text-gray-700 dark:text-gray-300">Repeatable</span>
+        <span className="text-sm text-text">Repeatable</span>
       </div>
 
       <div className="flex items-center gap-3">
         <Toggle value={verify} onChange={setVerify} disabled={isPending} />
-        <span className="text-sm text-gray-700 dark:text-gray-300">Requires verification</span>
+        <span className="text-sm text-text">Requires verification</span>
       </div>
 
       <div className="sm:col-span-2 flex items-center gap-2 pt-1">
         <button
           type="submit"
           disabled={!name.trim() || isPending}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-40 transition-colors"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary-hover disabled:opacity-40 transition-colors"
         >
           <Check className="w-3.5 h-3.5" />
           {isPending ? 'Saving…' : initial ? 'Save changes' : 'Create task'}
         </button>
-        <button type="button" onClick={onCancel} disabled={isPending} className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+        <button type="button" onClick={onCancel} disabled={isPending} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-xs font-medium text-muted hover:bg-surface-elevated transition-colors">
           <X className="w-3.5 h-3.5" />
           Cancel
         </button>
@@ -155,28 +155,28 @@ function VerificationQueue({ items }: { items: PendingVerification[] }) {
 
   return (
     <div className="mb-8">
-      <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-        <ShieldCheck className="w-4 h-4 text-amber-500" />
+      <h2 className="text-sm font-semibold text-text mb-3 flex items-center gap-2">
+        <ShieldCheck className="w-4 h-4 text-primary" />
         Pending Verification
-        <span className="text-xs font-normal text-gray-400 bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded-full">{items.length}</span>
+        <span className="text-xs font-normal text-subtle bg-warning-bg dark:bg-warning-bg text-warning px-1.5 py-0.5 rounded-full">{items.length}</span>
       </h2>
       <div className="space-y-2">
         {items.map((c) => (
-          <div key={c.id} className="flex items-center gap-3 rounded-2xl border border-amber-200 dark:border-amber-800 bg-amber-50/40 dark:bg-amber-950/20 shadow-sm px-4 py-3">
+          <div key={c.id} className="flex items-center gap-3 rounded-2xl border border-warning bg-warning-bg/40 dark:bg-warning-bg/20 shadow-sm px-4 py-3">
             {c.member?.avatar_url ? (
               <img src={c.member.avatar_url} alt={c.member.display_name} className="w-7 h-7 rounded-full object-cover shrink-0" />
             ) : (
-              <div className="w-7 h-7 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-600 text-xs font-semibold flex items-center justify-center shrink-0">
+              <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0">
                 {getInitials(c.member?.display_name ?? '?')}
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-50">
+              <p className="text-sm font-medium text-text">
                 {c.member?.display_name ?? 'Unknown'}
-                <span className="text-gray-400 dark:text-gray-500 font-normal"> submitted </span>
+                <span className="text-subtle font-normal"> submitted </span>
                 {c.task?.name ?? 'Unknown task'}
               </p>
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-subtle">
                 {new Date(c.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 {' · '}{c.zaps_earned} zaps pending
               </p>
@@ -186,7 +186,7 @@ function VerificationQueue({ items }: { items: PendingVerification[] }) {
                 onClick={() => handleApprove(c.id)}
                 disabled={isPending}
                 title="Approve"
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-green-600 text-white text-xs font-semibold hover:bg-green-700 disabled:opacity-50 transition-colors"
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-success text-white text-xs font-semibold hover:bg-success disabled:opacity-50 transition-colors"
               >
                 <ShieldCheck className="w-3.5 h-3.5" /> Approve
               </button>
@@ -194,7 +194,7 @@ function VerificationQueue({ items }: { items: PendingVerification[] }) {
                 onClick={() => handleReject(c.id)}
                 disabled={isPending}
                 title="Reject"
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-xs font-semibold hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-50 transition-colors"
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-danger text-danger text-xs font-semibold hover:bg-danger-bg disabled:opacity-50 transition-colors"
               >
                 <ShieldX className="w-3.5 h-3.5" /> Reject
               </button>
@@ -230,7 +230,7 @@ export function CrewTasksClient({ tasks, pendingVerifications = [] }: { tasks: C
 
       {/* Task list */}
       {tasks.length === 0 && (
-        <p className="text-sm text-gray-400 py-6 text-center">No crew tasks yet.</p>
+        <p className="text-sm text-subtle py-6 text-center">No crew tasks yet.</p>
       )}
 
       {tasks.map((task) => (
@@ -243,34 +243,34 @@ export function CrewTasksClient({ tasks, pendingVerifications = [] }: { tasks: C
               isPending={isPending}
             />
           ) : (
-            <div className="flex items-center gap-3 rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm px-4 py-3 group">
+            <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface shadow-sm px-4 py-3 group">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{task.name}</span>
-                  <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-medium capitalize">
+                  <span className="text-sm font-medium text-text">{task.name}</span>
+                  <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-primary-bg text-primary-strong font-medium capitalize">
                     {task.task_type}
                   </span>
                   {task.is_repeatable && (
-                    <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 font-medium">
+                    <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-surface-elevated text-muted font-medium">
                       Repeatable
                     </span>
                   )}
                   {task.requires_verification && (
-                    <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 font-medium">
+                    <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-warning-bg dark:bg-warning-bg text-warning font-medium">
                       Needs verification
                     </span>
                   )}
                 </div>
               </div>
 
-              <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400 shrink-0">
+              <span className="text-sm font-bold text-primary-strong shrink-0">
                 +{task.zaps_value} zaps
               </span>
 
               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
                   onClick={() => setEditingId(task.id)}
-                  className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-colors"
+                  className="p-1.5 rounded-lg text-subtle hover:text-primary-strong hover:bg-primary-bg dark:hover:bg-primary-bg transition-colors"
                   aria-label="Edit"
                 >
                   <Pencil className="w-3.5 h-3.5" />
@@ -278,7 +278,7 @@ export function CrewTasksClient({ tasks, pendingVerifications = [] }: { tasks: C
                 <button
                   onClick={() => handleDelete(task.id)}
                   disabled={isPending}
-                  className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-50 transition-colors"
+                  className="p-1.5 rounded-lg text-subtle hover:text-danger hover:bg-danger-bg disabled:opacity-50 transition-colors"
                   aria-label="Delete"
                 >
                   <Trash2 className="w-3.5 h-3.5" />

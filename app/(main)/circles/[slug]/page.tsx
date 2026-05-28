@@ -19,11 +19,11 @@ import { ProfileFlair } from '@/components/profile-flair'
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor'
 
 const ROLE_BADGE: Record<CommunityRole, { label: string; cls: string }> = {
-  member: { label: 'Member', cls: 'bg-gray-100 text-gray-600' },
-  crew:   { label: 'Crew',   cls: 'bg-blue-100 text-blue-700' },
-  host:   { label: 'Host',   cls: 'bg-green-100 text-green-700' },
-  guide:  { label: 'Guide',  cls: 'bg-purple-100 text-purple-700' },
-  mentor: { label: 'Mentor', cls: 'bg-amber-100 text-amber-700' },
+  member: { label: 'Member', cls: 'bg-surface-elevated text-muted' },
+  crew:   { label: 'Crew',   cls: 'bg-signal-bg text-signal-strong' },
+  host:   { label: 'Host',   cls: 'bg-success-bg text-success' },
+  guide:  { label: 'Guide',  cls: 'bg-signal-bg text-signal-strong' },
+  mentor: { label: 'Mentor', cls: 'bg-warning-bg text-warning' },
 }
 
 type CircleDetail = {
@@ -201,7 +201,7 @@ export default async function CirclePage({
       {/* Back */}
       <Link
         href="/circles"
-        className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 mb-4 transition-colors"
+        className="inline-flex items-center gap-1 text-xs text-subtle hover:text-muted mb-4 transition-colors"
       >
         ← All circles
       </Link>
@@ -214,19 +214,19 @@ export default async function CirclePage({
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl font-semibold text-gray-900">{circle.name}</h1>
+              <h1 className="text-xl font-semibold text-text">{circle.name}</h1>
               <StatusBadge status={circle.status} />
-              <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 font-medium">
+              <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-surface-elevated text-muted font-medium">
                 {circle.type}
               </span>
             </div>
 
             {circle.host && (
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-muted">
                 Host:{' '}
                 <Link
                   href={`/people/${circle.host.handle}`}
-                  className="text-indigo-600 hover:underline"
+                  className="text-primary-strong hover:underline"
                 >
                   {circle.host.display_name}
                 </Link>
@@ -245,7 +245,7 @@ export default async function CirclePage({
             <form action={leaveCircle.bind(null, circle.id)}>
               <button
                 type="submit"
-                className="shrink-0 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-red-600 hover:border-red-200 hover:bg-red-50 transition-colors"
+                className="shrink-0 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted hover:text-danger hover:border-danger hover:bg-danger-bg transition-colors"
               >
                 Leave
               </button>
@@ -256,12 +256,12 @@ export default async function CirclePage({
             <CrewGateButton
               isCrew={isCrew}
               label="Join circle"
-              buttonClassName="shrink-0 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors inline-flex items-center gap-1"
+              buttonClassName="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-hover transition-colors inline-flex items-center gap-1"
             >
               <form action={joinCircle.bind(null, circle.id, circle.slug)}>
                 <button
                   type="submit"
-                  className="shrink-0 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors"
+                  className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-hover transition-colors"
                 >
                   Join circle
                 </button>
@@ -270,7 +270,7 @@ export default async function CirclePage({
           )}
 
           {!isMember && myProfileId && full && (
-            <span className="shrink-0 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-400 cursor-not-allowed">
+            <span className="shrink-0 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-subtle cursor-not-allowed">
               Circle full
             </span>
           )}
@@ -279,25 +279,25 @@ export default async function CirclePage({
         {/* Capacity */}
         <div className="mt-4">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="flex items-center gap-1.5 text-sm text-gray-500">
+            <span className="flex items-center gap-1.5 text-sm text-muted">
               <Users className="w-4 h-4" />
               {circle.member_count} of {circle.member_cap} members
             </span>
             {nearCap && !full && (
-              <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 font-medium">
+              <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-warning-bg text-warning font-medium">
                 Almost full
               </span>
             )}
             {full && (
-              <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">
+              <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-danger-bg text-danger font-medium">
                 Full
               </span>
             )}
           </div>
-          <div className="mt-2 h-1.5 max-w-xs rounded-full bg-gray-100 overflow-hidden">
+          <div className="mt-2 h-1.5 max-w-xs rounded-full bg-surface-elevated overflow-hidden">
             <div
               className={`h-full rounded-full transition-all ${
-                full ? 'bg-red-400' : nearCap ? 'bg-orange-400' : 'bg-indigo-400'
+                full ? 'bg-danger' : nearCap ? 'bg-primary' : 'bg-primary'
               }`}
               style={{ width: `${pct}%` }}
             />
@@ -307,23 +307,23 @@ export default async function CirclePage({
 
       {/* ── About ──────────────────────────────────── */}
       {circle.about ? (
-        <div className="mb-6 rounded-2xl border border-gray-100/80 bg-gray-50 shadow-sm px-4 py-3">
-          <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+        <div className="mb-6 rounded-2xl border border-border/80 bg-surface shadow-sm px-4 py-3">
+          <p className="text-sm text-text leading-relaxed whitespace-pre-wrap">
             {circle.about}
           </p>
         </div>
       ) : isHost ? (
-        <div className="mb-6 rounded-2xl border border-dashed border-gray-200/60 bg-gray-50/50 dark:bg-gray-900/50 px-4 py-3">
-          <p className="text-xs text-gray-400">+ Add a description for your circle</p>
+        <div className="mb-6 rounded-2xl border border-dashed border-border/60 bg-surface/50 dark:bg-canvas/50 px-4 py-3">
+          <p className="text-xs text-subtle">+ Add a description for your circle</p>
         </div>
       ) : null}
 
       {/* ── Host tools ─────────────────────────────── */}
       {isHost && (
-        <div className="mb-6 rounded-2xl border border-indigo-100 dark:border-indigo-900/50 bg-indigo-50/40 dark:bg-indigo-950/10 shadow-sm px-4 py-3">
+        <div className="mb-6 rounded-2xl border border-primary-bg/50 bg-primary-bg/40 dark:bg-primary-bg/10 shadow-sm px-4 py-3">
           <div className="flex items-center gap-1.5 mb-2.5">
-            <Settings2 className="w-3.5 h-3.5 text-indigo-500" />
-            <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
+            <Settings2 className="w-3.5 h-3.5 text-primary-strong" />
+            <span className="text-xs font-semibold text-primary-strong uppercase tracking-wider">
               Host Tools
             </span>
           </div>
@@ -335,12 +335,12 @@ export default async function CirclePage({
 
       {/* ── Circle Health Score (host+ only) ──────── */}
       {isHost && healthScore.totalZaps > 0 && (
-        <div className="mb-6 rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
-          <div className="px-4 py-2.5 border-b border-gray-100/80 dark:border-gray-800/50 flex items-center gap-2">
-            <Activity className="w-3.5 h-3.5 text-emerald-500" />
-            <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Circle Health</h3>
+        <div className="mb-6 rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-border flex items-center gap-2">
+            <Activity className="w-3.5 h-3.5 text-signal" />
+            <h3 className="text-[11px] font-semibold uppercase tracking-wider text-subtle">Circle Health</h3>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-px bg-gray-100 dark:bg-gray-800">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-px bg-surface-elevated">
             <HealthStat label="Avg Zaps" value={healthScore.avgZaps.toLocaleString()} Icon={Zap} />
             <HealthStat label="Total Zaps" value={healthScore.totalZaps.toLocaleString()} Icon={TrendingUp} />
             <HealthStat label="Active Streaks" value={String(healthScore.activeStreaks)} Icon={Flame} />
@@ -352,13 +352,13 @@ export default async function CirclePage({
 
       {/* ── Members ────────────────────────────────── */}
       <section>
-        <h2 className="text-sm font-semibold text-gray-700 mb-3">
+        <h2 className="text-sm font-semibold text-text mb-3">
           Members
-          <span className="ml-2 text-xs font-normal text-gray-400">{sorted.length}</span>
+          <span className="ml-2 text-xs font-normal text-subtle">{sorted.length}</span>
         </h2>
 
         {sorted.length === 0 ? (
-          <p className="text-sm text-gray-400">No members yet.</p>
+          <p className="text-sm text-subtle">No members yet.</p>
         ) : (
           <div className="space-y-0.5">
             {sorted.map(({ profile, volunteer_role, is_crew_lead }) => {
@@ -371,7 +371,7 @@ export default async function CirclePage({
               return (
                 <div
                   key={profile.id}
-                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-gray-50 transition-colors -mx-3 group"
+                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-surface transition-colors -mx-3 group"
                 >
                   <Link
                     href={`/people/${profile.handle}`}
@@ -384,23 +384,23 @@ export default async function CirclePage({
                         className="w-8 h-8 rounded-full object-cover shrink-0"
                       />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 text-xs font-semibold flex items-center justify-center shrink-0 select-none">
+                      <div className="w-8 h-8 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none">
                         {getInitials(profile.display_name)}
                       </div>
                     )}
 
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-sm font-medium text-gray-900 truncate">
+                        <span className="text-sm font-medium text-text truncate">
                           {profile.display_name}
                         </span>
                         {memberIsHost && (
-                          <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">
+                          <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-success-bg text-success font-medium">
                             Host
                           </span>
                         )}
                         {is_crew_lead && !memberIsHost && (
-                          <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">
+                          <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-warning-bg text-warning font-medium">
                             Crew Lead
                           </span>
                         )}
@@ -418,7 +418,7 @@ export default async function CirclePage({
                           compact
                         />
                       </div>
-                      <p className="text-xs text-gray-400 mt-0.5">@{profile.handle}</p>
+                      <p className="text-xs text-subtle mt-0.5">@{profile.handle}</p>
                     </div>
                   </Link>
 
@@ -428,7 +428,7 @@ export default async function CirclePage({
                       <button
                         type="submit"
                         title={`Message ${profile.display_name}`}
-                        className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
+                        className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-subtle hover:text-primary-strong hover:bg-primary-bg transition-all"
                       >
                         <MessageSquare className="w-4 h-4" />
                       </button>
@@ -445,8 +445,8 @@ export default async function CirclePage({
       <UpcomingEventsWidget scopeIds={[circle.id]} />
 
       {/* ── Feed ───────────────────────────────────── */}
-      <section className="mt-8 border-t border-gray-100/80 dark:border-gray-800/50 pt-6">
-        <h2 className="text-sm font-semibold text-gray-700 mb-4">Circle Feed</h2>
+      <section className="mt-8 border-t border-border pt-6">
+        <h2 className="text-sm font-semibold text-text mb-4">Circle Feed</h2>
         {isMember && (
           <Composer
             scopeId={circle.id}
@@ -468,10 +468,10 @@ export default async function CirclePage({
 
 function HealthStat({ label, value, Icon }: { label: string; value: string; Icon: React.ElementType }) {
   return (
-    <div className="bg-white dark:bg-gray-900 px-3 py-2.5 text-center">
-      <Icon className="w-3.5 h-3.5 text-gray-400 mx-auto mb-1" />
-      <div className="text-lg font-bold text-gray-900 dark:text-gray-50 leading-none">{value}</div>
-      <div className="text-[10px] text-gray-400 mt-0.5">{label}</div>
+    <div className="bg-surface px-3 py-2.5 text-center">
+      <Icon className="w-3.5 h-3.5 text-subtle mx-auto mb-1" />
+      <div className="text-lg font-bold text-text leading-none">{value}</div>
+      <div className="text-[10px] text-subtle mt-0.5">{label}</div>
     </div>
   )
 }

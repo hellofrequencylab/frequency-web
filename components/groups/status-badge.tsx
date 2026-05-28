@@ -1,10 +1,10 @@
 type GroupStatus = 'forming' | 'active' | 'inactive' | 'archived'
 
 const STATUS_STYLES: Record<GroupStatus, { label: string; cls: string }> = {
-  forming:  { label: 'Forming',  cls: 'bg-gray-100 text-gray-500' },
-  active:   { label: 'Active',   cls: 'bg-green-100 text-green-700' },
-  inactive: { label: 'Inactive', cls: 'bg-amber-100 text-amber-700' },
-  archived: { label: 'Archived', cls: 'bg-red-100 text-red-600' },
+  forming:  { label: 'Forming',  cls: 'bg-surface-elevated text-muted' },
+  active:   { label: 'Active',   cls: 'bg-success-bg text-success' },
+  inactive: { label: 'Inactive', cls: 'bg-warning-bg text-warning' },
+  archived: { label: 'Archived', cls: 'bg-danger-bg text-danger' },
 }
 
 export function StatusBadge({ status }: { status: GroupStatus | string }) {

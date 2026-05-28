@@ -8,9 +8,9 @@ import { NewCircleCompose } from '@/components/compose/new-circle-compose'
 
 function SidebarCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
-      <div className="px-4 py-2.5 border-b border-gray-100/80 dark:border-gray-800/50">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">{title}</h3>
+    <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
+      <div className="px-4 py-2.5 border-b border-border">
+        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-subtle">{title}</h3>
       </div>
       {children}
     </div>
@@ -125,8 +125,8 @@ export default async function AdminCirclesPage() {
     <div>
       <div className="flex items-end justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Circles</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <h1 className="text-2xl font-bold text-text">Circles</h1>
+          <p className="text-sm text-muted mt-1">
             Create and manage circles within your scope. Each circle needs a hub assignment to appear in the hierarchy.
           </p>
         </div>
@@ -147,15 +147,15 @@ export default async function AdminCirclesPage() {
         <div className="space-y-4">
           <SidebarCard title="Quick Actions">
             <div className="p-2 space-y-0.5">
-              <Link href="/circles/new" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                <Plus className="w-4 h-4 text-gray-400" /> New Circle
+              <Link href="/circles/new" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-text hover:bg-surface-elevated transition-colors">
+                <Plus className="w-4 h-4 text-subtle" /> New Circle
               </Link>
-              <Link href="/admin/hubs" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                <Plus className="w-4 h-4 text-gray-400" /> Manage Hubs
+              <Link href="/admin/hubs" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-text hover:bg-surface-elevated transition-colors">
+                <Plus className="w-4 h-4 text-subtle" /> Manage Hubs
               </Link>
             </div>
-            <hr className="border-gray-100/80 dark:border-gray-800/50" />
-            <p className="px-4 py-3 text-xs text-gray-400">Archiving hides a circle from discovery but preserves all data.</p>
+            <hr className="border-border" />
+            <p className="px-4 py-3 text-xs text-subtle">Archiving hides a circle from discovery but preserves all data.</p>
           </SidebarCard>
         </div>
       </div>
