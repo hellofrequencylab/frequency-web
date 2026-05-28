@@ -4,6 +4,7 @@ import { useTransition } from 'react'
 import { CheckCircle, Loader2, RotateCcw } from 'lucide-react'
 import { logCompletion } from './actions'
 import { CrewGateButton } from '@/components/crew-gate-button'
+import { useAchievementCheck } from '@/lib/use-achievement-check'
 
 interface CompleteButtonProps {
   taskId: string
@@ -15,6 +16,7 @@ interface CompleteButtonProps {
 
 export function CompleteButton({ taskId, isDone, isRepeatable, requiresVerification, isCrew }: CompleteButtonProps) {
   const [isPending, startTransition] = useTransition()
+  const { checkForUnlocks } = useAchievementCheck()
 
   // Non-repeatable + already done — show static state
   if (isDone && !isRepeatable) {
@@ -38,6 +40,7 @@ export function CompleteButton({ taskId, isDone, isRepeatable, requiresVerificat
   function handleClick() {
     startTransition(async () => {
       await logCompletion(taskId)
+      checkForUnlocks()
     })
   }
 

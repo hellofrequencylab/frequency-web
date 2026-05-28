@@ -23,14 +23,28 @@ export type GamificationEvent =
   | { type: 'streak_update';  profileId: string; streakType: StreakType; count: number }
   | { type: 'rank_change';    profileId: string; rank: string }
 
-export async function processGamificationEvent(event: GamificationEvent) {
+export interface NewAchievement {
+  id: string
+  name: string
+  description: string
+  icon: string
+  tier: string
+  zapsReward: number
+}
+
+export async function processGamificationEvent(
+  event: GamificationEvent,
+): Promise<NewAchievement[]> {
   const admin = createAdminClient()
 
   try {
-    await evaluateAchievements(admin, event)
+    const newAchievements = await evaluateAchievements(admin, event)
     await advanceChallenges(admin, event)
+    await advanceQuests(admin, event)
+    return newAchievements
   } catch (err) {
     console.error('[gamification] event processing failed:', err)
+    return []
   }
 }
 
@@ -126,12 +140,12 @@ export async function recordStreakActivity(
 // Achievement evaluation
 // ---------------------------------------------------------------------------
 
-async function evaluateAchievements(admin: AdminClient, event: GamificationEvent) {
+async function evaluateAchievements(admin: AdminClient, event: GamificationEvent): Promise<NewAchievement[]> {
   const { data: allAchievements } = await admin
     .from('achievements')
-    .select('id, slug, criteria')
+    .select('id, slug, name, description, icon, tier, zaps_reward, criteria')
 
-  if (!allAchievements?.length) return
+  if (!allAchievements?.length) return []
 
   const { data: userAchievements } = await admin
     .from('user_achievements')
@@ -140,6 +154,7 @@ async function evaluateAchievements(admin: AdminClient, event: GamificationEvent
 
   const earnedIds = new Set((userAchievements ?? []).map(ua => ua.achievement_id))
   const stats = await getUserStats(admin, event.profileId)
+  const newlyUnlocked: NewAchievement[] = []
 
   for (const achievement of allAchievements) {
     if (earnedIds.has(achievement.id)) continue
@@ -148,12 +163,24 @@ async function evaluateAchievements(admin: AdminClient, event: GamificationEvent
     if (criteria.type === 'manual') continue
 
     if (isRelevantEvent(criteria, event) && isCriteriaMet(criteria, stats, event)) {
-      await admin.from('user_achievements').insert({
+      const { error } = await admin.from('user_achievements').insert({
         profile_id: event.profileId,
         achievement_id: achievement.id,
       })
+      if (!error) {
+        newlyUnlocked.push({
+          id: achievement.id,
+          name: achievement.name,
+          description: achievement.description,
+          icon: achievement.icon,
+          tier: achievement.tier,
+          zapsReward: achievement.zaps_reward,
+        })
+      }
     }
   }
+
+  return newlyUnlocked
 }
 
 function isRelevantEvent(criteria: AchievementCriteria, event: GamificationEvent): boolean {
@@ -179,6 +206,7 @@ interface UserStats {
   eventAttendCount: number
   eventHostCount: number
   postCount: number
+  maxPostReplies: number
   referralCount: number
   taskCompleteCount: number
   seasonZaps: number
@@ -188,7 +216,7 @@ interface UserStats {
 }
 
 async function getUserStats(admin: AdminClient, profileId: string): Promise<UserStats> {
-  const [profile, memberships, rsvps, hostedEvents, posts, completions, streaks, inviteLinks] =
+  const [profile, memberships, rsvps, hostedEvents, posts, topPost, completions, streaks, inviteLinks] =
     await Promise.all([
       admin.from('profiles')
         .select('current_season_zaps, current_season_rank, community_role')
@@ -208,6 +236,12 @@ async function getUserStats(admin: AdminClient, profileId: string): Promise<User
       admin.from('posts')
         .select('id')
         .eq('author_id', profileId),
+      admin.from('posts')
+        .select('reply_count')
+        .eq('author_id', profileId)
+        .order('reply_count', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
       admin.from('crew_completions')
         .select('id')
         .eq('profile_id', profileId),
@@ -234,6 +268,7 @@ async function getUserStats(admin: AdminClient, profileId: string): Promise<User
     eventAttendCount: rsvps.data?.length ?? 0,
     eventHostCount: hostedEvents.data?.length ?? 0,
     postCount: posts.data?.length ?? 0,
+    maxPostReplies: (topPost.data as any)?.reply_count ?? 0,
     referralCount: totalReferrals,
     taskCompleteCount: completions.data?.length ?? 0,
     seasonZaps: p?.current_season_zaps ?? 0,
@@ -260,7 +295,7 @@ function isCriteriaMet(
     case 'post_create':
       return stats.postCount >= criteria.count
     case 'post_replies':
-      return false
+      return stats.maxPostReplies >= criteria.count
     case 'referral':
       return stats.referralCount >= criteria.count
     case 'task_complete':
@@ -406,6 +441,163 @@ async function checkAllChallengesComplete(admin: AdminClient, profileId: string)
       .from('profiles')
       .update({ season_challenges_complete: true })
       .eq('id', profileId)
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Quest chain advancement
+// ---------------------------------------------------------------------------
+
+async function advanceQuests(admin: AdminClient, event: GamificationEvent) {
+  const { data: chains } = await admin
+    .from('quest_chains')
+    .select('id')
+
+  if (!chains?.length) return
+
+  for (const chain of chains) {
+    const { data: steps } = await admin
+      .from('quest_steps')
+      .select('id, step_order, criteria, target, zaps_reward')
+      .eq('chain_id', chain.id)
+      .order('step_order')
+
+    if (!steps?.length) continue
+
+    const { data: progress } = await admin
+      .from('quest_progress')
+      .select('id, current_step, step_progress, completed_at')
+      .eq('profile_id', event.profileId)
+      .eq('chain_id', chain.id)
+      .maybeSingle()
+
+    if (progress?.completed_at) continue
+
+    const currentStepOrder = progress?.current_step ?? 1
+    const currentStep = steps.find(s => s.step_order === currentStepOrder)
+    if (!currentStep) continue
+
+    const criteria = currentStep.criteria as Record<string, unknown>
+    if (!isQuestStepRelevant(criteria, event)) continue
+
+    const newProgress = (progress?.step_progress ?? 0) + 1
+
+    if (newProgress >= currentStep.target) {
+      // Step complete — advance to next or finish chain
+      const nextStep = steps.find(s => s.step_order === currentStepOrder + 1)
+
+      if (nextStep) {
+        // Advance to next step
+        if (progress) {
+          await admin
+            .from('quest_progress')
+            .update({ current_step: nextStep.step_order, step_progress: 0 })
+            .eq('id', progress.id)
+        } else {
+          await admin
+            .from('quest_progress')
+            .insert({
+              profile_id: event.profileId,
+              chain_id: chain.id,
+              current_step: nextStep.step_order,
+              step_progress: 0,
+            })
+        }
+      } else {
+        // Chain complete
+        const now = new Date().toISOString()
+        if (progress) {
+          await admin
+            .from('quest_progress')
+            .update({ step_progress: newProgress, completed_at: now })
+            .eq('id', progress.id)
+        } else {
+          await admin
+            .from('quest_progress')
+            .insert({
+              profile_id: event.profileId,
+              chain_id: chain.id,
+              current_step: currentStepOrder,
+              step_progress: newProgress,
+              completed_at: now,
+            })
+        }
+
+        // Award chain completion zaps
+        const { data: chainData } = await admin
+          .from('quest_chains')
+          .select('zaps_reward')
+          .eq('id', chain.id)
+          .maybeSingle()
+
+        if (chainData?.zaps_reward) {
+          const { data: profile } = await admin
+            .from('profiles')
+            .select('current_season_zaps, lifetime_zaps')
+            .eq('id', event.profileId)
+            .maybeSingle()
+
+          if (profile) {
+            await admin
+              .from('profiles')
+              .update({
+                current_season_zaps: (profile as any).current_season_zaps + chainData.zaps_reward,
+                lifetime_zaps: (profile as any).lifetime_zaps + chainData.zaps_reward,
+              })
+              .eq('id', event.profileId)
+          }
+        }
+      }
+
+      // Award step zaps
+      if (currentStep.zaps_reward > 0) {
+        const { data: profile } = await admin
+          .from('profiles')
+          .select('current_season_zaps, lifetime_zaps')
+          .eq('id', event.profileId)
+          .maybeSingle()
+
+        if (profile) {
+          await admin
+            .from('profiles')
+            .update({
+              current_season_zaps: (profile as any).current_season_zaps + currentStep.zaps_reward,
+              lifetime_zaps: (profile as any).lifetime_zaps + currentStep.zaps_reward,
+            })
+            .eq('id', event.profileId)
+        }
+      }
+    } else {
+      // Increment progress
+      if (progress) {
+        await admin
+          .from('quest_progress')
+          .update({ step_progress: newProgress })
+          .eq('id', progress.id)
+      } else {
+        await admin
+          .from('quest_progress')
+          .insert({
+            profile_id: event.profileId,
+            chain_id: chain.id,
+            current_step: currentStepOrder,
+            step_progress: newProgress,
+          })
+      }
+    }
+  }
+}
+
+function isQuestStepRelevant(criteria: Record<string, unknown>, event: GamificationEvent): boolean {
+  const cType = criteria.type as string
+  switch (cType) {
+    case 'event_attend':  return event.type === 'event_attend'
+    case 'event_host':    return event.type === 'event_host'
+    case 'post_create':   return event.type === 'post_create'
+    case 'task_complete': return event.type === 'task_complete'
+    case 'referral':      return event.type === 'referral'
+    case 'post_replies':  return event.type === 'post_create'
+    default:              return false
   }
 }
 

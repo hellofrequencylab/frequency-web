@@ -201,6 +201,41 @@ export const DIFFICULTY_CONFIG: Record<ChallengeDifficulty, {
 }
 
 // ---------------------------------------------------------------------------
+// Quest chains
+// ---------------------------------------------------------------------------
+
+export interface QuestChain {
+  id: string
+  slug: string
+  name: string
+  description: string
+  icon: string
+  season: number | null
+  zaps_reward: number
+}
+
+export interface QuestStep {
+  id: string
+  chain_id: string
+  step_order: number
+  name: string
+  description: string
+  criteria: Record<string, unknown>
+  target: number
+  zaps_reward: number
+}
+
+export interface QuestProgress {
+  id: string
+  profile_id: string
+  chain_id: string
+  current_step: number
+  step_progress: number
+  started_at: string
+  completed_at: string | null
+}
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 

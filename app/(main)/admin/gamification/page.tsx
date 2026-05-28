@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { TIER_CONFIG, DIFFICULTY_CONFIG } from '@/lib/gamification'
 import type { AchievementTier, ChallengeDifficulty } from '@/lib/gamification'
+import { AwardDialog } from './award-dialog'
 
 export default async function AdminGamificationPage() {
   const supabase = await createClient()
@@ -32,6 +33,7 @@ export default async function AdminGamificationPage() {
     { data: topEarners },
     { data: achievements },
     { data: challenges },
+    { data: allMembers },
   ] = await Promise.all([
     admin.from('achievements').select('id', { count: 'exact', head: true }),
     admin.from('user_achievements').select('id', { count: 'exact', head: true }),
@@ -43,7 +45,8 @@ export default async function AdminGamificationPage() {
       .limit(5),
     admin.from('achievements').select('id, slug, name, tier, category, zaps_reward').order('sort_order'),
     admin.from('season_challenges').select('id, slug, name, difficulty, target, zaps_reward').order('sort_order'),
-  ])
+    admin.from('profiles').select('id, display_name, handle').eq('is_active', true).order('display_name').limit(200),
+  ] as const)
 
   return (
     <div>
@@ -53,9 +56,15 @@ export default async function AdminGamificationPage() {
           <span className="text-gray-300 dark:text-gray-600">/</span>
           <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50">Gamification</h1>
         </div>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Overview of achievements, challenges, and engagement stats.
-        </p>
+        <div className="flex items-center justify-between mt-1">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Overview of achievements, challenges, and engagement stats.
+          </p>
+          <AwardDialog
+            achievements={(achievements ?? []).map(a => ({ id: a.id, name: a.name, tier: a.tier }))}
+            members={(allMembers ?? []).map(m => ({ id: m.id, display_name: m.display_name, handle: m.handle }))}
+          />
+        </div>
       </div>
 
       {/* Stats grid */}

@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { Star, CheckCircle, Zap, Award, Flame, Target } from 'lucide-react'
+import { Star, CheckCircle, Zap, Award, Flame, Target, Map } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { SEASON_RANKS, getRankDef, type SeasonRank } from '@/lib/season-ranks'
@@ -180,7 +180,7 @@ export default async function CrewPage() {
           </div>
 
           {/* ── Gamification quick links ─────────────────── */}
-          <div className="grid grid-cols-3 gap-3 mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
             <Link
               href="/crew/achievements"
               className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm p-3 hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors group"
@@ -209,7 +209,17 @@ export default async function CrewPage() {
                 <Target className="w-4 h-4" />
               </div>
               <div className="text-sm font-semibold text-gray-900 dark:text-gray-50 leading-none">Challenges</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Season quests</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Season goals</div>
+            </Link>
+            <Link
+              href="/crew/quests"
+              className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm p-3 hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors group"
+            >
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2 bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-100 dark:group-hover:bg-emerald-900 transition-colors">
+                <Map className="w-4 h-4" />
+              </div>
+              <div className="text-sm font-semibold text-gray-900 dark:text-gray-50 leading-none">Quests</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Multi-step journeys</div>
             </Link>
           </div>
 

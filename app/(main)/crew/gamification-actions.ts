@@ -1,6 +1,5 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -178,5 +177,117 @@ export async function getGamificationSummary(profileId?: string) {
       current: s.current_count,
       longest: s.longest_count,
     })),
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Check for recently unlocked achievements (for toast display)
+// ---------------------------------------------------------------------------
+
+export async function checkRecentUnlocks(sinceIso: string) {
+  const profileId = await getMyProfileId()
+  if (!profileId) return []
+
+  const admin = createAdminClient()
+  const { data } = await admin
+    .from('user_achievements')
+    .select('achievement_id, unlocked_at, achievement:achievements(id, name, description, icon, tier, zaps_reward)')
+    .eq('profile_id', profileId)
+    .gte('unlocked_at', sinceIso)
+    .order('unlocked_at', { ascending: true })
+
+  return (data ?? []).map(row => {
+    const a = row.achievement as any
+    return {
+      id: a?.id ?? row.achievement_id,
+      name: a?.name ?? '',
+      description: a?.description ?? '',
+      icon: a?.icon ?? 'award',
+      tier: (a?.tier ?? 'bronze') as AchievementTier,
+      zapsReward: a?.zaps_reward ?? 0,
+    }
+  })
+}
+
+// ---------------------------------------------------------------------------
+// Admin: manually award an achievement to a profile
+// ---------------------------------------------------------------------------
+
+export async function awardAchievement(profileId: string, achievementId: string) {
+  const myProfileId = await getMyProfileId()
+  if (!myProfileId) throw new Error('Not authenticated')
+
+  const admin = createAdminClient()
+
+  // Check caller is host+
+  const { data: caller } = await admin
+    .from('profiles')
+    .select('community_role')
+    .eq('id', myProfileId)
+    .maybeSingle()
+
+  const role = (caller as any)?.community_role ?? 'member'
+  if (!['host', 'guide', 'mentor', 'janitor'].includes(role)) {
+    throw new Error('Unauthorized')
+  }
+
+  // Check not already earned
+  const { data: existing } = await admin
+    .from('user_achievements')
+    .select('id')
+    .eq('profile_id', profileId)
+    .eq('achievement_id', achievementId)
+    .maybeSingle()
+
+  if (existing) return { alreadyEarned: true }
+
+  const { error } = await admin.from('user_achievements').insert({
+    profile_id: profileId,
+    achievement_id: achievementId,
+  })
+
+  if (error) throw new Error(error.message)
+  return { alreadyEarned: false }
+}
+
+// ---------------------------------------------------------------------------
+// Admin: revoke an achievement from a profile
+// ---------------------------------------------------------------------------
+
+export async function revokeAchievement(profileId: string, achievementId: string) {
+  const myProfileId = await getMyProfileId()
+  if (!myProfileId) throw new Error('Not authenticated')
+
+  const admin = createAdminClient()
+
+  const { data: caller } = await admin
+    .from('profiles')
+    .select('community_role')
+    .eq('id', myProfileId)
+    .maybeSingle()
+
+  const role = (caller as any)?.community_role ?? 'member'
+  if (!['host', 'guide', 'mentor', 'janitor'].includes(role)) {
+    throw new Error('Unauthorized')
+  }
+
+  await admin
+    .from('user_achievements')
+    .delete()
+    .eq('profile_id', profileId)
+    .eq('achievement_id', achievementId)
+
+  // Decrement counter
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('achievement_count')
+    .eq('id', profileId)
+    .maybeSingle()
+
+  if (profile) {
+    await admin
+      .from('profiles')
+      .update({ achievement_count: Math.max(0, ((profile as any).achievement_count ?? 1) - 1) })
+      .eq('id', profileId)
   }
 }
