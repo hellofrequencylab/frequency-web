@@ -6,6 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { sendDispatchNotificationEmail } from '@/lib/email'
 import { slugify } from '@/lib/utils'
+import { processGamificationEvent } from '@/lib/achievements'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
@@ -36,6 +37,7 @@ export async function assignRole(profileId: string, role: CommunityRole) {
   const admin = createAdminClient()
   const { error } = await admin.from('profiles').update({ community_role: role }).eq('id', profileId)
   if (error) throw new Error(error.message)
+  processGamificationEvent({ type: 'role_change', profileId, role }).catch(() => {})
   revalidatePath('/admin')
 }
 
@@ -682,6 +684,7 @@ export async function assignLuminary(profileId: string) {
     .update({ current_season_rank: 'luminary', season_challenges_complete: true })
     .eq('id', profileId)
   if (error) throw new Error(error.message)
+  processGamificationEvent({ type: 'rank_change', profileId, rank: 'luminary' }).catch(() => {})
   revalidatePath('/admin')
 }
 

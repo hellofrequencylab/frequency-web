@@ -279,7 +279,7 @@ export default function AppShell({
     if (href === '/channels') return pathname === '/channels' || pathname.startsWith('/channels/')
     if (href === '/messages') return pathname === '/messages' || pathname.startsWith('/messages/')
     if (href === '/settings') return pathname === '/settings' || pathname.startsWith('/settings/')
-    if (href === '/crew')     return pathname === '/crew'
+    if (href === '/crew')     return pathname === '/crew' || pathname.startsWith('/crew/')
     if (href === '/search')   return pathname === '/search'
     return pathname === href || pathname.startsWith(href + '/')
   }

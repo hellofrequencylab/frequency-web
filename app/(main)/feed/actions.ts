@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { processGamificationEvent, recordStreakActivity } from '@/lib/achievements'
+import { awardGems } from '@/lib/gems'
 
 async function getMyProfileId(): Promise<string | null> {
   const supabase = await createClient()
@@ -54,6 +56,11 @@ export async function createPost(formData: FormData) {
     console.error('[createPost]', error.message)
     return
   }
+
+  // Fire gamification events (non-blocking)
+  processGamificationEvent({ type: 'post_create', profileId }).catch(() => {})
+  recordStreakActivity(profileId, 'posting').catch(() => {})
+  awardGems(profileId, 'post_create').catch(() => {})
 
   // Extract @mentions and create notification rows (best-effort, non-blocking)
   const bodyText = body || ''
@@ -138,6 +145,9 @@ export async function createReply(parentId: string, body: string) {
     parent_id:  parentId,
   })
 
+  awardGems(profileId, 'comment_reply').catch(() => {})
+  processGamificationEvent({ type: 'post_create', profileId }).catch(() => {})
+
   revalidatePath('/feed')
   revalidatePath('/circles', 'layout')
   revalidatePath('/people', 'layout')
@@ -149,7 +159,7 @@ export async function fetchReplies(parentId: string) {
     .from('posts')
     .select(
       `id, body, created_at,
-       author:profiles!author_id ( id, display_name, handle, avatar_url, community_role )`
+       author:profiles!author_id ( id, display_name, handle, avatar_url, community_role, current_season_rank, current_streak, achievement_count )`
     )
     .eq('parent_id', parentId)
     .order('created_at', { ascending: true })
@@ -158,7 +168,7 @@ export async function fetchReplies(parentId: string) {
     id: string
     body: string | null
     created_at: string
-    author: { id: string; display_name: string; handle: string; avatar_url: string | null; community_role: string }
+    author: { id: string; display_name: string; handle: string; avatar_url: string | null; community_role: string; current_season_rank: string | null; current_streak: number; achievement_count: number }
   }>
 }
 
@@ -189,6 +199,7 @@ export async function toggleReaction(
       profile_id: profileId,
       reaction_type: reactionType,
     })
+    awardGems(profileId, 'reaction').catch(() => {})
   }
 
   revalidatePath('/feed')

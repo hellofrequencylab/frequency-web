@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Loader2, Send } from 'lucide-react'
 import { createReply, fetchReplies } from '@/app/(main)/feed/actions'
 import { getInitials, relativeTime } from '@/lib/utils'
+import { ProfileFlair } from '@/components/profile-flair'
 
 type ReplyAuthor = {
   id: string
@@ -12,6 +13,9 @@ type ReplyAuthor = {
   handle: string
   avatar_url: string | null
   community_role: string
+  current_season_rank?: string | null
+  current_streak?: number
+  achievement_count?: number
 }
 
 type Reply = {
@@ -103,6 +107,13 @@ export function PostReplies({
                     <Link href={r.author ? `/people/${r.author.handle}` : '#'} className="text-xs font-semibold text-gray-900 dark:text-gray-50 hover:underline">
                       {r.author?.display_name ?? 'Unknown'}
                     </Link>
+                    {r.author && (
+                      <ProfileFlair
+                        rank={r.author.current_season_rank}
+                        streak={r.author.current_streak}
+                        compact
+                      />
+                    )}
                     <span className="text-[11px] text-gray-400">{relativeTime(r.created_at)}</span>
                   </div>
                   <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap mt-0.5">{r.body}</p>
