@@ -25,6 +25,7 @@ import {
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { NotificationBell } from '@/components/layout/notification-bell'
+import { MessagesPopover } from '@/components/messages/messages-popover'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
@@ -345,13 +346,7 @@ export default function AppShell({
           </Link>
 
           {/* Messages */}
-          <Link
-            href="/messages"
-            aria-label="Messages"
-            className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
-          >
-            <MessageSquare className="w-5 h-5" />
-          </Link>
+          <MessagesPopover />
 
           {/* Notifications */}
           <NotificationBell initialUnread={unreadCount} />
