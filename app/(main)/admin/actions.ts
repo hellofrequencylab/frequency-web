@@ -78,7 +78,7 @@ export async function reactivateMember(profileId: string) {
   revalidatePath('/admin/members')
 }
 
-export async function sendPasswordReset(profileId: string) {
+export async function sendMagicLink(profileId: string) {
   const caller = await getCallerProfile()
   if (!caller || !hasRole(caller.community_role, 'janitor')) throw new Error('Unauthorized')
 
@@ -93,9 +93,12 @@ export async function sendPasswordReset(profileId: string) {
   const { data: { user } } = await admin.auth.admin.getUserById(profile.auth_user_id)
   if (!user?.email) throw new Error('No email found for this user')
 
-  const supabase = createAdminClient()
-  const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://go.findafreq.com'}/auth/callback`,
+  const { error } = await admin.auth.admin.generateLink({
+    type: 'magiclink',
+    email: user.email,
+    options: {
+      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://go.findafreq.com'}/auth/callback`,
+    },
   })
   if (error) throw new Error(error.message)
   return { email: user.email }
