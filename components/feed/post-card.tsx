@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Heart, ThumbsUp, Megaphone, Clock, MessageCircle, TrendingUp } from 'lucide-react'
+import { Heart, ThumbsUp, Megaphone, Clock, MessageCircle, TrendingUp, Users, Radio, ArrowRight } from 'lucide-react'
 import { toggleReaction } from '@/app/(main)/feed/actions'
 import { PostReplies } from './post-replies'
 import { ContextActions } from '@/components/context-actions'
@@ -56,10 +56,13 @@ export type FeedPost = {
   is_pinned: boolean
   created_at: string
   media_urls: string[]
+  scope_id?: string | null
+  visibility?: string | null
   replyCount?: number
   reaction_count?: number
   comment_count?: number
   engagement_score?: number
+  scopeContext?: { type: 'wall' | 'circle' | 'channel'; name: string; href: string }
   author: {
     id: string
     display_name: string
@@ -130,6 +133,33 @@ export function PostCard({
             <p className="text-[11px] font-medium text-indigo-500 mb-2.5">
               📌 Pinned
             </p>
+          )}
+
+          {/* Scope context */}
+          {post.scopeContext && (
+            <Link
+              href={post.scopeContext.href}
+              className="flex items-center gap-1.5 mb-2 text-[11px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            >
+              {post.scopeContext.type === 'wall' && (
+                <>
+                  <ArrowRight className="w-3 h-3" />
+                  <span>Posted on <span className="font-medium text-gray-500 dark:text-gray-400">{post.scopeContext.name}&apos;s</span> wall</span>
+                </>
+              )}
+              {post.scopeContext.type === 'circle' && (
+                <>
+                  <Users className="w-3 h-3" />
+                  <span>in <span className="font-medium text-gray-500 dark:text-gray-400">{post.scopeContext.name}</span></span>
+                </>
+              )}
+              {post.scopeContext.type === 'channel' && (
+                <>
+                  <Radio className="w-3 h-3" />
+                  <span>in <span className="font-medium text-gray-500 dark:text-gray-400">{post.scopeContext.name}</span></span>
+                </>
+              )}
+            </Link>
           )}
 
           {/* Author row */}
