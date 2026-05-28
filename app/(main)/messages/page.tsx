@@ -1,9 +1,10 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { MessageSquare } from 'lucide-react'
+import { MessageSquare, Hash, Lock, Users, Compass } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { getInitials, relativeTime } from '@/lib/utils'
+import { NewRoomCompose } from '@/components/compose/new-room-compose'
 
 type Profile = {
   id: string
@@ -21,108 +22,125 @@ type ConversationRow = {
   myLastReadAt: string | null
 }
 
+type RoomRow = {
+  id: string
+  name: string
+  description: string | null
+  visibility: 'public' | 'private' | 'circle' | 'hub' | 'nexus' | 'outpost'
+  member_count: number
+  last_message_at: string | null
+  isMember: boolean
+}
+
+type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
+const CREW_PLUS: CommunityRole[] = ['crew', 'host', 'guide', 'mentor', 'janitor']
+
 export default async function MessagesPage() {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/sign-in')
 
   const admin = createAdminClient()
 
-  // Get my profile
   const { data: myProfile } = await admin
     .from('profiles')
-    .select('id')
+    .select('id, community_role')
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
   if (!myProfile) redirect('/onboarding')
   const myProfileId = myProfile.id as string
+  const canCreateRoom = CREW_PLUS.includes(myProfile.community_role as CommunityRole)
 
-  // 1. Get all conversation IDs I'm part of, with my last_read_at
+  // ── Rooms ─────────────────────────────────────────────────────────
+  // Joined rooms (sorted by recent activity)
+  const { data: myMemberships } = await admin
+    .from('room_members')
+    .select('room_id, last_read_at')
+    .eq('profile_id', myProfileId)
+
+  const joinedRoomIds = (myMemberships ?? []).map((m: { room_id: string }) => m.room_id)
+
+  const { data: myRoomsData } = joinedRoomIds.length > 0
+    ? await admin
+        .from('rooms')
+        .select('id, name, description, visibility, member_count, last_message_at')
+        .in('id', joinedRoomIds)
+        .order('last_message_at', { ascending: false, nullsFirst: false })
+    : { data: [] }
+
+  const myRooms: RoomRow[] = ((myRoomsData ?? []) as Omit<RoomRow, 'isMember'>[])
+    .map(r => ({ ...r, isMember: true }))
+
+  // Discover: public rooms not yet joined
+  let discoverRooms: RoomRow[] = []
+  const { data: publicRoomsData } = await admin
+    .from('rooms')
+    .select('id, name, description, visibility, member_count, last_message_at')
+    .eq('visibility', 'public')
+    .order('member_count', { ascending: false })
+    .limit(10)
+
+  discoverRooms = ((publicRoomsData ?? []) as Omit<RoomRow, 'isMember'>[])
+    .filter(r => !joinedRoomIds.includes(r.id))
+    .map(r => ({ ...r, isMember: false }))
+
+  // ── DMs ───────────────────────────────────────────────────────────
   const { data: myParts } = await admin
     .from('conversation_participants')
     .select('conversation_id, last_read_at, conversations!conversation_id(id, created_at)')
     .eq('profile_id', myProfileId)
 
-  if (!myParts || myParts.length === 0) {
-    return (
-      <div className="text-center">
-        <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
-          <MessageSquare className="w-6 h-6 text-gray-400" />
-        </div>
-        <h1 className="text-base font-semibold text-gray-900 mb-1">No messages yet</h1>
-        <p className="text-sm text-gray-400 leading-relaxed">
-          Start a conversation from any member&apos;s profile or circle page.
-        </p>
-      </div>
-    )
-  }
-
-  const convIds = myParts.map((p) => p.conversation_id as string)
+  const convIds = (myParts ?? []).map(p => p.conversation_id as string)
   const myLastReadMap: Record<string, string | null> = {}
-  for (const p of myParts) {
+  for (const p of myParts ?? []) {
     myLastReadMap[p.conversation_id as string] = p.last_read_at as string | null
   }
 
-  // 2. Get all other participants in those conversations
-  const { data: allParts } = await admin
-    .from('conversation_participants')
-    .select('conversation_id, profile_id, profiles!profile_id(id, display_name, handle, avatar_url)')
-    .in('conversation_id', convIds)
-    .neq('profile_id', myProfileId)
-
   const otherPartMap: Record<string, Profile | null> = {}
-  for (const p of allParts ?? []) {
-    const prof = p.profiles as unknown as Profile | null
-    otherPartMap[p.conversation_id as string] = prof
+  if (convIds.length > 0) {
+    const { data: allParts } = await admin
+      .from('conversation_participants')
+      .select('conversation_id, profile_id, profiles!profile_id(id, display_name, handle, avatar_url)')
+      .in('conversation_id', convIds)
+      .neq('profile_id', myProfileId)
+    for (const p of allParts ?? []) {
+      otherPartMap[p.conversation_id as string] = p.profiles as unknown as Profile | null
+    }
   }
 
-  // 3. Get recent messages across all conversations to find last message + unread count
-  const { data: recentMessages } = await admin
-    .from('messages')
-    .select('id, conversation_id, sender_id, body, created_at')
-    .in('conversation_id', convIds)
-    .order('created_at', { ascending: false })
-    .limit(convIds.length * 20) // enough to get last msg + unread count per conv
+  const messagesByConv: Record<string, Array<{ id: string; conversation_id: string; sender_id: string; body: string; created_at: string }>> = {}
+  if (convIds.length > 0) {
+    const { data: recentMessages } = await admin
+      .from('messages')
+      .select('id, conversation_id, sender_id, body, created_at')
+      .in('conversation_id', convIds)
+      .order('created_at', { ascending: false })
+      .limit(convIds.length * 20)
 
-  const messagesByConv: Record<string, typeof recentMessages> = {}
-  for (const msg of recentMessages ?? []) {
-    const cid = msg.conversation_id as string
-    if (!messagesByConv[cid]) messagesByConv[cid] = []
-    messagesByConv[cid]!.push(msg)
+    for (const msg of recentMessages ?? []) {
+      const cid = msg.conversation_id as string
+      if (!messagesByConv[cid]) messagesByConv[cid] = []
+      messagesByConv[cid].push(msg as { id: string; conversation_id: string; sender_id: string; body: string; created_at: string })
+    }
   }
 
-  // 4. Build conversation rows
-  const conversations: ConversationRow[] = myParts
-    .map((part) => {
+  const conversations: ConversationRow[] = (myParts ?? [])
+    .map(part => {
       const cid = part.conversation_id as string
       const msgs = messagesByConv[cid] ?? []
       const lastMsg = msgs[0] ?? null
       const myLastRead = myLastReadMap[cid]
-
       const unreadCount = myLastRead
-        ? msgs.filter(
-            (m) =>
-              m.sender_id !== myProfileId &&
-              new Date(m.created_at as string) > new Date(myLastRead)
-          ).length
-        : msgs.filter((m) => m.sender_id !== myProfileId).length
-
-      const conv = (part as any).conversations as { id: string; created_at: string } | null
+        ? msgs.filter(m => m.sender_id !== myProfileId && new Date(m.created_at) > new Date(myLastRead)).length
+        : msgs.filter(m => m.sender_id !== myProfileId).length
+      const conv = (part as unknown as { conversations: { id: string; created_at: string } | null }).conversations
 
       return {
         id: cid,
         created_at: conv?.created_at ?? '',
         otherParticipant: otherPartMap[cid] ?? null,
-        lastMessage: lastMsg
-          ? {
-              body: lastMsg.body as string,
-              sender_id: lastMsg.sender_id as string,
-              created_at: lastMsg.created_at as string,
-            }
-          : null,
+        lastMessage: lastMsg ? { body: lastMsg.body, sender_id: lastMsg.sender_id, created_at: lastMsg.created_at } : null,
         unreadCount,
         myLastReadAt: myLastRead ?? null,
       }
@@ -134,87 +152,177 @@ export default async function MessagesPage() {
     })
 
   const totalUnread = conversations.reduce((sum, c) => sum + c.unreadCount, 0)
+  const totalRooms = myRooms.length
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-5">
-        <h1 className="text-lg font-semibold text-gray-900">
-          Messages
-          {totalUnread > 0 && (
-            <span className="ml-2 inline-flex items-center justify-center w-5 h-5 rounded-full bg-indigo-600 text-white text-[10px] font-bold">
-              {totalUnread > 9 ? '9+' : totalUnread}
-            </span>
-          )}
-        </h1>
+      <div className="flex items-end justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-1">
+            Messages
+            {totalUnread > 0 && (
+              <span className="ml-2 inline-flex items-center justify-center w-5 h-5 rounded-full bg-indigo-600 text-white text-[10px] font-bold align-middle">
+                {totalUnread > 9 ? '9+' : totalUnread}
+              </span>
+            )}
+          </h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Direct messages with friends and chat rooms with the community.
+          </p>
+        </div>
+        {canCreateRoom && <NewRoomCompose />}
       </div>
 
-      <div className="space-y-0.5">
-        {conversations.map((conv) => {
-          const other = conv.otherParticipant
-          const hasUnread = conv.unreadCount > 0
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main column: Rooms + DMs */}
+        <div className="lg:col-span-2 space-y-6">
 
-          return (
-            <Link
-              key={conv.id}
-              href={`/messages/${conv.id}`}
-              className={`flex items-center gap-3 rounded-xl px-3 py-3 transition-colors ${
-                hasUnread
-                  ? 'bg-indigo-50/70 hover:bg-indigo-50'
-                  : 'hover:bg-gray-50'
-              }`}
-            >
-              {/* Avatar */}
-              <div className="shrink-0">
-                {other?.avatar_url ? (
-                  <img
-                    src={other.avatar_url}
-                    alt={other.display_name}
-                    className="w-10 h-10 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 text-sm font-semibold flex items-center justify-center select-none">
-                    {other ? getInitials(other.display_name) : '?'}
-                  </div>
-                )}
-              </div>
+          {/* Rooms */}
+          <section>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">
+                Rooms {totalRooms > 0 && <span className="text-gray-300 dark:text-gray-600">· {totalRooms}</span>}
+              </h2>
+            </div>
 
-              {/* Content */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2">
-                  <span
-                    className={`text-sm truncate ${
-                      hasUnread ? 'font-semibold text-gray-900' : 'font-medium text-gray-700'
-                    }`}
-                  >
-                    {other?.display_name ?? 'Unknown'}
-                  </span>
-                  {conv.lastMessage && (
-                    <span className="text-[11px] text-gray-400 shrink-0">
-                      {relativeTime(conv.lastMessage.created_at)}
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <p
-                    className={`text-xs truncate flex-1 ${
-                      hasUnread ? 'text-gray-700 font-medium' : 'text-gray-400'
-                    }`}
-                  >
-                    {conv.lastMessage
-                      ? conv.lastMessage.sender_id === myProfileId
-                        ? `You: ${conv.lastMessage.body}`
-                        : conv.lastMessage.body
-                      : 'No messages yet'}
-                  </p>
-                  {hasUnread && (
-                    <span className="shrink-0 w-2 h-2 rounded-full bg-indigo-500" />
-                  )}
-                </div>
+            {myRooms.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 p-8 text-center">
+                <Hash className="w-7 h-7 text-gray-300 dark:text-gray-700 mx-auto mb-2" />
+                <p className="text-sm text-gray-500 dark:text-gray-400">No rooms joined yet.</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {canCreateRoom ? 'Create a room above or browse discoverable ones below.' : 'Discover and join public rooms below.'}
+                </p>
               </div>
-            </Link>
-          )
-        })}
+            ) : (
+              <div className="space-y-1">
+                {myRooms.map(room => <RoomRow key={room.id} room={room} />)}
+              </div>
+            )}
+          </section>
+
+          {/* Direct Messages */}
+          <section>
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-3">
+              Direct messages {conversations.length > 0 && <span className="text-gray-300 dark:text-gray-600">· {conversations.length}</span>}
+            </h2>
+
+            {conversations.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 p-8 text-center">
+                <MessageSquare className="w-7 h-7 text-gray-300 dark:text-gray-700 mx-auto mb-2" />
+                <p className="text-sm text-gray-500 dark:text-gray-400">No conversations yet.</p>
+                <p className="text-xs text-gray-400 mt-1">Start one from any member&apos;s profile.</p>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {conversations.map(conv => <DMRow key={conv.id} conv={conv} myProfileId={myProfileId} />)}
+              </div>
+            )}
+          </section>
+        </div>
+
+        {/* Right sidebar: Discover rooms */}
+        <div className="space-y-4">
+          {discoverRooms.length > 0 && (
+            <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
+              <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800/50 flex items-center gap-1.5">
+                <Compass className="w-3.5 h-3.5 text-gray-400" />
+                <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Discover Rooms</h3>
+              </div>
+              <ul className="divide-y divide-gray-50 dark:divide-gray-800">
+                {discoverRooms.map(room => (
+                  <li key={room.id}>
+                    <Link
+                      href={`/messages/r/${room.id}`}
+                      className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                    >
+                      <Hash className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">{room.name}</p>
+                        <p className="text-[10px] text-gray-400">
+                          <Users className="w-2.5 h-2.5 inline mr-0.5 -mt-px" />
+                          {room.member_count}
+                        </p>
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
       </div>
     </div>
+  )
+}
+
+function RoomRow({ room }: { room: RoomRow }) {
+  return (
+    <Link
+      href={`/messages/r/${room.id}`}
+      className="flex items-center gap-3 rounded-xl px-3 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+    >
+      <div className="shrink-0 w-10 h-10 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center">
+        {room.visibility === 'private'
+          ? <Lock className="w-4 h-4 text-indigo-500" />
+          : <Hash className="w-4 h-4 text-indigo-500" />}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-sm font-semibold text-gray-900 dark:text-gray-50 truncate">{room.name}</span>
+          {room.last_message_at && (
+            <span className="text-[11px] text-gray-400 shrink-0">{relativeTime(room.last_message_at)}</span>
+          )}
+        </div>
+        <p className="text-xs text-gray-400 truncate">
+          <Users className="w-3 h-3 inline mr-1 -mt-px" />
+          {room.member_count} {room.member_count === 1 ? 'member' : 'members'}
+          {room.description && <> &middot; {room.description}</>}
+        </p>
+      </div>
+    </Link>
+  )
+}
+
+function DMRow({ conv, myProfileId }: { conv: ConversationRow; myProfileId: string }) {
+  const other = conv.otherParticipant
+  const hasUnread = conv.unreadCount > 0
+
+  return (
+    <Link
+      href={`/messages/${conv.id}`}
+      className={`flex items-center gap-3 rounded-xl px-3 py-3 transition-colors ${
+        hasUnread
+          ? 'bg-indigo-50/70 hover:bg-indigo-50 dark:bg-indigo-950/20 dark:hover:bg-indigo-950/30'
+          : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
+      }`}
+    >
+      <div className="shrink-0">
+        {other?.avatar_url ? (
+          <img src={other.avatar_url} alt={other.display_name} className="w-10 h-10 rounded-full object-cover" />
+        ) : (
+          <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-sm font-semibold flex items-center justify-center select-none">
+            {other ? getInitials(other.display_name) : '?'}
+          </div>
+        )}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between gap-2">
+          <span className={`text-sm truncate ${hasUnread ? 'font-semibold text-gray-900 dark:text-gray-50' : 'font-medium text-gray-700 dark:text-gray-300'}`}>
+            {other?.display_name ?? 'Unknown'}
+          </span>
+          {conv.lastMessage && (
+            <span className="text-[11px] text-gray-400 shrink-0">{relativeTime(conv.lastMessage.created_at)}</span>
+          )}
+        </div>
+        <div className="flex items-center gap-1.5 mt-0.5">
+          <p className={`text-xs truncate flex-1 ${hasUnread ? 'text-gray-700 dark:text-gray-300 font-medium' : 'text-gray-400'}`}>
+            {conv.lastMessage
+              ? conv.lastMessage.sender_id === myProfileId ? `You: ${conv.lastMessage.body}` : conv.lastMessage.body
+              : 'No messages yet'}
+          </p>
+          {hasUnread && <span className="shrink-0 w-2 h-2 rounded-full bg-indigo-500" />}
+        </div>
+      </div>
+    </Link>
   )
 }
