@@ -264,8 +264,6 @@ async function getUserStats(admin: AdminClient, profileId: string): Promise<User
     streakMap[s.streak_type] = s.current_count
   }
 
-  // invite_links is missing from remote schema (see Task #17); kept as
-  // loose shape until the migration is reapplied.
   type InviteLinkRow = { used_count: number | null }
   const totalReferrals = (inviteLinks.data ?? []).reduce(
     (sum, link) => sum + ((link as InviteLinkRow).used_count ?? 0), 0
