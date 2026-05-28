@@ -256,7 +256,7 @@ export default async function RootPage() {
           className="absolute inset-0 opacity-10 pointer-events-none"
           style={{
             background:
-              'radial-gradient(ellipse 60% 50% at 50% 50%, #4f46e5 0%, transparent 70%)',
+              'radial-gradient(ellipse 60% 50% at 50% 50%, var(--color-primary) 0%, transparent 70%)',
           }}
         />
         <div className="relative max-w-lg mx-auto">
