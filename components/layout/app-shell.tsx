@@ -23,6 +23,10 @@ import {
   SlidersHorizontal,
   Megaphone,
   UserPlus,
+  Menu,
+  X,
+  Gem,
+  Monitor,
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { NotificationBell } from '@/components/layout/notification-bell'
@@ -55,6 +59,8 @@ interface Profile {
   handle: string
   avatar_url: string | null
   community_role: CommunityRole
+  current_season_zaps?: number | null
+  lifetime_gems?: number | null
 }
 
 // ── Theme hook ────────────────────────────────────────────────────────────────
@@ -63,9 +69,9 @@ type Theme = 'light' | 'dark' | 'system'
 
 function useTheme() {
   const [theme, setThemeState] = useState<Theme>(() => {
-    if (typeof window === 'undefined') return 'system'
+    if (typeof window === 'undefined') return 'light'
     const saved = localStorage.getItem('theme') as Theme | null
-    return saved === 'dark' || saved === 'light' ? saved : 'system'
+    return saved === 'dark' || saved === 'light' || saved === 'system' ? saved : 'light'
   })
 
   function setTheme(next: Theme) {
@@ -78,7 +84,7 @@ function useTheme() {
       html.classList.remove('dark')
       localStorage.setItem('theme', 'light')
     } else {
-      localStorage.removeItem('theme')
+      localStorage.setItem('theme', 'system')
       html.classList.toggle('dark', window.matchMedia('(prefers-color-scheme: dark)').matches)
     }
   }
@@ -145,11 +151,15 @@ function ProfileCard({
 
 function AccountDropdown({
   profile,
+  profileHref,
+  role,
   themeLabel,
   ThemeIcon,
   cycleTheme,
 }: {
   profile: Profile
+  profileHref: string
+  role: CommunityRole
   themeLabel: string
   ThemeIcon: React.ElementType
   cycleTheme: () => void
@@ -165,18 +175,22 @@ function AccountDropdown({
     return () => document.removeEventListener('mousedown', handleOutside)
   }, [])
 
+  const showCrewLink = role === 'crew' || role === 'host' || role === 'guide' || role === 'mentor' || role === 'janitor'
+  const showAdminLink = role === 'host' || role === 'guide' || role === 'mentor' || role === 'janitor'
+
   return (
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
         aria-label="Account menu"
+        aria-expanded={open}
         className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-[11px] font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors select-none shrink-0"
       >
         {getInitials(profile.display_name)}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-56 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-xl shadow-black/5 py-1 z-50">
+        <div className="absolute right-0 top-full mt-2 w-60 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-xl shadow-black/5 py-1 z-50 max-h-[80vh] overflow-y-auto">
 
           {/* Header */}
           <div className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-800">
@@ -186,10 +200,57 @@ function AccountDropdown({
             <p className="text-sm font-semibold text-gray-900 dark:text-gray-50 truncate">
               {profile.display_name}
             </p>
+            <p className="text-xs text-gray-400 truncate">@{profile.handle}</p>
           </div>
 
-          {/* Account links */}
+          {/* Identity & people links */}
           <div className="py-1">
+            <Link
+              href={profileHref}
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            >
+              <User className="w-4 h-4 text-gray-400" />
+              Profile
+            </Link>
+            <Link
+              href="/friends"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            >
+              <UserPlus className="w-4 h-4 text-gray-400" />
+              Friends
+            </Link>
+          </div>
+
+          {/* Crew + Admin — role-gated */}
+          {(showCrewLink || showAdminLink) && (
+            <div className="border-t border-gray-100 dark:border-gray-800 py-1">
+              {showCrewLink && (
+                <Link
+                  href="/crew"
+                  onClick={() => setOpen(false)}
+                  className="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                >
+                  <Zap className="w-4 h-4 text-amber-500" />
+                  Crew Dashboard
+                </Link>
+              )}
+              {showAdminLink && (
+                <Link
+                  href="/admin"
+                  onClick={() => setOpen(false)}
+                  className="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                >
+                  <Shield className="w-4 h-4 text-amber-600" />
+                  Admin
+                </Link>
+              )}
+            </div>
+          )}
+
+          {/* Account links */}
+          <div className="border-t border-gray-100 dark:border-gray-800 py-1">
             <Link
               href="/settings"
               onClick={() => setOpen(false)}
@@ -219,7 +280,7 @@ function AccountDropdown({
           {/* Theme */}
           <div className="border-t border-gray-100 dark:border-gray-800 py-1">
             <button
-              onClick={() => { cycleTheme(); setOpen(false) }}
+              onClick={() => { cycleTheme() }}
               className="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 w-full text-left transition-colors"
             >
               <ThemeIcon className="w-4 h-4 text-gray-400" />
@@ -245,6 +306,222 @@ function AccountDropdown({
   )
 }
 
+// ── Shared nav items (used by desktop sidebar and mobile drawer) ──────────────
+
+function NavLinkList({
+  isActive,
+  role,
+  onNavigate,
+}: {
+  isActive: (href: string) => boolean
+  role: CommunityRole
+  onNavigate?: () => void
+}) {
+  const showCrew = role === 'crew' || role === 'host' || role === 'guide' || role === 'mentor' || role === 'janitor'
+  const showAdmin = role === 'host' || role === 'guide' || role === 'mentor' || role === 'janitor'
+
+  return (
+    <>
+      {SIDEBAR_NAV.map(({ href, label, Icon }) => {
+        const active = isActive(href)
+        return (
+          <Link
+            key={href}
+            href={href}
+            onClick={onNavigate}
+            className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              active
+                ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300'
+                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-50'
+            }`}
+          >
+            <Icon
+              className={`w-[18px] h-[18px] shrink-0 ${
+                active ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400 dark:text-gray-600'
+              }`}
+              strokeWidth={active ? 2.5 : 2}
+            />
+            {label}
+          </Link>
+        )
+      })}
+
+      {showCrew && (
+        <Link
+          href="/crew"
+          onClick={onNavigate}
+          className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+            isActive('/crew')
+              ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300'
+              : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-50'
+          }`}
+        >
+          <Zap
+            className={`w-[18px] h-[18px] shrink-0 ${
+              isActive('/crew') ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400 dark:text-gray-600'
+            }`}
+            strokeWidth={isActive('/crew') ? 2.5 : 2}
+          />
+          Crew
+        </Link>
+      )}
+
+      {showAdmin && (
+        <Link
+          href="/admin"
+          onClick={onNavigate}
+          className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+            isActive('/admin')
+              ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300'
+              : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-50'
+          }`}
+        >
+          <Shield
+            className={`w-[18px] h-[18px] shrink-0 ${
+              isActive('/admin') ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400 dark:text-gray-600'
+            }`}
+            strokeWidth={isActive('/admin') ? 2.5 : 2}
+          />
+          Admin
+        </Link>
+      )}
+    </>
+  )
+}
+
+// ── Mobile left drawer ───────────────────────────────────────────────────────
+
+function MobileLeftDrawer({
+  open,
+  onClose,
+  role,
+  isActive,
+}: {
+  open: boolean
+  onClose: () => void
+  role: CommunityRole
+  isActive: (href: string) => boolean
+}) {
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    if (open) window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open, onClose])
+
+  return (
+    <div
+      className={`md:hidden fixed inset-0 z-50 ${open ? 'pointer-events-auto' : 'pointer-events-none'}`}
+      aria-hidden={!open}
+    >
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        className={`absolute inset-0 bg-black/40 transition-opacity duration-200 ${
+          open ? 'opacity-100' : 'opacity-0'
+        }`}
+      />
+
+      {/* Panel */}
+      <aside
+        role="dialog"
+        aria-label="Navigation"
+        className={`absolute inset-y-0 left-0 w-72 max-w-[80vw] bg-white dark:bg-gray-900 shadow-2xl flex flex-col transform transition-transform duration-200 ease-out ${
+          open ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <div className="h-14 shrink-0 flex items-center justify-between px-4 border-b border-gray-200/60 dark:border-gray-800/60">
+          <Link href="/feed" onClick={onClose} className="flex items-center">
+            <img src="/frequency-logo.png" alt="Frequency" className="h-7 w-auto dark:invert" />
+          </Link>
+          <button
+            onClick={onClose}
+            aria-label="Close navigation"
+            className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
+          <NavLinkList isActive={isActive} role={role} onNavigate={onClose} />
+        </nav>
+      </aside>
+    </div>
+  )
+}
+
+// ── Mobile profile bottom bar ────────────────────────────────────────────────
+// Left tap → /settings · Right tap → /crew (gamified dashboard).
+
+function ProfileBottomBar({
+  profile,
+  badge,
+}: {
+  profile: Profile
+  badge: { label: string; cls: string }
+}) {
+  const seasonZaps = profile.current_season_zaps ?? 0
+  const lifetimeGems = profile.lifetime_gems ?? 0
+
+  return (
+    <nav className="md:hidden fixed inset-x-0 bottom-0 z-40 flex h-16 items-stretch bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-t border-gray-200/60 dark:border-gray-800/60">
+      {/* Profile — tap to open settings */}
+      <Link
+        href="/settings"
+        aria-label="Open settings"
+        className="flex flex-1 min-w-0 items-center gap-2.5 px-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+      >
+        {profile.avatar_url ? (
+          <img
+            src={profile.avatar_url}
+            alt={profile.display_name}
+            className="w-9 h-9 rounded-full object-cover shrink-0"
+          />
+        ) : (
+          <div className="w-9 h-9 rounded-full bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs font-bold flex items-center justify-center select-none shrink-0">
+            {getInitials(profile.display_name)}
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-semibold text-gray-900 dark:text-gray-50 truncate leading-tight">
+            {profile.display_name}
+          </p>
+          <span
+            className={`inline-block mt-0.5 text-[9px] px-1.5 py-px rounded-full font-medium ${badge.cls}`}
+          >
+            {badge.label}
+          </span>
+        </div>
+      </Link>
+
+      {/* Divider */}
+      <div className="w-px bg-gray-200 dark:bg-gray-800 my-3" aria-hidden="true" />
+
+      {/* Rewards — tap to open gamified dashboard */}
+      <Link
+        href="/crew"
+        aria-label="Open rewards dashboard"
+        className="flex items-center gap-3 px-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+      >
+        <div className="flex items-center gap-1" title="Bolts (this season)">
+          <Zap className="w-4 h-4 text-amber-500" strokeWidth={2.5} />
+          <span className="text-sm font-bold text-gray-900 dark:text-gray-50 tabular-nums">
+            {seasonZaps.toLocaleString()}
+          </span>
+        </div>
+        <div className="flex items-center gap-1" title="Gems">
+          <Gem className="w-4 h-4 text-emerald-500" strokeWidth={2.5} />
+          <span className="text-sm font-bold text-gray-900 dark:text-gray-50 tabular-nums">
+            {lifetimeGems.toLocaleString()}
+          </span>
+        </div>
+      </Link>
+    </nav>
+  )
+}
+
 // ── App shell ─────────────────────────────────────────────────────────────────
 
 export default function AppShell({
@@ -264,6 +541,14 @@ export default function AppShell({
   const badge = ROLE_BADGE[role] ?? ROLE_BADGE.member
   const profileHref = `/people/${profile.handle}`
   const { theme, setTheme } = useTheme()
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [lastPath, setLastPath] = useState(pathname)
+
+  // Close mobile drawer when the route changes (covers browser back/forward).
+  if (lastPath !== pathname) {
+    setLastPath(pathname)
+    if (drawerOpen) setDrawerOpen(false)
+  }
 
   // ⌘K / Ctrl+K → search
   useEffect(() => {
@@ -288,8 +573,6 @@ export default function AppShell({
     return pathname === href || pathname.startsWith(href + '/')
   }
 
-  const profileActive = pathname === profileHref || pathname.startsWith('/people/')
-
   // Hide right sidebar only where it would crowd or distract
   // /settings — narrow focused forms
   // /messages/<id> — chat thread needs full width; the index keeps the sidebar
@@ -304,7 +587,7 @@ export default function AppShell({
     else setTheme('system')
   }
 
-  const ThemeIcon = theme === 'dark' ? Moon : Sun
+  const ThemeIcon = theme === 'dark' ? Moon : theme === 'system' ? Monitor : Sun
   const themeLabel =
     theme === 'dark' ? 'Dark mode' : theme === 'light' ? 'Light mode' : 'System theme'
 
@@ -314,8 +597,18 @@ export default function AppShell({
       {/* ── Top bar ───────────────────────────────────────── */}
       <header className="h-14 shrink-0 flex items-stretch bg-white/90 dark:bg-gray-900/95 backdrop-blur-sm border-b border-gray-200/60 dark:border-gray-800/60 z-30">
 
+        {/* Hamburger — mobile only */}
+        <button
+          onClick={() => setDrawerOpen(true)}
+          aria-label="Open navigation"
+          aria-expanded={drawerOpen}
+          className="md:hidden flex items-center justify-center px-4 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+        >
+          <Menu className="w-6 h-6" />
+        </button>
+
         {/* Logo — full-width header, no vertical divider */}
-        <div className="flex items-center px-5">
+        <div className="flex items-center pl-1 pr-3 md:px-5">
           <Link href="/feed" className="flex items-center">
             <img
               src="/frequency-logo.png"
@@ -358,6 +651,8 @@ export default function AppShell({
           {/* Account dropdown — initials, admin/account layer */}
           <AccountDropdown
             profile={profile}
+            profileHref={profileHref}
+            role={role}
             themeLabel={themeLabel}
             ThemeIcon={ThemeIcon}
             cycleTheme={cycleTheme}
@@ -373,68 +668,7 @@ export default function AppShell({
 
           {/* Primary nav */}
           <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-            {SIDEBAR_NAV.map(({ href, label, Icon }) => {
-              const active = isActive(href)
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    active
-                      ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300'
-                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-50'
-                  }`}
-                >
-                  <Icon
-                    className={`w-[18px] h-[18px] shrink-0 ${
-                      active ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400 dark:text-gray-600'
-                    }`}
-                    strokeWidth={active ? 2.5 : 2}
-                  />
-                  {label}
-                </Link>
-              )
-            })}
-
-            {/* Crew — crew+ */}
-            {(role === 'crew' || role === 'host' || role === 'guide' || role === 'mentor' || role === 'janitor') && (
-              <Link
-                href="/crew"
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  pathname === '/crew'
-                    ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300'
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-50'
-                }`}
-              >
-                <Zap
-                  className={`w-[18px] h-[18px] shrink-0 ${
-                    pathname === '/crew' ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400 dark:text-gray-600'
-                  }`}
-                  strokeWidth={pathname === '/crew' ? 2.5 : 2}
-                />
-                Crew
-              </Link>
-            )}
-
-            {/* Admin — host+ */}
-            {(role === 'host' || role === 'guide' || role === 'mentor' || role === 'janitor') && (
-              <Link
-                href="/admin"
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  pathname.startsWith('/admin')
-                    ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300'
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-50'
-                }`}
-              >
-                <Shield
-                  className={`w-[18px] h-[18px] shrink-0 ${
-                    pathname.startsWith('/admin') ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400 dark:text-gray-600'
-                  }`}
-                  strokeWidth={pathname.startsWith('/admin') ? 2.5 : 2}
-                />
-                Admin
-              </Link>
-            )}
+            <NavLinkList isActive={isActive} role={role} />
           </nav>
 
           {/* Upgrade to Crew CTA — members only (not janitor) */}
@@ -482,32 +716,17 @@ export default function AppShell({
         </div>
       </div>
 
-      {/* ── Mobile bottom nav ─────────────────────────────── */}
-      <nav className="md:hidden fixed inset-x-0 bottom-0 z-40 flex h-16 items-stretch bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-t border-gray-200/60 dark:border-gray-800/60">
-        {(
-          [
-            { href: '/feed',     label: 'Feed',     Icon: Home },
-            { href: '/circles',  label: 'Circles',  Icon: Users },
-            { href: '/events',   label: 'Events',   Icon: CalendarDays },
-            { href: '/messages', label: 'Messages', Icon: MessageSquare },
-            { href: '/settings', label: 'Settings', Icon: Settings },
-          ] as const
-        ).map(({ href, label, Icon }) => {
-          const active = href === profileHref ? profileActive : isActive(href)
-          return (
-            <Link
-              key={label}
-              href={href}
-              className={`flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors ${
-                active ? 'text-indigo-600' : 'text-gray-400 dark:text-gray-600'
-              }`}
-            >
-              <Icon className="w-5 h-5" strokeWidth={active ? 2.5 : 2} />
-              {label}
-            </Link>
-          )
-        })}
-      </nav>
+      {/* ── Mobile bottom bar ─────────────────────────────── */}
+      {/* Profile (→ /settings) · Bolts + Gems (→ /crew) */}
+      <ProfileBottomBar profile={profile} badge={badge} />
+
+      {/* ── Mobile left drawer ────────────────────────────── */}
+      <MobileLeftDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        role={role}
+        isActive={isActive}
+      />
 
     </div>
   )
