@@ -37,8 +37,19 @@ type PostPreviewRow = {
     display_name: string
     handle: string
     avatar_url: string | null
-    community_role: string
+    community_role?: string
   } | null
+}
+
+// Flat shape returned by the public_posts RPC (redacted author columns).
+type PublicPostRow = {
+  id: string
+  body: string
+  created_at: string
+  media_urls: string[] | null
+  author_display_name: string | null
+  author_handle: string | null
+  author_avatar_url: string | null
 }
 
 // Role chips on the splash mirror the in-app rank palette so the look stays
@@ -58,37 +69,35 @@ export default async function RootPage() {
 
   if (user) redirect('/feed')
 
-  // Anon reads on public.posts (visibility='public') and public.events
-  // (non-cancelled, future) are now allowed via the policies added in
-  // 20240204000000_public_landing_reads.sql. Counts go through SECURITY
-  // DEFINER RPCs so we don't have to open profiles/circles to anon SELECT.
+  // All anon reads go through SECURITY DEFINER RPCs (20240211000000_public_
+  // discover_reads.sql) that return only safe columns. This is deliberate:
+  //   • public_events never returns events.location — only the circle's city.
+  //   • public_posts returns a redacted author shape (anon has no SELECT on
+  //     profiles), so the old author join silently returned null here.
+  // Counts come from the public_*_count RPCs added in 20240204000000.
   const [postsResult, memberCountResult, eventsResult, circleCountResult] = await Promise.all([
-    supabase
-      .from('posts')
-      .select(
-        `id, body, created_at, media_urls,
-         author:profiles!author_id ( display_name, handle, avatar_url, community_role )`
-      )
-      .eq('visibility', 'public')
-      .is('parent_id', null)
-      .is('hidden_at', null)
-      .order('created_at', { ascending: false })
-      .limit(4),
+    supabase.rpc('public_posts', { _limit: 4 }),
     supabase.rpc('public_member_count'),
-    supabase
-      .from('events')
-      .select('id, title, starts_at, location, slug')
-      .eq('is_cancelled', false)
-      .gte('starts_at', new Date().toISOString())
-      .order('starts_at', { ascending: true })
-      .limit(3),
+    supabase.rpc('public_events', { _limit: 3 }),
     supabase.rpc('public_active_circle_count'),
   ])
 
-  const posts = (postsResult.data ?? []) as unknown as PostPreviewRow[]
+  const posts: PostPreviewRow[] = ((postsResult.data ?? []) as PublicPostRow[]).map((r) => ({
+    id: r.id,
+    body: r.body,
+    created_at: r.created_at,
+    media_urls: r.media_urls ?? [],
+    author: r.author_display_name
+      ? {
+          display_name: r.author_display_name,
+          handle: r.author_handle ?? '',
+          avatar_url: r.author_avatar_url,
+        }
+      : null,
+  }))
   const memberCount = (memberCountResult.data as number | null) ?? 0
   const circleCount = (circleCountResult.data as number | null) ?? 0
-  const upcomingEvents = (eventsResult.data ?? []) as { id: string; title: string; starts_at: string; location: string | null; slug: string }[]
+  const upcomingEvents = (eventsResult.data ?? []) as { id: string; title: string; starts_at: string; city: string | null; slug: string }[]
 
   return (
     <>
@@ -258,7 +267,7 @@ export default async function RootPage() {
                       <p className="text-sm font-semibold text-text truncate">{event.title}</p>
                       <p className="text-xs text-subtle mt-0.5">
                         {dateStr}
-                        {event.location && <> &middot; {event.location}</>}
+                        {event.city && <> &middot; {event.city}</>}
                       </p>
                     </div>
                     <Link
