@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { Suspense } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getInitials, relativeTime } from '@/lib/utils'
@@ -189,7 +190,7 @@ async function ActiveMembersWidget({ profileId, circleIds }: { profileId: string
             >
               <div className="relative shrink-0">
                 {m.profile.avatar_url ? (
-                  <img
+                  <Image width={28} height={28}
                     src={m.profile.avatar_url}
                     alt={m.profile.display_name}
                     className="w-7 h-7 rounded-full object-cover"
@@ -362,7 +363,7 @@ async function LeaderboardWidget() {
             >
               <span className={`text-xs font-bold w-4 shrink-0 tabular-nums ${rankColors[i]}`}>{i + 1}</span>
               {member.avatar_url ? (
-                <img src={member.avatar_url} alt={member.display_name} className="w-6 h-6 rounded-full object-cover shrink-0" />
+                <Image width={24} height={24} src={member.avatar_url} alt={member.display_name} className="w-6 h-6 rounded-full object-cover shrink-0" />
               ) : (
                 <div className="w-6 h-6 rounded-full bg-border-strong flex items-center justify-center text-[10px] font-bold text-muted shrink-0">
                   {getInitials(member.display_name ?? '')}

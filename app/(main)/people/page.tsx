@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -180,7 +181,7 @@ export default async function DirectoryPage({
                 className="group flex items-start gap-3 rounded-2xl border border-border bg-surface shadow-sm p-4 hover:border-primary-bg dark:hover:border-primary hover:shadow-md transition-all"
               >
                 {p.avatar_url ? (
-                  <img
+                  <Image width={40} height={40}
                     src={p.avatar_url}
                     alt={p.display_name}
                     className="w-10 h-10 rounded-full object-cover shrink-0"

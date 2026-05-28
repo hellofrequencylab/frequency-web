@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import Image from 'next/image'
 import Link from 'next/link'
 import { Zap, TrendingUp, Award, Flame, Gem } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -203,7 +204,7 @@ export default async function LeaderboardPage({
 
                 <Link href={`/people/${entry.handle}`} className="flex items-center gap-2 min-w-0">
                   {entry.avatarUrl ? (
-                    <img src={entry.avatarUrl} alt={entry.displayName} className="w-7 h-7 rounded-full object-cover shrink-0" />
+                    <Image width={28} height={28} src={entry.avatarUrl} alt={entry.displayName} className="w-7 h-7 rounded-full object-cover shrink-0" />
                   ) : (
                     <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-[10px] font-bold flex items-center justify-center shrink-0">
                       {getInitials(entry.displayName)}

@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useState, useTransition, useRef } from 'react'
 import Link from 'next/link'
 import { Loader2, Trash2, MessageCircle } from 'lucide-react'
@@ -83,7 +84,7 @@ export function CommentSection({
           {comments.map(c => (
             <div key={c.id} className="flex gap-3 group">
               {c.author.avatar_url ? (
-                <img src={c.author.avatar_url} alt={c.author.display_name} className="w-7 h-7 rounded-full object-cover shrink-0 mt-0.5" />
+                <Image width={28} height={28} src={c.author.avatar_url} alt={c.author.display_name} className="w-7 h-7 rounded-full object-cover shrink-0 mt-0.5" />
               ) : (
                 <div className="w-7 h-7 rounded-full bg-border-strong flex items-center justify-center text-[10px] font-bold text-muted shrink-0 mt-0.5 select-none">
                   {getInitials(c.author.display_name)}

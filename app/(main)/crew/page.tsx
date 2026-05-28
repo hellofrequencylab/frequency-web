@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import Image from 'next/image'
 import Link from 'next/link'
 import { Star, CheckCircle, Zap, Award, Flame, Target, Map, TrendingUp, Gem, ShoppingBag } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -394,7 +395,7 @@ export default async function CrewPage() {
                       <span className={`text-sm font-bold w-5 shrink-0 ${rankColor}`}>{i + 1}</span>
 
                       {member.avatarUrl ? (
-                        <img src={member.avatarUrl} alt={member.displayName} className="w-7 h-7 rounded-full object-cover shrink-0" />
+                        <Image width={28} height={28} src={member.avatarUrl} alt={member.displayName} className="w-7 h-7 rounded-full object-cover shrink-0" />
                       ) : (
                         <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none">
                           {getInitials(member.displayName)}

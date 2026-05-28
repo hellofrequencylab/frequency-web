@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -158,7 +159,7 @@ export default async function ProfilePage({
           <div className="flex items-end justify-between -mt-12 mb-4">
             <div className="shrink-0">
               {profile.avatar_url ? (
-                <img
+                <Image width={96} height={96}
                   src={profile.avatar_url}
                   alt={profile.display_name}
                   className="w-24 h-24 rounded-full object-cover ring-4 ring-surface"

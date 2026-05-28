@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import {
   ChevronDown,
   Users,
@@ -13,6 +14,7 @@ import {
   HandHeart,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
+import { getLandingData } from '@/lib/landing'
 import { SiteHeader } from '@/components/layout/site-header'
 import { getInitials, relativeTime } from '@/lib/utils'
 import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION } from '@/lib/site'
@@ -58,37 +60,13 @@ export default async function RootPage() {
 
   if (user) redirect('/feed')
 
-  // Anon reads on public.posts (visibility='public') and public.events
-  // (non-cancelled, future) are now allowed via the policies added in
-  // 20240204000000_public_landing_reads.sql. Counts go through SECURITY
-  // DEFINER RPCs so we don't have to open profiles/circles to anon SELECT.
-  const [postsResult, memberCountResult, eventsResult, circleCountResult] = await Promise.all([
-    supabase
-      .from('posts')
-      .select(
-        `id, body, created_at, media_urls,
-         author:profiles!author_id ( display_name, handle, avatar_url, community_role )`
-      )
-      .eq('visibility', 'public')
-      .is('parent_id', null)
-      .is('hidden_at', null)
-      .order('created_at', { ascending: false })
-      .limit(4),
-    supabase.rpc('public_member_count'),
-    supabase
-      .from('events')
-      .select('id, title, starts_at, location, slug')
-      .eq('is_cancelled', false)
-      .gte('starts_at', new Date().toISOString())
-      .order('starts_at', { ascending: true })
-      .limit(3),
-    supabase.rpc('public_active_circle_count'),
-  ])
-
-  const posts = (postsResult.data ?? []) as unknown as PostPreviewRow[]
-  const memberCount = (memberCountResult.data as number | null) ?? 0
-  const circleCount = (circleCountResult.data as number | null) ?? 0
-  const upcomingEvents = (eventsResult.data ?? []) as { id: string; title: string; starts_at: string; location: string | null; slug: string }[]
+  // Public landing data is identical for every signed-out visitor, so it's
+  // fetched through a 60s `unstable_cache` (see lib/landing.ts) rather than
+  // re-querying Postgres on each hit. This page stays dynamic for the
+  // logged-in redirect above, but the heavy reads are served from cache.
+  const { posts: landingPosts, memberCount, circleCount, upcomingEvents } =
+    await getLandingData()
+  const posts = landingPosts as unknown as PostPreviewRow[]
 
   return (
     <>
@@ -346,7 +324,7 @@ export default async function RootPage() {
       <footer className="bg-marketing-canvas border-t border-border/60 px-6 py-10">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <img src="/frequency-logo.png" alt="Frequency" className="h-5 w-auto opacity-40" />
+            <Image src="/frequency-logo.png" alt="Frequency" width={963} height={170} className="h-5 w-auto opacity-40" />
             <span className="text-xs text-muted">&copy; {new Date().getFullYear()} Frequency Labs Holdings</span>
           </div>
           <div className="flex items-center gap-8 text-xs text-muted">
@@ -441,9 +419,11 @@ function PostPreviewCard({ post }: { post: PostPreviewRow }) {
         {/* Author row */}
         <div className="flex items-start gap-3 mb-3">
           {a?.avatar_url ? (
-            <img
+            <Image
               src={a.avatar_url}
               alt={a.display_name}
+              width={40}
+              height={40}
               className="w-10 h-10 rounded-full object-cover shrink-0"
             />
           ) : (
@@ -477,10 +457,12 @@ function PostPreviewCard({ post }: { post: PostPreviewRow }) {
         {/* Media */}
         {post.media_urls?.length > 0 && (
           <div className="rounded-xl overflow-hidden border border-border">
-            <img
+            <Image
               src={post.media_urls[0]}
               alt="Post attachment"
-              loading="lazy"
+              width={1024}
+              height={768}
+              sizes="(max-width: 768px) 100vw, 640px"
               className="w-full max-h-72 object-cover"
             />
           </div>

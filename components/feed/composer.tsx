@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useState, useTransition, useRef, useEffect, useCallback } from 'react'
 import { Megaphone, ImagePlus, X } from 'lucide-react'
 import { createPost } from '@/app/(main)/feed/actions'
@@ -251,7 +252,7 @@ export function Composer({
               }`}
             >
               {p.avatar_url ? (
-                <img src={p.avatar_url} alt={p.display_name} className="w-6 h-6 rounded-full object-cover shrink-0" />
+                <Image width={24} height={24} src={p.avatar_url} alt={p.display_name} className="w-6 h-6 rounded-full object-cover shrink-0" />
               ) : (
                 <div className="w-6 h-6 rounded-full bg-primary-bg text-primary-strong text-[10px] font-bold flex items-center justify-center shrink-0">
                   {getInitials(p.display_name)}

@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { User, Settings, LogOut, ChevronDown } from 'lucide-react'
@@ -66,7 +67,7 @@ export function UserMenu({ profile }: { profile: UserMenuProfile | null }) {
         aria-label="User menu"
       >
         {profile.avatar_url ? (
-          <img
+          <Image width={28} height={28}
             src={profile.avatar_url}
             alt={profile.display_name}
             className="w-7 h-7 rounded-full object-cover"

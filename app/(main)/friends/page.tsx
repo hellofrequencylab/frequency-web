@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { UserPlus, Users } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -184,8 +185,7 @@ function FriendRow({
   return (
     <div className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3">
       {profile.avatar_url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={profile.avatar_url} alt={profile.display_name} className="w-9 h-9 rounded-full object-cover shrink-0" />
+        <Image src={profile.avatar_url} alt={profile.display_name} width={36} height={36} className="w-9 h-9 rounded-full object-cover shrink-0" />
       ) : (
         <div className="w-9 h-9 rounded-full bg-primary-bg text-primary-strong text-sm font-semibold flex items-center justify-center shrink-0">
           {getInitials(profile.display_name)}

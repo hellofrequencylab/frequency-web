@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { Send, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -117,7 +118,7 @@ export function RoomThread({
               <div key={m.id} className={`flex gap-3 ${showAuthor ? 'mt-3' : ''}`}>
                 {showAuthor && a ? (
                   a.avatar_url ? (
-                    <img src={a.avatar_url} alt={a.display_name} className="w-9 h-9 rounded-full object-cover shrink-0" />
+                    <Image width={36} height={36} src={a.avatar_url} alt={a.display_name} className="w-9 h-9 rounded-full object-cover shrink-0" />
                   ) : (
                     <div className="w-9 h-9 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none">
                       {getInitials(a.display_name)}
