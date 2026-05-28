@@ -48,11 +48,11 @@ export function AdminCreateMenu({ role }: CreateMenuProps) {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(v => !v)}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors"
+        className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors whitespace-nowrap"
       >
-        <Plus className="w-3.5 h-3.5" />
+        <Plus className="w-4 h-4" />
         Create
-        <ChevronDown className="w-3 h-3" />
+        <ChevronDown className="w-3.5 h-3.5" />
       </button>
 
       {open && (

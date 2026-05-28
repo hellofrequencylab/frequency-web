@@ -84,7 +84,7 @@ export default async function DirectoryPage({
     <div>
 
       {/* Header */}
-      <div className="flex items-start justify-between gap-4 mb-6">
+      <div className="flex items-end justify-between gap-4 mb-6">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Globe className="w-5 h-5 text-indigo-500" />

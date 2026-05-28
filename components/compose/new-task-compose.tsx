@@ -10,7 +10,7 @@ type TaskType = typeof TASK_TYPES[number]
 
 export function NewTaskCompose({
   buttonLabel = 'New Task',
-  buttonClass = 'inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors',
+  buttonClass = 'inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors whitespace-nowrap',
 }: {
   buttonLabel?: string
   buttonClass?: string
@@ -50,7 +50,7 @@ export function NewTaskCompose({
   return (
     <>
       <button onClick={() => setOpen(true)} className={buttonClass}>
-        <Plus className="w-3.5 h-3.5" />
+        <Plus className="w-4 h-4" />
         {buttonLabel}
       </button>
 

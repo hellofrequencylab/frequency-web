@@ -96,7 +96,7 @@ export default async function AdminEventsPage() {
 
   return (
     <div>
-      <div className="flex items-start justify-between gap-4 mb-6">
+      <div className="flex items-end justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Events</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">

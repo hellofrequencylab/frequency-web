@@ -7,7 +7,7 @@ import { CreateModal, cmInput, cmLabel } from '@/components/create-modal'
 export function InviteMemberCompose({
   inviterName,
   buttonLabel = 'Invite Member',
-  buttonClass = 'inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors',
+  buttonClass = 'inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors whitespace-nowrap',
 }: {
   inviterName: string
   buttonLabel?: string
@@ -39,7 +39,7 @@ export function InviteMemberCompose({
   return (
     <>
       <button onClick={() => setOpen(true)} className={buttonClass}>
-        <UserPlus className="w-3.5 h-3.5" />
+        <UserPlus className="w-4 h-4" />
         {buttonLabel}
       </button>
 

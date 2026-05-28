@@ -175,8 +175,13 @@ export default async function EventsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Events</h1>
+      <div className="flex items-end justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-1">Events</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed max-w-lg">
+            Group rides, gatherings, and meetups happening in your community. RSVP to see who is going and add events to your calendar.
+          </p>
+        </div>
         {isCrew && <EventCompose groups={myCircles} />}
       </div>
 
