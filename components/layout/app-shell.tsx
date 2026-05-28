@@ -509,7 +509,13 @@ function ProfileBottomBar({
   const rank = ROLE_RANK[role]
 
   return (
-    <nav className="md:hidden fixed inset-x-0 bottom-0 z-40 flex h-16 items-stretch bg-surface/95 backdrop-blur-sm border-t border-border">
+    <nav
+      className="md:hidden fixed inset-x-0 bottom-0 z-40 flex items-stretch bg-surface/95 backdrop-blur-sm border-t border-border"
+      style={{
+        height: 'calc(4rem + env(safe-area-inset-bottom))',
+        paddingBottom: 'env(safe-area-inset-bottom)',
+      }}
+    >
       {/* Profile — tap to open settings */}
       <Link
         href="/settings"
@@ -750,7 +756,7 @@ export default function AppShell({
         <div className="flex flex-1 min-h-0 min-w-0 overflow-hidden">
 
           {/* Page content */}
-          <main className="flex-1 overflow-y-auto pb-16 md:pb-0 min-w-0">
+          <main className="flex-1 overflow-y-auto pb-[calc(4rem_+_env(safe-area-inset-bottom))] md:pb-0 min-w-0">
             <div className="w-full px-6 py-6">
               {children}
             </div>
