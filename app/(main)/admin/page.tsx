@@ -54,9 +54,9 @@ export default async function AdminPage() {
       <div className="flex items-end justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-text mb-1">Overview</h1>
-          <p className="text-sm text-muted">
+          <p className="text-sm text-muted leading-relaxed max-w-2xl">
             {role === 'janitor' ? (
-              <span className="font-medium text-signal-strong">Janitor, full platform access</span>
+              <span className="font-medium text-signal-strong">Janitor, full platform access.</span>
             ) : (
               <>Scoped to your <span className="font-medium capitalize">{role}</span> level.</>
             )}

@@ -308,7 +308,7 @@ export function ProfileForm({
         <button
           type="submit"
           disabled={!canSave}
-          className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-40 transition-colors"
+          className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-40 transition-colors"
         >
           {isPending || uploading ? (
             <Loader2 className="w-4 h-4 animate-spin" />

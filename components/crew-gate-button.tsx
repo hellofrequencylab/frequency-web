@@ -23,7 +23,7 @@ export function CrewGateButton({ isCrew, label, buttonClassName, children }: Cre
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={buttonClassName ?? 'inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover transition-colors'}
+        className={buttonClassName ?? 'inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors'}
       >
         <Lock className="w-3.5 h-3.5" />
         {label}

@@ -57,10 +57,10 @@ export default async function FeedPage({
     <div className="max-w-2xl mx-auto w-full">
 
       {/* Header */}
-      <div className="mb-7 flex items-start justify-between gap-4">
+      <div className="flex items-end justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-text">Feed</h1>
-          <p className="text-sm text-subtle mt-1">
+          <h1 className="text-2xl font-bold text-text mb-1">Feed</h1>
+          <p className="text-sm text-muted leading-relaxed max-w-2xl">
             {hasCircle ? "Here's what your circles are up to right now." : "What's happening across the community."}
           </p>
         </div>
