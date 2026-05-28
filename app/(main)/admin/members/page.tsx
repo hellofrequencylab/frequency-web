@@ -37,6 +37,7 @@ export default async function AdminMembersPage() {
       current_season_zaps,
       nexus_regions!nexus_region_id ( name )
     `)
+    .eq('is_system', false)
     .order('created_at', { ascending: false })
     .limit(200)
 

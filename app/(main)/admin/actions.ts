@@ -115,14 +115,23 @@ export async function deleteUserAccount(profileId: string) {
   const admin = createAdminClient()
   const { data: profile } = await admin
     .from('profiles')
-    .select('auth_user_id')
+    .select('auth_user_id, is_system')
     .eq('id', profileId)
     .maybeSingle()
-  if (!profile?.auth_user_id) throw new Error('Profile not found')
+  if (!profile) throw new Error('Profile not found')
+  if (profile.is_system) throw new Error('The system account cannot be deleted.')
 
   await admin.from('profiles').update({ is_active: false }).eq('id', profileId)
-  const { error } = await admin.auth.admin.deleteUser(profile.auth_user_id)
-  if (error) throw new Error(error.message)
+
+  if (profile.auth_user_id) {
+    const { error } = await admin.auth.admin.deleteUser(profile.auth_user_id)
+    if (error) throw new Error(error.message)
+  } else {
+    // No linked auth user (e.g. an imported profile): delete the row directly.
+    // FKs to profiles now cascade or set null, so this succeeds.
+    const { error } = await admin.from('profiles').delete().eq('id', profileId)
+    if (error) throw new Error(error.message)
+  }
 
   revalidatePath('/admin')
   revalidatePath('/admin/members')
