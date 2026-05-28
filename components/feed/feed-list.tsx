@@ -22,10 +22,6 @@ interface RawPost {
     handle: string
     avatar_url: string | null
     community_role: string
-    current_season_rank: string | null
-    current_streak: number
-    achievement_count: number
-    lifetime_gems: number
   }
   reactions: Array<{
     id: string
@@ -47,7 +43,7 @@ interface DispatchItem {
 const POST_SELECT = `
   id, body, post_type, is_pinned, created_at, media_urls,
   reaction_count, comment_count, engagement_score, scope_id, visibility,
-  author:profiles!author_id ( id, display_name, handle, avatar_url, community_role, current_season_rank, current_streak, achievement_count, lifetime_gems ),
+  author:profiles!author_id ( id, display_name, handle, avatar_url, community_role ),
   reactions:post_reactions ( id, reaction_type, profile_id )
 `
 

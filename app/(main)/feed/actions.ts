@@ -159,7 +159,7 @@ export async function fetchReplies(parentId: string) {
     .from('posts')
     .select(
       `id, body, created_at,
-       author:profiles!author_id ( id, display_name, handle, avatar_url, community_role, current_season_rank, current_streak, achievement_count )`
+       author:profiles!author_id ( id, display_name, handle, avatar_url, community_role )`
     )
     .eq('parent_id', parentId)
     .order('created_at', { ascending: true })
