@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Nunito, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { SITE_URL, SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION } from "@/lib/site";
 
 // Nunito: closest Google Font to the Frequency brand logo's rounded, bold letterforms.
 // Weights: 400 body, 600 semibold, 700 bold, 800 extrabold, 900 black (headings/branding).
@@ -33,9 +34,27 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Frequency",
-  description: "Your local community.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: `${SITE_NAME} — ${SITE_TAGLINE}`,
+    template: `%s · ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
   manifest: "/manifest.json",
+  openGraph: {
+    type: "website",
+    siteName: SITE_NAME,
+    title: `${SITE_NAME} — ${SITE_TAGLINE}`,
+    description: SITE_DESCRIPTION,
+    url: "/",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${SITE_NAME} — ${SITE_TAGLINE}`,
+    description: SITE_DESCRIPTION,
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
