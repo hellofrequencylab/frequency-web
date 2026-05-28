@@ -39,7 +39,7 @@ export async function createPost(formData: FormData) {
 
   const mediaUrls = imageUrl ? [imageUrl] : []
 
-  // Use admin client — RLS circle-membership check would block users who
+  // Use admin client. RLS circle-membership check would block users who
   // haven't joined a circle yet. Authorisation is enforced here in code.
   const admin = createAdminClient()
   const { data: post, error } = await admin.from('posts').insert({
@@ -180,7 +180,7 @@ export async function toggleReaction(
   const profileId = await getMyProfileId()
   if (!profileId) return
 
-  // Use admin to check existence — user client handles the write so RLS applies
+  // Use admin to check existence. User client handles the write so RLS applies
   const admin = createAdminClient()
   const { data: existing } = await admin
     .from('post_reactions')

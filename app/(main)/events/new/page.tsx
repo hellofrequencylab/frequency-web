@@ -48,14 +48,14 @@ export default async function NewEventPage() {
     <div>
       <Link
         href="/events"
-        className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 mb-5 transition-colors"
+        className="inline-flex items-center gap-1 text-xs text-subtle hover:text-muted mb-5 transition-colors"
       >
         ← Events
       </Link>
 
-      <h1 className="text-xl font-semibold text-gray-900 mb-6">Create an Event</h1>
+      <h1 className="text-xl font-semibold text-text mb-6">Create an Event</h1>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-5">
+      <div className="rounded-xl border border-border bg-white p-5">
         <EventForm groups={circles} />
       </div>
     </div>

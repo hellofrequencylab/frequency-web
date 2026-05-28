@@ -1,5 +1,5 @@
 /**
- * Lifecycle trigger cron — runs daily at midnight UTC via Vercel Cron.
+ * Lifecycle trigger cron. Runs daily at midnight UTC via Vercel Cron.
  * For each active membership that hasn't received a Day 1 / 3 / 7 check-in
  * notification, creates an in-app notification (and optionally an email)
  * at the right interval after joining.
@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
       reference_id:   m.id,
     }
 
-    // Day 1 — welcome to circle
+    // Day 1. Welcome to circle
     if (!m.lifecycle_day1_sent && days >= 1) {
       await admin.from('notifications').insert({
         ...notifBase,
@@ -78,12 +78,12 @@ export async function GET(req: NextRequest) {
       day1Count++
     }
 
-    // Day 3 — check in
+    // Day 3. Check in
     if (!m.lifecycle_day3_sent && days >= 3) {
       await admin.from('notifications').insert({
         ...notifBase,
         type: 'lifecycle_day3',
-        body: `You've been in ${circle.name} for 3 days — check out upcoming events and earn some Zaps!`,
+        body: `You've been in ${circle.name} for 3 days. Check out upcoming events and earn some Zaps!`,
       }).then(({ error: e }) => e && console.error('[lifecycle day3]', e.message))
 
       await admin
@@ -94,7 +94,7 @@ export async function GET(req: NextRequest) {
       day3Count++
     }
 
-    // Day 7 — engagement push
+    // Day 7. Engagement push
     if (!m.lifecycle_day7_sent && days >= 7) {
       await admin.from('notifications').insert({
         ...notifBase,

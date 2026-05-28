@@ -48,20 +48,20 @@ export default async function SignInPage({
   const { error } = await searchParams
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <main className="min-h-screen flex items-center justify-center bg-surface px-4">
       <div className="w-full max-w-sm space-y-8">
 
         <div className="text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+          <h1 className="text-3xl font-bold tracking-tight text-text">
             Frequency
           </h1>
-          <p className="mt-2 text-sm text-gray-500">
+          <p className="mt-2 text-sm text-muted">
             Sign in to your community
           </p>
         </div>
 
         {error && (
-          <div className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-red-200">
+          <div className="rounded-md bg-danger-bg px-4 py-3 text-sm text-danger ring-1 ring-danger">
             {decodeURIComponent(error)}
           </div>
         )}
@@ -71,7 +71,7 @@ export default async function SignInPage({
           <div>
             <label
               htmlFor="email"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-text"
             >
               Email address
             </label>
@@ -82,12 +82,12 @@ export default async function SignInPage({
               autoComplete="email"
               required
               placeholder="you@example.com"
-              className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="mt-1 block w-full rounded-lg border border-border-strong bg-white px-3 py-2 text-sm placeholder-subtle shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
           <button
             type="submit"
-            className="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+            className="w-full rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
           >
             Send magic link
           </button>
@@ -95,10 +95,10 @@ export default async function SignInPage({
 
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-200" />
+            <div className="w-full border-t border-border" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-gray-50 px-2 text-gray-400">or</span>
+            <span className="bg-surface px-2 text-subtle">or</span>
           </div>
         </div>
 
@@ -106,7 +106,7 @@ export default async function SignInPage({
         <form action={signInWithGoogle}>
           <button
             type="submit"
-            className="flex w-full items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-400"
+            className="flex w-full items-center justify-center gap-3 rounded-lg border border-border-strong bg-white px-4 py-2 text-sm font-medium text-text shadow-sm hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-400"
           >
             <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
               <path

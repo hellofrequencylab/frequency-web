@@ -2,7 +2,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 
 function PostSkeleton() {
   return (
-    <div className="rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+    <div className="rounded-xl border border-border bg-surface p-4">
       <div className="flex gap-3">
         <Skeleton className="w-9 h-9 rounded-full shrink-0" />
         <div className="flex-1 space-y-2 min-w-0">

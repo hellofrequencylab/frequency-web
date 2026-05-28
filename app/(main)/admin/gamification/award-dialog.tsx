@@ -74,7 +74,7 @@ export function AwardDialog({
     return (
       <button
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors whitespace-nowrap"
+        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors whitespace-nowrap"
       >
         <Award className="w-4 h-4" />
         Award Achievement
@@ -84,10 +84,10 @@ export function AwardDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-2xl">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
-          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-50">Award Achievement</h2>
-          <button onClick={() => { setOpen(false); reset() }} className="p-1 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+      <div className="w-full max-w-md rounded-2xl border border-border bg-surface shadow-2xl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+          <h2 className="text-sm font-semibold text-text">Award Achievement</h2>
+          <button onClick={() => { setOpen(false); reset() }} className="p-1 rounded text-subtle hover:text-muted dark:hover:text-subtle">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -95,11 +95,11 @@ export function AwardDialog({
         <div className="p-5 space-y-4">
           {result ? (
             <div className="text-center py-4">
-              <Check className="w-8 h-8 text-green-500 mx-auto mb-2" />
-              <p className="text-sm text-gray-700 dark:text-gray-300">{result}</p>
+              <Check className="w-8 h-8 text-success mx-auto mb-2" />
+              <p className="text-sm text-text">{result}</p>
               <button
                 onClick={reset}
-                className="mt-3 text-xs text-indigo-600 hover:text-indigo-700 font-medium"
+                className="mt-3 text-xs text-primary-strong hover:text-primary-strong font-medium"
               >
                 Award another
               </button>
@@ -108,41 +108,41 @@ export function AwardDialog({
             <>
               {/* Member picker */}
               <div>
-                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Member</label>
+                <label className="text-xs font-semibold text-muted uppercase tracking-wider">Member</label>
                 {selectedMember ? (
-                  <div className="mt-1 flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2">
-                    <span className="text-sm text-gray-900 dark:text-gray-50 flex-1">{selectedMember.display_name}</span>
-                    <span className="text-xs text-gray-400">@{selectedMember.handle}</span>
-                    <button onClick={() => setSelectedMember(null)} className="text-gray-400 hover:text-gray-600">
+                  <div className="mt-1 flex items-center gap-2 rounded-lg border border-border px-3 py-2">
+                    <span className="text-sm text-text flex-1">{selectedMember.display_name}</span>
+                    <span className="text-xs text-subtle">@{selectedMember.handle}</span>
+                    <button onClick={() => setSelectedMember(null)} className="text-subtle hover:text-muted">
                       <X className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 ) : (
                   <div className="mt-1">
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-subtle" />
                       <input
                         type="text"
                         value={memberSearch}
                         onChange={e => setMemberSearch(e.target.value)}
                         placeholder="Search members..."
-                        className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 pl-9 pr-3 py-2 text-sm text-gray-900 dark:text-gray-50 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full rounded-lg border border-border bg-surface pl-9 pr-3 py-2 text-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-primary"
                       />
                     </div>
                     {memberSearch && (
-                      <div className="mt-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 max-h-40 overflow-y-auto">
+                      <div className="mt-1 rounded-lg border border-border bg-surface max-h-40 overflow-y-auto">
                         {filteredMembers.map(m => (
                           <button
                             key={m.id}
                             onClick={() => { setSelectedMember(m); setMemberSearch('') }}
-                            className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-surface transition-colors"
                           >
-                            <span className="text-sm text-gray-900 dark:text-gray-50">{m.display_name}</span>
-                            <span className="text-xs text-gray-400">@{m.handle}</span>
+                            <span className="text-sm text-text">{m.display_name}</span>
+                            <span className="text-xs text-subtle">@{m.handle}</span>
                           </button>
                         ))}
                         {filteredMembers.length === 0 && (
-                          <p className="px-3 py-2 text-xs text-gray-400">No members found</p>
+                          <p className="px-3 py-2 text-xs text-subtle">No members found</p>
                         )}
                       </div>
                     )}
@@ -152,14 +152,14 @@ export function AwardDialog({
 
               {/* Achievement picker */}
               <div>
-                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Achievement</label>
+                <label className="text-xs font-semibold text-muted uppercase tracking-wider">Achievement</label>
                 <select
                   value={selectedAchievement?.id ?? ''}
                   onChange={e => {
                     const a = achievements.find(x => x.id === e.target.value)
                     setSelectedAchievement(a ?? null)
                   }}
-                  className="mt-1 w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   <option value="">Select an achievement...</option>
                   {achievements.map(a => (
@@ -175,7 +175,7 @@ export function AwardDialog({
                 <button
                   onClick={handleAward}
                   disabled={!selectedMember || !selectedAchievement || isPending}
-                  className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                  className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white hover:bg-primary-hover disabled:opacity-50 transition-colors"
                 >
                   {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Award className="w-3.5 h-3.5" />}
                   Award
@@ -183,7 +183,7 @@ export function AwardDialog({
                 <button
                   onClick={handleRevoke}
                   disabled={!selectedMember || !selectedAchievement || isPending}
-                  className="flex items-center justify-center gap-1.5 rounded-lg border border-red-200 dark:border-red-800 px-3 py-2 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-50 transition-colors"
+                  className="flex items-center justify-center gap-1.5 rounded-lg border border-danger px-3 py-2 text-xs font-semibold text-danger hover:bg-danger-bg disabled:opacity-50 transition-colors"
                 >
                   Revoke
                 </button>

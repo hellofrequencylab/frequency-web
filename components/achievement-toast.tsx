@@ -56,28 +56,28 @@ function AchievementToastCard({ achievement, onDismiss }: ToastProps) {
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-subtle">
                 Achievement Unlocked
               </p>
               <button
                 onClick={onDismiss}
-                className="p-0.5 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                className="p-0.5 rounded text-subtle hover:text-muted dark:hover:text-subtle transition-colors"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
-            <p className="text-sm font-bold text-gray-900 dark:text-gray-50 mt-0.5">
+            <p className="text-sm font-bold text-text mt-0.5">
               {achievement.name}
             </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">
+            <p className="text-xs text-muted mt-0.5 leading-relaxed">
               {achievement.description}
             </p>
             <div className="flex items-center gap-2 mt-2">
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${tier.bg} ${tier.color}`}>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-semibold ${tier.bg} ${tier.color}`}>
                 {tier.label}
               </span>
               {achievement.zapsReward > 0 && (
-                <span className="text-[11px] font-medium text-amber-600 dark:text-amber-400 flex items-center gap-0.5">
+                <span className="text-[11px] font-medium text-warning flex items-center gap-0.5">
                   <Zap className="w-3 h-3" />
                   +{achievement.zapsReward} zaps
                 </span>
@@ -90,7 +90,7 @@ function AchievementToastCard({ achievement, onDismiss }: ToastProps) {
   )
 }
 
-// Global toast container — rendered once in the layout
+// Global toast container. Rendered once in the layout
 export function AchievementToastContainer() {
   const [toasts, setToasts] = useState<AchievementUnlock[]>([])
 

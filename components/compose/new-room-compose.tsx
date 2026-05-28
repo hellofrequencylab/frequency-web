@@ -10,7 +10,7 @@ type Visibility = 'public' | 'private'
 
 export function NewRoomCompose({
   buttonLabel = 'New Room',
-  buttonClass = 'inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors whitespace-nowrap',
+  buttonClass = 'inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors whitespace-nowrap',
 }: {
   buttonLabel?: string
   buttonClass?: string
@@ -69,7 +69,7 @@ export function NewRoomCompose({
         </div>
 
         <div>
-          <label className={cmLabel}>Description <span className="text-gray-400 font-normal">(optional)</span></label>
+          <label className={cmLabel}>Description <span className="text-subtle font-normal">(optional)</span></label>
           <textarea value={description} onChange={e => setDescription(e.target.value)}
             placeholder="What is this room for?" rows={3} disabled={isPending}
             className={`${cmInput} resize-y leading-relaxed`} />
@@ -81,25 +81,25 @@ export function NewRoomCompose({
             <button type="button" onClick={() => setVisibility('public')} disabled={isPending}
               className={`flex items-start gap-2.5 rounded-lg border px-3 py-2.5 text-left transition-colors ${
                 visibility === 'public'
-                  ? 'border-indigo-300 bg-indigo-50 dark:bg-indigo-950/30'
-                  : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
+                  ? 'border-primary bg-primary-bg'
+                  : 'border-border hover:bg-surface-elevated'
               }`}>
-              <Globe className={`w-4 h-4 mt-0.5 shrink-0 ${visibility === 'public' ? 'text-indigo-500' : 'text-gray-400'}`} />
+              <Globe className={`w-4 h-4 mt-0.5 shrink-0 ${visibility === 'public' ? 'text-primary-strong' : 'text-subtle'}`} />
               <div className="min-w-0">
-                <p className={`text-xs font-semibold ${visibility === 'public' ? 'text-indigo-700 dark:text-indigo-300' : 'text-gray-700 dark:text-gray-300'}`}>Public</p>
-                <p className="text-[11px] text-gray-400">Anyone can find and join</p>
+                <p className={`text-xs font-semibold ${visibility === 'public' ? 'text-primary-strong' : 'text-text'}`}>Public</p>
+                <p className="text-[11px] text-subtle">Anyone can find and join</p>
               </div>
             </button>
             <button type="button" onClick={() => setVisibility('private')} disabled={isPending}
               className={`flex items-start gap-2.5 rounded-lg border px-3 py-2.5 text-left transition-colors ${
                 visibility === 'private'
-                  ? 'border-indigo-300 bg-indigo-50 dark:bg-indigo-950/30'
-                  : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
+                  ? 'border-primary bg-primary-bg'
+                  : 'border-border hover:bg-surface-elevated'
               }`}>
-              <Lock className={`w-4 h-4 mt-0.5 shrink-0 ${visibility === 'private' ? 'text-indigo-500' : 'text-gray-400'}`} />
+              <Lock className={`w-4 h-4 mt-0.5 shrink-0 ${visibility === 'private' ? 'text-primary-strong' : 'text-subtle'}`} />
               <div className="min-w-0">
-                <p className={`text-xs font-semibold ${visibility === 'private' ? 'text-indigo-700 dark:text-indigo-300' : 'text-gray-700 dark:text-gray-300'}`}>Private</p>
-                <p className="text-[11px] text-gray-400">Invite only</p>
+                <p className={`text-xs font-semibold ${visibility === 'private' ? 'text-primary-strong' : 'text-text'}`}>Private</p>
+                <p className="text-[11px] text-subtle">Invite only</p>
               </div>
             </button>
           </div>

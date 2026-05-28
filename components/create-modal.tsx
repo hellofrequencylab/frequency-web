@@ -3,11 +3,11 @@
 import { X, Check, Loader2 } from 'lucide-react'
 
 const ICON_COLORS: Record<string, { bg: string; text: string }> = {
-  indigo: { bg: 'bg-indigo-100 dark:bg-indigo-950', text: 'text-indigo-600 dark:text-indigo-400' },
-  amber:  { bg: 'bg-amber-100 dark:bg-amber-950',   text: 'text-amber-600 dark:text-amber-400' },
-  green:  { bg: 'bg-green-100 dark:bg-green-950',   text: 'text-green-600 dark:text-green-400' },
-  violet: { bg: 'bg-violet-100 dark:bg-violet-950', text: 'text-violet-600 dark:text-violet-400' },
-  blue:   { bg: 'bg-blue-100 dark:bg-blue-950',     text: 'text-blue-600 dark:text-blue-400' },
+  indigo: { bg: 'bg-primary-bg', text: 'text-primary-strong' },
+  amber:  { bg: 'bg-warning-bg dark:bg-warning-bg',   text: 'text-warning' },
+  green:  { bg: 'bg-success-bg',   text: 'text-success' },
+  violet: { bg: 'bg-signal-bg', text: 'text-signal-strong' },
+  blue:   { bg: 'bg-signal-bg',     text: 'text-signal-strong' },
 }
 
 interface CreateModalProps {
@@ -61,25 +61,25 @@ export function CreateModal({
       <form
         onSubmit={onSubmit}
         onClick={e => e.stopPropagation()}
-        className="w-full sm:max-w-2xl sm:my-8 rounded-t-2xl sm:rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-2xl flex flex-col max-h-[90vh] sm:max-h-[calc(100vh-4rem)]"
+        className="w-full sm:max-w-2xl sm:my-8 rounded-t-2xl sm:rounded-2xl border border-border bg-surface shadow-2xl flex flex-col max-h-[90vh] sm:max-h-[calc(100vh-4rem)]"
       >
         {/* Mobile drag indicator */}
         <div className="sm:hidden flex justify-center pt-2 pb-1">
-          <div className="w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-700" />
+          <div className="w-10 h-1 rounded-full bg-border-strong" />
         </div>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800 shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
           <div className="flex items-center gap-2">
             <div className={`w-8 h-8 rounded-lg ${colors.bg} flex items-center justify-center`}>
               <Icon className={`w-4 h-4 ${colors.text}`} />
             </div>
-            <h2 className="text-base font-bold text-gray-900 dark:text-gray-50">{title}</h2>
+            <h2 className="text-base font-bold text-text">{title}</h2>
           </div>
           <button
             type="button"
             onClick={() => !isPending && onClose()}
-            className="rounded-lg p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            className="rounded-lg p-1.5 text-subtle hover:text-muted hover:bg-surface-elevated transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -88,7 +88,7 @@ export function CreateModal({
         {/* Body */}
         <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
           {error && (
-            <p className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">
+            <p className="text-xs text-danger bg-danger-bg/30 border border-danger rounded-lg px-3 py-2">
               {error}
             </p>
           )}
@@ -96,19 +96,19 @@ export function CreateModal({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 sm:rounded-b-2xl shrink-0">
+        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-border bg-surface/50 dark:bg-canvas/50 sm:rounded-b-2xl shrink-0">
           <button
             type="button"
             onClick={() => !isPending && onClose()}
             disabled={isPending}
-            className="rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            className="rounded-lg border border-border px-4 py-2 text-xs font-medium text-muted hover:bg-surface-elevated transition-colors"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={submitDisabled || isPending}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-5 py-2 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-40 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-5 py-2 text-xs font-semibold text-white hover:bg-primary-hover disabled:opacity-40 transition-colors"
           >
             {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
             {isPending ? pendingLabel : submitLabel}
@@ -123,5 +123,5 @@ export function CreateModal({
  * Standard form-field styling shared across all create modals.
  * Use `cmInput` for inputs/selects/textareas, `cmLabel` for labels.
  */
-export const cmInput = 'w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-50 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 disabled:opacity-50 placeholder:text-gray-400'
-export const cmLabel = 'block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1'
+export const cmInput = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-primary focus:ring-2 focus:ring-primary/40 dark:focus:ring-primary/30 disabled:opacity-50 placeholder:text-subtle'
+export const cmLabel = 'block text-xs font-medium text-muted mb-1'

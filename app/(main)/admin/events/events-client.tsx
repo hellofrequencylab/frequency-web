@@ -19,8 +19,8 @@ export function CancelToggle({ id, isCancelled }: { id: string; isCancelled: boo
       disabled={isPending}
       className={`shrink-0 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 ${
         isCancelled
-          ? 'border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-950/30'
-          : 'border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30'
+          ? 'border-success text-success hover:bg-success-bg dark:hover:bg-success-bg/30'
+          : 'border-danger text-danger hover:bg-danger-bg'
       }`}
     >
       {isPending ? '…' : isCancelled ? 'Reinstate' : 'Cancel'}

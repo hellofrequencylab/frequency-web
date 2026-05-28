@@ -59,40 +59,40 @@ function StoreCard({ item, balance }: { item: StoreItem; balance: number }) {
   return (
     <div className={`rounded-2xl border px-4 py-3 transition-all ${
       item.owned
-        ? 'border-emerald-200 dark:border-emerald-800 bg-emerald-50/30 dark:bg-emerald-950/20'
-        : 'border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900'
+        ? 'border-success bg-success-bg/30'
+        : 'border-border bg-surface'
     }`}>
       <div className="flex items-start gap-3">
         <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
           item.owned
-            ? 'bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-400'
+            ? 'bg-success-bg text-signal-strong'
             : canAfford
-            ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400'
-            : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500'
+            ? 'bg-primary-bg text-primary-strong'
+            : 'bg-surface-elevated text-subtle'
         }`}>
           <Icon className="w-5 h-5" />
         </div>
 
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-gray-900 dark:text-gray-50">{item.name}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">{item.description}</p>
+          <p className="text-sm font-semibold text-text">{item.name}</p>
+          <p className="text-xs text-muted mt-0.5 leading-relaxed">{item.description}</p>
 
           <div className="flex items-center justify-between mt-3">
-            <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+            <span className="text-sm font-bold text-signal-strong flex items-center gap-1">
               <Gem className="w-3.5 h-3.5" />
               {item.gem_cost.toLocaleString()}
             </span>
 
             {result ? (
-              <span className={`text-xs font-semibold ${result === 'Redeemed!' ? 'text-emerald-600' : 'text-red-500'}`}>
+              <span className={`text-xs font-semibold ${result === 'Redeemed!' ? 'text-signal-strong' : 'text-danger'}`}>
                 {result}
               </span>
             ) : item.owned ? (
-              <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+              <span className="text-xs font-semibold text-signal-strong flex items-center gap-1">
                 <Check className="w-3.5 h-3.5" /> Owned
               </span>
             ) : outOfStock ? (
-              <span className="text-xs font-medium text-gray-400 flex items-center gap-1">
+              <span className="text-xs font-medium text-subtle flex items-center gap-1">
                 <Lock className="w-3 h-3" /> Sold out
               </span>
             ) : (
@@ -101,8 +101,8 @@ function StoreCard({ item, balance }: { item: StoreItem; balance: number }) {
                 disabled={!canAfford || isPending}
                 className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
                   canAfford
-                    ? 'bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed'
+                    ? 'bg-primary text-on-primary hover:bg-primary-hover disabled:opacity-50'
+                    : 'bg-surface-elevated text-subtle cursor-not-allowed'
                 }`}
               >
                 {isPending ? (
@@ -118,7 +118,7 @@ function StoreCard({ item, balance }: { item: StoreItem; balance: number }) {
           </div>
 
           {item.stock !== null && item.stock > 0 && !item.owned && (
-            <p className="text-[10px] text-gray-400 mt-1">{item.stock} remaining</p>
+            <p className="text-[10px] text-subtle mt-1">{item.stock} remaining</p>
           )}
         </div>
       </div>

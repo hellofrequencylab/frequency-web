@@ -62,10 +62,10 @@ function SidebarCard({
   children: React.ReactNode
 }) {
   return (
-    <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
-      <div className="px-4 py-2.5 border-b border-gray-100/80 dark:border-gray-800/50 flex items-center gap-1.5">
-        {Icon && <Icon className="w-3.5 h-3.5 text-gray-400" />}
-        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">{title}</h3>
+    <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
+      <div className="px-4 py-2.5 border-b border-border flex items-center gap-1.5">
+        {Icon && <Icon className="w-3.5 h-3.5 text-subtle" />}
+        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-subtle">{title}</h3>
       </div>
       {children}
     </div>
@@ -279,16 +279,17 @@ export default async function MessagesPage({
       {/* Header */}
       <div className="flex items-end justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-1">
+          <h1 className="text-2xl font-bold text-text mb-1">
             Messages
             {totalUnread > 0 && (
-              <span className="ml-2 inline-flex items-center justify-center w-5 h-5 rounded-full bg-indigo-600 text-white text-[10px] font-bold align-middle">
+              <span className="ml-2 inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-on-primary text-[10px] font-bold align-middle">
                 {totalUnread > 9 ? '9+' : totalUnread}
               </span>
             )}
           </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed max-w-lg">
-            One hub for every conversation — direct messages, group threads, and rooms with the community.
+          <p className="text-sm text-muted leading-relaxed max-w-2xl">
+            Every conversation in one place. Direct messages, group threads,
+            and rooms with the wider community.
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap justify-end">
@@ -309,10 +310,10 @@ export default async function MessagesPage({
               <div className="flex items-center gap-1.5 mb-3">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-success" />
                 </span>
-                <h2 className="text-xs font-semibold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
-                  Active Now <span className="text-gray-300 dark:text-gray-600">· {activeItems.length}</span>
+                <h2 className="text-xs font-semibold uppercase tracking-widest text-signal-strong">
+                  Active Now <span className="text-subtle">· {activeItems.length}</span>
                 </h2>
               </div>
               <div className="space-y-1">
@@ -328,18 +329,18 @@ export default async function MessagesPage({
           {/* Your Threads */}
           <section>
             <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">
-                Your Threads {filteredItems.length > 0 && <span className="text-gray-300 dark:text-gray-600">· {filteredItems.length}</span>}
+              <h2 className="text-xs font-semibold uppercase tracking-widest text-subtle">
+                Your Threads {filteredItems.length > 0 && <span className="text-subtle">· {filteredItems.length}</span>}
               </h2>
-              <div className="flex items-center gap-0.5 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
+              <div className="flex items-center gap-0.5 bg-surface-elevated rounded-lg p-0.5">
                 {FILTERS.map(f => (
                   <Link
                     key={f.value}
                     href={f.value === 'all' ? '/messages' : `/messages?filter=${f.value}`}
                     className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                       filter === f.value
-                        ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-50 shadow-sm'
-                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                        ? 'bg-white text-text shadow-sm'
+                        : 'text-muted hover:text-text'
                     }`}
                   >
                     {f.label}
@@ -349,14 +350,14 @@ export default async function MessagesPage({
             </div>
 
             {filteredItems.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 p-8 text-center">
-                <MessageSquare className="w-7 h-7 text-gray-300 dark:text-gray-700 mx-auto mb-2" />
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+              <div className="rounded-2xl border border-dashed border-border bg-surface/50 dark:bg-canvas/50 p-8 text-center">
+                <MessageSquare className="w-7 h-7 text-subtle/60 mx-auto mb-2" />
+                <p className="text-sm text-muted">
                   {filter === 'rooms' ? 'No rooms joined yet.' :
                     filter === 'dms'   ? 'No direct conversations yet.' :
                                          'Your threads will appear here.'}
                 </p>
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-xs text-subtle mt-1">
                   {filter === 'rooms' && (canCreateRoom ? 'Create one above or browse Discover.' : 'Join one from Discover below.')}
                   {filter === 'dms'   && 'Start one from any member’s profile.'}
                   {filter === 'all'   && 'Join a room or start a DM to begin.'}
@@ -373,12 +374,12 @@ export default async function MessagesPage({
             )}
           </section>
 
-          {/* Discover — only when not filtered to DMs */}
+          {/* Discover. Only when not filtered to DMs */}
           {filter !== 'dms' && discoverRooms.length > 0 && (
             <section>
               <div className="flex items-center gap-1.5 mb-3">
-                <Compass className="w-3.5 h-3.5 text-gray-400" />
-                <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">
+                <Compass className="w-3.5 h-3.5 text-subtle" />
+                <h2 className="text-xs font-semibold uppercase tracking-widest text-subtle">
                   Discover
                 </h2>
               </div>
@@ -387,14 +388,14 @@ export default async function MessagesPage({
                   <Link
                     key={room.id}
                     href={`/messages/r/${room.id}`}
-                    className="flex items-start gap-2.5 rounded-xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 px-3 py-2.5 hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-indigo-50/30 dark:hover:bg-indigo-950/20 transition-colors"
+                    className="flex items-start gap-2.5 rounded-xl border border-border bg-surface px-3 py-2.5 hover:border-primary-bg dark:hover:border-primary hover:bg-primary-bg/30 dark:hover:bg-primary-bg transition-colors"
                   >
-                    <div className="shrink-0 w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center">
-                      <Hash className="w-3.5 h-3.5 text-indigo-500" />
+                    <div className="shrink-0 w-8 h-8 rounded-lg bg-primary-bg flex items-center justify-center">
+                      <Hash className="w-3.5 h-3.5 text-primary-strong" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-900 dark:text-gray-50 truncate">{room.name}</p>
-                      <p className="text-[11px] text-gray-400 truncate">
+                      <p className="text-sm font-semibold text-text truncate">{room.name}</p>
+                      <p className="text-[11px] text-subtle truncate">
                         <Users className="w-2.5 h-2.5 inline mr-0.5 -mt-px" />
                         {room.member_count} {room.member_count === 1 ? 'member' : 'members'}
                         {room.description && <> &middot; {room.description}</>}
@@ -410,11 +411,11 @@ export default async function MessagesPage({
         {/* ── In-page context column ───────────────────────────── */}
         <div className="space-y-4">
 
-          {/* Welcome them — conversation prompt */}
+          {/* Welcome them. Conversation prompt */}
           {newMembers.length > 0 && (
             <SidebarCard title="Say hi" icon={Sparkles}>
               <div className="px-4 py-3">
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 leading-snug">
+                <p className="text-xs text-muted mb-3 leading-snug">
                   {newMembers.length === 1
                     ? '1 new member joined your circles this week.'
                     : `${newMembers.length} new members joined your circles this week.`}
@@ -426,25 +427,25 @@ export default async function MessagesPage({
                       <li key={m.profile_id}>
                         <Link
                           href={`/people/${m.handle}`}
-                          className="flex items-center gap-2 rounded-lg px-1 py-1 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                          className="flex items-center gap-2 rounded-lg px-1 py-1 hover:bg-surface-elevated transition-colors"
                         >
                           <div className="relative shrink-0">
                             {m.avatar_url ? (
                               <img src={m.avatar_url} alt={m.display_name} className="w-7 h-7 rounded-full object-cover" />
                             ) : (
-                              <div className="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-[10px] font-bold text-gray-500 dark:text-gray-400 select-none">
+                              <div className="w-7 h-7 rounded-full bg-border-strong flex items-center justify-center text-[10px] font-bold text-muted select-none">
                                 {getInitials(m.display_name)}
                               </div>
                             )}
                             {online && (
                               <span
                                 aria-label="Online now"
-                                className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-gray-900"
+                                className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-success ring-2 ring-surface"
                               />
                             )}
                           </div>
-                          <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate flex-1">{m.display_name}</span>
-                          <MessageSquare className="w-3 h-3 text-gray-300 shrink-0" />
+                          <span className="text-xs font-medium text-text truncate flex-1">{m.display_name}</span>
+                          <MessageSquare className="w-3 h-3 text-subtle shrink-0" />
                         </Link>
                       </li>
                     )
@@ -457,7 +458,7 @@ export default async function MessagesPage({
           {/* Quick actions */}
           <SidebarCard title="Quick Actions" icon={Zap}>
             <div className="px-4 py-3 space-y-2">
-              <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-snug">
+              <p className="text-[11px] text-muted leading-snug">
                 Start a fresh conversation with anyone, or open a new room around a topic.
               </p>
               <div className="flex flex-wrap gap-2 pt-1">
@@ -470,17 +471,17 @@ export default async function MessagesPage({
           {/* Discover (sidebar variant) */}
           {discoverRooms.length > 6 && (
             <SidebarCard title="Discover Rooms" icon={Compass}>
-              <ul className="divide-y divide-gray-50 dark:divide-gray-800">
+              <ul className="divide-y divide-border">
                 {discoverRooms.slice(6, 12).map(room => (
                   <li key={room.id}>
                     <Link
                       href={`/messages/r/${room.id}`}
-                      className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                      className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-surface-elevated transition-colors"
                     >
-                      <Hash className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                      <Hash className="w-3.5 h-3.5 text-subtle shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">{room.name}</p>
-                        <p className="text-[10px] text-gray-400">
+                        <p className="text-xs font-medium text-text truncate">{room.name}</p>
+                        <p className="text-[10px] text-subtle">
                           <Users className="w-2.5 h-2.5 inline mr-0.5 -mt-px" />
                           {room.member_count}
                         </p>
@@ -501,21 +502,21 @@ function RoomRow({ room }: { room: RoomRow }) {
   return (
     <Link
       href={`/messages/r/${room.id}`}
-      className="flex items-center gap-3 rounded-xl px-3 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+      className="flex items-center gap-3 rounded-xl px-3 py-3 hover:bg-surface-elevated transition-colors"
     >
-      <div className="shrink-0 w-10 h-10 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center">
+      <div className="shrink-0 w-10 h-10 rounded-lg bg-primary-bg flex items-center justify-center">
         {room.visibility === 'private'
-          ? <Lock className="w-4 h-4 text-indigo-500" />
-          : <Hash className="w-4 h-4 text-indigo-500" />}
+          ? <Lock className="w-4 h-4 text-primary-strong" />
+          : <Hash className="w-4 h-4 text-primary-strong" />}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-sm font-semibold text-gray-900 dark:text-gray-50 truncate">{room.name}</span>
+          <span className="text-sm font-semibold text-text truncate">{room.name}</span>
           {room.last_message_at && (
-            <span className="text-[11px] text-gray-400 shrink-0">{relativeTime(room.last_message_at)}</span>
+            <span className="text-[11px] text-subtle shrink-0">{relativeTime(room.last_message_at)}</span>
           )}
         </div>
-        <p className="text-xs text-gray-400 truncate">
+        <p className="text-xs text-subtle truncate">
           <Users className="w-3 h-3 inline mr-1 -mt-px" />
           {room.member_count} {room.member_count === 1 ? 'member' : 'members'}
           {room.description && <> &middot; {room.description}</>}
@@ -538,8 +539,8 @@ function DMRow({ conv, myProfileId }: { conv: ConversationRow; myProfileId: stri
       href={`/messages/${conv.id}`}
       className={`flex items-center gap-3 rounded-xl px-3 py-3 transition-colors ${
         hasUnread
-          ? 'bg-indigo-50/70 hover:bg-indigo-50 dark:bg-indigo-950/20 dark:hover:bg-indigo-950/30'
-          : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
+          ? 'bg-primary-bg/70 hover:bg-primary-bg dark:hover:bg-primary-bg'
+          : 'hover:bg-surface-elevated'
       }`}
     >
       <div className="shrink-0">
@@ -548,27 +549,27 @@ function DMRow({ conv, myProfileId }: { conv: ConversationRow; myProfileId: stri
         ) : conv.participants[0]?.avatar_url ? (
           <img src={conv.participants[0].avatar_url!} alt={conv.participants[0].display_name} className="w-10 h-10 rounded-full object-cover" />
         ) : (
-          <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-sm font-semibold flex items-center justify-center select-none">
+          <div className="w-10 h-10 rounded-full bg-primary-bg text-primary-strong text-sm font-semibold flex items-center justify-center select-none">
             {conv.participants[0] ? getInitials(conv.participants[0].display_name) : '?'}
           </div>
         )}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
-          <span className={`text-sm truncate ${hasUnread ? 'font-semibold text-gray-900 dark:text-gray-50' : 'font-medium text-gray-700 dark:text-gray-300'}`}>
+          <span className={`text-sm truncate ${hasUnread ? 'font-semibold text-text' : 'font-medium text-text'}`}>
             {display}
           </span>
           {conv.lastMessage && (
-            <span className="text-[11px] text-gray-400 shrink-0">{relativeTime(conv.lastMessage.created_at)}</span>
+            <span className="text-[11px] text-subtle shrink-0">{relativeTime(conv.lastMessage.created_at)}</span>
           )}
         </div>
         <div className="flex items-center gap-1.5 mt-0.5">
-          <p className={`text-xs truncate flex-1 ${hasUnread ? 'text-gray-700 dark:text-gray-300 font-medium' : 'text-gray-400'}`}>
+          <p className={`text-xs truncate flex-1 ${hasUnread ? 'text-text font-medium' : 'text-subtle'}`}>
             {conv.lastMessage
               ? conv.lastMessage.sender_id === myProfileId ? `You: ${conv.lastMessage.body}` : conv.lastMessage.body
               : 'No messages yet'}
           </p>
-          {hasUnread && <span className="shrink-0 w-2 h-2 rounded-full bg-indigo-500" />}
+          {hasUnread && <span className="shrink-0 w-2 h-2 rounded-full bg-primary" />}
         </div>
       </div>
     </Link>
@@ -586,10 +587,10 @@ function GroupAvatars({ participants }: { participants: Profile[] }) {
           : i === 0 ? 'absolute top-0 left-0' : i === 1 ? 'absolute bottom-0 right-0' : 'absolute bottom-0 left-0'
         return p.avatar_url ? (
           <img key={p.id} src={p.avatar_url} alt={p.display_name}
-            className={`${size} ${pos} rounded-full object-cover ring-2 ring-white dark:ring-gray-900`} />
+            className={`${size} ${pos} rounded-full object-cover ring-2 ring-surface`} />
         ) : (
           <div key={p.id}
-            className={`${size} ${pos} rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-[9px] font-semibold flex items-center justify-center ring-2 ring-white dark:ring-gray-900`}>
+            className={`${size} ${pos} rounded-full bg-primary-bg text-primary-strong text-[9px] font-semibold flex items-center justify-center ring-2 ring-surface`}>
             {getInitials(p.display_name)}
           </div>
         )

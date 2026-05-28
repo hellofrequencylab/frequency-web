@@ -31,9 +31,9 @@ type CircleRow = {
 
 function SidebarCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
-      <div className="px-4 py-2.5 border-b border-gray-100/80 dark:border-gray-800/50">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">{title}</h3>
+    <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
+      <div className="px-4 py-2.5 border-b border-border">
+        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-subtle">{title}</h3>
       </div>
       {children}
     </div>
@@ -100,10 +100,11 @@ export default async function CirclesPage() {
     <div>
       <div className="flex items-end justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-1">Circles</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
-            Your local crew. Circles are where you post, connect, and show up. Regular rides, shared
-            updates, and the people you&apos;ll see week to week. Join one to get started.
+          <h1 className="text-2xl font-bold text-text mb-1">Circles</h1>
+          <p className="text-sm text-muted leading-relaxed max-w-2xl">
+            Your local crew. This is where you post, connect, and show up.
+            Regular meetups, shared updates, the people you&apos;ll see week to
+            week. Join one to get started.
           </p>
         </div>
         {isAdmin && <NewCircleCompose />}
@@ -134,12 +135,12 @@ export default async function CirclesPage() {
             <section>
               {myCircles.length > 0 && (
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="h-px flex-1 bg-gray-200 dark:bg-gray-800" />
-                  <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">Discover</span>
-                  <div className="h-px flex-1 bg-gray-200 dark:bg-gray-800" />
+                  <div className="h-px flex-1 bg-border-strong" />
+                  <span className="text-[10px] font-semibold uppercase tracking-widest text-subtle">Discover</span>
+                  <div className="h-px flex-1 bg-border-strong" />
                 </div>
               )}
-              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 sr-only">
+              <h2 className="text-sm font-semibold text-muted uppercase tracking-wide mb-3 sr-only">
                 {myCircles.length > 0 ? 'Other Circles' : 'All Circles'}
               </h2>
               <div className="space-y-2">
@@ -155,9 +156,9 @@ export default async function CirclesPage() {
           )}
 
           {circles.length === 0 && (
-            <div className="rounded-2xl border border-dashed border-gray-200/60 bg-gray-50/50 dark:bg-gray-900/50 p-12 text-center">
-              <Users className="w-8 h-8 text-gray-300 mx-auto mb-3" />
-              <p className="text-sm text-gray-500">No circles yet. Check back soon.</p>
+            <div className="rounded-2xl border border-dashed border-border/60 bg-surface/50 dark:bg-canvas/50 p-12 text-center">
+              <Users className="w-8 h-8 text-subtle mx-auto mb-3" />
+              <p className="text-sm text-muted">No circles yet. Check back soon.</p>
             </div>
           )}
         </div>
@@ -168,20 +169,20 @@ export default async function CirclesPage() {
           {/* My Circles quick-links */}
           <SidebarCard title="My Circles">
             {myCircles.length === 0 ? (
-              <p className="px-4 py-4 text-xs text-gray-400 dark:text-gray-500 text-center">
+              <p className="px-4 py-4 text-xs text-subtle text-center">
                 No circles yet – join one!
               </p>
             ) : (
-              <ul className="divide-y divide-gray-50 dark:divide-gray-800">
+              <ul className="divide-y divide-border">
                 {myCircles.map((circle) => (
                   <li key={circle.id}>
                     <div className="flex items-center justify-between px-4 py-2.5 gap-2">
-                      <span className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">
+                      <span className="text-xs font-medium text-text dark:text-subtle/60 truncate">
                         {circle.name}
                       </span>
                       <Link
                         href={`/circles/${circle.slug}`}
-                        className="shrink-0 text-[11px] font-medium text-indigo-600 hover:underline"
+                        className="shrink-0 text-[11px] font-medium text-primary-strong hover:underline"
                       >
                         View →
                       </Link>
@@ -198,13 +199,13 @@ export default async function CirclesPage() {
               <div className="px-4 py-3 space-y-2">
                 <Link
                   href="/circles/new"
-                  className="flex items-center justify-between text-xs font-medium text-indigo-600 hover:underline"
+                  className="flex items-center justify-between text-xs font-medium text-primary-strong hover:underline"
                 >
                   Create Circle →
                 </Link>
                 <Link
                   href="/admin/circles"
-                  className="flex items-center justify-between text-xs font-medium text-gray-600 dark:text-gray-400 hover:underline"
+                  className="flex items-center justify-between text-xs font-medium text-muted hover:underline"
                 >
                   Manage Circles
                 </Link>
@@ -231,25 +232,25 @@ function CircleCard({
   const nexusName = circle.hub?.nexus?.name ?? null
 
   return (
-    <div className="rounded-2xl border border-gray-200/60 bg-white shadow-sm p-4">
+    <div className="rounded-2xl border border-border/60 bg-white shadow-sm p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             <Link
               href={`/circles/${circle.slug}`}
-              className="text-sm font-semibold text-gray-900 hover:text-indigo-600 transition-colors"
+              className="text-sm font-semibold text-text hover:text-primary-strong transition-colors"
             >
               {circle.name}
             </Link>
             <StatusBadge status={circle.status} />
-            <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 font-medium">
+            <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-surface-elevated text-muted font-medium">
               {circle.type}
             </span>
           </div>
 
           {/* Breadcrumb */}
           {(location || nexusName) && (
-            <div className="flex items-center gap-1 mt-0.5 text-xs text-gray-400">
+            <div className="flex items-center gap-1 mt-0.5 text-xs text-subtle">
               {location && (
                 <>
                   <MapPin className="w-3 h-3 shrink-0" />
@@ -260,7 +261,7 @@ function CircleCard({
               {nexusName && (
                 <Link
                   href={`/nexuses/${circle.hub?.nexus?.slug}`}
-                  className="hover:text-indigo-500 transition-colors"
+                  className="hover:text-primary-strong transition-colors"
                 >
                   {nexusName}
                 </Link>
@@ -270,7 +271,7 @@ function CircleCard({
                   <span>·</span>
                   <Link
                     href={`/hubs/${circle.hub.slug}`}
-                    className="hover:text-indigo-500 transition-colors"
+                    className="hover:text-primary-strong transition-colors"
                   >
                     {circle.hub.name}
                   </Link>
@@ -280,30 +281,30 @@ function CircleCard({
           )}
 
           {circle.about && (
-            <p className="mt-1.5 text-xs text-gray-500 line-clamp-2">{circle.about}</p>
+            <p className="mt-1.5 text-xs text-muted line-clamp-2">{circle.about}</p>
           )}
 
           {/* Capacity bar */}
           <div className="mt-2.5">
             <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-subtle">
                 {circle.member_count} / {circle.member_cap} members
               </span>
               {nearCap && !full && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 font-medium">
+                <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-warning-bg text-warning font-medium">
                   Almost full
                 </span>
               )}
               {full && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">
+                <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-danger-bg text-danger font-medium">
                   Full
                 </span>
               )}
             </div>
-            <div className="mt-1 h-1 max-w-xs rounded-full bg-gray-100 overflow-hidden">
+            <div className="mt-1 h-1 max-w-xs rounded-full bg-surface-elevated overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all ${
-                  full ? 'bg-red-400' : nearCap ? 'bg-orange-400' : 'bg-indigo-400'
+                  full ? 'bg-danger' : nearCap ? 'bg-primary' : 'bg-primary'
                 }`}
                 style={{ width: `${pct}%` }}
               />
@@ -316,7 +317,7 @@ function CircleCard({
           {isMember ? (
             <Link
               href={`/circles/${circle.slug}`}
-              className="inline-block rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100 transition-colors"
+              className="inline-block rounded-lg border border-primary-bg bg-primary-bg px-3 py-1.5 text-xs font-medium text-primary-strong hover:bg-primary-bg transition-colors"
             >
               View →
             </Link>
@@ -324,7 +325,7 @@ function CircleCard({
             <form action={joinCircle.bind(null, circle.id, circle.slug)}>
               <button
                 type="submit"
-                className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors"
+                className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-hover transition-colors"
               >
                 Join
               </button>

@@ -1,10 +1,10 @@
 export default function ConfirmPage() {
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <main className="min-h-screen flex items-center justify-center bg-surface px-4">
       <div className="w-full max-w-sm text-center space-y-4">
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-indigo-100">
+        <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary-bg">
           <svg
-            className="w-6 h-6 text-indigo-600"
+            className="w-6 h-6 text-primary-strong"
             fill="none"
             viewBox="0 0 24 24"
             strokeWidth={1.5}
@@ -18,16 +18,16 @@ export default function ConfirmPage() {
             />
           </svg>
         </div>
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+        <h1 className="text-2xl font-bold tracking-tight text-text">
           Check your email
         </h1>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-muted">
           We sent a magic link to your email address. Click the link to sign in.
           It expires in 60 minutes.
         </p>
-        <p className="text-xs text-gray-400">
+        <p className="text-xs text-subtle">
           Didn&apos;t get it? Check your spam folder or{' '}
-          <a href="/sign-in" className="text-indigo-600 hover:text-indigo-500 underline">
+          <a href="/sign-in" className="text-primary-strong hover:text-primary-strong underline">
             try again
           </a>
           .

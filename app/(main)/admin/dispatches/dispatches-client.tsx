@@ -35,16 +35,16 @@ const TYPE_LABELS: Record<DispatchType, string> = {
 }
 
 const TYPE_COLORS: Record<DispatchType, string> = {
-  post:      'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300',
-  poll:      'bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-300',
-  challenge: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
-  article:   'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300',
+  post:      'bg-surface-elevated text-muted dark:bg-surface-elevated dark:text-subtle',
+  poll:      'bg-signal-bg text-signal-strong',
+  challenge: 'bg-warning-bg text-warning dark:bg-warning-bg dark:text-warning',
+  article:   'bg-primary-bg text-primary-strong dark:bg-primary-bg dark:text-primary-strong',
 }
 
 type CommunityRole = 'host' | 'guide' | 'mentor' | 'janitor'
 
-const input = 'w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-50 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 disabled:opacity-50 placeholder:text-gray-400'
-const lbl   = 'block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1'
+const input = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-primary focus:ring-2 focus:ring-primary/40 dark:focus:ring-primary/30 disabled:opacity-50 placeholder:text-subtle'
+const lbl   = 'block text-xs font-medium text-muted mb-1'
 
 function DispatchForm({
   initial,
@@ -100,7 +100,7 @@ function DispatchForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/40 dark:bg-indigo-950/20 p-5 mb-5 space-y-4">
+    <form onSubmit={handleSubmit} className="rounded-xl border border-primary-bg bg-primary-bg/40 dark:bg-primary-bg p-5 mb-5 space-y-4">
       {/* Title */}
       <div>
         <label className={lbl}>Title *</label>
@@ -126,8 +126,8 @@ function DispatchForm({
               onClick={() => setDispatchType(t)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
                 dispatchType === t
-                  ? 'border-indigo-400 bg-indigo-600 text-white'
-                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:border-indigo-300'
+                  ? 'border-primary bg-primary text-on-primary'
+                  : 'border-border bg-surface text-text hover:border-primary'
               }`}
             >
               {TYPE_LABELS[t]}
@@ -139,17 +139,17 @@ function DispatchForm({
       {/* Body */}
       <div>
         <div className="flex items-center justify-between mb-1">
-          <label className={lbl + ' mb-0'}>Body * <span className="text-gray-400 font-normal">(markdown supported)</span></label>
+          <label className={lbl + ' mb-0'}>Body * <span className="text-subtle font-normal">(markdown supported)</span></label>
           <button
             type="button"
             onClick={() => setPreview(p => !p)}
-            className="text-xs text-indigo-500 hover:text-indigo-700 transition-colors"
+            className="text-xs text-primary-strong hover:text-primary-strong transition-colors"
           >
             {preview ? 'Edit' : 'Preview'}
           </button>
         </div>
         {preview ? (
-          <div className="min-h-[160px] rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 prose-preview">
+          <div className="min-h-[160px] rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text prose-preview">
             <MarkdownPreview text={body} />
           </div>
         ) : (
@@ -165,10 +165,10 @@ function DispatchForm({
         )}
       </div>
 
-      {/* Poll options — only when type=poll */}
+      {/* Poll options. Only when type=poll */}
       {dispatchType === 'poll' && (
         <div>
-          <label className={lbl}>Poll Options <span className="text-gray-400 font-normal">(min 2)</span></label>
+          <label className={lbl}>Poll Options <span className="text-subtle font-normal">(min 2)</span></label>
           <div className="space-y-2">
             {pollOptions.map((opt, i) => (
               <div key={i} className="flex items-center gap-2">
@@ -188,7 +188,7 @@ function DispatchForm({
                   <button
                     type="button"
                     onClick={() => setPollOptions(pollOptions.filter((_, j) => j !== i))}
-                    className="shrink-0 p-1 text-gray-400 hover:text-red-500 transition-colors"
+                    className="shrink-0 p-1 text-subtle hover:text-danger transition-colors"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -199,7 +199,7 @@ function DispatchForm({
               <button
                 type="button"
                 onClick={() => setPollOptions([...pollOptions, ''])}
-                className="text-xs text-indigo-500 hover:text-indigo-700 flex items-center gap-1 transition-colors"
+                className="text-xs text-primary-strong hover:text-primary-strong flex items-center gap-1 transition-colors"
               >
                 <Plus className="w-3 h-3" /> Add option
               </button>
@@ -232,7 +232,7 @@ function DispatchForm({
             disabled={isPending}
             className={input}
           >
-            <option value="">— Select —</option>
+            <option value="">- Select -</option>
             {audienceOptions.map(a => (
               <option key={a.id} value={a.id}>{a.name}</option>
             ))}
@@ -243,14 +243,14 @@ function DispatchForm({
       {/* Linked task */}
       {tasks.length > 0 && (
         <div>
-          <label className={lbl}>Link a Challenge <span className="text-gray-400 font-normal">(optional)</span></label>
+          <label className={lbl}>Link a Challenge <span className="text-subtle font-normal">(optional)</span></label>
           <select
             value={taskId}
             onChange={e => setTaskId(e.target.value)}
             disabled={isPending}
             className={input}
           >
-            <option value="">— None —</option>
+            <option value="">- None -</option>
             {tasks.map(t => (
               <option key={t.id} value={t.id}>{t.name}</option>
             ))}
@@ -262,7 +262,7 @@ function DispatchForm({
       <div>
         <label className={lbl}>
           <Clock className="w-3 h-3 inline mr-1" />
-          Schedule publish <span className="text-gray-400 font-normal">(optional — leave blank to save as draft)</span>
+          Schedule publish <span className="text-subtle font-normal">(optional. Leave blank to save as draft)</span>
         </label>
         <input
           type="datetime-local"
@@ -277,7 +277,7 @@ function DispatchForm({
         <button
           type="submit"
           disabled={!title.trim() || !body.trim() || !audId || isPending}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-40 transition-colors"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary-hover disabled:opacity-40 transition-colors"
         >
           <Check className="w-3.5 h-3.5" />
           {isPending ? 'Saving…' : initial ? 'Save changes' : 'Save draft'}
@@ -286,7 +286,7 @@ function DispatchForm({
           type="button"
           onClick={onCancel}
           disabled={isPending}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-xs font-medium text-muted hover:bg-surface-elevated transition-colors"
         >
           <X className="w-3.5 h-3.5" />
           Cancel
@@ -296,16 +296,16 @@ function DispatchForm({
   )
 }
 
-// Lightweight inline markdown preview — no import needed
+// Lightweight inline markdown preview. No import needed
 function MarkdownPreview({ text }: { text: string }) {
-  if (!text.trim()) return <span className="text-gray-400 italic">Nothing to preview yet.</span>
+  if (!text.trim()) return <span className="text-subtle italic">Nothing to preview yet.</span>
   // Render as pre-wrap for now; the full react-markdown render is on the public page
   return <pre className="whitespace-pre-wrap font-sans text-sm">{text}</pre>
 }
 
 const STATUS_COLOR: Record<string, string> = {
-  draft:     'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400',
-  published: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300',
+  draft:     'bg-surface-elevated text-muted dark:bg-surface-elevated dark:text-subtle',
+  published: 'bg-success-bg text-success dark:bg-success-bg',
 }
 
 export function DispatchesClient({
@@ -367,15 +367,15 @@ export function DispatchesClient({
   return (
     <div>
       {actionError && (
-        <div className="mb-4 flex items-start gap-2 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 px-4 py-3 text-sm text-red-700 dark:text-red-300">
+        <div className="mb-4 flex items-start gap-2 rounded-lg border border-danger bg-danger-bg/30 px-4 py-3 text-sm text-danger">
           <span className="shrink-0 font-semibold">Error:</span>
           <span className="flex-1">{actionError}</span>
-          <button onClick={() => setActionError(null)} className="shrink-0 text-red-400 hover:text-red-600 transition-colors">✕</button>
+          <button onClick={() => setActionError(null)} className="shrink-0 text-danger hover:text-danger transition-colors">✕</button>
         </div>
       )}
       <div className="space-y-2">
         {dispatches.length === 0 && (
-          <p className="text-sm text-gray-400 py-8 text-center">No dispatches yet.</p>
+          <p className="text-sm text-subtle py-8 text-center">No dispatches yet.</p>
         )}
 
         {dispatches.map(d => (
@@ -389,32 +389,32 @@ export function DispatchesClient({
                 isPending={isPending}
               />
             ) : (
-              <div className="flex items-start gap-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 group">
+              <div className="flex items-start gap-3 rounded-xl border border-border bg-surface px-4 py-3 group">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap mb-0.5">
                     <Link
                       href={`/broadcast/${d.id}`}
-                      className="text-sm font-semibold text-gray-900 dark:text-gray-50 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                      className="text-sm font-semibold text-text hover:text-primary-strong dark:hover:text-primary-strong transition-colors"
                     >
                       {d.title}
                     </Link>
-                    <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium capitalize ${STATUS_COLOR[d.status]}`}>
+                    <span className={`text-[11px] px-1.5 py-0.5 rounded-md font-medium capitalize ${STATUS_COLOR[d.status]}`}>
                       {d.status}
                     </span>
                     {d.dispatch_type && (
-                      <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${TYPE_COLORS[d.dispatch_type]}`}>
+                      <span className={`text-[11px] px-1.5 py-0.5 rounded-md font-medium ${TYPE_COLORS[d.dispatch_type]}`}>
                         {TYPE_LABELS[d.dispatch_type]}
                       </span>
                     )}
-                    <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 font-medium capitalize">
+                    <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-surface-elevated text-muted font-medium capitalize">
                       → {d.audience_scope}
                     </span>
                   </div>
                   {d.excerpt && (
-                    <p className="text-xs text-gray-400 line-clamp-1">{d.excerpt}</p>
+                    <p className="text-xs text-subtle line-clamp-1">{d.excerpt}</p>
                   )}
                   {d.linked_task && (
-                    <p className="text-xs text-indigo-500 mt-0.5">Challenge: {d.linked_task.name}</p>
+                    <p className="text-xs text-primary-strong mt-0.5">Challenge: {d.linked_task.name}</p>
                   )}
                 </div>
 
@@ -423,7 +423,7 @@ export function DispatchesClient({
                     <button
                       onClick={() => handlePublish(d.id)}
                       disabled={isPending}
-                      className="p-1.5 rounded-lg text-gray-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-950/30 disabled:opacity-50 transition-colors"
+                      className="p-1.5 rounded-lg text-subtle hover:text-success hover:bg-success-bg dark:hover:bg-success-bg/30 disabled:opacity-50 transition-colors"
                       aria-label="Publish"
                       title="Publish"
                     >
@@ -433,7 +433,7 @@ export function DispatchesClient({
                     <button
                       onClick={() => handleUnpublish(d.id)}
                       disabled={isPending}
-                      className="p-1.5 rounded-lg text-gray-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30 disabled:opacity-50 transition-colors"
+                      className="p-1.5 rounded-lg text-subtle hover:text-warning hover:bg-warning-bg dark:hover:bg-warning-bg/30 disabled:opacity-50 transition-colors"
                       aria-label="Unpublish"
                       title="Unpublish"
                     >
@@ -442,7 +442,7 @@ export function DispatchesClient({
                   )}
                   <button
                     onClick={() => setEditingId(d.id)}
-                    className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-colors"
+                    className="p-1.5 rounded-lg text-subtle hover:text-primary-strong hover:bg-primary-bg dark:hover:bg-primary-bg transition-colors"
                     aria-label="Edit"
                     title="Edit"
                   >
@@ -451,7 +451,7 @@ export function DispatchesClient({
                   <button
                     onClick={() => handleDelete(d.id)}
                     disabled={isPending}
-                    className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-50 transition-colors"
+                    className="p-1.5 rounded-lg text-subtle hover:text-danger hover:bg-danger-bg disabled:opacity-50 transition-colors"
                     aria-label="Delete"
                     title="Delete"
                   >

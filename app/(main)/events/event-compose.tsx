@@ -51,7 +51,7 @@ export function EventCompose({ groups }: { groups: Group[] }) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors whitespace-nowrap"
+        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors whitespace-nowrap"
       >
         <Plus className="w-4 h-4" />
         New Event
@@ -71,7 +71,7 @@ export function EventCompose({ groups }: { groups: Group[] }) {
         error={error}
       >
         {groups.length === 0 ? (
-          <p className="text-sm text-gray-500 text-center py-6">
+          <p className="text-sm text-muted text-center py-6">
             You must be in a circle to create an event.
           </p>
         ) : (
@@ -116,7 +116,7 @@ export function EventCompose({ groups }: { groups: Group[] }) {
               </div>
               <div>
                 <label className={cmLabel}>
-                  Ends at <span className="text-gray-400 font-normal">(optional)</span>
+                  Ends at <span className="text-subtle font-normal">(optional)</span>
                 </label>
                 <input
                   type="datetime-local"
@@ -130,7 +130,7 @@ export function EventCompose({ groups }: { groups: Group[] }) {
 
             <div>
               <label className={cmLabel}>
-                Location <span className="text-gray-400 font-normal">(optional)</span>
+                Location <span className="text-subtle font-normal">(optional)</span>
               </label>
               <input
                 type="text"
@@ -144,7 +144,7 @@ export function EventCompose({ groups }: { groups: Group[] }) {
 
             <div>
               <label className={cmLabel}>
-                Description <span className="text-gray-400 font-normal">(optional)</span>
+                Description <span className="text-subtle font-normal">(optional)</span>
               </label>
               <textarea
                 value={description}
