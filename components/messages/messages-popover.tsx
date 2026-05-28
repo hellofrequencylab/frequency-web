@@ -112,35 +112,43 @@ export function MessagesPopover({ initialUnread = 0 }: { initialUnread?: number 
             {data && data.conversations.length > 0 && (
               <div className="py-1 border-t border-gray-100 dark:border-gray-800">
                 <p className="px-4 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-400">Direct messages</p>
-                {data.conversations.map(c => (
-                  <Link
-                    key={c.id}
-                    href={`/messages/${c.id}`}
-                    onClick={() => setOpen(false)}
-                    className="flex items-center gap-2.5 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-                  >
-                    {c.other?.avatar_url ? (
-                      <img src={c.other.avatar_url} alt={c.other.display_name} className="w-7 h-7 rounded-full object-cover shrink-0" />
-                    ) : (
-                      <div className="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 text-[10px] font-semibold flex items-center justify-center shrink-0 select-none">
-                        {c.other ? getInitials(c.other.display_name) : '?'}
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-xs truncate ${c.unread > 0 ? 'font-semibold text-gray-900 dark:text-gray-50' : 'font-medium text-gray-700 dark:text-gray-300'}`}>
-                        {c.other?.display_name ?? 'Unknown'}
-                      </p>
-                      {c.lastMessage && (
-                        <p className="text-[10px] text-gray-400 truncate">{c.lastMessage.body}</p>
+                {data.conversations.map(c => {
+                  const isGroup = c.participants.length > 1
+                  const display = c.name || (isGroup
+                    ? c.participants.slice(0, 3).map(p => p.display_name.split(' ')[0]).join(', ') +
+                      (c.participants.length > 3 ? ` +${c.participants.length - 3}` : '')
+                    : c.participants[0]?.display_name ?? 'Unknown')
+                  const firstAvatar = c.participants[0]
+                  return (
+                    <Link
+                      key={c.id}
+                      href={`/messages/${c.id}`}
+                      onClick={() => setOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                    >
+                      {firstAvatar?.avatar_url ? (
+                        <img src={firstAvatar.avatar_url} alt={firstAvatar.display_name} className="w-7 h-7 rounded-full object-cover shrink-0" />
+                      ) : (
+                        <div className="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 text-[10px] font-semibold flex items-center justify-center shrink-0 select-none">
+                          {firstAvatar ? getInitials(firstAvatar.display_name) : '?'}
+                        </div>
                       )}
-                    </div>
-                    {c.unread > 0 && (
-                      <span className="shrink-0 min-w-[16px] h-4 px-1 rounded-full bg-indigo-600 text-white text-[9px] font-bold flex items-center justify-center">
-                        {c.unread > 9 ? '9+' : c.unread}
-                      </span>
-                    )}
-                  </Link>
-                ))}
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-xs truncate ${c.unread > 0 ? 'font-semibold text-gray-900 dark:text-gray-50' : 'font-medium text-gray-700 dark:text-gray-300'}`}>
+                          {display}
+                        </p>
+                        {c.lastMessage && (
+                          <p className="text-[10px] text-gray-400 truncate">{c.lastMessage.body}</p>
+                        )}
+                      </div>
+                      {c.unread > 0 && (
+                        <span className="shrink-0 min-w-[16px] h-4 px-1 rounded-full bg-indigo-600 text-white text-[9px] font-bold flex items-center justify-center">
+                          {c.unread > 9 ? '9+' : c.unread}
+                        </span>
+                      )}
+                    </Link>
+                  )
+                })}
               </div>
             )}
           </div>

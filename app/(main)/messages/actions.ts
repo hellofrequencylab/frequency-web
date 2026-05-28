@@ -127,3 +127,81 @@ export async function markConversationRead(conversationId: string) {
 
   revalidatePath('/messages')
 }
+
+// ── Group DMs ─────────────────────────────────────────────────────────
+
+const GROUP_DM_CAP = 25 // max participants including yourself
+
+export async function startGroupConversation(
+  profileIds: string[],
+  name?: string | null
+): Promise<{ id: string }> {
+  const myProfileId = await getMyProfileId()
+
+  // Filter out self, dedupe, and validate
+  const others = [...new Set(profileIds)].filter(id => id !== myProfileId)
+  if (others.length === 0) throw new Error('Pick at least one person')
+  if (others.length + 1 > GROUP_DM_CAP) {
+    throw new Error(`Group DMs are capped at ${GROUP_DM_CAP} people`)
+  }
+
+  const admin = createAdminClient()
+
+  const trimmedName = name?.trim() || null
+
+  const { data: conv, error } = await admin
+    .from('conversations')
+    .insert({ name: trimmedName, created_by: myProfileId })
+    .select('id')
+    .single()
+
+  if (error || !conv) throw new Error(error?.message ?? 'Failed to create group DM')
+
+  const rows = [{ conversation_id: conv.id, profile_id: myProfileId }]
+  for (const id of others) {
+    rows.push({ conversation_id: conv.id, profile_id: id })
+  }
+
+  await admin.from('conversation_participants').insert(rows)
+
+  revalidatePath('/messages')
+  return { id: conv.id }
+}
+
+export async function renameConversation(conversationId: string, name: string) {
+  const myProfileId = await getMyProfileId()
+  const admin = createAdminClient()
+
+  // Caller must be a participant
+  const { data: part } = await admin
+    .from('conversation_participants')
+    .select('profile_id')
+    .eq('conversation_id', conversationId)
+    .eq('profile_id', myProfileId)
+    .maybeSingle()
+  if (!part) throw new Error('You must be a participant to rename this conversation')
+
+  const trimmed = name.trim() || null
+
+  await admin
+    .from('conversations')
+    .update({ name: trimmed })
+    .eq('id', conversationId)
+
+  revalidatePath(`/messages/${conversationId}`)
+  revalidatePath('/messages')
+}
+
+export async function leaveConversation(conversationId: string) {
+  const myProfileId = await getMyProfileId()
+  const admin = createAdminClient()
+
+  await admin
+    .from('conversation_participants')
+    .delete()
+    .eq('conversation_id', conversationId)
+    .eq('profile_id', myProfileId)
+
+  revalidatePath('/messages')
+  redirect('/messages')
+}

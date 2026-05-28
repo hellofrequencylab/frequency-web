@@ -5,6 +5,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { getInitials, relativeTime } from '@/lib/utils'
 import { NewRoomCompose } from '@/components/compose/new-room-compose'
+import { NewGroupDMCompose } from '@/components/compose/new-group-dm-compose'
+import { CrewLeadQuickAction } from '@/components/messages/crew-lead-quick-action'
 
 type Profile = {
   id: string
@@ -15,8 +17,9 @@ type Profile = {
 
 type ConversationRow = {
   id: string
+  name: string | null
   created_at: string
-  otherParticipant: Profile | null
+  participants: Profile[]
   lastMessage: { body: string; sender_id: string; created_at: string } | null
   unreadCount: number
   myLastReadAt: string | null
@@ -88,16 +91,20 @@ export default async function MessagesPage() {
   // ── DMs ───────────────────────────────────────────────────────────
   const { data: myParts } = await admin
     .from('conversation_participants')
-    .select('conversation_id, last_read_at, conversations!conversation_id(id, created_at)')
+    .select('conversation_id, last_read_at, conversations!conversation_id(id, name, created_at)')
     .eq('profile_id', myProfileId)
 
   const convIds = (myParts ?? []).map(p => p.conversation_id as string)
   const myLastReadMap: Record<string, string | null> = {}
+  const convNameMap: Record<string, string | null> = {}
   for (const p of myParts ?? []) {
-    myLastReadMap[p.conversation_id as string] = p.last_read_at as string | null
+    const cid = p.conversation_id as string
+    myLastReadMap[cid] = p.last_read_at as string | null
+    const conv = (p as unknown as { conversations: { name: string | null } | null }).conversations
+    convNameMap[cid] = conv?.name ?? null
   }
 
-  const otherPartMap: Record<string, Profile | null> = {}
+  const otherPartMap: Record<string, Profile[]> = {}
   if (convIds.length > 0) {
     const { data: allParts } = await admin
       .from('conversation_participants')
@@ -105,7 +112,11 @@ export default async function MessagesPage() {
       .in('conversation_id', convIds)
       .neq('profile_id', myProfileId)
     for (const p of allParts ?? []) {
-      otherPartMap[p.conversation_id as string] = p.profiles as unknown as Profile | null
+      const cid = p.conversation_id as string
+      const prof = p.profiles as unknown as Profile | null
+      if (!prof) continue
+      if (!otherPartMap[cid]) otherPartMap[cid] = []
+      otherPartMap[cid].push(prof)
     }
   }
 
@@ -138,8 +149,9 @@ export default async function MessagesPage() {
 
       return {
         id: cid,
+        name: convNameMap[cid] ?? null,
         created_at: conv?.created_at ?? '',
-        otherParticipant: otherPartMap[cid] ?? null,
+        participants: otherPartMap[cid] ?? [],
         lastMessage: lastMsg ? { body: lastMsg.body, sender_id: lastMsg.sender_id, created_at: lastMsg.created_at } : null,
         unreadCount,
         myLastReadAt: myLastRead ?? null,
@@ -170,7 +182,11 @@ export default async function MessagesPage() {
             Direct messages with friends and chat rooms with the community.
           </p>
         </div>
-        {canCreateRoom && <NewRoomCompose />}
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          <CrewLeadQuickAction />
+          <NewGroupDMCompose />
+          {canCreateRoom && <NewRoomCompose />}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -284,8 +300,12 @@ function RoomRow({ room }: { room: RoomRow }) {
 }
 
 function DMRow({ conv, myProfileId }: { conv: ConversationRow; myProfileId: string }) {
-  const other = conv.otherParticipant
   const hasUnread = conv.unreadCount > 0
+  const isGroup = conv.participants.length > 1
+  const display = conv.name || (isGroup
+    ? conv.participants.slice(0, 3).map(p => p.display_name.split(' ')[0]).join(', ') +
+      (conv.participants.length > 3 ? ` +${conv.participants.length - 3}` : '')
+    : conv.participants[0]?.display_name ?? 'Unknown')
 
   return (
     <Link
@@ -297,18 +317,20 @@ function DMRow({ conv, myProfileId }: { conv: ConversationRow; myProfileId: stri
       }`}
     >
       <div className="shrink-0">
-        {other?.avatar_url ? (
-          <img src={other.avatar_url} alt={other.display_name} className="w-10 h-10 rounded-full object-cover" />
+        {isGroup ? (
+          <GroupAvatars participants={conv.participants} />
+        ) : conv.participants[0]?.avatar_url ? (
+          <img src={conv.participants[0].avatar_url!} alt={conv.participants[0].display_name} className="w-10 h-10 rounded-full object-cover" />
         ) : (
           <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-sm font-semibold flex items-center justify-center select-none">
-            {other ? getInitials(other.display_name) : '?'}
+            {conv.participants[0] ? getInitials(conv.participants[0].display_name) : '?'}
           </div>
         )}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
           <span className={`text-sm truncate ${hasUnread ? 'font-semibold text-gray-900 dark:text-gray-50' : 'font-medium text-gray-700 dark:text-gray-300'}`}>
-            {other?.display_name ?? 'Unknown'}
+            {display}
           </span>
           {conv.lastMessage && (
             <span className="text-[11px] text-gray-400 shrink-0">{relativeTime(conv.lastMessage.created_at)}</span>
@@ -324,5 +346,28 @@ function DMRow({ conv, myProfileId }: { conv: ConversationRow; myProfileId: stri
         </div>
       </div>
     </Link>
+  )
+}
+
+function GroupAvatars({ participants }: { participants: Profile[] }) {
+  const shown = participants.slice(0, 3)
+  return (
+    <div className="relative w-10 h-10">
+      {shown.map((p, i) => {
+        const size = shown.length === 1 ? 'w-10 h-10' : shown.length === 2 ? 'w-7 h-7' : 'w-6 h-6'
+        const pos = shown.length === 1
+          ? ''
+          : i === 0 ? 'absolute top-0 left-0' : i === 1 ? 'absolute bottom-0 right-0' : 'absolute bottom-0 left-0'
+        return p.avatar_url ? (
+          <img key={p.id} src={p.avatar_url} alt={p.display_name}
+            className={`${size} ${pos} rounded-full object-cover ring-2 ring-white dark:ring-gray-900`} />
+        ) : (
+          <div key={p.id}
+            className={`${size} ${pos} rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-[9px] font-semibold flex items-center justify-center ring-2 ring-white dark:ring-gray-900`}>
+            {getInitials(p.display_name)}
+          </div>
+        )
+      })}
+    </div>
   )
 }
