@@ -155,7 +155,7 @@ export default async function RootPage() {
       </section>
 
       {/* ── Stats bar ──────────────────────────────────────────── */}
-      <section className="bg-canvas px-6 py-14">
+      <section className="bg-marketing-canvas px-6 py-14">
         <div className="max-w-4xl mx-auto flex items-center justify-center gap-16 sm:gap-24 flex-wrap">
           <StatItem value={memberCount} label="Members" />
           <StatItem value={circleCount} label="Circles" />
@@ -228,7 +228,7 @@ export default async function RootPage() {
             </div>
 
             <div className="relative mt-3">
-              <div className="absolute -top-16 inset-x-0 h-16 bg-gradient-to-b from-transparent to-canvas dark:to-canvas pointer-events-none" />
+              <div className="absolute -top-16 inset-x-0 h-16 bg-gradient-to-b from-transparent to-marketing-canvas dark:to-marketing-canvas pointer-events-none" />
 
               <div className="rounded-2xl border border-border bg-surface p-10 text-center shadow-sm">
                 <p className="text-xl font-bold text-text mb-2">
@@ -251,7 +251,7 @@ export default async function RootPage() {
       )}
 
       {/* ── Final CTA ──────────────────────────────────────────── */}
-      <section className="relative bg-canvas px-6 py-24 text-center overflow-hidden">
+      <section className="relative bg-marketing-canvas px-6 py-24 text-center overflow-hidden">
         <div
           className="absolute inset-0 opacity-10 pointer-events-none"
           style={{
@@ -277,7 +277,7 @@ export default async function RootPage() {
       </section>
 
       {/* ── Footer ─────────────────────────────────────────────── */}
-      <footer className="bg-canvas border-t border-border/60 px-6 py-10">
+      <footer className="bg-marketing-canvas border-t border-border/60 px-6 py-10">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-4">
             <img src="/frequency-logo.png" alt="Frequency" className="h-5 w-auto invert opacity-40" />

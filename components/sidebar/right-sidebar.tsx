@@ -48,8 +48,10 @@ function DateChip({ iso }: { iso: string }) {
   const d = new Date(iso)
   const month = d.toLocaleDateString('en-US', { month: 'short' })
   const day = d.getDate()
+  // Events use the green success palette so they read as "happening" — same
+  // language the EventFeedCard speaks at the top of the feed.
   return (
-    <div className="flex flex-col items-center justify-center w-9 h-9 rounded-lg bg-primary-bg text-primary-strong shrink-0">
+    <div className="flex flex-col items-center justify-center w-9 h-9 rounded-lg bg-success-bg text-success shrink-0">
       <span className="text-[9px] font-semibold uppercase leading-none">{month}</span>
       <span className="text-sm font-bold leading-tight">{day}</span>
     </div>
@@ -295,11 +297,11 @@ async function RecentDispatchesWidget({
             href={`/broadcast/${d.id}`}
             className="flex items-start gap-2.5 px-3 py-2.5 hover:bg-surface-elevated transition-colors"
           >
-            <div className="shrink-0 w-6 h-6 rounded-md bg-primary-bg flex items-center justify-center mt-0.5">
+            <div className="shrink-0 w-6 h-6 rounded-md bg-signal-bg flex items-center justify-center mt-0.5">
               {d.linked_task ? (
                 <Zap className="w-3 h-3 text-primary" />
               ) : (
-                <Megaphone className="w-3 h-3 text-primary-strong" />
+                <Megaphone className="w-3 h-3 text-signal-strong" />
               )}
             </div>
             <div className="flex-1 min-w-0">

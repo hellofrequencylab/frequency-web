@@ -209,19 +209,22 @@ export async function FeedList({
   )
 }
 
+// Dispatch banner — teal signal palette. Reads as "broadcast / official"
+// and stays visually distinct from the green event card and the amber
+// announcement post type further down the feed.
 function DispatchFeedCard({ dispatch: d }: { dispatch: DispatchItem }) {
   return (
     <Link
       href={`/broadcast/${d.id}`}
-      className="group block rounded-2xl border border-primary-bg/60 bg-primary-bg/50 dark:bg-primary-bg/10 shadow-sm px-4 py-3.5 hover:border-primary-bg dark:hover:border-primary transition-colors"
+      className="group block rounded-2xl border border-signal-bg bg-signal-bg/60 dark:bg-signal-bg/40 shadow-sm px-4 py-3.5 hover:border-signal transition-colors"
     >
       <div className="flex items-start gap-3">
-        <div className="shrink-0 w-7 h-7 rounded-lg bg-primary-bg flex items-center justify-center mt-0.5">
-          <Megaphone className="w-3.5 h-3.5 text-primary-strong" />
+        <div className="shrink-0 w-7 h-7 rounded-lg bg-signal-bg flex items-center justify-center mt-0.5">
+          <Megaphone className="w-3.5 h-3.5 text-signal-strong" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-0.5">
-            <span className="text-[10px] font-black uppercase tracking-widest text-primary-strong">
+            <span className="text-[10px] font-black uppercase tracking-widest text-signal-strong">
               {d.audience_scope} dispatch
             </span>
             {d.linked_task && (
@@ -230,7 +233,7 @@ function DispatchFeedCard({ dispatch: d }: { dispatch: DispatchItem }) {
               </span>
             )}
           </div>
-          <p className="text-sm font-bold text-text group-hover:text-primary-strong dark:group-hover:text-primary-strong transition-colors line-clamp-1">
+          <p className="text-sm font-bold text-text group-hover:text-signal-strong transition-colors line-clamp-1">
             {d.title}
           </p>
           {d.excerpt && (
@@ -240,7 +243,7 @@ function DispatchFeedCard({ dispatch: d }: { dispatch: DispatchItem }) {
             <span className="text-[11px] text-subtle">
               {d.author?.display_name} · {relativeTime(d.published_at)}
             </span>
-            <ArrowRight className="w-3 h-3 text-primary-strong dark:text-primary-strong group-hover:text-primary-strong transition-colors" />
+            <ArrowRight className="w-3 h-3 text-signal-strong group-hover:text-signal transition-colors" />
           </div>
         </div>
       </div>
@@ -248,6 +251,9 @@ function DispatchFeedCard({ dispatch: d }: { dispatch: DispatchItem }) {
   )
 }
 
+// Event banner — green success palette. Reads as "happening / alive / show
+// up" and stays visually distinct from the teal dispatch above and the
+// amber announcement below.
 function EventFeedCard({ event: e }: { event: { id: string; title: string; starts_at: string; location: string | null; slug: string } }) {
   const d = new Date(e.starts_at)
   const month = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()
@@ -257,19 +263,19 @@ function EventFeedCard({ event: e }: { event: { id: string; title: string; start
   return (
     <Link
       href={`/events/${e.slug}`}
-      className="group block rounded-2xl border border-warning-bg bg-warning-bg/30 dark:bg-warning-bg/10 shadow-sm px-4 py-3.5 hover:border-warning transition-colors"
+      className="group block rounded-2xl border border-success-bg bg-success-bg/60 dark:bg-success-bg/40 shadow-sm px-4 py-3.5 hover:border-success transition-colors"
     >
       <div className="flex items-center gap-3">
-        <div className="shrink-0 w-10 h-10 rounded-lg bg-warning-bg dark:bg-warning-bg flex flex-col items-center justify-center">
-          <span className="text-[9px] font-bold text-warning leading-none">{month}</span>
-          <span className="text-sm font-bold text-warning leading-tight">{day}</span>
+        <div className="shrink-0 w-10 h-10 rounded-lg bg-success-bg flex flex-col items-center justify-center">
+          <span className="text-[9px] font-bold text-success leading-none">{month}</span>
+          <span className="text-sm font-bold text-success leading-tight">{day}</span>
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-0.5">
-            <CalendarDays className="w-3 h-3 text-primary" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-primary">Upcoming event</span>
+            <CalendarDays className="w-3 h-3 text-success" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-success">Upcoming event</span>
           </div>
-          <p className="text-sm font-bold text-text group-hover:text-warning dark:group-hover:text-primary transition-colors line-clamp-1">
+          <p className="text-sm font-bold text-text group-hover:text-success transition-colors line-clamp-1">
             {e.title}
           </p>
           <div className="flex items-center gap-2 mt-0.5">
@@ -281,7 +287,7 @@ function EventFeedCard({ event: e }: { event: { id: string; title: string; start
             )}
           </div>
         </div>
-        <ArrowRight className="w-3.5 h-3.5 text-warning dark:text-warning group-hover:text-primary transition-colors shrink-0" />
+        <ArrowRight className="w-3.5 h-3.5 text-success group-hover:text-success transition-colors shrink-0" />
       </div>
     </Link>
   )
