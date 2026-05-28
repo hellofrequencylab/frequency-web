@@ -3,13 +3,13 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import {
-  Search, ChevronDown, ChevronUp, Mail, Shield, Pencil,
-  UserX, UserCheck, Trash2, Loader2, X, Check, Key,
+  Search, ChevronDown, ChevronUp, Mail, Pencil,
+  UserX, UserCheck, Trash2, Loader2, Check,
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import {
   assignRole, deactivateMember, reactivateMember,
-  sendPasswordReset, updateMemberProfile, deleteUserAccount,
+  sendMagicLink, updateMemberProfile, deleteUserAccount,
 } from '../actions'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
@@ -147,10 +147,14 @@ function MemberRow({
     })
   }
 
-  function handlePasswordReset() {
+  function handleSendMagicLink() {
     startTransition(async () => {
-      const result = await sendPasswordReset(m.id)
-      setStatus(`Reset email sent to ${result.email}`)
+      try {
+        const result = await sendMagicLink(m.id)
+        setStatus(`Sign-in link sent to ${result.email}`)
+      } catch (err: any) {
+        setStatus(`Error: ${err.message}`)
+      }
       setTimeout(() => setStatus(null), 3000)
     })
   }
@@ -291,11 +295,11 @@ function MemberRow({
               <Pencil className="w-3 h-3" /> Edit profile
             </button>
             <button
-              onClick={handlePasswordReset}
+              onClick={handleSendMagicLink}
               disabled={isPending}
               className="flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
             >
-              <Key className="w-3 h-3" /> Send password reset
+              <Mail className="w-3 h-3" /> Send sign-in link
             </button>
             {m.is_active ? (
               <button
