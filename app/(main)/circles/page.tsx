@@ -98,10 +98,10 @@ export default async function CirclesPage() {
 
   return (
     <div>
-      <div className="flex items-start justify-between gap-4 mb-6">
+      <div className="flex items-end justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50 mb-1">Circles</h1>
-          <p className="text-sm text-gray-500 leading-relaxed">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-1">Circles</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
             Your local crew. Circles are where you post, connect, and show up. Regular rides, shared
             updates, and the people you&apos;ll see week to week. Join one to get started.
           </p>
@@ -116,10 +116,7 @@ export default async function CirclesPage() {
 
           {/* ── Your circles ────────────────────────────── */}
           {myCircles.length > 0 && (
-            <section className="mb-8">
-              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                Your Circles
-              </h2>
+            <section className="mb-6">
               <div className="space-y-2">
                 {myCircles.map((circle) => (
                   <CircleCard
@@ -135,7 +132,14 @@ export default async function CirclesPage() {
           {/* ── Discover ────────────────────────────────── */}
           {otherCircles.length > 0 && (
             <section>
-              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+              {myCircles.length > 0 && (
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="h-px flex-1 bg-gray-200 dark:bg-gray-800" />
+                  <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">Discover</span>
+                  <div className="h-px flex-1 bg-gray-200 dark:bg-gray-800" />
+                </div>
+              )}
+              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 sr-only">
                 {myCircles.length > 0 ? 'Other Circles' : 'All Circles'}
               </h2>
               <div className="space-y-2">

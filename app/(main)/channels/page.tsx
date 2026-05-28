@@ -211,15 +211,15 @@ export default async function ChannelsPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-1">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Channels</h1>
-          {isCreator && scopeOptions.length > 0 && <NewChannelCompose scopeOptions={scopeOptions} />}
+      <div className="flex items-end justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-1">Channels</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed max-w-lg">
+            Focused spaces beyond your circle. Channels are where the community organises around a
+            topic, event, or conversation, open to anyone in your area.
+          </p>
         </div>
-        <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed max-w-lg">
-          Focused spaces beyond your circle. Channels are where the community organises around a
-          topic, event, or conversation — open to anyone in your area.
-        </p>
+        {isCreator && scopeOptions.length > 0 && <NewChannelCompose scopeOptions={scopeOptions} />}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

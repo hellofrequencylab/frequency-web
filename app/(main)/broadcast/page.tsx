@@ -146,19 +146,19 @@ export default async function BroadcastPage() {
     <div>
 
       {/* ── Header ─────────────────────────────────────────── */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between gap-2 mb-1">
-          <div className="flex items-center gap-2">
+      <div className="flex items-end justify-between gap-4 mb-6">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
             <Megaphone className="w-5 h-5 text-indigo-500" />
             <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Broadcast</h1>
           </div>
-          {isHost && (namedCircles.length > 0 || namedHubs.length > 0 || namedNexuses.length > 0) && (
-            <BroadcastCompose circles={namedCircles} hubs={namedHubs} nexuses={namedNexuses} />
-          )}
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Announcements, events, and challenges from your community.
+          </p>
         </div>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          Announcements, events, and challenges from your community.
-        </p>
+        {isHost && (namedCircles.length > 0 || namedHubs.length > 0 || namedNexuses.length > 0) && (
+          <BroadcastCompose circles={namedCircles} hubs={namedHubs} nexuses={namedNexuses} />
+        )}
       </div>
 
       {/* ── Section tiles ──────────────────────────────────── */}
