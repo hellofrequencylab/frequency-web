@@ -177,9 +177,14 @@ function MemberRow({
 
   function handleDelete() {
     startTransition(async () => {
-      await deleteUserAccount(m.id)
-      setStatus('Account deleted')
-      setConfirmDelete(false)
+      try {
+        await deleteUserAccount(m.id)
+        setStatus('Account deleted')
+        setConfirmDelete(false)
+      } catch (err: any) {
+        setStatus(`Error: ${err.message}`)
+        setTimeout(() => setStatus(null), 6000)
+      }
     })
   }
 
