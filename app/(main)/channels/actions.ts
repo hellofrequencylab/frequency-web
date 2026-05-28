@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
-type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor'
+type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 type ChannelScope = 'hub' | 'nexus' | 'outpost'
 
 async function getMyProfile(): Promise<{
@@ -39,7 +39,7 @@ export async function createChannel(formData: FormData) {
   const profile = await getMyProfile()
   if (!profile) return
 
-  const roleOrder: CommunityRole[] = ['member', 'crew', 'host', 'guide', 'mentor']
+  const roleOrder: CommunityRole[] = ['member', 'crew', 'host', 'guide', 'mentor', 'janitor']
   const roleIndex = roleOrder.indexOf(profile.community_role)
 
   // Role → minimum scope allowed

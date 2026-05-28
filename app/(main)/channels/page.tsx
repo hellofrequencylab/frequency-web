@@ -82,7 +82,7 @@ export default async function ChannelsPage() {
 
     if (profile) {
       myProfileId = profile.id
-      isCreator = ['host', 'guide', 'mentor'].includes(profile.community_role)
+      isCreator = ['host', 'guide', 'mentor', 'janitor'].includes(profile.community_role)
 
       // Derive nexus/hub/outpost from membership chain
       const { data: membership } = await admin
