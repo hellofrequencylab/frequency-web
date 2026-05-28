@@ -133,6 +133,12 @@ export default async function ChannelPage({
   const Icon = CATEGORY_ICON[channel.category] ?? Radio
   const accent = CATEGORY_ACCENT[channel.category] ?? 'text-muted bg-surface'
 
+  // Defensive: the 20240206 migration rewrites the seeded descriptions to
+  // remove em dashes, but until it lands on every environment we strip
+  // them at render time so the UI is consistent everywhere.
+  const description = (channel.description ?? 'A global channel anyone can tune into.')
+    .replace(/\s*—\s*/g, '. ')
+
   return (
     <div>
       <Link
@@ -143,8 +149,9 @@ export default async function ChannelPage({
       </Link>
 
       {/* ── Header. Same shape as every other page (mb-6, h1 text-2xl,
-              max-w-2xl description) so the channels detail screen reads
-              as part of the same family. ─────────────────────────── */}
+              max-w-2xl description). Description is sized to roughly two
+              lines fullscreen so the header stays compact; the explainer
+              copy moves below the right column. ────────────────────── */}
       <div className="flex items-end justify-between gap-4 mb-6">
         <div className="min-w-0">
           <div className="flex items-center gap-3 mb-1">
@@ -156,10 +163,7 @@ export default async function ChannelPage({
             </h1>
           </div>
           <p className="text-sm text-muted leading-relaxed max-w-2xl">
-            {channel.description ?? 'A global channel anyone can tune into.'}
-            {' '}This is the worldwide forum for {channel.name}. The list on
-            the right is local crews already practicing it. Tune in to see
-            and post in the forum; join or start a circle to take it offline.
+            {description}
           </p>
           <div className="flex items-center gap-2 mt-3 text-xs text-muted">
             <Users className="w-3 h-3" />
@@ -171,9 +175,17 @@ export default async function ChannelPage({
         </div>
 
         {myProfileId && (
-          isTunedIn
-            ? <TunedInButton channelId={channel.id} channelName={channel.name} size="md" />
-            : <TuneInButton channelId={channel.id} slug={channel.slug} size="md" />
+          <div className="flex items-center gap-2 shrink-0">
+            <NewCircleCompose
+              topicalChannelId={channel.id}
+              topicalChannelName={channel.name}
+              buttonLabel="Start a Circle"
+            />
+            {isTunedIn
+              ? <TunedInButton channelId={channel.id} channelName={channel.name} size="md" />
+              : <TuneInButton channelId={channel.id} slug={channel.slug} size="md" />
+            }
+          </div>
         )}
       </div>
 
@@ -187,8 +199,7 @@ export default async function ChannelPage({
             <div className="mb-4">
               <h2 className="text-sm font-semibold text-text">Forum</h2>
               <p className="text-xs text-muted leading-relaxed mt-0.5">
-                Anyone tuned in can post and reply. Talk shop, share what you&apos;re
-                working on, swap resources.
+                Open to anyone tuned in. Talk shop, share, swap notes.
               </p>
             </div>
             {isTunedIn ? (
@@ -225,8 +236,7 @@ export default async function ChannelPage({
                 Circles practicing {channel.name}
               </h2>
               <p className="text-xs text-muted leading-relaxed mt-0.5">
-                Local crews, up to 50 people, who meet regularly around this
-                practice. Start one if there isn&apos;t a circle near you yet.
+                Local crews who meet around this practice.
               </p>
             </div>
 
@@ -238,8 +248,6 @@ export default async function ChannelPage({
                 </p>
                 <p className="text-xs text-muted leading-relaxed mb-4 max-w-xs mx-auto">
                   Be the first to start a local crew practicing {channel.name}.
-                  You&apos;ll be the host, and circles nearby can crystallise
-                  into a hub together later.
                 </p>
                 {myProfileId && (
                   <div className="flex justify-center">
@@ -252,58 +260,50 @@ export default async function ChannelPage({
                 )}
               </div>
             ) : (
-              <>
-                <div className="space-y-2">
-                  {circles.map((c) => (
-                    <Link
-                      key={c.id}
-                      href={`/circles/${c.slug}`}
-                      className="block rounded-xl border border-border bg-surface px-3 py-2.5 hover:border-primary-bg dark:hover:border-primary transition-colors"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs font-medium text-text truncate">
-                          {c.name}
+              <div className="space-y-2">
+                {circles.map((c) => (
+                  <Link
+                    key={c.id}
+                    href={`/circles/${c.slug}`}
+                    className="block rounded-xl border border-border bg-surface px-3 py-2.5 hover:border-primary-bg dark:hover:border-primary transition-colors"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-medium text-text truncate">
+                        {c.name}
+                      </span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium shrink-0 ${
+                        c.type === 'in-person'
+                          ? 'bg-success-bg text-success'
+                          : 'bg-signal-bg text-signal-strong'
+                      }`}>
+                        {c.type === 'in-person' ? 'In-person' : 'Online'}
+                      </span>
+                    </div>
+                    <div className="mt-1 flex items-center gap-2 text-[11px] text-muted">
+                      {(c.city || c.neighborhood) && (
+                        <span className="flex items-center gap-0.5">
+                          <MapPin className="w-2.5 h-2.5" />
+                          {c.neighborhood || c.city}
                         </span>
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium shrink-0 ${
-                          c.type === 'in-person'
-                            ? 'bg-success-bg text-success'
-                            : 'bg-signal-bg text-signal-strong'
-                        }`}>
-                          {c.type === 'in-person' ? 'In-person' : 'Online'}
-                        </span>
-                      </div>
-                      <div className="mt-1 flex items-center gap-2 text-[11px] text-muted">
-                        {(c.city || c.neighborhood) && (
-                          <span className="flex items-center gap-0.5">
-                            <MapPin className="w-2.5 h-2.5" />
-                            {c.neighborhood || c.city}
-                          </span>
-                        )}
-                        <span>
-                          {c.member_count}/{c.member_cap} members
-                        </span>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-
-                {/* Always-visible "start your own" CTA so people can spin up a
-                    local crew even when other circles already exist. */}
-                {myProfileId && (
-                  <div className="mt-4 rounded-xl border border-dashed border-border bg-surface/50 p-4">
-                    <p className="text-xs text-muted leading-relaxed mb-3">
-                      Don&apos;t see one near you? Start your own circle
-                      practicing {channel.name}.
-                    </p>
-                    <NewCircleCompose
-                      topicalChannelId={channel.id}
-                      topicalChannelName={channel.name}
-                      buttonLabel="Start a Circle"
-                    />
-                  </div>
-                )}
-              </>
+                      )}
+                      <span>
+                        {c.member_count}/{c.member_cap} members
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
             )}
+
+            {/* Context note BELOW the circles list. Same spot whether or
+                not there are circles, so the page rhythm stays consistent
+                across all seven channels. */}
+            <p className="mt-4 text-xs text-muted leading-relaxed">
+              Circles are local crews of up to 50 people who meet regularly,
+              in-person or online. Each declares a channel as its practice.
+              You can start one from the header above. No hub or nexus
+              required yet, you&apos;ll be the first host.
+            </p>
           </div>
         </div>
       </div>
