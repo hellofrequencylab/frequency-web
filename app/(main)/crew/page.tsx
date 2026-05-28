@@ -226,6 +226,12 @@ export default async function CrewPage() {
           {/* 4 stat cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <StatCard
+              label="Season Rank"
+              value={rankDef.label}
+              Icon={Star}
+              colorCls="text-indigo-600 bg-indigo-50 dark:bg-indigo-950 dark:text-indigo-400"
+            />
+            <StatCard
               label="Zaps"
               value={currentSeasonZaps.toLocaleString()}
               Icon={Zap}
@@ -242,12 +248,6 @@ export default async function CrewPage() {
               value={String(completedTaskCount)}
               Icon={CheckCircle}
               colorCls="text-green-600 bg-green-50 dark:bg-green-950 dark:text-green-400"
-            />
-            <StatCard
-              label="Season Rank"
-              value={rankDef.label}
-              Icon={Star}
-              colorCls="text-indigo-600 bg-indigo-50 dark:bg-indigo-950 dark:text-indigo-400"
             />
           </div>
 
