@@ -46,7 +46,7 @@ export default async function JoinPage({ params }: Props) {
 
     if (profile) {
       const { data: membership } = await admin
-        .from('circle_memberships')
+        .from('memberships')
         .select('id')
         .eq('circle_id', circle.id)
         .eq('profile_id', profile.id)

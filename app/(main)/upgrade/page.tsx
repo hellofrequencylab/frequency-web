@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { Zap, Check, MessageSquare, CalendarDays, Users, Star, Radio, BarChart3 } from 'lucide-react'
 import { UpgradeToggle } from './upgrade-toggle'
 
@@ -11,8 +10,7 @@ export default async function UpgradePage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/sign-in')
 
-  const admin = createAdminClient()
-  const { data: profile } = await admin
+  const { data: profile } = await supabase
     .from('profiles')
     .select('id, community_role')
     .eq('auth_user_id', user.id)

@@ -10,23 +10,21 @@ export async function GET(request: Request) {
     return NextResponse.json({ profiles: [] })
   }
 
-  const admin = createAdminClient()
-  const { data: hits } = await admin
-    .from('profiles')
-    .select('id, handle, display_name, avatar_url')
-    .or(`handle.ilike.${q}%,display_name.ilike.${q}%`)
-    .limit(6)
-
-  const profiles = hits ?? []
-
-  // Annotate each profile with friendship status relative to the caller.
-  // is_friend = true means accepted; friend_status = 'none' | 'pending_outgoing'
-  // | 'pending_incoming' | 'accepted' lets the picker render the right CTA.
+  // Profile search uses search_handles_public RPC (SECURITY DEFINER) so we
+  // don't need service-role just to find people. The narrow return shape
+  // (id, handle, display_name, avatar_url) is enforced by the RPC itself.
+  type SearchHit = { id: string; handle: string; display_name: string; avatar_url: string | null }
   const supabase = await createClient()
+  const { data: hits } = await supabase.rpc('search_handles_public', { q })
+  const profiles = (hits ?? []) as SearchHit[]
+
+  // The friendships annotation below still uses admin client because the
+  // friendships table RLS hasn't been reviewed in this pass.
+  const admin = createAdminClient()
   const { data: { user } } = await supabase.auth.getUser()
   let myProfileId: string | null = null
   if (user) {
-    const { data: me } = await admin
+    const { data: me } = await supabase
       .from('profiles')
       .select('id')
       .eq('auth_user_id', user.id)

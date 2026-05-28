@@ -2,7 +2,6 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronDown, Users, CalendarDays, Globe, Zap, ArrowRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { SiteHeader } from '@/components/layout/site-header'
 import { getInitials } from '@/lib/utils'
 
@@ -34,38 +33,35 @@ export default async function RootPage() {
 
   if (user) redirect('/feed')
 
-  const admin = createAdminClient()
-
-  const [postsResult, statsResult, eventsResult, circleCountResult] = await Promise.all([
-    admin
+  // Anon reads on public.posts (visibility='public') and public.events
+  // (non-cancelled, future) are now allowed via the policies added in
+  // 20240204000000_public_landing_reads.sql. Counts go through SECURITY
+  // DEFINER RPCs so we don't have to open profiles/circles to anon SELECT.
+  const [postsResult, memberCountResult, eventsResult, circleCountResult] = await Promise.all([
+    supabase
       .from('posts')
       .select(
         `id, body, created_at, media_urls,
          author:profiles!author_id ( display_name, handle, avatar_url, community_role )`
       )
+      .eq('visibility', 'public')
       .is('parent_id', null)
       .order('created_at', { ascending: false })
       .limit(5),
-    admin
-      .from('profiles')
-      .select('id', { count: 'exact', head: true })
-      .eq('is_active', true),
-    admin
+    supabase.rpc('public_member_count'),
+    supabase
       .from('events')
       .select('id, title, starts_at, location, slug')
       .eq('is_cancelled', false)
       .gte('starts_at', new Date().toISOString())
       .order('starts_at', { ascending: true })
       .limit(3),
-    admin
-      .from('circles')
-      .select('id', { count: 'exact', head: true })
-      .eq('is_active', true),
+    supabase.rpc('public_active_circle_count'),
   ])
 
   const posts = (postsResult.data ?? []) as unknown as PostPreviewRow[]
-  const memberCount = statsResult.count ?? 0
-  const circleCount = circleCountResult.count ?? 0
+  const memberCount = (memberCountResult.data as number | null) ?? 0
+  const circleCount = (circleCountResult.data as number | null) ?? 0
   const upcomingEvents = (eventsResult.data ?? []) as { id: string; title: string; starts_at: string; location: string | null; slug: string }[]
 
   return (

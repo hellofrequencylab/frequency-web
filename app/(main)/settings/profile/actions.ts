@@ -14,10 +14,11 @@ export async function updateProfile(data: {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Unauthorized')
 
-  const admin = createAdminClient()
-
-  // Guard: handle uniqueness (exclude this user)
+  // Handle-uniqueness check spans rows the caller can't see under RLS, so it
+  // needs the service role. The actual UPDATE runs under the user's session
+  // so the `profiles: self update` policy enforces auth_user_id ownership.
   if (data.handle) {
+    const admin = createAdminClient()
     const { data: taken } = await admin
       .from('profiles')
       .select('id')
@@ -34,7 +35,7 @@ export async function updateProfile(data: {
   }
   if (data.avatarUrl) update.avatar_url = data.avatarUrl
 
-  const { error } = await admin
+  const { error } = await supabase
     .from('profiles')
     .update(update)
     .eq('auth_user_id', user.id)
