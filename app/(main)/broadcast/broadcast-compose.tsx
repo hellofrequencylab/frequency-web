@@ -58,7 +58,7 @@ export function BroadcastCompose({
     <>
       <button
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors whitespace-nowrap"
+        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors whitespace-nowrap"
       >
         <Plus className="w-4 h-4" />
         New Dispatch
@@ -100,8 +100,8 @@ export function BroadcastCompose({
                 onClick={() => setType(t)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
                   type === t
-                    ? 'border-indigo-400 bg-indigo-600 text-white'
-                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:border-indigo-300'
+                    ? 'border-primary bg-primary text-on-primary'
+                    : 'border-border bg-surface text-text hover:border-primary'
                 }`}
               >
                 {TYPE_LABELS[t]}
@@ -112,7 +112,7 @@ export function BroadcastCompose({
 
         <div>
           <label className={cmLabel}>
-            Body * <span className="text-gray-400 font-normal">(markdown supported)</span>
+            Body * <span className="text-subtle font-normal">(markdown supported)</span>
           </label>
           <textarea
             value={body}
@@ -148,7 +148,7 @@ export function BroadcastCompose({
               disabled={isPending}
               className={cmInput}
             >
-              <option value="">— Select —</option>
+              <option value="">- Select -</option>
               {audienceOptions.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
             </select>
           </div>

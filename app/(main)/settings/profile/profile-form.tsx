@@ -35,8 +35,8 @@ function resizeToJpeg(file: File, size = 512): Promise<Blob> {
 
 const HANDLE_RE = /^[a-z0-9_]+$/
 
-const input = 'w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-50 placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50'
-const lbl   = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'
+const input = 'w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-sm text-text placeholder-subtle focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50'
+const lbl   = 'block text-sm font-medium text-text mb-1'
 
 export function ProfileForm({
   userId,
@@ -187,10 +187,10 @@ export function ProfileForm({
             <img
               src={avatarPreview}
               alt="Profile photo"
-              className="w-16 h-16 rounded-full object-cover shrink-0 ring-2 ring-white dark:ring-gray-900 shadow"
+              className="w-16 h-16 rounded-full object-cover shrink-0 ring-2 ring-surface shadow"
             />
           ) : (
-            <div className="w-16 h-16 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-xl font-bold flex items-center justify-center shrink-0 select-none">
+            <div className="w-16 h-16 rounded-full bg-primary-bg text-primary-strong text-xl font-bold flex items-center justify-center shrink-0 select-none">
               {showInitials}
             </div>
           )}
@@ -198,7 +198,7 @@ export function ProfileForm({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 transition-colors"
+              className="text-sm font-medium text-primary-strong hover:text-primary-strong transition-colors"
             >
               {avatarPreview ? 'Change photo' : 'Upload photo'}
             </button>
@@ -211,12 +211,12 @@ export function ProfileForm({
                   setAvatarUrl(initial.avatarUrl)
                   if (fileInputRef.current) fileInputRef.current.value = ''
                 }}
-                className="text-sm text-gray-400 hover:text-gray-600 transition-colors"
+                className="text-sm text-subtle hover:text-muted transition-colors"
               >
                 Revert
               </button>
             )}
-            <p className="text-xs text-gray-400">Any image format up to 5 MB · resized to 512×512</p>
+            <p className="text-xs text-subtle">Any image format up to 5 MB · resized to 512×512</p>
           </div>
           <input
             ref={fileInputRef}
@@ -226,13 +226,13 @@ export function ProfileForm({
             onChange={handleFileChange}
           />
         </div>
-        {uploadError && <p className="mt-1.5 text-xs text-red-600">{uploadError}</p>}
+        {uploadError && <p className="mt-1.5 text-xs text-danger">{uploadError}</p>}
       </div>
 
       {/* ── Display name ────────────────────────────── */}
       <div>
         <label htmlFor="displayName" className={lbl}>
-          Display name <span className="text-red-400">*</span>
+          Display name <span className="text-danger">*</span>
         </label>
         <input
           id="displayName"
@@ -249,10 +249,10 @@ export function ProfileForm({
       {/* ── Handle ──────────────────────────────────── */}
       <div>
         <label htmlFor="handle" className={lbl}>
-          Handle <span className="text-red-400">*</span>
+          Handle <span className="text-danger">*</span>
         </label>
         <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 select-none">@</span>
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-subtle select-none">@</span>
           <input
             id="handle"
             type="text"
@@ -267,23 +267,23 @@ export function ProfileForm({
             className={`${input} pl-7 pr-8`}
           />
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm leading-none">
-            {handleStatus === 'checking'  && <span className="text-gray-300 animate-pulse">•••</span>}
-            {handleStatus === 'available' && <span className="text-green-500">✓</span>}
-            {handleStatus === 'taken'     && <span className="text-red-500">✗</span>}
+            {handleStatus === 'checking'  && <span className="text-subtle animate-pulse">•••</span>}
+            {handleStatus === 'available' && <span className="text-success">✓</span>}
+            {handleStatus === 'taken'     && <span className="text-danger">✗</span>}
           </span>
         </div>
         {handleStatus === 'taken' && (
-          <p className="mt-1 text-xs text-red-600">This handle is already taken.</p>
+          <p className="mt-1 text-xs text-danger">This handle is already taken.</p>
         )}
         {handle && !HANDLE_RE.test(handle) && (
-          <p className="mt-1 text-xs text-red-600">Lowercase letters, numbers, and underscores only.</p>
+          <p className="mt-1 text-xs text-danger">Lowercase letters, numbers, and underscores only.</p>
         )}
       </div>
 
       {/* ── Bio ─────────────────────────────────────── */}
       <div>
         <label htmlFor="bio" className={lbl}>
-          Bio <span className="text-gray-400 font-normal text-xs">(optional)</span>
+          Bio <span className="text-subtle font-normal text-xs">(optional)</span>
         </label>
         <textarea
           id="bio"
@@ -294,21 +294,21 @@ export function ProfileForm({
           disabled={isPending}
           className={`${input} resize-none`}
         />
-        <p className={`mt-1 text-xs text-right tabular-nums ${bio.length >= 260 ? 'text-orange-500' : 'text-gray-400'}`}>
+        <p className={`mt-1 text-xs text-right tabular-nums ${bio.length >= 260 ? 'text-primary' : 'text-subtle'}`}>
           {bio.length} / 280
         </p>
       </div>
 
       {/* ── Error + Save ────────────────────────────── */}
       {saveError && (
-        <p className="text-sm text-red-600">{saveError}</p>
+        <p className="text-sm text-danger">{saveError}</p>
       )}
 
       <div className="flex items-center gap-3 pt-1">
         <button
           type="submit"
           disabled={!canSave}
-          className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-40 transition-colors"
+          className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-40 transition-colors"
         >
           {isPending || uploading ? (
             <Loader2 className="w-4 h-4 animate-spin" />

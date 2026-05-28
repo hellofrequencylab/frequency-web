@@ -35,10 +35,10 @@ const TABS = ['people', 'posts', 'events'] as const
 type Tab = (typeof TABS)[number]
 
 const ROLE_COLOR: Record<string, string> = {
-  crew:   'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400',
-  host:   'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400',
-  guide:  'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-400',
-  mentor: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400',
+  crew:   'bg-signal-bg text-signal-strong',
+  host:   'bg-success-bg text-success',
+  guide:  'bg-signal-bg text-signal-strong',
+  mentor: 'bg-warning-bg text-warning',
 }
 
 function formatDate(iso: string) {
@@ -125,19 +125,19 @@ export default async function SearchPage({
 
   return (
     <div>
-      <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50 mb-4">Search</h1>
+      <h1 className="text-xl font-semibold text-text mb-4">Search</h1>
 
       {/* ── Search form ──────────────────────────────────────── */}
       <form method="GET" action="/search" className="mb-6">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-subtle pointer-events-none" />
           <input
             name="q"
             defaultValue={query}
             placeholder="Search people, posts, events…"
             autoFocus
             autoComplete="off"
-            className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 pl-9 pr-4 py-2.5 text-sm text-gray-900 dark:text-gray-50 placeholder:text-gray-400 focus:border-indigo-300 dark:focus:border-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900"
+            className="w-full rounded-xl border border-border bg-surface pl-9 pr-4 py-2.5 text-sm text-text placeholder:text-subtle focus:border-primary dark:focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40 dark:focus:ring-primary/30"
           />
           {/* Preserve tab across searches */}
           <input type="hidden" name="tab" value={tab} />
@@ -145,7 +145,7 @@ export default async function SearchPage({
       </form>
 
       {/* ── Tabs ─────────────────────────────────────────────── */}
-      <div className="flex gap-1 mb-6 border-b border-gray-100/80 dark:border-gray-800/50">
+      <div className="flex gap-1 mb-6 border-b border-border">
         {TABS.map((t) => {
           const icons = { people: Users, posts: FileText, events: CalendarDays }
           const Icon = icons[t]
@@ -156,18 +156,18 @@ export default async function SearchPage({
               href={`/search?q=${encodeURIComponent(query)}&tab=${t}`}
               className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors capitalize ${
                 isActive
-                  ? 'border-gray-900 dark:border-gray-50 text-gray-900 dark:text-gray-50'
-                  : 'border-transparent text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                  ? 'border-gray-900 text-text'
+                  : 'border-transparent text-subtle hover:text-text'
               }`}
             >
               <Icon className="w-3.5 h-3.5" />
               {t}
               {query.length >= 2 && resultCount[t] > 0 && (
                 <span
-                  className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${
+                  className={`text-[11px] px-1.5 py-0.5 rounded-md font-medium ${
                     isActive
-                      ? 'bg-gray-900 dark:bg-gray-50 text-white dark:text-gray-900'
-                      : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
+                      ? 'bg-canvas dark:bg-surface text-white dark:text-text'
+                      : 'bg-surface-elevated text-muted'
                   }`}
                 >
                   {resultCount[t]}
@@ -180,12 +180,12 @@ export default async function SearchPage({
 
       {/* ── Empty / prompt states ────────────────────────────── */}
       {!query && (
-        <p className="text-sm text-gray-400 text-center py-12">
+        <p className="text-sm text-subtle text-center py-12">
           Type at least 2 characters to search.
         </p>
       )}
       {query.length === 1 && (
-        <p className="text-sm text-gray-400 text-center py-12">
+        <p className="text-sm text-subtle text-center py-12">
           Keep typing…
         </p>
       )}
@@ -204,7 +204,7 @@ export default async function SearchPage({
                   <Link
                     key={p.id}
                     href={`/people/${p.handle}`}
-                    className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors -mx-3"
+                    className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-surface-elevated transition-colors -mx-3"
                   >
                     {p.avatar_url ? (
                       <img
@@ -213,27 +213,27 @@ export default async function SearchPage({
                         className="w-9 h-9 rounded-full object-cover shrink-0"
                       />
                     ) : (
-                      <div className="w-9 h-9 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 text-xs font-semibold flex items-center justify-center shrink-0 select-none">
+                      <div className="w-9 h-9 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none">
                         {getInitials(p.display_name)}
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-medium text-gray-900 dark:text-gray-50">
+                        <span className="text-sm font-medium text-text">
                           {p.display_name}
                           {isSelf && (
-                            <span className="ml-1 text-xs text-gray-400 font-normal">(you)</span>
+                            <span className="ml-1 text-xs text-subtle font-normal">(you)</span>
                           )}
                         </span>
                         {roleCls && (
-                          <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium capitalize ${roleCls}`}>
+                          <span className={`text-[11px] px-1.5 py-0.5 rounded-md font-medium capitalize ${roleCls}`}>
                             {p.community_role}
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-gray-400 mt-0.5">@{p.handle}</p>
+                      <p className="text-xs text-subtle mt-0.5">@{p.handle}</p>
                     </div>
-                    <span className="text-xs text-gray-300 dark:text-gray-600 shrink-0">→</span>
+                    <span className="text-xs text-subtle shrink-0">→</span>
                   </Link>
                 )
               })}
@@ -255,7 +255,7 @@ export default async function SearchPage({
                 return (
                   <div
                     key={post.id}
-                    className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm px-4 py-3"
+                    className="rounded-2xl border border-border bg-surface shadow-sm px-4 py-3"
                   >
                     <div className="flex items-center gap-2.5 mb-2">
                       {a?.avatar_url ? (
@@ -265,7 +265,7 @@ export default async function SearchPage({
                           className="w-7 h-7 rounded-full object-cover shrink-0"
                         />
                       ) : (
-                        <div className="w-7 h-7 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 text-[11px] font-semibold flex items-center justify-center shrink-0 select-none">
+                        <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-[11px] font-semibold flex items-center justify-center shrink-0 select-none">
                           {a ? getInitials(a.display_name) : '?'}
                         </div>
                       )}
@@ -273,25 +273,25 @@ export default async function SearchPage({
                         {a && (
                           <Link
                             href={`/people/${a.handle}`}
-                            className="text-sm font-medium text-gray-900 dark:text-gray-50 hover:underline truncate"
+                            className="text-sm font-medium text-text hover:underline truncate"
                           >
                             {a.display_name}
                           </Link>
                         )}
                         {roleCls && (
-                          <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium capitalize ${roleCls}`}>
+                          <span className={`text-[11px] px-1.5 py-0.5 rounded-md font-medium capitalize ${roleCls}`}>
                             {a!.community_role}
                           </span>
                         )}
                       </div>
-                      <span className="text-xs text-gray-400 shrink-0">
+                      <span className="text-xs text-subtle shrink-0">
                         {new Date(post.created_at).toLocaleDateString('en-US', {
                           month: 'short',
                           day: 'numeric',
                         })}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed line-clamp-4">
+                    <p className="text-sm text-text leading-relaxed line-clamp-4">
                       {post.body}
                     </p>
                   </div>
@@ -313,37 +313,37 @@ export default async function SearchPage({
                 <Link
                   key={event.id}
                   href={`/events/${event.slug}`}
-                  className="flex items-start gap-3 rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm px-4 py-3 hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors"
+                  className="flex items-start gap-3 rounded-2xl border border-border bg-surface shadow-sm px-4 py-3 hover:border-primary-bg dark:hover:border-primary transition-colors"
                 >
                   {/* Date block */}
-                  <div className="shrink-0 w-10 flex flex-col items-center rounded-lg bg-gray-50 dark:bg-gray-800 py-1.5 text-center">
-                    <span className="text-[10px] font-semibold text-gray-400 uppercase leading-none">
+                  <div className="shrink-0 w-10 flex flex-col items-center rounded-lg bg-surface-elevated py-1.5 text-center">
+                    <span className="text-[10px] font-semibold text-subtle uppercase leading-none">
                       {new Date(event.starts_at).toLocaleDateString('en-US', { month: 'short' })}
                     </span>
-                    <span className="text-lg font-black text-gray-900 dark:text-gray-50 leading-none mt-0.5">
+                    <span className="text-lg font-black text-text leading-none mt-0.5">
                       {new Date(event.starts_at).getDate()}
                     </span>
                   </div>
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-semibold text-gray-900 dark:text-gray-50 truncate">
+                      <span className="text-sm font-semibold text-text truncate">
                         {event.title}
                       </span>
                       {event.is_cancelled && (
-                        <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">
+                        <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-danger-bg text-danger font-medium">
                           Cancelled
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-400">
+                    <div className="flex items-center gap-2 mt-0.5 text-xs text-subtle">
                       <span>{formatDate(event.starts_at)}</span>
                       {event.location && <span>· {event.location}</span>}
                       {event.host && <span>· {event.host.display_name}</span>}
                     </div>
                   </div>
 
-                  <span className="text-xs text-gray-300 dark:text-gray-600 shrink-0 pt-1">→</span>
+                  <span className="text-xs text-subtle shrink-0 pt-1">→</span>
                 </Link>
               ))}
             </div>
@@ -359,8 +359,8 @@ export default async function SearchPage({
 function EmptyState({ label }: { label: string }) {
   return (
     <div className="py-16 text-center">
-      <Search className="w-8 h-8 text-gray-200 dark:text-gray-700 mx-auto mb-3" />
-      <p className="text-sm text-gray-400 dark:text-gray-500">{label}</p>
+      <Search className="w-8 h-8 text-subtle/60 mx-auto mb-3" />
+      <p className="text-sm text-subtle">{label}</p>
     </div>
   )
 }

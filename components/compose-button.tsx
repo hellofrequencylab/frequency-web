@@ -45,25 +45,25 @@ export function ComposeButton({ role }: { role: CommunityRole }) {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 bg-indigo-600 text-white rounded-xl px-4 py-2 text-sm font-semibold hover:bg-indigo-700 shadow-sm transition-colors"
+        className="flex items-center gap-1.5 bg-primary text-on-primary rounded-xl px-4 py-2 text-sm font-semibold hover:bg-primary-hover shadow-sm transition-colors"
       >
         <Plus className="w-4 h-4" />
         <span className="hidden sm:inline">Create</span>
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-72 rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-xl p-2 z-50">
+        <div className="absolute right-0 mt-2 w-72 rounded-2xl border border-border bg-surface shadow-xl p-2 z-50">
           {visible.map((opt) => (
             <Link
               key={opt.href}
               href={opt.href}
               onClick={() => setOpen(false)}
-              className="flex items-start gap-3 rounded-xl px-3 py-2.5 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-colors"
+              className="flex items-start gap-3 rounded-xl px-3 py-2.5 hover:bg-primary-bg dark:hover:bg-primary-bg transition-colors"
             >
-              <opt.icon className="w-5 h-5 text-indigo-500 mt-0.5 shrink-0" />
+              <opt.icon className="w-5 h-5 text-primary-strong mt-0.5 shrink-0" />
               <div>
-                <p className="text-sm font-semibold text-gray-900 dark:text-gray-50">{opt.label}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{opt.desc}</p>
+                <p className="text-sm font-semibold text-text">{opt.label}</p>
+                <p className="text-xs text-muted">{opt.desc}</p>
               </div>
             </Link>
           ))}

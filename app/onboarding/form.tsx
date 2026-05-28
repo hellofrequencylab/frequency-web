@@ -178,7 +178,7 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
     const initials = getInitials(displayName || userEmail)
     return (
       <div
-        className={`${dim} rounded-full bg-indigo-100 text-indigo-600 font-semibold flex items-center justify-center shrink-0`}
+        className={`${dim} rounded-full bg-primary-bg text-primary-strong font-semibold flex items-center justify-center shrink-0`}
       >
         {initials || '?'}
       </div>
@@ -193,10 +193,10 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
             <div
               className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-colors ${
                 s === step
-                  ? 'bg-indigo-600 text-white'
+                  ? 'bg-primary text-on-primary'
                   : s < step
-                  ? 'bg-indigo-200 text-indigo-700'
-                  : 'bg-gray-100 text-gray-400'
+                  ? 'bg-primary-bg text-primary-strong'
+                  : 'bg-surface-elevated text-subtle'
               }`}
             >
               {s < step ? '✓' : s}
@@ -204,23 +204,23 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
             {s < 4 && (
               <div
                 className={`h-px w-6 transition-colors ${
-                  s < step ? 'bg-indigo-300' : 'bg-gray-200'
+                  s < step ? 'bg-primary' : 'bg-border-strong'
                 }`}
               />
             )}
           </div>
         ))}
-        <span className="ml-2 text-xs text-gray-400">Step {step} of 4</span>
+        <span className="ml-2 text-xs text-subtle">Step {step} of 4</span>
       </div>
     )
   }
 
   const btnPrimary =
-    'flex-1 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
+    'flex-1 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
   const btnSecondary =
-    'flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors'
+    'flex-1 rounded-lg border border-border-strong px-4 py-2.5 text-sm font-semibold text-text hover:bg-surface transition-colors'
   const inputBase =
-    'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500'
+    'w-full rounded-lg border border-border-strong px-3 py-2 text-sm placeholder-subtle focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary'
 
   // ── Steps ─────────────────────────────────────────────────────────────────
 
@@ -233,16 +233,16 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
         {step === 1 && (
           <div className="space-y-6">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Create your profile</h1>
-              <p className="mt-1 text-sm text-gray-500">
+              <h1 className="text-2xl font-bold text-text">Create your profile</h1>
+              <p className="mt-1 text-sm text-muted">
                 How should the community know you?
               </p>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label htmlFor="displayName" className="block text-sm font-medium text-gray-700 mb-1">
-                  Display name <span className="text-red-400">*</span>
+                <label htmlFor="displayName" className="block text-sm font-medium text-text mb-1">
+                  Display name <span className="text-danger">*</span>
                 </label>
                 <input
                   id="displayName"
@@ -256,11 +256,11 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
               </div>
 
               <div>
-                <label htmlFor="handle" className="block text-sm font-medium text-gray-700 mb-1">
-                  Handle <span className="text-red-400">*</span>
+                <label htmlFor="handle" className="block text-sm font-medium text-text mb-1">
+                  Handle <span className="text-danger">*</span>
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 select-none">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-subtle select-none">
                     @
                   </span>
                   <input
@@ -278,21 +278,21 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
                   {/* Status indicator */}
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm leading-none">
                     {handleStatus === 'checking' && (
-                      <span className="text-gray-300 animate-pulse">•••</span>
+                      <span className="text-subtle animate-pulse">•••</span>
                     )}
                     {handleStatus === 'available' && (
-                      <span className="text-green-500">✓</span>
+                      <span className="text-success">✓</span>
                     )}
                     {handleStatus === 'taken' && (
-                      <span className="text-red-500">✗</span>
+                      <span className="text-danger">✗</span>
                     )}
                   </span>
                 </div>
                 {handleStatus === 'taken' && (
-                  <p className="mt-1 text-xs text-red-600">This handle is already taken.</p>
+                  <p className="mt-1 text-xs text-danger">This handle is already taken.</p>
                 )}
                 {handle && !HANDLE_RE.test(handle) && (
-                  <p className="mt-1 text-xs text-red-600">
+                  <p className="mt-1 text-xs text-danger">
                     Only lowercase letters, numbers, and underscores.
                   </p>
                 )}
@@ -309,21 +309,21 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
         {step === 2 && (
           <div className="space-y-6">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">About you</h1>
-              <p className="mt-1 text-sm text-gray-500">Both fields are optional.</p>
+              <h1 className="text-2xl font-bold text-text">About you</h1>
+              <p className="mt-1 text-sm text-muted">Both fields are optional.</p>
             </div>
 
             <div className="space-y-5">
               {/* Avatar upload */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Photo</label>
+                <label className="block text-sm font-medium text-text mb-2">Photo</label>
                 <div className="flex items-center gap-4">
                   {renderAvatar()}
                   <div className="flex flex-col gap-1.5">
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
+                      className="text-sm font-medium text-primary-strong hover:text-primary-strong"
                     >
                       {avatarPreview ? 'Change photo' : 'Upload photo'}
                     </button>
@@ -336,12 +336,12 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
                           setAvatarUrl('')
                           if (fileInputRef.current) fileInputRef.current.value = ''
                         }}
-                        className="text-sm text-gray-400 hover:text-gray-600"
+                        className="text-sm text-subtle hover:text-muted"
                       >
                         Remove
                       </button>
                     )}
-                    <p className="text-xs text-gray-400">JPG, PNG, GIF up to 5 MB</p>
+                    <p className="text-xs text-subtle">JPG, PNG, GIF up to 5 MB</p>
                   </div>
                   <input
                     ref={fileInputRef}
@@ -351,12 +351,12 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
                     onChange={handleFileChange}
                   />
                 </div>
-                {uploadError && <p className="mt-2 text-xs text-red-600">{uploadError}</p>}
+                {uploadError && <p className="mt-2 text-xs text-danger">{uploadError}</p>}
               </div>
 
               {/* Bio textarea */}
               <div>
-                <label htmlFor="bio" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="bio" className="block text-sm font-medium text-text mb-1">
                   Bio
                 </label>
                 <textarea
@@ -369,7 +369,7 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
                 />
                 <p
                   className={`mt-1 text-xs text-right tabular-nums ${
-                    bio.length >= 260 ? 'text-orange-500' : 'text-gray-400'
+                    bio.length >= 260 ? 'text-primary' : 'text-subtle'
                   }`}
                 >
                   {bio.length} / 280
@@ -392,18 +392,18 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
         {step === 3 && (
           <div className="space-y-6">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Your region</h1>
-              <p className="mt-1 text-sm text-gray-500">
+              <h1 className="text-2xl font-bold text-text">Your region</h1>
+              <p className="mt-1 text-sm text-muted">
                 This connects you to the right local community.
               </p>
             </div>
 
             <div>
-              <label htmlFor="region" className="block text-sm font-medium text-gray-700 mb-1">
-                Region <span className="text-red-400">*</span>
+              <label htmlFor="region" className="block text-sm font-medium text-text mb-1">
+                Region <span className="text-danger">*</span>
               </label>
               {regions.length === 0 ? (
-                <p className="text-sm text-gray-400 italic">
+                <p className="text-sm text-subtle italic">
                   No regions available yet. Check back soon.
                 </p>
               ) : (
@@ -442,33 +442,33 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
         {step === 4 && (
           <div className="space-y-6">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Looks good?</h1>
-              <p className="mt-1 text-sm text-gray-500">
+              <h1 className="text-2xl font-bold text-text">Looks good?</h1>
+              <p className="mt-1 text-sm text-muted">
                 Review your profile before joining.
               </p>
             </div>
 
-            <div className="rounded-xl border border-gray-200 divide-y divide-gray-100 overflow-hidden">
+            <div className="rounded-xl border border-border divide-y divide-border overflow-hidden">
               {/* Identity row */}
               <div className="flex items-center gap-4 p-4">
                 {renderAvatar('lg')}
                 <div>
-                  <p className="font-semibold text-gray-900">{displayName}</p>
-                  <p className="text-sm text-gray-500">@{handle}</p>
+                  <p className="font-semibold text-text">{displayName}</p>
+                  <p className="text-sm text-muted">@{handle}</p>
                 </div>
               </div>
 
               {bio && (
                 <div className="px-4 py-3">
-                  <p className="text-xs uppercase tracking-wide text-gray-400 mb-1">Bio</p>
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{bio}</p>
+                  <p className="text-xs uppercase tracking-wide text-subtle mb-1">Bio</p>
+                  <p className="text-sm text-text whitespace-pre-wrap">{bio}</p>
                 </div>
               )}
 
               {regionId && (
                 <div className="px-4 py-3">
-                  <p className="text-xs uppercase tracking-wide text-gray-400 mb-1">Region</p>
-                  <p className="text-sm text-gray-700">
+                  <p className="text-xs uppercase tracking-wide text-subtle mb-1">Region</p>
+                  <p className="text-sm text-text">
                     {regions.find((r) => r.id === regionId)?.name}
                   </p>
                 </div>
@@ -476,7 +476,7 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
             </div>
 
             {submitError && (
-              <p className="text-sm text-red-600 text-center">{submitError}</p>
+              <p className="text-sm text-danger text-center">{submitError}</p>
             )}
 
             <div className="flex gap-3">

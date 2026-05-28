@@ -57,11 +57,11 @@ export default async function FeedPage({
     <div className="max-w-2xl mx-auto w-full">
 
       {/* Header */}
-      <div className="mb-7 flex items-start justify-between gap-4">
+      <div className="flex items-end justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Feed</h1>
-          <p className="text-sm text-gray-400 mt-1">
-            {hasCircle ? "What's happening in your circles" : "What's happening"}
+          <h1 className="text-2xl font-bold text-text mb-1">Feed</h1>
+          <p className="text-sm text-muted leading-relaxed max-w-2xl">
+            {hasCircle ? "Here's what your circles are up to right now." : "What's happening across the community."}
           </p>
         </div>
         <CreateMenu role={myRole} />
@@ -77,8 +77,8 @@ export default async function FeedPage({
             canAnnounce={canAnnounce}
           />
           {!primaryCircleId && (
-            <p className="text-xs text-gray-400 -mt-2 px-1">
-              <Link href="/circles" className="text-indigo-500 hover:underline">
+            <p className="text-xs text-subtle -mt-2 px-1">
+              <Link href="/circles" className="text-primary-strong hover:underline">
                 Join a circle
               </Link>{' '}
               to post to your group instead.
@@ -90,16 +90,16 @@ export default async function FeedPage({
       {/* Sort toggle + feed */}
       <section className="mt-8">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-600">
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-subtle">
             {sort === 'relevant' ? 'For You' : 'Recent'}
           </h2>
-          <div className="flex items-center gap-0.5 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
+          <div className="flex items-center gap-0.5 bg-surface-elevated rounded-lg p-0.5">
             <Link
               href="?sort=relevant"
               className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                 sort === 'relevant'
-                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-50 shadow-sm'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                  ? 'bg-white text-text shadow-sm'
+                  : 'text-muted hover:text-text'
               }`}
             >
               For You
@@ -108,8 +108,8 @@ export default async function FeedPage({
               href="?sort=recent"
               className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                 sort === 'recent'
-                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-50 shadow-sm'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                  ? 'bg-white text-text shadow-sm'
+                  : 'text-muted hover:text-text'
               }`}
             >
               Recent

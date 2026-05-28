@@ -71,8 +71,8 @@ export function CommentSection({
   return (
     <div>
       <div className="flex items-center gap-2 mb-5">
-        <MessageCircle className="w-4 h-4 text-gray-400" />
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+        <MessageCircle className="w-4 h-4 text-subtle" />
+        <h2 className="text-sm font-semibold text-text">
           {comments.length > 0 ? `${comments.length} comment${comments.length !== 1 ? 's' : ''}` : 'Comments'}
         </h2>
       </div>
@@ -85,7 +85,7 @@ export function CommentSection({
               {c.author.avatar_url ? (
                 <img src={c.author.avatar_url} alt={c.author.display_name} className="w-7 h-7 rounded-full object-cover shrink-0 mt-0.5" />
               ) : (
-                <div className="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-[10px] font-bold text-gray-500 shrink-0 mt-0.5 select-none">
+                <div className="w-7 h-7 rounded-full bg-border-strong flex items-center justify-center text-[10px] font-bold text-muted shrink-0 mt-0.5 select-none">
                   {getInitials(c.author.display_name)}
                 </div>
               )}
@@ -93,13 +93,13 @@ export function CommentSection({
                 <div className="flex items-baseline gap-2 flex-wrap">
                   <Link
                     href={`/people/${c.author.handle}`}
-                    className="text-xs font-semibold text-gray-900 dark:text-gray-50 hover:underline"
+                    className="text-xs font-semibold text-text hover:underline"
                   >
                     {c.author.display_name}
                   </Link>
-                  <span className="text-[11px] text-gray-400">{relTime(c.created_at)}</span>
+                  <span className="text-[11px] text-subtle">{relTime(c.created_at)}</span>
                 </div>
-                <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed mt-0.5 whitespace-pre-wrap break-words">
+                <p className="text-sm text-text leading-relaxed mt-0.5 whitespace-pre-wrap break-words">
                   {c.body}
                 </p>
               </div>
@@ -107,7 +107,7 @@ export function CommentSection({
                 <button
                   onClick={() => handleDelete(c.id)}
                   disabled={isPending}
-                  className="shrink-0 p-1 rounded text-gray-300 dark:text-gray-700 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all disabled:opacity-30"
+                  className="shrink-0 p-1 rounded text-subtle/60 hover:text-danger opacity-0 group-hover:opacity-100 transition-all disabled:opacity-30"
                   title="Delete comment"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -117,7 +117,7 @@ export function CommentSection({
           ))}
         </div>
       ) : (
-        <p className="text-sm text-gray-400 mb-5">No comments yet. Be the first.</p>
+        <p className="text-sm text-subtle mb-5">No comments yet. Be the first.</p>
       )}
 
       {/* Compose */}
@@ -131,22 +131,22 @@ export function CommentSection({
             placeholder="Add a comment… (⌘↵ to post)"
             rows={2}
             disabled={isPending}
-            className="flex-1 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-50 placeholder-gray-400 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 resize-none disabled:opacity-50"
+            className="flex-1 rounded-xl border border-border bg-surface px-3 py-2 text-sm text-text placeholder-subtle focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40 dark:focus:ring-primary/30 resize-none disabled:opacity-50"
           />
           <button
             type="submit"
             disabled={!body.trim() || isPending}
-            className="self-end inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-40 transition-colors shrink-0"
+            className="self-end inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-40 transition-colors shrink-0"
           >
             {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Post'}
           </button>
         </form>
       ) : (
-        <p className="text-sm text-gray-400">
-          <Link href="/sign-in" className="text-indigo-500 hover:underline">Sign in</Link> to comment.
+        <p className="text-sm text-subtle">
+          <Link href="/sign-in" className="text-primary-strong hover:underline">Sign in</Link> to comment.
         </p>
       )}
-      {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
+      {error && <p className="mt-2 text-xs text-danger">{error}</p>}
     </div>
   )
 }

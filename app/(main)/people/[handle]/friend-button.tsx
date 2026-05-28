@@ -31,7 +31,7 @@ export function FriendButton({
         type="button"
         disabled={isPending}
         onClick={() => startTransition(() => sendFriendRequest(targetProfileId).then(() => {}))}
-        className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+        className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-hover disabled:opacity-50 transition-colors"
       >
         <UserPlus className="w-3.5 h-3.5" />
         Add Friend
@@ -48,7 +48,7 @@ export function FriendButton({
           if (!confirm('Cancel this friend request?')) return
           startTransition(() => cancelFriendRequest(targetProfileId).then(() => {}))
         }}
-        className="flex items-center gap-1.5 rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 transition-colors"
+        className="flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-sm font-medium text-muted hover:bg-surface-elevated disabled:opacity-50 transition-colors"
         title="Click to cancel"
       >
         <Clock className="w-3.5 h-3.5" />
@@ -64,7 +64,7 @@ export function FriendButton({
           type="button"
           disabled={isPending}
           onClick={() => startTransition(() => acceptFriendRequest(targetProfileId).then(() => {}))}
-          className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+          className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-hover disabled:opacity-50 transition-colors"
         >
           <Check className="w-3.5 h-3.5" />
           Accept
@@ -73,7 +73,7 @@ export function FriendButton({
           type="button"
           disabled={isPending}
           onClick={() => startTransition(() => declineFriendRequest(targetProfileId).then(() => {}))}
-          className="flex items-center gap-1.5 rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 transition-colors"
+          className="flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-sm font-medium text-muted hover:bg-surface-elevated disabled:opacity-50 transition-colors"
           aria-label="Decline"
         >
           <X className="w-3.5 h-3.5" />
@@ -91,7 +91,7 @@ export function FriendButton({
         if (!confirm('Unfriend this person?')) return
         startTransition(() => unfriend(targetProfileId).then(() => {}))
       }}
-      className="group flex items-center gap-1.5 rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30 px-3 py-1.5 text-sm font-medium text-green-700 dark:text-green-300 hover:border-red-200 hover:bg-red-50 hover:text-red-600 dark:hover:border-red-800 dark:hover:bg-red-950/30 dark:hover:text-red-400 disabled:opacity-50 transition-colors"
+      className="group flex items-center gap-1.5 rounded-lg border border-success bg-success-bg/30 px-3 py-1.5 text-sm font-medium text-success hover:border-danger hover:bg-danger-bg hover:text-danger dark:hover:bg-danger-bg dark:hover:text-danger disabled:opacity-50 transition-colors"
       title="Click to unfriend"
     >
       <UserCheck className="w-3.5 h-3.5 group-hover:hidden" />

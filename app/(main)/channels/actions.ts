@@ -121,7 +121,10 @@ export async function leaveChannel(channelId: string) {
 
 // ─── Topical Channels (Hierarchy v3, global topical layer) ───
 
-export async function tuneInChannel(channelId: string) {
+// Tunes the viewer in and drops them straight into the channel. The user
+// asked us to stop returning them to the channel list after they hit
+// "Tune in", since the natural next move is to read the channel.
+export async function tuneInChannel(channelId: string, slug: string) {
   const profileId = await getMyProfileId()
   if (!profileId) return
 
@@ -134,7 +137,8 @@ export async function tuneInChannel(channelId: string) {
     )
 
   revalidatePath('/channels')
-  revalidatePath(`/channels/${channelId}`)
+  revalidatePath(`/channels/${slug}`)
+  redirect(`/channels/${slug}`)
 }
 
 export async function tuneOutChannel(channelId: string) {
@@ -150,4 +154,63 @@ export async function tuneOutChannel(channelId: string) {
 
   revalidatePath('/channels')
   revalidatePath(`/channels/${channelId}`)
+}
+
+// Creates a new topical channel. Host+ only (these are global, so we keep
+// the bar above member/crew). After creation, sends the creator to the
+// channel they just spun up.
+export async function createTopicalChannel(formData: FormData): Promise<void> {
+  const me = await getMyProfile()
+  if (!me) throw new Error('You need to be signed in.')
+
+  const allowed: CommunityRole[] = ['host', 'guide', 'mentor', 'janitor']
+  if (!allowed.includes(me.community_role)) {
+    throw new Error('Channels can be created by hosts and above.')
+  }
+
+  const name = String(formData.get('name') ?? '').trim()
+  const description = String(formData.get('description') ?? '').trim() || null
+  const category = String(formData.get('category') ?? '').trim()
+
+  if (!name) throw new Error('Give the channel a name.')
+  if (name.length > 80) throw new Error('Channel names need to be 80 characters or fewer.')
+  if (!category) throw new Error('Pick a category so people can find it.')
+
+  const slug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 60)
+
+  if (!slug) throw new Error('That name does not produce a usable URL. Try something with letters or numbers.')
+
+  const admin = createAdminClient()
+
+  const { data: existing } = await admin
+    .from('topical_channels')
+    .select('id')
+    .eq('slug', slug)
+    .maybeSingle()
+
+  if (existing) throw new Error('A channel with that name already exists.')
+
+  const { data: created, error } = await admin
+    .from('topical_channels')
+    .insert({ name, slug, category, description, is_active: true })
+    .select('id, slug')
+    .single()
+
+  if (error || !created) throw new Error(error?.message ?? 'Could not create the channel.')
+
+  await admin
+    .from('topical_channel_memberships')
+    .upsert(
+      { topical_channel_id: created.id, profile_id: me.id },
+      { onConflict: 'topical_channel_id,profile_id' },
+    )
+
+  revalidatePath('/channels')
+  redirect(`/channels/${created.slug}`)
 }

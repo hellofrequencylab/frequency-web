@@ -63,15 +63,15 @@ export default async function AchievementsPage() {
         <div className="flex items-center gap-3">
           <Link
             href="/crew"
-            className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            className="text-sm text-subtle hover:text-muted dark:hover:text-subtle transition-colors"
           >
             Crew
           </Link>
-          <span className="text-gray-300 dark:text-gray-600">/</span>
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50">Achievements</h1>
+          <span className="text-subtle">/</span>
+          <h1 className="text-xl font-semibold text-text">Achievements</h1>
         </div>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Earn badges by engaging with your community. Some are secret — keep exploring to find them all.
+        <p className="text-sm text-muted mt-1">
+          Earn badges by engaging with your community. Some are secret. Keep exploring to find them all.
         </p>
       </div>
 
@@ -86,14 +86,14 @@ export default async function AchievementsPage() {
       {/* Global progress bar */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+          <span className="text-xs font-medium text-muted">
             Collection Progress
           </span>
-          <span className="text-xs text-gray-400">{stats.earned} of {stats.total}</span>
+          <span className="text-xs text-subtle">{stats.earned} of {stats.total}</span>
         </div>
-        <div className="h-2.5 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
+        <div className="h-2.5 rounded-full bg-surface-elevated overflow-hidden">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all"
+            className="h-full rounded-full bg-gradient-to-r bg-primary transition-all"
             style={{ width: `${earnedPct}%` }}
           />
         </div>
@@ -108,10 +108,10 @@ export default async function AchievementsPage() {
           return (
             <section key={category}>
               <div className="flex items-center gap-2 mb-3">
-                <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                <h2 className="text-sm font-semibold text-text">
                   {catConfig.label}
                 </h2>
-                <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-400 font-medium">
+                <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-surface-elevated text-subtle font-medium">
                   {earned}/{items.length}
                 </span>
               </div>
@@ -127,14 +127,14 @@ export default async function AchievementsPage() {
                       className={`rounded-2xl border px-4 py-3 transition-all ${
                         a.earned
                           ? `${tier.border} ${tier.bg} shadow-sm ${tier.glow ? `shadow-md ${tier.glow}` : ''}`
-                          : 'border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 opacity-60'
+                          : 'border-border bg-surface opacity-60'
                       }`}
                     >
                       <div className="flex items-start gap-3">
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
                           a.earned
                             ? `${tier.bg} ${tier.color}`
-                            : 'bg-gray-100 dark:bg-gray-800 text-gray-300 dark:text-gray-600'
+                            : 'bg-surface-elevated text-subtle'
                         }`}>
                           {isSecret ? (
                             <Lock className="w-5 h-5" />
@@ -147,20 +147,20 @@ export default async function AchievementsPage() {
                           <div className="flex items-center gap-2">
                             <span className={`text-sm font-semibold ${
                               a.earned
-                                ? 'text-gray-900 dark:text-gray-50'
-                                : 'text-gray-500 dark:text-gray-400'
+                                ? 'text-text'
+                                : 'text-muted'
                             }`}>
                               {isSecret ? '???' : a.name}
                             </span>
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${tier.bg} ${tier.color}`}>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-semibold ${tier.bg} ${tier.color}`}>
                               {tier.label}
                             </span>
                           </div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">
+                          <p className="text-xs text-muted mt-0.5 leading-relaxed">
                             {isSecret ? 'Keep exploring to discover this achievement.' : a.description}
                           </p>
                           {a.earned && a.unlockedAt && (
-                            <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">
+                            <p className="text-[11px] text-subtle mt-1">
                               Unlocked {new Date(a.unlockedAt).toLocaleDateString('en-US', {
                                 month: 'short', day: 'numeric', year: 'numeric',
                               })}
@@ -168,8 +168,8 @@ export default async function AchievementsPage() {
                           )}
                           {!a.earned && a.zaps_reward > 0 && !isSecret && (
                             <div className="flex items-center gap-1 mt-1">
-                              <Zap className="w-3 h-3 text-amber-400" />
-                              <span className="text-[11px] font-medium text-gray-400">+{a.zaps_reward} zaps</span>
+                              <Zap className="w-3 h-3 text-primary" />
+                              <span className="text-[11px] font-medium text-subtle">+{a.zaps_reward} zaps</span>
                             </div>
                           )}
                         </div>
@@ -188,12 +188,12 @@ export default async function AchievementsPage() {
 
 function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm p-3">
-      <div className="text-xl font-bold text-gray-900 dark:text-gray-50 leading-none">
+    <div className="rounded-2xl border border-border bg-surface shadow-sm p-3">
+      <div className="text-xl font-bold text-text leading-none">
         {value}
-        {sub && <span className="text-xs font-normal text-gray-400 ml-1">{sub}</span>}
+        {sub && <span className="text-xs font-normal text-subtle ml-1">{sub}</span>}
       </div>
-      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{label}</div>
+      <div className="text-xs text-muted mt-1">{label}</div>
     </div>
   )
 }

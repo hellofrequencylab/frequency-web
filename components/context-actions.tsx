@@ -121,23 +121,23 @@ export function ContextActions({ role, context }: ContextActionsProps) {
         onClick={() => setOpen((v) => !v)}
         aria-label="More actions"
         disabled={isPending}
-        className="p-1.5 rounded-md text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
+        className="p-1.5 rounded-md text-subtle hover:text-text hover:bg-surface-elevated transition-colors disabled:opacity-50"
       >
         <MoreHorizontal className="w-4 h-4" />
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 min-w-[180px] rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-lg z-50 overflow-hidden py-1">
+        <div className="absolute right-0 top-full mt-1 min-w-[180px] rounded-2xl border border-border bg-surface shadow-lg z-50 overflow-hidden py-1">
           {actions.map((action) =>
             action.kind === 'link' ? (
               <Link
                 key={action.key}
                 href={action.href}
                 onClick={() => setOpen(false)}
-                className={`flex items-center gap-2.5 px-3 py-2 text-xs font-medium transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 ${
+                className={`flex items-center gap-2.5 px-3 py-2 text-xs font-medium transition-colors hover:bg-surface-elevated ${
                   action.destructive
-                    ? 'text-red-600 dark:text-red-400'
-                    : 'text-gray-700 dark:text-gray-300'
+                    ? 'text-danger'
+                    : 'text-text'
                 }`}
               >
                 {action.icon}
@@ -151,10 +151,10 @@ export function ContextActions({ role, context }: ContextActionsProps) {
                   setOpen(false)
                 }}
                 disabled={isPending}
-                className={`flex items-center gap-2.5 px-3 py-2 text-xs font-medium transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 w-full text-left disabled:opacity-50 ${
+                className={`flex items-center gap-2.5 px-3 py-2 text-xs font-medium transition-colors hover:bg-surface-elevated w-full text-left disabled:opacity-50 ${
                   action.destructive
-                    ? 'text-red-600 dark:text-red-400'
-                    : 'text-gray-700 dark:text-gray-300'
+                    ? 'text-danger'
+                    : 'text-text'
                 }`}
               >
                 {action.icon}

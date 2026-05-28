@@ -24,8 +24,8 @@ type HostOption = { id: string; display_name: string }
 
 const STATUSES = ['forming', 'active', 'paused', 'archived'] as const
 
-const input  = 'w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-50 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 disabled:opacity-50 placeholder:text-gray-400'
-const lbl    = 'block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1'
+const input  = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-primary focus:ring-2 focus:ring-primary/40 dark:focus:ring-primary/30 disabled:opacity-50 placeholder:text-subtle'
+const lbl    = 'block text-xs font-medium text-muted mb-1'
 
 function CircleForm({
   initial,
@@ -64,14 +64,14 @@ function CircleForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/40 dark:bg-indigo-950/20 mb-4">
+    <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-xl border border-primary-bg bg-primary-bg/40 dark:bg-primary-bg mb-4">
       <div className="sm:col-span-2">
         <label className={lbl}>Circle name *</label>
         <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Encinitas Morning Ride" required disabled={isPending} className={input} />
       </div>
 
       <div className="sm:col-span-2">
-        <label className={lbl}>About <span className="text-gray-400 font-normal">(optional)</span></label>
+        <label className={lbl}>About <span className="text-subtle font-normal">(optional)</span></label>
         <textarea value={about} onChange={e => setAbout(e.target.value)} placeholder="What is this circle about?" rows={2} disabled={isPending} className={`${input} resize-none`} />
       </div>
 
@@ -92,7 +92,7 @@ function CircleForm({
         <div>
           <label className={lbl}>Hub</label>
           <select value={hubId} onChange={e => setHubId(e.target.value)} disabled={isPending} className={input}>
-            <option value="">— No hub —</option>
+            <option value="">- No hub -</option>
             {hubs.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
           </select>
         </div>
@@ -102,7 +102,7 @@ function CircleForm({
         <div>
           <label className={lbl}>Host</label>
           <select value={hostId} onChange={e => setHostId(e.target.value)} disabled={isPending} className={input}>
-            <option value="">— Assign later —</option>
+            <option value="">- Assign later -</option>
             {hosts.map(h => <option key={h.id} value={h.id}>{h.display_name}</option>)}
           </select>
         </div>
@@ -116,11 +116,11 @@ function CircleForm({
       </div>
 
       <div className="sm:col-span-2 flex items-center gap-2 pt-1">
-        <button type="submit" disabled={!name.trim() || isPending} className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-40 transition-colors">
+        <button type="submit" disabled={!name.trim() || isPending} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary-hover disabled:opacity-40 transition-colors">
           <Check className="w-3.5 h-3.5" />
           {isPending ? 'Saving…' : initial ? 'Save changes' : 'Create circle'}
         </button>
-        <button type="button" onClick={onCancel} disabled={isPending} className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+        <button type="button" onClick={onCancel} disabled={isPending} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-xs font-medium text-muted hover:bg-surface-elevated transition-colors">
           <X className="w-3.5 h-3.5" />
           Cancel
         </button>
@@ -130,10 +130,10 @@ function CircleForm({
 }
 
 const STATUS_COLOR: Record<string, string> = {
-  forming:  'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
-  active:   'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300',
-  paused:   'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
-  archived: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400',
+  forming:  'bg-signal-bg text-signal-strong',
+  active:   'bg-success-bg text-success dark:bg-success-bg',
+  paused:   'bg-warning-bg text-warning dark:bg-warning-bg dark:text-warning',
+  archived: 'bg-surface-elevated text-muted dark:bg-surface-elevated dark:text-subtle',
 }
 
 export function CirclesClient({
@@ -170,7 +170,7 @@ export function CirclesClient({
       {/* Active list */}
       <div className="space-y-2">
         {active.length === 0 && (
-          <p className="text-sm text-gray-400 py-6 text-center">No circles yet.</p>
+          <p className="text-sm text-subtle py-6 text-center">No circles yet.</p>
         )}
         {active.map(circle => (
           <div key={circle.id}>
@@ -184,18 +184,18 @@ export function CirclesClient({
                 isPending={isPending}
               />
             ) : (
-              <div className="flex items-center gap-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 group">
+              <div className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 group">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{circle.name}</span>
-                    <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium capitalize ${STATUS_COLOR[circle.status] ?? STATUS_COLOR.forming}`}>
+                    <span className="text-sm font-medium text-text">{circle.name}</span>
+                    <span className={`text-[11px] px-1.5 py-0.5 rounded-md font-medium capitalize ${STATUS_COLOR[circle.status] ?? STATUS_COLOR.forming}`}>
                       {circle.status}
                     </span>
-                    <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 font-medium">
+                    <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-surface-elevated text-muted font-medium">
                       {circle.type}
                     </span>
                   </div>
-                  <p className="text-xs text-gray-400 mt-0.5">
+                  <p className="text-xs text-subtle mt-0.5">
                     {circle.member_count}/{circle.member_cap} members
                     {circle.hub && ` · ${circle.hub.name}`}
                     {circle.host && ` · Host: ${circle.host.display_name}`}
@@ -203,11 +203,11 @@ export function CirclesClient({
                 </div>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <InviteLinkButton circleId={circle.id} />
-                  <button onClick={() => setEditingId(circle.id)} className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-colors" aria-label="Edit">
+                  <button onClick={() => setEditingId(circle.id)} className="p-1.5 rounded-lg text-subtle hover:text-primary-strong hover:bg-primary-bg dark:hover:bg-primary-bg transition-colors" aria-label="Edit">
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
                   {circle.status !== 'archived' && (
-                    <button onClick={() => handleArchive(circle.id)} disabled={isPending} className="p-1.5 rounded-lg text-gray-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30 disabled:opacity-50 transition-colors" aria-label="Archive">
+                    <button onClick={() => handleArchive(circle.id)} disabled={isPending} className="p-1.5 rounded-lg text-subtle hover:text-warning hover:bg-warning-bg dark:hover:bg-warning-bg/30 disabled:opacity-50 transition-colors" aria-label="Archive">
                       <Archive className="w-3.5 h-3.5" />
                     </button>
                   )}
@@ -221,14 +221,14 @@ export function CirclesClient({
       {/* Archived section */}
       {archived.length > 0 && (
         <details className="mt-6">
-          <summary className="text-xs font-medium text-gray-400 cursor-pointer hover:text-gray-600 select-none">
+          <summary className="text-xs font-medium text-subtle cursor-pointer hover:text-muted select-none">
             {archived.length} archived circle{archived.length > 1 ? 's' : ''}
           </summary>
           <div className="space-y-2 mt-2 opacity-60">
             {archived.map(circle => (
-              <div key={circle.id} className="flex items-center gap-3 rounded-xl border border-gray-100 dark:border-gray-800 px-4 py-3">
-                <span className="text-sm text-gray-500 flex-1">{circle.name}</span>
-                <span className="text-xs text-gray-400">archived</span>
+              <div key={circle.id} className="flex items-center gap-3 rounded-xl border border-border px-4 py-3">
+                <span className="text-sm text-muted flex-1">{circle.name}</span>
+                <span className="text-xs text-subtle">archived</span>
               </div>
             ))}
           </div>

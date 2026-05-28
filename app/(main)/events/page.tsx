@@ -32,7 +32,7 @@ function DateBlock({ iso }: { iso: string }) {
   const month = d.toLocaleDateString('en-US', { month: 'short' })
   const day = d.getDate()
   return (
-    <div className="flex flex-col items-center justify-center w-11 h-11 rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 shrink-0">
+    <div className="flex flex-col items-center justify-center w-11 h-11 rounded-xl bg-primary-bg text-primary-strong shrink-0">
       <span className="text-[10px] font-semibold uppercase leading-none">{month}</span>
       <span className="text-lg font-bold leading-tight">{day}</span>
     </div>
@@ -41,9 +41,9 @@ function DateBlock({ iso }: { iso: string }) {
 
 function SidebarCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
-      <div className="px-4 py-2.5 border-b border-gray-100/80 dark:border-gray-800/50">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">{title}</h3>
+    <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
+      <div className="px-4 py-2.5 border-b border-border">
+        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-subtle">{title}</h3>
       </div>
       {children}
     </div>
@@ -98,12 +98,12 @@ export default async function EventsPage() {
     return (
       <div>
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Events</h1>
+          <h1 className="text-2xl font-bold text-text">Events</h1>
         </div>
-        <div className="rounded-2xl border border-dashed border-gray-200/60 dark:border-gray-800/60 bg-gray-50/50 dark:bg-gray-900/50 p-12 text-center">
-          <CalendarDays className="w-8 h-8 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            <Link href="/circles" className="text-indigo-600 hover:underline">
+        <div className="rounded-2xl border border-dashed border-border bg-surface/50 dark:bg-canvas/50 p-12 text-center">
+          <CalendarDays className="w-8 h-8 text-subtle/60 mx-auto mb-3" />
+          <p className="text-sm text-muted">
+            <Link href="/circles" className="text-primary-strong hover:underline">
               Join a circle
             </Link>{' '}
             to see events.
@@ -177,9 +177,10 @@ export default async function EventsPage() {
     <div>
       <div className="flex items-end justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-1">Events</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed max-w-lg">
-            Group rides, gatherings, and meetups happening in your community. RSVP to see who is going and add events to your calendar.
+          <h1 className="text-2xl font-bold text-text mb-1">Events</h1>
+          <p className="text-sm text-muted leading-relaxed max-w-2xl">
+            Group rides, gatherings, and meetups happening in your community.
+            RSVP to see who&apos;s coming, then drop it on your calendar.
           </p>
         </div>
         {isCrew && <EventCompose groups={myCircles} />}
@@ -190,11 +191,11 @@ export default async function EventsPage() {
         {/* ── Main column: events list ─────────────────────────── */}
         <div className="lg:col-span-2">
           {events.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-gray-200/60 dark:border-gray-800/60 bg-gray-50/50 dark:bg-gray-900/50 p-12 text-center">
-              <CalendarDays className="w-8 h-8 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
-              <p className="text-sm text-gray-500 dark:text-gray-400">No upcoming events in the next 60 days.</p>
+            <div className="rounded-2xl border border-dashed border-border bg-surface/50 dark:bg-canvas/50 p-12 text-center">
+              <CalendarDays className="w-8 h-8 text-subtle/60 mx-auto mb-3" />
+              <p className="text-sm text-muted">No upcoming events in the next 60 days.</p>
               {isCrew && (
-                <Link href="/events/new" className="mt-3 inline-block text-xs text-indigo-600 hover:underline">
+                <Link href="/events/new" className="mt-3 inline-block text-xs text-primary-strong hover:underline">
                   Create the first one →
                 </Link>
               )}
@@ -205,17 +206,17 @@ export default async function EventsPage() {
                 <Link
                   key={event.id}
                   href={`/events/${event.slug}`}
-                  className="flex items-start gap-3 rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm px-4 py-3 hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-indigo-50/30 dark:hover:bg-indigo-950/20 transition-colors"
+                  className="flex items-start gap-3 rounded-2xl border border-border bg-surface shadow-sm px-4 py-3 hover:border-primary-bg dark:hover:border-primary hover:bg-primary-bg/30 dark:hover:bg-primary-bg transition-colors"
                 >
                   <DateBlock iso={event.starts_at} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 dark:text-gray-50 truncate">{event.title}</p>
+                    <p className="text-sm font-semibold text-text truncate">{event.title}</p>
                     <div className="flex items-center gap-2 flex-wrap mt-0.5">
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-muted">
                         {formatDate(event.starts_at)} · {formatTime(event.starts_at)}
                       </span>
                       {event.location && (
-                        <span className="flex items-center gap-0.5 text-xs text-gray-400">
+                        <span className="flex items-center gap-0.5 text-xs text-subtle">
                           <MapPin className="w-3 h-3" />
                           {event.location}
                         </span>
@@ -223,15 +224,15 @@ export default async function EventsPage() {
                     </div>
                     <div className="flex items-center gap-2 flex-wrap mt-1">
                       {circleNames[event.scope_id] && (
-                        <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-medium">
+                        <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-primary-bg text-primary-strong font-medium">
                           {circleNames[event.scope_id]}
                         </span>
                       )}
                       {rsvpCounts[event.id] > 0 && (
-                        <span className="text-[11px] text-gray-400">{rsvpCounts[event.id]} going</span>
+                        <span className="text-[11px] text-subtle">{rsvpCounts[event.id]} going</span>
                       )}
                       {myRsvps.has(event.id) && (
-                        <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">
+                        <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-success-bg text-success font-medium">
                           ✓ Going
                         </span>
                       )}
@@ -249,21 +250,21 @@ export default async function EventsPage() {
           {/* Your RSVPs quick-links */}
           <SidebarCard title="Your RSVPs">
             {myRsvpEvents.length === 0 ? (
-              <p className="px-4 py-4 text-xs text-gray-400 dark:text-gray-500 text-center">
+              <p className="px-4 py-4 text-xs text-subtle text-center">
                 No RSVPs yet
               </p>
             ) : (
-              <ul className="divide-y divide-gray-50 dark:divide-gray-800">
+              <ul className="divide-y divide-border">
                 {myRsvpEvents.map((event) => (
                   <li key={event.id}>
                     <Link
                       href={`/events/${event.slug}`}
-                      className="flex items-center justify-between px-4 py-2.5 gap-2 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                      className="flex items-center justify-between px-4 py-2.5 gap-2 hover:bg-surface-elevated transition-colors"
                     >
-                      <span className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">
+                      <span className="text-xs font-medium text-text dark:text-subtle/60 truncate">
                         {event.title}
                       </span>
-                      <span className="shrink-0 text-[11px] text-gray-400">
+                      <span className="shrink-0 text-[11px] text-subtle">
                         {formatDate(event.starts_at)}
                       </span>
                     </Link>
@@ -279,14 +280,14 @@ export default async function EventsPage() {
               <div className="px-4 py-3 space-y-2">
                 <Link
                   href="/events/new"
-                  className="flex items-center justify-between text-xs font-medium text-indigo-600 hover:underline"
+                  className="flex items-center justify-between text-xs font-medium text-primary-strong hover:underline"
                 >
                   New Event →
                 </Link>
                 {isHost && (
                   <Link
                     href="/admin/events"
-                    className="flex items-center justify-between text-xs font-medium text-gray-600 dark:text-gray-400 hover:underline"
+                    className="flex items-center justify-between text-xs font-medium text-muted hover:underline"
                   >
                     Manage Events
                   </Link>

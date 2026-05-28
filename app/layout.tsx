@@ -23,9 +23,12 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
+  // Matches the community canvas (--color-canvas). The pre-paint script
+  // below also writes this meta dynamically so it stays correct when the
+  // user toggles modes.
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+    { media: "(prefers-color-scheme: light)", color: "#FBFAF6" },
+    { media: "(prefers-color-scheme: dark)",  color: "#16130E" },
   ],
 };
 
@@ -52,9 +55,12 @@ export const metadata: Metadata = {
   },
 };
 
-// Inline script that runs before first paint to prevent flash of wrong theme.
-// Reads localStorage('theme'): 'dark' | 'light' | absent (use system pref).
-const themeScript = `(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(t!=='light'&&window.matchMedia('(prefers-color-scheme:dark)').matches)){document.documentElement.classList.add('dark')}}catch(e){}})();`;
+// Inline script. Runs synchronously before first paint so the .dark class
+// and <meta name="theme-color"> are correct on the first frame (prevents the
+// dark-mode flash). Reads localStorage('freq-theme'): 'light' | 'dark' |
+// 'system' | null; defaults to 'system' per the Dawn spec. We also migrate
+// the legacy 'theme' key one-time so existing users don't get reset.
+const themeScript = `(function(){try{var s=localStorage.getItem('freq-theme');if(!s){var legacy=localStorage.getItem('theme');if(legacy==='dark'||legacy==='light'||legacy==='system'){s=legacy;localStorage.setItem('freq-theme',legacy);}}var sys=window.matchMedia('(prefers-color-scheme:dark)').matches;var dark=s==='dark'||((s==='system'||!s)&&sys);document.documentElement.classList.toggle('dark',dark);var m=document.querySelector('meta[name="theme-color"]');if(!m){m=document.createElement('meta');m.setAttribute('name','theme-color');document.head.appendChild(m);}m.setAttribute('content',dark?'#16130E':'#FBFAF6');}catch(e){}})();`;
 
 export default function RootLayout({
   children,

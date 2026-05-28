@@ -23,7 +23,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="-mx-6 -my-6 flex flex-col min-h-full">
-      {/* Horizontal top nav bar — sits right under the main app header */}
+      {/* Horizontal top nav bar. Sits right under the main app header */}
       <AdminSubNav role={profile.community_role as CommunityRole} />
 
       {/* Page content */}

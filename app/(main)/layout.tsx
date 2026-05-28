@@ -9,7 +9,7 @@ import { AchievementToastContainer } from '@/components/achievement-toast'
 import { PresenceHeartbeat } from '@/components/presence/heartbeat'
 import { PushRegistration } from '@/components/push/registration'
 
-// Authenticated app layout — wraps Feed, Groups, Events, Admin.
+// Authenticated app layout. Wraps Feed, Groups, Events, Admin.
 // Pages outside this group (onboarding, settings, sign-in, /people) render
 // without the nav shell and do their own auth checks.
 export default async function MainLayout({
@@ -26,17 +26,17 @@ export default async function MainLayout({
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, display_name, handle, avatar_url, community_role')
+    .select('id, display_name, handle, avatar_url, community_role, current_season_zaps, lifetime_gems')
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
-  // No profile row means the trigger hasn't run yet — send to onboarding.
+  // No profile row means the trigger hasn't run yet. Send to onboarding.
   if (!profile) redirect('/onboarding')
 
-  // Unread notification count — non-blocking, falls back to 0 on error
+  // Unread notification count. Non-blocking, falls back to 0 on error
   const unreadCount = await getUnreadCount().catch(() => 0)
 
-  // Right sidebar streams in independently — doesn't block page render
+  // Right sidebar streams in independently. Doesn't block page render
   const sidebar = (
     <Suspense fallback={<RightSidebarSkeleton />}>
       <RightSidebar
@@ -59,9 +59,9 @@ export default async function MainLayout({
 function RightSidebarSkeleton() {
   return (
     <div className="px-4 py-6 space-y-4">
-      <div className="h-48 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 animate-pulse" />
-      <div className="h-36 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 animate-pulse" />
-      <div className="h-28 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 animate-pulse" />
+      <div className="h-48 rounded-xl border border-border bg-surface animate-pulse" />
+      <div className="h-36 rounded-xl border border-border bg-surface animate-pulse" />
+      <div className="h-28 rounded-xl border border-border bg-surface animate-pulse" />
     </div>
   )
 }

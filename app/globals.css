@@ -3,67 +3,225 @@
 /* ── Dark mode variant ──────────────────────────────────────────────────────
    Responds to the .dark class on <html>. The theme script in layout.tsx sets
    this before first paint based on localStorage or prefers-color-scheme.     */
-@variant dark (&:where(.dark, .dark *));
+@custom-variant dark (&:where(.dark, .dark *));
 
-/* ── Brand color palette ────────────────────────────────────────────────────
-   Frequency brand: warm violet-indigo accents, clean backgrounds.
-   Indigo is restored to real color values so buttons, links, active states,
-   and badges have visual warmth. Charcoal text uses Tailwind's gray scale.   */
-@theme {
-  /* Warm indigo — slightly violet-shifted for community warmth */
-  --color-indigo-50:  #eef2ff;
-  --color-indigo-100: #e0e7ff;
-  --color-indigo-200: #c7d2fe;
-  --color-indigo-300: #a5b4fc;
-  --color-indigo-400: #818cf8;
-  --color-indigo-500: #6366f1;
-  --color-indigo-600: #4f46e5;   /* primary: buttons, active states  */
-  --color-indigo-700: #4338ca;   /* hover / deeper                   */
-  --color-indigo-800: #3730a3;
-  --color-indigo-900: #312e81;
-  --color-indigo-950: #1e1b4b;
+/* ─────────────────────────────────────────────────────────────────────────
+   DAWN. Frequency's semantic token layer.
+   Components reference these variables (or the Tailwind utilities mapped
+   below in @theme inline). Raw hex appears ONLY in this file.
+   ───────────────────────────────────────────────────────────────────────── */
 
-  /* Font */
+:root {
+  color-scheme: light;
+
+  /* Surfaces. Community canvas is light and airy. The warm sand stays as
+     `--color-marketing-canvas` for the splash and any public-facing pages so
+     the brand vibe carries on the website while the in-app community feels
+     light. */
+  --color-canvas:            #FBFAF6;
+  --color-marketing-canvas:  #F7F3EA;
+  --color-surface:           #FFFFFF;
+  --color-surface-elevated:  #FCFAF5;
+
+  /* Borders */
+  --color-border:           #E9E1D4;
+  --color-border-strong:    #D8CDBB;
+
+  /* Text */
+  --color-text:             #1E1A13;
+  --color-text-muted:       #6B6253;
+  --color-text-subtle:      #8F8675;
+
+  /* Brand. Primary (amber-gold) */
+  --color-primary:          #E2912F;
+  --color-primary-hover:    #CE8023;
+  --color-primary-strong:   #9A5E12;
+  --color-primary-bg:       #FBEFD9;
+  --color-text-on-primary:  #2A1B06;
+
+  /* Brand. Signal (teal) */
+  --color-signal:           #1E9E89;
+  --color-signal-strong:    #0F6657;
+  --color-signal-bg:        #DDF1ED;
+  --color-text-on-signal:   #04231E;
+
+  /* Semantic states */
+  --color-success:          #2E7D32;
+  --color-success-bg:       #E7F1E3;
+  --color-warning:          #B07515;
+  --color-warning-bg:       #F6ECD8;
+  --color-danger:           #BA3B30;
+  --color-danger-bg:        #F7E4E1;
+
+  /* Focus */
+  --color-focus-ring:       #E2912F;
+
+  /* Rank spectrum. Primitives (same in both modes).
+     core = solid dot/fill · deep = text on light · bright = text on dark */
+  --rank-stone:  #8A8073; --rank-stone-deep:  #4E4A40; --rank-stone-bright:  #CBC2B2;
+  --rank-clay:   #C26B45; --rank-clay-deep:   #7C3D22; --rank-clay-bright:   #E9A484;
+  --rank-gold:   #D69A3C; --rank-gold-deep:   #875A14; --rank-gold-bright:   #F0C173;
+  --rank-olive:  #8A9A5B; --rank-olive-deep:  #4F5A2E; --rank-olive-bright:  #C2CE96;
+  --rank-jade:   #4E9E7E; --rank-jade-deep:   #2A5C48; --rank-jade-bright:   #8FD3BA;
+  --rank-teal:   #3C9C95; --rank-teal-deep:   #205852; --rank-teal-bright:   #7FD2CC;
+  --rank-slate:  #5B7CA6; --rank-slate-deep:  #324862; --rank-slate-bright:  #9FB6D4;
+  --rank-indigo: #7A77C4; --rank-indigo-deep: #444180; --rank-indigo-bright: #B3B0E4;
+  --rank-plum:   #9E6B9E; --rank-plum-deep:   #5C3A5C; --rank-plum-bright:   #CFA3CF;
+  --rank-rose:   #BD6A7E; --rank-rose-deep:   #743A48; --rank-rose-bright:   #E2A2B0;
+}
+
+.dark {
+  color-scheme: dark;
+
+  --color-canvas:           #16130E;
+  --color-marketing-canvas: #16130E;
+  --color-surface:          #1F1B14;
+  --color-surface-elevated: #28231A;
+
+  --color-border:           #372F22;
+  --color-border-strong:    #4A4030;
+
+  --color-text:             #EFE8DB;
+  --color-text-muted:       #A99C88;
+  --color-text-subtle:      #7E735F;
+
+  --color-primary:          #F2B14E;
+  --color-primary-hover:    #F8C56F;
+  --color-primary-strong:   #F2B14E;
+  --color-primary-bg:       #2C2110;
+  --color-text-on-primary:  #2A1B06;
+
+  --color-signal:           #5FD3BE;
+  --color-signal-strong:    #5FD3BE;
+  --color-signal-bg:        #11241F;
+  --color-text-on-signal:   #04231E;
+
+  --color-success:          #6FCF73;
+  --color-success-bg:       #1A2A1A;
+  --color-warning:          #F2B14E;
+  --color-warning-bg:       #2C2310;
+  --color-danger:           #F0857A;
+  --color-danger-bg:        #2E1714;
+
+  --color-focus-ring:       #F2B14E;
+  /* rank primitives inherited from :root */
+}
+
+/* ── Tailwind wiring ────────────────────────────────────────────────────────
+   Map tokens into Tailwind v4 utility classes. Components can then say
+   `bg-canvas`, `bg-surface`, `text-text`, `text-muted`, `bg-primary`,
+   `text-primary-strong`, `border-border`, etc. Raw `bg-primary` should be
+   retired during the per-screen migration in favor of these.                */
+@theme inline {
+  --color-canvas:           var(--color-canvas);
+  --color-marketing-canvas: var(--color-marketing-canvas);
+  --color-surface:          var(--color-surface);
+  --color-surface-elevated: var(--color-surface-elevated);
+
+  --color-border:           var(--color-border);
+  --color-border-strong:    var(--color-border-strong);
+
+  --color-text:             var(--color-text);
+  --color-muted:            var(--color-text-muted);
+  --color-subtle:           var(--color-text-subtle);
+
+  --color-primary:          var(--color-primary);
+  --color-primary-hover:    var(--color-primary-hover);
+  --color-primary-strong:   var(--color-primary-strong);
+  --color-primary-bg:       var(--color-primary-bg);
+  --color-on-primary:       var(--color-text-on-primary);
+
+  --color-signal:           var(--color-signal);
+  --color-signal-strong:    var(--color-signal-strong);
+  --color-signal-bg:        var(--color-signal-bg);
+  --color-on-signal:        var(--color-text-on-signal);
+
+  --color-success:          var(--color-success);
+  --color-success-bg:       var(--color-success-bg);
+  --color-warning:          var(--color-warning);
+  --color-warning-bg:       var(--color-warning-bg);
+  --color-danger:           var(--color-danger);
+  --color-danger-bg:        var(--color-danger-bg);
+
+  /* Rank palette. Exposes the static primitives as utility classes:
+     bg-rank-stone, text-rank-jade, border-rank-gold, etc. The full
+     core/deep/bright spectrum is only used by .rank-badge in CSS;
+     these utilities give callers the rank "core" color for dots, fills,
+     and progress accents. */
+  --color-rank-stone:  var(--rank-stone);
+  --color-rank-clay:   var(--rank-clay);
+  --color-rank-gold:   var(--rank-gold);
+  --color-rank-olive:  var(--rank-olive);
+  --color-rank-jade:   var(--rank-jade);
+  --color-rank-teal:   var(--rank-teal);
+  --color-rank-slate:  var(--rank-slate);
+  --color-rank-indigo: var(--rank-indigo);
+  --color-rank-plum:   var(--rank-plum);
+  --color-rank-rose:   var(--rank-rose);
+
+  /* Fonts wired the same way they were. */
   --font-sans: var(--font-nunito);
   --font-mono: var(--font-geist-mono);
 }
 
-/* ── Background / foreground tokens ────────────────────────────────────────── */
-:root {
-  --background: #fafafa;
-  --foreground: #1a1a2e;
-}
-
-.dark {
-  --background: #0a0a0f;
-  --foreground: #f0f0f5;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-}
-
-/* ── Base styles ────────────────────────────────────────────────────────────── */
+/* ── Base ────────────────────────────────────────────────────────────────── */
 html {
   font-family: var(--font-nunito, 'Nunito', sans-serif);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--color-canvas);
+  color: var(--color-text);
   font-family: var(--font-nunito, 'Nunito', sans-serif);
   line-height: 1.6;
 }
 
-/* Headings: brand-weight defaults (overridden per-component by Tailwind utilities) */
 h1, h2, h3, h4, h5, h6 {
   font-weight: 800;
   line-height: 1.2;
   letter-spacing: -0.01em;
 }
 
-/* ── Achievement toast animation ───────────────────────────────────────────── */
+/* Global focus ring. Load-bearing accessibility default.                   */
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-focus-ring) 45%, transparent);
+}
+
+/* ── Rank badge primitive. Drives off three CSS vars set inline.
+   Usage:
+     <span class="rank-badge" style={{
+       '--rank':        'var(--rank-jade)',
+       '--rank-deep':   'var(--rank-jade-deep)',
+       '--rank-bright': 'var(--rank-jade-bright)',
+     }}>
+       <span class="rank-dot" /> Operative
+     </span>
+   ────────────────────────────────────────────────────────────────────────── */
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  background: color-mix(in srgb, var(--rank) 14%, var(--color-surface));
+  color: var(--rank-deep);
+  border: 0.5px solid color-mix(in srgb, var(--rank) 32%, transparent);
+}
+.rank-badge .rank-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--rank);
+}
+.dark .rank-badge {
+  background: color-mix(in srgb, var(--rank) 24%, var(--color-surface));
+  color: var(--rank-bright);
+}
+
+/* ── Achievement toast animation (existing) ───────────────────────────────── */
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(20px) scale(0.95); }
   to   { opacity: 1; transform: translateY(0)    scale(1); }

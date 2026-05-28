@@ -48,7 +48,7 @@ export function AdminCreateMenu({ role }: CreateMenuProps) {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(v => !v)}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors whitespace-nowrap"
+        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors whitespace-nowrap"
       >
         <Plus className="w-4 h-4" />
         Create
@@ -56,15 +56,15 @@ export function AdminCreateMenu({ role }: CreateMenuProps) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 w-48 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg z-30 overflow-hidden">
+        <div className="absolute right-0 top-full mt-1 w-48 rounded-xl border border-border bg-surface shadow-lg z-30 overflow-hidden">
           {items.filter(i => i.show).map(({ icon: Icon, label, href }) => (
             <Link
               key={href + label}
               href={href}
               onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              className="flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-surface-elevated transition-colors"
             >
-              <Icon className="w-4 h-4 text-gray-400" />
+              <Icon className="w-4 h-4 text-subtle" />
               {label}
             </Link>
           ))}

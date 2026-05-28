@@ -17,12 +17,12 @@ type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 const ROLES: CommunityRole[] = ['member', 'crew', 'host', 'guide', 'mentor', 'janitor']
 
 const ROLE_COLOR: Record<string, string> = {
-  member:  'bg-gray-100 text-gray-600',
-  crew:    'bg-blue-100 text-blue-700',
-  host:    'bg-green-100 text-green-700',
-  guide:   'bg-purple-100 text-purple-700',
-  mentor:  'bg-amber-100 text-amber-700',
-  janitor: 'bg-violet-100 text-violet-700',
+  member:  'bg-surface-elevated text-muted',
+  crew:    'bg-signal-bg text-signal-strong',
+  host:    'bg-success-bg text-success',
+  guide:   'bg-signal-bg text-signal-strong',
+  mentor:  'bg-warning-bg text-warning',
+  janitor: 'bg-signal-bg text-signal-strong',
 }
 
 interface Member {
@@ -70,38 +70,38 @@ export function MemberAdmin({
       {/* Filters */}
       <div className="flex items-center gap-3 mb-4 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-subtle" />
           <input
             type="text"
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="Search by name, handle, or email..."
-            className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-100"
+            className="w-full pl-9 pr-3 py-2 rounded-lg border border-border bg-surface text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/40"
           />
         </div>
         <select
           value={roleFilter}
           onChange={e => setRoleFilter(e.target.value)}
-          className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
+          className="rounded-lg border border-border bg-surface px-3 py-2 text-sm"
         >
           <option value="all">All roles</option>
           {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
         </select>
-        <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer">
+        <label className="flex items-center gap-1.5 text-xs text-muted cursor-pointer">
           <input
             type="checkbox"
             checked={showInactive}
             onChange={e => setShowInactive(e.target.checked)}
-            className="rounded border-gray-300"
+            className="rounded border-border-strong"
           />
           Show inactive
         </label>
       </div>
 
       {/* Member list */}
-      <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden divide-y divide-gray-100 dark:divide-gray-800">
+      <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden divide-y divide-border">
         {filtered.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-8">No members found.</p>
+          <p className="text-sm text-subtle text-center py-8">No members found.</p>
         ) : (
           filtered.map(m => (
             <MemberRow
@@ -115,7 +115,7 @@ export function MemberAdmin({
         )}
       </div>
 
-      <p className="text-xs text-gray-400 mt-3">Showing {filtered.length} of {members.length} members</p>
+      <p className="text-xs text-subtle mt-3">Showing {filtered.length} of {members.length} members</p>
     </div>
   )
 }
@@ -197,63 +197,63 @@ function MemberRow({
       {/* Summary row */}
       <button
         onClick={onToggle}
-        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors text-left"
+        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-surface-elevated transition-colors text-left"
       >
         {m.avatar_url ? (
           <img src={m.avatar_url} alt={m.display_name} className="w-9 h-9 rounded-full object-cover shrink-0" />
         ) : (
-          <div className="w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 text-xs font-semibold flex items-center justify-center shrink-0">
+          <div className="w-9 h-9 rounded-full bg-surface-elevated text-muted text-xs font-semibold flex items-center justify-center shrink-0">
             {initials}
           </div>
         )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-gray-900 dark:text-gray-50 truncate">{m.display_name}</span>
-            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${roleCls}`}>{m.community_role}</span>
-            {!m.is_active && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-red-100 text-red-600">Inactive</span>}
+            <span className="text-sm font-semibold text-text truncate">{m.display_name}</span>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium ${roleCls}`}>{m.community_role}</span>
+            {!m.is_active && <span className="text-[10px] px-1.5 py-0.5 rounded-md font-medium bg-danger-bg text-danger">Inactive</span>}
           </div>
-          <p className="text-xs text-gray-400 truncate">
+          <p className="text-xs text-subtle truncate">
             @{m.handle}
             {email && <> &middot; {email}</>}
           </p>
         </div>
         {isPending ? (
-          <Loader2 className="w-4 h-4 animate-spin text-gray-400 shrink-0" />
+          <Loader2 className="w-4 h-4 animate-spin text-subtle shrink-0" />
         ) : isExpanded ? (
-          <ChevronUp className="w-4 h-4 text-gray-400 shrink-0" />
+          <ChevronUp className="w-4 h-4 text-subtle shrink-0" />
         ) : (
-          <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
+          <ChevronDown className="w-4 h-4 text-subtle shrink-0" />
         )}
       </button>
 
       {/* Expanded detail panel */}
       {isExpanded && (
-        <div className="px-4 pb-4 pt-1 bg-gray-50/50 dark:bg-gray-800/20">
+        <div className="px-4 pb-4 pt-1 bg-surface/50 dark:bg-surface-elevated/20">
           {status && (
-            <div className="flex items-center gap-2 mb-3 text-xs font-medium text-green-600 bg-green-50 dark:bg-green-950/30 px-3 py-2 rounded-lg">
+            <div className="flex items-center gap-2 mb-3 text-xs font-medium text-success bg-success-bg/30 px-3 py-2 rounded-lg">
               <Check className="w-3.5 h-3.5" /> {status}
             </div>
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-1">Details</p>
-              <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-subtle mb-1">Details</p>
+              <div className="text-xs text-muted space-y-1">
                 <p>Joined {new Date(m.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
                 {m.regionName && <p>Region: {m.regionName}</p>}
                 {m.current_season_rank && <p>Rank: {m.current_season_rank} ({m.current_season_zaps ?? 0} zaps)</p>}
                 <p>
-                  <Link href={`/people/${m.handle}`} className="text-indigo-500 hover:underline">View profile →</Link>
+                  <Link href={`/people/${m.handle}`} className="text-primary-strong hover:underline">View profile →</Link>
                 </p>
               </div>
             </div>
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-1">Role</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-subtle mb-1">Role</p>
               <select
                 value={m.community_role}
                 onChange={e => handleRoleChange(e.target.value)}
                 disabled={isPending}
-                className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-2 py-1.5 text-xs disabled:opacity-50"
+                className="w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-xs disabled:opacity-50"
               >
                 {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
               </select>
@@ -262,24 +262,24 @@ function MemberRow({
 
           {/* Edit profile form */}
           {editMode ? (
-            <form action={handleProfileSave} className="space-y-3 mb-4 rounded-xl border border-gray-200 dark:border-gray-700 p-3 bg-white dark:bg-gray-900">
+            <form action={handleProfileSave} className="space-y-3 mb-4 rounded-xl border border-border p-3 bg-surface">
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Display name</label>
-                <input name="display_name" defaultValue={m.display_name} className="w-full mt-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1.5 text-xs" />
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-subtle">Display name</label>
+                <input name="display_name" defaultValue={m.display_name} className="w-full mt-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs" />
               </div>
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Handle</label>
-                <input name="handle" defaultValue={m.handle} className="w-full mt-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1.5 text-xs" />
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-subtle">Handle</label>
+                <input name="handle" defaultValue={m.handle} className="w-full mt-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs" />
               </div>
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Bio</label>
-                <textarea name="bio" defaultValue={m.bio ?? ''} rows={2} className="w-full mt-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1.5 text-xs resize-none" />
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-subtle">Bio</label>
+                <textarea name="bio" defaultValue={m.bio ?? ''} rows={2} className="w-full mt-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs resize-none" />
               </div>
               <div className="flex items-center gap-2">
-                <button type="submit" disabled={isPending} className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50">
+                <button type="submit" disabled={isPending} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary disabled:opacity-50">
                   Save changes
                 </button>
-                <button type="button" onClick={() => setEditMode(false)} className="rounded-lg px-3 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800">
+                <button type="button" onClick={() => setEditMode(false)} className="rounded-lg px-3 py-1.5 text-xs font-medium text-muted hover:bg-surface-elevated">
                   Cancel
                 </button>
               </div>
@@ -290,14 +290,14 @@ function MemberRow({
           <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => setEditMode(!editMode)}
-              className="flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted hover:bg-surface-elevated transition-colors"
             >
               <Pencil className="w-3 h-3" /> Edit profile
             </button>
             <button
               onClick={handleSendMagicLink}
               disabled={isPending}
-              className="flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted hover:bg-surface-elevated transition-colors disabled:opacity-50"
             >
               <Mail className="w-3 h-3" /> Send sign-in link
             </button>
@@ -305,7 +305,7 @@ function MemberRow({
               <button
                 onClick={handleDeactivate}
                 disabled={isPending}
-                className="flex items-center gap-1.5 rounded-lg border border-orange-200 dark:border-orange-800 px-3 py-1.5 text-xs font-medium text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition-colors disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-lg border border-orange-200 px-3 py-1.5 text-xs font-medium text-warning hover:bg-warning-bg transition-colors disabled:opacity-50"
               >
                 <UserX className="w-3 h-3" /> Deactivate
               </button>
@@ -313,7 +313,7 @@ function MemberRow({
               <button
                 onClick={handleReactivate}
                 disabled={isPending}
-                className="flex items-center gap-1.5 rounded-lg border border-green-200 dark:border-green-800 px-3 py-1.5 text-xs font-medium text-green-600 hover:bg-green-50 dark:hover:bg-green-950/30 transition-colors disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-lg border border-success px-3 py-1.5 text-xs font-medium text-success hover:bg-success-bg dark:hover:bg-success-bg/30 transition-colors disabled:opacity-50"
               >
                 <UserCheck className="w-3 h-3" /> Reactivate
               </button>
@@ -321,23 +321,23 @@ function MemberRow({
             {!confirmDelete ? (
               <button
                 onClick={() => setConfirmDelete(true)}
-                className="flex items-center gap-1.5 rounded-lg border border-red-200 dark:border-red-800 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                className="flex items-center gap-1.5 rounded-lg border border-danger px-3 py-1.5 text-xs font-medium text-danger hover:bg-danger-bg transition-colors"
               >
                 <Trash2 className="w-3 h-3" /> Delete account
               </button>
             ) : (
               <div className="flex items-center gap-1.5">
-                <span className="text-xs text-red-600 font-medium">Are you sure?</span>
+                <span className="text-xs text-danger font-medium">Are you sure?</span>
                 <button
                   onClick={handleDelete}
                   disabled={isPending}
-                  className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-500 disabled:opacity-50"
+                  className="rounded-lg bg-danger px-3 py-1.5 text-xs font-medium text-white hover:bg-danger disabled:opacity-50"
                 >
                   Yes, delete
                 </button>
                 <button
                   onClick={() => setConfirmDelete(false)}
-                  className="rounded-lg px-3 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-100"
+                  className="rounded-lg px-3 py-1.5 text-xs font-medium text-muted hover:bg-surface-elevated"
                 >
                   Cancel
                 </button>

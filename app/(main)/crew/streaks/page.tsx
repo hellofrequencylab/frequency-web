@@ -14,19 +14,19 @@ const STREAK_ICONS: Record<StreakType, React.ElementType> = {
 }
 
 function getFlameColor(count: number): string {
-  if (count >= 13) return 'text-violet-500'
-  if (count >= 8) return 'text-orange-500'
-  if (count >= 4) return 'text-amber-500'
-  if (count >= 1) return 'text-yellow-500'
-  return 'text-gray-300 dark:text-gray-600'
+  if (count >= 13) return 'text-signal'
+  if (count >= 8) return 'text-primary'
+  if (count >= 4) return 'text-primary'
+  if (count >= 1) return 'text-primary'
+  return 'text-subtle'
 }
 
 function getFlameBg(count: number): string {
-  if (count >= 13) return 'bg-violet-50 dark:bg-violet-950/40'
-  if (count >= 8) return 'bg-orange-50 dark:bg-orange-950/40'
-  if (count >= 4) return 'bg-amber-50 dark:bg-amber-950/40'
-  if (count >= 1) return 'bg-yellow-50 dark:bg-yellow-950/40'
-  return 'bg-gray-50 dark:bg-gray-800'
+  if (count >= 13) return 'bg-signal-bg/40'
+  if (count >= 8) return 'bg-warning-bg'
+  if (count >= 4) return 'bg-warning-bg/40'
+  if (count >= 1) return 'bg-warning-bg'
+  return 'bg-surface-elevated'
 }
 
 export default async function StreaksPage() {
@@ -47,14 +47,14 @@ export default async function StreaksPage() {
         <div className="flex items-center gap-3">
           <Link
             href="/crew"
-            className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            className="text-sm text-subtle hover:text-muted dark:hover:text-subtle transition-colors"
           >
             Crew
           </Link>
-          <span className="text-gray-300 dark:text-gray-600">/</span>
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50">Streaks</h1>
+          <span className="text-subtle">/</span>
+          <h1 className="text-xl font-semibold text-text">Streaks</h1>
         </div>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+        <p className="text-sm text-muted mt-1">
           Build momentum by showing up consistently. Maintain streaks to earn bonus achievements and freeze tokens.
         </p>
       </div>
@@ -75,7 +75,7 @@ export default async function StreaksPage() {
           return (
             <div
               key={type}
-              className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden"
+              className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden"
             >
               <div className="p-5">
                 <div className="flex items-start gap-4">
@@ -86,43 +86,43 @@ export default async function StreaksPage() {
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <Icon className="w-4 h-4 text-gray-400" />
-                      <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-50">
+                      <Icon className="w-4 h-4 text-subtle" />
+                      <h3 className="text-sm font-semibold text-text">
                         {config.label} Streak
                       </h3>
                       {active && current > 0 && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 dark:bg-green-950 text-green-600 dark:text-green-400 font-semibold">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-success-bg text-success font-semibold">
                           Active
                         </span>
                       )}
                       {!active && current > 0 && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 dark:bg-red-950 text-red-600 dark:text-red-400 font-semibold">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-danger-bg dark:bg-danger-bg text-danger font-semibold">
                           Expired
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    <p className="text-xs text-muted mt-0.5">
                       {config.description}
                     </p>
 
                     {/* Stats row */}
                     <div className="flex items-center gap-4 mt-3">
                       <div>
-                        <span className="text-2xl font-bold text-gray-900 dark:text-gray-50">{current}</span>
-                        <span className="text-xs text-gray-400 ml-1">weeks</span>
+                        <span className="text-2xl font-bold text-text">{current}</span>
+                        <span className="text-xs text-subtle ml-1">weeks</span>
                       </div>
-                      <div className="w-px h-6 bg-gray-200 dark:bg-gray-700" />
+                      <div className="w-px h-6 bg-border-strong" />
                       <div>
-                        <span className="text-sm font-semibold text-gray-500 dark:text-gray-400">{longest}</span>
-                        <span className="text-xs text-gray-400 ml-1">best</span>
+                        <span className="text-sm font-semibold text-muted">{longest}</span>
+                        <span className="text-xs text-subtle ml-1">best</span>
                       </div>
                       {freezes > 0 && (
                         <>
-                          <div className="w-px h-6 bg-gray-200 dark:bg-gray-700" />
+                          <div className="w-px h-6 bg-border-strong" />
                           <div className="flex items-center gap-1">
-                            <Snowflake className="w-3.5 h-3.5 text-blue-400" />
-                            <span className="text-sm font-semibold text-blue-500">{freezes}</span>
-                            <span className="text-xs text-gray-400">freezes</span>
+                            <Snowflake className="w-3.5 h-3.5 text-signal-strong" />
+                            <span className="text-sm font-semibold text-signal">{freezes}</span>
+                            <span className="text-xs text-subtle">freezes</span>
                           </div>
                         </>
                       )}
@@ -139,11 +139,11 @@ export default async function StreaksPage() {
                         <div key={m} className="flex flex-col items-center gap-1 flex-1">
                           <div className={`w-full h-1.5 rounded-full ${
                             reached
-                              ? 'bg-gradient-to-r from-amber-400 to-orange-500'
-                              : 'bg-gray-100 dark:bg-gray-800'
+                              ? 'bg-gradient-to-r from-amber-400 to-primary'
+                              : 'bg-surface-elevated'
                           }`} />
                           <span className={`text-[10px] font-semibold ${
-                            reached ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400'
+                            reached ? 'text-warning' : 'text-subtle'
                           }`}>
                             {m}w
                           </span>
@@ -155,7 +155,7 @@ export default async function StreaksPage() {
 
                 {/* Last activity */}
                 {streak?.last_activity_at && (
-                  <p className="text-[11px] text-gray-400 mt-3">
+                  <p className="text-[11px] text-subtle mt-3">
                     Last recorded: {new Date(streak.last_activity_at).toLocaleDateString('en-US', {
                       month: 'short', day: 'numeric', year: 'numeric',
                     })}
@@ -168,12 +168,12 @@ export default async function StreaksPage() {
       </div>
 
       {/* Streak freeze explanation */}
-      <div className="mt-8 rounded-2xl border border-blue-100 dark:border-blue-900/50 bg-blue-50/50 dark:bg-blue-950/20 p-4">
+      <div className="mt-8 rounded-2xl border border-blue-100 bg-signal-bg/50 p-4">
         <div className="flex items-start gap-3">
-          <Snowflake className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+          <Snowflake className="w-5 h-5 text-signal-strong shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-semibold text-blue-900 dark:text-blue-200">Streak Freezes</p>
-            <p className="text-xs text-blue-700 dark:text-blue-400 mt-1 leading-relaxed">
+            <p className="text-sm font-semibold text-signal-strong">Streak Freezes</p>
+            <p className="text-xs text-signal-strong mt-1 leading-relaxed">
               Earn freeze tokens at streak milestones (4, 8, 13, 26, 52 weeks).
               When a streak would break, a freeze token is automatically used to protect it.
               Build long streaks to bank more freezes.
