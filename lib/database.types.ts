@@ -168,7 +168,7 @@ export type Database = {
       channels: {
         Row: {
           created_at: string | null
-          creator_id: string
+          creator_id: string | null
           creator_role: Database["public"]["Enums"]["community_role"]
           description: string | null
           event_date: string | null
@@ -182,7 +182,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
-          creator_id: string
+          creator_id?: string | null
           creator_role: Database["public"]["Enums"]["community_role"]
           description?: string | null
           event_date?: string | null
@@ -196,7 +196,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
-          creator_id?: string
+          creator_id?: string | null
           creator_role?: Database["public"]["Enums"]["community_role"]
           description?: string | null
           event_date?: string | null
@@ -675,6 +675,8 @@ export type Database = {
           event_id: string
           id: string
           profile_id: string
+          reminder_24h_sent_at: string | null
+          reminder_2h_sent_at: string | null
           status: string
         }
         Insert: {
@@ -682,6 +684,8 @@ export type Database = {
           event_id: string
           id?: string
           profile_id: string
+          reminder_24h_sent_at?: string | null
+          reminder_2h_sent_at?: string | null
           status: string
         }
         Update: {
@@ -689,6 +693,8 @@ export type Database = {
           event_id?: string
           id?: string
           profile_id?: string
+          reminder_24h_sent_at?: string | null
+          reminder_2h_sent_at?: string | null
           status?: string
         }
         Relationships: [
@@ -1119,7 +1125,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fk_mentor"
+            foreignKeyName: "nexus_regions_mentor_id_fkey"
             columns: ["mentor_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -1607,6 +1613,47 @@ export type Database = {
           {
             foreignKeyName: "profiles_suspended_by_fkey"
             columns: ["suspended_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          last_used_at: string | null
+          p256dh: string
+          profile_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          last_used_at?: string | null
+          p256dh: string
+          profile_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          last_used_at?: string | null
+          p256dh?: string
+          profile_id?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_profile_id_fkey"
+            columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -2271,7 +2318,77 @@ export type Database = {
       }
       handle_is_available: { Args: { check_handle: string }; Returns: boolean }
       public_active_circle_count: { Args: never; Returns: number }
+      public_circle_by_id: {
+        Args: { _id: string }
+        Returns: {
+          about: string
+          channel_name: string
+          channel_slug: string
+          city: string
+          id: string
+          member_count: number
+          name: string
+          slug: string
+          status: string
+          type: string
+        }[]
+      }
+      public_circles: {
+        Args: { _limit?: number }
+        Returns: {
+          about: string
+          channel_name: string
+          channel_slug: string
+          city: string
+          id: string
+          member_count: number
+          name: string
+          slug: string
+          status: string
+          type: string
+        }[]
+      }
+      public_event_by_slug: {
+        Args: { _slug: string }
+        Returns: {
+          circle_id: string
+          circle_name: string
+          city: string
+          description: string
+          ends_at: string
+          id: string
+          slug: string
+          starts_at: string
+          title: string
+        }[]
+      }
+      public_events: {
+        Args: { _limit?: number }
+        Returns: {
+          circle_id: string
+          circle_name: string
+          city: string
+          description: string
+          ends_at: string
+          id: string
+          slug: string
+          starts_at: string
+          title: string
+        }[]
+      }
       public_member_count: { Args: never; Returns: number }
+      public_posts: {
+        Args: { _limit?: number }
+        Returns: {
+          author_avatar_url: string
+          author_display_name: string
+          author_handle: string
+          body: string
+          created_at: string
+          id: string
+          media_urls: string[]
+        }[]
+      }
       reset_season: { Args: never; Returns: undefined }
       search_handles_public: {
         Args: { q: string }
