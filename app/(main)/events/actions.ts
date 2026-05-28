@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { slugify } from '@/lib/utils'
 import { processGamificationEvent, recordStreakActivity } from '@/lib/achievements'
+import { awardGems } from '@/lib/gems'
 
 async function getMyProfileId(): Promise<string | null> {
   const supabase = await createClient()
@@ -100,6 +101,7 @@ export async function toggleRSVP(eventId: string, currentStatus: string | null) 
     if (newStatus === 'going') {
       processGamificationEvent({ type: 'event_attend', profileId: myProfileId }).catch(() => {})
       recordStreakActivity(myProfileId, 'attendance').catch(() => {})
+      awardGems(myProfileId, 'event_rsvp').catch(() => {})
     }
   } else {
     await supabase.from('event_rsvps').insert({
@@ -109,6 +111,7 @@ export async function toggleRSVP(eventId: string, currentStatus: string | null) 
     })
     processGamificationEvent({ type: 'event_attend', profileId: myProfileId }).catch(() => {})
     recordStreakActivity(myProfileId, 'attendance').catch(() => {})
+    awardGems(myProfileId, 'event_rsvp').catch(() => {})
   }
 
   revalidatePath('/events')

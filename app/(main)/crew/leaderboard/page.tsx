@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { Zap, TrendingUp, Award, Flame } from 'lucide-react'
+import { Zap, TrendingUp, Award, Flame, Gem } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { getRankDef, type SeasonRank } from '@/lib/season-ranks'
@@ -17,6 +17,7 @@ interface LeaderboardEntry {
   seasonRank: SeasonRank
   streak: number
   achievements: number
+  lifetimeGems: number
 }
 
 async function getLeaderboard(
@@ -83,17 +84,25 @@ async function getLeaderboard(
     }
   }
 
+  const isGemsScope = scope === 'gems'
+  const orderCol = isGemsScope ? 'lifetime_gems' : 'current_season_zaps'
+
   let query = admin
     .from('profiles')
-    .select('id, display_name, handle, avatar_url, current_season_zaps, current_season_rank, current_streak, achievement_count')
+    .select('id, display_name, handle, avatar_url, current_season_zaps, current_season_rank, current_streak, achievement_count, lifetime_gems')
     .eq('is_active', true)
-    .order('current_season_zaps', { ascending: false })
-    .limit(limit)
+    .order(orderCol, { ascending: false })
+    .limit(isGemsScope ? 50 : limit)
 
-  if (memberIds.length > 0) {
+  if (memberIds.length > 0 && !isGemsScope) {
     query = query.in('id', memberIds)
-  } else if (scope !== 'global') {
+  } else if (!isGemsScope && scope !== 'global') {
     return { entries: [], scopeLabel }
+  }
+
+  if (isGemsScope) {
+    scopeLabel = 'All-Time Gems'
+    query = query.gt('lifetime_gems', 0)
   }
 
   const { data: profiles } = await query
@@ -107,6 +116,7 @@ async function getLeaderboard(
     seasonRank: (p.current_season_rank ?? 'ghost') as SeasonRank,
     streak: p.current_streak ?? 0,
     achievements: p.achievement_count ?? 0,
+    lifetimeGems: p.lifetime_gems ?? 0,
   }))
 
   return { entries, scopeLabel }
@@ -171,7 +181,7 @@ export default async function LeaderboardPage({
           <div className="grid grid-cols-[2.5rem_1fr_5rem_4rem_4rem_5rem] gap-2 px-4 py-2 border-b border-gray-100 dark:border-gray-800 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
             <span>#</span>
             <span>Member</span>
-            <span className="text-right">Zaps</span>
+            <span className="text-right">{scope === 'gems' ? 'Gems' : 'Zaps'}</span>
             <span className="text-right">Streak</span>
             <span className="text-right">Badges</span>
             <span className="text-right">Rank</span>
@@ -206,8 +216,11 @@ export default async function LeaderboardPage({
                 </Link>
 
                 <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 text-right tabular-nums flex items-center justify-end gap-0.5">
-                  <Zap className="w-3 h-3 text-amber-400" />
-                  {entry.seasonZaps.toLocaleString()}
+                  {scope === 'gems' ? (
+                    <><Gem className="w-3 h-3 text-emerald-500" />{entry.lifetimeGems.toLocaleString()}</>
+                  ) : (
+                    <><Zap className="w-3 h-3 text-amber-400" />{entry.seasonZaps.toLocaleString()}</>
+                  )}
                 </span>
 
                 <span className="text-sm text-right tabular-nums">

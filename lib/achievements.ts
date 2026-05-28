@@ -5,6 +5,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { AchievementCriteria, StreakType } from '@/lib/gamification'
 import { STREAK_CONFIG } from '@/lib/gamification'
+import { awardGems } from '@/lib/gems'
 
 type AdminClient = ReturnType<typeof createAdminClient>
 
@@ -176,6 +177,9 @@ async function evaluateAchievements(admin: AdminClient, event: GamificationEvent
           tier: achievement.tier,
           zapsReward: achievement.zaps_reward,
         })
+        if (achievement.zaps_reward > 0) {
+          awardGems(event.profileId, 'achievement', achievement.zaps_reward, { achievement: achievement.slug }).catch(() => {})
+        }
       }
     }
   }
@@ -367,6 +371,7 @@ async function advanceChallenges(admin: AdminClient, event: GamificationEvent) {
 
     if (completed) {
       await awardChallengeZaps(admin, event.profileId, challenge.id)
+      awardGems(event.profileId, 'challenge_complete', 10, { challenge: challenge.id }).catch(() => {})
       await checkAllChallengesComplete(admin, event.profileId)
     }
   }

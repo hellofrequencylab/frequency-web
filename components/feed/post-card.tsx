@@ -69,6 +69,7 @@ export type FeedPost = {
     current_season_rank?: string | null
     current_streak?: number
     achievement_count?: number
+    lifetime_gems?: number
   }
   reactions: Array<{
     id: string
@@ -161,7 +162,7 @@ export function PostCard({
                 <ProfileFlair
                   rank={author.current_season_rank}
                   streak={author.current_streak}
-                  achievementCount={author.achievement_count}
+                  gems={author.lifetime_gems}
                   compact
                 />
               </div>

@@ -7,6 +7,7 @@ const SCOPES = [
   { key: 'hub',    label: 'Hub' },
   { key: 'nexus',  label: 'Nexus' },
   { key: 'global', label: 'Global' },
+  { key: 'gems',   label: 'Gems (All-Time)' },
 ] as const
 
 export function LeaderboardTabs({ activeScope }: { activeScope: string }) {

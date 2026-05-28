@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { processGamificationEvent, recordStreakActivity } from '@/lib/achievements'
+import { awardGems } from '@/lib/gems'
 
 async function getMyProfileId(): Promise<string | null> {
   const supabase = await createClient()
@@ -59,6 +60,7 @@ export async function createPost(formData: FormData) {
   // Fire gamification events (non-blocking)
   processGamificationEvent({ type: 'post_create', profileId }).catch(() => {})
   recordStreakActivity(profileId, 'posting').catch(() => {})
+  awardGems(profileId, 'post_create').catch(() => {})
 
   // Extract @mentions and create notification rows (best-effort, non-blocking)
   const bodyText = body || ''
@@ -143,6 +145,8 @@ export async function createReply(parentId: string, body: string) {
     parent_id:  parentId,
   })
 
+  awardGems(profileId, 'comment_reply').catch(() => {})
+
   revalidatePath('/feed')
   revalidatePath('/circles', 'layout')
   revalidatePath('/people', 'layout')
@@ -194,6 +198,7 @@ export async function toggleReaction(
       profile_id: profileId,
       reaction_type: reactionType,
     })
+    awardGems(profileId, 'reaction').catch(() => {})
   }
 
   revalidatePath('/feed')

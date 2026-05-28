@@ -3,7 +3,7 @@ import { Suspense } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getInitials, relativeTime } from '@/lib/utils'
 import { RANK_COLORS, RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
-import { CalendarDays, MapPin, Megaphone, Zap, Trophy, Award, Flame, Target } from 'lucide-react'
+import { CalendarDays, MapPin, Megaphone, Zap, Trophy, Award, Flame, Target, Gem } from 'lucide-react'
 import { GettingStartedChecklist } from '@/components/feed/getting-started'
 
 export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
@@ -386,7 +386,7 @@ async function GamificationWidget({ profileId }: { profileId: string }) {
     { count: achievementCount },
   ] = await Promise.all([
     admin.from('profiles')
-      .select('current_streak, achievement_count, lifetime_zaps')
+      .select('current_streak, achievement_count, lifetime_zaps, lifetime_gems')
       .eq('id', profileId)
       .maybeSingle(),
     admin.from('streaks')
@@ -401,8 +401,9 @@ async function GamificationWidget({ profileId }: { profileId: string }) {
   const currentStreak = (profile as any)?.current_streak ?? 0
   const achievements = achievementCount ?? 0
   const lifetimeZaps = (profile as any)?.lifetime_zaps ?? 0
+  const lifetimeGems = (profile as any)?.lifetime_gems ?? 0
 
-  if (achievements === 0 && currentStreak === 0 && lifetimeZaps === 0) return null
+  if (achievements === 0 && currentStreak === 0 && lifetimeZaps === 0 && lifetimeGems === 0) return null
 
   return (
     <WidgetCard title="Your Progress">
@@ -431,6 +432,11 @@ async function GamificationWidget({ profileId }: { profileId: string }) {
           <span className="text-xs text-gray-700 dark:text-gray-300 flex-1">Lifetime Zaps</span>
           <span className="text-xs font-bold text-gray-900 dark:text-gray-50">{lifetimeZaps.toLocaleString()}</span>
         </Link>
+        <div className="flex items-center gap-2.5 px-2 py-1.5">
+          <Gem className="w-4 h-4 text-emerald-500" />
+          <span className="text-xs text-gray-700 dark:text-gray-300 flex-1">Community Gems</span>
+          <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">{lifetimeGems.toLocaleString()}</span>
+        </div>
       </div>
     </WidgetCard>
   )
