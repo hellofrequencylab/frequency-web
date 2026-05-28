@@ -22,6 +22,7 @@ import {
   BellRing,
   SlidersHorizontal,
   Megaphone,
+  UserPlus,
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { NotificationBell } from '@/components/layout/notification-bell'
@@ -45,6 +46,7 @@ const SIDEBAR_NAV = [
   { href: '/channels',  label: 'Channels',  Icon: Radio },
   { href: '/events',    label: 'Events',    Icon: CalendarDays },
   { href: '/messages',  label: 'Messages',  Icon: MessageSquare },
+  { href: '/friends',   label: 'Friends',   Icon: UserPlus },
   { href: '/people',    label: 'Directory', Icon: Globe },
 ]
 

@@ -2,16 +2,20 @@
 
 import { useState, useTransition, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { UsersRound, Search, X, Loader2 } from 'lucide-react'
+import { UsersRound, Search, X, Clock, UserPlus } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { startGroupConversation } from '@/app/(main)/messages/actions'
+import { sendFriendRequest } from '@/app/(main)/people/friend-actions'
 import { CreateModal, cmInput, cmLabel } from '@/components/create-modal'
+
+type FriendStatus = 'none' | 'pending_outgoing' | 'pending_incoming' | 'accepted'
 
 interface HandleResult {
   id: string
   handle: string
   display_name: string
   avatar_url: string | null
+  friend_status?: FriendStatus
 }
 
 const GROUP_DM_CAP = 25
@@ -148,24 +152,77 @@ export function NewGroupDMCompose({
         {results.length > 0 && (
           <div className="rounded-lg border border-gray-200 dark:border-gray-700 max-h-56 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-800">
             {results.map(r => (
-              <button key={r.id} type="button" onClick={() => addRecipient(r)}
-                className="flex items-center gap-2.5 w-full px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                {r.avatar_url ? (
-                  <img src={r.avatar_url} alt={r.display_name} className="w-7 h-7 rounded-full object-cover shrink-0" />
-                ) : (
-                  <div className="w-7 h-7 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-[10px] font-semibold flex items-center justify-center shrink-0">
-                    {getInitials(r.display_name)}
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-gray-900 dark:text-gray-50 truncate">{r.display_name}</p>
-                  <p className="text-[11px] text-gray-400 truncate">@{r.handle}</p>
-                </div>
-              </button>
+              <ResultRow key={r.id} result={r} onAdd={() => addRecipient(r)} />
             ))}
           </div>
         )}
       </CreateModal>
     </>
+  )
+}
+
+function ResultRow({
+  result,
+  onAdd,
+}: {
+  result: HandleResult
+  onAdd: () => void
+}) {
+  const status: FriendStatus = result.friend_status ?? 'none'
+  const [requested, setRequested] = useState(false)
+  const [requestPending, startRequest] = useTransition()
+
+  const isFriend = status === 'accepted'
+
+  return (
+    <div className={`flex items-center gap-2.5 w-full px-3 py-2 ${isFriend ? 'hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors' : 'opacity-60'}`}>
+      {result.avatar_url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={result.avatar_url} alt={result.display_name} className="w-7 h-7 rounded-full object-cover shrink-0" />
+      ) : (
+        <div className="w-7 h-7 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-[10px] font-semibold flex items-center justify-center shrink-0">
+          {getInitials(result.display_name)}
+        </div>
+      )}
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-semibold text-gray-900 dark:text-gray-50 truncate">{result.display_name}</p>
+        <p className="text-[11px] text-gray-400 truncate">@{result.handle}</p>
+      </div>
+
+      {isFriend && (
+        <button
+          type="button"
+          onClick={onAdd}
+          className="shrink-0 rounded-md bg-indigo-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-indigo-700 transition-colors"
+        >
+          Add
+        </button>
+      )}
+      {status === 'none' && !requested && (
+        <button
+          type="button"
+          disabled={requestPending}
+          onClick={() => startRequest(async () => {
+            await sendFriendRequest(result.id)
+            setRequested(true)
+          })}
+          className="shrink-0 inline-flex items-center gap-1 rounded-md border border-gray-300 dark:border-gray-700 px-2 py-1 text-[11px] font-medium text-gray-500 dark:text-gray-400 hover:border-indigo-300 hover:text-indigo-600 disabled:opacity-50 transition-colors"
+        >
+          <UserPlus className="w-3 h-3" />
+          Add Friend
+        </button>
+      )}
+      {(status === 'pending_outgoing' || requested) && (
+        <span className="shrink-0 inline-flex items-center gap-1 rounded-md border border-gray-200 dark:border-gray-800 px-2 py-1 text-[11px] text-gray-400">
+          <Clock className="w-3 h-3" />
+          Pending
+        </span>
+      )}
+      {status === 'pending_incoming' && (
+        <span className="shrink-0 rounded-md border border-amber-200 dark:border-amber-800 px-2 py-1 text-[11px] font-medium text-amber-700 dark:text-amber-400">
+          Accept on profile
+        </span>
+      )}
+    </div>
   )
 }

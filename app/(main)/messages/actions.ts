@@ -37,6 +37,17 @@ export async function startConversation(otherProfileId: string) {
 
   const admin = createAdminClient()
 
+  // Gate on friendship — must be accepted friends to start a new 1:1
+  const friendPair = myProfileId < otherProfileId
+    ? { user_a_id: myProfileId, user_b_id: otherProfileId }
+    : { user_a_id: otherProfileId, user_b_id: myProfileId }
+  const { data: friendship } = await admin
+    .from('friendships')
+    .select('id')
+    .match({ ...friendPair, status: 'accepted' })
+    .maybeSingle()
+  if (!friendship) throw new Error('You must be friends to start a conversation')
+
   // Find all conversations I'm in
   const { data: mineRows } = await admin
     .from('conversation_participants')
@@ -146,6 +157,26 @@ export async function startGroupConversation(
   }
 
   const admin = createAdminClient()
+
+  // Gate on friendship — creator must be friends with every invitee
+  const pairs = others.map((id) =>
+    myProfileId < id
+      ? { user_a_id: myProfileId, user_b_id: id }
+      : { user_a_id: id, user_b_id: myProfileId }
+  )
+  const { data: friendships } = await admin
+    .from('friendships')
+    .select('user_a_id, user_b_id')
+    .or(pairs.map((p) => `and(user_a_id.eq.${p.user_a_id},user_b_id.eq.${p.user_b_id})`).join(','))
+    .eq('status', 'accepted')
+
+  const friendSet = new Set(
+    (friendships ?? []).map((f) => `${f.user_a_id}:${f.user_b_id}`)
+  )
+  const nonFriends = pairs.filter((p) => !friendSet.has(`${p.user_a_id}:${p.user_b_id}`))
+  if (nonFriends.length > 0) {
+    throw new Error('You must be friends with every member of a group DM')
+  }
 
   const trimmedName = name?.trim() || null
 
