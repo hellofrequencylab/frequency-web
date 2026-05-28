@@ -12,16 +12,7 @@ import {
   MapPin, Pencil, ArrowRight, Trophy, Star,
 } from 'lucide-react'
 
-type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
-
-const ROLE_BADGE: Record<CommunityRole, { label: string; cls: string }> = {
-  member:  { label: 'Member',  cls: 'bg-surface-elevated text-muted' },
-  crew:    { label: 'Crew',    cls: 'bg-signal-bg text-signal-strong' },
-  host:    { label: 'Host',    cls: 'bg-success-bg text-success' },
-  guide:   { label: 'Guide',   cls: 'bg-signal-bg text-signal-strong' },
-  mentor:  { label: 'Mentor',  cls: 'bg-warning-bg text-warning' },
-  janitor: { label: 'Janitor', cls: 'bg-signal-bg text-signal-strong' },
-}
+import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
 
 const RANK_TIERS = [
   { name: 'Ghost',    min: 0,    cls: 'bg-surface-elevated text-muted',     bar: 'bg-gray-400' },
@@ -77,7 +68,6 @@ export default async function ProfilePage({
   const isOwner = !!user && profile.auth_user_id === user.id
 
   const role = (profile.community_role ?? 'member') as CommunityRole
-  const badge = ROLE_BADGE[role] ?? ROLE_BADGE.member
   const initials = getInitials(profile.display_name)
   const regionName = (profile.nexus_regions as unknown as { name: string } | null)?.name
   const joinedDate = new Date(profile.created_at as string).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
@@ -204,9 +194,7 @@ export default async function ProfilePage({
           <p className="text-sm text-muted mt-0.5">@{profile.handle}</p>
 
           <div className="flex items-center gap-2 mt-2.5 flex-wrap">
-            <span className={`px-2.5 py-0.5 rounded-md text-xs font-medium ${badge.cls}`}>
-              {badge.label}
-            </span>
+            <RoleBadge role={role} className="text-xs leading-tight" />
             <span className={`px-2.5 py-0.5 rounded-md text-xs font-medium ${rank.cls}`}>
               {rank.name}
             </span>

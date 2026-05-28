@@ -52,13 +52,12 @@ type PublicPostRow = {
   author_avatar_url: string | null
 }
 
+import { type CommunityRole, ROLE_RANK, RoleBadge } from '@/lib/community-roles'
+
 // Role chips on the splash mirror the in-app rank palette so the look stays
 // consistent the moment a visitor signs in.
-const ROLE_COLOR: Record<string, string> = {
-  crew:   'bg-surface-elevated text-muted',
-  host:   'bg-warning-bg text-warning',
-  guide:  'bg-success-bg text-success',
-  mentor: 'bg-signal-bg text-signal-strong',
+function hasRole(role: string | null | undefined): role is CommunityRole {
+  return !!role && role in ROLE_RANK
 }
 
 export default async function RootPage() {
@@ -441,7 +440,7 @@ function StatItem({ value, label }: { value: number | string; label: string }) {
 // is anonymous and the row is decorative social proof.
 function PostPreviewCard({ post }: { post: PostPreviewRow }) {
   const a = post.author
-  const roleCls = a?.community_role ? ROLE_COLOR[a.community_role] : null
+  const showRole = hasRole(a?.community_role ?? null)
   const initials = a?.display_name ? getInitials(a.display_name) : '?'
 
   return (
@@ -465,10 +464,8 @@ function PostPreviewCard({ post }: { post: PostPreviewRow }) {
               <span className="text-sm font-semibold text-text truncate">
                 {a?.display_name ?? 'Community member'}
               </span>
-              {roleCls && (
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium capitalize ${roleCls}`}>
-                  {a!.community_role}
-                </span>
+              {showRole && (
+                <RoleBadge role={a!.community_role as CommunityRole} className="text-[10px] leading-tight" />
               )}
             </div>
             <p className="text-[11px] text-subtle mt-0.5">

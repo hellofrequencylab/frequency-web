@@ -20,16 +20,7 @@ function renderBodyWithMentions(body: string): React.ReactNode[] {
   })
 }
 
-type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
-
-const ROLE_BADGE: Record<CommunityRole, { label: string; cls: string }> = {
-  member:  { label: 'Member',  cls: 'bg-surface-elevated text-muted' },
-  crew:    { label: 'Crew',    cls: 'bg-signal-bg text-signal-strong' },
-  host:    { label: 'Host',    cls: 'bg-success-bg text-success' },
-  guide:   { label: 'Guide',   cls: 'bg-signal-bg text-signal-strong' },
-  mentor:  { label: 'Mentor',  cls: 'bg-warning-bg text-warning' },
-  janitor: { label: 'Janitor', cls: 'bg-signal-bg text-signal-strong' },
-}
+import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
 
 const POST_TYPE_LABEL: Record<string, { label: string; cls: string }> = {
   feed:         { label: 'Post',         cls: 'bg-surface-elevated text-muted dark:bg-surface-elevated dark:text-subtle' },
@@ -93,7 +84,6 @@ export function PostCard({
 }) {
   const { author, reactions } = post
   const role = (author.community_role ?? 'member') as CommunityRole
-  const badge = ROLE_BADGE[role] ?? ROLE_BADGE.member
 
   const heartCount = reactions.filter((r) => r.reaction_type === 'heart').length
   const plusCount = reactions.filter((r) => r.reaction_type === 'plus_one').length
@@ -168,9 +158,7 @@ export function PostCard({
                 >
                   {author.display_name}
                 </Link>
-                <span className={`text-[11px] px-1.5 py-0.5 rounded-md font-medium ${badge.cls}`}>
-                  {badge.label}
-                </span>
+                <RoleBadge role={role} className="text-[11px] leading-tight" />
                 {post.scopeContext && (
                   <>
                     <ArrowRight className="w-3 h-3 text-subtle shrink-0" />

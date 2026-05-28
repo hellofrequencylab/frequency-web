@@ -12,18 +12,9 @@ import {
   sendMagicLink, updateMemberProfile, deleteUserAccount,
 } from '../actions'
 
-type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
+import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
 
 const ROLES: CommunityRole[] = ['member', 'crew', 'host', 'guide', 'mentor', 'janitor']
-
-const ROLE_COLOR: Record<string, string> = {
-  member:  'bg-surface-elevated text-muted',
-  crew:    'bg-signal-bg text-signal-strong',
-  host:    'bg-success-bg text-success',
-  guide:   'bg-signal-bg text-signal-strong',
-  mentor:  'bg-warning-bg text-warning',
-  janitor: 'bg-signal-bg text-signal-strong',
-}
 
 interface Member {
   id: string
@@ -137,7 +128,6 @@ function MemberRow({
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   const initials = getInitials(m.display_name)
-  const roleCls = ROLE_COLOR[m.community_role] ?? ROLE_COLOR.member
 
   function handleRoleChange(role: string) {
     startTransition(async () => {
@@ -214,7 +204,7 @@ function MemberRow({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-text truncate">{m.display_name}</span>
-            <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium ${roleCls}`}>{m.community_role}</span>
+            <RoleBadge role={m.community_role as CommunityRole} className="text-[10px] leading-tight" />
             {!m.is_active && <span className="text-[10px] px-1.5 py-0.5 rounded-md font-medium bg-danger-bg text-danger">Inactive</span>}
           </div>
           <p className="text-xs text-subtle truncate">
