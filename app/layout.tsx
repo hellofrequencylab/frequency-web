@@ -53,8 +53,8 @@ export const metadata: Metadata = {
 };
 
 // Inline script that runs before first paint to prevent flash of wrong theme.
-// Reads localStorage('theme'): 'dark' | 'light' | absent (use system pref).
-const themeScript = `(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(t!=='light'&&window.matchMedia('(prefers-color-scheme:dark)').matches)){document.documentElement.classList.add('dark')}}catch(e){}})();`;
+// Default is light: only explicit 'dark' or 'system' (when OS prefers dark) opt in.
+const themeScript = `(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(t==='system'&&window.matchMedia('(prefers-color-scheme:dark)').matches)){document.documentElement.classList.add('dark')}}catch(e){}})();`;
 
 export default function RootLayout({
   children,
