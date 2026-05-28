@@ -363,7 +363,7 @@ async function LeaderboardWidget({ profileId, circleIds }: { profileId: string; 
       <div className="p-2">
         {top.map((member, i) => {
           const isSelf = member.id === profileId
-          const rankColor = RANK_COLORS[member.current_season_rank] ?? 'bg-slate-400'
+          const rankColor = RANK_COLORS[member.current_season_rank] ?? 'bg-border-strong'
           return (
             <Link
               key={member.id}

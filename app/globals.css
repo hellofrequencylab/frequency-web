@@ -105,7 +105,7 @@
 /* ── Tailwind wiring ────────────────────────────────────────────────────────
    Map tokens into Tailwind v4 utility classes. Components can then say
    `bg-canvas`, `bg-surface`, `text-text`, `text-muted`, `bg-primary`,
-   `text-primary-strong`, `border-border`, etc. Raw `bg-indigo-600` should be
+   `text-primary-strong`, `border-border`, etc. Raw `bg-primary` should be
    retired during the per-screen migration in favor of these.                */
 @theme inline {
   --color-canvas:           var(--color-canvas);

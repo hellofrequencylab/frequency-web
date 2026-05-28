@@ -15,20 +15,20 @@ import {
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
 const ROLE_BADGE: Record<CommunityRole, { label: string; cls: string }> = {
-  member:  { label: 'Member',  cls: 'bg-gray-100 text-gray-600' },
-  crew:    { label: 'Crew',    cls: 'bg-blue-100 text-blue-700' },
-  host:    { label: 'Host',    cls: 'bg-green-100 text-green-700' },
-  guide:   { label: 'Guide',   cls: 'bg-purple-100 text-purple-700' },
-  mentor:  { label: 'Mentor',  cls: 'bg-amber-100 text-amber-700' },
-  janitor: { label: 'Janitor', cls: 'bg-violet-100 text-violet-700' },
+  member:  { label: 'Member',  cls: 'bg-surface-elevated text-muted' },
+  crew:    { label: 'Crew',    cls: 'bg-signal-bg text-signal-strong' },
+  host:    { label: 'Host',    cls: 'bg-success-bg text-success' },
+  guide:   { label: 'Guide',   cls: 'bg-signal-bg text-signal-strong' },
+  mentor:  { label: 'Mentor',  cls: 'bg-warning-bg text-warning' },
+  janitor: { label: 'Janitor', cls: 'bg-signal-bg text-signal-strong' },
 }
 
 const RANK_TIERS = [
-  { name: 'Ghost',    min: 0,    cls: 'bg-gray-100 text-gray-600',     bar: 'bg-gray-400' },
-  { name: 'Spark',    min: 50,   cls: 'bg-amber-100 text-amber-700',   bar: 'bg-amber-500' },
-  { name: 'Flame',    min: 150,  cls: 'bg-orange-100 text-orange-700', bar: 'bg-orange-500' },
-  { name: 'Blaze',    min: 400,  cls: 'bg-red-100 text-red-700',       bar: 'bg-red-500' },
-  { name: 'Inferno',  min: 1000, cls: 'bg-violet-100 text-violet-700', bar: 'bg-violet-500' },
+  { name: 'Ghost',    min: 0,    cls: 'bg-surface-elevated text-muted',     bar: 'bg-gray-400' },
+  { name: 'Spark',    min: 50,   cls: 'bg-warning-bg text-warning',   bar: 'bg-primary' },
+  { name: 'Flame',    min: 150,  cls: 'bg-warning-bg text-warning', bar: 'bg-primary' },
+  { name: 'Blaze',    min: 400,  cls: 'bg-danger-bg text-danger',       bar: 'bg-danger' },
+  { name: 'Inferno',  min: 1000, cls: 'bg-signal-bg text-signal-strong', bar: 'bg-signal' },
 ]
 
 function getRank(zaps: number) {
@@ -147,9 +147,9 @@ export default async function ProfilePage({
   return (
     <div>
       {/* ── Cover image + avatar header ────────────────────── */}
-      <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden mb-6">
+      <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden mb-6">
         {/* Cover */}
-        <div className="relative h-32 sm:h-40 bg-gradient-to-br from-indigo-500 via-violet-500 to-purple-600">
+        <div className="relative h-32 sm:h-40 bg-gradient-to-br from-primary via-signal to-purple-600">
           <div className="absolute inset-0 bg-[url('/images/hero.jpg')] bg-cover bg-center opacity-30 mix-blend-overlay" />
         </div>
 
@@ -161,10 +161,10 @@ export default async function ProfilePage({
                 <img
                   src={profile.avatar_url}
                   alt={profile.display_name}
-                  className="w-24 h-24 rounded-full object-cover ring-4 ring-white dark:ring-gray-900"
+                  className="w-24 h-24 rounded-full object-cover ring-4 ring-surface"
                 />
               ) : (
-                <div className="w-24 h-24 rounded-full bg-indigo-100 text-indigo-600 text-3xl font-semibold flex items-center justify-center ring-4 ring-white dark:ring-gray-900">
+                <div className="w-24 h-24 rounded-full bg-primary-bg text-primary-strong text-3xl font-semibold flex items-center justify-center ring-4 ring-surface">
                   {initials}
                 </div>
               )}
@@ -173,7 +173,7 @@ export default async function ProfilePage({
               {isOwner ? (
                 <Link
                   href="/settings/profile"
-                  className="flex items-center gap-1.5 rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  className="flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-elevated transition-colors"
                 >
                   <Pencil className="w-3.5 h-3.5" />
                   Edit
@@ -185,7 +185,7 @@ export default async function ProfilePage({
                     <form action={startConversation.bind(null, profileId)}>
                       <button
                         type="submit"
-                        className="flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700 hover:bg-indigo-100 transition-colors"
+                        className="flex items-center gap-1.5 rounded-lg border border-primary-bg bg-primary-bg px-3 py-1.5 text-sm font-medium text-primary-strong hover:bg-primary-bg transition-colors"
                       >
                         <MessageSquare className="w-3.5 h-3.5" />
                         Message
@@ -198,10 +198,10 @@ export default async function ProfilePage({
           </div>
 
           {/* Identity */}
-          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-50 leading-tight">
+          <h1 className="text-xl font-bold text-text leading-tight">
             {profile.display_name}
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">@{profile.handle}</p>
+          <p className="text-sm text-muted mt-0.5">@{profile.handle}</p>
 
           <div className="flex items-center gap-2 mt-2.5 flex-wrap">
             <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${badge.cls}`}>
@@ -215,17 +215,17 @@ export default async function ProfilePage({
           {(profile.bio || regionName) && (
             <div className="mt-4 space-y-2">
               {profile.bio && (
-                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
+                <p className="text-sm text-text whitespace-pre-wrap leading-relaxed">
                   {profile.bio}
                 </p>
               )}
               <div className="flex items-center gap-4 flex-wrap">
                 {regionName && (
-                  <span className="flex items-center gap-1 text-xs text-gray-400">
+                  <span className="flex items-center gap-1 text-xs text-subtle">
                     <MapPin className="w-3 h-3" /> {regionName}
                   </span>
                 )}
-                <span className="flex items-center gap-1 text-xs text-gray-400">
+                <span className="flex items-center gap-1 text-xs text-subtle">
                   <CalendarDays className="w-3 h-3" /> Joined {joinedDate}
                 </span>
               </div>
@@ -253,7 +253,7 @@ export default async function ProfilePage({
             </div>
           )}
 
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-600 mb-4">
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-subtle mb-4">
             Timeline
           </h2>
           <ProfileFeed
@@ -280,19 +280,19 @@ export default async function ProfilePage({
             <div className="px-4 py-3">
               <div className="flex items-center justify-between mb-2">
                 <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${rank.cls}`}>{rank.name}</span>
-                <span className="text-[11px] text-gray-400 flex items-center gap-1">
-                  <Zap className="w-3 h-3 text-amber-400" /> {totalZaps}
+                <span className="text-[11px] text-subtle flex items-center gap-1">
+                  <Zap className="w-3 h-3 text-primary" /> {totalZaps}
                 </span>
               </div>
-              <div className="w-full h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+              <div className="w-full h-2 bg-surface-elevated rounded-full overflow-hidden">
                 <div className={`h-full rounded-full transition-all ${rank.bar}`} style={{ width: `${progress}%` }} />
               </div>
               {nextRank ? (
-                <p className="text-[11px] text-gray-400 mt-1.5">
+                <p className="text-[11px] text-subtle mt-1.5">
                   {nextRank.min - totalZaps} zaps to <span className="font-medium">{nextRank.name}</span>
                 </p>
               ) : (
-                <p className="text-[11px] text-gray-400 mt-1.5">Max rank reached</p>
+                <p className="text-[11px] text-subtle mt-1.5">Max rank reached</p>
               )}
             </div>
           </SidebarCard>
@@ -311,22 +311,22 @@ export default async function ProfilePage({
           {/* Circles & channels */}
           {(circles.length > 0 || channels.length > 0) && (
             <SidebarCard title="Groups">
-              <ul className="divide-y divide-gray-50 dark:divide-gray-800">
+              <ul className="divide-y divide-border">
                 {circles.map(c => (
                   <li key={c.id}>
-                    <Link href={`/circles/${c.slug}`} className="flex items-center gap-2.5 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                      <Users className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                      <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">{c.name}</span>
-                      <ArrowRight className="w-3 h-3 text-gray-300 dark:text-gray-600 ml-auto shrink-0" />
+                    <Link href={`/circles/${c.slug}`} className="flex items-center gap-2.5 px-4 py-2 hover:bg-surface-elevated transition-colors">
+                      <Users className="w-3.5 h-3.5 text-primary-strong shrink-0" />
+                      <span className="text-xs font-medium text-text truncate">{c.name}</span>
+                      <ArrowRight className="w-3 h-3 text-subtle ml-auto shrink-0" />
                     </Link>
                   </li>
                 ))}
                 {channels.map(c => (
                   <li key={c.id}>
-                    <Link href={`/channels/${c.id}`} className="flex items-center gap-2.5 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                      <Radio className="w-3.5 h-3.5 text-green-400 shrink-0" />
-                      <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">{c.name}</span>
-                      <ArrowRight className="w-3 h-3 text-gray-300 dark:text-gray-600 ml-auto shrink-0" />
+                    <Link href={`/channels/${c.id}`} className="flex items-center gap-2.5 px-4 py-2 hover:bg-surface-elevated transition-colors">
+                      <Radio className="w-3.5 h-3.5 text-success shrink-0" />
+                      <span className="text-xs font-medium text-text truncate">{c.name}</span>
+                      <ArrowRight className="w-3 h-3 text-subtle ml-auto shrink-0" />
                     </Link>
                   </li>
                 ))}
@@ -337,23 +337,23 @@ export default async function ProfilePage({
           {/* Events hosted */}
           {hostedEvents.length > 0 && (
             <SidebarCard title="Events">
-              <ul className="divide-y divide-gray-50 dark:divide-gray-800">
+              <ul className="divide-y divide-border">
                 {hostedEvents.map(e => {
                   const d = new Date(e.starts_at)
                   return (
                     <li key={e.id}>
-                      <Link href={`/events/${e.slug}`} className="flex items-start gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                      <Link href={`/events/${e.slug}`} className="flex items-start gap-3 px-4 py-2.5 hover:bg-surface-elevated transition-colors">
                         <div className="shrink-0 w-9 text-center">
-                          <div className="text-[9px] font-bold uppercase text-amber-500 leading-none">
+                          <div className="text-[9px] font-bold uppercase text-primary leading-none">
                             {d.toLocaleString('default', { month: 'short' })}
                           </div>
-                          <div className="text-base font-black text-gray-900 dark:text-gray-50 leading-tight">
+                          <div className="text-base font-black text-text leading-tight">
                             {d.getDate()}
                           </div>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium text-gray-700 dark:text-gray-300 line-clamp-1">{e.title}</p>
-                          {e.location && <p className="text-[11px] text-gray-400 truncate">{e.location}</p>}
+                          <p className="text-xs font-medium text-text line-clamp-1">{e.title}</p>
+                          {e.location && <p className="text-[11px] text-subtle truncate">{e.location}</p>}
                         </div>
                       </Link>
                     </li>
@@ -366,14 +366,14 @@ export default async function ProfilePage({
           {/* Dispatches authored */}
           {authoredDispatches.length > 0 && (
             <SidebarCard title="Dispatches">
-              <ul className="divide-y divide-gray-50 dark:divide-gray-800">
+              <ul className="divide-y divide-border">
                 {authoredDispatches.map(d => (
                   <li key={d.id}>
-                    <Link href={`/broadcast/${d.id}`} className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                      <Megaphone className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                    <Link href={`/broadcast/${d.id}`} className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-surface-elevated transition-colors">
+                      <Megaphone className="w-3.5 h-3.5 text-primary-strong shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-gray-700 dark:text-gray-300 line-clamp-1">{d.title}</p>
-                        <p className="text-[11px] text-gray-400">{relativeTime(d.published_at)}</p>
+                        <p className="text-xs font-medium text-text line-clamp-1">{d.title}</p>
+                        <p className="text-[11px] text-subtle">{relativeTime(d.published_at)}</p>
                       </div>
                     </Link>
                   </li>
@@ -399,10 +399,10 @@ function MiniStat({
   color: string
 }) {
   const colors: Record<string, string> = {
-    indigo: 'border-indigo-100 dark:border-indigo-900 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400',
-    amber:  'border-amber-100 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400',
-    green:  'border-green-100 dark:border-green-900 bg-green-50 dark:bg-green-950/40 text-green-600 dark:text-green-400',
-    violet: 'border-violet-100 dark:border-violet-900 bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400',
+    indigo: 'border-primary-bg bg-primary-bg text-primary-strong',
+    amber:  'border-warning-bg bg-warning-bg/40 text-warning',
+    green:  'border-green-100 bg-success-bg/40 text-success',
+    violet: 'border-violet-100 bg-signal-bg/40 text-signal-strong',
   }
   const cls = colors[color] ?? colors.indigo
   return (
@@ -429,23 +429,23 @@ function RewardBadge({
 }) {
   return (
     <div className={`flex items-center gap-3 ${earned ? '' : 'opacity-35'}`}>
-      <div className={`shrink-0 w-7 h-7 rounded-lg flex items-center justify-center ${earned ? 'bg-amber-100 dark:bg-amber-950/40' : 'bg-gray-100 dark:bg-gray-800'}`}>
-        <Icon className={`w-3.5 h-3.5 ${earned ? 'text-amber-500' : 'text-gray-400'}`} />
+      <div className={`shrink-0 w-7 h-7 rounded-lg flex items-center justify-center ${earned ? 'bg-warning-bg dark:bg-warning-bg/40' : 'bg-surface-elevated'}`}>
+        <Icon className={`w-3.5 h-3.5 ${earned ? 'text-primary' : 'text-subtle'}`} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-xs font-medium text-gray-700 dark:text-gray-300">{label}</p>
-        <p className="text-[10px] text-gray-400">{description}</p>
+        <p className="text-xs font-medium text-text">{label}</p>
+        <p className="text-[10px] text-subtle">{description}</p>
       </div>
-      {earned && <Star className="w-3 h-3 text-amber-400 fill-amber-400 shrink-0" />}
+      {earned && <Star className="w-3 h-3 text-primary fill-amber-400 shrink-0" />}
     </div>
   )
 }
 
 function SidebarCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
-      <div className="px-4 py-2.5 border-b border-gray-100/80 dark:border-gray-800/50">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">{title}</h3>
+    <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
+      <div className="px-4 py-2.5 border-b border-border">
+        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-subtle">{title}</h3>
       </div>
       {children}
     </div>

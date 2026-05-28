@@ -23,7 +23,7 @@ export function PostReportButton({
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Report"
-        className="p-1.5 rounded-md text-gray-300 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors"
+        className="p-1.5 rounded-md text-subtle hover:text-primary hover:bg-warning-bg dark:hover:bg-warning-bg/30 transition-colors"
       >
         <Flag className="w-3.5 h-3.5" />
       </button>

@@ -9,12 +9,12 @@ import { InviteMemberCompose } from '@/components/compose/invite-member-compose'
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
 const ROLE_BADGE: Record<CommunityRole, { label: string; cls: string }> = {
-  member:  { label: 'Member',  cls: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' },
-  crew:    { label: 'Crew',    cls: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400' },
-  host:    { label: 'Host',    cls: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400' },
-  guide:   { label: 'Guide',   cls: 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-400' },
-  mentor:  { label: 'Mentor',  cls: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400' },
-  janitor: { label: 'Janitor', cls: 'bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-400' },
+  member:  { label: 'Member',  cls: 'bg-surface-elevated text-muted dark:bg-surface-elevated dark:text-subtle' },
+  crew:    { label: 'Crew',    cls: 'bg-signal-bg text-signal-strong' },
+  host:    { label: 'Host',    cls: 'bg-success-bg text-success' },
+  guide:   { label: 'Guide',   cls: 'bg-signal-bg text-signal-strong' },
+  mentor:  { label: 'Mentor',  cls: 'bg-warning-bg text-warning' },
+  janitor: { label: 'Janitor', cls: 'bg-signal-bg text-signal-strong' },
 }
 
 type Profile = {
@@ -87,10 +87,10 @@ export default async function DirectoryPage({
       <div className="flex items-end justify-between gap-4 mb-6">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <Globe className="w-5 h-5 text-indigo-500" />
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Directory</h1>
+            <Globe className="w-5 h-5 text-primary-strong" />
+            <h1 className="text-2xl font-bold text-text">Directory</h1>
           </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-sm text-muted">
             Browse and connect with community members.
           </p>
         </div>
@@ -101,13 +101,13 @@ export default async function DirectoryPage({
       <div className="flex flex-wrap gap-2 mb-6">
         {/* Role filter */}
         <div className="flex items-center gap-1.5">
-          <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Role:</span>
+          <span className="text-xs text-muted font-medium">Role:</span>
           <Link
             href={filterHref({ region: regionFilter })}
             className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
               !roleFilter
-                ? 'bg-indigo-600 text-white border-indigo-600'
-                : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-indigo-300'
+                ? 'bg-primary text-on-primary border-primary'
+                : 'bg-surface text-muted border-border hover:border-primary'
             }`}
           >
             All
@@ -118,8 +118,8 @@ export default async function DirectoryPage({
               href={filterHref({ role: r, region: regionFilter })}
               className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
                 roleFilter === r
-                  ? 'bg-indigo-600 text-white border-indigo-600'
-                  : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-indigo-300'
+                  ? 'bg-primary text-on-primary border-primary'
+                  : 'bg-surface text-muted border-border hover:border-primary'
               }`}
             >
               {ROLE_BADGE[r].label}
@@ -130,13 +130,13 @@ export default async function DirectoryPage({
         {/* Region filter */}
         {regions && regions.length > 0 && (
           <div className="flex items-center gap-1.5">
-            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Region:</span>
+            <span className="text-xs text-muted font-medium">Region:</span>
             <Link
               href={filterHref({ role: roleFilter })}
               className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
                 !regionFilter
-                  ? 'bg-indigo-600 text-white border-indigo-600'
-                  : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-indigo-300'
+                  ? 'bg-primary text-on-primary border-primary'
+                  : 'bg-surface text-muted border-border hover:border-primary'
               }`}
             >
               All
@@ -147,8 +147,8 @@ export default async function DirectoryPage({
                 href={filterHref({ role: roleFilter, region: reg.name })}
                 className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
                   regionFilter === reg.name
-                    ? 'bg-indigo-600 text-white border-indigo-600'
-                    : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-indigo-300'
+                    ? 'bg-primary text-on-primary border-primary'
+                    : 'bg-surface text-muted border-border hover:border-primary'
                 }`}
               >
                 {reg.name}
@@ -159,13 +159,13 @@ export default async function DirectoryPage({
       </div>
 
       {/* Member count */}
-      <p className="text-xs text-gray-400 mb-4">{filtered.length} member{filtered.length !== 1 ? 's' : ''}</p>
+      <p className="text-xs text-subtle mb-4">{filtered.length} member{filtered.length !== 1 ? 's' : ''}</p>
 
       {/* Grid */}
       {filtered.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-gray-200/60 dark:border-gray-800/60 bg-gray-50/50 dark:bg-gray-900/50 p-12 text-center">
-          <Globe className="w-8 h-8 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
-          <p className="text-sm text-gray-500 dark:text-gray-400">No members match these filters.</p>
+        <div className="rounded-2xl border border-dashed border-border bg-surface/50 dark:bg-canvas/50 p-12 text-center">
+          <Globe className="w-8 h-8 text-subtle/60 mx-auto mb-3" />
+          <p className="text-sm text-muted">No members match these filters.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
@@ -176,7 +176,7 @@ export default async function DirectoryPage({
               <Link
                 key={p.id}
                 href={`/people/${p.handle}`}
-                className="group flex items-start gap-3 rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm p-4 hover:border-indigo-200 dark:hover:border-indigo-800 hover:shadow-md transition-all"
+                className="group flex items-start gap-3 rounded-2xl border border-border bg-surface shadow-sm p-4 hover:border-primary-bg dark:hover:border-primary hover:shadow-md transition-all"
               >
                 {p.avatar_url ? (
                   <img
@@ -185,21 +185,21 @@ export default async function DirectoryPage({
                     className="w-10 h-10 rounded-full object-cover shrink-0"
                   />
                 ) : (
-                  <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-sm font-semibold flex items-center justify-center shrink-0 select-none">
+                  <div className="w-10 h-10 rounded-full bg-primary-bg text-primary-strong text-sm font-semibold flex items-center justify-center shrink-0 select-none">
                     {getInitials(p.display_name)}
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 dark:text-gray-50 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors truncate">
+                  <p className="text-sm font-semibold text-text group-hover:text-primary-strong dark:group-hover:text-primary-strong transition-colors truncate">
                     {p.display_name}
                   </p>
-                  <p className="text-xs text-gray-400 truncate">@{p.handle}</p>
+                  <p className="text-xs text-subtle truncate">@{p.handle}</p>
                   <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                     <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${badge.cls}`}>
                       {badge.label}
                     </span>
                     {p.nexus_regions?.name && (
-                      <span className="text-[11px] text-gray-400">{p.nexus_regions.name}</span>
+                      <span className="text-[11px] text-subtle">{p.nexus_regions.name}</span>
                     )}
                   </div>
                 </div>

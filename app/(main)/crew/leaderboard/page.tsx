@@ -151,11 +151,11 @@ export default async function LeaderboardPage({
     <div>
       <div className="mb-6">
         <div className="flex items-center gap-3">
-          <Link href="/crew" className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">Crew</Link>
-          <span className="text-gray-300 dark:text-gray-600">/</span>
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50">Leaderboard</h1>
+          <Link href="/crew" className="text-sm text-subtle hover:text-muted dark:hover:text-subtle transition-colors">Crew</Link>
+          <span className="text-subtle">/</span>
+          <h1 className="text-xl font-semibold text-text">Leaderboard</h1>
         </div>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+        <p className="text-sm text-muted mt-1">
           Season rankings across your community. Compete with your circle, hub, nexus, or everyone.
         </p>
       </div>
@@ -163,22 +163,22 @@ export default async function LeaderboardPage({
       <LeaderboardTabs activeScope={scope} />
 
       {myRank >= 0 && (
-        <div className="mb-4 rounded-xl border border-indigo-200/60 dark:border-indigo-800/40 bg-indigo-50/50 dark:bg-indigo-950/20 px-4 py-2.5 flex items-center gap-2">
-          <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400">
+        <div className="mb-4 rounded-xl border border-primary-bg/60 dark:border-primary/40 bg-primary-bg/50 dark:bg-primary-bg px-4 py-2.5 flex items-center gap-2">
+          <span className="text-xs font-medium text-primary-strong">
             Your rank: #{myRank + 1} of {entries.length} in {scopeLabel}
           </span>
         </div>
       )}
 
       {entries.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-gray-200/60 dark:border-gray-700/60 bg-gray-50/50 dark:bg-gray-900/50 p-10 text-center">
-          <TrendingUp className="w-7 h-7 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
-          <p className="text-sm text-gray-400 dark:text-gray-500">No data for this scope yet.</p>
+        <div className="rounded-2xl border border-dashed border-border/60 dark:border-border-strong/60 bg-surface/50 dark:bg-canvas/50 p-10 text-center">
+          <TrendingUp className="w-7 h-7 text-subtle mx-auto mb-2" />
+          <p className="text-sm text-subtle">No data for this scope yet.</p>
         </div>
       ) : (
-        <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
+        <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
           {/* Header */}
-          <div className="grid grid-cols-[2.5rem_1fr_5rem_4rem_4rem_5rem] gap-2 px-4 py-2 border-b border-gray-100 dark:border-gray-800 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+          <div className="grid grid-cols-[2.5rem_1fr_5rem_4rem_4rem_5rem] gap-2 px-4 py-2 border-b border-border text-[10px] font-semibold uppercase tracking-wider text-subtle">
             <span>#</span>
             <span>Member</span>
             <span className="text-right">{scope === 'gems' ? 'Gems' : 'Zaps'}</span>
@@ -190,13 +190,13 @@ export default async function LeaderboardPage({
           {entries.map((entry, i) => {
             const isSelf = entry.id === profile.id
             const rankDef = getRankDef(entry.seasonRank)
-            const medalColor = i === 0 ? 'text-amber-500' : i === 1 ? 'text-gray-400' : i === 2 ? 'text-orange-400' : 'text-gray-300 dark:text-gray-600'
+            const medalColor = i === 0 ? 'text-primary' : i === 1 ? 'text-subtle' : i === 2 ? 'text-primary' : 'text-subtle'
 
             return (
               <div
                 key={entry.id}
-                className={`grid grid-cols-[2.5rem_1fr_5rem_4rem_4rem_5rem] gap-2 px-4 py-2.5 items-center border-b border-gray-50 dark:border-gray-800/30 last:border-0 ${
-                  isSelf ? 'bg-indigo-50/60 dark:bg-indigo-950/20' : ''
+                className={`grid grid-cols-[2.5rem_1fr_5rem_4rem_4rem_5rem] gap-2 px-4 py-2.5 items-center border-b border-gray-50 dark:border-border/30 last:border-0 ${
+                  isSelf ? 'bg-primary-bg/60 dark:bg-primary-bg' : ''
                 }`}
               >
                 <span className={`text-sm font-bold tabular-nums ${medalColor}`}>{i + 1}</span>
@@ -205,41 +205,41 @@ export default async function LeaderboardPage({
                   {entry.avatarUrl ? (
                     <img src={entry.avatarUrl} alt={entry.displayName} className="w-7 h-7 rounded-full object-cover shrink-0" />
                   ) : (
-                    <div className="w-7 h-7 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-600 text-[10px] font-bold flex items-center justify-center shrink-0">
+                    <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-[10px] font-bold flex items-center justify-center shrink-0">
                       {getInitials(entry.displayName)}
                     </div>
                   )}
-                  <span className={`text-sm truncate ${isSelf ? 'font-semibold text-indigo-700 dark:text-indigo-300' : 'text-gray-900 dark:text-gray-50'}`}>
+                  <span className={`text-sm truncate ${isSelf ? 'font-semibold text-primary-strong' : 'text-text'}`}>
                     {entry.displayName}
-                    {isSelf && <span className="text-[11px] font-normal text-indigo-400 ml-1">(you)</span>}
+                    {isSelf && <span className="text-[11px] font-normal text-primary-strong ml-1">(you)</span>}
                   </span>
                 </Link>
 
-                <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 text-right tabular-nums flex items-center justify-end gap-0.5">
+                <span className="text-sm font-semibold text-text text-right tabular-nums flex items-center justify-end gap-0.5">
                   {scope === 'gems' ? (
-                    <><Gem className="w-3 h-3 text-emerald-500" />{entry.lifetimeGems.toLocaleString()}</>
+                    <><Gem className="w-3 h-3 text-signal" />{entry.lifetimeGems.toLocaleString()}</>
                   ) : (
-                    <><Zap className="w-3 h-3 text-amber-400" />{entry.seasonZaps.toLocaleString()}</>
+                    <><Zap className="w-3 h-3 text-primary" />{entry.seasonZaps.toLocaleString()}</>
                   )}
                 </span>
 
                 <span className="text-sm text-right tabular-nums">
                   {entry.streak > 0 ? (
-                    <span className="text-orange-500 font-semibold flex items-center justify-end gap-0.5">
+                    <span className="text-primary font-semibold flex items-center justify-end gap-0.5">
                       <Flame className="w-3 h-3" />{entry.streak}
                     </span>
                   ) : (
-                    <span className="text-gray-300 dark:text-gray-600">—</span>
+                    <span className="text-subtle">—</span>
                   )}
                 </span>
 
                 <span className="text-sm text-right tabular-nums">
                   {entry.achievements > 0 ? (
-                    <span className="text-violet-500 font-medium flex items-center justify-end gap-0.5">
+                    <span className="text-signal font-medium flex items-center justify-end gap-0.5">
                       <Award className="w-3 h-3" />{entry.achievements}
                     </span>
                   ) : (
-                    <span className="text-gray-300 dark:text-gray-600">—</span>
+                    <span className="text-subtle">—</span>
                   )}
                 </span>
 

@@ -61,10 +61,10 @@ export default async function AdminMembersPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <Users className="w-5 h-5 text-indigo-500" />
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Members</h1>
+            <Users className="w-5 h-5 text-primary-strong" />
+            <h1 className="text-2xl font-bold text-text">Members</h1>
           </div>
-          <p className="text-sm text-gray-500">{allMembers.length} total members</p>
+          <p className="text-sm text-muted">{allMembers.length} total members</p>
         </div>
       </div>
 

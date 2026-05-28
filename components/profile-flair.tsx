@@ -22,17 +22,17 @@ export function ProfileFlair({ rank, streak, achievementCount, gems, compact = f
   return (
     <>
       {validRank && (
-        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white ${RANK_COLORS[validRank] ?? 'bg-slate-400'}`}>
+        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white ${RANK_COLORS[validRank] ?? 'bg-border-strong'}`}>
           {compact ? validRank.charAt(0).toUpperCase() : RANK_LABELS[validRank] ?? validRank}
         </span>
       )}
       {hasStreak && (
-        <span className="text-[11px] font-semibold text-orange-500 dark:text-orange-400 flex items-center gap-0.5">
+        <span className="text-[11px] font-semibold text-primary dark:text-primary flex items-center gap-0.5">
           <Flame className="w-3 h-3" />{streak}
         </span>
       )}
       {gemTier && !compact && (
-        <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
+        <span className="text-[11px] font-medium text-signal-strong flex items-center gap-0.5">
           <Gem className="w-3 h-3" />{gemCount.toLocaleString()}
         </span>
       )}
@@ -40,7 +40,7 @@ export function ProfileFlair({ rank, streak, achievementCount, gems, compact = f
         <span className={`w-2 h-2 rounded-full ${gemTier.color}`} title={`${gemCount} gems — ${gemTier.label}`} />
       )}
       {hasAchievements && !compact && (
-        <span className="text-[11px] font-medium text-violet-500 dark:text-violet-400 flex items-center gap-0.5">
+        <span className="text-[11px] font-medium text-signal dark:text-signal flex items-center gap-0.5">
           <Award className="w-3 h-3" />{achievementCount}
         </span>
       )}

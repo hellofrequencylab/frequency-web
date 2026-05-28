@@ -9,9 +9,9 @@ import { getInitials } from '@/lib/utils'
 
 function SidebarCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
-      <div className="px-4 py-2.5 border-b border-gray-100/80 dark:border-gray-800/50">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">{title}</h3>
+    <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
+      <div className="px-4 py-2.5 border-b border-border">
+        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-subtle">{title}</h3>
       </div>
       {children}
     </div>
@@ -138,29 +138,29 @@ export default async function CrewPage() {
       {/* ── Header ──────────────────────────────────── */}
       <div className="mb-6">
         <div className="flex items-center gap-2 flex-wrap">
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50">Crew Dashboard</h1>
+          <h1 className="text-xl font-semibold text-text">Crew Dashboard</h1>
           {isCrewLead && (
-            <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 font-semibold">
+            <span className="text-[11px] px-2 py-0.5 rounded-full bg-warning-bg dark:bg-warning-bg text-warning font-semibold">
               Crew Lead
             </span>
           )}
         </div>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+        <p className="text-sm text-muted mt-1">
           Track your contributions and season progress.
           {circleName && (
-            <> You&apos;re in <span className="font-medium text-gray-700 dark:text-gray-300">{circleName}</span>.</>
+            <> You&apos;re in <span className="font-medium text-text">{circleName}</span>.</>
           )}
         </p>
       </div>
 
       {/* ── Season Progress (full width, top) ────────── */}
-      <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden mb-6">
-        <div className="px-4 py-2.5 border-b border-gray-100/80 dark:border-gray-800/50">
-          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Season Progress</h3>
+      <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden mb-6">
+        <div className="px-4 py-2.5 border-b border-border">
+          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-subtle">Season Progress</h3>
         </div>
         <div className="px-5 py-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+            <span className="text-xs font-medium text-text">
               {currentSeasonRank === 'luminary'
                 ? 'Maximum rank achieved'
                 : currentSeasonRank === 'conduit' && !challengesComplete
@@ -170,13 +170,13 @@ export default async function CrewPage() {
                 : 'Max rank'}
             </span>
             {nextRank && currentSeasonRank !== 'conduit' && (
-              <span className="text-[11px] text-gray-400 dark:text-gray-500">
+              <span className="text-[11px] text-subtle">
                 {currentSeasonZaps.toLocaleString()} / {nextRank.minZaps.toLocaleString()}
               </span>
             )}
           </div>
 
-          <div className="h-2.5 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden mb-4">
+          <div className="h-2.5 rounded-full bg-surface-elevated overflow-hidden mb-4">
             <div
               className={`h-full rounded-full transition-all ${rankDef.color}`}
               style={{ width: `${rankProgress}%` }}
@@ -196,11 +196,11 @@ export default async function CrewPage() {
                         ? `${r.color} ring-current ring-offset-1`
                         : achieved
                         ? `${r.color} ring-transparent`
-                        : 'bg-gray-200 dark:bg-gray-700 ring-transparent'
+                        : 'bg-border-strong ring-transparent'
                     }`}
                   />
                   <span className={`text-[9px] font-semibold leading-none ${
-                    isCurrent ? r.text : 'text-gray-400 dark:text-gray-500'
+                    isCurrent ? r.text : 'text-subtle'
                   }`}>
                     {r.label}
                   </span>
@@ -210,7 +210,7 @@ export default async function CrewPage() {
           </div>
 
           {currentSeasonRank === 'conduit' && !challengesComplete && (
-            <p className="mt-3 text-[11px] text-gray-400 dark:text-gray-500 text-center">
+            <p className="mt-3 text-[11px] text-subtle text-center">
               Complete all season challenges to unlock Luminary rank.
             </p>
           )}
@@ -229,41 +229,41 @@ export default async function CrewPage() {
               label="Season Rank"
               value={rankDef.label}
               Icon={Star}
-              colorCls="text-indigo-600 bg-indigo-50 dark:bg-indigo-950 dark:text-indigo-400"
+              colorCls="text-primary-strong bg-primary-bg dark:text-primary-strong"
             />
             <StatCard
               label="Zaps"
               value={currentSeasonZaps.toLocaleString()}
               Icon={Zap}
-              colorCls="text-amber-600 bg-amber-50 dark:bg-amber-950 dark:text-amber-400"
+              colorCls="text-warning bg-warning-bg dark:text-primary"
             />
             <StatCard
               label="Gems"
               value={lifetimeGems.toLocaleString()}
               Icon={Gem}
-              colorCls="text-emerald-600 bg-emerald-50 dark:bg-emerald-950 dark:text-emerald-400"
+              colorCls="text-signal-strong bg-success-bg dark:text-signal"
             />
             <StatCard
               label="Tasks Done"
               value={String(completedTaskCount)}
               Icon={CheckCircle}
-              colorCls="text-green-600 bg-green-50 dark:bg-green-950 dark:text-green-400"
+              colorCls="text-success bg-success-bg dark:text-success"
             />
           </div>
 
           {/* Tasks */}
           <section>
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+            <h2 className="text-sm font-semibold text-text mb-3">
               Tasks
-              <span className="ml-2 text-xs font-normal text-gray-400">
+              <span className="ml-2 text-xs font-normal text-subtle">
                 {(tasks ?? []).length} available
               </span>
             </h2>
 
             {(tasks ?? []).length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-gray-200/60 dark:border-gray-700/60 bg-gray-50/50 dark:bg-gray-900/50 p-10 text-center">
-                <Star className="w-7 h-7 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
-                <p className="text-sm text-gray-400 dark:text-gray-500">No tasks available yet.</p>
+              <div className="rounded-2xl border border-dashed border-border/60 dark:border-border-strong/60 bg-surface/50 dark:bg-canvas/50 p-10 text-center">
+                <Star className="w-7 h-7 text-subtle mx-auto mb-2" />
+                <p className="text-sm text-subtle">No tasks available yet.</p>
               </div>
             ) : (
               <div className="space-y-2">
@@ -278,44 +278,44 @@ export default async function CrewPage() {
                       key={task.id}
                       className={`rounded-2xl border px-4 py-3 flex items-start gap-3 shadow-sm transition-colors ${
                         isDone
-                          ? 'border-green-100 dark:border-green-900 bg-green-50/50 dark:bg-green-950/30'
-                          : 'border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900'
+                          ? 'border-green-100 bg-success-bg/50 dark:bg-success-bg/30'
+                          : 'border-border bg-surface'
                       }`}
                     >
                       <div className={`flex items-center justify-center w-8 h-8 rounded-lg shrink-0 ${
-                        isDone ? 'bg-green-100 dark:bg-green-900' : 'bg-gray-50 dark:bg-gray-800'
+                        isDone ? 'bg-success-bg' : 'bg-surface-elevated'
                       }`}>
                         {isDone ? (
-                          <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
+                          <CheckCircle className="w-4 h-4 text-success" />
                         ) : (
-                          <Star className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                          <Star className="w-4 h-4 text-subtle" />
                         )}
                       </div>
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className={`text-sm font-medium ${
-                            isDone ? 'text-green-800 dark:text-green-300' : 'text-gray-900 dark:text-gray-50'
+                            isDone ? 'text-success' : 'text-text'
                           }`}>
                             {task.name}
                           </span>
-                          <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 font-medium">
+                          <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-surface-elevated text-muted font-medium">
                             {TASK_TYPE_LABEL[task.task_type] ?? task.task_type}
                           </span>
                           {task.is_repeatable && (
-                            <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 font-medium">
+                            <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-signal-bg text-signal-strong font-medium">
                               Repeatable
                             </span>
                           )}
                           {task.requires_verification && (
-                            <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-orange-50 dark:bg-orange-950 text-orange-600 dark:text-orange-400 font-medium">
+                            <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-warning-bg text-warning dark:text-primary font-medium">
                               Needs review
                             </span>
                           )}
                         </div>
 
                         {isDone && lastCompletion && (
-                          <p className="text-xs text-green-600 dark:text-green-400 mt-0.5">
+                          <p className="text-xs text-success mt-0.5">
                             Completed{' '}
                             {new Date(lastCompletion.completed_at).toLocaleDateString('en-US', {
                               month: 'short', day: 'numeric', year: 'numeric',
@@ -332,9 +332,9 @@ export default async function CrewPage() {
 
                       <div className="flex items-center gap-2 shrink-0">
                         <div className="flex items-center gap-0.5">
-                          <Zap className={`w-3.5 h-3.5 ${isDone ? 'text-green-500 dark:text-green-400' : 'text-amber-400'}`} />
+                          <Zap className={`w-3.5 h-3.5 ${isDone ? 'text-success dark:text-success' : 'text-primary'}`} />
                           <span className={`text-sm font-semibold ${
-                            isDone ? 'text-green-700 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'
+                            isDone ? 'text-success' : 'text-muted'
                           }`}>
                             +{(task as { zaps_value: number }).zaps_value}
                           </span>
@@ -360,12 +360,12 @@ export default async function CrewPage() {
 
           {/* 6 quick links */}
           <div className="grid grid-cols-2 gap-2">
-            <QuickLink href="/crew/achievements" Icon={Award} label="Achievements" sub="Earn badges" color="bg-violet-50 dark:bg-violet-950 text-violet-600 dark:text-violet-400" />
-            <QuickLink href="/crew/streaks" Icon={Flame} label="Streaks" sub="Stay consistent" color="bg-orange-50 dark:bg-orange-950 text-orange-600 dark:text-orange-400" />
-            <QuickLink href="/crew/challenges" Icon={Target} label="Challenges" sub="Season goals" color="bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400" />
-            <QuickLink href="/crew/quests" Icon={Map} label="Quests" sub="Multi-step" color="bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400" />
-            <QuickLink href="/crew/leaderboard" Icon={TrendingUp} label="Leaderboard" sub="Rankings" color="bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400" />
-            <QuickLink href="/crew/store" Icon={ShoppingBag} label="Gem Store" sub="Spend gems" color="bg-teal-50 dark:bg-teal-950 text-teal-600 dark:text-teal-400" />
+            <QuickLink href="/crew/achievements" Icon={Award} label="Achievements" sub="Earn badges" color="bg-signal-bg text-signal-strong" />
+            <QuickLink href="/crew/streaks" Icon={Flame} label="Streaks" sub="Stay consistent" color="bg-warning-bg text-warning dark:text-primary" />
+            <QuickLink href="/crew/challenges" Icon={Target} label="Challenges" sub="Season goals" color="bg-primary-bg text-primary-strong" />
+            <QuickLink href="/crew/quests" Icon={Map} label="Quests" sub="Multi-step" color="bg-success-bg text-signal-strong" />
+            <QuickLink href="/crew/leaderboard" Icon={TrendingUp} label="Leaderboard" sub="Rankings" color="bg-warning-bg text-warning" />
+            <QuickLink href="/crew/store" Icon={ShoppingBag} label="Gem Store" sub="Spend gems" color="bg-teal-50 text-signal-strong" />
           </div>
 
           {/* Leaderboard */}
@@ -376,24 +376,24 @@ export default async function CrewPage() {
                   const isSelf = member.profileId === profile.id
                   const memberRankDef = getRankDef(member.seasonRank)
                   const rankColor =
-                    i === 0 ? 'text-amber-500'
-                    : i === 1 ? 'text-gray-400'
-                    : i === 2 ? 'text-orange-400'
-                    : 'text-gray-300 dark:text-gray-600'
+                    i === 0 ? 'text-primary'
+                    : i === 1 ? 'text-subtle'
+                    : i === 2 ? 'text-primary'
+                    : 'text-subtle'
 
                   return (
                     <div
                       key={member.profileId}
                       className={`flex items-center gap-3 px-4 py-3 ${
-                        i < leaderboard.length - 1 ? 'border-b border-gray-100/80 dark:border-gray-800/50' : ''
-                      } ${isSelf ? 'bg-indigo-50/60 dark:bg-indigo-950/30' : ''}`}
+                        i < leaderboard.length - 1 ? 'border-b border-border' : ''
+                      } ${isSelf ? 'bg-primary-bg/60 dark:bg-primary-bg' : ''}`}
                     >
                       <span className={`text-sm font-bold w-5 shrink-0 ${rankColor}`}>{i + 1}</span>
 
                       {member.avatarUrl ? (
                         <img src={member.avatarUrl} alt={member.displayName} className="w-7 h-7 rounded-full object-cover shrink-0" />
                       ) : (
-                        <div className="w-7 h-7 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 text-xs font-semibold flex items-center justify-center shrink-0 select-none">
+                        <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none">
                           {getInitials(member.displayName)}
                         </div>
                       )}
@@ -402,11 +402,11 @@ export default async function CrewPage() {
                         <Link
                           href={`/people/${member.handle}`}
                           className={`text-xs font-medium truncate hover:underline ${
-                            isSelf ? 'text-indigo-700 dark:text-indigo-300' : 'text-gray-900 dark:text-gray-50'
+                            isSelf ? 'text-primary-strong' : 'text-text'
                           }`}
                         >
                           {member.displayName}
-                          {isSelf && <span className="ml-1 text-[11px] text-indigo-400 dark:text-indigo-500 font-normal">(you)</span>}
+                          {isSelf && <span className="ml-1 text-[11px] text-primary-strong dark:text-primary-strong font-normal">(you)</span>}
                         </Link>
                       </div>
 
@@ -415,8 +415,8 @@ export default async function CrewPage() {
                           {memberRankDef.label}
                         </span>
                         <div className="flex items-center gap-0.5">
-                          <Zap className="w-3 h-3 text-amber-400" />
-                          <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                          <Zap className="w-3 h-3 text-primary" />
+                          <span className="text-xs font-semibold text-text">
                             {member.seasonZaps.toLocaleString()}
                           </span>
                         </div>
@@ -444,12 +444,12 @@ function StatCard({
   colorCls: string
 }) {
   return (
-    <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm p-3">
+    <div className="rounded-2xl border border-border bg-surface shadow-sm p-3">
       <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2 ${colorCls}`}>
         <Icon className="w-4 h-4" />
       </div>
-      <div className="text-xl font-bold text-gray-900 dark:text-gray-50 leading-none">{value}</div>
-      <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{label}</div>
+      <div className="text-xl font-bold text-text leading-none">{value}</div>
+      <div className="text-xs text-muted mt-0.5">{label}</div>
     </div>
   )
 }
@@ -460,13 +460,13 @@ function QuickLink({ href, Icon, label, sub, color }: {
   return (
     <Link
       href={href}
-      className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm p-3 hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors group"
+      className="rounded-2xl border border-border bg-surface shadow-sm p-3 hover:border-primary-bg dark:hover:border-primary transition-colors group"
     >
       <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2 ${color} transition-colors`}>
         <Icon className="w-4 h-4" />
       </div>
-      <div className="text-sm font-semibold text-gray-900 dark:text-gray-50 leading-none">{label}</div>
-      <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{sub}</div>
+      <div className="text-sm font-semibold text-text leading-none">{label}</div>
+      <div className="text-xs text-muted mt-0.5">{sub}</div>
     </Link>
   )
 }

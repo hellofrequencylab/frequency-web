@@ -8,9 +8,9 @@ import { EventCompose } from '@/app/(main)/events/event-compose'
 
 function SidebarCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
-      <div className="px-4 py-2.5 border-b border-gray-100/80 dark:border-gray-800/50">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">{title}</h3>
+    <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
+      <div className="px-4 py-2.5 border-b border-border">
+        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-subtle">{title}</h3>
       </div>
       {children}
     </div>
@@ -98,8 +98,8 @@ export default async function AdminEventsPage() {
     <div>
       <div className="flex items-end justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Events</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <h1 className="text-2xl font-bold text-text">Events</h1>
+          <p className="text-sm text-muted mt-1">
             Manage events across your circles. Cancel or reinstate from here.
           </p>
         </div>
@@ -121,7 +121,7 @@ export default async function AdminEventsPage() {
           {/* Past */}
           {past.length > 0 && (
             <details>
-              <summary className="text-xs font-medium text-gray-400 cursor-pointer hover:text-gray-600 select-none">
+              <summary className="text-xs font-medium text-subtle cursor-pointer hover:text-muted select-none">
                 {past.length} past event{past.length > 1 ? 's' : ''}
               </summary>
               <div className="space-y-2 mt-2 opacity-70">
@@ -133,9 +133,9 @@ export default async function AdminEventsPage() {
           )}
 
           {events.length === 0 && (
-            <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-800 p-12 text-center">
-              <CalendarDays className="w-8 h-8 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
-              <p className="text-sm text-gray-500">No events yet.</p>
+            <div className="rounded-xl border border-dashed border-border p-12 text-center">
+              <CalendarDays className="w-8 h-8 text-subtle/60 mx-auto mb-3" />
+              <p className="text-sm text-muted">No events yet.</p>
             </div>
           )}
         </div>
@@ -144,11 +144,11 @@ export default async function AdminEventsPage() {
         <div className="space-y-4">
           <SidebarCard title="Quick Actions">
             <div className="p-2 space-y-0.5">
-              <Link href="/events/new" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                <Plus className="w-4 h-4 text-gray-400" /> New Event
+              <Link href="/events/new" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-text hover:bg-surface-elevated transition-colors">
+                <Plus className="w-4 h-4 text-subtle" /> New Event
               </Link>
             </div>
-            <p className="px-4 py-3 text-xs text-gray-400">Cancelling an event notifies RSVPed members and marks it on the events page.</p>
+            <p className="px-4 py-3 text-xs text-subtle">Cancelling an event notifies RSVPed members and marks it on the events page.</p>
           </SidebarCard>
         </div>
       </div>
@@ -158,13 +158,13 @@ export default async function AdminEventsPage() {
 
 function EventRow({ event }: { event: { id: string; title: string; slug: string; starts_at: string; ends_at: string | null; location: string | null; is_cancelled: boolean; host: { display_name: string } | null } }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3">
+    <div className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3">
       {/* Date chip */}
-      <div className="shrink-0 w-10 flex flex-col items-center rounded-lg bg-gray-50 dark:bg-gray-800 py-1.5 text-center">
-        <span className="text-[10px] font-semibold text-gray-400 uppercase leading-none">
+      <div className="shrink-0 w-10 flex flex-col items-center rounded-lg bg-surface-elevated py-1.5 text-center">
+        <span className="text-[10px] font-semibold text-subtle uppercase leading-none">
           {new Date(event.starts_at).toLocaleDateString('en-US', { month: 'short' })}
         </span>
-        <span className="text-lg font-black text-gray-900 dark:text-gray-50 leading-none mt-0.5">
+        <span className="text-lg font-black text-text leading-none mt-0.5">
           {new Date(event.starts_at).getDate()}
         </span>
       </div>
@@ -173,17 +173,17 @@ function EventRow({ event }: { event: { id: string; title: string; slug: string;
         <div className="flex items-center gap-2 flex-wrap">
           <Link
             href={`/events/${event.slug}`}
-            className="text-sm font-semibold text-gray-900 dark:text-gray-50 hover:text-indigo-600 dark:hover:text-indigo-400 truncate"
+            className="text-sm font-semibold text-text hover:text-primary-strong dark:hover:text-primary-strong truncate"
           >
             {event.title}
           </Link>
           {event.is_cancelled && (
-            <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300 font-medium">
+            <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-danger-bg dark:bg-danger-bg text-danger font-medium">
               Cancelled
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-400">
+        <div className="flex items-center gap-2 mt-0.5 text-xs text-subtle">
           <span>{formatDate(event.starts_at)} · {formatTime(event.starts_at)}</span>
           {event.location && (
             <span className="flex items-center gap-0.5">

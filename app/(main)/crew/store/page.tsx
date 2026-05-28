@@ -23,30 +23,30 @@ export default async function StorePage() {
     <div>
       <div className="mb-6">
         <div className="flex items-center gap-3">
-          <Link href="/crew" className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">Crew</Link>
-          <span className="text-gray-300 dark:text-gray-600">/</span>
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50">Gem Store</h1>
+          <Link href="/crew" className="text-sm text-subtle hover:text-muted dark:hover:text-subtle transition-colors">Crew</Link>
+          <span className="text-subtle">/</span>
+          <h1 className="text-xl font-semibold text-text">Gem Store</h1>
         </div>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+        <p className="text-sm text-muted mt-1">
           Spend your Community Gems on cosmetics, titles, badges, and membership credits.
         </p>
       </div>
 
       {/* Balance card */}
-      <div className="rounded-2xl border border-emerald-200/60 dark:border-emerald-800/40 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/20 shadow-sm p-5 mb-8">
+      <div className="rounded-2xl border border-success/60 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/20 shadow-sm p-5 mb-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-900/60 flex items-center justify-center">
-              <Gem className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+            <div className="w-12 h-12 rounded-2xl bg-success-bg flex items-center justify-center">
+              <Gem className="w-6 h-6 text-signal-strong" />
             </div>
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Your Balance</p>
-              <p className="text-3xl font-bold text-emerald-900 dark:text-emerald-50">{balance.toLocaleString()}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-signal-strong">Your Balance</p>
+              <p className="text-3xl font-bold text-emerald-900">{balance.toLocaleString()}</p>
             </div>
           </div>
           <div className="text-right">
-            <p className="text-xs text-emerald-600 dark:text-emerald-400">Community Gems</p>
-            <p className="text-[11px] text-emerald-500 dark:text-emerald-500 mt-0.5">
+            <p className="text-xs text-signal-strong">Community Gems</p>
+            <p className="text-[11px] text-signal dark:text-signal mt-0.5">
               Earn gems by posting, commenting, and participating
             </p>
           </div>
@@ -54,20 +54,20 @@ export default async function StorePage() {
 
         {/* Equipped items */}
         {(equipped.border || equipped.flair || equipped.title) && (
-          <div className="mt-4 pt-3 border-t border-emerald-200/50 dark:border-emerald-800/30 flex items-center gap-3 flex-wrap">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-emerald-500">Equipped:</span>
+          <div className="mt-4 pt-3 border-t border-success/50 flex items-center gap-3 flex-wrap">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-signal">Equipped:</span>
             {equipped.border && (
-              <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300">
+              <span className="text-xs px-2 py-0.5 rounded-full bg-success-bg text-success">
                 Border: {equipped.border.replace('ring-', '').replace('-500', '')}
               </span>
             )}
             {equipped.flair && (
-              <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300">
+              <span className="text-xs px-2 py-0.5 rounded-full bg-success-bg text-success">
                 Flair: {equipped.flair}
               </span>
             )}
             {equipped.title && (
-              <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300">
+              <span className="text-xs px-2 py-0.5 rounded-full bg-success-bg text-success">
                 Title: {equipped.title}
               </span>
             )}
@@ -84,8 +84,8 @@ export default async function StorePage() {
           return (
             <section key={cat.key}>
               <div className="mb-3">
-                <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">{cat.label}</h2>
-                <p className="text-xs text-gray-400 mt-0.5">{cat.desc}</p>
+                <h2 className="text-sm font-semibold text-text">{cat.label}</h2>
+                <p className="text-xs text-subtle mt-0.5">{cat.desc}</p>
               </div>
               <StoreGrid items={catItems} balance={balance} />
             </section>

@@ -14,7 +14,7 @@ interface ScopeOption {
 export function NewChannelCompose({
   scopeOptions,
   buttonLabel = 'New Channel',
-  buttonClass = 'inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors whitespace-nowrap',
+  buttonClass = 'inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover transition-colors whitespace-nowrap',
 }: {
   scopeOptions: ScopeOption[]
   buttonLabel?: string
@@ -85,8 +85,8 @@ export function NewChannelCompose({
                 disabled={isPending}
                 className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition-colors capitalize ${
                   type === t
-                    ? 'border-indigo-300 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-300'
-                    : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+                    ? 'border-primary bg-primary-bg text-primary-strong dark:bg-primary-bg dark:text-primary-strong'
+                    : 'border-border text-muted hover:bg-surface-elevated'
                 }`}>
                 {t}
               </button>
@@ -117,7 +117,7 @@ export function NewChannelCompose({
         )}
 
         <div>
-          <label className={cmLabel}>Description <span className="text-gray-400 font-normal">(optional)</span></label>
+          <label className={cmLabel}>Description <span className="text-subtle font-normal">(optional)</span></label>
           <textarea value={description} onChange={e => setDescription(e.target.value)}
             placeholder="What is this channel for?" rows={3} disabled={isPending}
             className={`${cmInput} resize-y leading-relaxed`} />
@@ -127,13 +127,13 @@ export function NewChannelCompose({
           <button type="button" role="switch" aria-checked={isPublic}
             onClick={() => setIsPublic(!isPublic)} disabled={isPending}
             className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors ${
-              isPublic ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-700'
+              isPublic ? 'bg-primary' : 'bg-border-strong'
             } disabled:opacity-60`}>
             <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
               isPublic ? 'translate-x-4' : 'translate-x-0'
             }`} />
           </button>
-          <span className="text-xs text-gray-700 dark:text-gray-300">
+          <span className="text-xs text-text">
             {isPublic ? 'Public: discoverable in your nexus' : 'Private: invite only'}
           </span>
         </div>

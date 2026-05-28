@@ -103,30 +103,30 @@ export default async function RoomPage({
   return (
     <div className="-mx-6 -my-6 flex flex-col h-[calc(100vh-3.5rem)]">
       {/* Header */}
-      <header className="flex items-center justify-between gap-3 px-5 py-3 border-b border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shrink-0">
+      <header className="flex items-center justify-between gap-3 px-5 py-3 border-b border-border bg-surface shrink-0">
         <div className="flex items-center gap-3 min-w-0">
           <Link
             href="/messages"
-            className="md:hidden p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="md:hidden p-1.5 rounded-lg text-subtle hover:text-muted hover:bg-surface-elevated"
             aria-label="Back"
           >
             <ChevronLeft className="w-5 h-5" />
           </Link>
-          <div className="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center shrink-0">
+          <div className="w-9 h-9 rounded-lg bg-primary-bg flex items-center justify-center shrink-0">
             {r.visibility === 'private' ? (
-              <Lock className="w-4 h-4 text-indigo-500" />
+              <Lock className="w-4 h-4 text-primary-strong" />
             ) : (
-              <Hash className="w-4 h-4 text-indigo-500" />
+              <Hash className="w-4 h-4 text-primary-strong" />
             )}
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h1 className="text-base font-bold text-gray-900 dark:text-gray-50 truncate">{r.name}</h1>
-              <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 capitalize">
+              <h1 className="text-base font-bold text-text truncate">{r.name}</h1>
+              <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-surface-elevated text-muted capitalize">
                 {r.visibility}
               </span>
             </div>
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-subtle">
               <Users className="w-3 h-3 inline mr-1 -mt-px" />
               {r.member_count} {r.member_count === 1 ? 'member' : 'members'}
               {r.description && <> &middot; {r.description}</>}
@@ -138,7 +138,7 @@ export default async function RoomPage({
           <form action={leaveRoom.bind(null, roomId)}>
             <button
               type="submit"
-              className="flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted hover:bg-surface-elevated transition-colors"
             >
               <LogOut className="w-3 h-3" /> Leave
             </button>
@@ -147,7 +147,7 @@ export default async function RoomPage({
           <form action={joinRoom.bind(null, roomId)}>
             <button
               type="submit"
-              className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors"
+              className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-hover transition-colors"
             >
               <LogIn className="w-3 h-3" /> Join
             </button>
@@ -165,31 +165,31 @@ export default async function RoomPage({
         />
 
         {/* Members sidebar (desktop) */}
-        <aside className="hidden lg:flex w-64 shrink-0 flex-col border-l border-gray-200/60 dark:border-gray-800/60 bg-gray-50/30 dark:bg-gray-900/30">
-          <div className="px-4 py-3 border-b border-gray-200/60 dark:border-gray-800/60">
-            <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">
+        <aside className="hidden lg:flex w-64 shrink-0 flex-col border-l border-border bg-surface/30 dark:bg-canvas/30">
+          <div className="px-4 py-3 border-b border-border">
+            <h3 className="text-[11px] font-semibold uppercase tracking-wider text-subtle mb-2">
               Members ({r.member_count})
             </h3>
             {isMember && <InviteToRoomButton roomId={roomId} />}
           </div>
-          <ul className="flex-1 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-800/50">
+          <ul className="flex-1 overflow-y-auto divide-y divide-border/50">
             {members.map(m => {
               const p = m.profile!
               const isSelf = p.id === myProfileId
               return (
                 <li key={p.id}>
-                  <div className="group flex items-center gap-2.5 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors">
+                  <div className="group flex items-center gap-2.5 px-4 py-2 hover:bg-surface-elevated/50 transition-colors">
                     <Link href={`/people/${p.handle}`} className="flex items-center gap-2.5 flex-1 min-w-0">
                       {p.avatar_url ? (
                         <img src={p.avatar_url} alt={p.display_name} className="w-7 h-7 rounded-full object-cover shrink-0" />
                       ) : (
-                        <div className="w-7 h-7 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-[10px] font-semibold flex items-center justify-center shrink-0 select-none">
+                        <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-[10px] font-semibold flex items-center justify-center shrink-0 select-none">
                           {getInitials(p.display_name)}
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">{p.display_name}</p>
-                        {m.is_admin && <p className="text-[10px] text-indigo-500">Admin</p>}
+                        <p className="text-xs font-medium text-text truncate">{p.display_name}</p>
+                        {m.is_admin && <p className="text-[10px] text-primary-strong">Admin</p>}
                       </div>
                     </Link>
                     {isAdmin && !isSelf && (

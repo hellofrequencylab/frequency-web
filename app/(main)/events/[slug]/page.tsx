@@ -138,7 +138,7 @@ export default async function EventDetailPage({
     <div>
       <Link
         href="/events"
-        className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 mb-5 transition-colors"
+        className="inline-flex items-center gap-1 text-xs text-subtle hover:text-muted mb-5 transition-colors"
       >
         ← Events
       </Link>
@@ -146,13 +146,13 @@ export default async function EventDetailPage({
       {/* ── Header ─────────────────────────────────── */}
       <div className="mb-6">
         {event.is_cancelled && (
-          <div className="mb-3 rounded-lg bg-red-50 border border-red-200 px-3 py-2">
-            <p className="text-sm font-medium text-red-700">This event has been cancelled.</p>
+          <div className="mb-3 rounded-lg bg-danger-bg border border-danger px-3 py-2">
+            <p className="text-sm font-medium text-danger">This event has been cancelled.</p>
           </div>
         )}
 
         <div className="flex items-start justify-between gap-2">
-          <h1 className="text-xl font-semibold text-gray-900">{event.title}</h1>
+          <h1 className="text-xl font-semibold text-text">{event.title}</h1>
           <ContextActions
             role={myRole}
             context={{
@@ -166,8 +166,8 @@ export default async function EventDetailPage({
         </div>
 
         <div className="mt-3 space-y-1.5">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <CalendarDays className="w-4 h-4 text-gray-400 shrink-0" />
+          <div className="flex items-center gap-2 text-sm text-muted">
+            <CalendarDays className="w-4 h-4 text-subtle shrink-0" />
             <span>
               {formatFull(event.starts_at)} at {formatTime(event.starts_at)}
               {event.ends_at && ` – ${formatTime(event.ends_at)}`}
@@ -175,17 +175,17 @@ export default async function EventDetailPage({
           </div>
 
           {event.location && (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <MapPin className="w-4 h-4 text-gray-400 shrink-0" />
+            <div className="flex items-center gap-2 text-sm text-muted">
+              <MapPin className="w-4 h-4 text-subtle shrink-0" />
               <span>{event.location}</span>
             </div>
           )}
 
           {scopeName && (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Users className="w-4 h-4 text-gray-400 shrink-0" />
+            <div className="flex items-center gap-2 text-sm text-muted">
+              <Users className="w-4 h-4 text-subtle shrink-0" />
               {scopeSlug ? (
-                <Link href={`/circles/${scopeSlug}`} className="text-indigo-600 hover:underline">
+                <Link href={`/circles/${scopeSlug}`} className="text-primary-strong hover:underline">
                   {scopeName}
                 </Link>
               ) : (
@@ -195,9 +195,9 @@ export default async function EventDetailPage({
           )}
 
           {event.host && (
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted">
               Hosted by{' '}
-              <Link href={`/people/${event.host.handle}`} className="text-indigo-600 hover:underline">
+              <Link href={`/people/${event.host.handle}`} className="text-primary-strong hover:underline">
                 {event.host.display_name}
               </Link>
             </p>
@@ -213,8 +213,8 @@ export default async function EventDetailPage({
             label={myRsvpStatus === 'going' ? "✓ Going (click to undo)" : "RSVP: I'm going"}
             buttonClassName={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors inline-flex items-center gap-1.5 ${
               myRsvpStatus === 'going'
-                ? 'bg-green-100 text-green-700 hover:bg-red-50 hover:text-red-600'
-                : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                ? 'bg-success-bg text-success hover:bg-danger-bg hover:text-danger'
+                : 'bg-primary text-on-primary hover:bg-primary-hover'
             }`}
           >
             <form action={toggleRSVP.bind(null, event.id, myRsvpStatus)}>
@@ -222,8 +222,8 @@ export default async function EventDetailPage({
                 type="submit"
                 className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
                   myRsvpStatus === 'going'
-                    ? 'bg-green-100 text-green-700 hover:bg-red-50 hover:text-red-600'
-                    : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                    ? 'bg-success-bg text-success hover:bg-danger-bg hover:text-danger'
+                    : 'bg-primary text-on-primary hover:bg-primary-hover'
                 }`}
               >
                 {myRsvpStatus === 'going' ? "✓ Going (click to undo)" : "RSVP: I'm going"}
@@ -235,7 +235,7 @@ export default async function EventDetailPage({
             href={googleCalendarUrl(event)}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:border-gray-300 hover:bg-gray-50 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted hover:border-border-strong hover:bg-surface transition-colors"
           >
             <ExternalLink className="w-3.5 h-3.5" />
             Add to Google Calendar
@@ -246,8 +246,8 @@ export default async function EventDetailPage({
 
       {/* ── Description ────────────────────────────── */}
       {event.description && (
-        <div className="mb-6 rounded-2xl border border-gray-100/80 bg-gray-50 shadow-sm px-4 py-3">
-          <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+        <div className="mb-6 rounded-2xl border border-border/80 bg-surface shadow-sm px-4 py-3">
+          <p className="text-sm text-text leading-relaxed whitespace-pre-wrap">
             {event.description}
           </p>
         </div>
@@ -255,37 +255,37 @@ export default async function EventDetailPage({
 
       {/* ── Attendees ──────────────────────────────── */}
       <section>
-        <h2 className="text-sm font-semibold text-gray-700 mb-3">
+        <h2 className="text-sm font-semibold text-text mb-3">
           Attendees
-          <span className="ml-2 text-xs font-normal text-gray-400">{goingRsvps.length} going</span>
+          <span className="ml-2 text-xs font-normal text-subtle">{goingRsvps.length} going</span>
         </h2>
 
         {goingRsvps.length === 0 ? (
-          <p className="text-sm text-gray-400">No RSVPs yet.</p>
+          <p className="text-sm text-subtle">No RSVPs yet.</p>
         ) : isCrew ? (
           <div className="space-y-0.5">
             {goingRsvps.map(({ profile }) => (
               <Link
                 key={profile.id}
                 href={`/people/${profile.handle}`}
-                className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-50 transition-colors -mx-3"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-surface transition-colors -mx-3"
               >
                 {profile.avatar_url ? (
                   <img src={profile.avatar_url} alt={profile.display_name} className="w-7 h-7 rounded-full object-cover shrink-0" />
                 ) : (
-                  <div className="w-7 h-7 rounded-full bg-indigo-100 text-indigo-600 text-xs font-semibold flex items-center justify-center shrink-0 select-none">
+                  <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none">
                     {getInitials(profile.display_name)}
                   </div>
                 )}
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">{profile.display_name}</p>
-                  <p className="text-xs text-gray-400">@{profile.handle}</p>
+                  <p className="text-sm font-medium text-text truncate">{profile.display_name}</p>
+                  <p className="text-xs text-subtle">@{profile.handle}</p>
                 </div>
               </Link>
             ))}
           </div>
         ) : (
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-muted">
             {goingRsvps.length} {goingRsvps.length === 1 ? 'person' : 'people'} going.
           </p>
         )}

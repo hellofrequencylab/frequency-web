@@ -201,7 +201,7 @@ export function Composer({
   }, [suggestions.length])
 
   return (
-    <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 mb-4 relative">
+    <div className="rounded-xl border border-border bg-surface p-4 mb-4 relative">
       <textarea
         ref={textareaRef}
         value={body}
@@ -210,7 +210,7 @@ export function Composer({
         placeholder={placeholder}
         rows={3}
         disabled={isPending}
-        className="w-full resize-none bg-transparent text-sm text-gray-900 dark:text-gray-50 placeholder-gray-400 dark:placeholder-gray-600 outline-none leading-relaxed disabled:opacity-60"
+        className="w-full resize-none bg-transparent text-sm text-text placeholder-subtle outline-none leading-relaxed disabled:opacity-60"
       />
 
       {/* Image preview */}
@@ -219,7 +219,7 @@ export function Composer({
           <img
             src={imagePreview}
             alt="Upload preview"
-            className="rounded-xl max-h-48 object-cover border border-gray-200 dark:border-gray-700"
+            className="rounded-xl max-h-48 object-cover border border-border"
           />
           <button
             type="button"
@@ -231,12 +231,12 @@ export function Composer({
           </button>
         </div>
       )}
-      {imageError && <p className="mt-1.5 text-xs text-red-600">{imageError}</p>}
+      {imageError && <p className="mt-1.5 text-xs text-danger">{imageError}</p>}
 
       {/* @mention autocomplete dropdown */}
       {suggestions.length > 0 && mentionQuery !== null && (
         <div
-          className="absolute left-4 bottom-full mb-1 w-64 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-xl shadow-black/5 py-1 z-50"
+          className="absolute left-4 bottom-full mb-1 w-64 rounded-xl border border-border bg-surface shadow-xl shadow-black/5 py-1 z-50"
           onMouseDown={e => e.preventDefault()}
         >
           {suggestions.map((p, i) => (
@@ -246,20 +246,20 @@ export function Composer({
               onClick={() => insertMention(p)}
               className={`flex items-center gap-2.5 w-full px-3 py-2 text-sm text-left transition-colors ${
                 i === activeSuggestion
-                  ? 'bg-indigo-50 dark:bg-indigo-950/30'
-                  : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+                  ? 'bg-primary-bg'
+                  : 'hover:bg-surface-elevated'
               }`}
             >
               {p.avatar_url ? (
                 <img src={p.avatar_url} alt={p.display_name} className="w-6 h-6 rounded-full object-cover shrink-0" />
               ) : (
-                <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold flex items-center justify-center shrink-0">
+                <div className="w-6 h-6 rounded-full bg-primary-bg text-primary-strong text-[10px] font-bold flex items-center justify-center shrink-0">
                   {getInitials(p.display_name)}
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-gray-900 dark:text-gray-50 truncate">{p.display_name}</p>
-                <p className="text-[11px] text-gray-400 truncate">@{p.handle}</p>
+                <p className="text-xs font-semibold text-text truncate">{p.display_name}</p>
+                <p className="text-[11px] text-subtle truncate">@{p.handle}</p>
               </div>
             </button>
           ))}
@@ -275,17 +275,17 @@ export function Composer({
         onChange={handleImageSelect}
       />
 
-      <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+      <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
         <div className="flex items-center gap-3">
-          <p className="text-[11px] text-gray-400">⌘↵ to post · @ to mention</p>
+          <p className="text-[11px] text-subtle">⌘↵ to post · @ to mention</p>
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={isPending}
             className={`inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold transition-colors ${
               imageFile
-                ? 'bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400'
-                : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800'
+                ? 'bg-primary-bg text-primary-strong'
+                : 'text-subtle hover:text-muted hover:bg-surface-elevated'
             } disabled:opacity-40`}
             title="Attach image"
           >
@@ -297,8 +297,8 @@ export function Composer({
               onClick={() => setIsAnnouncement(v => !v)}
               className={`inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold transition-colors ${
                 isAnnouncement
-                  ? 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300'
-                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  ? 'bg-warning-bg dark:bg-warning-bg text-warning'
+                  : 'text-subtle hover:text-muted hover:bg-surface-elevated'
               }`}
               title="Toggle announcement (pinned, highlighted)"
             >
@@ -312,8 +312,8 @@ export function Composer({
           disabled={(!body.trim() && !imageFile) || isPending}
           className={`rounded-lg px-4 py-1.5 text-xs font-semibold text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
             isAnnouncement
-              ? 'bg-amber-500 hover:bg-amber-600'
-              : 'bg-indigo-600 hover:bg-indigo-700'
+              ? 'bg-primary hover:bg-primary-hover'
+              : 'bg-primary hover:bg-primary-hover'
           }`}
         >
           {isPending ? 'Posting…' : isAnnouncement ? 'Announce' : 'Post'}

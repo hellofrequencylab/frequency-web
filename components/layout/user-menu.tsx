@@ -30,7 +30,7 @@ export function AuthButtons({ dark = false }: { dark?: boolean }) {
         href="/sign-in"
         className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
           dark
-            ? 'bg-white text-gray-900 hover:bg-gray-100'
+            ? 'bg-white text-text hover:bg-surface-elevated'
             : 'bg-primary text-on-primary hover:bg-primary-hover'
         }`}
       >

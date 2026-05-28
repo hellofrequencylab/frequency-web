@@ -18,22 +18,22 @@ export function HierarchyBreadcrumb({
   return (
     <nav
       aria-label="Hierarchy"
-      className={`flex items-center gap-1 flex-wrap text-xs text-gray-400 ${className}`}
+      className={`flex items-center gap-1 flex-wrap text-xs text-subtle ${className}`}
     >
       {crumbs.map((crumb, i) => {
         const isLast = i === crumbs.length - 1
         return (
           <span key={i} className="flex items-center gap-1">
-            {i > 0 && <ChevronRight className="w-3 h-3 text-gray-300 shrink-0" />}
+            {i > 0 && <ChevronRight className="w-3 h-3 text-subtle shrink-0" />}
             {crumb.href && !isLast ? (
               <Link
                 href={crumb.href}
-                className="hover:text-indigo-500 transition-colors"
+                className="hover:text-primary-strong transition-colors"
               >
                 {crumb.label}
               </Link>
             ) : (
-              <span className={isLast ? 'text-gray-600 font-medium' : ''}>
+              <span className={isLast ? 'text-muted font-medium' : ''}>
                 {crumb.label}
               </span>
             )}

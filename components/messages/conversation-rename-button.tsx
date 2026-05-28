@@ -40,13 +40,13 @@ export function ConversationRenameButton({
           placeholder="Group name (or blank to clear)"
           autoFocus
           disabled={isPending}
-          className="text-xs rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-2 py-0.5 outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 max-w-[200px]"
+          className="text-xs rounded border border-border bg-surface px-2 py-0.5 outline-none focus:border-primary focus:ring-1 focus:ring-primary/40 max-w-[200px]"
         />
-        <button onClick={save} disabled={isPending} className="p-0.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-950/30 rounded">
+        <button onClick={save} disabled={isPending} className="p-0.5 text-success hover:bg-success-bg dark:hover:bg-success-bg/30 rounded">
           {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
         </button>
         <button onClick={() => { setEditing(false); setValue(currentName ?? '') }}
-          className="p-0.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
+          className="p-0.5 text-subtle hover:bg-surface-elevated rounded">
           <X className="w-3.5 h-3.5" />
         </button>
       </div>
@@ -56,7 +56,7 @@ export function ConversationRenameButton({
   return (
     <button
       onClick={() => setEditing(true)}
-      className="p-1 rounded text-gray-300 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+      className="p-1 rounded text-subtle hover:text-muted dark:hover:text-subtle hover:bg-surface-elevated transition-colors"
       aria-label="Rename"
     >
       <Pencil className="w-3 h-3" />

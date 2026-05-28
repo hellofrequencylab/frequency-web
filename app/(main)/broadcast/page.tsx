@@ -149,10 +149,10 @@ export default async function BroadcastPage() {
       <div className="flex items-end justify-between gap-4 mb-6">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <Megaphone className="w-5 h-5 text-indigo-500" />
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Broadcast</h1>
+            <Megaphone className="w-5 h-5 text-primary-strong" />
+            <h1 className="text-2xl font-bold text-text">Broadcast</h1>
           </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-sm text-muted">
             Announcements, events, and challenges from your community.
           </p>
         </div>
@@ -163,29 +163,29 @@ export default async function BroadcastPage() {
 
       {/* ── Section tiles ──────────────────────────────────── */}
       <div className="grid grid-cols-3 gap-3 mb-7">
-        <a href="#dispatches" className="group rounded-2xl border border-indigo-100 dark:border-indigo-900 bg-indigo-50 dark:bg-indigo-950/40 p-4 hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors">
+        <a href="#dispatches" className="group rounded-2xl border border-primary-bg bg-primary-bg p-4 hover:border-primary dark:hover:border-primary transition-colors">
           <div className="flex items-center gap-2 mb-1.5">
-            <Megaphone className="w-4 h-4 text-indigo-500" />
-            <span className="text-xs font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">Dispatches</span>
+            <Megaphone className="w-4 h-4 text-primary-strong" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-primary-strong">Dispatches</span>
           </div>
-          <p className="text-2xl font-black text-indigo-700 dark:text-indigo-300">{dispatches.length}</p>
-          <p className="text-[11px] text-indigo-500 dark:text-indigo-500 mt-0.5">announcements</p>
+          <p className="text-2xl font-black text-primary-strong">{dispatches.length}</p>
+          <p className="text-[11px] text-primary-strong dark:text-primary-strong mt-0.5">announcements</p>
         </a>
-        <a href="#events" className="group rounded-2xl border border-amber-100 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/40 p-4 hover:border-amber-300 dark:hover:border-amber-700 transition-colors">
+        <a href="#events" className="group rounded-2xl border border-warning-bg bg-warning-bg/40 p-4 hover:border-warning transition-colors">
           <div className="flex items-center gap-2 mb-1.5">
-            <CalendarDays className="w-4 h-4 text-amber-500" />
-            <span className="text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">Events</span>
+            <CalendarDays className="w-4 h-4 text-primary" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-warning">Events</span>
           </div>
-          <p className="text-2xl font-black text-amber-700 dark:text-amber-300">{upcomingEventCount}</p>
-          <p className="text-[11px] text-amber-500 dark:text-amber-500 mt-0.5">upcoming</p>
+          <p className="text-2xl font-black text-warning">{upcomingEventCount}</p>
+          <p className="text-[11px] text-primary dark:text-primary mt-0.5">upcoming</p>
         </a>
-        <a href="#challenges" className="group rounded-2xl border border-green-100 dark:border-green-900 bg-green-50 dark:bg-green-950/40 p-4 hover:border-green-300 dark:hover:border-green-700 transition-colors">
+        <a href="#challenges" className="group rounded-2xl border border-green-100 bg-success-bg/40 p-4 hover:border-success transition-colors">
           <div className="flex items-center gap-2 mb-1.5">
-            <Zap className="w-4 h-4 text-green-500" />
-            <span className="text-xs font-semibold uppercase tracking-wider text-green-600 dark:text-green-400">Challenges</span>
+            <Zap className="w-4 h-4 text-success" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-success">Challenges</span>
           </div>
-          <p className="text-2xl font-black text-green-700 dark:text-green-300">{activeChallengeCount}</p>
-          <p className="text-[11px] text-green-500 dark:text-green-500 mt-0.5">active</p>
+          <p className="text-2xl font-black text-success">{activeChallengeCount}</p>
+          <p className="text-[11px] text-success dark:text-success mt-0.5">active</p>
         </a>
       </div>
 
@@ -194,10 +194,10 @@ export default async function BroadcastPage() {
         {/* ── Dispatches (main column) ───────────────────────── */}
         <div id="dispatches" className="lg:col-span-2 space-y-1">
           {dispatches.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-gray-200/60 dark:border-gray-800/60 bg-gray-50/50 dark:bg-gray-900/50 p-12 text-center">
-              <Megaphone className="w-8 h-8 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">No dispatches yet</p>
-              <p className="text-xs text-gray-400 mt-1">Your hosts and guides will post here.</p>
+            <div className="rounded-2xl border border-dashed border-border bg-surface/50 dark:bg-canvas/50 p-12 text-center">
+              <Megaphone className="w-8 h-8 text-subtle/60 mx-auto mb-3" />
+              <p className="text-sm font-medium text-muted">No dispatches yet</p>
+              <p className="text-xs text-subtle mt-1">Your hosts and guides will post here.</p>
             </div>
           ) : (
             dispatches.map(d => (
@@ -210,31 +210,31 @@ export default async function BroadcastPage() {
         <div className="space-y-5">
 
           {/* Upcoming events */}
-          <div id="events" className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
-            <div className="flex items-center gap-1.5 px-4 py-3 border-b border-gray-100/80 dark:border-gray-800/50">
-              <CalendarDays className="w-3.5 h-3.5 text-gray-400" />
-              <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 tracking-wide uppercase">Upcoming</span>
+          <div id="events" className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
+            <div className="flex items-center gap-1.5 px-4 py-3 border-b border-border">
+              <CalendarDays className="w-3.5 h-3.5 text-subtle" />
+              <span className="text-xs font-semibold text-text tracking-wide uppercase">Upcoming</span>
             </div>
             {!events || events.length === 0 ? (
-              <p className="text-xs text-gray-400 px-4 py-4 text-center">No events scheduled.</p>
+              <p className="text-xs text-subtle px-4 py-4 text-center">No events scheduled.</p>
             ) : (
-              <ul className="divide-y divide-gray-50 dark:divide-gray-800">
+              <ul className="divide-y divide-border">
                 {events.map((e: any) => {
                   const d = new Date(e.starts_at)
                   return (
                     <li key={e.id}>
-                      <Link href="/events" className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                      <Link href="/events" className="flex items-start gap-3 px-4 py-3 hover:bg-surface-elevated transition-colors">
                         <div className="shrink-0 w-10 text-center">
-                          <div className="text-[10px] font-bold uppercase text-indigo-500 leading-none">
+                          <div className="text-[10px] font-bold uppercase text-primary-strong leading-none">
                             {d.toLocaleString('default', { month: 'short' })}
                           </div>
-                          <div className="text-lg font-black text-gray-900 dark:text-gray-50 leading-tight">
+                          <div className="text-lg font-black text-text leading-tight">
                             {d.getDate()}
                           </div>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium text-gray-800 dark:text-gray-200 line-clamp-1">{e.title}</p>
-                          {e.location && <p className="text-[11px] text-gray-400 truncate">{e.location}</p>}
+                          <p className="text-xs font-medium text-text dark:text-subtle/60 line-clamp-1">{e.title}</p>
+                          {e.location && <p className="text-[11px] text-subtle truncate">{e.location}</p>}
                         </div>
                       </Link>
                     </li>
@@ -242,30 +242,30 @@ export default async function BroadcastPage() {
                 })}
               </ul>
             )}
-            <div className="px-4 py-2 border-t border-gray-100/80 dark:border-gray-800/50">
-              <Link href="/events" className="text-xs text-indigo-500 hover:underline">View all events →</Link>
+            <div className="px-4 py-2 border-t border-border">
+              <Link href="/events" className="text-xs text-primary-strong hover:underline">View all events →</Link>
             </div>
           </div>
 
           {/* Active challenges */}
           {tasks && tasks.length > 0 && (
-            <div id="challenges" className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
-              <div className="flex items-center gap-1.5 px-4 py-3 border-b border-gray-100/80 dark:border-gray-800/50">
-                <Zap className="w-3.5 h-3.5 text-amber-400" />
-                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 tracking-wide uppercase">Active Challenges</span>
+            <div id="challenges" className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
+              <div className="flex items-center gap-1.5 px-4 py-3 border-b border-border">
+                <Zap className="w-3.5 h-3.5 text-primary" />
+                <span className="text-xs font-semibold text-text tracking-wide uppercase">Active Challenges</span>
               </div>
-              <ul className="divide-y divide-gray-50 dark:divide-gray-800">
+              <ul className="divide-y divide-border">
                 {tasks.map((t: any) => (
                   <li key={t.id}>
-                    <Link href="/crew" className="flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                      <span className="text-xs text-gray-700 dark:text-gray-300 line-clamp-1">{t.name}</span>
-                      <span className="text-[11px] font-semibold text-amber-500 shrink-0 ml-2">{(t as any).zaps_value} zaps</span>
+                    <Link href="/crew" className="flex items-center justify-between px-4 py-2.5 hover:bg-surface-elevated transition-colors">
+                      <span className="text-xs text-text line-clamp-1">{t.name}</span>
+                      <span className="text-[11px] font-semibold text-primary shrink-0 ml-2">{(t as any).zaps_value} zaps</span>
                     </Link>
                   </li>
                 ))}
               </ul>
-              <div className="px-4 py-2 border-t border-gray-100/80 dark:border-gray-800/50">
-                <Link href="/crew" className="text-xs text-indigo-500 hover:underline">All challenges →</Link>
+              <div className="px-4 py-2 border-t border-border">
+                <Link href="/crew" className="text-xs text-primary-strong hover:underline">All challenges →</Link>
               </div>
             </div>
           )}
@@ -280,7 +280,7 @@ function DispatchCard({ dispatch: d, viewerRole, myProfileId }: { dispatch: Disp
   const showActions = isAuthor || HOST_PLUS.includes(viewerRole)
 
   return (
-    <div className="group relative rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm px-5 py-4 hover:border-indigo-200 dark:hover:border-indigo-800 hover:shadow-md transition-all">
+    <div className="group relative rounded-2xl border border-border bg-surface shadow-sm px-5 py-4 hover:border-primary-bg dark:hover:border-primary hover:shadow-md transition-all">
       {showActions && (
         <div className="absolute top-3 right-3 z-10">
           <ContextActions
@@ -292,38 +292,38 @@ function DispatchCard({ dispatch: d, viewerRole, myProfileId }: { dispatch: Disp
       <Link href={`/broadcast/${d.id}`} className="block">
         {/* Scope badge */}
         <div className="flex items-center gap-2 mb-2">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-500">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-primary-strong">
             {d.audience_scope} dispatch
           </span>
           {d.linked_task && (
-            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-500 flex items-center gap-0.5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-primary flex items-center gap-0.5">
               <Zap className="w-2.5 h-2.5" /> Challenge
             </span>
           )}
         </div>
 
         {/* Title */}
-        <h2 className="text-base font-black text-gray-900 dark:text-gray-50 leading-snug group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors mb-1">
+        <h2 className="text-base font-black text-text leading-snug group-hover:text-primary-strong dark:group-hover:text-primary-strong transition-colors mb-1">
           {d.title}
         </h2>
 
         {/* Excerpt */}
         {d.excerpt && (
-          <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed">
+          <p className="text-sm text-muted line-clamp-2 leading-relaxed">
             {d.excerpt}
           </p>
         )}
 
         {/* Footer */}
         <div className="flex items-center justify-between mt-3">
-          <div className="flex items-center gap-1.5 text-xs text-gray-400">
+          <div className="flex items-center gap-1.5 text-xs text-subtle">
             {d.author && (
-              <span className="font-medium text-gray-500 dark:text-gray-400">{d.author.display_name}</span>
+              <span className="font-medium text-muted">{d.author.display_name}</span>
             )}
             <span>·</span>
             <span>{relativeTime(d.published_at)}</span>
           </div>
-          <ArrowRight className="w-3.5 h-3.5 text-gray-300 dark:text-gray-600 group-hover:text-indigo-400 transition-colors" />
+          <ArrowRight className="w-3.5 h-3.5 text-subtle group-hover:text-primary-strong transition-colors" />
         </div>
       </Link>
     </div>
