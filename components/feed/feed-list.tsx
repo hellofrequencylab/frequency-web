@@ -14,6 +14,8 @@ interface RawPost {
   reaction_count: number | null
   comment_count: number | null
   engagement_score: number | null
+  scope_id: string | null
+  visibility: string | null
   author: {
     id: string
     display_name: string
@@ -44,7 +46,7 @@ interface DispatchItem {
 
 const POST_SELECT = `
   id, body, post_type, is_pinned, created_at, media_urls,
-  reaction_count, comment_count, engagement_score,
+  reaction_count, comment_count, engagement_score, scope_id, visibility,
   author:profiles!author_id ( id, display_name, handle, avatar_url, community_role, current_season_rank, current_streak, achievement_count, lifetime_gems ),
   reactions:post_reactions ( id, reaction_type, profile_id )
 `
@@ -103,6 +105,38 @@ export async function FeedList({
     })
     .slice(0, 20)
     .map((p: RawPost) => ({ ...p, replyCount: p.comment_count ?? 0 })) as FeedPost[]
+
+  // ── Resolve scope context (wall, circle, channel) ─────────────────────────
+  const scopeIds = [...new Set(posts.map(p => p.scope_id).filter(Boolean) as string[])]
+  const scopeMap: Record<string, { type: 'wall' | 'circle' | 'channel'; name: string; href: string }> = {}
+
+  if (scopeIds.length > 0) {
+    const [profileScopes, circleScopes, channelScopes] = await Promise.all([
+      admin.from('profiles').select('id, display_name, handle').in('id', scopeIds),
+      admin.from('circles').select('id, name, slug').in('id', scopeIds),
+      admin.from('channels').select('id, name').in('id', scopeIds),
+    ])
+    for (const c of (circleScopes.data ?? []) as { id: string; name: string; slug: string }[]) {
+      scopeMap[c.id] = { type: 'circle', name: c.name, href: `/circles/${c.slug}` }
+    }
+    for (const ch of (channelScopes.data ?? []) as { id: string; name: string }[]) {
+      if (!scopeMap[ch.id]) scopeMap[ch.id] = { type: 'channel', name: ch.name, href: `/channels/${ch.id}` }
+    }
+    for (const p of (profileScopes.data ?? []) as { id: string; display_name: string; handle: string }[]) {
+      if (!scopeMap[p.id]) scopeMap[p.id] = { type: 'wall', name: p.display_name, href: `/people/${p.handle}` }
+    }
+  }
+
+  for (const post of posts) {
+    if (post.scope_id && scopeMap[post.scope_id]) {
+      const scope = scopeMap[post.scope_id]
+      if (scope.type === 'wall' && post.author.id !== post.scope_id) {
+        post.scopeContext = scope
+      } else if (scope.type !== 'wall') {
+        post.scopeContext = scope
+      }
+    }
+  }
 
   // ── Dispatches ────────────────────────────────────────────────────────────
   // All logged-in users see the latest published dispatch pinned to top.
