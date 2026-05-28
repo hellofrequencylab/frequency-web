@@ -1,9 +1,43 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useFormStatus } from 'react-dom'
 import Link from 'next/link'
-import { X, Compass } from 'lucide-react'
+import { X, Compass, Loader2 } from 'lucide-react'
 import { tuneInChannel, tuneOutChannel } from './actions'
+
+// useFormStatus only fires inside a child of a <form>, so we factor the
+// actual <button> into its own component. That's what lets the button
+// disable itself + show a spinner the instant the form starts submitting,
+// killing the "tap again because nothing happened" instinct.
+function PendingButton({
+  className,
+  pendingLabel,
+  children,
+}: {
+  className: string
+  pendingLabel: string
+  children: React.ReactNode
+}) {
+  const { pending } = useFormStatus()
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      aria-busy={pending}
+      className={`${className} disabled:opacity-70 disabled:cursor-wait`}
+    >
+      {pending ? (
+        <span className="inline-flex items-center gap-1.5">
+          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          {pendingLabel}
+        </span>
+      ) : (
+        children
+      )}
+    </button>
+  )
+}
 
 // "Tune in". Submits the form and the server action redirects to the
 // channel detail page. No modal; the click is the commitment.
@@ -18,14 +52,14 @@ export function TuneInButton({
 }) {
   const cls =
     size === 'md'
-      ? 'rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors'
-      : 'rounded-lg bg-primary px-3 py-1.5 text-[11px] font-semibold text-on-primary hover:bg-primary-hover transition-colors'
+      ? 'shrink-0 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors'
+      : 'shrink-0 inline-flex items-center justify-center rounded-lg bg-primary px-3 py-1.5 text-[11px] font-semibold text-on-primary hover:bg-primary-hover transition-colors'
 
   return (
     <form action={tuneInChannel.bind(null, channelId, slug)}>
-      <button type="submit" className={`shrink-0 ${cls}`}>
+      <PendingButton className={cls} pendingLabel="Tuning in…">
         Tune in
-      </button>
+      </PendingButton>
     </form>
   )
 }
@@ -47,15 +81,15 @@ export function TunedInButton({
 
   const cls =
     size === 'md'
-      ? 'rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-text hover:text-danger hover:border-danger transition-colors'
-      : 'rounded-lg border border-border bg-surface px-3 py-1.5 text-[11px] font-medium text-text hover:text-danger hover:border-danger transition-colors'
+      ? 'shrink-0 inline-flex items-center justify-center rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-text hover:text-danger hover:border-danger transition-colors'
+      : 'shrink-0 inline-flex items-center justify-center rounded-lg border border-border bg-surface px-3 py-1.5 text-[11px] font-medium text-text hover:text-danger hover:border-danger transition-colors'
 
   return (
     <>
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={`shrink-0 ${cls}`}
+        className={cls}
         aria-haspopup="dialog"
       >
         Tuned in
@@ -144,24 +178,21 @@ function LeaveChannelDialog({
           <Link
             href="/channels"
             onClick={onClose}
-            className="mt-5 flex items-center justify-center gap-2 w-full rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-on-primary hover:bg-primary-hover transition-colors"
+            className="mt-5 flex items-center justify-center gap-2 w-full rounded-lg bg-primary px-4 py-3 text-sm font-bold text-on-primary hover:bg-primary-hover transition-colors"
           >
             <Compass className="w-4 h-4" />
             Explore more channels
           </Link>
 
-          {/* Quieter exit. Same server action, no second confirm. */}
-          <form
-            action={tuneOutChannel.bind(null, channelId)}
-            className="mt-2"
-            onSubmit={onClose}
-          >
-            <button
-              type="submit"
-              className="w-full rounded-2xl px-4 py-2.5 text-xs font-medium text-subtle hover:text-danger transition-colors"
+          {/* Quieter exit. Same server action, pending state via
+              useFormStatus so a stray double-tap doesn't fire twice. */}
+          <form action={tuneOutChannel.bind(null, channelId)} className="mt-2">
+            <PendingButton
+              className="inline-flex items-center justify-center w-full rounded-lg px-4 py-2.5 text-xs font-medium text-subtle hover:text-danger transition-colors"
+              pendingLabel="Leaving…"
             >
               Yes, leave the channel
-            </button>
+            </PendingButton>
           </form>
         </div>
       </div>
