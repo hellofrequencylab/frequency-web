@@ -91,12 +91,12 @@ export default async function StreaksPage() {
                         {config.label} Streak
                       </h3>
                       {active && current > 0 && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-success-bg text-success font-semibold">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-success-bg text-success font-semibold">
                           Active
                         </span>
                       )}
                       {!active && current > 0 && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-danger-bg dark:bg-danger-bg text-danger font-semibold">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-danger-bg dark:bg-danger-bg text-danger font-semibold">
                           Expired
                         </span>
                       )}

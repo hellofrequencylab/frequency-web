@@ -73,7 +73,7 @@ export default async function JoinPage({ params }: Props) {
           {/* Circle card */}
           <div className="p-8">
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary-bg text-primary-strong capitalize">
+              <span className="text-xs font-medium px-2 py-0.5 rounded-md bg-primary-bg text-primary-strong capitalize">
                 {circle.type}
               </span>
               {circle.hub?.name && (

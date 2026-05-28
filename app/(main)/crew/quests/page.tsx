@@ -86,7 +86,7 @@ export default async function QuestsPage() {
                     <div className="flex items-center gap-2">
                       <h2 className="text-sm font-bold text-text">{chain.name}</h2>
                       {isComplete && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-success-bg text-success font-semibold">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-success-bg text-success font-semibold">
                           Complete
                         </span>
                       )}

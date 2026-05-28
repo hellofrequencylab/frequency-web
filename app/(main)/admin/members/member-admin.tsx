@@ -209,8 +209,8 @@ function MemberRow({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-text truncate">{m.display_name}</span>
-            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${roleCls}`}>{m.community_role}</span>
-            {!m.is_active && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-danger-bg text-danger">Inactive</span>}
+            <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium ${roleCls}`}>{m.community_role}</span>
+            {!m.is_active && <span className="text-[10px] px-1.5 py-0.5 rounded-md font-medium bg-danger-bg text-danger">Inactive</span>}
           </div>
           <p className="text-xs text-subtle truncate">
             @{m.handle}

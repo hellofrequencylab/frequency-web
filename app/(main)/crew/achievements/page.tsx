@@ -111,7 +111,7 @@ export default async function AchievementsPage() {
                 <h2 className="text-sm font-semibold text-text">
                   {catConfig.label}
                 </h2>
-                <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-surface-elevated text-subtle font-medium">
+                <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-surface-elevated text-subtle font-medium">
                   {earned}/{items.length}
                 </span>
               </div>
@@ -152,7 +152,7 @@ export default async function AchievementsPage() {
                             }`}>
                               {isSecret ? '???' : a.name}
                             </span>
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${tier.bg} ${tier.color}`}>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-semibold ${tier.bg} ${tier.color}`}>
                               {tier.label}
                             </span>
                           </div>

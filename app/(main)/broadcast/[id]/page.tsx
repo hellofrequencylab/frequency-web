@@ -140,7 +140,7 @@ export default async function DispatchDetailPage({ params }: Props) {
               <span className="text-xs font-semibold text-muted">{audienceName}</span>
             </>
           )}
-          <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${TYPE_COLORS[dispType]}`}>
+          <span className={`text-[11px] px-2 py-0.5 rounded-md font-semibold ${TYPE_COLORS[dispType]}`}>
             {TYPE_LABELS[dispType] ?? dispType}
           </span>
         </div>

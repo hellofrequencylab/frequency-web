@@ -168,7 +168,7 @@ export function PostCard({
                 >
                   {author.display_name}
                 </Link>
-                <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${badge.cls}`}>
+                <span className={`text-[11px] px-1.5 py-0.5 rounded-md font-medium ${badge.cls}`}>
                   {badge.label}
                 </span>
                 {post.scopeContext && (

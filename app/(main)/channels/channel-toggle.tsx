@@ -1,8 +1,12 @@
 'use client'
 
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import { X, Compass } from 'lucide-react'
 import { tuneInChannel, tuneOutChannel } from './actions'
 
-// "Tune in" — submits the form and the server action redirects to the channel.
+// "Tune in" — submits the form and the server action redirects to the
+// channel detail page. No modal; the click is the commitment.
 export function TuneInButton({
   channelId,
   slug,
@@ -26,32 +30,141 @@ export function TuneInButton({
   )
 }
 
-// "Tuned in" — guarded with a native confirm so a stray tap doesn't drop
-// the viewer out of a channel they care about. Friction by design.
+// "Tuned in" — clicking it opens a modal that frames the exit as a chance
+// to discover more channels instead of dropping out. The "Explore more
+// channels" CTA is the engagement turn; "Leave channel" is the smaller,
+// secondary action so a stray tap doesn't drop the viewer out.
 export function TunedInButton({
   channelId,
+  channelName,
   size = 'sm',
 }: {
   channelId: string
+  channelName?: string
   size?: 'sm' | 'md'
 }) {
+  const [open, setOpen] = useState(false)
+
   const cls =
     size === 'md'
       ? 'rounded-2xl border border-border bg-surface px-4 py-2 text-sm font-medium text-text hover:text-danger hover:border-danger transition-colors'
       : 'rounded-2xl border border-border bg-surface px-3 py-1.5 text-[11px] font-medium text-text hover:text-danger hover:border-danger transition-colors'
 
   return (
-    <form
-      action={tuneOutChannel.bind(null, channelId)}
-      onSubmit={(e) => {
-        if (!window.confirm('Are you sure you want to leave this channel?')) {
-          e.preventDefault()
-        }
-      }}
-    >
-      <button type="submit" className={`shrink-0 ${cls}`}>
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className={`shrink-0 ${cls}`}
+        aria-haspopup="dialog"
+      >
         Tuned in
       </button>
-    </form>
+
+      {open && (
+        <LeaveChannelDialog
+          channelId={channelId}
+          channelName={channelName}
+          onClose={() => setOpen(false)}
+        />
+      )}
+    </>
+  )
+}
+
+// ── The dialog ────────────────────────────────────────────────────────────────
+
+function LeaveChannelDialog({
+  channelId,
+  channelName,
+  onClose,
+}: {
+  channelId: string
+  channelName?: string
+  onClose: () => void
+}) {
+  // Escape to dismiss, body scroll lock while open.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.body.style.overflow = prev
+    }
+  }, [onClose])
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="leave-channel-title"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+    >
+      {/* Backdrop */}
+      <button
+        type="button"
+        aria-label="Close"
+        onClick={onClose}
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
+      />
+
+      {/* Dialog */}
+      <div className="relative w-full max-w-sm rounded-2xl border border-border bg-surface shadow-2xl">
+        {/* Close */}
+        <button
+          type="button"
+          aria-label="Dismiss"
+          onClick={onClose}
+          className="absolute top-3 right-3 p-1.5 rounded-md text-subtle hover:text-text hover:bg-surface-elevated transition-colors"
+        >
+          <X className="w-4 h-4" />
+        </button>
+
+        <div className="p-6">
+          <h2
+            id="leave-channel-title"
+            className="text-base font-bold text-text pr-6 leading-tight"
+          >
+            Are you sure you want to leave this channel?
+          </h2>
+          <p className="mt-2 text-sm text-muted leading-relaxed">
+            You&apos;ll stop seeing posts and updates from{' '}
+            <span className="font-semibold text-text">
+              {channelName ?? 'this channel'}
+            </span>
+            . If it&apos;s not your thing, there are plenty of others — try
+            something new before you go.
+          </p>
+
+          {/* Engagement turn — the primary CTA is exploration, not exit. */}
+          <Link
+            href="/channels"
+            onClick={onClose}
+            className="mt-5 flex items-center justify-center gap-2 w-full rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-on-primary hover:bg-primary-hover transition-colors"
+          >
+            <Compass className="w-4 h-4" />
+            Explore more channels
+          </Link>
+
+          {/* Quieter exit. Same server action, no second confirm. */}
+          <form
+            action={tuneOutChannel.bind(null, channelId)}
+            className="mt-2"
+            onSubmit={onClose}
+          >
+            <button
+              type="submit"
+              className="w-full rounded-2xl px-4 py-2.5 text-xs font-medium text-subtle hover:text-danger transition-colors"
+            >
+              Yes, leave the channel
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
   )
 }

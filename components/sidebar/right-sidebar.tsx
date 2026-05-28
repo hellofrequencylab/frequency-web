@@ -32,7 +32,7 @@ function WidgetCard({
           {title}
         </h3>
         {badge && (
-          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-surface-elevated text-subtle font-medium">
+          <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-surface-elevated text-subtle font-medium">
             {badge}
           </span>
         )}

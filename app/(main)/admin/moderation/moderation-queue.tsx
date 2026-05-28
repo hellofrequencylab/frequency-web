@@ -91,10 +91,10 @@ export function ModerationQueue({ reports }: { reports: ReportItem[] }) {
 
             {/* Target type + reason */}
             <div className="flex items-center gap-2 mb-2 flex-wrap">
-              <span className="text-[11px] px-2 py-0.5 rounded-full bg-primary-bg text-primary-strong dark:bg-primary-bg dark:text-primary-strong font-medium">
+              <span className="text-[11px] px-2 py-0.5 rounded-md bg-primary-bg text-primary-strong dark:bg-primary-bg dark:text-primary-strong font-medium">
                 {targetLabel}
               </span>
-              <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${reasonInfo.cls}`}>
+              <span className={`text-[11px] px-2 py-0.5 rounded-md font-medium ${reasonInfo.cls}`}>
                 {reasonInfo.label}
               </span>
             </div>

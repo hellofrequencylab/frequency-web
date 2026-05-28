@@ -165,7 +165,7 @@ function ProfileCard({
               {ROLE_LABEL[role]}
             </span>
           ) : (
-            <span className="text-[10px] px-1.5 py-px rounded-full font-medium leading-tight bg-surface-elevated text-muted">
+            <span className="text-[10px] px-1.5 py-px rounded-md font-medium leading-tight bg-surface-elevated text-muted">
               {ROLE_LABEL[role]}
             </span>
           )}
@@ -545,7 +545,7 @@ function ProfileBottomBar({
               {ROLE_LABEL[role]}
             </span>
           ) : (
-            <span className="inline-block mt-0.5 text-[9px] px-1.5 py-px rounded-full font-medium bg-surface-elevated text-muted">
+            <span className="inline-block mt-0.5 text-[9px] px-1.5 py-px rounded-md font-medium bg-surface-elevated text-muted">
               {ROLE_LABEL[role]}
             </span>
           )}

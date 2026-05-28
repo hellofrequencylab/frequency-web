@@ -216,7 +216,7 @@ export default async function CirclePage({
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl font-semibold text-text">{circle.name}</h1>
               <StatusBadge status={circle.status} />
-              <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-surface-elevated text-muted font-medium">
+              <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-surface-elevated text-muted font-medium">
                 {circle.type}
               </span>
             </div>
@@ -284,12 +284,12 @@ export default async function CirclePage({
               {circle.member_count} of {circle.member_cap} members
             </span>
             {nearCap && !full && (
-              <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-warning-bg text-warning font-medium">
+              <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-warning-bg text-warning font-medium">
                 Almost full
               </span>
             )}
             {full && (
-              <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-danger-bg text-danger font-medium">
+              <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-danger-bg text-danger font-medium">
                 Full
               </span>
             )}
@@ -395,21 +395,21 @@ export default async function CirclePage({
                           {profile.display_name}
                         </span>
                         {memberIsHost && (
-                          <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-success-bg text-success font-medium">
+                          <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-success-bg text-success font-medium">
                             Host
                           </span>
                         )}
                         {is_crew_lead && !memberIsHost && (
-                          <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-warning-bg text-warning font-medium">
+                          <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-warning-bg text-warning font-medium">
                             Crew Lead
                           </span>
                         )}
                         {volBadge && !memberIsHost && (
-                          <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${volBadge.cls}`}>
+                          <span className={`text-[11px] px-1.5 py-0.5 rounded-md font-medium ${volBadge.cls}`}>
                             {volBadge.label}
                           </span>
                         )}
-                        <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${badge.cls}`}>
+                        <span className={`text-[11px] px-1.5 py-0.5 rounded-md font-medium ${badge.cls}`}>
                           {badge.label}
                         </span>
                         <ProfileFlair

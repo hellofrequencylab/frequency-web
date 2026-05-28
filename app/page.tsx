@@ -443,7 +443,7 @@ function PostPreviewCard({ post }: { post: PostPreviewRow }) {
                 {a?.display_name ?? 'Community member'}
               </span>
               {roleCls && (
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium capitalize ${roleCls}`}>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium capitalize ${roleCls}`}>
                   {a!.community_role}
                 </span>
               )}

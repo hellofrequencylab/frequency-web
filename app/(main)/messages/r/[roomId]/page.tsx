@@ -122,7 +122,7 @@ export default async function RoomPage({
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <h1 className="text-base font-bold text-text truncate">{r.name}</h1>
-              <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-surface-elevated text-muted capitalize">
+              <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-surface-elevated text-muted capitalize">
                 {r.visibility}
               </span>
             </div>

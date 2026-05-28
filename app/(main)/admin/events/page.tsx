@@ -178,7 +178,7 @@ function EventRow({ event }: { event: { id: string; title: string; slug: string;
             {event.title}
           </Link>
           {event.is_cancelled && (
-            <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-danger-bg dark:bg-danger-bg text-danger font-medium">
+            <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-danger-bg dark:bg-danger-bg text-danger font-medium">
               Cancelled
             </span>
           )}
