@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { MessageSquare, Megaphone, Zap, ArrowRight } from 'lucide-react'
+import { MessageSquare, Megaphone, Zap, ArrowRight, CalendarDays, MapPin } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { relativeTime } from '@/lib/utils'
 import { PostCard, FeedPost } from './post-card'
@@ -67,25 +67,44 @@ export async function FeedList({
   const order = sort === 'relevant' ? 'engagement_score' : 'created_at'
 
   // ── Posts ──────────────────────────────────────────────────────────────────
-  // All logged-in users see all posts. Visibility scoping will be re-added
-  // when the Friends feature lands.
 
   let rawPosts: RawPost[] = []
 
   if (myProfileId) {
-    let query = admin
-      .from('posts')
-      .select(POST_SELECT)
-      .is('parent_id', null)
-      .order(order, { ascending: false })
-      .limit(30)
-
     if (!showPublicLayer && circleIds.length > 0) {
-      query = query.in('scope_id', circleIds)
-    }
+      // Circle/channel detail page — show only scoped posts
+      const { data } = await admin
+        .from('posts')
+        .select(POST_SELECT)
+        .in('scope_id', circleIds)
+        .is('parent_id', null)
+        .order(order, { ascending: false })
+        .limit(30)
+      rawPosts = (data ?? []) as unknown as RawPost[]
+    } else {
+      // Main feed: wall/public posts + promoted circle/channel posts
+      const HOST_PLUS = ['host', 'guide', 'mentor', 'janitor']
+      const ENGAGEMENT_THRESHOLD = 3
 
-    const { data } = await query
-    rawPosts = (data ?? []) as unknown as RawPost[]
+      const [publicR, groupR] = await Promise.all([
+        admin.from('posts').select(POST_SELECT)
+          .eq('visibility', 'public').is('parent_id', null)
+          .order(order, { ascending: false })
+          .limit(20),
+        admin.from('posts').select(POST_SELECT)
+          .eq('visibility', 'group').is('parent_id', null)
+          .order(order, { ascending: false })
+          .limit(30),
+      ])
+
+      const publicPosts = (publicR.data ?? []) as unknown as RawPost[]
+      const groupPosts = ((groupR.data ?? []) as unknown as RawPost[]).filter(p =>
+        HOST_PLUS.includes(p.author.community_role) ||
+        (p.reaction_count ?? 0) + (p.comment_count ?? 0) >= ENGAGEMENT_THRESHOLD
+      )
+
+      rawPosts = [...publicPosts, ...groupPosts]
+    }
   }
 
   // Dedupe + sort
@@ -104,11 +123,11 @@ export async function FeedList({
 
   // ── Resolve scope context (wall, circle, channel) ─────────────────────────
   const scopeIds = [...new Set(posts.map(p => p.scope_id).filter(Boolean) as string[])]
-  const scopeMap: Record<string, { type: 'wall' | 'circle' | 'channel'; name: string; href: string }> = {}
+  const scopeMap: Record<string, { type: 'wall' | 'circle' | 'channel'; name: string; href: string; avatar_url?: string | null; handle?: string }> = {}
 
   if (scopeIds.length > 0) {
     const [profileScopes, circleScopes, channelScopes] = await Promise.all([
-      admin.from('profiles').select('id, display_name, handle').in('id', scopeIds),
+      admin.from('profiles').select('id, display_name, handle, avatar_url').in('id', scopeIds),
       admin.from('circles').select('id, name, slug').in('id', scopeIds),
       admin.from('channels').select('id, name').in('id', scopeIds),
     ])
@@ -118,8 +137,8 @@ export async function FeedList({
     for (const ch of (channelScopes.data ?? []) as { id: string; name: string }[]) {
       if (!scopeMap[ch.id]) scopeMap[ch.id] = { type: 'channel', name: ch.name, href: `/channels/${ch.id}` }
     }
-    for (const p of (profileScopes.data ?? []) as { id: string; display_name: string; handle: string }[]) {
-      if (!scopeMap[p.id]) scopeMap[p.id] = { type: 'wall', name: p.display_name, href: `/people/${p.handle}` }
+    for (const p of (profileScopes.data ?? []) as { id: string; display_name: string; handle: string; avatar_url: string | null }[]) {
+      if (!scopeMap[p.id]) scopeMap[p.id] = { type: 'wall', name: p.display_name, href: `/people/${p.handle}`, avatar_url: p.avatar_url, handle: p.handle }
     }
   }
 
@@ -137,58 +156,55 @@ export async function FeedList({
     }
   }
 
-  // ── Dispatches ────────────────────────────────────────────────────────────
-  // All logged-in users see the latest published dispatch pinned to top.
-  let dispatches: DispatchItem[] = []
+  // ── Dispatches + nearest event ──────────────────────────────────────────
+  let latestDispatch: DispatchItem | null = null
+  let nearestEvent: { id: string; title: string; starts_at: string; location: string | null; slug: string } | null = null
 
-  const dispatchSelect = `
-    id, title, excerpt, audience_scope, published_at,
-    author:profiles!author_id ( display_name ),
-    linked_task:crew_tasks!linked_task_id ( id, name )
-  `
+  if (myProfileId && showPublicLayer) {
+    const dispatchSelect = `
+      id, title, excerpt, audience_scope, published_at,
+      author:profiles!author_id ( display_name ),
+      linked_task:crew_tasks!linked_task_id ( id, name )
+    `
 
-  if (myProfileId) {
-    const { data } = await admin
-      .from('dispatches')
-      .select(dispatchSelect)
-      .eq('status', 'published')
-      .order('published_at', { ascending: false })
-      .limit(1)
-    dispatches = (data ?? []) as unknown as DispatchItem[]
+    const [dispatchR, eventR] = await Promise.all([
+      admin.from('dispatches').select(dispatchSelect)
+        .eq('status', 'published')
+        .order('published_at', { ascending: false })
+        .limit(1),
+      admin.from('events').select('id, title, starts_at, location, slug')
+        .eq('is_cancelled', false)
+        .gte('starts_at', new Date().toISOString())
+        .order('starts_at', { ascending: true })
+        .limit(1),
+    ])
+
+    latestDispatch = ((dispatchR.data ?? []) as unknown as DispatchItem[])[0] ?? null
+    nearestEvent = (eventR.data?.[0] as unknown as typeof nearestEvent) ?? null
   }
 
   // ── Merge + render ────────────────────────────────────────────────────────
-  type FeedItem =
-    | { kind: 'post';     data: FeedPost; date: number }
-    | { kind: 'dispatch'; data: DispatchItem; date: number }
-
   const pinned  = posts.filter(p => p.is_pinned)
   const regular = posts.filter(p => !p.is_pinned)
 
-  const latestDispatch = dispatches[0] ?? null
+  const items = regular
+    .map(p => ({ data: p, date: new Date(p.created_at).getTime() }))
+    .sort((a, b) => b.date - a.date)
 
-  const items: FeedItem[] = [
-    ...regular.map(p => ({ kind: 'post'     as const, data: p, date: new Date(p.created_at).getTime() })),
-    ...dispatches.slice(1).map(d => ({ kind: 'dispatch' as const, data: d, date: new Date(d.published_at).getTime() })),
-  ].sort((a, b) => b.date - a.date)
-
-  if (!latestDispatch && pinned.length === 0 && items.length === 0) {
+  if (!latestDispatch && !nearestEvent && pinned.length === 0 && items.length === 0) {
     return <EmptyState message={emptyMessage} />
   }
 
   return (
     <div className="space-y-4">
       {latestDispatch && <DispatchFeedCard dispatch={latestDispatch} />}
+      {nearestEvent && <EventFeedCard event={nearestEvent} />}
       {pinned.map(post => (
         <PostCard key={post.id} post={post} myProfileId={myProfileId} viewerRole={viewerRole} />
       ))}
-      {items.map(item =>
-        item.kind === 'post' ? (
-          <PostCard key={item.data.id} post={item.data} myProfileId={myProfileId} viewerRole={viewerRole} />
-        ) : (
-          <DispatchFeedCard key={item.data.id} dispatch={item.data} />
-        )
-      )}
+      {items.map(({ data: post }) => (
+        <PostCard key={post.id} post={post} myProfileId={myProfileId} viewerRole={viewerRole} />
+      ))}
     </div>
   )
 }
@@ -227,6 +243,45 @@ function DispatchFeedCard({ dispatch: d }: { dispatch: DispatchItem }) {
             <ArrowRight className="w-3 h-3 text-indigo-300 dark:text-indigo-700 group-hover:text-indigo-500 transition-colors" />
           </div>
         </div>
+      </div>
+    </Link>
+  )
+}
+
+function EventFeedCard({ event: e }: { event: { id: string; title: string; starts_at: string; location: string | null; slug: string } }) {
+  const d = new Date(e.starts_at)
+  const month = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()
+  const day = d.getDate()
+  const dateStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+
+  return (
+    <Link
+      href={`/events/${e.slug}`}
+      className="group block rounded-2xl border border-amber-100 dark:border-amber-900/40 bg-amber-50/30 dark:bg-amber-950/10 shadow-sm px-4 py-3.5 hover:border-amber-200 dark:hover:border-amber-800 transition-colors"
+    >
+      <div className="flex items-center gap-3">
+        <div className="shrink-0 w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-950 flex flex-col items-center justify-center">
+          <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 leading-none">{month}</span>
+          <span className="text-sm font-bold text-amber-700 dark:text-amber-300 leading-tight">{day}</span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <CalendarDays className="w-3 h-3 text-amber-500" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-amber-500">Upcoming event</span>
+          </div>
+          <p className="text-sm font-bold text-gray-900 dark:text-gray-50 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors line-clamp-1">
+            {e.title}
+          </p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <span className="text-[11px] text-gray-400">{dateStr}</span>
+            {e.location && (
+              <span className="text-[11px] text-gray-400 flex items-center gap-0.5">
+                <MapPin className="w-2.5 h-2.5" /> {e.location}
+              </span>
+            )}
+          </div>
+        </div>
+        <ArrowRight className="w-3.5 h-3.5 text-amber-300 dark:text-amber-700 group-hover:text-amber-500 transition-colors shrink-0" />
       </div>
     </Link>
   )

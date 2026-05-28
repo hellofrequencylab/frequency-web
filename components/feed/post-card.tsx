@@ -61,7 +61,13 @@ export type FeedPost = {
   reaction_count?: number
   comment_count?: number
   engagement_score?: number
-  scopeContext?: { type: 'wall' | 'circle' | 'channel'; name: string; href: string }
+  scopeContext?: {
+    type: 'wall' | 'circle' | 'channel'
+    name: string
+    href: string
+    avatar_url?: string | null
+    handle?: string
+  }
   author: {
     id: string
     display_name: string
@@ -130,60 +136,77 @@ export function PostCard({
             </p>
           )}
 
-          {/* Scope context */}
-          {post.scopeContext && (
+          {/* Scope context (circle/channel — not wall, wall uses dual-avatar header) */}
+          {post.scopeContext && post.scopeContext.type !== 'wall' && (
             <Link
               href={post.scopeContext.href}
               className="flex items-center gap-1.5 mb-2 text-[11px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
             >
-              {post.scopeContext.type === 'wall' && (
-                <>
-                  <ArrowRight className="w-3 h-3" />
-                  <span>Posted on <span className="font-medium text-gray-500 dark:text-gray-400">{post.scopeContext.name}&apos;s</span> wall</span>
-                </>
-              )}
-              {post.scopeContext.type === 'circle' && (
-                <>
-                  <Users className="w-3 h-3" />
-                  <span>in <span className="font-medium text-gray-500 dark:text-gray-400">{post.scopeContext.name}</span></span>
-                </>
-              )}
-              {post.scopeContext.type === 'channel' && (
-                <>
-                  <Radio className="w-3 h-3" />
-                  <span>in <span className="font-medium text-gray-500 dark:text-gray-400">{post.scopeContext.name}</span></span>
-                </>
-              )}
+              {post.scopeContext.type === 'circle' && <Users className="w-3 h-3" />}
+              {post.scopeContext.type === 'channel' && <Radio className="w-3 h-3" />}
+              <span>in <span className="font-medium text-gray-500 dark:text-gray-400">{post.scopeContext.name}</span></span>
             </Link>
           )}
 
-          {/* Author row */}
-          <div className="flex items-start gap-3 mb-3">
-            <Link href={`/people/${author.handle}`} className="shrink-0">
-              {author.avatar_url ? (
-                <img
-                  src={author.avatar_url}
-                  alt={author.display_name}
-                  className="w-8 h-8 rounded-full object-cover"
-                />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 text-xs font-semibold flex items-center justify-center select-none">
-                  {getInitials(author.display_name)}
-                </div>
-              )}
-            </Link>
-
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <Link
-                  href={`/people/${author.handle}`}
-                  className="text-sm font-semibold text-gray-900 dark:text-gray-50 hover:underline"
-                >
+          {/* Author row — wall posts get dual-avatar header */}
+          {post.scopeContext?.type === 'wall' ? (
+            <div className="flex items-center gap-2 mb-3">
+              <Link href={`/people/${author.handle}`} className="shrink-0">
+                {author.avatar_url ? (
+                  <img src={author.avatar_url} alt={author.display_name} className="w-8 h-8 rounded-full object-cover" />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 text-xs font-semibold flex items-center justify-center select-none">
+                    {getInitials(author.display_name)}
+                  </div>
+                )}
+              </Link>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <Link href={`/people/${author.handle}`} className="text-sm font-semibold text-gray-900 dark:text-gray-50 hover:underline truncate">
                   {author.display_name}
                 </Link>
-                <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${badge.cls}`}>
-                  {badge.label}
-                </span>
+                <ArrowRight className="w-3.5 h-3.5 text-gray-300 dark:text-gray-600 shrink-0" />
+                <Link href={post.scopeContext.href} className="text-sm font-semibold text-gray-900 dark:text-gray-50 hover:underline truncate">
+                  {post.scopeContext.name}
+                </Link>
+              </div>
+              <Link href={post.scopeContext.href} className="shrink-0">
+                {post.scopeContext.avatar_url ? (
+                  <img src={post.scopeContext.avatar_url} alt={post.scopeContext.name} className="w-8 h-8 rounded-full object-cover" />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 text-xs font-semibold flex items-center justify-center select-none">
+                    {getInitials(post.scopeContext.name)}
+                  </div>
+                )}
+              </Link>
+              <div className="flex-1" />
+              <ContextActions
+                role={(viewerRole ?? 'member') as any}
+                context={{ type: 'post', id: post.id, isPinned: post.is_pinned, isOwn, postType: post.post_type }}
+              />
+            </div>
+          ) : (
+            <div className="flex items-start gap-3 mb-3">
+              <Link href={`/people/${author.handle}`} className="shrink-0">
+                {author.avatar_url ? (
+                  <img src={author.avatar_url} alt={author.display_name} className="w-8 h-8 rounded-full object-cover" />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 text-xs font-semibold flex items-center justify-center select-none">
+                    {getInitials(author.display_name)}
+                  </div>
+                )}
+              </Link>
+
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <Link
+                    href={`/people/${author.handle}`}
+                    className="text-sm font-semibold text-gray-900 dark:text-gray-50 hover:underline"
+                  >
+                    {author.display_name}
+                  </Link>
+                  <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${badge.cls}`}>
+                    {badge.label}
+                  </span>
               </div>
               <p className="text-xs text-gray-400 mt-0.5">
                 @{author.handle} · {relativeTime(post.created_at)}
@@ -195,6 +218,14 @@ export function PostCard({
               context={{ type: 'post', id: post.id, isPinned: post.is_pinned, isOwn, postType: post.post_type }}
             />
           </div>
+          )}
+
+          {/* Wall post meta line */}
+          {post.scopeContext?.type === 'wall' && (
+            <p className="text-xs text-gray-400 mb-3">
+              @{author.handle} · {relativeTime(post.created_at)}
+            </p>
+          )}
 
           {/* Body */}
           {post.body && (
