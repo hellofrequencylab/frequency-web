@@ -100,39 +100,41 @@ function ProfileCard({
   profileHref: string
 }) {
   return (
-    <div className="flex items-center gap-2 rounded-xl p-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group">
-      <Link href={profileHref} className="flex items-center gap-2.5 flex-1 min-w-0">
+    <div className="flex items-start gap-2.5 rounded-xl p-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group">
+      <Link href={profileHref} className="shrink-0">
         {profile.avatar_url ? (
           <img
             src={profile.avatar_url}
             alt={profile.display_name}
-            className="w-12 h-12 rounded-full object-cover shrink-0"
+            className="w-11 h-11 rounded-full object-cover"
           />
         ) : (
-          <div className="w-12 h-12 rounded-full bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-sm font-bold flex items-center justify-center shrink-0 select-none">
+          <div className="w-11 h-11 rounded-full bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-sm font-bold flex items-center justify-center select-none">
             {getInitials(profile.display_name)}
           </div>
         )}
-        <div className="flex-1 min-w-0">
+      </Link>
+      <div className="flex-1 min-w-0">
+        <Link href={profileHref}>
           <p className="text-sm font-semibold text-gray-900 dark:text-gray-50 truncate leading-tight">
             {profile.display_name}
           </p>
+        </Link>
+        <div className="flex items-center gap-1 mt-1">
           <span
-            className={`inline-block mt-0.5 text-[10px] px-1.5 py-px rounded-full font-medium leading-tight ${badge.cls}`}
+            className={`text-[10px] px-1.5 py-px rounded-full font-medium leading-tight ${badge.cls}`}
           >
             {badge.label}
           </span>
+          <Link
+            href="/settings"
+            aria-label="Member settings"
+            className="p-1 rounded-md text-gray-400 hover:text-indigo-600 dark:text-gray-500 dark:hover:text-indigo-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          >
+            <Settings className="w-3.5 h-3.5" />
+          </Link>
         </div>
-      </Link>
-
-      {/* Member settings — always visible gear icon */}
-      <Link
-        href="/settings"
-        aria-label="Member settings"
-        className="shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 dark:text-gray-500 dark:hover:text-indigo-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
-      >
-        <Settings className="w-4 h-4" />
-      </Link>
+      </div>
     </div>
   )
 }
@@ -367,7 +369,7 @@ export default function AppShell({
       <div className="flex flex-1 min-h-0 overflow-hidden">
 
         {/* Left nav */}
-        <aside className="hidden md:flex w-72 flex-col shrink-0 border-r border-gray-200/60 dark:border-gray-800/60 bg-white/80 dark:bg-gray-900/90 backdrop-blur-sm">
+        <aside className="hidden md:flex w-60 flex-col shrink-0 border-r border-gray-200/60 dark:border-gray-800/60 bg-white/80 dark:bg-gray-900/90 backdrop-blur-sm">
 
           {/* Primary nav */}
           <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">

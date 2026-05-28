@@ -5,7 +5,7 @@ import { getInitials, relativeTime } from '@/lib/utils'
 import { RANK_COLORS, RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
 import { CalendarDays, MapPin, Megaphone, Zap, Trophy, Award, Flame, Target, Gem } from 'lucide-react'
 import { GettingStartedChecklist } from '@/components/feed/getting-started'
-import { isOnline } from '@/lib/presence'
+import { isOnline, ONLINE_MS } from '@/lib/presence'
 
 export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
@@ -118,44 +118,58 @@ async function UpcomingEventsWidget({ circleIds }: { circleIds: string[] }) {
 // ── Active Members ────────────────────────────────────────────────────────────
 
 async function ActiveMembersWidget({ profileId, circleIds }: { profileId: string; circleIds: string[] }) {
-  if (circleIds.length === 0) return null
-
   const admin = createAdminClient()
-
-  const { data: rawRows } = await admin
-    .from('memberships')
-    .select(
-      'profile_id, joined_at, profile:profiles!profile_id(id, display_name, handle, avatar_url, last_seen_at)'
-    )
-    .in('circle_id', circleIds)
-    .eq('status', 'active')
-    .neq('profile_id', profileId)
-    .order('joined_at', { ascending: false })
-    .limit(30)
 
   type MemberRow = {
     profile_id: string
-    joined_at: string
+    joined_at: string | null
     profile: { id: string; display_name: string; handle: string; avatar_url: string | null; last_seen_at: string | null }
   }
 
+  // Two queries in parallel:
+  // 1) Currently-online members anywhere in the community (engagement signal)
+  // 2) Recent joiners across the viewer's circles (community signal)
+  // Online members float to the top; circle-mates fill the rest.
+  const onlineCutoff = new Date(new Date().getTime() - ONLINE_MS).toISOString()
+  const [onlineRes, circleRes] = await Promise.all([
+    admin
+      .from('profiles')
+      .select('id, display_name, handle, avatar_url, last_seen_at')
+      .gte('last_seen_at', onlineCutoff)
+      .neq('id', profileId)
+      .order('last_seen_at', { ascending: false })
+      .limit(12),
+    circleIds.length > 0
+      ? admin
+          .from('memberships')
+          .select(
+            'profile_id, joined_at, profile:profiles!profile_id(id, display_name, handle, avatar_url, last_seen_at)'
+          )
+          .in('circle_id', circleIds)
+          .eq('status', 'active')
+          .neq('profile_id', profileId)
+          .order('joined_at', { ascending: false })
+          .limit(30)
+      : Promise.resolve({ data: [] as unknown[] }),
+  ])
+
   const seen = new Set<string>()
   const dedupedAll: MemberRow[] = []
-  for (const row of rawRows ?? []) {
-    if (!seen.has(row.profile_id)) {
-      seen.add(row.profile_id)
-      dedupedAll.push(row as unknown as MemberRow)
-    }
+
+  // Online members first
+  for (const p of (onlineRes.data ?? []) as { id: string; display_name: string; handle: string; avatar_url: string | null; last_seen_at: string | null }[]) {
+    if (seen.has(p.id)) continue
+    seen.add(p.id)
+    dedupedAll.push({ profile_id: p.id, joined_at: null, profile: p })
+  }
+  // Then circle-mates
+  for (const row of (circleRes.data ?? []) as MemberRow[]) {
+    if (seen.has(row.profile_id)) continue
+    seen.add(row.profile_id)
+    dedupedAll.push(row)
   }
 
-  // Float online members to the top so the widget feels alive.
-  const sorted = [...dedupedAll].sort((a, b) => {
-    const ao = isOnline(a.profile.last_seen_at) ? 1 : 0
-    const bo = isOnline(b.profile.last_seen_at) ? 1 : 0
-    if (ao !== bo) return bo - ao
-    return new Date(b.joined_at).getTime() - new Date(a.joined_at).getTime()
-  })
-  const members = sorted.slice(0, 8)
+  const members = dedupedAll.slice(0, 8)
   const onlineCount = dedupedAll.filter(m => isOnline(m.profile.last_seen_at)).length
 
   if (members.length === 0) return null
