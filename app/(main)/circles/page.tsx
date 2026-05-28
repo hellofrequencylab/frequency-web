@@ -102,8 +102,9 @@ export default async function CirclesPage() {
         <div>
           <h1 className="text-2xl font-bold text-text mb-1">Circles</h1>
           <p className="text-sm text-muted leading-relaxed">
-            Your local crew. Circles are where you post, connect, and show up. Regular rides, shared
-            updates, and the people you&apos;ll see week to week. Join one to get started.
+            Your local crew. This is where you post, connect, and show up.
+            Regular meetups, shared updates, the people you&apos;ll see week to
+            week. Join one to get started.
           </p>
         </div>
         {isAdmin && <NewCircleCompose />}

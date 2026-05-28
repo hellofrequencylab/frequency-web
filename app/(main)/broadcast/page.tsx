@@ -66,7 +66,7 @@ export default async function BroadcastPage() {
     nexusIds = (hubs ?? []).map((h: any) => h.nexus_id).filter(Boolean) as string[]
   }
 
-  // Build dispatch query — fetch all published dispatches visible to this user
+  // Build dispatch query. Fetch all published dispatches visible to this user
   let dispatches: DispatchRow[] = []
 
   const baseQuery = () =>
@@ -81,7 +81,7 @@ export default async function BroadcastPage() {
       .order('published_at', { ascending: false })
       .limit(40)
 
-  // Collect all visible dispatches — by audience targeting + own authored dispatches
+  // Collect all visible dispatches. By audience targeting + own authored dispatches
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const promises: any[] = [
     // Always include dispatches this user authored (creators see their own content)
@@ -154,6 +154,7 @@ export default async function BroadcastPage() {
           </div>
           <p className="text-sm text-muted">
             Announcements, events, and challenges from your community.
+            Worth a scroll when you have a minute.
           </p>
         </div>
         {isHost && (namedCircles.length > 0 || namedHubs.length > 0 || namedNexuses.length > 0) && (

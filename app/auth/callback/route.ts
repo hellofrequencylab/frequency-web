@@ -19,7 +19,7 @@ export async function GET(request: Request) {
     }
   }
 
-  // Something went wrong — send the user back to sign-in with a message.
+  // Something went wrong. Send the user back to sign-in with a message.
   return NextResponse.redirect(
     `${origin}/sign-in?error=${encodeURIComponent('Could not sign in. Please try again.')}`
   )

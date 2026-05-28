@@ -77,7 +77,7 @@ export async function joinCircle(circleId: string, circleSlug: string) {
     }
   }
 
-  // Use admin client — RLS only permits crew+ to self-join via policy, but new
+  // Use admin client. RLS only permits crew+ to self-join via policy, but new
   // members (role = 'member') should be able to join circles directly.
   // Authorization is enforced above in code (capacity, auth check).
   const { error } = await admin.from('memberships').insert({

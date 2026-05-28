@@ -6,7 +6,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ─────────────────────────────────────────────────────────────────────────
-   DAWN — Frequency's semantic token layer.
+   DAWN. Frequency's semantic token layer.
    Components reference these variables (or the Tailwind utilities mapped
    below in @theme inline). Raw hex appears ONLY in this file.
    ───────────────────────────────────────────────────────────────────────── */
@@ -14,7 +14,7 @@
 :root {
   color-scheme: light;
 
-  /* Surfaces — community canvas is light and airy. The warm sand stays as
+  /* Surfaces. Community canvas is light and airy. The warm sand stays as
      `--color-marketing-canvas` for the splash and any public-facing pages so
      the brand vibe carries on the website while the in-app community feels
      light. */
@@ -32,14 +32,14 @@
   --color-text-muted:       #6B6253;
   --color-text-subtle:      #8F8675;
 
-  /* Brand — primary (amber-gold) */
+  /* Brand. Primary (amber-gold) */
   --color-primary:          #E2912F;
   --color-primary-hover:    #CE8023;
   --color-primary-strong:   #9A5E12;
   --color-primary-bg:       #FBEFD9;
   --color-text-on-primary:  #2A1B06;
 
-  /* Brand — signal (teal) */
+  /* Brand. Signal (teal) */
   --color-signal:           #1E9E89;
   --color-signal-strong:    #0F6657;
   --color-signal-bg:        #DDF1ED;
@@ -56,7 +56,7 @@
   /* Focus */
   --color-focus-ring:       #E2912F;
 
-  /* Rank spectrum — primitives (same in both modes).
+  /* Rank spectrum. Primitives (same in both modes).
      core = solid dot/fill · deep = text on light · bright = text on dark */
   --rank-stone:  #8A8073; --rank-stone-deep:  #4E4A40; --rank-stone-bright:  #CBC2B2;
   --rank-clay:   #C26B45; --rank-clay-deep:   #7C3D22; --rank-clay-bright:   #E9A484;
@@ -143,7 +143,7 @@
   --color-danger:           var(--color-danger);
   --color-danger-bg:        var(--color-danger-bg);
 
-  /* Rank palette — exposes the static primitives as utility classes:
+  /* Rank palette. Exposes the static primitives as utility classes:
      bg-rank-stone, text-rank-jade, border-rank-gold, etc. The full
      core/deep/bright spectrum is only used by .rank-badge in CSS;
      these utilities give callers the rank "core" color for dots, fills,
@@ -182,13 +182,13 @@ h1, h2, h3, h4, h5, h6 {
   letter-spacing: -0.01em;
 }
 
-/* Global focus ring — load-bearing accessibility default.                   */
+/* Global focus ring. Load-bearing accessibility default.                   */
 :where(button, a, input, select, textarea, [tabindex]):focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-focus-ring) 45%, transparent);
 }
 
-/* ── Rank badge primitive — drives off three CSS vars set inline.
+/* ── Rank badge primitive. Drives off three CSS vars set inline.
    Usage:
      <span class="rank-badge" style={{
        '--rank':        'var(--rank-jade)',

@@ -223,7 +223,7 @@ export async function revokeInviteLink(id: string) {
   revalidatePath('/admin/circles')
 }
 
-// Public action — no role check, but validates token
+// Public action. No role check, but validates token
 export async function joinViaInviteLink(token: string): Promise<{ circleId: string }> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -272,7 +272,7 @@ export async function joinViaInviteLink(token: string): Promise<{ circleId: stri
       .update({ used_count: link.used_count + 1 })
       .eq('id', link.id)
 
-    // Best-effort member count increment — manual update since we may not have the RPC
+    // Best-effort member count increment. Manual update since we may not have the RPC
     const { data: circleData } = await admin
       .from('circles')
       .select('member_count')
@@ -535,7 +535,7 @@ export async function publishDispatch(id: string) {
   revalidatePath(`/broadcast/${id}`)
   revalidatePath('/feed')
 
-  // Fire-and-forget email fan-out — never block publish on email failure
+  // Fire-and-forget email fan-out. Never block publish on email failure
   ;(async () => {
     try {
       const { data: dispatch } = await admin

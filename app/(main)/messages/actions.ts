@@ -37,7 +37,7 @@ export async function startConversation(otherProfileId: string) {
 
   const admin = createAdminClient()
 
-  // Gate on friendship — must be accepted friends to start a new 1:1
+  // Gate on friendship. Must be accepted friends to start a new 1:1
   const friendPair = myProfileId < otherProfileId
     ? { user_a_id: myProfileId, user_b_id: otherProfileId }
     : { user_a_id: otherProfileId, user_b_id: myProfileId }
@@ -158,7 +158,7 @@ export async function startGroupConversation(
 
   const admin = createAdminClient()
 
-  // Gate on friendship — creator must be friends with every invitee
+  // Gate on friendship. Creator must be friends with every invitee
   const pairs = others.map((id) =>
     myProfileId < id
       ? { user_a_id: myProfileId, user_b_id: id }

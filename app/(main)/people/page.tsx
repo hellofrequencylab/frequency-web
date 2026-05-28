@@ -91,7 +91,8 @@ export default async function DirectoryPage({
             <h1 className="text-2xl font-bold text-text">Directory</h1>
           </div>
           <p className="text-sm text-muted">
-            Browse and connect with community members.
+            Everyone in the community. Browse, find someone interesting,
+            say hi.
           </p>
         </div>
         <InviteMemberCompose inviterName={viewerName} />

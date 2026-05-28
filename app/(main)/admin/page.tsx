@@ -41,7 +41,7 @@ export default async function AdminPage() {
 
   if (!['host', 'guide', 'mentor', 'janitor'].includes(role)) notFound()
 
-  // Overview stat counts — quick aggregate for all admin roles
+  // Overview stat counts. Quick aggregate for all admin roles
   const [membersCount, circlesCount, eventsCount, dispatchesCount] = await Promise.all([
     admin.from('memberships').select('id', { count: 'exact', head: true }).eq('status', 'active'),
     admin.from('circles').select('id', { count: 'exact', head: true }),

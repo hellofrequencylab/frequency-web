@@ -34,7 +34,7 @@ export async function logCompletion(taskId: string) {
 
   if (!task) return
 
-  // Non-repeatable gate — if already completed, no-op
+  // Non-repeatable gate. If already completed, no-op
   if (!task.is_repeatable) {
     const { data: existing } = await admin
       .from('crew_completions')

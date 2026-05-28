@@ -152,7 +152,7 @@ export function MessageThread({
               key={gi}
               className={`flex items-end gap-2.5 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}
             >
-              {/* Avatar — shown once per group, aligned to last message */}
+              {/* Avatar. Shown once per group, aligned to last message */}
               <div className="shrink-0 self-end mb-1">
                 {!isMine && (
                   sender?.avatar_url ? (

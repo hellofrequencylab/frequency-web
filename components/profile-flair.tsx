@@ -40,7 +40,7 @@ export function ProfileFlair({ rank, streak, achievementCount, gems, compact = f
         </span>
       )}
       {gemTier && compact && gemCount >= 100 && (
-        <span className={`w-2 h-2 rounded-full ${gemTier.color}`} title={`${gemCount} gems — ${gemTier.label}`} />
+        <span className={`w-2 h-2 rounded-full ${gemTier.color}`} title={`${gemCount} gems. ${gemTier.label}`} />
       )}
       {hasAchievements && !compact && (
         <span className="text-[11px] font-medium text-signal dark:text-signal flex items-center gap-0.5">

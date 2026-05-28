@@ -165,7 +165,7 @@ function DispatchForm({
         )}
       </div>
 
-      {/* Poll options — only when type=poll */}
+      {/* Poll options. Only when type=poll */}
       {dispatchType === 'poll' && (
         <div>
           <label className={lbl}>Poll Options <span className="text-subtle font-normal">(min 2)</span></label>
@@ -232,7 +232,7 @@ function DispatchForm({
             disabled={isPending}
             className={input}
           >
-            <option value="">— Select —</option>
+            <option value="">- Select -</option>
             {audienceOptions.map(a => (
               <option key={a.id} value={a.id}>{a.name}</option>
             ))}
@@ -250,7 +250,7 @@ function DispatchForm({
             disabled={isPending}
             className={input}
           >
-            <option value="">— None —</option>
+            <option value="">- None -</option>
             {tasks.map(t => (
               <option key={t.id} value={t.id}>{t.name}</option>
             ))}
@@ -262,7 +262,7 @@ function DispatchForm({
       <div>
         <label className={lbl}>
           <Clock className="w-3 h-3 inline mr-1" />
-          Schedule publish <span className="text-subtle font-normal">(optional — leave blank to save as draft)</span>
+          Schedule publish <span className="text-subtle font-normal">(optional. Leave blank to save as draft)</span>
         </label>
         <input
           type="datetime-local"
@@ -296,7 +296,7 @@ function DispatchForm({
   )
 }
 
-// Lightweight inline markdown preview — no import needed
+// Lightweight inline markdown preview. No import needed
 function MarkdownPreview({ text }: { text: string }) {
   if (!text.trim()) return <span className="text-subtle italic">Nothing to preview yet.</span>
   // Render as pre-wrap for now; the full react-markdown render is on the public page

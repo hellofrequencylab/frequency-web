@@ -69,7 +69,7 @@ function HubForm({
         <div>
           <label className={lbl}>Nexus</label>
           <select value={nexusId} onChange={e => setNexusId(e.target.value)} disabled={isPending} className={input}>
-            <option value="">— No nexus —</option>
+            <option value="">- No nexus -</option>
             {nexuses.map(n => <option key={n.id} value={n.id}>{n.name}</option>)}
           </select>
         </div>
@@ -78,7 +78,7 @@ function HubForm({
         <div>
           <label className={lbl}>Guide</label>
           <select value={guideId} onChange={e => setGuideId(e.target.value)} disabled={isPending} className={input}>
-            <option value="">— Assign later —</option>
+            <option value="">- Assign later -</option>
             {guides.map(g => <option key={g.id} value={g.id}>{g.display_name}</option>)}
           </select>
         </div>

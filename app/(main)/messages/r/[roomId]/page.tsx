@@ -155,7 +155,7 @@ export default async function RoomPage({
         )}
       </header>
 
-      {/* Body — three pane (messages + members on the right) */}
+      {/* Body. Three pane (messages + members on the right) */}
       <div className="flex-1 min-h-0 flex">
         <RoomThread
           roomId={roomId}

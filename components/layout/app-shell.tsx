@@ -36,7 +36,7 @@ type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
 // Dawn volunteer ladder (Section 6): Crew → Hosts → Guides → Mentors maps to
 // stone → clay → jade → plum. `member` is *not* a rank, so it renders as a
-// neutral muted chip. `janitor` is outside the volunteer ladder — parked on
+// neutral muted chip. `janitor` is outside the volunteer ladder. Parked on
 // slate (admin-feeling) until product weighs in.
 type RankKey = 'stone' | 'clay' | 'jade' | 'plum' | 'slate'
 const ROLE_RANK: Record<CommunityRole, RankKey | null> = {
@@ -126,7 +126,7 @@ function useTheme() {
 
 // ── Profile card (sidebar bottom) ─────────────────────────────────────────────
 // Public-facing identity: avatar · name · role badge → profile + member settings
-// This is the engagement anchor — badges, rank, etc. will live here as we grow.
+// This is the engagement anchor. Badges, rank, etc. will live here as we grow.
 
 function ProfileCard({
   profile,
@@ -184,7 +184,7 @@ function ProfileCard({
 
 // ── Account dropdown (top-right) ──────────────────────────────────────────────
 // Admin layer: account settings, billing, notifications, theme, sign out.
-// Always shows initials — keeps it feeling functional/admin vs. personal.
+// Always shows initials. Keeps it feeling functional/admin vs. personal.
 
 function AccountDropdown({
   profile,
@@ -260,7 +260,7 @@ function AccountDropdown({
             </Link>
           </div>
 
-          {/* Crew + Admin — role-gated */}
+          {/* Crew + Admin. Role-gated */}
           {(showCrewLink || showAdminLink) && (
             <div className="border-t border-border py-1">
               {showCrewLink && (
@@ -460,7 +460,7 @@ function MobileLeftDrawer({
         }`}
       />
 
-      {/* Panel — narrowed to roughly the logo's footprint; close button lives at the bottom for thumb reach */}
+      {/* Panel. Narrowed to roughly the logo's footprint; close button lives at the bottom for thumb reach */}
       <aside
         role="dialog"
         aria-label="Navigation"
@@ -478,7 +478,7 @@ function MobileLeftDrawer({
           <NavLinkList isActive={isActive} role={role} onNavigate={onClose} />
         </nav>
 
-        {/* Bottom close — sits in the thumb zone */}
+        {/* Bottom close. Sits in the thumb zone */}
         <div className="shrink-0 border-t border-border p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <button
             onClick={onClose}
@@ -516,7 +516,7 @@ function ProfileBottomBar({
         paddingBottom: 'env(safe-area-inset-bottom)',
       }}
     >
-      {/* Profile — tap to open settings */}
+      {/* Profile. Tap to open settings */}
       <Link
         href="/settings"
         aria-label="Open settings"
@@ -555,7 +555,7 @@ function ProfileBottomBar({
       {/* Divider */}
       <div className="w-px bg-border-strong my-3" aria-hidden="true" />
 
-      {/* Rewards — tap to open gamified dashboard */}
+      {/* Rewards. Tap to open gamified dashboard */}
       <Link
         href="/crew"
         aria-label="Open rewards dashboard"
@@ -629,8 +629,8 @@ export default function AppShell({
   }
 
   // Hide right sidebar only where it would crowd or distract
-  // /settings — narrow focused forms
-  // /messages/<id> — chat thread needs full width; the index keeps the sidebar
+  // /settings. Narrow focused forms
+  // /messages/<id>. Chat thread needs full width; the index keeps the sidebar
   const showSidebar =
     !!sidebar &&
     !pathname.startsWith('/settings') &&
@@ -652,7 +652,7 @@ export default function AppShell({
       {/* ── Top bar ───────────────────────────────────────── */}
       <header className="h-14 shrink-0 flex items-stretch bg-surface/90 backdrop-blur-sm border-b border-border z-30">
 
-        {/* Hamburger — mobile only */}
+        {/* Hamburger. Mobile only */}
         <button
           onClick={() => setDrawerOpen(true)}
           aria-label="Open navigation"
@@ -662,7 +662,7 @@ export default function AppShell({
           <Menu className="w-6 h-6" />
         </button>
 
-        {/* Logo — full-width header, no vertical divider */}
+        {/* Logo. Full-width header, no vertical divider */}
         <div className="flex items-center pl-1 pr-3 md:px-5">
           <Link href="/feed" className="flex items-center">
             <img
@@ -676,7 +676,7 @@ export default function AppShell({
         {/* Right section: search · notifications · account */}
         <div className="flex flex-1 items-center justify-end gap-1 px-3">
 
-          {/* Search pill — desktop */}
+          {/* Search pill. Desktop */}
           <Link
             href="/search"
             className="hidden sm:flex items-center gap-2 rounded-lg border border-border bg-surface-elevated px-3 py-1.5 text-sm text-muted hover:border-border-strong transition-colors mr-1"
@@ -688,7 +688,7 @@ export default function AppShell({
             </kbd>
           </Link>
 
-          {/* Search icon — mobile */}
+          {/* Search icon. Mobile */}
           <Link
             href="/search"
             aria-label="Search"
@@ -703,7 +703,7 @@ export default function AppShell({
           {/* Notifications */}
           <NotificationBell initialUnread={unreadCount} />
 
-          {/* Account dropdown — initials, admin/account layer */}
+          {/* Account dropdown. Initials, admin/account layer */}
           <AccountDropdown
             profile={profile}
             profileHref={profileHref}
@@ -726,7 +726,7 @@ export default function AppShell({
             <NavLinkList isActive={isActive} role={role} />
           </nav>
 
-          {/* Upgrade to Crew CTA — members only (not janitor) */}
+          {/* Upgrade to Crew CTA. Members only (not janitor) */}
           {role === 'member' && (
             <div className="mx-3 mb-3 rounded-xl border border-border bg-primary-bg p-3.5">
               <p className="text-xs font-semibold text-primary-strong mb-1">
@@ -744,7 +744,7 @@ export default function AppShell({
             </div>
           )}
 
-          {/* Profile card — public identity anchor */}
+          {/* Profile card. Public identity anchor */}
           {/* Avatar · name · role badge → public profile · member settings */}
           {/* Grows into: points, rank, badges as we build out engagement */}
           <div className="border-t border-border p-3">
@@ -762,7 +762,7 @@ export default function AppShell({
             </div>
           </main>
 
-          {/* Right sidebar — only on lg+, hidden on admin/settings */}
+          {/* Right sidebar. Only on lg+, hidden on admin/settings */}
           {showSidebar && (
             <aside className="hidden lg:block w-72 shrink-0 overflow-y-auto border-l border-border bg-surface/80 backdrop-blur-sm">
               {sidebar}

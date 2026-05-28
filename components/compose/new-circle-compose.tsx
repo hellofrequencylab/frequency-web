@@ -94,7 +94,7 @@ export function NewCircleCompose({
             <label className={cmLabel}>Hub <span className="text-subtle font-normal">(optional)</span></label>
             <select value={hubId} onChange={e => setHubId(e.target.value)}
               disabled={isPending} className={cmInput}>
-              <option value="">— None —</option>
+              <option value="">- None -</option>
               {hubs.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
             </select>
           </div>

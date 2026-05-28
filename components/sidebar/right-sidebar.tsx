@@ -48,7 +48,7 @@ function DateChip({ iso }: { iso: string }) {
   const d = new Date(iso)
   const month = d.toLocaleDateString('en-US', { month: 'short' })
   const day = d.getDate()
-  // Events use the green success palette so they read as "happening" — same
+  // Events use the green success palette so they read as "happening". Same
   // language the EventFeedCard speaks at the top of the feed.
   return (
     <div className="flex flex-col items-center justify-center w-9 h-9 rounded-lg bg-success-bg text-success shrink-0">
@@ -328,7 +328,7 @@ async function RecentDispatchesWidget({
 }
 
 // ── Leaderboard ───────────────────────────────────────────────────────────────
-// Site-wide top earners. No self-highlight — the viewer reads the board the
+// Site-wide top earners. No self-highlight. The viewer reads the board the
 // same way as any other rank list, which keeps it from feeling like a
 // personalized callout when they're already on it.
 
@@ -473,7 +473,7 @@ async function GamificationWidget({ profileId }: { profileId: string }) {
 export default async function RightSidebar({ profileId, role }: RightSidebarProps) {
   const admin = createAdminClient()
 
-  // Fetch circle memberships once — used by multiple widgets
+  // Fetch circle memberships once. Used by multiple widgets
   const { data: myMemberships } = await admin
     .from('memberships')
     .select('circle_id')
@@ -487,7 +487,7 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
 
   return (
     <div className="px-4 py-6 space-y-4">
-      {/* Getting Started — auto-hides when all items complete */}
+      {/* Getting Started. Auto-hides when all items complete */}
       <Suspense fallback={null}>
         <GettingStartedChecklist profileId={profileId} />
       </Suspense>

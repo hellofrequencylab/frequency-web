@@ -92,7 +92,7 @@ function CircleForm({
         <div>
           <label className={lbl}>Hub</label>
           <select value={hubId} onChange={e => setHubId(e.target.value)} disabled={isPending} className={input}>
-            <option value="">— No hub —</option>
+            <option value="">- No hub -</option>
             {hubs.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
           </select>
         </div>
@@ -102,7 +102,7 @@ function CircleForm({
         <div>
           <label className={lbl}>Host</label>
           <select value={hostId} onChange={e => setHostId(e.target.value)} disabled={isPending} className={input}>
-            <option value="">— Assign later —</option>
+            <option value="">- Assign later -</option>
             {hosts.map(h => <option key={h.id} value={h.id}>{h.display_name}</option>)}
           </select>
         </div>

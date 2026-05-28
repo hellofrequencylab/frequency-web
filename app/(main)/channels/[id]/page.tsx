@@ -194,7 +194,7 @@ export default async function ChannelPage({
             myProfileId={myProfileId}
             emptyMessage={
               isTunedIn
-                ? 'No posts yet — start the conversation.'
+                ? 'No posts yet. Start the conversation.'
                 : 'Tune in to see and join the conversation.'
             }
           />

@@ -84,7 +84,7 @@ export default async function AdminCirclesPage() {
       circles = (data ?? []) as unknown as CircleRow[]
     }
   } else {
-    // mentor — all circles across their nexuses
+    // mentor. All circles across their nexuses
     const { data: nexuses } = await admin.from('nexuses').select('id').eq('mentor_id', profile.id)
     const nexusIds = (nexuses ?? []).map((n: { id: string }) => n.id)
     if (nexusIds.length > 0) {
