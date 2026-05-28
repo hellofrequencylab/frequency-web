@@ -66,7 +66,7 @@ export function NewHubCompose({
             <label className={cmLabel}>Nexus <span className="text-subtle font-normal">(optional)</span></label>
             <select value={nexusId} onChange={e => setNexusId(e.target.value)}
               disabled={isPending} className={cmInput}>
-              <option value="">— None —</option>
+              <option value="">- None -</option>
               {nexuses.map(n => <option key={n.id} value={n.id}>{n.name}</option>)}
             </select>
           </div>

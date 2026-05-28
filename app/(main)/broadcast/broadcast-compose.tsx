@@ -148,7 +148,7 @@ export function BroadcastCompose({
               disabled={isPending}
               className={cmInput}
             >
-              <option value="">— Select —</option>
+              <option value="">- Select -</option>
               {audienceOptions.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
             </select>
           </div>

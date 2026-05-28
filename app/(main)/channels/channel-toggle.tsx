@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { X, Compass } from 'lucide-react'
 import { tuneInChannel, tuneOutChannel } from './actions'
 
-// "Tune in" — submits the form and the server action redirects to the
+// "Tune in". Submits the form and the server action redirects to the
 // channel detail page. No modal; the click is the commitment.
 export function TuneInButton({
   channelId,
@@ -30,7 +30,7 @@ export function TuneInButton({
   )
 }
 
-// "Tuned in" — clicking it opens a modal that frames the exit as a chance
+// "Tuned in". Clicking it opens a modal that frames the exit as a chance
 // to discover more channels instead of dropping out. The "Explore more
 // channels" CTA is the engagement turn; "Leave channel" is the smaller,
 // secondary action so a stray tap doesn't drop the viewer out.
@@ -136,11 +136,11 @@ function LeaveChannelDialog({
             <span className="font-semibold text-text">
               {channelName ?? 'this channel'}
             </span>
-            . If it&apos;s not your thing, there are plenty of others — try
+            . If it&apos;s not your thing, there are plenty of others. Try
             something new before you go.
           </p>
 
-          {/* Engagement turn — the primary CTA is exploration, not exit. */}
+          {/* Engagement turn. The primary CTA is exploration, not exit. */}
           <Link
             href="/channels"
             onClick={onClose}

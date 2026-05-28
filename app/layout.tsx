@@ -55,7 +55,7 @@ export const metadata: Metadata = {
   },
 };
 
-// Inline script — runs synchronously before first paint so the .dark class
+// Inline script. Runs synchronously before first paint so the .dark class
 // and <meta name="theme-color"> are correct on the first frame (prevents the
 // dark-mode flash). Reads localStorage('freq-theme'): 'light' | 'dark' |
 // 'system' | null; defaults to 'system' per the Dawn spec. We also migrate

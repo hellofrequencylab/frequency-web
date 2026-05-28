@@ -166,7 +166,7 @@ export default async function RootPage() {
         </div>
       </section>
 
-      {/* ── Stats bar — dark band, gives the page visible rhythm and lets the
+      {/* ── Stats bar. Dark band, gives the page visible rhythm and lets the
               numbers actually read at a glance. ───────────────────────────── */}
       <section className="bg-text px-6 py-14">
         <div className="max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-y-8 items-center text-center">
@@ -177,7 +177,7 @@ export default async function RootPage() {
         </div>
       </section>
 
-      {/* ── Start in 3 steps — concrete onramp for the demographic that
+      {/* ── Start in 3 steps. Concrete onramp for the demographic that
               actually shows up: tell them exactly what to do next. ────────── */}
       <section className="bg-marketing-canvas px-6 py-24">
         <div className="max-w-5xl mx-auto">
@@ -203,7 +203,7 @@ export default async function RootPage() {
               n={2}
               icon={Compass}
               title="Join a local circle"
-              description="Find a circle near you — up to 50 people from your neighborhood. Small enough to know everyone."
+              description="Find a circle near you. Up to 50 people from your neighborhood. Small enough to know everyone."
             />
             <StepCard
               n={3}
@@ -301,7 +301,7 @@ export default async function RootPage() {
         </section>
       )}
 
-      {/* ── Final CTA — light band with high-contrast text and the same
+      {/* ── Final CTA. Light band with high-contrast text and the same
               warm radial accent the splash hero hints at. ─────────────────── */}
       <section className="relative bg-surface px-6 py-24 text-center overflow-hidden">
         <div
@@ -412,7 +412,7 @@ function StatItem({ value, label }: { value: number | string; label: string }) {
   )
 }
 
-// Post preview — visually matches the in-app PostCard's identity (avatar +
+// Post preview. Visually matches the in-app PostCard's identity (avatar +
 // name with role chip + scope/timestamp meta + body + optional media). It
 // stays presentational (no reactions, no actions) since the splash visitor
 // is anonymous and the row is decorative social proof.

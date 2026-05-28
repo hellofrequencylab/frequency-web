@@ -69,7 +69,7 @@ function NexusForm({ initial, mentors, onSave, onCancel, isPending }: {
         <div>
           <label className={lbl}>Mentor</label>
           <select value={mentorId} onChange={e => setMentorId(e.target.value)} disabled={isPending} className={input}>
-            <option value="">— Assign later —</option>
+            <option value="">- Assign later -</option>
             {mentors.map(m => <option key={m.id} value={m.id}>{m.display_name}</option>)}
           </select>
         </div>

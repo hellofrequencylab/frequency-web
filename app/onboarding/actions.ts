@@ -32,14 +32,14 @@ export async function completeOnboarding(data: {
     .eq('auth_user_id', user.id)
 
   if (error) {
-    // 23505 = unique_violation — handle was claimed between check and submit
+    // 23505 = unique_violation. Handle was claimed between check and submit
     if (error.code === '23505') {
       throw new Error('That handle was just taken. Go back and choose another.')
     }
     throw new Error(error.message)
   }
 
-  // Fire welcome email — non-blocking, never throws
+  // Fire welcome email. Non-blocking, never throws
   if (user.email) {
     sendWelcomeEmail({ to: user.email, displayName: data.displayName }).catch(() => {})
   }

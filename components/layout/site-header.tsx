@@ -9,7 +9,7 @@ import { UserMenu, AuthButtons, type UserMenuProfile } from './user-menu'
 // For the authenticated app, AppShell handles navigation instead.
 
 interface SiteHeaderProps {
-  /** Override auth state — pass null to force unauthenticated appearance. */
+  /** Override auth state. Pass null to force unauthenticated appearance. */
   profile?: UserMenuProfile | null
   /** Visual style: 'light' for white bg, 'dark' for transparent over hero */
   variant?: 'light' | 'dark'

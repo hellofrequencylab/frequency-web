@@ -136,7 +136,7 @@ export function Composer({
     const val = e.target.value
     setBody(val)
 
-    // Detect @mention — find last @ before cursor that has no space after it
+    // Detect @mention. Find last @ before cursor that has no space after it
     const cursor = e.target.selectionStart ?? val.length
     const textBefore = val.slice(0, cursor)
     const match = textBefore.match(/@([a-zA-Z0-9_]*)$/)

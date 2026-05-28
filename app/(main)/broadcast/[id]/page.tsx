@@ -54,7 +54,7 @@ export default async function DispatchDetailPage({ params }: Props) {
 
   const myProfileId = myProfileRes.data?.id ?? null
 
-  // Audience name, likes, comments, poll options — all parallel
+  // Audience name, likes, comments, poll options. All parallel
   const [audienceRes, likesRes, myLikeRes, commentsRes, pollOptionsRes] = await Promise.all([
     (async () => {
       const table =
@@ -178,7 +178,7 @@ export default async function DispatchDetailPage({ params }: Props) {
         {/* Body */}
         <DispatchBody body={dispatch.body} />
 
-        {/* Poll voting — only when type=poll and options exist */}
+        {/* Poll voting. Only when type=poll and options exist */}
         {dispType === 'poll' && pollOptions.length > 0 && (
           <PollSection
             dispatchId={id}

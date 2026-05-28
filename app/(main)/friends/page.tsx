@@ -75,7 +75,8 @@ export default async function FriendsPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-text">Friends</h1>
         <p className="text-sm text-muted mt-1">
-          Manage friend requests and your friends list. You must be friends to start a direct message or group DM.
+          Your friends and any pending requests live here. Add someone before
+          you start a direct message or group thread with them.
         </p>
       </div>
 

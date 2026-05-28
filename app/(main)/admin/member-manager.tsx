@@ -198,9 +198,9 @@ export function MemberManager({ members }: { members: MemberItem[] }) {
                   </div>
                 </div>
 
-                {/* Controls — visible on hover */}
+                {/* Controls. Visible on hover */}
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
-                  {/* Season challenges toggle — guides+ */}
+                  {/* Season challenges toggle. Guides+ */}
                   {m.currentSeasonRank !== undefined && (
                     <button
                       onClick={() => handleToggleSeason(m.profileId, m.seasonChallengesComplete ?? false)}
@@ -215,7 +215,7 @@ export function MemberManager({ members }: { members: MemberItem[] }) {
                       {m.seasonChallengesComplete ? '✓ Challenges' : 'Mark complete'}
                     </button>
                   )}
-                  {/* Luminary promotion — conduit + challenges complete */}
+                  {/* Luminary promotion. Conduit + challenges complete */}
                   {canPromote && (
                     <button
                       onClick={() => handleLuminary(m.profileId)}

@@ -18,7 +18,7 @@ export function CompleteButton({ taskId, isDone, isRepeatable, requiresVerificat
   const [isPending, startTransition] = useTransition()
   const { checkForUnlocks } = useAchievementCheck()
 
-  // Non-repeatable + already done — show static state
+  // Non-repeatable + already done. Show static state
   if (isDone && !isRepeatable) {
     return null
   }
