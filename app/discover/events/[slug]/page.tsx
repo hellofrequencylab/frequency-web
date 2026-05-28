@@ -5,6 +5,8 @@ import { ChevronRight, CalendarDays, MapPin, Lock } from 'lucide-react'
 import { getPublicEventBySlug, formatEventDateTime, hasEventEnded } from '@/lib/discover'
 import { SignInCta } from '@/components/discover/cards'
 import { SITE_NAME } from '@/lib/site'
+import { JsonLd } from '@/components/json-ld'
+import { eventSchema, breadcrumbSchema } from '@/lib/jsonld'
 
 export const revalidate = 3600
 
@@ -47,6 +49,17 @@ export default async function EventPage({
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-12">
+      <JsonLd
+        data={[
+          eventSchema(event),
+          breadcrumbSchema([
+            { name: 'Discover', path: '/discover' },
+            { name: 'Events', path: '/discover' },
+            { name: event.title, path: `/discover/events/${event.slug}` },
+          ]),
+        ]}
+      />
+
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-xs text-subtle mb-8">
         <Link href="/discover" className="hover:text-text transition-colors">Discover</Link>

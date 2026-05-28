@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Nunito, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SITE_URL, SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION } from "@/lib/site";
+import { JsonLd } from "@/components/json-ld";
+import { organizationSchema, websiteSchema } from "@/lib/jsonld";
 
 // Nunito: closest Google Font to the Frequency brand logo's rounded, bold letterforms.
 // Weights: 400 body, 600 semibold, 700 bold, 800 extrabold, 900 black (headings/branding).
@@ -94,6 +96,8 @@ export default function RootLayout({
       <head>
         {/* Theme script must run synchronously before any paint */}
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        {/* Site-wide structured data for search/answer engines */}
+        <JsonLd data={[organizationSchema(), websiteSchema()]} />
       </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

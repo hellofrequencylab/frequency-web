@@ -1,7 +1,12 @@
 # Frequency — SEO / AEO Plan
 
-**Status:** Planning complete, paused before Phase 1 implementation (2026-05-28).
-**Owner:** Daniel. Resume by starting Phase 1.
+**Status:** Phases 1–3 COMPLETE and pushed to `origin/main` (2026-05-28).
+**Owner:** Daniel.
+- Phase 1 (safety + foundation): leak closed, column-safe RPCs live, landing rewired, robots/sitemap/OG. Migrations pushed to prod.
+- Phase 2 (public pages): `/discover` hub + topics/circles/events on the safe RPCs, dynamic sitemap. Commit `02693ac`.
+- Phase 3 (AEO): JSON-LD (Organization/WebSite site-wide; Event/ItemList/BreadcrumbList; FAQPage on hub).
+**Remaining manual step:** submit `sitemap.xml` via Google Search Console + Bing Webmaster
+once the production domain is verified (can't be automated without those credentials).
 
 ## Goal
 

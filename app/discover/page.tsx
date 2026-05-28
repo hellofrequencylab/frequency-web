@@ -17,6 +17,38 @@ import {
   SectionHeading,
 } from '@/components/discover/cards'
 import { SITE_NAME } from '@/lib/site'
+import { JsonLd } from '@/components/json-ld'
+import {
+  breadcrumbSchema,
+  topicListSchema,
+  circleListSchema,
+  eventListSchema,
+  faqSchema,
+} from '@/lib/jsonld'
+
+// Evergreen Q&A — drives the FAQ section below and its FAQPage schema.
+const DISCOVER_FAQS = [
+  {
+    q: 'What is Frequency?',
+    a: 'Frequency is a community platform that connects neighborhoods into real-world community. You join a local circle of up to 50 people, show up for in-person events near you, and build lasting friendships with people who live close by.',
+  },
+  {
+    q: 'Is Frequency free to join?',
+    a: 'Yes. Creating an account, joining a circle, and RSVPing to events is free.',
+  },
+  {
+    q: 'What is a circle?',
+    a: 'A circle is a small local group of up to 50 people centered on a shared topic — like Movement, Spirituality, or Creative practice. Small enough to know everyone, big enough to always have plans.',
+  },
+  {
+    q: 'Do I need an account to browse?',
+    a: 'No. You can browse circles, topics, and upcoming events without signing up. You only need a free account to join a circle, RSVP to an event, see exact venue details, or post.',
+  },
+  {
+    q: 'How is my location handled?',
+    a: 'Public pages only ever show the city or area, never a precise address. The exact venue for an event is shared with members who RSVP.',
+  },
+]
 
 export const metadata: Metadata = {
   title: 'Discover the community',
@@ -53,6 +85,16 @@ export default async function DiscoverHubPage() {
 
   return (
     <>
+      <JsonLd
+        data={[
+          breadcrumbSchema([{ name: 'Discover', path: '/discover' }]),
+          topicListSchema(channels, 'Topics on Frequency'),
+          eventListSchema(events, 'Upcoming events'),
+          circleListSchema(circles, 'Circles forming now'),
+          faqSchema(DISCOVER_FAQS),
+        ]}
+      />
+
       {/* ── Intro ─────────────────────────────────────────────── */}
       <section className="bg-marketing-canvas px-6 py-16 border-b border-border/60">
         <div className="max-w-5xl mx-auto text-center">
@@ -143,6 +185,23 @@ export default async function DiscoverHubPage() {
           </div>
         </section>
       )}
+
+      {/* ── FAQ ───────────────────────────────────────────────── */}
+      <section className="bg-surface px-6 py-16 border-t border-border/60">
+        <div className="max-w-2xl mx-auto">
+          <div className="text-center mb-10">
+            <SectionHeading eyebrow="Good to know" title="Frequently asked" />
+          </div>
+          <dl className="space-y-6">
+            {DISCOVER_FAQS.map((item) => (
+              <div key={item.q} className="rounded-2xl border border-border bg-marketing-canvas p-5">
+                <dt className="text-base font-semibold text-text mb-1.5">{item.q}</dt>
+                <dd className="text-sm text-muted leading-relaxed">{item.a}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </section>
 
       {/* ── Final CTA ─────────────────────────────────────────── */}
       <section className="relative bg-surface px-6 py-20 text-center overflow-hidden">
