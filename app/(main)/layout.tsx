@@ -1,12 +1,12 @@
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 import AppShell from '@/components/layout/app-shell'
 import RightSidebar from '@/components/sidebar/right-sidebar'
 import type { CommunityRole } from '@/components/sidebar/right-sidebar'
 import { getUnreadCount } from '@/app/(main)/notifications/actions'
 import { AchievementToastContainer } from '@/components/achievement-toast'
+import { PresenceHeartbeat } from '@/components/presence/heartbeat'
 
 // Authenticated app layout — wraps Feed, Groups, Events, Admin.
 // Pages outside this group (onboarding, settings, sign-in, /people) render
@@ -23,8 +23,7 @@ export default async function MainLayout({
 
   if (!user) redirect('/sign-in')
 
-  const admin = createAdminClient()
-  const { data: profile } = await admin
+  const { data: profile } = await supabase
     .from('profiles')
     .select('id, display_name, handle, avatar_url, community_role')
     .eq('auth_user_id', user.id)
@@ -50,6 +49,7 @@ export default async function MainLayout({
     <AppShell profile={profile} sidebar={sidebar} unreadCount={unreadCount}>
       {children}
       <AchievementToastContainer />
+      <PresenceHeartbeat />
     </AppShell>
   )
 }
