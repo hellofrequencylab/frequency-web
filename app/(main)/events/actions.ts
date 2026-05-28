@@ -7,6 +7,9 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { slugify } from '@/lib/utils'
 import { processGamificationEvent, recordStreakActivity } from '@/lib/achievements'
 import { awardGems } from '@/lib/gems'
+import { generateOccurrencesForAnchor, type RecurrenceType } from '@/lib/event-recurrence'
+
+const VALID_RECURRENCE: RecurrenceType[] = ['none', 'daily', 'weekly', 'monthly']
 
 async function getMyProfileId(): Promise<string | null> {
   const supabase = await createClient()
@@ -31,6 +34,15 @@ export async function createEvent(formData: FormData) {
   const startsAt = formData.get('startsAt') as string | null
   const endsAt = (formData.get('endsAt') as string | null) || null
 
+  const recurrenceRaw = (formData.get('recurrenceType') as string | null) ?? 'none'
+  const recurrenceType: RecurrenceType = (VALID_RECURRENCE as string[]).includes(recurrenceRaw)
+    ? (recurrenceRaw as RecurrenceType)
+    : 'none'
+  const recurrenceUntilRaw = (formData.get('recurrenceUntil') as string | null) || null
+  const recurrenceUntil = recurrenceType !== 'none' && recurrenceUntilRaw
+    ? new Date(recurrenceUntilRaw).toISOString()
+    : null
+
   if (!title || !scopeId || !startsAt) return
 
   const myProfileId = await getMyProfileId()
@@ -51,7 +63,7 @@ export async function createEvent(formData: FormData) {
   }
 
   const supabase = await createClient()
-  const { error } = await supabase.from('events').insert({
+  const { data: inserted, error } = await supabase.from('events').insert({
     title,
     description,
     location,
@@ -61,11 +73,21 @@ export async function createEvent(formData: FormData) {
     ends_at: endsAt ? new Date(endsAt).toISOString() : null,
     host_id: myProfileId,
     slug,
-  })
+    recurrence_type: recurrenceType,
+    recurrence_until: recurrenceUntil,
+  }).select('id').single()
 
   if (error) {
     console.error('createEvent error', error)
     return
+  }
+
+  // For recurring events, materialise the first batch of occurrences right
+  // away so users see them immediately (cron also runs daily as a backstop).
+  if (recurrenceType !== 'none' && inserted) {
+    generateOccurrencesForAnchor(inserted.id).catch((e) =>
+      console.error('[createEvent] occurrence generation:', e)
+    )
   }
 
   processGamificationEvent({ type: 'event_host', profileId: myProfileId }).catch(() => {})

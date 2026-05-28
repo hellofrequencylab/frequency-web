@@ -19,12 +19,21 @@ type EventDetail = {
   is_cancelled: boolean
   scope_id: string
   scope_type: string
+  recurrence_type: 'none' | 'daily' | 'weekly' | 'monthly'
+  recurrence_until: string | null
+  parent_event_id: string | null
   host: {
     id: string
     display_name: string
     handle: string
     avatar_url: string | null
   } | null
+}
+
+const RECURRENCE_LABEL: Record<string, string> = {
+  daily:   'Repeats daily',
+  weekly:  'Repeats weekly',
+  monthly: 'Repeats monthly',
 }
 
 type RSVPRow = {
@@ -78,7 +87,7 @@ export default async function EventDetailPage({
     .from('events')
     .select(
       `id, title, slug, description, location, starts_at, ends_at, is_cancelled,
-       scope_id, scope_type,
+       scope_id, scope_type, recurrence_type, recurrence_until, parent_event_id,
        host:profiles!host_id ( id, display_name, handle, avatar_url )`
     )
     .eq('slug', slug)
@@ -178,6 +187,22 @@ export default async function EventDetailPage({
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <MapPin className="w-4 h-4 text-gray-400 shrink-0" />
               <span>{event.location}</span>
+            </div>
+          )}
+
+          {(event.recurrence_type !== 'none' || event.parent_event_id) && (
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <span aria-hidden className="text-base leading-none">🔁</span>
+              <span>
+                {event.recurrence_type !== 'none'
+                  ? RECURRENCE_LABEL[event.recurrence_type]
+                  : 'Part of a recurring series'}
+                {event.recurrence_until && (
+                  <span className="text-gray-400 ml-1">
+                    · until {new Date(event.recurrence_until).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </span>
+                )}
+              </span>
             </div>
           )}
 
