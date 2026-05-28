@@ -1,7 +1,8 @@
 import Link from 'next/link'
-import { CalendarDays, MapPin, Plus } from 'lucide-react'
+import { CalendarDays, MapPin } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { EventCompose } from './event-compose'
 
 type EventRow = {
   id: string
@@ -59,6 +60,7 @@ export default async function EventsPage() {
 
   let myProfileId: string | null = null
   let myCircleIds: string[] = []
+  let myCircles: { id: string; name: string }[] = []
   let isCrew = false
   let isHost = false
 
@@ -81,6 +83,14 @@ export default async function EventsPage() {
         .eq('status', 'active')
 
       myCircleIds = (memberships ?? []).map((m) => m.circle_id as string)
+
+      if (myCircleIds.length > 0) {
+        const { data: circles } = await admin
+          .from('circles')
+          .select('id, name')
+          .in('id', myCircleIds)
+        myCircles = (circles ?? []) as { id: string; name: string }[]
+      }
     }
   }
 
@@ -167,15 +177,7 @@ export default async function EventsPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Events</h1>
-        {isCrew && (
-          <Link
-            href="/events/new"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            New Event
-          </Link>
-        )}
+        {isCrew && <EventCompose groups={myCircles} />}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
