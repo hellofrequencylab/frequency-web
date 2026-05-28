@@ -5,7 +5,13 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { TIER_CONFIG, DIFFICULTY_CONFIG } from '@/lib/gamification'
 import type { AchievementTier, ChallengeDifficulty } from '@/lib/gamification'
+import type { Database } from '@/lib/database.types'
 import { AwardDialog } from './award-dialog'
+
+type TopEarner = Pick<
+  Database['public']['Tables']['profiles']['Row'],
+  'id' | 'display_name' | 'handle' | 'achievement_count' | 'lifetime_zaps' | 'current_streak'
+>
 
 export default async function AdminGamificationPage() {
   const supabase = await createClient()
@@ -81,7 +87,7 @@ export default async function AdminGamificationPage() {
             </h2>
           </div>
           <div>
-            {(topEarners ?? []).map((p, i) => (
+            {((topEarners ?? []) as TopEarner[]).map((p, i) => (
               <div
                 key={p.id}
                 className={`flex items-center gap-3 px-4 py-3 ${
@@ -97,15 +103,15 @@ export default async function AdminGamificationPage() {
                 <div className="flex items-center gap-3 shrink-0 text-xs text-gray-500">
                   <span className="flex items-center gap-1">
                     <Award className="w-3 h-3 text-violet-400" />
-                    {(p as any).achievement_count}
+                    {p.achievement_count ?? 0}
                   </span>
                   <span className="flex items-center gap-1">
                     <Zap className="w-3 h-3 text-amber-400" />
-                    {((p as any).lifetime_zaps ?? 0).toLocaleString()}
+                    {(p.lifetime_zaps ?? 0).toLocaleString()}
                   </span>
                   <span className="flex items-center gap-1">
                     <Flame className="w-3 h-3 text-orange-400" />
-                    {(p as any).current_streak}w
+                    {p.current_streak ?? 0}w
                   </span>
                 </div>
               </div>
