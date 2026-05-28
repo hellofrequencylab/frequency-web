@@ -1,9 +1,10 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { MessageSquare, Hash, Lock, Users, Compass } from 'lucide-react'
+import { MessageSquare, Hash, Lock, Users, Compass, Sparkles, Zap } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { getInitials, relativeTime } from '@/lib/utils'
+import { isOnline } from '@/lib/presence'
 import { NewRoomCompose } from '@/components/compose/new-room-compose'
 import { NewGroupDMCompose } from '@/components/compose/new-group-dm-compose'
 import { CrewLeadQuickAction } from '@/components/messages/crew-lead-quick-action'
@@ -35,10 +36,51 @@ type RoomRow = {
   isMember: boolean
 }
 
+type ThreadItem =
+  | { kind: 'room'; id: string; lastActivity: string | null; room: RoomRow }
+  | { kind: 'dm'; id: string; lastActivity: string | null; conv: ConversationRow }
+
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 const CREW_PLUS: CommunityRole[] = ['crew', 'host', 'guide', 'mentor', 'janitor']
 
-export default async function MessagesPage() {
+type Filter = 'all' | 'rooms' | 'dms'
+const FILTERS: { value: Filter; label: string }[] = [
+  { value: 'all',   label: 'All' },
+  { value: 'rooms', label: 'Rooms' },
+  { value: 'dms',   label: 'DMs' },
+]
+
+const ACTIVE_WINDOW_MS = 30 * 60 * 1000
+
+function SidebarCard({
+  title,
+  icon: Icon,
+  children,
+}: {
+  title: string
+  icon?: React.ElementType
+  children: React.ReactNode
+}) {
+  return (
+    <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
+      <div className="px-4 py-2.5 border-b border-gray-100/80 dark:border-gray-800/50 flex items-center gap-1.5">
+        {Icon && <Icon className="w-3.5 h-3.5 text-gray-400" />}
+        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">{title}</h3>
+      </div>
+      {children}
+    </div>
+  )
+}
+
+export default async function MessagesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ filter?: string }>
+}) {
+  const { filter: filterParam } = await searchParams
+  const filter: Filter =
+    filterParam === 'rooms' ? 'rooms' : filterParam === 'dms' ? 'dms' : 'all'
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/sign-in')
@@ -56,7 +98,6 @@ export default async function MessagesPage() {
   const canCreateRoom = CREW_PLUS.includes(myProfile.community_role as CommunityRole)
 
   // ── Rooms ─────────────────────────────────────────────────────────
-  // Joined rooms (sorted by recent activity)
   const { data: myMemberships } = await admin
     .from('room_members')
     .select('room_id, last_read_at')
@@ -76,7 +117,6 @@ export default async function MessagesPage() {
     .map(r => ({ ...r, isMember: true }))
 
   // Discover: public rooms not yet joined
-  let discoverRooms: RoomRow[] = []
   const { data: publicRoomsData } = await admin
     .from('rooms')
     .select('id, name, description, visibility, member_count, last_message_at')
@@ -84,7 +124,7 @@ export default async function MessagesPage() {
     .order('member_count', { ascending: false })
     .limit(10)
 
-  discoverRooms = ((publicRoomsData ?? []) as Omit<RoomRow, 'isMember'>[])
+  const discoverRooms: RoomRow[] = ((publicRoomsData ?? []) as Omit<RoomRow, 'isMember'>[])
     .filter(r => !joinedRoomIds.includes(r.id))
     .map(r => ({ ...r, isMember: false }))
 
@@ -163,11 +203,80 @@ export default async function MessagesPage() {
       return new Date(bTime).getTime() - new Date(aTime).getTime()
     })
 
-  const totalUnread = conversations.reduce((sum, c) => sum + c.unreadCount, 0)
-  const totalRooms = myRooms.length
+  // ── Unified thread list ───────────────────────────────────────────
+  const roomItems: ThreadItem[] = myRooms.map(r => ({
+    kind: 'room' as const,
+    id: r.id,
+    lastActivity: r.last_message_at,
+    room: r,
+  }))
+  const dmItems: ThreadItem[] = conversations.map(c => ({
+    kind: 'dm' as const,
+    id: c.id,
+    lastActivity: c.lastMessage?.created_at ?? c.created_at,
+    conv: c,
+  }))
+
+  const allItems: ThreadItem[] = [...roomItems, ...dmItems].sort((a, b) => {
+    const at = a.lastActivity ? new Date(a.lastActivity).getTime() : 0
+    const bt = b.lastActivity ? new Date(b.lastActivity).getTime() : 0
+    return bt - at
+  })
+
+  const nowMs = new Date().getTime()
+  const activeItems = allItems.filter(it =>
+    it.lastActivity && nowMs - new Date(it.lastActivity).getTime() < ACTIVE_WINDOW_MS
+  )
+  const activeIds = new Set(activeItems.map(it => `${it.kind}:${it.id}`))
+
+  const filteredItems = allItems
+    .filter(it => !activeIds.has(`${it.kind}:${it.id}`))
+    .filter(it => filter === 'all' || (filter === 'rooms' ? it.kind === 'room' : it.kind === 'dm'))
+
+  const totalUnread =
+    conversations.reduce((sum, c) => sum + c.unreadCount, 0)
+
+  // ── Conversation prompt: new members in user's circles (last 7 days) ─
+  const sevenDaysAgo = new Date(nowMs - 7 * 24 * 60 * 60 * 1000).toISOString()
+  const { data: myCircleMemberships } = await admin
+    .from('memberships')
+    .select('circle_id')
+    .eq('profile_id', myProfileId)
+    .eq('status', 'active')
+
+  const myCircleIds = (myCircleMemberships ?? []).map((m: { circle_id: string }) => m.circle_id as string)
+
+  const newMembers: { profile_id: string; display_name: string; handle: string; avatar_url: string | null; last_seen_at: string | null }[] = []
+  if (myCircleIds.length > 0) {
+    const { data: recent } = await admin
+      .from('memberships')
+      .select('profile_id, joined_at, profile:profiles!profile_id(id, display_name, handle, avatar_url, last_seen_at)')
+      .in('circle_id', myCircleIds)
+      .eq('status', 'active')
+      .neq('profile_id', myProfileId)
+      .gte('joined_at', sevenDaysAgo)
+      .order('joined_at', { ascending: false })
+      .limit(5)
+
+    const seen = new Set<string>()
+    for (const r of recent ?? []) {
+      const prof = (r as unknown as { profile: (Profile & { last_seen_at: string | null }) | null }).profile
+      if (!prof || seen.has(prof.id)) continue
+      seen.add(prof.id)
+      newMembers.push({
+        profile_id: prof.id,
+        display_name: prof.display_name,
+        handle: prof.handle,
+        avatar_url: prof.avatar_url,
+        last_seen_at: prof.last_seen_at,
+      })
+    }
+  }
 
   return (
     <div>
+
+      {/* Header */}
       <div className="flex items-end justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-1">
@@ -178,8 +287,8 @@ export default async function MessagesPage() {
               </span>
             )}
           </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Direct messages with friends and chat rooms with the community.
+          <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed max-w-lg">
+            One hub for every conversation — direct messages, group threads, and rooms with the community.
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap justify-end">
@@ -190,62 +299,179 @@ export default async function MessagesPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main column: Rooms + DMs */}
+
+        {/* ── Main column ──────────────────────────────────────── */}
         <div className="lg:col-span-2 space-y-6">
 
-          {/* Rooms */}
+          {/* Active Now */}
+          {activeItems.length > 0 && (
+            <section>
+              <div className="flex items-center gap-1.5 mb-3">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                </span>
+                <h2 className="text-xs font-semibold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
+                  Active Now <span className="text-gray-300 dark:text-gray-600">· {activeItems.length}</span>
+                </h2>
+              </div>
+              <div className="space-y-1">
+                {activeItems.map(it =>
+                  it.kind === 'room'
+                    ? <RoomRow key={`r-${it.id}`} room={it.room} />
+                    : <DMRow key={`d-${it.id}`} conv={it.conv} myProfileId={myProfileId} />
+                )}
+              </div>
+            </section>
+          )}
+
+          {/* Your Threads */}
           <section>
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
               <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">
-                Rooms {totalRooms > 0 && <span className="text-gray-300 dark:text-gray-600">· {totalRooms}</span>}
+                Your Threads {filteredItems.length > 0 && <span className="text-gray-300 dark:text-gray-600">· {filteredItems.length}</span>}
               </h2>
+              <div className="flex items-center gap-0.5 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
+                {FILTERS.map(f => (
+                  <Link
+                    key={f.value}
+                    href={f.value === 'all' ? '/messages' : `/messages?filter=${f.value}`}
+                    className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                      filter === f.value
+                        ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-50 shadow-sm'
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                    }`}
+                  >
+                    {f.label}
+                  </Link>
+                ))}
+              </div>
             </div>
 
-            {myRooms.length === 0 ? (
+            {filteredItems.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 p-8 text-center">
-                <Hash className="w-7 h-7 text-gray-300 dark:text-gray-700 mx-auto mb-2" />
-                <p className="text-sm text-gray-500 dark:text-gray-400">No rooms joined yet.</p>
+                <MessageSquare className="w-7 h-7 text-gray-300 dark:text-gray-700 mx-auto mb-2" />
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {filter === 'rooms' ? 'No rooms joined yet.' :
+                    filter === 'dms'   ? 'No direct conversations yet.' :
+                                         'Your threads will appear here.'}
+                </p>
                 <p className="text-xs text-gray-400 mt-1">
-                  {canCreateRoom ? 'Create a room above or browse discoverable ones below.' : 'Discover and join public rooms below.'}
+                  {filter === 'rooms' && (canCreateRoom ? 'Create one above or browse Discover.' : 'Join one from Discover below.')}
+                  {filter === 'dms'   && 'Start one from any member’s profile.'}
+                  {filter === 'all'   && 'Join a room or start a DM to begin.'}
                 </p>
               </div>
             ) : (
               <div className="space-y-1">
-                {myRooms.map(room => <RoomRow key={room.id} room={room} />)}
+                {filteredItems.map(it =>
+                  it.kind === 'room'
+                    ? <RoomRow key={`r-${it.id}`} room={it.room} />
+                    : <DMRow key={`d-${it.id}`} conv={it.conv} myProfileId={myProfileId} />
+                )}
               </div>
             )}
           </section>
 
-          {/* Direct Messages */}
-          <section>
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-3">
-              Direct messages {conversations.length > 0 && <span className="text-gray-300 dark:text-gray-600">· {conversations.length}</span>}
-            </h2>
-
-            {conversations.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 p-8 text-center">
-                <MessageSquare className="w-7 h-7 text-gray-300 dark:text-gray-700 mx-auto mb-2" />
-                <p className="text-sm text-gray-500 dark:text-gray-400">No conversations yet.</p>
-                <p className="text-xs text-gray-400 mt-1">Start one from any member&apos;s profile.</p>
+          {/* Discover — only when not filtered to DMs */}
+          {filter !== 'dms' && discoverRooms.length > 0 && (
+            <section>
+              <div className="flex items-center gap-1.5 mb-3">
+                <Compass className="w-3.5 h-3.5 text-gray-400" />
+                <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">
+                  Discover
+                </h2>
               </div>
-            ) : (
-              <div className="space-y-1">
-                {conversations.map(conv => <DMRow key={conv.id} conv={conv} myProfileId={myProfileId} />)}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {discoverRooms.slice(0, 6).map(room => (
+                  <Link
+                    key={room.id}
+                    href={`/messages/r/${room.id}`}
+                    className="flex items-start gap-2.5 rounded-xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 px-3 py-2.5 hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-indigo-50/30 dark:hover:bg-indigo-950/20 transition-colors"
+                  >
+                    <div className="shrink-0 w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center">
+                      <Hash className="w-3.5 h-3.5 text-indigo-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 dark:text-gray-50 truncate">{room.name}</p>
+                      <p className="text-[11px] text-gray-400 truncate">
+                        <Users className="w-2.5 h-2.5 inline mr-0.5 -mt-px" />
+                        {room.member_count} {room.member_count === 1 ? 'member' : 'members'}
+                        {room.description && <> &middot; {room.description}</>}
+                      </p>
+                    </div>
+                  </Link>
+                ))}
               </div>
-            )}
-          </section>
+            </section>
+          )}
         </div>
 
-        {/* Right sidebar: Discover rooms */}
+        {/* ── In-page context column ───────────────────────────── */}
         <div className="space-y-4">
-          {discoverRooms.length > 0 && (
-            <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
-              <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800/50 flex items-center gap-1.5">
-                <Compass className="w-3.5 h-3.5 text-gray-400" />
-                <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Discover Rooms</h3>
+
+          {/* Welcome them — conversation prompt */}
+          {newMembers.length > 0 && (
+            <SidebarCard title="Say hi" icon={Sparkles}>
+              <div className="px-4 py-3">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 leading-snug">
+                  {newMembers.length === 1
+                    ? '1 new member joined your circles this week.'
+                    : `${newMembers.length} new members joined your circles this week.`}
+                </p>
+                <ul className="space-y-1.5">
+                  {newMembers.map(m => {
+                    const online = isOnline(m.last_seen_at)
+                    return (
+                      <li key={m.profile_id}>
+                        <Link
+                          href={`/people/${m.handle}`}
+                          className="flex items-center gap-2 rounded-lg px-1 py-1 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                        >
+                          <div className="relative shrink-0">
+                            {m.avatar_url ? (
+                              <img src={m.avatar_url} alt={m.display_name} className="w-7 h-7 rounded-full object-cover" />
+                            ) : (
+                              <div className="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-[10px] font-bold text-gray-500 dark:text-gray-400 select-none">
+                                {getInitials(m.display_name)}
+                              </div>
+                            )}
+                            {online && (
+                              <span
+                                aria-label="Online now"
+                                className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-gray-900"
+                              />
+                            )}
+                          </div>
+                          <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate flex-1">{m.display_name}</span>
+                          <MessageSquare className="w-3 h-3 text-gray-300 shrink-0" />
+                        </Link>
+                      </li>
+                    )
+                  })}
+                </ul>
               </div>
+            </SidebarCard>
+          )}
+
+          {/* Quick actions */}
+          <SidebarCard title="Quick Actions" icon={Zap}>
+            <div className="px-4 py-3 space-y-2">
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-snug">
+                Start a fresh conversation with anyone, or open a new room around a topic.
+              </p>
+              <div className="flex flex-wrap gap-2 pt-1">
+                <NewGroupDMCompose />
+                {canCreateRoom && <NewRoomCompose />}
+              </div>
+            </div>
+          </SidebarCard>
+
+          {/* Discover (sidebar variant) */}
+          {discoverRooms.length > 6 && (
+            <SidebarCard title="Discover Rooms" icon={Compass}>
               <ul className="divide-y divide-gray-50 dark:divide-gray-800">
-                {discoverRooms.map(room => (
+                {discoverRooms.slice(6, 12).map(room => (
                   <li key={room.id}>
                     <Link
                       href={`/messages/r/${room.id}`}
@@ -263,7 +489,7 @@ export default async function MessagesPage() {
                   </li>
                 ))}
               </ul>
-            </div>
+            </SidebarCard>
           )}
         </div>
       </div>

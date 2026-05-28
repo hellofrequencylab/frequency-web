@@ -5,6 +5,7 @@ import { getInitials, relativeTime } from '@/lib/utils'
 import { RANK_COLORS, RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
 import { CalendarDays, MapPin, Megaphone, Zap, Trophy, Award, Flame, Target, Gem } from 'lucide-react'
 import { GettingStartedChecklist } from '@/components/feed/getting-started'
+import { isOnline } from '@/lib/presence'
 
 export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
@@ -124,7 +125,7 @@ async function ActiveMembersWidget({ profileId, circleIds }: { profileId: string
   const { data: rawRows } = await admin
     .from('memberships')
     .select(
-      'profile_id, joined_at, profile:profiles!profile_id(id, display_name, handle, avatar_url)'
+      'profile_id, joined_at, profile:profiles!profile_id(id, display_name, handle, avatar_url, last_seen_at)'
     )
     .in('circle_id', circleIds)
     .eq('status', 'active')
@@ -135,46 +136,66 @@ async function ActiveMembersWidget({ profileId, circleIds }: { profileId: string
   type MemberRow = {
     profile_id: string
     joined_at: string
-    profile: { id: string; display_name: string; handle: string; avatar_url: string | null }
+    profile: { id: string; display_name: string; handle: string; avatar_url: string | null; last_seen_at: string | null }
   }
 
   const seen = new Set<string>()
-  const members: MemberRow[] = []
+  const dedupedAll: MemberRow[] = []
   for (const row of rawRows ?? []) {
     if (!seen.has(row.profile_id)) {
       seen.add(row.profile_id)
-      members.push(row as unknown as MemberRow)
-      if (members.length >= 8) break
+      dedupedAll.push(row as unknown as MemberRow)
     }
   }
+
+  // Float online members to the top so the widget feels alive.
+  const sorted = [...dedupedAll].sort((a, b) => {
+    const ao = isOnline(a.profile.last_seen_at) ? 1 : 0
+    const bo = isOnline(b.profile.last_seen_at) ? 1 : 0
+    if (ao !== bo) return bo - ao
+    return new Date(b.joined_at).getTime() - new Date(a.joined_at).getTime()
+  })
+  const members = sorted.slice(0, 8)
+  const onlineCount = dedupedAll.filter(m => isOnline(m.profile.last_seen_at)).length
 
   if (members.length === 0) return null
 
   return (
-    <WidgetCard title="Members">
+    <WidgetCard title="Members" badge={onlineCount > 0 ? `${onlineCount} online` : undefined}>
       <div className="p-2">
-        {members.map((m: MemberRow) => (
-          <Link
-            key={m.profile_id}
-            href={`/people/${m.profile.handle}`}
-            className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-          >
-            {m.profile.avatar_url ? (
-              <img
-                src={m.profile.avatar_url}
-                alt={m.profile.display_name}
-                className="w-7 h-7 rounded-full object-cover shrink-0"
-              />
-            ) : (
-              <div className="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-[10px] font-bold text-gray-500 dark:text-gray-400 shrink-0 select-none">
-                {getInitials(m.profile.display_name ?? '')}
+        {members.map((m: MemberRow) => {
+          const online = isOnline(m.profile.last_seen_at)
+          return (
+            <Link
+              key={m.profile_id}
+              href={`/people/${m.profile.handle}`}
+              className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            >
+              <div className="relative shrink-0">
+                {m.profile.avatar_url ? (
+                  <img
+                    src={m.profile.avatar_url}
+                    alt={m.profile.display_name}
+                    className="w-7 h-7 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-[10px] font-bold text-gray-500 dark:text-gray-400 select-none">
+                    {getInitials(m.profile.display_name ?? '')}
+                  </div>
+                )}
+                {online && (
+                  <span
+                    aria-label="Online now"
+                    className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-gray-900"
+                  />
+                )}
               </div>
-            )}
-            <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate flex-1">
-              {m.profile.display_name}
-            </span>
-          </Link>
-        ))}
+              <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate flex-1">
+                {m.profile.display_name}
+              </span>
+            </Link>
+          )
+        })}
       </div>
       <div className="px-4 py-2.5 border-t border-gray-100/80 dark:border-gray-800/50">
         <Link

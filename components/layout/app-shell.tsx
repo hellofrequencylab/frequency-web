@@ -288,11 +288,11 @@ export default function AppShell({
 
   // Hide right sidebar only where it would crowd or distract
   // /settings — narrow focused forms
-  // /messages — chat thread needs full width
+  // /messages/<id> — chat thread needs full width; the index keeps the sidebar
   const showSidebar =
     !!sidebar &&
     !pathname.startsWith('/settings') &&
-    !pathname.startsWith('/messages')
+    !(pathname.startsWith('/messages/') && pathname !== '/messages')
 
   function cycleTheme() {
     if (theme === 'system') setTheme('dark')
@@ -365,7 +365,7 @@ export default function AppShell({
       <div className="flex flex-1 min-h-0 overflow-hidden">
 
         {/* Left nav */}
-        <aside className="hidden md:flex w-52 flex-col shrink-0 border-r border-gray-200/60 dark:border-gray-800/60 bg-white/80 dark:bg-gray-900/90 backdrop-blur-sm">
+        <aside className="hidden md:flex w-72 flex-col shrink-0 border-r border-gray-200/60 dark:border-gray-800/60 bg-white/80 dark:bg-gray-900/90 backdrop-blur-sm">
 
           {/* Primary nav */}
           <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">

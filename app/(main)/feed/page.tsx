@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { Composer } from '@/components/feed/composer'
 import { FeedList } from '@/components/feed/feed-list'
+import { CreateMenu } from '@/components/feed/create-menu'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
@@ -56,11 +57,14 @@ export default async function FeedPage({
     <div className="max-w-2xl mx-auto w-full">
 
       {/* Header */}
-      <div className="mb-7">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Feed</h1>
-        <p className="text-sm text-gray-400 mt-1">
-          {hasCircle ? "What's happening in your circles" : "What's happening"}
-        </p>
+      <div className="mb-7 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Feed</h1>
+          <p className="text-sm text-gray-400 mt-1">
+            {hasCircle ? "What's happening in your circles" : "What's happening"}
+          </p>
+        </div>
+        <CreateMenu role={myRole} />
       </div>
 
       {/* Composer */}
