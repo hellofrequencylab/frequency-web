@@ -121,7 +121,10 @@ export async function leaveChannel(channelId: string) {
 
 // ─── Topical Channels (Hierarchy v3, global topical layer) ───
 
-export async function tuneInChannel(channelId: string) {
+// Tunes the viewer in and drops them straight into the channel — the user
+// asked us to stop returning them to the channel list after they hit
+// "Tune in", since the natural next move is to read the channel.
+export async function tuneInChannel(channelId: string, slug: string) {
   const profileId = await getMyProfileId()
   if (!profileId) return
 
@@ -134,7 +137,8 @@ export async function tuneInChannel(channelId: string) {
     )
 
   revalidatePath('/channels')
-  revalidatePath(`/channels/${channelId}`)
+  revalidatePath(`/channels/${slug}`)
+  redirect(`/channels/${slug}`)
 }
 
 export async function tuneOutChannel(channelId: string) {

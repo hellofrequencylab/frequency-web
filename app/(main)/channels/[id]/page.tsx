@@ -16,7 +16,7 @@ import {
 import type { LucideIcon } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
-import { tuneInChannel, tuneOutChannel } from '../actions'
+import { TuneInButton, TunedInButton } from '../channel-toggle'
 import { Composer } from '@/components/feed/composer'
 import { FeedList } from '@/components/feed/feed-list'
 
@@ -163,25 +163,9 @@ export default async function ChannelPage({
           </div>
 
           {myProfileId && (
-            isTunedIn ? (
-              <form action={tuneOutChannel.bind(null, channel.id)}>
-                <button
-                  type="submit"
-                  className="shrink-0 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-text hover:text-danger hover:border-danger hover:bg-danger-bg/20 transition-colors"
-                >
-                  Tuned in
-                </button>
-              </form>
-            ) : (
-              <form action={tuneInChannel.bind(null, channel.id)}>
-                <button
-                  type="submit"
-                  className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-hover transition-colors"
-                >
-                  Tune in
-                </button>
-              </form>
-            )
+            isTunedIn
+              ? <TunedInButton channelId={channel.id} />
+              : <TuneInButton channelId={channel.id} slug={channel.slug} />
           )}
         </div>
 
