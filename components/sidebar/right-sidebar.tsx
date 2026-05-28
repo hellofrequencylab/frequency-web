@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { Suspense } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getInitials, relativeTime } from '@/lib/utils'
-import { RANK_COLORS, RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
+import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
 import { CalendarDays, MapPin, Megaphone, Zap, Trophy, Award, Flame, Target, Gem } from 'lucide-react'
 import { GettingStartedChecklist } from '@/components/feed/getting-started'
 import { isOnline, ONLINE_MS } from '@/lib/presence'
@@ -363,7 +363,6 @@ async function LeaderboardWidget({ profileId, circleIds }: { profileId: string; 
       <div className="p-2">
         {top.map((member, i) => {
           const isSelf = member.id === profileId
-          const rankColor = RANK_COLORS[member.current_season_rank] ?? 'bg-border-strong'
           return (
             <Link
               key={member.id}
@@ -384,7 +383,10 @@ async function LeaderboardWidget({ profileId, circleIds }: { profileId: string; 
                 {member.display_name}
               </span>
               <div className="flex items-center gap-1 shrink-0">
-                <span className={`text-[9px] font-bold px-1 py-0.5 rounded-full text-white ${rankColor}`}>
+                <span
+                  className="rank-badge text-[9px] font-bold leading-tight"
+                  style={seasonRankStyle(member.current_season_rank)}
+                >
                   {RANK_LABELS[member.current_season_rank] ?? member.current_season_rank}
                 </span>
                 <div className="flex items-center gap-0.5">

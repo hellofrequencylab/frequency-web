@@ -1,5 +1,5 @@
 import { Flame, Award, Gem } from 'lucide-react'
-import { RANK_COLORS, RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
+import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
 import { getGemTier } from '@/lib/gems'
 
 interface ProfileFlairProps {
@@ -22,7 +22,10 @@ export function ProfileFlair({ rank, streak, achievementCount, gems, compact = f
   return (
     <>
       {validRank && (
-        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white ${RANK_COLORS[validRank] ?? 'bg-border-strong'}`}>
+        <span
+          className="rank-badge text-[10px] font-bold leading-tight"
+          style={seasonRankStyle(validRank)}
+        >
           {compact ? validRank.charAt(0).toUpperCase() : RANK_LABELS[validRank] ?? validRank}
         </span>
       )}

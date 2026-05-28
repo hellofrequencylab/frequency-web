@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { Zap, TrendingUp, Award, Flame, Gem } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
-import { getRankDef, type SeasonRank } from '@/lib/season-ranks'
+import { getRankDef, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
 import { getInitials } from '@/lib/utils'
 import { ProfileFlair } from '@/components/profile-flair'
 import { LeaderboardTabs } from './leaderboard-tabs'
@@ -243,7 +243,10 @@ export default async function LeaderboardPage({
                   )}
                 </span>
 
-                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white text-center ${rankDef.color}`}>
+                <span
+                  className="rank-badge text-[10px] font-bold leading-tight"
+                  style={seasonRankStyle(rankDef.rank)}
+                >
                   {rankDef.label}
                 </span>
               </div>

@@ -137,6 +137,22 @@
   --color-danger:           var(--color-danger);
   --color-danger-bg:        var(--color-danger-bg);
 
+  /* Rank palette — exposes the static primitives as utility classes:
+     bg-rank-stone, text-rank-jade, border-rank-gold, etc. The full
+     core/deep/bright spectrum is only used by .rank-badge in CSS;
+     these utilities give callers the rank "core" color for dots, fills,
+     and progress accents. */
+  --color-rank-stone:  var(--rank-stone);
+  --color-rank-clay:   var(--rank-clay);
+  --color-rank-gold:   var(--rank-gold);
+  --color-rank-olive:  var(--rank-olive);
+  --color-rank-jade:   var(--rank-jade);
+  --color-rank-teal:   var(--rank-teal);
+  --color-rank-slate:  var(--rank-slate);
+  --color-rank-indigo: var(--rank-indigo);
+  --color-rank-plum:   var(--rank-plum);
+  --color-rank-rose:   var(--rank-rose);
+
   /* Fonts wired the same way they were. */
   --font-sans: var(--font-nunito);
   --font-mono: var(--font-geist-mono);
