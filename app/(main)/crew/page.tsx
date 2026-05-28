@@ -38,7 +38,7 @@ export default async function CrewPage() {
 
   const { data: profile } = await admin
     .from('profiles')
-    .select('id, display_name, handle, community_role, avatar_url, current_season_rank, current_season_zaps, season_challenges_complete')
+    .select('id, display_name, handle, community_role, avatar_url, current_season_rank, current_season_zaps, season_challenges_complete, lifetime_gems')
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
@@ -49,6 +49,7 @@ export default async function CrewPage() {
   const currentSeasonZaps: number = (profile as { current_season_zaps: number }).current_season_zaps ?? 0
   const currentSeasonRank: SeasonRank = ((profile as { current_season_rank: string | null }).current_season_rank ?? 'ghost') as SeasonRank
   const challengesComplete: boolean = (profile as { season_challenges_complete: boolean }).season_challenges_complete ?? false
+  const lifetimeGems: number = (profile as { lifetime_gems: number }).lifetime_gems ?? 0
   const rankDef = getRankDef(currentSeasonRank)
 
   // Next rank for progress bar
@@ -152,44 +153,117 @@ export default async function CrewPage() {
         </p>
       </div>
 
+      {/* ── Season Progress (full width, top) ────────── */}
+      <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden mb-6">
+        <div className="px-4 py-2.5 border-b border-gray-100/80 dark:border-gray-800/50">
+          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Season Progress</h3>
+        </div>
+        <div className="px-5 py-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+              {currentSeasonRank === 'luminary'
+                ? 'Maximum rank achieved'
+                : currentSeasonRank === 'conduit' && !challengesComplete
+                ? `Progress to Luminary`
+                : nextRank
+                ? `Progress to ${nextRank.label}`
+                : 'Max rank'}
+            </span>
+            {nextRank && currentSeasonRank !== 'conduit' && (
+              <span className="text-[11px] text-gray-400 dark:text-gray-500">
+                {currentSeasonZaps.toLocaleString()} / {nextRank.minZaps.toLocaleString()}
+              </span>
+            )}
+          </div>
+
+          <div className="h-2.5 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden mb-4">
+            <div
+              className={`h-full rounded-full transition-all ${rankDef.color}`}
+              style={{ width: `${rankProgress}%` }}
+            />
+          </div>
+
+          <div className="flex justify-between">
+            {SEASON_RANKS.map((r) => {
+              const achieved = currentSeasonZaps >= r.minZaps &&
+                (r.rank !== 'luminary' || challengesComplete)
+              const isCurrent = r.rank === currentSeasonRank
+              return (
+                <div key={r.rank} className="flex flex-col items-center gap-1">
+                  <div
+                    className={`w-2.5 h-2.5 rounded-full ring-2 transition-all ${
+                      isCurrent
+                        ? `${r.color} ring-current ring-offset-1`
+                        : achieved
+                        ? `${r.color} ring-transparent`
+                        : 'bg-gray-200 dark:bg-gray-700 ring-transparent'
+                    }`}
+                  />
+                  <span className={`text-[9px] font-semibold leading-none ${
+                    isCurrent ? r.text : 'text-gray-400 dark:text-gray-500'
+                  }`}>
+                    {r.label}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+
+          {currentSeasonRank === 'conduit' && !challengesComplete && (
+            <p className="mt-3 text-[11px] text-gray-400 dark:text-gray-500 text-center">
+              Complete all season challenges to unlock Luminary rank.
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* ── Stats + Quick Links row ──────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+
+        {/* Left: 4 stat cards */}
+        <div className="lg:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <StatCard
+            label="Zaps"
+            value={currentSeasonZaps.toLocaleString()}
+            Icon={Zap}
+            colorCls="text-amber-600 bg-amber-50 dark:bg-amber-950 dark:text-amber-400"
+          />
+          <StatCard
+            label="Gems"
+            value={lifetimeGems.toLocaleString()}
+            Icon={Gem}
+            colorCls="text-emerald-600 bg-emerald-50 dark:bg-emerald-950 dark:text-emerald-400"
+          />
+          <StatCard
+            label="Tasks Done"
+            value={String(completedTaskCount)}
+            Icon={CheckCircle}
+            colorCls="text-green-600 bg-green-50 dark:bg-green-950 dark:text-green-400"
+          />
+          <StatCard
+            label="Season Rank"
+            value={rankDef.label}
+            Icon={Star}
+            colorCls="text-indigo-600 bg-indigo-50 dark:bg-indigo-950 dark:text-indigo-400"
+          />
+        </div>
+
+        {/* Right: 6 quick links in 3x2 grid */}
+        <div className="grid grid-cols-2 gap-2">
+          <QuickLink href="/crew/achievements" Icon={Award} label="Achievements" sub="Earn badges" color="bg-violet-50 dark:bg-violet-950 text-violet-600 dark:text-violet-400" />
+          <QuickLink href="/crew/streaks" Icon={Flame} label="Streaks" sub="Stay consistent" color="bg-orange-50 dark:bg-orange-950 text-orange-600 dark:text-orange-400" />
+          <QuickLink href="/crew/challenges" Icon={Target} label="Challenges" sub="Season goals" color="bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400" />
+          <QuickLink href="/crew/quests" Icon={Map} label="Quests" sub="Multi-step" color="bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400" />
+          <QuickLink href="/crew/leaderboard" Icon={TrendingUp} label="Leaderboard" sub="Rankings" color="bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400" />
+          <QuickLink href="/crew/store" Icon={ShoppingBag} label="Gem Store" sub="Spend gems" color="bg-teal-50 dark:bg-teal-950 text-teal-600 dark:text-teal-400" />
+        </div>
+      </div>
+
+      {/* ── Tasks + Leaderboard ──────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        {/* ── Left: Stats + Tasks ──────────────────────── */}
+        {/* Left: Tasks */}
         <div className="lg:col-span-2">
-
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-3 mb-6">
-            <StatCard
-              label="Zaps"
-              value={currentSeasonZaps.toLocaleString()}
-              Icon={Zap}
-              colorCls="text-amber-600 bg-amber-50 dark:bg-amber-950 dark:text-amber-400"
-            />
-            <StatCard
-              label="Tasks Done"
-              value={String(completedTaskCount)}
-              Icon={CheckCircle}
-              colorCls="text-green-600 bg-green-50 dark:bg-green-950 dark:text-green-400"
-            />
-            <StatCard
-              label="Season Rank"
-              value={rankDef.label}
-              Icon={Star}
-              colorCls="text-indigo-600 bg-indigo-50 dark:bg-indigo-950 dark:text-indigo-400"
-            />
-          </div>
-
-          {/* ── Gamification quick links ─────────────────── */}
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-6">
-            <QuickLink href="/crew/achievements" Icon={Award} label="Achievements" sub="Earn badges" color="bg-violet-50 dark:bg-violet-950 text-violet-600 dark:text-violet-400" />
-            <QuickLink href="/crew/streaks" Icon={Flame} label="Streaks" sub="Stay consistent" color="bg-orange-50 dark:bg-orange-950 text-orange-600 dark:text-orange-400" />
-            <QuickLink href="/crew/challenges" Icon={Target} label="Challenges" sub="Season goals" color="bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400" />
-            <QuickLink href="/crew/quests" Icon={Map} label="Quests" sub="Multi-step" color="bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400" />
-            <QuickLink href="/crew/leaderboard" Icon={TrendingUp} label="Leaderboard" sub="Rankings" color="bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400" />
-            <QuickLink href="/crew/store" Icon={ShoppingBag} label="Gem Store" sub="Spend gems" color="bg-teal-50 dark:bg-teal-950 text-teal-600 dark:text-teal-400" />
-          </div>
-
-          {/* ── Tasks ────────────────────────────────────── */}
           <section>
             <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
               Tasks
@@ -293,74 +367,8 @@ export default async function CrewPage() {
           </section>
         </div>
 
-        {/* ── Sidebar: rank progress + leaderboard ────────── */}
+        {/* Right: Leaderboard */}
         <div className="space-y-4">
-
-          {/* Season rank progression */}
-          <SidebarCard title="Season Progress">
-            <div className="px-4 py-3">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
-                  {currentSeasonRank === 'luminary'
-                    ? 'Maximum rank achieved'
-                    : currentSeasonRank === 'conduit' && !challengesComplete
-                    ? `Progress to Luminary`
-                    : nextRank
-                    ? `Progress to ${nextRank.label}`
-                    : 'Max rank'}
-                </span>
-                {nextRank && currentSeasonRank !== 'conduit' && (
-                  <span className="text-[11px] text-gray-400 dark:text-gray-500">
-                    {currentSeasonZaps.toLocaleString()} / {nextRank.minZaps.toLocaleString()}
-                  </span>
-                )}
-              </div>
-
-              {/* Progress bar */}
-              <div className="h-2 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden mb-3">
-                <div
-                  className={`h-full rounded-full transition-all ${rankDef.color}`}
-                  style={{ width: `${rankProgress}%` }}
-                />
-              </div>
-
-              {/* Rank milestones */}
-              <div className="flex justify-between">
-                {SEASON_RANKS.map((r) => {
-                  const achieved = currentSeasonZaps >= r.minZaps &&
-                    (r.rank !== 'luminary' || challengesComplete)
-                  const isCurrent = r.rank === currentSeasonRank
-                  return (
-                    <div key={r.rank} className="flex flex-col items-center gap-1">
-                      <div
-                        className={`w-2.5 h-2.5 rounded-full ring-2 transition-all ${
-                          isCurrent
-                            ? `${r.color} ring-current ring-offset-1`
-                            : achieved
-                            ? `${r.color} ring-transparent`
-                            : 'bg-gray-200 dark:bg-gray-700 ring-transparent'
-                        }`}
-                      />
-                      <span className={`text-[9px] font-semibold leading-none ${
-                        isCurrent ? r.text : 'text-gray-400 dark:text-gray-500'
-                      }`}>
-                        {r.label}
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
-
-              {/* Luminary gate note */}
-              {currentSeasonRank === 'conduit' && !challengesComplete && (
-                <p className="mt-3 text-[11px] text-gray-400 dark:text-gray-500 text-center">
-                  Complete all season challenges to unlock Luminary rank.
-                </p>
-              )}
-            </div>
-          </SidebarCard>
-
-          {/* Leaderboard */}
           {leaderboard.length > 0 && (
             <SidebarCard title={circleName ? `Leaderboard — ${circleName}` : 'Season Leaderboard'}>
               <div>
