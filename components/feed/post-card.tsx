@@ -4,7 +4,6 @@ import { toggleReaction } from '@/app/(main)/feed/actions'
 import { PostReplies } from './post-replies'
 import { ContextActions } from '@/components/context-actions'
 import { getInitials, relativeTime } from '@/lib/utils'
-import { ProfileFlair } from '@/components/profile-flair'
 
 function renderBodyWithMentions(body: string): React.ReactNode[] {
   const parts = body.split(/(@[a-zA-Z0-9_]+)/g)
@@ -69,10 +68,6 @@ export type FeedPost = {
     handle: string
     avatar_url: string | null
     community_role: CommunityRole
-    current_season_rank?: string | null
-    current_streak?: number
-    achievement_count?: number
-    lifetime_gems?: number
   }
   reactions: Array<{
     id: string
@@ -189,12 +184,6 @@ export function PostCard({
                 <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${badge.cls}`}>
                   {badge.label}
                 </span>
-                <ProfileFlair
-                  rank={author.current_season_rank}
-                  streak={author.current_streak}
-                  gems={author.lifetime_gems}
-                  compact
-                />
               </div>
               <p className="text-xs text-gray-400 mt-0.5">
                 @{author.handle} · {relativeTime(post.created_at)}
