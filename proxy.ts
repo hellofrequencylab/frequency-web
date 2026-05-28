@@ -56,7 +56,11 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   const { pathname } = request.nextUrl
-  const isProtected = PROTECTED_PATHS.some((p) => pathname.startsWith(p))
+  // Calendar feed downloads (.ics) are intentionally shareable — anyone with
+  // the event link should be able to add it to their calendar. Events are
+  // already anon-readable via the public_landing_reads RLS policies.
+  const isShareableFeed = pathname.endsWith('.ics')
+  const isProtected = !isShareableFeed && PROTECTED_PATHS.some((p) => pathname.startsWith(p))
 
   if (!user && isProtected) {
     const signInUrl = request.nextUrl.clone()
