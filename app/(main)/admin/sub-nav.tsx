@@ -12,6 +12,7 @@ import {
   Building2,
   Network,
   ShieldAlert,
+  Users,
 } from 'lucide-react'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
@@ -39,6 +40,9 @@ export function AdminSubNav({ role }: { role: CommunityRole }) {
       : []),
     ...(role === 'mentor' || role === 'janitor'
       ? [{ href: '/admin/nexuses', label: 'Nexuses', Icon: Network } as NavItem]
+      : []),
+    ...(role === 'janitor'
+      ? [{ href: '/admin/members', label: 'Members', Icon: Users } as NavItem]
       : []),
   ]
 
