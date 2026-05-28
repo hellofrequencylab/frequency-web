@@ -25,7 +25,7 @@ export default async function MainLayout({
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, display_name, handle, avatar_url, community_role')
+    .select('id, display_name, handle, avatar_url, community_role, current_season_zaps, lifetime_gems')
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
