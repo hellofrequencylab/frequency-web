@@ -120,11 +120,11 @@ export default async function ProfilePage({
   const [zapsResult, completionsCountResult, postsCountResult, circlesResult, channelsResult, eventsResult, dispatchesResult] = await Promise.all([
     admin.from('crew_completions').select('points_earned').eq('profile_id', profileId),
     admin.from('crew_completions').select('id', { count: 'exact', head: true }).eq('profile_id', profileId),
-    admin.from('posts').select('id', { count: 'exact', head: true }).eq('author_id', profileId).is('parent_id', null),
+    admin.from('posts').select('id', { count: 'exact', head: true }).eq('author_id', profileId).is('parent_id', null).is('hidden_at', null),
     admin.from('memberships').select('circles!circle_id ( id, name, slug )').eq('profile_id', profileId).eq('status', 'active'),
     admin.from('channel_memberships').select('channels!channel_id ( id, name )').eq('profile_id', profileId).eq('status', 'active'),
     admin.from('events').select('id, title, starts_at, location, slug').eq('host_id', profileId).eq('is_cancelled', false).order('starts_at', { ascending: false }).limit(3),
-    admin.from('dispatches').select('id, title, published_at, audience_scope').eq('author_id', profileId).eq('status', 'published').order('published_at', { ascending: false }).limit(3),
+    admin.from('dispatches').select('id, title, published_at, audience_scope').eq('author_id', profileId).eq('status', 'published').is('hidden_at', null).order('published_at', { ascending: false }).limit(3),
   ])
 
   const totalZaps = (zapsResult.data ?? []).reduce((sum: number, r: { points_earned: number }) => sum + (r.points_earned ?? 0), 0)

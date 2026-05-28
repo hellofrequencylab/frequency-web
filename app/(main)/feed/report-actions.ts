@@ -113,6 +113,18 @@ export async function getReports(): Promise<ReportRow[]> {
 }
 
 // ── Review a report (host+ only) ───────────────────────────────────────────
+//
+// Action semantics by target_type:
+//   post/comment → soft-hide (sets hidden_at, hidden_by — recoverable)
+//   dispatch     → soft-hide
+//   member       → use warnMember() or suspendMember() instead; this call
+//                  on a member target is a no-op apart from status flip
+//                  (kept for backwards compatibility — UI no longer calls
+//                  reviewReport() on member targets, it calls the dedicated
+//                  helpers below).
+//   event        → use cancelEventFromReport() instead; same caveat.
+//
+// 'dismissed' just flips status; no content action.
 
 export async function reviewReport(
   reportId: string,
@@ -125,7 +137,6 @@ export async function reviewReport(
 
   const admin = createAdminClient()
 
-  // If actioning, fetch the report to auto-delete the offending content
   if (action === 'actioned') {
     const { data: report } = await admin
       .from('reports')
@@ -134,27 +145,212 @@ export async function reviewReport(
       .maybeSingle()
 
     if (report) {
-      if (report.target_type === 'post' || report.target_type === 'comment') {
-        await admin.from('posts').delete().eq('id', report.target_id)
-      } else if (report.target_type === 'dispatch') {
-        await admin.from('dispatches').delete().eq('id', report.target_id)
+      const hidePayload = {
+        hidden_at: new Date().toISOString(),
+        hidden_by: caller.id,
       }
-      // For 'member' and 'event' types, we just mark the report as actioned
-      // without auto-deleting — admins can handle those manually.
+      if (report.target_type === 'post' || report.target_type === 'comment') {
+        await admin.from('posts').update(hidePayload).eq('id', report.target_id)
+      } else if (report.target_type === 'dispatch') {
+        await admin.from('dispatches').update(hidePayload).eq('id', report.target_id)
+      }
+      // member/event handled via dedicated helpers; reviewReport just closes them.
     }
   }
 
+  return closeReport(reportId, caller.id, action)
+}
+
+
+// ── Member-targeted actions ────────────────────────────────────────────────
+
+const DEFAULT_WARN_TEMPLATE = (reason: string | null) =>
+  `Hi — a moderator has reviewed a recent report concerning your activity ` +
+  `on Frequency${reason ? ` (${reason})` : ''}. ` +
+  `Please review our community guidelines. Continued issues may lead to a ` +
+  `suspension. If you think this was a mistake, reply to this message and a ` +
+  `moderator will follow up.`
+
+export async function warnMember(
+  reportId: string,
+  memberProfileId: string,
+  reason?: string,
+): Promise<{ success: boolean; error?: string }> {
+  const caller = await getCallerProfile()
+  if (!caller || !hasRole(caller.community_role, 'host')) {
+    return { success: false, error: 'Unauthorized' }
+  }
+
+  const admin = createAdminClient()
+
+  // Look up the system profile (one row, seeded by 20240207 migration).
+  const { data: system } = await admin
+    .from('profiles')
+    .select('id')
+    .eq('is_system', true)
+    .eq('handle', 'moderation')
+    .maybeSingle()
+
+  if (!system) {
+    return { success: false, error: 'System moderation profile missing — re-run migration 20240207.' }
+  }
+
+  // Reuse an existing 1:1 DM between the system profile and the member
+  // if one already exists; otherwise spin up a new conversation.
+  const { data: existingConv } = await admin
+    .from('conversation_participants')
+    .select('conversation_id')
+    .eq('profile_id', system.id)
+
+  let conversationId: string | null = null
+  if (existingConv && existingConv.length > 0) {
+    const convIds = existingConv.map((c: { conversation_id: string }) => c.conversation_id)
+    const { data: shared } = await admin
+      .from('conversation_participants')
+      .select('conversation_id')
+      .eq('profile_id', memberProfileId)
+      .in('conversation_id', convIds)
+      .limit(1)
+      .maybeSingle()
+    conversationId = (shared as { conversation_id: string } | null)?.conversation_id ?? null
+  }
+
+  if (!conversationId) {
+    const { data: conv, error: convErr } = await admin
+      .from('conversations')
+      .insert({})
+      .select('id')
+      .single()
+    if (convErr || !conv) {
+      console.error('[warnMember] conversation create:', convErr?.message)
+      return { success: false, error: 'Could not open warning conversation' }
+    }
+    conversationId = conv.id
+
+    const { error: partErr } = await admin
+      .from('conversation_participants')
+      .insert([
+        { conversation_id: conversationId, profile_id: system.id },
+        { conversation_id: conversationId, profile_id: memberProfileId },
+      ])
+    if (partErr) {
+      console.error('[warnMember] participants:', partErr.message)
+      return { success: false, error: 'Could not add conversation participants' }
+    }
+  }
+
+  const { error: msgErr } = await admin
+    .from('messages')
+    .insert({
+      conversation_id: conversationId,
+      sender_id:       system.id,
+      body:            DEFAULT_WARN_TEMPLATE(reason ?? null),
+    })
+  if (msgErr) {
+    console.error('[warnMember] message:', msgErr.message)
+    return { success: false, error: 'Could not send warning message' }
+  }
+
+  return closeReport(reportId, caller.id, 'actioned')
+}
+
+export async function suspendMember(
+  reportId: string,
+  memberProfileId: string,
+  options: { reason?: string; durationDays?: number } = {},
+): Promise<{ success: boolean; error?: string }> {
+  const caller = await getCallerProfile()
+  if (!caller || !hasRole(caller.community_role, 'host')) {
+    return { success: false, error: 'Unauthorized' }
+  }
+
+  const admin = createAdminClient()
+
+  const suspendedUntil = options.durationDays
+    ? new Date(Date.now() + options.durationDays * 24 * 60 * 60 * 1000).toISOString()
+    : null
+
+  const { error } = await admin
+    .from('profiles')
+    .update({
+      suspended_at:     new Date().toISOString(),
+      suspended_until:  suspendedUntil,
+      suspended_reason: options.reason ?? null,
+      suspended_by:     caller.id,
+    })
+    .eq('id', memberProfileId)
+
+  if (error) {
+    console.error('[suspendMember]', error.message)
+    return { success: false, error: 'Failed to suspend member' }
+  }
+
+  return closeReport(reportId, caller.id, 'actioned')
+}
+
+
+// ── Event-targeted actions ─────────────────────────────────────────────────
+
+export async function cancelEventFromReport(
+  reportId: string,
+  eventId: string,
+): Promise<{ success: boolean; error?: string }> {
+  const caller = await getCallerProfile()
+  if (!caller || !hasRole(caller.community_role, 'host')) {
+    return { success: false, error: 'Unauthorized' }
+  }
+
+  const admin = createAdminClient()
+  const { error } = await admin
+    .from('events')
+    .update({ is_cancelled: true })
+    .eq('id', eventId)
+
+  if (error) {
+    console.error('[cancelEventFromReport]', error.message)
+    return { success: false, error: 'Failed to cancel event' }
+  }
+
+  return closeReport(reportId, caller.id, 'actioned')
+}
+
+
+// ── Member context: prior report count ─────────────────────────────────────
+
+export async function getMemberReportCount(memberProfileId: string): Promise<number> {
+  const caller = await getCallerProfile()
+  if (!caller || !hasRole(caller.community_role, 'host')) return 0
+
+  const admin = createAdminClient()
+  const { count } = await admin
+    .from('reports')
+    .select('id', { count: 'exact', head: true })
+    .eq('target_type', 'member')
+    .eq('target_id', memberProfileId)
+
+  return count ?? 0
+}
+
+
+// ── Internal: close a report row + revalidate paths ────────────────────────
+
+async function closeReport(
+  reportId: string,
+  callerId: string,
+  status: 'actioned' | 'dismissed',
+): Promise<{ success: boolean; error?: string }> {
+  const admin = createAdminClient()
   const { error } = await admin
     .from('reports')
     .update({
-      status: action,
-      reviewed_by: caller.id,
+      status,
+      reviewed_by: callerId,
       reviewed_at: new Date().toISOString(),
     })
     .eq('id', reportId)
 
   if (error) {
-    console.error('[reviewReport]', error.message)
+    console.error('[closeReport]', error.message)
     return { success: false, error: 'Failed to update report' }
   }
 

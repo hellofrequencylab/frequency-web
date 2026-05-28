@@ -80,6 +80,7 @@ export async function ProfileFeed({
     .select(POST_SELECT)
     .eq('author_id', profileId)
     .is('parent_id', null)
+    .is('hidden_at', null)
     .order('created_at', { ascending: false })
     .limit(30)
 
@@ -89,6 +90,7 @@ export async function ProfileFeed({
     .eq('scope_id', profileId)
     .neq('author_id', profileId)
     .is('parent_id', null)
+    .is('hidden_at', null)
     .order('created_at', { ascending: false })
     .limit(20)
 
@@ -144,6 +146,7 @@ export async function ProfileFeed({
       .select(POST_SELECT)
       .in('id', mentionPostIds)
       .is('parent_id', null)
+      .is('hidden_at', null)
     mentionPosts = (data ?? []) as unknown as RawPost[]
   }
 

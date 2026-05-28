@@ -1,19 +1,39 @@
-import { BellRing } from 'lucide-react'
+import { notFound } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { DEFAULT_PREFERENCES, type NotificationPreferences } from '@/lib/notification-preferences'
+import { NotificationsForm } from './form'
 
-export default function NotificationsPage() {
+export default async function NotificationsPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) notFound()
+
+  const admin = createAdminClient()
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('id')
+    .eq('auth_user_id', user.id)
+    .maybeSingle()
+  if (!profile) notFound()
+
+  const { data: prefsRow } = await admin
+    .from('notification_preferences')
+    .select('*')
+    .eq('profile_id', profile.id)
+    .maybeSingle()
+
+  const initial: NotificationPreferences = prefsRow
+    ? (prefsRow as unknown as NotificationPreferences)
+    : DEFAULT_PREFERENCES
+
   return (
     <div className="px-6 py-8 max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-1">Notifications</h1>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">
-        Control how and when Frequency contacts you.
+        Choose how and when Frequency contacts you. Changes save instantly.
       </p>
-      <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-800 p-12 text-center">
-        <BellRing className="w-8 h-8 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
-        <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Coming soon</p>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          Notification preferences are being built. Check back soon.
-        </p>
-      </div>
+      <NotificationsForm initial={initial} />
     </div>
   )
 }

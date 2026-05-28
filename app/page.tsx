@@ -46,6 +46,7 @@ export default async function RootPage() {
       )
       .eq('visibility', 'public')
       .is('parent_id', null)
+      .is('hidden_at', null)
       .order('created_at', { ascending: false })
       .limit(5),
     supabase.rpc('public_member_count'),

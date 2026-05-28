@@ -105,19 +105,35 @@ export default async function ModerationPage() {
     }
   }
 
-  type ReportWithPreview = RawReport & { preview: string }
+  // For member-targeted reports, also fetch prior report count so the mod
+  // can see "this member has been reported N times" inline.
+  const memberPriorCounts: Record<string, number> = {}
+  if (memberIds.length > 0) {
+    for (const mid of memberIds) {
+      const { count } = await admin
+        .from('reports')
+        .select('id', { count: 'exact', head: true })
+        .eq('target_type', 'member')
+        .eq('target_id', mid)
+      memberPriorCounts[mid] = count ?? 0
+    }
+  }
+
+  type ReportWithPreview = RawReport & { preview: string; priorReports?: number }
   const reportsWithPreviews: ReportWithPreview[] = reports.map((r) => {
     let preview = ''
+    let priorReports: number | undefined
     if (r.target_type === 'post' || r.target_type === 'comment') {
       preview = postPreviews[r.target_id] ?? '[Content not found]'
     } else if (r.target_type === 'dispatch') {
       preview = dispatchPreviews[r.target_id] ?? '[Dispatch not found]'
     } else if (r.target_type === 'member') {
       preview = memberPreviews[r.target_id] ?? '[Member not found]'
+      priorReports = memberPriorCounts[r.target_id]
     } else if (r.target_type === 'event') {
       preview = eventPreviews[r.target_id] ?? '[Event not found]'
     }
-    return { ...r, preview }
+    return { ...r, preview, priorReports }
   })
 
   return (
