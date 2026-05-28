@@ -59,6 +59,7 @@ $$;
 ALTER TABLE friendships ENABLE ROW LEVEL SECURITY;
 
 -- See your own friendships (either side)
+DROP POLICY IF EXISTS "friendships_select_own" ON friendships;
 CREATE POLICY "friendships_select_own"
   ON friendships FOR SELECT
   USING (
@@ -67,6 +68,7 @@ CREATE POLICY "friendships_select_own"
   );
 
 -- Insert: you must be the requester AND a party
+DROP POLICY IF EXISTS "friendships_insert_self_request" ON friendships;
 CREATE POLICY "friendships_insert_self_request"
   ON friendships FOR INSERT
   WITH CHECK (
@@ -75,6 +77,7 @@ CREATE POLICY "friendships_insert_self_request"
   );
 
 -- Update: only the addressee (the party who didn't request) can flip to accepted
+DROP POLICY IF EXISTS "friendships_update_addressee_accept" ON friendships;
 CREATE POLICY "friendships_update_addressee_accept"
   ON friendships FOR UPDATE
   USING (
@@ -84,6 +87,7 @@ CREATE POLICY "friendships_update_addressee_accept"
   WITH CHECK (status = 'accepted');
 
 -- Delete: either party (decline, cancel, unfriend)
+DROP POLICY IF EXISTS "friendships_delete_own" ON friendships;
 CREATE POLICY "friendships_delete_own"
   ON friendships FOR DELETE
   USING (
@@ -92,6 +96,7 @@ CREATE POLICY "friendships_delete_own"
   );
 
 -- Service role bypasses RLS for backfill and admin tooling
+DROP POLICY IF EXISTS "friendships_service_role_full_access" ON friendships;
 CREATE POLICY "friendships_service_role_full_access"
   ON friendships FOR ALL
   USING (auth.role() = 'service_role')
