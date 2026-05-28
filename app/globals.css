@@ -14,10 +14,14 @@
 :root {
   color-scheme: light;
 
-  /* Surfaces */
-  --color-canvas:           #F7F3EA;
-  --color-surface:          #FFFFFF;
-  --color-surface-elevated: #FCF8F1;
+  /* Surfaces — community canvas is light and airy. The warm sand stays as
+     `--color-marketing-canvas` for the splash and any public-facing pages so
+     the brand vibe carries on the website while the in-app community feels
+     light. */
+  --color-canvas:            #FBFAF6;
+  --color-marketing-canvas:  #F7F3EA;
+  --color-surface:           #FFFFFF;
+  --color-surface-elevated:  #FCFAF5;
 
   /* Borders */
   --color-border:           #E9E1D4;
@@ -70,6 +74,7 @@
   color-scheme: dark;
 
   --color-canvas:           #16130E;
+  --color-marketing-canvas: #16130E;
   --color-surface:          #1F1B14;
   --color-surface-elevated: #28231A;
 
@@ -109,6 +114,7 @@
    retired during the per-screen migration in favor of these.                */
 @theme inline {
   --color-canvas:           var(--color-canvas);
+  --color-marketing-canvas: var(--color-marketing-canvas);
   --color-surface:          var(--color-surface);
   --color-surface-elevated: var(--color-surface-elevated);
 

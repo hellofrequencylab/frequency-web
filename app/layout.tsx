@@ -23,10 +23,11 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
-  // Dawn canvas values. The pre-paint script below also writes this meta
-  // dynamically so it stays correct when the user toggles modes.
+  // Matches the community canvas (--color-canvas). The pre-paint script
+  // below also writes this meta dynamically so it stays correct when the
+  // user toggles modes.
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#F7F3EA" },
+    { media: "(prefers-color-scheme: light)", color: "#FBFAF6" },
     { media: "(prefers-color-scheme: dark)",  color: "#16130E" },
   ],
 };
@@ -59,7 +60,7 @@ export const metadata: Metadata = {
 // dark-mode flash). Reads localStorage('freq-theme'): 'light' | 'dark' |
 // 'system' | null; defaults to 'system' per the Dawn spec. We also migrate
 // the legacy 'theme' key one-time so existing users don't get reset.
-const themeScript = `(function(){try{var s=localStorage.getItem('freq-theme');if(!s){var legacy=localStorage.getItem('theme');if(legacy==='dark'||legacy==='light'||legacy==='system'){s=legacy;localStorage.setItem('freq-theme',legacy);}}var sys=window.matchMedia('(prefers-color-scheme:dark)').matches;var dark=s==='dark'||((s==='system'||!s)&&sys);document.documentElement.classList.toggle('dark',dark);var m=document.querySelector('meta[name="theme-color"]');if(!m){m=document.createElement('meta');m.setAttribute('name','theme-color');document.head.appendChild(m);}m.setAttribute('content',dark?'#16130E':'#F7F3EA');}catch(e){}})();`;
+const themeScript = `(function(){try{var s=localStorage.getItem('freq-theme');if(!s){var legacy=localStorage.getItem('theme');if(legacy==='dark'||legacy==='light'||legacy==='system'){s=legacy;localStorage.setItem('freq-theme',legacy);}}var sys=window.matchMedia('(prefers-color-scheme:dark)').matches;var dark=s==='dark'||((s==='system'||!s)&&sys);document.documentElement.classList.toggle('dark',dark);var m=document.querySelector('meta[name="theme-color"]');if(!m){m=document.createElement('meta');m.setAttribute('name','theme-color');document.head.appendChild(m);}m.setAttribute('content',dark?'#16130E':'#FBFAF6');}catch(e){}})();`;
 
 export default function RootLayout({
   children,
