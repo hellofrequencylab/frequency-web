@@ -31,7 +31,7 @@ const CATEGORIES: { key: NotificationCategory; label: string; description: strin
 const CHANNELS = [
   { key: 'email', label: 'Email',  Icon: Mail,       disabled: false },
   { key: 'inapp', label: 'In-app', Icon: Bell,       disabled: false },
-  { key: 'push',  label: 'Push',   Icon: Smartphone, disabled: true  },
+  { key: 'push',  label: 'Push',   Icon: Smartphone, disabled: false },
 ] as const
 
 export function NotificationsForm({ initial }: { initial: NotificationPreferences }) {
@@ -83,7 +83,7 @@ export function NotificationsForm({ initial }: { initial: NotificationPreference
                       onClick={() => !disabled && toggle(channel, key)}
                       disabled={disabled}
                       aria-label={`${channel} ${key}`}
-                      title={disabled ? 'Coming soon (P1.4 — PWA web push)' : undefined}
+                      title={disabled ? 'Not yet available' : undefined}
                       className={`
                         relative inline-flex items-center justify-center
                         w-10 h-6 rounded-full transition-colors
@@ -118,7 +118,7 @@ export function NotificationsForm({ initial }: { initial: NotificationPreference
             <Check className="w-3 h-3" /> Saved
           </span>
         ) : (
-          <span>Push notifications are coming with our mobile experience.</span>
+          <span>Push notifications require granting your browser permission on first toggle.</span>
         )}
       </div>
     </div>

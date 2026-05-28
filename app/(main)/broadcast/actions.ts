@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendDispatchNotificationEmail } from '@/lib/email'
+import { shouldSend } from '@/lib/notification-preferences'
+import { sendPushToProfile } from '@/lib/push'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 const HIERARCHY: CommunityRole[] = ['member', 'crew', 'host', 'guide', 'mentor', 'janitor']
@@ -106,13 +108,26 @@ export async function createAndPublishDispatch(fd: FormData) {
       }
       profileIds = [...new Set(profileIds)]
       if (!profileIds.length) return
-      const { data: profiles } = await admin.from('profiles').select('display_name, auth_user_id').in('id', profileIds)
+      const { data: profiles } = await admin.from('profiles').select('id, display_name, auth_user_id').in('id', profileIds)
       if (!profiles?.length) return
       for (const profile of profiles) {
         if (!profile.auth_user_id) continue
-        const { data: { user } } = await admin.auth.admin.getUserById(profile.auth_user_id)
-        if (!user?.email) continue
-        await sendDispatchNotificationEmail({ to: user.email, recipientName: profile.display_name, authorName, dispatchTitle: title, excerpt, dispatchUrl })
+
+        if (await shouldSend(profile.id, 'email', 'dispatches')) {
+          const { data: { user } } = await admin.auth.admin.getUserById(profile.auth_user_id)
+          if (user?.email) {
+            await sendDispatchNotificationEmail({ to: user.email, recipientName: profile.display_name, recipientProfileId: profile.id, authorName, dispatchTitle: title, excerpt, dispatchUrl })
+          }
+        }
+
+        if (await shouldSend(profile.id, 'push', 'dispatches')) {
+          await sendPushToProfile(profile.id, {
+            title: `📡 ${title}`,
+            body:  excerpt || `New dispatch from ${authorName}`,
+            url:   `/broadcast/${dispatch.id}`,
+            tag:   `dispatch-${dispatch.id}`,
+          })
+        }
       }
     } catch (err) {
       console.error('[createAndPublishDispatch] email fan-out failed:', err)

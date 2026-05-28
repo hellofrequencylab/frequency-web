@@ -11,9 +11,22 @@
  */
 
 import { Resend } from 'resend'
+import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
+import type { NotificationCategory } from '@/lib/notification-preferences'
 
 const apiKey  = process.env.RESEND_API_KEY
 const FROM    = process.env.EMAIL_FROM ?? 'Frequency <noreply@hellofrequency.com>'
+
+// Headers required by Gmail/Yahoo bulk-sender policies (RFC 8058).
+// `apiUrl` is the POST endpoint mailbox providers call when a user hits
+// the inbox-rendered unsubscribe button.
+function listUnsubscribeHeaders(unsubscribeUrl: string): Record<string, string> {
+  const apiUrl = unsubscribeUrl.replace('/unsubscribe?', '/api/unsubscribe?')
+  return {
+    'List-Unsubscribe':      `<${apiUrl}>, <${unsubscribeUrl}>`,
+    'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+  }
+}
 
 function getClient(): Resend | null {
   if (!apiKey) {
@@ -73,27 +86,120 @@ export async function sendInviteEmail(params: {
   }
 }
 
-// ── Dispatch notification email ────────────────────────────────────────────────
+// ── Weekly community digest ───────────────────────────────────────────────────
 
-export async function sendDispatchNotificationEmail(params: {
-  to: string
-  recipientName: string
-  authorName: string
-  dispatchTitle: string
-  excerpt: string
-  dispatchUrl: string
+export async function sendWeeklyDigestEmail(params: {
+  to:                 string
+  recipientName:      string
+  recipientProfileId: string
+  dispatches:         { title: string; excerpt: string | null; url: string; authorName: string }[]
+  upcomingEvents:     { title: string; startsAt: string; location: string | null; url: string }[]
+  topStreak:          { type: string; count: number } | null
+  rank:               { name: string | null; zaps: number } | null
 }) {
   const client = getClient()
   if (!client) return
 
-  const { to, recipientName, authorName, dispatchTitle, excerpt, dispatchUrl } = params
+  const { to, recipientName, recipientProfileId, dispatches, upcomingEvents, topStreak, rank } = params
+
+  // Lifecycle category covers periodic engagement nudges (Day 1/3/7 emails
+  // and this weekly digest). One unsubscribe lever for "Frequency telling
+  // me to come back" is the right granularity.
+  const unsubscribeUrl = buildUnsubscribeUrl({
+    baseUrl:   BASE_URL,
+    profileId: recipientProfileId,
+    category:  'lifecycle',
+  })
+
+  const subject = `📡 Your week on Frequency`
+
+  const { error } = await client.emails.send({
+    from:    FROM,
+    to,
+    subject,
+    headers: listUnsubscribeHeaders(unsubscribeUrl),
+    html:    digestHtml({ recipientName, dispatches, upcomingEvents, topStreak, rank, unsubscribeUrl }),
+    text:    digestText({ recipientName, dispatches, upcomingEvents, topStreak, rank, unsubscribeUrl }),
+  })
+
+  if (error) {
+    console.error('[email] Failed to send weekly digest:', error)
+  }
+}
+
+
+// ── Event reminder email ──────────────────────────────────────────────────────
+
+export async function sendEventReminderEmail(params: {
+  to:                 string
+  recipientName:      string
+  recipientProfileId: string
+  eventTitle:         string
+  whenLabel:          string
+  whenAbsolute:       string
+  location:           string | null
+  eventUrl:           string
+  lead:               '24h' | '2h'
+}) {
+  const client = getClient()
+  if (!client) return
+
+  const { to, recipientName, recipientProfileId, eventTitle, whenLabel, whenAbsolute, location, eventUrl, lead } = params
+
+  const subject = lead === '24h'
+    ? `🗓️ Tomorrow: ${eventTitle}`
+    : `⏰ Starting soon: ${eventTitle}`
+
+  const unsubscribeUrl = buildUnsubscribeUrl({
+    baseUrl:   BASE_URL,
+    profileId: recipientProfileId,
+    category:  'events',
+  })
+
+  const { error } = await client.emails.send({
+    from:    FROM,
+    to,
+    subject,
+    headers: listUnsubscribeHeaders(unsubscribeUrl),
+    html:    eventReminderHtml({ recipientName, eventTitle, whenLabel, whenAbsolute, location, eventUrl, lead, unsubscribeUrl }),
+    text:    eventReminderText({ eventTitle, whenLabel, whenAbsolute, location, eventUrl, lead, unsubscribeUrl }),
+  })
+
+  if (error) {
+    console.error('[email] Failed to send event reminder:', error)
+  }
+}
+
+
+// ── Dispatch notification email ────────────────────────────────────────────────
+
+export async function sendDispatchNotificationEmail(params: {
+  to:                 string
+  recipientName:      string
+  recipientProfileId: string
+  authorName:         string
+  dispatchTitle:      string
+  excerpt:            string
+  dispatchUrl:        string
+}) {
+  const client = getClient()
+  if (!client) return
+
+  const { to, recipientName, recipientProfileId, authorName, dispatchTitle, excerpt, dispatchUrl } = params
+
+  const unsubscribeUrl = buildUnsubscribeUrl({
+    baseUrl:   BASE_URL,
+    profileId: recipientProfileId,
+    category:  'dispatches',
+  })
 
   const { error } = await client.emails.send({
     from:    FROM,
     to,
     subject: `📡 New dispatch: ${dispatchTitle}`,
-    html:    dispatchHtml({ recipientName, authorName, dispatchTitle, excerpt, dispatchUrl }),
-    text:    dispatchText({ authorName, dispatchTitle, excerpt, dispatchUrl }),
+    headers: listUnsubscribeHeaders(unsubscribeUrl),
+    html:    dispatchHtml({ recipientName, authorName, dispatchTitle, excerpt, dispatchUrl, unsubscribeUrl }),
+    text:    dispatchText({ authorName, dispatchTitle, excerpt, dispatchUrl, unsubscribeUrl }),
   })
 
   if (error) {
@@ -210,10 +316,180 @@ Frequency is a community platform for local groups to connect, organise events, 
 `
 }
 
+// Weekly community digest ──────────────────────────────────────────────────────
+
+function formatDigestDate(iso: string): string {
+  const d = new Date(iso)
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+}
+
+function formatDigestTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+}
+
+function digestHtml({ recipientName, dispatches, upcomingEvents, topStreak, rank, unsubscribeUrl }: {
+  recipientName: string
+  dispatches:     { title: string; excerpt: string | null; url: string; authorName: string }[]
+  upcomingEvents: { title: string; startsAt: string; location: string | null; url: string }[]
+  topStreak:      { type: string; count: number } | null
+  rank:           { name: string | null; zaps: number } | null
+  unsubscribeUrl: string
+}): string {
+  const dispatchesHtml = dispatches.length ? `
+    <h2 style="font-size:14px;font-weight:800;color:#4f46e5;text-transform:uppercase;letter-spacing:0.08em;margin:32px 0 12px;">📡 This week's dispatches</h2>
+    ${dispatches.map((d) => `
+      <div style="border-left:3px solid #4f46e5;padding:0 0 0 14px;margin-bottom:18px;">
+        <p style="margin:0 0 4px;font-size:11px;color:#999;font-weight:600;">${d.authorName}</p>
+        <p style="margin:0 0 6px;font-size:16px;font-weight:700;color:#1a1a1a;">${d.title}</p>
+        ${d.excerpt ? `<p style="margin:0 0 8px;font-size:14px;color:#555;line-height:1.5;">${d.excerpt}</p>` : ''}
+        <a href="${d.url}" style="font-size:13px;font-weight:600;color:#4f46e5;text-decoration:none;">Read →</a>
+      </div>
+    `).join('')}
+  ` : ''
+
+  const eventsHtml = upcomingEvents.length ? `
+    <h2 style="font-size:14px;font-weight:800;color:#4f46e5;text-transform:uppercase;letter-spacing:0.08em;margin:32px 0 12px;">🗓️ This week on your calendar</h2>
+    <table cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;">
+      ${upcomingEvents.map((e) => `
+        <tr>
+          <td style="padding:10px 0;border-bottom:1px solid #eee;">
+            <p style="margin:0 0 2px;font-size:15px;font-weight:700;color:#1a1a1a;">${e.title}</p>
+            <p style="margin:0;font-size:13px;color:#777;">
+              ${formatDigestDate(e.startsAt)} · ${formatDigestTime(e.startsAt)}${e.location ? ` · ${e.location}` : ''}
+            </p>
+          </td>
+          <td style="padding:10px 0;border-bottom:1px solid #eee;text-align:right;">
+            <a href="${e.url}" style="font-size:13px;font-weight:600;color:#4f46e5;text-decoration:none;">View</a>
+          </td>
+        </tr>
+      `).join('')}
+    </table>
+  ` : ''
+
+  const statusHtml = (topStreak || rank) ? `
+    <div style="background:#f9fafb;border-radius:10px;padding:14px 16px;margin:24px 0;">
+      <p style="margin:0;font-size:11px;font-weight:800;color:#999;text-transform:uppercase;letter-spacing:0.08em;">Your standing</p>
+      ${rank ? `<p style="margin:6px 0 0;font-size:14px;color:#1a1a1a;">⚡ <strong>${rank.zaps} zaps</strong> · ${rank.name}</p>` : ''}
+      ${topStreak ? `<p style="margin:4px 0 0;font-size:14px;color:#1a1a1a;">🔥 <strong>${topStreak.count}-day ${topStreak.type} streak</strong></p>` : ''}
+    </div>
+  ` : ''
+
+  return emailShell(`
+    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#4f46e5;margin:28px 0 8px;">
+      Your week
+    </p>
+    <h1 style="${h1Style}">Hi ${recipientName} —</h1>
+    <p style="${pStyle}">Here's what's happening in your community this week.</p>
+    ${statusHtml}
+    ${dispatchesHtml}
+    ${eventsHtml}
+    <hr style="${dividerStyle}">
+    <p style="font-size:13px;color:#999;">
+      <a href="${BASE_URL}/feed" style="${btnStyle}">Open Frequency →</a>
+    </p>
+    <p style="font-size:13px;color:#999;">
+      <a href="${BASE_URL}/settings/notifications" style="color:#999;">Manage preferences</a>
+      · <a href="${unsubscribeUrl}" style="color:#999;">Unsubscribe from weekly digest</a>.
+    </p>
+  `)
+}
+
+function digestText({ recipientName, dispatches, upcomingEvents, topStreak, rank, unsubscribeUrl }: {
+  recipientName: string
+  dispatches:     { title: string; excerpt: string | null; url: string; authorName: string }[]
+  upcomingEvents: { title: string; startsAt: string; location: string | null; url: string }[]
+  topStreak:      { type: string; count: number } | null
+  rank:           { name: string | null; zaps: number } | null
+  unsubscribeUrl: string
+}): string {
+  const lines: string[] = [`Hi ${recipientName} — here's your week on Frequency.\n`]
+
+  if (rank || topStreak) {
+    lines.push('YOUR STANDING')
+    if (rank)      lines.push(`  ⚡ ${rank.zaps} zaps · ${rank.name}`)
+    if (topStreak) lines.push(`  🔥 ${topStreak.count}-day ${topStreak.type} streak`)
+    lines.push('')
+  }
+
+  if (dispatches.length) {
+    lines.push('THIS WEEK\'S DISPATCHES')
+    for (const d of dispatches) {
+      lines.push(`  · ${d.title} (${d.authorName})`)
+      if (d.excerpt) lines.push(`    ${d.excerpt}`)
+      lines.push(`    ${d.url}`)
+    }
+    lines.push('')
+  }
+
+  if (upcomingEvents.length) {
+    lines.push('THIS WEEK ON YOUR CALENDAR')
+    for (const e of upcomingEvents) {
+      lines.push(`  · ${e.title} — ${formatDigestDate(e.startsAt)} ${formatDigestTime(e.startsAt)}${e.location ? ` · ${e.location}` : ''}`)
+      lines.push(`    ${e.url}`)
+    }
+    lines.push('')
+  }
+
+  lines.push(`Open Frequency: ${BASE_URL}/feed`)
+  lines.push(`Manage preferences: ${BASE_URL}/settings/notifications`)
+  lines.push(`Unsubscribe from weekly digest: ${unsubscribeUrl}`)
+
+  return lines.join('\n') + '\n'
+}
+
+
+// Event reminder ──────────────────────────────────────────────────────────────
+
+function eventReminderHtml({ recipientName, eventTitle, whenLabel, whenAbsolute, location, eventUrl, lead, unsubscribeUrl }: {
+  recipientName: string; eventTitle: string; whenLabel: string; whenAbsolute: string;
+  location: string | null; eventUrl: string; lead: '24h' | '2h'; unsubscribeUrl: string
+}): string {
+  const eyebrow = lead === '24h' ? 'Reminder · tomorrow' : 'Starting soon'
+  return emailShell(`
+    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#4f46e5;margin:28px 0 8px;">
+      ${eyebrow}
+    </p>
+    <h1 style="${h1Style}">${eventTitle}</h1>
+    <p style="${pStyle}">
+      Hi ${recipientName} — your event is ${whenLabel}.
+    </p>
+    <p style="${pStyle}">
+      <strong>${whenAbsolute}</strong>${location ? `<br><span style="color:#777;">${location}</span>` : ''}
+    </p>
+    <a href="${eventUrl}" style="${btnStyle}">View event →</a>
+    <hr style="${dividerStyle}">
+    <p style="font-size:13px;color:#999;">
+      You're receiving this because you RSVP'd to attend.
+      <a href="${BASE_URL}/settings/notifications" style="color:#999;">Manage preferences</a>
+      · <a href="${unsubscribeUrl}" style="color:#999;">Unsubscribe from event reminders</a>.
+    </p>
+  `)
+}
+
+function eventReminderText({ eventTitle, whenLabel, whenAbsolute, location, eventUrl, lead, unsubscribeUrl }: {
+  eventTitle: string; whenLabel: string; whenAbsolute: string;
+  location: string | null; eventUrl: string; lead: '24h' | '2h'; unsubscribeUrl: string
+}): string {
+  const eyebrow = lead === '24h' ? 'Reminder — tomorrow' : 'Starting soon'
+  return `${eyebrow}: ${eventTitle}
+
+Your event is ${whenLabel}.
+
+${whenAbsolute}${location ? `\n${location}` : ''}
+
+View event: ${eventUrl}
+
+You're receiving this because you RSVP'd.
+Manage preferences: ${BASE_URL}/settings/notifications
+Unsubscribe from event reminders: ${unsubscribeUrl}
+`
+}
+
+
 // Dispatch notification ────────────────────────────────────────────────────────
 
-function dispatchHtml({ recipientName, authorName, dispatchTitle, excerpt, dispatchUrl }: {
-  recipientName: string; authorName: string; dispatchTitle: string; excerpt: string; dispatchUrl: string
+function dispatchHtml({ recipientName, authorName, dispatchTitle, excerpt, dispatchUrl, unsubscribeUrl }: {
+  recipientName: string; authorName: string; dispatchTitle: string; excerpt: string; dispatchUrl: string; unsubscribeUrl: string
 }): string {
   return emailShell(`
     <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#4f46e5;margin:28px 0 8px;">
@@ -229,13 +505,16 @@ function dispatchHtml({ recipientName, authorName, dispatchTitle, excerpt, dispa
   `)
 }
 
-function dispatchText({ authorName, dispatchTitle, excerpt, dispatchUrl }: {
-  authorName: string; dispatchTitle: string; excerpt: string; dispatchUrl: string
+function dispatchText({ authorName, dispatchTitle, excerpt, dispatchUrl, unsubscribeUrl }: {
+  authorName: string; dispatchTitle: string; excerpt: string; dispatchUrl: string; unsubscribeUrl: string
 }): string {
   return `New dispatch from ${authorName}: ${dispatchTitle}
 
 ${excerpt}
 
 Read the full dispatch: ${dispatchUrl}
+
+Manage preferences: ${BASE_URL}/settings/notifications
+Unsubscribe from dispatches: ${unsubscribeUrl}
 `
 }

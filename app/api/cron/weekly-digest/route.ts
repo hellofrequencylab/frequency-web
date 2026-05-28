@@ -1,0 +1,64 @@
+// Weekly community digest cron — runs Sundays at 14:00 UTC (~7am PT,
+// matches when most members are actually awake on their day off).
+//
+// For each active profile (anyone with a circle membership), assemble a
+// per-person digest. Skip people with nothing to surface (no recent
+// dispatches AND no upcoming events) so we never send hollow emails.
+// Each send gated by shouldSend(*, 'email', 'lifecycle').
+
+import { NextRequest, NextResponse } from 'next/server'
+import { sendWeeklyDigestEmail } from '@/lib/email'
+import { shouldSend } from '@/lib/notification-preferences'
+import { assembleDigestForProfile, listProfileIdsForDigest } from '@/lib/digest'
+
+export const dynamic = 'force-dynamic'
+
+const CRON_SECRET = process.env.CRON_SECRET
+
+export async function GET(req: NextRequest) {
+  const authHeader = req.headers.get('authorization')
+  if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const profileIds = await listProfileIdsForDigest()
+  let sent    = 0
+  let skipped = 0
+  let optOut  = 0
+
+  for (const profileId of profileIds) {
+    const payload = await assembleDigestForProfile(profileId)
+    if (!payload) {
+      skipped++
+      continue
+    }
+
+    if (!(await shouldSend(profileId, 'email', 'lifecycle'))) {
+      optOut++
+      continue
+    }
+
+    await sendWeeklyDigestEmail({
+      to:                 payload.email,
+      recipientName:      payload.displayName,
+      recipientProfileId: payload.profileId,
+      dispatches:         payload.dispatches,
+      upcomingEvents:     payload.upcomingEvents,
+      topStreak:          payload.topStreak,
+      rank:               payload.rank,
+    })
+    sent++
+  }
+
+  console.log(
+    `[weekly-digest] candidates=${profileIds.length} sent=${sent} skipped(empty)=${skipped} optOut=${optOut}`
+  )
+
+  return NextResponse.json({
+    ok:        true,
+    candidates: profileIds.length,
+    sent,
+    skipped,
+    optOut,
+  })
+}
