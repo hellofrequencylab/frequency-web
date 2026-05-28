@@ -5,6 +5,8 @@ import { ChevronRight, Users, MapPin } from 'lucide-react'
 import { getPublicCircleById } from '@/lib/discover'
 import { SignInCta } from '@/components/discover/cards'
 import { SITE_NAME } from '@/lib/site'
+import { JsonLd } from '@/components/json-ld'
+import { breadcrumbSchema } from '@/lib/jsonld'
 
 export const revalidate = 3600
 
@@ -44,6 +46,14 @@ export default async function CirclePage({
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-12">
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: 'Discover', path: '/discover' },
+          { name: 'Circles', path: '/discover' },
+          { name: circle.name, path: `/discover/circles/${circle.id}` },
+        ])}
+      />
+
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-xs text-subtle mb-8">
         <Link href="/discover" className="hover:text-text transition-colors">Discover</Link>
