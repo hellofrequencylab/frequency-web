@@ -7,6 +7,7 @@ import type { CommunityRole } from '@/components/sidebar/right-sidebar'
 import { getUnreadCount } from '@/app/(main)/notifications/actions'
 import { AchievementToastContainer } from '@/components/achievement-toast'
 import { PresenceHeartbeat } from '@/components/presence/heartbeat'
+import { PushRegistration } from '@/components/push/registration'
 
 // Authenticated app layout — wraps Feed, Groups, Events, Admin.
 // Pages outside this group (onboarding, settings, sign-in, /people) render
@@ -50,6 +51,7 @@ export default async function MainLayout({
       {children}
       <AchievementToastContainer />
       <PresenceHeartbeat />
+      <PushRegistration />
     </AppShell>
   )
 }

@@ -599,6 +599,8 @@ export type Database = {
           created_at: string
           dispatch_type: string
           excerpt: string | null
+          hidden_at: string | null
+          hidden_by: string | null
           id: string
           linked_task_id: string | null
           published_at: string | null
@@ -615,6 +617,8 @@ export type Database = {
           created_at?: string
           dispatch_type?: string
           excerpt?: string | null
+          hidden_at?: string | null
+          hidden_by?: string | null
           id?: string
           linked_task_id?: string | null
           published_at?: string | null
@@ -631,6 +635,8 @@ export type Database = {
           created_at?: string
           dispatch_type?: string
           excerpt?: string | null
+          hidden_at?: string | null
+          hidden_by?: string | null
           id?: string
           linked_task_id?: string | null
           published_at?: string | null
@@ -643,6 +649,13 @@ export type Database = {
           {
             foreignKeyName: "dispatches_author_id_fkey"
             columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispatches_hidden_by_fkey"
+            columns: ["hidden_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -706,6 +719,9 @@ export type Database = {
           location: string | null
           mux_playback_id: string | null
           mux_stream_id: string | null
+          parent_event_id: string | null
+          recurrence_type: string
+          recurrence_until: string | null
           scope_id: string
           scope_type: string
           slug: string
@@ -722,6 +738,9 @@ export type Database = {
           location?: string | null
           mux_playback_id?: string | null
           mux_stream_id?: string | null
+          parent_event_id?: string | null
+          recurrence_type?: string
+          recurrence_until?: string | null
           scope_id: string
           scope_type: string
           slug: string
@@ -738,6 +757,9 @@ export type Database = {
           location?: string | null
           mux_playback_id?: string | null
           mux_stream_id?: string | null
+          parent_event_id?: string | null
+          recurrence_type?: string
+          recurrence_until?: string | null
           scope_id?: string
           scope_type?: string
           slug?: string
@@ -750,6 +772,13 @@ export type Database = {
             columns: ["host_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_parent_event_id_fkey"
+            columns: ["parent_event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
             referencedColumns: ["id"]
           },
         ]
@@ -909,6 +938,57 @@ export type Database = {
             columns: ["nexus_id"]
             isOneToOne: false
             referencedRelation: "nexuses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invite_links: {
+        Row: {
+          circle_id: string
+          created_at: string
+          created_by: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          max_uses: number
+          token: string
+          used_count: number
+        }
+        Insert: {
+          circle_id: string
+          created_at?: string
+          created_by: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number
+          token: string
+          used_count?: number
+        }
+        Update: {
+          circle_id?: string
+          created_at?: string
+          created_by?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number
+          token?: string
+          used_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invite_links_circle_id_fkey"
+            columns: ["circle_id"]
+            isOneToOne: false
+            referencedRelation: "circles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invite_links_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1102,6 +1182,68 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          created_at: string
+          email_dispatches: boolean
+          email_events: boolean
+          email_lifecycle: boolean
+          email_mentions: boolean
+          inapp_dispatches: boolean
+          inapp_events: boolean
+          inapp_lifecycle: boolean
+          inapp_mentions: boolean
+          profile_id: string
+          push_dispatches: boolean
+          push_events: boolean
+          push_lifecycle: boolean
+          push_mentions: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email_dispatches?: boolean
+          email_events?: boolean
+          email_lifecycle?: boolean
+          email_mentions?: boolean
+          inapp_dispatches?: boolean
+          inapp_events?: boolean
+          inapp_lifecycle?: boolean
+          inapp_mentions?: boolean
+          profile_id: string
+          push_dispatches?: boolean
+          push_events?: boolean
+          push_lifecycle?: boolean
+          push_mentions?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email_dispatches?: boolean
+          email_events?: boolean
+          email_lifecycle?: boolean
+          email_mentions?: boolean
+          inapp_dispatches?: boolean
+          inapp_events?: boolean
+          inapp_lifecycle?: boolean
+          inapp_mentions?: boolean
+          profile_id?: string
+          push_dispatches?: boolean
+          push_events?: boolean
+          push_lifecycle?: boolean
+          push_mentions?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           actor_id: string | null
@@ -1267,6 +1409,8 @@ export type Database = {
           comment_count: number
           created_at: string | null
           engagement_score: number
+          hidden_at: string | null
+          hidden_by: string | null
           id: string
           is_pinned: boolean | null
           media_urls: string[] | null
@@ -1284,6 +1428,8 @@ export type Database = {
           comment_count?: number
           created_at?: string | null
           engagement_score?: number
+          hidden_at?: string | null
+          hidden_by?: string | null
           id?: string
           is_pinned?: boolean | null
           media_urls?: string[] | null
@@ -1301,6 +1447,8 @@ export type Database = {
           comment_count?: number
           created_at?: string | null
           engagement_score?: number
+          hidden_at?: string | null
+          hidden_by?: string | null
           id?: string
           is_pinned?: boolean | null
           media_urls?: string[] | null
@@ -1316,6 +1464,13 @@ export type Database = {
           {
             foreignKeyName: "posts_author_id_fkey"
             columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_hidden_by_fkey"
+            columns: ["hidden_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1349,6 +1504,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           is_crew_lead: boolean | null
+          is_system: boolean
           last_seen_at: string | null
           lifetime_gems: number
           lifetime_zaps: number
@@ -1359,6 +1515,10 @@ export type Database = {
           profile_flair: string | null
           profile_theme: string | null
           season_challenges_complete: boolean
+          suspended_at: string | null
+          suspended_by: string | null
+          suspended_reason: string | null
+          suspended_until: string | null
           updated_at: string | null
           website: string | null
         }
@@ -1381,6 +1541,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_crew_lead?: boolean | null
+          is_system?: boolean
           last_seen_at?: string | null
           lifetime_gems?: number
           lifetime_zaps?: number
@@ -1391,6 +1552,10 @@ export type Database = {
           profile_flair?: string | null
           profile_theme?: string | null
           season_challenges_complete?: boolean
+          suspended_at?: string | null
+          suspended_by?: string | null
+          suspended_reason?: string | null
+          suspended_until?: string | null
           updated_at?: string | null
           website?: string | null
         }
@@ -1413,6 +1578,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_crew_lead?: boolean | null
+          is_system?: boolean
           last_seen_at?: string | null
           lifetime_gems?: number
           lifetime_zaps?: number
@@ -1423,6 +1589,10 @@ export type Database = {
           profile_flair?: string | null
           profile_theme?: string | null
           season_challenges_complete?: boolean
+          suspended_at?: string | null
+          suspended_by?: string | null
+          suspended_reason?: string | null
+          suspended_until?: string | null
           updated_at?: string | null
           website?: string | null
         }
@@ -1432,6 +1602,13 @@ export type Database = {
             columns: ["nexus_region_id"]
             isOneToOne: false
             referencedRelation: "nexus_regions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_suspended_by_fkey"
+            columns: ["suspended_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
