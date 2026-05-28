@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { processGamificationEvent, recordStreakActivity } from '@/lib/achievements'
 
 async function getMyProfileId(): Promise<string | null> {
   const supabase = await createClient()
@@ -27,7 +28,7 @@ export async function logCompletion(taskId: string) {
   // Load task to check repeatability and zaps value
   const { data: task } = await admin
     .from('crew_tasks')
-    .select('id, zaps_value, is_repeatable, requires_verification')
+    .select('id, zaps_value, is_repeatable, requires_verification, task_type')
     .eq('id', taskId)
     .maybeSingle()
 
@@ -56,5 +57,15 @@ export async function logCompletion(taskId: string) {
     return
   }
 
+  // Fire gamification events (non-blocking)
+  processGamificationEvent({ type: 'task_complete', profileId }).catch(() => {})
+  if (task.task_type === 'attendance') {
+    recordStreakActivity(profileId, 'attendance').catch(() => {})
+  } else if (task.task_type === 'hosting') {
+    recordStreakActivity(profileId, 'hosting').catch(() => {})
+  }
+
   revalidatePath('/crew')
+  revalidatePath('/crew/achievements')
+  revalidatePath('/crew/challenges')
 }

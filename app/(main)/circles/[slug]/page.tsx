@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { Users, MessageSquare, Settings2 } from 'lucide-react'
+import { Users, MessageSquare, Settings2, Activity, TrendingUp, Zap, Flame } from 'lucide-react'
 import { ContextActions } from '@/components/context-actions'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
@@ -14,6 +14,7 @@ import { HierarchyBreadcrumb } from '@/components/hierarchy/breadcrumb'
 import { StatusBadge } from '@/components/groups/status-badge'
 import { HostInviteButton } from '@/components/circles/host-invite-button'
 import { getInitials } from '@/lib/utils'
+import { ProfileFlair } from '@/components/profile-flair'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor'
 
@@ -63,6 +64,9 @@ type MemberRow = {
     handle: string
     avatar_url: string | null
     community_role: CommunityRole
+    current_season_rank: string | null
+    current_streak: number
+    achievement_count: number
   }
 }
 
@@ -103,13 +107,40 @@ export default async function CirclePage({
     .from('memberships')
     .select(
       `id, volunteer_role, joined_at, is_crew_lead,
-       profile:profiles!profile_id ( id, display_name, handle, avatar_url, community_role )`
+       profile:profiles!profile_id ( id, display_name, handle, avatar_url, community_role, current_season_rank, current_streak, achievement_count )`
     )
     .eq('circle_id', circle.id)
     .eq('status', 'active')
     .order('joined_at', { ascending: true })
 
   const members = (rawMembers ?? []) as unknown as MemberRow[]
+
+  // Circle health metrics
+  const memberProfileIds = (rawMembers ?? []).map((m: any) => m.profile?.id).filter(Boolean)
+  let healthScore = { avgZaps: 0, totalZaps: 0, activeStreaks: 0, totalAchievements: 0, newThisWeek: 0 }
+
+  if (memberProfileIds.length > 0) {
+    const [{ data: memberProfiles }, { data: recentJoins }] = await Promise.all([
+      admin.from('profiles')
+        .select('current_season_zaps, current_streak, achievement_count')
+        .in('id', memberProfileIds),
+      admin.from('memberships')
+        .select('id')
+        .eq('circle_id', circle.id)
+        .eq('status', 'active')
+        .gte('joined_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
+    ])
+
+    const profiles = (memberProfiles ?? []) as any[]
+    const totalZaps = profiles.reduce((s, p) => s + (p.current_season_zaps ?? 0), 0)
+    healthScore = {
+      avgZaps: profiles.length > 0 ? Math.round(totalZaps / profiles.length) : 0,
+      totalZaps,
+      activeStreaks: profiles.filter(p => (p.current_streak ?? 0) > 0).length,
+      totalAchievements: profiles.reduce((s, p) => s + (p.achievement_count ?? 0), 0),
+      newThisWeek: recentJoins?.length ?? 0,
+    }
+  }
 
   // Current user
   const {
@@ -302,6 +333,23 @@ export default async function CirclePage({
         </div>
       )}
 
+      {/* ── Circle Health Score (host+ only) ──────── */}
+      {isHost && healthScore.totalZaps > 0 && (
+        <div className="mb-6 rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-gray-100/80 dark:border-gray-800/50 flex items-center gap-2">
+            <Activity className="w-3.5 h-3.5 text-emerald-500" />
+            <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Circle Health</h3>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-px bg-gray-100 dark:bg-gray-800">
+            <HealthStat label="Avg Zaps" value={healthScore.avgZaps.toLocaleString()} Icon={Zap} />
+            <HealthStat label="Total Zaps" value={healthScore.totalZaps.toLocaleString()} Icon={TrendingUp} />
+            <HealthStat label="Active Streaks" value={String(healthScore.activeStreaks)} Icon={Flame} />
+            <HealthStat label="Badges Earned" value={String(healthScore.totalAchievements)} Icon={Activity} />
+            <HealthStat label="New This Week" value={String(healthScore.newThisWeek)} Icon={Users} />
+          </div>
+        </div>
+      )}
+
       {/* ── Members ────────────────────────────────── */}
       <section>
         <h2 className="text-sm font-semibold text-gray-700 mb-3">
@@ -364,6 +412,11 @@ export default async function CirclePage({
                         <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${badge.cls}`}>
                           {badge.label}
                         </span>
+                        <ProfileFlair
+                          rank={profile.current_season_rank}
+                          streak={profile.current_streak}
+                          compact
+                        />
                       </div>
                       <p className="text-xs text-gray-400 mt-0.5">@{profile.handle}</p>
                     </div>
@@ -409,6 +462,16 @@ export default async function CirclePage({
           emptyMessage="No posts yet. Be the first to share something."
         />
       </section>
+    </div>
+  )
+}
+
+function HealthStat({ label, value, Icon }: { label: string; value: string; Icon: React.ElementType }) {
+  return (
+    <div className="bg-white dark:bg-gray-900 px-3 py-2.5 text-center">
+      <Icon className="w-3.5 h-3.5 text-gray-400 mx-auto mb-1" />
+      <div className="text-lg font-bold text-gray-900 dark:text-gray-50 leading-none">{value}</div>
+      <div className="text-[10px] text-gray-400 mt-0.5">{label}</div>
     </div>
   )
 }

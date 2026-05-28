@@ -6,6 +6,7 @@ import AppShell from '@/components/layout/app-shell'
 import RightSidebar from '@/components/sidebar/right-sidebar'
 import type { CommunityRole } from '@/components/sidebar/right-sidebar'
 import { getUnreadCount } from '@/app/(main)/notifications/actions'
+import { AchievementToastContainer } from '@/components/achievement-toast'
 
 // Authenticated app layout — wraps Feed, Groups, Events, Admin.
 // Pages outside this group (onboarding, settings, sign-in, /people) render
@@ -48,6 +49,7 @@ export default async function MainLayout({
   return (
     <AppShell profile={profile} sidebar={sidebar} unreadCount={unreadCount}>
       {children}
+      <AchievementToastContainer />
     </AppShell>
   )
 }
