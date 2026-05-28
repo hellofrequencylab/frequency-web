@@ -6,6 +6,7 @@ import { startConversation } from '@/app/(main)/messages/actions'
 import { Composer } from '@/components/feed/composer'
 import { ProfileFeed } from '@/components/feed/profile-feed'
 import { getInitials, relativeTime } from '@/lib/utils'
+import { FriendButton, type FriendState } from './friend-button'
 import {
   MessageSquare, CalendarDays, Zap, Users, Megaphone, Radio,
   MapPin, Pencil, ArrowRight, Trophy, Star,
@@ -98,6 +99,24 @@ export default async function ProfilePage({
 
   const profileId = profile.id as string
 
+  // Friendship state between viewer and this profile
+  let friendState: FriendState = { kind: 'none' }
+  if (myProfileId && myProfileId !== profileId) {
+    const pair = myProfileId < profileId
+      ? { user_a_id: myProfileId, user_b_id: profileId }
+      : { user_a_id: profileId, user_b_id: myProfileId }
+    const { data: f } = await admin
+      .from('friendships')
+      .select('status, requested_by')
+      .match(pair)
+      .maybeSingle()
+    if (f) {
+      if (f.status === 'accepted') friendState = { kind: 'accepted' }
+      else if (f.requested_by === myProfileId) friendState = { kind: 'pending_outgoing' }
+      else friendState = { kind: 'pending_incoming' }
+    }
+  }
+
   const [zapsResult, completionsCountResult, postsCountResult, circlesResult, channelsResult, eventsResult, dispatchesResult] = await Promise.all([
     admin.from('crew_completions').select('points_earned').eq('profile_id', profileId),
     admin.from('crew_completions').select('id', { count: 'exact', head: true }).eq('profile_id', profileId),
@@ -160,15 +179,20 @@ export default async function ProfilePage({
                   Edit
                 </Link>
               ) : user ? (
-                <form action={startConversation.bind(null, profileId)}>
-                  <button
-                    type="submit"
-                    className="flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700 hover:bg-indigo-100 transition-colors"
-                  >
-                    <MessageSquare className="w-3.5 h-3.5" />
-                    Message
-                  </button>
-                </form>
+                <>
+                  <FriendButton targetProfileId={profileId} state={friendState} />
+                  {friendState.kind === 'accepted' && (
+                    <form action={startConversation.bind(null, profileId)}>
+                      <button
+                        type="submit"
+                        className="flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700 hover:bg-indigo-100 transition-colors"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        Message
+                      </button>
+                    </form>
+                  )}
+                </>
               ) : null}
             </div>
           </div>

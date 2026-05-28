@@ -8,16 +8,22 @@ import type { NotificationItem } from '@/app/(main)/notifications/actions'
 import { relativeTime } from '@/lib/utils'
 
 const TYPE_ICON: Record<string, string> = {
-  reaction:       '❤️',
-  comment:        '💬',
-  mention:        '@',
-  dispatch:       '📣',
-  lifecycle_day1: '👋',
-  lifecycle_day3: '📅',
-  lifecycle_day7: '🎉',
+  reaction:        '❤️',
+  comment:         '💬',
+  mention:         '@',
+  dispatch:        '📣',
+  lifecycle_day1:  '👋',
+  lifecycle_day3:  '📅',
+  lifecycle_day7:  '🎉',
+  friend_request:  '👤',
+  friend_accepted: '🤝',
 }
 
 function notifHref(n: NotificationItem): string {
+  if (n.type === 'friend_request') return '/friends'
+  if (n.type === 'friend_accepted' && n.reference_type === 'profile' && n.reference_id) {
+    return '/friends'
+  }
   if (n.reference_type === 'post' && n.reference_id) return `/feed`
   if (n.reference_type === 'dispatch' && n.reference_id) return `/broadcast/${n.reference_id}`
   return '/feed'
