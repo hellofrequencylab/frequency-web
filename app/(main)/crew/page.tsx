@@ -140,7 +140,7 @@ export default async function CrewPage() {
         <div className="flex items-center gap-2 flex-wrap">
           <h1 className="text-xl font-semibold text-text">Crew Dashboard</h1>
           {isCrewLead && (
-            <span className="text-[11px] px-2 py-0.5 rounded-full bg-warning-bg dark:bg-warning-bg text-warning font-semibold">
+            <span className="text-[11px] px-2 py-0.5 rounded-md bg-warning-bg dark:bg-warning-bg text-warning font-semibold">
               Crew Lead
             </span>
           )}
@@ -299,16 +299,16 @@ export default async function CrewPage() {
                           }`}>
                             {task.name}
                           </span>
-                          <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-surface-elevated text-muted font-medium">
+                          <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-surface-elevated text-muted font-medium">
                             {TASK_TYPE_LABEL[task.task_type] ?? task.task_type}
                           </span>
                           {task.is_repeatable && (
-                            <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-signal-bg text-signal-strong font-medium">
+                            <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-signal-bg text-signal-strong font-medium">
                               Repeatable
                             </span>
                           )}
                           {task.requires_verification && (
-                            <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-warning-bg text-warning dark:text-primary font-medium">
+                            <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-warning-bg text-warning dark:text-primary font-medium">
                               Needs review
                             </span>
                           )}
@@ -411,7 +411,7 @@ export default async function CrewPage() {
                       </div>
 
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${memberRankDef.color} text-white`}>
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${memberRankDef.color} text-white`}>
                           {memberRankDef.label}
                         </span>
                         <div className="flex items-center gap-0.5">

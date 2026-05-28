@@ -164,7 +164,7 @@ export default async function ChannelPage({
 
           {myProfileId && (
             isTunedIn
-              ? <TunedInButton channelId={channel.id} />
+              ? <TunedInButton channelId={channel.id} channelName={channel.name} />
               : <TuneInButton channelId={channel.id} slug={channel.slug} />
           )}
         </div>
@@ -224,7 +224,7 @@ export default async function ChannelPage({
                     <span className="text-xs font-medium text-text truncate">
                       {c.name}
                     </span>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium shrink-0 ${
                       c.type === 'in-person'
                         ? 'bg-success-bg text-success'
                         : 'bg-signal-bg text-signal-strong'

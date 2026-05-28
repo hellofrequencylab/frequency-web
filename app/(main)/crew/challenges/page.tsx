@@ -88,7 +88,7 @@ export default async function ChallengesPage() {
                 <h2 className="text-sm font-semibold text-text">
                   {diff.label}
                 </h2>
-                <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-semibold ${diff.bg} ${diff.color}`}>
+                <span className={`text-[11px] px-1.5 py-0.5 rounded-md font-semibold ${diff.bg} ${diff.color}`}>
                   {items.filter(c => c.completedAt).length}/{items.length}
                 </span>
               </div>

@@ -223,7 +223,7 @@ export default async function EventsPage() {
                     </div>
                     <div className="flex items-center gap-2 flex-wrap mt-1">
                       {circleNames[event.scope_id] && (
-                        <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-primary-bg text-primary-strong font-medium">
+                        <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-primary-bg text-primary-strong font-medium">
                           {circleNames[event.scope_id]}
                         </span>
                       )}
@@ -231,7 +231,7 @@ export default async function EventsPage() {
                         <span className="text-[11px] text-subtle">{rsvpCounts[event.id]} going</span>
                       )}
                       {myRsvps.has(event.id) && (
-                        <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-success-bg text-success font-medium">
+                        <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-success-bg text-success font-medium">
                           ✓ Going
                         </span>
                       )}

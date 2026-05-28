@@ -57,17 +57,17 @@ export default async function StorePage() {
           <div className="mt-4 pt-3 border-t border-success/50 flex items-center gap-3 flex-wrap">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-signal">Equipped:</span>
             {equipped.border && (
-              <span className="text-xs px-2 py-0.5 rounded-full bg-success-bg text-success">
+              <span className="text-xs px-2 py-0.5 rounded-md bg-success-bg text-success">
                 Border: {equipped.border.replace('ring-', '').replace('-500', '')}
               </span>
             )}
             {equipped.flair && (
-              <span className="text-xs px-2 py-0.5 rounded-full bg-success-bg text-success">
+              <span className="text-xs px-2 py-0.5 rounded-md bg-success-bg text-success">
                 Flair: {equipped.flair}
               </span>
             )}
             {equipped.title && (
-              <span className="text-xs px-2 py-0.5 rounded-full bg-success-bg text-success">
+              <span className="text-xs px-2 py-0.5 rounded-md bg-success-bg text-success">
                 Title: {equipped.title}
               </span>
             )}

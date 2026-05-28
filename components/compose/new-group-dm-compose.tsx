@@ -124,7 +124,7 @@ export function NewGroupDMCompose({
           {recipients.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mb-2">
               {recipients.map(r => (
-                <span key={r.id} className="inline-flex items-center gap-1 rounded-full bg-primary-bg border border-primary-bg px-2 py-1 text-xs">
+                <span key={r.id} className="inline-flex items-center gap-1 rounded-md bg-primary-bg border border-primary-bg px-2 py-1 text-xs">
                   {r.avatar_url ? (
                     <img src={r.avatar_url} alt={r.display_name} className="w-4 h-4 rounded-full object-cover" />
                   ) : (

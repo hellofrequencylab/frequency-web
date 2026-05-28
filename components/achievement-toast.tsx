@@ -73,7 +73,7 @@ function AchievementToastCard({ achievement, onDismiss }: ToastProps) {
               {achievement.description}
             </p>
             <div className="flex items-center gap-2 mt-2">
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${tier.bg} ${tier.color}`}>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-semibold ${tier.bg} ${tier.color}`}>
                 {tier.label}
               </span>
               {achievement.zapsReward > 0 && (
