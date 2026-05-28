@@ -78,6 +78,7 @@ export default async function BroadcastPage() {
         linked_task:crew_tasks!linked_task_id ( id, name )
       `)
       .eq('status', 'published')
+      .is('hidden_at', null)
       .order('published_at', { ascending: false })
       .limit(40)
 

@@ -162,6 +162,7 @@ export async function fetchReplies(parentId: string) {
        author:profiles!author_id ( id, display_name, handle, avatar_url, community_role )`
     )
     .eq('parent_id', parentId)
+    .is('hidden_at', null)
     .order('created_at', { ascending: true })
     .limit(50)
   return (data ?? []) as unknown as Array<{

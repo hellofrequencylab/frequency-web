@@ -43,6 +43,7 @@ export default async function DispatchDetailPage({ params }: Props) {
       `)
       .eq('id', id)
       .eq('status', 'published')
+      .is('hidden_at', null)
       .maybeSingle(),
     user
       ? admin.from('profiles').select('id').eq('auth_user_id', user.id).maybeSingle()

@@ -100,6 +100,7 @@ export default async function SearchPage({
            author:profiles!author_id ( display_name, handle, avatar_url, community_role )`
         )
         .ilike('body', `%${query}%`)
+        .is('hidden_at', null)
         .order('created_at', { ascending: false })
         .limit(20)
       posts = (data ?? []) as unknown as PostRow[]

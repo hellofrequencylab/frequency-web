@@ -78,6 +78,7 @@ export async function FeedList({
         .select(POST_SELECT)
         .in('scope_id', circleIds)
         .is('parent_id', null)
+        .is('hidden_at', null)
         .order(order, { ascending: false })
         .limit(30)
       rawPosts = (data ?? []) as unknown as RawPost[]
@@ -88,11 +89,11 @@ export async function FeedList({
 
       const [publicR, groupR] = await Promise.all([
         admin.from('posts').select(POST_SELECT)
-          .eq('visibility', 'public').is('parent_id', null)
+          .eq('visibility', 'public').is('parent_id', null).is('hidden_at', null)
           .order(order, { ascending: false })
           .limit(20),
         admin.from('posts').select(POST_SELECT)
-          .eq('visibility', 'group').is('parent_id', null)
+          .eq('visibility', 'group').is('parent_id', null).is('hidden_at', null)
           .order(order, { ascending: false })
           .limit(30),
       ])
