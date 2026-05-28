@@ -101,7 +101,7 @@ export default async function ChannelPage({
     if (profile) {
       myProfileId = profile.id
       isCreator = channel.creator?.id === myProfileId
-      isCrew = ['crew', 'host', 'guide', 'mentor'].includes(profile.community_role)
+      isCrew = ['crew', 'host', 'guide', 'mentor', 'janitor'].includes(profile.community_role)
       isMember = members.some((m) => m.profile.id === myProfileId)
     }
   }

@@ -26,7 +26,7 @@ export default async function NewChannelPage() {
 
   if (!profile) notFound()
 
-  const creatableRoles = ['host', 'guide', 'mentor']
+  const creatableRoles = ['host', 'guide', 'mentor', 'janitor']
   if (!creatableRoles.includes(profile.community_role)) notFound()
 
   // Build scope options based on the user's role and position in hierarchy

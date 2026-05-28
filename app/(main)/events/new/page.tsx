@@ -21,7 +21,7 @@ export default async function NewEventPage() {
 
   if (!profile) notFound()
 
-  const crewRoles = ['crew', 'host', 'guide', 'mentor']
+  const crewRoles = ['crew', 'host', 'guide', 'mentor', 'janitor']
   if (!crewRoles.includes(profile.community_role)) notFound()
 
   // Fetch circles the user is a member of (scope for events)
