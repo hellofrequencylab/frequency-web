@@ -423,30 +423,35 @@ function MobileLeftDrawer({
         }`}
       />
 
-      {/* Panel */}
+      {/* Panel — narrowed to roughly the logo's footprint; close button lives at the bottom for thumb reach */}
       <aside
         role="dialog"
         aria-label="Navigation"
-        className={`absolute inset-y-0 left-0 w-72 max-w-[80vw] bg-white dark:bg-gray-900 shadow-2xl flex flex-col transform transition-transform duration-200 ease-out ${
+        className={`absolute inset-y-0 left-0 w-60 max-w-[75vw] bg-white dark:bg-gray-900 shadow-2xl flex flex-col transform transition-transform duration-200 ease-out ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="h-14 shrink-0 flex items-center justify-between px-4 border-b border-gray-200/60 dark:border-gray-800/60">
+        <div className="h-14 shrink-0 flex items-center px-4 border-b border-gray-200/60 dark:border-gray-800/60">
           <Link href="/feed" onClick={onClose} className="flex items-center">
             <img src="/frequency-logo.png" alt="Frequency" className="h-7 w-auto dark:invert" />
           </Link>
-          <button
-            onClick={onClose}
-            aria-label="Close navigation"
-            className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
           <NavLinkList isActive={isActive} role={role} onNavigate={onClose} />
         </nav>
+
+        {/* Bottom close — sits in the thumb zone */}
+        <div className="shrink-0 border-t border-gray-200/60 dark:border-gray-800/60 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <button
+            onClick={onClose}
+            aria-label="Close navigation"
+            className="w-full flex items-center justify-center gap-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 text-sm font-medium py-3 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          >
+            <X className="w-4 h-4" />
+            Close
+          </button>
+        </div>
       </aside>
     </div>
   )
