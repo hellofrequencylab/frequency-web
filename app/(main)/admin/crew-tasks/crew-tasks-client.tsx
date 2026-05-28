@@ -158,7 +158,7 @@ function VerificationQueue({ items }: { items: PendingVerification[] }) {
       <h2 className="text-sm font-semibold text-text mb-3 flex items-center gap-2">
         <ShieldCheck className="w-4 h-4 text-primary" />
         Pending Verification
-        <span className="text-xs font-normal text-subtle bg-warning-bg dark:bg-warning-bg text-warning px-1.5 py-0.5 rounded-full">{items.length}</span>
+        <span className="text-xs font-normal text-subtle bg-warning-bg dark:bg-warning-bg text-warning px-1.5 py-0.5 rounded-md">{items.length}</span>
       </h2>
       <div className="space-y-2">
         {items.map((c) => (
@@ -247,16 +247,16 @@ export function CrewTasksClient({ tasks, pendingVerifications = [] }: { tasks: C
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-sm font-medium text-text">{task.name}</span>
-                  <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-primary-bg text-primary-strong font-medium capitalize">
+                  <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-primary-bg text-primary-strong font-medium capitalize">
                     {task.task_type}
                   </span>
                   {task.is_repeatable && (
-                    <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-surface-elevated text-muted font-medium">
+                    <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-surface-elevated text-muted font-medium">
                       Repeatable
                     </span>
                   )}
                   {task.requires_verification && (
-                    <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-warning-bg dark:bg-warning-bg text-warning font-medium">
+                    <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-warning-bg dark:bg-warning-bg text-warning font-medium">
                       Needs verification
                     </span>
                   )}

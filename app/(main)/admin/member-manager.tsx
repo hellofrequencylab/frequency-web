@@ -161,12 +161,12 @@ export function MemberManager({ members }: { members: MemberItem[] }) {
                       {m.displayName}
                     </Link>
                     {m.isCrewLead && (
-                      <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-warning-bg dark:bg-warning-bg text-warning font-medium">
+                      <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-warning-bg dark:bg-warning-bg text-warning font-medium">
                         Crew Lead
                       </span>
                     )}
                     {isLuminary && (
-                      <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-warning-bg text-warning font-medium flex items-center gap-0.5">
+                      <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-warning-bg text-warning font-medium flex items-center gap-0.5">
                         <Star className="w-2.5 h-2.5" /> Luminary
                       </span>
                     )}

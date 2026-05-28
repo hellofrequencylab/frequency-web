@@ -39,7 +39,7 @@ export default async function UpgradePage() {
           <span className="text-xs font-black uppercase tracking-widest text-primary-strong">
             Free Beta
           </span>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-white bg-primary px-2 py-0.5 rounded-full">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-white bg-primary px-2 py-0.5 rounded-md">
             Active
           </span>
         </div>

@@ -163,7 +163,7 @@ export default async function SearchPage({
               {t}
               {query.length >= 2 && resultCount[t] > 0 && (
                 <span
-                  className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${
+                  className={`text-[11px] px-1.5 py-0.5 rounded-md font-medium ${
                     isActive
                       ? 'bg-canvas dark:bg-surface text-white dark:text-text'
                       : 'bg-surface-elevated text-muted'
@@ -225,7 +225,7 @@ export default async function SearchPage({
                           )}
                         </span>
                         {roleCls && (
-                          <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium capitalize ${roleCls}`}>
+                          <span className={`text-[11px] px-1.5 py-0.5 rounded-md font-medium capitalize ${roleCls}`}>
                             {p.community_role}
                           </span>
                         )}
@@ -278,7 +278,7 @@ export default async function SearchPage({
                           </Link>
                         )}
                         {roleCls && (
-                          <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium capitalize ${roleCls}`}>
+                          <span className={`text-[11px] px-1.5 py-0.5 rounded-md font-medium capitalize ${roleCls}`}>
                             {a!.community_role}
                           </span>
                         )}
@@ -330,7 +330,7 @@ export default async function SearchPage({
                         {event.title}
                       </span>
                       {event.is_cancelled && (
-                        <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-danger-bg text-danger font-medium">
+                        <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-danger-bg text-danger font-medium">
                           Cancelled
                         </span>
                       )}

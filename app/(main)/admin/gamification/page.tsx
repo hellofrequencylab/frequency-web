@@ -135,7 +135,7 @@ export default async function AdminGamificationPage() {
               const tier = TIER_CONFIG[a.tier as AchievementTier]
               return (
                 <div key={a.id} className="flex items-center gap-3 px-4 py-2 border-b border-border dark:border-border/30 last:border-0">
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${tier.bg} ${tier.color}`}>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-semibold ${tier.bg} ${tier.color}`}>
                     {tier.label}
                   </span>
                   <span className="text-xs text-text flex-1 truncate">{a.name}</span>
@@ -163,7 +163,7 @@ export default async function AdminGamificationPage() {
               const diff = DIFFICULTY_CONFIG[c.difficulty as ChallengeDifficulty]
               return (
                 <div key={c.id} className="flex items-center gap-3 px-4 py-2.5">
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${diff.bg} ${diff.color}`}>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-semibold ${diff.bg} ${diff.color}`}>
                     {diff.label}
                   </span>
                   <span className="text-xs text-text flex-1">{c.name}</span>

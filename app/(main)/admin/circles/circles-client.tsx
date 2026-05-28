@@ -188,10 +188,10 @@ export function CirclesClient({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-medium text-text">{circle.name}</span>
-                    <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium capitalize ${STATUS_COLOR[circle.status] ?? STATUS_COLOR.forming}`}>
+                    <span className={`text-[11px] px-1.5 py-0.5 rounded-md font-medium capitalize ${STATUS_COLOR[circle.status] ?? STATUS_COLOR.forming}`}>
                       {circle.status}
                     </span>
-                    <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-surface-elevated text-muted font-medium">
+                    <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-surface-elevated text-muted font-medium">
                       {circle.type}
                     </span>
                   </div>

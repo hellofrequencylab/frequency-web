@@ -242,7 +242,7 @@ function CircleCard({
               {circle.name}
             </Link>
             <StatusBadge status={circle.status} />
-            <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-surface-elevated text-muted font-medium">
+            <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-surface-elevated text-muted font-medium">
               {circle.type}
             </span>
           </div>
@@ -290,12 +290,12 @@ function CircleCard({
                 {circle.member_count} / {circle.member_cap} members
               </span>
               {nearCap && !full && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-warning-bg text-warning font-medium">
+                <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-warning-bg text-warning font-medium">
                   Almost full
                 </span>
               )}
               {full && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-danger-bg text-danger font-medium">
+                <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-danger-bg text-danger font-medium">
                   Full
                 </span>
               )}

@@ -204,10 +204,10 @@ export default async function ProfilePage({
           <p className="text-sm text-muted mt-0.5">@{profile.handle}</p>
 
           <div className="flex items-center gap-2 mt-2.5 flex-wrap">
-            <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${badge.cls}`}>
+            <span className={`px-2.5 py-0.5 rounded-md text-xs font-medium ${badge.cls}`}>
               {badge.label}
             </span>
-            <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${rank.cls}`}>
+            <span className={`px-2.5 py-0.5 rounded-md text-xs font-medium ${rank.cls}`}>
               {rank.name}
             </span>
           </div>
@@ -279,7 +279,7 @@ export default async function ProfilePage({
           <SidebarCard title="Season rank">
             <div className="px-4 py-3">
               <div className="flex items-center justify-between mb-2">
-                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${rank.cls}`}>{rank.name}</span>
+                <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${rank.cls}`}>{rank.name}</span>
                 <span className="text-[11px] text-subtle flex items-center gap-1">
                   <Zap className="w-3 h-3 text-primary" /> {totalZaps}
                 </span>

@@ -104,7 +104,7 @@ export default async function DirectoryPage({
           <span className="text-xs text-muted font-medium">Role:</span>
           <Link
             href={filterHref({ region: regionFilter })}
-            className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+            className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
               !roleFilter
                 ? 'bg-primary text-on-primary border-primary'
                 : 'bg-surface text-muted border-border hover:border-primary'
@@ -116,7 +116,7 @@ export default async function DirectoryPage({
             <Link
               key={r}
               href={filterHref({ role: r, region: regionFilter })}
-              className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+              className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
                 roleFilter === r
                   ? 'bg-primary text-on-primary border-primary'
                   : 'bg-surface text-muted border-border hover:border-primary'
@@ -133,7 +133,7 @@ export default async function DirectoryPage({
             <span className="text-xs text-muted font-medium">Region:</span>
             <Link
               href={filterHref({ role: roleFilter })}
-              className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+              className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
                 !regionFilter
                   ? 'bg-primary text-on-primary border-primary'
                   : 'bg-surface text-muted border-border hover:border-primary'
@@ -145,7 +145,7 @@ export default async function DirectoryPage({
               <Link
                 key={reg.id}
                 href={filterHref({ role: roleFilter, region: reg.name })}
-                className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
                   regionFilter === reg.name
                     ? 'bg-primary text-on-primary border-primary'
                     : 'bg-surface text-muted border-border hover:border-primary'
@@ -195,7 +195,7 @@ export default async function DirectoryPage({
                   </p>
                   <p className="text-xs text-subtle truncate">@{p.handle}</p>
                   <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                    <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${badge.cls}`}>
+                    <span className={`text-[11px] px-1.5 py-0.5 rounded-md font-medium ${badge.cls}`}>
                       {badge.label}
                     </span>
                     {p.nexus_regions?.name && (

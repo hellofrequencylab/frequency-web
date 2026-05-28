@@ -113,7 +113,7 @@ export function NexusesClient({ nexuses, mentors }: { nexuses: NexusRow[]; mento
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-medium text-text">{nexus.name}</span>
-                    <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium capitalize ${STATUS_COLOR[nexus.status] ?? STATUS_COLOR.forming}`}>{nexus.status}</span>
+                    <span className={`text-[11px] px-1.5 py-0.5 rounded-md font-medium capitalize ${STATUS_COLOR[nexus.status] ?? STATUS_COLOR.forming}`}>{nexus.status}</span>
                   </div>
                   <p className="text-xs text-subtle mt-0.5">
                     {nexus._hub_count} hub{nexus._hub_count !== 1 ? 's' : ''} · cap {nexus.member_cap}

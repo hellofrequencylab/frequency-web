@@ -204,7 +204,7 @@ function ChannelCard({
           </Link>
           {canToggle && (
             isTunedIn
-              ? <TunedInButton channelId={channel.id} />
+              ? <TunedInButton channelId={channel.id} channelName={channel.name} />
               : <TuneInButton channelId={channel.id} slug={channel.slug} />
           )}
         </div>
