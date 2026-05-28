@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Heart, ThumbsUp, Megaphone, Clock, MessageCircle, TrendingUp, Users, Radio, ArrowRight } from 'lucide-react'
+import { Heart, ThumbsUp, Megaphone, MessageCircle, Users, Radio, ArrowRight } from 'lucide-react'
 import { toggleReaction } from '@/app/(main)/feed/actions'
 import { PostReplies } from './post-replies'
 import { ContextActions } from '@/components/context-actions'
@@ -262,64 +262,56 @@ export function PostCard({
         </div>
 
         {/* ── Stats sidebar (desktop only) ─────────── */}
-        <div className="hidden md:flex w-44 shrink-0 flex-col gap-3 border-l border-gray-100/80 dark:border-gray-800/50 bg-indigo-50/20 dark:bg-indigo-950/10 rounded-r-2xl p-3">
-          {/* Post type */}
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">Type</p>
-            <span className={`inline-block text-[11px] px-2 py-0.5 rounded-full font-medium ${typeInfo.cls}`}>
-              {typeInfo.label}
+        <div className="hidden md:flex w-36 shrink-0 flex-col gap-2.5 border-l border-gray-100/80 dark:border-gray-800/50 rounded-r-2xl p-3">
+          {/* Author rank badge */}
+          <div className="flex items-center gap-1.5">
+            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${badge.cls}`}>
+              {badge.label}
             </span>
           </div>
 
-          {/* Timestamp */}
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">Posted</p>
-            <div className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
-              <Clock className="w-3 h-3 text-gray-400 dark:text-gray-600" />
-              <div>
-                <p className="leading-tight">{formatPostDate(post.created_at)}</p>
-                <p className="text-[11px] text-gray-400 dark:text-gray-500">{formatPostTime(post.created_at)}</p>
-              </div>
+          {/* Zap values for interactions */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-gray-400">
+                <Heart className="w-2.5 h-2.5 inline mr-0.5 -mt-px" />React
+              </span>
+              <span className="text-[10px] font-semibold text-amber-500">+1 zap</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-gray-400">
+                <MessageCircle className="w-2.5 h-2.5 inline mr-0.5 -mt-px" />Reply
+              </span>
+              <span className="text-[10px] font-semibold text-amber-500">+2 zaps</span>
             </div>
           </div>
 
-          {/* Engagement */}
+          {/* Engagement stats */}
           {(totalReactions > 0 || replyCount > 0) && (
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">Engagement</p>
-              <div className="space-y-1">
-                {totalReactions > 0 && (
-                  <div className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
-                    <Heart className="w-3 h-3 text-gray-400 dark:text-gray-600" />
-                    <span>{totalReactions} reaction{totalReactions !== 1 ? 's' : ''}</span>
-                  </div>
-                )}
-                {replyCount > 0 && (
-                  <div className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
-                    <MessageCircle className="w-3 h-3 text-gray-400 dark:text-gray-600" />
-                    <span>{replyCount} repl{replyCount !== 1 ? 'ies' : 'y'}</span>
-                  </div>
-                )}
-              </div>
+            <div className="pt-2 border-t border-gray-100 dark:border-gray-800 space-y-1">
+              {totalReactions > 0 && (
+                <div className="flex items-center justify-between text-[10px]">
+                  <span className="text-gray-400">{totalReactions} reaction{totalReactions !== 1 ? 's' : ''}</span>
+                  <span className="font-medium text-amber-500/70">{totalReactions} zap{totalReactions !== 1 ? 's' : ''}</span>
+                </div>
+              )}
+              {replyCount > 0 && (
+                <div className="flex items-center justify-between text-[10px]">
+                  <span className="text-gray-400">{replyCount} repl{replyCount !== 1 ? 'ies' : 'y'}</span>
+                  <span className="font-medium text-amber-500/70">{replyCount * 2} zaps</span>
+                </div>
+              )}
             </div>
           )}
 
-          {/* Engagement score */}
-          {(post.engagement_score ?? 0) > 0 && (
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">Score</p>
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400">
-                <TrendingUp className="w-3 h-3" />
-                <span>{post.engagement_score}</span>
-              </div>
-            </div>
-          )}
+          {/* Timestamp */}
+          <div className="mt-auto pt-2 border-t border-gray-100 dark:border-gray-800">
+            <p className="text-[10px] text-gray-400 leading-tight">{formatPostDate(post.created_at)}</p>
+            <p className="text-[10px] text-gray-300 dark:text-gray-600">{formatPostTime(post.created_at)}</p>
+          </div>
 
-          {/* Pinned indicator */}
           {post.is_pinned && (
-            <div className="mt-auto pt-2 border-t border-gray-200 dark:border-gray-800">
-              <span className="text-[11px] text-indigo-500 font-medium">📌 Pinned</span>
-            </div>
+            <span className="text-[10px] text-indigo-500 font-medium">📌 Pinned</span>
           )}
         </div>
       </div>
