@@ -31,38 +31,11 @@ import {
 import { getInitials } from '@/lib/utils'
 import { NotificationBell } from '@/components/layout/notification-bell'
 import { MessagesPopover } from '@/components/messages/messages-popover'
-
-type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
-
-// Dawn volunteer ladder (Section 6): Crew → Hosts → Guides → Mentors maps to
-// stone → clay → jade → plum. `member` is *not* a rank, so it renders as a
-// neutral muted chip. `janitor` is outside the volunteer ladder. Parked on
-// slate (admin-feeling) until product weighs in.
-type RankKey = 'stone' | 'clay' | 'jade' | 'plum' | 'slate'
-const ROLE_RANK: Record<CommunityRole, RankKey | null> = {
-  member:  null,
-  crew:    'stone',
-  host:    'clay',
-  guide:   'jade',
-  mentor:  'plum',
-  janitor: 'slate',
-}
-const ROLE_LABEL: Record<CommunityRole, string> = {
-  member:  'Member',
-  crew:    'Crew',
-  host:    'Host',
-  guide:   'Guide',
-  mentor:  'Mentor',
-  janitor: 'Janitor',
-}
-function rankStyle(rank: RankKey | null): React.CSSProperties {
-  if (!rank) return {}
-  return {
-    ['--rank' as string]:        `var(--rank-${rank})`,
-    ['--rank-deep' as string]:   `var(--rank-${rank}-deep)`,
-    ['--rank-bright' as string]: `var(--rank-${rank}-bright)`,
-  }
-}
+import {
+  type CommunityRole,
+  ROLE_LABEL,
+  roleBadgeStyle,
+} from '@/lib/community-roles'
 
 const SIDEBAR_NAV = [
   { href: '/feed',      label: 'Feed',      Icon: Home },
@@ -137,7 +110,6 @@ function ProfileCard({
   role: CommunityRole
   profileHref: string
 }) {
-  const rank = ROLE_RANK[role]
   return (
     <div className="flex items-start gap-2.5 rounded-xl p-2 hover:bg-surface-elevated transition-colors group">
       <Link href={profileHref} className="shrink-0">
@@ -160,15 +132,9 @@ function ProfileCard({
           </p>
         </Link>
         <div className="flex items-center gap-1 mt-1">
-          {rank ? (
-            <span className="rank-badge text-[10px] leading-tight" style={rankStyle(rank)}>
-              {ROLE_LABEL[role]}
-            </span>
-          ) : (
-            <span className="text-[10px] px-1.5 py-px rounded-md font-medium leading-tight bg-surface-elevated text-muted">
-              {ROLE_LABEL[role]}
-            </span>
-          )}
+          <span className="rank-badge text-[10px] leading-tight" style={roleBadgeStyle(role)}>
+            {ROLE_LABEL[role]}
+          </span>
           <Link
             href="/settings"
             aria-label="Member settings"
@@ -506,7 +472,6 @@ function ProfileBottomBar({
 }) {
   const seasonZaps = profile.current_season_zaps ?? 0
   const lifetimeGems = profile.lifetime_gems ?? 0
-  const rank = ROLE_RANK[role]
 
   return (
     <nav
@@ -537,18 +502,12 @@ function ProfileBottomBar({
           <p className="text-xs font-semibold text-text truncate leading-tight">
             {profile.display_name}
           </p>
-          {rank ? (
-            <span
-              className="rank-badge mt-0.5 text-[9px] leading-tight"
-              style={rankStyle(rank)}
-            >
-              {ROLE_LABEL[role]}
-            </span>
-          ) : (
-            <span className="inline-block mt-0.5 text-[9px] px-1.5 py-px rounded-md font-medium bg-surface-elevated text-muted">
-              {ROLE_LABEL[role]}
-            </span>
-          )}
+          <span
+            className="rank-badge mt-0.5 text-[9px] leading-tight"
+            style={roleBadgeStyle(role)}
+          >
+            {ROLE_LABEL[role]}
+          </span>
         </div>
       </Link>
 

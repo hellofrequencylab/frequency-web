@@ -5,17 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { Globe } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { InviteMemberCompose } from '@/components/compose/invite-member-compose'
-
-type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
-
-const ROLE_BADGE: Record<CommunityRole, { label: string; cls: string }> = {
-  member:  { label: 'Member',  cls: 'bg-surface-elevated text-muted dark:bg-surface-elevated dark:text-subtle' },
-  crew:    { label: 'Crew',    cls: 'bg-signal-bg text-signal-strong' },
-  host:    { label: 'Host',    cls: 'bg-success-bg text-success' },
-  guide:   { label: 'Guide',   cls: 'bg-signal-bg text-signal-strong' },
-  mentor:  { label: 'Mentor',  cls: 'bg-warning-bg text-warning' },
-  janitor: { label: 'Janitor', cls: 'bg-signal-bg text-signal-strong' },
-}
+import { type CommunityRole, ROLE_LABEL, RoleBadge } from '@/lib/community-roles'
 
 type Profile = {
   id: string
@@ -123,7 +113,7 @@ export default async function DirectoryPage({
                   : 'bg-surface text-muted border-border hover:border-primary'
               }`}
             >
-              {ROLE_BADGE[r].label}
+              {ROLE_LABEL[r]}
             </Link>
           ))}
         </div>
@@ -172,7 +162,6 @@ export default async function DirectoryPage({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {filtered.map(p => {
             const role = (p.community_role ?? 'member') as CommunityRole
-            const badge = ROLE_BADGE[role] ?? ROLE_BADGE.member
             return (
               <Link
                 key={p.id}
@@ -196,9 +185,7 @@ export default async function DirectoryPage({
                   </p>
                   <p className="text-xs text-subtle truncate">@{p.handle}</p>
                   <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                    <span className={`text-[11px] px-1.5 py-0.5 rounded-md font-medium ${badge.cls}`}>
-                      {badge.label}
-                    </span>
+                    <RoleBadge role={role} className="text-[11px] leading-tight" />
                     {p.nexus_regions?.name && (
                       <span className="text-[11px] text-subtle">{p.nexus_regions.name}</span>
                     )}

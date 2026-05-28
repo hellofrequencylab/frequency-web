@@ -15,16 +15,7 @@ import { StatusBadge } from '@/components/groups/status-badge'
 import { HostInviteButton } from '@/components/circles/host-invite-button'
 import { getInitials } from '@/lib/utils'
 import { ProfileFlair } from '@/components/profile-flair'
-
-type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor'
-
-const ROLE_BADGE: Record<CommunityRole, { label: string; cls: string }> = {
-  member: { label: 'Member', cls: 'bg-surface-elevated text-muted' },
-  crew:   { label: 'Crew',   cls: 'bg-signal-bg text-signal-strong' },
-  host:   { label: 'Host',   cls: 'bg-success-bg text-success' },
-  guide:  { label: 'Guide',  cls: 'bg-signal-bg text-signal-strong' },
-  mentor: { label: 'Mentor', cls: 'bg-warning-bg text-warning' },
-}
+import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
 
 type CircleDetail = {
   id: string
@@ -364,8 +355,6 @@ export default async function CirclePage({
             {sorted.map(({ profile, volunteer_role, is_crew_lead }) => {
               const memberIsHost = circle.host?.id === profile.id
               const role = (profile.community_role ?? 'member') as CommunityRole
-              const badge = ROLE_BADGE[role] ?? ROLE_BADGE.member
-              const volBadge = volunteer_role ? ROLE_BADGE[volunteer_role] : null
               const isSelf = profile.id === myProfileId
 
               return (
@@ -404,14 +393,10 @@ export default async function CirclePage({
                             Crew Lead
                           </span>
                         )}
-                        {volBadge && !memberIsHost && (
-                          <span className={`text-[11px] px-1.5 py-0.5 rounded-md font-medium ${volBadge.cls}`}>
-                            {volBadge.label}
-                          </span>
+                        {volunteer_role && !memberIsHost && (
+                          <RoleBadge role={volunteer_role} className="text-[11px] leading-tight" />
                         )}
-                        <span className={`text-[11px] px-1.5 py-0.5 rounded-md font-medium ${badge.cls}`}>
-                          {badge.label}
-                        </span>
+                        <RoleBadge role={role} className="text-[11px] leading-tight" />
                         <ProfileFlair
                           rank={profile.current_season_rank}
                           streak={profile.current_streak}
