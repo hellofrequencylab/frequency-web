@@ -142,6 +142,76 @@ export async function markRoomRead(roomId: string) {
     .eq('profile_id', caller.id)
 }
 
+async function assertRoomAdmin(roomId: string, callerId: string) {
+  const admin = createAdminClient()
+  const { data } = await admin
+    .from('room_members')
+    .select('is_admin')
+    .eq('room_id', roomId)
+    .eq('profile_id', callerId)
+    .maybeSingle()
+  if (!data?.is_admin) throw new Error('You must be a room admin to do that')
+}
+
+export async function removeFromRoom(roomId: string, profileId: string) {
+  const caller = await getCallerProfile()
+  if (!caller) redirect('/sign-in')
+  await assertRoomAdmin(roomId, caller.id)
+  if (caller.id === profileId) throw new Error('Use Leave to remove yourself')
+
+  const admin = createAdminClient()
+  await admin.from('room_members').delete()
+    .eq('room_id', roomId)
+    .eq('profile_id', profileId)
+
+  revalidatePath(`/messages/r/${roomId}`)
+}
+
+export async function promoteRoomMember(roomId: string, profileId: string) {
+  const caller = await getCallerProfile()
+  if (!caller) redirect('/sign-in')
+  await assertRoomAdmin(roomId, caller.id)
+
+  const admin = createAdminClient()
+  await admin.from('room_members').update({ is_admin: true })
+    .eq('room_id', roomId)
+    .eq('profile_id', profileId)
+
+  revalidatePath(`/messages/r/${roomId}`)
+}
+
+export async function demoteRoomMember(roomId: string, profileId: string) {
+  const caller = await getCallerProfile()
+  if (!caller) redirect('/sign-in')
+  await assertRoomAdmin(roomId, caller.id)
+
+  // Prevent demoting the last admin
+  const admin = createAdminClient()
+  const { count } = await admin
+    .from('room_members')
+    .select('profile_id', { count: 'exact', head: true })
+    .eq('room_id', roomId)
+    .eq('is_admin', true)
+  if ((count ?? 0) <= 1) throw new Error('Cannot demote the last admin')
+
+  await admin.from('room_members').update({ is_admin: false })
+    .eq('room_id', roomId)
+    .eq('profile_id', profileId)
+
+  revalidatePath(`/messages/r/${roomId}`)
+}
+
+export async function deleteRoom(roomId: string) {
+  const caller = await getCallerProfile()
+  if (!caller) redirect('/sign-in')
+  await assertRoomAdmin(roomId, caller.id)
+
+  const admin = createAdminClient()
+  await admin.from('rooms').delete().eq('id', roomId)
+  revalidatePath('/messages')
+  redirect('/messages')
+}
+
 export async function inviteToRoom(roomId: string, profileId: string) {
   const caller = await getCallerProfile()
   if (!caller) redirect('/sign-in')

@@ -6,6 +6,8 @@ import { createClient } from '@/lib/supabase/server'
 import { getInitials } from '@/lib/utils'
 import { joinRoom, leaveRoom } from '../../rooms/actions'
 import { RoomThread } from '@/components/rooms/room-thread'
+import { InviteToRoomButton } from '@/components/rooms/invite-to-room-button'
+import { MemberRowActions } from '@/components/rooms/member-row-actions'
 
 export default async function RoomPage({
   params,
@@ -165,31 +167,35 @@ export default async function RoomPage({
         {/* Members sidebar (desktop) */}
         <aside className="hidden lg:flex w-64 shrink-0 flex-col border-l border-gray-200/60 dark:border-gray-800/60 bg-gray-50/30 dark:bg-gray-900/30">
           <div className="px-4 py-3 border-b border-gray-200/60 dark:border-gray-800/60">
-            <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+            <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">
               Members ({r.member_count})
             </h3>
+            {isMember && <InviteToRoomButton roomId={roomId} />}
           </div>
           <ul className="flex-1 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-800/50">
             {members.map(m => {
               const p = m.profile!
+              const isSelf = p.id === myProfileId
               return (
                 <li key={p.id}>
-                  <Link
-                    href={`/people/${p.handle}`}
-                    className="flex items-center gap-2.5 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
-                  >
-                    {p.avatar_url ? (
-                      <img src={p.avatar_url} alt={p.display_name} className="w-7 h-7 rounded-full object-cover shrink-0" />
-                    ) : (
-                      <div className="w-7 h-7 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-[10px] font-semibold flex items-center justify-center shrink-0 select-none">
-                        {getInitials(p.display_name)}
+                  <div className="group flex items-center gap-2.5 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors">
+                    <Link href={`/people/${p.handle}`} className="flex items-center gap-2.5 flex-1 min-w-0">
+                      {p.avatar_url ? (
+                        <img src={p.avatar_url} alt={p.display_name} className="w-7 h-7 rounded-full object-cover shrink-0" />
+                      ) : (
+                        <div className="w-7 h-7 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-[10px] font-semibold flex items-center justify-center shrink-0 select-none">
+                          {getInitials(p.display_name)}
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">{p.display_name}</p>
+                        {m.is_admin && <p className="text-[10px] text-indigo-500">Admin</p>}
                       </div>
+                    </Link>
+                    {isAdmin && !isSelf && (
+                      <MemberRowActions roomId={roomId} memberId={p.id} isAdmin={m.is_admin} />
                     )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">{p.display_name}</p>
-                      {m.is_admin && <p className="text-[10px] text-indigo-500">Admin</p>}
-                    </div>
-                  </Link>
+                  </div>
                 </li>
               )
             })}
