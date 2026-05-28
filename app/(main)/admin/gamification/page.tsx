@@ -134,7 +134,7 @@ export default async function AdminGamificationPage() {
             {(achievements ?? []).map(a => {
               const tier = TIER_CONFIG[a.tier as AchievementTier]
               return (
-                <div key={a.id} className="flex items-center gap-3 px-4 py-2 border-b border-gray-50 dark:border-border/30 last:border-0">
+                <div key={a.id} className="flex items-center gap-3 px-4 py-2 border-b border-border dark:border-border/30 last:border-0">
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${tier.bg} ${tier.color}`}>
                     {tier.label}
                   </span>

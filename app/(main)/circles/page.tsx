@@ -303,7 +303,7 @@ function CircleCard({
             <div className="mt-1 h-1 max-w-xs rounded-full bg-surface-elevated overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all ${
-                  full ? 'bg-red-400' : nearCap ? 'bg-orange-400' : 'bg-primary'
+                  full ? 'bg-danger' : nearCap ? 'bg-primary' : 'bg-primary'
                 }`}
                 style={{ width: `${pct}%` }}
               />

@@ -61,7 +61,7 @@ export default async function SignInPage({
         </div>
 
         {error && (
-          <div className="rounded-md bg-danger-bg px-4 py-3 text-sm text-danger ring-1 ring-red-200">
+          <div className="rounded-md bg-danger-bg px-4 py-3 text-sm text-danger ring-1 ring-danger">
             {decodeURIComponent(error)}
           </div>
         )}

@@ -259,7 +259,7 @@ export function PostCard({
               <div className="flex items-center gap-1 mt-1.5">
                 {post.scopeContext.type === 'wall' && <Users className="w-2.5 h-2.5 text-primary-strong" />}
                 {post.scopeContext.type === 'circle' && <Users className="w-2.5 h-2.5 text-success" />}
-                {post.scopeContext.type === 'channel' && <Radio className="w-2.5 h-2.5 text-blue-400" />}
+                {post.scopeContext.type === 'channel' && <Radio className="w-2.5 h-2.5 text-signal-strong" />}
                 <span className="text-[10px] text-subtle capitalize">{post.scopeContext.type === 'wall' ? 'Wall post' : post.scopeContext.type}</span>
               </div>
             )}
@@ -282,7 +282,7 @@ export function PostCard({
               {replyCount > 0 && (
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] text-muted flex items-center gap-1">
-                    <MessageCircle className="w-3 h-3 text-blue-300" />{replyCount}
+                    <MessageCircle className="w-3 h-3 text-signal-strong" />{replyCount}
                   </span>
                   <span className="text-[10px] font-medium text-primary">{replyCount * 2} zaps</span>
                 </div>

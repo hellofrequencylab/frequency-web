@@ -195,7 +195,7 @@ export default async function LeaderboardPage({
             return (
               <div
                 key={entry.id}
-                className={`grid grid-cols-[2.5rem_1fr_5rem_4rem_4rem_5rem] gap-2 px-4 py-2.5 items-center border-b border-gray-50 dark:border-border/30 last:border-0 ${
+                className={`grid grid-cols-[2.5rem_1fr_5rem_4rem_4rem_5rem] gap-2 px-4 py-2.5 items-center border-b border-border dark:border-border/30 last:border-0 ${
                   isSelf ? 'bg-primary-bg/60 dark:bg-primary-bg' : ''
                 }`}
               >

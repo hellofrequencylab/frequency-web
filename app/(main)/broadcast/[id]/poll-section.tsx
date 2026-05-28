@@ -81,7 +81,7 @@ export function PollSection({
                   ? 'border-blue-400 bg-signal-bg/80'
                   : hasVoted
                   ? 'border-border bg-surface cursor-default'
-                  : 'border-border bg-surface hover:border-blue-300 hover:bg-signal-bg'
+                  : 'border-border bg-surface hover:border-signal hover:bg-signal-bg'
               } disabled:cursor-not-allowed`}
             >
               {/* Vote bar background */}

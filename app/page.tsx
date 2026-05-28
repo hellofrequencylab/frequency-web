@@ -228,7 +228,7 @@ export default async function RootPage() {
             </div>
 
             <div className="relative mt-3">
-              <div className="absolute -top-16 inset-x-0 h-16 bg-gradient-to-b from-transparent to-gray-50 dark:to-gray-900 pointer-events-none" />
+              <div className="absolute -top-16 inset-x-0 h-16 bg-gradient-to-b from-transparent to-canvas dark:to-canvas pointer-events-none" />
 
               <div className="rounded-2xl border border-border bg-surface p-10 text-center shadow-sm">
                 <p className="text-xl font-bold text-text mb-2">

@@ -149,7 +149,7 @@ export default async function ProfilePage({
       {/* ── Cover image + avatar header ────────────────────── */}
       <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden mb-6">
         {/* Cover */}
-        <div className="relative h-32 sm:h-40 bg-gradient-to-br from-primary via-signal to-purple-600">
+        <div className="relative h-32 sm:h-40 bg-gradient-to-br from-primary via-signal to-signal-strong">
           <div className="absolute inset-0 bg-[url('/images/hero.jpg')] bg-cover bg-center opacity-30 mix-blend-overlay" />
         </div>
 
@@ -401,7 +401,7 @@ function MiniStat({
   const colors: Record<string, string> = {
     indigo: 'border-primary-bg bg-primary-bg text-primary-strong',
     amber:  'border-warning-bg bg-warning-bg/40 text-warning',
-    green:  'border-green-100 bg-success-bg/40 text-success',
+    green:  'border-success bg-success-bg/40 text-success',
     violet: 'border-violet-100 bg-signal-bg/40 text-signal-strong',
   }
   const cls = colors[color] ?? colors.indigo

@@ -179,7 +179,7 @@ export default async function BroadcastPage() {
           <p className="text-2xl font-black text-warning">{upcomingEventCount}</p>
           <p className="text-[11px] text-primary dark:text-primary mt-0.5">upcoming</p>
         </a>
-        <a href="#challenges" className="group rounded-2xl border border-green-100 bg-success-bg/40 p-4 hover:border-success transition-colors">
+        <a href="#challenges" className="group rounded-2xl border border-success bg-success-bg/40 p-4 hover:border-success transition-colors">
           <div className="flex items-center gap-2 mb-1.5">
             <Zap className="w-4 h-4 text-success" />
             <span className="text-xs font-semibold uppercase tracking-wider text-success">Challenges</span>

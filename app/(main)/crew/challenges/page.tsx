@@ -103,7 +103,7 @@ export default async function ChallengesPage() {
                       key={challenge.id}
                       className={`rounded-2xl border px-4 py-3 transition-all ${
                         isComplete
-                          ? 'border-green-100 bg-success-bg/50 dark:bg-success-bg/30'
+                          ? 'border-success bg-success-bg/50 dark:bg-success-bg/30'
                           : 'border-border bg-surface'
                       }`}
                     >

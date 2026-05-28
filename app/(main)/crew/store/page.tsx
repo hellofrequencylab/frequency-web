@@ -33,7 +33,7 @@ export default async function StorePage() {
       </div>
 
       {/* Balance card */}
-      <div className="rounded-2xl border border-success/60 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/20 shadow-sm p-5 mb-8">
+      <div className="rounded-2xl border border-success/60 bg-gradient-to-r from-emerald-50 to-signal-bg dark:from-emerald-950/30 dark:to-signal-strong/20 shadow-sm p-5 mb-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-success-bg flex items-center justify-center">
@@ -41,7 +41,7 @@ export default async function StorePage() {
             </div>
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-wider text-signal-strong">Your Balance</p>
-              <p className="text-3xl font-bold text-emerald-900">{balance.toLocaleString()}</p>
+              <p className="text-3xl font-bold text-success">{balance.toLocaleString()}</p>
             </div>
           </div>
           <div className="text-right">

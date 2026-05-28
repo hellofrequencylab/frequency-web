@@ -278,7 +278,7 @@ export default async function CrewPage() {
                       key={task.id}
                       className={`rounded-2xl border px-4 py-3 flex items-start gap-3 shadow-sm transition-colors ${
                         isDone
-                          ? 'border-green-100 bg-success-bg/50 dark:bg-success-bg/30'
+                          ? 'border-success bg-success-bg/50 dark:bg-success-bg/30'
                           : 'border-border bg-surface'
                       }`}
                     >

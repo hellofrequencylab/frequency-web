@@ -160,7 +160,7 @@ export default async function HubPage({
                       </span>
                       <div className="h-1 w-20 rounded-full bg-surface-elevated overflow-hidden">
                         <div
-                          className={`h-full rounded-full ${full ? 'bg-red-400' : 'bg-primary'}`}
+                          className={`h-full rounded-full ${full ? 'bg-danger' : 'bg-primary'}`}
                           style={{ width: `${pct}%` }}
                         />
                       </div>

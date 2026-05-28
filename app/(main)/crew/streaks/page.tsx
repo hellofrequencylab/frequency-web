@@ -120,7 +120,7 @@ export default async function StreaksPage() {
                         <>
                           <div className="w-px h-6 bg-border-strong" />
                           <div className="flex items-center gap-1">
-                            <Snowflake className="w-3.5 h-3.5 text-blue-400" />
+                            <Snowflake className="w-3.5 h-3.5 text-signal-strong" />
                             <span className="text-sm font-semibold text-signal">{freezes}</span>
                             <span className="text-xs text-subtle">freezes</span>
                           </div>
@@ -139,7 +139,7 @@ export default async function StreaksPage() {
                         <div key={m} className="flex flex-col items-center gap-1 flex-1">
                           <div className={`w-full h-1.5 rounded-full ${
                             reached
-                              ? 'bg-gradient-to-r from-amber-400 to-orange-500'
+                              ? 'bg-gradient-to-r from-amber-400 to-primary'
                               : 'bg-surface-elevated'
                           }`} />
                           <span className={`text-[10px] font-semibold ${
@@ -170,9 +170,9 @@ export default async function StreaksPage() {
       {/* Streak freeze explanation */}
       <div className="mt-8 rounded-2xl border border-blue-100 bg-signal-bg/50 p-4">
         <div className="flex items-start gap-3">
-          <Snowflake className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+          <Snowflake className="w-5 h-5 text-signal-strong shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-semibold text-blue-900">Streak Freezes</p>
+            <p className="text-sm font-semibold text-signal-strong">Streak Freezes</p>
             <p className="text-xs text-signal-strong mt-1 leading-relaxed">
               Earn freeze tokens at streak milestones (4, 8, 13, 26, 52 weeks).
               When a streak would break, a freeze token is automatically used to protect it.

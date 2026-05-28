@@ -37,13 +37,13 @@ const CATEGORY_ICON: Record<string, LucideIcon> = {
 }
 
 const CATEGORY_ACCENT: Record<string, string> = {
-  spirituality:     'from-signal/20 to-fuchsia-500/10  text-signal-strong',
+  spirituality:     'from-signal/20 to-signal/10  text-signal-strong',
   movement:         'from-emerald-500/20 to-signal/10    text-signal-strong',
-  'holistic-health': 'from-rose-500/20 to-pink-500/10       text-danger',
-  'human-relating': 'from-sky-500/20 to-blue-500/10        text-signal-strong',
-  activism:         'from-orange-500/20 to-red-500/10      text-warning dark:text-primary',
-  creative:         'from-amber-500/20 to-yellow-500/10    text-warning',
-  'business-support': 'from-slate-500/20 to-zinc-500/10    text-muted dark:text-subtle',
+  'holistic-health': 'from-danger/20 to-danger/10       text-danger',
+  'human-relating': 'from-signal/20 to-signal/10        text-signal-strong',
+  activism:         'from-primary/20 to-danger/10      text-warning dark:text-primary',
+  creative:         'from-amber-500/20 to-primary/10    text-warning',
+  'business-support': 'from-muted/20 to-canvas/10    text-muted dark:text-subtle',
 }
 
 export default async function ChannelsPage() {
@@ -180,7 +180,7 @@ function ChannelCard({
   canToggle: boolean
 }) {
   const Icon = CATEGORY_ICON[channel.category] ?? Radio
-  const accent = CATEGORY_ACCENT[channel.category] ?? 'from-gray-500/10 to-gray-500/5 text-muted'
+  const accent = CATEGORY_ACCENT[channel.category] ?? 'from-muted/10 to-muted/5 text-muted'
 
   return (
     <div className="group relative overflow-hidden rounded-2xl border border-border bg-surface shadow-sm hover:border-primary-bg dark:hover:border-primary transition-colors">

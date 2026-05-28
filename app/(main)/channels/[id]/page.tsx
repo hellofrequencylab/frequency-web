@@ -243,7 +243,7 @@ export default async function ChannelPage({
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${
                       c.type === 'in-person'
                         ? 'bg-success-bg text-success'
-                        : 'bg-signal-bg text-sky-700'
+                        : 'bg-signal-bg text-signal-strong'
                     }`}>
                       {c.type === 'in-person' ? 'In-person' : 'Online'}
                     </span>
