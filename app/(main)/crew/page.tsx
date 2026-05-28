@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { Star, CheckCircle, Zap, Award, Flame, Target, Map } from 'lucide-react'
+import { Star, CheckCircle, Zap, Award, Flame, Target, Map, TrendingUp } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { SEASON_RANKS, getRankDef, type SeasonRank } from '@/lib/season-ranks'

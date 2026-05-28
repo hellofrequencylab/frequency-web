@@ -365,7 +365,7 @@ async function LeaderboardWidget({ profileId, circleIds }: { profileId: string; 
       </div>
       <div className="px-4 py-2.5 border-t border-gray-100/80 dark:border-gray-800/50">
         <Link
-          href="/crew"
+          href="/crew/leaderboard"
           className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
         >
           Full leaderboard →
