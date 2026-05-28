@@ -15,7 +15,7 @@ export default async function AdminNexusesPage() {
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
-  if (!profile || profile.community_role !== 'mentor') notFound()
+  if (!profile || !['mentor', 'janitor'].includes(profile.community_role as string)) notFound()
 
   const { data: rawNexuses } = await admin
     .from('nexuses')
