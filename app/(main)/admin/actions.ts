@@ -130,7 +130,16 @@ export async function deleteUserAccount(profileId: string) {
 
 export async function createCircle(fd: FormData) {
   const caller = await getCallerProfile()
-  if (!caller || !hasRole(caller.community_role, 'host')) throw new Error('Unauthorized')
+  if (!caller) throw new Error('You need to be signed in.')
+
+  const topical_channel_id = (fd.get('topical_channel_id') as string) || null
+
+  // Admin-managed circles still need host+. Bottom-up circles created from
+  // a topical channel (the "I want to start a local crew practicing X" path)
+  // are open to any signed-in member.
+  if (!topical_channel_id && !hasRole(caller.community_role, 'host')) {
+    throw new Error('Unauthorized')
+  }
 
   const name    = (fd.get('name') as string).trim()
   const about   = (fd.get('about') as string)?.trim() || null
@@ -149,10 +158,12 @@ export async function createCircle(fd: FormData) {
   const { error } = await admin.from('circles').insert({
     name, about, type, member_cap: cap, hub_id, status, slug,
     host_id, member_count: 0,
+    ...(topical_channel_id ? { topical_channel_id } : {}),
   })
   if (error) throw new Error(error.message)
   revalidatePath('/admin/circles')
   revalidatePath('/circles')
+  revalidatePath('/channels')
 }
 
 export async function updateCircle(id: string, fd: FormData) {

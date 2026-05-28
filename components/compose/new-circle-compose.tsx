@@ -9,10 +9,17 @@ interface HubOption { id: string; name: string }
 
 export function NewCircleCompose({
   hubs = [],
+  topicalChannelId,
+  topicalChannelName,
   buttonLabel = 'New Circle',
   buttonClass = 'inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors whitespace-nowrap',
 }: {
   hubs?: HubOption[]
+  /** When set, the new circle declares this topical channel as its topic. */
+  topicalChannelId?: string
+  /** Optional channel name used in the modal copy so the framing reads
+   *  like "Start a circle practicing Spirituality" instead of generic. */
+  topicalChannelName?: string
   buttonLabel?: string
   buttonClass?: string
 }) {
@@ -24,6 +31,8 @@ export function NewCircleCompose({
   const [hubId, setHubId] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+
+  const inChannel = !!topicalChannelId
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -37,6 +46,7 @@ export function NewCircleCompose({
     fd.set('member_cap', String(memberCap))
     fd.set('status', 'forming')
     if (hubId) fd.set('hub_id', hubId)
+    if (topicalChannelId) fd.set('topical_channel_id', topicalChannelId)
 
     startTransition(async () => {
       try {
@@ -49,6 +59,10 @@ export function NewCircleCompose({
     })
   }
 
+  const modalTitle = inChannel && topicalChannelName
+    ? `Start a circle practicing ${topicalChannelName}`
+    : 'New Circle'
+
   return (
     <>
       <button onClick={() => setOpen(true)} className={buttonClass}>
@@ -58,10 +72,20 @@ export function NewCircleCompose({
 
       <CreateModal
         open={open} onClose={() => setOpen(false)} onSubmit={submit}
-        title="New Circle" titleIcon={CircleDot} titleIconColor="green"
+        title={modalTitle} titleIcon={CircleDot} titleIconColor="green"
         submitLabel="Create Circle" pendingLabel="Creating…"
         submitDisabled={!name.trim()} isPending={isPending} error={error}
       >
+        {inChannel && (
+          <p className="text-sm text-muted leading-relaxed">
+            A circle is your local crew, up to 50 people, who meet regularly
+            around a shared practice. This one will be tagged as practicing
+            {topicalChannelName ? <> <span className="font-semibold text-text">{topicalChannelName}</span></> : ' this channel'}
+            , and you&apos;ll be the first host. No hub or nexus needed yet.
+            Once a few neighbouring circles form, they crystallise into a hub
+            together.
+          </p>
+        )}
         <div>
           <label className={cmLabel}>Circle name *</label>
           <input type="text" value={name} onChange={e => setName(e.target.value)}
@@ -89,12 +113,12 @@ export function NewCircleCompose({
               disabled={isPending} className={cmInput} />
           </div>
         </div>
-        {hubs.length > 0 && (
+        {!inChannel && hubs.length > 0 && (
           <div>
             <label className={cmLabel}>Hub <span className="text-subtle font-normal">(optional)</span></label>
             <select value={hubId} onChange={e => setHubId(e.target.value)}
               disabled={isPending} className={cmInput}>
-              <option value="">- None -</option>
+              <option value="">None</option>
               {hubs.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
             </select>
           </div>

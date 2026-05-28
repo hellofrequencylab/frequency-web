@@ -19,6 +19,7 @@ import { createClient } from '@/lib/supabase/server'
 import { TuneInButton, TunedInButton } from '../channel-toggle'
 import { Composer } from '@/components/feed/composer'
 import { FeedList } from '@/components/feed/feed-list'
+import { NewCircleCompose } from '@/components/compose/new-circle-compose'
 
 type TopicalChannel = {
   id: string
@@ -136,117 +137,174 @@ export default async function ChannelPage({
     <div>
       <Link
         href="/channels"
-        className="inline-flex items-center gap-1 text-xs text-subtle hover:text-muted mb-5 transition-colors"
+        className="inline-flex items-center gap-1 text-xs text-subtle hover:text-muted mb-4 transition-colors"
       >
         ← Channels
       </Link>
 
-      {/* ── Header ─────────────────────────────────── */}
-      <div className="mb-8">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-start gap-3 min-w-0">
-            <div className={`flex items-center justify-center w-12 h-12 rounded-xl shrink-0 ${accent}`}>
-              <Icon className="w-6 h-6" />
+      {/* ── Header. Same shape as every other page (mb-6, h1 text-2xl,
+              max-w-2xl description) so the channels detail screen reads
+              as part of the same family. ─────────────────────────── */}
+      <div className="flex items-end justify-between gap-4 mb-6">
+        <div className="min-w-0">
+          <div className="flex items-center gap-3 mb-1">
+            <div className={`flex items-center justify-center w-10 h-10 rounded-lg shrink-0 ${accent}`}>
+              <Icon className="w-5 h-5" />
             </div>
-            <div className="min-w-0">
-              <h1 className="text-2xl font-bold text-text leading-tight">
-                {channel.name}
-              </h1>
-              <div className="flex items-center gap-2 mt-1 text-xs text-muted">
-                <Users className="w-3 h-3" />
-                <span>{(memberCount ?? 0).toLocaleString()} tuned in</span>
-                <span className="text-subtle/60">·</span>
-                <CircleIcon className="w-3 h-3" />
-                <span>{circles.length} {circles.length === 1 ? 'Circle' : 'Circles'} practicing</span>
-              </div>
-            </div>
+            <h1 className="text-2xl font-bold text-text leading-tight">
+              {channel.name}
+            </h1>
           </div>
-
-          {myProfileId && (
-            isTunedIn
-              ? <TunedInButton channelId={channel.id} channelName={channel.name} />
-              : <TuneInButton channelId={channel.id} slug={channel.slug} />
-          )}
+          <p className="text-sm text-muted leading-relaxed max-w-2xl">
+            {channel.description ?? 'A global channel anyone can tune into.'}
+            {' '}This is the worldwide forum for {channel.name}. The list on
+            the right is local crews already practicing it. Tune in to see
+            and post in the forum; join or start a circle to take it offline.
+          </p>
+          <div className="flex items-center gap-2 mt-3 text-xs text-muted">
+            <Users className="w-3 h-3" />
+            <span>{(memberCount ?? 0).toLocaleString()} tuned in</span>
+            <span className="text-subtle/60">·</span>
+            <CircleIcon className="w-3 h-3" />
+            <span>{circles.length} {circles.length === 1 ? 'Circle' : 'Circles'} practicing</span>
+          </div>
         </div>
 
-        {channel.description && (
-          <p className="mt-4 text-sm text-muted leading-relaxed max-w-2xl">
-            {channel.description}
-          </p>
+        {myProfileId && (
+          isTunedIn
+            ? <TunedInButton channelId={channel.id} channelName={channel.name} size="md" />
+            : <TuneInButton channelId={channel.id} slug={channel.slug} size="md" />
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* ── Body. One border-t spans the whole row so Forum and "Circles
+              practicing X" hang off the same line, top-aligned. ─────── */}
+      <div className="border-t border-border pt-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-        {/* ── Main: forum feed ─────────────────────── */}
-        <div className="lg:col-span-2 border-t border-border pt-6">
-          <h2 className="text-sm font-semibold text-text mb-4">Forum</h2>
-          {isTunedIn && (
-            <Composer
-              scopeId={channel.id}
-              visibility="public"
-              placeholder={`Post to ${channel.name}…`}
-            />
-          )}
-          <FeedList
-            circleIds={[channel.id]}
-            showPublicLayer={false}
-            myProfileId={myProfileId}
-            emptyMessage={
-              isTunedIn
-                ? 'No posts yet. Start the conversation.'
-                : 'Tune in to see and join the conversation.'
-            }
-          />
-        </div>
-
-        {/* ── Sidebar: Circles practicing this Channel ─ */}
-        <div>
-          <h2 className="text-sm font-semibold text-text mb-4">
-            Circles practicing {channel.name}
-          </h2>
-          {circles.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-border bg-surface/50 dark:bg-canvas/50 p-6 text-center">
-              <CircleIcon className="w-6 h-6 text-subtle/60 mx-auto mb-2" />
-              <p className="text-xs text-muted">
-                No Circles practicing this Channel yet.
+          {/* ── Main: forum feed ─────────────────────── */}
+          <div className="lg:col-span-2">
+            <div className="mb-4">
+              <h2 className="text-sm font-semibold text-text">Forum</h2>
+              <p className="text-xs text-muted leading-relaxed mt-0.5">
+                Anyone tuned in can post and reply. Talk shop, share what you&apos;re
+                working on, swap resources.
               </p>
             </div>
-          ) : (
-            <div className="space-y-2">
-              {circles.map((c) => (
-                <Link
-                  key={c.id}
-                  href={`/circles/${c.slug}`}
-                  className="block rounded-xl border border-border bg-surface px-3 py-2.5 hover:border-primary-bg dark:hover:border-primary transition-colors"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-medium text-text truncate">
-                      {c.name}
-                    </span>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium shrink-0 ${
-                      c.type === 'in-person'
-                        ? 'bg-success-bg text-success'
-                        : 'bg-signal-bg text-signal-strong'
-                    }`}>
-                      {c.type === 'in-person' ? 'In-person' : 'Online'}
-                    </span>
-                  </div>
-                  <div className="mt-1 flex items-center gap-2 text-[11px] text-muted">
-                    {(c.city || c.neighborhood) && (
-                      <span className="flex items-center gap-0.5">
-                        <MapPin className="w-2.5 h-2.5" />
-                        {c.neighborhood || c.city}
-                      </span>
-                    )}
-                    <span>
-                      {c.member_count}/{c.member_cap} members
-                    </span>
-                  </div>
-                </Link>
-              ))}
+            {isTunedIn ? (
+              <Composer
+                scopeId={channel.id}
+                visibility="public"
+                placeholder={`Post to ${channel.name}…`}
+              />
+            ) : (
+              myProfileId && (
+                <div className="mb-4 rounded-xl border border-dashed border-border bg-surface/60 px-4 py-3">
+                  <p className="text-xs text-muted leading-relaxed">
+                    Tune in to post and follow this forum from your feed.
+                  </p>
+                </div>
+              )
+            )}
+            <FeedList
+              circleIds={[channel.id]}
+              showPublicLayer={false}
+              myProfileId={myProfileId}
+              emptyMessage={
+                isTunedIn
+                  ? 'No posts yet. Start the conversation.'
+                  : 'No posts yet. Tune in to see and join the conversation.'
+              }
+            />
+          </div>
+
+          {/* ── Sidebar: Circles practicing this Channel ─ */}
+          <div>
+            <div className="mb-4">
+              <h2 className="text-sm font-semibold text-text">
+                Circles practicing {channel.name}
+              </h2>
+              <p className="text-xs text-muted leading-relaxed mt-0.5">
+                Local crews, up to 50 people, who meet regularly around this
+                practice. Start one if there isn&apos;t a circle near you yet.
+              </p>
             </div>
-          )}
+
+            {circles.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-border bg-surface/50 p-6 text-center">
+                <CircleIcon className="w-6 h-6 text-subtle/60 mx-auto mb-3" />
+                <p className="text-sm font-medium text-text mb-1">
+                  No circles yet.
+                </p>
+                <p className="text-xs text-muted leading-relaxed mb-4 max-w-xs mx-auto">
+                  Be the first to start a local crew practicing {channel.name}.
+                  You&apos;ll be the host, and circles nearby can crystallise
+                  into a hub together later.
+                </p>
+                {myProfileId && (
+                  <div className="flex justify-center">
+                    <NewCircleCompose
+                      topicalChannelId={channel.id}
+                      topicalChannelName={channel.name}
+                      buttonLabel="Create the first Circle"
+                    />
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  {circles.map((c) => (
+                    <Link
+                      key={c.id}
+                      href={`/circles/${c.slug}`}
+                      className="block rounded-xl border border-border bg-surface px-3 py-2.5 hover:border-primary-bg dark:hover:border-primary transition-colors"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-medium text-text truncate">
+                          {c.name}
+                        </span>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium shrink-0 ${
+                          c.type === 'in-person'
+                            ? 'bg-success-bg text-success'
+                            : 'bg-signal-bg text-signal-strong'
+                        }`}>
+                          {c.type === 'in-person' ? 'In-person' : 'Online'}
+                        </span>
+                      </div>
+                      <div className="mt-1 flex items-center gap-2 text-[11px] text-muted">
+                        {(c.city || c.neighborhood) && (
+                          <span className="flex items-center gap-0.5">
+                            <MapPin className="w-2.5 h-2.5" />
+                            {c.neighborhood || c.city}
+                          </span>
+                        )}
+                        <span>
+                          {c.member_count}/{c.member_cap} members
+                        </span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+
+                {/* Always-visible "start your own" CTA so people can spin up a
+                    local crew even when other circles already exist. */}
+                {myProfileId && (
+                  <div className="mt-4 rounded-xl border border-dashed border-border bg-surface/50 p-4">
+                    <p className="text-xs text-muted leading-relaxed mb-3">
+                      Don&apos;t see one near you? Start your own circle
+                      practicing {channel.name}.
+                    </p>
+                    <NewCircleCompose
+                      topicalChannelId={channel.id}
+                      topicalChannelName={channel.name}
+                      buttonLabel="Start a Circle"
+                    />
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>
