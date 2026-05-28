@@ -178,7 +178,7 @@ export default async function EventsPage() {
       <div className="flex items-end justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-text mb-1">Events</h1>
-          <p className="text-sm text-muted leading-relaxed max-w-lg">
+          <p className="text-sm text-muted leading-relaxed max-w-2xl">
             Group rides, gatherings, and meetups happening in your community.
             RSVP to see who&apos;s coming, then drop it on your calendar.
           </p>

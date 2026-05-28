@@ -101,7 +101,7 @@ export default async function CirclesPage() {
       <div className="flex items-end justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-text mb-1">Circles</h1>
-          <p className="text-sm text-muted leading-relaxed">
+          <p className="text-sm text-muted leading-relaxed max-w-2xl">
             Your local crew. This is where you post, connect, and show up.
             Regular meetups, shared updates, the people you&apos;ll see week to
             week. Join one to get started.

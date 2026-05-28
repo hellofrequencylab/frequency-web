@@ -152,7 +152,7 @@ export default async function BroadcastPage() {
             <Megaphone className="w-5 h-5 text-primary-strong" />
             <h1 className="text-2xl font-bold text-text">Broadcast</h1>
           </div>
-          <p className="text-sm text-muted">
+          <p className="text-sm text-muted leading-relaxed max-w-2xl">
             Announcements, events, and challenges from your community.
             Worth a scroll when you have a minute.
           </p>

@@ -287,7 +287,7 @@ export default async function MessagesPage({
               </span>
             )}
           </h1>
-          <p className="text-sm text-muted leading-relaxed max-w-lg">
+          <p className="text-sm text-muted leading-relaxed max-w-2xl">
             Every conversation in one place. Direct messages, group threads,
             and rooms with the wider community.
           </p>

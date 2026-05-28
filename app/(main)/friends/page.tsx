@@ -72,12 +72,14 @@ export default async function FriendsPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-text">Friends</h1>
-        <p className="text-sm text-muted mt-1">
-          Your friends and any pending requests live here. Add someone before
-          you start a direct message or group thread with them.
-        </p>
+      <div className="flex items-end justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-text mb-1">Friends</h1>
+          <p className="text-sm text-muted leading-relaxed max-w-2xl">
+            Your friends and any pending requests live here. Add someone before
+            you start a direct message or group thread with them.
+          </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

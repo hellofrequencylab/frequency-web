@@ -10,7 +10,7 @@ type Visibility = 'public' | 'private'
 
 export function NewRoomCompose({
   buttonLabel = 'New Room',
-  buttonClass = 'inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover transition-colors whitespace-nowrap',
+  buttonClass = 'inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors whitespace-nowrap',
 }: {
   buttonLabel?: string
   buttonClass?: string
