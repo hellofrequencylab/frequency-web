@@ -217,11 +217,13 @@ export default async function CrewPage() {
         </div>
       </div>
 
-      {/* ── Stats + Quick Links row ──────────────────── */}
-      <div className="flex flex-col lg:flex-row gap-6 mb-6">
+      {/* ── Main content: left column (stats + tasks) + right column (quick links + leaderboard) */}
+      <div className="flex flex-col lg:flex-row gap-6 items-start">
 
-        {/* Left: 4 stat cards — fixed height, don't stretch */}
-        <div className="flex-1 min-w-0">
+        {/* Left: stats tight above tasks */}
+        <div className="flex-1 min-w-0 space-y-6">
+
+          {/* 4 stat cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <StatCard
               label="Zaps"
@@ -248,26 +250,8 @@ export default async function CrewPage() {
               colorCls="text-indigo-600 bg-indigo-50 dark:bg-indigo-950 dark:text-indigo-400"
             />
           </div>
-        </div>
 
-        {/* Right: 6 quick links in 3x2 grid — independent height */}
-        <div className="lg:w-72 shrink-0">
-          <div className="grid grid-cols-2 gap-2">
-            <QuickLink href="/crew/achievements" Icon={Award} label="Achievements" sub="Earn badges" color="bg-violet-50 dark:bg-violet-950 text-violet-600 dark:text-violet-400" />
-            <QuickLink href="/crew/streaks" Icon={Flame} label="Streaks" sub="Stay consistent" color="bg-orange-50 dark:bg-orange-950 text-orange-600 dark:text-orange-400" />
-            <QuickLink href="/crew/challenges" Icon={Target} label="Challenges" sub="Season goals" color="bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400" />
-            <QuickLink href="/crew/quests" Icon={Map} label="Quests" sub="Multi-step" color="bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400" />
-            <QuickLink href="/crew/leaderboard" Icon={TrendingUp} label="Leaderboard" sub="Rankings" color="bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400" />
-            <QuickLink href="/crew/store" Icon={ShoppingBag} label="Gem Store" sub="Spend gems" color="bg-teal-50 dark:bg-teal-950 text-teal-600 dark:text-teal-400" />
-          </div>
-        </div>
-      </div>
-
-      {/* ── Tasks + Leaderboard ──────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        {/* Left: Tasks */}
-        <div className="lg:col-span-2">
+          {/* Tasks */}
           <section>
             <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
               Tasks
@@ -371,8 +355,20 @@ export default async function CrewPage() {
           </section>
         </div>
 
-        {/* Right: Leaderboard */}
-        <div className="space-y-4">
+        {/* Right: quick links + leaderboard */}
+        <div className="lg:w-72 shrink-0 space-y-4">
+
+          {/* 6 quick links */}
+          <div className="grid grid-cols-2 gap-2">
+            <QuickLink href="/crew/achievements" Icon={Award} label="Achievements" sub="Earn badges" color="bg-violet-50 dark:bg-violet-950 text-violet-600 dark:text-violet-400" />
+            <QuickLink href="/crew/streaks" Icon={Flame} label="Streaks" sub="Stay consistent" color="bg-orange-50 dark:bg-orange-950 text-orange-600 dark:text-orange-400" />
+            <QuickLink href="/crew/challenges" Icon={Target} label="Challenges" sub="Season goals" color="bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400" />
+            <QuickLink href="/crew/quests" Icon={Map} label="Quests" sub="Multi-step" color="bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400" />
+            <QuickLink href="/crew/leaderboard" Icon={TrendingUp} label="Leaderboard" sub="Rankings" color="bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400" />
+            <QuickLink href="/crew/store" Icon={ShoppingBag} label="Gem Store" sub="Spend gems" color="bg-teal-50 dark:bg-teal-950 text-teal-600 dark:text-teal-400" />
+          </div>
+
+          {/* Leaderboard */}
           {leaderboard.length > 0 && (
             <SidebarCard title={circleName ? `Leaderboard — ${circleName}` : 'Season Leaderboard'}>
               <div>
