@@ -48,6 +48,79 @@ export async function deactivateMember(profileId: string) {
   revalidatePath('/admin')
 }
 
+export async function updateMemberProfile(profileId: string, fd: FormData) {
+  const caller = await getCallerProfile()
+  if (!caller || !hasRole(caller.community_role, 'janitor')) throw new Error('Unauthorized')
+  const admin = createAdminClient()
+
+  const updates: Record<string, string | null> = {}
+  const name = (fd.get('display_name') as string)?.trim()
+  const handle = (fd.get('handle') as string)?.trim()
+  const bio = (fd.get('bio') as string)?.trim()
+  if (name) updates.display_name = name
+  if (handle) updates.handle = handle
+  if (bio !== undefined) updates.bio = bio || null
+
+  const { error } = await admin.from('profiles').update(updates).eq('id', profileId)
+  if (error) throw new Error(error.message)
+  revalidatePath('/admin')
+  revalidatePath('/admin/members')
+  revalidatePath('/people', 'layout')
+}
+
+export async function reactivateMember(profileId: string) {
+  const caller = await getCallerProfile()
+  if (!caller || !hasRole(caller.community_role, 'janitor')) throw new Error('Unauthorized')
+  const admin = createAdminClient()
+  const { error } = await admin.from('profiles').update({ is_active: true }).eq('id', profileId)
+  if (error) throw new Error(error.message)
+  revalidatePath('/admin')
+  revalidatePath('/admin/members')
+}
+
+export async function sendPasswordReset(profileId: string) {
+  const caller = await getCallerProfile()
+  if (!caller || !hasRole(caller.community_role, 'janitor')) throw new Error('Unauthorized')
+
+  const admin = createAdminClient()
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('auth_user_id')
+    .eq('id', profileId)
+    .maybeSingle()
+  if (!profile?.auth_user_id) throw new Error('Profile not found')
+
+  const { data: { user } } = await admin.auth.admin.getUserById(profile.auth_user_id)
+  if (!user?.email) throw new Error('No email found for this user')
+
+  const supabase = createAdminClient()
+  const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://go.findafreq.com'}/auth/callback`,
+  })
+  if (error) throw new Error(error.message)
+  return { email: user.email }
+}
+
+export async function deleteUserAccount(profileId: string) {
+  const caller = await getCallerProfile()
+  if (!caller || !hasRole(caller.community_role, 'janitor')) throw new Error('Unauthorized')
+
+  const admin = createAdminClient()
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('auth_user_id')
+    .eq('id', profileId)
+    .maybeSingle()
+  if (!profile?.auth_user_id) throw new Error('Profile not found')
+
+  await admin.from('profiles').update({ is_active: false }).eq('id', profileId)
+  const { error } = await admin.auth.admin.deleteUser(profile.auth_user_id)
+  if (error) throw new Error(error.message)
+
+  revalidatePath('/admin')
+  revalidatePath('/admin/members')
+}
+
 // ── Circles ───────────────────────────────────────────────────────────────────
 
 export async function createCircle(fd: FormData) {
