@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { joinCircle } from './actions'
 import { StatusBadge } from '@/components/groups/status-badge'
+import { NewCircleCompose } from '@/components/compose/new-circle-compose'
 
 type CircleRow = {
   id: string
@@ -97,11 +98,16 @@ export default async function CirclesPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold text-gray-900 mb-1">Circles</h1>
-      <p className="text-sm text-gray-500 leading-relaxed mb-6">
-        Your local crew. Circles are where you post, connect, and show up. Regular rides, shared
-        updates, and the people you&apos;ll see week to week. Join one to get started.
-      </p>
+      <div className="flex items-start justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50 mb-1">Circles</h1>
+          <p className="text-sm text-gray-500 leading-relaxed">
+            Your local crew. Circles are where you post, connect, and show up. Regular rides, shared
+            updates, and the people you&apos;ll see week to week. Join one to get started.
+          </p>
+        </div>
+        {isAdmin && <NewCircleCompose />}
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 

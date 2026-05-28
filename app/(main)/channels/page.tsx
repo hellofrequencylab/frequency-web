@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Hash, Plus, Users, CalendarDays, MessageSquare } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { NewChannelCompose } from '@/components/compose/new-channel-compose'
 
 type ChannelRow = {
   id: string
@@ -114,6 +115,19 @@ export default async function ChannelsPage() {
     }
   }
 
+  // Build scope options for the create-channel modal
+  const scopeOptions: { scope: 'hub' | 'nexus' | 'outpost'; scopeId: string; label: string }[] = []
+  if (myHubId || myNexusId || myOutpostId) {
+    const [hubR, nexusR, outpostR] = await Promise.all([
+      myHubId ? admin.from('hubs').select('name').eq('id', myHubId).maybeSingle() : Promise.resolve({ data: null }),
+      myNexusId ? admin.from('nexuses').select('name').eq('id', myNexusId).maybeSingle() : Promise.resolve({ data: null }),
+      myOutpostId ? admin.from('outposts').select('name').eq('id', myOutpostId).maybeSingle() : Promise.resolve({ data: null }),
+    ])
+    if (myHubId && hubR.data) scopeOptions.push({ scope: 'hub', scopeId: myHubId, label: `Hub: ${(hubR.data as { name: string }).name}` })
+    if (myNexusId && nexusR.data) scopeOptions.push({ scope: 'nexus', scopeId: myNexusId, label: `Nexus: ${(nexusR.data as { name: string }).name}` })
+    if (myOutpostId && outpostR.data) scopeOptions.push({ scope: 'outpost', scopeId: myOutpostId, label: `Outpost: ${(outpostR.data as { name: string }).name}` })
+  }
+
   if (!myNexusId && !myHubId) {
     return (
       <div>
@@ -200,15 +214,7 @@ export default async function ChannelsPage() {
       <div className="mb-6">
         <div className="flex items-center justify-between mb-1">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Channels</h1>
-          {isCreator && (
-            <Link
-              href="/channels/new"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              New Channel
-            </Link>
-          )}
+          {isCreator && scopeOptions.length > 0 && <NewChannelCompose scopeOptions={scopeOptions} />}
         </div>
         <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed max-w-lg">
           Focused spaces beyond your circle. Channels are where the community organises around a

@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Globe } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
+import { InviteMemberCompose } from '@/components/compose/invite-member-compose'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
@@ -37,6 +38,14 @@ export default async function DirectoryPage({
   const { role: roleFilter, region: regionFilter } = await searchParams
 
   const admin = createAdminClient()
+
+  // Get viewer's display name for the Invite Member modal
+  const { data: viewer } = await admin
+    .from('profiles')
+    .select('display_name')
+    .eq('auth_user_id', user.id)
+    .maybeSingle()
+  const viewerName = (viewer?.display_name as string | undefined) ?? 'A friend'
 
   let query = admin
     .from('profiles')
@@ -75,14 +84,17 @@ export default async function DirectoryPage({
     <div>
 
       {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center gap-2 mb-1">
-          <Globe className="w-5 h-5 text-indigo-500" />
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Directory</h1>
+      <div className="flex items-start justify-between gap-4 mb-6">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <Globe className="w-5 h-5 text-indigo-500" />
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Directory</h1>
+          </div>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Browse and connect with community members.
+          </p>
         </div>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          Browse and connect with community members.
-        </p>
+        <InviteMemberCompose inviterName={viewerName} />
       </div>
 
       {/* Filters */}

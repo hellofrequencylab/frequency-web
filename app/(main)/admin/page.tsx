@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Users, Layers, Building2, Plus, CalendarDays, Megaphone, ShieldAlert } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { AdminCreateMenu } from './create-menu'
 import { StatusBadge } from '@/components/groups/status-badge'
 import { MemberManager, type MemberItem } from './member-manager'
 import type { SeasonRank } from '@/lib/season-ranks'
@@ -50,14 +51,19 @@ export default async function AdminPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-2">Overview</h1>
-      <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-        {role === 'janitor' ? (
-          <span className="font-medium text-violet-600 dark:text-violet-400">Janitor — full platform access</span>
-        ) : (
-          <>Scoped to your <span className="font-medium capitalize">{role}</span> level.</>
-        )}
-      </p>
+      <div className="flex items-start justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-2">Overview</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {role === 'janitor' ? (
+              <span className="font-medium text-violet-600 dark:text-violet-400">Janitor — full platform access</span>
+            ) : (
+              <>Scoped to your <span className="font-medium capitalize">{role}</span> level.</>
+            )}
+          </p>
+        </div>
+        <AdminCreateMenu role={role} />
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main content */}
