@@ -14,7 +14,8 @@ export interface MessagesSummary {
   }>
   conversations: Array<{
     id: string
-    other: { id: string; display_name: string; handle: string; avatar_url: string | null } | null
+    name: string | null
+    participants: Array<{ id: string; display_name: string; handle: string; avatar_url: string | null }>
     lastMessage: { body: string; created_at: string } | null
     unread: number
   }>
@@ -75,13 +76,17 @@ export async function fetchMessagesSummary(): Promise<MessagesSummary> {
   // ── DMs (top 5 by recent activity) ─────────────────────────────────
   const { data: myParts } = await admin
     .from('conversation_participants')
-    .select('conversation_id, last_read_at')
+    .select('conversation_id, last_read_at, conversations!conversation_id(id, name)')
     .eq('profile_id', myProfileId)
 
   const convIds = (myParts ?? []).map(p => p.conversation_id as string)
   const dmReadMap: Record<string, string | null> = {}
+  const convNameMap: Record<string, string | null> = {}
   for (const p of myParts ?? []) {
-    dmReadMap[p.conversation_id as string] = (p.last_read_at as string | null) ?? null
+    const cid = p.conversation_id as string
+    dmReadMap[cid] = (p.last_read_at as string | null) ?? null
+    const c = (p as unknown as { conversations: { name: string | null } | null }).conversations
+    convNameMap[cid] = c?.name ?? null
   }
 
   const conversations: MessagesSummary['conversations'] = []
@@ -93,9 +98,13 @@ export async function fetchMessagesSummary(): Promise<MessagesSummary> {
       .in('conversation_id', convIds)
       .neq('profile_id', myProfileId)
 
-    const otherMap: Record<string, MessagesSummary['conversations'][number]['other']> = {}
+    const partsByConv: Record<string, MessagesSummary['conversations'][number]['participants']> = {}
     for (const o of others ?? []) {
-      otherMap[o.conversation_id as string] = (o.profiles as unknown as MessagesSummary['conversations'][number]['other'])
+      const cid = o.conversation_id as string
+      const prof = o.profiles as unknown as MessagesSummary['conversations'][number]['participants'][number] | null
+      if (!prof) continue
+      if (!partsByConv[cid]) partsByConv[cid] = []
+      partsByConv[cid].push(prof)
     }
 
     // Get last message per conv + unread count
@@ -132,7 +141,8 @@ export async function fetchMessagesSummary(): Promise<MessagesSummary> {
     for (const cid of sortedConvIds) {
       conversations.push({
         id: cid,
-        other: otherMap[cid] ?? null,
+        name: convNameMap[cid] ?? null,
+        participants: partsByConv[cid] ?? [],
         lastMessage: lastMsgMap[cid] ?? null,
         unread: unreadCountMap[cid] ?? 0,
       })
