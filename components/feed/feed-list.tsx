@@ -128,11 +128,14 @@ export async function FeedList({
   }
 
   for (const post of posts) {
-    if (post.scope_id && scopeMap[post.scope_id]) {
-      const scope = scopeMap[post.scope_id]
-      if (scope.type === 'wall' && post.author.id !== post.scope_id) {
-        post.scopeContext = scope
-      } else if (scope.type !== 'wall') {
+    const sid = post.scope_id as string | undefined
+    if (sid && scopeMap[sid]) {
+      const scope = scopeMap[sid]
+      if (scope.type === 'wall') {
+        if (post.author.id !== sid) {
+          post.scopeContext = scope
+        }
+      } else {
         post.scopeContext = scope
       }
     }
