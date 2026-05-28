@@ -6,8 +6,10 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import type { AchievementCriteria, StreakType } from '@/lib/gamification'
 import { STREAK_CONFIG } from '@/lib/gamification'
 import { awardGems } from '@/lib/gems'
+import type { Database } from '@/lib/database.types'
 
 type AdminClient = ReturnType<typeof createAdminClient>
+type ProfileRow  = Database['public']['Tables']['profiles']['Row']
 
 // ---------------------------------------------------------------------------
 // Public API — call after each user action
@@ -262,17 +264,23 @@ async function getUserStats(admin: AdminClient, profileId: string): Promise<User
     streakMap[s.streak_type] = s.current_count
   }
 
+  // invite_links is missing from remote schema (see Task #17); kept as
+  // loose shape until the migration is reapplied.
+  type InviteLinkRow = { used_count: number | null }
   const totalReferrals = (inviteLinks.data ?? []).reduce(
-    (sum, link) => sum + ((link as any).used_count ?? 0), 0
+    (sum, link) => sum + ((link as InviteLinkRow).used_count ?? 0), 0
   )
 
-  const p = profile.data as any
+  const p = profile.data as Pick<ProfileRow,
+    'current_season_zaps' | 'current_season_rank' | 'community_role'> | null
+  const topPostRow = topPost.data as { reply_count: number | null } | null
+
   return {
     circleCount: memberships.data?.length ?? 0,
     eventAttendCount: rsvps.data?.length ?? 0,
     eventHostCount: hostedEvents.data?.length ?? 0,
     postCount: posts.data?.length ?? 0,
-    maxPostReplies: (topPost.data as any)?.reply_count ?? 0,
+    maxPostReplies: topPostRow?.reply_count ?? 0,
     referralCount: totalReferrals,
     taskCompleteCount: completions.data?.length ?? 0,
     seasonZaps: p?.current_season_zaps ?? 0,
@@ -414,11 +422,12 @@ async function awardChallengeZaps(admin: AdminClient, profileId: string, challen
     .maybeSingle()
 
   if (profile) {
+    const p = profile as Pick<ProfileRow, 'current_season_zaps' | 'lifetime_zaps'>
     await admin
       .from('profiles')
       .update({
-        current_season_zaps: (profile as any).current_season_zaps + challenge.zaps_reward,
-        lifetime_zaps: (profile as any).lifetime_zaps + challenge.zaps_reward,
+        current_season_zaps: (p.current_season_zaps ?? 0) + challenge.zaps_reward,
+        lifetime_zaps: (p.lifetime_zaps ?? 0) + challenge.zaps_reward,
       })
       .eq('id', profileId)
   }
@@ -543,11 +552,12 @@ async function advanceQuests(admin: AdminClient, event: GamificationEvent) {
             .maybeSingle()
 
           if (profile) {
+            const p = profile as Pick<ProfileRow, 'current_season_zaps' | 'lifetime_zaps'>
             await admin
               .from('profiles')
               .update({
-                current_season_zaps: (profile as any).current_season_zaps + chainData.zaps_reward,
-                lifetime_zaps: (profile as any).lifetime_zaps + chainData.zaps_reward,
+                current_season_zaps: (p.current_season_zaps ?? 0) + chainData.zaps_reward,
+                lifetime_zaps: (p.lifetime_zaps ?? 0) + chainData.zaps_reward,
               })
               .eq('id', event.profileId)
           }
@@ -563,11 +573,12 @@ async function advanceQuests(admin: AdminClient, event: GamificationEvent) {
           .maybeSingle()
 
         if (profile) {
+          const p = profile as Pick<ProfileRow, 'current_season_zaps' | 'lifetime_zaps'>
           await admin
             .from('profiles')
             .update({
-              current_season_zaps: (profile as any).current_season_zaps + currentStep.zaps_reward,
-              lifetime_zaps: (profile as any).lifetime_zaps + currentStep.zaps_reward,
+              current_season_zaps: (p.current_season_zaps ?? 0) + currentStep.zaps_reward,
+              lifetime_zaps: (p.lifetime_zaps ?? 0) + currentStep.zaps_reward,
             })
             .eq('id', event.profileId)
         }

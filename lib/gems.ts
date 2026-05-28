@@ -3,6 +3,9 @@
 // Called from server actions after user interactions.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { Database } from '@/lib/database.types'
+
+type ProfileRow = Database['public']['Tables']['profiles']['Row']
 
 type GemAction =
   | 'post_create'
@@ -81,9 +84,10 @@ export async function getGemBalance(profileId: string) {
     .eq('id', profileId)
     .maybeSingle()
 
+  const p = data as Pick<ProfileRow, 'lifetime_gems' | 'current_season_gems'> | null
   return {
-    lifetime: (data as any)?.lifetime_gems ?? 0,
-    season: (data as any)?.current_season_gems ?? 0,
+    lifetime: p?.lifetime_gems ?? 0,
+    season: p?.current_season_gems ?? 0,
   }
 }
 

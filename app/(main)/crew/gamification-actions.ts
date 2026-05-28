@@ -4,6 +4,10 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { AchievementCategory, AchievementTier, StreakType } from '@/lib/gamification'
+import type { Database } from '@/lib/database.types'
+
+type ProfileRow = Database['public']['Tables']['profiles']['Row']
+type AchievementRow = Database['public']['Tables']['achievements']['Row']
 
 async function getMyProfileId(): Promise<string | null> {
   const supabase = await createClient()
@@ -58,10 +62,10 @@ export async function getAchievementsData() {
     stats: {
       total: (achievements ?? []).length,
       earned: earnedMap.size,
-      achievementCount: (profile as any)?.achievement_count ?? 0,
-      lifetimeZaps: (profile as any)?.lifetime_zaps ?? 0,
-      currentStreak: (profile as any)?.current_streak ?? 0,
-      longestStreak: (profile as any)?.longest_streak ?? 0,
+      achievementCount: (profile as ProfileRow | null)?.achievement_count ?? 0,
+      lifetimeZaps:     (profile as ProfileRow | null)?.lifetime_zaps     ?? 0,
+      currentStreak:    (profile as ProfileRow | null)?.current_streak    ?? 0,
+      longestStreak:    (profile as ProfileRow | null)?.longest_streak    ?? 0,
     },
   }
 }
@@ -158,20 +162,24 @@ export async function getGamificationSummary(profileId?: string) {
       .eq('profile_id', resolvedId),
   ])
 
+  const p = profile as ProfileRow | null
   return {
-    achievementCount: (profile as any)?.achievement_count ?? 0,
-    lifetimeZaps: (profile as any)?.lifetime_zaps ?? 0,
-    currentStreak: (profile as any)?.current_streak ?? 0,
-    longestStreak: (profile as any)?.longest_streak ?? 0,
-    seasonZaps: (profile as any)?.current_season_zaps ?? 0,
-    seasonRank: (profile as any)?.current_season_rank ?? 'ghost',
-    recentAchievements: (recentAchievements ?? []).map(ra => ({
-      achievementId: ra.achievement_id,
-      unlockedAt: ra.unlocked_at,
-      name: (ra.achievement as any)?.name ?? '',
-      icon: (ra.achievement as any)?.icon ?? 'award',
-      tier: ((ra.achievement as any)?.tier ?? 'bronze') as AchievementTier,
-    })),
+    achievementCount: p?.achievement_count    ?? 0,
+    lifetimeZaps:     p?.lifetime_zaps        ?? 0,
+    currentStreak:    p?.current_streak       ?? 0,
+    longestStreak:    p?.longest_streak       ?? 0,
+    seasonZaps:       p?.current_season_zaps  ?? 0,
+    seasonRank:       p?.current_season_rank  ?? 'ghost',
+    recentAchievements: (recentAchievements ?? []).map(ra => {
+      const a = ra.achievement as unknown as Pick<AchievementRow, 'name' | 'icon' | 'tier'> | null
+      return {
+        achievementId: ra.achievement_id,
+        unlockedAt: ra.unlocked_at,
+        name: a?.name ?? '',
+        icon: a?.icon ?? 'award',
+        tier: (a?.tier ?? 'bronze') as AchievementTier,
+      }
+    }),
     streaks: (streaks ?? []).map(s => ({
       type: s.streak_type as StreakType,
       current: s.current_count,
@@ -197,7 +205,8 @@ export async function checkRecentUnlocks(sinceIso: string) {
     .order('unlocked_at', { ascending: true })
 
   return (data ?? []).map(row => {
-    const a = row.achievement as any
+    const a = row.achievement as unknown as Pick<AchievementRow,
+      'id' | 'name' | 'description' | 'icon' | 'tier' | 'zaps_reward'> | null
     return {
       id: a?.id ?? row.achievement_id,
       name: a?.name ?? '',
@@ -226,7 +235,7 @@ export async function awardAchievement(profileId: string, achievementId: string)
     .eq('id', myProfileId)
     .maybeSingle()
 
-  const role = (caller as any)?.community_role ?? 'member'
+  const role = (caller as Pick<ProfileRow, 'community_role'> | null)?.community_role ?? 'member'
   if (!['host', 'guide', 'mentor', 'janitor'].includes(role)) {
     throw new Error('Unauthorized')
   }
@@ -266,7 +275,7 @@ export async function revokeAchievement(profileId: string, achievementId: string
     .eq('id', myProfileId)
     .maybeSingle()
 
-  const role = (caller as any)?.community_role ?? 'member'
+  const role = (caller as Pick<ProfileRow, 'community_role'> | null)?.community_role ?? 'member'
   if (!['host', 'guide', 'mentor', 'janitor'].includes(role)) {
     throw new Error('Unauthorized')
   }
@@ -285,9 +294,10 @@ export async function revokeAchievement(profileId: string, achievementId: string
     .maybeSingle()
 
   if (profile) {
+    const current = (profile as Pick<ProfileRow, 'achievement_count'>).achievement_count ?? 1
     await admin
       .from('profiles')
-      .update({ achievement_count: Math.max(0, ((profile as any).achievement_count ?? 1) - 1) })
+      .update({ achievement_count: Math.max(0, current - 1) })
       .eq('id', profileId)
   }
 }

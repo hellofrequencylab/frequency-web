@@ -74,7 +74,7 @@ function DispatchForm({
   const [title,        setTitle]        = useState(initial?.title ?? '')
   const [body,         setBody]         = useState('')
   const [dispatchType, setDispatchType] = useState<DispatchType>(initial?.dispatch_type ?? 'post')
-  const [scope,        setScope]        = useState<'circle' | 'hub' | 'nexus'>(defaultScope as any)
+  const [scope,        setScope]        = useState<'circle' | 'hub' | 'nexus'>(defaultScope as 'circle' | 'hub' | 'nexus')
   const [audId,        setAudId]        = useState(initial?.audience_id ?? '')
   const [taskId,       setTaskId]       = useState(initial?.linked_task?.id ?? '')
   const [preview,      setPreview]      = useState(false)
@@ -214,7 +214,7 @@ function DispatchForm({
           <label className={lbl}>Send to</label>
           <select
             value={scope}
-            onChange={e => { setScope(e.target.value as any); setAudId('') }}
+            onChange={e => { setScope(e.target.value as 'circle' | 'hub' | 'nexus'); setAudId('') }}
             disabled={isPending}
             className={input}
           >
