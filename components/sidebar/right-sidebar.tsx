@@ -328,26 +328,16 @@ async function RecentDispatchesWidget({
 }
 
 // ── Leaderboard ───────────────────────────────────────────────────────────────
+// Site-wide top earners. No self-highlight — the viewer reads the board the
+// same way as any other rank list, which keeps it from feeling like a
+// personalized callout when they're already on it.
 
-async function LeaderboardWidget({ profileId, circleIds }: { profileId: string; circleIds: string[] }) {
-  if (circleIds.length === 0) return null
-
+async function LeaderboardWidget() {
   const admin = createAdminClient()
-
-  // Get all member IDs in the viewer's circles
-  const { data: circleMembers } = await admin
-    .from('memberships')
-    .select('profile_id')
-    .in('circle_id', circleIds)
-    .eq('status', 'active')
-
-  const memberIds = [...new Set((circleMembers ?? []).map((m: { profile_id: string }) => m.profile_id as string))]
-  if (memberIds.length === 0) return null
 
   const { data: profiles } = await admin
     .from('profiles')
     .select('id, display_name, handle, avatar_url, current_season_zaps, current_season_rank')
-    .in('id', memberIds)
     .order('current_season_zaps', { ascending: false })
     .limit(5)
 
@@ -364,14 +354,11 @@ async function LeaderboardWidget({ profileId, circleIds }: { profileId: string; 
     <WidgetCard title="Leaderboard">
       <div className="p-2">
         {top.map((member, i) => {
-          const isSelf = member.id === profileId
           return (
             <Link
               key={member.id}
               href={`/people/${member.handle}`}
-              className={`flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-surface-elevated transition-colors ${
-                isSelf ? 'bg-primary-bg' : ''
-              }`}
+              className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-surface-elevated transition-colors"
             >
               <span className={`text-xs font-bold w-4 shrink-0 tabular-nums ${rankColors[i]}`}>{i + 1}</span>
               {member.avatar_url ? (
@@ -381,7 +368,7 @@ async function LeaderboardWidget({ profileId, circleIds }: { profileId: string; 
                   {getInitials(member.display_name ?? '')}
                 </div>
               )}
-              <span className={`text-xs flex-1 truncate ${isSelf ? 'font-semibold text-primary-strong' : 'text-text'}`}>
+              <span className="text-xs flex-1 truncate text-text">
                 {member.display_name}
               </span>
               <div className="flex items-center gap-1 shrink-0">
@@ -514,7 +501,7 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
       {/* Active Members */}
       <ActiveMembersWidget profileId={profileId} circleIds={circleIds} />
 
-      {isCrew && <LeaderboardWidget profileId={profileId} circleIds={circleIds} />}
+      {isCrew && <LeaderboardWidget />}
 
       {isCrew && <GamificationWidget profileId={profileId} />}
     </div>

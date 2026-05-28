@@ -464,7 +464,7 @@ function MobileLeftDrawer({
       <aside
         role="dialog"
         aria-label="Navigation"
-        className={`absolute inset-y-0 left-0 w-60 max-w-[75vw] bg-surface shadow-2xl flex flex-col transform transition-transform duration-200 ease-out ${
+        className={`absolute inset-y-0 left-0 w-52 max-w-[75vw] bg-surface shadow-2xl flex flex-col transform transition-transform duration-200 ease-out ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -719,7 +719,7 @@ export default function AppShell({
       <div className="flex flex-1 min-h-0 overflow-hidden">
 
         {/* Left nav */}
-        <aside className="hidden md:flex w-60 flex-col shrink-0 border-r border-border bg-surface/80 backdrop-blur-sm">
+        <aside className="hidden md:flex w-52 flex-col shrink-0 border-r border-border bg-surface/80 backdrop-blur-sm">
 
           {/* Primary nav */}
           <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">

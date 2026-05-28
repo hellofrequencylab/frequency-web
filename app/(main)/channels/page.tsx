@@ -14,7 +14,7 @@ import {
 import type { LucideIcon } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
-import { tuneInChannel, tuneOutChannel } from './actions'
+import { TuneInButton, TunedInButton } from './channel-toggle'
 
 type TopicalChannel = {
   id: string
@@ -203,25 +203,9 @@ function ChannelCard({
             </div>
           </Link>
           {canToggle && (
-            isTunedIn ? (
-              <form action={tuneOutChannel.bind(null, channel.id)}>
-                <button
-                  type="submit"
-                  className="shrink-0 rounded-full border border-border bg-white/80 dark:bg-canvas/80 px-2.5 py-1 text-[11px] font-medium text-text hover:text-danger hover:border-danger transition-colors"
-                >
-                  Tuned in
-                </button>
-              </form>
-            ) : (
-              <form action={tuneInChannel.bind(null, channel.id)}>
-                <button
-                  type="submit"
-                  className="shrink-0 rounded-full bg-primary px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-primary-hover transition-colors"
-                >
-                  Tune in
-                </button>
-              </form>
-            )
+            isTunedIn
+              ? <TunedInButton channelId={channel.id} />
+              : <TuneInButton channelId={channel.id} slug={channel.slug} />
           )}
         </div>
 
