@@ -218,44 +218,48 @@ export default async function CrewPage() {
       </div>
 
       {/* ── Stats + Quick Links row ──────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <div className="flex flex-col lg:flex-row gap-6 mb-6">
 
-        {/* Left: 4 stat cards */}
-        <div className="lg:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <StatCard
-            label="Zaps"
-            value={currentSeasonZaps.toLocaleString()}
-            Icon={Zap}
-            colorCls="text-amber-600 bg-amber-50 dark:bg-amber-950 dark:text-amber-400"
-          />
-          <StatCard
-            label="Gems"
-            value={lifetimeGems.toLocaleString()}
-            Icon={Gem}
-            colorCls="text-emerald-600 bg-emerald-50 dark:bg-emerald-950 dark:text-emerald-400"
-          />
-          <StatCard
-            label="Tasks Done"
-            value={String(completedTaskCount)}
-            Icon={CheckCircle}
-            colorCls="text-green-600 bg-green-50 dark:bg-green-950 dark:text-green-400"
-          />
-          <StatCard
-            label="Season Rank"
-            value={rankDef.label}
-            Icon={Star}
-            colorCls="text-indigo-600 bg-indigo-50 dark:bg-indigo-950 dark:text-indigo-400"
-          />
+        {/* Left: 4 stat cards — fixed height, don't stretch */}
+        <div className="flex-1 min-w-0">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <StatCard
+              label="Zaps"
+              value={currentSeasonZaps.toLocaleString()}
+              Icon={Zap}
+              colorCls="text-amber-600 bg-amber-50 dark:bg-amber-950 dark:text-amber-400"
+            />
+            <StatCard
+              label="Gems"
+              value={lifetimeGems.toLocaleString()}
+              Icon={Gem}
+              colorCls="text-emerald-600 bg-emerald-50 dark:bg-emerald-950 dark:text-emerald-400"
+            />
+            <StatCard
+              label="Tasks Done"
+              value={String(completedTaskCount)}
+              Icon={CheckCircle}
+              colorCls="text-green-600 bg-green-50 dark:bg-green-950 dark:text-green-400"
+            />
+            <StatCard
+              label="Season Rank"
+              value={rankDef.label}
+              Icon={Star}
+              colorCls="text-indigo-600 bg-indigo-50 dark:bg-indigo-950 dark:text-indigo-400"
+            />
+          </div>
         </div>
 
-        {/* Right: 6 quick links in 3x2 grid */}
-        <div className="grid grid-cols-2 gap-2">
-          <QuickLink href="/crew/achievements" Icon={Award} label="Achievements" sub="Earn badges" color="bg-violet-50 dark:bg-violet-950 text-violet-600 dark:text-violet-400" />
-          <QuickLink href="/crew/streaks" Icon={Flame} label="Streaks" sub="Stay consistent" color="bg-orange-50 dark:bg-orange-950 text-orange-600 dark:text-orange-400" />
-          <QuickLink href="/crew/challenges" Icon={Target} label="Challenges" sub="Season goals" color="bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400" />
-          <QuickLink href="/crew/quests" Icon={Map} label="Quests" sub="Multi-step" color="bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400" />
-          <QuickLink href="/crew/leaderboard" Icon={TrendingUp} label="Leaderboard" sub="Rankings" color="bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400" />
-          <QuickLink href="/crew/store" Icon={ShoppingBag} label="Gem Store" sub="Spend gems" color="bg-teal-50 dark:bg-teal-950 text-teal-600 dark:text-teal-400" />
+        {/* Right: 6 quick links in 3x2 grid — independent height */}
+        <div className="lg:w-72 shrink-0">
+          <div className="grid grid-cols-2 gap-2">
+            <QuickLink href="/crew/achievements" Icon={Award} label="Achievements" sub="Earn badges" color="bg-violet-50 dark:bg-violet-950 text-violet-600 dark:text-violet-400" />
+            <QuickLink href="/crew/streaks" Icon={Flame} label="Streaks" sub="Stay consistent" color="bg-orange-50 dark:bg-orange-950 text-orange-600 dark:text-orange-400" />
+            <QuickLink href="/crew/challenges" Icon={Target} label="Challenges" sub="Season goals" color="bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400" />
+            <QuickLink href="/crew/quests" Icon={Map} label="Quests" sub="Multi-step" color="bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400" />
+            <QuickLink href="/crew/leaderboard" Icon={TrendingUp} label="Leaderboard" sub="Rankings" color="bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400" />
+            <QuickLink href="/crew/store" Icon={ShoppingBag} label="Gem Store" sub="Spend gems" color="bg-teal-50 dark:bg-teal-950 text-teal-600 dark:text-teal-400" />
+          </div>
         </div>
       </div>
 
