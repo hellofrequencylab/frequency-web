@@ -4,6 +4,7 @@ import { Hash, Plus, EyeOff, Users } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { archiveChannel } from '../actions'
+import { NewChannelCompose } from '@/components/compose/new-channel-compose'
 
 function SidebarCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -36,6 +37,29 @@ export default async function AdminChannelsPage() {
 
   if (!profile || !['host', 'guide', 'mentor', 'janitor'].includes(profile.community_role)) notFound()
 
+  // Derive scope options for the New Channel modal from the admin's primary circle
+  const scopeOptions: { scope: 'hub' | 'nexus' | 'outpost'; scopeId: string; label: string }[] = []
+  const { data: membership } = await admin
+    .from('memberships')
+    .select(`circle:circles!circle_id (
+      hub:hubs!hub_id ( id, name, nexus:nexuses!nexus_id ( id, name, outpost:outposts!outpost_id ( id, name ) ) )
+    )`)
+    .eq('profile_id', profile.id)
+    .eq('status', 'active')
+    .order('joined_at', { ascending: true })
+    .limit(1)
+    .maybeSingle()
+
+  if (membership) {
+    const m = membership as unknown as { circle: { hub: { id: string; name: string; nexus: { id: string; name: string; outpost: { id: string; name: string } | null } | null } | null } | null }
+    const hub = m.circle?.hub
+    const nexus = hub?.nexus
+    const outpost = nexus?.outpost
+    if (hub) scopeOptions.push({ scope: 'hub', scopeId: hub.id, label: `Hub: ${hub.name}` })
+    if (nexus) scopeOptions.push({ scope: 'nexus', scopeId: nexus.id, label: `Nexus: ${nexus.name}` })
+    if (outpost) scopeOptions.push({ scope: 'outpost', scopeId: outpost.id, label: `Outpost: ${outpost.name}` })
+  }
+
   // Fetch all channels the admin has scope over
   const { data: channels } = await admin
     .from('channels')
@@ -53,11 +77,14 @@ export default async function AdminChannelsPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Channels</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Manage channels across your scope. Archiving hides from discovery.
-        </p>
+      <div className="flex items-start justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Channels</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Manage channels across your scope. Archiving hides from discovery.
+          </p>
+        </div>
+        {scopeOptions.length > 0 && <NewChannelCompose scopeOptions={scopeOptions} />}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
