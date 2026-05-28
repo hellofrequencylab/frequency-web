@@ -146,6 +146,7 @@ export async function createReply(parentId: string, body: string) {
   })
 
   awardGems(profileId, 'comment_reply').catch(() => {})
+  processGamificationEvent({ type: 'post_create', profileId }).catch(() => {})
 
   revalidatePath('/feed')
   revalidatePath('/circles', 'layout')
