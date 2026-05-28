@@ -35,10 +35,14 @@ export function NewRoomCompose({
 
     startTransition(async () => {
       try {
-        const { id } = await createRoom(fd)
+        const result = await createRoom(fd)
+        if ('error' in result) {
+          setError(result.error)
+          return
+        }
         setOpen(false)
         setName(''); setDescription('')
-        router.push(`/messages/r/${id}`)
+        router.push(`/messages/r/${result.id}`)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to create room.')
       }

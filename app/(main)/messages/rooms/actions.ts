@@ -23,11 +23,11 @@ async function getCallerProfile() {
   return data as { id: string; community_role: CommunityRole } | null
 }
 
-export async function createRoom(fd: FormData): Promise<{ id: string }> {
+export async function createRoom(fd: FormData): Promise<{ id: string } | { error: string }> {
   const caller = await getCallerProfile()
-  if (!caller) redirect('/sign-in')
+  if (!caller) return { error: 'Not signed in' }
   if (!CREW_PLUS.includes(caller.community_role)) {
-    throw new Error('Crew membership required to create rooms')
+    return { error: 'Crew membership required to create rooms' }
   }
 
   const name = (fd.get('name') as string)?.trim()
@@ -35,7 +35,7 @@ export async function createRoom(fd: FormData): Promise<{ id: string }> {
   const visibility = ((fd.get('visibility') as string) || 'public') as RoomVisibility
   const scopeId = (fd.get('scope_id') as string)?.trim() || null
 
-  if (!name) throw new Error('Name is required')
+  if (!name) return { error: 'Name is required' }
 
   const admin = createAdminClient()
   const { data, error } = await admin
@@ -50,14 +50,21 @@ export async function createRoom(fd: FormData): Promise<{ id: string }> {
     .select('id')
     .single()
 
-  if (error || !data) throw new Error(error?.message ?? 'Failed to create room')
+  if (error || !data) {
+    console.error('[createRoom] insert error:', error)
+    return { error: error?.message ?? 'Failed to create room' }
+  }
 
-  // Add creator as the first member + admin
-  await admin.from('room_members').insert({
+  const { error: memberError } = await admin.from('room_members').insert({
     room_id: data.id,
     profile_id: caller.id,
     is_admin: true,
   })
+
+  if (memberError) {
+    console.error('[createRoom] member insert error:', memberError)
+    return { error: `Room created but failed to add you as member: ${memberError.message}` }
+  }
 
   revalidatePath('/messages')
   return { id: data.id }
