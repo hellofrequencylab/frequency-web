@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { processGamificationEvent, recordStreakActivity } from '@/lib/achievements'
 
 async function getMyProfileId(): Promise<string | null> {
   const supabase = await createClient()
@@ -54,6 +55,10 @@ export async function createPost(formData: FormData) {
     console.error('[createPost]', error.message)
     return
   }
+
+  // Fire gamification events (non-blocking)
+  processGamificationEvent({ type: 'post_create', profileId }).catch(() => {})
+  recordStreakActivity(profileId, 'posting').catch(() => {})
 
   // Extract @mentions and create notification rows (best-effort, non-blocking)
   const bodyText = body || ''

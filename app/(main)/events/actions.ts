@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { slugify } from '@/lib/utils'
+import { processGamificationEvent, recordStreakActivity } from '@/lib/achievements'
 
 async function getMyProfileId(): Promise<string | null> {
   const supabase = await createClient()
@@ -66,6 +67,9 @@ export async function createEvent(formData: FormData) {
     return
   }
 
+  processGamificationEvent({ type: 'event_host', profileId: myProfileId }).catch(() => {})
+  recordStreakActivity(myProfileId, 'hosting').catch(() => {})
+
   revalidatePath('/events')
   revalidatePath('/feed')
   revalidatePath('/circles', 'layout')
@@ -87,16 +91,24 @@ export async function toggleRSVP(eventId: string, currentStatus: string | null) 
     .maybeSingle()
 
   if (existing) {
+    const newStatus = existing.status === 'going' ? 'not_going' : 'going'
     await supabase
       .from('event_rsvps')
-      .update({ status: existing.status === 'going' ? 'not_going' : 'going' })
+      .update({ status: newStatus })
       .eq('id', existing.id)
+
+    if (newStatus === 'going') {
+      processGamificationEvent({ type: 'event_attend', profileId: myProfileId }).catch(() => {})
+      recordStreakActivity(myProfileId, 'attendance').catch(() => {})
+    }
   } else {
     await supabase.from('event_rsvps').insert({
       event_id: eventId,
       profile_id: myProfileId,
       status: 'going',
     })
+    processGamificationEvent({ type: 'event_attend', profileId: myProfileId }).catch(() => {})
+    recordStreakActivity(myProfileId, 'attendance').catch(() => {})
   }
 
   revalidatePath('/events')

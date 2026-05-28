@@ -3,7 +3,7 @@ import { Suspense } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getInitials, relativeTime } from '@/lib/utils'
 import { RANK_COLORS, RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
-import { CalendarDays, MapPin, Megaphone, Zap, Trophy } from 'lucide-react'
+import { CalendarDays, MapPin, Megaphone, Zap, Trophy, Award, Flame, Target } from 'lucide-react'
 import { GettingStartedChecklist } from '@/components/feed/getting-started'
 
 export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
@@ -375,6 +375,67 @@ async function LeaderboardWidget({ profileId, circleIds }: { profileId: string; 
   )
 }
 
+// ── Gamification quick stats ─────────────────────────────────────────────────
+
+async function GamificationWidget({ profileId }: { profileId: string }) {
+  const admin = createAdminClient()
+
+  const [
+    { data: profile },
+    { data: streaks },
+    { count: achievementCount },
+  ] = await Promise.all([
+    admin.from('profiles')
+      .select('current_streak, achievement_count, lifetime_zaps')
+      .eq('id', profileId)
+      .maybeSingle(),
+    admin.from('streaks')
+      .select('streak_type, current_count')
+      .eq('profile_id', profileId)
+      .gt('current_count', 0),
+    admin.from('user_achievements')
+      .select('id', { count: 'exact', head: true })
+      .eq('profile_id', profileId),
+  ])
+
+  const currentStreak = (profile as any)?.current_streak ?? 0
+  const achievements = achievementCount ?? 0
+  const lifetimeZaps = (profile as any)?.lifetime_zaps ?? 0
+
+  if (achievements === 0 && currentStreak === 0 && lifetimeZaps === 0) return null
+
+  return (
+    <WidgetCard title="Your Progress">
+      <div className="p-3 space-y-2">
+        <Link
+          href="/crew/achievements"
+          className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+        >
+          <Award className="w-4 h-4 text-violet-500" />
+          <span className="text-xs text-gray-700 dark:text-gray-300 flex-1">Achievements</span>
+          <span className="text-xs font-bold text-gray-900 dark:text-gray-50">{achievements}</span>
+        </Link>
+        <Link
+          href="/crew/streaks"
+          className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+        >
+          <Flame className={`w-4 h-4 ${currentStreak > 0 ? 'text-orange-500' : 'text-gray-300 dark:text-gray-600'}`} />
+          <span className="text-xs text-gray-700 dark:text-gray-300 flex-1">Streak</span>
+          <span className="text-xs font-bold text-gray-900 dark:text-gray-50">{currentStreak}w</span>
+        </Link>
+        <Link
+          href="/crew/challenges"
+          className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+        >
+          <Zap className="w-4 h-4 text-amber-400" />
+          <span className="text-xs text-gray-700 dark:text-gray-300 flex-1">Lifetime Zaps</span>
+          <span className="text-xs font-bold text-gray-900 dark:text-gray-50">{lifetimeZaps.toLocaleString()}</span>
+        </Link>
+      </div>
+    </WidgetCard>
+  )
+}
+
 // ── Right sidebar ─────────────────────────────────────────────────────────────
 
 export default async function RightSidebar({ profileId, role }: RightSidebarProps) {
@@ -409,6 +470,8 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
       <ActiveMembersWidget profileId={profileId} circleIds={circleIds} />
 
       {isCrew && <LeaderboardWidget profileId={profileId} circleIds={circleIds} />}
+
+      {isCrew && <GamificationWidget profileId={profileId} />}
     </div>
   )
 }

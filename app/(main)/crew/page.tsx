@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { Star, CheckCircle, Zap } from 'lucide-react'
+import { Star, CheckCircle, Zap, Award, Flame, Target } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { SEASON_RANKS, getRankDef, type SeasonRank } from '@/lib/season-ranks'
@@ -177,6 +177,40 @@ export default async function CrewPage() {
               Icon={Star}
               colorCls="text-indigo-600 bg-indigo-50 dark:bg-indigo-950 dark:text-indigo-400"
             />
+          </div>
+
+          {/* ── Gamification quick links ─────────────────── */}
+          <div className="grid grid-cols-3 gap-3 mb-6">
+            <Link
+              href="/crew/achievements"
+              className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm p-3 hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors group"
+            >
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2 bg-violet-50 dark:bg-violet-950 text-violet-600 dark:text-violet-400 group-hover:bg-violet-100 dark:group-hover:bg-violet-900 transition-colors">
+                <Award className="w-4 h-4" />
+              </div>
+              <div className="text-sm font-semibold text-gray-900 dark:text-gray-50 leading-none">Achievements</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Earn badges</div>
+            </Link>
+            <Link
+              href="/crew/streaks"
+              className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm p-3 hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors group"
+            >
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2 bg-orange-50 dark:bg-orange-950 text-orange-600 dark:text-orange-400 group-hover:bg-orange-100 dark:group-hover:bg-orange-900 transition-colors">
+                <Flame className="w-4 h-4" />
+              </div>
+              <div className="text-sm font-semibold text-gray-900 dark:text-gray-50 leading-none">Streaks</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Stay consistent</div>
+            </Link>
+            <Link
+              href="/crew/challenges"
+              className="rounded-2xl border border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900 shadow-sm p-3 hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors group"
+            >
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2 bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900 transition-colors">
+                <Target className="w-4 h-4" />
+              </div>
+              <div className="text-sm font-semibold text-gray-900 dark:text-gray-50 leading-none">Challenges</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Season quests</div>
+            </Link>
           </div>
 
           {/* ── Tasks ────────────────────────────────────── */}

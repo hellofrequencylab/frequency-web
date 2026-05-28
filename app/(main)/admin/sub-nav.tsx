@@ -13,6 +13,7 @@ import {
   Network,
   ShieldAlert,
   Users,
+  Trophy,
 } from 'lucide-react'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
@@ -33,8 +34,9 @@ export function AdminSubNav({ role }: { role: CommunityRole }) {
     { href: '/admin/channels',    label: 'Channels',    Icon: Radio },
     { href: '/admin/events',      label: 'Events',      Icon: CalendarDays },
     { href: '/admin/dispatches',  label: 'Dispatches',  Icon: Megaphone },
-    { href: '/admin/crew-tasks',  label: 'Crew Tasks',  Icon: ClipboardList },
-    { href: '/admin/moderation',  label: 'Moderation',  Icon: ShieldAlert },
+    { href: '/admin/crew-tasks',     label: 'Crew Tasks',     Icon: ClipboardList },
+    { href: '/admin/gamification',  label: 'Gamification',  Icon: Trophy },
+    { href: '/admin/moderation',    label: 'Moderation',    Icon: ShieldAlert },
     ...(role === 'guide' || role === 'mentor' || role === 'janitor'
       ? [{ href: '/admin/hubs', label: 'Hubs', Icon: Building2 } as NavItem]
       : []),
