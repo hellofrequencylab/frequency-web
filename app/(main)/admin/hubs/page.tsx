@@ -15,7 +15,7 @@ export default async function AdminHubsPage() {
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
-  if (!profile || !['guide', 'mentor'].includes(profile.community_role)) notFound()
+  if (!profile || !['guide', 'mentor', 'janitor'].includes(profile.community_role)) notFound()
 
   const { data: rawHubs } = await admin
     .from('hubs')
