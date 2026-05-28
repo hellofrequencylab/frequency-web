@@ -1,6 +1,10 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { Award, Lock, Trophy, Zap, Flame, Star } from 'lucide-react'
+import {
+  Award, Lock, Trophy, Zap, Flame, Star, Users, Link as LinkIcon,
+  Calendar, Mic, Edit, BookOpen, Volume2, MessageCircle, PenTool,
+  Compass, Shield, Sun, Gem, Crown, TrendingUp, HandMetal,
+} from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { getAchievementsData } from '../gamification-actions'
 import { TIER_CONFIG, CATEGORY_CONFIG } from '@/lib/gamification'
@@ -12,6 +16,22 @@ const ICON_MAP: Record<string, React.ElementType> = {
   zap: Zap,
   flame: Flame,
   star: Star,
+  users: Users,
+  link: LinkIcon,
+  calendar: Calendar,
+  mic: Mic,
+  edit: Edit,
+  'book-open': BookOpen,
+  'volume-2': Volume2,
+  'message-circle': MessageCircle,
+  'pen-tool': PenTool,
+  compass: Compass,
+  shield: Shield,
+  sun: Sun,
+  gem: Gem,
+  crown: Crown,
+  'trending-up': TrendingUp,
+  'hand-metal': HandMetal,
 }
 
 function AchievementIcon({ icon, className }: { icon: string; className?: string }) {

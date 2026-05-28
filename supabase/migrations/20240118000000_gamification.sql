@@ -109,6 +109,7 @@ CREATE TABLE challenge_progress (
 
 CREATE INDEX idx_challenge_progress_profile   ON challenge_progress (profile_id);
 CREATE INDEX idx_challenge_progress_challenge ON challenge_progress (challenge_id);
+CREATE INDEX idx_challenge_progress_completed ON challenge_progress (completed_at) WHERE completed_at IS NOT NULL;
 
 -- ---------------------------------------------------------------------------
 -- 7. Add gamification fields to profiles

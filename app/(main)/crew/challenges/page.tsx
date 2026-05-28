@@ -141,7 +141,7 @@ export default async function ChallengesPage() {
                               </div>
                               <div className="h-1.5 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
                                 <div
-                                  className={`h-full rounded-full transition-all ${diff.color.replace('text-', 'bg-')}`}
+                                  className={`h-full rounded-full transition-all ${diff.bar}`}
                                   style={{ width: `${progress}%` }}
                                 />
                               </div>

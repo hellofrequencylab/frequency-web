@@ -4,6 +4,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { AchievementCriteria, StreakType } from '@/lib/gamification'
+import { STREAK_CONFIG } from '@/lib/gamification'
 
 type AdminClient = ReturnType<typeof createAdminClient>
 
@@ -85,8 +86,8 @@ export async function recordStreakActivity(
     return { current: existing.current_count, longest: existing.longest_count }
   }
 
-  // Check if streak is still alive (within window)
-  const windowDays = 9
+  // Check if streak is still alive (within window per type)
+  const windowDays = STREAK_CONFIG[streakType]?.window_days ?? 9
   const daysSinceLast = lastActivity
     ? (nowDate.getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24)
     : Infinity
@@ -159,9 +160,11 @@ function isRelevantEvent(criteria: AchievementCriteria, event: GamificationEvent
   switch (criteria.type) {
     case 'circle_join':    return event.type === 'circle_join'
     case 'referral':       return event.type === 'referral'
+    case 'welcome_member': return event.type === 'post_create'
     case 'event_attend':   return event.type === 'event_attend'
     case 'event_host':     return event.type === 'event_host'
     case 'post_create':    return event.type === 'post_create'
+    case 'post_replies':   return event.type === 'post_create'
     case 'role_earned':    return event.type === 'role_change'
     case 'streak':         return event.type === 'streak_update'
     case 'season_zaps':    return event.type === 'task_complete'
@@ -185,7 +188,7 @@ interface UserStats {
 }
 
 async function getUserStats(admin: AdminClient, profileId: string): Promise<UserStats> {
-  const [profile, memberships, rsvps, hostedEvents, posts, completions, streaks] =
+  const [profile, memberships, rsvps, hostedEvents, posts, completions, streaks, inviteLinks] =
     await Promise.all([
       admin.from('profiles')
         .select('current_season_zaps, current_season_rank, community_role')
@@ -211,6 +214,9 @@ async function getUserStats(admin: AdminClient, profileId: string): Promise<User
       admin.from('streaks')
         .select('streak_type, current_count')
         .eq('profile_id', profileId),
+      admin.from('invite_links')
+        .select('used_count')
+        .eq('created_by', profileId),
     ])
 
   const streakMap: Record<string, number> = {}
@@ -218,16 +224,21 @@ async function getUserStats(admin: AdminClient, profileId: string): Promise<User
     streakMap[s.streak_type] = s.current_count
   }
 
+  const totalReferrals = (inviteLinks.data ?? []).reduce(
+    (sum, link) => sum + ((link as any).used_count ?? 0), 0
+  )
+
+  const p = profile.data as any
   return {
     circleCount: memberships.data?.length ?? 0,
     eventAttendCount: rsvps.data?.length ?? 0,
     eventHostCount: hostedEvents.data?.length ?? 0,
     postCount: posts.data?.length ?? 0,
-    referralCount: 0,
+    referralCount: totalReferrals,
     taskCompleteCount: completions.data?.length ?? 0,
-    seasonZaps: (profile.data as any)?.current_season_zaps ?? 0,
-    currentRank: (profile.data as any)?.current_season_rank ?? 'ghost',
-    communityRole: (profile.data as any)?.community_role ?? 'member',
+    seasonZaps: p?.current_season_zaps ?? 0,
+    currentRank: p?.current_season_rank ?? 'ghost',
+    communityRole: p?.community_role ?? 'member',
     streaks: streakMap,
   }
 }
@@ -240,12 +251,16 @@ function isCriteriaMet(
   switch (criteria.type) {
     case 'circle_join':
       return stats.circleCount >= criteria.count
+    case 'welcome_member':
+      return false
     case 'event_attend':
       return stats.eventAttendCount >= criteria.count
     case 'event_host':
       return stats.eventHostCount >= criteria.count
     case 'post_create':
       return stats.postCount >= criteria.count
+    case 'post_replies':
+      return false
     case 'referral':
       return stats.referralCount >= criteria.count
     case 'task_complete':

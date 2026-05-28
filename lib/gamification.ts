@@ -192,11 +192,12 @@ export const DIFFICULTY_CONFIG: Record<ChallengeDifficulty, {
   label: string
   color: string
   bg: string
+  bar: string
 }> = {
-  easy:      { label: 'Easy',      color: 'text-green-600 dark:text-green-400',  bg: 'bg-green-50 dark:bg-green-950/40' },
-  normal:    { label: 'Normal',    color: 'text-blue-600 dark:text-blue-400',    bg: 'bg-blue-50 dark:bg-blue-950/40' },
-  hard:      { label: 'Hard',      color: 'text-orange-600 dark:text-orange-400',bg: 'bg-orange-50 dark:bg-orange-950/40' },
-  legendary: { label: 'Legendary', color: 'text-violet-600 dark:text-violet-400',bg: 'bg-violet-50 dark:bg-violet-950/40' },
+  easy:      { label: 'Easy',      color: 'text-green-600 dark:text-green-400',  bg: 'bg-green-50 dark:bg-green-950/40',  bar: 'bg-green-500' },
+  normal:    { label: 'Normal',    color: 'text-blue-600 dark:text-blue-400',    bg: 'bg-blue-50 dark:bg-blue-950/40',    bar: 'bg-blue-500' },
+  hard:      { label: 'Hard',      color: 'text-orange-600 dark:text-orange-400',bg: 'bg-orange-50 dark:bg-orange-950/40',bar: 'bg-orange-500' },
+  legendary: { label: 'Legendary', color: 'text-violet-600 dark:text-violet-400',bg: 'bg-violet-50 dark:bg-violet-950/40',bar: 'bg-violet-500' },
 }
 
 // ---------------------------------------------------------------------------

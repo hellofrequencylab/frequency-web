@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { processGamificationEvent } from '@/lib/achievements'
 
 async function getMyProfileId(): Promise<string | null> {
   const supabase = await createClient()
@@ -87,6 +88,8 @@ export async function joinCircle(circleId: string, circleSlug: string) {
     console.error('[joinCircle]', error.message)
     return
   }
+
+  processGamificationEvent({ type: 'circle_join', profileId: myProfileId }).catch(() => {})
 
   revalidatePath('/circles')
   revalidatePath('/feed')
