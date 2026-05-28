@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -14,6 +15,18 @@ import {
 import { createClient } from '@/lib/supabase/server'
 import { SiteHeader } from '@/components/layout/site-header'
 import { getInitials, relativeTime } from '@/lib/utils'
+import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION } from '@/lib/site'
+
+export const metadata: Metadata = {
+  title: { absolute: `${SITE_NAME} — ${SITE_TAGLINE}` },
+  description: SITE_DESCRIPTION,
+  alternates: { canonical: '/' },
+  openGraph: {
+    title: `${SITE_NAME} — ${SITE_TAGLINE}`,
+    description: SITE_DESCRIPTION,
+    url: '/',
+  },
+}
 
 type PostPreviewRow = {
   id: string
