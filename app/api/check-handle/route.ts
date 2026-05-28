@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/supabase/server'
 
-// New users have community_role='member', which the RLS policies block from
-// reading other profiles. We use the service role here so the uniqueness
-// check works regardless of the caller's role. This route only returns a
-// boolean — no profile data is exposed.
+// Handle uniqueness check. Uses the handle_is_available SECURITY DEFINER RPC
+// (added in 20240204000000) so the caller's role doesn't matter — anyone
+// can check whether a handle is taken without seeing whose row holds it.
+//
+// The `userId` query param lets the signup flow keep its own auto-generated
+// handle when it re-checks — without this, the user would see "taken" on
+// their own handle.
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const handle = searchParams.get('handle')
@@ -14,22 +17,33 @@ export async function GET(request: Request) {
     return NextResponse.json({ available: false })
   }
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
+  const supabase = await createClient()
 
-  let query = supabase
-    .from('profiles')
-    .select('handle')
-    .eq('handle', handle)
+  // If the caller passed a userId to exclude, we still need to check
+  // whether *anyone else* has the handle. The RPC tells us if it's free
+  // globally; if it's not free but the only owner is the excluded user,
+  // it's effectively still available.
+  const { data: available, error } = await supabase.rpc('handle_is_available', {
+    check_handle: handle,
+  })
 
-  // Exclude the requesting user's own row so their auto-generated handle
-  // doesn't appear as taken when they try to keep or modify it.
+  if (error) return NextResponse.json({ available: false })
+  if (available) return NextResponse.json({ available: true })
+
+  // Not globally free — check whether the only owner is the excluded user.
   if (excludeUserId) {
-    query = query.neq('auth_user_id', excludeUserId)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user?.id === excludeUserId) {
+      const { data: ownProfile } = await supabase
+        .from('profiles')
+        .select('handle')
+        .eq('auth_user_id', excludeUserId)
+        .maybeSingle()
+      if (ownProfile?.handle === handle) {
+        return NextResponse.json({ available: true })
+      }
+    }
   }
 
-  const { data } = await query.maybeSingle()
-  return NextResponse.json({ available: !data })
+  return NextResponse.json({ available: false })
 }

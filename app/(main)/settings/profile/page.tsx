@@ -1,6 +1,5 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { ProfileForm } from './profile-form'
 
 export default async function ProfileSettingsPage() {
@@ -8,8 +7,7 @@ export default async function ProfileSettingsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) notFound()
 
-  const admin = createAdminClient()
-  const { data: profile } = await admin
+  const { data: profile } = await supabase
     .from('profiles')
     .select('display_name, handle, bio, avatar_url')
     .eq('auth_user_id', user.id)
