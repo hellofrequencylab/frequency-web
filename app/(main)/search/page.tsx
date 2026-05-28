@@ -34,11 +34,10 @@ type EventRow = {
 const TABS = ['people', 'posts', 'events'] as const
 type Tab = (typeof TABS)[number]
 
-const ROLE_COLOR: Record<string, string> = {
-  crew:   'bg-signal-bg text-signal-strong',
-  host:   'bg-success-bg text-success',
-  guide:  'bg-signal-bg text-signal-strong',
-  mentor: 'bg-warning-bg text-warning',
+import { type CommunityRole, ROLE_RANK, RoleBadge } from '@/lib/community-roles'
+
+function hasRole(role: string | null | undefined): role is CommunityRole {
+  return !!role && role in ROLE_RANK
 }
 
 function formatDate(iso: string) {
@@ -199,7 +198,7 @@ export default async function SearchPage({
             <div className="space-y-0.5">
               {people.map((p) => {
                 const isSelf = p.id === myProfileId
-                const roleCls = ROLE_COLOR[p.community_role]
+                const showRole = hasRole(p.community_role)
                 return (
                   <Link
                     key={p.id}
@@ -225,10 +224,8 @@ export default async function SearchPage({
                             <span className="ml-1 text-xs text-subtle font-normal">(you)</span>
                           )}
                         </span>
-                        {roleCls && (
-                          <span className={`text-[11px] px-1.5 py-0.5 rounded-md font-medium capitalize ${roleCls}`}>
-                            {p.community_role}
-                          </span>
+                        {showRole && (
+                          <RoleBadge role={p.community_role as CommunityRole} className="text-[11px] leading-tight" />
                         )}
                       </div>
                       <p className="text-xs text-subtle mt-0.5">@{p.handle}</p>
@@ -251,7 +248,7 @@ export default async function SearchPage({
             <div className="space-y-3">
               {posts.map((post) => {
                 const a = post.author
-                const roleCls = a?.community_role ? ROLE_COLOR[a.community_role] : null
+                const showAuthorRole = hasRole(a?.community_role ?? null)
                 return (
                   <div
                     key={post.id}
@@ -278,10 +275,8 @@ export default async function SearchPage({
                             {a.display_name}
                           </Link>
                         )}
-                        {roleCls && (
-                          <span className={`text-[11px] px-1.5 py-0.5 rounded-md font-medium capitalize ${roleCls}`}>
-                            {a!.community_role}
-                          </span>
+                        {showAuthorRole && (
+                          <RoleBadge role={a!.community_role as CommunityRole} className="text-[11px] leading-tight" />
                         )}
                       </div>
                       <span className="text-xs text-subtle shrink-0">
