@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NexusesClient } from './nexuses-client'
+import { NewNexusCompose } from '@/components/compose/new-nexus-compose'
 
 export default async function AdminNexusesPage() {
   const supabase = await createClient()
@@ -43,11 +44,14 @@ export default async function AdminNexusesPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Nexuses</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Top-level geographic groupings. Each nexus contains hubs, which contain circles.
-        </p>
+      <div className="flex items-start justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Nexuses</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Top-level geographic groupings. Each nexus contains hubs, which contain circles.
+          </p>
+        </div>
+        <NewNexusCompose />
       </div>
       <NexusesClient nexuses={nexuses} mentors={mentors ?? []} />
     </div>

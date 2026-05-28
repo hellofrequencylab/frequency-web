@@ -4,6 +4,7 @@ import { Plus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { CirclesClient } from './circles-client'
+import { NewCircleCompose } from '@/components/compose/new-circle-compose'
 
 function SidebarCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -122,11 +123,14 @@ export default async function AdminCirclesPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Circles</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Create and manage circles within your scope. Each circle needs a hub assignment to appear in the hierarchy.
-        </p>
+      <div className="flex items-start justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Circles</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Create and manage circles within your scope. Each circle needs a hub assignment to appear in the hierarchy.
+          </p>
+        </div>
+        <NewCircleCompose hubs={hubs} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

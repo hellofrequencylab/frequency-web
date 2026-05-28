@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { HubsClient } from './hubs-client'
+import { NewHubCompose } from '@/components/compose/new-hub-compose'
 
 export default async function AdminHubsPage() {
   const supabase = await createClient()
@@ -50,11 +51,14 @@ export default async function AdminHubsPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Hubs</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Hubs group circles within a nexus. Assign a guide to each hub.
-        </p>
+      <div className="flex items-start justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Hubs</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Hubs group circles within a nexus. Assign a guide to each hub.
+          </p>
+        </div>
+        <NewHubCompose nexuses={nexuses ?? []} />
       </div>
       <HubsClient hubs={hubs} nexuses={nexuses ?? []} guides={guides ?? []} />
     </div>

@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { CrewTasksClient } from './crew-tasks-client'
+import { NewTaskCompose } from '@/components/compose/new-task-compose'
 
 function SidebarCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -74,11 +75,14 @@ export default async function AdminCrewTasksPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Crew Tasks</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Define the tasks members can complete to earn zaps. Changes apply immediately across the app.
-        </p>
+      <div className="flex items-start justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Crew Tasks</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Define the tasks members can complete to earn zaps. Changes apply immediately across the app.
+          </p>
+        </div>
+        <NewTaskCompose />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

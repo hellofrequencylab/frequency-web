@@ -4,6 +4,7 @@ import { Megaphone } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { DispatchesClient } from './dispatches-client'
+import { BroadcastCompose } from '@/app/(main)/broadcast/broadcast-compose'
 
 function SidebarCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -90,11 +91,14 @@ export default async function AdminDispatchesPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Dispatches</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Publish announcements to your community. Dispatches appear on the Broadcast page and drop into the main feed.
-        </p>
+      <div className="flex items-start justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Dispatches</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Publish announcements to your community. Dispatches appear on the Broadcast page and drop into the main feed.
+          </p>
+        </div>
+        <BroadcastCompose circles={circles} hubs={hubs} nexuses={nexuses} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

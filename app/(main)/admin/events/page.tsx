@@ -4,6 +4,7 @@ import { Plus, CalendarDays, MapPin } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { CancelToggle } from './events-client'
+import { EventCompose } from '@/app/(main)/events/event-compose'
 
 function SidebarCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -44,6 +45,15 @@ export default async function AdminEventsPage() {
     .from('circles')
     .select('id')
     .eq('host_id', profile.id)
+
+  // Fetch circles for the New Event modal (membership-based)
+  const { data: myMemberships } = await admin
+    .from('memberships')
+    .select('circle:circles!circle_id ( id, name )')
+    .eq('profile_id', profile.id)
+    .eq('status', 'active')
+  const myCircles = ((myMemberships ?? []) as unknown as { circle: { id: string; name: string } | null }[])
+    .map(m => m.circle).filter((c): c is { id: string; name: string } => !!c)
 
   type EventRow = {
     id: string; title: string; slug: string; starts_at: string; ends_at: string | null;
@@ -86,11 +96,14 @@ export default async function AdminEventsPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Events</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Manage events across your circles. Cancel or reinstate from here.
-        </p>
+      <div className="flex items-start justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Events</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Manage events across your circles. Cancel or reinstate from here.
+          </p>
+        </div>
+        <EventCompose groups={myCircles} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
