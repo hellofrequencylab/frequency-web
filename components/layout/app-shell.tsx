@@ -69,25 +69,36 @@ type Theme = 'light' | 'dark' | 'system'
 
 function useTheme() {
   const [theme, setThemeState] = useState<Theme>(() => {
-    if (typeof window === 'undefined') return 'light'
-    const saved = localStorage.getItem('theme') as Theme | null
-    return saved === 'dark' || saved === 'light' || saved === 'system' ? saved : 'light'
+    if (typeof window === 'undefined') return 'system'
+    const saved = localStorage.getItem('freq-theme') as Theme | null
+    return saved === 'dark' || saved === 'light' || saved === 'system' ? saved : 'system'
   })
+
+  // Apply (mode → .dark class + meta theme-color). Pulled out so we can also
+  // call it from the OS preference listener below.
+  function apply(mode: Theme) {
+    const sysDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+    const isDark = mode === 'dark' || (mode === 'system' && sysDark)
+    document.documentElement.classList.toggle('dark', isDark)
+    const meta = document.querySelector('meta[name="theme-color"]')
+    if (meta) meta.setAttribute('content', isDark ? '#16130E' : '#F7F3EA')
+  }
 
   function setTheme(next: Theme) {
     setThemeState(next)
-    const html = document.documentElement
-    if (next === 'dark') {
-      html.classList.add('dark')
-      localStorage.setItem('theme', 'dark')
-    } else if (next === 'light') {
-      html.classList.remove('dark')
-      localStorage.setItem('theme', 'light')
-    } else {
-      localStorage.setItem('theme', 'system')
-      html.classList.toggle('dark', window.matchMedia('(prefers-color-scheme: dark)').matches)
-    }
+    localStorage.setItem('freq-theme', next)
+    apply(next)
   }
+
+  // Follow OS changes while the user is on 'system'.
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)')
+    function onChange() {
+      if ((localStorage.getItem('freq-theme') ?? 'system') === 'system') apply('system')
+    }
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
 
   return { theme, setTheme }
 }
