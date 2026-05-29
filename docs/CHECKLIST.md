@@ -1,5 +1,8 @@
 # Owner checklist — what to verify & decide (when you're at a computer)
 
+> 👉 **For the ordered, step-by-step path, use [START-HERE.md](START-HERE.md).**
+> This file is the detailed reference (decisions + tech debt) behind it.
+>
 > A running list of things only *you* can do (apply DB changes, eyeball UI, make
 > product calls). The developer-side phase tracker is [BUILD-PHASES.md](BUILD-PHASES.md);
 > this is the human action list. Work through it on the **test/dev side**, then
