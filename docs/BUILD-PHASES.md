@@ -145,8 +145,10 @@ ENGAGEMENT-ARCHITECTURE.
 - [ ] **Async lane** (outbox/queue + workers) for fan-out, fraud scoring, expiry,
       leaderboard recompute.
 - [ ] Realtime **reward feedback** via Supabase Broadcast.
-- [ ] **Capture orchestration** — `captureNode()` tying verify → insert capture →
-      `recordEngagementEvent`; deferred until the reward economy is set.
+- [x] **Capture orchestration** — `captureNode()` (`lib/engagement/capture.ts`):
+      verify → ledger (exactly-once) → capture row → `awardZaps(node.zaps_value)`.
+      Physical loop is functional end-to-end. *(Repeatable-node idempotency keying
+      still TODO; node reward amounts are tunable via `nodes.zaps_value`.)*
 
 **Done when:** an event from any source can be verified server-side and award
 exactly once; QR/NFC/geo nodes exist as data; the engine is config-extensible

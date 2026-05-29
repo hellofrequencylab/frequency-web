@@ -12,6 +12,7 @@
       - `20240214000000_enable_postgis_geography.sql` (PostGIS + `circles.geog`)
       - `20240215000000_engagement_events.sql` (event ledger)
       - `20240216000000_physical_nodes.sql` (nodes + captures + `node_within_range`)
+      - `20240217000000_node_zaps_value.sql` (per-node zap reward amount)
 - [ ] **Regenerate DB types** after applying (the new tables use an untyped client
       view until then): `npx supabase gen types typescript --linked > lib/database.types.ts`,
       then `npx tsc --noEmit`. Optional: once regenerated, drop the
