@@ -82,14 +82,16 @@ PAGE-FRAMEWORK.
 - [~] In-person **icon designator** (📍 "In person" badge; virtual = unmarked
       default) on the `/circles` cards; capacity line already shows the cap.
       **Follow-up (visual QA):** mirror the badge on the circle detail header.
-- [ ] Implement the **3 templates** (Stream / Index / Detail) as shared components.
-      *(Foundations ready: capability resolver + `lib/contract` view models.
-      Needs a running app for visual QA — do with the owner available.)*
-- [ ] Implement **module + slot composition** + scope-aware right rail +
-      **capability-driven inline action slots** (the inline-admin foundation).
-      *(Wire `getCircleCapabilities`/`getProfileCapabilities` into the circle &
-      profile pages; render `circle.editSettings` / `profile.edit` affordances
-      inline. Behavioral + visual — needs the app running.)*
+- [~] **3 templates** — **Detail** shell built
+      (`components/templates/detail-template.tsx`: context header + badges +
+      actions slot + tabs + body). Stream/Index thin shells + **wiring pages onto
+      templates** still pending (needs running app for visual QA).
+- [~] **Module + slot + inline actions** — built additively: shared module chrome
+      (`components/modules/module-card.tsx`, now consumed by the right rail) +
+      capability gating (`components/ui/can.tsx` → `<Can need=…>`). **Still
+      pending (needs running app):** the slot registry, scope-aware rail, and
+      wiring `getCircleCapabilities`/`getProfileCapabilities` into the circle &
+      profile pages so inline admin / edit-in-place render by capability.
 
 **Done when:** every main page renders via one of the 3 templates; inline actions
 appear by capability (host edits inline, member sees content only); a newcomer can
