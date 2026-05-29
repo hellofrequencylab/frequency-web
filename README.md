@@ -1,4 +1,19 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+Frequency — a platform for place-based, in-person community practice. Next.js 16 +
+Supabase.
+
+## Documentation
+
+New here? Start with the handoff docs in [`docs/`](docs/):
+
+- [Architecture](docs/ARCHITECTURE.md) — stack, directory map, the RLS /
+  admin-client **authorization model** (read first), server-action conventions, cron.
+- [Glossary](docs/GLOSSARY.md) — domain language (Circle / Hub / Nexus, roles,
+  gems & zaps, channels).
+- [Database](docs/DATABASE.md) — table inventory, enums, schema invariants,
+  migration workflow.
+- [Backlog](docs/BACKLOG.md) — roadmap pointer, remaining hygiene, deploy env vars.
+
+The product roadmap (P0–P7) lives in [`ROADMAP.md`](ROADMAP.md).
 
 ## Getting Started
 

@@ -10,21 +10,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendWelcomeEmail } from '@/lib/email'
+import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 
 export const dynamic = 'force-dynamic'
-
-const CRON_SECRET = process.env.CRON_SECRET
 
 function daysSince(iso: string): number {
   return Math.floor((Date.now() - new Date(iso).getTime()) / (1000 * 60 * 60 * 24))
 }
 
 export async function GET(req: NextRequest) {
-  // Verify secret header (Vercel Cron sends Authorization: Bearer <CRON_SECRET>)
-  const authHeader = req.headers.get('authorization')
-  if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const denied = rejectUnauthorizedCron(req)
+  if (denied) return denied
 
   const admin = createAdminClient()
 

@@ -8,6 +8,29 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
+export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
+
+/**
+ * The caller's profile id + community role, or null if not signed in / no
+ * profile row. Use when an action needs to make a role-based authz decision.
+ */
+export async function getCallerProfile(): Promise<{ id: string; community_role: CommunityRole } | null> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return null
+
+  const admin = createAdminClient()
+  const { data } = await admin
+    .from('profiles')
+    .select('id, community_role')
+    .eq('auth_user_id', user.id)
+    .maybeSingle()
+
+  return data as { id: string; community_role: CommunityRole } | null
+}
+
 /** The caller's profile id, or null if not signed in / no profile row. */
 export async function getMyProfileId(): Promise<string | null> {
   const supabase = await createClient()

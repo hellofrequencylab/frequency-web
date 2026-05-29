@@ -4,27 +4,13 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getMyProfileId } from '@/lib/auth'
 import { slugify } from '@/lib/utils'
 import { processGamificationEvent, recordStreakActivity } from '@/lib/achievements'
 import { awardGems } from '@/lib/gems'
 import { generateOccurrencesForAnchor, type RecurrenceType } from '@/lib/event-recurrence'
 
 const VALID_RECURRENCE: RecurrenceType[] = ['none', 'daily', 'weekly', 'monthly']
-
-async function getMyProfileId(): Promise<string | null> {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return null
-  const admin = createAdminClient()
-  const { data } = await admin
-    .from('profiles')
-    .select('id')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
-  return data?.id ?? null
-}
 
 export async function createEvent(formData: FormData) {
   const title = (formData.get('title') as string | null)?.trim()
