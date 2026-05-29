@@ -25,6 +25,15 @@ export interface ProcessResult {
 
 const BACKOFF_BASE_MS = 60_000 // 1m → 2m → 4m → 8m …
 
+/** Pure retry policy: given the next attempt count, fail past the cap, else retry with exponential backoff. */
+export function nextRetry(
+  attempts: number,
+  maxAttempts: number,
+): { status: 'failed' | 'pending'; delayMs: number } {
+  if (attempts >= maxAttempts) return { status: 'failed', delayMs: 0 }
+  return { status: 'pending', delayMs: BACKOFF_BASE_MS * 2 ** (attempts - 1) }
+}
+
 function db() {
   return createAdminClient()
 }
@@ -85,21 +94,21 @@ export async function processQueue(
       done++
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
-      if (attempts >= job.max_attempts) {
+      const retry = nextRetry(attempts, job.max_attempts)
+      if (retry.status === 'failed') {
         await client
           .from('notification_queue')
           .update({ status: 'failed', attempts, last_error: msg, updated_at: new Date().toISOString() })
           .eq('id', job.id)
         failed++
       } else {
-        const delay = BACKOFF_BASE_MS * 2 ** (attempts - 1)
         await client
           .from('notification_queue')
           .update({
             status: 'pending',
             attempts,
             last_error: msg,
-            run_after: new Date(Date.now() + delay).toISOString(),
+            run_after: new Date(Date.now() + retry.delayMs).toISOString(),
             updated_at: new Date().toISOString(),
           })
           .eq('id', job.id)

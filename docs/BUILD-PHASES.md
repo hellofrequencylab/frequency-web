@@ -257,11 +257,12 @@ a **proven practice-retention loop (PMF)** before building the cathedral.
       suppressed), and email performance + deliverability over 30 days
       (`lib/studio/analytics.ts`). Remaining: funnel conversion, acquisition source,
       cohort retention.
-- [~] **Test harness** — **Vitest added** (`npm test` → `vitest run`; `vitest.config.ts`
-      with the `@/` alias). First suite covers the pure authz core
-      (`resolveCapabilities`, `atLeastRole`) + `currencyForSource` (11 tests). Still
-      to add before agent autonomy (6.6): mocked tests for the spine (outbox,
-      `shouldSend` consent, suppression).
+- [~] **Test harness** — **Vitest** (`npm test`; `vitest.config.ts`, `@/` alias).
+      **17 tests** covering the pure authz core (`resolveCapabilities`, `atLeastRole`),
+      `currencyForSource`, the outbox **retry/backoff policy** (`nextRetry`), and the
+      Resend **webhook signature verification** (`verifyResendSignature`). Still to add
+      before agent *autonomy*: mocked DB tests for `shouldSend` consent + suppression
+      queries (the copilot agent is human-gated, so it ships without these).
 - [~] **6.6 Agent Console (copilot)** — shipped (migration `20240225000000`):
       `/studio/agent` Action Queue, a deterministic winback proposer
       (`lib/studio/agent.ts`), one-click **Approve & send** / Dismiss, and approved
