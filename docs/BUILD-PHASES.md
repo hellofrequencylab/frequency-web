@@ -142,8 +142,9 @@ ENGAGEMENT-ARCHITECTURE.
       (migration `20240216000000`); server-mediated (no client reads).
       **`partners/businesses` module schema DONE** — `partners` + `partner_offers`
       + `partner_redemptions` + `nodes.partner_id` (migration `20240218000000`);
-      directory/offers public-when-active, redemptions read-own. TS read helpers +
-      redemption-on-capture flow still to wire.
+      directory/offers public-when-active, redemptions read-own. TS read layer
+      DONE (`lib/partners/read.ts`: `listActivePartners` + `getPartnerView`).
+      Redemption-on-capture flow (bump plaque → discount + zaps) still to wire.
 - [x] **Async lane** — `notification_queue` (migration `20240219000000`) +
       `lib/queue/outbox.ts` (`enqueue` / `processQueue` with retries + exponential
       backoff) + `/api/cron/process-queue` (every 2 min; durable web-push handler
