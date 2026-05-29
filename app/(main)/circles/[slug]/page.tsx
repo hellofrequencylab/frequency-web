@@ -12,6 +12,7 @@ import { UpcomingEventsWidget } from '@/components/events/upcoming-widget'
 import { HostInviteButton } from '@/components/circles/host-invite-button'
 import { CollapsibleAbout } from '@/components/circles/collapsible-about'
 import { CircleHostMenu } from '@/components/circles/circle-host-menu'
+import { getCircleCapabilities } from '@/lib/core/load-capabilities'
 import { getInitials } from '@/lib/utils'
 import { ProfileFlair } from '@/components/profile-flair'
 import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
@@ -155,6 +156,11 @@ export default async function CirclePage({
     }
   }
 
+  // Inline-admin gating via the one capability resolver: host + janitors, plus
+  // guides/mentors who lead this circle's hub/nexus (scope-aware).
+  const caps = await getCircleCapabilities(circle.id)
+  const canManage = caps.has('circle.editSettings')
+
   // Sort: host first → by join date
   const sorted = [...members].sort((a, b) => {
     const aHost = circle.host?.id === a.profile.id ? 0 : 1
@@ -239,7 +245,7 @@ export default async function CirclePage({
 
         {/* Create / join / leave actions */}
         <div className="flex items-center gap-3 shrink-0">
-          {isHost && <CircleHostMenu circleId={circle.id} />}
+          {canManage && <CircleHostMenu circleId={circle.id} />}
 
           {isMember && !isHost && (
             <form action={leaveCircle.bind(null, circle.id)}>
@@ -282,7 +288,7 @@ export default async function CirclePage({
         <div className="mb-6">
           <CollapsibleAbout text={circle.about} />
         </div>
-      ) : isHost ? (
+      ) : canManage ? (
         <Link
           href={`/circles/${circle.slug}?edit=true`}
           className="inline-block mb-6 text-xs text-subtle hover:text-primary-strong transition-colors"
@@ -301,7 +307,7 @@ export default async function CirclePage({
             <div className="mb-4">
               <h2 className="text-sm font-semibold text-text">Circle Feed</h2>
               <p className="text-xs text-muted leading-relaxed mt-0.5">
-                {isHost
+                {canManage
                   ? 'Post to your circle. Toggle Announce to broadcast to the wider hub.'
                   : 'Share with everyone in this circle.'}
               </p>
@@ -311,7 +317,7 @@ export default async function CirclePage({
                 scopeId={circle.id}
                 visibility="group"
                 placeholder={`Share something with ${circle.name}…`}
-                canAnnounce={isHost}
+                canAnnounce={canManage}
               />
             ) : (
               myProfileId && (
@@ -325,7 +331,7 @@ export default async function CirclePage({
             <FeedList
               circleIds={[circle.id]} showPublicLayer={false}
               myProfileId={myProfileId}
-              viewerRole={isHost ? 'host' : isCrew ? 'crew' : 'member'}
+              viewerRole={canManage ? 'host' : isCrew ? 'crew' : 'member'}
               emptyMessage="No posts yet. Be the first to share something."
             />
           </div>
@@ -334,7 +340,7 @@ export default async function CirclePage({
           <div className="space-y-6">
 
             {/* Host tools */}
-            {isHost && (
+            {canManage && (
               <div className="rounded-2xl border border-primary-bg/50 bg-primary-bg/40 dark:bg-primary-bg/10 shadow-sm px-4 py-3">
                 <div className="flex items-center gap-1.5 mb-2.5">
                   <Settings2 className="w-3.5 h-3.5 text-primary-strong" />
@@ -356,7 +362,7 @@ export default async function CirclePage({
             )}
 
             {/* Circle health (host+ only) */}
-            {isHost && healthScore.totalZaps > 0 && (
+            {canManage && healthScore.totalZaps > 0 && (
               <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
                 <div className="px-4 py-2.5 border-b border-border flex items-center gap-2">
                   <Activity className="w-3.5 h-3.5 text-signal" />

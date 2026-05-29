@@ -243,9 +243,13 @@ function CircleCard({
               {circle.name}
             </Link>
             <StatusBadge status={circle.status} />
-            <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-surface-elevated text-muted font-medium">
-              {circle.type}
-            </span>
+            {/* Virtual is the default (unmarked); only flag in-person (IA-STRATEGY §3). */}
+            {circle.type === 'in-person' && (
+              <span className="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-md bg-primary-bg text-primary-strong font-medium">
+                <MapPin className="w-3 h-3" />
+                In person
+              </span>
+            )}
           </div>
 
           {/* Breadcrumb */}

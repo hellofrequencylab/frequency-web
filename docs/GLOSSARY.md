@@ -60,13 +60,25 @@ Ascending privilege: **member → crew → host → guide → mentor → janitor
 > Terminology is **canonical**: say **zaps**, not "points". The martial-arts rank
 > names (deshi/sempai/sensei…) are **legacy** — ignore them.
 
-- **Gems** — `gem_transactions`, `gem_config`, `store_items`, `store_redemptions`.
-  Spendable currency earned through activity; redeemable in the crew store for
-  cosmetics/titles.
-- **Zaps** — season XP. Drive **season ranks**:
+**Two currencies, split by where the activity happens:**
+
+- **Gems** — earned through **internal, on-platform (web) engagement** (posts,
+  comments, reactions, logins, RSVPs, joins). `gem_transactions`, `gem_config`,
+  `store_items`, `store_redemptions`. The **spendable** currency: buy digital
+  badges/cosmetics and **trade for physical merch** in the web store.
+  `awardGems()` (`lib/gems.ts`). Tracked as `lifetime_gems` + `current_season_gems`.
+- **Zaps** — earned through **external + in-person activity**: outreach, invites,
+  in-person events, ghost-node captures, business/NFC programs — "anything in
+  person." Season XP that drives **season ranks**:
   `ghost → runner → operative → agent → conduit → luminary` (auto-advance at
   100 / 300 / 750 / 1500 zaps; luminary is a manual admin promotion gated on
-  `season_challenges_complete`).
+  `season_challenges_complete`). `awardZaps()` (`lib/zaps.ts`); the engagement
+  layer routes sources to the right currency via `currencyForSource`
+  (`lib/engagement/currency.ts`).
+- **Season rollover** — at season end, `reset_season()` converts a **rank-based
+  share** of `current_season_zaps` into gems (luminary 1/1.5 … default 1/5),
+  mints a `season_trophies` row, then zeroes season counters. So zaps are the
+  seasonal "doing", gems are the durable spendable that accrues from it.
 - **Achievements / streaks** — `achievements`, `user_achievements`, `streaks`,
   `challenge_progress`, `quest_chains` / `quest_steps` / `quest_progress`,
   `season_challenges`, `season_trophies`.

@@ -8,6 +8,7 @@ import { getMyProfileId } from '@/lib/auth'
 import { slugify } from '@/lib/utils'
 import { processGamificationEvent, recordStreakActivity } from '@/lib/achievements'
 import { awardGems } from '@/lib/gems'
+import { awardZaps, ZAP_AMOUNTS } from '@/lib/zaps'
 import { generateOccurrencesForAnchor, type RecurrenceType } from '@/lib/event-recurrence'
 
 const VALID_RECURRENCE: RecurrenceType[] = ['none', 'daily', 'weekly', 'monthly']
@@ -77,6 +78,8 @@ export async function createEvent(formData: FormData) {
   }
 
   processGamificationEvent({ type: 'event_host', profileId: myProfileId }).catch(() => {})
+  // Hosting an in-person gathering is external/organizing → zaps (not gems).
+  awardZaps(myProfileId, ZAP_AMOUNTS.event_host).catch(() => {})
   recordStreakActivity(myProfileId, 'hosting').catch(() => {})
 
   revalidatePath('/events')
@@ -109,6 +112,8 @@ export async function toggleRSVP(eventId: string, currentStatus: string | null) 
     if (newStatus === 'going') {
       processGamificationEvent({ type: 'event_attend', profileId: myProfileId }).catch(() => {})
       recordStreakActivity(myProfileId, 'attendance').catch(() => {})
+      // RSVP is a web action → gems. ATTENDANCE zaps are awarded at verified
+      // check-in (ROADMAP P2.13), not on RSVP (which would be gameable).
       awardGems(myProfileId, 'event_rsvp').catch(() => {})
     }
   } else {
