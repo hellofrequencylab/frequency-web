@@ -1,4 +1,4 @@
-// Index template — the "list / discovery" shell (PAGE-FRAMEWORK §3, Template B).
+// Index template - the "list / discovery" shell (PAGE-FRAMEWORK §3, Template B).
 //
 // One grammar for browse pages (Circles, Interests, Events, Partners, Directory):
 // a title + description, an optional header action (create/new), an optional

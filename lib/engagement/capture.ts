@@ -1,4 +1,4 @@
-// Capture orchestration — the end-to-end physical engagement flow
+// Capture orchestration - the end-to-end physical engagement flow
 // (docs/ENGAGEMENT-ARCHITECTURE.md): VERIFY → LEDGER (exactly-once) → record the
 // capture → award zaps. Server-only.
 //
@@ -33,7 +33,7 @@ export interface CaptureResult {
  * zaps. Idempotent per (node, actor) for once-per-user / once-global nodes.
  *
  * NOTE: repeatable nodes need a request-scoped key appended to the idempotency
- * key so repeats aren't collapsed — pass it through `attempt` when that lands.
+ * key so repeats aren't collapsed - pass it through `attempt` when that lands.
  */
 export async function captureNode(attempt: CaptureAttempt): Promise<CaptureResult> {
   // 1) Server-authoritative verification (validity, signature, rule, proximity).
@@ -70,7 +70,7 @@ export async function captureNode(attempt: CaptureAttempt): Promise<CaptureResul
     verified: true,
   })
 
-  // 4) Reward — physical = zaps.
+  // 4) Reward - physical = zaps.
   const amount = Number(node.zaps_value ?? 0)
   if (amount > 0 && currencyForSource(source) === 'zaps') {
     await awardZaps(attempt.actorProfileId, amount)

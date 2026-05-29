@@ -1,4 +1,4 @@
-// The contract layer — presentation-neutral view models shared by web (RSC) and
+// The contract layer - presentation-neutral view models shared by web (RSC) and
 // the future mobile app. See docs/SCALE-ARCHITECTURE.md and CAPABILITIES-AND-MOBILE.md.
 //
 // Convention: every view model carries the viewer's `capabilities` for that
@@ -6,7 +6,7 @@
 // recompute policy. Phase 2 implements `SECURITY DEFINER` RPCs that RETURN these
 // shapes; this file is the agreed shape both sides code against.
 //
-// These are a first draft of the shapes — pure types, no runtime. Refine as the
+// These are a first draft of the shapes - pure types, no runtime. Refine as the
 // RPCs land.
 
 import type { Capability } from '@/lib/core'

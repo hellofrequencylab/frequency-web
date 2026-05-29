@@ -1,4 +1,4 @@
-// Contract view-builders (Phase 2) — compose entity data + the viewer's
+// Contract view-builders (Phase 2) - compose entity data + the viewer's
 // capabilities into the presentation-neutral shapes in ./types. This is the
 // shared contract IMPLEMENTATION: web RSC renders these today; mobile consumes
 // the same shapes later (exposed via an RPC/endpoint). Capabilities come from the

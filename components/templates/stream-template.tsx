@@ -1,4 +1,4 @@
-// Stream template — the "feed" shell (PAGE-FRAMEWORK §3, Template A).
+// Stream template - the "feed" shell (PAGE-FRAMEWORK §3, Template A).
 //
 // One grammar for chronological/ranked streams (the home Feed, a Circle feed, a
 // profile timeline): a title + description, an optional composer slot at the top,

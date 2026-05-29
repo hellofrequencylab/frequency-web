@@ -1,7 +1,7 @@
-// Zaps award engine — the external / in-person counterpart to awardGems.
+// Zaps award engine - the external / in-person counterpart to awardGems.
 //
 // Currency model (docs/GLOSSARY.md): GEMS reward internal, on-platform web
-// engagement; ZAPS reward external + in-person activity — outreach, invites,
+// engagement; ZAPS reward external + in-person activity - outreach, invites,
 // in-person events, ghost-node captures, business/NFC programs. At season end,
 // reset_season() converts a rank-based share of season zaps into gems, which buy
 // digital badges and trade for physical merch in the web store.
@@ -15,7 +15,7 @@ import type { Database } from '@/lib/database.types'
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row']
 
-// Tunable base zap amounts for external / in-person actions. Placeholder values —
+// Tunable base zap amounts for external / in-person actions. Placeholder values -
 // the reward economy will set the real numbers (see docs/CHECKLIST.md). Attendance
 // is awarded at verified check-in (ROADMAP P2.13), NOT at RSVP (RSVP is a web
 // action and stays gems).
@@ -32,7 +32,7 @@ export interface ZapAwardResult {
 /**
  * Add `amount` zaps to a profile's current season + lifetime totals. Use for
  * verified external / in-person engagement. Amounts come from the reward economy
- * (config), not from here. Idempotency is the caller's responsibility — drive
+ * (config), not from here. Idempotency is the caller's responsibility - drive
  * grants through recordEngagementEvent (lib/engagement/events.ts) for
  * exactly-once.
  */

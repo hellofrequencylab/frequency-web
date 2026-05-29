@@ -3,7 +3,7 @@
 // Framework-independent (no Next/Supabase imports) so the web app, the future
 // mobile app, and server-side enforcement all share one definition. This is the
 // canonical home for the `HIERARCHY` pattern that is currently duplicated across
-// several server-action files — new code should import from here; existing
+// several server-action files - new code should import from here; existing
 // duplicates can adopt it incrementally.
 
 export type CommunityRole =

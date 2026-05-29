@@ -1,12 +1,12 @@
-// THE policy layer — one pure function answers "what can this user do here?"
+// THE policy layer - one pure function answers "what can this user do here?"
 // for a given scope. See docs/CAPABILITIES-AND-MOBILE.md.
 //
 // Consumed by BOTH:
-//   • the SERVER, to ENFORCE — re-check before every mutation, and
+//   • the SERVER, to ENFORCE - re-check before every mutation, and
 //   • CLIENTS (web + future mobile), to RENDER affordances (show/hide).
 //
 // Capabilities are *UX* for the client and *law* for the server. NEVER trust the
-// client's capability set for authorization — the server recomputes and enforces
+// client's capability set for authorization - the server recomputes and enforces
 // (the admin client bypasses RLS; see docs/ARCHITECTURE.md). This module exists
 // so both consumers project the SAME policy and never drift.
 //
@@ -50,7 +50,7 @@ export type Scope =
       /** Open, unassigned host tasks in this circle. */
       openTaskCount?: number
       /** True if the viewer is the guide/mentor who oversees this circle's
-       *  hub/nexus (computed by the caller — avoids over-granting all guides). */
+       *  hub/nexus (computed by the caller - avoids over-granting all guides). */
       viewerManagesParent?: boolean
     }
   | { kind: 'profile'; ownerId: string }
@@ -65,7 +65,7 @@ export interface Viewer {
 }
 
 /**
- * Resolve the viewer's capabilities within a scope. Pure and deterministic —
+ * Resolve the viewer's capabilities within a scope. Pure and deterministic -
  * same inputs always yield the same set.
  */
 export function resolveCapabilities(viewer: Viewer, scope: Scope): Set<Capability> {

@@ -1,7 +1,7 @@
 // Reward-currency model (docs/GLOSSARY.md).
 //
-//   GEMS — internal, on-platform web engagement.
-//   ZAPS — external + in-person: outreach, invites, ghost-node captures,
+//   GEMS - internal, on-platform web engagement.
+//   ZAPS - external + in-person: outreach, invites, ghost-node captures,
 //          business/NFC programs, in-person events.
 //
 // At season end, zaps convert to gems (reset_season, rank-based rate); gems buy

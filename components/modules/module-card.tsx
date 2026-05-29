@@ -1,4 +1,4 @@
-// Shared module chrome — the consistent card every right-rail / page module wears
+// Shared module chrome - the consistent card every right-rail / page module wears
 // (PAGE-FRAMEWORK §4.5). One shell means uniformity is structural, not something
 // each author has to remember. Promoted from the inline copy in right-sidebar.tsx.
 
@@ -28,6 +28,6 @@ export function ModuleCard({
   )
 }
 
-// Back-compat alias — existing call sites render <WidgetCard>. Per the
+// Back-compat alias - existing call sites render <WidgetCard>. Per the
 // PAGE-FRAMEWORK terminology note, "widget" = a module's card UI.
 export const WidgetCard = ModuleCard

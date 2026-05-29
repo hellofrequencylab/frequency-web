@@ -1,4 +1,4 @@
-// Partner directory read layer (Phase 3, ENGAGEMENT-ARCHITECTURE §4) — the read
+// Partner directory read layer (Phase 3, ENGAGEMENT-ARCHITECTURE §4) - the read
 // side of the partners module: active businesses for the geolocated directory and
 // a single partner with its live offers. The shapes are presentation-neutral
 // (web + mobile consume the same), mirroring lib/contract/views. Server-only.

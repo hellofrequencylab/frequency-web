@@ -1,6 +1,6 @@
 // Server-authoritative verification for physical engagement triggers (QR / NFC /
 // ghost nodes). GPS and QR/NFC payloads are trivially spoofable, so a capture is
-// only trusted after the SERVER clears it here — never the device.
+// only trusted after the SERVER clears it here - never the device.
 // See docs/ENGAGEMENT-ARCHITECTURE.md §2.
 //
 // This module verifies; it does not grant rewards. The caller pairs a successful
@@ -34,7 +34,7 @@ export interface VerifyResult {
 }
 
 /**
- * Run every server-side check for a capture attempt. Pure verification — no
+ * Run every server-side check for a capture attempt. Pure verification - no
  * writes, no rewards. Returns ok:true only when the node is live, the signature
  * (if any) matches, the capture rule allows it, and proximity (if required) holds.
  */

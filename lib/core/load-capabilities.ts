@@ -5,7 +5,7 @@
 // actions call these; the result is (a) rendered as affordances and (b) the same
 // policy the server must re-check before mutating (see capabilities.ts).
 //
-// NOTE: server-only — it uses the admin client. Do not import from a client
+// NOTE: server-only - it uses the admin client. Do not import from a client
 // component.
 
 import { getCallerProfile } from '@/lib/auth'

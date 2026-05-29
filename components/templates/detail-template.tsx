@@ -1,12 +1,12 @@
-// Detail template — the "nested page" shell (PAGE-FRAMEWORK §3, Template C).
+// Detail template - the "nested page" shell (PAGE-FRAMEWORK §3, Template C).
 //
 // One consistent grammar for every single-entity page (a Circle, an Interest, an
 // Event, a Profile): a context header band (identity · badges · inline actions)
-// over a tab row over the body. The body is itself usually a Stream or Index —
+// over a tab row over the body. The body is itself usually a Stream or Index -
 // templates nest, you reuse not rebuild.
 //
 // NOTE on the right rail: a Detail page's scope-scoped rail is rendered by the
-// global shell via the route layout's `sidebar` slot (AppShell) — NOT here.
+// global shell via the route layout's `sidebar` slot (AppShell) - NOT here.
 // Rendering a second rail inside the page is the double-sidebar trap we avoid.
 //
 // Presentational + server-friendly (no hooks). `tabs[].active` is precomputed by
@@ -74,7 +74,7 @@ export function DetailTemplate({
         )}
       </header>
 
-      {/* Body — usually a Stream or Index */}
+      {/* Body - usually a Stream or Index */}
       {children}
     </div>
   )

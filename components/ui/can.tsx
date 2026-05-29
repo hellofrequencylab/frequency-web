@@ -2,7 +2,7 @@
 // capability. Works in both server and client component trees (no hooks).
 //
 // The `caps` set comes from the server (lib/core/load-capabilities). This is a
-// RENDER convenience only — the server still re-checks before any mutation
+// RENDER convenience only - the server still re-checks before any mutation
 // (see lib/core/capabilities.ts). Never treat a hidden affordance as security.
 //
 //   const caps = await getCircleCapabilities(circle.id)

@@ -1,4 +1,4 @@
-// Engagement event ledger — the SOURCE → LEDGER → RULES spine of
+// Engagement event ledger - the SOURCE → LEDGER → RULES spine of
 // docs/ENGAGEMENT-ARCHITECTURE.md. Records every reward-earning action EXACTLY
 // ONCE (idempotency_key), then runs the EXISTING rules engine
 // (processGamificationEvent) on first insert. Server-only (admin client).
@@ -22,7 +22,7 @@ export interface RecordEngagementInput {
   /** Ledger event type (e.g. 'post_create', 'node_capture'). */
   eventType: string
   actorProfileId: string | null
-  /** Per-source detail (node id, location, peer, …) — stored on the ledger row. */
+  /** Per-source detail (node id, location, peer, …) - stored on the ledger row. */
   context?: Record<string, unknown>
   /** Set when a server-side verifier has already cleared a physical event. */
   verifiedAt?: Date

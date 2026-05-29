@@ -1,4 +1,4 @@
-// Durable async job queue — the "async lane" (ENGAGEMENT-ARCHITECTURE §5; ROADMAP
+// Durable async job queue - the "async lane" (ENGAGEMENT-ARCHITECTURE §5; ROADMAP
 // P7.29). Enqueue side-effects (push/email fan-out, fraud scoring, leaderboard
 // recompute) instead of running them inline where a provider outage would drop
 // them. A cron drains the queue with retries + exponential backoff. Server-only.
