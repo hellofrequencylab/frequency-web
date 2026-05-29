@@ -252,8 +252,11 @@ a **proven practice-retention loop (PMF)** before building the cathedral.
       (MVP: email the actor, consent-checked). Remaining: richer Segment builder,
       Pipelines (Kanban funnels), conditions/drip sequences, React Email templates,
       lead/non-member unsubscribe.
-- [ ] **6.5 Analytics** — WAM, activation, funnel conversion, acquisition, email
-      performance, deliverability, engagement/cohort.
+- [~] **6.5 Analytics** — `/studio/analytics` surfaces the North Star (WAM,
+      practices/week, activation, new members), CRM counts (contacts, campaigns,
+      suppressed), and email performance + deliverability over 30 days
+      (`lib/studio/analytics.ts`). Remaining: funnel conversion, acquisition source,
+      cohort retention.
 - [ ] **Test harness** around spine + consent + suppression — **gates 6.6.** (Repo
       has no test framework today; this is a non-negotiable before agent autonomy.)
 - [ ] **6.6 Agent Console (copilot)** — bounded tool surface, Action Queue +
