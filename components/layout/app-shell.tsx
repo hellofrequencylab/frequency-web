@@ -599,13 +599,26 @@ export default function AppShell({
     return pathname === href || pathname.startsWith(href + '/')
   }
 
-  // Hide right sidebar only where it would crowd or distract
-  // /settings. Narrow focused forms
-  // /messages/<id>. Chat thread needs full width; the index keeps the sidebar
+  // Scope-aware rail (PAGE-FRAMEWORK §4): the GLOBAL rail shows on global/index
+  // pages. Entity DETAIL pages render their own scope-scoped rail in the page body
+  // (members/events for that circle, etc.), so the global rail is suppressed there
+  // to avoid the double-sidebar trap. A detail route = one path segment past the
+  // section (e.g. /circles/<slug>, /people/<handle>, /channels/<id>), while the
+  // index (/circles) keeps the global rail.
+  // Only sections whose detail page renders its own scoped right column.
+  const SCOPED_SECTIONS = ['/circles/', '/people/', '/channels/']
+  const isEntityDetail = SCOPED_SECTIONS.some(
+    (s) => pathname.startsWith(s) && pathname.slice(s.length).length > 0,
+  )
+
+  // Hide right sidebar only where it would crowd or distract:
+  // /settings (narrow focused forms); /messages/<id> (chat needs full width);
+  // entity detail pages (they bring their own scoped rail).
   const showSidebar =
     !!sidebar &&
     !pathname.startsWith('/settings') &&
-    !(pathname.startsWith('/messages/') && pathname !== '/messages')
+    !(pathname.startsWith('/messages/') && pathname !== '/messages') &&
+    !isEntityDetail
 
   function cycleTheme() {
     if (theme === 'system') setTheme('dark')
