@@ -38,11 +38,13 @@
       deferred (config later). The **currency model is now baked in**: gems =
       internal/web, zaps = external/in-person, zaps→gems at season end
       (`reset_season`), gems spend in the store. Two nuances to confirm:
-      - **In-person events** (`event_attend`/`event_host`) currently reward gems
-        via the achievements engine, but by your rule they're "in person" → should
-        they pay **zaps**? (I left existing behavior; flag if you want it switched.)
-      - **Conversion rate** zaps→gems is rank-based (luminary 1/1.5 … default 1/5)
-        — keep, or set your own?
+      - **In-person events → zaps: DONE.** Hosting now awards zaps on event
+        creation (`ZAP_AMOUNTS.event_host`). Attendance zaps are deferred to
+        **verified check-in** (ROADMAP P2.13) — *not* awarded on RSVP, which stays
+        a gems web-action (RSVP-for-zaps would be gameable). Amounts in
+        `lib/zaps.ts` are tunable placeholders.
+      - **Conversion rate: keep rank-based** (luminary 1/1.5 … default 1/5) —
+        confirmed, no change.
 - [ ] **Physical merch fulfillment** — store spends gems today; trading gems for
       physical merch needs `store_items` flagged physical + a fulfillment/shipping
       flow on `store_redemptions` (not built yet).
