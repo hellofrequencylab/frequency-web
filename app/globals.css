@@ -52,6 +52,8 @@
   --color-warning-bg:       #F6ECD8;
   --color-danger:           #BA3B30;
   --color-danger-bg:        #F7E4E1;
+  --color-info:             #2F6FB0;
+  --color-info-bg:          #E3EDF7;
 
   /* Focus */
   --color-focus-ring:       #E2912F;
@@ -102,6 +104,8 @@
   --color-warning-bg:       #2C2310;
   --color-danger:           #F0857A;
   --color-danger-bg:        #2E1714;
+  --color-info:             #6FA8DC;
+  --color-info-bg:          #15212E;
 
   --color-focus-ring:       #F2B14E;
   /* rank primitives inherited from :root */
@@ -142,6 +146,8 @@
   --color-warning-bg:       var(--color-warning-bg);
   --color-danger:           var(--color-danger);
   --color-danger-bg:        var(--color-danger-bg);
+  --color-info:             var(--color-info);
+  --color-info-bg:          var(--color-info-bg);
 
   /* Rank palette. Exposes the static primitives as utility classes:
      bg-rank-stone, text-rank-jade, border-rank-gold, etc. The full

@@ -9,7 +9,6 @@ import { startConversation } from '@/app/(main)/messages/actions'
 import { Composer } from '@/components/feed/composer'
 import { FeedList } from '@/components/feed/feed-list'
 import { UpcomingEventsWidget } from '@/components/events/upcoming-widget'
-import { StatusBadge } from '@/components/groups/status-badge'
 import { HostInviteButton } from '@/components/circles/host-invite-button'
 import { CollapsibleAbout } from '@/components/circles/collapsible-about'
 import { CircleHostMenu } from '@/components/circles/circle-host-menu'
@@ -168,47 +167,69 @@ export default async function CirclePage({
   const nearCap = circle.member_count >= circle.member_cap * 0.9
   const full = circle.member_count >= circle.member_cap
 
+  // Header status pill: forming → green, active → blue, full/closed → red.
+  const statusPill = full
+    ? { label: 'Full', cls: 'bg-danger-bg text-danger' }
+    : circle.status === 'forming'
+      ? { label: 'Forming', cls: 'bg-success-bg text-success' }
+      : circle.status === 'active'
+        ? { label: 'Active', cls: 'bg-info-bg text-info' }
+        : { label: circle.status === 'archived' ? 'Closed' : 'Inactive', cls: 'bg-danger-bg text-danger' }
+
+  const typeLabel = String(circle.type)
+    .split(/[-_\s]+/)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ')
+
   return (
     <div>
 
-      {/* ── Header. Mirrors the Channels page: back-link and title on one
-              line, meta + actions on the next, boxless collapsible
-              description below. ───────────────────────────────────── */}
-      <div className="flex items-center gap-2.5 mb-3 min-w-0">
+      {/* ── Header. Back-link + status/type pills on the top line, title
+              below, then member count + host and the action buttons, with a
+              boxless collapsible description underneath. ──────────────── */}
+      <div className="flex items-center gap-2.5 mb-1.5 min-w-0">
         <Link
           href="/circles"
           className="text-xs text-subtle hover:text-muted transition-colors shrink-0"
         >
           ← All circles
         </Link>
-        <span className="text-subtle/40 shrink-0">|</span>
-        <h1 className="text-2xl font-bold text-text leading-tight truncate">{circle.name}</h1>
-        <StatusBadge status={circle.status} />
-        <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-surface-elevated text-muted font-medium shrink-0">
-          {circle.type}
+        <span className={`text-[11px] px-1.5 py-0.5 rounded-md font-medium shrink-0 ${statusPill.cls}`}>
+          {statusPill.label}
+        </span>
+        <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-signal-bg text-signal-strong font-medium shrink-0">
+          {typeLabel}
         </span>
       </div>
 
+      <h1 className="text-2xl font-bold text-text leading-tight truncate mb-3">{circle.name}</h1>
+
       <div className="flex items-end justify-between gap-4 mb-4">
-        {/* Member count, moved up under the title */}
+        {/* Member count + host, beside each other under the title */}
         <div className="min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-x-4 gap-y-1 flex-wrap">
             <span className="flex items-center gap-1.5 text-sm text-muted">
               <Users className="w-4 h-4" />
               {circle.member_count} of {circle.member_cap} members
             </span>
+            {circle.host && (
+              <span className="text-sm text-muted">
+                Host{' '}
+                <Link
+                  href={`/people/${circle.host.handle}`}
+                  className="text-primary-strong hover:underline font-medium"
+                >
+                  {circle.host.display_name}
+                </Link>
+              </span>
+            )}
             {nearCap && !full && (
               <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-warning-bg text-warning font-medium">
                 Almost full
               </span>
             )}
-            {full && (
-              <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-danger-bg text-danger font-medium">
-                Full
-              </span>
-            )}
           </div>
-          <div className="mt-2 h-1.5 max-w-xs rounded-full bg-surface-elevated overflow-hidden">
+          <div className="mt-2 h-1.5 max-w-xs rounded-full bg-border overflow-hidden">
             <div
               className={`h-full rounded-full transition-all ${full ? 'bg-danger' : 'bg-primary'}`}
               style={{ width: `${pct}%` }}
@@ -216,20 +237,8 @@ export default async function CirclePage({
           </div>
         </div>
 
-        {/* Host on the right, plus create/join actions */}
+        {/* Create / join / leave actions */}
         <div className="flex items-center gap-3 shrink-0">
-          {circle.host && (
-            <span className="hidden sm:inline text-xs text-muted">
-              Host{' '}
-              <Link
-                href={`/people/${circle.host.handle}`}
-                className="text-primary-strong hover:underline font-medium"
-              >
-                {circle.host.display_name}
-              </Link>
-            </span>
-          )}
-
           {isHost && <CircleHostMenu circleId={circle.id} />}
 
           {isMember && !isHost && (
