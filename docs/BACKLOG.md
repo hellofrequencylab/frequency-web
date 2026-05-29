@@ -44,6 +44,15 @@ These came out of the security + handoff audit (the work behind these docs and
   safety nets. Introducing even a thin integration-test layer (especially around
   the admin-client authz checks) would de-risk future changes substantially.
 
+### Open canonical-URL gap (SEO)
+The app is served at `go.findafreq.com`, but `lib/site.ts` falls back to
+`frequency-web-three.vercel.app` when `NEXT_PUBLIC_SITE_URL` is unset — so
+canonical tags, `sitemap.xml`, `robots.txt`, OpenGraph, and JSON-LD can advertise
+the wrong domain. **Fix:** set `NEXT_PUBLIC_SITE_URL=https://go.findafreq.com` in
+the Vercel project (no code change needed; everything reads from `SITE_URL`). This
+supersedes the "point a custom domain at the app" half of ROADMAP P3.31 — the
+domain is already live; only the env var is missing.
+
 ## Production deploy checklist (env vars)
 
 - `CRON_SECRET` — **required in production**; cron endpoints now reject without it.
