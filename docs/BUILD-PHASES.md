@@ -53,9 +53,8 @@ CAPABILITIES-AND-MOBILE.
 - [x] Build the **capability resolver** — `lib/core/capabilities.ts`
       (`resolveCapabilities(viewer, scope)`, `can()`), pure + framework-independent;
       plus `lib/core/roles.ts` (single-source `atLeastRole`). tsc clean.
-- [~] **Enable PostGIS** — migration `20240214000000_enable_postgis_geography.sql`
-      written (extension + generated `circles.geog` + GiST index). **Apply with
-      `npx supabase db push`** (needs DB creds/network — not run here).
+- [x] **Enable PostGIS** — migration `20240214000000` applied to production
+      (extension + `circles.geog` + GiST index); used by node proximity + partner geo.
 - [~] **HIERARCHY duplicates consolidated** — admin/broadcast/report actions now
       import `atLeastRole` from `lib/core/roles` (single source). Adopting **RLS +
       RPC** for data access continues in Phase 2.
@@ -64,8 +63,8 @@ CAPABILITIES-AND-MOBILE.
 
 **Done when:** new features can be built behind the capability resolver + an RPC,
 PostGIS is live (migration applied), and shared folders are importable. No UX
-change shipped. **Status: foundations landed; PostGIS apply + HIERARCHY adoption
-remain.**
+change shipped. **Status: DONE** (PostGIS applied to prod; capability resolver +
+shared folders in use across the app). Full RLS adoption continues in Phase 2.
 
 ---
 
@@ -84,9 +83,8 @@ PAGE-FRAMEWORK.
 - [x] Demote Hubs & Nexuses from member nav → already absent from the primary
       nav (folded under "Circles" in `isActive`); contextual hub/nexus breadcrumb
       links already render on circle cards. Satisfied.
-- [~] In-person **icon designator** (📍 "In person" badge; virtual = unmarked
-      default) on the `/circles` cards; capacity line already shows the cap.
-      **Follow-up (visual QA):** mirror the badge on the circle detail header.
+- [x] In-person **icon designator** (📍 "In person" badge; virtual = unmarked
+      default) on `/circles` cards + the circle detail header. Live.
 - [x] **3 templates** — all three shells built and the main pages migrated:
       **Stream** (`/feed`), **Index** (`/circles`, `/channels` Interests, `/events`,
       `/partners`, `/people` Directory), **Detail** (`detail-template.tsx`, used by
@@ -107,10 +105,10 @@ PAGE-FRAMEWORK.
 
 **Done when:** every main page renders via one of the 3 templates; inline actions
 appear by capability (host edits inline, member sees content only); a newcomer can
-read the nav without explanation. **Status:** quick wins landed (nav grouping,
-Interests rename, in-person badge, hubs/nexuses demotion); the templates +
-inline-admin system is the remaining major slice and is best done with a running
-app (visual QA), since it changes page rendering and behavior.
+read the nav without explanation. **Status: DONE** (all live) — nav grouping,
+Interests rename, in-person badge, 3 templates with pages migrated, inline admin by
+capability, profile edit-in-place, scope-aware rail. Only a formal module slot
+registry remains as an optional refactor.
 
 ---
 
