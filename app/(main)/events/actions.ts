@@ -143,7 +143,7 @@ export interface CheckInResult {
 // authoritative: the event must be real, started, not cancelled, and the viewer
 // must have RSVP'd 'going'. Idempotent per (event, profile); the first check-in
 // records the ledger event, awards zaps, and ticks the attendance streak.
-// (RSVP = gems web-action; check-in = zaps verified practice — ADR-021/024.)
+// (RSVP = gems web-action; check-in = zaps verified practice; see ADR-021/024.)
 export async function checkInEvent(eventId: string): Promise<CheckInResult> {
   const myProfileId = await getMyProfileId()
   if (!myProfileId) return { ok: false }
