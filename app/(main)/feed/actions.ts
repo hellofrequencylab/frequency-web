@@ -4,44 +4,59 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getMyProfileId } from '@/lib/auth'
 import { processGamificationEvent, recordStreakActivity } from '@/lib/achievements'
 import { awardGems } from '@/lib/gems'
 
-async function getMyProfileId(): Promise<string | null> {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return null
-
-  const admin = createAdminClient()
-  const { data } = await admin
-    .from('profiles')
-    .select('id')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
-
-  return data?.id ?? null
-}
+const HOST_PLUS = ['host', 'guide', 'mentor', 'janitor']
 
 export async function createPost(formData: FormData) {
   const body = (formData.get('body') as string | null)?.trim()
   const scopeId = formData.get('scopeId') as string | null
-  const visibility = (formData.get('visibility') as string) || 'public'
+  const requestedVisibility = (formData.get('visibility') as string) || 'public'
   const postType = (formData.get('post_type') as string | null) || 'feed'
   const imageUrl = (formData.get('imageUrl') as string | null)?.trim() || null
   const isAnnouncement = postType === 'announcement'
+
+  // A host announcement broadcasts beyond the circle (to the hub, or the
+  // topical channel's followers if hub-less) — that wider reach is what
+  // `cluster` visibility resolves. A member's post stays circle-only (`group`).
+  const visibility = isAnnouncement ? 'cluster' : requestedVisibility
 
   if ((!body && !imageUrl) || !scopeId) return
 
   const profileId = await getMyProfileId()
   if (!profileId) redirect('/sign-in')
 
+  // The admin client bypasses RLS, so authorisation MUST be enforced here.
+  const admin = createAdminClient()
+
+  // Announcements pin to the top and broadcast beyond the circle (cluster
+  // reach) — restricted to host+. The UI hides the toggle for everyone else;
+  // this stops a crafted request from self-elevating a post.
+  if (isAnnouncement) {
+    const { data: profile } = await admin
+      .from('profiles')
+      .select('community_role')
+      .eq('id', profileId)
+      .maybeSingle()
+    if (!profile || !HOST_PLUS.includes(profile.community_role)) return
+  }
+
+  // Circle-scoped (`group`) posts require active membership in that circle.
+  if (visibility === 'group') {
+    const { data: membership } = await admin
+      .from('memberships')
+      .select('id')
+      .eq('profile_id', profileId)
+      .eq('circle_id', scopeId)
+      .eq('status', 'active')
+      .maybeSingle()
+    if (!membership) return
+  }
+
   const mediaUrls = imageUrl ? [imageUrl] : []
 
-  // Use admin client. RLS circle-membership check would block users who
-  // haven't joined a circle yet. Authorisation is enforced here in code.
-  const admin = createAdminClient()
   const { data: post, error } = await admin.from('posts').insert({
     author_id: profileId,
     body: body || '',
@@ -207,8 +222,6 @@ export async function toggleReaction(
   revalidatePath('/circles', 'layout')
   revalidatePath('/people', 'layout')
 }
-
-const HOST_PLUS = ['host', 'guide', 'mentor', 'janitor']
 
 export async function pinPost(postId: string) {
   const profileId = await getMyProfileId()

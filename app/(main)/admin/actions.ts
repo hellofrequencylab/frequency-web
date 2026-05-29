@@ -166,15 +166,30 @@ export async function createCircle(fd: FormData) {
   const { data: existing } = await admin.from('circles').select('id').eq('slug', slug).maybeSingle()
   if (existing) slug = slug + '-' + Math.random().toString(36).slice(2, 5)
 
-  const { error } = await admin.from('circles').insert({
+  const { data: circle, error } = await admin.from('circles').insert({
     name, about, type, member_cap: cap, hub_id, status, slug,
     host_id, member_count: 0,
     ...(topical_channel_id ? { topical_channel_id } : {}),
-  })
+  }).select('id').single()
   if (error) throw new Error(error.message)
+
+  // Announce the new circle to the wider audience (hub members, or the topical
+  // channel's followers if the circle has no hub). Cluster visibility resolves
+  // that audience at read time; scope_id stays the circle so it also shows on
+  // the circle page and in the host's own feed.
+  await admin.from('posts').insert({
+    author_id:  host_id,
+    body:       about ? `Started a new circle: ${name}.\n\n${about}` : `Started a new circle: ${name}.`,
+    scope_id:   circle.id,
+    visibility: 'cluster',
+    post_type:  'announcement',
+    is_pinned:  true,
+  })
+
   revalidatePath('/admin/circles')
   revalidatePath('/circles')
   revalidatePath('/channels')
+  revalidatePath('/feed')
 }
 
 export async function updateCircle(id: string, fd: FormData) {

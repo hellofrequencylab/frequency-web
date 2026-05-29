@@ -83,28 +83,84 @@ export async function FeedList({
         .limit(30)
       rawPosts = (data ?? []) as unknown as RawPost[]
     } else {
-      // Main feed: wall/public posts + promoted circle/channel posts
-      const HOST_PLUS = ['host', 'guide', 'mentor', 'janitor']
-      const ENGAGEMENT_THRESHOLD = 3
+      // Main feed: public posts + the posts the viewer can actually reach.
+      // This mirrors the posts SELECT RLS model (the feed uses the admin
+      // client, so visibility is enforced here in code instead):
+      //   group   → posts in circles the viewer belongs to (circle-only).
+      //   cluster → announcements from the viewer's circles, plus any circle
+      //             in a hub they belong to, plus hub-less circles whose
+      //             topical channel they follow.
+      const { data: myMemberships } = await admin
+        .from('memberships')
+        .select('circle_id, circles!circle_id ( id, hub_id )')
+        .eq('profile_id', myProfileId)
+        .eq('status', 'active')
 
-      const [publicR, groupR] = await Promise.all([
+      const myCircleIds = [...new Set(
+        (myMemberships ?? []).map((m: any) => m.circle_id).filter(Boolean) as string[]
+      )]
+      const myHubIds = [...new Set(
+        (myMemberships ?? [])
+          .map((m: any) => m.circles?.hub_id)
+          .filter(Boolean) as string[]
+      )]
+
+      const { data: myChannels } = await admin
+        .from('topical_channel_memberships')
+        .select('topical_channel_id')
+        .eq('profile_id', myProfileId)
+      const myChannelIds = [...new Set(
+        (myChannels ?? []).map((c: any) => c.topical_channel_id).filter(Boolean) as string[]
+      )]
+
+      // Circles whose announcements the viewer can reach via a shared hub or a
+      // followed topical channel (their own circles are always reachable).
+      const announcementCircleIds = new Set<string>(myCircleIds)
+      const reachableQueries = []
+      if (myHubIds.length > 0) {
+        reachableQueries.push(
+          admin.from('circles').select('id').in('hub_id', myHubIds)
+        )
+      }
+      if (myChannelIds.length > 0) {
+        reachableQueries.push(
+          admin.from('circles').select('id').is('hub_id', null).in('topical_channel_id', myChannelIds)
+        )
+      }
+      if (reachableQueries.length > 0) {
+        const results = await Promise.all(reachableQueries)
+        for (const r of results) {
+          for (const c of (r.data ?? []) as { id: string }[]) announcementCircleIds.add(c.id)
+        }
+      }
+
+      const queries: PromiseLike<{ data: unknown }>[] = [
         admin.from('posts').select(POST_SELECT)
           .eq('visibility', 'public').is('parent_id', null).is('hidden_at', null)
           .order(order, { ascending: false })
           .limit(20),
-        admin.from('posts').select(POST_SELECT)
-          .eq('visibility', 'group').is('parent_id', null).is('hidden_at', null)
-          .order(order, { ascending: false })
-          .limit(30),
-      ])
+      ]
+      if (myCircleIds.length > 0) {
+        queries.push(
+          admin.from('posts').select(POST_SELECT)
+            .eq('visibility', 'group').in('scope_id', myCircleIds)
+            .is('parent_id', null).is('hidden_at', null)
+            .order(order, { ascending: false })
+            .limit(30)
+        )
+      }
+      if (announcementCircleIds.size > 0) {
+        queries.push(
+          admin.from('posts').select(POST_SELECT)
+            .eq('visibility', 'cluster').in('scope_id', [...announcementCircleIds])
+            .is('parent_id', null).is('hidden_at', null)
+            .order(order, { ascending: false })
+            .limit(30)
+        )
+      }
 
-      const publicPosts = (publicR.data ?? []) as unknown as RawPost[]
-      const groupPosts = ((groupR.data ?? []) as unknown as RawPost[]).filter(p =>
-        HOST_PLUS.includes(p.author.community_role) ||
-        (p.reaction_count ?? 0) + (p.comment_count ?? 0) >= ENGAGEMENT_THRESHOLD
-      )
-
-      rawPosts = [...publicPosts, ...groupPosts]
+      const results = await Promise.all(queries)
+      rawPosts = results.flatMap(r => (r.data ?? []) as unknown as RawPost[])
     }
   }
 
