@@ -120,9 +120,9 @@ export default async function ChannelsPage() {
     <div>
       <div className="flex items-end justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-text mb-1">Channels</h1>
+          <h1 className="text-2xl font-bold text-text mb-1">Interests</h1>
           <p className="text-sm text-muted leading-relaxed max-w-2xl">
-            Channels are global topics anyone can tune into. Each one carries a
+            Interests are global topics anyone can tune into. Each one carries a
             seasonal practice that Circles run locally. Pick what you&apos;re into,
             then find the people doing it near you.
           </p>

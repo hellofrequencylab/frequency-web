@@ -2,18 +2,16 @@
 
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getCallerProfile, type CommunityRole } from '@/lib/auth'
+import { getCallerProfile } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { atLeastRole } from '@/lib/core/roles'
 
 type TargetType = 'post' | 'dispatch' | 'comment' | 'member' | 'event'
 type ReportReason = 'spam' | 'harassment' | 'inappropriate' | 'misinformation' | 'other'
 type ReportStatus = 'pending' | 'reviewed' | 'actioned' | 'dismissed'
 
-const HIERARCHY: CommunityRole[] = ['member', 'crew', 'host', 'guide', 'mentor', 'janitor']
-
-function hasRole(callerRole: CommunityRole, minRole: CommunityRole): boolean {
-  return HIERARCHY.indexOf(callerRole) >= HIERARCHY.indexOf(minRole)
-}
+// Role-ladder comparison — single source in lib/core/roles.
+const hasRole = atLeastRole
 
 // ── Report content ──────────────────────────────────────────────────────────
 

@@ -11,12 +11,10 @@ import { shouldSend } from '@/lib/notification-preferences'
 import { sendPushToProfile } from '@/lib/push'
 import { slugify } from '@/lib/utils'
 import { processGamificationEvent } from '@/lib/achievements'
+import { atLeastRole } from '@/lib/core/roles'
 
-const HIERARCHY: CommunityRole[] = ['member', 'crew', 'host', 'guide', 'mentor', 'janitor']
-
-function hasRole(callerRole: CommunityRole, minRole: CommunityRole): boolean {
-  return HIERARCHY.indexOf(callerRole) >= HIERARCHY.indexOf(minRole)
-}
+// Role-ladder comparison — single source in lib/core/roles.
+const hasRole = atLeastRole
 
 // ── Member management ─────────────────────────────────────────────────────────
 

@@ -129,14 +129,16 @@ export function PostCard({
           {/* Author row */}
           <div className="flex items-start gap-3 mb-3">
             {/* Avatars. Stacked for wall posts, single for everything else */}
-            <Link href={`/people/${author.handle}`} className="shrink-0 relative">
-              {author.avatar_url ? (
-                <img src={author.avatar_url} alt={author.display_name} className="w-8 h-8 rounded-full object-cover" />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center select-none">
-                  {getInitials(author.display_name)}
-                </div>
-              )}
+            <div className="shrink-0 relative">
+              <Link href={`/people/${author.handle}`} className="block">
+                {author.avatar_url ? (
+                  <img src={author.avatar_url} alt={author.display_name} className="w-8 h-8 rounded-full object-cover" />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center select-none">
+                    {getInitials(author.display_name)}
+                  </div>
+                )}
+              </Link>
               {post.scopeContext?.type === 'wall' && (
                 <Link href={post.scopeContext.href} className="absolute -bottom-1 -right-1.5 ring-2 ring-surface rounded-full">
                   {post.scopeContext.avatar_url ? (
@@ -148,7 +150,7 @@ export function PostCard({
                   )}
                 </Link>
               )}
-            </Link>
+            </div>
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 flex-wrap">
