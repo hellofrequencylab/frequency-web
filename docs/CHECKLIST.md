@@ -34,8 +34,18 @@
       **Topics**. Reconcile to one, or keep public=Topics / member=Interests.
 - [ ] **The "tune in" verb** — keep it, or switch to "follow/join" now that the
       noun is Interests.
-- [ ] **Reward economy** (Phase 3) — point values, what each action/QR/NFC/ghost
-      node pays, season resets. Game-design, not engineering.
+- [ ] **Reward economy** (Phase 3) — point values per action; amounts are
+      deferred (config later). The **currency model is now baked in**: gems =
+      internal/web, zaps = external/in-person, zaps→gems at season end
+      (`reset_season`), gems spend in the store. Two nuances to confirm:
+      - **In-person events** (`event_attend`/`event_host`) currently reward gems
+        via the achievements engine, but by your rule they're "in person" → should
+        they pay **zaps**? (I left existing behavior; flag if you want it switched.)
+      - **Conversion rate** zaps→gems is rank-based (luminary 1/1.5 … default 1/5)
+        — keep, or set your own?
+- [ ] **Physical merch fulfillment** — store spends gems today; trading gems for
+      physical merch needs `store_items` flagged physical + a fulfillment/shipping
+      flow on `store_redemptions` (not built yet).
 - [ ] **Physical rollout & safety** (Phase 3) — who may place ghost nodes; partner
       business terms.
 - [ ] **Web's long-term role** once mobile leads — full parity vs. lighter funnel.
