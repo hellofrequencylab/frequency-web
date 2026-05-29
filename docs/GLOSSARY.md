@@ -30,8 +30,13 @@ from clustering — they are not appointed top-down.
 
 Ascending privilege: **member → crew → host → guide → mentor → janitor**.
 
-- **member** — default participant.
-- **crew** — engaged contributor (gamification-eligible).
+- **member** — default participant (free tier).
+- **crew** — the **paid membership tier** (intended $10/mo, "Founder pricing" for
+  early members). **Currently free for everyone during beta** — all features are
+  unlocked and members can toggle Member↔Crew freely (`/upgrade`). Billing is not
+  yet wired (`/settings/billing` is a "coming soon" stub; Stripe packages were
+  removed pending P4). Crew is also the gamification-eligible tier. In code,
+  `isCrew = role !== 'member'`.
 - **host** — runs a Circle; can post announcements, moderate, broadcast dispatches.
 - **guide / mentor** — higher leadership tiers.
 - **janitor** — platform admin; manages topical channels, full moderation.

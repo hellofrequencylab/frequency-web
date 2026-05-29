@@ -37,7 +37,13 @@ yarn-error.log*
 .vercel
 
 # editor / local tooling
-.claude/
+# Ignore personal/local Claude state, but TRACK shared project config
+# (settings.json, skills, hooks) so every session inherits the docs automation.
+.claude/*
+!.claude/settings.json
+!.claude/skills/
+!.claude/hooks/
+.claude/settings.local.json
 
 # typescript
 *.tsbuildinfo
