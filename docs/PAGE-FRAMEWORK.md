@@ -11,6 +11,15 @@
 > *caching* API (`use cache` / Partial Prerendering / `cacheLife`) must be
 > verified against the installed Next 16 docs before use — Next 16 changed
 > caching semantics and `node_modules` isn't always present to confirm.
+>
+> ⚠️ **Terminology (read this):** this doc predates the "module" reframe and says
+> **"widget."** Treat **widget = the presentational card chrome only**. *Which*
+> module appears, for *whom*, is decided server-side per user by role +
+> involvement — that's **server-composed capability modules**, not a static
+> widget board. The authoritative model is in
+> [SCALE-ARCHITECTURE.md](SCALE-ARCHITECTURE.md) ("server-composed capability
+> modules") and [CAPABILITIES-AND-MOBILE.md](CAPABILITIES-AND-MOBILE.md) (the
+> capability resolver). Read "widget" here as "module's card UI."
 
 ---
 
