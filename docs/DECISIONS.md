@@ -212,6 +212,60 @@ Message INSERT additionally requires `sender_id = own profile`.
 `friendships` graph (`20240203000000_friendships.sql`); the per-row read/write gate stays
 `am_participant`.
 
+## ADR-015: Friendship graph — one canonically-ordered row per pair, no `declined` tombstone
+
+**Status:** Accepted · corroborated by `supabase/migrations/20240203000000_friendships.sql`,
+`app/(main)/people/friend-actions.ts`
+**Context:** DM and Group-DM *creation* needed a gate (see ADR-014, which records that
+`am_participant` stays the per-row read/write gate while creation is gated by the graph).
+A friendship is inherently symmetric, so the model must make reverse-direction duplicates
+(A→B and B→A) impossible and must let a declined requester try again later.
+**Decision:** A single `friendships` row per pair with a `CHECK (user_a_id < user_b_id)`
+canonical-ordering constraint plus `UNIQUE (user_a_id, user_b_id)` — duplicates are
+structurally impossible regardless of who initiates. `requested_by` records the initiator
+(constrained to be one of the two parties); `status` is `pending` until the addressee
+accepts, then `accepted`. **Decline, cancel, and unfriend all DELETE the row** (there is no
+`declined` state) so no tombstone blocks a future request. An order-independent
+`are_friends(a, b)` SQL helper (`LEAST`/`GREATEST`) backs the server-action gates:
+1:1 DM (`startConversation`) requires accepted friends; Group DM (`startGroupConversation`)
+requires the creator be accepted friends with **every** invitee. RLS: UPDATE-to-accepted is
+allowed only for the addressee (`caller IN (user_a,user_b) AND caller <> requested_by`).
+A migration backfill auto-friends every pair that has co-existed in any
+`conversation_participants` row (`ON CONFLICT DO NOTHING`) so pre-existing threads keep working.
+**Consequences:** **Rooms are deliberately NOT gated** — they are scope-based and already
+require crew+. No blocking in v1 (unfriend suffices); a `blocked` state would be a separate
+column/table. Adding members to an *existing* Room or Group DM is not gated either — flagged
+for revisit if abused. Realtime/grandfathering caveats from ADR-014 still apply.
+
+## ADR-016: DAWN is a semantic CSS-variable token layer; dark mode swaps the variable, not the utility
+
+**Status:** Accepted · corroborated by `app/globals.css`, `lib/season-ranks.ts`, PR #3
+(`f1f9299`). Supersedes the earlier indigo/charcoal brand decisions.
+**Context:** The app was first built with raw `indigo-*` utilities, then a brand pass remapped
+the Tailwind `indigo` scale to a charcoal palette at the `@theme` level (so every existing
+`bg-indigo-*` propagated brand color with zero component edits). That charcoal-scale remap is
+now **superseded**: the live palette is the amber-gold **DAWN** layer (`--color-primary`
+`#E2912F` light / `#F2B14E` dark) — the indigo/charcoal brand-override notes are stale.
+ADR-011 already records *why there is no component library*; this ADR records *how color works*.
+**Decision:** Every color is a semantic CSS variable defined once in `:root` (light) and `.dark`
+(dark) in `app/globals.css`; `@theme inline` maps them to Tailwind v4 utilities. Components
+write a single token utility (`bg-surface`, `text-muted`, `text-primary-strong`) — **never**
+`bg-white dark:bg-gray-900` pairs, because `.dark` swaps the variable underneath. Specific rules
+that are easy to get wrong: **dark mode reads via surface lightness, not shadows**
+(`canvas → surface → surface-elevated`); the **amber primary uses dark text on its fill**
+(`--color-text-on-primary` `#2A1B06`) because white-on-amber fails WCAG — amber-as-link uses
+`--color-primary-strong` instead of the raw fill; the **10-color rank spectrum**
+(`stone/clay/gold/olive/jade/teal/slate/indigo/plum/rose`, each exposing `core/deep/bright`)
+is a primitive consumed by `.rank-badge` via `color-mix`, and the season-rank ladder maps onto
+it (ghost=stone → … → luminary=gold) in `lib/season-ranks.ts`. A pre-paint inline script reads
+`localStorage('freq-theme')` (default `system`) and syncs `<meta name="theme-color">` to avoid
+a flash.
+**Consequences:** Adding a state color still means editing globals.css in three places (light
+`:root`, `.dark`, `@theme inline`) per ARCHITECTURE.md — Tailwind v4 only emits a utility whose
+class string is scanned. Nunito remains the brand typeface (the only surviving piece of the
+earlier brand pass). Email templates (`lib/email.ts`) can't use CSS vars, so DAWN light-mode hex
+is inlined there separately. Trust globals.css over any Notion "indigo"/"charcoal" color note.
+
 ---
 
 ### Decisions intentionally NOT duplicated here
