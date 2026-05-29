@@ -288,3 +288,88 @@ it's what makes the hierarchy spread instead of just exist.
   **tighter cap**. Don't badge "virtual"; mark in-person, leave the rest blank.
 - **Circles are designed to split to spread** — the cap is a growth trigger, and
   Hubs/Nexuses are what that growth *produces*.
+
+---
+
+## Refinement (session 2) — the two-strategy crossover
+
+Frequency runs **two structures** that share the same words but play different
+roles. A member's journey is the **crossover** between them: virtual entry →
+local commitment → embodied gathering.
+
+### A. In-person: the church model (a nested gathering ladder)
+
+- **Frequency Lab** — the physical anchor: the main facility in a neighborhood.
+  Circles form around it. (The church *building*.) *New concept — does not fit
+  today's schema cleanly; see open questions.*
+- **Circle** — the small group, weekly practice; orbits a Lab if in-person.
+- **Hub** — the *neighborhood*: the cluster of circles around a Lab, **and itself
+  a gathering body** — community meetups, parties, bigger events.
+- **Nexus** — the *whole area*: gathers quarterly — galas, big events.
+- **Mentor** — *pastoral, not structural.* Cares for the guides, makes sure each
+  guide's circles are healthy. (The authz ladder is unchanged; the *human* role
+  is shepherd, not operations manager.)
+
+> Insight: **every tier is a gathering body with its own cadence** — Circle
+> (weekly) → Hub (neighborhood meetup) → Nexus (quarterly gala). This is why the
+> fractal UI (§4) is right — it mirrors a fractal *org*, not just a layout taste.
+
+### B. Virtual: the topic engine (Interests = catalog + spawn point)
+
+- **Interests/Topics are virtual and global** — everyone, no place required.
+- Each Interest holds three things: **virtual discussion**, a **program**
+  (curriculum / practices / meetup templates), and a **roster of circles**
+  practicing it.
+- **Program lives as a template at the Interest level; it is *dispensed into* a
+  circle on adoption.** Topic = master/library; Circle = running instance. (Ties
+  to ROADMAP P2.11 `circle_weekly_practice` + P2.12 practice library.)
+- **"Add to Circle" / adopt** opens a *new* circle pre-loaded with that program,
+  and makes the adopter its **host**.
+
+### C. The crossover arc — the onboarding/"wake-up" spine
+
+1. Sign up → **pick Interests** (pure virtual).
+2. **Join a circle** *or* **adopt an Interest's program** (→ become host, spawn a
+   circle).
+3. Circle runs its program; attend first session.
+4. **Go in-person** — meet at the neighborhood **Lab**.
+5. Attend a **Hub meetup** (neighborhood).
+6. Attend a **Nexus gala** (area, quarterly).
+
+Each step reveals the next tier — this *is* the milestone-gating model (§2). The
+"wake up" is not a one-time form; it's this ladder lighting up over time.
+
+### D. Two ways a circle is born (unifies the growth loop §3a)
+
+1. **Split** — a circle hits its (tighter, in-person) cap → seeds a child circle.
+2. **Adopt** — someone takes an Interest's program → opens a new circle around it.
+
+Both produce circles; circles cluster into Hubs; Hubs into Nexuses. Growth is
+**bottom-up**; Hubs/Nexuses are the *emergent result*, surfaced to members as
+**places + events**, never as nav.
+
+### How this lines up with the prior strategy
+
+- ✅ **Hubs/Nexuses contextual-only** — *strengthened.* Members meet them as *the
+  Lab*, *the neighborhood meetup*, *the quarterly gala* — places and events.
+- ✅ **Virtual default, in-person additive** — holds. Virtual-only = Interest +
+  virtual space; in-person additionally anchors to a Lab and joins the ladder.
+- ✅ **Growth loop (§3a)** — enriched with a second spawn path and a clear
+  endpoint (Hub/Nexus gatherings).
+- ✅ **Fractal layout (§4)** — now justified by org reality, not UI taste.
+- ✅ **Milestone gating (§2)** — gets its concrete spine: the crossover arc (C).
+- ✅ **Interests rename (§6)** — fits; Interests now also = program catalog +
+  circle spawn point.
+
+### Open structural questions (resolve before building)
+
+1. **Where does "Frequency Lab" live?** A *neighborhood venue* anchoring a Hub —
+   but today's `outposts` sits *above* Nexus (top of the place tree), so it can't
+   be reused as-is. Options: (a) new `labs`/venue entity attached to a Hub;
+   (b) reposition/rename Outpost. **Recommend (a).**
+2. **Hub- and Nexus-scoped events** (meetups, galas) — do `events.scope_type`
+   values support hub/nexus? If not, that's the gap the church model requires.
+3. **Program model** — confirm Interest-level template → circle-level instance
+   (P2.11/P2.12). "Add to Circle" = instantiate program + set adopter as host.
+4. **Mentor copy** — reflect the pastoral framing in role descriptions / future
+   host-guide dashboards (P5), without changing authz.
