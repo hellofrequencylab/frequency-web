@@ -1,0 +1,158 @@
+# Engagement & Event Architecture
+
+> **Scope: architecture only.** This is the backbone that hosts *all* engagement
+> and gamification — online activity, outreach/task completion, QR codes, NFC
+> bumps (business plaques, merch tags, phone-to-phone), and geocache-style
+> capture. It deliberately does **not** design game mechanics (point values,
+> specific rules, reward economy) — those are product decisions that plug into
+> this backbone later. Specializes [TECH-STRATEGY](TECH-STRATEGY.md) and
+> [SCALE-ARCHITECTURE](SCALE-ARCHITECTURE.md).
+
+---
+
+## The one pattern everything reduces to
+
+Every example you described is the same shape: **a verified event, from some
+source, that grants rewards.** The variety lives in the *sources* and the
+*verification* — never in the core. So the core is one pipeline:
+
+```
+   SOURCE adapters            VERIFICATION             LEDGER + RULES            REWARD
+ ┌───────────────────┐    ┌──────────────────┐    ┌──────────────────┐    ┌────────────┐
+ │ web activity       │    │ idempotency key   │    │ append-only       │    │ gems/zaps  │
+ │ task / outreach    │    │ proximity (PostGIS)│   │ EVENT LEDGER      │    │ achievements│
+ │ QR scan            │──▶ │ signed payload     │──▶│  → rules engine   │──▶ │ ranks       │
+ │ NFC bump (biz/merch│    │ device attestation │    │  → reward txns    │    │ unlocks     │
+ │ phone-to-phone     │    │ mutual confirm (P2P)│   │ (idempotent,      │    │ + REALTIME  │
+ │ geo / ghost node   │    │ velocity / anti-farm│   │  exactly-once)    │    │   feedback  │
+ └───────────────────┘    └──────────────────┘    └──────────────────┘    └────────────┘
+        pluggable                pluggable              the stable core         pluggable
+```
+
+This is a standard event-driven loyalty design: events → rules engine → ledger,
+with idempotency to prevent double-awards
+([loyalty system architecture](https://www.openloyalty.io/insider/loyalty-system-architecture-how-modern-platforms-are-built),
+[Formance double-entry ledger](https://www.bamdad.info/fintech/loyalty/2024/08/20/loyalty-points-formance-ledger.html)).
+
+**Architectural payoff:** "elaborate" stops being scary. Adding a new way to earn
+(a new QR campaign, a new merch interaction, a new geo mechanic) = **a new source
+adapter + a rule**, not a new system. The core never changes.
+
+---
+
+## 1. Sources are adapters (the breadth lives here)
+
+Each source's only job: capture the raw interaction and hand a **normalized,
+signed event** to the pipeline. They share nothing else.
+
+| Source | What it produces | Notes |
+|---|---|---|
+| Web/app activity | `event(type, actor, context)` | the existing posts/RSVP/etc. |
+| Task / outreach completion | `event` + proof (photo, host approval) | circle tasks, marketing tasks (posters, flyering) |
+| **QR scan** | `event(node_id, actor, geo, ts)` | signed QR payload |
+| **NFC — business plaque** | `event(node_id=partner, actor, geo)` | → discount + points |
+| **NFC — merch tag** | `event(tag→ownerAccount, scanner)` | identity-bound tag |
+| **NFC / phone-to-phone bump** | `event(actorA, actorB, mutual)` | two-party, mutual confirm |
+| **Geo / ghost node** | `event(node_id, actor, geo)` | proximity-verified |
+
+All converge on **one event shape**, so downstream code is source-agnostic.
+
+## 2. Verification is a first-class, server-authoritative layer (security)
+
+Nothing grants a reward until the event passes verification **on the server** —
+the client is never trusted. Verifiers are pluggable and composed per source:
+
+- **Idempotency key** on every event → points awarded *exactly once* even if the
+  request is retried (the #1 ledger correctness rule)
+  ([idempotency in loyalty APIs](https://www.voucherify.io/glossary/loyalty-points)).
+- **Proximity** — PostGIS distance check (was the actor actually near the
+  node/business/person?).
+- **Signed payload** — QR/NFC carry a server-issued signature; forged codes fail.
+- **Device attestation** — Play Integrity / App Attest as a trust signal (mobile).
+- **Mutual confirmation** — phone-to-phone / merch bumps require both accounts to
+  corroborate, defeating one-sided farming.
+- **Velocity / anti-abuse** — rate limits, anomaly checks (same as fraud scoring).
+
+These are the economic + physical anti-cheat layer; design the **reward grant as
+the thing that runs verification**, never the capture UI.
+
+## 3. The ledger (correctness = security for a points economy)
+
+- **Append-only event ledger** + **append-only reward transactions** — immutable
+  history for audit/dispute (you already have `gem_transactions`; generalize it).
+- **Exactly-once via idempotency keys** — duplicate/ retried events can't
+  double-credit; "ledgers that don't handle this produce balance errors that are
+  hard to detect and expensive to fix"
+  ([ledger at scale](https://www.zigpoll.com/content/what-strategies-can-be-implemented-in-our-ecommerce-platform-backend-to-handle-loyalty-program-reward-points-efficiently-for-returning-customers)).
+- **Balances are a maintained read-model** (a column/projection), not a `SUM()`
+  over the ledger on every read → fast reads (speed).
+- **Partition the ledger by user** when it grows — the standard scaling seam.
+
+## 4. New domains arrive as modules, not core rewrites (scalable development)
+
+Your scope introduces whole new bounded contexts. Each is a **vertical-slice
+module** in the modular monolith (per SCALE-ARCHITECTURE), behind **RLS + RPCs**,
+plugged in via the registry — so the host app doesn't change:
+
+- **Partners / Businesses** — geolocated directory, partner accounts, offers/
+  discounts, **redemptions** ledger. Partner owners get their own *capability*
+  scope (managing their plaque/offers) — reuses the capability model from
+  [CAPABILITIES-AND-MOBILE](CAPABILITIES-AND-MOBILE.md), no new auth system.
+- **Physical nodes / tags** — one registry for QR, NFC plaques, merch tags, ghost
+  nodes: `type`, `location` (geography), `owner`, signed secret, validity, capture
+  rule, linked reward/offer. Identity-bound tags (merch) link a tag → an account.
+- **Social graph** — friend links and the events that create them (real-life
+  bumps). 1-hop queries stay indexed Postgres join tables (no graph DB needed
+  early).
+
+Adding "local business directory" or "merch tags" = ship a module, not refactor
+the core.
+
+## 5. Where it lives + how it stays fast
+
+- **Core in Postgres, behind RLS + RPCs** — `record_event()` / `grant_reward()`
+  are RPCs both web and mobile call; RLS + signatures enforce trust uniformly
+  (cross-platform contract from CAPABILITIES-AND-MOBILE).
+- **Synchronous path is tiny and fast** — verify + write event + update balance in
+  one idempotent RPC; instant response (the dopamine hit).
+- **Heavy work is async** — fraud scoring, feed fan-out, leaderboard recompute,
+  point expiry → background jobs / a queue (the **outbox pattern**: write the
+  event, process side-effects asynchronously). Keeps the grant fast.
+- **Realtime reward feedback** via Supabase **Broadcast** (not Postgres-Changes) —
+  the "you earned X!" moment, web + native.
+- **Geospatial** via **PostGIS** — shared by business discovery, ghost-node
+  proximity, and in-person verification.
+
+## 6. Why this satisfies scalable / secure / fast
+
+- **Scalable development:** new sources = adapters; new earn-rules = config in the
+  rules engine; new domains = modules. The core pipeline is stable and small.
+- **Secure:** server-authoritative verification on every grant, signed physical
+  payloads, mutual confirmation for P2P, idempotent exactly-once ledger, RLS as
+  the one boundary for every client.
+- **Fast:** tiny synchronous grant + maintained balance read-model + async
+  side-effects + realtime feedback; scales via ledger partitioning and the seams
+  in SCALE-ARCHITECTURE.
+
+---
+
+## Set-up-now checklist (infra, no game mechanics)
+
+Folds into the TECH-STRATEGY phases (esp. Phase 0/3):
+
+1. **Generalized event ledger** — `events` (append-only, `idempotency_key`,
+   `source_type`, `actor`, `context`, `verified_at`) + reward transactions
+   (extend `gem_transactions`).
+2. **Verifier interface** — a pluggable `verify(event) → ok/why` contract; start
+   with idempotency + proximity + signature; add attestation/mutual-confirm later.
+3. **Reward grant RPC** — `grant_reward(event)` idempotent, server-side,
+   updates the maintained balance.
+4. **PostGIS enabled** + `geography` columns + spatial indexes.
+5. **Physical-node + partner module schemas** (registry-pluggable, RLS + RPC).
+6. **Async lane** — an outbox/queue + background workers for fan-out, scoring,
+   expiry, leaderboard recompute.
+7. **Realtime reward channel** — Broadcast topic per user for instant feedback.
+
+**Deliberately out of scope here (product, later):** point values, earn rules,
+reward economy/balancing, partner business terms, anti-abuse thresholds. They all
+configure *into* this backbone without changing it.
