@@ -87,18 +87,23 @@ PAGE-FRAMEWORK.
 - [~] In-person **icon designator** (📍 "In person" badge; virtual = unmarked
       default) on the `/circles` cards; capacity line already shows the cap.
       **Follow-up (visual QA):** mirror the badge on the circle detail header.
-- [~] **3 templates** — all three shells built: **Detail** (header + badges +
-      actions + tabs + body), **Index** (`index-template.tsx`: title + description +
-      action + toolbar), **Stream** (`stream-template.tsx`: title + composer + sort).
-      `/circles` migrated onto Index. Remaining: migrate `/feed` onto Stream + the
-      other index pages (Interests/Events/Partners/Directory) as a sweep.
+- [x] **3 templates** — all three shells built and the main pages migrated:
+      **Stream** (`/feed`), **Index** (`/circles`, `/channels` Interests, `/events`,
+      `/partners`, `/people` Directory), **Detail** (`detail-template.tsx`, used by
+      single-entity pages). Every primary list/feed page now renders through one
+      shell. *(Circle-detail page can adopt the Detail shell in a later pass.)*
 - [~] **Module + slot + inline actions** — shared module chrome
       (`components/modules/module-card.tsx`) + capability gating
       (`components/ui/can.tsx`). **Inline admin WIRED + verified live:** the circle
       page gates Host Tools, Circle Health, edit/announce, and feed moderation by
-      `circle.editSettings` (host + janitors + area guides/mentors). **Still
-      pending:** the slot registry + scope-aware rail; **profile edit-in-place**
-      (needs a new admin route — janitors can't yet edit *others'* profiles).
+      `circle.editSettings` (host + janitors + area guides/mentors). **Profile
+      edit-in-place DONE:** owners edit via settings; janitors get an inline
+      moderator edit (name + bio) on any profile, gated by `profile.edit`
+      (`moderate-profile-button` + capability-checked `moderateUpdateProfile`).
+      **Scope-aware rail DONE:** the global rail shows on global/index pages; entity
+      detail pages (circle / profile / interest) render their own scoped rail in the
+      page body, and the global rail is suppressed there (no double-sidebar). **Still
+      pending:** a formal module **slot registry** (current composition is per-page).
 
 **Done when:** every main page renders via one of the 3 templates; inline actions
 appear by capability (host edits inline, member sees content only); a newcomer can

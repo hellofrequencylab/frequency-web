@@ -7,6 +7,7 @@ import { Globe } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { InviteMemberCompose } from '@/components/compose/invite-member-compose'
 import { type CommunityRole, ROLE_LABEL, RoleBadge } from '@/lib/community-roles'
+import { IndexTemplate } from '@/components/templates/index-template'
 
 type Profile = {
   id: string
@@ -72,22 +73,16 @@ export default async function DirectoryPage({
   }
 
   return (
-    <div>
-
-      {/* Header */}
-      <div className="flex items-end justify-between gap-4 mb-6">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Globe className="w-5 h-5 text-primary-strong" />
-            <h1 className="text-2xl font-bold text-text">Directory</h1>
-          </div>
-          <p className="text-sm text-muted leading-relaxed max-w-2xl">
-            Everyone in the community. Browse, find someone interesting,
-            say hi.
-          </p>
-        </div>
-        <InviteMemberCompose inviterName={viewerName} />
-      </div>
+    <IndexTemplate
+      title={
+        <span className="flex items-center gap-2">
+          <Globe className="w-5 h-5 text-primary-strong" />
+          Directory
+        </span>
+      }
+      description="Everyone in the community. Browse, find someone interesting, say hi."
+      action={<InviteMemberCompose inviterName={viewerName} />}
+    >
 
       {/* Filters */}
       <div className="flex flex-wrap gap-2 mb-6">
@@ -197,6 +192,6 @@ export default async function DirectoryPage({
           })}
         </div>
       )}
-    </div>
+    </IndexTemplate>
   )
 }

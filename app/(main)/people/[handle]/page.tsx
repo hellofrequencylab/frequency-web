@@ -13,6 +13,8 @@ import {
 } from 'lucide-react'
 
 import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
+import { getProfileCapabilities } from '@/lib/core/load-capabilities'
+import { ModerateProfileButton } from './moderate-profile-button'
 
 const RANK_TIERS = [
   { name: 'Ghost',    min: 0,    cls: 'bg-surface-elevated text-muted',     bar: 'bg-gray-400' },
@@ -89,6 +91,10 @@ export default async function ProfilePage({
 
   const profileId = profile.id as string
 
+  // Capability-gated moderator edit: profile.edit on a profile you don't own = janitor.
+  const profileCaps = await getProfileCapabilities(profileId)
+  const canModerateProfile = !isOwner && profileCaps.has('profile.edit')
+
   // Friendship state between viewer and this profile
   let friendState: FriendState = { kind: 'none' }
   if (myProfileId && myProfileId !== profileId) {
@@ -159,7 +165,7 @@ export default async function ProfilePage({
                 </div>
               )}
             </div>
-            <div className="flex items-center gap-2 shrink-0 pb-1">
+            <div className="relative flex items-center gap-2 shrink-0 pb-1">
               {isOwner ? (
                 <Link
                   href="/settings/profile"
@@ -181,6 +187,13 @@ export default async function ProfilePage({
                         Message
                       </button>
                     </form>
+                  )}
+                  {canModerateProfile && (
+                    <ModerateProfileButton
+                      profileId={profileId}
+                      initialName={profile.display_name}
+                      initialBio={profile.bio ?? ''}
+                    />
                   )}
                 </>
               ) : null}
