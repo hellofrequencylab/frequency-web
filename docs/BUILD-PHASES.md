@@ -77,8 +77,9 @@ PAGE-FRAMEWORK.
       any remaining "Channel" copy on cards/`[id]` page, decide the "tune in"
       verb, and reconcile with the public `/discover` layer which says "Topics".
 - [ ] Demote Hubs & Nexuses from member nav → contextual links + Admin.
-- [ ] In-person **icon designator** (virtual = unmarked default) + tighter
-      in-person cap on `/circles`.
+- [~] In-person **icon designator** (📍 "In person" badge; virtual = unmarked
+      default) on the `/circles` cards; capacity line already shows the cap.
+      **Follow-up (visual QA):** mirror the badge on the circle detail header.
 - [ ] Implement the **3 templates** (Stream / Index / Detail) as shared components.
 - [ ] Implement **module + slot composition** + scope-aware right rail +
       **capability-driven inline action slots** (the inline-admin foundation).
