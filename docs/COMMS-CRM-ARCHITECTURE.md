@@ -5,11 +5,11 @@
 > it does **not** replace it. Decisions here are recorded as ADR-024…028 in
 > [DECISIONS.md](DECISIONS.md).
 
-## 0. North Star — Weekly Active Practitioners (WAP)
+## 0. North Star — Weekly Active Members (WAM)
 
 The one number every layer optimizes for: **members completing ≥1 *verified
 practice* (check-in, attended session, logged practice) in a rolling 7 days.**
-Depth is secondary (sessions/practitioner, practice-streak retention).
+Depth is secondary (sessions/member, practice-streak retention).
 
 - **Hero event:** `practice.verified` — the canonical highest-value event.
 - **Gamification rewards verified practice far above social activity** (zaps +
@@ -18,7 +18,7 @@ Depth is secondary (sessions/practitioner, practice-streak retention).
   practice + in-person/outreach; practice is the top of the zap hierarchy.)
 - **Activation leading indicator:** *first verified practice within N days of
   joining* — instrument this first; it predicts retention best.
-- **Analytics hero metric is WAP; "retention" means practice retention.**
+- **Analytics hero metric is WAM; "retention" means practice retention.**
 - **The AI agent optimizes for getting people to practice / winning back lapsed
   practice** — not lapsed email opens.
 - **Counter-metric:** watch practice repeat/quality, not raw check-in counts, so
@@ -141,6 +141,6 @@ transactional emails, **and (this build) the `engagement_events` backbone +
 verifier + capture + partners**. `sendInviteEmail` is defined but never called
 (circle invites make a link but don't email it — a quick win).
 
-**Design-only (this doc):** `practice.verified` + WAP instrumentation, the
+**Design-only (this doc):** `practice.verified` + WAM instrumentation, the
 notification router/registry, email-on-the-queue, Resend webhooks + `email_events` +
 suppression, the contacts/CRM layer, the Studio, the rules engine, the AI agent.

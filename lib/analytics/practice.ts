@@ -1,5 +1,5 @@
 // North-Star read-models, computed off the one event backbone (engagement_events).
-// WAP = Weekly Active Practitioners (distinct members with a verified practice in a
+// WAM = Weekly Active Members (distinct members with a verified practice in a
 // rolling 7 days); activation = first verified practice within N days of joining.
 // See docs/COMMS-CRM-ARCHITECTURE.md §0 + ADR-024/025. Server-only.
 
@@ -11,7 +11,7 @@ const ACTIVATION_WINDOW_DAYS = 7
 
 export interface PracticeMetrics {
   /** Distinct members with >=1 verified practice in the last 7 days. */
-  wap: number
+  wam: number
   /** Total verified practices in the last 7 days. */
   verifiedThisWeek: number
   /** Members who joined in the last 30 days. */
@@ -28,7 +28,7 @@ export async function getPracticeMetrics(): Promise<PracticeMetrics> {
   const weekAgo = new Date(now - 7 * DAY).toISOString()
   const monthAgo = new Date(now - 30 * DAY).toISOString()
 
-  // Verified practices in the last 7 days → WAP (distinct actors) + volume.
+  // Verified practices in the last 7 days → WAM (distinct actors) + volume.
   const { data: weekRows } = await admin
     .from('engagement_events')
     .select('actor_profile_id')
@@ -36,7 +36,7 @@ export async function getPracticeMetrics(): Promise<PracticeMetrics> {
     .gte('created_at', weekAgo)
 
   const verifiedThisWeek = weekRows?.length ?? 0
-  const wap = new Set(
+  const wam = new Set(
     (weekRows ?? []).map((r) => r.actor_profile_id).filter((id): id is string => !!id),
   ).size
 
@@ -77,7 +77,7 @@ export async function getPracticeMetrics(): Promise<PracticeMetrics> {
   }
 
   return {
-    wap,
+    wam,
     verifiedThisWeek,
     newMembers,
     activated,

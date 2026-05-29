@@ -86,7 +86,7 @@ export default async function AdminPage() {
               North Star · Verified practice
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <StatCard label="Weekly Active Practitioners" value={practice.wap} Icon={Zap} />
+              <StatCard label="Weekly Active Members" value={practice.wam} Icon={Zap} />
               <StatCard label="Practices this week" value={practice.verifiedThisWeek} Icon={Activity} />
               <StatCard
                 label={`Activation 7d (${practice.activated}/${practice.newMembers})`}
