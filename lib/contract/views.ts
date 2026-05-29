@@ -9,7 +9,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCircleCapabilities, getProfileCapabilities } from '@/lib/core/load-capabilities'
-import type { CircleView, ProfileView } from './types'
+import type { CircleView, ProfileView, FeedView, FeedItem } from './types'
 
 export async function getProfileView(handle: string): Promise<ProfileView | null> {
   const admin = createAdminClient()
@@ -54,4 +54,43 @@ export async function getCircleView(slug: string): Promise<CircleView | null> {
     hostId: data.host_id,
     capabilities: [...caps],
   }
+}
+
+/**
+ * Public feed as the presentation-neutral FeedView contract (Phase 2). Cursor is
+ * the created_at of the last item; pass it back as `cursor` for the next page.
+ * Non-hidden posts only. Mobile + web consume this identical shape.
+ */
+export async function getFeed(opts?: { cursor?: string | null; limit?: number }): Promise<FeedView> {
+  const admin = createAdminClient()
+  const limit = Math.min(opts?.limit ?? 20, 50)
+
+  let q = admin
+    .from('posts')
+    .select('id, body, created_at, post_type, author:profiles!author_id ( handle, display_name )')
+    .is('hidden_at', null)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  if (opts?.cursor) q = q.lt('created_at', opts.cursor)
+
+  const { data } = await q
+  const rows = (data ?? []) as unknown as Array<{
+    id: string
+    body: string | null
+    created_at: string | null
+    post_type: string | null
+    author: { handle: string | null; display_name: string | null } | null
+  }>
+
+  const items: FeedItem[] = rows.map((r) => ({
+    id: r.id,
+    kind: 'post',
+    authorHandle: r.author?.handle ?? '',
+    authorName: r.author?.display_name ?? '',
+    createdAt: r.created_at ?? '',
+    body: r.body,
+  }))
+
+  const nextCursor = items.length === limit ? items[items.length - 1].createdAt : null
+  return { items, nextCursor }
 }

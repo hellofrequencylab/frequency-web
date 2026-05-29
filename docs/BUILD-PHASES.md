@@ -120,10 +120,11 @@ app (visual QA), since it changes page rendering and behavior.
 
 - [ ] Migrate high-traffic read/write paths from admin-client → RLS + RPCs,
       surface by surface (generalize the `/discover` SECURITY DEFINER model).
-- [~] Build the core **view-models** returning **data + capabilities** —
-      `getCircleView` + `getProfileView` shipped (`lib/contract/views.ts`,
-      reusing the one capability resolver). `getFeed` pending. (Implemented as
-      server view-builders now; expose via RPC/endpoint for mobile in Phase 5.)
+- [x] Build the core **view-models** returning **data + capabilities** —
+      `getCircleView` + `getProfileView` + `getFeed` (cursor-paginated FeedView)
+      shipped (`lib/contract/views.ts`), reusing the one capability resolver.
+      Implemented as server view-builders now; expose via RPC/endpoint for mobile
+      in Phase 5.
 - [ ] Verify RLS coverage with policy tests for each migrated table.
 
 **Done when:** the primary read paths and key mutations are RLS-enforced and
