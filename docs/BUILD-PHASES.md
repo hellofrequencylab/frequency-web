@@ -144,8 +144,11 @@ ENGAGEMENT-ARCHITECTURE.
       + `partner_redemptions` + `nodes.partner_id` (migration `20240218000000`);
       directory/offers public-when-active, redemptions read-own. TS read helpers +
       redemption-on-capture flow still to wire.
-- [ ] **Async lane** (outbox/queue + workers) for fan-out, fraud scoring, expiry,
-      leaderboard recompute.
+- [x] **Async lane** — `notification_queue` (migration `20240219000000`) +
+      `lib/queue/outbox.ts` (`enqueue` / `processQueue` with retries + exponential
+      backoff) + `/api/cron/process-queue` (every 2 min; durable web-push handler
+      shipped). *Follow-up: migrate inline send sites (email/push fan-out) onto
+      the queue; add `SELECT … FOR UPDATE SKIP LOCKED` claim if concurrency grows.*
 - [ ] Realtime **reward feedback** via Supabase Broadcast.
 - [x] **Capture orchestration** — `captureNode()` (`lib/engagement/capture.ts`):
       verify → ledger (exactly-once) → capture row → `awardZaps(node.zaps_value)`.

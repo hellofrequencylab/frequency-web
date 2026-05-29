@@ -1,0 +1,114 @@
+// Durable async job queue — the "async lane" (ENGAGEMENT-ARCHITECTURE §5; ROADMAP
+// P7.29). Enqueue side-effects (push/email fan-out, fraud scoring, leaderboard
+// recompute) instead of running them inline where a provider outage would drop
+// them. A cron drains the queue with retries + exponential backoff. Server-only.
+
+import type { SupabaseClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/admin'
+
+export interface QueueJob {
+  id: string
+  kind: string
+  payload: Record<string, unknown>
+  attempts: number
+  max_attempts: number
+}
+
+export type JobHandler = (payload: Record<string, unknown>) => Promise<void>
+
+export interface ProcessResult {
+  processed: number
+  done: number
+  failed: number
+  retried: number
+}
+
+const BACKOFF_BASE_MS = 60_000 // 1m → 2m → 4m → 8m …
+
+// notification_queue isn't in the generated Database types until the migration
+// (20240219000000) is applied + types regenerated; untyped client view for now.
+function db(): SupabaseClient {
+  return createAdminClient() as unknown as SupabaseClient
+}
+
+/** Enqueue a job. `runAfter` delays first execution; `maxAttempts` defaults to 5. */
+export async function enqueue(
+  kind: string,
+  payload: Record<string, unknown>,
+  opts?: { runAfter?: Date; maxAttempts?: number },
+): Promise<void> {
+  await db()
+    .from('notification_queue')
+    .insert({
+      kind,
+      payload,
+      run_after: (opts?.runAfter ?? new Date()).toISOString(),
+      max_attempts: opts?.maxAttempts ?? 5,
+    })
+}
+
+/**
+ * Claim due pending jobs, run their handler, and mark done / failed / retried
+ * (with exponential backoff). Unknown kinds fail the job. Returns counts.
+ *
+ * NOTE: simple claim (no row-locking). For high concurrency, move the claim to a
+ * `SELECT … FOR UPDATE SKIP LOCKED` RPC; fine for a single periodic cron.
+ */
+export async function processQueue(
+  handlers: Record<string, JobHandler>,
+  limit = 25,
+): Promise<ProcessResult> {
+  const client = db()
+  const nowIso = new Date().toISOString()
+
+  const { data: jobs } = await client
+    .from('notification_queue')
+    .select('id, kind, payload, attempts, max_attempts')
+    .eq('status', 'pending')
+    .lte('run_after', nowIso)
+    .order('run_after', { ascending: true })
+    .limit(limit)
+
+  const list = (jobs ?? []) as QueueJob[]
+  let done = 0
+  let failed = 0
+  let retried = 0
+
+  for (const job of list) {
+    const attempts = job.attempts + 1
+    try {
+      const handler = handlers[job.kind]
+      if (!handler) throw new Error(`no handler for kind '${job.kind}'`)
+      await handler(job.payload)
+      await client
+        .from('notification_queue')
+        .update({ status: 'done', attempts, last_error: null, updated_at: new Date().toISOString() })
+        .eq('id', job.id)
+      done++
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      if (attempts >= job.max_attempts) {
+        await client
+          .from('notification_queue')
+          .update({ status: 'failed', attempts, last_error: msg, updated_at: new Date().toISOString() })
+          .eq('id', job.id)
+        failed++
+      } else {
+        const delay = BACKOFF_BASE_MS * 2 ** (attempts - 1)
+        await client
+          .from('notification_queue')
+          .update({
+            status: 'pending',
+            attempts,
+            last_error: msg,
+            run_after: new Date(Date.now() + delay).toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', job.id)
+        retried++
+      }
+    }
+  }
+
+  return { processed: list.length, done, failed, retried }
+}
