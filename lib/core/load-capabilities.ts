@@ -37,7 +37,7 @@ export async function getCircleCapabilities(
 
   const { data: circle } = await admin
     .from('circles')
-    .select('host_id')
+    .select('host_id, hub_id')
     .eq('id', circleId)
     .maybeSingle()
 
@@ -52,6 +52,33 @@ export async function getCircleCapabilities(
     if (m) membership = { status: m.status as string, volunteerRole: m.volunteer_role as CommunityRole | null }
   }
 
+  // Area-scoped leadership: a guide/mentor who leads this circle's hub (or its
+  // nexus) manages it too. Host + janitor are handled by the resolver directly,
+  // so we only do these extra lookups for guide/mentor viewers.
+  let viewerManagesParent = opts?.viewerManagesParent ?? false
+  if (
+    !viewerManagesParent &&
+    viewer.profileId &&
+    (viewer.role === 'guide' || viewer.role === 'mentor') &&
+    circle?.hub_id
+  ) {
+    const { data: hub } = await admin
+      .from('hubs')
+      .select('guide_id, nexus_id')
+      .eq('id', circle.hub_id)
+      .maybeSingle()
+    if (hub?.guide_id === viewer.profileId) {
+      viewerManagesParent = true
+    } else if (hub?.nexus_id) {
+      const { data: nexus } = await admin
+        .from('nexuses')
+        .select('mentor_id')
+        .eq('id', hub.nexus_id)
+        .maybeSingle()
+      if (nexus?.mentor_id === viewer.profileId) viewerManagesParent = true
+    }
+  }
+
   return resolveCapabilities(viewer, {
     kind: 'circle',
     circleId,
@@ -59,7 +86,7 @@ export async function getCircleCapabilities(
     membership,
     // TODO: derive from the task-assignment table once that model is confirmed.
     openTaskCount: opts?.openTaskCount ?? 0,
-    viewerManagesParent: opts?.viewerManagesParent,
+    viewerManagesParent,
   })
 }
 

@@ -12,6 +12,7 @@ import { UpcomingEventsWidget } from '@/components/events/upcoming-widget'
 import { HostInviteButton } from '@/components/circles/host-invite-button'
 import { CollapsibleAbout } from '@/components/circles/collapsible-about'
 import { CircleHostMenu } from '@/components/circles/circle-host-menu'
+import { getCircleCapabilities } from '@/lib/core/load-capabilities'
 import { getInitials } from '@/lib/utils'
 import { ProfileFlair } from '@/components/profile-flair'
 import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
@@ -155,6 +156,11 @@ export default async function CirclePage({
     }
   }
 
+  // Inline-admin gating via the one capability resolver: host + janitors, plus
+  // guides/mentors who lead this circle's hub/nexus (scope-aware).
+  const caps = await getCircleCapabilities(circle.id)
+  const canManage = caps.has('circle.editSettings')
+
   // Sort: host first → by join date
   const sorted = [...members].sort((a, b) => {
     const aHost = circle.host?.id === a.profile.id ? 0 : 1
@@ -239,7 +245,7 @@ export default async function CirclePage({
 
         {/* Create / join / leave actions */}
         <div className="flex items-center gap-3 shrink-0">
-          {isHost && <CircleHostMenu circleId={circle.id} />}
+          {canManage && <CircleHostMenu circleId={circle.id} />}
 
           {isMember && !isHost && (
             <form action={leaveCircle.bind(null, circle.id)}>
