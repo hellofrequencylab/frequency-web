@@ -158,7 +158,10 @@ ENGAGEMENT-ARCHITECTURE.
       backoff) + `/api/cron/process-queue` (every 2 min; durable web-push handler
       shipped). *Follow-up: migrate inline send sites (email/push fan-out) onto
       the queue; add `SELECT … FOR UPDATE SKIP LOCKED` claim if concurrency grows.*
-- [ ] Realtime **reward feedback** via Supabase Broadcast.
+- [x] **Reward feedback** — live "+N zaps" toast (`components/zap-toast.tsx`,
+      `showZapToast` + container in the main layout, mirroring achievement-toast)
+      fired on event check-in and node claim. *(In-tab CustomEvent; cross-device
+      Supabase Broadcast can layer on later if needed.)*
 - [x] **Capture orchestration** — `captureNode()` (`lib/engagement/capture.ts`):
       verify → ledger (exactly-once) → capture row → `awardZaps(node.zaps_value)`.
       Physical loop is functional end-to-end. *(Repeatable-node idempotency keying
@@ -258,11 +261,11 @@ a **proven practice-retention loop (PMF)** before building the cathedral.
       (`lib/studio/analytics.ts`). Remaining: funnel conversion, acquisition source,
       cohort retention.
 - [~] **Test harness** — **Vitest** (`npm test`; `vitest.config.ts`, `@/` alias).
-      **17 tests** covering the pure authz core (`resolveCapabilities`, `atLeastRole`),
-      `currencyForSource`, the outbox **retry/backoff policy** (`nextRetry`), and the
-      Resend **webhook signature verification** (`verifyResendSignature`). Still to add
-      before agent *autonomy*: mocked DB tests for `shouldSend` consent + suppression
-      queries (the copilot agent is human-gated, so it ships without these).
+      **20 tests** covering the pure authz core (`resolveCapabilities`, `atLeastRole`),
+      `currencyForSource`, the outbox **retry/backoff policy** (`nextRetry`), the Resend
+      **webhook signature verification** (`verifyResendSignature`), and **suppression**
+      (`isSuppressed`/`suppress`, mocked client). Still to add before agent *autonomy*:
+      a `shouldSend` consent test (the copilot agent is human-gated, so it ships now).
 - [~] **6.6 Agent Console (copilot)** — shipped (migration `20240225000000`):
       `/studio/agent` Action Queue, a deterministic winback proposer
       (`lib/studio/agent.ts`), one-click **Approve & send** / Dismiss, and approved
