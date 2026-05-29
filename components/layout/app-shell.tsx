@@ -37,15 +37,27 @@ import {
   roleBadgeStyle,
 } from '@/lib/community-roles'
 
-const SIDEBAR_NAV = [
-  { href: '/feed',      label: 'Feed',      Icon: Home },
-  { href: '/broadcast', label: 'Broadcast', Icon: Megaphone },
-  { href: '/circles',   label: 'Circles',   Icon: Users },
-  { href: '/channels',  label: 'Channels',  Icon: Radio },
-  { href: '/events',    label: 'Events',    Icon: CalendarDays },
-  { href: '/messages',  label: 'Messages',  Icon: MessageSquare },
-  { href: '/friends',   label: 'Friends',   Icon: UserPlus },
-  { href: '/people',    label: 'Directory', Icon: Globe },
+// Grouped nav (IA-STRATEGY §1). Same items + visibility as before — just sorted
+// into labelled sections so a newcomer can read the structure. Crew/Admin are
+// appended (role-gated) below in NavLinkList.
+const NAV_SECTIONS: {
+  label: string | null
+  items: { href: string; label: string; Icon: React.ElementType }[]
+}[] = [
+  { label: null, items: [
+    { href: '/feed', label: 'Feed', Icon: Home },
+  ] },
+  { label: 'Community', items: [
+    { href: '/circles',   label: 'Circles',   Icon: Users },
+    { href: '/channels',  label: 'Channels',  Icon: Radio },
+    { href: '/events',    label: 'Events',    Icon: CalendarDays },
+    { href: '/broadcast', label: 'Broadcast', Icon: Megaphone },
+  ] },
+  { label: 'Connect', items: [
+    { href: '/messages',  label: 'Messages',  Icon: MessageSquare },
+    { href: '/friends',   label: 'Friends',   Icon: UserPlus },
+    { href: '/people',    label: 'Directory', Icon: Globe },
+  ] },
 ]
 
 interface Profile {
@@ -323,70 +335,68 @@ function NavLinkList({
   const showCrew = role === 'crew' || role === 'host' || role === 'guide' || role === 'mentor' || role === 'janitor'
   const showAdmin = role === 'host' || role === 'guide' || role === 'mentor' || role === 'janitor'
 
+  const itemClass = (active: boolean) =>
+    `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+      active
+        ? 'bg-primary-bg text-primary-strong'
+        : 'text-muted hover:bg-surface-elevated hover:text-text'
+    }`
+
+  const sectionLabelClass =
+    'px-3 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-subtle'
+
   return (
     <>
-      {SIDEBAR_NAV.map(({ href, label, Icon }) => {
-        const active = isActive(href)
-        return (
-          <Link
-            key={href}
-            href={href}
-            onClick={onNavigate}
-            className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-              active
-                ? 'bg-primary-bg text-primary-strong'
-                : 'text-muted hover:bg-surface-elevated hover:text-text'
-            }`}
-          >
-            <Icon
-              className={`w-[18px] h-[18px] shrink-0 ${
-                active ? 'text-primary-strong' : 'text-subtle'
-              }`}
-              strokeWidth={active ? 2.5 : 2}
-            />
-            {label}
-          </Link>
-        )
-      })}
+      {NAV_SECTIONS.map((section, i) => (
+        <div key={section.label ?? `top-${i}`} className={`space-y-0.5 ${i > 0 ? 'mt-2' : ''}`}>
+          {section.label && <p className={sectionLabelClass}>{section.label}</p>}
+          {section.items.map(({ href, label, Icon }) => {
+            const active = isActive(href)
+            return (
+              <Link key={href} href={href} onClick={onNavigate} className={itemClass(active)}>
+                <Icon
+                  className={`w-[18px] h-[18px] shrink-0 ${active ? 'text-primary-strong' : 'text-subtle'}`}
+                  strokeWidth={active ? 2.5 : 2}
+                />
+                {label}
+              </Link>
+            )
+          })}
+        </div>
+      ))}
 
       {showCrew && (
-        <Link
-          href="/crew"
-          onClick={onNavigate}
-          className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-            isActive('/crew')
-              ? 'bg-primary-bg text-primary-strong'
-              : 'text-muted hover:bg-surface-elevated hover:text-text'
-          }`}
-        >
-          <Zap
-            className={`w-[18px] h-[18px] shrink-0 ${
-              isActive('/crew') ? 'text-primary-strong' : 'text-subtle'
-            }`}
-            strokeWidth={isActive('/crew') ? 2.5 : 2}
-          />
-          Crew
-        </Link>
+        <div className="space-y-0.5 mt-2">
+          <p className={sectionLabelClass}>Progress</p>
+          <Link href="/crew" onClick={onNavigate} className={itemClass(isActive('/crew'))}>
+            <Zap
+              className={`w-[18px] h-[18px] shrink-0 ${isActive('/crew') ? 'text-primary-strong' : 'text-subtle'}`}
+              strokeWidth={isActive('/crew') ? 2.5 : 2}
+            />
+            Crew
+          </Link>
+        </div>
       )}
 
       {showAdmin && (
-        <Link
-          href="/admin"
-          onClick={onNavigate}
-          className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-            isActive('/admin')
-              ? 'bg-signal-bg text-signal-strong'
-              : 'text-muted hover:bg-surface-elevated hover:text-text'
-          }`}
-        >
-          <Shield
-            className={`w-[18px] h-[18px] shrink-0 ${
-              isActive('/admin') ? 'text-signal-strong' : 'text-subtle'
+        <div className="space-y-0.5 mt-2">
+          <p className={sectionLabelClass}>Manage</p>
+          <Link
+            href="/admin"
+            onClick={onNavigate}
+            className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              isActive('/admin')
+                ? 'bg-signal-bg text-signal-strong'
+                : 'text-muted hover:bg-surface-elevated hover:text-text'
             }`}
-            strokeWidth={isActive('/admin') ? 2.5 : 2}
-          />
-          Admin
-        </Link>
+          >
+            <Shield
+              className={`w-[18px] h-[18px] shrink-0 ${isActive('/admin') ? 'text-signal-strong' : 'text-subtle'}`}
+              strokeWidth={isActive('/admin') ? 2.5 : 2}
+            />
+            Admin
+          </Link>
+        </div>
       )}
     </>
   )

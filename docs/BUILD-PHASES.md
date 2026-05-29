@@ -69,7 +69,8 @@ remain.**
 layers mobile will reuse. **Depends on:** Phase 0. **Governs:** IA-STRATEGY,
 PAGE-FRAMEWORK.
 
-- [ ] Nav grouping (MY COMMUNITY / CONNECT / PROGRESS / MANAGE).
+- [x] Nav grouping — Community / Connect / Progress / Manage sections in
+      `app-shell.tsx` (desktop sidebar + mobile drawer); item visibility unchanged.
 - [ ] Rename member-facing **Channels → Interests** (presentation only;
       `topical_channels` table keeps its name).
 - [ ] Demote Hubs & Nexuses from member nav → contextual links + Admin.
