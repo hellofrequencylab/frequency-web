@@ -72,8 +72,12 @@ mobile.
    decisions made, and the phased plan.
 
 ### Executable plan
+- [**START-HERE**](docs/START-HERE.md) — **go-live runbook.** Ordered steps to apply
+  migrations, regenerate types, run & QA, then continue development. Open this first
+  at a computer.
 - [**BUILD-PHASES**](docs/BUILD-PHASES.md) — **the working tracker.** Phase-by-phase
-  checklist (0→5), dependencies, and definition-of-done. Start here to *build*.
+  checklist (0→5), dependencies, and definition-of-done.
+- [**CHECKLIST**](docs/CHECKLIST.md) — owner action items: decisions + tech debt.
 
 ### As-is engineering reference (current codebase)
 - [ARCHITECTURE](docs/ARCHITECTURE.md) — current stack, directory map, the RLS /
