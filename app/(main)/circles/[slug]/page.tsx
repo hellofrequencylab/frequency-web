@@ -288,7 +288,7 @@ export default async function CirclePage({
         <div className="mb-6">
           <CollapsibleAbout text={circle.about} />
         </div>
-      ) : isHost ? (
+      ) : canManage ? (
         <Link
           href={`/circles/${circle.slug}?edit=true`}
           className="inline-block mb-6 text-xs text-subtle hover:text-primary-strong transition-colors"
@@ -307,7 +307,7 @@ export default async function CirclePage({
             <div className="mb-4">
               <h2 className="text-sm font-semibold text-text">Circle Feed</h2>
               <p className="text-xs text-muted leading-relaxed mt-0.5">
-                {isHost
+                {canManage
                   ? 'Post to your circle. Toggle Announce to broadcast to the wider hub.'
                   : 'Share with everyone in this circle.'}
               </p>
@@ -317,7 +317,7 @@ export default async function CirclePage({
                 scopeId={circle.id}
                 visibility="group"
                 placeholder={`Share something with ${circle.name}…`}
-                canAnnounce={isHost}
+                canAnnounce={canManage}
               />
             ) : (
               myProfileId && (
@@ -340,7 +340,7 @@ export default async function CirclePage({
           <div className="space-y-6">
 
             {/* Host tools */}
-            {isHost && (
+            {canManage && (
               <div className="rounded-2xl border border-primary-bg/50 bg-primary-bg/40 dark:bg-primary-bg/10 shadow-sm px-4 py-3">
                 <div className="flex items-center gap-1.5 mb-2.5">
                   <Settings2 className="w-3.5 h-3.5 text-primary-strong" />
@@ -362,7 +362,7 @@ export default async function CirclePage({
             )}
 
             {/* Circle health (host+ only) */}
-            {isHost && healthScore.totalZaps > 0 && (
+            {canManage && healthScore.totalZaps > 0 && (
               <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
                 <div className="px-4 py-2.5 border-b border-border flex items-center gap-2">
                   <Activity className="w-3.5 h-3.5 text-signal" />
