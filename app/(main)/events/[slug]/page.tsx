@@ -143,6 +143,10 @@ export default async function EventDetailPage({
   }
 
   const isPast = new Date(event.starts_at) < new Date()
+  // RSVP stays changeable until the event actually ENDS (not merely starts), so a
+  // member can still un-RSVP during a live session. Falls back to starts_at when
+  // no end time is set.
+  const hasEnded = new Date(event.ends_at ?? event.starts_at) < new Date()
 
   // Practice check-in availability + whether the viewer already checked in.
   const canCheckIn = !!myProfileId && myRsvpStatus === 'going' && isPast && !event.is_cancelled
@@ -244,7 +248,7 @@ export default async function EventDetailPage({
       </div>
 
       {/* ── Actions ────────────────────────────────── */}
-      {!event.is_cancelled && !isPast && myProfileId && (
+      {!event.is_cancelled && !hasEnded && myProfileId && (
         <div className="flex items-center gap-3 mb-6 flex-wrap">
           <CrewGateButton
             isCrew={isCrew}
