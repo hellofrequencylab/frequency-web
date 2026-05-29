@@ -246,9 +246,12 @@ a **proven practice-retention loop (PMF)** before building the cathedral.
 - [~] **6.4 Marketing engine** — **Campaigns shipped** (migration `20240223000000`):
       `/studio/campaigns` compose → send to a member segment (all / subscribed)
       through the spine, consent-checked (`shouldSend` lifecycle) + suppression-aware
-      + per-recipient unsubscribe. Remaining: richer Segment builder, Pipelines
-      (Kanban funnels), Automations (drip + trigger→condition→action rules engine),
-      React Email templates, lead/non-member unsubscribe.
+      + per-recipient unsubscribe. **Automations rules engine shipped** (migration
+      `20240224000000`): `/studio/automations` rules subscribe to the event backbone
+      (`lib/automations.ts`, called from `recordEngagementEvent`) and act
+      (MVP: email the actor, consent-checked). Remaining: richer Segment builder,
+      Pipelines (Kanban funnels), conditions/drip sequences, React Email templates,
+      lead/non-member unsubscribe.
 - [ ] **6.5 Analytics** — WAM, activation, funnel conversion, acquisition, email
       performance, deliverability, engagement/cohort.
 - [ ] **Test harness** around spine + consent + suppression — **gates 6.6.** (Repo
