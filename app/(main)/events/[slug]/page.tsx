@@ -1,9 +1,10 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { CalendarDays, MapPin, Users, ExternalLink } from 'lucide-react'
+import { CalendarDays, MapPin, Users, ExternalLink, Check } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { toggleRSVP } from '../actions'
+import { EventCheckInButton } from './check-in-button'
 import { CrewGateButton } from '@/components/crew-gate-button'
 import { ContextActions } from '@/components/context-actions'
 import { getInitials } from '@/lib/utils'
@@ -143,6 +144,18 @@ export default async function EventDetailPage({
 
   const isPast = new Date(event.starts_at) < new Date()
 
+  // Practice check-in availability + whether the viewer already checked in.
+  const canCheckIn = !!myProfileId && myRsvpStatus === 'going' && isPast && !event.is_cancelled
+  let alreadyCheckedIn = false
+  if (canCheckIn && myProfileId) {
+    const { data: ci } = await admin
+      .from('engagement_events')
+      .select('id')
+      .eq('idempotency_key', `event_checkin:${event.id}:${myProfileId}`)
+      .maybeSingle()
+    alreadyCheckedIn = !!ci
+  }
+
   return (
     <div>
       <Link
@@ -275,6 +288,20 @@ export default async function EventDetailPage({
             Add to Calendar (.ics)
           </a>
 
+        </div>
+      )}
+
+      {/* ── Practice check-in (verified practice → zaps + streak) ── */}
+      {canCheckIn && (
+        <div className="mb-6">
+          {alreadyCheckedIn ? (
+            <div className="inline-flex items-center gap-2 rounded-xl bg-success-bg text-success px-4 py-2.5 text-sm font-semibold">
+              <Check className="w-4 h-4" />
+              Checked in — practice logged
+            </div>
+          ) : (
+            <EventCheckInButton eventId={event.id} />
+          )}
         </div>
       )}
 
