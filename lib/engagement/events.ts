@@ -8,9 +8,9 @@
 // (web actions migrated here, plus physical QR/NFC/geo/p2p) flow through this so
 // they gain persistence + exactly-once + a server-side verification hook.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { processGamificationEvent, type GamificationEvent } from '@/lib/achievements'
+import type { Json } from '@/lib/database.types'
 
 export type EngagementSource = 'web' | 'task' | 'qr' | 'nfc' | 'geo' | 'p2p' | 'system'
 
@@ -48,10 +48,7 @@ export async function recordEngagementEvent(
 ): Promise<RecordEngagementResult> {
   const { idempotencyKey, source, eventType, actorProfileId, context, verifiedAt, gamificationEvent } = input
 
-  // `engagement_events` isn't in the generated Database types until the migration
-  // (20240215000000) is applied and types are regenerated. Until then, use an
-  // untyped client view for this one table.
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
 
   // Exactly-once: ON CONFLICT DO NOTHING (ignoreDuplicates). A conflict returns
   // zero rows, so `recorded` is false and we skip the reward.
@@ -63,7 +60,7 @@ export async function recordEngagementEvent(
         source,
         event_type: eventType,
         actor_profile_id: actorProfileId,
-        context: context ?? {},
+        context: (context ?? {}) as Json,
         verified_at: verifiedAt?.toISOString() ?? null,
       },
       { onConflict: 'idempotency_key', ignoreDuplicates: true },

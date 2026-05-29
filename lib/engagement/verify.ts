@@ -7,7 +7,6 @@
 // verification with `recordEngagementEvent` (lib/engagement/events.ts) once the
 // reward economy is defined.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export interface CaptureAttempt {
@@ -40,9 +39,7 @@ export interface VerifyResult {
  * (if any) matches, the capture rule allows it, and proximity (if required) holds.
  */
 export async function verifyCapture(attempt: CaptureAttempt): Promise<VerifyResult> {
-  // nodes/captures aren't in the generated Database types until the migration
-  // (20240216000000) is applied + types regenerated; use an untyped client view.
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
 
   const { data: node } = await db
     .from('nodes')

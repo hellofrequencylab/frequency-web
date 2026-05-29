@@ -6,7 +6,6 @@
 // node's tunable `zaps_value`. Reward is granted only on the first verified
 // capture (the ledger's idempotency_key guards against retries / double taps).
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { awardZaps } from '@/lib/zaps'
 import { verifyCapture, type CaptureAttempt, type VerifyReason } from './verify'
@@ -39,8 +38,7 @@ export async function captureNode(attempt: CaptureAttempt): Promise<CaptureResul
   const verdict = await verifyCapture(attempt)
   if (!verdict.ok) return { ok: false, reason: verdict.reason }
 
-  // nodes/captures aren't in the generated Database types yet → untyped view.
-  const db = createAdminClient() as unknown as SupabaseClient
+  const db = createAdminClient()
 
   const { data: node } = await db
     .from('nodes')

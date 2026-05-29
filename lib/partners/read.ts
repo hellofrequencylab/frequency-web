@@ -6,7 +6,6 @@
 // partners/* aren't in the generated Database types until the migration
 // (20240218000000) is applied + regenerated; untyped client view for now.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export interface PartnerSummary {
@@ -32,8 +31,8 @@ export interface PartnerDetail extends PartnerSummary {
   offers: PartnerOffer[]
 }
 
-function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+function db() {
+  return createAdminClient()
 }
 
 export async function listActivePartners(
