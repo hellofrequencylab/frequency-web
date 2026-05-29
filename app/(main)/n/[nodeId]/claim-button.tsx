@@ -22,9 +22,16 @@ export function ClaimButton({ nodeId }: { nodeId: string }) {
 
   if (result?.ok) {
     return (
-      <div className="inline-flex items-center gap-2 rounded-xl bg-success-bg text-success px-4 py-3 font-semibold">
-        <Check className="w-5 h-5" />
-        Claimed! +{result.zapsAwarded ?? 0} zaps
+      <div className="flex flex-col items-center gap-2">
+        <div className="inline-flex items-center gap-2 rounded-xl bg-success-bg text-success px-4 py-3 font-semibold">
+          <Check className="w-5 h-5" />
+          Claimed! +{result.zapsAwarded ?? 0} zaps
+        </div>
+        {result.offerTitle && (
+          <p className="text-sm text-muted">
+            🎟 Offer unlocked: <span className="font-medium text-text">{result.offerTitle}</span>
+          </p>
+        )}
       </div>
     )
   }

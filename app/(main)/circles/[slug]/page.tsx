@@ -10,6 +10,7 @@ import { Composer } from '@/components/feed/composer'
 import { FeedList } from '@/components/feed/feed-list'
 import { UpcomingEventsWidget } from '@/components/events/upcoming-widget'
 import { HostInviteButton } from '@/components/circles/host-invite-button'
+import { HostInviteEmail } from '@/components/circles/host-invite-email'
 import { CollapsibleAbout } from '@/components/circles/collapsible-about'
 import { CircleHostMenu } from '@/components/circles/circle-host-menu'
 import { getCircleCapabilities } from '@/lib/core/load-capabilities'
@@ -357,6 +358,9 @@ export default async function CirclePage({
                     <Pencil className="w-3.5 h-3.5" />
                     Edit info
                   </Link>
+                </div>
+                <div className="mt-2">
+                  <HostInviteEmail circleId={circle.id} />
                 </div>
               </div>
             )}

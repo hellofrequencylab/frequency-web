@@ -7,6 +7,9 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { processGamificationEvent } from '@/lib/achievements'
 import { awardGems } from '@/lib/gems'
+import { sendInviteEmail } from '@/lib/email'
+import { SITE_URL } from '@/lib/site'
+import { getCircleCapabilities } from '@/lib/core/load-capabilities'
 
 export async function joinCircle(circleId: string, circleSlug: string) {
   const myProfileId = await getMyProfileId()
@@ -121,6 +124,54 @@ export async function createHostInviteLink(circleId: string): Promise<{ token: s
 
   revalidatePath(`/circles`)
   return { token }
+}
+
+// Invite someone to a circle by email: create a fresh invite link and send it
+// through the durable email queue (the spine). Host-only.
+export async function inviteByEmail(
+  circleId: string,
+  email: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const myProfileId = await getMyProfileId()
+  if (!myProfileId) return { ok: false, error: 'Not signed in.' }
+
+  const clean = email.trim().toLowerCase()
+  if (!clean || !clean.includes('@')) return { ok: false, error: 'Enter a valid email address.' }
+
+  // Same gate as the Host Tools UI: host + janitors + area guides/mentors.
+  const caps = await getCircleCapabilities(circleId)
+  if (!caps.has('circle.editSettings')) {
+    return { ok: false, error: 'You do not manage this circle.' }
+  }
+
+  const admin = createAdminClient()
+  const { data: circle } = await admin
+    .from('circles')
+    .select('name')
+    .eq('id', circleId)
+    .maybeSingle()
+  if (!circle) return { ok: false, error: 'Circle not found.' }
+
+  const { data: me } = await admin
+    .from('profiles')
+    .select('display_name')
+    .eq('id', myProfileId)
+    .maybeSingle()
+
+  const token = randomBytes(12).toString('base64url')
+  const { error } = await admin
+    .from('invite_links')
+    .insert({ token, circle_id: circleId, created_by: myProfileId })
+  if (error) return { ok: false, error: error.message }
+
+  await sendInviteEmail({
+    to: clean,
+    inviterName: me?.display_name ?? 'A member',
+    circleName: circle.name,
+    inviteUrl: `${SITE_URL}/join/${token}`,
+  })
+
+  return { ok: true }
 }
 
 export async function leaveCircle(circleId: string) {

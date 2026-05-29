@@ -13,6 +13,8 @@
 import { Resend } from 'resend'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import type { NotificationCategory } from '@/lib/notification-preferences'
+import { enqueue } from '@/lib/queue/outbox'
+import { isSuppressed } from '@/lib/suppression'
 
 const apiKey  = process.env.RESEND_API_KEY
 const FROM    = process.env.EMAIL_FROM ?? 'Frequency <noreply@hellofrequency.com>'
@@ -20,7 +22,7 @@ const FROM    = process.env.EMAIL_FROM ?? 'Frequency <noreply@hellofrequency.com
 // Headers required by Gmail/Yahoo bulk-sender policies (RFC 8058).
 // `apiUrl` is the POST endpoint mailbox providers call when a user hits
 // the inbox-rendered unsubscribe button.
-function listUnsubscribeHeaders(unsubscribeUrl: string): Record<string, string> {
+export function listUnsubscribeHeaders(unsubscribeUrl: string): Record<string, string> {
   const apiUrl = unsubscribeUrl.replace('/unsubscribe?', '/api/unsubscribe?')
   return {
     'List-Unsubscribe':      `<${apiUrl}>, <${unsubscribeUrl}>`,
@@ -30,10 +32,42 @@ function listUnsubscribeHeaders(unsubscribeUrl: string): Record<string, string> 
 
 function getClient(): Resend | null {
   if (!apiKey) {
-    console.warn('[email] RESEND_API_KEY is not set — email sending is disabled.')
+    console.warn('[email] RESEND_API_KEY is not set, email sending is disabled.')
     return null
   }
   return new Resend(apiKey)
+}
+
+// ── The spine: queue all email, never send inline (ADR-026) ────────────────────
+
+export interface EmailPayload {
+  to: string
+  subject: string
+  html: string
+  text?: string
+  headers?: Record<string, string>
+}
+
+// Low-level send, called by the queue's `email` handler. Throws on provider error
+// so the outbox retries; no-ops when RESEND_API_KEY is unset.
+export async function sendRawEmail(payload: EmailPayload): Promise<void> {
+  const client = getClient()
+  if (!client) return
+  // Deliverability guard: never re-mail a suppressed address (hard bounce / complaint).
+  if (await isSuppressed(payload.to)) {
+    console.warn(`[email] skipped suppressed address: ${payload.to}`)
+    return
+  }
+  const { error } = await client.emails.send({ from: FROM, ...payload })
+  if (error) {
+    throw new Error(`[email] send failed: ${typeof error === 'string' ? error : JSON.stringify(error)}`)
+  }
+}
+
+// Enqueue an email onto the durable outbox. Drained by /api/cron/process-queue
+// with retries + backoff. New email paths should go through this, not inline.
+export async function enqueueEmail(payload: EmailPayload): Promise<void> {
+  await enqueue('email', payload as unknown as Record<string, unknown>)
 }
 
 // ── Welcome email ─────────────────────────────────────────────────────────────
@@ -42,22 +76,14 @@ export async function sendWelcomeEmail(params: {
   to: string
   displayName: string
 }) {
-  const client = getClient()
-  if (!client) return
-
   const { to, displayName } = params
 
-  const { error } = await client.emails.send({
-    from:    FROM,
+  await enqueueEmail({
     to,
     subject: `Welcome to Frequency, ${displayName} 👋`,
     html:    welcomeHtml({ displayName }),
     text:    welcomeText({ displayName }),
   })
-
-  if (error) {
-    console.error('[email] Failed to send welcome email:', error)
-  }
 }
 
 // ── Invite email ──────────────────────────────────────────────────────────────
@@ -68,22 +94,14 @@ export async function sendInviteEmail(params: {
   circleName: string
   inviteUrl: string
 }) {
-  const client = getClient()
-  if (!client) return
-
   const { to, inviterName, circleName, inviteUrl } = params
 
-  const { error } = await client.emails.send({
-    from:    FROM,
+  await enqueueEmail({
     to,
     subject: `${inviterName} invited you to join ${circleName} on Frequency`,
     html:    inviteHtml({ inviterName, circleName, inviteUrl }),
     text:    inviteText({ inviterName, circleName, inviteUrl }),
   })
-
-  if (error) {
-    console.error('[email] Failed to send invite email:', error)
-  }
 }
 
 // ── Weekly community digest ───────────────────────────────────────────────────
@@ -97,9 +115,6 @@ export async function sendWeeklyDigestEmail(params: {
   topStreak:          { type: string; count: number } | null
   rank:               { name: string | null; zaps: number } | null
 }) {
-  const client = getClient()
-  if (!client) return
-
   const { to, recipientName, recipientProfileId, dispatches, upcomingEvents, topStreak, rank } = params
 
   // Lifecycle category covers periodic engagement nudges (Day 1/3/7 emails
@@ -111,20 +126,13 @@ export async function sendWeeklyDigestEmail(params: {
     category:  'lifecycle',
   })
 
-  const subject = `📡 Your week on Frequency`
-
-  const { error } = await client.emails.send({
-    from:    FROM,
+  await enqueueEmail({
     to,
-    subject,
+    subject: `📡 Your week on Frequency`,
     headers: listUnsubscribeHeaders(unsubscribeUrl),
     html:    digestHtml({ recipientName, dispatches, upcomingEvents, topStreak, rank, unsubscribeUrl }),
     text:    digestText({ recipientName, dispatches, upcomingEvents, topStreak, rank, unsubscribeUrl }),
   })
-
-  if (error) {
-    console.error('[email] Failed to send weekly digest:', error)
-  }
 }
 
 
@@ -141,9 +149,6 @@ export async function sendEventReminderEmail(params: {
   eventUrl:           string
   lead:               '24h' | '2h'
 }) {
-  const client = getClient()
-  if (!client) return
-
   const { to, recipientName, recipientProfileId, eventTitle, whenLabel, whenAbsolute, location, eventUrl, lead } = params
 
   const subject = lead === '24h'
@@ -156,18 +161,13 @@ export async function sendEventReminderEmail(params: {
     category:  'events',
   })
 
-  const { error } = await client.emails.send({
-    from:    FROM,
+  await enqueueEmail({
     to,
     subject,
     headers: listUnsubscribeHeaders(unsubscribeUrl),
     html:    eventReminderHtml({ recipientName, eventTitle, whenLabel, whenAbsolute, location, eventUrl, lead, unsubscribeUrl }),
     text:    eventReminderText({ eventTitle, whenLabel, whenAbsolute, location, eventUrl, lead, unsubscribeUrl }),
   })
-
-  if (error) {
-    console.error('[email] Failed to send event reminder:', error)
-  }
 }
 
 
@@ -182,9 +182,6 @@ export async function sendDispatchNotificationEmail(params: {
   excerpt:            string
   dispatchUrl:        string
 }) {
-  const client = getClient()
-  if (!client) return
-
   const { to, recipientName, recipientProfileId, authorName, dispatchTitle, excerpt, dispatchUrl } = params
 
   const unsubscribeUrl = buildUnsubscribeUrl({
@@ -193,18 +190,13 @@ export async function sendDispatchNotificationEmail(params: {
     category:  'dispatches',
   })
 
-  const { error } = await client.emails.send({
-    from:    FROM,
+  await enqueueEmail({
     to,
     subject: `📡 New dispatch: ${dispatchTitle}`,
     headers: listUnsubscribeHeaders(unsubscribeUrl),
     html:    dispatchHtml({ recipientName, authorName, dispatchTitle, excerpt, dispatchUrl, unsubscribeUrl }),
     text:    dispatchText({ authorName, dispatchTitle, excerpt, dispatchUrl, unsubscribeUrl }),
   })
-
-  if (error) {
-    console.error('[email] Failed to send dispatch notification email:', error)
-  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

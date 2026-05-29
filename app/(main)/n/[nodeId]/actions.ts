@@ -10,6 +10,7 @@ export interface ClaimResult {
   ok: boolean
   reason?: string
   zapsAwarded?: number
+  offerTitle?: string | null
 }
 
 export async function claimNode(nodeId: string): Promise<ClaimResult> {
@@ -17,5 +18,10 @@ export async function claimNode(nodeId: string): Promise<ClaimResult> {
   if (!profileId) return { ok: false, reason: 'not_signed_in' }
 
   const result = await captureNode({ nodeId, actorProfileId: profileId })
-  return { ok: result.ok, reason: result.reason, zapsAwarded: result.zapsAwarded }
+  return {
+    ok: result.ok,
+    reason: result.reason,
+    zapsAwarded: result.zapsAwarded,
+    offerTitle: result.offerTitle,
+  }
 }

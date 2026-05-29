@@ -10,6 +10,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { processGamificationEvent, type GamificationEvent } from '@/lib/achievements'
+import { runAutomationsForEvent } from '@/lib/automations'
 import type { Json } from '@/lib/database.types'
 
 export type EngagementSource = 'web' | 'task' | 'qr' | 'nfc' | 'geo' | 'p2p' | 'system'
@@ -72,6 +73,16 @@ export async function recordEngagementEvent(
 
   // Run the existing rules engine only on the first insert, when supplied.
   if (recorded && gamificationEvent) await processGamificationEvent(gamificationEvent)
+
+  // Automations subscribe to the event backbone (ADR-025). Guarded so a rule
+  // failure never breaks event recording.
+  if (recorded) {
+    try {
+      await runAutomationsForEvent(eventType, actorProfileId)
+    } catch (err) {
+      console.error('[automations] evaluation failed:', err)
+    }
+  }
 
   return { recorded }
 }

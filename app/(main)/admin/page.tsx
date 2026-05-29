@@ -1,7 +1,8 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { Users, Layers, Building2, Plus, CalendarDays, Megaphone, ShieldAlert } from 'lucide-react'
+import { Users, Layers, Building2, Plus, CalendarDays, Megaphone, ShieldAlert, Zap, Activity, TrendingUp } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getPracticeMetrics } from '@/lib/analytics/practice'
 import { createClient } from '@/lib/supabase/server'
 import { AdminCreateMenu } from './create-menu'
 import { StatusBadge } from '@/components/groups/status-badge'
@@ -49,6 +50,9 @@ export default async function AdminPage() {
     admin.from('dispatches').select('id', { count: 'exact', head: true }),
   ])
 
+  // North Star: verified-practice metrics off the event backbone.
+  const practice = await getPracticeMetrics()
+
   return (
     <div>
       <div className="flex items-end justify-between gap-4 mb-6">
@@ -74,6 +78,22 @@ export default async function AdminPage() {
             <StatCard label="Circles"     value={circlesCount.count ?? 0}    Icon={Layers} />
             <StatCard label="Events"      value={eventsCount.count ?? 0}     Icon={CalendarDays} />
             <StatCard label="Dispatches"  value={dispatchesCount.count ?? 0} Icon={Megaphone} />
+          </div>
+
+          {/* North Star: verified practice */}
+          <div className="mt-4">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-subtle mb-2">
+              North Star · Verified practice
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <StatCard label="Weekly Active Members" value={practice.wam} Icon={Zap} />
+              <StatCard label="Practices this week" value={practice.verifiedThisWeek} Icon={Activity} />
+              <StatCard
+                label={`Activation 7d (${practice.activated}/${practice.newMembers})`}
+                value={`${Math.round(practice.activationRate * 100)}%`}
+                Icon={TrendingUp}
+              />
+            </div>
           </div>
 
           {role === 'janitor' && <JanitorPanel profileId={profile.id} />}
