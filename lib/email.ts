@@ -13,6 +13,7 @@
 import { Resend } from 'resend'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import type { NotificationCategory } from '@/lib/notification-preferences'
+import { enqueue } from '@/lib/queue/outbox'
 
 const apiKey  = process.env.RESEND_API_KEY
 const FROM    = process.env.EMAIL_FROM ?? 'Frequency <noreply@hellofrequency.com>'
@@ -30,10 +31,36 @@ function listUnsubscribeHeaders(unsubscribeUrl: string): Record<string, string> 
 
 function getClient(): Resend | null {
   if (!apiKey) {
-    console.warn('[email] RESEND_API_KEY is not set — email sending is disabled.')
+    console.warn('[email] RESEND_API_KEY is not set, email sending is disabled.')
     return null
   }
   return new Resend(apiKey)
+}
+
+// ── The spine: queue all email, never send inline (ADR-026) ────────────────────
+
+export interface EmailPayload {
+  to: string
+  subject: string
+  html: string
+  text?: string
+}
+
+// Low-level send, called by the queue's `email` handler. Throws on provider error
+// so the outbox retries; no-ops when RESEND_API_KEY is unset.
+export async function sendRawEmail(payload: EmailPayload): Promise<void> {
+  const client = getClient()
+  if (!client) return
+  const { error } = await client.emails.send({ from: FROM, ...payload })
+  if (error) {
+    throw new Error(`[email] send failed: ${typeof error === 'string' ? error : JSON.stringify(error)}`)
+  }
+}
+
+// Enqueue an email onto the durable outbox. Drained by /api/cron/process-queue
+// with retries + backoff. New email paths should go through this, not inline.
+export async function enqueueEmail(payload: EmailPayload): Promise<void> {
+  await enqueue('email', payload as unknown as Record<string, unknown>)
 }
 
 // ── Welcome email ─────────────────────────────────────────────────────────────
@@ -68,22 +95,14 @@ export async function sendInviteEmail(params: {
   circleName: string
   inviteUrl: string
 }) {
-  const client = getClient()
-  if (!client) return
-
   const { to, inviterName, circleName, inviteUrl } = params
 
-  const { error } = await client.emails.send({
-    from:    FROM,
+  await enqueueEmail({
     to,
     subject: `${inviterName} invited you to join ${circleName} on Frequency`,
     html:    inviteHtml({ inviterName, circleName, inviteUrl }),
     text:    inviteText({ inviterName, circleName, inviteUrl }),
   })
-
-  if (error) {
-    console.error('[email] Failed to send invite email:', error)
-  }
 }
 
 // ── Weekly community digest ───────────────────────────────────────────────────

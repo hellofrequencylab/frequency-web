@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 import { processQueue, type JobHandler } from '@/lib/queue/outbox'
 import { sendPushToProfile } from '@/lib/push'
+import { sendRawEmail } from '@/lib/email'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,8 +16,17 @@ const handlers: Record<string, JobHandler> = {
     if (!profileId || !p.payload) return
     await sendPushToProfile(profileId, p.payload as Parameters<typeof sendPushToProfile>[1])
   },
-  // email / fanout / leaderboard handlers register here as those flows move to
-  // the queue (currently they run inline).
+  // Durable email (ADR-026). payload: { to, subject, html, text? }.
+  email: async (p) => {
+    if (!p.to || !p.subject) return
+    await sendRawEmail({
+      to: p.to as string,
+      subject: p.subject as string,
+      html: (p.html as string) ?? '',
+      text: typeof p.text === 'string' ? p.text : undefined,
+    })
+  },
+  // fanout / leaderboard handlers register here as those flows move to the queue.
 }
 
 export async function GET(req: NextRequest) {
