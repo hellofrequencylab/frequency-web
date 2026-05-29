@@ -47,6 +47,33 @@ these tables mean.
 `get_my_role`, `public_circles`, `public_circle_by_id`, `public_events`,
 `public_event_by_slug`, `public_posts`, `search_handles_public`
 
+## The `profiles` table — universal entity record
+
+`profiles` is the single identity row for **every** entity, not just logged-in
+members: members, vendors, performers, service providers, collaborators, officials.
+Key design columns beyond the obvious (`display_name`, `handle`, `avatar_url`, `bio`):
+
+| Column | Type | Purpose |
+|---|---|---|
+| `auth_user_id` | `uuid` **nullable** | Supabase auth link. **Null is valid** — a café or official can exist in the directory with no login. |
+| `entity_types` | `text[]` | What kind(s) of entity this is (`member`, `vendor`, `performer`, `service`, …). A somatic healer who is also crew is **one** row with two tags — no duplicate records. |
+| `community_role` | `community_role` enum | Separate axis from `entity_types`. A performer may have no role; a mentor may also be a vendor. |
+| `meta` | `jsonb` | Type-specific data (vendor hours, performer genres, booking contact) until a type is complex enough to warrant its own table. No premature normalization. |
+| `nexus_region_id` | `uuid` FK → `nexus_regions` | **Legacy** geography link (see below). Still read by the `get_my_region_id()` RLS helper. |
+| `embedding` | `vector(384)` | Reserved for semantic search (all-MiniLM-L6-v2). Column exists; embedding-based search is **not yet built** (ROADMAP P6.25). |
+| `is_crew_lead` | `boolean` | Elevated within a small group. |
+| `is_active` | `boolean` | Soft-deactivation — records are deactivated, not hard-deleted, to preserve history. |
+
+Cosmetic (`profile_border/flair/theme`), presence (`last_seen_at`), and moderation
+(`suspended_*`) columns are added by later migrations (gem store, presence, moderation).
+
+> **Legacy tables — present but being phased out:** `nexus_regions` (self-referencing
+> geography tree) still exists and backs `get_my_region_id()`. The *current* place
+> model is `outposts → nexuses → hubs → circles` (see GLOSSARY). The original
+> `groups` / `group_memberships` tables were **dropped** in
+> `20240102000000_hierarchy_v2.sql` and replaced by `circles` / `memberships` — do
+> not reference them.
+
 ## Key enums
 
 | Enum | Values |
