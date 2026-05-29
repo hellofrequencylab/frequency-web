@@ -113,6 +113,26 @@ secret for local runs.
 | `digest.ts` | Weekly digest assembly |
 | `discover.ts` / `jsonld.ts` / `site.ts` | Public SEO/AEO layer |
 
+## Styling & design tokens (DAWN)
+
+`app/globals.css` is the **single source of truth** for color. Raw hex appears
+*only* there. The flow is:
+
+1. `:root` (light) and `.dark` define semantic CSS variables (`--color-canvas`,
+   `--color-text`, `--color-primary`, `--color-success`, `--color-info`, …).
+2. The `@theme inline` block maps those into Tailwind v4 utilities, so
+   components use classes like `bg-surface`, `text-muted`, `bg-info-bg text-info`.
+
+Semantic families: surfaces (`canvas`/`surface`/`surface-elevated`), `border`,
+text (`text`/`muted`/`subtle`), brand (`primary`, `signal`), states (`success`,
+`warning`, `danger`, `info`), and the 10-color `rank-*` spectrum.
+
+**Adding a state color** means editing globals.css in three places — light
+`:root`, `.dark`, and `@theme inline` — or the Tailwind utility won't be
+generated. Tailwind v4 only emits a utility when its class string appears in
+scanned source. After adding a token, restart the dev server / clear `.next` if
+the new utility doesn't show up (the cache can serve a stale stylesheet).
+
 ## Local development
 
 ```
