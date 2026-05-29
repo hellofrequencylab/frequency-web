@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Composer } from '@/components/feed/composer'
 import { FeedList } from '@/components/feed/feed-list'
 import { CreateMenu } from '@/components/feed/create-menu'
+import { StreamTemplate } from '@/components/templates/stream-template'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
@@ -55,17 +56,11 @@ export default async function FeedPage({
 
   return (
     <div className="max-w-2xl mx-auto w-full">
-
-      {/* Header */}
-      <div className="flex items-end justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-text mb-1">Feed</h1>
-          <p className="text-sm text-muted leading-relaxed max-w-2xl">
-            {hasCircle ? "Here's what your circles are up to right now." : "What's happening across the community."}
-          </p>
-        </div>
-        <CreateMenu role={myRole} />
-      </div>
+      <StreamTemplate
+        title="Feed"
+        description={hasCircle ? "Here's what your circles are up to right now." : "What's happening across the community."}
+        action={<CreateMenu role={myRole} />}
+      >
 
       {/* Composer */}
       {composerScopeId && (
@@ -123,6 +118,7 @@ export default async function FeedPage({
           viewerRole={myRole}
         />
       </section>
+      </StreamTemplate>
     </div>
   )
 }
