@@ -124,7 +124,8 @@ staff. It acts **only** through the spine and a bounded tool surface (`query_con
 - **One event backbone** — gamification, notifications, and CRM never invent their
   own event log.
 - **Add a real test harness** around the spine, consent, and suppression **before**
-  the agent acts autonomously. (Today: tsc + eslint only, no test framework.)
+  the agent acts autonomously. (Vitest is in: `npm test` covers the pure authz core
+  + currency routing; spine/consent/suppression tests with mocks still to add.)
 - **Deliverability is production-critical** — subdomain reputation isolation +
   monitoring; one incident can poison member email.
 - **Privacy/trust is existential** — health + emotional + location data: data
