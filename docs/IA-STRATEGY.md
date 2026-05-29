@@ -297,18 +297,24 @@ Frequency runs **two structures** that share the same words but play different
 roles. A member's journey is the **crossover** between them: virtual entry →
 local commitment → embodied gathering.
 
-### A. In-person: the church model (a nested gathering ladder)
+### A. In-person: the church *growth* model (a nested gathering ladder)
 
-- **Frequency Lab** — the physical anchor: the main facility in a neighborhood.
-  Circles form around it. (The church *building*.) *New concept — does not fit
-  today's schema cleanly; see open questions.*
-- **Circle** — the small group, weekly practice; orbits a Lab if in-person.
-- **Hub** — the *neighborhood*: the cluster of circles around a Lab, **and itself
+> **Secular by design.** We borrow *how churches grow and plant new locations* —
+> the cell-multiplication mechanics — and nothing else. No religious framing, no
+> religious role names. Frequency is not religious or religiously affiliated.
+
+- **Frequency Lab** — an in-person **third space** (a physical venue); nodes in a
+  worldwide network. A Lab is **earned, not pre-placed**: it sprouts up where
+  demand is already proven (§D2). It's the **physical graduation of a mature
+  neighborhood (Hub)**, not a container you slot circles into. Circles and Hub
+  gatherings come first; the Lab is what their growth earns.
+- **Circle** — the small group, weekly practice; meets at/near a Lab if in-person.
+- **Hub** — the *neighborhood*: the cluster of circles in a locale, **and itself
   a gathering body** — community meetups, parties, bigger events.
 - **Nexus** — the *whole area*: gathers quarterly — galas, big events.
-- **Mentor** — *pastoral, not structural.* Cares for the guides, makes sure each
-  guide's circles are healthy. (The authz ladder is unchanged; the *human* role
-  is shepherd, not operations manager.)
+- **Mentor** — an **oversight/support role, not an operational one.** Looks after
+  the **guides** (and through them the health of all their circles); doesn't run
+  day-to-day operations. Plain secular language; the authz ladder is unchanged.
 
 > Insight: **every tier is a gathering body with its own cadence** — Circle
 > (weekly) → Hub (neighborhood meetup) → Nexus (quarterly gala). This is why the
@@ -348,6 +354,33 @@ Both produce circles; circles cluster into Hubs; Hubs into Nexuses. Growth is
 **bottom-up**; Hubs/Nexuses are the *emergent result*, surfaced to members as
 **places + events**, never as nav.
 
+### D2. The growth engine *is* the marketing engine
+
+For in-person circles especially, splitting/growth is **how the message spreads
+and how we prove demand for a third space before spending on marketing or real
+estate.** A neighborhood whose in-person circles keep filling and splitting is a
+*validated market* — and that signal is what justifies opening a physical
+**Frequency Lab** there. Build the space (and market it) *after* the need is
+proven, not before.
+
+The platform's job is to make that demand **legible**: a "this neighborhood is
+ready for a Lab" signal — a demand heatmap of growing/splitting in-person circles
+(ties to ROADMAP P3.14 map discovery; `circles` already has `lat/lng/city`).
+This is a leadership/admin surface, not member nav.
+
+### E. Discovery & entry (the browse-first onboarding)
+
+- **Browse-first onboarding.** A newcomer explores **Topics/Interests** and is
+  prompted to either **join a circle** or **start a circle** straight from a
+  topic — low-commitment entry, exactly the progressive-disclosure pattern.
+- **Find circles by need.** `/circles` should let members **filter by multiple
+  topics** (multi-select) plus mode (*in-person near me* / *virtual*) to find
+  circles that fit.
+  - ⚠️ *Schema implication:* today a circle declares **one** topic
+    (`circles.topical_channel_id`). Multi-topic discovery wants either a
+    **many-to-many** circle↔topic tagging or a **primary + secondary tags**
+    model. See open question #5.
+
 ### How this lines up with the prior strategy
 
 - ✅ **Hubs/Nexuses contextual-only** — *strengthened.* Members meet them as *the
@@ -363,13 +396,19 @@ Both produce circles; circles cluster into Hubs; Hubs into Nexuses. Growth is
 
 ### Open structural questions (resolve before building)
 
-1. **Where does "Frequency Lab" live?** A *neighborhood venue* anchoring a Hub —
-   but today's `outposts` sits *above* Nexus (top of the place tree), so it can't
-   be reused as-is. Options: (a) new `labs`/venue entity attached to a Hub;
-   (b) reposition/rename Outpost. **Recommend (a).**
+1. **What is a "Frequency Lab" in the schema?** A physical third-space venue a
+   neighborhood *earns* once demand is proven (§D2) — the graduation of a Hub,
+   **not** the `outposts` concept (which sits above Nexus). Recommend a
+   `labs`/venue entity linked to a Hub, created when demand thresholds are met.
 2. **Hub- and Nexus-scoped events** (meetups, galas) — do `events.scope_type`
    values support hub/nexus? If not, that's the gap the church model requires.
 3. **Program model** — confirm Interest-level template → circle-level instance
    (P2.11/P2.12). "Add to Circle" = instantiate program + set adopter as host.
-4. **Mentor copy** — reflect the pastoral framing in role descriptions / future
-   host-guide dashboards (P5), without changing authz.
+4. **Mentor copy** — describe as oversight/support of guides (non-operational),
+   in plain secular language, without changing authz.
+5. **Circle ↔ topic cardinality.** One topic per circle today vs. the multi-topic
+   discovery the onboarding wants. Decide *single-primary + tags* or full
+   *many-to-many* (§E).
+6. **Demand signal** — define what "proven demand" means numerically (e.g. N
+   active in-person circles + M splits within a radius) so the "ready for a Lab"
+   surface (§D2) can be built later.
