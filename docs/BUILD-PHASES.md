@@ -96,9 +96,11 @@ PAGE-FRAMEWORK.
       (`components/modules/module-card.tsx`) + capability gating
       (`components/ui/can.tsx`). **Inline admin WIRED + verified live:** the circle
       page gates Host Tools, Circle Health, edit/announce, and feed moderation by
-      `circle.editSettings` (host + janitors + area guides/mentors). **Still
-      pending:** the slot registry + scope-aware rail; **profile edit-in-place**
-      (needs a new admin route — janitors can't yet edit *others'* profiles).
+      `circle.editSettings` (host + janitors + area guides/mentors). **Profile
+      edit-in-place DONE:** owners edit via settings; janitors get an inline
+      moderator edit (name + bio) on any profile, gated by `profile.edit`
+      (`moderate-profile-button` + capability-checked `moderateUpdateProfile`).
+      **Still pending:** the slot registry + scope-aware right rail.
 
 **Done when:** every main page renders via one of the 3 templates; inline actions
 appear by capability (host edits inline, member sees content only); a newcomer can
