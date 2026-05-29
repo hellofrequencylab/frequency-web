@@ -140,8 +140,10 @@ ENGAGEMENT-ARCHITECTURE.
       capture → a reward event waits on the reward economy (product).
 - [~] **Physical nodes / tags** registry — `nodes` + `captures` + RLS
       (migration `20240216000000`); server-mediated (no client reads).
-      **`partners/businesses` module (directory, offers, redemptions) still to
-      build.**
+      **`partners/businesses` module schema DONE** — `partners` + `partner_offers`
+      + `partner_redemptions` + `nodes.partner_id` (migration `20240218000000`);
+      directory/offers public-when-active, redemptions read-own. TS read helpers +
+      redemption-on-capture flow still to wire.
 - [ ] **Async lane** (outbox/queue + workers) for fan-out, fraud scoring, expiry,
       leaderboard recompute.
 - [ ] Realtime **reward feedback** via Supabase Broadcast.
