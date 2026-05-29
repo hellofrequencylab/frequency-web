@@ -13,6 +13,7 @@
       - `20240215000000_engagement_events.sql` (event ledger)
       - `20240216000000_physical_nodes.sql` (nodes + captures + `node_within_range`)
       - `20240217000000_node_zaps_value.sql` (per-node zap reward amount)
+      - `20240218000000_partners_module.sql` (partners + offers + redemptions)
 - [ ] **Regenerate DB types** after applying (the new tables use an untyped client
       view until then): `npx supabase gen types typescript --linked > lib/database.types.ts`,
       then `npx tsc --noEmit`. Optional: once regenerated, drop the
