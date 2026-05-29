@@ -6,6 +6,7 @@ import RightSidebar from '@/components/sidebar/right-sidebar'
 import type { CommunityRole } from '@/components/sidebar/right-sidebar'
 import { getUnreadCount } from '@/app/(main)/notifications/actions'
 import { AchievementToastContainer } from '@/components/achievement-toast'
+import { ZapToastContainer } from '@/components/zap-toast'
 import { PresenceHeartbeat } from '@/components/presence/heartbeat'
 import { PushRegistration } from '@/components/push/registration'
 
@@ -54,6 +55,7 @@ export default async function MainLayout({
     >
       {children}
       <AchievementToastContainer />
+      <ZapToastContainer />
       <PresenceHeartbeat />
       <PushRegistration />
     </AppShell>
