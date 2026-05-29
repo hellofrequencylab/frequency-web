@@ -27,6 +27,7 @@ import {
   X,
   Gem,
   Monitor,
+  Store,
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { NotificationBell } from '@/components/layout/notification-bell'
@@ -52,6 +53,7 @@ const NAV_SECTIONS: {
     { href: '/channels',  label: 'Interests', Icon: Radio },
     { href: '/events',    label: 'Events',    Icon: CalendarDays },
     { href: '/broadcast', label: 'Broadcast', Icon: Megaphone },
+    { href: '/partners',  label: 'Partners',  Icon: Store },
   ] },
   { label: 'Connect', items: [
     { href: '/messages',  label: 'Messages',  Icon: MessageSquare },
