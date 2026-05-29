@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { LayoutDashboard, Users, Megaphone, Workflow, BarChart3, ArrowLeft } from 'lucide-react'
+import { LayoutDashboard, Users, Megaphone, Workflow, BarChart3, Sparkles, ArrowLeft } from 'lucide-react'
 import { requireStaff } from '@/lib/staff'
 
 // The Studio: an admin-gated business cockpit with its own SaaS-style shell
@@ -44,10 +44,14 @@ export default async function StudioLayout({ children }: { children: React.React
             <BarChart3 className="w-4 h-4" />
             Analytics
           </Link>
+          <Link href="/studio/agent" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-muted hover:bg-surface-elevated hover:text-text transition-colors">
+            <Sparkles className="w-4 h-4" />
+            Agent
+          </Link>
           <p className="px-3 pt-3 text-[10px] font-semibold uppercase tracking-wider text-subtle">
             Coming soon
           </p>
-          {['Segments', 'Agent', 'Settings'].map((m) => (
+          {['Segments', 'Settings'].map((m) => (
             <span key={m} className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-subtle/60 cursor-default">
               {m}
             </span>

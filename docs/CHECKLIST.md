@@ -23,6 +23,7 @@
       - `20240222000000_contacts_backfill.sql` (auto-link + backfill contacts) — **new; apply**
       - `20240223000000_campaigns.sql` (marketing campaigns) — **new; apply**
       - `20240224000000_automations.sql` (automation rules engine) — **new; apply**
+      - `20240225000000_agent_actions.sql` (agent action queue) — **new; apply**
 - [ ] **Grant yourself Studio access** (to load `/studio`): after applying, run
       `insert into public.team_members (profile_id, role) select id, 'owner' from public.profiles where handle = 'danieltyack';`
 - [ ] **Configure the Resend webhook** (Phase 6.2): in the Resend dashboard add a
