@@ -41,9 +41,10 @@
 change, not rewrite. **Depends on:** nothing. **Governs:** SCALE-ARCHITECTURE,
 CAPABILITIES-AND-MOBILE.
 
-- [~] Extract shared code into folders (formal Turborepo monorepo when mobile
-      starts): **`lib/core/` created** (`roles.ts`, `capabilities.ts`). Still to
-      add: `contract` (generated types) + `tokens` packages.
+- [x] Extract shared code into folders (formal Turborepo monorepo deferred to
+      mobile, Phase 5): **`lib/core/`** (`roles`, `capabilities`, + the
+      `load-capabilities` server seam), **`lib/contract/`** (presentation-neutral
+      view-model types), **`lib/tokens/`** (cross-platform token plan).
 - [x] Build the **capability resolver** — `lib/core/capabilities.ts`
       (`resolveCapabilities(viewer, scope)`, `can()`), pure + framework-independent;
       plus `lib/core/roles.ts` (single-source `atLeastRole`). tsc clean.
