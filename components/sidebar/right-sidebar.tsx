@@ -6,6 +6,7 @@ import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-rank
 import { CalendarDays, MapPin, Megaphone, Zap, Trophy, Award, Flame, Target, Gem } from 'lucide-react'
 import { GettingStartedChecklist } from '@/components/feed/getting-started'
 import { isOnline, ONLINE_MS } from '@/lib/presence'
+import { WidgetCard } from '@/components/modules/module-card'
 
 export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
@@ -14,33 +15,8 @@ interface RightSidebarProps {
   role: CommunityRole
 }
 
-// ── Widget card shell ─────────────────────────────────────────────────────────
-
-function WidgetCard({
-  title,
-  badge,
-  children,
-}: {
-  title: string
-  badge?: string
-  children: React.ReactNode
-}) {
-  return (
-    <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
-      <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-subtle">
-          {title}
-        </h3>
-        {badge && (
-          <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-surface-elevated text-subtle font-medium">
-            {badge}
-          </span>
-        )}
-      </div>
-      {children}
-    </div>
-  )
-}
+// WidgetCard (the shared module chrome) now lives in
+// components/modules/module-card.tsx — imported above.
 
 // ── Upcoming Events ───────────────────────────────────────────────────────────
 
