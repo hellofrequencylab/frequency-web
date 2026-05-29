@@ -16,7 +16,8 @@ export default async function OnboardingPage() {
     .single()
 
   // Returning user who already finished onboarding.
-  if (profile?.meta?.onboarding_completed) redirect('/feed')
+  const meta = profile?.meta as { onboarding_completed?: boolean } | null
+  if (meta?.onboarding_completed) redirect('/feed')
 
   // Only fetch top-level regions (depth = 0) for the region picker.
   const { data: regions } = await supabase

@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { NotificationPreferences } from '@/lib/notification-preferences'
+import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 // Saves the notification preferences form. Upserts (lazy-create on first
 // save). Push columns are accepted but currently locked-off in the UI;
@@ -11,10 +12,10 @@ import type { NotificationPreferences } from '@/lib/notification-preferences'
 // future P1.4 release can flip them live without another migration.
 export async function saveNotificationPreferences(
   prefs: NotificationPreferences,
-): Promise<{ ok: true } | { ok: false; error: string }> {
+): Promise<ActionResult> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { ok: false, error: 'Not signed in' }
+  if (!user) return fail('Not signed in')
 
   const admin = createAdminClient()
   const { data: profile } = await admin
@@ -23,7 +24,7 @@ export async function saveNotificationPreferences(
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
-  if (!profile) return { ok: false, error: 'No profile' }
+  if (!profile) return fail('No profile')
 
   const { error } = await admin
     .from('notification_preferences')
@@ -32,8 +33,8 @@ export async function saveNotificationPreferences(
       { onConflict: 'profile_id' },
     )
 
-  if (error) return { ok: false, error: error.message }
+  if (error) return fail(error.message)
 
   revalidatePath('/settings/notifications')
-  return { ok: true }
+  return ok()
 }

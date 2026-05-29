@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { reportContent } from '@/app/(main)/feed/report-actions'
+import { isError } from '@/lib/action-result'
 
 type ReportDialogProps = {
   targetType: 'post' | 'dispatch' | 'comment' | 'member' | 'event'
@@ -42,10 +43,10 @@ export function ReportDialog({ targetType, targetId, open, onClose }: ReportDial
     setError(null)
     startTransition(async () => {
       const result = await reportContent(targetType, targetId, reason, details || undefined)
-      if (result.success) {
-        setSubmitted(true)
+      if (isError(result)) {
+        setError(result.error)
       } else {
-        setError(result.error ?? 'Something went wrong')
+        setSubmitted(true)
       }
     })
   }

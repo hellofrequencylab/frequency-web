@@ -7,6 +7,7 @@ import {
   type NotificationCategory,
   type NotificationPreferences,
 } from '@/lib/notification-preferences'
+import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 const VALID_CATEGORIES: NotificationCategory[] = [
   'dispatches', 'events', 'mentions', 'lifecycle',
@@ -22,16 +23,16 @@ export async function processUnsubscribe(params: {
   profileId: string
   category:  string
   token:     string
-}): Promise<{ ok: true; category: NotificationCategory } | { ok: false; error: string }> {
+}): Promise<ActionResult<{ category: NotificationCategory }>> {
   const { profileId, category, token } = params
 
   if (!(VALID_CATEGORIES as string[]).includes(category)) {
-    return { ok: false, error: 'Unknown category.' }
+    return fail('Unknown category.')
   }
   const cat = category as NotificationCategory
 
   if (!verifyUnsubscribeToken(profileId, cat, token)) {
-    return { ok: false, error: 'This unsubscribe link is invalid or expired.' }
+    return fail('This unsubscribe link is invalid or expired.')
   }
 
   const admin = createAdminClient()
@@ -54,8 +55,8 @@ export async function processUnsubscribe(params: {
 
   if (error) {
     console.error('[unsubscribe] upsert:', error.message)
-    return { ok: false, error: 'Could not save your preference. Please try again.' }
+    return fail('Could not save your preference. Please try again.')
   }
 
-  return { ok: true, category: cat }
+  return ok({ category: cat })
 }

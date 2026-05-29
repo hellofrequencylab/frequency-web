@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { Database } from '@/lib/database.types'
 import { Globe } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { InviteMemberCompose } from '@/components/compose/invite-member-compose'
@@ -43,7 +44,7 @@ export default async function DirectoryPage({
     .eq('is_active', true)
     .order('display_name', { ascending: true })
 
-  if (roleFilter) query = query.eq('community_role', roleFilter)
+  if (roleFilter) query = query.eq('community_role', roleFilter as Database['public']['Enums']['community_role'])
 
   const { data: profiles } = await query
 

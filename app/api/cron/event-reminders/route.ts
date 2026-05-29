@@ -11,6 +11,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { Database } from '@/lib/database.types'
 import { sendEventReminderEmail } from '@/lib/email'
 import { shouldSend } from '@/lib/notification-preferences'
 import { sendPushToProfile } from '@/lib/push'
@@ -114,7 +115,7 @@ async function processLead(lead: ReminderLead): Promise<{ events: number; sent: 
         // Fully opted out — stamp so we don't re-evaluate next run.
         await admin
           .from('event_rsvps')
-          .update({ [sentColumn]: new Date().toISOString() })
+          .update({ [sentColumn]: new Date().toISOString() } as Database['public']['Tables']['event_rsvps']['Update'])
           .eq('id', rsvp.id)
         continue
       }
@@ -147,7 +148,7 @@ async function processLead(lead: ReminderLead): Promise<{ events: number; sent: 
 
       await admin
         .from('event_rsvps')
-        .update({ [sentColumn]: new Date().toISOString() })
+        .update({ [sentColumn]: new Date().toISOString() } as Database['public']['Tables']['event_rsvps']['Update'])
         .eq('id', rsvp.id)
 
       sent++

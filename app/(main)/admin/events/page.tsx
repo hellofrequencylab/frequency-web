@@ -38,7 +38,7 @@ export default async function AdminEventsPage() {
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
-  if (!profile || !['host', 'guide', 'mentor', 'janitor'].includes(profile.community_role)) notFound()
+  if (!profile || !['host', 'guide', 'mentor', 'janitor'].includes(profile.community_role ?? '')) notFound()
 
   // Fetch events scoped to circles where user is host
   const { data: hostedCircles } = await admin

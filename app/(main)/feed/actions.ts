@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { Database } from '@/lib/database.types'
 import { getMyProfileId } from '@/lib/auth'
 import { processGamificationEvent, recordStreakActivity } from '@/lib/achievements'
 import { awardGems } from '@/lib/gems'
@@ -40,7 +41,7 @@ export async function createPost(formData: FormData) {
       .select('community_role')
       .eq('id', profileId)
       .maybeSingle()
-    if (!profile || !HOST_PLUS.includes(profile.community_role)) return
+    if (!profile || !HOST_PLUS.includes(profile.community_role ?? '')) return
   }
 
   // Circle-scoped (`group`) posts require active membership in that circle.
@@ -61,8 +62,8 @@ export async function createPost(formData: FormData) {
     author_id: profileId,
     body: body || '',
     scope_id: scopeId,
-    visibility,
-    post_type: postType,
+    visibility: visibility as Database['public']['Tables']['posts']['Insert']['visibility'],
+    post_type: postType as Database['public']['Tables']['posts']['Insert']['post_type'],
     is_pinned: isAnnouncement,
     media_urls: mediaUrls,
   }).select('id').single()
@@ -228,7 +229,7 @@ export async function pinPost(postId: string) {
   if (!profileId) return
   const admin = createAdminClient()
   const { data: profile } = await admin.from('profiles').select('community_role').eq('id', profileId).maybeSingle()
-  if (!profile || !HOST_PLUS.includes(profile.community_role)) return
+  if (!profile || !HOST_PLUS.includes(profile.community_role ?? '')) return
   await admin.from('posts').update({ is_pinned: true }).eq('id', postId)
   revalidatePath('/feed')
 }
@@ -238,7 +239,7 @@ export async function unpinPost(postId: string) {
   if (!profileId) return
   const admin = createAdminClient()
   const { data: profile } = await admin.from('profiles').select('community_role').eq('id', profileId).maybeSingle()
-  if (!profile || !HOST_PLUS.includes(profile.community_role)) return
+  if (!profile || !HOST_PLUS.includes(profile.community_role ?? '')) return
   await admin.from('posts').update({ is_pinned: false }).eq('id', postId)
   revalidatePath('/feed')
 }

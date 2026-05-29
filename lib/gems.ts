@@ -65,7 +65,7 @@ export async function awardGems(
     profile_id: profileId,
     action_type: action,
     amount,
-    metadata: metadata ?? {},
+    metadata: (metadata ?? {}) as Database['public']['Tables']['gem_transactions']['Insert']['metadata'],
   })
 
   if (error) {

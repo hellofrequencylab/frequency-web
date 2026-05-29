@@ -32,7 +32,7 @@ export default async function AdminDispatchesPage() {
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
-  if (!profile || !ADMIN_ROLES.includes(profile.community_role)) notFound()
+  if (!profile || !ADMIN_ROLES.includes(profile.community_role ?? '')) notFound()
   const role = profile.community_role as AdminRole
 
   // Fetch dispatches authored by this user

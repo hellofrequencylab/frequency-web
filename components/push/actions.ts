@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 export type SubscriptionPayload = {
   endpoint:   string
@@ -14,14 +15,14 @@ export type SubscriptionPayload = {
 // (profile_id, endpoint) so re-running is safe.
 export async function saveSubscription(
   sub: SubscriptionPayload,
-): Promise<{ ok: true } | { ok: false; error: string }> {
+): Promise<ActionResult> {
   if (!sub.endpoint || !sub.p256dh || !sub.auth) {
-    return { ok: false, error: 'Incomplete subscription' }
+    return fail('Incomplete subscription')
   }
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { ok: false, error: 'Not signed in' }
+  if (!user) return fail('Not signed in')
 
   const admin = createAdminClient()
   const { data: profile } = await admin
@@ -30,7 +31,7 @@ export async function saveSubscription(
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
-  if (!profile) return { ok: false, error: 'No profile' }
+  if (!profile) return fail('No profile')
 
   const { error } = await admin
     .from('push_subscriptions')
@@ -48,8 +49,8 @@ export async function saveSubscription(
 
   if (error) {
     console.error('[saveSubscription]', error.message)
-    return { ok: false, error: error.message }
+    return fail(error.message)
   }
 
-  return { ok: true }
+  return ok()
 }

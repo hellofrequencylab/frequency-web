@@ -47,7 +47,11 @@ export default async function MainLayout({
   )
 
   return (
-    <AppShell profile={profile} sidebar={sidebar} unreadCount={unreadCount}>
+    <AppShell
+      profile={{ ...profile, community_role: (profile.community_role ?? 'member') as CommunityRole }}
+      sidebar={sidebar}
+      unreadCount={unreadCount}
+    >
       {children}
       <AchievementToastContainer />
       <PresenceHeartbeat />

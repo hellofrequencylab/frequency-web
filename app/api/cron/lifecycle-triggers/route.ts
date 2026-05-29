@@ -50,6 +50,7 @@ export async function GET(req: NextRequest) {
   let day7Count = 0
 
   for (const m of memberships ?? []) {
+    if (!m.joined_at) continue
     const days = daysSince(m.joined_at)
     const profile = m.profile as any
     const circle  = m.circle  as any

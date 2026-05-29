@@ -137,8 +137,8 @@ async function JanitorPanel({ profileId }: { profileId: string }) {
     admin.from('hubs').select('id, name, slug, status').order('name'),
     admin.from('nexuses').select('id, name, slug, status').order('name'),
     admin.from('memberships').select(
-      `id, volunteer_role, joined_at, is_crew_lead,
-       profile:profiles!profile_id ( id, display_name, handle, avatar_url, community_role, current_season_rank, current_season_zaps, season_challenges_complete ),
+      `id, volunteer_role, joined_at,
+       profile:profiles!profile_id ( id, display_name, handle, avatar_url, community_role, current_season_rank, current_season_zaps, season_challenges_complete, is_crew_lead ),
        circle:circles!circle_id ( name )`
     ).eq('status', 'active').order('joined_at', { ascending: true }).limit(200),
   ])
@@ -149,8 +149,8 @@ async function JanitorPanel({ profileId }: { profileId: string }) {
   const rawMembers = membersRes.data ?? []
 
   const typedMembers = rawMembers as unknown as Array<{
-    id: string; volunteer_role: string | null; joined_at: string; is_crew_lead: boolean;
-    profile: { id: string; display_name: string; handle: string; avatar_url: string | null; community_role: string; current_season_rank: string | null; current_season_zaps: number; season_challenges_complete: boolean };
+    id: string; volunteer_role: string | null; joined_at: string;
+    profile: { id: string; display_name: string; handle: string; avatar_url: string | null; community_role: string; current_season_rank: string | null; current_season_zaps: number; season_challenges_complete: boolean; is_crew_lead: boolean | null };
     circle: { name: string } | null;
   }>
 
@@ -163,7 +163,7 @@ async function JanitorPanel({ profileId }: { profileId: string }) {
     role:                     m.profile.community_role as CommunityRole,
     circleName:               m.circle?.name ?? undefined,
     joinedAt:                 m.joined_at,
-    isCrewLead:               m.is_crew_lead ?? false,
+    isCrewLead:               m.profile.is_crew_lead ?? false,
     currentSeasonRank:        (m.profile.current_season_rank ?? undefined) as SeasonRank | undefined,
     currentSeasonZaps:        m.profile.current_season_zaps ?? 0,
     seasonChallengesComplete: m.profile.season_challenges_complete ?? false,
@@ -246,8 +246,8 @@ async function HostPanel({ profileId }: { profileId: string }) {
   const { data: rawMembers } = await admin
     .from('memberships')
     .select(
-      `id, volunteer_role, joined_at, is_crew_lead,
-       profile:profiles!profile_id ( id, display_name, handle, avatar_url, community_role, current_season_rank, current_season_zaps, season_challenges_complete ),
+      `id, volunteer_role, joined_at,
+       profile:profiles!profile_id ( id, display_name, handle, avatar_url, community_role, current_season_rank, current_season_zaps, season_challenges_complete, is_crew_lead ),
        circle:circles!circle_id ( name )`
     )
     .in('circle_id', circleIds.length > 0 ? circleIds : ['__none__'])
@@ -255,8 +255,8 @@ async function HostPanel({ profileId }: { profileId: string }) {
     .order('joined_at', { ascending: true })
 
   type MembershipRow = {
-    id: string; volunteer_role: string | null; joined_at: string; is_crew_lead: boolean;
-    profile: { id: string; display_name: string; handle: string; avatar_url: string | null; community_role: string; current_season_rank: string | null; current_season_zaps: number; season_challenges_complete: boolean };
+    id: string; volunteer_role: string | null; joined_at: string;
+    profile: { id: string; display_name: string; handle: string; avatar_url: string | null; community_role: string; current_season_rank: string | null; current_season_zaps: number; season_challenges_complete: boolean; is_crew_lead: boolean | null };
     circle: { name: string } | null;
   }
   const hostMembers = (rawMembers ?? []) as unknown as MembershipRow[]
@@ -269,7 +269,7 @@ async function HostPanel({ profileId }: { profileId: string }) {
     role:                     m.profile.community_role as CommunityRole,
     circleName:               m.circle?.name ?? undefined,
     joinedAt:                 m.joined_at,
-    isCrewLead:               m.is_crew_lead ?? false,
+    isCrewLead:               m.profile.is_crew_lead ?? false,
     currentSeasonRank:        (m.profile.current_season_rank ?? undefined) as SeasonRank | undefined,
     currentSeasonZaps:        m.profile.current_season_zaps ?? 0,
     seasonChallengesComplete: m.profile.season_challenges_complete ?? false,
@@ -376,8 +376,8 @@ async function GuidePanel({ profileId }: { profileId: string }) {
   const { data: rawMembers } = await admin
     .from('memberships')
     .select(
-      `id, volunteer_role, joined_at, is_crew_lead,
-       profile:profiles!profile_id ( id, display_name, handle, avatar_url, community_role, current_season_rank, current_season_zaps, season_challenges_complete ),
+      `id, volunteer_role, joined_at,
+       profile:profiles!profile_id ( id, display_name, handle, avatar_url, community_role, current_season_rank, current_season_zaps, season_challenges_complete, is_crew_lead ),
        circle:circles!circle_id ( name )`
     )
     .in('circle_id', allCircleIds.length > 0 ? allCircleIds : ['__none__'])
@@ -385,8 +385,8 @@ async function GuidePanel({ profileId }: { profileId: string }) {
     .order('joined_at', { ascending: true })
 
   type GuideMemberRow = {
-    id: string; volunteer_role: string | null; joined_at: string; is_crew_lead: boolean;
-    profile: { id: string; display_name: string; handle: string; avatar_url: string | null; community_role: string; current_season_rank: string | null; current_season_zaps: number; season_challenges_complete: boolean };
+    id: string; volunteer_role: string | null; joined_at: string;
+    profile: { id: string; display_name: string; handle: string; avatar_url: string | null; community_role: string; current_season_rank: string | null; current_season_zaps: number; season_challenges_complete: boolean; is_crew_lead: boolean | null };
     circle: { name: string } | null;
   }
   const guideMembers = (rawMembers ?? []) as unknown as GuideMemberRow[]
@@ -399,7 +399,7 @@ async function GuidePanel({ profileId }: { profileId: string }) {
     role:                     m.profile.community_role as CommunityRole,
     circleName:               m.circle?.name ?? undefined,
     joinedAt:                 m.joined_at,
-    isCrewLead:               m.is_crew_lead ?? false,
+    isCrewLead:               m.profile.is_crew_lead ?? false,
     currentSeasonRank:        (m.profile.current_season_rank ?? undefined) as SeasonRank | undefined,
     currentSeasonZaps:        m.profile.current_season_zaps ?? 0,
     seasonChallengesComplete: m.profile.season_challenges_complete ?? false,
@@ -546,8 +546,8 @@ async function MentorPanel({ profileId }: { profileId: string }) {
   const { data: rawMembers } = await admin
     .from('memberships')
     .select(
-      `id, volunteer_role, joined_at, is_crew_lead,
-       profile:profiles!profile_id ( id, display_name, handle, avatar_url, community_role, current_season_rank, current_season_zaps, season_challenges_complete ),
+      `id, volunteer_role, joined_at,
+       profile:profiles!profile_id ( id, display_name, handle, avatar_url, community_role, current_season_rank, current_season_zaps, season_challenges_complete, is_crew_lead ),
        circle:circles!circle_id ( name )`
     )
     .in('circle_id', allCircleIds.length > 0 ? allCircleIds : ['__none__'])
@@ -555,8 +555,8 @@ async function MentorPanel({ profileId }: { profileId: string }) {
     .order('joined_at', { ascending: true })
 
   type MentorMemberRow = {
-    id: string; volunteer_role: string | null; joined_at: string; is_crew_lead: boolean;
-    profile: { id: string; display_name: string; handle: string; avatar_url: string | null; community_role: string; current_season_rank: string | null; current_season_zaps: number; season_challenges_complete: boolean };
+    id: string; volunteer_role: string | null; joined_at: string;
+    profile: { id: string; display_name: string; handle: string; avatar_url: string | null; community_role: string; current_season_rank: string | null; current_season_zaps: number; season_challenges_complete: boolean; is_crew_lead: boolean | null };
     circle: { name: string } | null;
   }
   const mentorMembers = (rawMembers ?? []) as unknown as MentorMemberRow[]
@@ -569,7 +569,7 @@ async function MentorPanel({ profileId }: { profileId: string }) {
     role:                     m.profile.community_role as CommunityRole,
     circleName:               m.circle?.name ?? undefined,
     joinedAt:                 m.joined_at,
-    isCrewLead:               m.is_crew_lead ?? false,
+    isCrewLead:               m.profile.is_crew_lead ?? false,
     currentSeasonRank:        (m.profile.current_season_rank ?? undefined) as SeasonRank | undefined,
     currentSeasonZaps:        m.profile.current_season_zaps ?? 0,
     seasonChallengesComplete: m.profile.season_challenges_complete ?? false,

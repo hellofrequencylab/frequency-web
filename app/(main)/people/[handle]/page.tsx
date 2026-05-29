@@ -108,7 +108,7 @@ export default async function ProfilePage({
   }
 
   const [zapsResult, completionsCountResult, postsCountResult, circlesResult, channelsResult, eventsResult, dispatchesResult] = await Promise.all([
-    admin.from('crew_completions').select('points_earned').eq('profile_id', profileId),
+    admin.from('crew_completions').select('zaps_earned').eq('profile_id', profileId),
     admin.from('crew_completions').select('id', { count: 'exact', head: true }).eq('profile_id', profileId),
     admin.from('posts').select('id', { count: 'exact', head: true }).eq('author_id', profileId).is('parent_id', null).is('hidden_at', null),
     admin.from('memberships').select('circles!circle_id ( id, name, slug )').eq('profile_id', profileId).eq('status', 'active'),
@@ -117,7 +117,7 @@ export default async function ProfilePage({
     admin.from('dispatches').select('id, title, published_at, audience_scope').eq('author_id', profileId).eq('status', 'published').is('hidden_at', null).order('published_at', { ascending: false }).limit(3),
   ])
 
-  const totalZaps = (zapsResult.data ?? []).reduce((sum: number, r: { points_earned: number }) => sum + (r.points_earned ?? 0), 0)
+  const totalZaps = (zapsResult.data ?? []).reduce((sum: number, r: { zaps_earned: number }) => sum + (r.zaps_earned ?? 0), 0)
   const tasksCompleted = completionsCountResult.count ?? 0
   const postCount = postsCountResult.count ?? 0
 

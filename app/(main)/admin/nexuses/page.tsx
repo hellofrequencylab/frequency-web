@@ -53,6 +53,11 @@ export default async function AdminNexusesPage() {
     .eq('is_active', true)
     .order('display_name')
 
+  const { data: outposts } = await admin
+    .from('outposts')
+    .select('id, name')
+    .order('name')
+
   return (
     <div>
       <div className="flex items-end justify-between gap-4 mb-6">
@@ -62,7 +67,7 @@ export default async function AdminNexusesPage() {
             Top-level geographic groupings. Each nexus contains hubs, which contain circles.
           </p>
         </div>
-        <NewNexusCompose />
+        <NewNexusCompose outposts={outposts ?? []} />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">

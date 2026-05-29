@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 async function getMyProfileId(): Promise<string | null> {
   const supabase = await createClient()
@@ -18,12 +19,9 @@ async function getMyProfileId(): Promise<string | null> {
   return data?.id ?? null
 }
 
-export async function redeemItem(itemId: string): Promise<{
-  success: boolean
-  error?: string
-}> {
+export async function redeemItem(itemId: string): Promise<ActionResult> {
   const profileId = await getMyProfileId()
-  if (!profileId) return { success: false, error: 'Not authenticated' }
+  if (!profileId) return fail('Not authenticated')
 
   const admin = createAdminClient()
 
@@ -38,13 +36,13 @@ export async function redeemItem(itemId: string): Promise<{
       .maybeSingle(),
   ])
 
-  if (!item) return { success: false, error: 'Item not found' }
-  if (!item.is_active) return { success: false, error: 'Item is no longer available' }
-  if (item.stock !== null && item.stock <= 0) return { success: false, error: 'Out of stock' }
+  if (!item) return fail('Item not found')
+  if (!item.is_active) return fail('Item is no longer available')
+  if (item.stock !== null && item.stock <= 0) return fail('Out of stock')
 
   const gems = (profile as any)?.lifetime_gems ?? 0
   if (gems < item.gem_cost) {
-    return { success: false, error: `Not enough gems. You need ${item.gem_cost - gems} more.` }
+    return fail(`Not enough gems. You need ${item.gem_cost - gems} more.`)
   }
 
   // Check if already purchased (for non-stackable items like cosmetics/titles)
@@ -56,7 +54,7 @@ export async function redeemItem(itemId: string): Promise<{
       .eq('item_id', itemId)
       .maybeSingle()
 
-    if (existing) return { success: false, error: 'You already own this item' }
+    if (existing) return fail('You already own this item')
   }
 
   const { error } = await admin.from('store_redemptions').insert({
@@ -66,7 +64,7 @@ export async function redeemItem(itemId: string): Promise<{
     metadata: item.metadata,
   })
 
-  if (error) return { success: false, error: error.message }
+  if (error) return fail(error.message)
 
   // Apply cosmetic effects
   const meta = item.metadata as any
@@ -87,7 +85,7 @@ export async function redeemItem(itemId: string): Promise<{
   revalidatePath('/crew/store')
   revalidatePath('/crew')
   revalidatePath('/people', 'layout')
-  return { success: true }
+  return ok()
 }
 
 export async function equipCosmetic(type: 'border' | 'flair' | 'title', value: string | null) {

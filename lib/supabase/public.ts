@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
+import type { Database } from '@/lib/database.types'
 
 // Cookieless anon client for PUBLIC reads (the /discover pages, sitemap).
 //
@@ -9,7 +10,7 @@ import { createServerClient } from '@supabase/ssr'
 // the column-safe public_* RPCs this guarantees no logged-out reader ever sees
 // more than the anon policy allows.
 export function createPublicClient() {
-  return createServerClient(
+  return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {

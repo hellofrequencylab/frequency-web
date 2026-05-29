@@ -4,6 +4,7 @@ import { randomBytes } from 'crypto'
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import type { Database } from '@/lib/database.types'
 import { sendDispatchNotificationEmail } from '@/lib/email'
 import { shouldSend } from '@/lib/notification-preferences'
 import { sendPushToProfile } from '@/lib/push'
@@ -57,7 +58,7 @@ export async function updateMemberProfile(profileId: string, fd: FormData) {
   if (!caller || !hasRole(caller.community_role, 'janitor')) throw new Error('Unauthorized')
   const admin = createAdminClient()
 
-  const updates: Record<string, string | null> = {}
+  const updates: Database['public']['Tables']['profiles']['Update'] = {}
   const name = (fd.get('display_name') as string)?.trim()
   const handle = (fd.get('handle') as string)?.trim()
   const bio = (fd.get('bio') as string)?.trim()
@@ -154,10 +155,10 @@ export async function createCircle(fd: FormData) {
 
   const name    = (fd.get('name') as string).trim()
   const about   = (fd.get('about') as string)?.trim() || null
-  const type    = (fd.get('type') as string) || 'in-person'
+  const type    = ((fd.get('type') as string) || 'in-person') as Database['public']['Enums']['circle_type']
   const cap     = parseInt(fd.get('member_cap') as string) || 12
   const hub_id  = (fd.get('hub_id') as string) || null
-  const status  = (fd.get('status') as string) || 'forming'
+  const status  = ((fd.get('status') as string) || 'forming') as Database['public']['Enums']['group_status']
   const host_id = (fd.get('host_id') as string) || caller.id
   let slug      = slugify(name)
 
@@ -199,10 +200,10 @@ export async function updateCircle(id: string, fd: FormData) {
   const { error } = await admin.from('circles').update({
     name:       (fd.get('name') as string).trim(),
     about:      (fd.get('about') as string)?.trim() || null,
-    type:       fd.get('type') as string,
+    type:       fd.get('type') as Database['public']['Enums']['circle_type'],
     member_cap: parseInt(fd.get('member_cap') as string) || 12,
     hub_id:     (fd.get('hub_id') as string) || null,
-    status:     fd.get('status') as string,
+    status:     fd.get('status') as Database['public']['Enums']['group_status'],
     host_id:    (fd.get('host_id') as string) || caller.id,
   }).eq('id', id)
   if (error) throw new Error(error.message)
@@ -289,7 +290,7 @@ export async function joinViaInviteLink(token: string): Promise<{ circleId: stri
 
   // Check not already a member
   const { data: existing } = await admin
-    .from('circle_memberships')
+    .from('memberships')
     .select('id')
     .eq('circle_id', link.circle_id)
     .eq('profile_id', profile.id)
@@ -348,7 +349,7 @@ export async function createHub(fd: FormData) {
 
   const name     = (fd.get('name') as string).trim()
   const nexus_id = (fd.get('nexus_id') as string) || null
-  const status   = (fd.get('status') as string) || 'forming'
+  const status   = ((fd.get('status') as string) || 'forming') as Database['public']['Enums']['group_status']
   const guide_id = (fd.get('guide_id') as string) || caller.id
   let slug       = slugify(name)
 
@@ -368,7 +369,7 @@ export async function updateHub(id: string, fd: FormData) {
   const { error } = await admin.from('hubs').update({
     name:     (fd.get('name') as string).trim(),
     nexus_id: (fd.get('nexus_id') as string) || null,
-    status:   fd.get('status') as string,
+    status:   fd.get('status') as Database['public']['Enums']['group_status'],
     guide_id: (fd.get('guide_id') as string) || caller.id,
   }).eq('id', id)
   if (error) throw new Error(error.message)
@@ -381,17 +382,19 @@ export async function createNexus(fd: FormData) {
   const caller = await getCallerProfile()
   if (!caller || !hasRole(caller.community_role, 'mentor')) throw new Error('Unauthorized')
 
-  const name      = (fd.get('name') as string).trim()
-  const cap       = parseInt(fd.get('member_cap') as string) || 100
-  const status    = (fd.get('status') as string) || 'forming'
-  const mentor_id = (fd.get('mentor_id') as string) || caller.id
-  let slug        = slugify(name)
+  const name       = (fd.get('name') as string).trim()
+  const cap        = parseInt(fd.get('member_cap') as string) || 100
+  const status     = ((fd.get('status') as string) || 'forming') as Database['public']['Enums']['group_status']
+  const mentor_id  = (fd.get('mentor_id') as string) || caller.id
+  const outpost_id = (fd.get('outpost_id') as string) || null
+  if (!outpost_id) throw new Error('An outpost is required.')
+  let slug         = slugify(name)
 
   const admin = createAdminClient()
   const { data: existing } = await admin.from('nexuses').select('id').eq('slug', slug).maybeSingle()
   if (existing) slug = slug + '-' + Math.random().toString(36).slice(2, 5)
 
-  const { error } = await admin.from('nexuses').insert({ name, slug, member_cap: cap, status, mentor_id })
+  const { error } = await admin.from('nexuses').insert({ name, slug, member_cap: cap, status, mentor_id, outpost_id })
   if (error) throw new Error(error.message)
   revalidatePath('/admin/nexuses')
 }
@@ -403,7 +406,7 @@ export async function updateNexus(id: string, fd: FormData) {
   const { error } = await admin.from('nexuses').update({
     name:       (fd.get('name') as string).trim(),
     member_cap: parseInt(fd.get('member_cap') as string) || 100,
-    status:     fd.get('status') as string,
+    status:     fd.get('status') as Database['public']['Enums']['group_status'],
     mentor_id:  (fd.get('mentor_id') as string) || caller.id,
   }).eq('id', id)
   if (error) throw new Error(error.message)

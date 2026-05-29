@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 const CREW_PLUS: CommunityRole[] = ['crew', 'host', 'guide', 'mentor', 'janitor']
@@ -23,11 +24,11 @@ async function getCallerProfile() {
   return data as { id: string; community_role: CommunityRole } | null
 }
 
-export async function createRoom(fd: FormData): Promise<{ id: string } | { error: string }> {
+export async function createRoom(fd: FormData): Promise<ActionResult<{ id: string }>> {
   const caller = await getCallerProfile()
-  if (!caller) return { error: 'Not signed in' }
+  if (!caller) return fail('Not signed in')
   if (!CREW_PLUS.includes(caller.community_role)) {
-    return { error: 'Crew membership required to create rooms' }
+    return fail('Crew membership required to create rooms')
   }
 
   const name = (fd.get('name') as string)?.trim()
@@ -35,7 +36,7 @@ export async function createRoom(fd: FormData): Promise<{ id: string } | { error
   const visibility = ((fd.get('visibility') as string) || 'public') as RoomVisibility
   const scopeId = (fd.get('scope_id') as string)?.trim() || null
 
-  if (!name) return { error: 'Name is required' }
+  if (!name) return fail('Name is required')
 
   const admin = createAdminClient()
   const { data, error } = await admin
@@ -52,7 +53,7 @@ export async function createRoom(fd: FormData): Promise<{ id: string } | { error
 
   if (error || !data) {
     console.error('[createRoom] insert error:', error)
-    return { error: error?.message ?? 'Failed to create room' }
+    return fail(error?.message ?? 'Failed to create room')
   }
 
   const { error: memberError } = await admin.from('room_members').insert({
@@ -63,11 +64,11 @@ export async function createRoom(fd: FormData): Promise<{ id: string } | { error
 
   if (memberError) {
     console.error('[createRoom] member insert error:', memberError)
-    return { error: `Room created but failed to add you as member: ${memberError.message}` }
+    return fail(`Room created but failed to add you as member: ${memberError.message}`)
   }
 
   revalidatePath('/messages')
-  return { id: data.id }
+  return ok({ id: data.id })
 }
 
 export async function joinRoom(roomId: string) {

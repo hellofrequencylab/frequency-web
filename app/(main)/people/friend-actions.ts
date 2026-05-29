@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -28,9 +29,9 @@ function canonicalPair(a: string, b: string): { user_a_id: string; user_b_id: st
 
 // ── sendFriendRequest ────────────────────────────────────────────────
 
-export async function sendFriendRequest(targetProfileId: string): Promise<{ error?: string }> {
+export async function sendFriendRequest(targetProfileId: string): Promise<ActionResult> {
   const me = await getMyProfile()
-  if (me.id === targetProfileId) return { error: 'Cannot friend yourself' }
+  if (me.id === targetProfileId) return fail('Cannot friend yourself')
 
   const pair = canonicalPair(me.id, targetProfileId)
   const admin = createAdminClient()
@@ -45,7 +46,7 @@ export async function sendFriendRequest(targetProfileId: string): Promise<{ erro
     })
 
   if (error && !error.message.toLowerCase().includes('duplicate')) {
-    return { error: error.message }
+    return fail(error.message)
   }
 
   // Notify the target. But only if the row was newly inserted
@@ -62,12 +63,12 @@ export async function sendFriendRequest(targetProfileId: string): Promise<{ erro
 
   revalidatePath('/friends')
   revalidatePath(`/people/${targetProfileId}`)
-  return {}
+  return ok()
 }
 
 // ── acceptFriendRequest ──────────────────────────────────────────────
 
-export async function acceptFriendRequest(requesterProfileId: string): Promise<{ error?: string }> {
+export async function acceptFriendRequest(requesterProfileId: string): Promise<ActionResult> {
   const me = await getMyProfile()
   const pair = canonicalPair(me.id, requesterProfileId)
   const admin = createAdminClient()
@@ -80,8 +81,8 @@ export async function acceptFriendRequest(requesterProfileId: string): Promise<{
     .select('id')
     .maybeSingle()
 
-  if (error) return { error: error.message }
-  if (!updated) return { error: 'No pending request from that user' }
+  if (error) return fail(error.message)
+  if (!updated) return fail('No pending request from that user')
 
   // Notify the original requester that it was accepted
   await admin.from('notifications').insert({
@@ -95,13 +96,13 @@ export async function acceptFriendRequest(requesterProfileId: string): Promise<{
 
   revalidatePath('/friends')
   revalidatePath(`/people/${requesterProfileId}`)
-  return {}
+  return ok()
 }
 
 // ── declineFriendRequest ─────────────────────────────────────────────
 // Deletes the pending row so the requester can try again later.
 
-export async function declineFriendRequest(requesterProfileId: string): Promise<{ error?: string }> {
+export async function declineFriendRequest(requesterProfileId: string): Promise<ActionResult> {
   const me = await getMyProfile()
   const pair = canonicalPair(me.id, requesterProfileId)
   const admin = createAdminClient()
@@ -111,15 +112,15 @@ export async function declineFriendRequest(requesterProfileId: string): Promise<
     .delete()
     .match({ ...pair, status: 'pending', requested_by: requesterProfileId })
 
-  if (error) return { error: error.message }
+  if (error) return fail(error.message)
   revalidatePath('/friends')
-  return {}
+  return ok()
 }
 
 // ── cancelFriendRequest ──────────────────────────────────────────────
 // Requester withdraws their own pending request.
 
-export async function cancelFriendRequest(addresseeProfileId: string): Promise<{ error?: string }> {
+export async function cancelFriendRequest(addresseeProfileId: string): Promise<ActionResult> {
   const me = await getMyProfile()
   const pair = canonicalPair(me.id, addresseeProfileId)
   const admin = createAdminClient()
@@ -129,16 +130,16 @@ export async function cancelFriendRequest(addresseeProfileId: string): Promise<{
     .delete()
     .match({ ...pair, status: 'pending', requested_by: me.id })
 
-  if (error) return { error: error.message }
+  if (error) return fail(error.message)
   revalidatePath('/friends')
   revalidatePath(`/people/${addresseeProfileId}`)
-  return {}
+  return ok()
 }
 
 // ── unfriend ─────────────────────────────────────────────────────────
 // Either party removes an accepted friendship.
 
-export async function unfriend(otherProfileId: string): Promise<{ error?: string }> {
+export async function unfriend(otherProfileId: string): Promise<ActionResult> {
   const me = await getMyProfile()
   const pair = canonicalPair(me.id, otherProfileId)
   const admin = createAdminClient()
@@ -148,10 +149,10 @@ export async function unfriend(otherProfileId: string): Promise<{ error?: string
     .delete()
     .match({ ...pair, status: 'accepted' })
 
-  if (error) return { error: error.message }
+  if (error) return fail(error.message)
   revalidatePath('/friends')
   revalidatePath(`/people/${otherProfileId}`)
-  return {}
+  return ok()
 }
 
 // ── areFriends ───────────────────────────────────────────────────────
