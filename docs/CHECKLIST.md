@@ -18,6 +18,11 @@
       - `20240217000000_node_zaps_value.sql` (per-node zap reward amount)
       - `20240218000000_partners_module.sql` (partners + offers + redemptions)
       - `20240219000000_notification_queue.sql` (durable async job queue)
+      - `20240220000000_email_events.sql` (email_events + email_suppressions) — **new since the first batch; apply + regen types**
+- [ ] **Configure the Resend webhook** (Phase 6.2): in the Resend dashboard add a
+      webhook to `https://go.findafreq.com/api/webhooks/resend` for delivery/bounce/
+      complaint events, and set `RESEND_WEBHOOK_SECRET` (the `whsec_…` value) in env.
+      Without it the endpoint rejects all calls (so bounces won't auto-suppress).
 - [ ] **Regenerate DB types** after applying (the new tables use an untyped client
       view until then): `npx supabase gen types typescript --linked > lib/database.types.ts`,
       then `npx tsc --noEmit`. Optional: once regenerated, drop the

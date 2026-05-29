@@ -230,9 +230,13 @@ a **proven practice-retention loop (PMF)** before building the cathedral.
       List-Unsubscribe headers preserved); **`sendInviteEmail` wired** (invite-by-email
       from Host Tools). Remaining: notification **router/registry** (event → category
       → channels → template) + making `engagement_events` a multi-subscriber source.
-- [ ] **6.2 Deliverability loop** — Resend **webhooks** → `email_events` + auto
-      **suppression**; observability. Subdomain reputation isolation (transactional
-      vs marketing; SPF/DKIM/DMARC). Two consent surfaces + global suppression.
+- [~] **6.2 Deliverability loop** — `email_events` + `email_suppressions` tables
+      (migration `20240220000000`); `/api/webhooks/resend` (Svix-verified) logs
+      delivery/engagement and **auto-suppresses hard bounces + complaints**;
+      `sendRawEmail` checks suppression before every send. Remaining: subdomain
+      reputation isolation (SPF/DKIM/DMARC, transactional vs marketing) + surfacing
+      open/click analytics. **Owner setup:** add the webhook in the Resend dashboard
+      + set `RESEND_WEBHOOK_SECRET`.
 - [ ] **6.3 CRM data + Studio shell + Contacts** — `app/(studio)/` at `/studio`;
       `team_members` + `lib/staff.ts requireStaff()` (separate staff axis); unified
       `contacts` (email join, nullable `profile_id` auto-linked); `engagement_score`
