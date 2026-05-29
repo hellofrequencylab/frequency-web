@@ -135,7 +135,7 @@ export default async function EventDetailPage({
       myProfileId = profile.id
       myRole = (profile.community_role ?? 'member') as typeof myRole
       isHost = event.host?.id === myProfileId
-      isCrew = ['crew', 'host', 'guide', 'mentor', 'janitor'].includes(profile.community_role)
+      isCrew = ['crew', 'host', 'guide', 'mentor', 'janitor'].includes(profile.community_role ?? '')
       const myRsvp = rsvps.find((r) => r.profile.id === myProfileId)
       myRsvpStatus = myRsvp?.status ?? null
     }

@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { Database } from '@/lib/database.types'
 
 export async function updateProfile(data: {
   displayName: string
@@ -28,7 +29,7 @@ export async function updateProfile(data: {
     if (taken) throw new Error('That handle is already taken.')
   }
 
-  const update: Record<string, string | null> = {
+  const update: Database['public']['Tables']['profiles']['Update'] = {
     display_name: data.displayName.trim(),
     handle:       data.handle.trim(),
     bio:          data.bio.trim() || null,

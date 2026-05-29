@@ -38,7 +38,7 @@ export default async function CrewPage() {
 
   const { data: profile } = await admin
     .from('profiles')
-    .select('id, display_name, handle, community_role, avatar_url, current_season_rank, current_season_zaps, season_challenges_complete, lifetime_gems')
+    .select('id, display_name, handle, community_role, avatar_url, current_season_rank, current_season_zaps, season_challenges_complete, lifetime_gems, is_crew_lead')
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
@@ -76,6 +76,7 @@ export default async function CrewPage() {
 
   const completionsByTask: Record<string, typeof completions> = {}
   ;(completions ?? []).forEach((c) => {
+    if (!c.task_id) return
     if (!completionsByTask[c.task_id]) completionsByTask[c.task_id] = []
     completionsByTask[c.task_id]!.push(c)
   })
@@ -85,7 +86,7 @@ export default async function CrewPage() {
   // My first active circle membership
   const { data: membership } = await admin
     .from('memberships')
-    .select(`circle_id, is_crew_lead, circle:circles!circle_id ( id, name, slug )`)
+    .select(`circle_id, circle:circles!circle_id ( id, name, slug )`)
     .eq('profile_id', profile.id)
     .eq('status', 'active')
     .limit(1)
@@ -130,8 +131,8 @@ export default async function CrewPage() {
     }
   }
 
-  const circleName = (membership as { circle: { name: string } | null } | null)?.circle?.name ?? null
-  const isCrewLead = (membership as { is_crew_lead: boolean } | null)?.is_crew_lead ?? false
+  const circleName = (membership?.circle as { name: string } | null)?.name ?? null
+  const isCrewLead = profile.is_crew_lead ?? false
 
   return (
     <div>
@@ -317,7 +318,7 @@ export default async function CrewPage() {
                           )}
                         </div>
 
-                        {isDone && lastCompletion && (
+                        {isDone && lastCompletion?.completed_at && (
                           <p className="text-xs text-success mt-0.5">
                             Completed{' '}
                             {new Date(lastCompletion.completed_at).toLocaleDateString('en-US', {

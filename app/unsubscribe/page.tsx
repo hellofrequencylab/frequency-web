@@ -5,6 +5,7 @@
 
 import Link from 'next/link'
 import { processUnsubscribe } from './actions'
+import { isError } from '@/lib/action-result'
 
 const CATEGORY_LABELS: Record<string, string> = {
   dispatches: 'broadcast dispatches',
@@ -32,7 +33,7 @@ export default async function UnsubscribePage({
 
   const result = await processUnsubscribe({ profileId: p, category: c, token: t })
 
-  if (!result.ok) {
+  if (isError(result)) {
     return <Layout>
       <Title>Couldn&apos;t process unsubscribe</Title>
       <Body>{result.error}</Body>
@@ -40,7 +41,7 @@ export default async function UnsubscribePage({
     </Layout>
   }
 
-  const label = CATEGORY_LABELS[result.category] ?? result.category
+  const label = CATEGORY_LABELS[result.data.category] ?? result.data.category
 
   return <Layout>
     <Title>You&apos;re unsubscribed.</Title>

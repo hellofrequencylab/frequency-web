@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { Mail, Bell, Smartphone, Check } from 'lucide-react'
 import type { NotificationPreferences, NotificationCategory } from '@/lib/notification-preferences'
 import { saveNotificationPreferences } from './actions'
+import { isError } from '@/lib/action-result'
 
 const CATEGORIES: { key: NotificationCategory; label: string; description: string }[] = [
   {
@@ -45,7 +46,7 @@ export function NotificationsForm({ initial }: { initial: NotificationPreference
     setPrefs(next)
     startTransition(async () => {
       const res = await saveNotificationPreferences(next)
-      if (res.ok) setSavedAt(Date.now())
+      if (!isError(res)) setSavedAt(Date.now())
     })
   }
 

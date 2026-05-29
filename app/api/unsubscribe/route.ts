@@ -9,6 +9,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { processUnsubscribe } from '@/app/unsubscribe/actions'
+import { isError } from '@/lib/action-result'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest) {
 
   const result = await processUnsubscribe({ profileId: p, category: c, token: t })
 
-  if (!result.ok) {
+  if (isError(result)) {
     // Log the reason internally but return 200 so the mailbox UI shows
     // success. (Revealing the failure invites probing.)
     console.warn('[api/unsubscribe] processUnsubscribe failed:', result.error)

@@ -48,7 +48,7 @@ export async function logCompletion(taskId: string) {
   const { error } = await admin.from('crew_completions').insert({
     task_id:       taskId,
     profile_id:    profileId,
-    zaps_earned:   task.zaps_value,
+    zaps_earned:   task.zaps_value ?? 0,
     completed_at:  new Date().toISOString(),
   })
 

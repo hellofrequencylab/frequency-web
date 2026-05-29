@@ -4,6 +4,7 @@ import { useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Zap, ArrowDown, Loader2 } from 'lucide-react'
 import { toggleCrewRole } from './actions'
+import { isError } from '@/lib/action-result'
 
 export function UpgradeToggle({ isCrew }: { isCrew: boolean }) {
   const [isPending, startTransition] = useTransition()
@@ -12,7 +13,7 @@ export function UpgradeToggle({ isCrew }: { isCrew: boolean }) {
   function handleToggle() {
     startTransition(async () => {
       const result = await toggleCrewRole()
-      if (!result.error) {
+      if (!isError(result)) {
         router.refresh()
       }
     })

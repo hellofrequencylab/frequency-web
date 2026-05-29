@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Hash, Lock, Globe } from 'lucide-react'
 import { createRoom } from '@/app/(main)/messages/rooms/actions'
+import { isError } from '@/lib/action-result'
 import { CreateModal, cmInput, cmLabel } from '@/components/create-modal'
 
 type Visibility = 'public' | 'private'
@@ -36,13 +37,13 @@ export function NewRoomCompose({
     startTransition(async () => {
       try {
         const result = await createRoom(fd)
-        if ('error' in result) {
+        if (isError(result)) {
           setError(result.error)
           return
         }
         setOpen(false)
         setName(''); setDescription('')
-        router.push(`/messages/r/${result.id}`)
+        router.push(`/messages/r/${result.data.id}`)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to create room.')
       }

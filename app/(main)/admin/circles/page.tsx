@@ -31,7 +31,7 @@ export default async function AdminCirclesPage() {
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
-  if (!profile || !['host', 'guide', 'mentor', 'janitor'].includes(profile.community_role)) notFound()
+  if (!profile || !['host', 'guide', 'mentor', 'janitor'].includes(profile.community_role ?? '')) notFound()
 
   const role = profile.community_role as CommunityRole
 

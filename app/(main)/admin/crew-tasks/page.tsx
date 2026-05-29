@@ -27,7 +27,7 @@ export default async function AdminCrewTasksPage() {
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
-  if (!profile || !['host', 'guide', 'mentor', 'janitor'].includes(profile.community_role)) notFound()
+  if (!profile || !['host', 'guide', 'mentor', 'janitor'].includes(profile.community_role ?? '')) notFound()
 
   const [tasksRes, pendingRes] = await Promise.all([
     admin
@@ -70,8 +70,17 @@ export default async function AdminCrewTasksPage() {
   )
 
   const filteredPending = pendingVerifications.filter((c: PendingRow) =>
-    verificationTaskIds.has(c.task?.id)
+    c.task ? verificationTaskIds.has(c.task.id) : false
   )
+
+  const tasks = (tasksRes.data ?? []).map((t) => ({
+    id: t.id,
+    name: t.name,
+    task_type: t.task_type,
+    zaps_value: t.zaps_value ?? 0,
+    is_repeatable: t.is_repeatable ?? false,
+    requires_verification: t.requires_verification ?? false,
+  }))
 
   return (
     <div>
@@ -89,7 +98,7 @@ export default async function AdminCrewTasksPage() {
         {/* Main content */}
         <div className="lg:col-span-2">
           <CrewTasksClient
-            tasks={tasksRes.data ?? []}
+            tasks={tasks}
             pendingVerifications={filteredPending}
           />
         </div>

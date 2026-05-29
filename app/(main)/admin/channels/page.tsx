@@ -35,7 +35,7 @@ export default async function AdminChannelsPage() {
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
-  if (!profile || !['host', 'guide', 'mentor', 'janitor'].includes(profile.community_role)) notFound()
+  if (!profile || !['host', 'guide', 'mentor', 'janitor'].includes(profile.community_role ?? '')) notFound()
 
   // Derive scope options for the New Channel modal from the admin's primary circle
   const scopeOptions: { scope: 'hub' | 'nexus' | 'outpost'; scopeId: string; label: string }[] = []

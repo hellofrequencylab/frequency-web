@@ -3,11 +3,12 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { type ActionResult, ok, fail } from '@/lib/action-result'
 
-export async function toggleCrewRole() {
+export async function toggleCrewRole(): Promise<ActionResult<{ role: string }>> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: 'Not signed in' }
+  if (!user) return fail('Not signed in')
 
   const admin = createAdminClient()
   const { data: profile } = await admin
@@ -16,13 +17,13 @@ export async function toggleCrewRole() {
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
-  if (!profile) return { error: 'Profile not found' }
+  if (!profile) return fail('Profile not found')
 
   const currentRole = profile.community_role as string
 
   // Only toggle between member and crew. Don't touch host+ roles.
   if (!['member', 'crew'].includes(currentRole)) {
-    return { error: 'Your role is managed by community leadership' }
+    return fail('Your role is managed by community leadership')
   }
 
   const newRole = currentRole === 'crew' ? 'member' : 'crew'
@@ -32,8 +33,8 @@ export async function toggleCrewRole() {
     .update({ community_role: newRole })
     .eq('id', profile.id)
 
-  if (error) return { error: error.message }
+  if (error) return fail(error.message)
 
   revalidatePath('/', 'layout')
-  return { role: newRole }
+  return ok({ role: newRole })
 }

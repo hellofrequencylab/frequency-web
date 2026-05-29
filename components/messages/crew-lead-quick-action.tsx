@@ -17,18 +17,17 @@ export async function CrewLeadQuickAction() {
   const admin = createAdminClient()
   const { data: myProfile } = await admin
     .from('profiles')
-    .select('id')
+    .select('id, is_crew_lead')
     .eq('auth_user_id', user.id)
     .maybeSingle()
-  if (!myProfile) return null
-  const myProfileId = myProfile.id as string
+  if (!myProfile || !myProfile.is_crew_lead) return null
+  const myProfileId = myProfile.id
 
-  // Find circles where viewer is a crew lead
+  // Crew lead is a global profile flag; surface their active circle(s).
   const { data: leadMemberships } = await admin
     .from('memberships')
     .select('circle_id, circles!circle_id(id, name, host_id)')
     .eq('profile_id', myProfileId)
-    .eq('is_crew_lead', true)
     .eq('status', 'active')
 
   if (!leadMemberships || leadMemberships.length === 0) return null

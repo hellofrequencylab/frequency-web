@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 type TargetType = 'post' | 'dispatch' | 'comment' | 'member' | 'event'
@@ -35,9 +36,9 @@ export async function reportContent(
   targetId: string,
   reason: ReportReason,
   details?: string
-): Promise<{ success: boolean; error?: string }> {
+): Promise<ActionResult> {
   const caller = await getCallerProfile()
-  if (!caller) return { success: false, error: 'Not authenticated' }
+  if (!caller) return fail('Not authenticated')
 
   const admin = createAdminClient()
 
@@ -52,7 +53,7 @@ export async function reportContent(
     .maybeSingle()
 
   if (existing) {
-    return { success: false, error: 'You have already reported this content' }
+    return fail('You have already reported this content')
   }
 
   const { error } = await admin.from('reports').insert({
@@ -65,10 +66,10 @@ export async function reportContent(
 
   if (error) {
     console.error('[reportContent]', error.message)
-    return { success: false, error: 'Failed to submit report' }
+    return fail('Failed to submit report')
   }
 
-  return { success: true }
+  return ok()
 }
 
 // ── Get reports (host+ only) ────────────────────────────────────────────────
@@ -129,10 +130,10 @@ export async function getReports(): Promise<ReportRow[]> {
 export async function reviewReport(
   reportId: string,
   action: 'actioned' | 'dismissed'
-): Promise<{ success: boolean; error?: string }> {
+): Promise<ActionResult> {
   const caller = await getCallerProfile()
   if (!caller || !hasRole(caller.community_role, 'host')) {
-    return { success: false, error: 'Unauthorized' }
+    return fail('Unauthorized')
   }
 
   const admin = createAdminClient()
@@ -175,10 +176,10 @@ export async function warnMember(
   reportId: string,
   memberProfileId: string,
   reason?: string,
-): Promise<{ success: boolean; error?: string }> {
+): Promise<ActionResult> {
   const caller = await getCallerProfile()
   if (!caller || !hasRole(caller.community_role, 'host')) {
-    return { success: false, error: 'Unauthorized' }
+    return fail('Unauthorized')
   }
 
   const admin = createAdminClient()
@@ -192,7 +193,7 @@ export async function warnMember(
     .maybeSingle()
 
   if (!system) {
-    return { success: false, error: 'System moderation profile missing — re-run migration 20240207.' }
+    return fail('System moderation profile missing — re-run migration 20240207.')
   }
 
   // Reuse an existing 1:1 DM between the system profile and the member
@@ -223,7 +224,7 @@ export async function warnMember(
       .single()
     if (convErr || !conv) {
       console.error('[warnMember] conversation create:', convErr?.message)
-      return { success: false, error: 'Could not open warning conversation' }
+      return fail('Could not open warning conversation')
     }
     conversationId = conv.id
 
@@ -235,7 +236,7 @@ export async function warnMember(
       ])
     if (partErr) {
       console.error('[warnMember] participants:', partErr.message)
-      return { success: false, error: 'Could not add conversation participants' }
+      return fail('Could not add conversation participants')
     }
   }
 
@@ -248,7 +249,7 @@ export async function warnMember(
     })
   if (msgErr) {
     console.error('[warnMember] message:', msgErr.message)
-    return { success: false, error: 'Could not send warning message' }
+    return fail('Could not send warning message')
   }
 
   return closeReport(reportId, caller.id, 'actioned')
@@ -258,10 +259,10 @@ export async function suspendMember(
   reportId: string,
   memberProfileId: string,
   options: { reason?: string; durationDays?: number } = {},
-): Promise<{ success: boolean; error?: string }> {
+): Promise<ActionResult> {
   const caller = await getCallerProfile()
   if (!caller || !hasRole(caller.community_role, 'host')) {
-    return { success: false, error: 'Unauthorized' }
+    return fail('Unauthorized')
   }
 
   const admin = createAdminClient()
@@ -282,7 +283,7 @@ export async function suspendMember(
 
   if (error) {
     console.error('[suspendMember]', error.message)
-    return { success: false, error: 'Failed to suspend member' }
+    return fail('Failed to suspend member')
   }
 
   return closeReport(reportId, caller.id, 'actioned')
@@ -294,10 +295,10 @@ export async function suspendMember(
 export async function cancelEventFromReport(
   reportId: string,
   eventId: string,
-): Promise<{ success: boolean; error?: string }> {
+): Promise<ActionResult> {
   const caller = await getCallerProfile()
   if (!caller || !hasRole(caller.community_role, 'host')) {
-    return { success: false, error: 'Unauthorized' }
+    return fail('Unauthorized')
   }
 
   const admin = createAdminClient()
@@ -308,7 +309,7 @@ export async function cancelEventFromReport(
 
   if (error) {
     console.error('[cancelEventFromReport]', error.message)
-    return { success: false, error: 'Failed to cancel event' }
+    return fail('Failed to cancel event')
   }
 
   return closeReport(reportId, caller.id, 'actioned')
@@ -338,7 +339,7 @@ async function closeReport(
   reportId: string,
   callerId: string,
   status: 'actioned' | 'dismissed',
-): Promise<{ success: boolean; error?: string }> {
+): Promise<ActionResult> {
   const admin = createAdminClient()
   const { error } = await admin
     .from('reports')
@@ -351,11 +352,11 @@ async function closeReport(
 
   if (error) {
     console.error('[closeReport]', error.message)
-    return { success: false, error: 'Failed to update report' }
+    return fail('Failed to update report')
   }
 
   revalidatePath('/admin/moderation')
   revalidatePath('/feed')
   revalidatePath('/broadcast')
-  return { success: true }
+  return ok()
 }

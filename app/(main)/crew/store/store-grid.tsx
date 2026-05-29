@@ -7,6 +7,7 @@ import {
   CreditCard, Award, Heart, BadgeCheck,
 } from 'lucide-react'
 import { redeemItem } from './actions'
+import { isError } from '@/lib/action-result'
 
 const ICON_MAP: Record<string, React.ElementType> = {
   circle: Circle, flame: Flame, star: Star, crown: Crown, zap: Zap,
@@ -47,10 +48,10 @@ function StoreCard({ item, balance }: { item: StoreItem; balance: number }) {
   function handleRedeem() {
     startTransition(async () => {
       const res = await redeemItem(item.id)
-      if (res.success) {
-        setResult('Redeemed!')
+      if (isError(res)) {
+        setResult(res.error)
       } else {
-        setResult(res.error ?? 'Failed')
+        setResult('Redeemed!')
       }
       setTimeout(() => setResult(null), 3000)
     })

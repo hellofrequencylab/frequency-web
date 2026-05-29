@@ -38,6 +38,7 @@ export async function joinCircle(circleId: string, circleSlug: string) {
 
   if (!circle) return
   if (circle.member_count >= circle.member_cap) return // full
+  if (!circle.hub_id) return // no hub → no nexus capacity to check
 
   // Check nexus capacity
   const { data: hub } = await admin
@@ -46,7 +47,7 @@ export async function joinCircle(circleId: string, circleSlug: string) {
     .eq('id', circle.hub_id)
     .maybeSingle()
 
-  if (hub) {
+  if (hub?.nexus_id) {
     const { data: nexus } = await admin
       .from('nexuses')
       .select('id, member_cap')

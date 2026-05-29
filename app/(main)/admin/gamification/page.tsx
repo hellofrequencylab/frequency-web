@@ -26,7 +26,7 @@ export default async function AdminGamificationPage() {
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
-  if (!profile || !['host', 'guide', 'mentor', 'janitor'].includes(profile.community_role)) {
+  if (!profile || !['host', 'guide', 'mentor', 'janitor'].includes(profile.community_role ?? '')) {
     notFound()
   }
 

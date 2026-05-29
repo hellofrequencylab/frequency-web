@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { Database } from '@/lib/database.types'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 type ChannelScope = 'hub' | 'nexus' | 'outpost'
@@ -23,7 +24,8 @@ async function getMyProfile(): Promise<{
     .select('id, community_role')
     .eq('auth_user_id', user.id)
     .maybeSingle()
-  return data ?? null
+  if (!data || !data.community_role) return null
+  return { id: data.id, community_role: data.community_role }
 }
 
 async function getMyProfileId(): Promise<string | null> {
@@ -67,7 +69,7 @@ export async function createChannel(formData: FormData) {
       creator_role: profile.community_role,
       scope,
       scope_id: scopeId,
-      type,
+      type: type as Database['public']['Tables']['channels']['Insert']['type'],
       is_public: isPublic,
     })
     .select('id')
