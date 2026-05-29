@@ -44,6 +44,7 @@ export interface EmailPayload {
   subject: string
   html: string
   text?: string
+  headers?: Record<string, string>
 }
 
 // Low-level send, called by the queue's `email` handler. Throws on provider error
@@ -69,22 +70,14 @@ export async function sendWelcomeEmail(params: {
   to: string
   displayName: string
 }) {
-  const client = getClient()
-  if (!client) return
-
   const { to, displayName } = params
 
-  const { error } = await client.emails.send({
-    from:    FROM,
+  await enqueueEmail({
     to,
     subject: `Welcome to Frequency, ${displayName} 👋`,
     html:    welcomeHtml({ displayName }),
     text:    welcomeText({ displayName }),
   })
-
-  if (error) {
-    console.error('[email] Failed to send welcome email:', error)
-  }
 }
 
 // ── Invite email ──────────────────────────────────────────────────────────────
@@ -116,9 +109,6 @@ export async function sendWeeklyDigestEmail(params: {
   topStreak:          { type: string; count: number } | null
   rank:               { name: string | null; zaps: number } | null
 }) {
-  const client = getClient()
-  if (!client) return
-
   const { to, recipientName, recipientProfileId, dispatches, upcomingEvents, topStreak, rank } = params
 
   // Lifecycle category covers periodic engagement nudges (Day 1/3/7 emails
@@ -130,20 +120,13 @@ export async function sendWeeklyDigestEmail(params: {
     category:  'lifecycle',
   })
 
-  const subject = `📡 Your week on Frequency`
-
-  const { error } = await client.emails.send({
-    from:    FROM,
+  await enqueueEmail({
     to,
-    subject,
+    subject: `📡 Your week on Frequency`,
     headers: listUnsubscribeHeaders(unsubscribeUrl),
     html:    digestHtml({ recipientName, dispatches, upcomingEvents, topStreak, rank, unsubscribeUrl }),
     text:    digestText({ recipientName, dispatches, upcomingEvents, topStreak, rank, unsubscribeUrl }),
   })
-
-  if (error) {
-    console.error('[email] Failed to send weekly digest:', error)
-  }
 }
 
 
@@ -160,9 +143,6 @@ export async function sendEventReminderEmail(params: {
   eventUrl:           string
   lead:               '24h' | '2h'
 }) {
-  const client = getClient()
-  if (!client) return
-
   const { to, recipientName, recipientProfileId, eventTitle, whenLabel, whenAbsolute, location, eventUrl, lead } = params
 
   const subject = lead === '24h'
@@ -175,18 +155,13 @@ export async function sendEventReminderEmail(params: {
     category:  'events',
   })
 
-  const { error } = await client.emails.send({
-    from:    FROM,
+  await enqueueEmail({
     to,
     subject,
     headers: listUnsubscribeHeaders(unsubscribeUrl),
     html:    eventReminderHtml({ recipientName, eventTitle, whenLabel, whenAbsolute, location, eventUrl, lead, unsubscribeUrl }),
     text:    eventReminderText({ eventTitle, whenLabel, whenAbsolute, location, eventUrl, lead, unsubscribeUrl }),
   })
-
-  if (error) {
-    console.error('[email] Failed to send event reminder:', error)
-  }
 }
 
 
@@ -201,9 +176,6 @@ export async function sendDispatchNotificationEmail(params: {
   excerpt:            string
   dispatchUrl:        string
 }) {
-  const client = getClient()
-  if (!client) return
-
   const { to, recipientName, recipientProfileId, authorName, dispatchTitle, excerpt, dispatchUrl } = params
 
   const unsubscribeUrl = buildUnsubscribeUrl({
@@ -212,18 +184,13 @@ export async function sendDispatchNotificationEmail(params: {
     category:  'dispatches',
   })
 
-  const { error } = await client.emails.send({
-    from:    FROM,
+  await enqueueEmail({
     to,
     subject: `📡 New dispatch: ${dispatchTitle}`,
     headers: listUnsubscribeHeaders(unsubscribeUrl),
     html:    dispatchHtml({ recipientName, authorName, dispatchTitle, excerpt, dispatchUrl, unsubscribeUrl }),
     text:    dispatchText({ authorName, dispatchTitle, excerpt, dispatchUrl, unsubscribeUrl }),
   })
-
-  if (error) {
-    console.error('[email] Failed to send dispatch notification email:', error)
-  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

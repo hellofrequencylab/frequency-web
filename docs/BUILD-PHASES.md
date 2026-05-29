@@ -225,10 +225,11 @@ a **proven practice-retention loop (PMF)** before building the cathedral.
 > Build in this order; each step is usable alone. **Do not start the agent (6.6)
 > before the test harness exists.** Everything sends through the spine — never inline.
 
-- [ ] **6.1 Backbone + spine** — make `engagement_events` multi-subscriber; add the
-      notification **router/registry** (event → category → channels → template);
-      **migrate all email onto the outbox**; idempotency everywhere. *(Quick win:
-      wire `sendInviteEmail` — defined but never called.)*
+- [~] **6.1 Backbone + spine** — **all email now flows through the outbox**
+      (`enqueueEmail` + cron `email` handler; every `lib/email.ts` sender enqueues,
+      List-Unsubscribe headers preserved); **`sendInviteEmail` wired** (invite-by-email
+      from Host Tools). Remaining: notification **router/registry** (event → category
+      → channels → template) + making `engagement_events` a multi-subscriber source.
 - [ ] **6.2 Deliverability loop** — Resend **webhooks** → `email_events` + auto
       **suppression**; observability. Subdomain reputation isolation (transactional
       vs marketing; SPF/DKIM/DMARC). Two consent surfaces + global suppression.

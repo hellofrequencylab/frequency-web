@@ -16,7 +16,7 @@ const handlers: Record<string, JobHandler> = {
     if (!profileId || !p.payload) return
     await sendPushToProfile(profileId, p.payload as Parameters<typeof sendPushToProfile>[1])
   },
-  // Durable email (ADR-026). payload: { to, subject, html, text? }.
+  // Durable email (ADR-026). payload: { to, subject, html, text?, headers? }.
   email: async (p) => {
     if (!p.to || !p.subject) return
     await sendRawEmail({
@@ -24,6 +24,7 @@ const handlers: Record<string, JobHandler> = {
       subject: p.subject as string,
       html: (p.html as string) ?? '',
       text: typeof p.text === 'string' ? p.text : undefined,
+      headers: (p.headers as Record<string, string> | undefined) ?? undefined,
     })
   },
   // fanout / leaderboard handlers register here as those flows move to the queue.
