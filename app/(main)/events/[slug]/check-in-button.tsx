@@ -15,8 +15,8 @@ export function EventCheckInButton({ eventId }: { eventId: string }) {
       <div className="inline-flex items-center gap-2 rounded-xl bg-success-bg text-success px-4 py-2.5 text-sm font-semibold">
         <Check className="w-4 h-4" />
         {result.alreadyCheckedIn
-          ? 'Checked in · practice logged'
-          : `Checked in! +${result.zapsAwarded ?? 0} zaps`}
+          ? 'Checked In'
+          : `Checked In · +${result.zapsAwarded ?? 0} zaps`}
       </div>
     )
   }
@@ -28,7 +28,7 @@ export function EventCheckInButton({ eventId }: { eventId: string }) {
       className="inline-flex items-center gap-2 rounded-xl bg-primary hover:bg-primary-hover text-on-primary text-sm font-semibold px-5 py-2.5 shadow-sm transition-colors disabled:opacity-60"
     >
       <Zap className="w-4 h-4" strokeWidth={2.5} />
-      {pending ? 'Checking in…' : 'Check in · log practice'}
+      {pending ? 'Checking in…' : 'Check in'}
     </button>
   )
 }

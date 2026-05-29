@@ -298,7 +298,7 @@ export default async function EventDetailPage({
               {alreadyCheckedIn ? (
                 <div className="inline-flex items-center gap-2 rounded-lg bg-success-bg text-success px-4 py-2 text-sm font-semibold">
                   <Check className="w-4 h-4" />
-                  Checked in · practice logged
+                  Checked In
                 </div>
               ) : (
                 <EventCheckInButton eventId={event.id} />
