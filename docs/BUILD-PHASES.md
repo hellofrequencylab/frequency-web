@@ -100,7 +100,10 @@ PAGE-FRAMEWORK.
       edit-in-place DONE:** owners edit via settings; janitors get an inline
       moderator edit (name + bio) on any profile, gated by `profile.edit`
       (`moderate-profile-button` + capability-checked `moderateUpdateProfile`).
-      **Still pending:** the slot registry + scope-aware right rail.
+      **Scope-aware rail DONE:** the global rail shows on global/index pages; entity
+      detail pages (circle / profile / interest) render their own scoped rail in the
+      page body, and the global rail is suppressed there (no double-sidebar). **Still
+      pending:** a formal module **slot registry** (current composition is per-page).
 
 **Done when:** every main page renders via one of the 3 templates; inline actions
 appear by capability (host edits inline, member sees content only); a newcomer can
