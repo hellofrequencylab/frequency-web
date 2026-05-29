@@ -123,19 +123,28 @@ identically.
 **Depends on:** Phase 0 (PostGIS), Phase 2 (RPC contract). **Governs:**
 ENGAGEMENT-ARCHITECTURE.
 
-- [ ] Generalized **event ledger** (`events`: append-only, `idempotency_key`,
-      `source_type`, `actor`, `context`, `verified_at`) + reward txns (extend
-      `gem_transactions`).
-- [ ] **Verifier interface** `verify(event)` — start with idempotency + PostGIS
-      proximity + signed payload; attestation / mutual-confirm later.
-- [ ] **`grant_reward(event)`** RPC — idempotent, server-side, updates a
-      **maintained balance** read-model (not a re-sum).
-- [ ] **Physical nodes / tags** registry (QR / NFC plaque / merch tag / ghost
-      node) + **partners/businesses** module (directory, offers, redemptions) —
-      vertical-slice modules behind RLS + RPC.
+- [x] Generalized **event ledger** — `engagement_events` (migration
+      `20240215000000`) + `recordEngagementEvent()` (`lib/engagement/events.ts`):
+      append-only, `idempotency_key` = exactly-once, `source`, `verified_at`.
+      Runs the EXISTING rules engine on first insert (in front of, not replacing,
+      the current gamification system).
+- [x] **Verifier** — `verifyCapture()` (`lib/engagement/verify.ts`): server-side
+      validity window + signed payload + capture rule + PostGIS proximity
+      (`node_within_range` RPC). Idempotency lives in the events layer.
+      *Device attestation / mutual-confirm (P2P) still to add.*
+- [~] **Reward grant** — reuses the existing idempotent path
+      (`recordEngagementEvent` → `processGamificationEvent` → `awardGems`/zaps);
+      balances are already maintained columns on `profiles`. Mapping a physical
+      capture → a reward event waits on the reward economy (product).
+- [~] **Physical nodes / tags** registry — `nodes` + `captures` + RLS
+      (migration `20240216000000`); server-mediated (no client reads).
+      **`partners/businesses` module (directory, offers, redemptions) still to
+      build.**
 - [ ] **Async lane** (outbox/queue + workers) for fan-out, fraud scoring, expiry,
       leaderboard recompute.
 - [ ] Realtime **reward feedback** via Supabase Broadcast.
+- [ ] **Capture orchestration** — `captureNode()` tying verify → insert capture →
+      `recordEngagementEvent`; deferred until the reward economy is set.
 
 **Done when:** an event from any source can be verified server-side and award
 exactly once; QR/NFC/geo nodes exist as data; the engine is config-extensible

@@ -6,10 +6,16 @@
 > promote to production when satisfied. Check items off as you go.
 
 ## 🔴 Blocking — do first
-- [ ] **Apply the PostGIS migration** — review then run:
-      `npx supabase migration list` → `npx supabase db push`
-      (file: `supabase/migrations/20240214000000_enable_postgis_geography.sql`).
-      Nothing geo works until this lands.
+- [ ] **Review + apply the new migrations** — `npx supabase migration list` →
+      `npx supabase db push`. New, unapplied, and written without a live DB to
+      test against, so **read them first**:
+      - `20240214000000_enable_postgis_geography.sql` (PostGIS + `circles.geog`)
+      - `20240215000000_engagement_events.sql` (event ledger)
+      - `20240216000000_physical_nodes.sql` (nodes + captures + `node_within_range`)
+- [ ] **Regenerate DB types** after applying (the new tables use an untyped client
+      view until then): `npx supabase gen types typescript --linked > lib/database.types.ts`,
+      then `npx tsc --noEmit`. Optional: once regenerated, drop the
+      `as unknown as SupabaseClient` casts in `lib/engagement/*` for full typing.
 - [ ] **Local sanity check** — `npm install` (if needed) → `npx tsc --noEmit`
       (should be clean) → `npm run dev` and load the app.
 
