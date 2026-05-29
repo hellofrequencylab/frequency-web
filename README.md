@@ -72,6 +72,8 @@ mobile.
    decisions made, and the phased plan.
 
 ### Executable plan
+- [**OVERVIEW**](docs/OVERVIEW.md) — **north star.** The whole picture: IA,
+  page framework, gamification, and the lock-in-resistant architecture.
 - [**START-HERE**](docs/START-HERE.md) — **go-live runbook.** Ordered steps to apply
   migrations, regenerate types, run & QA, then continue development. Open this first
   at a computer.
