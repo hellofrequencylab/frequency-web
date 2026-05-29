@@ -15,6 +15,15 @@ import type { Database } from '@/lib/database.types'
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row']
 
+// Tunable base zap amounts for external / in-person actions. Placeholder values —
+// the reward economy will set the real numbers (see docs/CHECKLIST.md). Attendance
+// is awarded at verified check-in (ROADMAP P2.13), NOT at RSVP (RSVP is a web
+// action and stays gems).
+export const ZAP_AMOUNTS = {
+  event_host: 50,
+  event_attend: 25,
+} as const
+
 export interface ZapAwardResult {
   awarded: boolean
   amount: number
