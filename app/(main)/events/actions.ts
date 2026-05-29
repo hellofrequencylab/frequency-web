@@ -9,6 +9,7 @@ import { slugify } from '@/lib/utils'
 import { processGamificationEvent, recordStreakActivity } from '@/lib/achievements'
 import { awardGems } from '@/lib/gems'
 import { awardZaps, ZAP_AMOUNTS } from '@/lib/zaps'
+import { recordEngagementEvent } from '@/lib/engagement/events'
 import { generateOccurrencesForAnchor, type RecurrenceType } from '@/lib/event-recurrence'
 
 const VALID_RECURRENCE: RecurrenceType[] = ['none', 'daily', 'weekly', 'monthly']
@@ -130,6 +131,53 @@ export async function toggleRSVP(eventId: string, currentStatus: string | null) 
   revalidatePath('/events')
   revalidatePath('/feed')
   revalidatePath('/circles', 'layout')
+}
+
+export interface CheckInResult {
+  ok: boolean
+  alreadyCheckedIn?: boolean
+  zapsAwarded?: number
+}
+
+// Verified-practice check-in (the North-Star `practice.verified` event). Server-
+// authoritative: the event must be real, started, not cancelled, and the viewer
+// must have RSVP'd 'going'. Idempotent per (event, profile); the first check-in
+// records the ledger event, awards zaps, and ticks the attendance streak.
+// (RSVP = gems web-action; check-in = zaps verified practice; see ADR-021/024.)
+export async function checkInEvent(eventId: string): Promise<CheckInResult> {
+  const myProfileId = await getMyProfileId()
+  if (!myProfileId) return { ok: false }
+
+  const admin = createAdminClient()
+  const { data: ev } = await admin
+    .from('events')
+    .select('starts_at, is_cancelled')
+    .eq('id', eventId)
+    .maybeSingle()
+  if (!ev || ev.is_cancelled || new Date(ev.starts_at) > new Date()) return { ok: false }
+
+  const { data: rsvp } = await admin
+    .from('event_rsvps')
+    .select('status')
+    .eq('event_id', eventId)
+    .eq('profile_id', myProfileId)
+    .maybeSingle()
+  if (rsvp?.status !== 'going') return { ok: false }
+
+  const { recorded } = await recordEngagementEvent({
+    idempotencyKey: `event_checkin:${eventId}:${myProfileId}`,
+    source: 'web',
+    eventType: 'practice.verified',
+    actorProfileId: myProfileId,
+    context: { eventId, kind: 'event_checkin' },
+    verifiedAt: new Date(),
+  })
+  if (!recorded) return { ok: true, alreadyCheckedIn: true }
+
+  // Verified practice always earns zaps (regardless of channel) + a streak tick.
+  await awardZaps(myProfileId, ZAP_AMOUNTS.event_attend).catch(() => {})
+  await recordStreakActivity(myProfileId, 'attendance').catch(() => {})
+  return { ok: true, zapsAwarded: ZAP_AMOUNTS.event_attend }
 }
 
 export async function cancelEvent(eventId: string) {

@@ -11,6 +11,11 @@
 > as [ROADMAP](../ROADMAP.md), which tracks *product features*; this tracks
 > *architecture*).
 
+> **North Star — Weekly Active Members (WAM):** members with ≥1 *verified
+> practice* in a rolling 7 days. **Every phase optimizes for this one number**;
+> `practice.verified` is the canonical event. See
+> [COMMS-CRM-ARCHITECTURE.md](COMMS-CRM-ARCHITECTURE.md) §0 + ADR-024.
+
 **Status:** `[ ]` pending · `[~]` in progress · `[x]` done
 
 ---
@@ -158,10 +163,19 @@ ENGAGEMENT-ARCHITECTURE.
       verify → ledger (exactly-once) → capture row → `awardZaps(node.zaps_value)`.
       Physical loop is functional end-to-end. *(Repeatable-node idempotency keying
       still TODO; node reward amounts are tunable via `nodes.zaps_value`.)*
+- [~] **`practice.verified`, the North-Star event (ADR-024).** First-class
+      `event_type` shipped: server-verified **event check-in** emits it and keys
+      zaps + an attendance streak on it. Remaining sources: logged practice +
+      verified node check-in. *The practice-retention loop; build it deliberately.*
+- [~] **WAM + activation instrumentation** (read-models off `engagement_events`):
+      `getPracticeMetrics` (`lib/analytics/practice.ts`) computes Weekly Active
+      Members, practices-this-week, and 7-day activation, surfaced on the
+      Admin overview. Full analytics dashboards land in Phase 6.5.
 
 **Done when:** an event from any source can be verified server-side and award
-exactly once; QR/NFC/geo nodes exist as data; the engine is config-extensible
-(new earn = adapter + rule, not core change). *(Point values/rules deferred.)*
+exactly once; QR/NFC/geo nodes exist as data; **`practice.verified` flows and WAM
+is measurable**; the engine is config-extensible (new earn = adapter + rule, not
+core change). *(Point values/rules deferred.)*
 
 ---
 
@@ -202,14 +216,79 @@ contract — not reimplementing logic — and is the primary entry point.
 
 ---
 
+## Phase 6 — Communications spine, CRM "Studio" & AI agent  ·  *the growth engine*
+**Goal:** one notification / CRM / agent layer riding the **one event backbone**,
+all optimizing for the WAM North Star. **Depends on:** Phase 3 (backbone — built) +
+a **proven practice-retention loop (PMF)** before building the cathedral.
+**Governs:** [COMMS-CRM-ARCHITECTURE.md](COMMS-CRM-ARCHITECTURE.md) (ADR-024…028).
+
+> Build in this order; each step is usable alone. **Do not start the agent (6.6)
+> before the test harness exists.** Everything sends through the spine — never inline.
+
+- [~] **6.1 Backbone + spine** — **all email now flows through the outbox**
+      (`enqueueEmail` + cron `email` handler; every `lib/email.ts` sender enqueues,
+      List-Unsubscribe headers preserved); **`sendInviteEmail` wired** (invite-by-email
+      from Host Tools). Remaining: notification **router/registry** (event → category
+      → channels → template) + making `engagement_events` a multi-subscriber source.
+- [~] **6.2 Deliverability loop** — `email_events` + `email_suppressions` tables
+      (migration `20240220000000`); `/api/webhooks/resend` (Svix-verified) logs
+      delivery/engagement and **auto-suppresses hard bounces + complaints**;
+      `sendRawEmail` checks suppression before every send. Remaining: subdomain
+      reputation isolation (SPF/DKIM/DMARC, transactional vs marketing) + surfacing
+      open/click analytics. **Owner setup:** add the webhook in the Resend dashboard
+      + set `RESEND_WEBHOOK_SECRET`.
+- [~] **6.3 CRM data + Studio shell + Contacts** — DONE: `team_members` + `contacts`
+      (migration `20240221000000`); `lib/staff.ts requireStaff()` (separate staff
+      axis); the `app/(studio)/` shell gated at `/studio`; the Contacts list module;
+      **contacts auto-link on signup + backfill of existing members** (trigger +
+      migration `20240222000000`). Remaining: compute `engagement_score` (projection
+      off the backbone + `email_events`).
+- [~] **6.4 Marketing engine** — **Campaigns shipped** (migration `20240223000000`):
+      `/studio/campaigns` compose → send to a member segment (all / subscribed)
+      through the spine, consent-checked (`shouldSend` lifecycle) + suppression-aware
+      + per-recipient unsubscribe. **Automations rules engine shipped** (migration
+      `20240224000000`): `/studio/automations` rules subscribe to the event backbone
+      (`lib/automations.ts`, called from `recordEngagementEvent`) and act
+      (MVP: email the actor, consent-checked). Remaining: richer Segment builder,
+      Pipelines (Kanban funnels), conditions/drip sequences, React Email templates,
+      lead/non-member unsubscribe.
+- [~] **6.5 Analytics** — `/studio/analytics` surfaces the North Star (WAM,
+      practices/week, activation, new members), CRM counts (contacts, campaigns,
+      suppressed), and email performance + deliverability over 30 days
+      (`lib/studio/analytics.ts`). Remaining: funnel conversion, acquisition source,
+      cohort retention.
+- [~] **Test harness** — **Vitest** (`npm test`; `vitest.config.ts`, `@/` alias).
+      **17 tests** covering the pure authz core (`resolveCapabilities`, `atLeastRole`),
+      `currencyForSource`, the outbox **retry/backoff policy** (`nextRetry`), and the
+      Resend **webhook signature verification** (`verifyResendSignature`). Still to add
+      before agent *autonomy*: mocked DB tests for `shouldSend` consent + suppression
+      queries (the copilot agent is human-gated, so it ships without these).
+- [~] **6.6 Agent Console (copilot)** — shipped (migration `20240225000000`):
+      `/studio/agent` Action Queue, a deterministic winback proposer
+      (`lib/studio/agent.ts`), one-click **Approve & send** / Dismiss, and approved
+      actions run **through the spine** (consent + suppression + unsubscribe).
+      Remaining: swap the deterministic proposer for a live Claude operator + the
+      bounded tool surface; per-action-type autonomy + caps/kill-switch/audit
+      (needs the spine test coverage first).
+- [ ] **6.7 Inbox** — 2-way replies (v2).
+
+**Done when:** every send flows through the spine (none inline); the CRM timeline,
+`engagement_score`, and WAM are **projections of the one backbone**; the agent runs
+in copilot with guardrails it structurally cannot bypass. *(Deliverability + privacy
+non-negotiables: COMMS-CRM-ARCHITECTURE §6.)*
+
+---
+
 ## Dependency map
 
 ```
  0 Foundations ─┬─▶ 1 Web IA/framework
-                ├─▶ 2 Authz convergence ─▶ 3 Gamification/physical ─▶ 5 Mobile
-                └────────────────────────────────────────────────────▶ 5 Mobile
+                ├─▶ 2 Authz convergence ─▶ 3 Gamification/physical ─┬─▶ 5 Mobile
+                │                              │ (practice loop/PMF) └─▶ 6 Comms/CRM/Agent
+                └──────────────────────────────────────────────────────▶ 5 Mobile
                                           4 Scale hardening (parallel, metric-driven)
 ```
 
-Phases 0→1 can run nearly together. 2 enables 3. 3 + 2 enable 5. 4 is continuous,
-triggered by measurements, not calendar.
+Phases 0→1 can run nearly together. 2 enables 3. 3 + 2 enable 5. **6 rides 3's event
+backbone but waits on a proven practice-retention loop (PMF); its agent step waits on
+a test harness.** 4 is continuous, triggered by measurements, not calendar.

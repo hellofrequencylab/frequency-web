@@ -1,9 +1,10 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { CalendarDays, MapPin, Users, ExternalLink } from 'lucide-react'
+import { CalendarDays, MapPin, Users, ExternalLink, Check } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { toggleRSVP } from '../actions'
+import { EventCheckInButton } from './check-in-button'
 import { CrewGateButton } from '@/components/crew-gate-button'
 import { ContextActions } from '@/components/context-actions'
 import { getInitials } from '@/lib/utils'
@@ -142,6 +143,24 @@ export default async function EventDetailPage({
   }
 
   const isPast = new Date(event.starts_at) < new Date()
+  // RSVP stays changeable until the event actually ENDS (not merely starts), so a
+  // member can still un-RSVP during a live session. Falls back to starts_at when
+  // no end time is set.
+  const hasEnded = new Date(event.ends_at ?? event.starts_at) < new Date()
+
+  const isGoing = myRsvpStatus === 'going'
+
+  // Practice check-in availability + whether the viewer already checked in.
+  const canCheckIn = !!myProfileId && isGoing && isPast && !event.is_cancelled
+  let alreadyCheckedIn = false
+  if (canCheckIn && myProfileId) {
+    const { data: ci } = await admin
+      .from('engagement_events')
+      .select('id')
+      .eq('idempotency_key', `event_checkin:${event.id}:${myProfileId}`)
+      .maybeSingle()
+    alreadyCheckedIn = !!ci
+  }
 
   return (
     <div>
@@ -230,51 +249,88 @@ export default async function EventDetailPage({
         </div>
       </div>
 
-      {/* ── Actions ────────────────────────────────── */}
-      {!event.is_cancelled && !isPast && myProfileId && (
-        <div className="flex items-center gap-3 mb-6 flex-wrap">
-          <CrewGateButton
-            isCrew={isCrew}
-            label={myRsvpStatus === 'going' ? "✓ Going (click to undo)" : "RSVP: I'm going"}
-            buttonClassName={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors inline-flex items-center gap-1.5 ${
-              myRsvpStatus === 'going'
-                ? 'bg-success-bg text-success hover:bg-danger-bg hover:text-danger'
-                : 'bg-primary text-on-primary hover:bg-primary-hover'
-            }`}
-          >
-            <form action={toggleRSVP.bind(null, event.id, myRsvpStatus)}>
-              <button
-                type="submit"
-                className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-                  myRsvpStatus === 'going'
-                    ? 'bg-success-bg text-success hover:bg-danger-bg hover:text-danger'
-                    : 'bg-primary text-on-primary hover:bg-primary-hover'
-                }`}
+      {/* ── Actions: RSVP while upcoming, then Check in at event time ── */}
+      {!event.is_cancelled && myProfileId && (
+        <div className="mb-6">
+          {!isPast ? (
+            /* Upcoming: RSVP toggle + add-to-calendar */
+            <div className="flex items-center gap-3 flex-wrap">
+              <CrewGateButton
+                isCrew={isCrew}
+                label={isGoing ? '✓ Going' : "RSVP: I'm going"}
+                buttonClassName="rounded-lg px-4 py-2 text-sm font-semibold transition-colors inline-flex items-center gap-1.5 bg-primary text-on-primary hover:bg-primary-hover"
               >
-                {myRsvpStatus === 'going' ? "✓ Going (click to undo)" : "RSVP: I'm going"}
-              </button>
-            </form>
-          </CrewGateButton>
+                <form action={toggleRSVP.bind(null, event.id, myRsvpStatus)}>
+                  <button
+                    type="submit"
+                    className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
+                      isGoing
+                        ? 'bg-success-bg text-success hover:bg-danger-bg hover:text-danger'
+                        : 'bg-primary text-on-primary hover:bg-primary-hover'
+                    }`}
+                  >
+                    {isGoing ? '✓ Going (click to undo)' : "RSVP: I'm going"}
+                  </button>
+                </form>
+              </CrewGateButton>
 
-          <a
-            href={googleCalendarUrl(event)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted hover:border-border-strong hover:bg-surface transition-colors"
-          >
-            <ExternalLink className="w-3.5 h-3.5" />
-            Add to Google Calendar
-          </a>
-
-          <a
-            href={`/events/${event.slug}/event.ics`}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:border-gray-300 hover:bg-gray-50 transition-colors"
-            title="Apple Calendar, Outlook, and any iCal-compatible app"
-          >
-            <CalendarDays className="w-3.5 h-3.5" />
-            Add to Calendar (.ics)
-          </a>
-
+              <a
+                href={googleCalendarUrl(event)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted hover:border-border-strong hover:bg-surface transition-colors"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                Add to Google Calendar
+              </a>
+              <a
+                href={`/events/${event.slug}/event.ics`}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted hover:border-border-strong hover:bg-surface transition-colors"
+                title="Apple Calendar, Outlook, and any iCal-compatible app"
+              >
+                <CalendarDays className="w-3.5 h-3.5" />
+                Add to Calendar (.ics)
+              </a>
+            </div>
+          ) : isGoing ? (
+            /* Event time, going: Check in is the primary action; Cancel RSVP is a quiet link */
+            <div className="flex items-center gap-4 flex-wrap">
+              {alreadyCheckedIn ? (
+                <div className="inline-flex items-center gap-2 rounded-lg bg-success-bg text-success px-4 py-2 text-sm font-semibold">
+                  <Check className="w-4 h-4" />
+                  Checked In
+                </div>
+              ) : (
+                <EventCheckInButton eventId={event.id} />
+              )}
+              {!hasEnded && (
+                <form action={toggleRSVP.bind(null, event.id, myRsvpStatus)}>
+                  <button
+                    type="submit"
+                    className="text-xs text-subtle hover:text-danger underline underline-offset-2 transition-colors"
+                  >
+                    Cancel RSVP
+                  </button>
+                </form>
+              )}
+            </div>
+          ) : !hasEnded ? (
+            /* Event started, not going yet: still allow joining */
+            <CrewGateButton
+              isCrew={isCrew}
+              label="RSVP: I'm going"
+              buttonClassName="rounded-lg px-4 py-2 text-sm font-semibold transition-colors inline-flex items-center gap-1.5 bg-primary text-on-primary hover:bg-primary-hover"
+            >
+              <form action={toggleRSVP.bind(null, event.id, myRsvpStatus)}>
+                <button
+                  type="submit"
+                  className="rounded-lg px-4 py-2 text-sm font-semibold transition-colors bg-primary text-on-primary hover:bg-primary-hover"
+                >
+                  RSVP: I&apos;m going
+                </button>
+              </form>
+            </CrewGateButton>
+          ) : null}
         </div>
       )}
 
