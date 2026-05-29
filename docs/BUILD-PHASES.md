@@ -239,9 +239,10 @@ a **proven practice-retention loop (PMF)** before building the cathedral.
       + set `RESEND_WEBHOOK_SECRET`.
 - [~] **6.3 CRM data + Studio shell + Contacts** — DONE: `team_members` + `contacts`
       (migration `20240221000000`); `lib/staff.ts requireStaff()` (separate staff
-      axis); the `app/(studio)/` shell gated at `/studio`; the Contacts list module.
-      Remaining: auto-link `contacts` on signup + backfill, and compute
-      `engagement_score` (projection off the backbone + `email_events`).
+      axis); the `app/(studio)/` shell gated at `/studio`; the Contacts list module;
+      **contacts auto-link on signup + backfill of existing members** (trigger +
+      migration `20240222000000`). Remaining: compute `engagement_score` (projection
+      off the backbone + `email_events`).
 - [ ] **6.4 Marketing engine** — Segments + Templates (React Email) → **Campaigns**
       (first real sends) → Pipelines (Kanban funnels) → Automations (drip +
       trigger→condition→action rules engine).
