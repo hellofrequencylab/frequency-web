@@ -64,3 +64,23 @@ Most features hit #1 every time and #2 sometimes.
 - [ ] Notion: training page updated **only if** user/operator-facing behavior changed
 - [ ] Notion: page's "Source of truth" points back to the git doc
 - [ ] Confirm the Notion page does not duplicate code/schema — it links to it
+
+## Automation in Claude Code
+
+This protocol is wired into the repo so the double-write is low-friction and hard to forget:
+
+- **`AGENTS.md`** carries an inline summary of the router — it is injected into **every**
+  Claude Code session in this repo, so the routing rule is always in context.
+- **`/sync-docs` skill** (`.claude/skills/sync-docs/`) runs the full double-write on
+  demand: it inspects the diff, updates the right `docs/*.md` + ADR + roadmap, updates or
+  creates the matching Notion training page in place, commits, and pushes. Run it after
+  designing/shipping a change (or just say "sync the docs").
+- **Docs-drift Stop hook** (`.claude/hooks/docs-drift-check.sh`, registered in
+  `.claude/settings.json`) prints a one-line reminder when the latest commit or the
+  working tree changes code under `app/`, `lib/`, `components/`, or `supabase/migrations/`
+  without a matching docs change. It never blocks — it just nudges you to run `/sync-docs`.
+
+Together: you design and push; the hook catches undocumented code; `/sync-docs` (or any
+session following `AGENTS.md`) performs the git + Notion update. The Notion half only fires
+when the change is operator/user-facing, keeping the training database lean.
+
