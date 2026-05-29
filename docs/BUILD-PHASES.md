@@ -76,17 +76,27 @@ PAGE-FRAMEWORK.
       `topical_channels` table unchanged. **Follow-up (needs visual QA):** sweep
       any remaining "Channel" copy on cards/`[id]` page, decide the "tune in"
       verb, and reconcile with the public `/discover` layer which says "Topics".
-- [ ] Demote Hubs & Nexuses from member nav → contextual links + Admin.
+- [x] Demote Hubs & Nexuses from member nav → already absent from the primary
+      nav (folded under "Circles" in `isActive`); contextual hub/nexus breadcrumb
+      links already render on circle cards. Satisfied.
 - [~] In-person **icon designator** (📍 "In person" badge; virtual = unmarked
       default) on the `/circles` cards; capacity line already shows the cap.
       **Follow-up (visual QA):** mirror the badge on the circle detail header.
 - [ ] Implement the **3 templates** (Stream / Index / Detail) as shared components.
+      *(Foundations ready: capability resolver + `lib/contract` view models.
+      Needs a running app for visual QA — do with the owner available.)*
 - [ ] Implement **module + slot composition** + scope-aware right rail +
       **capability-driven inline action slots** (the inline-admin foundation).
+      *(Wire `getCircleCapabilities`/`getProfileCapabilities` into the circle &
+      profile pages; render `circle.editSettings` / `profile.edit` affordances
+      inline. Behavioral + visual — needs the app running.)*
 
 **Done when:** every main page renders via one of the 3 templates; inline actions
 appear by capability (host edits inline, member sees content only); a newcomer can
-read the nav without explanation.
+read the nav without explanation. **Status:** quick wins landed (nav grouping,
+Interests rename, in-person badge, hubs/nexuses demotion); the templates +
+inline-admin system is the remaining major slice and is best done with a running
+app (visual QA), since it changes page rendering and behavior.
 
 ---
 
