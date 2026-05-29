@@ -15,6 +15,9 @@ New here? Start with the handoff docs in [`docs/`](docs/):
 - [Decisions](docs/DECISIONS.md) — architecture decision records (ADRs): the *why*
   behind proxy.ts, the admin client, RLS helpers, the hierarchy evolution, presence,
   gamification currencies, and more.
+- [Docs Protocol](docs/DOCS-PROTOCOL.md) — how docs are routed: **technical → git,
+  instructional → the Notion training database**, without duplication. Follow it on
+  every change.
 
 The product roadmap (P0–P7) lives in [`ROADMAP.md`](ROADMAP.md).
 
