@@ -30,10 +30,14 @@
       webhook to `https://go.findafreq.com/api/webhooks/resend` for delivery/bounce/
       complaint events, and set `RESEND_WEBHOOK_SECRET` (the `whsec_…` value) in env.
       Without it the endpoint rejects all calls (so bounces won't auto-suppress).
-- [ ] **Regenerate DB types** after applying (the new tables use an untyped client
-      view until then): `npx supabase gen types typescript --linked > lib/database.types.ts`,
-      then `npx tsc --noEmit`. Optional: once regenerated, drop the
-      `as unknown as SupabaseClient` casts in `lib/engagement/*` for full typing.
+- [ ] **Regenerate DB types** (all 12 migrations are applied to prod, but the
+      committed `lib/database.types.ts` predates the Phase-6 tables — campaigns,
+      automation_rules, agent_actions, contacts, team_members, email_events,
+      email_suppressions). Run `npx supabase gen types typescript --linked >
+      lib/database.types.ts`, then `npx tsc --noEmit`. **After that**, the
+      `as unknown as SupabaseClient` casts in `lib/studio/*`, `lib/automations.ts`,
+      `lib/staff.ts`, `lib/suppression.ts` can be dropped for full typing (they're a
+      deliberate stopgap, not a bug — code works as-is).
 - [ ] **Local sanity check** — `npm install` (if needed) → `npx tsc --noEmit`
       (should be clean) → `npm run dev` and load the app.
 
