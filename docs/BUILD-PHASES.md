@@ -163,15 +163,14 @@ ENGAGEMENT-ARCHITECTURE.
       verify → ledger (exactly-once) → capture row → `awardZaps(node.zaps_value)`.
       Physical loop is functional end-to-end. *(Repeatable-node idempotency keying
       still TODO; node reward amounts are tunable via `nodes.zaps_value`.)*
-- [ ] **`practice.verified` — the North-Star event (ADR-024).** Add as a
-      first-class `event_type`; emit it from verified-practice sources (event
-      **check-in** [ROADMAP P2.13], logged practice, verified node check-in) through
-      the verifier; key **zaps + streaks** on it above social. *This is the
-      practice-retention loop — build it deliberately.*
-- [ ] **WAP + activation instrumentation** — read-models off `engagement_events`:
-      Weekly Active Practitioners + "first verified practice within N days of
-      joining." Instrument **first** (leading retention indicator). Full analytics
-      dashboards land in Phase 6.5.
+- [~] **`practice.verified`, the North-Star event (ADR-024).** First-class
+      `event_type` shipped: server-verified **event check-in** emits it and keys
+      zaps + an attendance streak on it. Remaining sources: logged practice +
+      verified node check-in. *The practice-retention loop; build it deliberately.*
+- [~] **WAP + activation instrumentation** (read-models off `engagement_events`):
+      `getPracticeMetrics` (`lib/analytics/practice.ts`) computes Weekly Active
+      Practitioners, practices-this-week, and 7-day activation, surfaced on the
+      Admin overview. Full analytics dashboards land in Phase 6.5.
 
 **Done when:** an event from any source can be verified server-side and award
 exactly once; QR/NFC/geo nodes exist as data; **`practice.verified` flows and WAP
