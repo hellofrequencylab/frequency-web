@@ -10,8 +10,23 @@ terms), [DATABASE.md](DATABASE.md) (schema), and [BACKLOG.md](BACKLOG.md) (what'
 - **React 19**, **TypeScript** (strict; `noUnusedLocals` is off, so unused
   locals/imports are ESLint warnings, not type errors).
 - **Supabase** (Postgres + Auth + Realtime) via `@supabase/ssr`.
-- **Tailwind v4** + shadcn/ui.
+- **Tailwind v4** — hand-written components against the DAWN semantic-token layer
+  (`app/globals.css`); **no component library** (no shadcn/Radix in `package.json`).
+  Icons via `lucide-react`. See ADR-011 in [DECISIONS.md](DECISIONS.md).
 - Hosted on **Vercel**; cron via `vercel.json`.
+
+### Domain & canonical URL
+
+Production is served at the custom domain **`go.findafreq.com`** (GoDaddy CNAME →
+Vercel; Supabase Site URL set to match). This host is hardcoded as the fallback in
+a few server paths (invite signup link, admin auth `redirectTo`, privacy page).
+
+Separately, `lib/site.ts` derives `SITE_URL` — used for **canonical tags, sitemap,
+robots, OpenGraph, and JSON-LD** — from `NEXT_PUBLIC_SITE_URL`, falling back to
+`https://frequency-web-three.vercel.app`. **If `NEXT_PUBLIC_SITE_URL` is not set in
+the Vercel project, those SEO surfaces advertise the vercel.app domain even though
+the app is served at go.findafreq.com** (canonical/sitemap drift). Set
+`NEXT_PUBLIC_SITE_URL=https://go.findafreq.com` in Vercel — see BACKLOG.
 
 ## Directory map
 

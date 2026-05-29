@@ -87,6 +87,9 @@ mobile.
   touching code.**
 - [GLOSSARY](docs/GLOSSARY.md) — domain language. [DATABASE](docs/DATABASE.md) —
   tables, enums, migrations. [BACKLOG](docs/BACKLOG.md) — hygiene + env vars.
+- [DECISIONS](docs/DECISIONS.md) — architecture decision records (ADRs).
+  [DOCS-PROTOCOL](docs/DOCS-PROTOCOL.md) — how docs are routed (**technical → git,
+  instructional → Notion**). Follow it on every change.
 - [ROADMAP](ROADMAP.md) — product feature roadmap (P0–P7).
   [SEO-AEO-PLAN](SEO-AEO-PLAN.md) — discovery layer.
 
