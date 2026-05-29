@@ -87,10 +87,11 @@ PAGE-FRAMEWORK.
 - [~] In-person **icon designator** (📍 "In person" badge; virtual = unmarked
       default) on the `/circles` cards; capacity line already shows the cap.
       **Follow-up (visual QA):** mirror the badge on the circle detail header.
-- [~] **3 templates** — **Detail** shell built
-      (`components/templates/detail-template.tsx`: context header + badges +
-      actions slot + tabs + body). Stream/Index thin shells + **wiring pages onto
-      templates** still pending (needs running app for visual QA).
+- [~] **3 templates** — all three shells built: **Detail** (header + badges +
+      actions + tabs + body), **Index** (`index-template.tsx`: title + description +
+      action + toolbar), **Stream** (`stream-template.tsx`: title + composer + sort).
+      `/circles` migrated onto Index. Remaining: migrate `/feed` onto Stream + the
+      other index pages (Interests/Events/Partners/Directory) as a sweep.
 - [~] **Module + slot + inline actions** — shared module chrome
       (`components/modules/module-card.tsx`) + capability gating
       (`components/ui/can.tsx`). **Inline admin WIRED + verified live:** the circle
