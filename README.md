@@ -70,7 +70,7 @@ mobile.
    verify → ledger → reward backbone hosting all gamification sources.
 6. [TECH-STRATEGY](docs/TECH-STRATEGY.md) — the capstone: recommended stack,
    decisions made, and the phased plan.
-7. [COMMS-CRM-ARCHITECTURE](docs/COMMS-CRM-ARCHITECTURE.md) — the **WAP North Star**,
+7. [COMMS-CRM-ARCHITECTURE](docs/COMMS-CRM-ARCHITECTURE.md) — the **WAM North Star**,
    the one event backbone, the comms spine, the CRM "Studio", and the AI agent
    (governs **Phase 6**).
 

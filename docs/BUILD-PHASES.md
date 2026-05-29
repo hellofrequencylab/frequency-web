@@ -11,7 +11,7 @@
 > as [ROADMAP](../ROADMAP.md), which tracks *product features*; this tracks
 > *architecture*).
 
-> **North Star — Weekly Active Practitioners (WAP):** members with ≥1 *verified
+> **North Star — Weekly Active Members (WAM):** members with ≥1 *verified
 > practice* in a rolling 7 days. **Every phase optimizes for this one number**;
 > `practice.verified` is the canonical event. See
 > [COMMS-CRM-ARCHITECTURE.md](COMMS-CRM-ARCHITECTURE.md) §0 + ADR-024.
@@ -167,13 +167,13 @@ ENGAGEMENT-ARCHITECTURE.
       `event_type` shipped: server-verified **event check-in** emits it and keys
       zaps + an attendance streak on it. Remaining sources: logged practice +
       verified node check-in. *The practice-retention loop; build it deliberately.*
-- [~] **WAP + activation instrumentation** (read-models off `engagement_events`):
+- [~] **WAM + activation instrumentation** (read-models off `engagement_events`):
       `getPracticeMetrics` (`lib/analytics/practice.ts`) computes Weekly Active
-      Practitioners, practices-this-week, and 7-day activation, surfaced on the
+      Members, practices-this-week, and 7-day activation, surfaced on the
       Admin overview. Full analytics dashboards land in Phase 6.5.
 
 **Done when:** an event from any source can be verified server-side and award
-exactly once; QR/NFC/geo nodes exist as data; **`practice.verified` flows and WAP
+exactly once; QR/NFC/geo nodes exist as data; **`practice.verified` flows and WAM
 is measurable**; the engine is config-extensible (new earn = adapter + rule, not
 core change). *(Point values/rules deferred.)*
 
@@ -218,7 +218,7 @@ contract — not reimplementing logic — and is the primary entry point.
 
 ## Phase 6 — Communications spine, CRM "Studio" & AI agent  ·  *the growth engine*
 **Goal:** one notification / CRM / agent layer riding the **one event backbone**,
-all optimizing for the WAP North Star. **Depends on:** Phase 3 (backbone — built) +
+all optimizing for the WAM North Star. **Depends on:** Phase 3 (backbone — built) +
 a **proven practice-retention loop (PMF)** before building the cathedral.
 **Governs:** [COMMS-CRM-ARCHITECTURE.md](COMMS-CRM-ARCHITECTURE.md) (ADR-024…028).
 
@@ -239,7 +239,7 @@ a **proven practice-retention loop (PMF)** before building the cathedral.
 - [ ] **6.4 Marketing engine** — Segments + Templates (React Email) → **Campaigns**
       (first real sends) → Pipelines (Kanban funnels) → Automations (drip +
       trigger→condition→action rules engine).
-- [ ] **6.5 Analytics** — WAP, activation, funnel conversion, acquisition, email
+- [ ] **6.5 Analytics** — WAM, activation, funnel conversion, acquisition, email
       performance, deliverability, engagement/cohort.
 - [ ] **Test harness** around spine + consent + suppression — **gates 6.6.** (Repo
       has no test framework today; this is a non-negotiable before agent autonomy.)
@@ -249,7 +249,7 @@ a **proven practice-retention loop (PMF)** before building the cathedral.
 - [ ] **6.7 Inbox** — 2-way replies (v2).
 
 **Done when:** every send flows through the spine (none inline); the CRM timeline,
-`engagement_score`, and WAP are **projections of the one backbone**; the agent runs
+`engagement_score`, and WAM are **projections of the one backbone**; the agent runs
 in copilot with guardrails it structurally cannot bypass. *(Deliverability + privacy
 non-negotiables: COMMS-CRM-ARCHITECTURE §6.)*
 
