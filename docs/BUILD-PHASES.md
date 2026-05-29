@@ -158,7 +158,10 @@ ENGAGEMENT-ARCHITECTURE.
       backoff) + `/api/cron/process-queue` (every 2 min; durable web-push handler
       shipped). *Follow-up: migrate inline send sites (email/push fan-out) onto
       the queue; add `SELECT … FOR UPDATE SKIP LOCKED` claim if concurrency grows.*
-- [ ] Realtime **reward feedback** via Supabase Broadcast.
+- [x] **Reward feedback** — live "+N zaps" toast (`components/zap-toast.tsx`,
+      `showZapToast` + container in the main layout, mirroring achievement-toast)
+      fired on event check-in and node claim. *(In-tab CustomEvent; cross-device
+      Supabase Broadcast can layer on later if needed.)*
 - [x] **Capture orchestration** — `captureNode()` (`lib/engagement/capture.ts`):
       verify → ledger (exactly-once) → capture row → `awardZaps(node.zaps_value)`.
       Physical loop is functional end-to-end. *(Repeatable-node idempotency keying
