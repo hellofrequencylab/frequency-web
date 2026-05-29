@@ -9,28 +9,31 @@
 export function StreamTemplate({
   title,
   description,
+  action,
   composer,
   sort,
   children,
 }: {
   title: React.ReactNode
   description?: React.ReactNode
+  /** Header-right action, e.g. a create menu. */
+  action?: React.ReactNode
   /** Composer / create-post slot rendered above the stream. */
   composer?: React.ReactNode
-  /** Sort/filter control shown on the header row (right side). */
+  /** Sort/filter control shown on the header row (right side). Use when there's no `action`. */
   sort?: React.ReactNode
   children: React.ReactNode
 }) {
   return (
     <div>
-      <div className="flex items-end justify-between gap-4 mb-4">
+      <div className="flex items-end justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-text mb-1">{title}</h1>
           {description && (
             <p className="text-sm text-muted leading-relaxed max-w-2xl">{description}</p>
           )}
         </div>
-        {sort && <div className="shrink-0">{sort}</div>}
+        {(action || sort) && <div className="shrink-0">{action ?? sort}</div>}
       </div>
       {composer && <div className="mb-6">{composer}</div>}
       {children}
