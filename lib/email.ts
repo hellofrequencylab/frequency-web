@@ -14,6 +14,7 @@ import { Resend } from 'resend'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import type { NotificationCategory } from '@/lib/notification-preferences'
 import { enqueue } from '@/lib/queue/outbox'
+import { isSuppressed } from '@/lib/suppression'
 
 const apiKey  = process.env.RESEND_API_KEY
 const FROM    = process.env.EMAIL_FROM ?? 'Frequency <noreply@hellofrequency.com>'
@@ -52,6 +53,11 @@ export interface EmailPayload {
 export async function sendRawEmail(payload: EmailPayload): Promise<void> {
   const client = getClient()
   if (!client) return
+  // Deliverability guard: never re-mail a suppressed address (hard bounce / complaint).
+  if (await isSuppressed(payload.to)) {
+    console.warn(`[email] skipped suppressed address: ${payload.to}`)
+    return
+  }
   const { error } = await client.emails.send({ from: FROM, ...payload })
   if (error) {
     throw new Error(`[email] send failed: ${typeof error === 'string' ? error : JSON.stringify(error)}`)
