@@ -24,6 +24,8 @@ export interface CaptureResult {
   ok: boolean
   reason?: VerifyReason | 'unknown_node' | 'already_captured'
   zapsAwarded?: number
+  /** Title of the partner offer unlocked, when the node is a partner plaque. */
+  offerTitle?: string | null
 }
 
 /**
@@ -42,7 +44,7 @@ export async function captureNode(attempt: CaptureAttempt): Promise<CaptureResul
 
   const { data: node } = await db
     .from('nodes')
-    .select('type, zaps_value')
+    .select('type, zaps_value, partner_id')
     .eq('id', attempt.nodeId)
     .maybeSingle()
   if (!node) return { ok: false, reason: 'unknown_node' }
@@ -74,5 +76,25 @@ export async function captureNode(attempt: CaptureAttempt): Promise<CaptureResul
     await awardZaps(attempt.actorProfileId, amount)
   }
 
-  return { ok: true, zapsAwarded: amount > 0 ? amount : 0 }
+  // 5) Partner plaque → log a redemption + surface the unlocked offer.
+  let offerTitle: string | null = null
+  if (node.partner_id) {
+    const { data: offer } = await db
+      .from('partner_offers')
+      .select('id, title')
+      .eq('partner_id', node.partner_id)
+      .eq('active', true)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    await db.from('partner_redemptions').insert({
+      partner_id: node.partner_id,
+      offer_id: offer?.id ?? null,
+      profile_id: attempt.actorProfileId,
+      source,
+    })
+    offerTitle = offer?.title ?? null
+  }
+
+  return { ok: true, zapsAwarded: amount > 0 ? amount : 0, offerTitle }
 }
