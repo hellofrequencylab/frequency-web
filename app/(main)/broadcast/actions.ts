@@ -2,15 +2,14 @@
 
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getCallerProfile, type CommunityRole } from '@/lib/auth'
+import { getCallerProfile } from '@/lib/auth'
 import { sendDispatchNotificationEmail } from '@/lib/email'
 import { shouldSend } from '@/lib/notification-preferences'
 import { sendPushToProfile } from '@/lib/push'
+import { atLeastRole } from '@/lib/core/roles'
 
-const HIERARCHY: CommunityRole[] = ['member', 'crew', 'host', 'guide', 'mentor', 'janitor']
-function hasRole(role: CommunityRole, min: CommunityRole) {
-  return HIERARCHY.indexOf(role) >= HIERARCHY.indexOf(min)
-}
+// Role-ladder comparison — single source in lib/core/roles.
+const hasRole = atLeastRole
 
 async function getCallerProfileId(): Promise<string | null> {
   const p = await getCallerProfile()
