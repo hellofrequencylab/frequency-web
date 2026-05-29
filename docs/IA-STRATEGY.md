@@ -303,15 +303,18 @@ local commitment → embodied gathering.
 > the cell-multiplication mechanics — and nothing else. No religious framing, no
 > religious role names. Frequency is not religious or religiously affiliated.
 
-- **Frequency Lab** — an in-person **third space** (a physical venue); nodes in a
-  worldwide network. A Lab is **earned, not pre-placed**: it sprouts up where
-  demand is already proven (§D2). It's the **physical graduation of a mature
-  neighborhood (Hub)**, not a container you slot circles into. Circles and Hub
-  gatherings come first; the Lab is what their growth earns.
-- **Circle** — the small group, weekly practice; meets at/near a Lab if in-person.
+- **Frequency Lab** — a physical in-person **third space**. **Out of scope for
+  the website** — it's the *other half* of the overall plan (first one ~a year
+  out), managed separately. Captured here only so the crossover makes sense: a
+  **Nexus is designed to surround a Lab** (the tie-in). Circles and Hubs spread;
+  by the time a local community is Nexus-sized, the model is already proven enough
+  to justify a physical location. The website does **not** model Labs or "prove
+  demand."
+- **Circle** — the small group, weekly practice; meets in person and/or virtual.
 - **Hub** — the *neighborhood*: the cluster of circles in a locale, **and itself
   a gathering body** — community meetups, parties, bigger events.
-- **Nexus** — the *whole area*: gathers quarterly — galas, big events.
+- **Nexus** — the *whole area*: gathers quarterly — galas, big events. Designed to
+  surround a (future) Lab.
 - **Mentor** — an **oversight/support role, not an operational one.** Looks after
   the **guides** (and through them the health of all their circles); doesn't run
   day-to-day operations. Plain secular language; the authz ladder is unchanged.
@@ -354,19 +357,14 @@ Both produce circles; circles cluster into Hubs; Hubs into Nexuses. Growth is
 **bottom-up**; Hubs/Nexuses are the *emergent result*, surfaced to members as
 **places + events**, never as nav.
 
-### D2. The growth engine *is* the marketing engine
+### D2. Out of website scope — Labs & demand-proving
 
-For in-person circles especially, splitting/growth is **how the message spreads
-and how we prove demand for a third space before spending on marketing or real
-estate.** A neighborhood whose in-person circles keep filling and splitting is a
-*validated market* — and that signal is what justifies opening a physical
-**Frequency Lab** there. Build the space (and market it) *after* the need is
-proven, not before.
-
-The platform's job is to make that demand **legible**: a "this neighborhood is
-ready for a Lab" signal — a demand heatmap of growing/splitting in-person circles
-(ties to ROADMAP P3.14 map discovery; `circles` already has `lat/lng/city`).
-This is a leadership/admin surface, not member nav.
+The physical-network side (building Frequency Labs, proving demand for a new
+area) is a **separate function** (investor / operations, ~a year out). The
+website owns the **virtual + community-growth** half: Topics, Circles,
+gatherings, and the splitting/growth engine that spreads the community. A
+Nexus-sized community is the hand-off point to the physical plan — but the
+website does **not** build it, gate on it, or model demand-proving.
 
 ### E. Discovery & entry (the browse-first onboarding)
 
@@ -396,19 +394,15 @@ This is a leadership/admin surface, not member nav.
 
 ### Open structural questions (resolve before building)
 
-1. **What is a "Frequency Lab" in the schema?** A physical third-space venue a
-   neighborhood *earns* once demand is proven (§D2) — the graduation of a Hub,
-   **not** the `outposts` concept (which sits above Nexus). Recommend a
-   `labs`/venue entity linked to a Hub, created when demand thresholds are met.
-2. **Hub- and Nexus-scoped events** (meetups, galas) — do `events.scope_type`
-   values support hub/nexus? If not, that's the gap the church model requires.
-3. **Program model** — confirm Interest-level template → circle-level instance
+1. **Hub- and Nexus-scoped events** (meetups, galas) — do `events.scope_type`
+   values support hub/nexus? If not, that's the gap the gathering ladder requires.
+2. **Program model** — confirm Interest-level template → circle-level instance
    (P2.11/P2.12). "Add to Circle" = instantiate program + set adopter as host.
-4. **Mentor copy** — describe as oversight/support of guides (non-operational),
+3. **Mentor copy** — describe as oversight/support of guides (non-operational),
    in plain secular language, without changing authz.
-5. **Circle ↔ topic cardinality.** One topic per circle today vs. the multi-topic
+4. **Circle ↔ topic cardinality.** One topic per circle today vs. the multi-topic
    discovery the onboarding wants. Decide *single-primary + tags* or full
    *many-to-many* (§E).
-6. **Demand signal** — define what "proven demand" means numerically (e.g. N
-   active in-person circles + M splits within a radius) so the "ready for a Lab"
-   surface (§D2) can be built later.
+
+> Labs and demand-proving are **out of website scope** (§D2) — not open questions
+> for this codebase.
