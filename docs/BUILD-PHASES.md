@@ -257,8 +257,11 @@ a **proven practice-retention loop (PMF)** before building the cathedral.
       suppressed), and email performance + deliverability over 30 days
       (`lib/studio/analytics.ts`). Remaining: funnel conversion, acquisition source,
       cohort retention.
-- [ ] **Test harness** around spine + consent + suppression — **gates 6.6.** (Repo
-      has no test framework today; this is a non-negotiable before agent autonomy.)
+- [~] **Test harness** — **Vitest added** (`npm test` → `vitest run`; `vitest.config.ts`
+      with the `@/` alias). First suite covers the pure authz core
+      (`resolveCapabilities`, `atLeastRole`) + `currencyForSource` (11 tests). Still
+      to add before agent autonomy (6.6): mocked tests for the spine (outbox,
+      `shouldSend` consent, suppression).
 - [ ] **6.6 Agent Console (copilot)** — bounded tool surface, Action Queue +
       one-click approval, per-action-type autonomy via approval-flag, governance
       (frequency/spend caps, dry-run, kill switch, audit log).
