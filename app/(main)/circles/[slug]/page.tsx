@@ -331,7 +331,7 @@ export default async function CirclePage({
             <FeedList
               circleIds={[circle.id]} showPublicLayer={false}
               myProfileId={myProfileId}
-              viewerRole={isHost ? 'host' : isCrew ? 'crew' : 'member'}
+              viewerRole={canManage ? 'host' : isCrew ? 'crew' : 'member'}
               emptyMessage="No posts yet. Be the first to share something."
             />
           </div>
