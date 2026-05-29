@@ -262,9 +262,13 @@ a **proven practice-retention loop (PMF)** before building the cathedral.
       (`resolveCapabilities`, `atLeastRole`) + `currencyForSource` (11 tests). Still
       to add before agent autonomy (6.6): mocked tests for the spine (outbox,
       `shouldSend` consent, suppression).
-- [ ] **6.6 Agent Console (copilot)** — bounded tool surface, Action Queue +
-      one-click approval, per-action-type autonomy via approval-flag, governance
-      (frequency/spend caps, dry-run, kill switch, audit log).
+- [~] **6.6 Agent Console (copilot)** — shipped (migration `20240225000000`):
+      `/studio/agent` Action Queue, a deterministic winback proposer
+      (`lib/studio/agent.ts`), one-click **Approve & send** / Dismiss, and approved
+      actions run **through the spine** (consent + suppression + unsubscribe).
+      Remaining: swap the deterministic proposer for a live Claude operator + the
+      bounded tool surface; per-action-type autonomy + caps/kill-switch/audit
+      (needs the spine test coverage first).
 - [ ] **6.7 Inbox** — 2-way replies (v2).
 
 **Done when:** every send flows through the spine (none inline); the CRM timeline,
