@@ -3,8 +3,8 @@
 // recompute) instead of running them inline where a provider outage would drop
 // them. A cron drains the queue with retries + exponential backoff. Server-only.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { Json } from '@/lib/database.types'
 
 export interface QueueJob {
   id: string
@@ -25,10 +25,8 @@ export interface ProcessResult {
 
 const BACKOFF_BASE_MS = 60_000 // 1m → 2m → 4m → 8m …
 
-// notification_queue isn't in the generated Database types until the migration
-// (20240219000000) is applied + types regenerated; untyped client view for now.
-function db(): SupabaseClient {
-  return createAdminClient() as unknown as SupabaseClient
+function db() {
+  return createAdminClient()
 }
 
 /** Enqueue a job. `runAfter` delays first execution; `maxAttempts` defaults to 5. */
@@ -41,7 +39,7 @@ export async function enqueue(
     .from('notification_queue')
     .insert({
       kind,
-      payload,
+      payload: payload as Json,
       run_after: (opts?.runAfter ?? new Date()).toISOString(),
       max_attempts: opts?.maxAttempts ?? 5,
     })
@@ -69,7 +67,7 @@ export async function processQueue(
     .order('run_after', { ascending: true })
     .limit(limit)
 
-  const list = (jobs ?? []) as QueueJob[]
+  const list = (jobs ?? []) as unknown as QueueJob[]
   let done = 0
   let failed = 0
   let retried = 0
