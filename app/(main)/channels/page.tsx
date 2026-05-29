@@ -16,6 +16,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { TuneInButton, TunedInButton } from './channel-toggle'
 import { NewChannelCompose } from './new-channel-compose'
+import { IndexTemplate } from '@/components/templates/index-template'
 
 type TopicalChannel = {
   id: string
@@ -117,19 +118,11 @@ export default async function ChannelsPage() {
   const explore  = channelList.filter((c) => !myChannelIds.has(c.id))
 
   return (
-    <div>
-      <div className="flex items-end justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-text mb-1">Interests</h1>
-          <p className="text-sm text-muted leading-relaxed max-w-2xl">
-            Interests are global topics anyone can tune into. Each one carries a
-            seasonal practice that Circles run locally. Pick what you&apos;re into,
-            then find the people doing it near you.
-          </p>
-        </div>
-        {canCreate && <NewChannelCompose />}
-      </div>
-
+    <IndexTemplate
+      title="Interests"
+      description="Interests are global topics anyone can tune into. Each one carries a seasonal practice that Circles run locally. Pick what you're into, then find the people doing it near you."
+      action={canCreate ? <NewChannelCompose /> : undefined}
+    >
       {tunedIn.length > 0 && (
         <section className="mb-10">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-subtle mb-3">
@@ -167,7 +160,7 @@ export default async function ChannelsPage() {
           ))}
         </div>
       </section>
-    </div>
+    </IndexTemplate>
   )
 }
 
