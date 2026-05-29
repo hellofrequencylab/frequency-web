@@ -86,12 +86,13 @@ PAGE-FRAMEWORK.
       (`components/templates/detail-template.tsx`: context header + badges +
       actions slot + tabs + body). Stream/Index thin shells + **wiring pages onto
       templates** still pending (needs running app for visual QA).
-- [~] **Module + slot + inline actions** — built additively: shared module chrome
-      (`components/modules/module-card.tsx`, now consumed by the right rail) +
-      capability gating (`components/ui/can.tsx` → `<Can need=…>`). **Still
-      pending (needs running app):** the slot registry, scope-aware rail, and
-      wiring `getCircleCapabilities`/`getProfileCapabilities` into the circle &
-      profile pages so inline admin / edit-in-place render by capability.
+- [~] **Module + slot + inline actions** — shared module chrome
+      (`components/modules/module-card.tsx`) + capability gating
+      (`components/ui/can.tsx`). **Inline admin WIRED + verified live:** the circle
+      page gates Host Tools, Circle Health, edit/announce, and feed moderation by
+      `circle.editSettings` (host + janitors + area guides/mentors). **Still
+      pending:** the slot registry + scope-aware rail; **profile edit-in-place**
+      (needs a new admin route — janitors can't yet edit *others'* profiles).
 
 **Done when:** every main page renders via one of the 3 templates; inline actions
 appear by capability (host edits inline, member sees content only); a newcomer can
@@ -142,9 +143,11 @@ ENGAGEMENT-ARCHITECTURE.
       (migration `20240216000000`); server-mediated (no client reads).
       **`partners/businesses` module schema DONE** — `partners` + `partner_offers`
       + `partner_redemptions` + `nodes.partner_id` (migration `20240218000000`);
-      directory/offers public-when-active, redemptions read-own. TS read layer
-      DONE (`lib/partners/read.ts`: `listActivePartners` + `getPartnerView`).
-      Redemption-on-capture flow (bump plaque → discount + zaps) still to wire.
+      directory/offers public-when-active, redemptions read-own. TS read layer +
+      **UI live**: `/partners` directory + `/partners/[slug]` detail with offers,
+      Partners in nav. **Claim flow live + verified** (`/n/[nodeId]` → verify →
+      ledger → zaps). Redemption-on-capture (claim → log `partner_redemptions`)
+      still to wire.
 - [x] **Async lane** — `notification_queue` (migration `20240219000000`) +
       `lib/queue/outbox.ts` (`enqueue` / `processQueue` with retries + exponential
       backoff) + `/api/cron/process-queue` (every 2 min; durable web-push handler
