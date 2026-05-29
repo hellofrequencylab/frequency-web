@@ -18,12 +18,19 @@ export interface RecordEngagementInput {
   /** Makes recording exactly-once across retries. */
   idempotencyKey: string
   source: EngagementSource
-  /** The typed event that drives achievements / quests / challenges. */
-  event: GamificationEvent
+  /** Ledger event type (e.g. 'post_create', 'node_capture'). */
+  eventType: string
+  actorProfileId: string | null
   /** Per-source detail (node id, location, peer, …) — stored on the ledger row. */
   context?: Record<string, unknown>
   /** Set when a server-side verifier has already cleared a physical event. */
   verifiedAt?: Date
+  /**
+   * Optional: also run the rules engine (achievements / quests / challenges) on
+   * first insert. Supply for sources that map to a typed GamificationEvent;
+   * omit for sources (e.g. node captures) whose reward is granted directly.
+   */
+  gamificationEvent?: GamificationEvent
 }
 
 export interface RecordEngagementResult {
@@ -32,14 +39,14 @@ export interface RecordEngagementResult {
 }
 
 /**
- * Append an engagement event to the ledger exactly once, then run the rules
- * engine on first insert. Idempotent: a repeated `idempotencyKey` is a no-op.
+ * Append an engagement event to the ledger exactly once. Idempotent: a repeated
+ * `idempotencyKey` is a no-op. On the first (real) insert, runs the rules engine
+ * iff a `gamificationEvent` was supplied.
  */
 export async function recordEngagementEvent(
   input: RecordEngagementInput,
 ): Promise<RecordEngagementResult> {
-  const { idempotencyKey, source, event, context, verifiedAt } = input
-  const actorProfileId = 'profileId' in event ? event.profileId : null
+  const { idempotencyKey, source, eventType, actorProfileId, context, verifiedAt, gamificationEvent } = input
 
   // `engagement_events` isn't in the generated Database types until the migration
   // (20240215000000) is applied and types are regenerated. Until then, use an
@@ -54,7 +61,7 @@ export async function recordEngagementEvent(
       {
         idempotency_key: idempotencyKey,
         source,
-        event_type: event.type,
+        event_type: eventType,
         actor_profile_id: actorProfileId,
         context: context ?? {},
         verified_at: verifiedAt?.toISOString() ?? null,
@@ -66,8 +73,8 @@ export async function recordEngagementEvent(
   if (error) throw error
   const recorded = (data?.length ?? 0) > 0
 
-  // Run the existing rules engine only on the first (real) insert.
-  if (recorded) await processGamificationEvent(event)
+  // Run the existing rules engine only on the first insert, when supplied.
+  if (recorded && gamificationEvent) await processGamificationEvent(gamificationEvent)
 
   return { recorded }
 }
