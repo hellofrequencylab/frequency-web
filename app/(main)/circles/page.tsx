@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { joinCircle } from './actions'
 import { StatusBadge } from '@/components/groups/status-badge'
 import { NewCircleCompose } from '@/components/compose/new-circle-compose'
+import { IndexTemplate } from '@/components/templates/index-template'
 
 type CircleRow = {
   id: string
@@ -97,19 +98,11 @@ export default async function CirclesPage() {
   const otherCircles = circles.filter((c) => !myCircleIds.includes(c.id))
 
   return (
-    <div>
-      <div className="flex items-end justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-text mb-1">Circles</h1>
-          <p className="text-sm text-muted leading-relaxed max-w-2xl">
-            Your local crew. This is where you post, connect, and show up.
-            Regular meetups, shared updates, the people you&apos;ll see week to
-            week. Join one to get started.
-          </p>
-        </div>
-        {isAdmin && <NewCircleCompose />}
-      </div>
-
+    <IndexTemplate
+      title="Circles"
+      description="Your local crew. This is where you post, connect, and show up. Regular meetups, shared updates, the people you'll see week to week. Join one to get started."
+      action={isAdmin ? <NewCircleCompose /> : undefined}
+    >
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {/* ── Main column: circles list ────────────────────────── */}
@@ -214,7 +207,7 @@ export default async function CirclesPage() {
           )}
         </div>
       </div>
-    </div>
+    </IndexTemplate>
   )
 }
 
