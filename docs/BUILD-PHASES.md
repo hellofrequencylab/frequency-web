@@ -50,9 +50,9 @@ CAPABILITIES-AND-MOBILE.
 - [~] **Enable PostGIS** — migration `20240214000000_enable_postgis_geography.sql`
       written (extension + generated `circles.geog` + GiST index). **Apply with
       `npx supabase db push`** (needs DB creds/network — not run here).
-- [ ] Adopt **RLS + RPC** as the pattern for all *new* data access; migrate the
-      duplicated `HIERARCHY` helpers (admin/broadcast/report actions) to import
-      `lib/core/roles`.
+- [~] **HIERARCHY duplicates consolidated** — admin/broadcast/report actions now
+      import `atLeastRole` from `lib/core/roles` (single source). Adopting **RLS +
+      RPC** for data access continues in Phase 2.
 - [x] Keep raw style values out of components — already enforced (the DAWN token
       system in ARCHITECTURE.md).
 
