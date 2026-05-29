@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { MapPin } from 'lucide-react'
 import { listActivePartners } from '@/lib/partners/read'
 
@@ -25,9 +26,10 @@ export default async function PartnersPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {partners.map((p) => (
-            <div
+            <Link
               key={p.id}
-              className="rounded-2xl border border-border bg-surface shadow-sm p-4"
+              href={`/partners/${p.slug}`}
+              className="block rounded-2xl border border-border bg-surface shadow-sm p-4 hover:border-primary-bg dark:hover:border-primary transition-colors"
             >
               <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-sm font-semibold text-text">{p.name}</h2>
@@ -46,7 +48,7 @@ export default async function PartnersPage() {
               {p.description && (
                 <p className="mt-1.5 text-xs text-muted line-clamp-2">{p.description}</p>
               )}
-            </div>
+            </Link>
           ))}
         </div>
       )}
