@@ -71,8 +71,11 @@ PAGE-FRAMEWORK.
 
 - [x] Nav grouping — Community / Connect / Progress / Manage sections in
       `app-shell.tsx` (desktop sidebar + mobile drawer); item visibility unchanged.
-- [ ] Rename member-facing **Channels → Interests** (presentation only;
-      `topical_channels` table keeps its name).
+- [~] Rename member-facing **Channels → Interests** — done on the primary
+      surfaces (nav label + `/channels` page heading/description); route +
+      `topical_channels` table unchanged. **Follow-up (needs visual QA):** sweep
+      any remaining "Channel" copy on cards/`[id]` page, decide the "tune in"
+      verb, and reconcile with the public `/discover` layer which says "Topics".
 - [ ] Demote Hubs & Nexuses from member nav → contextual links + Admin.
 - [ ] In-person **icon designator** (virtual = unmarked default) + tighter
       in-person cap on `/circles`.

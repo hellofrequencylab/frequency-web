@@ -49,7 +49,7 @@ const NAV_SECTIONS: {
   ] },
   { label: 'Community', items: [
     { href: '/circles',   label: 'Circles',   Icon: Users },
-    { href: '/channels',  label: 'Channels',  Icon: Radio },
+    { href: '/channels',  label: 'Interests', Icon: Radio },
     { href: '/events',    label: 'Events',    Icon: CalendarDays },
     { href: '/broadcast', label: 'Broadcast', Icon: Megaphone },
   ] },
