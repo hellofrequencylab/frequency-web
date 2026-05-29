@@ -1,29 +1,15 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getCallerProfile, type CommunityRole } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
-type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 type TargetType = 'post' | 'dispatch' | 'comment' | 'member' | 'event'
 type ReportReason = 'spam' | 'harassment' | 'inappropriate' | 'misinformation' | 'other'
 type ReportStatus = 'pending' | 'reviewed' | 'actioned' | 'dismissed'
 
 const HIERARCHY: CommunityRole[] = ['member', 'crew', 'host', 'guide', 'mentor', 'janitor']
-
-async function getCallerProfile(): Promise<{ id: string; community_role: CommunityRole } | null> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-  const admin = createAdminClient()
-  const { data } = await admin
-    .from('profiles')
-    .select('id, community_role')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
-  return data as { id: string; community_role: CommunityRole } | null
-}
 
 function hasRole(callerRole: CommunityRole, minRole: CommunityRole): boolean {
   return HIERARCHY.indexOf(callerRole) >= HIERARCHY.indexOf(minRole)

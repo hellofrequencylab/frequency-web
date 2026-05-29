@@ -1,17 +1,8 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-
-async function getMyProfileId(): Promise<string | null> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-  const admin = createAdminClient()
-  const { data } = await admin.from('profiles').select('id').eq('auth_user_id', user.id).maybeSingle()
-  return data?.id ?? null
-}
+import { getMyProfileId } from '@/lib/auth'
 
 export type NotificationItem = {
   id: string

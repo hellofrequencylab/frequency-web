@@ -1,26 +1,13 @@
 'use server'
 
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getMyProfileId } from '@/lib/auth'
 import type { AchievementCategory, AchievementTier, StreakType } from '@/lib/gamification'
 import type { Database } from '@/lib/database.types'
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row']
 type AchievementRow = Database['public']['Tables']['achievements']['Row']
-
-async function getMyProfileId(): Promise<string | null> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-  const admin = createAdminClient()
-  const { data } = await admin
-    .from('profiles')
-    .select('id')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
-  return data?.id ?? null
-}
 
 // ---------------------------------------------------------------------------
 // Fetch achievements page data

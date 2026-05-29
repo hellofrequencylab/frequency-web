@@ -10,16 +10,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { sendWeeklyDigestEmail } from '@/lib/email'
 import { shouldSend } from '@/lib/notification-preferences'
 import { assembleDigestForProfile, listProfileIdsForDigest } from '@/lib/digest'
+import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 
 export const dynamic = 'force-dynamic'
 
-const CRON_SECRET = process.env.CRON_SECRET
-
 export async function GET(req: NextRequest) {
-  const authHeader = req.headers.get('authorization')
-  if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const denied = rejectUnauthorizedCron(req)
+  if (denied) return denied
 
   const profileIds = await listProfileIdsForDigest()
   let sent    = 0

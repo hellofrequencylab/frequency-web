@@ -15,11 +15,11 @@ import type { Database } from '@/lib/database.types'
 import { sendEventReminderEmail } from '@/lib/email'
 import { shouldSend } from '@/lib/notification-preferences'
 import { sendPushToProfile } from '@/lib/push'
+import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 
 export const dynamic = 'force-dynamic'
 
-const CRON_SECRET = process.env.CRON_SECRET
-const SLACK_MS    = 30 * 60 * 1000   // tolerate up to 30 min cron drift
+const SLACK_MS = 30 * 60 * 1000   // tolerate up to 30 min cron drift
 
 type ReminderLead = '24h' | '2h'
 
@@ -159,10 +159,8 @@ async function processLead(lead: ReminderLead): Promise<{ events: number; sent: 
 }
 
 export async function GET(req: NextRequest) {
-  const authHeader = req.headers.get('authorization')
-  if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const denied = rejectUnauthorizedCron(req)
+  if (denied) return denied
 
   const t24 = await processLead('24h')
   const t2  = await processLead('2h')

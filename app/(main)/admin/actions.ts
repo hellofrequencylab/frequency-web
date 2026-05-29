@@ -4,6 +4,7 @@ import { randomBytes } from 'crypto'
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { getCallerProfile, type CommunityRole } from '@/lib/auth'
 import type { Database } from '@/lib/database.types'
 import { sendDispatchNotificationEmail } from '@/lib/email'
 import { shouldSend } from '@/lib/notification-preferences'
@@ -11,22 +12,7 @@ import { sendPushToProfile } from '@/lib/push'
 import { slugify } from '@/lib/utils'
 import { processGamificationEvent } from '@/lib/achievements'
 
-type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
-
 const HIERARCHY: CommunityRole[] = ['member', 'crew', 'host', 'guide', 'mentor', 'janitor']
-
-async function getCallerProfile(): Promise<{ id: string; community_role: CommunityRole } | null> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-  const admin = createAdminClient()
-  const { data } = await admin
-    .from('profiles')
-    .select('id, community_role')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
-  return data as { id: string; community_role: CommunityRole } | null
-}
 
 function hasRole(callerRole: CommunityRole, minRole: CommunityRole): boolean {
   return HIERARCHY.indexOf(callerRole) >= HIERARCHY.indexOf(minRole)

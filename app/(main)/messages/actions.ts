@@ -2,28 +2,8 @@
 
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-
-// ── Helpers ──────────────────────────────────────────────────────────
-
-async function getMyProfileId(): Promise<string> {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect('/sign-in')
-
-  const admin = createAdminClient()
-  const { data: profile } = await admin
-    .from('profiles')
-    .select('id')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
-
-  if (!profile) redirect('/onboarding')
-  return profile.id as string
-}
+import { requireProfileId as getMyProfileId } from '@/lib/auth'
 
 // ── startConversation ─────────────────────────────────────────────────
 // Finds an existing 1:1 thread with otherProfileId, or creates one.

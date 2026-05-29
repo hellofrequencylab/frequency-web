@@ -3,25 +3,10 @@
 import { randomBytes } from 'crypto'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getMyProfileId } from '@/lib/auth'
 import { processGamificationEvent } from '@/lib/achievements'
 import { awardGems } from '@/lib/gems'
-
-async function getMyProfileId(): Promise<string | null> {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return null
-  const admin = createAdminClient()
-  const { data } = await admin
-    .from('profiles')
-    .select('id')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
-  return data?.id ?? null
-}
 
 export async function joinCircle(circleId: string, circleSlug: string) {
   const myProfileId = await getMyProfileId()
