@@ -41,20 +41,25 @@
 change, not rewrite. **Depends on:** nothing. **Governs:** SCALE-ARCHITECTURE,
 CAPABILITIES-AND-MOBILE.
 
-- [ ] Extract shared code into packages (folders now; formal Turborepo monorepo
-      when mobile starts): `contract` (generated types), `core` (domain +
-      capability resolver), `tokens` (design tokens).
-- [ ] Build the **capability resolver** `getCapabilities(user, scope)` in `core/`
-      — pure, framework-independent; unit-tested.
-- [ ] **Enable PostGIS**; migrate `circles` lat/lng → `geography`; add spatial
-      indexes. (Cheap now, painful to retrofit.)
-- [ ] Adopt **RLS + RPC** as the pattern for all *new* data access; document it;
-      stop adding new service-role/app-authz code where an RPC fits.
-- [ ] Keep raw style values out of components (design-token discipline; the DAWN
-      rule in ARCHITECTURE.md).
+- [~] Extract shared code into folders (formal Turborepo monorepo when mobile
+      starts): **`lib/core/` created** (`roles.ts`, `capabilities.ts`). Still to
+      add: `contract` (generated types) + `tokens` packages.
+- [x] Build the **capability resolver** — `lib/core/capabilities.ts`
+      (`resolveCapabilities(viewer, scope)`, `can()`), pure + framework-independent;
+      plus `lib/core/roles.ts` (single-source `atLeastRole`). tsc clean.
+- [~] **Enable PostGIS** — migration `20240214000000_enable_postgis_geography.sql`
+      written (extension + generated `circles.geog` + GiST index). **Apply with
+      `npx supabase db push`** (needs DB creds/network — not run here).
+- [ ] Adopt **RLS + RPC** as the pattern for all *new* data access; migrate the
+      duplicated `HIERARCHY` helpers (admin/broadcast/report actions) to import
+      `lib/core/roles`.
+- [x] Keep raw style values out of components — already enforced (the DAWN token
+      system in ARCHITECTURE.md).
 
 **Done when:** new features can be built behind the capability resolver + an RPC,
-PostGIS is live, and shared packages are importable. No UX change shipped.
+PostGIS is live (migration applied), and shared folders are importable. No UX
+change shipped. **Status: foundations landed; PostGIS apply + HIERARCHY adoption
+remain.**
 
 ---
 
