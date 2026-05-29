@@ -10,7 +10,9 @@ terms), [DATABASE.md](DATABASE.md) (schema), and [BACKLOG.md](BACKLOG.md) (what'
 - **React 19**, **TypeScript** (strict; `noUnusedLocals` is off, so unused
   locals/imports are ESLint warnings, not type errors).
 - **Supabase** (Postgres + Auth + Realtime) via `@supabase/ssr`.
-- **Tailwind v4** + shadcn/ui.
+- **Tailwind v4** — hand-written components against the DAWN semantic-token layer
+  (`app/globals.css`); **no component library** (no shadcn/Radix in `package.json`).
+  Icons via `lucide-react`. See ADR-011 in [DECISIONS.md](DECISIONS.md).
 - Hosted on **Vercel**; cron via `vercel.json`.
 
 ### Domain & canonical URL
