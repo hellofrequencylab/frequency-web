@@ -22,7 +22,7 @@ const FROM    = process.env.EMAIL_FROM ?? 'Frequency <noreply@hellofrequency.com
 // Headers required by Gmail/Yahoo bulk-sender policies (RFC 8058).
 // `apiUrl` is the POST endpoint mailbox providers call when a user hits
 // the inbox-rendered unsubscribe button.
-function listUnsubscribeHeaders(unsubscribeUrl: string): Record<string, string> {
+export function listUnsubscribeHeaders(unsubscribeUrl: string): Record<string, string> {
   const apiUrl = unsubscribeUrl.replace('/unsubscribe?', '/api/unsubscribe?')
   return {
     'List-Unsubscribe':      `<${apiUrl}>, <${unsubscribeUrl}>`,

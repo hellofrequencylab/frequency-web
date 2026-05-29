@@ -243,9 +243,12 @@ a **proven practice-retention loop (PMF)** before building the cathedral.
       **contacts auto-link on signup + backfill of existing members** (trigger +
       migration `20240222000000`). Remaining: compute `engagement_score` (projection
       off the backbone + `email_events`).
-- [ ] **6.4 Marketing engine** — Segments + Templates (React Email) → **Campaigns**
-      (first real sends) → Pipelines (Kanban funnels) → Automations (drip +
-      trigger→condition→action rules engine).
+- [~] **6.4 Marketing engine** — **Campaigns shipped** (migration `20240223000000`):
+      `/studio/campaigns` compose → send to a member segment (all / subscribed)
+      through the spine, consent-checked (`shouldSend` lifecycle) + suppression-aware
+      + per-recipient unsubscribe. Remaining: richer Segment builder, Pipelines
+      (Kanban funnels), Automations (drip + trigger→condition→action rules engine),
+      React Email templates, lead/non-member unsubscribe.
 - [ ] **6.5 Analytics** — WAM, activation, funnel conversion, acquisition, email
       performance, deliverability, engagement/cohort.
 - [ ] **Test harness** around spine + consent + suppression — **gates 6.6.** (Repo
