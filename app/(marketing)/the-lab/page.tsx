@@ -4,10 +4,10 @@ import { PageHero, Section, SectionHeading, Lead, Body, BetaCTA } from '@/compon
 export const metadata: Metadata = {
   title: 'The Lab',
   description:
-    'The Frequency Lab is a third space engineered for your nervous system — somewhere to move, gather, cool down, and come back to yourself.',
+    'The Frequency Lab is a third space engineered for your nervous system. Somewhere to move, gather, cool down, and come back to yourself.',
   alternates: { canonical: '/the-lab' },
   openGraph: {
-    title: 'The Lab — Frequency',
+    title: 'The Lab · Frequency',
     description:
       'A third space built to be felt: movement studios, a thermal circuit, a connection bar, and an events floor.',
     url: '/the-lab',
@@ -18,17 +18,17 @@ const FEATURES = [
   {
     img: '/images/site/lab-thermal.jpg',
     title: 'The thermal circuit',
-    body: 'Sauna and cold plunge — the contrast at the center of it all.',
+    body: 'Sauna and cold plunge. The contrast at the center of it all.',
   },
   {
     img: '/images/site/lab-pool.jpg',
     title: 'Movement studios',
-    body: 'Breathwork, yoga, and somatic practice — the daily reset.',
+    body: 'Breathwork, yoga, and somatic practice. The daily reset.',
   },
   {
     img: '/images/site/lab-lounge.jpg',
     title: 'The connection bar',
-    body: 'Coffee and conversation — where strangers become regulars.',
+    body: 'Coffee and conversation, where strangers become regulars.',
   },
   {
     img: '/images/site/lab-concept.jpg',
@@ -43,7 +43,7 @@ export default function TheLabPage() {
       <PageHero
         eyebrow="The third space"
         title="A place built to be felt."
-        subtitle="The Frequency Lab is a third space engineered for your nervous system — somewhere to move, gather, cool down, and come back to yourself."
+        subtitle="The Frequency Lab is a third space engineered for your nervous system. Somewhere to move, gather, cool down, and come back to yourself."
       />
 
       {/* Hero render */}
@@ -58,30 +58,30 @@ export default function TheLabPage() {
       </div>
 
       <Section tone="canvas">
-        <SectionHeading title="Not a gym. Not a café. Not a studio. All of it — on purpose." />
+        <SectionHeading title="Not a gym. Not a café. Not a studio. All of it, on purpose." />
         <Lead>
           The Lab is a single space designed to do what scattered places
           can&apos;t: hold a whole arc of a day.
         </Lead>
         <Body>
           Arrive frazzled, leave regulated. Come alone, leave known. The
-          environment does the work — light, sound, temperature, and the people
+          environment does the work. Light, sound, temperature, and the people
           around you all tuned to bring you back to yourself.
         </Body>
       </Section>
 
       {/* Feature tiles with imagery */}
-      <section className="bg-surface px-6 py-16 sm:py-20">
+      <section className="bg-surface px-6 py-20 sm:py-24">
         <div className="max-w-5xl mx-auto">
-          <div className="mb-8">
-            <p className="text-xs font-bold uppercase tracking-[0.25em] text-primary-strong mb-3">
+          <div className="mb-10">
+            <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
               Inside
             </p>
-            <h2 className="font-display uppercase text-text text-4xl sm:text-5xl">
+            <h2 className="font-display uppercase text-text text-5xl sm:text-6xl">
               What you&apos;ll find
             </h2>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {FEATURES.map((f) => (
               <article
                 key={f.title}
@@ -93,9 +93,9 @@ export default function TheLabPage() {
                   loading="lazy"
                   className="w-full object-cover aspect-[16/10]"
                 />
-                <div className="p-5">
-                  <h3 className="text-base font-bold text-text mb-1.5">{f.title}</h3>
-                  <p className="text-sm text-muted leading-relaxed">{f.body}</p>
+                <div className="p-6">
+                  <h3 className="text-xl font-bold text-text mb-1.5">{f.title}</h3>
+                  <p className="text-base text-muted leading-relaxed">{f.body}</p>
                 </div>
               </article>
             ))}
@@ -106,7 +106,7 @@ export default function TheLabPage() {
       <Section tone="canvas">
         <SectionHeading title="Designed to spread." />
         <Body>
-          The first Lab is a prototype — a flagship rooted in one neighborhood.
+          The first Lab is a prototype, a flagship rooted in one neighborhood.
           It&apos;s built so that what works here can open in your city next.
           The community comes first; the Lab is where it gets a body.
         </Body>

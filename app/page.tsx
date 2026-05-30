@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronDown, ArrowRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import { SiteHeader } from '@/components/layout/site-header'
+import { MarketingHeader } from '@/components/layout/marketing-header'
 import { MarketingFooter } from '@/components/layout/marketing-footer'
 import { Statement, ZigZag, Marquee, BetaCTA } from '@/components/marketing/marketing-ui'
 import { getInitials, relativeTime } from '@/lib/utils'
@@ -11,11 +11,11 @@ import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, BETA_CTA_LABEL, BETA_CTA_HRE
 import { type CommunityRole, ROLE_RANK, RoleBadge } from '@/lib/community-roles'
 
 export const metadata: Metadata = {
-  title: { absolute: `${SITE_NAME} — ${SITE_TAGLINE}` },
+  title: { absolute: `${SITE_NAME} · ${SITE_TAGLINE}` },
   description: SITE_DESCRIPTION,
   alternates: { canonical: '/' },
   openGraph: {
-    title: `${SITE_NAME} — ${SITE_TAGLINE}`,
+    title: `${SITE_NAME} · ${SITE_TAGLINE}`,
     description: SITE_DESCRIPTION,
     url: '/',
   },
@@ -82,9 +82,9 @@ export default async function RootPage() {
 
   return (
     <>
-      <SiteHeader profile={null} variant="dark" />
+      <MarketingHeader overHero />
 
-      {/* ── Hero — headline overlaid on the image ──────────────── */}
+      {/* Hero */}
       <section className="relative min-h-screen flex flex-col items-center justify-center text-center px-6 overflow-hidden">
         <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat scale-105"
@@ -93,32 +93,32 @@ export default async function RootPage() {
         <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/85" />
 
         <div className="relative z-10 flex flex-col items-center w-full max-w-4xl">
-          <p className="text-[11px] sm:text-xs font-bold uppercase tracking-[0.3em] text-primary mb-6">
+          <p className="text-xs sm:text-sm font-bold uppercase tracking-[0.3em] text-primary mb-6">
             A third space for a disconnected generation
           </p>
-          <h1 className="font-display uppercase text-white text-[2.75rem] leading-[0.92] sm:text-6xl lg:text-7xl max-w-3xl">
+          <h1 className="font-display uppercase text-white text-[2.9rem] leading-[0.95] sm:text-7xl lg:text-8xl max-w-4xl">
             This is what community is supposed to feel like.
           </h1>
-          <p className="mt-7 text-base sm:text-lg text-white/75 max-w-md leading-relaxed">
-            Not home. Not work. A place to exhale, reset, and be human —
-            together.
+          <p className="mt-8 text-lg sm:text-2xl text-white/85 max-w-2xl leading-relaxed">
+            Not home. Not work. A place to exhale, reset, and remember what it
+            feels like to belong.
           </p>
 
-          <div className="mt-9 flex items-center gap-3 flex-wrap justify-center">
+          <div className="mt-10 flex items-center gap-3 flex-wrap justify-center">
             <Link
               href={BETA_CTA_HREF}
-              className="rounded-2xl bg-primary text-on-primary px-8 py-3.5 text-base font-bold hover:bg-primary-hover transition-colors"
+              className="rounded-2xl bg-primary text-on-primary px-9 py-4 text-lg font-bold hover:bg-primary-hover transition-colors"
             >
               {BETA_CTA_LABEL}
             </Link>
             <Link
               href="/sign-in"
-              className="rounded-2xl border border-white/30 px-8 py-3.5 text-base font-medium text-white hover:bg-white/10 hover:border-white/50 transition-colors"
+              className="rounded-2xl border border-white/30 px-9 py-4 text-lg font-medium text-white hover:bg-white/10 hover:border-white/50 transition-colors"
             >
               Sign in
             </Link>
           </div>
-          <p className="mt-8 text-sm text-white/45">
+          <p className="mt-9 text-base text-white/50">
             The first space is taking root in North County San Diego.
           </p>
         </div>
@@ -129,34 +129,35 @@ export default async function RootPage() {
         </div>
       </section>
 
-      {/* ── Problem ────────────────────────────────────────────── */}
+      {/* Problem */}
       <ZigZag
         img="/images/site/community-1.jpg"
         alt="A Frequency community gathering"
         eyebrow="Something is broken"
         title="And everyone feels it."
-        imgAspect="square"
+        imgAspect="natural"
       >
         <p>
-          67% of millennials and Gen Z report feeling lonely. It isn&apos;t for
-          lack of people — it&apos;s for lack of <em>places</em>.
+          67% of millennials and Gen Z report feeling lonely. Not because there
+          aren&apos;t people around, but because the <em>places</em> that used to
+          hold us have quietly disappeared.
         </p>
         <p>
-          The third spaces that used to hold us have quietly disappeared. We
-          replaced them with feeds. It didn&apos;t work.
+          The corner café, the town square, the gathering ground. We traded them
+          for feeds and followers. It didn&apos;t work, and we all feel it.
         </p>
       </ZigZag>
 
-      {/* ── Story ──────────────────────────────────────────────── */}
+      {/* Story */}
       <ZigZag
         img="/images/site/moonlight-2.jpg"
         alt="A Frequency gathering on the bluffs at Moonlight Beach"
         reverse
         tone="canvas"
-        imgAspect="portrait"
+        imgAspect="natural"
         title={
           <>
-            <span className="block text-2xl sm:text-3xl tracking-[0.12em] text-muted">
+            <span className="block text-3xl sm:text-4xl tracking-[0.12em] text-muted">
               The Frequency
             </span>
             <span className="block text-6xl sm:text-7xl text-text">Story</span>
@@ -168,12 +169,13 @@ export default async function RootPage() {
         <p>It started on the cliffs of Moonlight Beach in 2020.</p>
         <p>
           A few of us gathered every morning to breathe and reconnect. Within
-          eighteen months, a thousand people were showing up. No guru, no brand
-          — just people who needed each other.
+          eighteen months, a thousand people were showing up. No guru, no brand,
+          no agenda. Just people who needed each other and a place to be.
         </p>
         <p>
-          It proved the hunger is enormous. It also proved that without a home,
-          even the most beautiful community can&apos;t last.
+          It proved the hunger is real. It also proved that without a home, even
+          the most beautiful community can&apos;t hold. So we set out to build
+          one that could.
         </p>
       </ZigZag>
 
@@ -182,12 +184,12 @@ export default async function RootPage() {
         <span className="text-primary">Frequency</span> was first planted.
       </Statement>
 
-      {/* ── Vision ─────────────────────────────────────────────── */}
+      {/* Vision */}
       <ZigZag
         img="/images/site/moonlight-1.jpg"
-        alt="A Frequency community gathering at the beach"
+        alt="A Frequency community embracing at the beach"
         eyebrow="The vision"
-        imgAspect="landscape"
+        imgAspect="natural"
         title={
           <>
             The vision <span className="text-primary">lives on</span>
@@ -196,13 +198,14 @@ export default async function RootPage() {
         cta={{ label: 'See how it works', href: '/how-it-works' }}
       >
         <p>
-          Frequency is social infrastructure <em>and</em> physical space —
-          designed, from the ground up, to regulate your nervous system and
-          bring you back to people who see you.
+          Frequency is social infrastructure <em>and</em> physical space.
+          Designed from the ground up to regulate your nervous system and bring
+          you back to people who actually see you.
         </p>
         <p>
-          Guru-free. Built to outlast any one person. A model that puts
-          connection within reach for everyone.
+          Guru-free, and built to outlast any one person. A model that keeps real
+          connection within reach for everyone, not just the few who can afford
+          it.
         </p>
       </ZigZag>
 
@@ -212,22 +215,22 @@ export default async function RootPage() {
         <br className="hidden sm:block" /> Coming to your city.
       </Statement>
 
-      {/* ── What we're building (dark band) ────────────────────── */}
+      {/* What we're building (dark band) */}
       <section className="bg-text">
         <Marquee items={['What we’re building', 'The Lab', 'The Network', 'The Model']} />
-        <div className="max-w-5xl mx-auto px-6 py-20 sm:py-28 space-y-20 sm:space-y-24">
+        <div className="max-w-5xl mx-auto px-6 py-24 sm:py-32 space-y-24 sm:space-y-28">
           <Pillar
             img="/images/site/lab-storefront.jpg"
             alt="The Lab"
             title="The Lab"
-            body="A prototype third space: movement studios, a thermal circuit, a connection bar, and an events floor. The environment does the work."
+            body="A prototype third space: movement studios, a thermal circuit, a connection bar, and an events floor. Part regulation studio, part social hub, part venue. The environment does the work."
             href="/the-lab"
           />
           <Pillar
             img="/images/site/community-1.jpg"
             alt="The Network"
             title="The Network"
-            body="A community that spreads city by city. Circles cluster into neighborhoods, neighborhoods into whole areas — bottom-up, never appointed."
+            body="A community that spreads city by city. Circles cluster into neighborhoods, neighborhoods into whole areas. Bottom-up and never appointed, so it grows on its own momentum."
             href="/how-it-works"
             reverse
           />
@@ -235,21 +238,21 @@ export default async function RootPage() {
             img="/images/site/lab-pool.jpg"
             alt="The Model"
             title="The Model"
-            body="Built to last and built to include. Memberships sustain the spaces so connection stays within reach. Circulation, not exclusion."
+            body="Built to last and built to include. Memberships sustain the spaces so connection stays within reach. Nobody is excluded, and people who can pay more fund those who can't. Circulation, not exclusion."
           />
         </div>
       </section>
 
-      {/* ── It's already alive (live data) ─────────────────────── */}
-      <section className="bg-surface px-6 pt-20 pb-10">
-        <div className="max-w-2xl mx-auto text-center">
-          <p className="text-xs font-bold uppercase tracking-[0.25em] text-primary-strong mb-3">
+      {/* It's already happening (live data) */}
+      <section className="bg-surface px-6 py-24 sm:py-28">
+        <div className="max-w-3xl mx-auto text-center">
+          <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
             Not a someday idea
           </p>
-          <h2 className="font-display uppercase text-text text-4xl sm:text-5xl mb-8">
+          <h2 className="font-display uppercase text-text text-5xl sm:text-6xl mb-14">
             It&apos;s already happening.
           </h2>
-          <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto">
+          <div className="grid grid-cols-3 gap-6 max-w-xl mx-auto">
             <Stat value={memberCount} label="Members" />
             <Stat value={circleCount} label="Circles" />
             <Stat value={upcomingEvents.length} label="Events soon" />
@@ -258,7 +261,7 @@ export default async function RootPage() {
       </section>
 
       {upcomingEvents.length > 0 && (
-        <section className="bg-surface px-6 pb-16">
+        <section className="bg-marketing-canvas px-6 py-20">
           <div className="max-w-2xl mx-auto space-y-3">
             {upcomingEvents.map((event) => {
               const d = new Date(event.starts_at)
@@ -275,15 +278,15 @@ export default async function RootPage() {
                     <span className="text-base font-bold text-primary-strong leading-tight">{day}</span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-text truncate">{event.title}</p>
-                    <p className="text-xs text-subtle mt-0.5">
+                    <p className="text-base font-semibold text-text truncate">{event.title}</p>
+                    <p className="text-sm text-subtle mt-0.5">
                       {dateStr}
                       {event.city && <> &middot; {event.city}</>}
                     </p>
                   </div>
                   <Link
                     href={BETA_CTA_HREF}
-                    className="flex items-center gap-1 text-xs font-semibold text-primary-strong hover:underline shrink-0"
+                    className="flex items-center gap-1 text-sm font-semibold text-primary-strong hover:underline shrink-0"
                   >
                     Join <ArrowRight className="w-3 h-3" />
                   </Link>
@@ -295,12 +298,12 @@ export default async function RootPage() {
       )}
 
       {posts.length > 0 && (
-        <section className="bg-marketing-canvas px-6 py-16">
+        <section className="bg-marketing-canvas px-6 pb-24">
           <div className="max-w-2xl mx-auto">
-            <h2 className="text-center font-display uppercase text-text text-3xl sm:text-4xl mb-10">
+            <h2 className="text-center font-display uppercase text-text text-4xl sm:text-5xl mb-12">
               People showing up for each other
             </h2>
-            <div className="space-y-3">
+            <div className="space-y-4">
               {posts.map((post) => (
                 <PostPreviewCard key={post.id} post={post} />
               ))}
@@ -309,10 +312,10 @@ export default async function RootPage() {
         </section>
       )}
 
-      {/* ── Closing CTA ────────────────────────────────────────── */}
+      {/* Closing CTA */}
       <BetaCTA
         heading="Be one of the first."
-        body="We're opening the community to a small group at a time. Add your name and we'll be in touch."
+        body="We're opening the community to a small group at a time. Add your name and we'll reach out when a spot opens."
       />
 
       <MarketingFooter />
@@ -322,8 +325,8 @@ export default async function RootPage() {
 
 // ── Building blocks ─────────────────────────────────────────────────────────
 
-// Dark-band pillar: circular image + a big display heading with a floating
-// light card holding the body, overlapping the circle. Alternates sides.
+// Dark-band pillar: large circular image with a big display heading and a
+// floating light card holding the body, overlapping the circle. Alternates.
 function Pillar({
   img,
   alt,
@@ -345,28 +348,26 @@ function Pillar({
         reverse ? 'sm:flex-row-reverse' : ''
       }`}
     >
-      <div className="shrink-0 flex justify-center">
-        <img
-          src={img}
-          alt={alt}
-          loading="lazy"
-          className="w-56 h-56 sm:w-72 sm:h-72 rounded-full object-cover border-4 border-white/10"
-        />
-      </div>
+      <img
+        src={img}
+        alt={alt}
+        loading="lazy"
+        className="w-72 h-72 sm:w-[26rem] sm:h-[26rem] rounded-full object-cover border-4 border-white/10 shrink-0"
+      />
       <div
-        className={`relative z-10 flex flex-col justify-center max-w-md -mt-10 sm:mt-0 ${
-          reverse ? 'sm:-mr-14' : 'sm:-ml-14'
+        className={`relative z-10 flex flex-col justify-center max-w-md -mt-12 sm:mt-0 ${
+          reverse ? 'sm:-mr-16' : 'sm:-ml-16'
         }`}
       >
-        <h3 className="font-display uppercase text-white text-4xl sm:text-5xl mb-4 px-2 text-center sm:text-left">
+        <h3 className="font-display uppercase text-white text-5xl sm:text-6xl mb-5 px-2 text-center sm:text-left">
           {title}
         </h3>
-        <div className="bg-surface rounded-3xl p-7 shadow-2xl">
-          <p className="text-sm text-muted leading-relaxed">{body}</p>
+        <div className="bg-surface rounded-3xl p-8 shadow-2xl">
+          <p className="text-base text-muted leading-relaxed">{body}</p>
           {href && (
             <Link
               href={href}
-              className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide text-primary-strong hover:underline"
+              className="mt-5 inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide text-primary-strong hover:underline"
             >
               Learn more <ArrowRight className="w-4 h-4" />
             </Link>
@@ -380,8 +381,8 @@ function Pillar({
 function Stat({ value, label }: { value: number | string; label: string }) {
   return (
     <div>
-      <p className="font-display text-4xl sm:text-5xl text-text">{value}</p>
-      <p className="text-[11px] text-subtle mt-1.5 uppercase tracking-widest font-semibold">{label}</p>
+      <p className="font-display text-6xl sm:text-7xl text-text">{value}</p>
+      <p className="text-xs text-subtle mt-3 uppercase tracking-widest font-bold">{label}</p>
     </div>
   )
 }
@@ -393,7 +394,7 @@ function PostPreviewCard({ post }: { post: PostPreviewRow }) {
 
   return (
     <article className="rounded-2xl border border-border bg-surface shadow-sm hover:shadow-md transition-shadow">
-      <div className="p-4">
+      <div className="p-5">
         <div className="flex items-start gap-3 mb-3">
           {a?.avatar_url ? (
             <img
@@ -408,24 +409,24 @@ function PostPreviewCard({ post }: { post: PostPreviewRow }) {
           )}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-semibold text-text truncate">
+              <span className="text-base font-semibold text-text truncate">
                 {a?.display_name ?? 'Community member'}
               </span>
               {showRole && (
                 <RoleBadge role={a!.community_role as CommunityRole} className="text-[10px] leading-tight" />
               )}
             </div>
-            <p className="text-[11px] text-subtle mt-0.5">
+            <p className="text-xs text-subtle mt-0.5">
               {a?.handle && <>@{a.handle} · </>}
               {relativeTime(post.created_at)}
             </p>
           </div>
         </div>
 
-        <p className="text-sm text-text leading-relaxed line-clamp-3 mb-3">{post.body}</p>
+        <p className="text-base text-text leading-relaxed line-clamp-3">{post.body}</p>
 
         {post.media_urls?.length > 0 && (
-          <div className="rounded-xl overflow-hidden border border-border">
+          <div className="mt-3 rounded-xl overflow-hidden border border-border">
             <img
               src={post.media_urls[0]}
               alt="Post attachment"
