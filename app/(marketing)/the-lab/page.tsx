@@ -1,5 +1,10 @@
 import type { Metadata } from 'next'
+import { Render } from '@measured/puck/rsc'
 import { PageHero, ZigZag, Statement, BetaCTA } from '@/components/marketing/marketing-ui'
+import { config } from '@/lib/page-editor/config'
+import { getPublishedData } from '@/lib/page-editor/data'
+
+export const revalidate = 3600
 
 export const metadata: Metadata = {
   title: 'The Lab',
@@ -37,7 +42,15 @@ const FEATURES = [
   },
 ]
 
-export default function TheLabPage() {
+export default async function TheLabPage() {
+  const data = await getPublishedData('the-lab')
+  if (data && Array.isArray(data.content) && data.content.length > 0) {
+    return <Render config={config} data={data} />
+  }
+  return <LegacyTheLab />
+}
+
+function LegacyTheLab() {
   return (
     <>
       <PageHero
