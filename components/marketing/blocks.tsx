@@ -36,6 +36,7 @@ export function HeroBlock({
   ctaSecondaryLabel,
   ctaSecondaryHref,
   note,
+  vis = '',
 }: {
   eyebrow?: string
   title: React.ReactNode
@@ -46,9 +47,10 @@ export function HeroBlock({
   ctaSecondaryLabel?: string
   ctaSecondaryHref?: string
   note?: string
+  vis?: string
 }) {
   return (
-    <section className="relative min-h-screen flex flex-col items-center justify-center text-center px-6 overflow-hidden">
+    <section className={`relative min-h-screen flex flex-col items-center justify-center text-center px-6 overflow-hidden ${vis}`}>
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat scale-105"
         style={{ backgroundImage: `url(${bgImage || '/images/site/lab-thermal.jpg'})` }}
@@ -95,13 +97,17 @@ export function GalleryBlock({
   eyebrow,
   heading,
   items,
+  pad,
+  vis = '',
 }: {
   eyebrow?: string
   heading?: string
   items: { image?: string; title?: string; body?: string }[]
+  pad?: string
+  vis?: string
 }) {
   return (
-    <section className="bg-surface px-6 py-16 sm:py-20">
+    <section className={`bg-surface px-6 ${pad ?? 'py-16 sm:py-20'} ${vis}`}>
       <div className="max-w-5xl mx-auto">
         <div className="mb-8">
           {eyebrow && <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-3">{eyebrow}</p>}
@@ -130,12 +136,14 @@ import { Marquee } from '@/components/marketing/marketing-ui'
 export function PillarsBlock({
   marqueeItems,
   pillars,
+  vis = '',
 }: {
   marqueeItems: string[]
   pillars: { image?: string; title?: string; body?: string; href?: string; reverse?: boolean }[]
+  vis?: string
 }) {
   return (
-    <section className="bg-text">
+    <section className={`bg-text ${vis}`}>
       <Marquee items={marqueeItems?.length ? marqueeItems : ['What we’re building']} />
       <div className="max-w-5xl mx-auto px-6 py-24 sm:py-28 space-y-24 sm:space-y-28">
         {(pillars || []).map((p, i) => (
@@ -164,14 +172,14 @@ export function PillarsBlock({
 }
 
 // ── Live data blocks ──────────────────────────────────────────────────────────
-export function LiveStatsBlock({ eyebrow, heading, live }: { eyebrow?: string; heading?: string; live?: LiveData }) {
+export function LiveStatsBlock({ eyebrow, heading, live, pad, vis = '' }: { eyebrow?: string; heading?: string; live?: LiveData; pad?: string; vis?: string }) {
   const stats = [
     { value: live?.memberCount ?? 0, label: 'Members' },
     { value: live?.circleCount ?? 0, label: 'Circles' },
     { value: live?.upcomingEvents.length ?? 0, label: 'Events soon' },
   ]
   return (
-    <section className="bg-surface px-6 py-24 sm:py-28">
+    <section className={`bg-surface px-6 ${pad ?? 'py-24 sm:py-28'} ${vis}`}>
       <div className="max-w-3xl mx-auto text-center">
         {eyebrow && <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">{eyebrow}</p>}
         {heading && <h2 className="font-display uppercase text-text text-4xl sm:text-5xl mb-12">{heading}</h2>}
@@ -188,11 +196,11 @@ export function LiveStatsBlock({ eyebrow, heading, live }: { eyebrow?: string; h
   )
 }
 
-export function LiveEventsBlock({ live }: { live?: LiveData }) {
+export function LiveEventsBlock({ live, pad, vis = '' }: { live?: LiveData; pad?: string; vis?: string }) {
   const events = live?.upcomingEvents ?? []
   if (!events.length) return null
   return (
-    <section className="bg-marketing-canvas px-6 py-20">
+    <section className={`bg-marketing-canvas px-6 ${pad ?? 'py-20'} ${vis}`}>
       <div className="max-w-2xl mx-auto space-y-3">
         {events.map((event) => {
           const d = new Date(event.starts_at)
@@ -223,11 +231,11 @@ export function LiveEventsBlock({ live }: { live?: LiveData }) {
   )
 }
 
-export function LivePostsBlock({ heading, live }: { heading?: string; live?: LiveData }) {
+export function LivePostsBlock({ heading, live, pad, vis = '' }: { heading?: string; live?: LiveData; pad?: string; vis?: string }) {
   const posts = live?.posts ?? []
   if (!posts.length) return null
   return (
-    <section className="bg-marketing-canvas px-6 py-20 sm:py-24">
+    <section className={`bg-marketing-canvas px-6 ${pad ?? 'py-20 sm:py-24'} ${vis}`}>
       <div className="max-w-2xl mx-auto">
         {heading && <h2 className="text-center font-display uppercase text-text text-3xl sm:text-4xl mb-10 text-balance">{heading}</h2>}
         <div className="space-y-4">
