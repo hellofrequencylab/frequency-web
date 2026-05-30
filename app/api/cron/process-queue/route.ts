@@ -3,37 +3,15 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
-import { processQueue, type JobHandler } from '@/lib/queue/outbox'
-import { sendPushToProfile } from '@/lib/push'
-import { sendRawEmail } from '@/lib/email'
+import { processQueue } from '@/lib/queue/outbox'
+import { queueHandlers } from '@/lib/queue/handlers'
 
 export const dynamic = 'force-dynamic'
-
-const handlers: Record<string, JobHandler> = {
-  // Durable web push (P1.4 + P7.29). payload: { profileId, payload: PushPayload }.
-  push: async (p) => {
-    const profileId = p.profileId as string
-    if (!profileId || !p.payload) return
-    await sendPushToProfile(profileId, p.payload as Parameters<typeof sendPushToProfile>[1])
-  },
-  // Durable email (ADR-026). payload: { to, subject, html, text?, headers? }.
-  email: async (p) => {
-    if (!p.to || !p.subject) return
-    await sendRawEmail({
-      to: p.to as string,
-      subject: p.subject as string,
-      html: (p.html as string) ?? '',
-      text: typeof p.text === 'string' ? p.text : undefined,
-      headers: (p.headers as Record<string, string> | undefined) ?? undefined,
-    })
-  },
-  // fanout / leaderboard handlers register here as those flows move to the queue.
-}
 
 export async function GET(req: NextRequest) {
   const denied = rejectUnauthorizedCron(req)
   if (denied) return denied
 
-  const result = await processQueue(handlers)
+  const result = await processQueue(queueHandlers)
   return NextResponse.json({ ok: true, ...result })
 }
