@@ -105,15 +105,27 @@ export function GalleryBlock({
   eyebrow,
   heading,
   items,
+  cols = '2',
+  tileAspect = '16/10',
+  tileRadius = 'rounded-2xl',
   pad,
   vis = '',
 }: {
   eyebrow?: string
   heading?: string
   items: { image?: string; title?: string; body?: string }[]
+  cols?: string
+  tileAspect?: string
+  tileRadius?: string
   pad?: string
   vis?: string
 }) {
+  const colsClass =
+    cols === '3'
+      ? 'sm:grid-cols-2 lg:grid-cols-3'
+      : cols === '4'
+        ? 'sm:grid-cols-2 lg:grid-cols-4'
+        : 'sm:grid-cols-2'
   return (
     <section className={`bg-surface px-6 ${pad ?? 'py-16 sm:py-20'} ${vis}`}>
       <div className="max-w-5xl mx-auto">
@@ -121,10 +133,10 @@ export function GalleryBlock({
           {eyebrow && <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-3">{eyebrow}</p>}
           {heading && <h2 className="font-display uppercase text-text text-4xl sm:text-5xl">{heading}</h2>}
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div className={`grid grid-cols-1 ${colsClass} gap-5`}>
           {(items || []).map((f, i) => (
-            <article key={i} className="rounded-2xl overflow-hidden border border-border bg-surface">
-              <SiteImage src={f.image || '/images/site/lab-pool.jpg'} alt={f.title || ''} aspect="16/10" sizes="(min-width: 640px) 40rem, 100vw" />
+            <article key={i} className={`${tileRadius} overflow-hidden border border-border bg-surface`}>
+              <SiteImage src={f.image || '/images/site/lab-pool.jpg'} alt={f.title || ''} aspect={tileAspect} sizes="(min-width: 640px) 40rem, 100vw" />
               <div className="p-6">
                 <h3 className="text-xl font-bold text-text mb-1.5">{f.title}</h3>
                 <p className="text-base text-muted leading-relaxed">{f.body}</p>
