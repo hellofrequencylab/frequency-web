@@ -12,6 +12,7 @@ import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, BETA_CTA_LABEL, BETA_CTA_HRE
 import { type CommunityRole, ROLE_RANK, RoleBadge } from '@/lib/community-roles'
 import { config } from '@/lib/page-editor/config'
 import { getPublishedData } from '@/lib/page-editor/data'
+import { getJanitor } from '@/lib/page-editor/guard'
 import { getLiveData } from '@/lib/page-editor/live-data'
 import type { LiveData } from '@/components/marketing/blocks'
 
@@ -43,13 +44,23 @@ function hasRole(role: string | null | undefined): role is CommunityRole {
   return !!role && role in ROLE_RANK
 }
 
-export default async function RootPage() {
+export default async function RootPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ preview?: string }>
+}) {
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (user) redirect('/feed')
+  // Logged-in users get their feed — except a janitor with `?preview`, who can
+  // preview the public splash (e.g. via the Pages directory "View" link).
+  if (user) {
+    const { preview } = await searchParams
+    const canPreview = preview !== undefined && (await getJanitor())
+    if (!canPreview) redirect('/feed')
+  }
 
   const [pageData, live] = await Promise.all([getPublishedData('home'), getLiveData(supabase)])
 
