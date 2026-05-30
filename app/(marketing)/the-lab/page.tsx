@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { PageHero, Section, SectionHeading, Lead, Body, BetaCTA } from '@/components/marketing/marketing-ui'
+import { PageHero, ZigZag, Statement, BetaCTA } from '@/components/marketing/marketing-ui'
 
 export const metadata: Metadata = {
   title: 'The Lab',
@@ -18,22 +18,22 @@ const FEATURES = [
   {
     img: '/images/site/lab-thermal.jpg',
     title: 'The thermal circuit',
-    body: 'Sauna and cold plunge. The contrast at the center of it all.',
+    body: 'Sauna and cold plunge. The contrast that resets your whole system in twenty minutes.',
   },
   {
     img: '/images/site/lab-pool.jpg',
     title: 'Movement studios',
-    body: 'Breathwork, yoga, and somatic practice. The daily reset.',
+    body: 'Breathwork, yoga, and somatic practice. The daily reset, led by people who know what they’re doing.',
   },
   {
     img: '/images/site/lab-lounge.jpg',
     title: 'The connection bar',
-    body: 'Coffee and conversation, where strangers become regulars.',
+    body: 'Coffee, tea, and real conversation. The lingering place, where strangers quietly become regulars.',
   },
   {
     img: '/images/site/lab-concept.jpg',
     title: 'The events floor',
-    body: 'Talks, sound, ceremony, and celebration when the community gathers.',
+    body: 'Talks, sound baths, ceremony, and celebration. Where the whole community comes together.',
   },
 ]
 
@@ -42,7 +42,11 @@ export default function TheLabPage() {
     <>
       <PageHero
         eyebrow="The third space"
-        title="A place built to be felt."
+        title={
+          <>
+            A place built to be <span className="text-primary">felt</span>.
+          </>
+        }
         subtitle="The Frequency Lab is a third space engineered for your nervous system. Somewhere to move, gather, cool down, and come back to yourself."
       />
 
@@ -57,27 +61,42 @@ export default function TheLabPage() {
         </div>
       </div>
 
-      <Section tone="canvas">
-        <SectionHeading title="Not a gym. Not a café. Not a studio. All of it, on purpose." />
-        <Lead>
-          The Lab is a single space designed to do what scattered places
-          can&apos;t: hold a whole arc of a day.
-        </Lead>
-        <Body>
-          Arrive frazzled, leave regulated. Come alone, leave known. The
-          environment does the work. Light, sound, temperature, and the people
-          around you all tuned to bring you back to yourself.
-        </Body>
-      </Section>
+      {/* The arc of a day */}
+      <ZigZag
+        img="/images/site/lab-pool.jpg"
+        alt="A warm, plant-filled movement studio inside the Frequency Lab"
+        eyebrow="The experience"
+        title="Arrive frazzled. Leave regulated."
+        imgAspect="portrait"
+        reverse
+        tone="canvas"
+      >
+        <p>
+          Step in off the street and the noise drops away. Move your body. Drop
+          into your breath. Sweat in the sauna, then shock it all loose in the
+          plunge. Land at the bar with a coffee and somebody you didn&apos;t
+          know an hour ago.
+        </p>
+        <p>
+          Nothing about it is accidental. Light, sound, temperature, and the
+          people around you are all tuned to do one thing: bring you back to
+          yourself.
+        </p>
+      </ZigZag>
+
+      <Statement tone="surface">
+        Not a gym. Not a café. Not a studio.{' '}
+        <span className="text-primary">All of it</span>, on purpose.
+      </Statement>
 
       {/* Feature tiles with imagery */}
-      <section className="bg-surface px-6 py-20 sm:py-24">
+      <section className="bg-surface px-6 pb-20 sm:pb-24">
         <div className="max-w-5xl mx-auto">
           <div className="mb-10">
             <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
               Inside
             </p>
-            <h2 className="font-display uppercase text-text text-5xl sm:text-6xl">
+            <h2 className="font-display uppercase text-text text-4xl sm:text-5xl">
               What you&apos;ll find
             </h2>
           </div>
@@ -103,18 +122,34 @@ export default function TheLabPage() {
         </div>
       </section>
 
-      <Section tone="canvas">
-        <SectionHeading title="Designed to spread." />
-        <Body>
-          The first Lab is a prototype, a flagship rooted in one neighborhood.
-          It&apos;s built so that what works here can open in your city next.
-          The community comes first; the Lab is where it gets a body.
-        </Body>
-      </Section>
+      {/* Designed to spread */}
+      <ZigZag
+        img="/images/site/lab-concept.jpg"
+        alt="Concept render of a Frequency community space"
+        eyebrow="The model"
+        title="Designed to spread."
+        tone="canvas"
+      >
+        <p>
+          The first Lab is a prototype: a flagship rooted in one neighborhood,
+          funded by the people it serves. It&apos;s built from day one to be
+          repeatable, so the version that works here can open in your city next.
+        </p>
+        <p>
+          The community always comes first. By the time a place is ready for a
+          Lab, the people are already there. The Lab is simply where the
+          community gets a body.
+        </p>
+      </ZigZag>
+
+      <Statement tone="surface">
+        The community comes first.{' '}
+        <span className="text-primary">The Lab is where it gets a body.</span>
+      </Statement>
 
       <BetaCTA
         heading="Be part of building it."
-        body="The community is how the Lab begins. Join the Beta and help it take shape."
+        body="The community is how the Lab begins. Join the Beta and help shape the first one."
       />
     </>
   )
