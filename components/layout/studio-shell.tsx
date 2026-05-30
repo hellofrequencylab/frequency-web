@@ -1,6 +1,6 @@
 'use client'
 
-import { LayoutDashboard, Users, Rocket, Megaphone, Workflow, BarChart3, Sparkles } from 'lucide-react'
+import { LayoutDashboard, FileText, Users, Rocket, Megaphone, Workflow, BarChart3, Sparkles } from 'lucide-react'
 import AppShell, { type NavSection } from '@/components/layout/app-shell'
 
 // Studio nav defined client-side so the icon components don't have to cross the
@@ -10,6 +10,7 @@ const STUDIO_SECTIONS: NavSection[] = [
     label: 'Studio',
     items: [
       { href: '/studio', label: 'Dashboard', Icon: LayoutDashboard },
+      { href: '/studio/pages', label: 'Pages', Icon: FileText },
       { href: '/studio/contacts', label: 'Contacts', Icon: Users },
       { href: '/studio/beta', label: 'Beta waitlist', Icon: Rocket },
       { href: '/studio/campaigns', label: 'Campaigns', Icon: Megaphone },

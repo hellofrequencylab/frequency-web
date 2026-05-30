@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronDown, ArrowRight } from 'lucide-react'
+import { Render } from '@measured/puck/rsc'
 import { createClient } from '@/lib/supabase/server'
 import { MarketingHeader } from '@/components/layout/marketing-header'
 import { MarketingFooter } from '@/components/layout/marketing-footer'
@@ -9,6 +10,10 @@ import { Statement, ZigZag, Marquee, BetaCTA } from '@/components/marketing/mark
 import { getInitials, relativeTime } from '@/lib/utils'
 import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
 import { type CommunityRole, ROLE_RANK, RoleBadge } from '@/lib/community-roles'
+import { config } from '@/lib/page-editor/config'
+import { getPublishedData } from '@/lib/page-editor/data'
+import { getLiveData } from '@/lib/page-editor/live-data'
+import type { LiveData } from '@/components/marketing/blocks'
 
 export const metadata: Metadata = {
   title: { absolute: `${SITE_NAME} · ${SITE_TAGLINE}` },
@@ -34,16 +39,6 @@ type PostPreviewRow = {
   } | null
 }
 
-type PublicPostRow = {
-  id: string
-  body: string
-  created_at: string
-  media_urls: string[] | null
-  author_display_name: string | null
-  author_handle: string | null
-  author_avatar_url: string | null
-}
-
 function hasRole(role: string | null | undefined): role is CommunityRole {
   return !!role && role in ROLE_RANK
 }
@@ -56,29 +51,28 @@ export default async function RootPage() {
 
   if (user) redirect('/feed')
 
-  const [postsResult, memberCountResult, eventsResult, circleCountResult] = await Promise.all([
-    supabase.rpc('public_posts', { _limit: 3 }),
-    supabase.rpc('public_member_count'),
-    supabase.rpc('public_events', { _limit: 3 }),
-    supabase.rpc('public_active_circle_count'),
-  ])
+  const [pageData, live] = await Promise.all([getPublishedData('home'), getLiveData(supabase)])
 
-  const posts: PostPreviewRow[] = ((postsResult.data ?? []) as PublicPostRow[]).map((r) => ({
-    id: r.id,
-    body: r.body,
-    created_at: r.created_at,
-    media_urls: r.media_urls ?? [],
-    author: r.author_display_name
-      ? {
-          display_name: r.author_display_name,
-          handle: r.author_handle ?? '',
-          avatar_url: r.author_avatar_url,
-        }
-      : null,
-  }))
-  const memberCount = (memberCountResult.data as number | null) ?? 0
-  const circleCount = (circleCountResult.data as number | null) ?? 0
-  const upcomingEvents = (eventsResult.data ?? []) as { id: string; title: string; starts_at: string; city: string | null; slug: string }[]
+  // Published in the visual editor → render that. Otherwise fall back to the
+  // original hardcoded design (zero-downtime). Live data is injected as metadata.
+  if (pageData && Array.isArray(pageData.content) && pageData.content.length > 0) {
+    return (
+      <>
+        <MarketingHeader overHero />
+        <Render config={config} data={pageData} metadata={{ live }} />
+        <MarketingFooter />
+      </>
+    )
+  }
+
+  return <LegacySplash live={live} />
+}
+
+function LegacySplash({ live }: { live: LiveData }) {
+  const posts = live.posts as PostPreviewRow[]
+  const memberCount = live.memberCount
+  const circleCount = live.circleCount
+  const upcomingEvents = live.upcomingEvents
 
   return (
     <>

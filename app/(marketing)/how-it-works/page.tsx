@@ -1,5 +1,10 @@
 import type { Metadata } from 'next'
+import { Render } from '@measured/puck/rsc'
 import { PageHero, ZigZag, Statement, BetaCTA } from '@/components/marketing/marketing-ui'
+import { config } from '@/lib/page-editor/config'
+import { getPublishedData } from '@/lib/page-editor/data'
+
+export const revalidate = 3600
 
 export const metadata: Metadata = {
   title: 'How it works',
@@ -13,7 +18,15 @@ export const metadata: Metadata = {
   },
 }
 
-export default function HowItWorksPage() {
+export default async function HowItWorksPage() {
+  const data = await getPublishedData('how-it-works')
+  if (data && Array.isArray(data.content) && data.content.length > 0) {
+    return <Render config={config} data={data} />
+  }
+  return <LegacyHowItWorks />
+}
+
+function LegacyHowItWorks() {
   return (
     <>
       <PageHero
