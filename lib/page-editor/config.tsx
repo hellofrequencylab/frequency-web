@@ -16,6 +16,7 @@ import {
   type LiveData,
 } from '@/components/marketing/blocks'
 import { SiteImage } from '@/components/marketing/site-image'
+import { richParagraphs } from './richtext'
 import { ImageField } from './image-field'
 import { layoutField, layoutDefault, padClass, visClass, type LayoutValue } from './layout'
 import {
@@ -47,16 +48,6 @@ function accentize(text?: string, accent?: string): React.ReactNode {
       {text.slice(i + accent.length)}
     </>
   )
-}
-
-// Body text → paragraphs (split on blank lines).
-function paragraphs(body?: string): React.ReactNode {
-  if (!body) return null
-  return body
-    .split(/\n\s*\n/)
-    .map((p) => p.trim())
-    .filter(Boolean)
-    .map((p, i) => <p key={i}>{p}</p>)
 }
 
 const toneField = {
@@ -100,7 +91,7 @@ export const config: Config = {
         title: { type: 'text' },
         titleAccent: { type: 'text', label: 'Title accent word (optional)' },
         kicker: { type: 'text', label: 'Italic kicker (optional)' },
-        body: { type: 'textarea' },
+        body: { type: 'textarea', label: 'Body (**bold**, *italic*, [link](/path))' },
         side: {
           type: 'radio',
           options: [
@@ -154,7 +145,7 @@ export const config: Config = {
           vis={visClass(layout as LayoutValue)}
           cta={ctaLabel && ctaHref ? { label: ctaLabel, href: ctaHref } : undefined}
         >
-          {paragraphs(body)}
+          {richParagraphs(body)}
         </ZigZag>
       ),
     },
@@ -304,11 +295,41 @@ export const config: Config = {
           arrayFields: { image: imgField, title: { type: 'text' }, body: { type: 'textarea' } },
           getItemSummary: (i: { title?: string }) => i.title || 'Tile',
         },
+        columns: {
+          type: 'select',
+          label: 'Columns',
+          options: [
+            { label: '2 columns', value: '2' },
+            { label: '3 columns', value: '3' },
+            { label: '4 columns', value: '4' },
+          ],
+        },
+        tileAspect: {
+          type: 'select',
+          label: 'Tile crop',
+          options: [
+            { label: 'Landscape (16:10)', value: '16/10' },
+            { label: 'Wide (16:9)', value: '16/9' },
+            { label: 'Photo (3:2)', value: '3/2' },
+            { label: 'Square (1:1)', value: '1/1' },
+            { label: 'Portrait (4:5)', value: '4/5' },
+          ],
+        },
+        radius: radiusField,
         layout: layoutField,
       },
-      defaultProps: { eyebrow: 'Inside', heading: 'What you’ll find', items: [], layout: layoutDefault },
-      render: ({ eyebrow, heading, items, layout }) => (
-        <GalleryBlock eyebrow={eyebrow || undefined} heading={heading || undefined} items={items || []} pad={padClass(layout as LayoutValue)} vis={visClass(layout as LayoutValue)} />
+      defaultProps: { eyebrow: 'Inside', heading: 'What you’ll find', items: [], columns: '2', tileAspect: '16/10', radius: 'md', layout: layoutDefault },
+      render: ({ eyebrow, heading, items, columns, tileAspect, radius, layout }) => (
+        <GalleryBlock
+          eyebrow={eyebrow || undefined}
+          heading={heading || undefined}
+          items={items || []}
+          cols={columns as string}
+          tileAspect={(tileAspect as string) || '16/10'}
+          tileRadius={radiusClass(radius as string, 'rounded-2xl')}
+          pad={padClass(layout as LayoutValue)}
+          vis={visClass(layout as LayoutValue)}
+        />
       ),
     },
 
