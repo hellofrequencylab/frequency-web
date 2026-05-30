@@ -82,6 +82,101 @@ export function Body({ children }: { children: React.ReactNode }) {
   return <p className="text-base text-muted leading-relaxed mb-5">{children}</p>
 }
 
+// Big full-width typographic interstitial — the rhythm device between sections.
+// Wrap accent words in <span className="text-primary-strong"> inside children.
+export function Statement({
+  children,
+  tone = 'canvas',
+}: {
+  children: React.ReactNode
+  tone?: 'surface' | 'canvas'
+}) {
+  const bg = tone === 'canvas' ? 'bg-marketing-canvas' : 'bg-surface'
+  return (
+    <section className={`${bg} px-6 py-16 sm:py-24`}>
+      <p className="max-w-4xl mx-auto text-center text-[1.9rem] sm:text-4xl lg:text-5xl font-black text-text tracking-tight leading-[1.12]">
+        {children}
+      </p>
+    </section>
+  )
+}
+
+// Alternating image / text row. `reverse` flips the image to the right.
+export function ZigZag({
+  img,
+  alt,
+  eyebrow,
+  title,
+  children,
+  cta,
+  reverse = false,
+  tone = 'surface',
+}: {
+  img: string
+  alt: string
+  eyebrow?: string
+  title: string
+  children: React.ReactNode
+  cta?: { label: string; href: string }
+  reverse?: boolean
+  tone?: 'surface' | 'canvas'
+}) {
+  const bg = tone === 'canvas' ? 'bg-marketing-canvas' : 'bg-surface'
+  return (
+    <section className={`${bg} px-6 py-16 sm:py-20`}>
+      <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-10 items-center">
+        <div
+          className={`rounded-3xl overflow-hidden border border-border shadow-sm ${
+            reverse ? 'md:order-last' : ''
+          }`}
+        >
+          <img src={img} alt={alt} className="w-full h-full object-cover aspect-[4/3]" />
+        </div>
+        <div>
+          {eyebrow && (
+            <p className="text-xs font-semibold uppercase tracking-widest text-primary-strong mb-3">
+              {eyebrow}
+            </p>
+          )}
+          <h2 className="text-3xl sm:text-4xl font-bold text-text tracking-tight mb-5">
+            {title}
+          </h2>
+          <div className="text-base text-muted leading-relaxed space-y-4">{children}</div>
+          {cta && (
+            <Link
+              href={cta.href}
+              className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-primary-strong hover:underline"
+            >
+              {cta.label} <ArrowRight className="w-4 h-4" />
+            </Link>
+          )}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// Pure-CSS marquee strip (see .animate-marquee in globals.css). Items are
+// duplicated once so the -50% translate loops seamlessly.
+export function Marquee({ items }: { items: string[] }) {
+  const row = [...items, ...items]
+  return (
+    <div className="overflow-hidden border-y border-white/10 py-4 select-none">
+      <div className="flex w-max animate-marquee items-center whitespace-nowrap">
+        {row.map((t, i) => (
+          <span
+            key={i}
+            className="flex items-center text-sm font-black uppercase tracking-[0.25em] text-white/35"
+          >
+            <span className="px-6">{t}</span>
+            <span className="text-primary">&bull;</span>
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export function BetaCTA({
   heading,
   body,

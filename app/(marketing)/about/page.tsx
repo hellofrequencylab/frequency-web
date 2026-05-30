@@ -22,6 +22,16 @@ export default function AboutPage() {
         subtitle="The story behind Frequency — and why we won&apos;t let it collapse this time."
       />
 
+      <div className="px-6">
+        <div className="max-w-5xl mx-auto rounded-3xl overflow-hidden border border-border shadow-sm">
+          <img
+            src="/images/site/community-1.jpg"
+            alt="A Frequency community gathering"
+            className="w-full object-cover aspect-[21/9]"
+          />
+        </div>
+      </div>
+
       <Section tone="canvas">
         <SectionHeading title="It started on a cliff at Moonlight Beach." />
         <Body>
