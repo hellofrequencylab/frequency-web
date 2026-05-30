@@ -325,14 +325,21 @@ function AccountDropdown({
 
 // ── Shared nav items (used by desktop sidebar and mobile drawer) ──────────────
 
+export type NavSection = {
+  label: string | null
+  items: { href: string; label: string; Icon: React.ElementType }[]
+}
+
 function NavLinkList({
   isActive,
   role,
   onNavigate,
+  extraSections,
 }: {
   isActive: (href: string) => boolean
   role: CommunityRole
   onNavigate?: () => void
+  extraSections?: NavSection[]
 }) {
   const showCrew = role === 'crew' || role === 'host' || role === 'guide' || role === 'mentor' || role === 'janitor'
   const showAdmin = role === 'host' || role === 'guide' || role === 'mentor' || role === 'janitor'
@@ -351,6 +358,24 @@ function NavLinkList({
     <>
       {NAV_SECTIONS.map((section, i) => (
         <div key={section.label ?? `top-${i}`} className={`space-y-0.5 ${i > 0 ? 'mt-2' : ''}`}>
+          {section.label && <p className={sectionLabelClass}>{section.label}</p>}
+          {section.items.map(({ href, label, Icon }) => {
+            const active = isActive(href)
+            return (
+              <Link key={href} href={href} onClick={onNavigate} className={itemClass(active)}>
+                <Icon
+                  className={`w-[18px] h-[18px] shrink-0 ${active ? 'text-primary-strong' : 'text-subtle'}`}
+                  strokeWidth={active ? 2.5 : 2}
+                />
+                {label}
+              </Link>
+            )
+          })}
+        </div>
+      ))}
+
+      {extraSections?.map((section, i) => (
+        <div key={`extra-${section.label ?? i}`} className="space-y-0.5 mt-2">
           {section.label && <p className={sectionLabelClass}>{section.label}</p>}
           {section.items.map(({ href, label, Icon }) => {
             const active = isActive(href)
@@ -411,11 +436,13 @@ function MobileLeftDrawer({
   onClose,
   role,
   isActive,
+  extraSections,
 }: {
   open: boolean
   onClose: () => void
   role: CommunityRole
   isActive: (href: string) => boolean
+  extraSections?: NavSection[]
 }) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -453,7 +480,7 @@ function MobileLeftDrawer({
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-          <NavLinkList isActive={isActive} role={role} onNavigate={onClose} />
+          <NavLinkList isActive={isActive} role={role} onNavigate={onClose} extraSections={extraSections} />
         </nav>
 
         {/* Bottom close. Sits in the thumb zone */}
@@ -556,11 +583,13 @@ export default function AppShell({
   children,
   sidebar,
   unreadCount = 0,
+  extraSections,
 }: {
   profile: Profile
   children: React.ReactNode
   sidebar?: React.ReactNode
   unreadCount?: number
+  extraSections?: NavSection[]
 }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -589,6 +618,7 @@ export default function AppShell({
   }, [router])
 
   function isActive(href: string) {
+    if (href === '/studio')   return pathname === '/studio'
     if (href === '/feed')     return pathname === '/feed'
     if (href === '/circles')  return pathname === '/circles' || pathname.startsWith('/circles/') || pathname.startsWith('/hubs/') || pathname.startsWith('/nexuses/')
     if (href === '/channels') return pathname === '/channels' || pathname.startsWith('/channels/')
@@ -707,7 +737,7 @@ export default function AppShell({
 
           {/* Primary nav */}
           <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-            <NavLinkList isActive={isActive} role={role} />
+            <NavLinkList isActive={isActive} role={role} extraSections={extraSections} />
           </nav>
 
           {/* Upgrade to Crew CTA. Members only (not janitor) */}
@@ -765,6 +795,7 @@ export default function AppShell({
         onClose={() => setDrawerOpen(false)}
         role={role}
         isActive={isActive}
+        extraSections={extraSections}
       />
 
     </div>
