@@ -5,6 +5,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { leaveCircle, joinCircle } from '../actions'
 import { CrewGateButton } from '@/components/crew-gate-button'
+import { TeaserGate } from '@/components/teaser-gate'
+import { teaserAllowed, TEASER_PREVIEW_SECONDS } from '@/lib/teaser'
 import { startConversation } from '@/app/(main)/messages/actions'
 import { Composer } from '@/components/feed/composer'
 import { FeedList } from '@/components/feed/feed-list'
@@ -299,7 +301,16 @@ export default async function CirclePage({
       ) : null}
 
       {/* ── Body. One border-t spans the row so the feed and the right
-              rail hang off the same line (mirrors Channels). ──────── */}
+              rail hang off the same line (mirrors Channels). Teaser-gated:
+              below-tier viewers preview, then it blurs (no-op until the gate
+              is switched on — see lib/teaser.ts). ──────── */}
+      <TeaserGate
+        allowed={teaserAllowed({ role: isCrew ? 'crew' : 'member', hasAccess: isMember })}
+        resourceKey={`circle:${circle.id}`}
+        previewSeconds={TEASER_PREVIEW_SECONDS}
+        title="Crew unlocks the full circle"
+        body="Take a look around. Crew members can post, join the conversation, and connect with everyone here."
+      >
       <div className="border-t border-border pt-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
@@ -468,6 +479,7 @@ export default async function CirclePage({
           </div>
         </div>
       </div>
+      </TeaserGate>
     </div>
   )
 }
