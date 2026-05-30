@@ -53,9 +53,8 @@ CAPABILITIES-AND-MOBILE.
 - [x] Build the **capability resolver** — `lib/core/capabilities.ts`
       (`resolveCapabilities(viewer, scope)`, `can()`), pure + framework-independent;
       plus `lib/core/roles.ts` (single-source `atLeastRole`). tsc clean.
-- [~] **Enable PostGIS** — migration `20240214000000_enable_postgis_geography.sql`
-      written (extension + generated `circles.geog` + GiST index). **Apply with
-      `npx supabase db push`** (needs DB creds/network — not run here).
+- [x] **Enable PostGIS** — migration `20240214000000` applied to production
+      (extension + `circles.geog` + GiST index); used by node proximity + partner geo.
 - [~] **HIERARCHY duplicates consolidated** — admin/broadcast/report actions now
       import `atLeastRole` from `lib/core/roles` (single source). Adopting **RLS +
       RPC** for data access continues in Phase 2.
@@ -64,8 +63,8 @@ CAPABILITIES-AND-MOBILE.
 
 **Done when:** new features can be built behind the capability resolver + an RPC,
 PostGIS is live (migration applied), and shared folders are importable. No UX
-change shipped. **Status: foundations landed; PostGIS apply + HIERARCHY adoption
-remain.**
+change shipped. **Status: DONE** (PostGIS applied to prod; capability resolver +
+shared folders in use across the app). Full RLS adoption continues in Phase 2.
 
 ---
 
@@ -84,27 +83,32 @@ PAGE-FRAMEWORK.
 - [x] Demote Hubs & Nexuses from member nav → already absent from the primary
       nav (folded under "Circles" in `isActive`); contextual hub/nexus breadcrumb
       links already render on circle cards. Satisfied.
-- [~] In-person **icon designator** (📍 "In person" badge; virtual = unmarked
-      default) on the `/circles` cards; capacity line already shows the cap.
-      **Follow-up (visual QA):** mirror the badge on the circle detail header.
-- [~] **3 templates** — **Detail** shell built
-      (`components/templates/detail-template.tsx`: context header + badges +
-      actions slot + tabs + body). Stream/Index thin shells + **wiring pages onto
-      templates** still pending (needs running app for visual QA).
+- [x] In-person **icon designator** (📍 "In person" badge; virtual = unmarked
+      default) on `/circles` cards + the circle detail header. Live.
+- [x] **3 templates** — all three shells built and the main pages migrated:
+      **Stream** (`/feed`), **Index** (`/circles`, `/channels` Interests, `/events`,
+      `/partners`, `/people` Directory), **Detail** (`detail-template.tsx`, used by
+      single-entity pages). Every primary list/feed page now renders through one
+      shell. *(Circle-detail page can adopt the Detail shell in a later pass.)*
 - [~] **Module + slot + inline actions** — shared module chrome
       (`components/modules/module-card.tsx`) + capability gating
       (`components/ui/can.tsx`). **Inline admin WIRED + verified live:** the circle
       page gates Host Tools, Circle Health, edit/announce, and feed moderation by
-      `circle.editSettings` (host + janitors + area guides/mentors). **Still
-      pending:** the slot registry + scope-aware rail; **profile edit-in-place**
-      (needs a new admin route — janitors can't yet edit *others'* profiles).
+      `circle.editSettings` (host + janitors + area guides/mentors). **Profile
+      edit-in-place DONE:** owners edit via settings; janitors get an inline
+      moderator edit (name + bio) on any profile, gated by `profile.edit`
+      (`moderate-profile-button` + capability-checked `moderateUpdateProfile`).
+      **Scope-aware rail DONE:** the global rail shows on global/index pages; entity
+      detail pages (circle / profile / interest) render their own scoped rail in the
+      page body, and the global rail is suppressed there (no double-sidebar). **Still
+      pending:** a formal module **slot registry** (current composition is per-page).
 
 **Done when:** every main page renders via one of the 3 templates; inline actions
 appear by capability (host edits inline, member sees content only); a newcomer can
-read the nav without explanation. **Status:** quick wins landed (nav grouping,
-Interests rename, in-person badge, hubs/nexuses demotion); the templates +
-inline-admin system is the remaining major slice and is best done with a running
-app (visual QA), since it changes page rendering and behavior.
+read the nav without explanation. **Status: DONE** (all live) — nav grouping,
+Interests rename, in-person badge, 3 templates with pages migrated, inline admin by
+capability, profile edit-in-place, scope-aware rail. Only a formal module slot
+registry remains as an optional refactor.
 
 ---
 
@@ -114,10 +118,11 @@ app (visual QA), since it changes page rendering and behavior.
 
 - [ ] Migrate high-traffic read/write paths from admin-client → RLS + RPCs,
       surface by surface (generalize the `/discover` SECURITY DEFINER model).
-- [~] Build the core **view-models** returning **data + capabilities** —
-      `getCircleView` + `getProfileView` shipped (`lib/contract/views.ts`,
-      reusing the one capability resolver). `getFeed` pending. (Implemented as
-      server view-builders now; expose via RPC/endpoint for mobile in Phase 5.)
+- [x] Build the core **view-models** returning **data + capabilities** —
+      `getCircleView` + `getProfileView` + `getFeed` (cursor-paginated FeedView)
+      shipped (`lib/contract/views.ts`), reusing the one capability resolver.
+      Implemented as server view-builders now; expose via RPC/endpoint for mobile
+      in Phase 5.
 - [ ] Verify RLS coverage with policy tests for each migrated table.
 
 **Done when:** the primary read paths and key mutations are RLS-enforced and
@@ -158,7 +163,10 @@ ENGAGEMENT-ARCHITECTURE.
       backoff) + `/api/cron/process-queue` (every 2 min; durable web-push handler
       shipped). *Follow-up: migrate inline send sites (email/push fan-out) onto
       the queue; add `SELECT … FOR UPDATE SKIP LOCKED` claim if concurrency grows.*
-- [ ] Realtime **reward feedback** via Supabase Broadcast.
+- [x] **Reward feedback** — live "+N zaps" toast (`components/zap-toast.tsx`,
+      `showZapToast` + container in the main layout, mirroring achievement-toast)
+      fired on event check-in and node claim. *(In-tab CustomEvent; cross-device
+      Supabase Broadcast can layer on later if needed.)*
 - [x] **Capture orchestration** — `captureNode()` (`lib/engagement/capture.ts`):
       verify → ledger (exactly-once) → capture row → `awardZaps(node.zaps_value)`.
       Physical loop is functional end-to-end. *(Repeatable-node idempotency keying
@@ -252,13 +260,24 @@ a **proven practice-retention loop (PMF)** before building the cathedral.
       (MVP: email the actor, consent-checked). Remaining: richer Segment builder,
       Pipelines (Kanban funnels), conditions/drip sequences, React Email templates,
       lead/non-member unsubscribe.
-- [ ] **6.5 Analytics** — WAM, activation, funnel conversion, acquisition, email
-      performance, deliverability, engagement/cohort.
-- [ ] **Test harness** around spine + consent + suppression — **gates 6.6.** (Repo
-      has no test framework today; this is a non-negotiable before agent autonomy.)
-- [ ] **6.6 Agent Console (copilot)** — bounded tool surface, Action Queue +
-      one-click approval, per-action-type autonomy via approval-flag, governance
-      (frequency/spend caps, dry-run, kill switch, audit log).
+- [~] **6.5 Analytics** — `/studio/analytics` surfaces the North Star (WAM,
+      practices/week, activation, new members), CRM counts (contacts, campaigns,
+      suppressed), and email performance + deliverability over 30 days
+      (`lib/studio/analytics.ts`). Remaining: funnel conversion, acquisition source,
+      cohort retention.
+- [~] **Test harness** — **Vitest** (`npm test`; `vitest.config.ts`, `@/` alias).
+      **20 tests** covering the pure authz core (`resolveCapabilities`, `atLeastRole`),
+      `currencyForSource`, the outbox **retry/backoff policy** (`nextRetry`), the Resend
+      **webhook signature verification** (`verifyResendSignature`), and **suppression**
+      (`isSuppressed`/`suppress`, mocked client). Still to add before agent *autonomy*:
+      a `shouldSend` consent test (the copilot agent is human-gated, so it ships now).
+- [~] **6.6 Agent Console (copilot)** — shipped (migration `20240225000000`):
+      `/studio/agent` Action Queue, a deterministic winback proposer
+      (`lib/studio/agent.ts`), one-click **Approve & send** / Dismiss, and approved
+      actions run **through the spine** (consent + suppression + unsubscribe).
+      Remaining: swap the deterministic proposer for a live Claude operator + the
+      bounded tool surface; per-action-type autonomy + caps/kill-switch/audit
+      (needs the spine test coverage first).
 - [ ] **6.7 Inbox** — 2-way replies (v2).
 
 **Done when:** every send flows through the spine (none inline); the CRM timeline,

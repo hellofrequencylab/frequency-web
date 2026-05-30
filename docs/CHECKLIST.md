@@ -23,6 +23,7 @@
       - `20240222000000_contacts_backfill.sql` (auto-link + backfill contacts) — **new; apply**
       - `20240223000000_campaigns.sql` (marketing campaigns) — **new; apply**
       - `20240224000000_automations.sql` (automation rules engine) — **new; apply**
+      - `20240225000000_agent_actions.sql` (agent action queue) — **new; apply**
 - [ ] **Grant yourself Studio access** (to load `/studio`): after applying, run
       `insert into public.team_members (profile_id, role) select id, 'owner' from public.profiles where handle = 'danieltyack';`
 - [ ] **Configure the Resend webhook** (Phase 6.2): in the Resend dashboard add a
@@ -69,23 +70,21 @@
       business terms.
 - [ ] **Web's long-term role** once mobile leads — full parity vs. lighter funnel.
 
-## 🔧 Next build steps — need the app running (do together / with QA)
-These have **foundations already built & committed** (capability resolver,
-`<Can>`, `DetailTemplate`, `ModuleCard`, contract types) — they just need wiring
-+ visual QA, which is why I held them:
-- [ ] Wire `getCircleCapabilities` into the **circle page** → inline host actions
-      via `<Can need="circle.editSettings">` etc. (replaces ad-hoc `isHost`).
-      ⚠️ Decide intended behavior: should **janitors** see inline host actions on
-      *any* circle? (The resolver currently grants it; today's UI shows it only to
-      the circle's host.)
-- [ ] Wire `getProfileCapabilities` into the **profile page** → "Edit profile" /
-      edit-in-place via `<Can need="profile.edit">`.
-- [ ] Build **Stream** + **Index** template shells; migrate `/feed` and
-      `/circles` onto the templates (Detail shell already exists).
+## 🔧 Next build steps — remaining
+**Shipped since this list was written:** inline circle admin by capability (host +
+janitors + area guides/mentors); profile edit-in-place (owner via settings, janitor
+inline moderator edit); all 3 page templates + Feed/Circles/Interests/Events/
+Partners/Directory migrated onto them.
+
+Still pending:
 - [ ] **Module slot registry** + make the right rail **scope-aware**
       (global → circle/interest) per PAGE-FRAMEWORK §4.
+- [ ] **Phase 2 authz:** migrate high-traffic read paths to RLS + RPCs; `getFeed`
+      view-builder; RLS policy tests. (Sensitive — incremental + tested.)
 - [ ] Crew **task volunteering** inline on circle pages (needs the task-assignment
       data model confirmed — `crew_tasks` is currently a type catalog only).
+- [ ] **Phase 6 remainder:** live Claude operator for the Agent (gated on more spine
+      tests); Segments builder + Pipelines; 6.7 Inbox.
 
 ## 🧹 Pre-existing tech debt (noticed, not mine to silently change)
 - [ ] `right-sidebar.tsx` — unused imports (`CalendarDays`, `Trophy`, `Target`),

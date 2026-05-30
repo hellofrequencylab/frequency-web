@@ -4,36 +4,10 @@
 // Svix-style with Node crypto (no svix dependency).
 
 import { NextResponse } from 'next/server'
-import crypto from 'node:crypto'
 import { recordEmailEvent, suppress } from '@/lib/suppression'
+import { verifyResendSignature } from '@/lib/webhook-verify'
 
 export const dynamic = 'force-dynamic'
-
-function verifySignature(
-  secret: string,
-  id: string,
-  timestamp: string,
-  body: string,
-  signatureHeader: string,
-): boolean {
-  try {
-    const key = Buffer.from(secret.replace(/^whsec_/, ''), 'base64')
-    const expected = crypto
-      .createHmac('sha256', key)
-      .update(`${id}.${timestamp}.${body}`)
-      .digest('base64')
-    const expectedBuf = Buffer.from(expected)
-    // svix-signature is a space-separated list of "v1,<base64sig>" entries.
-    return signatureHeader.split(' ').some((part) => {
-      const sig = part.split(',')[1]
-      if (!sig) return false
-      const sigBuf = Buffer.from(sig)
-      return sigBuf.length === expectedBuf.length && crypto.timingSafeEqual(sigBuf, expectedBuf)
-    })
-  } catch {
-    return false
-  }
-}
 
 export async function POST(req: Request) {
   const secret = process.env.RESEND_WEBHOOK_SECRET
@@ -42,7 +16,7 @@ export async function POST(req: Request) {
   const signature = req.headers.get('svix-signature')
   const body = await req.text()
 
-  if (!secret || !id || !timestamp || !signature || !verifySignature(secret, id, timestamp, body, signature)) {
+  if (!secret || !id || !timestamp || !signature || !verifyResendSignature(secret, id, timestamp, body, signature)) {
     return NextResponse.json({ error: 'invalid signature' }, { status: 401 })
   }
 
