@@ -10,7 +10,6 @@ import { requireStaff } from '@/lib/staff'
 export async function setContactConsent(
   id: string,
   state: 'subscribed' | 'unsubscribed',
-  _formData?: FormData,
 ): Promise<void> {
   await requireStaff('marketer')
   const db = createAdminClient() as unknown as SupabaseClient

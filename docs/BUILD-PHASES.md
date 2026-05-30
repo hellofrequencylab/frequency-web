@@ -287,6 +287,35 @@ non-negotiables: COMMS-CRM-ARCHITECTURE §6.)*
 
 ---
 
+## Phase 7 — Public marketing site & Beta acquisition funnel  ·  *the front door*
+**Goal:** a public marketing site + a double-opt-in beta funnel that feeds the CRM,
+replacing the Squarespace site. **Depends on:** the email spine (6.1) + `contacts`
+(6.3). **Governs:** [MARKETING-AND-BETA.md](MARKETING-AND-BETA.md).
+
+- [x] **Marketing site** — `app/(marketing)/` (`/the-lab`, `/how-it-works`,
+      `/about`) + the vision splash (`app/page.tsx`), editorial chrome
+      (`marketing-header` scroll-aware/no-search, `marketing-footer`, `marketing-ui`
+      primitives, Anton display face). Reuses public `/discover`.
+- [x] **Beta funnel (double opt-in)** — `/beta` + `/beta/confirm`; `requestBetaAccess`
+      → `contacts` lead + HMAC confirm token (`lib/beta-tokens.ts`) + queued confirm
+      email; confirm flips `consent_state='subscribed'`. Admit → invite email.
+- [x] **Admin surfaces** — Studio now renders in the **standard `AppShell`**
+      (`extraSections` "Studio" nav); `/studio/beta` (admit/resend/manual-drain),
+      `/studio/contacts` (filter + un/resubscribe). Community `/admin/members`
+      tabbed (Members/Subscribers/Beta). `@moderation` hidden from the directory.
+- [x] **Manual queue drain** — `drainQueueNow` + "Send queued emails now" button,
+      since `process-queue` cron is fail-closed on `CRON_SECRET` (MARKETING-AND-BETA §4).
+- [ ] **Owner config** — set `CRON_SECRET`, `NEXT_PUBLIC_SITE_URL`,
+      `NEXT_PUBLIC_APP_URL`, `EMAIL_FROM` in prod (MARKETING-AND-BETA §5).
+- [ ] **Apex cutover** — move from `go.findafreq.com` to `findafreq.com` (kill
+      Squarespace). Deferred: Support/donations (org-status framework), per-Nexus
+      subdomains.
+
+**Done when:** a visitor can read the vision, join the beta with double opt-in, and
+land in the CRM; staff can admit them; and the whole thing lives on `findafreq.com`.
+
+---
+
 ## Dependency map
 
 ```

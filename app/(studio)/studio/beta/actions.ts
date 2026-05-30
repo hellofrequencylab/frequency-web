@@ -19,7 +19,7 @@ export async function drainQueueNow(): Promise<void> {
 }
 
 // Admit a confirmed beta signup: mark invited + email them the "you're in" link.
-export async function admitBetaSignup(id: string, _formData?: FormData): Promise<void> {
+export async function admitBetaSignup(id: string): Promise<void> {
   await requireStaff('marketer')
   const db = createAdminClient() as unknown as SupabaseClient
 
@@ -51,7 +51,7 @@ export async function admitBetaSignup(id: string, _formData?: FormData): Promise
 }
 
 // Re-queue the double opt-in confirm email for a pending signup.
-export async function resendBetaConfirm(id: string, _formData?: FormData): Promise<void> {
+export async function resendBetaConfirm(id: string): Promise<void> {
   await requireStaff('marketer')
   const db = createAdminClient() as unknown as SupabaseClient
 
