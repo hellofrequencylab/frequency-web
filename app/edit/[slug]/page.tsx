@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
-import { redirect } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import type { Data } from '@measured/puck'
-import { requireStaff } from '@/lib/staff'
+import { getJanitor } from '@/lib/page-editor/guard'
 import { getPage, isEditableSlug, EDITABLE_PAGES } from '@/lib/page-editor/data'
 import { PageEditor } from '@/components/page-editor/editor'
 
@@ -15,9 +15,9 @@ export default async function EditPage({
 }: {
   params: Promise<{ slug: string }>
 }) {
-  await requireStaff('marketer')
+  if (!(await getJanitor())) notFound()
   const { slug } = await params
-  if (!isEditableSlug(slug)) redirect('/studio/pages')
+  if (!isEditableSlug(slug)) redirect('/pages')
 
   const page = await getPage(slug)
   const meta = EDITABLE_PAGES.find((p) => p.slug === slug)!

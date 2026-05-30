@@ -1,5 +1,7 @@
 import Link from 'next/link'
+import { notFound } from 'next/navigation'
 import { ExternalLink, Pencil } from 'lucide-react'
+import { getJanitor } from '@/lib/page-editor/guard'
 import { EDITABLE_PAGES, listPages } from '@/lib/page-editor/data'
 
 export const dynamic = 'force-dynamic'
@@ -12,7 +14,10 @@ function fmt(d: string | null | undefined): string {
     : `Published ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
 }
 
-export default async function PagesPage() {
+export default async function PagesDirectory() {
+  // Janitor-only. This is the directory of editable public "static" pages.
+  if (!(await getJanitor())) notFound()
+
   const pages = await listPages()
 
   return (
@@ -24,7 +29,7 @@ export default async function PagesPage() {
         affected.
       </p>
 
-      <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
+      <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden max-w-3xl">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border text-left text-[11px] uppercase tracking-wider text-subtle">

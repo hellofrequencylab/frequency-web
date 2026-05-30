@@ -43,10 +43,12 @@ own chrome (not the member shell).
 All 4 marketing pages are **WYSIWYG-editable**; no code or deploy needed to
 change copy, images, or section order. Full design spec: [PAGE-EDITOR-SPEC.md](PAGE-EDITOR-SPEC.md).
 
-**How to edit (staff = `marketer`+):** open the **Pages** directory at
-`/studio/pages` — reachable from the main nav under **Manage → Pages**, or from
-inside the Studio sidebar. **Edit** a page → opens the full-screen editor at
-`/edit/[slug]`. Drag blocks to
+**How to edit (janitor only):** open the **Pages** directory at `/pages` —
+reachable from the main app nav under **Manage → Pages** (the link shows only for
+the `janitor` community role, beneath Admin and Studio). **Edit** a page → opens
+the full-screen editor at `/edit/[slug]`. The whole feature (directory, editor
+route, publish/draft actions) is gated by `lib/page-editor/guard.ts`
+(`getJanitor` / `requireJanitor`) — it is **not** part of the Studio. Drag blocks to
 reorder, edit fields in the right panel, swap/upload images, then **Publish** →
 live immediately (the route is revalidated). "Save draft" stores without
 publishing.

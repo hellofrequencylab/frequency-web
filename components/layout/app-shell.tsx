@@ -448,19 +448,19 @@ function NavLinkList({
               Studio
             </Link>
           )}
-          {isStaff && (
+          {role === 'janitor' && (
             <Link
-              href="/studio/pages"
+              href="/pages"
               onClick={onNavigate}
               className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                isActive('/studio/pages')
+                isActive('/pages')
                   ? 'bg-signal-bg text-signal-strong'
                   : 'text-muted hover:bg-surface-elevated hover:text-text'
               }`}
             >
               <FileText
-                className={`w-[18px] h-[18px] shrink-0 ${isActive('/studio/pages') ? 'text-signal-strong' : 'text-subtle'}`}
-                strokeWidth={isActive('/studio/pages') ? 2.5 : 2}
+                className={`w-[18px] h-[18px] shrink-0 ${isActive('/pages') ? 'text-signal-strong' : 'text-subtle'}`}
+                strokeWidth={isActive('/pages') ? 2.5 : 2}
               />
               Pages
             </Link>

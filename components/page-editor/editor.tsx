@@ -21,7 +21,7 @@ export function PageEditor({ slug, title, data }: { slug: string; title: string;
         headerActions: ({ children }) => (
           <>
             <Link
-              href="/studio/pages"
+              href="/pages"
               className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-[#555] hover:text-black"
             >
               ← Exit
