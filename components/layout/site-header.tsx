@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Search } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { MARKETING_NAV } from '@/lib/site'
 import { UserMenu, AuthButtons, type UserMenuProfile } from './user-menu'
 
 // ── Public site header ────────────────────────────────────────────────────────
@@ -55,6 +56,24 @@ export async function SiteHeader({ profile: profileProp, variant = 'light' }: Si
           className={`h-7 w-auto ${isDark ? 'invert' : 'dark:invert'}`}
         />
       </Link>
+
+      {/* Primary marketing nav (public pages). Desktop only; mobile relies on
+          the prominent Join CTA + footer nav until a drawer ships. */}
+      <nav className="hidden md:flex items-center gap-1 ml-2">
+        {MARKETING_NAV.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              isDark
+                ? 'text-white/70 hover:text-white hover:bg-white/10'
+                : 'text-muted hover:text-text hover:bg-surface-elevated'
+            }`}
+          >
+            {item.label}
+          </Link>
+        ))}
+      </nav>
 
       <div className="flex-1" />
 
