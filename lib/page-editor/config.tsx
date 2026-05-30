@@ -394,5 +394,77 @@ export const config: Config = {
         <LivePostsBlock heading={heading || undefined} pad={padClass(layout as LayoutValue)} vis={visClass(layout as LayoutValue)} live={(puck?.metadata?.live as LiveData) || undefined} />
       ),
     },
+
+    Text: {
+      label: 'Text',
+      fields: {
+        body: { type: 'textarea', label: 'Text (**bold**, *italic*, [link](/path))' },
+        align: { type: 'radio', options: [{ label: 'Left', value: 'left' }, { label: 'Center', value: 'center' }] },
+        size: {
+          type: 'select',
+          options: [
+            { label: 'Small', value: 'sm' },
+            { label: 'Normal', value: 'base' },
+            { label: 'Large', value: 'lg' },
+          ],
+        },
+        layout: layoutField,
+      },
+      defaultProps: { body: 'Write something here. **Bold**, *italic*, and [links](/the-lab) all work.', align: 'left', size: 'base', layout: layoutDefault },
+      render: ({ body, align, size, layout }) => {
+        const sz = size === 'sm' ? 'text-sm' : size === 'lg' ? 'text-xl' : 'text-lg'
+        return (
+          <div className={`px-6 ${padClass(layout as LayoutValue) ?? 'py-6'} ${visClass(layout as LayoutValue)}`}>
+            <div className={`max-w-3xl mx-auto ${align === 'center' ? 'text-center' : ''} ${sz} text-muted leading-relaxed space-y-4`}>
+              {richParagraphs(body as string)}
+            </div>
+          </div>
+        )
+      },
+    },
+
+    Columns: {
+      label: 'Columns',
+      fields: {
+        count: { type: 'radio', options: [{ label: '2', value: '2' }, { label: '3', value: '3' }] },
+        gap: {
+          type: 'select',
+          options: [
+            { label: 'Small', value: 'sm' },
+            { label: 'Medium', value: 'md' },
+            { label: 'Large', value: 'lg' },
+          ],
+        },
+        valign: {
+          type: 'select',
+          label: 'Vertical align',
+          options: [{ label: 'Top', value: 'top' }, { label: 'Center', value: 'center' }],
+        },
+        tone: toneField,
+        col1: { type: 'slot' },
+        col2: { type: 'slot' },
+        col3: { type: 'slot' },
+        layout: layoutField,
+      },
+      defaultProps: { count: '2', gap: 'md', valign: 'top', tone: 'surface', col1: [], col2: [], col3: [], layout: layoutDefault },
+      render: ({ count, gap, valign, tone, col1: Col1, col2: Col2, col3: Col3, layout }) => {
+        const n = count === '3' ? 3 : 2
+        const gapClass = gap === 'sm' ? 'gap-4' : gap === 'lg' ? 'gap-12' : 'gap-8'
+        const bg = tone === 'canvas' ? 'bg-marketing-canvas' : 'bg-surface'
+        return (
+          <section className={`${bg} px-6 ${padClass(layout as LayoutValue) ?? 'py-12 sm:py-16'} ${visClass(layout as LayoutValue)}`}>
+            <div
+              className={`max-w-5xl mx-auto grid ${gapClass} ${n === 3 ? 'md:grid-cols-3' : 'md:grid-cols-2'} ${
+                valign === 'center' ? 'items-center' : 'items-start'
+              }`}
+            >
+              <Col1 />
+              <Col2 />
+              {n === 3 && <Col3 />}
+            </div>
+          </section>
+        )
+      },
+    },
   },
 }
