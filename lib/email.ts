@@ -246,6 +246,49 @@ We're opening it to a small group at a time and we'll reach out as soon as a spo
 Didn't request this? You can safely ignore this email.`
 }
 
+// ── Beta invite ("you're in") ─────────────────────────────────────────────────
+
+export async function sendBetaInviteEmail(params: {
+  to: string
+  signupUrl: string
+  displayName?: string | null
+}) {
+  const { to, signupUrl, displayName } = params
+  await enqueueEmail({
+    to,
+    subject: "You're in — welcome to the Frequency Beta",
+    html: betaInviteHtml({ signupUrl, displayName: displayName ?? null }),
+    text: betaInviteText({ signupUrl, displayName: displayName ?? null }),
+  })
+}
+
+function betaInviteHtml({ signupUrl, displayName }: { signupUrl: string; displayName: string | null }): string {
+  const hi = displayName ? `${displayName}, you're` : "You're"
+  return emailShell(`
+    <h1 style="${h1Style}">${hi} in.</h1>
+    <p style="${pStyle}">
+      A spot just opened in the Frequency community Beta, and it's yours. Create
+      your account, find a circle near you, and start showing up.
+    </p>
+    <p style="margin:0 0 28px;">
+      <a href="${signupUrl}" style="${btnStyle}">Create my account</a>
+    </p>
+    <p style="${pStyle}font-size:13px;color:#888;">
+      Or paste this into your browser:<br>
+      <a href="${signupUrl}" style="color:#888;">${signupUrl}</a>
+    </p>
+  `)
+}
+
+function betaInviteText({ signupUrl, displayName }: { signupUrl: string; displayName: string | null }): string {
+  const hi = displayName ? `${displayName}, you're in.` : "You're in."
+  return `${hi}
+
+A spot just opened in the Frequency community Beta, and it's yours. Create your account and start showing up:
+
+${signupUrl}`
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // HTML templates
 // Inline styles only — maximum email client compatibility.
