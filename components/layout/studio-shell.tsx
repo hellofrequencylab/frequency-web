@@ -27,8 +27,11 @@ export function StudioShell({
   profile: React.ComponentProps<typeof AppShell>['profile']
   children: React.ReactNode
 }) {
+  // Studio-only sidebar: the standard chrome (logo → feed, profile card) but
+  // only the Studio nav (it's used as a CRM / email marketing / pipeline tool,
+  // not the member app).
   return (
-    <AppShell profile={profile} extraSections={STUDIO_SECTIONS}>
+    <AppShell profile={profile} extraSections={STUDIO_SECTIONS} hideAppNav>
       {children}
     </AppShell>
   )

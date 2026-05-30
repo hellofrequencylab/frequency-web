@@ -335,11 +335,13 @@ function NavLinkList({
   role,
   onNavigate,
   extraSections,
+  hideAppNav = false,
 }: {
   isActive: (href: string) => boolean
   role: CommunityRole
   onNavigate?: () => void
   extraSections?: NavSection[]
+  hideAppNav?: boolean
 }) {
   const showCrew = role === 'crew' || role === 'host' || role === 'guide' || role === 'mentor' || role === 'janitor'
   const showAdmin = role === 'host' || role === 'guide' || role === 'mentor' || role === 'janitor'
@@ -356,7 +358,7 @@ function NavLinkList({
 
   return (
     <>
-      {NAV_SECTIONS.map((section, i) => (
+      {!hideAppNav && NAV_SECTIONS.map((section, i) => (
         <div key={section.label ?? `top-${i}`} className={`space-y-0.5 ${i > 0 ? 'mt-2' : ''}`}>
           {section.label && <p className={sectionLabelClass}>{section.label}</p>}
           {section.items.map(({ href, label, Icon }) => {
@@ -392,7 +394,7 @@ function NavLinkList({
         </div>
       ))}
 
-      {showCrew && (
+      {!hideAppNav && showCrew && (
         <div className="space-y-0.5 mt-2">
           <p className={sectionLabelClass}>Progress</p>
           <Link href="/crew" onClick={onNavigate} className={itemClass(isActive('/crew'))}>
@@ -405,7 +407,7 @@ function NavLinkList({
         </div>
       )}
 
-      {showAdmin && (
+      {!hideAppNav && showAdmin && (
         <div className="space-y-0.5 mt-2">
           <p className={sectionLabelClass}>Manage</p>
           <Link
@@ -437,12 +439,14 @@ function MobileLeftDrawer({
   role,
   isActive,
   extraSections,
+  hideAppNav = false,
 }: {
   open: boolean
   onClose: () => void
   role: CommunityRole
   isActive: (href: string) => boolean
   extraSections?: NavSection[]
+  hideAppNav?: boolean
 }) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -480,7 +484,7 @@ function MobileLeftDrawer({
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-          <NavLinkList isActive={isActive} role={role} onNavigate={onClose} extraSections={extraSections} />
+          <NavLinkList isActive={isActive} role={role} onNavigate={onClose} extraSections={extraSections} hideAppNav={hideAppNav} />
         </nav>
 
         {/* Bottom close. Sits in the thumb zone */}
@@ -584,12 +588,14 @@ export default function AppShell({
   sidebar,
   unreadCount = 0,
   extraSections,
+  hideAppNav = false,
 }: {
   profile: Profile
   children: React.ReactNode
   sidebar?: React.ReactNode
   unreadCount?: number
   extraSections?: NavSection[]
+  hideAppNav?: boolean
 }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -737,11 +743,11 @@ export default function AppShell({
 
           {/* Primary nav */}
           <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-            <NavLinkList isActive={isActive} role={role} extraSections={extraSections} />
+            <NavLinkList isActive={isActive} role={role} extraSections={extraSections} hideAppNav={hideAppNav} />
           </nav>
 
           {/* Upgrade to Crew CTA. Members only (not janitor) */}
-          {role === 'member' && (
+          {!hideAppNav && role === 'member' && (
             <div className="mx-3 mb-3 rounded-xl border border-border bg-primary-bg p-3.5">
               <p className="text-xs font-semibold text-primary-strong mb-1">
                 Upgrade to Crew
@@ -796,6 +802,7 @@ export default function AppShell({
         role={role}
         isActive={isActive}
         extraSections={extraSections}
+        hideAppNav={hideAppNav}
       />
 
     </div>
