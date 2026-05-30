@@ -17,6 +17,18 @@ import {
 } from '@/components/marketing/blocks'
 import { ImageField } from './image-field'
 import { layoutField, layoutDefault, padClass, visClass, type LayoutValue } from './layout'
+import {
+  focalField,
+  aspectField,
+  sizeField,
+  radiusField,
+  shadowField,
+  focalClass,
+  radiusClass,
+  shadowClass,
+  sizeClass,
+  aspectValue,
+} from './image-controls'
 
 // Shared by BOTH the editor (<Puck>) and the public renderer (<Render>). The
 // palette is our existing marketing blocks, styled with DAWN tokens — so the
@@ -105,6 +117,7 @@ export const config: Config = {
             { label: 'Natural (uncropped)', value: 'natural' },
           ],
         },
+        focal: focalField,
         ctaLabel: { type: 'text', label: 'CTA label (optional)' },
         ctaHref: { type: 'text', label: 'CTA link (optional)' },
         layout: layoutField,
@@ -120,11 +133,12 @@ export const config: Config = {
         side: 'left',
         tone: 'surface',
         imgAspect: 'landscape',
+        focal: 'center',
         ctaLabel: '',
         ctaHref: '',
         layout: layoutDefault,
       },
-      render: ({ image, alt, eyebrow, title, titleAccent, kicker, body, side, tone, imgAspect, ctaLabel, ctaHref, layout }) => (
+      render: ({ image, alt, eyebrow, title, titleAccent, kicker, body, side, tone, imgAspect, focal, ctaLabel, ctaHref, layout }) => (
         <ZigZag
           img={image || '/images/site/community-1.jpg'}
           alt={alt || ''}
@@ -134,6 +148,7 @@ export const config: Config = {
           reverse={side === 'right'}
           tone={tone as 'surface' | 'canvas'}
           imgAspect={imgAspect as 'landscape' | 'portrait' | 'square' | 'natural'}
+          imgPosition={focal as 'top' | 'center' | 'bottom' | 'left' | 'right'}
           pad={padClass(layout as LayoutValue)}
           vis={visClass(layout as LayoutValue)}
           cta={ctaLabel && ctaHref ? { label: ctaLabel, href: ctaHref } : undefined}
@@ -192,25 +207,30 @@ export const config: Config = {
       fields: {
         image: imgField,
         alt: { type: 'text' },
-        aspect: {
-          type: 'select',
-          options: [
-            { label: 'Cinematic (21:9)', value: '21/9' },
-            { label: 'Wide (16:9)', value: '16/9' },
-            { label: 'Landscape (4:3)', value: '4/3' },
-          ],
-        },
+        aspect: aspectField,
+        focal: focalField,
+        size: { ...sizeField, label: 'Width' },
+        radius: radiusField,
+        shadow: shadowField,
         layout: layoutField,
       },
-      defaultProps: { image: '', alt: '', aspect: '21/9', layout: layoutDefault },
-      render: ({ image, alt, aspect, layout }) => (
-        <div className={`px-6 ${padClass(layout as LayoutValue) ?? 'py-4'} ${visClass(layout as LayoutValue)}`}>
-          <div className="max-w-5xl mx-auto rounded-3xl overflow-hidden border border-border shadow-sm">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={image || '/images/site/lab-storefront.jpg'} alt={alt || ''} className="w-full object-cover" style={{ aspectRatio: aspect }} />
+      defaultProps: { image: '', alt: '', aspect: '21/9', focal: 'center', size: 'xl', radius: 'lg', shadow: 'sm', layout: layoutDefault },
+      render: ({ image, alt, aspect, focal, size, radius, shadow, layout }) => {
+        const ar = aspectValue(aspect as string)
+        return (
+          <div className={`px-6 ${padClass(layout as LayoutValue) ?? 'py-4'} ${visClass(layout as LayoutValue)}`}>
+            <div className={`${sizeClass(size as string)} mx-auto overflow-hidden border border-border ${radiusClass(radius as string)} ${shadowClass(shadow as string)}`}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={image || '/images/site/lab-storefront.jpg'}
+                alt={alt || ''}
+                className={`w-full ${ar ? 'object-cover' : ''} ${focalClass(focal as string)}`}
+                style={ar ? { aspectRatio: ar } : undefined}
+              />
+            </div>
           </div>
-        </div>
-      ),
+        )
+      },
     },
 
     Spacer: {

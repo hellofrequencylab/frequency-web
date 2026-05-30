@@ -141,7 +141,7 @@ export function ZigZag({
   reverse?: boolean
   tone?: 'surface' | 'canvas'
   imgAspect?: 'square' | 'portrait' | 'landscape' | 'natural'
-  imgPosition?: 'top' | 'center' | 'bottom'
+  imgPosition?: 'top' | 'center' | 'bottom' | 'left' | 'right'
   pad?: string
   vis?: string
 }) {
@@ -155,7 +155,15 @@ export function ZigZag({
           ? ''
           : 'aspect-[4/3]'
   const objectPos =
-    imgPosition === 'top' ? 'object-top' : imgPosition === 'bottom' ? 'object-bottom' : 'object-center'
+    imgPosition === 'top'
+      ? 'object-top'
+      : imgPosition === 'bottom'
+        ? 'object-bottom'
+        : imgPosition === 'left'
+          ? 'object-left'
+          : imgPosition === 'right'
+            ? 'object-right'
+            : 'object-center'
   // Tall (portrait/square) images get capped width so they don't tower over the
   // text column and leave a big empty gap below the section.
   const wrapMax = imgAspect === 'portrait' || imgAspect === 'square' ? 'max-w-sm mx-auto' : ''
