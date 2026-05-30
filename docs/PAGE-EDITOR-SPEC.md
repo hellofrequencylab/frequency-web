@@ -205,6 +205,16 @@ falls back to `lib/site.ts` defaults. JSON-LD/sitemap unaffected.
 > Presentational markup lives in `components/marketing/blocks.tsx`; live data in
 > `lib/page-editor/live-data.ts`. Sub-pages are ISR (`revalidate = 3600`) +
 > `revalidatePath` on publish; the splash stays dynamic for auth redirect.
+>
+> **Block controls (added later).** Every block has a collapsible **Layout**
+> group (`lib/page-editor/layout.ts`): Space above / Space below (token scale
+> none..xl = margins/buffers) and Show on (Everywhere / Desktop only / Mobile
+> only). Image blocks have **image controls** (`lib/page-editor/image-controls.ts`):
+> crop ratio, focal point, size, corner radius, shadow (ImageBand full set;
+> ZigZag focal point). All token selects → Tailwind classes (no raw px, no image
+> processing); helper fallbacks preserve the look of already-seeded blocks.
+> Remaining/optional: optimized images (next/image + Supabase transforms),
+> multi-column block, drag focal/crop picker, inline rich text.
 
 1. **Foundation** — `pages` migration, `site-media` bucket, install
    `@measured/puck`, `lib/page-editor/config.tsx` for the core blocks + the
