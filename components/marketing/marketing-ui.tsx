@@ -23,7 +23,7 @@ export function PageHero({
             {eyebrow}
           </p>
         )}
-        <h1 className="font-display uppercase text-text text-6xl sm:text-7xl lg:text-8xl">
+        <h1 className="font-display uppercase text-text text-5xl sm:text-6xl lg:text-7xl">
           {title}
         </h1>
         {subtitle && (
@@ -69,7 +69,7 @@ export function SectionHeading({
           {eyebrow}
         </p>
       )}
-      <h2 className="font-display uppercase text-text text-5xl sm:text-6xl">{title}</h2>
+      <h2 className="font-display uppercase text-text text-4xl sm:text-5xl">{title}</h2>
       {kicker && <p className="mt-4 text-xl italic text-muted">{kicker}</p>}
     </div>
   )
@@ -95,7 +95,7 @@ export function Statement({
   const bg = tone === 'canvas' ? 'bg-marketing-canvas' : 'bg-surface'
   return (
     <section className={`${bg} px-6 py-24 sm:py-32`}>
-      <p className="font-display uppercase max-w-5xl mx-auto text-center text-text text-5xl sm:text-6xl lg:text-7xl leading-[1.05]">
+      <p className="font-display uppercase max-w-4xl mx-auto text-center text-text text-4xl sm:text-5xl lg:text-6xl leading-[1.1]">
         {children}
       </p>
     </section>
@@ -160,7 +160,7 @@ export function ZigZag({
               {eyebrow}
             </p>
           )}
-          <h2 className="font-display uppercase text-text text-5xl sm:text-6xl">{title}</h2>
+          <h2 className="font-display uppercase text-text text-4xl sm:text-5xl">{title}</h2>
           {kicker && <p className="mt-3 mb-6 text-xl italic text-muted">{kicker}</p>}
           <div className={`text-lg text-muted leading-relaxed space-y-4 ${kicker ? '' : 'mt-6'}`}>
             {children}
@@ -214,7 +214,7 @@ export function BetaCTA({
         }}
       />
       <div className="relative max-w-2xl mx-auto">
-        <h2 className="font-display uppercase text-text text-5xl sm:text-6xl mb-6">{heading}</h2>
+        <h2 className="font-display uppercase text-text text-4xl sm:text-5xl mb-6">{heading}</h2>
         {body && <p className="text-xl text-muted mb-9 leading-relaxed">{body}</p>}
         <Link
           href={BETA_CTA_HREF}
