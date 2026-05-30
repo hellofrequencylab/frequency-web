@@ -191,8 +191,10 @@ falls back to `lib/site.ts` defaults. JSON-LD/sitemap unaffected.
 
 ## 11. Build phases & effort (~3–5 days)
 
-> **Status (all phases shipped).** The editor is live at `/studio/pages` ->
-> `/edit/[slug]`. All 4 marketing pages (`/`, `/the-lab`, `/how-it-works`,
+> **Status (all phases shipped).** The directory is at `/pages` (main nav
+> **Manage → Pages**, **janitor-only**, not in the Studio); the editor is at
+> `/edit/[slug]`. Access is gated by `lib/page-editor/guard.ts`. All 4 marketing
+> pages (`/`, `/the-lab`, `/how-it-works`,
 > `/about`) render from `pages.published_data` via `@measured/puck/rsc`
 > `<Render>`, with the original hardcoded JSX kept as a `Legacy*` fallback (zero
 > downtime if a row is missing/empty). Current content is seeded into the DB so
