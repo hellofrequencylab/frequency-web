@@ -94,7 +94,7 @@ export function Statement({
 }) {
   const bg = tone === 'canvas' ? 'bg-marketing-canvas' : 'bg-surface'
   return (
-    <section className={`${bg} px-6 py-24 sm:py-32`}>
+    <section className={`${bg} px-6 py-16 sm:py-20`}>
       <p className="font-display uppercase max-w-4xl mx-auto text-center text-text text-4xl sm:text-5xl lg:text-6xl leading-[1.1]">
         {children}
       </p>
@@ -140,11 +140,14 @@ export function ZigZag({
           : 'aspect-[4/3]'
   const objectPos =
     imgPosition === 'top' ? 'object-top' : imgPosition === 'bottom' ? 'object-bottom' : 'object-center'
+  // Tall (portrait/square) images get capped width so they don't tower over the
+  // text column and leave a big empty gap below the section.
+  const wrapMax = imgAspect === 'portrait' || imgAspect === 'square' ? 'max-w-sm mx-auto' : ''
   return (
-    <section className={`${bg} px-6 py-20 sm:py-24`}>
+    <section className={`${bg} px-6 py-16 sm:py-20`}>
       <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-8 md:gap-10 items-center">
         <div
-          className={`w-full rounded-3xl overflow-hidden border border-border shadow-sm ${
+          className={`w-full ${wrapMax} rounded-3xl overflow-hidden border border-border shadow-sm ${
             reverse ? 'md:order-last' : ''
           }`}
         >
