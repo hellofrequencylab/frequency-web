@@ -737,8 +737,28 @@ export default function AppShell({
           </Link>
         </div>
 
-        {/* Right section: search · notifications · account */}
+        {/* Right section: quick nav · search · notifications · account */}
         <div className="flex flex-1 items-center justify-end gap-1 px-3">
+
+          {/* Quick nav. Desktop only — sits next to the search bar. */}
+          <nav className="hidden md:flex items-center gap-0.5 mr-2">
+            {[
+              { href: '/feed', label: 'Feed' },
+              { href: '/circles', label: 'Circles' },
+            ].map((l) => (
+              <Link
+                key={l.href}
+                href={l.href}
+                className={`px-2.5 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
+                  isActive(l.href)
+                    ? 'text-primary-strong bg-primary-bg'
+                    : 'text-primary/90 hover:text-primary hover:bg-surface-elevated'
+                }`}
+              >
+                {l.label}
+              </Link>
+            ))}
+          </nav>
 
           {/* Search pill. Desktop */}
           <Link
