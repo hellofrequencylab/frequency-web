@@ -14,6 +14,29 @@ export const metadata: Metadata = {
   },
 }
 
+const FEATURES = [
+  {
+    img: '/images/site/lab-thermal.jpg',
+    title: 'The thermal circuit',
+    body: 'Sauna and cold plunge — the contrast at the center of it all.',
+  },
+  {
+    img: '/images/site/lab-pool.jpg',
+    title: 'Movement studios',
+    body: 'Breathwork, yoga, and somatic practice — the daily reset.',
+  },
+  {
+    img: '/images/site/lab-lounge.jpg',
+    title: 'The connection bar',
+    body: 'Coffee and conversation — where strangers become regulars.',
+  },
+  {
+    img: '/images/site/lab-concept.jpg',
+    title: 'The events floor',
+    body: 'Talks, sound, ceremony, and celebration when the community gathers.',
+  },
+]
+
 export default function TheLabPage() {
   return (
     <>
@@ -23,11 +46,22 @@ export default function TheLabPage() {
         subtitle="The Frequency Lab is a third space engineered for your nervous system — somewhere to move, gather, cool down, and come back to yourself."
       />
 
+      {/* Hero render */}
+      <div className="px-6">
+        <div className="max-w-5xl mx-auto rounded-3xl overflow-hidden border border-border shadow-sm">
+          <img
+            src="/images/site/lab-storefront.jpg"
+            alt="Concept render of a Frequency Lab storefront hosting a movement class"
+            className="w-full object-cover aspect-[21/9]"
+          />
+        </div>
+      </div>
+
       <Section tone="canvas">
         <SectionHeading title="Not a gym. Not a café. Not a studio. All of it — on purpose." />
         <Lead>
-          The Lab is a single space designed to do what scattered places can&apos;t:
-          hold a whole arc of a day.
+          The Lab is a single space designed to do what scattered places
+          can&apos;t: hold a whole arc of a day.
         </Lead>
         <Body>
           Arrive frazzled, leave regulated. Come alone, leave known. The
@@ -36,15 +70,38 @@ export default function TheLabPage() {
         </Body>
       </Section>
 
-      <Section>
-        <SectionHeading eyebrow="Inside" title="What you&apos;ll find" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Feature title="Movement studios" body="Breathwork, yoga, and somatic practice — the daily reset." />
-          <Feature title="The thermal circuit" body="Sauna and cold plunge: the contrast at the center of it all." />
-          <Feature title="The connection bar" body="Coffee and conversation — the lingering place where strangers become regulars." />
-          <Feature title="The events floor" body="Talks, sound, ceremony, and celebration when the community gathers." />
+      {/* Feature tiles with imagery */}
+      <section className="bg-surface px-6 py-16 sm:py-20">
+        <div className="max-w-5xl mx-auto">
+          <div className="mb-8">
+            <p className="text-xs font-semibold uppercase tracking-widest text-primary-strong mb-3">
+              Inside
+            </p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-text tracking-tight">
+              What you&apos;ll find
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {FEATURES.map((f) => (
+              <article
+                key={f.title}
+                className="rounded-2xl overflow-hidden border border-border bg-surface hover:border-border-strong transition-colors"
+              >
+                <img
+                  src={f.img}
+                  alt={f.title}
+                  loading="lazy"
+                  className="w-full object-cover aspect-[16/10]"
+                />
+                <div className="p-5">
+                  <h3 className="text-base font-bold text-text mb-1.5">{f.title}</h3>
+                  <p className="text-sm text-muted leading-relaxed">{f.body}</p>
+                </div>
+              </article>
+            ))}
+          </div>
         </div>
-      </Section>
+      </section>
 
       <Section tone="canvas">
         <SectionHeading title="Designed to spread." />
@@ -60,14 +117,5 @@ export default function TheLabPage() {
         body="The community is how the Lab begins. Join the Beta and help it take shape."
       />
     </>
-  )
-}
-
-function Feature({ title, body }: { title: string; body: string }) {
-  return (
-    <div className="rounded-2xl border border-border bg-surface p-6">
-      <h3 className="text-base font-bold text-text mb-2">{title}</h3>
-      <p className="text-sm text-muted leading-relaxed">{body}</p>
-    </div>
   )
 }
