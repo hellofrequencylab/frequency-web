@@ -43,6 +43,7 @@ export default async function DirectoryPage({
     .from('profiles')
     .select('id, display_name, handle, avatar_url, community_role, nexus_regions!nexus_region_id ( name )')
     .eq('is_active', true)
+    .eq('is_system', false) // hide system accounts (e.g. @moderation) from the directory
     .order('display_name', { ascending: true })
 
   if (roleFilter) query = query.eq('community_role', roleFilter as Database['public']['Enums']['community_role'])
