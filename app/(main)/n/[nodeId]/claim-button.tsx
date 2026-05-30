@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { Zap, Check, AlertCircle } from 'lucide-react'
 import { claimNode, type ClaimResult } from './actions'
+import { showZapToast } from '@/components/zap-toast'
 
 const REASON_LABEL: Record<string, string> = {
   not_signed_in: 'Sign in to claim this.',
@@ -53,7 +54,15 @@ export function ClaimButton({ nodeId }: { nodeId: string }) {
   return (
     <button
       disabled={pending}
-      onClick={() => start(async () => setResult(await claimNode(nodeId)))}
+      onClick={() =>
+        start(async () => {
+          const res = await claimNode(nodeId)
+          setResult(res)
+          if (res.ok && res.zapsAwarded) {
+            showZapToast({ amount: res.zapsAwarded, label: 'Claimed' })
+          }
+        })
+      }
       className="inline-flex items-center gap-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-sm font-semibold px-5 py-3 shadow-sm transition-colors disabled:opacity-60"
     >
       <Zap className="w-4 h-4" strokeWidth={2.5} />

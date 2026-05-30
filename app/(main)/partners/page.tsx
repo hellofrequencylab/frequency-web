@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { MapPin } from 'lucide-react'
 import { listActivePartners } from '@/lib/partners/read'
+import { IndexTemplate } from '@/components/templates/index-template'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,15 +11,10 @@ export default async function PartnersPage() {
   const partners = await listActivePartners()
 
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-text mb-1">Partners</h1>
-        <p className="text-sm text-muted leading-relaxed max-w-2xl">
-          Local businesses aligned with the community. Members unlock offers — tap
-          their plaque or scan a code in person to claim it and earn zaps.
-        </p>
-      </div>
-
+    <IndexTemplate
+      title="Partners"
+      description="Local businesses aligned with the community. Members unlock offers: tap their plaque or scan a code in person to claim it and earn zaps."
+    >
       {partners.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border bg-surface/60 px-4 py-10 text-center">
           <p className="text-sm text-muted">No partners yet.</p>
@@ -52,6 +48,6 @@ export default async function PartnersPage() {
           ))}
         </div>
       )}
-    </div>
+    </IndexTemplate>
   )
 }

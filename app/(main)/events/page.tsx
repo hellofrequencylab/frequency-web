@@ -3,6 +3,7 @@ import { CalendarDays, MapPin } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { EventCompose } from './event-compose'
+import { IndexTemplate } from '@/components/templates/index-template'
 
 type EventRow = {
   id: string
@@ -174,18 +175,11 @@ export default async function EventsPage() {
   const myRsvpEvents = events.filter((e) => myRsvps.has(e.id))
 
   return (
-    <div>
-      <div className="flex items-end justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-text mb-1">Events</h1>
-          <p className="text-sm text-muted leading-relaxed max-w-2xl">
-            Group rides, gatherings, and meetups happening in your community.
-            RSVP to see who&apos;s coming, then drop it on your calendar.
-          </p>
-        </div>
-        {isCrew && <EventCompose groups={myCircles} />}
-      </div>
-
+    <IndexTemplate
+      title="Events"
+      description="Group rides, gatherings, and meetups happening in your community. RSVP to see who's coming, then drop it on your calendar."
+      action={isCrew ? <EventCompose groups={myCircles} /> : undefined}
+    >
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {/* ── Main column: events list ─────────────────────────── */}
@@ -297,6 +291,6 @@ export default async function EventsPage() {
           )}
         </div>
       </div>
-    </div>
+    </IndexTemplate>
   )
 }
