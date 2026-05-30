@@ -213,8 +213,20 @@ falls back to `lib/site.ts` defaults. JSON-LD/sitemap unaffected.
 > crop ratio, focal point, size, corner radius, shadow (ImageBand full set;
 > ZigZag focal point). All token selects → Tailwind classes (no raw px, no image
 > processing); helper fallbacks preserve the look of already-seeded blocks.
-> Remaining/optional: optimized images (next/image + Supabase transforms),
-> multi-column block, drag focal/crop picker, inline rich text.
+>
+> **Optimized images (Phase 3).** `<SiteImage>` (`components/marketing/site-image.tsx`)
+> wraps next/image — responsive srcsets + AVIF/WebP for every marketing image
+> (splash Hero bg is `priority`/LCP, plus ImageBand, ZigZag, gallery tiles,
+> Pillars). `next.config.ts` adds `remotePatterns` for public Supabase Storage so
+> uploads are optimized too.
+>
+> **Advanced (Phase 4).** Inline **rich text** (`lib/page-editor/richtext.tsx`):
+> `**bold**` / `*italic*` / `[link](/path)` parsed to React elements (safe-href,
+> no dangerouslySetInnerHTML) in body copy. New blocks: **Text** (standalone rich
+> paragraph) and **Columns** (2–3 columns via Puck **slot** fields — RSC-safe,
+> verified). Feature-gallery gains Columns / Tile-crop / Corners controls. Only
+> deferred polish: a visual drag focal-point/crop picker (the focal-point select
+> already covers cropping).
 
 1. **Foundation** — `pages` migration, `site-media` bucket, install
    `@measured/puck`, `lib/page-editor/config.tsx` for the core blocks + the
