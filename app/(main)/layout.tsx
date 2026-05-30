@@ -5,6 +5,7 @@ import AppShell from '@/components/layout/app-shell'
 import RightSidebar from '@/components/sidebar/right-sidebar'
 import type { CommunityRole } from '@/components/sidebar/right-sidebar'
 import { getUnreadCount } from '@/app/(main)/notifications/actions'
+import { getStaffMember } from '@/lib/staff'
 import { AchievementToastContainer } from '@/components/achievement-toast'
 import { ZapToastContainer } from '@/components/zap-toast'
 import { PresenceHeartbeat } from '@/components/presence/heartbeat'
@@ -37,6 +38,9 @@ export default async function MainLayout({
   // Unread notification count. Non-blocking, falls back to 0 on error
   const unreadCount = await getUnreadCount().catch(() => 0)
 
+  // Staff members get a "Studio" link in the Manage nav section.
+  const isStaff = !!(await getStaffMember().catch(() => null))
+
   // Right sidebar streams in independently. Doesn't block page render
   const sidebar = (
     <Suspense fallback={<RightSidebarSkeleton />}>
@@ -52,6 +56,7 @@ export default async function MainLayout({
       profile={{ ...profile, community_role: (profile.community_role ?? 'member') as CommunityRole }}
       sidebar={sidebar}
       unreadCount={unreadCount}
+      isStaff={isStaff}
     >
       {children}
       <AchievementToastContainer />
