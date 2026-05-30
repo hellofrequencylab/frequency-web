@@ -74,10 +74,10 @@ export default function TheLabPage() {
       <section className="bg-surface px-6 py-16 sm:py-20">
         <div className="max-w-5xl mx-auto">
           <div className="mb-8">
-            <p className="text-xs font-semibold uppercase tracking-widest text-primary-strong mb-3">
+            <p className="text-xs font-bold uppercase tracking-[0.25em] text-primary-strong mb-3">
               Inside
             </p>
-            <h2 className="text-2xl sm:text-3xl font-bold text-text tracking-tight">
+            <h2 className="font-display uppercase text-text text-4xl sm:text-5xl">
               What you&apos;ll find
             </h2>
           </div>
