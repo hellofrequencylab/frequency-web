@@ -6,6 +6,15 @@ import {
   Marquee,
   BetaCTA,
 } from '@/components/marketing/marketing-ui'
+import {
+  HeroBlock,
+  GalleryBlock,
+  PillarsBlock,
+  LiveStatsBlock,
+  LiveEventsBlock,
+  LivePostsBlock,
+  type LiveData,
+} from '@/components/marketing/blocks'
 import { ImageField } from './image-field'
 
 // Shared by BOTH the editor (<Puck>) and the public renderer (<Render>). The
@@ -206,6 +215,124 @@ export const config: Config = {
       },
       defaultProps: { size: '4rem' },
       render: ({ size }) => <div style={{ height: size }} />,
+    },
+
+    Hero: {
+      label: 'Splash hero (full-bleed)',
+      fields: {
+        eyebrow: { type: 'text' },
+        title: { type: 'text' },
+        titleAccent: { type: 'text', label: 'Title accent word (optional)' },
+        subtitle: { type: 'textarea' },
+        bgImage: imgField,
+        ctaPrimaryLabel: { type: 'text', label: 'Primary CTA label' },
+        ctaPrimaryHref: { type: 'text', label: 'Primary CTA link' },
+        ctaSecondaryLabel: { type: 'text', label: 'Secondary CTA label' },
+        ctaSecondaryHref: { type: 'text', label: 'Secondary CTA link' },
+        note: { type: 'text', label: 'Small note under CTAs' },
+      },
+      defaultProps: {
+        eyebrow: 'A third space for a disconnected generation',
+        title: 'This is what community is supposed to feel like.',
+        titleAccent: '',
+        subtitle: '',
+        bgImage: '',
+        ctaPrimaryLabel: 'Join the Beta',
+        ctaPrimaryHref: '/beta',
+        ctaSecondaryLabel: 'Sign in',
+        ctaSecondaryHref: '/sign-in',
+        note: '',
+      },
+      render: ({ eyebrow, title, titleAccent, subtitle, bgImage, ctaPrimaryLabel, ctaPrimaryHref, ctaSecondaryLabel, ctaSecondaryHref, note }) => (
+        <HeroBlock
+          eyebrow={eyebrow || undefined}
+          title={accentize(title, titleAccent)}
+          subtitle={subtitle || undefined}
+          bgImage={bgImage || undefined}
+          ctaPrimaryLabel={ctaPrimaryLabel || undefined}
+          ctaPrimaryHref={ctaPrimaryHref || undefined}
+          ctaSecondaryLabel={ctaSecondaryLabel || undefined}
+          ctaSecondaryHref={ctaSecondaryHref || undefined}
+          note={note || undefined}
+        />
+      ),
+    },
+
+    FeatureGallery: {
+      label: 'Feature gallery',
+      fields: {
+        eyebrow: { type: 'text' },
+        heading: { type: 'text' },
+        items: {
+          type: 'array',
+          arrayFields: { image: imgField, title: { type: 'text' }, body: { type: 'textarea' } },
+          getItemSummary: (i: { title?: string }) => i.title || 'Tile',
+        },
+      },
+      defaultProps: { eyebrow: 'Inside', heading: 'What you’ll find', items: [] },
+      render: ({ eyebrow, heading, items }) => (
+        <GalleryBlock eyebrow={eyebrow || undefined} heading={heading || undefined} items={items || []} />
+      ),
+    },
+
+    Pillars: {
+      label: '"What we’re building" band',
+      fields: {
+        marqueeItems: {
+          type: 'array',
+          arrayFields: { text: { type: 'text' } },
+          getItemSummary: (i: { text?: string }) => i.text || 'Item',
+        },
+        pillars: {
+          type: 'array',
+          arrayFields: {
+            image: imgField,
+            title: { type: 'text' },
+            body: { type: 'textarea' },
+            href: { type: 'text', label: 'Link (optional)' },
+            side: { type: 'radio', options: [{ label: 'Image left', value: 'left' }, { label: 'Image right', value: 'right' }] },
+          },
+          getItemSummary: (i: { title?: string }) => i.title || 'Pillar',
+        },
+      },
+      defaultProps: { marqueeItems: [{ text: 'What we’re building' }], pillars: [] },
+      render: ({ marqueeItems, pillars }) => (
+        <PillarsBlock
+          marqueeItems={(marqueeItems || []).map((i: { text?: string }) => i.text || '')}
+          pillars={(pillars || []).map((p: { image?: string; title?: string; body?: string; href?: string; side?: string }) => ({
+            image: p.image,
+            title: p.title,
+            body: p.body,
+            href: p.href || undefined,
+            reverse: p.side === 'right',
+          }))}
+        />
+      ),
+    },
+
+    LiveStats: {
+      label: 'Live stats (members/circles/events)',
+      fields: { eyebrow: { type: 'text' }, heading: { type: 'text' } },
+      defaultProps: { eyebrow: 'Not a someday idea', heading: 'It’s already happening.' },
+      render: ({ eyebrow, heading, puck }) => (
+        <LiveStatsBlock eyebrow={eyebrow || undefined} heading={heading || undefined} live={(puck?.metadata?.live as LiveData) || undefined} />
+      ),
+    },
+
+    LiveEvents: {
+      label: 'Live upcoming events',
+      fields: {},
+      defaultProps: {},
+      render: ({ puck }) => <LiveEventsBlock live={(puck?.metadata?.live as LiveData) || undefined} />,
+    },
+
+    LivePosts: {
+      label: 'Live community posts',
+      fields: { heading: { type: 'text' } },
+      defaultProps: { heading: 'People showing up for each other' },
+      render: ({ heading, puck }) => (
+        <LivePostsBlock heading={heading || undefined} live={(puck?.metadata?.live as LiveData) || undefined} />
+      ),
     },
   },
 }

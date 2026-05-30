@@ -191,6 +191,19 @@ falls back to `lib/site.ts` defaults. JSON-LD/sitemap unaffected.
 
 ## 11. Build phases & effort (~3–5 days)
 
+> **Status (all phases shipped).** The editor is live at `/studio/pages` ->
+> `/edit/[slug]`. All 4 marketing pages (`/`, `/the-lab`, `/how-it-works`,
+> `/about`) render from `pages.published_data` via `@measured/puck/rsc`
+> `<Render>`, with the original hardcoded JSX kept as a `Legacy*` fallback (zero
+> downtime if a row is missing/empty). Current content is seeded into the DB so
+> the editor opens on the real design. Block palette: PageHero, ZigZag,
+> Statement, BetaCTA, Marquee, ImageBand, Spacer, **Hero** (full-bleed splash),
+> **FeatureGallery**, **Pillars** (dark band), and live **LiveStats /
+> LiveEvents / LivePosts** (fed the public RPC data through Puck `metadata`).
+> Presentational markup lives in `components/marketing/blocks.tsx`; live data in
+> `lib/page-editor/live-data.ts`. Sub-pages are ISR (`revalidate = 3600`) +
+> `revalidatePath` on publish; the splash stays dynamic for auth redirect.
+
 1. **Foundation** — `pages` migration, `site-media` bucket, install
    `@measured/puck`, `lib/page-editor/config.tsx` for the core blocks + the
    custom image field. *(~1.5d)*
