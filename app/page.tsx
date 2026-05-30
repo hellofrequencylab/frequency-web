@@ -93,32 +93,32 @@ export default async function RootPage() {
         <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/85" />
 
         <div className="relative z-10 flex flex-col items-center w-full max-w-4xl">
-          <p className="text-xs sm:text-sm font-bold uppercase tracking-[0.3em] text-primary mb-6">
+          <p className="text-[11px] sm:text-xs font-bold uppercase tracking-[0.3em] text-primary mb-6">
             A third space for a disconnected generation
           </p>
-          <h1 className="font-display uppercase text-white text-[2.9rem] leading-[0.95] sm:text-7xl lg:text-8xl max-w-4xl">
+          <h1 className="font-display uppercase text-white text-[2.75rem] leading-[0.95] sm:text-6xl lg:text-7xl max-w-3xl">
             This is what community is supposed to feel like.
           </h1>
-          <p className="mt-8 text-lg sm:text-2xl text-white/85 max-w-2xl leading-relaxed">
+          <p className="mt-7 text-base sm:text-lg text-white/80 max-w-lg leading-relaxed">
             Not home. Not work. A place to exhale, reset, and remember what it
             feels like to belong.
           </p>
 
-          <div className="mt-10 flex items-center gap-3 flex-wrap justify-center">
+          <div className="mt-9 flex items-center gap-3 flex-wrap justify-center">
             <Link
               href={BETA_CTA_HREF}
-              className="rounded-2xl bg-primary text-on-primary px-9 py-4 text-lg font-bold hover:bg-primary-hover transition-colors"
+              className="rounded-2xl bg-primary text-on-primary px-8 py-3.5 text-base font-bold hover:bg-primary-hover transition-colors"
             >
               {BETA_CTA_LABEL}
             </Link>
             <Link
               href="/sign-in"
-              className="rounded-2xl border border-white/30 px-9 py-4 text-lg font-medium text-white hover:bg-white/10 hover:border-white/50 transition-colors"
+              className="rounded-2xl border border-white/30 px-8 py-3.5 text-base font-medium text-white hover:bg-white/10 hover:border-white/50 transition-colors"
             >
               Sign in
             </Link>
           </div>
-          <p className="mt-9 text-base text-white/50">
+          <p className="mt-8 text-sm text-white/45">
             The first space is taking root in North County San Diego.
           </p>
         </div>
@@ -135,7 +135,8 @@ export default async function RootPage() {
         alt="A Frequency community gathering"
         eyebrow="Something is broken"
         title="And everyone feels it."
-        imgAspect="natural"
+        imgAspect="landscape"
+        imgPosition="center"
       >
         <p>
           67% of millennials and Gen Z report feeling lonely. Not because there
@@ -154,7 +155,8 @@ export default async function RootPage() {
         alt="A Frequency gathering on the bluffs at Moonlight Beach"
         reverse
         tone="canvas"
-        imgAspect="natural"
+        imgAspect="portrait"
+        imgPosition="top"
         title={
           <>
             <span className="block text-3xl sm:text-4xl tracking-[0.12em] text-muted">
@@ -180,7 +182,8 @@ export default async function RootPage() {
       </ZigZag>
 
       <Statement>
-        That&apos;s when the seed of{' '}
+        That&apos;s when the seed of
+        <br />
         <span className="text-primary">Frequency</span> was first planted.
       </Statement>
 
@@ -211,8 +214,9 @@ export default async function RootPage() {
 
       <Statement tone="surface">
         Starting in{' '}
-        <span className="text-primary">North County San Diego.</span>
-        <br className="hidden sm:block" /> Coming to your city.
+        <span className="text-primary whitespace-nowrap">North County San Diego.</span>
+        <br />
+        Coming to your city.
       </Statement>
 
       {/* What we're building (dark band) */}
@@ -249,7 +253,7 @@ export default async function RootPage() {
           <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
             Not a someday idea
           </p>
-          <h2 className="font-display uppercase text-text text-5xl sm:text-6xl mb-14">
+          <h2 className="font-display uppercase text-text text-4xl sm:text-5xl mb-12">
             It&apos;s already happening.
           </h2>
           <div className="grid grid-cols-3 gap-6 max-w-xl mx-auto">
@@ -298,9 +302,9 @@ export default async function RootPage() {
       )}
 
       {posts.length > 0 && (
-        <section className="bg-marketing-canvas px-6 pb-24">
+        <section className="bg-marketing-canvas px-6 py-20 sm:py-24">
           <div className="max-w-2xl mx-auto">
-            <h2 className="text-center font-display uppercase text-text text-4xl sm:text-5xl mb-12">
+            <h2 className="text-center font-display uppercase text-text text-3xl sm:text-4xl mb-10 text-balance">
               People showing up for each other
             </h2>
             <div className="space-y-4">
@@ -352,14 +356,14 @@ function Pillar({
         src={img}
         alt={alt}
         loading="lazy"
-        className="w-72 h-72 sm:w-[26rem] sm:h-[26rem] rounded-full object-cover border-4 border-white/10 shrink-0"
+        className="w-80 h-80 sm:w-[32rem] sm:h-[32rem] rounded-full object-cover border-4 border-white/10 shrink-0"
       />
       <div
         className={`relative z-10 flex flex-col justify-center max-w-md -mt-12 sm:mt-0 ${
-          reverse ? 'sm:-mr-16' : 'sm:-ml-16'
+          reverse ? 'sm:-mr-20' : 'sm:-ml-20'
         }`}
       >
-        <h3 className="font-display uppercase text-white text-5xl sm:text-6xl mb-5 px-2 text-center sm:text-left">
+        <h3 className="font-display uppercase text-white text-4xl sm:text-5xl mb-5 px-2 text-center sm:text-left">
           {title}
         </h3>
         <div className="bg-surface rounded-3xl p-8 shadow-2xl">
