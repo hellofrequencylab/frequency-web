@@ -29,6 +29,7 @@ import {
   Monitor,
   Store,
   Briefcase,
+  FileText,
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { NotificationBell } from '@/components/layout/notification-bell'
@@ -445,6 +446,23 @@ function NavLinkList({
                 strokeWidth={isActive('/studio') ? 2.5 : 2}
               />
               Studio
+            </Link>
+          )}
+          {isStaff && (
+            <Link
+              href="/studio/pages"
+              onClick={onNavigate}
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isActive('/studio/pages')
+                  ? 'bg-signal-bg text-signal-strong'
+                  : 'text-muted hover:bg-surface-elevated hover:text-text'
+              }`}
+            >
+              <FileText
+                className={`w-[18px] h-[18px] shrink-0 ${isActive('/studio/pages') ? 'text-signal-strong' : 'text-subtle'}`}
+                strokeWidth={isActive('/studio/pages') ? 2.5 : 2}
+              />
+              Pages
             </Link>
           )}
         </div>

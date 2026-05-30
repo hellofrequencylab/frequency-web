@@ -43,8 +43,10 @@ own chrome (not the member shell).
 All 4 marketing pages are **WYSIWYG-editable**; no code or deploy needed to
 change copy, images, or section order. Full design spec: [PAGE-EDITOR-SPEC.md](PAGE-EDITOR-SPEC.md).
 
-**How to edit (staff = `marketer`+):** Studio → **Pages** (`/studio/pages`) →
-**Edit** a page → opens the full-screen editor at `/edit/[slug]`. Drag blocks to
+**How to edit (staff = `marketer`+):** open the **Pages** directory at
+`/studio/pages` — reachable from the main nav under **Manage → Pages**, or from
+inside the Studio sidebar. **Edit** a page → opens the full-screen editor at
+`/edit/[slug]`. Drag blocks to
 reorder, edit fields in the right panel, swap/upload images, then **Publish** →
 live immediately (the route is revalidated). "Save draft" stores without
 publishing.
