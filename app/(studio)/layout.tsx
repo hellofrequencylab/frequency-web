@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { LayoutDashboard, Users, Megaphone, Workflow, BarChart3, Sparkles, ArrowLeft } from 'lucide-react'
+import { LayoutDashboard, Users, Rocket, Megaphone, Workflow, BarChart3, Sparkles, ArrowLeft } from 'lucide-react'
 import { requireStaff } from '@/lib/staff'
 
 // The Studio: an admin-gated business cockpit with its own SaaS-style shell
@@ -31,6 +31,10 @@ export default async function StudioLayout({ children }: { children: React.React
           <Link href="/studio/contacts" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-muted hover:bg-surface-elevated hover:text-text transition-colors">
             <Users className="w-4 h-4" />
             Contacts
+          </Link>
+          <Link href="/studio/beta" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-muted hover:bg-surface-elevated hover:text-text transition-colors">
+            <Rocket className="w-4 h-4" />
+            Beta waitlist
           </Link>
           <Link href="/studio/campaigns" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-muted hover:bg-surface-elevated hover:text-text transition-colors">
             <Megaphone className="w-4 h-4" />
