@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Nunito, Geist_Mono } from "next/font/google";
+import { Nunito, Geist_Mono, Anton } from "next/font/google";
 import "./globals.css";
 import { SITE_URL, SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION } from "@/lib/site";
 import { JsonLd } from "@/components/json-ld";
@@ -17,6 +17,16 @@ const nunito = Nunito({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: "swap",
+});
+
+// Anton: heavy condensed display face for the public marketing headlines
+// (editorial, fills the width). Used via the `.font-display` utility; the
+// in-app product keeps Nunito. Single weight (400) — it's already very heavy.
+const anton = Anton({
+  variable: "--font-anton",
+  subsets: ["latin"],
+  weight: "400",
   display: "swap",
 });
 
@@ -91,7 +101,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${nunito.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${nunito.variable} ${geistMono.variable} ${anton.variable} h-full antialiased`}
     >
       <head>
         {/* Theme script must run synchronously before any paint */}

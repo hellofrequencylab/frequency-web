@@ -245,3 +245,13 @@ h1, h2, h3, h4, h5, h6 {
 @media (prefers-reduced-motion: reduce) {
   .animate-marquee { animation: none; }
 }
+
+/* ── Display face (public marketing headlines) ─────────────────────────────────
+   Heavy condensed editorial headline face. Pair with `uppercase`. The tight
+   line-height + slight tracking is tuned for Anton at large sizes.            */
+.font-display {
+  font-family: var(--font-anton), 'Arial Narrow', system-ui, sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.012em;
+  line-height: 0.94;
+}
