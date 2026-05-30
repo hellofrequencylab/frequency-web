@@ -305,6 +305,11 @@ replacing the Squarespace site. **Depends on:** the email spine (6.1) + `contact
       tabbed (Members/Subscribers/Beta). `@moderation` hidden from the directory.
 - [x] **Manual queue drain** — `drainQueueNow` + "Send queued emails now" button,
       since `process-queue` cron is fail-closed on `CRON_SECRET` (MARKETING-AND-BETA §4).
+- [x] **Visual page editor (Puck)** — all 4 marketing pages are WYSIWYG-editable
+      at `/studio/pages` → `/edit/[slug]`; public renders from `pages.published_data`
+      via `@measured/puck/rsc` `<Render>` with a `Legacy*` JSX fallback. Current
+      content seeded into the DB. See [PAGE-EDITOR-SPEC.md](PAGE-EDITOR-SPEC.md) §11
+      and MARKETING-AND-BETA §1.1.
 - [ ] **Owner config** — set `CRON_SECRET`, `NEXT_PUBLIC_SITE_URL`,
       `NEXT_PUBLIC_APP_URL`, `EMAIL_FROM` in prod (MARKETING-AND-BETA §5).
 - [ ] **Apex cutover** — move from `go.findafreq.com` to `findafreq.com` (kill

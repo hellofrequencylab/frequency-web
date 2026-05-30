@@ -38,6 +38,38 @@ own chrome (not the member shell).
 - Imagery: `public/images/site/` (pulled from the old Squarespace, optimized).
 - **No em dashes** in marketing copy (house rule).
 
+### 1.1 Editing the pages — visual editor (Puck)
+
+All 4 marketing pages are **WYSIWYG-editable**; no code or deploy needed to
+change copy, images, or section order. Full design spec: [PAGE-EDITOR-SPEC.md](PAGE-EDITOR-SPEC.md).
+
+**How to edit (staff = `marketer`+):** Studio → **Pages** (`/studio/pages`) →
+**Edit** a page → opens the full-screen editor at `/edit/[slug]`. Drag blocks to
+reorder, edit fields in the right panel, swap/upload images, then **Publish** →
+live immediately (the route is revalidated). "Save draft" stores without
+publishing.
+
+**How it renders (fast + safe):**
+- Public pages read `pages.published_data` and render server-side via
+  `@measured/puck/rsc` `<Render>` — **no editor JS ships to visitors.**
+- If a page row is missing/empty, the page falls back to the original hardcoded
+  JSX (`Legacy*` component) → zero-downtime.
+- Sub-pages are ISR (`revalidate = 3600`, re-validated on publish); the splash
+  `/` stays dynamic (auth redirect to `/feed`).
+
+**Block palette** (`lib/page-editor/config.tsx`, markup in
+`components/marketing/blocks.tsx`): PageHero, ZigZag (image+text), Statement,
+BetaCTA, Marquee, ImageBand, Spacer, Hero (full-bleed splash), FeatureGallery,
+Pillars (dark band), and live **LiveStats / LiveEvents / LivePosts** (fed real
+member/circle/event/post data via Puck `metadata`, fetched in
+`lib/page-editor/live-data.ts`). The palette is brand-locked (DAWN tokens only).
+
+**Infra:** `pages` table + public `site-media` bucket (migration
+`20240226000000_pages_cms.sql`). Image uploads → `site-media` via
+`lib/page-editor/upload-action.ts` (8 MB cap, `marketer`+). Publish/draft actions
+in `app/edit/actions.ts`. Current content is **seeded** into the DB so the editor
+opens on the real design.
+
 ---
 
 ## 2. Beta acquisition funnel — double opt-in
