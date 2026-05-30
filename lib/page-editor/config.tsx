@@ -15,6 +15,7 @@ import {
   LivePostsBlock,
   type LiveData,
 } from '@/components/marketing/blocks'
+import { SiteImage } from '@/components/marketing/site-image'
 import { ImageField } from './image-field'
 import { layoutField, layoutDefault, padClass, visClass, type LayoutValue } from './layout'
 import {
@@ -220,12 +221,12 @@ export const config: Config = {
         return (
           <div className={`px-6 ${padClass(layout as LayoutValue) ?? 'py-4'} ${visClass(layout as LayoutValue)}`}>
             <div className={`${sizeClass(size as string)} mx-auto overflow-hidden border border-border ${radiusClass(radius as string)} ${shadowClass(shadow as string)}`}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <SiteImage
                 src={image || '/images/site/lab-storefront.jpg'}
                 alt={alt || ''}
-                className={`w-full ${ar ? 'object-cover' : ''} ${focalClass(focal as string)}`}
-                style={ar ? { aspectRatio: ar } : undefined}
+                aspect={ar}
+                focal={focalClass(focal as string)}
+                sizes="(min-width: 1024px) 64rem, 100vw"
               />
             </div>
           </div>

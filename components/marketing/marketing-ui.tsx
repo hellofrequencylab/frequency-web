@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
+import { SiteImage } from '@/components/marketing/site-image'
 
 // ── Shared building blocks for the public marketing pages ─────────────────────
 // Editorial treatment: heavy condensed display headings (.font-display from the
@@ -146,14 +147,14 @@ export function ZigZag({
   vis?: string
 }) {
   const bg = tone === 'canvas' ? 'bg-marketing-canvas' : 'bg-surface'
-  const aspect =
+  const cssAspect =
     imgAspect === 'portrait'
-      ? 'aspect-[4/5]'
+      ? '4/5'
       : imgAspect === 'square'
-        ? 'aspect-square'
+        ? '1/1'
         : imgAspect === 'natural'
-          ? ''
-          : 'aspect-[4/3]'
+          ? undefined
+          : '4/3'
   const objectPos =
     imgPosition === 'top'
       ? 'object-top'
@@ -175,11 +176,13 @@ export function ZigZag({
             reverse ? 'md:order-last' : ''
           }`}
         >
-          {imgAspect === 'natural' ? (
-            <img src={img} alt={alt} className="w-full h-auto" />
-          ) : (
-            <img src={img} alt={alt} className={`w-full object-cover ${aspect} ${objectPos}`} />
-          )}
+          <SiteImage
+            src={img}
+            alt={alt}
+            aspect={cssAspect}
+            focal={objectPos}
+            sizes="(min-width: 768px) 40rem, 100vw"
+          />
         </div>
         <div>
           {eyebrow && (

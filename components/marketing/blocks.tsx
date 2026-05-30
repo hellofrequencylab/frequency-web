@@ -1,7 +1,9 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { ChevronDown, ArrowRight } from 'lucide-react'
 import { getInitials, relativeTime } from '@/lib/utils'
 import { type CommunityRole, ROLE_RANK, RoleBadge } from '@/lib/community-roles'
+import { SiteImage } from '@/components/marketing/site-image'
 
 // Presentational blocks shared by the Puck config (editor + public render) and
 // the legacy splash fallback. Pure props in, markup out.
@@ -51,10 +53,16 @@ export function HeroBlock({
 }) {
   return (
     <section className={`relative min-h-screen flex flex-col items-center justify-center text-center px-6 overflow-hidden ${vis}`}>
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat scale-105"
-        style={{ backgroundImage: `url(${bgImage || '/images/site/lab-thermal.jpg'})` }}
-      />
+      <div className="absolute inset-0 scale-105">
+        <Image
+          src={bgImage || '/images/site/lab-thermal.jpg'}
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-center"
+        />
+      </div>
       <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/85" />
       <div className="relative z-10 flex flex-col items-center w-full max-w-4xl">
         {eyebrow && (
@@ -116,8 +124,7 @@ export function GalleryBlock({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           {(items || []).map((f, i) => (
             <article key={i} className="rounded-2xl overflow-hidden border border-border bg-surface">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={f.image || '/images/site/lab-pool.jpg'} alt={f.title || ''} loading="lazy" className="w-full object-cover aspect-[16/10]" />
+              <SiteImage src={f.image || '/images/site/lab-pool.jpg'} alt={f.title || ''} aspect="16/10" sizes="(min-width: 640px) 40rem, 100vw" />
               <div className="p-6">
                 <h3 className="text-xl font-bold text-text mb-1.5">{f.title}</h3>
                 <p className="text-base text-muted leading-relaxed">{f.body}</p>
@@ -151,8 +158,9 @@ export function PillarsBlock({
             key={i}
             className={`flex flex-col items-center sm:items-stretch sm:flex-row ${p.reverse ? 'sm:flex-row-reverse' : ''}`}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={p.image || '/images/site/lab-storefront.jpg'} alt={p.title || ''} loading="lazy" className="w-80 h-80 sm:w-[32rem] sm:h-[32rem] rounded-full object-cover border-4 border-white/10 shrink-0" />
+            <div className="relative w-80 h-80 sm:w-[32rem] sm:h-[32rem] rounded-full overflow-hidden border-4 border-white/10 shrink-0">
+              <Image src={p.image || '/images/site/lab-storefront.jpg'} alt={p.title || ''} fill sizes="(min-width: 640px) 32rem, 20rem" className="object-cover" />
+            </div>
             <div className={`relative z-10 flex flex-col justify-center max-w-md -mt-12 sm:mt-0 ${p.reverse ? 'sm:-mr-20' : 'sm:-ml-20'}`}>
               <h3 className="font-display uppercase text-white text-4xl sm:text-5xl mb-5 px-2 text-center sm:text-left">{p.title}</h3>
               <div className="bg-surface rounded-3xl p-8 shadow-2xl">
