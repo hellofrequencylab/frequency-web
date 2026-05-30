@@ -16,6 +16,7 @@ import {
   type LiveData,
 } from '@/components/marketing/blocks'
 import { ImageField } from './image-field'
+import { layoutField, layoutDefault, padClass, visClass, type LayoutValue } from './layout'
 
 // Shared by BOTH the editor (<Puck>) and the public renderer (<Render>). The
 // palette is our existing marketing blocks, styled with DAWN tokens — so the
@@ -69,10 +70,11 @@ export const config: Config = {
         title: { type: 'text' },
         titleAccent: { type: 'text', label: 'Title accent word (optional)' },
         subtitle: { type: 'textarea' },
+        layout: layoutField,
       },
-      defaultProps: { eyebrow: 'Eyebrow', title: 'Headline', titleAccent: '', subtitle: '' },
-      render: ({ eyebrow, title, titleAccent, subtitle }) => (
-        <PageHero eyebrow={eyebrow || undefined} title={accentize(title, titleAccent)} subtitle={subtitle || undefined} />
+      defaultProps: { eyebrow: 'Eyebrow', title: 'Headline', titleAccent: '', subtitle: '', layout: layoutDefault },
+      render: ({ eyebrow, title, titleAccent, subtitle, layout }) => (
+        <PageHero eyebrow={eyebrow || undefined} title={accentize(title, titleAccent)} subtitle={subtitle || undefined} pad={padClass(layout as LayoutValue)} vis={visClass(layout as LayoutValue)} />
       ),
     },
 
@@ -105,6 +107,7 @@ export const config: Config = {
         },
         ctaLabel: { type: 'text', label: 'CTA label (optional)' },
         ctaHref: { type: 'text', label: 'CTA link (optional)' },
+        layout: layoutField,
       },
       defaultProps: {
         image: '',
@@ -119,8 +122,9 @@ export const config: Config = {
         imgAspect: 'landscape',
         ctaLabel: '',
         ctaHref: '',
+        layout: layoutDefault,
       },
-      render: ({ image, alt, eyebrow, title, titleAccent, kicker, body, side, tone, imgAspect, ctaLabel, ctaHref }) => (
+      render: ({ image, alt, eyebrow, title, titleAccent, kicker, body, side, tone, imgAspect, ctaLabel, ctaHref, layout }) => (
         <ZigZag
           img={image || '/images/site/community-1.jpg'}
           alt={alt || ''}
@@ -130,6 +134,8 @@ export const config: Config = {
           reverse={side === 'right'}
           tone={tone as 'surface' | 'canvas'}
           imgAspect={imgAspect as 'landscape' | 'portrait' | 'square' | 'natural'}
+          pad={padClass(layout as LayoutValue)}
+          vis={visClass(layout as LayoutValue)}
           cta={ctaLabel && ctaHref ? { label: ctaLabel, href: ctaHref } : undefined}
         >
           {paragraphs(body)}
@@ -143,10 +149,13 @@ export const config: Config = {
         text: { type: 'textarea' },
         accent: { type: 'text', label: 'Accent word (optional)' },
         tone: toneField,
+        layout: layoutField,
       },
-      defaultProps: { text: 'A bold statement.', accent: '', tone: 'canvas' },
-      render: ({ text, accent, tone }) => (
-        <Statement tone={tone as 'surface' | 'canvas'}>{accentize(text, accent)}</Statement>
+      defaultProps: { text: 'A bold statement.', accent: '', tone: 'canvas', layout: layoutDefault },
+      render: ({ text, accent, tone, layout }) => (
+        <Statement tone={tone as 'surface' | 'canvas'} pad={padClass(layout as LayoutValue)} vis={visClass(layout as LayoutValue)}>
+          {accentize(text, accent)}
+        </Statement>
       ),
     },
 
@@ -156,10 +165,11 @@ export const config: Config = {
         heading: { type: 'text' },
         headingAccent: { type: 'text', label: 'Heading accent word (optional)' },
         body: { type: 'textarea' },
+        layout: layoutField,
       },
-      defaultProps: { heading: 'Be one of the first.', headingAccent: '', body: '' },
-      render: ({ heading, headingAccent, body }) => (
-        <BetaCTA heading={accentize(heading, headingAccent)} body={body || undefined} />
+      defaultProps: { heading: 'Be one of the first.', headingAccent: '', body: '', layout: layoutDefault },
+      render: ({ heading, headingAccent, body, layout }) => (
+        <BetaCTA heading={accentize(heading, headingAccent)} body={body || undefined} pad={padClass(layout as LayoutValue)} vis={visClass(layout as LayoutValue)} />
       ),
     },
 
@@ -167,10 +177,11 @@ export const config: Config = {
       label: 'Scrolling marquee',
       fields: {
         items: { type: 'array', arrayFields: { text: { type: 'text' } }, getItemSummary: (i: { text?: string }) => i.text || 'Item' },
+        layout: layoutField,
       },
-      defaultProps: { items: [{ text: 'What we’re building' }] },
-      render: ({ items }) => (
-        <section className="bg-text">
+      defaultProps: { items: [{ text: 'What we’re building' }], layout: layoutDefault },
+      render: ({ items, layout }) => (
+        <section className={`bg-text ${visClass(layout as LayoutValue)}`}>
           <Marquee items={(items || []).map((i: { text?: string }) => i.text || '')} />
         </section>
       ),
@@ -189,10 +200,11 @@ export const config: Config = {
             { label: 'Landscape (4:3)', value: '4/3' },
           ],
         },
+        layout: layoutField,
       },
-      defaultProps: { image: '', alt: '', aspect: '21/9' },
-      render: ({ image, alt, aspect }) => (
-        <div className="px-6 py-4">
+      defaultProps: { image: '', alt: '', aspect: '21/9', layout: layoutDefault },
+      render: ({ image, alt, aspect, layout }) => (
+        <div className={`px-6 ${padClass(layout as LayoutValue) ?? 'py-4'} ${visClass(layout as LayoutValue)}`}>
           <div className="max-w-5xl mx-auto rounded-3xl overflow-hidden border border-border shadow-sm">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={image || '/images/site/lab-storefront.jpg'} alt={alt || ''} className="w-full object-cover" style={{ aspectRatio: aspect }} />
@@ -230,6 +242,7 @@ export const config: Config = {
         ctaSecondaryLabel: { type: 'text', label: 'Secondary CTA label' },
         ctaSecondaryHref: { type: 'text', label: 'Secondary CTA link' },
         note: { type: 'text', label: 'Small note under CTAs' },
+        layout: layoutField,
       },
       defaultProps: {
         eyebrow: 'A third space for a disconnected generation',
@@ -242,8 +255,9 @@ export const config: Config = {
         ctaSecondaryLabel: 'Sign in',
         ctaSecondaryHref: '/sign-in',
         note: '',
+        layout: layoutDefault,
       },
-      render: ({ eyebrow, title, titleAccent, subtitle, bgImage, ctaPrimaryLabel, ctaPrimaryHref, ctaSecondaryLabel, ctaSecondaryHref, note }) => (
+      render: ({ eyebrow, title, titleAccent, subtitle, bgImage, ctaPrimaryLabel, ctaPrimaryHref, ctaSecondaryLabel, ctaSecondaryHref, note, layout }) => (
         <HeroBlock
           eyebrow={eyebrow || undefined}
           title={accentize(title, titleAccent)}
@@ -254,6 +268,7 @@ export const config: Config = {
           ctaSecondaryLabel={ctaSecondaryLabel || undefined}
           ctaSecondaryHref={ctaSecondaryHref || undefined}
           note={note || undefined}
+          vis={visClass(layout as LayoutValue)}
         />
       ),
     },
@@ -268,10 +283,11 @@ export const config: Config = {
           arrayFields: { image: imgField, title: { type: 'text' }, body: { type: 'textarea' } },
           getItemSummary: (i: { title?: string }) => i.title || 'Tile',
         },
+        layout: layoutField,
       },
-      defaultProps: { eyebrow: 'Inside', heading: 'What you’ll find', items: [] },
-      render: ({ eyebrow, heading, items }) => (
-        <GalleryBlock eyebrow={eyebrow || undefined} heading={heading || undefined} items={items || []} />
+      defaultProps: { eyebrow: 'Inside', heading: 'What you’ll find', items: [], layout: layoutDefault },
+      render: ({ eyebrow, heading, items, layout }) => (
+        <GalleryBlock eyebrow={eyebrow || undefined} heading={heading || undefined} items={items || []} pad={padClass(layout as LayoutValue)} vis={visClass(layout as LayoutValue)} />
       ),
     },
 
@@ -294,10 +310,12 @@ export const config: Config = {
           },
           getItemSummary: (i: { title?: string }) => i.title || 'Pillar',
         },
+        layout: layoutField,
       },
-      defaultProps: { marqueeItems: [{ text: 'What we’re building' }], pillars: [] },
-      render: ({ marqueeItems, pillars }) => (
+      defaultProps: { marqueeItems: [{ text: 'What we’re building' }], pillars: [], layout: layoutDefault },
+      render: ({ marqueeItems, pillars, layout }) => (
         <PillarsBlock
+          vis={visClass(layout as LayoutValue)}
           marqueeItems={(marqueeItems || []).map((i: { text?: string }) => i.text || '')}
           pillars={(pillars || []).map((p: { image?: string; title?: string; body?: string; href?: string; side?: string }) => ({
             image: p.image,
@@ -312,26 +330,26 @@ export const config: Config = {
 
     LiveStats: {
       label: 'Live stats (members/circles/events)',
-      fields: { eyebrow: { type: 'text' }, heading: { type: 'text' } },
-      defaultProps: { eyebrow: 'Not a someday idea', heading: 'It’s already happening.' },
-      render: ({ eyebrow, heading, puck }) => (
-        <LiveStatsBlock eyebrow={eyebrow || undefined} heading={heading || undefined} live={(puck?.metadata?.live as LiveData) || undefined} />
+      fields: { eyebrow: { type: 'text' }, heading: { type: 'text' }, layout: layoutField },
+      defaultProps: { eyebrow: 'Not a someday idea', heading: 'It’s already happening.', layout: layoutDefault },
+      render: ({ eyebrow, heading, layout, puck }) => (
+        <LiveStatsBlock eyebrow={eyebrow || undefined} heading={heading || undefined} pad={padClass(layout as LayoutValue)} vis={visClass(layout as LayoutValue)} live={(puck?.metadata?.live as LiveData) || undefined} />
       ),
     },
 
     LiveEvents: {
       label: 'Live upcoming events',
-      fields: {},
-      defaultProps: {},
-      render: ({ puck }) => <LiveEventsBlock live={(puck?.metadata?.live as LiveData) || undefined} />,
+      fields: { layout: layoutField },
+      defaultProps: { layout: layoutDefault },
+      render: ({ layout, puck }) => <LiveEventsBlock pad={padClass(layout as LayoutValue)} vis={visClass(layout as LayoutValue)} live={(puck?.metadata?.live as LiveData) || undefined} />,
     },
 
     LivePosts: {
       label: 'Live community posts',
-      fields: { heading: { type: 'text' } },
-      defaultProps: { heading: 'People showing up for each other' },
-      render: ({ heading, puck }) => (
-        <LivePostsBlock heading={heading || undefined} live={(puck?.metadata?.live as LiveData) || undefined} />
+      fields: { heading: { type: 'text' }, layout: layoutField },
+      defaultProps: { heading: 'People showing up for each other', layout: layoutDefault },
+      render: ({ heading, layout, puck }) => (
+        <LivePostsBlock heading={heading || undefined} pad={padClass(layout as LayoutValue)} vis={visClass(layout as LayoutValue)} live={(puck?.metadata?.live as LiveData) || undefined} />
       ),
     },
   },

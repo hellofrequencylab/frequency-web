@@ -10,13 +10,17 @@ export function PageHero({
   eyebrow,
   title,
   subtitle,
+  pad,
+  vis = '',
 }: {
   eyebrow?: string
   title: React.ReactNode
   subtitle?: string
+  pad?: string
+  vis?: string
 }) {
   return (
-    <section className="px-6 pt-24 pb-14 sm:pt-32 sm:pb-20">
+    <section className={`px-6 ${pad ?? 'pt-24 pb-14 sm:pt-32 sm:pb-20'} ${vis}`}>
       <div className="max-w-3xl mx-auto text-center">
         {eyebrow && (
           <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-5">
@@ -40,14 +44,18 @@ export function Section({
   children,
   tone = 'surface',
   className = '',
+  pad,
+  vis = '',
 }: {
   children: React.ReactNode
   tone?: 'surface' | 'canvas'
   className?: string
+  pad?: string
+  vis?: string
 }) {
   const bg = tone === 'canvas' ? 'bg-marketing-canvas' : 'bg-surface'
   return (
-    <section className={`px-6 py-20 sm:py-24 ${bg} ${className}`}>
+    <section className={`px-6 ${pad ?? 'py-20 sm:py-24'} ${bg} ${vis} ${className}`}>
       <div className="max-w-3xl mx-auto">{children}</div>
     </section>
   )
@@ -88,13 +96,17 @@ export function Body({ children }: { children: React.ReactNode }) {
 export function Statement({
   children,
   tone = 'canvas',
+  pad,
+  vis = '',
 }: {
   children: React.ReactNode
   tone?: 'surface' | 'canvas'
+  pad?: string
+  vis?: string
 }) {
   const bg = tone === 'canvas' ? 'bg-marketing-canvas' : 'bg-surface'
   return (
-    <section className={`${bg} px-6 py-16 sm:py-20`}>
+    <section className={`${bg} px-6 ${pad ?? 'py-16 sm:py-20'} ${vis}`}>
       <p className="font-display uppercase max-w-4xl mx-auto text-center text-text text-4xl sm:text-5xl lg:text-6xl leading-[1.1]">
         {children}
       </p>
@@ -116,6 +128,8 @@ export function ZigZag({
   tone = 'surface',
   imgAspect = 'landscape',
   imgPosition = 'center',
+  pad,
+  vis = '',
 }: {
   img: string
   alt: string
@@ -128,6 +142,8 @@ export function ZigZag({
   tone?: 'surface' | 'canvas'
   imgAspect?: 'square' | 'portrait' | 'landscape' | 'natural'
   imgPosition?: 'top' | 'center' | 'bottom'
+  pad?: string
+  vis?: string
 }) {
   const bg = tone === 'canvas' ? 'bg-marketing-canvas' : 'bg-surface'
   const aspect =
@@ -144,7 +160,7 @@ export function ZigZag({
   // text column and leave a big empty gap below the section.
   const wrapMax = imgAspect === 'portrait' || imgAspect === 'square' ? 'max-w-sm mx-auto' : ''
   return (
-    <section className={`${bg} px-6 py-16 sm:py-20`}>
+    <section className={`${bg} px-6 ${pad ?? 'py-16 sm:py-20'} ${vis}`}>
       <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-8 md:gap-10 items-center">
         <div
           className={`w-full ${wrapMax} rounded-3xl overflow-hidden border border-border shadow-sm ${
@@ -203,12 +219,16 @@ export function Marquee({ items }: { items: string[] }) {
 export function BetaCTA({
   heading,
   body,
+  pad,
+  vis = '',
 }: {
   heading: React.ReactNode
   body?: string
+  pad?: string
+  vis?: string
 }) {
   return (
-    <section className="relative bg-surface px-6 py-24 sm:py-28 text-center overflow-hidden">
+    <section className={`relative bg-surface px-6 ${pad ?? 'py-24 sm:py-28'} text-center overflow-hidden ${vis}`}>
       <div
         className="absolute inset-0 opacity-25 pointer-events-none"
         style={{
