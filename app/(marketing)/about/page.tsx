@@ -4,7 +4,7 @@ import { PageHero, Section, SectionHeading, Lead, Body, BetaCTA } from '@/compon
 export const metadata: Metadata = {
   title: 'About',
   description:
-    'The story behind Frequency — and why we won’t let it collapse this time. A place to be human, built to outlast any one person.',
+    'The story behind Frequency, and why we won’t let it collapse this time. A place to be human, built to outlast any one person.',
   alternates: { canonical: '/about' },
   openGraph: {
     title: 'About Frequency',
@@ -19,7 +19,7 @@ export default function AboutPage() {
       <PageHero
         eyebrow="Our story"
         title="We&apos;re building the place we wished existed."
-        subtitle="The story behind Frequency — and why we won&apos;t let it collapse this time."
+        subtitle="The story behind Frequency, and why we won&apos;t let it collapse this time."
       />
 
       <div className="px-6">
@@ -40,7 +40,7 @@ export default function AboutPage() {
           Word spread. Within eighteen months, gatherings of a thousand-plus.
         </Body>
         <Body>
-          It was proof of the hunger — and proof of the problem: without
+          It was proof of the hunger, and proof of the problem: without
           infrastructure, even something that beautiful couldn&apos;t hold. When
           it faded, it left a blueprint of exactly what to build.
         </Body>
@@ -48,11 +48,9 @@ export default function AboutPage() {
 
       <Section>
         <SectionHeading title="A place to be human." />
-        <Lead>
-          67% of millennials and Gen Z report feeling lonely.
-        </Lead>
+        <Lead>67% of millennials and Gen Z report feeling lonely.</Lead>
         <Body>
-          It isn&apos;t for lack of people — it&apos;s for lack of places. The
+          It isn&apos;t for lack of people. It&apos;s for lack of places. The
           third spaces that used to hold us have quietly disappeared, and we
           replaced them with feeds. Frequency exists to rebuild that third
           space: physical homes for connection, backed by a community designed
@@ -64,7 +62,7 @@ export default function AboutPage() {
         <SectionHeading title="Built to outlast any one person." />
         <Body>
           Guru-free. Bottom-up. The environment does the work. We&apos;re not
-          building a following — we&apos;re building infrastructure for
+          building a following. We&apos;re building infrastructure for
           connection that can spread, city by city, and stand on its own.
         </Body>
       </Section>

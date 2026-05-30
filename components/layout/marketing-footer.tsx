@@ -12,9 +12,9 @@ export function MarketingFooter() {
           {/* Brand */}
           <div className="max-w-xs">
             <img src="/frequency-logo.png" alt="Frequency" className="h-6 w-auto opacity-50 mb-3" />
-            <p className="text-xs text-muted leading-relaxed">
-              A third space for a disconnected generation. Not home, not work —
-              a place to be human, together.
+            <p className="text-sm text-muted leading-relaxed">
+              A third space for a disconnected generation. Not home, not work.
+              A place to be human, together.
             </p>
           </div>
 
