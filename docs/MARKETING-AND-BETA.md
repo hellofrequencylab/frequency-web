@@ -84,6 +84,9 @@ admitBetaSignup()  ──▶  meta.beta_status='invited' + queue invite email (s
   props (member app unaffected): `extraSections` (the Studio nav) and `hideAppNav`
   (suppresses the member NAV_SECTIONS / Crew / Admin / Upgrade-CTA). The logo still
   links back to `/feed`; the profile card stays at the bottom.
+- Reachable from the member app: staff see a **Studio** link in the sidebar's
+  **Manage** section (below Admin). Gated on `isStaff` — the `(main)` layout
+  computes it via `getStaffMember()` and passes it to `AppShell`.
 - `/studio/beta` (`lib/studio/beta.ts`) — waitlist: stats, **Admit**, **Resend
   confirm**, and a **"Send queued emails now"** manual drain (see §4).
 - `/studio/contacts` (`lib/studio/contacts.ts`) — filter tabs (All / Subscribers /

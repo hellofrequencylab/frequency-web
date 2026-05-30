@@ -28,6 +28,7 @@ import {
   Gem,
   Monitor,
   Store,
+  Briefcase,
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { NotificationBell } from '@/components/layout/notification-bell'
@@ -336,12 +337,14 @@ function NavLinkList({
   onNavigate,
   extraSections,
   hideAppNav = false,
+  isStaff = false,
 }: {
   isActive: (href: string) => boolean
   role: CommunityRole
   onNavigate?: () => void
   extraSections?: NavSection[]
   hideAppNav?: boolean
+  isStaff?: boolean
 }) {
   const showCrew = role === 'crew' || role === 'host' || role === 'guide' || role === 'mentor' || role === 'janitor'
   const showAdmin = role === 'host' || role === 'guide' || role === 'mentor' || role === 'janitor'
@@ -407,24 +410,43 @@ function NavLinkList({
         </div>
       )}
 
-      {!hideAppNav && showAdmin && (
+      {!hideAppNav && (showAdmin || isStaff) && (
         <div className="space-y-0.5 mt-2">
           <p className={sectionLabelClass}>Manage</p>
-          <Link
-            href="/admin"
-            onClick={onNavigate}
-            className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-              isActive('/admin')
-                ? 'bg-signal-bg text-signal-strong'
-                : 'text-muted hover:bg-surface-elevated hover:text-text'
-            }`}
-          >
-            <Shield
-              className={`w-[18px] h-[18px] shrink-0 ${isActive('/admin') ? 'text-signal-strong' : 'text-subtle'}`}
-              strokeWidth={isActive('/admin') ? 2.5 : 2}
-            />
-            Admin
-          </Link>
+          {showAdmin && (
+            <Link
+              href="/admin"
+              onClick={onNavigate}
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isActive('/admin')
+                  ? 'bg-signal-bg text-signal-strong'
+                  : 'text-muted hover:bg-surface-elevated hover:text-text'
+              }`}
+            >
+              <Shield
+                className={`w-[18px] h-[18px] shrink-0 ${isActive('/admin') ? 'text-signal-strong' : 'text-subtle'}`}
+                strokeWidth={isActive('/admin') ? 2.5 : 2}
+              />
+              Admin
+            </Link>
+          )}
+          {isStaff && (
+            <Link
+              href="/studio"
+              onClick={onNavigate}
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isActive('/studio')
+                  ? 'bg-signal-bg text-signal-strong'
+                  : 'text-muted hover:bg-surface-elevated hover:text-text'
+              }`}
+            >
+              <Briefcase
+                className={`w-[18px] h-[18px] shrink-0 ${isActive('/studio') ? 'text-signal-strong' : 'text-subtle'}`}
+                strokeWidth={isActive('/studio') ? 2.5 : 2}
+              />
+              Studio
+            </Link>
+          )}
         </div>
       )}
     </>
@@ -440,6 +462,7 @@ function MobileLeftDrawer({
   isActive,
   extraSections,
   hideAppNav = false,
+  isStaff = false,
 }: {
   open: boolean
   onClose: () => void
@@ -447,6 +470,7 @@ function MobileLeftDrawer({
   isActive: (href: string) => boolean
   extraSections?: NavSection[]
   hideAppNav?: boolean
+  isStaff?: boolean
 }) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -484,7 +508,7 @@ function MobileLeftDrawer({
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-          <NavLinkList isActive={isActive} role={role} onNavigate={onClose} extraSections={extraSections} hideAppNav={hideAppNav} />
+          <NavLinkList isActive={isActive} role={role} onNavigate={onClose} extraSections={extraSections} hideAppNav={hideAppNav} isStaff={isStaff} />
         </nav>
 
         {/* Bottom close. Sits in the thumb zone */}
@@ -589,6 +613,7 @@ export default function AppShell({
   unreadCount = 0,
   extraSections,
   hideAppNav = false,
+  isStaff = false,
 }: {
   profile: Profile
   children: React.ReactNode
@@ -596,6 +621,7 @@ export default function AppShell({
   unreadCount?: number
   extraSections?: NavSection[]
   hideAppNav?: boolean
+  isStaff?: boolean
 }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -743,7 +769,7 @@ export default function AppShell({
 
           {/* Primary nav */}
           <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-            <NavLinkList isActive={isActive} role={role} extraSections={extraSections} hideAppNav={hideAppNav} />
+            <NavLinkList isActive={isActive} role={role} extraSections={extraSections} hideAppNav={hideAppNav} isStaff={isStaff} />
           </nav>
 
           {/* Upgrade to Crew CTA. Members only (not janitor) */}
@@ -803,6 +829,7 @@ export default function AppShell({
         isActive={isActive}
         extraSections={extraSections}
         hideAppNav={hideAppNav}
+        isStaff={isStaff}
       />
 
     </div>
