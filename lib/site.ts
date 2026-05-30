@@ -19,11 +19,10 @@ export const MARKETING_NAV: { label: string; href: string }[] = [
   { label: "About", href: "/about" },
 ];
 
-// Primary acquisition CTA. Soft-waitlist for now: signup stays open, so this
-// points at /sign-in. When the dedicated Beta lead-capture (double opt-in)
-// ships, repoint BETA_CTA_HREF to it in one place.
+// Primary acquisition CTA — the Beta lead-capture (double opt-in). Open signup
+// still lives at /sign-in; this featured path captures leads into the CRM.
 export const BETA_CTA_LABEL = "Join the Beta";
-export const BETA_CTA_HREF = "/sign-in";
+export const BETA_CTA_HREF = "/beta";
 
 // Org footer line. Donations / 501(c)(3) framework deferred — no fundraising
 // language on the public site yet (see frequency-site-plan + org-status spec).
