@@ -6,7 +6,17 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { requireStaff } from '@/lib/staff'
 import { sendBetaInviteEmail, sendBetaConfirmEmail } from '@/lib/email'
 import { buildBetaConfirmUrl } from '@/lib/beta-tokens'
+import { processQueue } from '@/lib/queue/outbox'
+import { queueHandlers } from '@/lib/queue/handlers'
 import { SITE_URL } from '@/lib/site'
+
+// Manually drain the outbox (send all queued emails/pushes now). Useful when the
+// Vercel cron isn't running (e.g. CRON_SECRET unset). Same logic as the cron.
+export async function drainQueueNow(): Promise<void> {
+  await requireStaff('marketer')
+  await processQueue(queueHandlers, 100)
+  revalidatePath('/studio/beta')
+}
 
 // Admit a confirmed beta signup: mark invited + email them the "you're in" link.
 export async function admitBetaSignup(id: string, _formData?: FormData): Promise<void> {

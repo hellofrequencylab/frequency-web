@@ -1,5 +1,5 @@
-import { listBetaSignups, summarizeBeta, type BetaStatus } from '@/lib/studio/beta'
-import { admitBetaSignup, resendBetaConfirm } from './actions'
+import { listBetaSignups, summarizeBeta, pendingEmailCount, type BetaStatus } from '@/lib/studio/beta'
+import { admitBetaSignup, resendBetaConfirm, drainQueueNow } from './actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,7 +25,7 @@ function fmt(d: string | null): string {
 }
 
 export default async function BetaPage() {
-  const signups = await listBetaSignups()
+  const [signups, queued] = await Promise.all([listBetaSignups(), pendingEmailCount()])
   const stats = summarizeBeta(signups)
 
   return (
@@ -35,6 +35,26 @@ export default async function BetaPage() {
         People who asked to join the community Beta. Admit confirmed signups in
         batches to send them their invite to create an account.
       </p>
+
+      {queued > 0 && (
+        <div className="mb-6 flex items-center justify-between gap-4 rounded-2xl border border-warning bg-warning-bg/50 px-4 py-3">
+          <p className="text-sm text-text">
+            <span className="font-semibold">{queued} email{queued === 1 ? '' : 's'} waiting to send.</span>{' '}
+            <span className="text-muted">
+              If invites/confirmations aren&apos;t arriving, the background sender may not be
+              running. Send them now.
+            </span>
+          </p>
+          <form action={drainQueueNow}>
+            <button
+              type="submit"
+              className="shrink-0 rounded-lg bg-primary text-on-primary px-3.5 py-1.5 text-xs font-semibold hover:bg-primary-hover transition-colors"
+            >
+              Send queued emails now
+            </button>
+          </form>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">

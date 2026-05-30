@@ -48,6 +48,19 @@ export async function listBetaSignups(): Promise<BetaSignup[]> {
   })
 }
 
+// Count of email jobs sitting in the outbox waiting to be sent. Surfaced so an
+// admin can flush them manually if the cron isn't draining (e.g. CRON_SECRET
+// unset).
+export async function pendingEmailCount(): Promise<number> {
+  const db = createAdminClient() as unknown as SupabaseClient
+  const { count } = await db
+    .from('notification_queue')
+    .select('id', { count: 'exact', head: true })
+    .eq('kind', 'email')
+    .eq('status', 'pending')
+  return count ?? 0
+}
+
 export interface BetaStats {
   total: number
   pending: number
