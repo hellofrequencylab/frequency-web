@@ -125,9 +125,13 @@ on the real domain. **Depends on:** nothing (all in-codebase closeouts).
       *Done:* `zap_config` table (migration `20240227000000`) brings zaps to parity with
       `gem_config`; `awardZapsForAction` reads it; real values seeded. *Next:* seasons
       table + admin config UI.
-- [ ] **Complete `practice.verified` sources**: logged practice + verified node check-in +
+- [~] **Complete `practice.verified` sources**: logged practice + verified node check-in +
       event attendance check-in (old P2.13). The North-Star event must fire from every
-      real-practice path, not just event RSVP-checkin.
+      real-practice path, not just event RSVP-checkin. *Done:* practices backbone
+      (migration `20240228000000`: `practices` / `circle_practices` / `member_practices` /
+      `practice_logs`) + `lib/practices.ts` (`logPractice` emits `practice.verified`,
+      host-assigned + personal paths). *Next:* the UI (set circle practice, adopt personal,
+      log button) + node-capture emitting `practice.verified`.
 - [ ] **RLS convergence (Phase 2)**: migrate high-traffic read/write paths from
       admin-client → RLS + `SECURITY DEFINER` RPCs, with policy tests, surface by surface.
 - [ ] **Partner redemption-on-capture**: plaque bump → discount + zaps logged to
