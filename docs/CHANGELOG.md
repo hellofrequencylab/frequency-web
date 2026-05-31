@@ -12,6 +12,9 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **Mentions in replies**: @mentioning someone in a reply now notifies them, just
+  like in a top-level post.
+- **Richer profiles**: profiles now show verified practices and current streak.
 - **Blocking**: block a member from their profile to stop messages both ways and
   hide each other; manage blocked members under Settings, Account & privacy.
 - **Delete your account**: permanent, self-serve account deletion under Settings,

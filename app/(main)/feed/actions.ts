@@ -11,6 +11,45 @@ import { awardGems } from '@/lib/gems'
 
 const HOST_PLUS = ['host', 'guide', 'mentor', 'janitor']
 
+// Notify members @mentioned in a post/reply body: store post_mentions + create
+// in-app 'mention' notifications (best-effort). Shared by createPost + createReply.
+async function fanOutMentions(
+  admin: ReturnType<typeof createAdminClient>,
+  postId: string,
+  body: string,
+  authorId: string,
+  context: string,
+) {
+  const handles = [
+    ...new Set(Array.from(body.matchAll(/@([a-zA-Z0-9_]+)/g), (m) => m[1].toLowerCase())),
+  ]
+  if (handles.length === 0) return
+  const { data: mentioned } = await admin.from('profiles').select('id, handle').in('handle', handles)
+  const targets = (mentioned ?? []).filter((p) => p.id !== authorId)
+  if (targets.length === 0) return
+  try {
+    await admin
+      .from('post_mentions')
+      .insert(targets.map((p) => ({ post_id: postId, profile_id: p.id })))
+  } catch {
+    /* non-critical */
+  }
+  try {
+    await admin.from('notifications').insert(
+      targets.map((p) => ({
+        recipient_id: p.id,
+        actor_id: authorId,
+        type: 'mention',
+        reference_type: 'post',
+        reference_id: postId,
+        body: `mentioned you in ${context}`,
+      })),
+    )
+  } catch {
+    /* non-critical */
+  }
+}
+
 export async function createPost(formData: FormData) {
   const body = (formData.get('body') as string | null)?.trim()
   const scopeId = formData.get('scopeId') as string | null
@@ -78,36 +117,8 @@ export async function createPost(formData: FormData) {
   recordStreakActivity(profileId, 'posting').catch(() => {})
   awardGems(profileId, 'post_create').catch(() => {})
 
-  // Extract @mentions and create notification rows (best-effort, non-blocking)
-  const bodyText = body || ''
-  const handles = [...new Set(Array.from(bodyText.matchAll(/@([a-zA-Z0-9_]+)/g), m => m[1].toLowerCase()))]
-  if (handles.length > 0 && post) {
-    const { data: mentioned } = await admin
-      .from('profiles')
-      .select('id, handle')
-      .in('handle', handles)
-
-    if (mentioned && mentioned.length > 0) {
-      const mentionInserts = mentioned
-        .filter((p: { id: string; handle: string }) => p.id !== profileId)
-        .map((p: { id: string }) => ({ post_id: post.id, profile_id: p.id }))
-
-      if (mentionInserts.length > 0) {
-        try { await admin.from('post_mentions').insert(mentionInserts) } catch { /* non-critical */ }
-
-        // Create notification for each mentioned user
-        const notifInserts = mentionInserts.map((m: { profile_id: string }) => ({
-          recipient_id:   m.profile_id,
-          actor_id:       profileId,
-          type:           'mention',
-          reference_type: 'post',
-          reference_id:   post.id,
-          body:           'mentioned you in a post',
-        }))
-        try { await admin.from('notifications').insert(notifInserts) } catch { /* non-critical */ }
-      }
-    }
-  }
+  // Notify mentioned members (best-effort, non-blocking).
+  if (post) await fanOutMentions(admin, post.id, body || '', profileId, 'a post')
 
   revalidatePath('/feed')
   revalidatePath('/circles', 'layout')
@@ -152,14 +163,17 @@ export async function createReply(parentId: string, body: string) {
     .maybeSingle()
   if (!parent) return
 
-  await admin.from('posts').insert({
+  const { data: reply } = await admin.from('posts').insert({
     author_id:  profileId,
     body:       trimmed,
     scope_id:   parent.scope_id,
     visibility: parent.visibility,
     post_type:  'feed',
     parent_id:  parentId,
-  })
+  }).select('id').maybeSingle()
+
+  // Notify members @mentioned in the reply (same fan-out as top-level posts).
+  if (reply) await fanOutMentions(admin, reply.id, trimmed, profileId, 'a reply')
 
   awardGems(profileId, 'comment_reply').catch(() => {})
   processGamificationEvent({ type: 'post_create', profileId }).catch(() => {})

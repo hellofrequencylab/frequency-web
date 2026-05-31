@@ -146,9 +146,11 @@ on the real domain. **Depends on:** nothing (all in-codebase closeouts).
       deletion**. Shipped: `blocked_users` (migration `20240301000000`) + `lib/blocking.ts`
       (gates DMs both ways, unfriends on block); profile Block/Unblock button; account hard
       delete (`lib/account.ts`) + blocked-list management at `/settings/account`.
-- [ ] **Beta-experience polish**: map/proximity circle discovery (P3.14), profile richness
-      (P3.16), @mention rendering + notifications (P3.17). Lean subset that materially lifts a
-      first beta.
+- [~] **Beta-experience polish**: map/proximity circle discovery (P3.14), profile richness
+      (P3.16), @mention rendering + notifications (P3.17). *Done:* @mentions now fan out on
+      replies too (shared `fanOutMentions` helper), completing P3.17; profiles surface
+      verified practices + current streak (P3.16). *Next:* map/proximity discovery (needs a
+      map lib).
 - [ ] **Apex cutover + owner config**: `go.findafreq.com → findafreq.com`; set
       `CRON_SECRET`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_APP_URL`, `EMAIL_FROM` in prod.
 
