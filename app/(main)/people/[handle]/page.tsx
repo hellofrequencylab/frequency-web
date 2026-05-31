@@ -7,6 +7,8 @@ import { Composer } from '@/components/feed/composer'
 import { ProfileFeed } from '@/components/feed/profile-feed'
 import { getInitials, relativeTime } from '@/lib/utils'
 import { FriendButton, type FriendState } from './friend-button'
+import { BlockButton } from './block-button'
+import { hasBlocked } from '@/lib/blocking'
 import {
   MessageSquare, CalendarDays, Zap, Users, Megaphone, Radio,
   MapPin, Pencil, ArrowRight, Trophy, Star,
@@ -113,6 +115,12 @@ export default async function ProfilePage({
     }
   }
 
+  // Block state between viewer and this profile.
+  let isBlocked = false
+  if (myProfileId && myProfileId !== profileId) {
+    isBlocked = await hasBlocked(myProfileId, profileId)
+  }
+
   const [zapsResult, completionsCountResult, postsCountResult, circlesResult, channelsResult, eventsResult, dispatchesResult] = await Promise.all([
     admin.from('crew_completions').select('zaps_earned').eq('profile_id', profileId),
     admin.from('crew_completions').select('id', { count: 'exact', head: true }).eq('profile_id', profileId),
@@ -176,8 +184,8 @@ export default async function ProfilePage({
                 </Link>
               ) : user ? (
                 <>
-                  <FriendButton targetProfileId={profileId} state={friendState} />
-                  {friendState.kind === 'accepted' && (
+                  {!isBlocked && <FriendButton targetProfileId={profileId} state={friendState} />}
+                  {!isBlocked && friendState.kind === 'accepted' && (
                     <form action={startConversation.bind(null, profileId)}>
                       <button
                         type="submit"
@@ -188,6 +196,7 @@ export default async function ProfilePage({
                       </button>
                     </form>
                   )}
+                  {!isOwner && <BlockButton profileId={profileId} blocked={isBlocked} />}
                   {canModerateProfile && (
                     <ModerateProfileButton
                       profileId={profileId}
