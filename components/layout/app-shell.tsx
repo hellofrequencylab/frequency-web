@@ -858,7 +858,7 @@ export default function AppShell({
                 a full-height divider, flush to the far edge. The rail sits at
                 the top and scrolls with the feed (shared scroll, no sticky). */}
             {showSidebar && (
-              <aside className="hidden lg:block w-72 shrink-0 border-l border-border">
+              <aside className="hidden lg:flex flex-col w-72 shrink-0 border-l border-border">
                 {sidebar}
               </aside>
             )}

@@ -3,7 +3,7 @@ import { Suspense } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getInitials, relativeTime } from '@/lib/utils'
 import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
-import { CalendarDays, MapPin, Megaphone, Zap, Trophy, Award, Flame, Target, Gem } from 'lucide-react'
+import { MapPin, Megaphone, Zap, Flame, Gem } from 'lucide-react'
 import { GettingStartedChecklist } from '@/components/feed/getting-started'
 import { isOnline, ONLINE_MS } from '@/lib/presence'
 import { WidgetCard } from '@/components/modules/module-card'
@@ -377,70 +377,62 @@ async function LeaderboardWidget() {
   )
 }
 
-// ── Gamification quick stats ─────────────────────────────────────────────────
+// ── Game stats dock ───────────────────────────────────────────────────────────
+// A persistent gamification HUD pinned to the BOTTOM of the rail (`sticky
+// bottom-0`). As the top of the rail scrolls away with the feed, this dock stays
+// glued to the bottom and "fills in" — the player's zaps / gems / streak are
+// always one glance away. Links through to the full /crew dashboard.
 
-async function GamificationWidget({ profileId }: { profileId: string }) {
+async function GameStatsDock({ profileId }: { profileId: string }) {
   const admin = createAdminClient()
 
-  const [
-    { data: profile },
-    { data: streaks },
-    { count: achievementCount },
-  ] = await Promise.all([
-    admin.from('profiles')
-      .select('current_streak, achievement_count, lifetime_zaps, lifetime_gems')
-      .eq('id', profileId)
-      .maybeSingle(),
-    admin.from('streaks')
-      .select('streak_type, current_count')
-      .eq('profile_id', profileId)
-      .gt('current_count', 0),
-    admin.from('user_achievements')
-      .select('id', { count: 'exact', head: true })
-      .eq('profile_id', profileId),
-  ])
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('current_season_zaps, current_season_rank, lifetime_gems, current_streak')
+    .eq('id', profileId)
+    .maybeSingle()
 
-  const currentStreak = (profile as any)?.current_streak ?? 0
-  const achievements = achievementCount ?? 0
-  const lifetimeZaps = (profile as any)?.lifetime_zaps ?? 0
-  const lifetimeGems = (profile as any)?.lifetime_gems ?? 0
-
-  if (achievements === 0 && currentStreak === 0 && lifetimeZaps === 0 && lifetimeGems === 0) return null
+  const zaps = (profile as { current_season_zaps?: number } | null)?.current_season_zaps ?? 0
+  const gems = (profile as { lifetime_gems?: number } | null)?.lifetime_gems ?? 0
+  const streak = (profile as { current_streak?: number } | null)?.current_streak ?? 0
+  const rank = (profile as { current_season_rank?: SeasonRank } | null)?.current_season_rank
 
   return (
-    <WidgetCard title="Your Progress">
-      <div className="space-y-0.5">
-        <Link
-          href="/crew/achievements"
-          className="flex items-center gap-2.5 px-1 py-2 rounded-lg hover:bg-surface-elevated transition-colors"
-        >
-          <Award className="w-4 h-4 text-signal" />
-          <span className="text-sm text-text flex-1">Achievements</span>
-          <span className="text-sm font-bold text-text">{achievements}</span>
-        </Link>
-        <Link
-          href="/crew/streaks"
-          className="flex items-center gap-2.5 px-1 py-2 rounded-lg hover:bg-surface-elevated transition-colors"
-        >
-          <Flame className={`w-4 h-4 ${currentStreak > 0 ? 'text-primary' : 'text-subtle'}`} />
-          <span className="text-sm text-text flex-1">Streak</span>
-          <span className="text-sm font-bold text-text">{currentStreak}w</span>
-        </Link>
-        <Link
-          href="/crew/challenges"
-          className="flex items-center gap-2.5 px-1 py-2 rounded-lg hover:bg-surface-elevated transition-colors"
-        >
-          <Zap className="w-4 h-4 text-primary" />
-          <span className="text-sm text-text flex-1">Lifetime Zaps</span>
-          <span className="text-sm font-bold text-text">{lifetimeZaps.toLocaleString()}</span>
-        </Link>
-        <div className="flex items-center gap-2.5 px-1 py-2">
-          <Gem className="w-4 h-4 text-signal" />
-          <span className="text-sm text-text flex-1">Community Gems</span>
-          <span className="text-sm font-bold text-signal-strong">{lifetimeGems.toLocaleString()}</span>
+    <div className="sticky bottom-0 z-10 border-t border-border bg-canvas/95 backdrop-blur-sm px-3 py-3">
+      <Link href="/crew" className="group flex items-center justify-between px-1 mb-2">
+        <h3 className="flex items-center gap-1.5 text-sm font-bold tracking-tight text-text">
+          Your stats
+          {rank && (
+            <span
+              className="rank-badge text-[9px] font-bold leading-tight"
+              style={seasonRankStyle(rank)}
+            >
+              {RANK_LABELS[rank] ?? rank}
+            </span>
+          )}
+        </h3>
+        <span className="text-xs font-semibold text-primary-strong group-hover:text-primary-hover transition-colors">
+          Open →
+        </span>
+      </Link>
+      <div className="grid grid-cols-3 gap-2">
+        <div className="rounded-xl bg-surface-elevated px-2 py-2.5 text-center">
+          <Zap className="w-4 h-4 text-primary fill-current mx-auto mb-1" />
+          <div className="text-sm font-bold text-text tabular-nums leading-none">{zaps.toLocaleString()}</div>
+          <div className="text-[11px] text-subtle mt-1">Zaps</div>
+        </div>
+        <div className="rounded-xl bg-surface-elevated px-2 py-2.5 text-center">
+          <Gem className="w-4 h-4 text-signal mx-auto mb-1" />
+          <div className="text-sm font-bold text-text tabular-nums leading-none">{gems.toLocaleString()}</div>
+          <div className="text-[11px] text-subtle mt-1">Gems</div>
+        </div>
+        <div className="rounded-xl bg-surface-elevated px-2 py-2.5 text-center">
+          <Flame className={`w-4 h-4 mx-auto mb-1 ${streak > 0 ? 'text-primary' : 'text-subtle'}`} />
+          <div className="text-sm font-bold text-text tabular-nums leading-none">{streak}w</div>
+          <div className="text-[11px] text-subtle mt-1">Streak</div>
         </div>
       </div>
-    </WidgetCard>
+    </div>
   )
 }
 
@@ -462,24 +454,28 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
   const isHost    = ['host', 'guide', 'mentor', 'janitor'].includes(role)
 
   return (
-    <div className="px-3 py-6 space-y-8">
-      {/* Getting Started. Auto-hides when all items complete */}
-      <Suspense fallback={null}>
-        <GettingStartedChecklist profileId={profileId} />
-      </Suspense>
+    <div className="flex flex-1 flex-col">
+      {/* Scrolling top: moves up with the feed */}
+      <div className="flex-1 px-3 py-6 space-y-8">
+        {/* Getting Started. Auto-hides when all items complete */}
+        <Suspense fallback={null}>
+          <GettingStartedChecklist profileId={profileId} />
+        </Suspense>
 
-      {/* Recent Dispatches */}
-      <RecentDispatchesWidget profileId={profileId} circleIds={circleIds} />
+        {/* Recent Dispatches */}
+        <RecentDispatchesWidget profileId={profileId} circleIds={circleIds} />
 
-      {/* Upcoming Events */}
-      <UpcomingEventsWidget circleIds={circleIds} />
+        {/* Upcoming Events */}
+        <UpcomingEventsWidget circleIds={circleIds} />
 
-      {/* Active Members */}
-      <ActiveMembersWidget profileId={profileId} circleIds={circleIds} />
+        {/* Active Members */}
+        <ActiveMembersWidget profileId={profileId} circleIds={circleIds} />
 
-      {isCrew && <LeaderboardWidget />}
+        {isCrew && <LeaderboardWidget />}
+      </div>
 
-      {isCrew && <GamificationWidget profileId={profileId} />}
+      {/* Persistent game-stats HUD, pinned to the bottom of the rail */}
+      <GameStatsDock profileId={profileId} />
     </div>
   )
 }
