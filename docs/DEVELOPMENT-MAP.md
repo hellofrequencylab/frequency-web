@@ -130,8 +130,10 @@ on the real domain. **Depends on:** nothing (all in-codebase closeouts).
       real-practice path, not just event RSVP-checkin. *Done:* practices backbone
       (migration `20240228000000`: `practices` / `circle_practices` / `member_practices` /
       `practice_logs`) + `lib/practices.ts` (`logPractice` emits `practice.verified`,
-      host-assigned + personal paths). *Next:* the UI (set circle practice, adopt personal,
-      log button) + node-capture emitting `practice.verified`.
+      host-assigned + personal paths). UI shipped: `/practices` hub (adopt + log), circle
+      "This week's practice" card (host sets, members log), nav entry, and node-capture
+      now emits `practice.verified`. *Next:* logged-practice history surface; custom
+      practice creation UI; verification layers (host/peer confirm) if desired.
 - [ ] **RLS convergence (Phase 2)**: migrate high-traffic read/write paths from
       admin-client → RLS + `SECURITY DEFINER` RPCs, with policy tests, surface by surface.
 - [ ] **Partner redemption-on-capture**: plaque bump → discount + zaps logged to
