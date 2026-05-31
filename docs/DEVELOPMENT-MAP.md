@@ -69,7 +69,7 @@ Legend: ✅ built · 🟡 partial · 📐 designed only.
 | 1 | **Community** | Foundation | circles, events, interests, feed, messaging, social graph | ✅ |
 | 2 | **The Game** | shared | gems/zaps, ranks, seasons, the circle-lifecycle rewards | ✅ · 🟡 economy |
 | 3 | **Physical World** | shared | QR/NFC/ghost nodes, captures, PostGIS | ✅ · 🟡 wiring |
-| 4 | **Programs** | Foundation | frameworks + trainings to start/run/maintain a circle; lifecycle gamification (start→activate→invite→attend). The mission's activation engine. | 📐 |
+| 4 | **Programs** | Foundation | frameworks + trainings to start/run/maintain a circle; lifecycle gamification (start→activate→invite→attend). The mission's activation engine. | 🟡 content |
 | 5 | **Local Marketplace** | Foundation · **no fee** | geolocated goods swap/sell/offer; anti-consumerism, local mutual support. Likely **no in-app payment** (arrange offline, FB-Marketplace-local style). | 📐 |
 | 6 | **Donations & Grants** | Foundation | nonprofit funding rail (one-time + recurring) | 📐 |
 | 7 | **The Collective** | Labs | members apply to contribute and host **paid** meditations/courses (Insight-Timer model); Connect payouts | 📐 |
@@ -165,9 +165,12 @@ admin/analytics surface.
 verticals that don't need the money foundation. **Depends on:** Stage A.
 
 - [ ] **Launch the free Beta**; instrument WAM, 7-day activation, cohort retention.
-- [ ] **Programs (vertical 4)**: the circle start/run/maintain framework + training library,
+- [~] **Programs (vertical 4)**: the circle start/run/maintain framework + training library,
       hubbed into the network, with lifecycle gamification. Free; deepens activation and the
-      North Star directly.
+      North Star directly. *Done:* content library shipped (`/programs` + `lib/programs.ts`,
+      MDX-in-git, 4 seed frameworks: start a circle, run a gathering, grow/split, keep
+      alive; reuses the help markdown renderer; nav entry). *Next:* progress tracking +
+      lifecycle gamification (start/activate/invite/attend rewards), needs a small migration.
 - [ ] **Local Marketplace (vertical 5)**: Foundation, no fee, geolocated to circle/hub/nexus,
       listings + messaging (no in-app payment). Proves local exchange + feeds the density
       signal.

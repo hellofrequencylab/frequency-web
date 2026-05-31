@@ -31,6 +31,7 @@ import {
   Briefcase,
   FileText,
   Sparkles,
+  BookOpen,
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { NotificationBell } from '@/components/layout/notification-bell'
@@ -54,6 +55,7 @@ const NAV_SECTIONS: {
   { label: 'Community', items: [
     { href: '/circles',   label: 'Circles',   Icon: Users },
     { href: '/practices', label: 'Practices', Icon: Sparkles },
+    { href: '/programs',  label: 'Programs',  Icon: BookOpen },
     { href: '/channels',  label: 'Interests', Icon: Radio },
     { href: '/events',    label: 'Events',    Icon: CalendarDays },
     { href: '/broadcast', label: 'Broadcast', Icon: Megaphone },

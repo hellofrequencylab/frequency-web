@@ -12,6 +12,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **Programs**: free guides for starting, running, growing, and keeping a circle alive,
+  at `/programs`.
 - **Circles near you**: on the Circles page, find in-person circles sorted by distance
   using your device location.
 - **Daily practice nudge**: your feed shows a "log today's practice" prompt for any
