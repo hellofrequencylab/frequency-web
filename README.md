@@ -55,12 +55,12 @@ mobile.
 ## Documentation map
 
 ### Strategy & target architecture (the plan — read in this order)
-0. [DEVELOPMENT-MAP](docs/DEVELOPMENT-MAP.md) — **the single source of truth for what we're
+0. [DEVELOPMENT-MAP](docs/DEVELOPMENT-MAP.md): **the single source of truth for what we're
    building and in what order.** Mission, the structural inventory (substrate/identity/
    horizontals/13 verticals/surfaces), and the staged build list (harden → free beta → PMF
    → mobile + money foundation → money verticals). **Supersedes** `ROADMAP.md` +
    `BUILD-PHASES.md`. Start here for the *what/when*.
-0b. [PLATFORM-VISION](docs/PLATFORM-VISION.md) — **the whole-system frame** (the *why*). One
+0b. [PLATFORM-VISION](docs/PLATFORM-VISION.md): **the whole-system frame** (the *why*). One
    community graph spanning a nonprofit (Foundation) + for-profit (Labs), one shared game,
    money hard-partitioned by entity, verticals (Programs/Marketplace/Collective/affiliate/
    donations/Lab Spaces) as
