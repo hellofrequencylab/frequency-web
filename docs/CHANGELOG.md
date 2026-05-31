@@ -12,6 +12,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **Create your own practices**: members and hosts can add custom practices to the
+  library, not just the seeded ones.
 - **Mentions in replies**: @mentioning someone in a reply now notifies them, just
   like in a top-level post.
 - **Richer profiles**: profiles now show verified practices and current streak.
