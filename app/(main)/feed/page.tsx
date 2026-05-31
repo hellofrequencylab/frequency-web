@@ -5,6 +5,8 @@ import { Composer } from '@/components/feed/composer'
 import { FeedList } from '@/components/feed/feed-list'
 import { CreateMenu } from '@/components/feed/create-menu'
 import { StreamTemplate } from '@/components/templates/stream-template'
+import { PracticePrompt } from '@/components/practice/practice-prompt'
+import { getPracticesToLogToday } from '@/lib/practices'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
@@ -54,6 +56,9 @@ export default async function FeedPage({
   const composerVisibility: 'public' | 'group' = primaryCircleId ? 'group' : 'public'
   const hasCircle = !!primaryCircleId
 
+  // Adopted practices not yet logged today -> the feed "log today" nudge (WAM).
+  const practicesToLog = myProfileId ? await getPracticesToLogToday(myProfileId) : []
+
   return (
     <div className="max-w-2xl mx-auto w-full">
       <StreamTemplate
@@ -61,6 +66,8 @@ export default async function FeedPage({
         description={hasCircle ? "Here's what your circles are up to right now." : "What's happening across the community."}
         action={<CreateMenu role={myRole} />}
       >
+
+      <PracticePrompt practices={practicesToLog} />
 
       {/* Composer */}
       {composerScopeId && (

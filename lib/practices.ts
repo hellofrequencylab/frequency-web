@@ -140,6 +140,21 @@ export async function getRecentPracticeLogs(
   return rows.map((r) => ({ logged_for: r.logged_for, title: r.practice?.title ?? null }))
 }
 
+/** A member's adopted practices that they have NOT yet logged today. Powers the
+ *  "log today's practice" prompt on the feed. Empty if none adopted or all logged. */
+export async function getPracticesToLogToday(profileId: string): Promise<Practice[]> {
+  const mine = await getMemberPractices(profileId)
+  if (mine.length === 0) return []
+  const today = new Date().toISOString().slice(0, 10)
+  const { data } = await db()
+    .from('practice_logs')
+    .select('practice_id')
+    .eq('profile_id', profileId)
+    .eq('logged_for', today)
+  const logged = new Set(((data as { practice_id: string }[] | null) ?? []).map((r) => r.practice_id))
+  return mine.filter((p) => !logged.has(p.id))
+}
+
 // --- The North-Star emitter ----------------------------------------------
 
 export interface LogPracticeResult {

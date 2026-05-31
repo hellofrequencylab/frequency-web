@@ -69,7 +69,7 @@ Legend: ✅ built · 🟡 partial · 📐 designed only.
 | 1 | **Community** | Foundation | circles, events, interests, feed, messaging, social graph | ✅ |
 | 2 | **The Game** | shared | gems/zaps, ranks, seasons, the circle-lifecycle rewards | ✅ · 🟡 economy |
 | 3 | **Physical World** | shared | QR/NFC/ghost nodes, captures, PostGIS | ✅ · 🟡 wiring |
-| 4 | **Programs** | Foundation | frameworks + trainings to start/run/maintain a circle; lifecycle gamification (start→activate→invite→attend). The mission's activation engine. | 📐 |
+| 4 | **Programs** | Foundation | frameworks + trainings to start/run/maintain a circle; lifecycle gamification (start→activate→invite→attend). The mission's activation engine. | 🟡 content |
 | 5 | **Local Marketplace** | Foundation · **no fee** | geolocated goods swap/sell/offer; anti-consumerism, local mutual support. Likely **no in-app payment** (arrange offline, FB-Marketplace-local style). | 📐 |
 | 6 | **Donations & Grants** | Foundation | nonprofit funding rail (one-time + recurring) | 📐 |
 | 7 | **The Collective** | Labs | members apply to contribute and host **paid** meditations/courses (Insight-Timer model); Connect payouts | 📐 |
@@ -134,8 +134,9 @@ on the real domain. **Depends on:** nothing (all in-codebase closeouts).
       `practice_logs`) + `lib/practices.ts` (`logPractice` emits `practice.verified`,
       host-assigned + personal paths). UI shipped: `/practices` hub (adopt + log), circle
       "This week's practice" card (host sets, members log), nav entry, and node-capture
-      now emits `practice.verified`. *Next:* logged-practice history surface; custom
-      practice creation UI; verification layers (host/peer confirm) if desired.
+      now emits `practice.verified`; `/practices` shows a 14-day activity history; members
+      and hosts can create custom practices. *Next:* verification layers (host/peer
+      confirm) if desired.
 - [ ] **RLS convergence (Phase 2)**: migrate high-traffic read/write paths from
       admin-client → RLS + `SECURITY DEFINER` RPCs, with policy tests, surface by surface.
 - [ ] **Partner redemption-on-capture**: plaque bump → discount + zaps logged to
@@ -149,8 +150,10 @@ on the real domain. **Depends on:** nothing (all in-codebase closeouts).
 - [~] **Beta-experience polish**: map/proximity circle discovery (P3.14), profile richness
       (P3.16), @mention rendering + notifications (P3.17). *Done:* @mentions now fan out on
       replies too (shared `fanOutMentions` helper), completing P3.17; profiles surface
-      verified practices + current streak (P3.16). *Next:* map/proximity discovery (needs a
-      map lib).
+      verified practices + current streak (P3.16); **proximity discovery** shipped as a
+      distance-sorted "Circles near you" (browser geolocation + haversine, no map dependency)
+      (P3.14). *Optional later:* a visual map layer on top (deferred because a map widget
+      can't be verified without a browser).
 - [ ] **Apex cutover + owner config**: `go.findafreq.com → findafreq.com`; set
       `CRON_SECRET`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_APP_URL`, `EMAIL_FROM` in prod.
 
@@ -162,9 +165,12 @@ admin/analytics surface.
 verticals that don't need the money foundation. **Depends on:** Stage A.
 
 - [ ] **Launch the free Beta**; instrument WAM, 7-day activation, cohort retention.
-- [ ] **Programs (vertical 4)**: the circle start/run/maintain framework + training library,
+- [~] **Programs (vertical 4)**: the circle start/run/maintain framework + training library,
       hubbed into the network, with lifecycle gamification. Free; deepens activation and the
-      North Star directly.
+      North Star directly. *Done:* content library shipped (`/programs` + `lib/programs.ts`,
+      MDX-in-git, 4 seed frameworks: start a circle, run a gathering, grow/split, keep
+      alive; reuses the help markdown renderer; nav entry). *Next:* progress tracking +
+      lifecycle gamification (start/activate/invite/attend rewards), needs a small migration.
 - [ ] **Local Marketplace (vertical 5)**: Foundation, no fee, geolocated to circle/hub/nexus,
       listings + messaging (no in-app payment). Proves local exchange + feeds the density
       signal.

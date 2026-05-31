@@ -6,6 +6,7 @@ import { joinCircle } from './actions'
 import { StatusBadge } from '@/components/groups/status-badge'
 import { NewCircleCompose } from '@/components/compose/new-circle-compose'
 import { IndexTemplate } from '@/components/templates/index-template'
+import { NearYou } from '@/components/circles/near-you'
 
 type CircleRow = {
   id: string
@@ -16,6 +17,9 @@ type CircleRow = {
   member_count: number
   member_cap: number
   status: string
+  latitude: number | null
+  longitude: number | null
+  neighborhood: string | null
   host: { display_name: string; handle: string } | null
   hub: {
     id: string
@@ -77,6 +81,7 @@ export default async function CirclesPage() {
     .from('circles')
     .select(
       `id, name, slug, about, type, member_count, member_cap, status,
+       latitude, longitude, neighborhood,
        host:profiles!host_id ( display_name, handle ),
        hub:hubs!hub_id (
          id, name, slug,
@@ -97,12 +102,26 @@ export default async function CirclesPage() {
   const myCircles = circles.filter((c) => myCircleIds.includes(c.id))
   const otherCircles = circles.filter((c) => !myCircleIds.includes(c.id))
 
+  // In-person circles with coordinates -> "Circles near you" (client geolocation).
+  const locatableCircles = circles
+    .filter((c) => c.type === 'in-person' && c.latitude != null && c.longitude != null)
+    .map((c) => ({
+      id: c.id,
+      name: c.name,
+      slug: c.slug,
+      latitude: c.latitude as number,
+      longitude: c.longitude as number,
+      neighborhood: c.neighborhood,
+    }))
+
   return (
     <IndexTemplate
       title="Circles"
       description="Your local crew. This is where you post, connect, and show up. Regular meetups, shared updates, the people you'll see week to week. Join one to get started."
       action={isAdmin ? <NewCircleCompose /> : undefined}
     >
+      <NearYou circles={locatableCircles} />
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {/* ── Main column: circles list ────────────────────────── */}

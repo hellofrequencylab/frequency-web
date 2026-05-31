@@ -7,6 +7,7 @@ import {
 } from '@/lib/practices'
 import { LogPracticeButton } from '@/components/practice/log-practice-button'
 import { AdoptPracticeButton } from '@/components/practice/adopt-practice-button'
+import { CreatePracticeForm } from '@/components/practice/create-practice-form'
 
 export const metadata: Metadata = {
   title: 'Practices',
@@ -113,6 +114,11 @@ export default async function PracticesPage() {
         <h2 className="text-sm font-semibold uppercase tracking-wide text-subtle mb-3">
           Practice library
         </h2>
+        {profileId && (
+          <div className="mb-3">
+            <CreatePracticeForm />
+          </div>
+        )}
         {unadopted.length === 0 ? (
           <p className="text-sm text-muted">You&rsquo;ve adopted everything in the library.</p>
         ) : (
