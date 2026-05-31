@@ -59,10 +59,10 @@ Still to do (needs eyeballing, see Next):
 - **Type scale.** Establish a deliberate scale and migrate the tiny fixed-px sizes
   (`text-[10px]/[11px]`, heavy `text-xs`) up. Fixed-px sizes do NOT scale with the root
   bump, so the rail still needs a manual pass.
-- **A characterful header face.** Consider a warm serif (e.g. Fraunces) or soft display for
-  in-app section/hero headings, paired with Nunito body, for real editorial warmth. Anton
-  stays the marketing headline face (it is bold/striking, not "warm," so not for in-app body
-  hierarchy).
+- **A characterful header face.** Trialed a warm serif (Fraunces) for in-app page titles and
+  reverted it: in context it read as a different product, not warmer. Decision: **Nunito bold
+  stays the in-app heading face** (it is already the brand-aligned rounded face). Anton stays
+  the marketing headline face only. See ADR in DECISIONS.md.
 - **Radius consistency.** Standardize on a small set (e.g. `rounded-xl` for cards,
   `rounded-lg` for controls, `rounded-full` for pills).
 
@@ -106,17 +106,26 @@ or a new meta-framework. All slower and more locked-in than what you run today.
 
 ## What changed in this pass
 
-- `globals.css`: soft warm shadow tokens; base font-size 16 to 17px.
-- `components/modules/module-card.tsx`: borderless, soft-shadow, larger sentence-case title
-  (fixes the right-rail "stacked boxes" feel).
+- `globals.css`: soft warm shadow tokens. (Base font-size was bumped to 17px then reverted to
+  16px: the +6% scaled spacing too loose vs the live site; kept at 16.)
+- `components/modules/module-card.tsx`: soft-shadow card with a larger sentence-case bold
+  title (fixes the right-rail "stacked boxes" feel). A hairline border was restored after the
+  borderless version read as too detached.
+- **Even, contained spacing.** The center + right column is now capped (`max-w-[68rem]`) and
+  centered as a cluster in `app-shell.tsx`, so the feed no longer floats in a sea of cream on
+  wide screens; the left nav stays pinned. Margins read even instead of one big right gap.
+- **Fuller headers.** `StreamTemplate`/`IndexTemplate` headers gained a hairline bottom rule
+  (matching `DetailTemplate`) for a defined band; `StreamTemplate` gained an optional
+  `eyebrow` slot. The feed now greets the viewer (time-aware "Good morning, {name}" + today's
+  date) instead of a thin lone "Feed" title.
+- **Uniformity.** `practices` migrated onto `IndexTemplate` (was ad-hoc), matching `programs`.
 
 ## Next (eyeball + iterate in `npm run dev`)
 
 1. Type-scale pass on the right rail and dense lists (lift the fixed-px sizes).
-2. Trial a warm serif/display for in-app headings.
-3. Reduce remaining bordered boxes on the main surfaces to grouped/editorial where they are
+2. Reduce remaining bordered boxes on the main surfaces to grouped/editorial where they are
    lists, not objects.
-4. A real visual designer (or a tool) for logo + brand marks (out of scope for code).
+3. A real visual designer (or a tool) for logo + brand marks (out of scope for code).
 
 ## Page unification: one grammar for every page
 
