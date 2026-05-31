@@ -7,9 +7,11 @@ import { Composer } from '@/components/feed/composer'
 import { ProfileFeed } from '@/components/feed/profile-feed'
 import { getInitials, relativeTime } from '@/lib/utils'
 import { FriendButton, type FriendState } from './friend-button'
+import { BlockButton } from './block-button'
+import { hasBlocked } from '@/lib/blocking'
 import {
   MessageSquare, CalendarDays, Zap, Users, Megaphone, Radio,
-  MapPin, Pencil, ArrowRight, Trophy, Star,
+  MapPin, Pencil, ArrowRight, Trophy, Star, Sparkles, Flame,
 } from 'lucide-react'
 
 import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
@@ -113,7 +115,13 @@ export default async function ProfilePage({
     }
   }
 
-  const [zapsResult, completionsCountResult, postsCountResult, circlesResult, channelsResult, eventsResult, dispatchesResult] = await Promise.all([
+  // Block state between viewer and this profile.
+  let isBlocked = false
+  if (myProfileId && myProfileId !== profileId) {
+    isBlocked = await hasBlocked(myProfileId, profileId)
+  }
+
+  const [zapsResult, completionsCountResult, postsCountResult, circlesResult, channelsResult, eventsResult, dispatchesResult, practicesCountResult, streakResult] = await Promise.all([
     admin.from('crew_completions').select('zaps_earned').eq('profile_id', profileId),
     admin.from('crew_completions').select('id', { count: 'exact', head: true }).eq('profile_id', profileId),
     admin.from('posts').select('id', { count: 'exact', head: true }).eq('author_id', profileId).is('parent_id', null).is('hidden_at', null),
@@ -121,11 +129,15 @@ export default async function ProfilePage({
     admin.from('channel_memberships').select('channels!channel_id ( id, name )').eq('profile_id', profileId).eq('status', 'active'),
     admin.from('events').select('id, title, starts_at, location, slug').eq('host_id', profileId).eq('is_cancelled', false).order('starts_at', { ascending: false }).limit(3),
     admin.from('dispatches').select('id, title, published_at, audience_scope').eq('author_id', profileId).eq('status', 'published').is('hidden_at', null).order('published_at', { ascending: false }).limit(3),
+    admin.from('engagement_events').select('id', { count: 'exact', head: true }).eq('actor_profile_id', profileId).eq('event_type', 'practice.verified'),
+    admin.from('profiles').select('current_streak').eq('id', profileId).maybeSingle(),
   ])
 
   const totalZaps = (zapsResult.data ?? []).reduce((sum: number, r: { zaps_earned: number }) => sum + (r.zaps_earned ?? 0), 0)
   const tasksCompleted = completionsCountResult.count ?? 0
   const postCount = postsCountResult.count ?? 0
+  const verifiedPractices = practicesCountResult.count ?? 0
+  const currentStreak = (streakResult.data as { current_streak: number } | null)?.current_streak ?? 0
 
   const circles = ((circlesResult.data ?? []) as unknown as { circles: { id: string; name: string; slug: string } | null }[])
     .map(m => m.circles).filter((c): c is { id: string; name: string; slug: string } => !!c)
@@ -176,8 +188,8 @@ export default async function ProfilePage({
                 </Link>
               ) : user ? (
                 <>
-                  <FriendButton targetProfileId={profileId} state={friendState} />
-                  {friendState.kind === 'accepted' && (
+                  {!isBlocked && <FriendButton targetProfileId={profileId} state={friendState} />}
+                  {!isBlocked && friendState.kind === 'accepted' && (
                     <form action={startConversation.bind(null, profileId)}>
                       <button
                         type="submit"
@@ -188,6 +200,7 @@ export default async function ProfilePage({
                       </button>
                     </form>
                   )}
+                  {!isOwner && <BlockButton profileId={profileId} blocked={isBlocked} />}
                   {canModerateProfile && (
                     <ModerateProfileButton
                       profileId={profileId}
@@ -270,6 +283,8 @@ export default async function ProfilePage({
 
           {/* Stat tiles - compact stacked */}
           <div className="grid grid-cols-2 gap-2">
+            <MiniStat icon={Sparkles} label="Practices" value={verifiedPractices} color="green" />
+            <MiniStat icon={Flame} label="Streak" value={currentStreak} color="amber" />
             <MiniStat icon={MessageSquare} label="Posts" value={postCount} color="indigo" />
             <MiniStat icon={Zap} label="Zaps" value={totalZaps} color="amber" />
             <MiniStat icon={Trophy} label="Tasks" value={tasksCompleted} color="green" />

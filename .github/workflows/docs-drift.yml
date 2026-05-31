@@ -1,0 +1,39 @@
+# Docs-drift backstop: annotate a PR when code or user-facing routes change without a
+# matching docs / help-center update. Non-blocking (warnings only), no secrets. Mirrors
+# the local Stop hook (.claude/hooks/docs-drift-check.sh) for contributors who don't run
+# Claude Code. Spec: docs/DOCS-PROTOCOL.md.
+name: docs-drift
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for documentation drift
+        run: |
+          base="origin/${{ github.base_ref }}"
+          files="$(git diff --name-only "$base"...HEAD)"
+          echo "Changed files:"; echo "$files"
+
+          code="$(echo "$files" | grep -E '^(app|lib|components|supabase/migrations)/' || true)"
+          docs="$(echo "$files" | grep -E '^(docs/|ROADMAP\.md|README\.md|AGENTS\.md)' || true)"
+          userfacing="$(echo "$files" | grep -E '^app/\((main|marketing)\)/' || true)"
+          help="$(echo "$files" | grep -E '^content/help/' || true)"
+
+          if [ -n "$code" ] && [ -z "$docs" ]; then
+            echo "::warning::Docs drift: code changed without a matching docs update. See docs/DOCS-PROTOCOL.md (run /sync-docs)."
+          fi
+          if [ -n "$userfacing" ] && [ -z "$help" ]; then
+            echo "::warning::Help drift: a user-facing route changed without a content/help update. If members would do something differently, add/update a help article + docs/CHANGELOG.md. See docs/HELP-CENTER.md."
+          fi
+          echo "Drift check complete (warnings only, never blocks)."

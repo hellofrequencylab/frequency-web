@@ -1,5 +1,11 @@
 # Frequency — MVP Build List
 
+> **⚠️ SUPERSEDED (2026-05-31) by [docs/DEVELOPMENT-MAP.md](docs/DEVELOPMENT-MAP.md).**
+> The single plan now lives there (mission → structure → staged build list), folding this
+> product roadmap and `docs/BUILD-PHASES.md` into one. This file is kept for **history**:
+> its shipped items (P0–P3, P7) record what was done; its open items are folded into the
+> Development Map's stages. Do not plan from this file; plan from the Development Map.
+
 **Audience reframe:** Circle.so sells to community *operators* marketing to their audiences. Frequency is built for the **people inside the offering** — embodied practitioners who show up to rides, gatherings, circles. That changes what's worth building and what's noise.
 
 This roadmap is mirrored to [MVP Build List in Notion](https://www.notion.so/36efb0d4b941813e8e04d8a4d30d1dc3). The repo file is the source of truth — update both when status changes.
@@ -10,10 +16,19 @@ This roadmap is mirrored to [MVP Build List in Notion](https://www.notion.so/36e
 
 These are Circle's bread and butter but conflict with Frequency's worldview. Resist scope-creep requests for them.
 
-- White-label / branded mobile app · Custom CSS · Theme editor · Landing page builder · Custom email templates UI
-- Multi-tenant / Workspaces / sub-communities · Headless mode · Marketplace
-- Custom roles (the 6-tier ladder IS the worldview) · SAML / SCIM
-- Affiliate program · Sub-account billing · MRR / churn dashboards
+> **⚠️ Partly superseded by [PLATFORM-VISION.md](docs/PLATFORM-VISION.md) (2026-05-31).**
+> The owner has expanded the vision to one community graph spanning a nonprofit
+> (Foundation) + for-profit (Labs), so **Marketplace, Affiliate, and a native mobile app
+> are now IN SCOPE, but guardrailed**: every vertical's high-value rewards must **ladder
+> up to verified practice** (ADR-024/034), so the worldview is *preserved*, not abandoned.
+> The genuinely-still-excluded worldview piece is **custom roles**: "many roles as we grow"
+> is expressed on the **persona axis** (ADR-030), *not* by inflating the 6-tier ladder. See
+> ADR-029→036.
+
+- ~~White-label / branded mobile app~~ → **in scope** (native app, the *primary* doorway, per TECH-STRATEGY) · Custom CSS · Theme editor · Landing page builder · Custom email templates UI
+- Multi-tenant / Workspaces / sub-communities · Headless mode · ~~Marketplace~~ → **in scope, guardrailed** (entity-tagged `market` module, ADR-033)
+- **Custom roles** still excluded (the 6-tier ladder IS the worldview; grow on the **persona axis** instead, ADR-030/034) · SAML / SCIM
+- ~~Affiliate program~~ → **in scope, guardrailed** (for-profit `affiliate` module on the financial ledger, ADR-032/033) · Sub-account billing · MRR / churn dashboards
 - AI agents impersonating hosts · AI Inbox triage
 - Public API for external integrations (Zapier, HubSpot, Salesforce)
 

@@ -5,6 +5,7 @@ const PROTECTED_PATHS = [
   '/feed',
   '/broadcast',
   '/circles',
+  '/practices',
   '/channels',
   '/events',
   '/messages',

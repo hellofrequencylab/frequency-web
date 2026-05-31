@@ -16,6 +16,9 @@ import { HostInviteEmail } from '@/components/circles/host-invite-email'
 import { CollapsibleAbout } from '@/components/circles/collapsible-about'
 import { CircleHostMenu } from '@/components/circles/circle-host-menu'
 import { getCircleCapabilities } from '@/lib/core/load-capabilities'
+import { getCircleActivePractice, listPublicPractices } from '@/lib/practices'
+import { LogPracticeButton } from '@/components/practice/log-practice-button'
+import { SetCirclePractice } from '@/components/practice/set-circle-practice'
 import { getInitials } from '@/lib/utils'
 import { ProfileFlair } from '@/components/profile-flair'
 import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
@@ -164,6 +167,12 @@ export default async function CirclePage({
   const caps = await getCircleCapabilities(circle.id)
   const canManage = caps.has('circle.editSettings')
 
+  // This week's practice (host-assigned). Library only needed for the host picker.
+  const [circlePractice, practiceLibrary] = await Promise.all([
+    getCircleActivePractice(circle.id),
+    canManage ? listPublicPractices() : Promise.resolve([]),
+  ])
+
   // Sort: host first → by join date
   const sorted = [...members].sort((a, b) => {
     const aHost = circle.host?.id === a.profile.id ? 0 : 1
@@ -299,6 +308,44 @@ export default async function CirclePage({
           + Add a description for your circle
         </Link>
       ) : null}
+
+      {/* ── This week's practice (host-assigned). Members log it for
+              practice.verified + zaps; hosts set/change it. ──────────── */}
+      {(circlePractice || canManage) && (
+        <div className="mb-6 rounded-xl border border-border bg-surface-elevated p-4">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wide text-subtle">
+                This week&rsquo;s practice
+              </p>
+              {circlePractice ? (
+                <>
+                  <p className="mt-1 font-medium text-text">{circlePractice.title}</p>
+                  {circlePractice.description && (
+                    <p className="mt-0.5 text-sm text-muted">{circlePractice.description}</p>
+                  )}
+                </>
+              ) : (
+                <p className="mt-1 text-sm text-muted">No practice set yet.</p>
+              )}
+            </div>
+            {circlePractice && isMember && (
+              <div className="shrink-0">
+                <LogPracticeButton practiceId={circlePractice.id} circleId={circle.id} />
+              </div>
+            )}
+          </div>
+          {canManage && (
+            <div className="mt-3 pt-3 border-t border-border">
+              <SetCirclePractice
+                circleId={circle.id}
+                library={practiceLibrary}
+                current={circlePractice?.id}
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Body. One border-t spans the row so the feed and the right
               rail hang off the same line (mirrors Channels). Teaser-gated:

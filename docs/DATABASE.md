@@ -34,14 +34,40 @@ these tables mean.
 **Events**
 `events`, `event_rsvps`
 
-**Moderation**
-`reports`
+**Moderation & safety**
+`reports`, `blocked_users`
+
+> **`blocked_users`** (ADR-036, supersedes ADR-015's "no blocking"): directional
+> rows (`blocker_id` to `blocked_id`); `is_blocked_between(a,b)` checks both
+> directions and gates DM creation. Blocking also unfriends (`lib/blocking.ts`).
+> Account deletion is hard-delete via `auth.admin.deleteUser` (cascades the
+> profile + content); see `lib/account.ts` and `/settings/account`.
 
 **Gamification**
 `achievements`, `user_achievements`, `streaks`, `challenge_progress`,
 `quest_chains`, `quest_steps`, `quest_progress`, `season_challenges`,
-`season_trophies`, `crew_tasks`, `crew_completions`, `gem_config`,
-`gem_transactions`, `store_items`, `store_redemptions`
+`season_trophies`, `seasons`, `crew_tasks`, `crew_completions`, `gem_config`,
+`gem_transactions`, `zap_config`, `store_items`, `store_redemptions`
+
+> **`seasons`** gives seasons a first-class identity (`season_number`, `name`,
+> `theme`, `starts_at`/`ends_at`, `status`; one `active` at a time). `reset_season()`
+> reads the active season for trophy numbering, then closes it and opens the next.
+> `lib/seasons.ts` (`getCurrentSeason`, `endSeasonNow`); admin control on
+> `/admin/gamification` (janitor-gated).
+
+> **`gem_config` / `zap_config`** are the tunable reward economy: `action_type` to
+> amount, read by `awardGems` / `awardZapsForAction` (gems also enforce `daily_cap`
+> via `gem_transactions`; zap caps are enforced upstream at `engagement_events`
+> idempotency). Code holds fallback defaults so a missing row never breaks a grant.
+
+**Practices (North Star)**
+`practices`, `circle_practices`, `member_practices`, `practice_logs`
+
+> A **practice** is what a member does. A host sets a circle's current practice
+> (`circle_practices`, one active per circle) or a member adopts their own
+> (`member_practices`); logging it (`practice_logs`, unique per member+practice+day)
+> emits `practice.verified` (the WAM North-Star event) + zaps + an attendance streak
+> via `lib/practices.ts` (`logPractice`).
 
 **RPCs / views (public read layer)**
 `get_my_role`, `public_circles`, `public_circle_by_id`, `public_events`,
