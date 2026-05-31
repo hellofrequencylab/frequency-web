@@ -11,17 +11,19 @@ Realtime, Storage) on Vercel, **Tailwind v4**.
 
 ---
 
-## Where documentation lives — two homes, on purpose
+## Where documentation lives: three homes, by audience
 
 | Home | Audience | Contains |
 |---|---|---|
-| **GitHub** (`/docs`, `/ROADMAP.md`, this README) | **Developers** | architecture, schema, conventions, the build plan — everything technical |
-| **Notion** | **Users, admins, hosts, training** | how features work, host/admin guides, onboarding/training, community policy |
+| **GitHub** (`/docs`, `DEVELOPMENT-MAP.md`, this README) | **Developers** | architecture, schema, conventions, the build plan, everything technical |
+| **Public help center** (`content/help/`, served at `/help`) | **Members** | how to use the product, in member language |
+| **Notion** | **Operators, hosts, training** | how to operate/moderate the product, host/admin guides, community policy |
 
-**Rule of thumb:** if it tells a *developer how to build it*, it goes in Git. If
-it tells a *person how to use it*, it goes in Notion. Don't cross the streams —
-keep Git technical and Notion human. (Proposed Notion structure is sketched at
-the bottom of this file.)
+**Rule of thumb:** if it tells a *developer how to build it*, it goes in Git; if it
+tells a *member how to use it*, it goes in the help center; if it tells an *operator how
+to run or moderate it*, it goes in Notion. One change updates each home in its own voice:
+we single-source the routing, not the prose. Full spec:
+[docs/DOCS-PROTOCOL.md](docs/DOCS-PROTOCOL.md) and [docs/HELP-CENTER.md](docs/HELP-CENTER.md).
 
 ---
 
@@ -55,6 +57,16 @@ mobile.
 ## Documentation map
 
 ### Strategy & target architecture (the plan — read in this order)
+0. [DEVELOPMENT-MAP](docs/DEVELOPMENT-MAP.md): **the single source of truth for what we're
+   building and in what order.** Mission, the structural inventory (substrate/identity/
+   horizontals/13 verticals/surfaces), and the staged build list (harden → free beta → PMF
+   → mobile + money foundation → money verticals). **Supersedes** `ROADMAP.md` +
+   `BUILD-PHASES.md`. Start here for the *what/when*.
+0b. [PLATFORM-VISION](docs/PLATFORM-VISION.md): **the whole-system frame** (the *why*). One
+   community graph spanning a nonprofit (Foundation) + for-profit (Labs), one shared game,
+   money hard-partitioned by entity, verticals (Programs/Marketplace/Collective/affiliate/
+   donations/Lab Spaces) as
+   modules, the geographic flywheel. Governs ADR-029→036. Read this first for the *why*.
 1. [IA-STRATEGY](docs/IA-STRATEGY.md) — information architecture: Circle + Interest
    as the only member-facing words; Hubs/Nexuses contextual; in-person designator;
    role + milestone "wake-up" gating. (Labs/demand-proving are out of website scope.)

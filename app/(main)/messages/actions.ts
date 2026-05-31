@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireProfileId as getMyProfileId } from '@/lib/auth'
+import { isBlockedBetween } from '@/lib/blocking'
 
 // ── startConversation ─────────────────────────────────────────────────
 // Finds an existing 1:1 thread with otherProfileId, or creates one.
@@ -14,6 +15,11 @@ export async function startConversation(otherProfileId: string) {
 
   // Don't allow messaging yourself
   if (myProfileId === otherProfileId) redirect('/messages')
+
+  // Blocking gate: neither party may start a thread if either has blocked the other.
+  if (await isBlockedBetween(myProfileId, otherProfileId)) {
+    throw new Error('You cannot message this member')
+  }
 
   const admin = createAdminClient()
 

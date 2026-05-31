@@ -8,7 +8,7 @@ import { getMyProfileId } from '@/lib/auth'
 import { slugify } from '@/lib/utils'
 import { processGamificationEvent, recordStreakActivity } from '@/lib/achievements'
 import { awardGems } from '@/lib/gems'
-import { awardZaps, ZAP_AMOUNTS } from '@/lib/zaps'
+import { awardZapsForAction } from '@/lib/zaps'
 import { recordEngagementEvent } from '@/lib/engagement/events'
 import { generateOccurrencesForAnchor, type RecurrenceType } from '@/lib/event-recurrence'
 
@@ -80,7 +80,7 @@ export async function createEvent(formData: FormData) {
 
   processGamificationEvent({ type: 'event_host', profileId: myProfileId }).catch(() => {})
   // Hosting an in-person gathering is external/organizing → zaps (not gems).
-  awardZaps(myProfileId, ZAP_AMOUNTS.event_host).catch(() => {})
+  awardZapsForAction(myProfileId, 'event_host').catch(() => {})
   recordStreakActivity(myProfileId, 'hosting').catch(() => {})
 
   revalidatePath('/events')
@@ -175,9 +175,14 @@ export async function checkInEvent(eventId: string): Promise<CheckInResult> {
   if (!recorded) return { ok: true, alreadyCheckedIn: true }
 
   // Verified practice always earns zaps (regardless of channel) + a streak tick.
-  await awardZaps(myProfileId, ZAP_AMOUNTS.event_attend).catch(() => {})
+  let zapsAwarded = 0
+  try {
+    zapsAwarded = (await awardZapsForAction(myProfileId, 'event_attend')).amount
+  } catch {
+    // never let a reward read break the check-in
+  }
   await recordStreakActivity(myProfileId, 'attendance').catch(() => {})
-  return { ok: true, zapsAwarded: ZAP_AMOUNTS.event_attend }
+  return { ok: true, zapsAwarded }
 }
 
 export async function cancelEvent(eventId: string) {
