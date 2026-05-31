@@ -169,8 +169,9 @@ verticals that don't need the money foundation. **Depends on:** Stage A.
       hubbed into the network, with lifecycle gamification. Free; deepens activation and the
       North Star directly. *Done:* content library shipped (`/programs` + `lib/programs.ts`,
       MDX-in-git, 4 seed frameworks: start a circle, run a gathering, grow/split, keep
-      alive; reuses the help markdown renderer; nav entry). *Next:* progress tracking +
-      lifecycle gamification (start/activate/invite/attend rewards), needs a small migration.
+      alive; reuses the help markdown renderer; nav entry). Progress tracking shipped (mark
+      complete via the engagement ledger, no migration; per the guardrail, reading is tracked
+      but not rewarded). *Next:* circle-lifecycle rewards (start/activate/invite/attend).
 - [ ] **Local Marketplace (vertical 5)**: Foundation, no fee, geolocated to circle/hub/nexus,
       listings + messaging (no in-app payment). Proves local exchange + feeds the density
       signal.
