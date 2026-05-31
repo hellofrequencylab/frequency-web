@@ -3,6 +3,8 @@
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getProfileCapabilities } from '@/lib/core/load-capabilities'
+import { getMyProfileId } from '@/lib/auth'
+import { blockUser, unblockUser } from '@/lib/blocking'
 
 export interface ModerateProfileResult {
   ok: boolean
@@ -37,6 +39,24 @@ export async function moderateUpdateProfile(
   if (error) return { ok: false, error: error.message }
 
   if (target?.handle) revalidatePath(`/people/${target.handle}`)
+  revalidatePath('/people')
+  return { ok: true }
+}
+
+// Block / unblock a member (self only). Blocking also unfriends and stops DMs
+// in both directions (lib/blocking.ts).
+export async function blockProfileAction(profileId: string): Promise<{ ok: boolean }> {
+  const myId = await getMyProfileId()
+  if (!myId || myId === profileId) return { ok: false }
+  await blockUser(myId, profileId)
+  revalidatePath('/people')
+  return { ok: true }
+}
+
+export async function unblockProfileAction(profileId: string): Promise<{ ok: boolean }> {
+  const myId = await getMyProfileId()
+  if (!myId) return { ok: false }
+  await unblockUser(myId, profileId)
   revalidatePath('/people')
   return { ok: true }
 }

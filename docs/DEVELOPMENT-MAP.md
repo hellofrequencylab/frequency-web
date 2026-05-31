@@ -142,8 +142,10 @@ on the real domain. **Depends on:** nothing (all in-codebase closeouts).
       `partner_redemptions` (closes Phase 3 wiring).
 - [ ] **Live-Claude agent + consent test**: swap the deterministic proposer for the bounded
       Claude operator; add the `shouldSend` consent test; keep copilot-gated (closes 6.6).
-- [ ] **Trust & safety floor (ADR-036)**: first-class **blocking** + in-app **account
-      deletion**. Required for a public beta even before App Store.
+- [x] **Trust & safety floor (ADR-036)**: first-class **blocking** + in-app **account
+      deletion**. Shipped: `blocked_users` (migration `20240301000000`) + `lib/blocking.ts`
+      (gates DMs both ways, unfriends on block); profile Block/Unblock button; account hard
+      delete (`lib/account.ts`) + blocked-list management at `/settings/account`.
 - [ ] **Beta-experience polish**: map/proximity circle discovery (P3.14), profile richness
       (P3.16), @mention rendering + notifications (P3.17). Lean subset that materially lifts a
       first beta.

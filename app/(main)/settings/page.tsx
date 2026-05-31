@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { Moon, Sun, Monitor, Check, User } from 'lucide-react'
+import { Moon, Sun, Monitor, Check, User, Shield } from 'lucide-react'
 
 type Theme = 'light' | 'dark' | 'system'
 
@@ -74,6 +74,19 @@ export default function SettingsPage() {
             <p className="text-xs text-muted mt-0.5">
               Display name, handle, bio, and photo
             </p>
+          </div>
+          <span className="text-subtle text-sm">→</span>
+        </Link>
+        <Link
+          href="/settings/account"
+          className="mt-3 flex items-center gap-3 rounded-2xl border border-border bg-surface shadow-sm px-4 py-3 hover:border-primary-bg dark:hover:border-primary hover:bg-primary-bg/30 dark:hover:bg-primary-bg transition-colors"
+        >
+          <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-surface-elevated shrink-0">
+            <Shield className="w-4 h-4 text-muted" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-text">Account &amp; privacy</p>
+            <p className="text-xs text-muted mt-0.5">Blocked members, delete account</p>
           </div>
           <span className="text-subtle text-sm">→</span>
         </Link>

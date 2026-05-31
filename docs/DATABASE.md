@@ -34,8 +34,14 @@ these tables mean.
 **Events**
 `events`, `event_rsvps`
 
-**Moderation**
-`reports`
+**Moderation & safety**
+`reports`, `blocked_users`
+
+> **`blocked_users`** (ADR-036, supersedes ADR-015's "no blocking"): directional
+> rows (`blocker_id` to `blocked_id`); `is_blocked_between(a,b)` checks both
+> directions and gates DM creation. Blocking also unfriends (`lib/blocking.ts`).
+> Account deletion is hard-delete via `auth.admin.deleteUser` (cascades the
+> profile + content); see `lib/account.ts` and `/settings/account`.
 
 **Gamification**
 `achievements`, `user_achievements`, `streaks`, `challenge_progress`,
