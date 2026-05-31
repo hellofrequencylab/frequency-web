@@ -585,6 +585,26 @@ quid-pro-quo and private-benefit treatment).
 
 ---
 
+## ADR-039: In-app heading face stays Nunito (warm serif trialed and reverted)
+
+**Status:** Accepted · governs DESIGN.md (type)
+**Context:** Pages felt "template-like." A warm editorial serif (Fraunces) was trialed for
+in-app page titles via a `.font-editorial` utility, paired with Nunito body, to add
+magazine-like warmth.
+**Decision:** **Revert the serif; Nunito bold remains the single in-app heading face.** In
+context the serif read as a different product rather than a warmer version of this one, and
+Nunito is already the brand-aligned rounded face (it matches the logo letterforms). Anton
+stays scoped to public marketing headlines only. Warmth is carried instead by spacing,
+shadow, color, and header composition, not a second text face.
+**Consequences:**
+- `Fraunces` import and the `.font-editorial` utility removed; templates use `text-2xl
+  font-bold`. One fewer web font to load.
+- Editorial warmth is a layout/token concern: even contained spacing (center+right column
+  capped and centered), hairline header rules across templates, and a fuller, greeting-led
+  feed header.
+
+---
+
 ### Decisions intentionally NOT duplicated here
 
 Already fully covered by the repo docs (no ADR needed): the RLS / admin-client

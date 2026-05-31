@@ -8,6 +8,7 @@ import {
 import { LogPracticeButton } from '@/components/practice/log-practice-button'
 import { AdoptPracticeButton } from '@/components/practice/adopt-practice-button'
 import { CreatePracticeForm } from '@/components/practice/create-practice-form'
+import { IndexTemplate } from '@/components/templates/index-template'
 
 export const metadata: Metadata = {
   title: 'Practices',
@@ -35,13 +36,11 @@ export default async function PracticesPage() {
   const daysLogged = last14.filter((d) => loggedDays.has(d)).length
 
   return (
-    <div className="max-w-2xl">
-      <h1 className="text-2xl font-bold text-text mb-1">Practices</h1>
-      <p className="text-muted mb-8">
-        A practice is what you do. Adopt one for yourself or do your circle&rsquo;s, then log
-        it each day to earn zaps and build your streak.
-      </p>
-
+    <IndexTemplate
+      title="Practices"
+      description="A practice is what you do. Adopt one for yourself or do your circle's, then log it each day to earn zaps and build your streak."
+    >
+      <div className="max-w-2xl">
       {profileId && (recent.length > 0 || mine.length > 0) && (
         <section className="mb-10">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-subtle mb-3">
@@ -142,6 +141,7 @@ export default async function PracticesPage() {
           </ul>
         )}
       </section>
-    </div>
+      </div>
+    </IndexTemplate>
   )
 }

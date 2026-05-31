@@ -840,8 +840,12 @@ export default function AppShell({
           </div>
         </aside>
 
-        {/* Center + right column */}
-        <div className="flex flex-1 min-h-0 min-w-0 overflow-hidden">
+        {/* Center + right column.
+            Capped + centered as a cluster so content doesn't sprawl across
+            ultra-wide canvas: the left nav stays pinned, but the feed+rail
+            group is held to a comfortable reading width with even margins
+            (the "don't float in a sea of cream" fix). */}
+        <div className="flex flex-1 min-h-0 min-w-0 overflow-hidden mx-auto w-full max-w-[68rem]">
 
           {/* Page content */}
           <main className="flex-1 overflow-y-auto pb-[calc(4rem_+_env(safe-area-inset-bottom))] md:pb-0 min-w-0">
