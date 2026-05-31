@@ -3,10 +3,11 @@ import { Suspense } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getInitials, relativeTime } from '@/lib/utils'
 import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
-import { MapPin, Megaphone, Zap, Flame, Gem } from 'lucide-react'
+import { MapPin, Megaphone, Zap } from 'lucide-react'
 import { GettingStartedChecklist } from '@/components/feed/getting-started'
 import { isOnline, ONLINE_MS } from '@/lib/presence'
 import { WidgetCard } from '@/components/modules/module-card'
+import { GameStatsDockClient } from '@/components/sidebar/game-stats-dock'
 
 export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
@@ -378,10 +379,9 @@ async function LeaderboardWidget() {
 }
 
 // ── Game stats dock ───────────────────────────────────────────────────────────
-// The player's gamification HUD. Sits BELOW the scrolling rail content (never
-// overlaps it). Leads with a compact summary band the height of the left-nav
-// profile card; the detailed stat tiles sit beneath it and are pulled into view
-// as the top of the rail scrolls away. Links through to the full /crew dashboard.
+// Server wrapper: fetch the player's stats, hand them to the interactive dock
+// (components/sidebar/game-stats-dock.tsx) which pins a compact bar to the
+// bottom and reveals the detail tiles as the top of the rail scrolls past.
 
 async function GameStatsDock({ profileId }: { profileId: string }) {
   const admin = createAdminClient()
@@ -395,62 +395,9 @@ async function GameStatsDock({ profileId }: { profileId: string }) {
   const zaps = (profile as { current_season_zaps?: number } | null)?.current_season_zaps ?? 0
   const gems = (profile as { lifetime_gems?: number } | null)?.lifetime_gems ?? 0
   const streak = (profile as { current_streak?: number } | null)?.current_streak ?? 0
-  const rank = (profile as { current_season_rank?: SeasonRank } | null)?.current_season_rank
+  const rank = (profile as { current_season_rank?: SeasonRank } | null)?.current_season_rank ?? null
 
-  return (
-    <div className="border-t border-border bg-canvas">
-      {/* Summary band — same height/feel as the left-nav profile card. This is
-          the "initial" face of the dock; the tiles below reveal on scroll. */}
-      <Link
-        href="/crew"
-        className="group flex items-center gap-2.5 px-3 py-3 hover:bg-surface-elevated transition-colors"
-      >
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-bg">
-          <Zap className="w-5 h-5 text-primary fill-current" />
-        </span>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5">
-            <p className="text-sm font-semibold text-text leading-tight">Your stats</p>
-            {rank && (
-              <span
-                className="rank-badge text-[10px] leading-tight"
-                style={seasonRankStyle(rank)}
-              >
-                {RANK_LABELS[rank] ?? rank}
-              </span>
-            )}
-          </div>
-          <p className="mt-1 flex items-center gap-2.5 text-xs text-subtle tabular-nums">
-            <span className="inline-flex items-center gap-0.5"><Zap className="w-3 h-3 text-primary" />{zaps.toLocaleString()}</span>
-            <span className="inline-flex items-center gap-0.5"><Gem className="w-3 h-3 text-signal" />{gems.toLocaleString()}</span>
-            <span className="inline-flex items-center gap-0.5"><Flame className="w-3 h-3 text-primary" />{streak}w</span>
-          </p>
-        </div>
-        <span className="text-xs font-semibold text-primary-strong opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-          Open →
-        </span>
-      </Link>
-
-      {/* Detailed tiles — pulled up as the top of the rail scrolls away */}
-      <div className="grid grid-cols-3 gap-2 px-3 pb-4">
-        <div className="rounded-xl bg-surface-elevated px-2 py-2.5 text-center">
-          <Zap className="w-4 h-4 text-primary fill-current mx-auto mb-1" />
-          <div className="text-sm font-bold text-text tabular-nums leading-none">{zaps.toLocaleString()}</div>
-          <div className="text-[11px] text-subtle mt-1">Zaps</div>
-        </div>
-        <div className="rounded-xl bg-surface-elevated px-2 py-2.5 text-center">
-          <Gem className="w-4 h-4 text-signal mx-auto mb-1" />
-          <div className="text-sm font-bold text-text tabular-nums leading-none">{gems.toLocaleString()}</div>
-          <div className="text-[11px] text-subtle mt-1">Gems</div>
-        </div>
-        <div className="rounded-xl bg-surface-elevated px-2 py-2.5 text-center">
-          <Flame className={`w-4 h-4 mx-auto mb-1 ${streak > 0 ? 'text-primary' : 'text-subtle'}`} />
-          <div className="text-sm font-bold text-text tabular-nums leading-none">{streak}w</div>
-          <div className="text-[11px] text-subtle mt-1">Streak</div>
-        </div>
-      </div>
-    </div>
-  )
+  return <GameStatsDockClient zaps={zaps} gems={gems} streak={streak} rank={rank} />
 }
 
 // ── Right sidebar ─────────────────────────────────────────────────────────────
@@ -471,9 +418,10 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
   const isHost    = ['host', 'guide', 'mentor', 'janitor'].includes(role)
 
   return (
-    <div>
-      {/* Top of the rail: scrolls up with the feed */}
-      <div className="px-3 py-6 space-y-8">
+    <div className="min-h-full">
+      {/* Top of the rail: scrolls up with the feed. The pb reserves room for the
+          pinned stats bar so it never overlaps the content above it. */}
+      <div className="px-3 py-6 pb-24 space-y-8">
         {/* Getting Started. Auto-hides when all items complete */}
         <Suspense fallback={null}>
           <GettingStartedChecklist profileId={profileId} />
