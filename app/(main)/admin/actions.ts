@@ -158,6 +158,14 @@ export async function createCircle(fd: FormData) {
   }).select('id').single()
   if (error) throw new Error(error.message)
 
+  // The host is a member of their own circle (so they can post, log practice,
+  // and use it fully). member_count is trigger-maintained on membership insert.
+  await admin.from('memberships').insert({
+    profile_id: host_id,
+    circle_id: circle.id,
+    status: 'active',
+  })
+
   // Announce the new circle to the wider audience (hub members, or the topical
   // channel's followers if the circle has no hub). Cluster visibility resolves
   // that audience at read time; scope_id stays the circle so it also shows on

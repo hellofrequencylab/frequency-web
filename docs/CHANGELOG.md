@@ -12,6 +12,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **Start your own circle**: any member can now create a circle around an Interest and
+  become its host (previously admin-only). What the Programs guides walk you through.
 - **Program progress**: mark a program complete and see which ones you've finished.
 - **Programs**: free guides for starting, running, growing, and keeping a circle alive,
   at `/programs`.
