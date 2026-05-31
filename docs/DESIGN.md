@@ -108,9 +108,19 @@ or a new meta-framework. All slower and more locked-in than what you run today.
 
 - `globals.css`: soft warm shadow tokens. (Base font-size was bumped to 17px then reverted to
   16px: the +6% scaled spacing too loose vs the live site; kept at 16.)
-- `components/modules/module-card.tsx`: soft-shadow card with a larger sentence-case bold
-  title (fixes the right-rail "stacked boxes" feel). A hairline border was restored after the
-  borderless version read as too detached.
+- **Right rail: minimal, borderless modules.** `ModuleCard` dropped its border/shadow/box
+  entirely. A module is now a titled group of rows on the canvas, separated from neighbours by
+  whitespace (`space-y-8`), not a stacked box. Settled the earlier border/borderless flip-flop
+  on the side of borderless: the boxes were the "template" tell. The one intentional card left
+  is "Getting started" (a tinted onboarding CTA, a genuinely distinct object).
+- **Right rail: type scale lifted.** Primary content (member/event/dispatch/leaderboard names)
+  went `text-xs` to `text-sm`; meta went `text-[10px]/[11px]` to `text-xs`; avatars/date-chips
+  bumped a step; rows got more vertical padding. The rail no longer reads "tight".
+- **Feed post stats simplified.** Removed the per-post `w-44` stats sidebar (it repeated the
+  date/scope already in the author row, and stamped a static "EARN React +1 / Reply +2" legend
+  on every card). Posts are now single-column; gamification is a single amber zap chip on the
+  reaction bar showing the zaps the post earned (`reactions x1 + replies x2`). Clean cue, not a
+  ledger.
 - **Even, contained spacing.** The center + right column is now capped (`max-w-[68rem]`) and
   centered as a cluster in `app-shell.tsx`, so the feed no longer floats in a sea of cream on
   wide screens; the left nav stays pinned. Margins read even instead of one big right gap.
@@ -122,10 +132,9 @@ or a new meta-framework. All slower and more locked-in than what you run today.
 
 ## Next (eyeball + iterate in `npm run dev`)
 
-1. Type-scale pass on the right rail and dense lists (lift the fixed-px sizes).
-2. Reduce remaining bordered boxes on the main surfaces to grouped/editorial where they are
+1. Reduce remaining bordered boxes on the main surfaces to grouped/editorial where they are
    lists, not objects.
-3. A real visual designer (or a tool) for logo + brand marks (out of scope for code).
+2. A real visual designer (or a tool) for logo + brand marks (out of scope for code).
 
 ## Page unification: one grammar for every page
 

@@ -1,6 +1,8 @@
-// Shared module chrome — the consistent card every right-rail / page module wears
-// (PAGE-FRAMEWORK §4.5). One shell means uniformity is structural, not something
-// each author has to remember. Promoted from the inline copy in right-sidebar.tsx.
+// Shared module chrome — the consistent wrapper every right-rail / page module
+// wears (PAGE-FRAMEWORK §4.5). Minimal by design: no border, no box. A module is
+// a titled group of rows that sits directly on the canvas, separated from its
+// neighbours by whitespace. (The card-with-border version read as a heavy stack
+// of boxes; see docs/DESIGN.md "card to editorial-grouping".)
 
 export function ModuleCard({
   title,
@@ -12,8 +14,8 @@ export function ModuleCard({
   children: React.ReactNode
 }) {
   return (
-    <section className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
-      <div className="flex items-center justify-between px-4 pt-3 pb-2">
+    <section>
+      <div className="flex items-center justify-between px-1 mb-2">
         <h3 className="text-sm font-bold tracking-tight text-text">
           {title}
         </h3>

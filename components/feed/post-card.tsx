@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Heart, ThumbsUp, Megaphone, MessageCircle, Users, Radio, ArrowRight } from 'lucide-react'
+import { Heart, ThumbsUp, Megaphone, ArrowRight, Zap } from 'lucide-react'
 import { toggleReaction } from '@/app/(main)/feed/actions'
 import { PostReplies } from './post-replies'
 import { ContextActions } from '@/components/context-actions'
@@ -27,16 +27,6 @@ const POST_TYPE_LABEL: Record<string, { label: string; cls: string }> = {
   announcement: { label: 'Announcement', cls: 'bg-warning-bg text-warning dark:bg-warning-bg dark:text-warning' },
   blog:         { label: 'Blog',         cls: 'bg-primary-bg text-primary-strong dark:bg-primary-bg dark:text-primary-strong' },
   recap:        { label: 'Recap',        cls: 'bg-success-bg text-success dark:bg-success-bg' },
-}
-
-function formatPostTime(iso: string): string {
-  const d = new Date(iso)
-  return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-}
-
-function formatPostDate(iso: string): string {
-  const d = new Date(iso)
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
 export type FeedPost = {
@@ -98,6 +88,9 @@ export function PostCard({
   const typeInfo = POST_TYPE_LABEL[post.post_type] ?? POST_TYPE_LABEL.feed
   const totalReactions = heartCount + plusCount
   const replyCount = post.replyCount ?? 0
+  // Zaps this post has earned: each reaction is worth 1, each reply 2. One clean
+  // number replaces the old per-post stats ledger (date/scope/earn-rates column).
+  const zapsEarned = totalReactions + replyCount * 2
 
   return (
     <article
@@ -109,9 +102,8 @@ export function PostCard({
           : 'border-border'
       }`}
     >
-      <div className="flex">
-        {/* ── Main content ──────────────────────────── */}
-        <div className="flex-1 min-w-0 p-4">
+      {/* ── Main content ──────────────────────────── */}
+      <div className="p-4">
           {isAnnouncement && (
             <div className="flex items-center gap-1.5 mb-2.5">
               <Megaphone className="w-3 h-3 text-primary" />
@@ -205,94 +197,50 @@ export function PostCard({
             </div>
           )}
 
-          {/* Reactions */}
-          <div className="flex items-center gap-1 pt-2.5 border-t border-border">
-            <form action={toggleReaction.bind(null, post.id, 'heart')}>
-              <button
-                type="submit"
-                className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${
-                  myHeart
-                    ? 'bg-danger-bg/30 text-danger'
-                    : 'text-subtle hover:bg-surface-elevated hover:text-muted'
-                }`}
+          {/* Reactions + the zaps this post has earned (the clean gamification cue) */}
+          <div className="flex items-center justify-between gap-2 pt-3 border-t border-border">
+            <div className="flex items-center gap-1">
+              <form action={toggleReaction.bind(null, post.id, 'heart')}>
+                <button
+                  type="submit"
+                  className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                    myHeart
+                      ? 'bg-danger-bg/30 text-danger'
+                      : 'text-subtle hover:bg-surface-elevated hover:text-muted'
+                  }`}
+                >
+                  <Heart className={`w-3.5 h-3.5 ${myHeart ? 'fill-current' : ''}`} />
+                  {heartCount > 0 && <span>{heartCount}</span>}
+                </button>
+              </form>
+
+              <form action={toggleReaction.bind(null, post.id, 'plus_one')}>
+                <button
+                  type="submit"
+                  className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                    myPlus
+                      ? 'bg-primary-bg text-primary-strong'
+                      : 'text-subtle hover:bg-surface-elevated hover:text-muted'
+                  }`}
+                >
+                  <ThumbsUp className={`w-3.5 h-3.5 ${myPlus ? 'fill-current' : ''}`} />
+                  {plusCount > 0 && <span>{plusCount}</span>}
+                </button>
+              </form>
+
+              <PostReplies postId={post.id} initialCount={replyCount} />
+            </div>
+
+            {zapsEarned > 0 && (
+              <span
+                title={`Earned ${zapsEarned} zap${zapsEarned !== 1 ? 's' : ''} from reactions and replies`}
+                className="flex items-center gap-1 rounded-full bg-primary-bg px-2.5 py-1 text-xs font-semibold text-primary-strong shrink-0"
               >
-                <Heart className={`w-3.5 h-3.5 ${myHeart ? 'fill-current' : ''}`} />
-                {heartCount > 0 && <span>{heartCount}</span>}
-              </button>
-            </form>
-
-            <form action={toggleReaction.bind(null, post.id, 'plus_one')}>
-              <button
-                type="submit"
-                className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${
-                  myPlus
-                    ? 'bg-primary-bg text-primary-strong'
-                    : 'text-subtle hover:bg-surface-elevated hover:text-muted'
-                }`}
-              >
-                <ThumbsUp className={`w-3.5 h-3.5 ${myPlus ? 'fill-current' : ''}`} />
-                {plusCount > 0 && <span>{plusCount}</span>}
-              </button>
-            </form>
-
-            <PostReplies postId={post.id} initialCount={replyCount} />
-          </div>
-        </div>
-
-        {/* ── Stats sidebar (desktop only) ─────────── */}
-        <div className="hidden md:flex w-44 shrink-0 flex-col border-l border-border rounded-r-2xl p-3">
-          {/* Date + scope type */}
-          <div className="mb-2.5">
-            <p className="text-[10px] text-muted font-medium">{formatPostDate(post.created_at)}</p>
-            <p className="text-[10px] text-subtle">{formatPostTime(post.created_at)}</p>
-            {post.scopeContext && (
-              <div className="flex items-center gap-1 mt-1.5">
-                {post.scopeContext.type === 'wall' && <Users className="w-2.5 h-2.5 text-primary-strong" />}
-                {post.scopeContext.type === 'circle' && <Users className="w-2.5 h-2.5 text-success" />}
-                {post.scopeContext.type === 'channel' && <Radio className="w-2.5 h-2.5 text-signal-strong" />}
-                <span className="text-[10px] text-subtle capitalize">{post.scopeContext.type === 'wall' ? 'Wall post' : post.scopeContext.type}</span>
-              </div>
-            )}
-            {post.is_pinned && (
-              <p className="text-[10px] text-primary-strong font-medium mt-1">📌 Pinned</p>
+                <Zap className="w-3.5 h-3.5 fill-current" />
+                {zapsEarned}
+              </span>
             )}
           </div>
-
-          {/* Engagement stats */}
-          {(totalReactions > 0 || replyCount > 0) && (
-            <div className="py-2.5 border-t border-border space-y-1.5">
-              {totalReactions > 0 && (
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-muted flex items-center gap-1">
-                    <Heart className="w-3 h-3 text-danger" />{totalReactions}
-                  </span>
-                  <span className="text-[10px] font-medium text-primary">{totalReactions} zap{totalReactions !== 1 ? 's' : ''}</span>
-                </div>
-              )}
-              {replyCount > 0 && (
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-muted flex items-center gap-1">
-                    <MessageCircle className="w-3 h-3 text-signal-strong" />{replyCount}
-                  </span>
-                  <span className="text-[10px] font-medium text-primary">{replyCount * 2} zaps</span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Zap earn rates */}
-          <div className="mt-auto pt-2.5 border-t border-border space-y-1">
-            <p className="text-[9px] font-semibold uppercase tracking-wider text-subtle mb-1">Earn</p>
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-subtle">React</span>
-              <span className="text-[10px] font-medium text-primary/60">+1</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-subtle">Reply</span>
-              <span className="text-[10px] font-medium text-primary/60">+2</span>
-            </div>
-          </div>
-        </div>
       </div>
     </article>
   )
