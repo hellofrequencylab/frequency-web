@@ -55,6 +55,10 @@ mobile.
 ## Documentation map
 
 ### Strategy & target architecture (the plan — read in this order)
+0. [PLATFORM-VISION](docs/PLATFORM-VISION.md) — **the whole-system frame.** One community
+   graph spanning a nonprofit (Foundation) + for-profit (Labs), one shared game, money
+   hard-partitioned by entity, verticals (marketplace/sessions/affiliate/donations) as
+   modules, the geographic flywheel. Governs ADR-029→036. Read this first for the *why*.
 1. [IA-STRATEGY](docs/IA-STRATEGY.md) — information architecture: Circle + Interest
    as the only member-facing words; Hubs/Nexuses contextual; in-person designator;
    role + milestone "wake-up" gating. (Labs/demand-proving are out of website scope.)
