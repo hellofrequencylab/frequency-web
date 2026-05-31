@@ -12,6 +12,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **Circles near you**: on the Circles page, find in-person circles sorted by distance
+  using your device location.
 - **Daily practice nudge**: your feed shows a "log today's practice" prompt for any
   practice you've adopted but not yet logged today, so it's one tap from anywhere.
 - **Create your own practices**: members and hosts can add custom practices to the
