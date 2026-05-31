@@ -41,7 +41,12 @@ these tables mean.
 `achievements`, `user_achievements`, `streaks`, `challenge_progress`,
 `quest_chains`, `quest_steps`, `quest_progress`, `season_challenges`,
 `season_trophies`, `crew_tasks`, `crew_completions`, `gem_config`,
-`gem_transactions`, `store_items`, `store_redemptions`
+`gem_transactions`, `zap_config`, `store_items`, `store_redemptions`
+
+> **`gem_config` / `zap_config`** are the tunable reward economy: `action_type` to
+> amount, read by `awardGems` / `awardZapsForAction` (gems also enforce `daily_cap`
+> via `gem_transactions`; zap caps are enforced upstream at `engagement_events`
+> idempotency). Code holds fallback defaults so a missing row never breaks a grant.
 
 **RPCs / views (public read layer)**
 `get_my_role`, `public_circles`, `public_circle_by_id`, `public_events`,

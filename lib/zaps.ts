@@ -11,18 +11,25 @@
 // existing DB logic). Server-only.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/database.types'
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row']
 
-// Tunable base zap amounts for external / in-person actions. Placeholder values —
-// the reward economy will set the real numbers (see docs/CHECKLIST.md). Attendance
-// is awarded at verified check-in (ROADMAP P2.13), NOT at RSVP (RSVP is a web
-// action and stays gems).
+// Fallback base zap amounts for external / in-person actions. The live, tunable
+// numbers come from the `zap_config` table (awardZapsForAction); these are only
+// used if a config row is missing, so a grant never breaks. Attendance is awarded
+// at verified check-in (ROADMAP P2.13), NOT at RSVP (RSVP is a web action = gems).
 export const ZAP_AMOUNTS = {
   event_host: 50,
   event_attend: 25,
+  practice_logged: 15,
+  node_capture: 10,
+  invite_accepted: 30,
+  outreach_task: 20,
 } as const
+
+export type ZapAction = keyof typeof ZAP_AMOUNTS
 
 export interface ZapAwardResult {
   awarded: boolean
@@ -57,4 +64,33 @@ export async function awardZaps(profileId: string, amount: number): Promise<ZapA
     .eq('id', profileId)
 
   return { awarded: true, amount }
+}
+
+/**
+ * Award zaps for a named action, reading the amount from the tunable `zap_config`
+ * table (falls back to ZAP_AMOUNTS if the row is missing). Use this for fixed-value
+ * actions; pass an explicit amount to `awardZaps` directly for dynamic values (e.g.
+ * a node's own `zaps_value`). Idempotency stays the caller's responsibility (drive
+ * through recordEngagementEvent for exactly-once).
+ */
+export async function awardZapsForAction(
+  profileId: string,
+  action: ZapAction,
+  overrideAmount?: number,
+): Promise<ZapAwardResult> {
+  const admin = createAdminClient()
+
+  // `zap_config` is a new table; until `supabase gen types` is re-run it is not in
+  // the generated Database types, so read it through an untyped handle. Drop the
+  // cast once types are regenerated (see docs/START-HERE.md).
+  const { data } = await (admin as unknown as SupabaseClient)
+    .from('zap_config')
+    .select('zaps_amount, is_active')
+    .eq('action_type', action)
+    .maybeSingle()
+  const cfg = data as { zaps_amount: number; is_active: boolean } | null
+
+  if (cfg && !cfg.is_active) return { awarded: false, amount: 0 }
+  const amount = overrideAmount ?? cfg?.zaps_amount ?? ZAP_AMOUNTS[action]
+  return awardZaps(profileId, amount)
 }
