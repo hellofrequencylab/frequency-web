@@ -12,8 +12,8 @@ export function ModuleCard({
   children: React.ReactNode
 }) {
   return (
-    <section className="rounded-2xl bg-surface shadow-sm overflow-hidden">
-      <div className="flex items-center justify-between px-4 pt-4 pb-2.5">
+    <section className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
+      <div className="flex items-center justify-between px-4 pt-3 pb-2">
         <h3 className="text-sm font-bold tracking-tight text-text">
           {title}
         </h3>

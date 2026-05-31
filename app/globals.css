@@ -184,10 +184,6 @@
 /* ── Base ────────────────────────────────────────────────────────────────── */
 html {
   font-family: var(--font-nunito, 'Nunito', sans-serif);
-  /* Slightly larger root so the whole app reads warmer and more inviting. All
-     rem-based type + spacing scale up ~6% together (a gentle, uniform lift, not
-     a per-component change). Revert to 16px if any tight layout overflows. */
-  font-size: 17px;
 }
 
 body {

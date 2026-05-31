@@ -462,7 +462,7 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
   const isHost    = ['host', 'guide', 'mentor', 'janitor'].includes(role)
 
   return (
-    <div className="px-4 py-6 space-y-4">
+    <div className="px-4 py-5 space-y-3">
       {/* Getting Started. Auto-hides when all items complete */}
       <Suspense fallback={null}>
         <GettingStartedChecklist profileId={profileId} />
