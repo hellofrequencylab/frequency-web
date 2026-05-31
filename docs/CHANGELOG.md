@@ -10,6 +10,12 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ## [Unreleased]
 
+### Changed
+
+- **Getting Started** now guides new members to their first practice (the heart of
+  Frequency) instead of their first post: add a photo, join or start a circle, adopt a
+  practice, log it.
+
 ### Added
 
 - **Lifecycle rewards**: earn zaps for starting a circle, activating it with a practice,
