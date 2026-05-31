@@ -118,6 +118,62 @@ or a new meta-framework. All slower and more locked-in than what you run today.
    lists, not objects.
 4. A real visual designer (or a tool) for logo + brand marks (out of scope for code).
 
+## Page unification: one grammar for every page
+
+The other half of "cobbled together" is structural, not visual. Audit: list pages use
+`IndexTemplate`; the feed uses `StreamTemplate`; but `DetailTemplate` is **used by zero
+pages**, so every single-entity page (a circle, a profile, an event) is hand-rolled, and a
+couple of pages (Practices, Programs) were also ad-hoc. Mixed shells = mixed headers,
+spacing, and action placement = the cobbled feel. Fix: **every page lives in one of three
+shells, and all role logic flows through the capability resolver.**
+
+### The three shells (best practice per area)
+
+- **IndexTemplate (list / discovery).** title + description + a right-aligned `action` +
+  optional `toolbar` (filters) + body. Use for: Circles, Interests, Events, Partners,
+  Directory, Practices, Programs.
+- **StreamTemplate (the feed).** A composer over a scrolling stream. Use for the feed and
+  any "what's happening" surface.
+- **DetailTemplate (single entity).** A context header (title, subtitle, badges, `actions`)
+  over a tab row over a body that itself nests an Index or Stream. Use for a Circle,
+  Profile, Event, Interest, Program, or Practice detail. **Adopting this is the single
+  biggest unification win**, since it's currently unused.
+
+Rule: pick the shell by page type; never hand-roll a header. The shell owns the title,
+spacing, and action placement, so every page reads as one product.
+
+### Role-based actions (the dynamic buttons)
+
+One rule: **the header action area is driven by the capability resolver, not scattered role
+checks.** Today role logic is split across `CreateMenu` (hardcoded role arrays),
+`ContextActions` (per-item kebab), `<Can>`, and inline `isAdmin` / `canManage`. Consolidate:
+
+- **The resolver is the single source.** `resolveCapabilities(viewer, scope)` already
+  answers "what can this viewer do here." Every action reads from it, so member, host, and
+  janitor each see exactly their actions, on every page, automatically.
+- **A unified `<RoleActions>` in the header slot:** a primary button + overflow menu, fed
+  a list of `{ label, action, capability }` plus the viewer's cap set; renders only the
+  permitted entries. Replaces bespoke per-page header buttons. `CreateMenu` becomes one
+  instance of it; `ContextActions` stays for per-item menus.
+- **Free vs paid (ADR-037) flows through the same input** (tier as a capability), so locked
+  actions show the upgrade affordance uniformly instead of the one-off `CrewGateButton`.
+- **Staleness to fix:** `CreateMenu` still gates "New Circle" to host+ and links to
+  `/circles/new`, but members now create via the Interest picker on `/circles`. Re-point it
+  through the resolver + the real entry.
+
+### Migration checklist (page to shell)
+
+- [x] Programs to IndexTemplate (the reference migration)
+- [ ] Practices to IndexTemplate
+- [ ] Circle detail (`/circles/[slug]`) to DetailTemplate + `<RoleActions>` (host/member/janitor)
+- [ ] Profile (`/people/[handle]`) to DetailTemplate (friend/message/block/moderate become RoleActions)
+- [ ] Event detail (`/events/[slug]`) to DetailTemplate
+- [ ] Program + Practice detail to DetailTemplate
+- [ ] Build `<RoleActions>`; route `CreateMenu` through the resolver
+
+Best done on localhost, page by page with eyes on, since each detail page's tab set and
+action list is a small product decision.
+
 ## Sources
 
 UI/typography direction drawn from 2026 trend research:
