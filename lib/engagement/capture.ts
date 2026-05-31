@@ -76,6 +76,21 @@ export async function captureNode(attempt: CaptureAttempt): Promise<CaptureResul
     await awardZaps(attempt.actorProfileId, amount)
   }
 
+  // 4b) A proximity-verified physical capture is also a verified practice (the
+  //     actor was really there), except purely commercial partner-plaque bumps.
+  //     Emit the North-Star event once per (node, actor), keyed independently
+  //     from the capture above.
+  if (!node.partner_id) {
+    await recordEngagementEvent({
+      idempotencyKey: `practice_node:${attempt.nodeId}:${attempt.actorProfileId}`,
+      source,
+      eventType: 'practice.verified',
+      actorProfileId: attempt.actorProfileId,
+      context: { nodeId: attempt.nodeId, kind: 'node_practice' },
+      verifiedAt: new Date(),
+    }).catch(() => {})
+  }
+
   // 5) Partner plaque → log a redemption + surface the unlocked offer.
   let offerTitle: string | null = null
   if (node.partner_id) {

@@ -12,6 +12,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **Practices**: adopt a practice from the library or follow your circle's, and log
+  it each day to earn zaps and build a streak. Hosts can set their circle's practice.
 - **Help Center** at `/help`: searchable guides for finding Circles, going to
   gatherings, and how the game works.
 
