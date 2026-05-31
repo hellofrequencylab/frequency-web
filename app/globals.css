@@ -270,3 +270,13 @@ h1, h2, h3, h4, h5, h6 {
   letter-spacing: 0.012em;
   line-height: 1.0;
 }
+
+/* ── Editorial face (in-app page titles) ───────────────────────────────────────
+   Warm, soft serif (Fraunces) for page + section titles, so pages feel like a
+   magazine, not a SaaS template. Body stays Nunito. See docs/DESIGN.md.        */
+.font-editorial {
+  font-family: var(--font-fraunces), Georgia, 'Times New Roman', serif;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}

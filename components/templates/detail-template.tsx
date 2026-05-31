@@ -44,7 +44,7 @@ export function DetailTemplate({
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-2xl font-bold text-text truncate">{title}</h1>
+              <h1 className="font-editorial text-3xl text-text truncate">{title}</h1>
               {badges}
             </div>
             {subtitle && (
