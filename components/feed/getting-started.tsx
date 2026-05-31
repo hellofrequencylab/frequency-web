@@ -54,47 +54,47 @@ export async function GettingStartedChecklist({ profileId }: { profileId: string
   const pct = Math.round((doneCount / items.length) * 100)
 
   return (
-    <div className="rounded-2xl border border-primary-bg dark:border-primary bg-surface shadow-sm overflow-hidden">
+    <div className="rounded-2xl bg-primary-bg/50 dark:bg-primary-bg/30 p-3">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-primary-bg flex items-center justify-between">
+      <div className="px-1 flex items-center justify-between mb-2.5">
         <div className="flex items-center gap-1.5">
-          <Sparkles className="w-3.5 h-3.5 text-primary-strong shrink-0" />
-          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-primary-strong">
-            Getting Started
+          <Sparkles className="w-4 h-4 text-primary-strong shrink-0" />
+          <h3 className="text-sm font-bold tracking-tight text-primary-strong">
+            Getting started
           </h3>
         </div>
-        <span className="text-[10px] font-bold text-primary-strong tabular-nums">
+        <span className="text-xs font-bold text-primary-strong tabular-nums">
           {pct}%
         </span>
       </div>
 
       {/* Progress bar */}
-      <div className="w-full h-1 bg-primary-bg overflow-hidden">
+      <div className="mx-1 mb-2 h-1.5 rounded-full bg-primary-bg overflow-hidden">
         <div
-          className="h-full bg-primary transition-all duration-500"
+          className="h-full rounded-full bg-primary transition-all duration-500"
           style={{ width: `${pct}%` }}
         />
       </div>
 
       {/* Items */}
-      <div className="p-2">
+      <div className="space-y-0.5">
         {items.map(item => (
           <div key={item.key}>
             {item.done ? (
-              <div className="flex items-center gap-2 px-2 py-1.5 opacity-40">
-                <CheckCircle2 className="w-3.5 h-3.5 text-success shrink-0" />
-                <span className="text-xs text-muted line-through">{item.label}</span>
+              <div className="flex items-center gap-2.5 px-1 py-1.5 opacity-40">
+                <CheckCircle2 className="w-4 h-4 text-success shrink-0" />
+                <span className="text-sm text-muted line-through">{item.label}</span>
               </div>
             ) : (
               <Link
                 href={item.href}
-                className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-primary-bg dark:hover:bg-primary-bg transition-colors group"
+                className="flex items-center gap-2.5 rounded-lg px-1 py-1.5 hover:bg-primary-bg dark:hover:bg-primary-bg transition-colors group"
               >
-                <Circle className="w-3.5 h-3.5 text-primary-strong dark:text-primary-strong shrink-0" />
-                <span className="text-xs font-medium text-text dark:text-subtle/60 group-hover:text-primary-strong dark:group-hover:text-primary-strong transition-colors flex-1">
+                <Circle className="w-4 h-4 text-primary-strong dark:text-primary-strong shrink-0" />
+                <span className="text-sm font-medium text-text dark:text-subtle/60 group-hover:text-primary-strong dark:group-hover:text-primary-strong transition-colors flex-1">
                   {item.label}
                 </span>
-                <span className="text-[10px] text-primary-strong opacity-0 group-hover:opacity-100 transition-opacity shrink-0">→</span>
+                <span className="text-xs text-primary-strong opacity-0 group-hover:opacity-100 transition-opacity shrink-0">→</span>
               </Link>
             )}
           </div>

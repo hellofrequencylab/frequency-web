@@ -27,7 +27,7 @@ function DateChip({ iso }: { iso: string }) {
   // Events use the green success palette so they read as "happening". Same
   // language the EventFeedCard speaks at the top of the feed.
   return (
-    <div className="flex flex-col items-center justify-center w-9 h-9 rounded-lg bg-success-bg text-success shrink-0">
+    <div className="flex flex-col items-center justify-center w-10 h-10 rounded-lg bg-success-bg text-success shrink-0">
       <span className="text-[9px] font-semibold uppercase leading-none">{month}</span>
       <span className="text-sm font-bold leading-tight">{day}</span>
     </div>
@@ -58,16 +58,16 @@ async function UpcomingEventsWidget({ circleIds }: { circleIds: string[] }) {
 
   return (
     <WidgetCard title="Upcoming Events">
-      <div className="p-2">
+      <div className="space-y-0.5">
         {events.map((event) => (
           <Link
             key={event.id}
             href={`/events/${event.slug}`}
-            className="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-surface-elevated transition-colors"
+            className="flex items-center gap-3 px-1 py-2 rounded-lg hover:bg-surface-elevated transition-colors"
           >
             <DateChip iso={event.starts_at} />
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-text truncate">{event.title}</p>
+              <p className="text-sm font-semibold text-text truncate">{event.title}</p>
               <p className="text-xs text-subtle mt-0.5">
                 {new Date(event.starts_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                 {event.location && (
@@ -81,10 +81,10 @@ async function UpcomingEventsWidget({ circleIds }: { circleIds: string[] }) {
           </Link>
         ))}
       </div>
-      <div className="px-4 py-2.5 border-t border-border">
+      <div className="px-1 pt-3">
         <Link
           href="/events"
-          className="text-xs font-medium text-primary-strong hover:text-primary-hover transition-colors"
+          className="text-[13px] font-semibold text-primary-strong hover:text-primary-hover transition-colors"
         >
           See all events →
         </Link>
@@ -154,24 +154,24 @@ async function ActiveMembersWidget({ profileId, circleIds }: { profileId: string
 
   return (
     <WidgetCard title="Members" badge={onlineCount > 0 ? `${onlineCount} online` : undefined}>
-      <div className="p-2">
+      <div className="space-y-0.5">
         {members.map((m: MemberRow) => {
           const online = isOnline(m.profile.last_seen_at)
           return (
             <Link
               key={m.profile_id}
               href={`/people/${m.profile.handle}`}
-              className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-surface-elevated transition-colors"
+              className="flex items-center gap-3 px-1 py-2 rounded-lg hover:bg-surface-elevated transition-colors"
             >
               <div className="relative shrink-0">
                 {m.profile.avatar_url ? (
                   <img
                     src={m.profile.avatar_url}
                     alt={m.profile.display_name}
-                    className="w-7 h-7 rounded-full object-cover"
+                    className="w-8 h-8 rounded-full object-cover"
                   />
                 ) : (
-                  <div className="w-7 h-7 rounded-full bg-border-strong flex items-center justify-center text-[11px] font-bold text-muted dark:text-subtle select-none">
+                  <div className="w-8 h-8 rounded-full bg-border-strong flex items-center justify-center text-xs font-bold text-muted dark:text-subtle select-none">
                     {getInitials(m.profile.display_name ?? '')}
                   </div>
                 )}
@@ -182,17 +182,17 @@ async function ActiveMembersWidget({ profileId, circleIds }: { profileId: string
                   />
                 )}
               </div>
-              <span className="text-xs font-medium text-text truncate flex-1">
+              <span className="text-sm font-medium text-text truncate flex-1">
                 {m.profile.display_name}
               </span>
             </Link>
           )
         })}
       </div>
-      <div className="px-4 py-2.5 border-t border-border">
+      <div className="px-1 pt-3">
         <Link
           href="/people"
-          className="text-xs font-medium text-primary-strong hover:text-primary-hover transition-colors"
+          className="text-[13px] font-semibold text-primary-strong hover:text-primary-hover transition-colors"
         >
           View directory →
         </Link>
@@ -266,35 +266,35 @@ async function RecentDispatchesWidget({
 
   return (
     <WidgetCard title="Dispatches">
-      <div className="divide-y divide-border">
+      <div className="space-y-0.5">
         {dispatches.map((d: DispatchRow) => (
           <Link
             key={d.id}
             href={`/broadcast/${d.id}`}
-            className="flex items-start gap-2.5 px-3 py-2.5 hover:bg-surface-elevated transition-colors"
+            className="flex items-start gap-3 px-1 py-2 rounded-lg hover:bg-surface-elevated transition-colors"
           >
-            <div className="shrink-0 w-6 h-6 rounded-md bg-signal-bg flex items-center justify-center mt-0.5">
+            <div className="shrink-0 w-7 h-7 rounded-lg bg-signal-bg flex items-center justify-center mt-0.5">
               {d.linked_task ? (
-                <Zap className="w-3 h-3 text-primary" />
+                <Zap className="w-3.5 h-3.5 text-primary" />
               ) : (
-                <Megaphone className="w-3 h-3 text-signal-strong" />
+                <Megaphone className="w-3.5 h-3.5 text-signal-strong" />
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-text line-clamp-1 leading-snug">
+              <p className="text-sm font-semibold text-text line-clamp-1 leading-snug">
                 {d.title}
               </p>
-              <p className="text-[11px] text-subtle mt-0.5">
+              <p className="text-xs text-subtle mt-0.5">
                 {d.author?.display_name} · {relativeTime(d.published_at)}
               </p>
             </div>
           </Link>
         ))}
       </div>
-      <div className="px-4 py-2.5 border-t border-border">
+      <div className="px-1 pt-3">
         <Link
           href="/broadcast"
-          className="text-xs font-medium text-primary-strong hover:text-primary-hover transition-colors"
+          className="text-[13px] font-semibold text-primary-strong hover:text-primary-hover transition-colors"
         >
           View all broadcasts →
         </Link>
@@ -328,23 +328,23 @@ async function LeaderboardWidget() {
 
   return (
     <WidgetCard title="Leaderboard">
-      <div className="p-2">
+      <div className="space-y-0.5">
         {top.map((member, i) => {
           return (
             <Link
               key={member.id}
               href={`/people/${member.handle}`}
-              className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-surface-elevated transition-colors"
+              className="flex items-center gap-2.5 px-1 py-2 rounded-lg hover:bg-surface-elevated transition-colors"
             >
-              <span className={`text-xs font-bold w-4 shrink-0 tabular-nums ${rankColors[i]}`}>{i + 1}</span>
+              <span className={`text-sm font-bold w-4 shrink-0 tabular-nums ${rankColors[i]}`}>{i + 1}</span>
               {member.avatar_url ? (
-                <img src={member.avatar_url} alt={member.display_name} className="w-6 h-6 rounded-full object-cover shrink-0" />
+                <img src={member.avatar_url} alt={member.display_name} className="w-8 h-8 rounded-full object-cover shrink-0" />
               ) : (
-                <div className="w-6 h-6 rounded-full bg-border-strong flex items-center justify-center text-[11px] font-bold text-muted shrink-0">
+                <div className="w-8 h-8 rounded-full bg-border-strong flex items-center justify-center text-xs font-bold text-muted shrink-0">
                   {getInitials(member.display_name ?? '')}
                 </div>
               )}
-              <span className="text-xs flex-1 truncate text-text">
+              <span className="text-sm flex-1 truncate text-text">
                 {member.display_name}
               </span>
               <div className="flex items-center gap-1 shrink-0">
@@ -365,10 +365,10 @@ async function LeaderboardWidget() {
           )
         })}
       </div>
-      <div className="px-4 py-2.5 border-t border-border">
+      <div className="px-1 pt-3">
         <Link
           href="/crew/leaderboard"
-          className="text-xs font-medium text-primary-strong hover:text-primary-hover transition-colors"
+          className="text-[13px] font-semibold text-primary-strong hover:text-primary-hover transition-colors"
         >
           Full leaderboard →
         </Link>
@@ -409,35 +409,35 @@ async function GamificationWidget({ profileId }: { profileId: string }) {
 
   return (
     <WidgetCard title="Your Progress">
-      <div className="p-3 space-y-2">
+      <div className="space-y-0.5">
         <Link
           href="/crew/achievements"
-          className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-surface-elevated transition-colors"
+          className="flex items-center gap-2.5 px-1 py-2 rounded-lg hover:bg-surface-elevated transition-colors"
         >
           <Award className="w-4 h-4 text-signal" />
-          <span className="text-xs text-text flex-1">Achievements</span>
-          <span className="text-xs font-bold text-text">{achievements}</span>
+          <span className="text-sm text-text flex-1">Achievements</span>
+          <span className="text-sm font-bold text-text">{achievements}</span>
         </Link>
         <Link
           href="/crew/streaks"
-          className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-surface-elevated transition-colors"
+          className="flex items-center gap-2.5 px-1 py-2 rounded-lg hover:bg-surface-elevated transition-colors"
         >
           <Flame className={`w-4 h-4 ${currentStreak > 0 ? 'text-primary' : 'text-subtle'}`} />
-          <span className="text-xs text-text flex-1">Streak</span>
-          <span className="text-xs font-bold text-text">{currentStreak}w</span>
+          <span className="text-sm text-text flex-1">Streak</span>
+          <span className="text-sm font-bold text-text">{currentStreak}w</span>
         </Link>
         <Link
           href="/crew/challenges"
-          className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-surface-elevated transition-colors"
+          className="flex items-center gap-2.5 px-1 py-2 rounded-lg hover:bg-surface-elevated transition-colors"
         >
           <Zap className="w-4 h-4 text-primary" />
-          <span className="text-xs text-text flex-1">Lifetime Zaps</span>
-          <span className="text-xs font-bold text-text">{lifetimeZaps.toLocaleString()}</span>
+          <span className="text-sm text-text flex-1">Lifetime Zaps</span>
+          <span className="text-sm font-bold text-text">{lifetimeZaps.toLocaleString()}</span>
         </Link>
-        <div className="flex items-center gap-2.5 px-2 py-1.5">
+        <div className="flex items-center gap-2.5 px-1 py-2">
           <Gem className="w-4 h-4 text-signal" />
-          <span className="text-xs text-text flex-1">Community Gems</span>
-          <span className="text-xs font-bold text-signal-strong">{lifetimeGems.toLocaleString()}</span>
+          <span className="text-sm text-text flex-1">Community Gems</span>
+          <span className="text-sm font-bold text-signal-strong">{lifetimeGems.toLocaleString()}</span>
         </div>
       </div>
     </WidgetCard>
@@ -462,7 +462,7 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
   const isHost    = ['host', 'guide', 'mentor', 'janitor'].includes(role)
 
   return (
-    <div className="px-4 py-5 space-y-3">
+    <div className="px-3 py-6 space-y-8">
       {/* Getting Started. Auto-hides when all items complete */}
       <Suspense fallback={null}>
         <GettingStartedChecklist profileId={profileId} />
