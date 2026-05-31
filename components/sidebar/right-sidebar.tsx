@@ -68,7 +68,7 @@ async function UpcomingEventsWidget({ circleIds }: { circleIds: string[] }) {
             <DateChip iso={event.starts_at} />
             <div className="flex-1 min-w-0">
               <p className="text-xs font-semibold text-text truncate">{event.title}</p>
-              <p className="text-[11px] text-subtle mt-0.5">
+              <p className="text-xs text-subtle mt-0.5">
                 {new Date(event.starts_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                 {event.location && (
                   <span className="ml-1.5 inline-flex items-center gap-0.5">
@@ -84,7 +84,7 @@ async function UpcomingEventsWidget({ circleIds }: { circleIds: string[] }) {
       <div className="px-4 py-2.5 border-t border-border">
         <Link
           href="/events"
-          className="text-[11px] font-medium text-primary-strong hover:text-primary-hover transition-colors"
+          className="text-xs font-medium text-primary-strong hover:text-primary-hover transition-colors"
         >
           See all events →
         </Link>
@@ -171,7 +171,7 @@ async function ActiveMembersWidget({ profileId, circleIds }: { profileId: string
                     className="w-7 h-7 rounded-full object-cover"
                   />
                 ) : (
-                  <div className="w-7 h-7 rounded-full bg-border-strong flex items-center justify-center text-[10px] font-bold text-muted dark:text-subtle select-none">
+                  <div className="w-7 h-7 rounded-full bg-border-strong flex items-center justify-center text-[11px] font-bold text-muted dark:text-subtle select-none">
                     {getInitials(m.profile.display_name ?? '')}
                   </div>
                 )}
@@ -192,7 +192,7 @@ async function ActiveMembersWidget({ profileId, circleIds }: { profileId: string
       <div className="px-4 py-2.5 border-t border-border">
         <Link
           href="/people"
-          className="text-[11px] font-medium text-primary-strong hover:text-primary-hover transition-colors"
+          className="text-xs font-medium text-primary-strong hover:text-primary-hover transition-colors"
         >
           View directory →
         </Link>
@@ -284,7 +284,7 @@ async function RecentDispatchesWidget({
               <p className="text-xs font-semibold text-text line-clamp-1 leading-snug">
                 {d.title}
               </p>
-              <p className="text-[10px] text-subtle mt-0.5">
+              <p className="text-[11px] text-subtle mt-0.5">
                 {d.author?.display_name} · {relativeTime(d.published_at)}
               </p>
             </div>
@@ -294,7 +294,7 @@ async function RecentDispatchesWidget({
       <div className="px-4 py-2.5 border-t border-border">
         <Link
           href="/broadcast"
-          className="text-[11px] font-medium text-primary-strong hover:text-primary-hover transition-colors"
+          className="text-xs font-medium text-primary-strong hover:text-primary-hover transition-colors"
         >
           View all broadcasts →
         </Link>
@@ -340,7 +340,7 @@ async function LeaderboardWidget() {
               {member.avatar_url ? (
                 <img src={member.avatar_url} alt={member.display_name} className="w-6 h-6 rounded-full object-cover shrink-0" />
               ) : (
-                <div className="w-6 h-6 rounded-full bg-border-strong flex items-center justify-center text-[10px] font-bold text-muted shrink-0">
+                <div className="w-6 h-6 rounded-full bg-border-strong flex items-center justify-center text-[11px] font-bold text-muted shrink-0">
                   {getInitials(member.display_name ?? '')}
                 </div>
               )}
@@ -356,7 +356,7 @@ async function LeaderboardWidget() {
                 </span>
                 <div className="flex items-center gap-0.5">
                   <Zap className="w-2.5 h-2.5 text-primary" />
-                  <span className="text-[11px] font-semibold text-muted">
+                  <span className="text-xs font-semibold text-muted">
                     {(member.current_season_zaps ?? 0).toLocaleString()}
                   </span>
                 </div>
@@ -368,7 +368,7 @@ async function LeaderboardWidget() {
       <div className="px-4 py-2.5 border-t border-border">
         <Link
           href="/crew/leaderboard"
-          className="text-[11px] font-medium text-primary-strong hover:text-primary-hover transition-colors"
+          className="text-xs font-medium text-primary-strong hover:text-primary-hover transition-colors"
         >
           Full leaderboard →
         </Link>
