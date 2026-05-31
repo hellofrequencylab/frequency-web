@@ -511,6 +511,78 @@ verticals (a disputed payout is a real ledger state, ADR-032).
 ships. Store-review landmines are designed in, not retrofitted under rejection pressure.
 The digital/physical flag is a product-data field from the first marketplace migration.
 
+## ADR-037: Free full app + an accruing Vault + membership-to-cash-in (the freemium model)
+
+**Status:** Accepted (target) · governs [PLATFORM-VISION.md](PLATFORM-VISION.md) §3 · refines
+ADR-031 (tiers) + ADR-035 (entitlement bridge)
+**Context:** The Foundation's mission is free, real community for everyone (fight loneliness,
+heal society), funded by public donations. The game (zaps/gems/ranks/leaderboard/store) is a
+fun bonus on top. We want maximum inclusivity AND intrinsic monetization, with no community
+paywall and no aggressive upgrade marketing. Calling a feature-unlock a "donation" is quid
+pro quo (not legal); a crippled free tier betrays the mission.
+**Decision:**
+- **The full app is free for everyone.** Community, practices, programs, and an honest
+  personal tracker (real streak/stats) are never gated. The mission layer carries no lock.
+- **The game accrues for everyone, locked until claimed.** Rewards land for all users in a
+  **persistent, non-resetting Vault**; everyone is "playing," they just cannot **cash in**
+  (claim / spend / compete) without an **active game entitlement**.
+- **Game access is an entitlement** (generalizes ADR-035), grantable from four sources:
+  (a) the member's own Foundation membership, (b) a **host comp-grant** to a circle member
+  who cannot pay, (c) a Lab-membership rollup (ADR-035), (d) a staff grant. The resolver
+  reads "active game entitlement?" regardless of origin.
+- **The pay path is a Foundation membership, not a price and not a pure donation:** a low
+  floor (~$4.99/mo) unlocks the game as a member benefit, plus pay-what-you-want supporter
+  tiers above the floor where the **excess is a genuine deductible gift**. The tier object
+  carries `entity` + `revenue_type` (`dues` for the base, `donation` for the excess) per
+  ADR-031.
+- **Cash-in** converts the Vault to gems (spendable) + a lifetime rank; live **seasonal
+  competition starts fresh** (fairness, so a long-time free member's haul is loot and
+  status, not an unfair leaderboard lead). **Milestone freebies** (reusing the
+  achievements/quests engine) are planted into the Vault as extra teases.
+**Consequences:**
+- The reward path always **records** a grant; for users without an active entitlement the
+  grant is **vaulted (pending)** instead of credited live. Cash-in claims all pending
+  grants. Generalizes `gem_transactions` / the ADR-019 ledger (grant gets a claimed/pending
+  state).
+- The capability resolver gains a tier/entitlement input: **free** = `practice.log`,
+  `progress.viewOwn`, `vault.watch`; **entitled** = `vault.claim`, `rewards.spend`,
+  `leaderboard.compete`, `store.access`, `events.register`.
+- **Conversion is intrinsic:** the visible growing Vault + ghost leaderboard position +
+  planted freebies do the selling. **Guardrails (anti-dark-pattern):** community and stats
+  are never gated; gifts are not hostages; no fake urgency.
+- **Open legal items (counsel, before money):** dues-vs-donation language + the
+  deductibility math (deductible only above benefit value); UBIT on game revenue; which
+  entity collects (ADR-031).
+
+## ADR-038: Inter-entity bridge: a Foundation contribution can grant Frequency Lab access
+
+**Status:** Accepted (target) · governs PLATFORM-VISION §1/§3 · extends ADR-029 (inter-entity
+transfers) + ADR-035 (entitlement)
+**Context:** The Foundation seeds community, which creates built-in demand for the for-profit
+**Frequency Labs** (physical third spaces). The bridge: a person who contributes to the
+Foundation an amount equal to a Lab membership gains Lab ("members-only club") access, and
+Labs "donates" that subscription value to the Foundation. This is a 501c3 <-> for-profit
+arrangement.
+**Decision:** Model it as **a qualifying Foundation contribution grants a Lab-access
+entitlement** (the same entitlement machinery as ADR-035/037); the value moving between
+entities is recorded as a **first-class, audited inter-entity ledger entry** (ADR-029),
+entity-tagged and never commingled. The product/architecture treats it as
+"contribution to entitlement"; the **legal mechanism is an open decision** (in-kind
+donation from Labs to the Foundation, or a sponsorship/services agreement, plus the
+quid-pro-quo and private-benefit treatment).
+**Consequences:**
+- Lab access becomes an entitlement grantable from a Foundation contribution, not only from
+  a Labs subscription. The resolver reads the entitlement regardless of which entity
+  originated it.
+- Every inter-entity transfer (Labs donating the subscription value to the Foundation, or
+  the Foundation paying Labs for access) is an audited, entity-tagged ledger entry, never
+  commingled (ADR-029).
+- **Open legal items (counsel, non-negotiable before money):** quid-pro-quo treatment (the
+  donor receives Lab access, which reduces the deductible portion); related-party /
+  private-inurement risk (especially if the Foundation and Labs share owners); UBIT; the
+  exact inter-entity agreement. Analogous structures exist (churches, university/for-profit
+  arms), but this requires real structuring, not improvisation.
+
 ---
 
 ### Decisions intentionally NOT duplicated here

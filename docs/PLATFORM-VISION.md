@@ -116,31 +116,43 @@ the persona's verified state.
 
 ---
 
-## 3. Membership = one freemium tier ladder (generalizes `crew`)
+## 3. Membership: free full app, a game that accrues, cash-in to play
 
-The free/paid split is **one ladder of tiers on one profile**, read by the same resolver
-that gates everything else. It is **not** a new system, it **generalizes the existing
-`crew` tier** (GLOSSARY: "the paid membership tier, intended $10/mo, currently free during
-beta").
+The model is **one entitlement read by the same resolver** that gates everything else, and
+it **generalizes the existing `crew` tier**. Full decision: ADR-037.
 
-- **Free (Foundation):** anyone worldwide. Full community membership, local circles/
-  channels, seed programs, meetup engine, basic game. The **mission**, nonprofit-funded.
-- **Paid (depth):** freemium upgrade unlocking more website/game depth + premium surfaces;
-  plus **Lab subscriptions** where physical spaces exist. **Commerce**, for-profit.
+- **Free for everyone (the Foundation, for the people):** the *full* app. Community,
+  circles/channels, practices, Programs, the meetup engine, and an honest personal tracker
+  (real stats). The mission is **never gated**. Funded by public donations.
+- **The game accrues for everyone, locked until claimed:** zaps/gems/ranks/leaderboard/
+  store. Rewards land for all users in a **persistent Vault**; everyone is already
+  "playing," they just cannot **cash in** (claim / spend / compete) without an **active
+  game entitlement**. Milestone freebies (reusing the achievements engine) are planted in
+  the Vault as extra teases.
+- **Cash-in = becoming a Foundation member/supporter** (not a "price," not a pure
+  "donation"): a low floor (~$4.99/mo) unlocks the game as a member benefit; pay-what-you-
+  want tiers above are genuine deductible gifts. Cash-in converts the Vault to gems + a
+  lifetime rank; live seasonal play starts fresh (fair).
 
-A paid member's "extra depth" = more capabilities + more modules light up. The tier is
-just another **input to the resolver**.
+**Game access is an entitlement, grantable from four sources** (the clean abstraction so
+everything else falls out): the member's own membership; a **host comp-grant** (a host
+switches the game on for a circle member who cannot pay, an organic, free scholarship so
+no one is excluded for lack of money); a **Lab-membership rollup** (ADR-035); or a staff
+grant. The resolver only ever asks "active game entitlement?"
 
-> **⚠️ The one careful line (open legal decision).** A paid membership whose free version
-> is a *nonprofit program* and whose paid version is *for-profit revenue* crosses an
-> entity boundary. **Which entity sells the paid tier, and what is being bought?** Two
-> clean structures: (a) the **for-profit** sells "premium features / deeper game" (clean
-> commerce); or (b) the **Foundation** offers a genuine nonprofit *membership* (dues, the
-> way museums do), with mission-aligned benefits. These are **not** the same and an
-> accountant/attorney picks. The **architecture must support either**: the **tier object
-> carries `entity` + `revenue_type`** (`donation` | `dues` | `commerce`) so one smooth
-> "upgrade for more depth" UX routes to the correct legal home and Stripe relationship
-> without a rebuild. See ADR-031.
+> **⚠️ The careful line (open legal decision, ADR-031/037).** The pay path is framed as a
+> **Foundation membership** (dues + optional donation), not a purchase and not a pure
+> donation: only the amount **above the benefit value** is a deductible gift. The
+> **tier/grant object carries `entity` + `revenue_type`** (`dues` for the base, `donation`
+> for the excess, `commerce` for Labs) so the same UX routes to the correct legal home.
+> Counsel decides dues-vs-donation language, deductibility, UBIT, and which entity collects.
+
+**The flywheel bridge (ADR-038).** The Foundation seeds community, which creates built-in
+demand for the for-profit Labs. A Foundation contribution equal to a Lab membership can
+grant Lab ("members-only club") access, and Labs donates that subscription value back to
+the Foundation. Architecturally this is the same entitlement plus an audited inter-entity
+transfer (ADR-029); the legal mechanism (quid-pro-quo, related-party, private-benefit) is
+an open decision for counsel.
 
 **Subscription-as-bridge (the delicate join).** A Lab membership is a *for-profit
 subscription* (money) that grants *community benefits* (access to spaces where practice
@@ -292,11 +304,14 @@ persona axis.** Everything else is modules and tiers on the graph you already ha
 Captured so they are **not lost** and **not guessed**:
 
 1. **Which entity sells the paid membership tier** (the UBI/charitable-purpose line, §3).
-2. **Does the Foundation take membership dues at all, or only donations/grants** (changes
-   whether the donation rail needs a recurring-dues mode).
-3. **How value flows between entities**: for-profit→Foundation donation, or
-   Foundation→for-profit services agreement (the "back-and-forth, handled carefully").
-   Architecture records inter-entity transfers as audited ledger entries regardless.
+   Recommended frame: a **Foundation membership** (dues) + pay-what-you-want **donation**
+   above the floor, with the game as a member benefit (ADR-037). Counsel confirms.
+2. **Membership-dues vs donation language + deductibility math** (deductible only above the
+   benefit value); UBIT on game revenue; the year-end acknowledgment. Counsel (ADR-037).
+3. **The inter-entity Lab bridge** (ADR-038): a Foundation contribution grants Lab access,
+   Labs donates the subscription value to the Foundation. Quid-pro-quo, related-party, and
+   private-inurement treatment, plus the exact agreement. The architecture records the
+   inter-entity transfer as an audited ledger entry regardless; counsel sets the mechanism.
 4. **First proving vertical = The Collective** (decided): contributor-hosted paid
    meditations/courses exercises the most seams at once (persona + verification + Connect
    payout + digital-vs-physical + practice-laddering) and is closest to the meditation/
