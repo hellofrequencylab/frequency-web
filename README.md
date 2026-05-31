@@ -102,6 +102,8 @@ mobile.
   touching code.**
 - [GLOSSARY](docs/GLOSSARY.md) — domain language. [DATABASE](docs/DATABASE.md) —
   tables, enums, migrations. [BACKLOG](docs/BACKLOG.md) — hygiene + env vars.
+- [DESIGN](docs/DESIGN.md) — the look and feel direction (warm editorial), the DAWN
+  token spec, and the design-stack rationale.
 - [DECISIONS](docs/DECISIONS.md) — architecture decision records (ADRs).
   [DOCS-PROTOCOL](docs/DOCS-PROTOCOL.md) — how docs are routed (**technical → git,
   instructional → Notion**). Follow it on every change.

@@ -166,6 +166,8 @@ admin/analytics surface.
 verticals that don't need the money foundation. **Depends on:** Stage A.
 
 - [ ] **Launch the free Beta**; instrument WAM, 7-day activation, cohort retention.
+      *Instrumentation:* WAM + activation live on `/studio/analytics`; weekly practice-
+      retention cohorts shipped there too (`getPracticeRetention`), the PMF lens.
 - [x] **Member-driven circle creation** (the flywheel enabler): any signed-in member can
       start a circle around an Interest and become its host (was admin-only). Creator is
       auto-enrolled as host + member. Matches what the Programs guides teach.
