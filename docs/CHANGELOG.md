@@ -12,6 +12,7 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **Program progress**: mark a program complete and see which ones you've finished.
 - **Programs**: free guides for starting, running, growing, and keeping a circle alive,
   at `/programs`.
 - **Circles near you**: on the Circles page, find in-person circles sorted by distance

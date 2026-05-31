@@ -2,8 +2,10 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { notFound } from 'next/navigation'
-import { getProgram } from '@/lib/programs'
+import { getProgram, getCompletedProgramSlugs } from '@/lib/programs'
+import { getMyProfileId } from '@/lib/auth'
 import { HelpMarkdown } from '@/components/help/help-markdown'
+import { CompleteProgramButton } from '@/components/program/complete-button'
 
 type Params = { params: Promise<{ slug: string }> }
 
@@ -18,6 +20,9 @@ export default async function ProgramPage({ params }: Params) {
   const { slug } = await params
   const program = await getProgram(slug)
   if (!program) notFound()
+
+  const profileId = await getMyProfileId()
+  const completed = profileId ? (await getCompletedProgramSlugs(profileId)).has(slug) : false
 
   return (
     <article className="max-w-2xl">
@@ -38,6 +43,12 @@ export default async function ProgramPage({ params }: Params) {
       <div className="mt-8">
         <HelpMarkdown>{program.body}</HelpMarkdown>
       </div>
+
+      {profileId && (
+        <div className="mt-8 border-t border-border pt-6">
+          <CompleteProgramButton slug={slug} completed={completed} />
+        </div>
+      )}
     </article>
   )
 }
