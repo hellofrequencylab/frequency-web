@@ -120,8 +120,11 @@ not a blocker. State: `[ ]` pending · `[~]` in progress · `[x]` done.
 **Goal:** a stranger can sign up → find/join a circle → attend → earn → and WAM is measured,
 on the real domain. **Depends on:** nothing (all in-codebase closeouts).
 
-- [ ] **Reward economy**: set gem/zap amounts, `nodes.zaps_value`, and a `seasons` table +
+- [~] **Reward economy**: set gem/zap amounts, `nodes.zaps_value`, and a `seasons` table +
       config UI (old ROADMAP P2.10). The game already runs; this gives it real numbers.
+      *Done:* `zap_config` table (migration `20240227000000`) brings zaps to parity with
+      `gem_config`; `awardZapsForAction` reads it; real values seeded. *Next:* seasons
+      table + admin config UI.
 - [ ] **Complete `practice.verified` sources**: logged practice + verified node check-in +
       event attendance check-in (old P2.13). The North-Star event must fire from every
       real-practice path, not just event RSVP-checkin.
