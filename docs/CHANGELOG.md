@@ -12,6 +12,14 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **Programs**: free guides for starting, running, growing, and keeping a circle alive,
+  at `/programs`.
+- **Circles near you**: on the Circles page, find in-person circles sorted by distance
+  using your device location.
+- **Daily practice nudge**: your feed shows a "log today's practice" prompt for any
+  practice you've adopted but not yet logged today, so it's one tap from anywhere.
+- **Create your own practices**: members and hosts can add custom practices to the
+  library, not just the seeded ones.
 - **Mentions in replies**: @mentioning someone in a reply now notifies them, just
   like in a top-level post.
 - **Richer profiles**: profiles now show verified practices and current streak.
