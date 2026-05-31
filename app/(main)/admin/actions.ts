@@ -10,6 +10,8 @@ import { sendDispatchNotificationEmail } from '@/lib/email'
 import { shouldSend } from '@/lib/notification-preferences'
 import { sendPushToProfile } from '@/lib/push'
 import { slugify } from '@/lib/utils'
+import { recordEngagementEvent } from '@/lib/engagement/events'
+import { awardZapsForAction } from '@/lib/zaps'
 import { processGamificationEvent } from '@/lib/achievements'
 import { atLeastRole } from '@/lib/core/roles'
 
@@ -166,6 +168,22 @@ export async function createCircle(fd: FormData) {
     status: 'active',
   })
 
+  // Lifecycle reward: starting a circle (once per circle). Routes through the
+  // engagement ledger (idempotent); credits live today, will land in the Vault
+  // for free users once the entitlement layer ships (ADR-037).
+  try {
+    const { recorded } = await recordEngagementEvent({
+      idempotencyKey: `circle_start:${circle.id}`,
+      source: 'web',
+      eventType: 'circle.started',
+      actorProfileId: host_id,
+      context: { circleId: circle.id },
+    })
+    if (recorded) await awardZapsForAction(host_id, 'circle_start')
+  } catch {
+    // a reward failure must never block circle creation
+  }
+
   // Announce the new circle to the wider audience (hub members, or the topical
   // channel's followers if the circle has no hub). Cluster visibility resolves
   // that audience at read time; scope_id stays the circle so it also shows on
@@ -264,7 +282,7 @@ export async function joinViaInviteLink(token: string): Promise<{ circleId: stri
   // Fetch and validate link
   const { data: link } = await admin
     .from('invite_links')
-    .select('id, circle_id, max_uses, used_count, expires_at, is_active')
+    .select('id, circle_id, created_by, max_uses, used_count, expires_at, is_active')
     .eq('token', token)
     .maybeSingle()
 
@@ -313,6 +331,24 @@ export async function joinViaInviteLink(token: string): Promise<{ circleId: stri
         .from('circles')
         .update({ member_count: (circleData.member_count ?? 0) + 1 })
         .eq('id', link.circle_id)
+    }
+
+    // Lifecycle reward: the inviter, when someone they invited actually joins
+    // (once per inviter+invitee). Real-world outreach -> zaps. Routes through
+    // the ledger; will land in the Vault for free inviters once ADR-037 ships.
+    if (link.created_by && link.created_by !== profile.id) {
+      try {
+        const { recorded } = await recordEngagementEvent({
+          idempotencyKey: `invite_accepted:${link.created_by}:${profile.id}`,
+          source: 'web',
+          eventType: 'invite.accepted',
+          actorProfileId: link.created_by,
+          context: { circleId: link.circle_id, invitee: profile.id },
+        })
+        if (recorded) await awardZapsForAction(link.created_by, 'invite_accepted')
+      } catch {
+        // a reward failure must never block the join
+      }
     }
   }
 

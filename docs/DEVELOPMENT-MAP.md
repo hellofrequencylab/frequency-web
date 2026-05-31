@@ -174,7 +174,10 @@ verticals that don't need the money foundation. **Depends on:** Stage A.
       MDX-in-git, 4 seed frameworks: start a circle, run a gathering, grow/split, keep
       alive; reuses the help markdown renderer; nav entry). Progress tracking shipped (mark
       complete via the engagement ledger, no migration; per the guardrail, reading is tracked
-      but not rewarded). *Next:* circle-lifecycle rewards (start/activate/invite/attend).
+      but not rewarded). Circle-lifecycle rewards shipped: starting a circle, activating it
+      (first practice), and an accepted invite all award zaps through the ledger (attending
+      already did). Credits live today; will land in the Vault for free users once the
+      entitlement layer ships (ADR-037).
 - [ ] **Local Marketplace (vertical 5)**: Foundation, no fee, geolocated to circle/hub/nexus,
       listings + messaging (no in-app payment). Proves local exchange + feeds the density
       signal.
