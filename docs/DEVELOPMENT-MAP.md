@@ -207,8 +207,13 @@ practice (ADR-034). **Depends on:** Stage C2 + legally-live entities.
 - [ ] **D1 · The Collective (vertical 7)**: *first commerce build.* Contributor application
       + verification → host paid offerings → Connect payout → digital/physical flag →
       practice-laddering. Exercises the entire money foundation; closest to the product's soul.
-- [ ] **D2 · Website paid tiers / freemium**: generalize `crew` into the tier ladder carrying
-      `entity` + `revenue_type` (ADR-031); `/upgrade` + `/settings/billing` wired.
+- [ ] **D2 · Freemium: free app + Vault + membership cash-in** (ADR-037): the game accrues
+      for everyone into a persistent Vault, locked until claimed; game access is an
+      entitlement (own membership / **host comp-grant** / Lab rollup / staff grant). The pay
+      path is a Foundation membership (dues floor + pay-what-you-want donation tiers, game as
+      a member benefit) carrying `entity` + `revenue_type` (ADR-031). Cash-in claims the
+      Vault to gems + lifetime rank; seasonal play starts fresh. Generalizes `crew`; wires
+      `/upgrade` + `/settings/billing`. Plus the **inter-entity Lab bridge** (ADR-038).
 - [ ] **D3 · Affiliate (vertical 9)**: referral attribution → commission → payout ledger.
 - [ ] **D4 · Donations & Grants (vertical 6)**: Foundation rail; independent of the for-profit
       Connect work, so it can land any time the Foundation is ready to accept money.
