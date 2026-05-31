@@ -98,6 +98,22 @@ export async function setCirclePractice(
   await client
     .from('circle_practices')
     .insert({ circle_id: circleId, practice_id: practiceId, set_by: setBy, active: true })
+
+  // Lifecycle reward: activating a circle (its first practice). Idempotency keyed
+  // per circle, so it fires once even if the practice changes later. Routes
+  // through the ledger; will land in the Vault for free hosts once ADR-037 ships.
+  try {
+    const { recorded } = await recordEngagementEvent({
+      idempotencyKey: `circle_activated:${circleId}`,
+      source: 'web',
+      eventType: 'circle.activated',
+      actorProfileId: setBy,
+      context: { circleId },
+    })
+    if (recorded) await awardZapsForAction(setBy, 'circle_activate')
+  } catch {
+    // a reward failure must never block setting the practice
+  }
 }
 
 /** A member adopts a practice for themselves (re-activates if previously dropped). */

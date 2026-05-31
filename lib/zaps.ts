@@ -27,6 +27,8 @@ export const ZAP_AMOUNTS = {
   node_capture: 10,
   invite_accepted: 30,
   outreach_task: 20,
+  circle_start: 50,
+  circle_activate: 40,
 } as const
 
 export type ZapAction = keyof typeof ZAP_AMOUNTS

@@ -12,6 +12,9 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **Lifecycle rewards**: earn zaps for starting a circle, activating it with a practice,
+  and inviting someone who joins (attending already rewarded). The circle journey now
+  pays off.
 - **Start your own circle**: any member can now create a circle around an Interest and
   become its host (previously admin-only). What the Programs guides walk you through.
 - **Program progress**: mark a program complete and see which ones you've finished.
