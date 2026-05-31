@@ -48,6 +48,15 @@ these tables mean.
 > via `gem_transactions`; zap caps are enforced upstream at `engagement_events`
 > idempotency). Code holds fallback defaults so a missing row never breaks a grant.
 
+**Practices (North Star)**
+`practices`, `circle_practices`, `member_practices`, `practice_logs`
+
+> A **practice** is what a member does. A host sets a circle's current practice
+> (`circle_practices`, one active per circle) or a member adopts their own
+> (`member_practices`); logging it (`practice_logs`, unique per member+practice+day)
+> emits `practice.verified` (the WAM North-Star event) + zaps + an attendance streak
+> via `lib/practices.ts` (`logPractice`).
+
 **RPCs / views (public read layer)**
 `get_my_role`, `public_circles`, `public_circle_by_id`, `public_events`,
 `public_event_by_slug`, `public_posts`, `search_handles_public`
