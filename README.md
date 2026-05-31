@@ -11,17 +11,19 @@ Realtime, Storage) on Vercel, **Tailwind v4**.
 
 ---
 
-## Where documentation lives — two homes, on purpose
+## Where documentation lives: three homes, by audience
 
 | Home | Audience | Contains |
 |---|---|---|
-| **GitHub** (`/docs`, `/ROADMAP.md`, this README) | **Developers** | architecture, schema, conventions, the build plan — everything technical |
-| **Notion** | **Users, admins, hosts, training** | how features work, host/admin guides, onboarding/training, community policy |
+| **GitHub** (`/docs`, `DEVELOPMENT-MAP.md`, this README) | **Developers** | architecture, schema, conventions, the build plan, everything technical |
+| **Public help center** (`content/help/`, served at `/help`) | **Members** | how to use the product, in member language |
+| **Notion** | **Operators, hosts, training** | how to operate/moderate the product, host/admin guides, community policy |
 
-**Rule of thumb:** if it tells a *developer how to build it*, it goes in Git. If
-it tells a *person how to use it*, it goes in Notion. Don't cross the streams —
-keep Git technical and Notion human. (Proposed Notion structure is sketched at
-the bottom of this file.)
+**Rule of thumb:** if it tells a *developer how to build it*, it goes in Git; if it
+tells a *member how to use it*, it goes in the help center; if it tells an *operator how
+to run or moderate it*, it goes in Notion. One change updates each home in its own voice:
+we single-source the routing, not the prose. Full spec:
+[docs/DOCS-PROTOCOL.md](docs/DOCS-PROTOCOL.md) and [docs/HELP-CENTER.md](docs/HELP-CENTER.md).
 
 ---
 
