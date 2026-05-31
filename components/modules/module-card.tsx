@@ -12,19 +12,19 @@ export function ModuleCard({
   children: React.ReactNode
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
-      <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-subtle">
+    <section className="rounded-2xl bg-surface shadow-sm overflow-hidden">
+      <div className="flex items-center justify-between px-4 pt-4 pb-2.5">
+        <h3 className="text-sm font-bold tracking-tight text-text">
           {title}
         </h3>
         {badge && (
-          <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-surface-elevated text-subtle font-medium">
+          <span className="text-[11px] px-2 py-0.5 rounded-full bg-surface-elevated text-muted font-medium">
             {badge}
           </span>
         )}
       </div>
       {children}
-    </div>
+    </section>
   )
 }
 

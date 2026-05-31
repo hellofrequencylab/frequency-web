@@ -168,11 +168,26 @@
   /* Fonts wired the same way they were. */
   --font-sans: var(--font-nunito);
   --font-mono: var(--font-geist-mono);
+
+  /* Soft, warm-tinted elevation. Overrides Tailwind's hard pure-black defaults so
+     every shadow-sm/md/lg reads as gentle, diffused depth instead of a crisp
+     template-y box edge. Warm shadow color (near-espresso), low alpha, wide blur.
+     See docs/DESIGN.md (warm-editorial direction). */
+  --shadow-2xs: 0 1px 2px rgb(40 30 16 / 0.04);
+  --shadow-xs:  0 1px 3px rgb(40 30 16 / 0.05);
+  --shadow-sm:  0 1px 2px rgb(40 30 16 / 0.04), 0 2px 6px -1px rgb(40 30 16 / 0.06);
+  --shadow-md:  0 2px 4px rgb(40 30 16 / 0.05), 0 6px 16px -4px rgb(40 30 16 / 0.08);
+  --shadow-lg:  0 4px 8px rgb(40 30 16 / 0.06), 0 12px 28px -6px rgb(40 30 16 / 0.10);
+  --shadow-xl:  0 8px 16px rgb(40 30 16 / 0.08), 0 24px 48px -12px rgb(40 30 16 / 0.12);
 }
 
 /* ── Base ────────────────────────────────────────────────────────────────── */
 html {
   font-family: var(--font-nunito, 'Nunito', sans-serif);
+  /* Slightly larger root so the whole app reads warmer and more inviting. All
+     rem-based type + spacing scale up ~6% together (a gentle, uniform lift, not
+     a per-component change). Revert to 16px if any tight layout overflows. */
+  font-size: 17px;
 }
 
 body {
