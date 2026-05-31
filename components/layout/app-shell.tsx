@@ -845,7 +845,7 @@ export default function AppShell({
             the far edge with `sticky`, so it stays visible and never gets its
             own scrollbar. Best-practice "document + sticky rail" model. */}
         <div className="flex-1 min-w-0 overflow-y-auto pb-[calc(4rem_+_env(safe-area-inset-bottom))] md:pb-0">
-          <div className="flex">
+          <div className="flex items-stretch min-h-full">
 
             {/* Page content */}
             <main className="flex-1 min-w-0 px-6 py-6">
@@ -853,10 +853,15 @@ export default function AppShell({
             </main>
 
             {/* Right sidebar. Only on lg+, hidden on admin/settings.
-                Flush right + sticky; shares the scroll above. */}
+                The <aside> spans the full content height (so its left border is
+                a full-height divider, flush to the far edge); the inner wrapper
+                is `sticky` so the rail stays in view as the feed scrolls — one
+                shared scroll, no independent scroll box. */}
             {showSidebar && (
-              <aside className="hidden lg:block w-72 shrink-0 self-start sticky top-0 border-l border-border">
-                {sidebar}
+              <aside className="hidden lg:block w-72 shrink-0 border-l border-border">
+                <div className="sticky top-0">
+                  {sidebar}
+                </div>
               </aside>
             )}
           </div>
