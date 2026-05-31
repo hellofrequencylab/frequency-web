@@ -150,8 +150,10 @@ on the real domain. **Depends on:** nothing (all in-codebase closeouts).
 - [~] **Beta-experience polish**: map/proximity circle discovery (P3.14), profile richness
       (P3.16), @mention rendering + notifications (P3.17). *Done:* @mentions now fan out on
       replies too (shared `fanOutMentions` helper), completing P3.17; profiles surface
-      verified practices + current streak (P3.16). *Next:* map/proximity discovery (needs a
-      map lib).
+      verified practices + current streak (P3.16); **proximity discovery** shipped as a
+      distance-sorted "Circles near you" (browser geolocation + haversine, no map dependency)
+      (P3.14). *Optional later:* a visual map layer on top (deferred because a map widget
+      can't be verified without a browser).
 - [ ] **Apex cutover + owner config**: `go.findafreq.com → findafreq.com`; set
       `CRON_SECRET`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_APP_URL`, `EMAIL_FROM` in prod.
 
