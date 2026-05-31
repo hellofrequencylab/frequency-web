@@ -840,26 +840,26 @@ export default function AppShell({
           </div>
         </aside>
 
-        {/* Center + right column.
-            Capped + centered as a cluster so content doesn't sprawl across
-            ultra-wide canvas: the left nav stays pinned, but the feed+rail
-            group is held to a comfortable reading width with even margins
-            (the "don't float in a sea of cream" fix). */}
-        <div className="flex flex-1 min-h-0 min-w-0 overflow-hidden mx-auto w-full max-w-[68rem]">
+        {/* Center + right column — ONE shared scroll container (no per-column
+            scroll boxes). The feed scrolls; the right rail is pinned flush to
+            the far edge with `sticky`, so it stays visible and never gets its
+            own scrollbar. Best-practice "document + sticky rail" model. */}
+        <div className="flex-1 min-w-0 overflow-y-auto pb-[calc(4rem_+_env(safe-area-inset-bottom))] md:pb-0">
+          <div className="flex">
 
-          {/* Page content */}
-          <main className="flex-1 overflow-y-auto pb-[calc(4rem_+_env(safe-area-inset-bottom))] md:pb-0 min-w-0">
-            <div className="w-full px-6 py-6">
+            {/* Page content */}
+            <main className="flex-1 min-w-0 px-6 py-6">
               {children}
-            </div>
-          </main>
+            </main>
 
-          {/* Right sidebar. Only on lg+, hidden on admin/settings */}
-          {showSidebar && (
-            <aside className="hidden lg:block w-72 shrink-0 overflow-y-auto border-l border-border bg-surface/80 backdrop-blur-sm">
-              {sidebar}
-            </aside>
-          )}
+            {/* Right sidebar. Only on lg+, hidden on admin/settings.
+                Flush right + sticky; shares the scroll above. */}
+            {showSidebar && (
+              <aside className="hidden lg:block w-72 shrink-0 self-start sticky top-0 border-l border-border">
+                {sidebar}
+              </aside>
+            )}
+          </div>
         </div>
       </div>
 

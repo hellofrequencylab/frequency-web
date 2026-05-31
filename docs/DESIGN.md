@@ -121,9 +121,12 @@ or a new meta-framework. All slower and more locked-in than what you run today.
   on every card). Posts are now single-column; gamification is a single amber zap chip on the
   reaction bar showing the zaps the post earned (`reactions x1 + replies x2`). Clean cue, not a
   ledger.
-- **Even, contained spacing.** The center + right column is now capped (`max-w-[68rem]`) and
-  centered as a cluster in `app-shell.tsx`, so the feed no longer floats in a sea of cream on
-  wide screens; the left nav stays pinned. Margins read even instead of one big right gap.
+- **Scroll model: one shared scroll, sticky rail.** Reworked `app-shell.tsx` from three
+  independently-scrolling columns to the "document + sticky rail" model (X / Reddit): the feed
+  and right rail share **one** scroll container, and the rail is `sticky top-0`, flush to the
+  far-right edge (like the left nav is flush left). No more per-column scrollbar / floating
+  cluster. (An earlier attempt capped+centered the whole cluster at `max-w-[68rem]`; that
+  pulled the rail off the right edge and left a dead gutter beside it, so it was reverted.)
 - **Fuller headers.** `StreamTemplate`/`IndexTemplate` headers gained a hairline bottom rule
   (matching `DetailTemplate`) for a defined band; `StreamTemplate` gained an optional
   `eyebrow` slot. The feed now greets the viewer (time-aware "Good morning, {name}" + today's
