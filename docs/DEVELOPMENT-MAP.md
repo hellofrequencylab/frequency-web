@@ -165,12 +165,19 @@ admin/analytics surface.
 verticals that don't need the money foundation. **Depends on:** Stage A.
 
 - [ ] **Launch the free Beta**; instrument WAM, 7-day activation, cohort retention.
+- [x] **Member-driven circle creation** (the flywheel enabler): any signed-in member can
+      start a circle around an Interest and become its host (was admin-only). Creator is
+      auto-enrolled as host + member. Matches what the Programs guides teach.
 - [~] **Programs (vertical 4)**: the circle start/run/maintain framework + training library,
       hubbed into the network, with lifecycle gamification. Free; deepens activation and the
       North Star directly. *Done:* content library shipped (`/programs` + `lib/programs.ts`,
       MDX-in-git, 4 seed frameworks: start a circle, run a gathering, grow/split, keep
-      alive; reuses the help markdown renderer; nav entry). *Next:* progress tracking +
-      lifecycle gamification (start/activate/invite/attend rewards), needs a small migration.
+      alive; reuses the help markdown renderer; nav entry). Progress tracking shipped (mark
+      complete via the engagement ledger, no migration; per the guardrail, reading is tracked
+      but not rewarded). Circle-lifecycle rewards shipped: starting a circle, activating it
+      (first practice), and an accepted invite all award zaps through the ledger (attending
+      already did). Credits live today; will land in the Vault for free users once the
+      entitlement layer ships (ADR-037).
 - [ ] **Local Marketplace (vertical 5)**: Foundation, no fee, geolocated to circle/hub/nexus,
       listings + messaging (no in-app payment). Proves local exchange + feeds the density
       signal.
@@ -206,8 +213,13 @@ practice (ADR-034). **Depends on:** Stage C2 + legally-live entities.
 - [ ] **D1 · The Collective (vertical 7)**: *first commerce build.* Contributor application
       + verification → host paid offerings → Connect payout → digital/physical flag →
       practice-laddering. Exercises the entire money foundation; closest to the product's soul.
-- [ ] **D2 · Website paid tiers / freemium**: generalize `crew` into the tier ladder carrying
-      `entity` + `revenue_type` (ADR-031); `/upgrade` + `/settings/billing` wired.
+- [ ] **D2 · Freemium: free app + Vault + membership cash-in** (ADR-037): the game accrues
+      for everyone into a persistent Vault, locked until claimed; game access is an
+      entitlement (own membership / **host comp-grant** / Lab rollup / staff grant). The pay
+      path is a Foundation membership (dues floor + pay-what-you-want donation tiers, game as
+      a member benefit) carrying `entity` + `revenue_type` (ADR-031). Cash-in claims the
+      Vault to gems + lifetime rank; seasonal play starts fresh. Generalizes `crew`; wires
+      `/upgrade` + `/settings/billing`. Plus the **inter-entity Lab bridge** (ADR-038).
 - [ ] **D3 · Affiliate (vertical 9)**: referral attribution → commission → payout ledger.
 - [ ] **D4 · Donations & Grants (vertical 6)**: Foundation rail; independent of the for-profit
       Connect work, so it can land any time the Foundation is ready to accept money.

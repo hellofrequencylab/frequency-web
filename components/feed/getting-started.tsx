@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { CheckCircle2, Circle, Sparkles } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getMemberPractices } from '@/lib/practices'
 
 type CheckItem = {
   key: string
@@ -12,10 +13,11 @@ type CheckItem = {
 export async function GettingStartedChecklist({ profileId }: { profileId: string }) {
   const admin = createAdminClient()
 
-  const [profileRes, membershipRes, postRes] = await Promise.all([
+  // The activation funnel ends at the North-Star moment: a verified practice.
+  const [profileRes, membershipRes, practiceRes, myPractices] = await Promise.all([
     admin
       .from('profiles')
-      .select('avatar_url, bio')
+      .select('avatar_url')
       .eq('id', profileId)
       .maybeSingle(),
     admin
@@ -25,23 +27,23 @@ export async function GettingStartedChecklist({ profileId }: { profileId: string
       .eq('status', 'active')
       .limit(1),
     admin
-      .from('posts')
-      .select('id')
-      .eq('author_id', profileId)
-      .limit(1),
+      .from('engagement_events')
+      .select('id', { count: 'exact', head: true })
+      .eq('actor_profile_id', profileId)
+      .eq('event_type', 'practice.verified'),
+    getMemberPractices(profileId),
   ])
 
-  const profile    = profileRes.data
-  const hasCircle  = (membershipRes.data ?? []).length > 0
-  const hasPosted  = (postRes.data ?? []).length > 0
-  const hasAvatar  = !!profile?.avatar_url
-  const hasBio     = !!profile?.bio?.trim()
+  const hasAvatar           = !!profileRes.data?.avatar_url
+  const hasCircle           = (membershipRes.data ?? []).length > 0
+  const hasAdoptedPractice  = myPractices.length > 0
+  const hasPracticed        = (practiceRes.count ?? 0) > 0
 
   const items: CheckItem[] = [
-    { key: 'avatar',  label: 'Add a profile photo',  href: '/settings/profile', done: hasAvatar },
-    { key: 'bio',     label: 'Write a short bio',     href: '/settings/profile', done: hasBio },
-    { key: 'circle',  label: 'Join a circle',          href: '/circles',          done: hasCircle },
-    { key: 'post',    label: 'Make your first post',  href: '/feed',             done: hasPosted },
+    { key: 'avatar',   label: 'Add a profile photo',     href: '/settings/profile', done: hasAvatar },
+    { key: 'circle',   label: 'Join or start a circle',  href: '/circles',          done: hasCircle },
+    { key: 'practice', label: 'Adopt a practice',        href: '/practices',        done: hasAdoptedPractice },
+    { key: 'log',      label: 'Log your first practice', href: '/practices',        done: hasPracticed },
   ]
 
   const doneCount = items.filter(i => i.done).length

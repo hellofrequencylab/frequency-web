@@ -7,6 +7,8 @@
 
 import { promises as fs } from 'fs'
 import path from 'path'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { recordEngagementEvent } from '@/lib/engagement/events'
 
 const PROGRAMS_DIR = path.join(process.cwd(), 'content', 'programs')
 
@@ -68,4 +70,41 @@ export async function listPrograms(): Promise<Program[]> {
 
 export async function getProgram(slug: string): Promise<Program | null> {
   return (await listPrograms()).find((p) => p.slug === slug) ?? null
+}
+
+// --- Progress tracking ----------------------------------------------------
+// Completion is recorded on the existing engagement_events ledger (idempotent,
+// no new table). Per the North-Star guardrail, completing a program (reading)
+// tracks progress but does not award points; the rewards belong to the real
+// circle-lifecycle doing (start/activate/invite/attend), a later increment.
+
+/** The program slugs a member has marked complete. */
+export async function getCompletedProgramSlugs(profileId: string): Promise<Set<string>> {
+  const admin = createAdminClient()
+  const { data } = await admin
+    .from('engagement_events')
+    .select('context')
+    .eq('actor_profile_id', profileId)
+    .eq('event_type', 'program_complete')
+  const slugs = new Set<string>()
+  for (const r of data ?? []) {
+    const s = (r.context as { slug?: string } | null)?.slug
+    if (s) slugs.add(s)
+  }
+  return slugs
+}
+
+/** Mark a program complete for a member (idempotent). */
+export async function markProgramComplete(
+  profileId: string,
+  slug: string,
+): Promise<{ newlyCompleted: boolean }> {
+  const { recorded } = await recordEngagementEvent({
+    idempotencyKey: `program_complete:${profileId}:${slug}`,
+    source: 'web',
+    eventType: 'program_complete',
+    actorProfileId: profileId,
+    context: { slug, kind: 'program_complete' },
+  })
+  return { newlyCompleted: recorded }
 }

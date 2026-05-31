@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { BookOpen } from 'lucide-react'
-import { listPrograms } from '@/lib/programs'
+import { BookOpen, Check } from 'lucide-react'
+import { listPrograms, getCompletedProgramSlugs } from '@/lib/programs'
+import { getMyProfileId } from '@/lib/auth'
 
 export const metadata: Metadata = {
   title: 'Programs',
@@ -9,7 +10,11 @@ export const metadata: Metadata = {
 }
 
 export default async function ProgramsPage() {
-  const programs = await listPrograms()
+  const profileId = await getMyProfileId()
+  const [programs, completed] = await Promise.all([
+    listPrograms(),
+    profileId ? getCompletedProgramSlugs(profileId) : Promise.resolve(new Set<string>()),
+  ])
 
   return (
     <div className="max-w-2xl">
@@ -34,7 +39,12 @@ export default async function ProgramsPage() {
                     <BookOpen className="h-4 w-4" />
                   </span>
                   <div className="min-w-0">
-                    <p className="font-medium text-text">{p.title}</p>
+                    <p className="flex items-center gap-1.5 font-medium text-text">
+                      {p.title}
+                      {completed.has(p.slug) && (
+                        <Check className="h-3.5 w-3.5 shrink-0 text-success" aria-label="Completed" />
+                      )}
+                    </p>
                     {p.description && <p className="mt-0.5 text-sm text-muted">{p.description}</p>}
                     <div className="mt-1 flex items-center gap-2 text-xs text-subtle">
                       <span>{p.audience === 'host' ? 'For hosts' : 'For everyone'}</span>
