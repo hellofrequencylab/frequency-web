@@ -352,6 +352,167 @@ is inlined there separately. Trust globals.css over any Notion "indigo"/"charcoa
 
 ---
 
+> **ADR-029 → ADR-036 record the seams for the whole-platform vision** (one community
+> graph, two legal entities, one game, marketplace + sessions + affiliate + donations as
+> modules). They are **target decisions**: the rationale is accepted, but most are **not
+> yet built** — code + `supabase/migrations/` remain the truth until each migration lands.
+> Full picture: [PLATFORM-VISION.md](PLATFORM-VISION.md).
+
+## ADR-029: One community graph, money hard-partitioned by legal entity
+
+**Status:** Accepted (target) · governs [PLATFORM-VISION.md](PLATFORM-VISION.md) §0–1
+**Context:** Frequency is one product over two legal entities — **Frequency Foundation**
+(501c3 nonprofit: free community, seed programs, donations/grants) and **Frequency Labs**
+(for-profit: Lab subscriptions, marketplace, sessions, affiliate, paid depth tiers). The
+same website + database serve both. A 501c3 commingling funds with a for-profit is a
+compliance/audit problem, not a style choice.
+**Decision:** **The community graph and the engagement/game ledger are SHARED and
+ENTITY-BLIND; the FINANCIAL ledger is HARD-PARTITIONED by entity, and the two money
+systems never commingle.** Three rails: (1) community graph (shared), (2) engagement
+ledger — zaps/gems/ranks (shared, entity-blind), (3) **financial** ledger (partitioned,
+`entity`-tagged). A check-in at a *for-profit* Lab earns *shared* community points (the
+glue); but **every dollar carries an immutable `entity` tag** (`foundation` | `labs`) and
+cannot leak across. Two Stripe relationships, separate reconciliation/reporting.
+**Consequences:** Points are not money; points are not entity-bound but **every dollar
+is**. Inter-entity value flows (for-profit→Foundation donation, Foundation→for-profit
+services agreement) are **first-class audited ledger entries** — the *mechanism* is a
+legal decision (PLATFORM-VISION §10), the architecture only records it. Reverses any
+"one Stripe with a flag" shortcut.
+
+## ADR-030: Identity is three orthogonal axes; persona is a multi-select hat
+
+**Status:** Accepted (target) · governs PLATFORM-VISION §2 · refines DATABASE.md
+(`profiles.entity_types`)
+**Context:** "Different sign-up tracks" and "many roles as we grow" (general member,
+practitioner, business/seller, affiliate, host) must not be modeled as one inflating role
+enum. A practitioner is **not** "above" a member, and one human can be several at once.
+**Decision:** Three **independent** axes: **(1) trust/role ladder** (`community_role`,
+unchanged), **(2) staff/ops role** (`team_members`, ADR-027, unchanged), **(3) persona /
+track** — a **multi-select set** of `profile_personas` rows, each with its own `state`
+(claimed → verified → active → suspended) and, where money is involved, its own **Stripe
+Connect account binding + `entity`**. Nav + capabilities = **union of (trust-role ⊕ each
+active persona ⊕ scope)** via the existing resolver (ADR-017). **Verification is
+per-persona, not per-user** ("verified practitioner" ≠ "verified business"); some
+capabilities (esp. *receive money*) gate on verified state.
+**Consequences:** Adding a track = a new persona + its capabilities/nav; the role ladder
+stays 6 tiers (ADR-034). The existing `profiles.entity_types text[]` stays as the
+lightweight **directory-kind** tag (vendor/performer/service); `profile_personas` is the
+**richer** layer for any persona gating capabilities/onboarding/money — **do not
+duplicate**. The stripped-down mobile app shows the right hats with zero extra logic.
+
+## ADR-031: Membership is one freemium tier ladder; tiers carry entity + revenue_type
+
+**Status:** Accepted (target) · governs PLATFORM-VISION §3 · generalizes the `crew` tier
+(GLOSSARY)
+**Context:** Free community (Foundation) vs paid "depth"/Lab subscription (Labs) is a
+freemium ladder — but a paid tier whose free version is a *nonprofit program* and whose
+paid version is *for-profit revenue* crosses an entity boundary (UBI / charitable-purpose
+risk).
+**Decision:** Membership is **one tier ladder on one profile**, read by the same resolver
+that gates everything — a **generalization of the existing `crew` paid tier**, not a new
+system. The **tier object carries `entity` + `revenue_type`** (`donation` | `dues` |
+`commerce`) so one smooth "upgrade for more depth" UX routes to the correct legal home +
+Stripe relationship without a rebuild. **Which entity sells the paid tier is an open legal
+decision** (PLATFORM-VISION §10) — architecture supports either.
+**Consequences:** No code path assumes the paid tier belongs to one entity. `crew`'s
+"$10/mo, free during beta, `isCrew = role !== 'member'`" framing is subsumed by the tier
+ladder. Billing wiring (ROADMAP P4) implements *against the tier object*, not a hardcoded
+plan.
+
+## ADR-032: Dual financial ledger — append-only, idempotent, entity-tagged, twin to engagement
+
+**Status:** Accepted (target) · governs PLATFORM-VISION §1 · twins ADR-019
+**Context:** Marketplace sales, paid programs, affiliate commissions, Lab subscriptions,
+and donations all move **real money to third parties** (owner confirmed). This requires
+**Stripe Connect (multiparty)** — connected accounts + KYC for anyone who *receives*
+money — and an auditable money source-of-truth.
+**Decision:** A **new** append-only `financial_transactions` ledger (double-entry-style,
+idempotent, reconciled against Stripe webhooks) is the source of truth for "who is owed
+what." It is the **money twin** of the `engagement_events` ledger (ADR-019) but a
+**separate table** — gems/zaps and dollars **never** share a ledger. Every row is
+`entity`-tagged (ADR-029). Refunds, disputes, chargebacks, holds, and payouts are modeled
+states **from day one** (a clawed-back payout is a real state). One **payments module**
+(`create_checkout`, `process_payout`, `record_commission`) serves marketplace + programs +
+affiliate — built once, not re-invented per vertical.
+**Consequences:** "Receive money" becomes a **persona-gated, Connect-verified** onboarding
+step (ADR-030). Apple/Google's digital-vs-physical 30% rule attaches to the sellable item
+(ADR-036). No vertical writes its own ad-hoc payment code. The stale "Stripe-as-live" note
+(DECISIONS preamble) is replaced by this greenfield Connect design.
+
+## ADR-033: Each vertical is an entity-tagged module against a registry
+
+**Status:** Accepted (target) · governs PLATFORM-VISION §4 · extends SCALE-ARCHITECTURE §3,
+ENGAGEMENT-ARCHITECTURE §4
+**Context:** The vision adds whole verticals (marketplace, sessions/programs, affiliate,
+donations). Hardwiring each into core would fork the truth and trap logic.
+**Decision:** Each vertical is a **self-contained, vertical-slice module** that **declares**
+to a registry: its **namespaced data** (`market_*`/`session_*`/`program_*`/`affiliate_*`/
+`donation_*`), its **`SECURITY DEFINER` RPCs** returning **contract view-models +
+capabilities** (the `/discover` pattern, ADR-018 — **both web and app call the identical
+RPC**), its **capabilities** (fed to the ADR-017 resolver), its **nav/composition** gates,
+its **engagement hooks** (emit `engagement_events`), and its **entity domain**
+(`foundation`/`labs`/`shared`). Core does not change when a module ships.
+**Consequences:** "Add the trades marketplace" = ship a `market` module. Local trades are
+**scoped to a locality** via the existing place-tree + PostGIS (ADR-006/020) — no new geo
+infra. Both clients stay in sync because they consume the same module RPCs.
+
+## ADR-034: Growth happens on the persona axis; the role ladder stays 6 tiers
+
+**Status:** Accepted (target) · governs PLATFORM-VISION §8 · preserves the GLOSSARY
+worldview · reconciles ROADMAP "Deliberately NOT building"
+**Context:** ROADMAP excludes "custom roles" with rationale *"the 6-tier ladder IS the
+worldview,"* yet the owner wants "many different roles as we grow." These only conflict if
+"role" is conflated across axes (ADR-030).
+**Decision:** **"Many roles as we grow" is expressed on the persona axis (ADR-030), not by
+inflating the `community_role` ladder.** The trust ladder remains exactly
+`member < crew < host < guide < mentor < janitor` — it is the worldview. New tracks
+(practitioner, business, affiliate, …) are **personas**, each contributing capabilities +
+nav. Verticals previously on the "Deliberately NOT building" list (marketplace, affiliate,
+branded mobile app) are brought **into scope but guardrailed** by ADR-024 (everything
+high-value ladders up to verified practice).
+**Consequences:** The role ladder never becomes a custom-role sprawl. The ROADMAP exclusion
+list is annotated as **superseded-with-guardrail** by PLATFORM-VISION, not silently
+contradicted.
+
+## ADR-035: Subscription-as-bridge — for-profit subscription grants a shared-graph entitlement
+
+**Status:** Accepted (target) · governs PLATFORM-VISION §3
+**Context:** A Lab membership is a *for-profit subscription* (money) that grants *community
+benefits* (space access where practice happens → earns shared points). The money and the
+community benefit live in different domains and must not be modeled as one object.
+**Decision:** Model the chain explicitly: **for-profit subscription state → grants a
+shared-graph `entitlement` → which the engagement engine reads.** The subscription +
+billing live in the money domain (`entity = labs`); the **entitlement** and the engagement
+it unlocks live in the **shared, entity-blind graph**. The engagement engine never reads
+Stripe; it reads the entitlement.
+**Consequences:** Cancelling a subscription revokes the entitlement (one well-defined join)
+without touching the engagement ledger's history. A future non-Lab paid tier reuses the
+same entitlement mechanism. Keeps ADR-029's partition intact at the one place money and
+community most want to bleed together.
+
+## ADR-036: Content-agnostic moderation + first-class blocking + App-Store seams (supersedes ADR-015 "no blocking")
+
+**Status:** Accepted (target) · governs PLATFORM-VISION §5, §7 · **supersedes** the
+ADR-015 "no blocking in v1" stance
+**Context:** Marketplace + paid sessions mean **strangers transacting**, and the **primary
+client is a native app** (TECH-STRATEGY). Both raise the trust & safety floor; Apple/Google
+gate UGC apps on specific controls.
+**Decision:** (1) **One content-type-agnostic moderation pipeline** — generalize
+`reports.target_type` to cover new content (listing/session/program/profile), never a
+second moderation system. (2) **Blocking is first-class now** — a `blocked` relationship
+(ADR-015 deferred it; **this supersedes that** because a marketplace needs it and Apple
+requires per-user block + per-content report). (3) **Account deletion in-app** (Apple
+requirement) — a real self-serve delete beyond `is_active` soft-deactivation. (4) **Every
+sellable item carries a `fulfillment` flag (`digital` | `physical`)** — Apple/Google take
+~30% on in-app *digital* goods but not real-world goods/services; this **determines whether
+an item can be sold in-app at all** vs web-only. (5) Ratings/reviews/disputes for paid
+verticals (a disputed payout is a real ledger state, ADR-032).
+**Consequences:** ADR-015's "rooms not gated / no blocking" note is updated — blocking
+ships. Store-review landmines are designed in, not retrofitted under rejection pressure.
+The digital/physical flag is a product-data field from the first marketplace migration.
+
+---
+
 ### Decisions intentionally NOT duplicated here
 
 Already fully covered by the repo docs (no ADR needed): the RLS / admin-client
