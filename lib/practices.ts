@@ -118,6 +118,28 @@ export async function dropMemberPractice(profileId: string, practiceId: string):
     .eq('practice_id', practiceId)
 }
 
+// --- Activity history -----------------------------------------------------
+
+export interface PracticeLogEntry {
+  logged_for: string
+  title: string | null
+}
+
+/** A member's recent practice logs (newest first), with the practice title. */
+export async function getRecentPracticeLogs(
+  profileId: string,
+  limit = 60,
+): Promise<PracticeLogEntry[]> {
+  const { data } = await db()
+    .from('practice_logs')
+    .select('logged_for, practice:practices(title)')
+    .eq('profile_id', profileId)
+    .order('logged_for', { ascending: false })
+    .limit(limit)
+  const rows = (data as { logged_for: string; practice: { title: string } | null }[] | null) ?? []
+  return rows.map((r) => ({ logged_for: r.logged_for, title: r.practice?.title ?? null }))
+}
+
 // --- The North-Star emitter ----------------------------------------------
 
 export interface LogPracticeResult {
