@@ -156,6 +156,7 @@ on the real domain. **Depends on:** nothing (all in-codebase closeouts).
       can't be verified without a browser).
 - [ ] **Apex cutover + owner config**: `go.findafreq.com → findafreq.com`; set
       `CRON_SECRET`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_APP_URL`, `EMAIL_FROM` in prod.
+      Full step-by-step runbook: [LAUNCH.md](LAUNCH.md).
 
 **Done when:** the loop above works end-to-end on `findafreq.com` and WAM is live on the
 admin/analytics surface.
