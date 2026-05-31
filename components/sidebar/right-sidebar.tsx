@@ -454,7 +454,7 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
   const isHost    = ['host', 'guide', 'mentor', 'janitor'].includes(role)
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="flex flex-1 flex-col min-h-full">
       {/* Scrolling top: moves up with the feed */}
       <div className="flex-1 px-3 py-6 space-y-8">
         {/* Getting Started. Auto-hides when all items complete */}
