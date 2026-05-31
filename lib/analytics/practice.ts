@@ -84,3 +84,75 @@ export async function getPracticeMetrics(): Promise<PracticeMetrics> {
     activationRate: newMembers > 0 ? activated / newMembers : 0,
   }
 }
+
+const WEEK = 7 * DAY
+
+export interface RetentionCohort {
+  /** ISO date (YYYY-MM-DD) of the cohort's first week (Monday, UTC). */
+  weekStart: string
+  /** Members whose first verified practice fell in that week. */
+  size: number
+  /** Percent of the cohort still active each subsequent week: [w0=100, w1, w2, ...]. */
+  retention: number[]
+}
+
+// Monday-based week start (UTC) for a timestamp.
+function weekStartUTC(ms: number): number {
+  const d = new Date(ms)
+  const dayFromMonday = (d.getUTCDay() + 6) % 7
+  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) - dayFromMonday * DAY
+}
+
+/**
+ * Weekly practice-retention cohorts: of the members whose first verified practice was in
+ * week W, what share practiced again in W+1, W+2, ... The core PMF signal. Windowed to the
+ * last `weeks` weeks; computed off the engagement ledger.
+ */
+export async function getPracticeRetention(weeks = 8): Promise<RetentionCohort[]> {
+  const admin = createAdminClient()
+  const since = new Date(weekStartUTC(Date.now()) - (weeks - 1) * WEEK).toISOString()
+
+  const { data } = await admin
+    .from('engagement_events')
+    .select('actor_profile_id, created_at')
+    .eq('event_type', PRACTICE_EVENT)
+    .gte('created_at', since)
+
+  // actor -> set of week-start timestamps they practiced
+  const actorWeeks = new Map<string, Set<number>>()
+  for (const ev of data ?? []) {
+    if (!ev.actor_profile_id || !ev.created_at) continue
+    const w = weekStartUTC(new Date(ev.created_at).getTime())
+    let set = actorWeeks.get(ev.actor_profile_id)
+    if (!set) {
+      set = new Set<number>()
+      actorWeeks.set(ev.actor_profile_id, set)
+    }
+    set.add(w)
+  }
+
+  // cohort = the actor's earliest active week within the window
+  const cohorts = new Map<number, string[]>()
+  for (const [actor, set] of actorWeeks) {
+    const first = Math.min(...set)
+    const arr = cohorts.get(first)
+    if (arr) arr.push(actor)
+    else cohorts.set(first, [actor])
+  }
+
+  const thisWeek = weekStartUTC(Date.now())
+  return [...cohorts.keys()]
+    .sort((a, b) => a - b)
+    .map((cw) => {
+      const actors = cohorts.get(cw) as string[]
+      const size = actors.length
+      const maxOffset = Math.round((thisWeek - cw) / WEEK)
+      const retention: number[] = []
+      for (let off = 0; off <= maxOffset; off++) {
+        const wk = cw + off * WEEK
+        const active = actors.filter((a) => actorWeeks.get(a)?.has(wk)).length
+        retention.push(Math.round((active / size) * 100))
+      }
+      return { weekStart: new Date(cw).toISOString().slice(0, 10), size, retention }
+    })
+}
