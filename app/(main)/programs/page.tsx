@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { BookOpen, Check } from 'lucide-react'
 import { listPrograms, getCompletedProgramSlugs } from '@/lib/programs'
 import { getMyProfileId } from '@/lib/auth'
+import { IndexTemplate } from '@/components/templates/index-template'
 
 export const metadata: Metadata = {
   title: 'Programs',
@@ -17,13 +18,11 @@ export default async function ProgramsPage() {
   ])
 
   return (
-    <div className="max-w-2xl">
-      <h1 className="text-2xl font-bold text-text mb-1">Programs</h1>
-      <p className="text-muted mb-8">
-        Free frameworks and trainings to help you start, run, and grow a real circle. None
-        of it is appointed from above; this is how to do it yourself.
-      </p>
-
+    <IndexTemplate
+      title="Programs"
+      description="Free frameworks and trainings to help you start, run, and grow a real circle. None of it is appointed from above; this is how to do it yourself."
+    >
+      <div className="max-w-2xl">
       {programs.length === 0 ? (
         <p className="text-muted">Programs are coming soon.</p>
       ) : (
@@ -62,6 +61,7 @@ export default async function ProgramsPage() {
           ))}
         </ul>
       )}
-    </div>
+      </div>
+    </IndexTemplate>
   )
 }
