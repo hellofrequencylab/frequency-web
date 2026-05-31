@@ -1,5 +1,11 @@
 # Frequency — MVP Build List
 
+> **⚠️ SUPERSEDED (2026-05-31) by [docs/DEVELOPMENT-MAP.md](docs/DEVELOPMENT-MAP.md).**
+> The single plan now lives there (mission → structure → staged build list), folding this
+> product roadmap and `docs/BUILD-PHASES.md` into one. This file is kept for **history** —
+> its shipped items (P0–P3, P7) record what was done; its open items are folded into the
+> Development Map's stages. Do not plan from this file; plan from the Development Map.
+
 **Audience reframe:** Circle.so sells to community *operators* marketing to their audiences. Frequency is built for the **people inside the offering** — embodied practitioners who show up to rides, gatherings, circles. That changes what's worth building and what's noise.
 
 This roadmap is mirrored to [MVP Build List in Notion](https://www.notion.so/36efb0d4b941813e8e04d8a4d30d1dc3). The repo file is the source of truth — update both when status changes.
