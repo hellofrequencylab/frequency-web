@@ -4,13 +4,26 @@
 > deploy path* use [START-HERE.md](START-HERE.md); for the phase tracker use
 > [BUILD-PHASES.md](BUILD-PHASES.md).
 
+## Mission (locked 2026-05-31)
+
+> **Shared interests into real-world community: a free global mission, a game that
+> drives people offline, and physical spaces where it lives.**
+
+Frequency turns shared interests into real-world community, ending the isolation of
+connection lived only through a screen. A free, worldwide **Foundation** gives anyone a
+place to gather around what they love; a game rewards the things that actually build
+community: showing up, inviting strangers, backing local life; and **Labs** builds the
+physical third spaces, sustained by commerce, where it all takes root. One community, one
+game, two engines. We measure success not by screen time but by the people who actually
+practiced together this week (the North Star: Weekly Active Members, see
+[BUILD-PHASES.md](BUILD-PHASES.md)).
+
 ## The thesis
-Frequency is a platform for building **real-world community** — getting people who
-share interests to actually gather, in person and online. The gamification isn't
-decoration; it's the engine that **drives offline action** (showing up, inviting,
-exploring the city, supporting local businesses). We build the **web app as the
-proving ground**, architected so the logic is **portable to mobile** and we're
-**never locked into a vendor or framework**.
+The gamification isn't decoration; it's the engine that **drives offline action** (showing
+up, inviting, exploring the city, supporting local life). We build the **web app as the
+proving ground**, architected so the logic is **portable to mobile** and we're **never
+locked into a vendor or framework**. The full two-entity model (Foundation + Labs, one
+community graph) lives in [PLATFORM-VISION.md](PLATFORM-VISION.md).
 
 Three goals throughout: **(1)** a page structure a newcomer can read without
 explanation, **(2)** a gamification/engagement backbone that's extensible and
