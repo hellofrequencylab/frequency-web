@@ -3,8 +3,9 @@
 > **The big picture.** Frequency is **one community graph spanning two legal/financial
 > domains, with a geographic growth flywheel running through the middle.** This doc
 > captures the whole-system vision the owner articulated, and names the **seams** that
-> must exist in the architecture *now* so every vertical (social, local marketplace,
-> session/program hosting, affiliate, donations) plugs in later **without a rewrite**.
+> must exist in the architecture *now* so every vertical (community, Programs, Local
+> Marketplace, The Collective, affiliate, donations, Lab Spaces) plugs in later **without a
+> rewrite**.
 >
 > Status: **strategy / decision doc.** It governs a new wave of ADRs (ADR-029→036) and
 > reconciles the [ROADMAP](../ROADMAP.md) "Deliberately NOT building" list (see §8).
@@ -156,13 +157,13 @@ To "grow into whatever it becomes," each vertical is a **self-contained, vertica
 module** (per SCALE-ARCHITECTURE §3 and ENGAGEMENT-ARCHITECTURE §4) that **declares
 itself** to a registry rather than editing the core. A module declares:
 
-1. **Data** — own tables, namespaced (`market_*`, `session_*`, `program_*`,
+1. **Data** — own tables, namespaced (`market_*`, `collective_*`, `program_*`,
    `affiliate_*`, `donation_*`). Touches core tables only by FK.
 2. **RPCs** — `SECURITY DEFINER` functions returning **contract view-models + capability
    sets** (the `/discover` pattern, ADR-018, generalized). **Both web and the app call
    the identical RPC** — this is *why* the app can be "just as fully featured": same data,
    only the rendering differs.
-3. **Capabilities** — granular actions (`market.listItem`, `session.host`,
+3. **Capabilities** — granular actions (`market.listItem`, `collective.host`,
    `program.publish`, `affiliate.refer`, `donation.give`) fed into the **same** resolver
    (ADR-017).
 4. **Navigation + composition** — which personas/roles/tiers/scopes surface it, where.
@@ -173,33 +174,35 @@ itself** to a registry rather than editing the core. A module declares:
 Once the registry seam exists, **"add the trades marketplace" = ship a `market`
 module**; core does not change. See ADR-033.
 
-**Vertical catalogue (target — built later, seamed now):**
+**Vertical catalogue (target — built later, seamed now).** The full 13-vertical list +
+build order lives in [DEVELOPMENT-MAP.md](DEVELOPMENT-MAP.md); the money/commerce ones:
 
 | Vertical | Entity | Notes |
 |---|---|---|
 | Circles / channels / events / nodes | shared | the existing graph + engagement |
-| Seed programs ("start your own group", assets) | foundation | free, mission |
-| Local marketplace (Nextdoor-style trades, local support) | labs | strangers transacting → trust & safety §5; **scoped to locality** via the place-tree + PostGIS you already have |
-| Session / program hosting (Insight-Timer / Calm style) | labs | practitioner-hosted; paid; **digital-vs-physical fulfillment flag** (§7) |
+| **Programs** | foundation | **free**: frameworks/trainings to start/run/maintain a circle; lifecycle gamification (start→activate→invite→attend). The mission's activation engine. |
+| **Local Marketplace** | foundation, **no fee** | geolocated goods swap/sell/offer; anti-consumerism, local mutual support; **scoped to locality** via the place-tree + PostGIS. Likely **no in-app payment** (arrange offline) → lighter trust & safety than a paid marketplace. |
+| **The Collective** | labs | members apply to contribute and host **paid** meditations/courses (Insight-Timer model); Connect payouts; **digital-vs-physical fulfillment flag** (§7) |
 | Affiliate program | labs | referral attribution → commission → payout ledger |
 | Donations / grants | foundation | nonprofit rail; recurring (if dues, §3) |
+| **Lab Spaces** | labs | gym-style SaaS for a worldwide facility network: packages, subscriptions, booking, marketing. **Lab membership** lives here and **rolls in** the website paid tier (ADR-035). |
 
 ---
 
 ## 5. Trust & safety is content-type-agnostic (and store-mandatory)
 
-Marketplace + sessions mean **strangers transacting**, which raises the safety bar beyond
-today's moderation queue + janitor. Required seams **now**:
+The Local Marketplace + The Collective mean **strangers connecting and transacting**, which
+raises the safety bar beyond today's moderation queue + janitor. Required seams **now**:
 
-- **Content-type-agnostic moderation.** Reporting a *listing*, a *session*, a *profile*,
-  a *message* must use **one pipeline**. The existing `reports.target_type` enum
+- **Content-type-agnostic moderation.** Reporting a *listing*, a *Collective offering*, a
+  *profile*, a *message* must use **one pipeline**. The existing `reports.target_type` enum
   (`post/dispatch/comment/member/event`) generalizes to cover the new content types — do
   not fork a second moderation system.
 - **Blocking is first-class — now, not v2.** ADR-015 says "no blocking in v1" (fine for
   friends-only DM). **Superseded for the platform vision:** a `blocked` relationship is
   required, because (a) a marketplace needs it for safety, and (b) **Apple/Google require
   per-user block + per-content report for any UGC app.** See ADR-036.
-- **Ratings / reviews / disputes** for marketplace + paid sessions (a payout that's been
+- **Ratings / reviews / disputes** for The Collective's paid offerings (a payout that's been
   disputed is a real ledger state — ties to §1).
 
 ---
@@ -294,10 +297,11 @@ Captured so they are **not lost** and **not guessed**:
 3. **How value flows between entities** — for-profit→Foundation donation, or
    Foundation→for-profit services agreement (the "back-and-forth, handled carefully").
    Architecture records inter-entity transfers as audited ledger entries regardless.
-4. **First proving vertical** — recommend **practitioner-hosted paid sessions/programs**:
-   it exercises the most seams at once (persona + verification + Connect payout +
-   digital-vs-physical + practice-laddering) and is closest to the meditation/Insight-
-   Timer soul of the product. Marketplace second (adds stranger-to-stranger
-   safety/disputes onto a payment rail already proven).
+4. **First proving vertical = The Collective** (decided): contributor-hosted paid
+   meditations/courses exercises the most seams at once (persona + verification + Connect
+   payout + digital-vs-physical + practice-laddering) and is closest to the meditation/
+   Insight-Timer soul of the product. The free verticals (Programs, Local Marketplace) ship
+   *earlier*, in the beta era, since they need no money foundation. Full order:
+   [DEVELOPMENT-MAP.md](DEVELOPMENT-MAP.md).
 5. **Reward economy values, physical-node rollout/safety, web's role once mobile leads**
    — product decisions already flagged in TECH-STRATEGY; unchanged.
