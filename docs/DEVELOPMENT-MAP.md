@@ -165,6 +165,9 @@ admin/analytics surface.
 verticals that don't need the money foundation. **Depends on:** Stage A.
 
 - [ ] **Launch the free Beta**; instrument WAM, 7-day activation, cohort retention.
+- [x] **Member-driven circle creation** (the flywheel enabler): any signed-in member can
+      start a circle around an Interest and become its host (was admin-only). Creator is
+      auto-enrolled as host + member. Matches what the Programs guides teach.
 - [~] **Programs (vertical 4)**: the circle start/run/maintain framework + training library,
       hubbed into the network, with lifecycle gamification. Free; deepens activation and the
       North Star directly. *Done:* content library shipped (`/programs` + `lib/programs.ts`,

@@ -114,11 +114,18 @@ export default async function CirclesPage() {
       neighborhood: c.neighborhood,
     }))
 
+  // Interests (topical channels) for the member-driven "start a circle" picker.
+  const { data: interestRows } = await admin
+    .from('topical_channels')
+    .select('id, name')
+    .order('name')
+  const interests = (interestRows ?? []) as { id: string; name: string }[]
+
   return (
     <IndexTemplate
       title="Circles"
-      description="Your local crew. This is where you post, connect, and show up. Regular meetups, shared updates, the people you'll see week to week. Join one to get started."
-      action={isAdmin ? <NewCircleCompose /> : undefined}
+      description="Your local crew. This is where you post, connect, and show up. Regular meetups, shared updates, the people you'll see week to week. Join one or start your own."
+      action={user ? <NewCircleCompose interests={interests} buttonLabel="Start a circle" /> : undefined}
     >
       <NearYou circles={locatableCircles} />
 

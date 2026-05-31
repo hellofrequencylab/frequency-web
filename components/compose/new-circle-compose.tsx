@@ -6,15 +6,20 @@ import { createCircle } from '@/app/(main)/admin/actions'
 import { CreateModal, cmInput, cmLabel } from '@/components/create-modal'
 
 interface HubOption { id: string; name: string }
+interface InterestOption { id: string; name: string }
 
 export function NewCircleCompose({
   hubs = [],
+  interests = [],
   topicalChannelId,
   topicalChannelName,
   buttonLabel = 'New Circle',
   buttonClass = 'inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors whitespace-nowrap',
 }: {
   hubs?: HubOption[]
+  /** Interests (topical channels) to choose from when not already in a channel.
+   *  Required for the member-driven "start your own circle" path. */
+  interests?: InterestOption[]
   /** When set, the new circle declares this topical channel as its topic. */
   topicalChannelId?: string
   /** Optional channel name used in the modal copy so the framing reads
@@ -29,14 +34,18 @@ export function NewCircleCompose({
   const [type, setType] = useState<'in-person' | 'online'>('in-person')
   const [memberCap, setMemberCap] = useState(50)
   const [hubId, setHubId] = useState('')
+  const [interestId, setInterestId] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
   const inChannel = !!topicalChannelId
+  // Outside a channel, the member must pick an Interest (the topical channel the
+  // circle practices). That also satisfies the bottom-up create rule server-side.
+  const needsInterest = !inChannel && interests.length > 0
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
-    if (!name.trim() || isPending) return
+    if (!name.trim() || (needsInterest && !interestId) || isPending) return
     setError(null)
 
     const fd = new FormData()
@@ -46,13 +55,14 @@ export function NewCircleCompose({
     fd.set('member_cap', String(memberCap))
     fd.set('status', 'forming')
     if (hubId) fd.set('hub_id', hubId)
-    if (topicalChannelId) fd.set('topical_channel_id', topicalChannelId)
+    const channelId = topicalChannelId || interestId
+    if (channelId) fd.set('topical_channel_id', channelId)
 
     startTransition(async () => {
       try {
         await createCircle(fd)
         setOpen(false)
-        setName(''); setAbout(''); setHubId('')
+        setName(''); setAbout(''); setHubId(''); setInterestId('')
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to create circle.')
       }
@@ -61,7 +71,9 @@ export function NewCircleCompose({
 
   const modalTitle = inChannel && topicalChannelName
     ? `Start a circle practicing ${topicalChannelName}`
-    : 'New Circle'
+    : needsInterest
+      ? 'Start a circle'
+      : 'New Circle'
 
   return (
     <>
@@ -74,7 +86,7 @@ export function NewCircleCompose({
         open={open} onClose={() => setOpen(false)} onSubmit={submit}
         title={modalTitle} titleIcon={CircleDot} titleIconColor="green"
         submitLabel="Create Circle" pendingLabel="Creating…"
-        submitDisabled={!name.trim()} isPending={isPending} error={error}
+        submitDisabled={!name.trim() || (needsInterest && !interestId)} isPending={isPending} error={error}
       >
         {inChannel && (
           <p className="text-sm text-muted leading-relaxed">
@@ -85,6 +97,23 @@ export function NewCircleCompose({
             Once a few neighbouring circles form, they crystallise into a hub
             together.
           </p>
+        )}
+        {needsInterest && (
+          <p className="text-sm text-muted leading-relaxed">
+            A circle is your local crew who meet regularly around one practice.
+            Pick what it practices, give it a name, and you&apos;ll be its first
+            host. No hub needed yet, that forms once a few circles cluster.
+          </p>
+        )}
+        {needsInterest && (
+          <div>
+            <label className={cmLabel}>Interest *</label>
+            <select value={interestId} onChange={e => setInterestId(e.target.value)}
+              required disabled={isPending} className={cmInput}>
+              <option value="">What does it practice?</option>
+              {interests.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
+            </select>
+          </div>
         )}
         <div>
           <label className={cmLabel}>Circle name *</label>
