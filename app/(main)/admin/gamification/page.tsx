@@ -7,6 +7,8 @@ import { TIER_CONFIG, DIFFICULTY_CONFIG } from '@/lib/gamification'
 import type { AchievementTier, ChallengeDifficulty } from '@/lib/gamification'
 import type { Database } from '@/lib/database.types'
 import { AwardDialog } from './award-dialog'
+import { getCurrentSeason } from '@/lib/seasons'
+import { SeasonControl } from './season-control'
 
 type TopEarner = Pick<
   Database['public']['Tables']['profiles']['Row'],
@@ -54,6 +56,9 @@ export default async function AdminGamificationPage() {
     admin.from('profiles').select('id, display_name, handle').eq('is_active', true).order('display_name').limit(200),
   ] as const)
 
+  const currentSeason = await getCurrentSeason()
+  const isJanitor = profile.community_role === 'janitor'
+
   return (
     <div>
       <div className="flex items-end justify-between gap-4 mb-6">
@@ -68,6 +73,8 @@ export default async function AdminGamificationPage() {
           members={(allMembers ?? []).map(m => ({ id: m.id, display_name: m.display_name, handle: m.handle }))}
         />
       </div>
+
+      <SeasonControl season={currentSeason} isJanitor={isJanitor} />
 
       {/* Stats grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">

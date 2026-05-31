@@ -40,8 +40,14 @@ these tables mean.
 **Gamification**
 `achievements`, `user_achievements`, `streaks`, `challenge_progress`,
 `quest_chains`, `quest_steps`, `quest_progress`, `season_challenges`,
-`season_trophies`, `crew_tasks`, `crew_completions`, `gem_config`,
+`season_trophies`, `seasons`, `crew_tasks`, `crew_completions`, `gem_config`,
 `gem_transactions`, `zap_config`, `store_items`, `store_redemptions`
+
+> **`seasons`** gives seasons a first-class identity (`season_number`, `name`,
+> `theme`, `starts_at`/`ends_at`, `status`; one `active` at a time). `reset_season()`
+> reads the active season for trophy numbering, then closes it and opens the next.
+> `lib/seasons.ts` (`getCurrentSeason`, `endSeasonNow`); admin control on
+> `/admin/gamification` (janitor-gated).
 
 > **`gem_config` / `zap_config`** are the tunable reward economy: `action_type` to
 > amount, read by `awardGems` / `awardZapsForAction` (gems also enforce `daily_cap`

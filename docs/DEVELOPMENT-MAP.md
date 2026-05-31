@@ -123,8 +123,10 @@ on the real domain. **Depends on:** nothing (all in-codebase closeouts).
 - [~] **Reward economy**: set gem/zap amounts, `nodes.zaps_value`, and a `seasons` table +
       config UI (old ROADMAP P2.10). The game already runs; this gives it real numbers.
       *Done:* `zap_config` table (migration `20240227000000`) brings zaps to parity with
-      `gem_config`; `awardZapsForAction` reads it; real values seeded. *Next:* seasons
-      table + admin config UI.
+      `gem_config`; `awardZapsForAction` reads it; real values seeded. `seasons` table
+      (migration `20240229000000`) gives seasons identity (number, name, dates, status);
+      `reset_season` now advances them; admin "end season" control on `/admin/gamification`.
+      *Next (optional):* member-facing season banner + countdown; live amount-editing UI.
 - [~] **Complete `practice.verified` sources**: logged practice + verified node check-in +
       event attendance check-in (old P2.13). The North-Star event must fire from every
       real-practice path, not just event RSVP-checkin. *Done:* practices backbone
