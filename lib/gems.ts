@@ -3,6 +3,7 @@
 // Called from server actions after user interactions.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { Database } from '@/lib/database.types'
 
 type GemAction =
   | 'post_create'
