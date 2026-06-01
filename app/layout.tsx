@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Nunito, Geist_Mono, Anton, Fraunces } from "next/font/google";
+import { Nunito, Geist_Mono, Anton } from "next/font/google";
 import "./globals.css";
 import { SITE_URL, SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION } from "@/lib/site";
 import { JsonLd } from "@/components/json-ld";
@@ -17,16 +17,6 @@ const nunito = Nunito({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
-  display: "swap",
-});
-
-// Fraunces: a warm, soft editorial serif for in-app page titles (the .font-editorial
-// utility). Pairs with Nunito body to give pages a magazine-like, human feel rather
-// than a SaaS-template look. See docs/DESIGN.md.
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
   display: "swap",
 });
 
@@ -111,7 +101,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${nunito.variable} ${geistMono.variable} ${anton.variable} ${fraunces.variable} h-full antialiased`}
+      className={`${nunito.variable} ${geistMono.variable} ${anton.variable} h-full antialiased`}
     >
       <head>
         {/* Theme script must run synchronously before any paint */}

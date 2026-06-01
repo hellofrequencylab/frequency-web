@@ -26,17 +26,19 @@ export default async function FeedPage({
   let myRole: CommunityRole = 'member'
   let primaryCircleId: string | null = null
   let canAnnounce = false
+  let firstName: string | null = null
 
   if (user) {
     const { data: profile } = await admin
       .from('profiles')
-      .select('id, community_role')
+      .select('id, community_role, display_name')
       .eq('auth_user_id', user.id)
       .maybeSingle()
 
     if (profile) {
       myProfileId = profile.id
       myRole = (profile.community_role ?? 'member') as CommunityRole
+      firstName = (profile.display_name ?? '').trim().split(/\s+/)[0] || null
       canAnnounce = ['host', 'guide', 'mentor', 'janitor'].includes(myRole)
 
       const { data: membership } = await admin
@@ -59,10 +61,21 @@ export default async function FeedPage({
   // Adopted practices not yet logged today -> the feed "log today" nudge (WAM).
   const practicesToLog = myProfileId ? await getPracticesToLogToday(myProfileId) : []
 
+  // Warm, time-aware greeting headline (the feed is "home", so it greets you).
+  const hour = new Date().getHours()
+  const partOfDay = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
+  const greeting = firstName ? `${partOfDay}, ${firstName}` : partOfDay
+  const today = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  })
+
   return (
     <div className="max-w-2xl mx-auto w-full">
       <StreamTemplate
-        title="Feed"
+        eyebrow={today}
+        title={greeting}
         description={hasCircle ? "Here's what your circles are up to right now." : "What's happening across the community."}
         action={<CreateMenu role={myRole} />}
       >

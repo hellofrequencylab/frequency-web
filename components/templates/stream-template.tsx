@@ -7,6 +7,7 @@
 // Presentational + server-friendly (no hooks).
 
 export function StreamTemplate({
+  eyebrow,
   title,
   description,
   action,
@@ -14,6 +15,8 @@ export function StreamTemplate({
   sort,
   children,
 }: {
+  /** Small contextual line above the title (e.g. today's date). Adds weight to thin headers. */
+  eyebrow?: React.ReactNode
   title: React.ReactNode
   description?: React.ReactNode
   /** Header-right action, e.g. a create menu. */
@@ -26,9 +29,14 @@ export function StreamTemplate({
 }) {
   return (
     <div>
-      <div className="flex items-end justify-between gap-4 mb-6">
+      <div className="flex items-end justify-between gap-4 mb-6 pb-5 border-b border-border">
         <div>
-          <h1 className="font-editorial text-3xl text-text mb-1">{title}</h1>
+          {eyebrow && (
+            <p className="text-xs font-semibold uppercase tracking-widest text-primary-strong mb-1.5">
+              {eyebrow}
+            </p>
+          )}
+          <h1 className="text-2xl font-bold text-text mb-1">{title}</h1>
           {description && (
             <p className="text-sm text-muted leading-relaxed max-w-2xl">{description}</p>
           )}
