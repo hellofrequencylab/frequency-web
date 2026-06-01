@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
-import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
+import { BETA_CTA_LABEL } from '@/lib/site'
 import { SiteImage } from '@/components/marketing/site-image'
+import { JoinButton } from '@/components/welcome/join-button'
 
 // ── Shared building blocks for the public marketing pages ─────────────────────
 // Editorial treatment: heavy condensed display headings (.font-display from the
@@ -250,12 +251,9 @@ export function BetaCTA({
       <div className="relative max-w-2xl mx-auto">
         <h2 className="font-display uppercase text-text text-4xl sm:text-5xl mb-6">{heading}</h2>
         {body && <p className="text-xl text-muted mb-9 leading-relaxed">{body}</p>}
-        <Link
-          href={BETA_CTA_HREF}
-          className="inline-flex items-center gap-2 rounded-2xl bg-primary text-on-primary px-10 py-4 text-lg font-bold hover:bg-primary-hover transition-colors"
-        >
+        <JoinButton className="inline-flex items-center gap-2 rounded-2xl bg-primary text-on-primary px-10 py-4 text-lg font-bold hover:bg-primary-hover transition-colors">
           {BETA_CTA_LABEL} <ArrowRight className="w-5 h-5" />
-        </Link>
+        </JoinButton>
       </div>
     </section>
   )
