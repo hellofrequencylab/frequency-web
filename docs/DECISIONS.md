@@ -733,6 +733,39 @@ on once their migrations ship — this change is deliberately schema-free and
 deploy-safe.
 
 ---
+
+## ADR-044: Tests cover the pure core + security primitives, not DB-touching glue
+
+**Status:** Accepted · corroborated by `vitest.config.ts` and the five `*.test.ts` files ·
+relates to ADR-028 (autonomy is gated on a test harness)
+**Context:** The repo runs against Supabase, where most modules call `createAdminClient()` /
+RPCs and the real guarantees live in **RLS policies and SQL functions** — neither of which a
+Node unit test exercises faithfully. Mocking Supabase end-to-end mostly re-asserts the mock,
+not the behavior, and is high-maintenance. But ADR-028 makes a verification harness
+**non-negotiable** before any AI agent earns autonomy, and some logic is genuinely
+pure/security-critical and cheap to test for real. We needed a stance on *what* `vitest`
+owns so coverage tracks risk instead of chasing a line-count target.
+**Decision:** `vitest` (config: `environment: 'node'`, `include: ['**/*.test.ts']`, `@/`
+alias mirroring tsconfig) targets two things only:
+- **Pure, framework-independent core** — deterministic logic with no I/O. Today:
+  `lib/engagement/currency.ts` (source → currency) and `lib/core/capabilities.ts` (the
+  capability resolver / authz). These are the highest-leverage, lowest-cost tests.
+- **Security-critical primitives** where a bug is silent and dangerous —
+  `lib/webhook-verify.ts` (signature verification), `lib/suppression.ts` (the `shouldSend`
+  consent gate ADR-028 names), and `lib/queue/outbox.ts` (idempotent/retrying job drain).
+
+DB-touching code (`events.ts`, `verify.ts`, `capture.ts`, route handlers) is **not**
+unit-tested in-process. Its correctness is owned by the type system + the RLS/RPC layer, and
+the planned **RLS/authz test suite** (ADR-041 Layer 1, run against a real Postgres) is the
+right tool for it — not Node mocks.
+**Consequences:** Keep the pure core genuinely pure so it stays testable (it's a design
+constraint, not just a convenience). New security primitives ship **with** a `*.test.ts`;
+new DB glue does not grow the mock surface — it waits for the RLS suite. The `shouldSend` +
+`vitest` harness that ADR-028 gates agent autonomy on is **partially in place** (suppression
++ pure core); the remaining gate is the RLS/authz suite. Reach for a mock only when logic is
+both impure and security-critical enough that waiting for the RLS suite is too slow.
+
+---
 ### Decisions intentionally NOT duplicated here
 
 Already fully covered by the repo docs (no ADR needed): the RLS / admin-client

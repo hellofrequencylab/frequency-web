@@ -196,6 +196,9 @@ export function ProfileForm({
         <label className={lbl}>Photo</label>
         <div className="flex items-center gap-4">
           {avatarPreview ? (
+            // avatarPreview is a local object-URL (blob:) once a file is picked,
+            // so the Next optimizer can't handle it — a plain <img> is correct.
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={avatarPreview}
               alt="Profile photo"

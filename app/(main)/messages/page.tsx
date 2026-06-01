@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { redirect } from 'next/navigation'
 import { MessageSquare, Hash, Lock, Users, Compass, Sparkles, Zap } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -431,7 +432,7 @@ export default async function MessagesPage({
                         >
                           <div className="relative shrink-0">
                             {m.avatar_url ? (
-                              <img src={m.avatar_url} alt={m.display_name} className="w-7 h-7 rounded-full object-cover" />
+                              <Image src={m.avatar_url} alt={m.display_name} width={28} height={28} className="w-7 h-7 rounded-full object-cover" />
                             ) : (
                               <div className="w-7 h-7 rounded-full bg-border-strong flex items-center justify-center text-[10px] font-bold text-muted select-none">
                                 {getInitials(m.display_name)}
@@ -547,7 +548,7 @@ function DMRow({ conv, myProfileId }: { conv: ConversationRow; myProfileId: stri
         {isGroup ? (
           <GroupAvatars participants={conv.participants} />
         ) : conv.participants[0]?.avatar_url ? (
-          <img src={conv.participants[0].avatar_url!} alt={conv.participants[0].display_name} className="w-10 h-10 rounded-full object-cover" />
+          <Image src={conv.participants[0].avatar_url!} alt={conv.participants[0].display_name} width={40} height={40} className="w-10 h-10 rounded-full object-cover" />
         ) : (
           <div className="w-10 h-10 rounded-full bg-primary-bg text-primary-strong text-sm font-semibold flex items-center justify-center select-none">
             {conv.participants[0] ? getInitials(conv.participants[0].display_name) : '?'}
@@ -586,7 +587,7 @@ function GroupAvatars({ participants }: { participants: Profile[] }) {
           ? ''
           : i === 0 ? 'absolute top-0 left-0' : i === 1 ? 'absolute bottom-0 right-0' : 'absolute bottom-0 left-0'
         return p.avatar_url ? (
-          <img key={p.id} src={p.avatar_url} alt={p.display_name}
+          <Image key={p.id} src={p.avatar_url} alt={p.display_name} width={40} height={40}
             className={`${size} ${pos} rounded-full object-cover ring-2 ring-surface`} />
         ) : (
           <div key={p.id}

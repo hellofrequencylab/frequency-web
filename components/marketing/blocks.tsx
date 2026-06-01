@@ -58,7 +58,7 @@ export function HeroBlock({
           src={bgImage || '/images/site/lab-thermal.jpg'}
           alt=""
           fill
-          priority
+          preload
           sizes="100vw"
           className="object-cover object-center"
         />
@@ -268,8 +268,7 @@ export function LivePostsBlock({ heading, live, pad, vis = '' }: { heading?: str
                 <div className="p-5">
                   <div className="flex items-start gap-3 mb-3">
                     {a?.avatar_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={a.avatar_url} alt={a.display_name} className="w-10 h-10 rounded-full object-cover shrink-0" />
+                      <Image src={a.avatar_url} alt={a.display_name} width={40} height={40} className="w-10 h-10 rounded-full object-cover shrink-0" />
                     ) : (
                       <div className="w-10 h-10 rounded-full bg-surface-elevated text-muted text-xs font-semibold flex items-center justify-center shrink-0 select-none">
                         {initials}

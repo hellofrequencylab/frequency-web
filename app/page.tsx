@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { ChevronDown, ArrowRight } from 'lucide-react'
 import { Render } from '@measured/puck/rsc'
 import { createClient } from '@/lib/supabase/server'
@@ -357,10 +358,12 @@ function Pillar({
         reverse ? 'sm:flex-row-reverse' : ''
       }`}
     >
-      <img
+      <Image
         src={img}
         alt={alt}
-        loading="lazy"
+        width={512}
+        height={512}
+        sizes="(min-width: 640px) 32rem, 20rem"
         className="w-80 h-80 sm:w-[32rem] sm:h-[32rem] rounded-full object-cover border-4 border-white/10 shrink-0"
       />
       <div
@@ -406,9 +409,11 @@ function PostPreviewCard({ post }: { post: PostPreviewRow }) {
       <div className="p-5">
         <div className="flex items-start gap-3 mb-3">
           {a?.avatar_url ? (
-            <img
+            <Image
               src={a.avatar_url}
               alt={a.display_name}
+              width={40}
+              height={40}
               className="w-10 h-10 rounded-full object-cover shrink-0"
             />
           ) : (
@@ -435,12 +440,13 @@ function PostPreviewCard({ post }: { post: PostPreviewRow }) {
         <p className="text-base text-text leading-relaxed line-clamp-3">{post.body}</p>
 
         {post.media_urls?.length > 0 && (
-          <div className="mt-3 rounded-xl overflow-hidden border border-border">
-            <img
+          <div className="relative mt-3 h-72 w-full rounded-xl overflow-hidden border border-border">
+            <Image
               src={post.media_urls[0]}
               alt="Post attachment"
-              loading="lazy"
-              className="w-full max-h-72 object-cover"
+              fill
+              sizes="(min-width: 768px) 40rem, 100vw"
+              className="object-cover"
             />
           </div>
         )}

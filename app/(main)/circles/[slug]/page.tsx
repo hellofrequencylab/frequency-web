@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import Image from 'next/image'
 import Link from 'next/link'
 import { Users, MessageSquare, Settings2, Activity, TrendingUp, Zap, Flame, Pencil } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -475,9 +476,11 @@ export default async function CirclePage({
                           className="flex items-center gap-3 flex-1 min-w-0"
                         >
                           {profile.avatar_url ? (
-                            <img
+                            <Image
                               src={profile.avatar_url}
                               alt={profile.display_name}
+                              width={32}
+                              height={32}
                               className="w-8 h-8 rounded-full object-cover shrink-0"
                             />
                           ) : (

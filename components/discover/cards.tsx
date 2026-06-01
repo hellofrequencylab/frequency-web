@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { ArrowRight, Users, MapPin, CalendarDays } from 'lucide-react'
 import { getInitials, relativeTime } from '@/lib/utils'
 import { eventDateBadge, formatEventDate } from '@/lib/discover'
@@ -109,9 +110,11 @@ export function PostPreview({ post }: { post: PublicPost }) {
     <article className="rounded-2xl border border-border bg-surface shadow-sm p-4">
       <div className="flex items-start gap-3 mb-3">
         {post.author_avatar_url ? (
-          <img
+          <Image
             src={post.author_avatar_url}
             alt={post.author_display_name ?? 'Member'}
+            width={40}
+            height={40}
             className="w-10 h-10 rounded-full object-cover shrink-0"
           />
         ) : (
@@ -131,12 +134,13 @@ export function PostPreview({ post }: { post: PublicPost }) {
       </div>
       <p className="text-sm text-text leading-relaxed line-clamp-3 mb-3">{post.body}</p>
       {post.media_urls && post.media_urls.length > 0 && (
-        <div className="rounded-xl overflow-hidden border border-border">
-          <img
+        <div className="relative h-72 w-full rounded-xl overflow-hidden border border-border">
+          <Image
             src={post.media_urls[0]}
             alt="Post attachment"
-            loading="lazy"
-            className="w-full max-h-72 object-cover"
+            fill
+            sizes="(min-width: 768px) 36rem, 100vw"
+            className="object-cover"
           />
         </div>
       )}

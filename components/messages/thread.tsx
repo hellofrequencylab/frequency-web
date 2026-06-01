@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useTransition } from 'react'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { sendMessage } from '@/app/(main)/messages/actions'
 import { getInitials } from '@/lib/utils'
@@ -156,9 +157,11 @@ export function MessageThread({
               <div className="shrink-0 self-end mb-1">
                 {!isMine && (
                   sender?.avatar_url ? (
-                    <img
+                    <Image
                       src={sender.avatar_url}
                       alt={sender.display_name}
+                      width={28}
+                      height={28}
                       className="w-7 h-7 rounded-full object-cover"
                     />
                   ) : (

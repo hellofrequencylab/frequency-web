@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import Image from 'next/image'
 import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
@@ -170,7 +171,7 @@ export default async function DispatchDetailPage({ params }: Props) {
         {/* Author + date */}
         <div className="flex items-center gap-3 mb-8">
           {author?.avatar_url ? (
-            <img src={author.avatar_url} alt={author.display_name} className="w-8 h-8 rounded-full object-cover" />
+            <Image src={author.avatar_url} alt={author.display_name} width={32} height={32} className="w-8 h-8 rounded-full object-cover" />
           ) : (
             <div className="w-8 h-8 rounded-full bg-primary-bg flex items-center justify-center text-xs font-bold text-primary-strong">
               {getInitials(author?.display_name ?? '?')}

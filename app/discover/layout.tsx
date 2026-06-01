@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { SiteHeader } from '@/components/layout/site-header'
 
 // Shared chrome for every public /discover page: the public SiteHeader (light
@@ -14,7 +15,7 @@ export default function DiscoverLayout({ children }: { children: React.ReactNode
       <footer className="bg-marketing-canvas border-t border-border/60 px-6 py-10">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <img src="/frequency-logo.png" alt="Frequency" className="h-5 w-auto opacity-40" />
+            <Image src="/frequency-logo.png" alt="Frequency" width={963} height={170} className="h-5 w-auto opacity-40" />
             <span className="text-xs text-muted">
               &copy; {new Date().getFullYear()} Frequency Labs Holdings
             </span>

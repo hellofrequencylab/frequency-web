@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition, useRef, useEffect, useCallback } from 'react'
+import Image from 'next/image'
 import { Megaphone, ImagePlus, X } from 'lucide-react'
 import { createPost } from '@/app/(main)/feed/actions'
 import { createClient } from '@/lib/supabase/client'
@@ -216,6 +217,10 @@ export function Composer({
       {/* Image preview */}
       {imagePreview && (
         <div className="relative mt-2 inline-block">
+          {/* Local object-URL preview of the file being uploaded — a transient
+              blob: src that the Next image optimizer can't (and shouldn't) touch,
+              so a plain <img> is correct here. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={imagePreview}
             alt="Upload preview"
@@ -251,7 +256,7 @@ export function Composer({
               }`}
             >
               {p.avatar_url ? (
-                <img src={p.avatar_url} alt={p.display_name} className="w-6 h-6 rounded-full object-cover shrink-0" />
+                <Image src={p.avatar_url} alt={p.display_name} width={24} height={24} className="w-6 h-6 rounded-full object-cover shrink-0" />
               ) : (
                 <div className="w-6 h-6 rounded-full bg-primary-bg text-primary-strong text-[10px] font-bold flex items-center justify-center shrink-0">
                   {getInitials(p.display_name)}

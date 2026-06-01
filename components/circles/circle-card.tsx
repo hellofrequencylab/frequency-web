@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { Users, MapPin, Globe } from 'lucide-react'
 import { joinCircle } from '@/app/(main)/circles/actions'
 
@@ -26,10 +27,11 @@ export function CircleCard({ circle, isMember }: { circle: CircleCardData; isMem
     <div className="flex flex-col items-center px-1 text-center">
       <Link href={`/circles/${circle.slug}`} className="group/img shrink-0">
         {circle.imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={circle.imageUrl}
             alt={circle.name}
+            width={144}
+            height={144}
             className="h-36 w-36 rounded-full object-cover shadow-sm ring-1 ring-border/60 transition-transform duration-200 group-hover/img:scale-[1.03]"
           />
         ) : (

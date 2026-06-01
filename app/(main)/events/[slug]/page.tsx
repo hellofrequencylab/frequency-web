@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import Image from 'next/image'
 import Link from 'next/link'
 import { CalendarDays, MapPin, Users, ExternalLink, Check } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -361,7 +362,7 @@ export default async function EventDetailPage({
                 className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-surface transition-colors -mx-3"
               >
                 {profile.avatar_url ? (
-                  <img src={profile.avatar_url} alt={profile.display_name} className="w-7 h-7 rounded-full object-cover shrink-0" />
+                  <Image src={profile.avatar_url} alt={profile.display_name} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0" />
                 ) : (
                   <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none">
                     {getInitials(profile.display_name)}
