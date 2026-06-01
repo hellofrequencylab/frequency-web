@@ -895,6 +895,57 @@ used instead of a Next-version-specific helper, since the bundled Next 16 docs r
 AGENTS.md aren't present in `node_modules`.
 
 ---
+
+## ADR-049: Vera — a persistent, memory-backed AI guide persona; personas as a pluggable registry
+
+**Status:** Accepted (design) · 2026-06-01. Spec: [AI-VERA.md](AI-VERA.md).
+
+**Context:** The onboarding concierge (ADR-047 Phase 2) needs a voice and a model for how the AI
+relates to members over time. We want a consistent character that debuts in onboarding and recurs
+across the planned AI member surfaces, that *remembers* the member, and that we can extend to
+other archetypes later.
+
+**Decision:** Define **Vera** — a warm, dry, no-slack matriarch who keeps the place running. She
+**spars (verbal aikido)** with people who test her rather than shutting them down; she only drops
+the humor when someone is cruel to *another* member, which routes to existing moderation (she is
+**not** the moderator). She is the **persistent voice of the place** (onboarding, contextual help,
+encouragement, gentle accountability, guardian), and a **bridge to humans, not a replacement**.
+She has **memory** — extracted facts + a rolling conversation *summary* (not raw transcripts),
+sourced from the same `engagement_events` backbone as the analytics dashboard, stored per-member,
+member-viewable and erasable. Personas are **data, not hardcoded** (`id, name, voice, tools,
+surfaces, model`) so future archetypes are config; Vera is persona #1.
+
+**Consequences:** Vera ships only on top of the AI core (`lib/ai/` — model router, prompt cache,
+caps, kill switch, governance; ADR-028/041), via the Claude API with tool-use + prompt caching +
+memory. **No autonomous writes until gated by the consent/verification harness (ADR-028);** budget
+caps + kill switch are mandatory, and the deterministic onboarding tour (ADR-047) is her always-on
+fallback so the product never depends on her being up. Open: autonomy level (propose-and-confirm
+vs act-and-undo), memory store shape, and the first non-onboarding surface.
+
+---
+
+## ADR-050: First-party event tracking is the source of truth for the admin dashboard; GA4 owns acquisition
+
+**Status:** Accepted (design) · 2026-06-01. Spec: [ANALYTICS.md](ANALYTICS.md). Builds on ADR-048.
+
+**Context:** We want accurate, real-time product/community analytics on an **in-app admin
+dashboard**, and GA4 (ADR-048) "fully embedded." GA4 is sampled, delayed, and acquisition-shaped —
+unsuitable as the dashboard's data source.
+
+**Decision:** Split analytics by job. (1) **First-party = source of truth** for the admin
+dashboard: a canonical **event taxonomy** recorded to the existing `engagement_events` backbone,
+read via aggregates/RPCs. (2) A single **dual-emit `track(event, props)` helper** is the only
+sanctioned way to record an event — it writes `engagement_events` *and* fires the matching **GA4
+custom event**, so coverage can't drift and GA's funnels reflect real behavior (not just
+pageviews). (3) **GA4 owns acquisition**, surfaced in the dashboard via the **GA Data API** widget
+(service account — same access the Google Analytics MCP uses) or linked out.
+
+**Consequences:** The admin dashboard never reads from GA (accuracy + realtime). The same event
+stream feeds **Vera's memory** (ADR-049) — one source, two consumers. First-party telemetry adds
+no new cookies/consent; GA4 stays per ADR-048 (anonymized, ad signals off; EU consent deferred).
+Open: GA Data API embed vs link-out, v1 metric priorities, and the client/server split per event.
+
+---
 ### Decisions intentionally NOT duplicated here
 
 Already fully covered by the repo docs (no ADR needed): the RLS / admin-client

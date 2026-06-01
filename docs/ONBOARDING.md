@@ -92,6 +92,22 @@ activation funnel is measurable (ties directly into the planned analytics dashbo
 **Success metrics.** First-session/first-week activation (handle set, circle joined,
 practice adopted), WAM lift, tour completion & drop-off per step.
 
+**The concrete flow (moment-by-moment).** One coachmark per moment, in Vera's voice
+([AI-VERA.md](AI-VERA.md)), each gated by the pacing rule and each emitting an event
+([ANALYTICS.md](ANALYTICS.md)) so the activation funnel is measurable from day one:
+
+| # | Moment / trigger | Vera's beat (voice) | Captures | Event emitted |
+|---|---|---|---|---|
+| 1 | First feed visit | "This is home — what's happening near you. Make it yours." | — | `onboarding.step_viewed` (feed) |
+| 2 | After a beat on feed | "Put a face to the name? Takes ten seconds." → name/photo sheet | display name, avatar | `profile.completed` |
+| 3 | First `/circles` visit | "Here's where you find your people. Pick one that doesn't scare you." | — | `onboarding.step_viewed` (circles) |
+| 4 | Joins a circle | "Good. That's the hard part done." | `joined_circle` | `circle.joined` |
+| 5 | After joining | "Want a small weekly thing to show up for? That's the whole point." → adopt a practice | adopted practice | `practice.adopted` |
+| 6 | Name is set | community/system account posts "welcome [Name] 👋" once; members react/comment | — | `post.created` (welcome) |
+
+Each step is **skippable**, never re-shown once `seen`/`dismissed`, and the next one only
+appears after the pacing gate clears — so it reads as a guide noticing you, not a wizard.
+
 ### Phase 2 — AI concierge (separate initiative; depends on the AI core)
 
 A conversational surface (slide-in) where Claude greets the newcomer, explains Frequency,
