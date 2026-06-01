@@ -29,3 +29,10 @@ export const BETA_CTA_HREF = "/beta";
 // language on the public site yet (see frequency-site-plan + org-status spec).
 export const ORG_LEGAL_NAME = "Frequency Labs Holdings";
 export const CONTACT_EMAIL = "hello@frequencylocal.com";
+
+// Social-proof floor. Below this many members, public surfaces show qualitative
+// "founding" framing instead of raw counts — a brand-new community showing
+// "0 members" is actively anti-persuasive (STUDIO-REVIEW P0). Raise once real.
+export const SOCIAL_PROOF_FLOOR = 25;
+// Where the first community is taking root — used in founding-stage copy.
+export const FOUNDING_PLACE = "North County San Diego";

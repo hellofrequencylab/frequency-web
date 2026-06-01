@@ -16,7 +16,7 @@ import {
   SignInCta,
   SectionHeading,
 } from '@/components/discover/cards'
-import { SITE_NAME } from '@/lib/site'
+import { SITE_NAME, SOCIAL_PROOF_FLOOR, FOUNDING_PLACE } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import {
   breadcrumbSchema,
@@ -108,13 +108,19 @@ export default async function DiscoverHubPage() {
             Explore the circles, events, and topics bringing neighbors together in person.
             Browse freely — sign up free to join a circle, RSVP to an event, or post.
           </p>
-          <div className="flex items-center justify-center gap-6 text-sm text-muted">
-            <span><strong className="text-text">{counts.members}</strong> members</span>
-            <span className="text-border">|</span>
-            <span><strong className="text-text">{counts.circles}</strong> circles</span>
-            <span className="text-border">|</span>
-            <span><strong className="text-text">{events.length}</strong> upcoming events</span>
-          </div>
+          {counts.members >= SOCIAL_PROOF_FLOOR ? (
+            <div className="flex items-center justify-center gap-6 text-sm text-muted">
+              <span><strong className="text-text">{counts.members}</strong> members</span>
+              <span className="text-border">|</span>
+              <span><strong className="text-text">{counts.circles}</strong> circles</span>
+              <span className="text-border">|</span>
+              <span><strong className="text-text">{events.length}</strong> upcoming events</span>
+            </div>
+          ) : (
+            <p className="text-sm text-muted">
+              Forming now in {FOUNDING_PLACE} — explore the first circles, topics, and events below.
+            </p>
+          )}
         </div>
       </section>
 

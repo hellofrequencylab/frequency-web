@@ -9,7 +9,7 @@ import { MarketingHeader } from '@/components/layout/marketing-header'
 import { MarketingFooter } from '@/components/layout/marketing-footer'
 import { Statement, ZigZag, Marquee, BetaCTA } from '@/components/marketing/marketing-ui'
 import { getInitials, relativeTime } from '@/lib/utils'
-import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
+import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, BETA_CTA_LABEL, BETA_CTA_HREF, SOCIAL_PROOF_FLOOR, FOUNDING_PLACE } from '@/lib/site'
 import { type CommunityRole, ROLE_RANK, RoleBadge } from '@/lib/community-roles'
 import { config } from '@/lib/page-editor/config'
 import { getPublishedData } from '@/lib/page-editor/data'
@@ -262,11 +262,18 @@ function LegacySplash({ live }: { live: LiveData }) {
           <h2 className="font-display uppercase text-text text-4xl sm:text-5xl mb-12">
             It&apos;s already happening.
           </h2>
-          <div className="grid grid-cols-3 gap-6 max-w-xl mx-auto">
-            <Stat value={memberCount} label="Members" />
-            <Stat value={circleCount} label="Circles" />
-            <Stat value={upcomingEvents.length} label="Events soon" />
-          </div>
+          {memberCount >= SOCIAL_PROOF_FLOOR ? (
+            <div className="grid grid-cols-3 gap-6 max-w-xl mx-auto">
+              <Stat value={memberCount} label="Members" />
+              <Stat value={circleCount} label="Circles" />
+              <Stat value={upcomingEvents.length} label="Events soon" />
+            </div>
+          ) : (
+            <p className="text-lg leading-relaxed text-muted max-w-xl mx-auto">
+              The first circles are forming in {FOUNDING_PLACE}. The founding members are
+              shaping what this becomes — come be one of them.
+            </p>
+          )}
         </div>
       </section>
 
