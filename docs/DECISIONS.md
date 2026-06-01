@@ -868,6 +868,33 @@ not block Phase 1. The current `/onboarding` wizard is demoted to an optional "f
 profile" surface rather than a hard gate.
 
 ---
+
+## ADR-048: Add GA4 for acquisition analytics (privacy-configured), alongside a first-party product dashboard
+
+**Status:** Accepted · 2026-06-01.
+
+**Context:** We had no analytics and a privacy policy stating we use no third-party tracking
+cookies. We want two complementary views: **acquisition** (how visitors find us — traffic,
+sources, devices) and **product/community health** (what members do once in). Acquisition
+data is hard to derive from our own DB; product data is hard to get from a third party.
+
+**Decision:** Run **both**. (1) **GA4** via a gtag.js tag (`components/analytics/google-analytics.tsx`,
+mounted in the root layout) for acquisition. It is **inert unless `NEXT_PUBLIC_GA_MEASUREMENT_ID`
+is set AND `NODE_ENV==='production'`**, so it never fires in dev/preview and is safe to ship
+before the property exists. GA4 "Enhanced measurement" covers SPA route changes, so no manual
+pageview wiring. We configure it privacy-forward: `anonymize_ip`, and Google Signals /
+ad-personalization **off**. (2) A **first-party dashboard** (planned, separate) built on our own
+Supabase `engagement_events` for product/community metrics — no cookies, no consent surface.
+
+**Consequences:** The privacy policy is updated to disclose Google Analytics (reversing the
+"no third-party tracking" line) with the anonymization/no-ads configuration spelled out.
+Because GA4 still sets cookies, **EU/UK traffic would require a consent banner / GA Consent
+Mode** — deferred (audience is US/local beta today); flagged as a follow-up if traffic
+internationalizes. Raw-`<script>` injection (matching the existing theme-script pattern) is
+used instead of a Next-version-specific helper, since the bundled Next 16 docs referenced in
+AGENTS.md aren't present in `node_modules`.
+
+---
 ### Decisions intentionally NOT duplicated here
 
 Already fully covered by the repo docs (no ADR needed): the RLS / admin-client
