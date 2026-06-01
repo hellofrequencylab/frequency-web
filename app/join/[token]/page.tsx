@@ -113,7 +113,7 @@ export default async function JoinPage({ params }: Props) {
             {alreadyMember ? (
               <div className="text-center space-y-3">
                 <p className="text-sm text-muted">
-                  You're already a member of this circle.
+                  You&apos;re already a member of this circle.
                 </p>
                 <Link
                   href="/circles"
@@ -133,7 +133,7 @@ export default async function JoinPage({ params }: Props) {
                   Sign in to join
                 </Link>
                 <p className="text-xs text-center text-subtle">
-                  Don't have an account?{' '}
+                  Don&apos;t have an account?{' '}
                   <Link href={`/sign-in?next=/join/${token}`} className="text-primary-strong hover:underline">
                     Get started
                   </Link>

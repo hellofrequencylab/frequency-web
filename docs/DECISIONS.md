@@ -766,6 +766,35 @@ new DB glue does not grow the mock surface — it waits for the RLS suite. The `
 both impure and security-critical enough that waiting for the RLS suite is too slow.
 
 ---
+
+## ADR-045: Janitor "view as any role" is an effective-role downgrade gated on the real role
+
+**Status:** Accepted · corroborated by `lib/view-as.ts`, `lib/auth.ts` (`resolveCaller`),
+`app/(main)/view-as-actions.ts`, `components/layout/view-as-control.tsx`.
+**Context:** Janitors need to preview the app as a lower role (member/crew/host/…) to QA the
+experience without a second account. The role read-path is split: the `(main)` layout reads
+`community_role` directly (nav gating) while the capability resolver reads it via
+`lib/auth.ts`. A preview must be consistent across both, and must not become a privilege-
+escalation vector.
+**Decision:** A single shared helper (`lib/view-as.ts`) resolves an **effective role** from
+an httpOnly `freq-view-as` cookie, applied in *both* read-paths (the layout and
+`resolveCaller`). The override is honoured **only when the caller's real role is `janitor`**;
+since janitor is the top of the ladder, every "view as" is a *downgrade* and can never
+escalate — even a forged cookie on a non-janitor account is ignored. The effective role
+flows everywhere (nav, capability resolver, and therefore server-side enforcement), so the
+preview is faithful: a janitor "viewing as member" also loses janitor mutation rights until
+they exit. The cookie is set only via a server action that re-checks the real role
+(defence in depth) and auto-expires after 8h so no one is silently stuck impersonating.
+`resolveCaller` returns both the effective `community_role` and the true `realRole`; the
+latter gates the janitor-only control (in the sidebar profile box, opening upward).
+**Consequences:** No new schema, no new policy — purely an application-layer effective-role
+shim, so it composes with the RLS convergence (ADR-042) rather than fighting it. Known
+limitation: any code that still reads `community_role` *directly from the DB* for
+authorization (outside the capability resolver) won't be downgraded in preview — those
+surfaces stay at the real role until they migrate to the resolver. Staff/Studio access is a
+separate axis (the `staff` table) and is intentionally unaffected by view-as.
+
+---
 ### Decisions intentionally NOT duplicated here
 
 Already fully covered by the repo docs (no ADR needed): the RLS / admin-client

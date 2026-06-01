@@ -18,6 +18,7 @@ import { cache } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { applyViewAs } from '@/lib/view-as'
 
 export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
@@ -28,9 +29,16 @@ export const getCachedUser = cache(async (): Promise<User | null> => {
   return user
 })
 
-/** The caller's profile core fields (or null), memoized per request. */
+/**
+ * The caller's profile core fields (or null), memoized per request.
+ *
+ * `community_role` is the *effective* role: for a janitor using "view as" it is
+ * the impersonated (downgraded) role, so the capability resolver and server
+ * enforcement preview faithfully. `realRole` is always the true DB role — use it
+ * to gate the view-as control itself. See lib/view-as.ts.
+ */
 const resolveCaller = cache(
-  async (): Promise<{ id: string; community_role: CommunityRole } | null> => {
+  async (): Promise<{ id: string; community_role: CommunityRole; realRole: CommunityRole } | null> => {
     const user = await getCachedUser()
     if (!user) return null
 
@@ -43,16 +51,27 @@ const resolveCaller = cache(
       .eq('auth_user_id', user.id)
       .maybeSingle()
 
-    return data as { id: string; community_role: CommunityRole } | null
+    if (!data) return null
+    const realRole = (data.community_role ?? 'member') as CommunityRole
+    return { id: data.id as string, community_role: await applyViewAs(realRole), realRole }
   },
 )
 
 /**
- * The caller's profile id + community role, or null if not signed in / no
- * profile row. Use when an action needs to make a role-based authz decision.
+ * The caller's profile id + effective community role, or null if not signed in /
+ * no profile row. Use when an action needs to make a role-based authz decision.
  */
 export async function getCallerProfile(): Promise<{ id: string; community_role: CommunityRole } | null> {
   return resolveCaller()
+}
+
+/**
+ * The caller's REAL community role (ignoring any active "view as" override), or
+ * null. Use to decide whether to show the janitor-only view-as control, and to
+ * gate the action that sets it.
+ */
+export async function getRealCallerRole(): Promise<CommunityRole | null> {
+  return (await resolveCaller())?.realRole ?? null
 }
 
 /** The caller's profile id, or null if not signed in / no profile row. */

@@ -26,7 +26,7 @@ export default async function UnsubscribePage({
   if (!p || !c || !t) {
     return <Layout>
       <Title>Missing unsubscribe details.</Title>
-      <Body>This link looks incomplete. If you got here from an email, please reply to it and we'll help.</Body>
+      <Body>This link looks incomplete. If you got here from an email, please reply to it and we&apos;ll help.</Body>
       <ManageLink />
     </Layout>
   }
