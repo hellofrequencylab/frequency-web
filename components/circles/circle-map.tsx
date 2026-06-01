@@ -25,12 +25,25 @@ export default function CircleMap({
   circles,
   interactive = true,
   className = 'h-[420px] w-full overflow-hidden rounded-2xl border border-border',
+  center = null,
 }: {
   circles: MapCircle[]
   interactive?: boolean
   className?: string
+  /** [lng, lat] of the viewer (from IP geo) — the map eases here when it arrives. */
+  center?: [number, number] | null
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
+  const mapRef = useRef<maplibregl.Map | null>(null)
+  const centerRef = useRef(center)
+
+  // Ease to the viewer's location once IP geolocation resolves (after first paint).
+  useEffect(() => {
+    centerRef.current = center
+    if (center && mapRef.current) {
+      mapRef.current.easeTo({ center, zoom: 9, duration: 900 })
+    }
+  }, [center])
 
   useEffect(() => {
     const container = containerRef.current
@@ -44,6 +57,7 @@ export default function CircleMap({
       interactive,
       attributionControl: interactive ? { compact: true } : false,
     })
+    mapRef.current = map
 
     if (interactive) {
       map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
@@ -109,7 +123,10 @@ export default function CircleMap({
         },
       })
 
-      if (features.length > 0) {
+      if (centerRef.current) {
+        // Viewer location already known -> open on their area.
+        map.jumpTo({ center: centerRef.current, zoom: 9 })
+      } else if (features.length > 0) {
         const bounds = new maplibregl.LngLatBounds()
         for (const f of features) bounds.extend(f.geometry.coordinates as [number, number])
         map.fitBounds(bounds, { padding: interactive ? 60 : 36, maxZoom: 11, duration: 0 })
@@ -151,7 +168,10 @@ export default function CircleMap({
       }
     })
 
-    return () => map.remove()
+    return () => {
+      map.remove()
+      mapRef.current = null
+    }
   }, [circles, interactive])
 
   // Subtle warm filter so the (cool, grayscale) base tiles sit on the cream

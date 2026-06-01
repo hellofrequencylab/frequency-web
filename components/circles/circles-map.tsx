@@ -11,21 +11,39 @@ const CircleMap = dynamic(() => import('./circle-map'), {
   loading: () => <div className="h-full w-full animate-pulse rounded-2xl border border-border bg-surface-elevated" />,
 })
 
-type Ctx = { open: boolean; setOpen: (v: boolean) => void; circles: MapCircle[] }
+type Ctx = { open: boolean; setOpen: (v: boolean) => void; circles: MapCircle[]; center: [number, number] | null }
 const MapCtx = createContext<Ctx | null>(null)
 
 // Provider wraps the page content so the expanded 16:9 banner can render ABOVE
 // the grid (pushing "Your circles" down) while the square preview lives inside
 // the right column — both driven by one open state. Esc collapses.
+//
+// On mount it geolocates the viewer by IP (no permission prompt) so the map
+// opens on their area and shows the circles near them.
 export function MapZone({ circles, children }: { circles: MapCircle[]; children: React.ReactNode }) {
   const [open, setOpen] = useState(false)
+  const [center, setCenter] = useState<[number, number] | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    fetch('https://ipapi.co/json/')
+      .then((r) => r.json())
+      .then((d: { latitude?: number; longitude?: number }) => {
+        if (!cancelled && typeof d?.latitude === 'number' && typeof d?.longitude === 'number') {
+          setCenter([d.longitude, d.latitude])
+        }
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [])
+
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [open])
-  return <MapCtx.Provider value={{ open, setOpen, circles }}><div className="mt-6">{children}</div></MapCtx.Provider>
+  return <MapCtx.Provider value={{ open, setOpen, circles, center }}><div className="mt-6">{children}</div></MapCtx.Provider>
 }
 
 // Square, non-interactive preview at the top of the right column. Click to open.
@@ -41,7 +59,7 @@ export function MapPreview() {
       className="group relative block w-full"
     >
       <div className="pointer-events-none">
-        <CircleMap circles={ctx.circles} interactive={false} className="aspect-square w-full overflow-hidden rounded-2xl border border-border" />
+        <CircleMap circles={ctx.circles} interactive={false} center={ctx.center} className="aspect-square w-full overflow-hidden rounded-2xl border border-border" />
       </div>
       <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-text/0 transition-colors group-hover:bg-text/10">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-surface/95 px-3 py-1.5 text-xs font-semibold text-text shadow-sm">
@@ -63,7 +81,7 @@ export function MapBanner() {
   return (
     <div className="mb-8">
       <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-border shadow-sm">
-        <CircleMap key={mapKey} circles={ctx.circles} interactive className="h-full w-full" />
+        <CircleMap key={mapKey} circles={ctx.circles} interactive center={ctx.center} className="h-full w-full" />
         <button
           type="button"
           onClick={() => ctx.setOpen(false)}
