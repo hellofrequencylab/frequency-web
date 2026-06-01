@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { NewCircleCompose } from '@/components/compose/new-circle-compose'
 import { IndexTemplate } from '@/components/templates/index-template'
-import { Nearby } from '@/components/circles/nearby'
+import { CirclesMap } from '@/components/circles/circles-map'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { CircleCard, type CircleCardData } from '@/components/circles/circle-card'
@@ -157,8 +157,12 @@ export default async function CirclesPage({
       <CirclesToolbar interests={interests} />
 
       <div className="mt-6 grid grid-cols-1 gap-x-10 gap-y-8 lg:grid-cols-3">
-        {/* ── Interior right column: browse + explore, borderless and up top ── */}
+        {/* ── Interior right column: map + browse + explore, borderless ── */}
         <aside className="space-y-8 lg:order-2">
+          {locatableCircles.length > 0 && (
+            <CirclesMap circles={locatableCircles} />
+          )}
+
           {interestChips.length > 0 && (
             <div>
               <SectionHeader title="Browse by interest" />
@@ -208,12 +212,6 @@ export default async function CirclesPage({
 
         {/* ── Main column: the circles themselves ──────────────────────────── */}
         <div className="space-y-10 lg:order-1 lg:col-span-2">
-          {!filtering && locatableCircles.length > 0 && (
-            <section>
-              <Nearby circles={locatableCircles} />
-            </section>
-          )}
-
           {myCircles.length > 0 && (
             <section>
               <SectionHeader title="Your circles" count={myCircles.length} />

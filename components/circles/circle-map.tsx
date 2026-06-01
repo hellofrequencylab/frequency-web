@@ -17,10 +17,19 @@ export type MapCircle = {
   neighborhood: string | null
 }
 
-// Loaded via next/dynamic(ssr:false) from nearby.tsx, so maplibre never runs on
-// the server. In-person circles are shown as clustered amber pins; clicking a
-// pin opens a popup linking to the circle; the geolocate control centers on you.
-export default function CircleMap({ circles }: { circles: MapCircle[] }) {
+// In-person circles as clustered amber pins. `interactive=false` renders a calm,
+// non-interactive preview (no controls/gestures) — used as the click-to-open
+// preview; the expanded view is fully interactive. Loaded via next/dynamic
+// (ssr:false) so maplibre never runs on the server.
+export default function CircleMap({
+  circles,
+  interactive = true,
+  className = 'h-[420px] w-full overflow-hidden rounded-2xl border border-border',
+}: {
+  circles: MapCircle[]
+  interactive?: boolean
+  className?: string
+}) {
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -32,18 +41,21 @@ export default function CircleMap({ circles }: { circles: MapCircle[] }) {
       style: STYLE,
       center: [0, 20],
       zoom: 1.3,
-      attributionControl: { compact: true },
+      interactive,
+      attributionControl: interactive ? { compact: true } : false,
     })
 
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
-    map.addControl(
-      new maplibregl.GeolocateControl({
-        positionOptions: { enableHighAccuracy: true },
-        trackUserLocation: true,
-        showUserLocation: true,
-      }),
-      'top-right',
-    )
+    if (interactive) {
+      map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
+      map.addControl(
+        new maplibregl.GeolocateControl({
+          positionOptions: { enableHighAccuracy: true },
+          trackUserLocation: true,
+          showUserLocation: true,
+        }),
+        'top-right',
+      )
+    }
 
     map.on('load', () => {
       const features: GeoJSON.Feature<GeoJSON.Point>[] = circles.map((c) => ({
@@ -100,8 +112,10 @@ export default function CircleMap({ circles }: { circles: MapCircle[] }) {
       if (features.length > 0) {
         const bounds = new maplibregl.LngLatBounds()
         for (const f of features) bounds.extend(f.geometry.coordinates as [number, number])
-        map.fitBounds(bounds, { padding: 60, maxZoom: 11, duration: 0 })
+        map.fitBounds(bounds, { padding: interactive ? 60 : 36, maxZoom: 11, duration: 0 })
       }
+
+      if (!interactive) return
 
       map.on('click', 'clusters', (e) => {
         const feats = map.queryRenderedFeatures(e.point, { layers: ['clusters'] })
@@ -138,7 +152,7 @@ export default function CircleMap({ circles }: { circles: MapCircle[] }) {
     })
 
     return () => map.remove()
-  }, [circles])
+  }, [circles, interactive])
 
-  return <div ref={containerRef} className="h-[420px] w-full overflow-hidden rounded-2xl border border-border" />
+  return <div ref={containerRef} className={className} />
 }
