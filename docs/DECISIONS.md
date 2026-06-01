@@ -661,7 +661,6 @@ data sent to Anthropic is data-minimized; crisis/safety routes to humans; AI is
 labeled. See [`BACKLOG.md`](BACKLOG.md) sections D, E, I for the tracked work.
 
 ---
-
 ### Decisions intentionally NOT duplicated here
 
 Already fully covered by the repo docs (no ADR needed): the RLS / admin-client
