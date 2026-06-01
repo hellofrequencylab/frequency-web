@@ -263,7 +263,7 @@ export const config: Config = {
         subtitle: '',
         bgImage: '',
         ctaPrimaryLabel: 'Join the Beta',
-        ctaPrimaryHref: '/welcome',
+        ctaPrimaryHref: '/beta',
         ctaSecondaryLabel: 'Sign in',
         ctaSecondaryHref: '/sign-in',
         note: '',
