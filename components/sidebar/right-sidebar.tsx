@@ -505,9 +505,9 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
 
   return (
     <div className="flex flex-1 flex-col">
-      {/* Top of the rail: scrolls up with the feed. flex-1 pushes the stats
-          dock to the bottom so its sticky positioning actually pins it. */}
-      <div className="flex-1 px-3 py-6 space-y-8">
+      {/* Top of the rail. The stats dock follows directly below it (not pinned),
+          so the whole rail scrolls up together with the feed. */}
+      <div className="px-3 py-6 space-y-8">
         {/* Getting Started. Auto-hides when all items complete */}
         <Suspense fallback={null}>
           <GettingStartedChecklist profileId={profileId} />
@@ -523,15 +523,9 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
         <ActiveMembersWidget profileId={profileId} circleIds={circleIds} />
 
         {isCrew && <LeaderboardWidget />}
-
-        {/* Sentinel marking the end of the rail's top content. The stats dock
-            watches it: once it scrolls above the viewport top (the top content
-            has scrolled away), the dock follows the top up and reveals. */}
-        <div data-rail-top-end aria-hidden className="h-px w-full" />
       </div>
 
-      {/* Game stats sit BELOW the rail content (never overlap it). As the top
-          scrolls away, more of this is pulled into view. */}
+      {/* Game stats sit below the rail content and scroll up with it. */}
       <GameStatsDock profileId={profileId} />
     </div>
   )
