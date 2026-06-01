@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { sendWelcomeEmail } from '@/lib/email'
+import { sanitizeProfileInput } from '@/lib/profile-input'
 
 export async function completeOnboarding(data: {
   displayName: string
@@ -11,6 +12,8 @@ export async function completeOnboarding(data: {
   avatarUrl: string
   regionId: string
 }) {
+  const { displayName, handle, bio, avatarUrl } = sanitizeProfileInput(data)
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -19,10 +22,10 @@ export async function completeOnboarding(data: {
   const { error } = await supabase
     .from('profiles')
     .update({
-      display_name: data.displayName,
-      handle: data.handle,
-      bio: data.bio || null,
-      avatar_url: data.avatarUrl || null,
+      display_name: displayName,
+      handle,
+      bio: bio || null,
+      avatar_url: avatarUrl || null,
       nexus_region_id: data.regionId,
       // Stamp onboarding complete so returning users bypass this flow.
       // Using jsonb_set would merge; overwriting is fine here since meta
@@ -41,7 +44,7 @@ export async function completeOnboarding(data: {
 
   // Fire welcome email. Non-blocking, never throws
   if (user.email) {
-    sendWelcomeEmail({ to: user.email, displayName: data.displayName }).catch(() => {})
+    sendWelcomeEmail({ to: user.email, displayName }).catch(() => {})
   }
 
   redirect('/circles')
