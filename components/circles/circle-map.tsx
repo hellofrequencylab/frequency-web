@@ -8,6 +8,16 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 // the box. Override with a Mapbox/MapTiler style URL via NEXT_PUBLIC_MAP_STYLE.
 const STYLE = process.env.NEXT_PUBLIC_MAP_STYLE || 'https://tiles.openfreemap.org/styles/positron'
 
+// Escape user-controlled text before it goes into popup HTML (setHTML).
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 export type MapCircle = {
   id: string
   name: string
@@ -173,9 +183,12 @@ export default function CircleMap({
         if (!f) return
         const geom = f.geometry as GeoJSON.Point
         const props = f.properties ?? {}
-        const name = String(props.name ?? 'Circle')
-        const slug = String(props.slug ?? '')
-        const hood = String(props.neighborhood ?? '')
+        // Circle name/neighborhood are user-controlled, so escape before
+        // interpolating into popup HTML (otherwise a circle named
+        // `<img src=x onerror=...>` is stored XSS for everyone who clicks it).
+        const name = escapeHtml(String(props.name ?? 'Circle'))
+        const slug = encodeURIComponent(String(props.slug ?? ''))
+        const hood = escapeHtml(String(props.neighborhood ?? ''))
         new maplibregl.Popup({ offset: 12, closeButton: false })
           .setLngLat(geom.coordinates as [number, number])
           .setHTML(
