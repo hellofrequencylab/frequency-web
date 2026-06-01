@@ -161,9 +161,9 @@ export default async function CirclesPage({
         {/* Expanded map lives here (above the grid) so it pushes content down. */}
         <MapBanner />
 
-        <div className="grid grid-cols-1 items-start gap-x-10 gap-y-8 lg:grid-cols-3">
+        <div className="grid grid-cols-1 items-start gap-x-10 gap-y-8 lg:grid-cols-4">
         {/* ── Interior right column: map preview + browse + explore, borderless ── */}
-        <aside className="space-y-8 lg:col-start-3">
+        <aside className="space-y-8 lg:col-start-4">
           <MapPreview />
 
           {interestChips.length > 0 && (
@@ -214,11 +214,11 @@ export default async function CirclesPage({
         </aside>
 
         {/* ── Main column: the circles themselves ──────────────────────────── */}
-        <div className="space-y-10 lg:col-start-1 lg:col-span-2 lg:row-start-1">
+        <div className="space-y-10 lg:col-start-1 lg:col-span-3 lg:row-start-1">
           {myCircles.length > 0 && (
             <section>
               <SectionHeader title="Your circles" count={myCircles.length} />
-              <div className="grid gap-x-6 gap-y-10 sm:grid-cols-2">
+              <div className="grid gap-x-6 gap-y-10 grid-cols-2 lg:grid-cols-3">
                 {myCircles.map((c) => <CircleCard key={c.id} circle={toCardData(c)} isMember />)}
               </div>
             </section>
@@ -234,7 +234,7 @@ export default async function CirclesPage({
                 action={user ? <NewCircleCompose interests={interests} buttonLabel="Start a circle" /> : undefined}
               />
             ) : (
-              <div className="grid gap-x-6 gap-y-10 sm:grid-cols-2">
+              <div className="grid gap-x-6 gap-y-10 grid-cols-2 lg:grid-cols-3">
                 {discover.map((c) => <CircleCard key={c.id} circle={toCardData(c)} isMember={false} />)}
               </div>
             )}

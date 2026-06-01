@@ -45,44 +45,30 @@ export function CirclesToolbar({ interests }: { interests: Interest[] }) {
 
   return (
     <div className="space-y-3">
-      {/* Search */}
-      <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          update({ q: q.trim() || null })
-        }}
-        className="relative"
-      >
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" />
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search circles by name, place, or interest…"
-          className="w-full rounded-xl border border-border bg-surface py-2.5 pl-9 pr-3 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary-bg"
-        />
-      </form>
+      {/* Search + interest + sort on one row */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            update({ q: q.trim() || null })
+          }}
+          className="relative flex-1"
+        >
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" />
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search circles by name, place, or interest…"
+            className="w-full rounded-xl border border-border bg-surface py-2.5 pl-9 pr-3 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary-bg"
+          />
+        </form>
 
-      {/* Facet row */}
-      <div className="flex flex-wrap items-center gap-2">
-        {/* Type */}
-        <div className="flex items-center gap-0.5 rounded-lg bg-surface-elevated p-0.5">
-          <button type="button" onClick={() => update({ type: null })} className={pill(!type).replace('hover:bg-surface-elevated', 'hover:bg-surface')}>
-            <Users className="h-3.5 w-3.5" /> All
-          </button>
-          <button type="button" onClick={() => update({ type: 'in-person' })} className={pill(type === 'in-person').replace('hover:bg-surface-elevated', 'hover:bg-surface')}>
-            <MapPin className="h-3.5 w-3.5" /> In person
-          </button>
-          <button type="button" onClick={() => update({ type: 'online' })} className={pill(type === 'online').replace('hover:bg-surface-elevated', 'hover:bg-surface')}>
-            <Globe className="h-3.5 w-3.5" /> Online
-          </button>
-        </div>
-
-        <div className="ml-auto flex items-center gap-2">
+        <div className="flex shrink-0 gap-2">
           {/* Interest */}
           <select
             value={interest}
             onChange={(e) => update({ interest: e.target.value || null })}
-            className="rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm font-medium text-muted focus:border-primary focus:outline-none"
+            className="rounded-lg border border-border bg-surface px-2.5 py-2 text-sm font-medium text-muted focus:border-primary focus:outline-none"
             aria-label="Filter by interest"
           >
             <option value="">All interests</option>
@@ -95,7 +81,7 @@ export function CirclesToolbar({ interests }: { interests: Interest[] }) {
           <select
             value={sort}
             onChange={(e) => update({ sort: e.target.value })}
-            className="rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm font-medium text-muted focus:border-primary focus:outline-none"
+            className="rounded-lg border border-border bg-surface px-2.5 py-2 text-sm font-medium text-muted focus:border-primary focus:outline-none"
             aria-label="Sort circles"
           >
             {SORTS.map((s) => (
@@ -103,6 +89,19 @@ export function CirclesToolbar({ interests }: { interests: Interest[] }) {
             ))}
           </select>
         </div>
+      </div>
+
+      {/* Type pills */}
+      <div className="flex w-fit items-center gap-0.5 rounded-lg bg-surface-elevated p-0.5">
+        <button type="button" onClick={() => update({ type: null })} className={pill(!type).replace('hover:bg-surface-elevated', 'hover:bg-surface')}>
+          <Users className="h-3.5 w-3.5" /> All
+        </button>
+        <button type="button" onClick={() => update({ type: 'in-person' })} className={pill(type === 'in-person').replace('hover:bg-surface-elevated', 'hover:bg-surface')}>
+          <MapPin className="h-3.5 w-3.5" /> In person
+        </button>
+        <button type="button" onClick={() => update({ type: 'online' })} className={pill(type === 'online').replace('hover:bg-surface-elevated', 'hover:bg-surface')}>
+          <Globe className="h-3.5 w-3.5" /> Online
+        </button>
       </div>
     </div>
   )
