@@ -94,14 +94,19 @@ async function MembersTab() {
 
   const allMembers = (members ?? []).map((m: any) => ({ ...m, regionName: m.nexus_regions?.name ?? null }))
 
+  // Resolve emails by paging through the auth users (a few listUsers calls)
+  // instead of one getUserById per member, which was up to 200 sequential
+  // round-trips to the auth admin API on every page load.
+  const emailByAuthId: Record<string, string> = {}
+  for (let page = 1; page <= 20; page++) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 1000 })
+    const users = data?.users ?? []
+    for (const u of users) if (u.email) emailByAuthId[u.id] = u.email
+    if (error || users.length < 1000) break
+  }
   const emailMap: Record<string, string> = {}
   for (const m of allMembers) {
-    if (m.auth_user_id) {
-      try {
-        const { data: { user: authUser } } = await admin.auth.admin.getUserById(m.auth_user_id)
-        if (authUser?.email) emailMap[m.id] = authUser.email
-      } catch { /* skip */ }
-    }
+    if (m.auth_user_id && emailByAuthId[m.auth_user_id]) emailMap[m.id] = emailByAuthId[m.auth_user_id]
   }
 
   return (

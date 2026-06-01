@@ -113,9 +113,10 @@ export async function toggleRSVP(eventId: string, currentStatus: string | null) 
     if (newStatus === 'going') {
       processGamificationEvent({ type: 'event_attend', profileId: myProfileId }).catch(() => {})
       recordStreakActivity(myProfileId, 'attendance').catch(() => {})
-      // RSVP is a web action → gems. ATTENDANCE zaps are awarded at verified
-      // check-in (ROADMAP P2.13), not on RSVP (which would be gameable).
-      awardGems(myProfileId, 'event_rsvp').catch(() => {})
+      // No gems here: the `event_rsvp` gem has no daily cap, so awarding it on
+      // every not_going -> going flip let a user farm unlimited gems by
+      // toggling. Gems are granted once, on the first RSVP (the insert path
+      // below). Verified attendance zaps come at check-in (ROADMAP P2.13).
     }
   } else {
     await supabase.from('event_rsvps').insert({
@@ -125,6 +126,7 @@ export async function toggleRSVP(eventId: string, currentStatus: string | null) 
     })
     processGamificationEvent({ type: 'event_attend', profileId: myProfileId }).catch(() => {})
     recordStreakActivity(myProfileId, 'attendance').catch(() => {})
+    // First RSVP only (one row per (event, profile), so this fires once).
     awardGems(myProfileId, 'event_rsvp').catch(() => {})
   }
 
