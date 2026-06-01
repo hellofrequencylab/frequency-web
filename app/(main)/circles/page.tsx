@@ -161,86 +161,86 @@ export default async function CirclesPage({
         {/* Expanded map lives here (above the grid) so it pushes content down. */}
         <MapBanner />
 
-        <div className="grid grid-cols-1 items-start gap-x-10 gap-y-8 lg:grid-cols-5">
-        {/* ── Right column: big map area, then browse + explore pushed below ── */}
-        <aside className="space-y-8 lg:col-start-4 lg:col-span-2">
-          <MapPreview />
-
-          {interestChips.length > 0 && (
-            <div>
-              <SectionHeader title="Browse by interest" />
-              <div className="space-y-0.5">
-                {interestChips.map((i) => {
-                  const active = interest === i.id
-                  return (
-                    <Link
-                      key={i.id}
-                      href={`/circles?interest=${active ? '' : i.id}`}
-                      className={`flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors ${
-                        active
-                          ? 'bg-primary-bg font-semibold text-primary-strong'
-                          : 'text-muted hover:bg-surface-elevated hover:text-text'
-                      }`}
-                    >
-                      <span className="truncate">{i.name}</span>
-                      <span className="text-xs tabular-nums text-subtle">{i.count}</span>
-                    </Link>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
-          {nexuses.length > 0 && (
-            <div>
-              <SectionHeader title="Explore the network" />
-              <div className="space-y-0.5">
-                {nexuses.map((nx) => (
-                  <Link
-                    key={nx.slug}
-                    href={`/nexuses/${nx.slug}`}
-                    className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-surface-elevated"
-                  >
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-elevated text-primary-strong">
-                      <Compass className="h-3.5 w-3.5" />
-                    </span>
-                    <span className="flex-1 truncate text-sm font-medium text-text">{nx.name}</span>
-                    <span className="text-xs tabular-nums text-subtle">{nx.count}</span>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
-        </aside>
-
-        {/* ── Main column: the circles themselves ──────────────────────────── */}
-        <div className="space-y-10 lg:col-start-1 lg:col-span-3 lg:row-start-1">
-          {myCircles.length > 0 && (
+        {/* ── Top: Your circles (left) · big map + menu (right) ── */}
+        <div className="grid items-start gap-x-8 gap-y-8 lg:grid-cols-2">
+          {myCircles.length > 0 ? (
             <section>
               <SectionHeader title="Your circles" count={myCircles.length} />
-              <div className="grid gap-x-6 gap-y-10 grid-cols-2 xl:grid-cols-3">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-6">
                 {myCircles.map((c) => <CircleCard key={c.id} circle={toCardData(c)} isMember />)}
               </div>
             </section>
+          ) : (
+            <div className="hidden lg:block" />
           )}
 
-          <section>
-            <SectionHeader title={filtering ? 'Results' : 'Discover'} count={discover.length} />
-            {discover.length === 0 ? (
-              <EmptyState
-                icon={Users}
-                title={filtering ? 'No circles match these filters' : 'No circles yet'}
-                description={filtering ? 'Try a wider search, or start the first one for this corner of the network.' : 'Be the first — start a circle for your neighborhood or an interest.'}
-                action={user ? <NewCircleCompose interests={interests} buttonLabel="Start a circle" /> : undefined}
-              />
-            ) : (
-              <div className="grid gap-x-6 gap-y-10 grid-cols-2 xl:grid-cols-3">
-                {discover.map((c) => <CircleCard key={c.id} circle={toCardData(c)} isMember={false} />)}
+          <aside className="space-y-6">
+            <MapPreview />
+
+            {interestChips.length > 0 && (
+              <div>
+                <SectionHeader title="Browse by interest" />
+                <div className="space-y-0.5">
+                  {interestChips.map((i) => {
+                    const active = interest === i.id
+                    return (
+                      <Link
+                        key={i.id}
+                        href={`/circles?interest=${active ? '' : i.id}`}
+                        className={`flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors ${
+                          active
+                            ? 'bg-primary-bg font-semibold text-primary-strong'
+                            : 'text-muted hover:bg-surface-elevated hover:text-text'
+                        }`}
+                      >
+                        <span className="truncate">{i.name}</span>
+                        <span className="text-xs tabular-nums text-subtle">{i.count}</span>
+                      </Link>
+                    )
+                  })}
+                </div>
               </div>
             )}
-          </section>
+
+            {nexuses.length > 0 && (
+              <div>
+                <SectionHeader title="Explore the network" />
+                <div className="space-y-0.5">
+                  {nexuses.map((nx) => (
+                    <Link
+                      key={nx.slug}
+                      href={`/nexuses/${nx.slug}`}
+                      className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-surface-elevated"
+                    >
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-elevated text-primary-strong">
+                        <Compass className="h-3.5 w-3.5" />
+                      </span>
+                      <span className="flex-1 truncate text-sm font-medium text-text">{nx.name}</span>
+                      <span className="text-xs tabular-nums text-subtle">{nx.count}</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+          </aside>
         </div>
-        </div>
+
+        {/* ── Discover: the rest of the circles, full width ── */}
+        <section className="mt-10">
+          <SectionHeader title={filtering ? 'Results' : 'Discover'} count={discover.length} />
+          {discover.length === 0 ? (
+            <EmptyState
+              icon={Users}
+              title={filtering ? 'No circles match these filters' : 'No circles yet'}
+              description={filtering ? 'Try a wider search, or start the first one for this corner of the network.' : 'Be the first — start a circle for your neighborhood or an interest.'}
+              action={user ? <NewCircleCompose interests={interests} buttonLabel="Start a circle" /> : undefined}
+            />
+          ) : (
+            <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
+              {discover.map((c) => <CircleCard key={c.id} circle={toCardData(c)} isMember={false} />)}
+            </div>
+          )}
+        </section>
       </MapZone>
     </IndexTemplate>
   )
