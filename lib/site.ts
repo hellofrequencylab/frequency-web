@@ -1,8 +1,9 @@
-// Canonical site URL. Override per-environment with NEXT_PUBLIC_SITE_URL
-// (set it once a custom domain is live); falls back to the Vercel deployment.
+// Canonical site URL. Override per-environment with NEXT_PUBLIC_SITE_URL;
+// falls back to the production apex so canonical/sitemap/OG stay correct even if
+// the env var is missing in a deploy.
 export const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
-  "https://frequency-web-three.vercel.app";
+  "https://frequencylocal.com";
 
 export const SITE_NAME = "Frequency";
 export const SITE_TAGLINE = "A place to be human";

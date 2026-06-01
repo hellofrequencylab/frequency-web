@@ -192,6 +192,6 @@ cutover + prod env config; submit the sitemap; the `shouldSend` consent test.
 - `NEXT_PUBLIC_SITE_URL` (drives metadata, sitemap, robots, JSON-LD; the
   `lib/site.ts` fallback is a Vercel preview URL, so this must be set in prod).
 - `NEXT_PUBLIC_APP_URL` (canonical app URL used by email/digest/ICS/auth redirects;
-  falls back to `hellofrequency.com` in several server paths today).
+  falls back to `frequencylocal.com` in several server paths today).
 - `RESEND_WEBHOOK_SECRET`, `EMAIL_FROM`.
 - Supabase URL / anon key / service-role key.

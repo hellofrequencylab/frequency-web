@@ -80,7 +80,7 @@ export async function GET(
     ? new Date(ev.ends_at)
     : new Date(start.getTime() + 60 * 60 * 1000)  // default 1h
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://hellofrequency.com'
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
   const eventUrl = `${appUrl}/events/${ev.slug}`
 
   const lines: string[] = [
