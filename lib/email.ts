@@ -16,7 +16,7 @@ import { enqueue } from '@/lib/queue/outbox'
 import { isSuppressed } from '@/lib/suppression'
 
 const apiKey  = process.env.RESEND_API_KEY
-const FROM    = process.env.EMAIL_FROM ?? 'Frequency <noreply@hellofrequency.com>'
+const FROM    = process.env.EMAIL_FROM ?? 'Frequency <noreply@frequencylocal.com>'
 
 // Headers required by Gmail/Yahoo bulk-sender policies (RFC 8058).
 // `apiUrl` is the POST endpoint mailbox providers call when a user hits
@@ -293,7 +293,7 @@ ${signupUrl}`
 // Inline styles only — maximum email client compatibility.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://hellofrequency.com'
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
 
 const containerStyle = `max-width:560px;margin:0 auto;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;`
 const bodyBg         = `background:#f5f5f5;padding:32px 16px;`

@@ -19,7 +19,7 @@ export function organizationSchema() {
     url: SITE_URL,
     logo: abs('/icons/icon-192.png'),
     description: SITE_DESCRIPTION,
-    email: 'hello@findafreq.com',
+    email: 'hello@frequencylocal.com',
   }
 }
 

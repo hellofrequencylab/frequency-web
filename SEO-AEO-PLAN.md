@@ -108,10 +108,10 @@ Submit sitemap to search engines.
 
 ## Domain note
 
-**Update (2026-05-29):** the custom domain `go.findafreq.com` is **live** (GoDaddy
-CNAME → Vercel). The remaining gap is purely config: `NEXT_PUBLIC_SITE_URL` is not
-set, so `lib/site.ts` still falls back to `frequency-web-three.vercel.app` — meaning
-metadata, sitemap, robots, and JSON-LD advertise the vercel.app host. Set
-`NEXT_PUBLIC_SITE_URL=https://go.findafreq.com` in the Vercel project and all SEO
+**Update (2026-06-01):** the brand is moving to the custom domain `frequencylocal.com`
+(registered at GoDaddy, apex → Vercel), replacing the old `go.findafreq.com` host. Once
+DNS is pointed, the remaining gap is config: set `NEXT_PUBLIC_SITE_URL=https://frequencylocal.com`
+in the Vercel project — otherwise `lib/site.ts` falls back to `frequency-web-three.vercel.app`
+and metadata, sitemap, robots, and JSON-LD advertise the vercel.app host. With it set, all SEO
 surfaces follow automatically. This is the highest-leverage remaining SEO move
-(was framed as "verify a custom domain" in P3.31 — the domain already exists).
+(was framed as "verify a custom domain" in P3.31).
