@@ -112,7 +112,7 @@ export default async function CirclePage({
   const members = (rawMembers ?? []) as unknown as MemberRow[]
 
   // Circle health metrics
-  const memberProfileIds = (rawMembers ?? []).map((m: any) => m.profile?.id).filter(Boolean)
+  const memberProfileIds = members.map((m) => m.profile?.id).filter(Boolean)
   let healthScore = { avgZaps: 0, totalZaps: 0, activeStreaks: 0, totalAchievements: 0, newThisWeek: 0 }
 
   if (memberProfileIds.length > 0) {
@@ -127,7 +127,11 @@ export default async function CirclePage({
         .gte('joined_at', isoDaysAgo(7)),
     ])
 
-    const profiles = (memberProfiles ?? []) as any[]
+    const profiles = (memberProfiles ?? []) as Array<{
+      current_season_zaps: number | null
+      current_streak: number | null
+      achievement_count: number | null
+    }>
     const totalZaps = profiles.reduce((s, p) => s + (p.current_season_zaps ?? 0), 0)
     healthScore = {
       avgZaps: profiles.length > 0 ? Math.round(totalZaps / profiles.length) : 0,

@@ -98,7 +98,7 @@ export default async function HubPage({
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-semibold text-text">{hub.name}</h1>
-              <StatusBadge status={hub.status as any} />
+              <StatusBadge status={hub.status} />
             </div>
 
             {hub.guide && (
@@ -143,7 +143,7 @@ export default async function HubPage({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-medium text-text">{circle.name}</span>
-                      <StatusBadge status={circle.status as any} />
+                      <StatusBadge status={circle.status} />
                       <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-surface-elevated text-muted font-medium">
                         {circle.type}
                       </span>

@@ -25,7 +25,7 @@ export default async function QuestsPage() {
     admin.from('quest_progress').select('*').eq('profile_id', profile.id),
   ])
 
-  type Step = { id: string; chain_id: string; step_order: number; name: string; description: string; criteria: any; target: number; zaps_reward: number }
+  type Step = { id: string; chain_id: string; step_order: number; name: string; description: string; criteria: unknown; target: number; zaps_reward: number }
   type Progress = { id: string; profile_id: string; chain_id: string; current_step: number; step_progress: number; started_at: string; completed_at: string | null }
 
   const stepsByChain: Record<string, Step[]> = {}
@@ -53,7 +53,7 @@ export default async function QuestsPage() {
       </div>
 
       <div className="space-y-6">
-        {(chains ?? []).map((chain: any) => {
+        {(chains ?? []).map((chain) => {
           const steps: Step[] = stepsByChain[chain.id] ?? []
           const progress: Progress | undefined = progressByChain[chain.id]
           const isComplete = !!progress?.completed_at
