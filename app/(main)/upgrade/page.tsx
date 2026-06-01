@@ -71,7 +71,7 @@ export default async function UpgradePage() {
             What you get
           </p>
           <ul className="space-y-3.5">
-            {benefits.map(({ icon: Icon, label }) => (
+            {benefits.map(({ label }) => (
               <li key={label} className="flex items-center gap-3">
                 <div className="shrink-0 w-8 h-8 rounded-lg bg-success-bg/30 flex items-center justify-center">
                   <Check className="w-4 h-4 text-success" />

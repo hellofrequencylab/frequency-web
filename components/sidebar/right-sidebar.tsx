@@ -501,7 +501,6 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
   const circleIds = (myMemberships ?? []).map((m: { circle_id: string }) => m.circle_id as string)
 
   const isCrew    = ['crew', 'host', 'guide', 'mentor', 'janitor'].includes(role)
-  const isHost    = ['host', 'guide', 'mentor', 'janitor'].includes(role)
 
   return (
     <div className="flex flex-1 flex-col">

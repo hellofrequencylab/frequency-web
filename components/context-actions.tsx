@@ -97,7 +97,7 @@ export function ContextActions({ role, context }: ContextActionsProps) {
   }, [])
 
   const reportTarget = getReportTarget(context)
-  const actions = buildActions(role, context, startTransition, () => setOpen(false))
+  const actions = buildActions(role, context, startTransition)
 
   // Add report action for non-owner posts, dispatches, and members
   if (reportTarget) {
@@ -182,7 +182,6 @@ function buildActions(
   role: CommunityRole,
   context: ContextActionsProps['context'],
   startTransition: (fn: () => void) => void,
-  close: () => void,
 ): ActionItem[] {
   const items: ActionItem[] = []
   const iconCls = 'w-3.5 h-3.5'

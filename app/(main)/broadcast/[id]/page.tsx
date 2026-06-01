@@ -58,11 +58,11 @@ export default async function DispatchDetailPage({ params }: Props) {
   // Audience name, likes, comments, poll options. All parallel
   const [audienceRes, likesRes, myLikeRes, commentsRes, pollOptionsRes] = await Promise.all([
     (async () => {
-      const table =
+      const table: 'circles' | 'hubs' | 'nexuses' =
         dispatch.audience_scope === 'circle' ? 'circles' :
         dispatch.audience_scope === 'hub'    ? 'hubs'    : 'nexuses'
-      const { data } = await admin.from(table as any).select('name').eq('id', dispatch.audience_id).maybeSingle()
-      return (data as any)?.name ?? ''
+      const { data } = await admin.from(table).select('name').eq('id', dispatch.audience_id).maybeSingle()
+      return data?.name ?? ''
     })(),
     admin.from('dispatch_likes').select('id', { count: 'exact', head: true }).eq('dispatch_id', id),
     myProfileId
@@ -86,11 +86,21 @@ export default async function DispatchDetailPage({ params }: Props) {
   const audienceName = audienceRes as string
   const likeCount  = likesRes.count ?? 0
   const hasLiked   = !!myLikeRes.data
-  const comments   = (commentsRes.data ?? []) as any[]
-  const rawOptions = (pollOptionsRes.data ?? []) as any[]
+  const comments   = (commentsRes.data ?? []) as unknown as {
+    id: string
+    body: string
+    created_at: string
+    author: { id: string; display_name: string; handle: string; avatar_url: string | null }
+  }[]
+  const rawOptions = (pollOptionsRes.data ?? []) as unknown as {
+    id: string
+    label: string
+    position: number
+    dispatch_poll_votes: { count: number }[]
+  }[]
 
   // Resolve poll vote count and user's vote
-  const pollOptions = rawOptions.map((o: any) => ({
+  const pollOptions = rawOptions.map((o) => ({
     id:        o.id,
     label:     o.label,
     position:  o.position,
@@ -103,13 +113,13 @@ export default async function DispatchDetailPage({ params }: Props) {
       .from('dispatch_poll_votes')
       .select('option_id')
       .eq('profile_id', myProfileId)
-      .in('option_id', pollOptions.map((o: any) => o.id))
+      .in('option_id', pollOptions.map((o) => o.id))
       .maybeSingle()
     myVotedOptionId = myVote?.option_id ?? null
   }
 
-  const author     = dispatch.author as any
-  const linkedTask = dispatch.linked_task as any
+  const author     = dispatch.author as unknown as { display_name: string; avatar_url: string | null } | null
+  const linkedTask = dispatch.linked_task as unknown as { name: string; task_type: string; zaps_value: number } | null
   const pubDate    = new Date(dispatch.published_at ?? dispatch.created_at)
   const dispType   = dispatch.dispatch_type ?? 'post'
 
@@ -202,7 +212,7 @@ export default async function DispatchDetailPage({ params }: Props) {
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted capitalize">{linkedTask.task_type}</span>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-black text-primary">{(linkedTask as any).zaps_value} zaps</span>
+                <span className="text-sm font-black text-primary">{linkedTask.zaps_value} zaps</span>
                 <Link
                   href="/crew"
                   className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-white hover:bg-primary-hover transition-colors"

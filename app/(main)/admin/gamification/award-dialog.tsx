@@ -45,8 +45,8 @@ export function AwardDialog({
         } else {
           setResult(`Awarded "${selectedAchievement.name}" to ${selectedMember.display_name}`)
         }
-      } catch (err: any) {
-        setResult(`Error: ${err.message}`)
+      } catch (err) {
+        setResult(`Error: ${err instanceof Error ? err.message : String(err)}`)
       }
     })
   }
@@ -57,8 +57,8 @@ export function AwardDialog({
       try {
         await revokeAchievement(selectedMember.id, selectedAchievement.id)
         setResult(`Revoked "${selectedAchievement.name}" from ${selectedMember.display_name}`)
-      } catch (err: any) {
-        setResult(`Error: ${err.message}`)
+      } catch (err) {
+        setResult(`Error: ${err instanceof Error ? err.message : String(err)}`)
       }
     })
   }

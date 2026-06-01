@@ -5,7 +5,6 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { getRankDef, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
 import { getInitials } from '@/lib/utils'
-import { ProfileFlair } from '@/components/profile-flair'
 import { LeaderboardTabs } from './leaderboard-tabs'
 
 interface LeaderboardEntry {
@@ -36,7 +35,7 @@ async function getLeaderboard(
       .eq('profile_id', profileId)
       .eq('status', 'active')
 
-    const circleIds = (myMemberships ?? []).map((m: any) => m.circle_id as string)
+    const circleIds = (myMemberships ?? []).map((m) => m.circle_id as string)
 
     if (scope === 'circle') {
       if (circleIds.length === 0) return { entries: [], scopeLabel: 'My Circle' }
@@ -45,41 +44,41 @@ async function getLeaderboard(
         .select('profile_id')
         .in('circle_id', circleIds)
         .eq('status', 'active')
-      memberIds = [...new Set((members ?? []).map((m: any) => m.profile_id as string))]
+      memberIds = [...new Set((members ?? []).map((m) => m.profile_id as string))]
       scopeLabel = 'My Circle'
     } else if (scope === 'hub') {
       const { data: circles } = await admin.from('circles').select('hub_id').in('id', circleIds)
-      const hubIds = [...new Set((circles ?? []).map((c: any) => c.hub_id).filter(Boolean))]
+      const hubIds = [...new Set((circles ?? []).map((c) => c.hub_id).filter((id): id is string => Boolean(id)))]
       if (hubIds.length === 0) return { entries: [], scopeLabel: 'My Hub' }
 
       const { data: hubCircles } = await admin.from('circles').select('id').in('hub_id', hubIds)
-      const allCircleIds = (hubCircles ?? []).map((c: any) => c.id as string)
+      const allCircleIds = (hubCircles ?? []).map((c) => c.id as string)
       const { data: members } = await admin
         .from('memberships')
         .select('profile_id')
         .in('circle_id', allCircleIds)
         .eq('status', 'active')
-      memberIds = [...new Set((members ?? []).map((m: any) => m.profile_id as string))]
+      memberIds = [...new Set((members ?? []).map((m) => m.profile_id as string))]
       scopeLabel = 'My Hub'
     } else if (scope === 'nexus') {
       const { data: circles } = await admin.from('circles').select('hub_id').in('id', circleIds)
-      const hubIds = [...new Set((circles ?? []).map((c: any) => c.hub_id).filter(Boolean))]
+      const hubIds = [...new Set((circles ?? []).map((c) => c.hub_id).filter((id): id is string => Boolean(id)))]
       if (hubIds.length === 0) return { entries: [], scopeLabel: 'My Nexus' }
 
       const { data: hubs } = await admin.from('hubs').select('nexus_id').in('id', hubIds)
-      const nexusIds = [...new Set((hubs ?? []).map((h: any) => h.nexus_id).filter(Boolean))]
+      const nexusIds = [...new Set((hubs ?? []).map((h) => h.nexus_id).filter((id): id is string => Boolean(id)))]
       if (nexusIds.length === 0) return { entries: [], scopeLabel: 'My Nexus' }
 
       const { data: nexusHubs } = await admin.from('hubs').select('id').in('nexus_id', nexusIds)
-      const allHubIds = (nexusHubs ?? []).map((h: any) => h.id as string)
+      const allHubIds = (nexusHubs ?? []).map((h) => h.id as string)
       const { data: nexusCircles } = await admin.from('circles').select('id').in('hub_id', allHubIds)
-      const allCircleIds = (nexusCircles ?? []).map((c: any) => c.id as string)
+      const allCircleIds = (nexusCircles ?? []).map((c) => c.id as string)
       const { data: members } = await admin
         .from('memberships')
         .select('profile_id')
         .in('circle_id', allCircleIds)
         .eq('status', 'active')
-      memberIds = [...new Set((members ?? []).map((m: any) => m.profile_id as string))]
+      memberIds = [...new Set((members ?? []).map((m) => m.profile_id as string))]
       scopeLabel = 'My Nexus'
     }
   }
@@ -107,7 +106,7 @@ async function getLeaderboard(
 
   const { data: profiles } = await query
 
-  const entries: LeaderboardEntry[] = (profiles ?? []).map((p: any) => ({
+  const entries: LeaderboardEntry[] = (profiles ?? []).map((p) => ({
     id: p.id,
     displayName: p.display_name,
     handle: p.handle,
