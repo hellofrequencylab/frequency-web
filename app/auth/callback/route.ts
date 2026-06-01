@@ -8,7 +8,14 @@ export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
   // `next` lets callers specify a post-login destination (defaults to feed).
-  const next = searchParams.get('next') ?? '/feed'
+  // It arrives from attacker-influenceable links (/sign-in?next=..., invite
+  // links), so only accept a same-origin absolute path; anything starting with
+  // `//` or `/\` is a protocol-relative open-redirect to another host.
+  const requested = searchParams.get('next') ?? '/feed'
+  const next =
+    requested.startsWith('/') && !requested.startsWith('//') && !requested.startsWith('/\\')
+      ? requested
+      : '/feed'
 
   if (code) {
     const supabase = await createClient()
