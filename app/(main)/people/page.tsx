@@ -6,6 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import type { Database } from '@/lib/database.types'
 import { Globe } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
+import { isOnline } from '@/lib/presence'
 import { InviteMemberCompose } from '@/components/compose/invite-member-compose'
 import { type CommunityRole, ROLE_LABEL, RoleBadge } from '@/lib/community-roles'
 import { IndexTemplate } from '@/components/templates/index-template'
@@ -16,19 +17,38 @@ type Profile = {
   handle: string
   avatar_url: string | null
   community_role: CommunityRole
+  last_seen_at: string | null
   nexus_regions: { name: string } | null
+}
+
+// Filters carried in the URL so the directory stays a shareable, server-rendered
+// view (no client state). Members can be narrowed by role (rank), the Circle they
+// belong to, the city that Circle meets in, their Nexus region, and whether
+// they're online right now. Circle/city resolve through the memberships join.
+type Filters = {
+  role?: string
+  circle?: string
+  city?: string
+  region?: string
+  online?: string
 }
 
 export default async function DirectoryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ role?: string; region?: string }>
+  searchParams: Promise<Filters>
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) notFound()
 
-  const { role: roleFilter, region: regionFilter } = await searchParams
+  const {
+    role: roleFilter,
+    circle: circleFilter,
+    city: cityFilter,
+    region: regionFilter,
+    online: onlineFilter,
+  } = await searchParams
 
   const admin = createAdminClient()
 
@@ -42,37 +62,87 @@ export default async function DirectoryPage({
 
   let query = admin
     .from('profiles')
-    .select('id, display_name, handle, avatar_url, community_role, nexus_regions!nexus_region_id ( name )')
+    .select('id, display_name, handle, avatar_url, community_role, last_seen_at, nexus_regions!nexus_region_id ( name )')
     .eq('is_active', true)
     .eq('is_system', false) // hide system accounts (e.g. @moderation) from the directory
     .order('display_name', { ascending: true })
 
   if (roleFilter) query = query.eq('community_role', roleFilter as Database['public']['Enums']['community_role'])
 
-  const { data: profiles } = await query
+  // Fetch the filter vocabularies and the directory in parallel.
+  const [{ data: profiles }, { data: regions }, { data: circles }] = await Promise.all([
+    query,
+    admin.from('nexus_regions').select('id, name').order('name'),
+    admin
+      .from('circles')
+      .select('id, name, city, status')
+      .in('status', ['forming', 'active'])
+      .order('name'),
+  ])
 
-  // Fetch all distinct regions for the filter dropdown
-  const { data: regions } = await admin
-    .from('nexus_regions')
-    .select('id, name')
-    .order('name')
+  const circleList = (circles ?? []) as { id: string; name: string; city: string | null }[]
+  // Distinct, sorted cities a Circle actually meets in.
+  const cities = Array.from(
+    new Set(circleList.map((c) => c.city).filter((c): c is string => !!c))
+  ).sort((a, b) => a.localeCompare(b))
+
+  // Resolve the Circle and City filters through memberships → the set of profile
+  // ids that belong to the chosen Circle (or to any Circle in the chosen city).
+  // Only queried when one of those filters is active, so the default list is one
+  // round trip per vocabulary.
+  let circleMemberIds: Set<string> | null = null
+  if (circleFilter || cityFilter) {
+    let circleIds: string[]
+    if (circleFilter) {
+      circleIds = [circleFilter]
+    } else {
+      circleIds = circleList.filter((c) => c.city === cityFilter).map((c) => c.id)
+    }
+    if (circleIds.length === 0) {
+      circleMemberIds = new Set()
+    } else {
+      const { data: members } = await admin
+        .from('memberships')
+        .select('profile_id')
+        .in('circle_id', circleIds)
+        .eq('status', 'active')
+      circleMemberIds = new Set((members ?? []).map((m) => m.profile_id as string))
+    }
+  }
 
   const typedProfiles = (profiles ?? []) as unknown as Profile[]
 
-  // Apply region filter client-side (join result)
-  const filtered = regionFilter
-    ? typedProfiles.filter(p => p.nexus_regions?.name === regionFilter)
-    : typedProfiles
+  // Apply the join-resolved + client-side filters.
+  let filtered = typedProfiles
+  if (regionFilter) filtered = filtered.filter((p) => p.nexus_regions?.name === regionFilter)
+  if (circleMemberIds) filtered = filtered.filter((p) => circleMemberIds!.has(p.id))
+  if (onlineFilter) filtered = filtered.filter((p) => isOnline(p.last_seen_at))
 
   const roles: CommunityRole[] = ['member', 'crew', 'host', 'guide', 'mentor', 'janitor']
 
-  function filterHref(params: Record<string, string | undefined>) {
+  function filterHref(params: Filters) {
     const p = new URLSearchParams()
     if (params.role) p.set('role', params.role)
+    if (params.circle) p.set('circle', params.circle)
+    if (params.city) p.set('city', params.city)
     if (params.region) p.set('region', params.region)
+    if (params.online) p.set('online', params.online)
     const s = p.toString()
     return s ? `/people?${s}` : '/people'
   }
+
+  // The current filter state, minus whichever dimension a pill row is editing.
+  const base: Filters = {
+    role: roleFilter,
+    circle: circleFilter,
+    city: cityFilter,
+    region: regionFilter,
+    online: onlineFilter,
+  }
+
+  const pillBase = 'px-2.5 py-1 rounded-md text-xs font-medium border transition-colors'
+  const pillOn = 'bg-primary text-on-primary border-primary'
+  const pillOff = 'bg-surface text-muted border-border hover:border-primary'
 
   return (
     <IndexTemplate
@@ -87,64 +157,106 @@ export default async function DirectoryPage({
     >
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        {/* Role filter */}
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs text-muted font-medium">Role:</span>
+      <div className="flex flex-col gap-2 mb-6">
+        {/* Role (rank) filter */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-xs text-muted font-medium w-12 shrink-0">Role:</span>
           <Link
-            href={filterHref({ region: regionFilter })}
-            className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
-              !roleFilter
-                ? 'bg-primary text-on-primary border-primary'
-                : 'bg-surface text-muted border-border hover:border-primary'
-            }`}
+            href={filterHref({ ...base, role: undefined })}
+            className={`${pillBase} ${!roleFilter ? pillOn : pillOff}`}
           >
             All
           </Link>
-          {roles.map(r => (
+          {roles.map((r) => (
             <Link
               key={r}
-              href={filterHref({ role: r, region: regionFilter })}
-              className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
-                roleFilter === r
-                  ? 'bg-primary text-on-primary border-primary'
-                  : 'bg-surface text-muted border-border hover:border-primary'
-              }`}
+              href={filterHref({ ...base, role: r })}
+              className={`${pillBase} ${roleFilter === r ? pillOn : pillOff}`}
             >
               {ROLE_LABEL[r]}
             </Link>
           ))}
         </div>
 
+        {/* Circle filter */}
+        {circleList.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-xs text-muted font-medium w-12 shrink-0">Circle:</span>
+            <Link
+              href={filterHref({ ...base, circle: undefined })}
+              className={`${pillBase} ${!circleFilter ? pillOn : pillOff}`}
+            >
+              All
+            </Link>
+            {circleList.map((c) => (
+              <Link
+                key={c.id}
+                href={filterHref({ ...base, circle: c.id })}
+                className={`${pillBase} ${circleFilter === c.id ? pillOn : pillOff}`}
+              >
+                {c.name}
+              </Link>
+            ))}
+          </div>
+        )}
+
+        {/* City filter */}
+        {cities.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-xs text-muted font-medium w-12 shrink-0">City:</span>
+            <Link
+              href={filterHref({ ...base, city: undefined })}
+              className={`${pillBase} ${!cityFilter ? pillOn : pillOff}`}
+            >
+              All
+            </Link>
+            {cities.map((c) => (
+              <Link
+                key={c}
+                href={filterHref({ ...base, city: c })}
+                className={`${pillBase} ${cityFilter === c ? pillOn : pillOff}`}
+              >
+                {c}
+              </Link>
+            ))}
+          </div>
+        )}
+
         {/* Region filter */}
         {regions && regions.length > 0 && (
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs text-muted font-medium">Region:</span>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-xs text-muted font-medium w-12 shrink-0">Region:</span>
             <Link
-              href={filterHref({ role: roleFilter })}
-              className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
-                !regionFilter
-                  ? 'bg-primary text-on-primary border-primary'
-                  : 'bg-surface text-muted border-border hover:border-primary'
-              }`}
+              href={filterHref({ ...base, region: undefined })}
+              className={`${pillBase} ${!regionFilter ? pillOn : pillOff}`}
             >
               All
             </Link>
             {regions.map((reg: { id: string; name: string }) => (
               <Link
                 key={reg.id}
-                href={filterHref({ role: roleFilter, region: reg.name })}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
-                  regionFilter === reg.name
-                    ? 'bg-primary text-on-primary border-primary'
-                    : 'bg-surface text-muted border-border hover:border-primary'
-                }`}
+                href={filterHref({ ...base, region: reg.name })}
+                className={`${pillBase} ${regionFilter === reg.name ? pillOn : pillOff}`}
               >
                 {reg.name}
               </Link>
             ))}
           </div>
         )}
+
+        {/* Online-now toggle */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-xs text-muted font-medium w-12 shrink-0">Status:</span>
+          <Link
+            href={filterHref({ ...base, online: onlineFilter ? undefined : '1' })}
+            className={`${pillBase} ${onlineFilter ? pillOn : pillOff}`}
+          >
+            <span className="inline-flex items-center gap-1.5">
+              <span className={`h-1.5 w-1.5 rounded-full ${onlineFilter ? 'bg-on-primary' : 'bg-success'}`} />
+              Online now
+            </span>
+          </Link>
+        </div>
       </div>
 
       {/* Member count */}
@@ -158,27 +270,36 @@ export default async function DirectoryPage({
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-          {filtered.map(p => {
+          {filtered.map((p) => {
             const role = (p.community_role ?? 'member') as CommunityRole
+            const online = isOnline(p.last_seen_at)
             return (
               <Link
                 key={p.id}
                 href={`/people/${p.handle}`}
                 className="group flex items-start gap-3 rounded-2xl border border-border bg-surface shadow-sm p-4 hover:border-primary-bg dark:hover:border-primary hover:shadow-md transition-all"
               >
-                {p.avatar_url ? (
-                  <Image
-                    src={p.avatar_url}
-                    alt={p.display_name}
-                    width={40}
-                    height={40}
-                    className="w-10 h-10 rounded-full object-cover shrink-0"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-primary-bg text-primary-strong text-sm font-semibold flex items-center justify-center shrink-0 select-none">
-                    {getInitials(p.display_name)}
-                  </div>
-                )}
+                <div className="relative shrink-0">
+                  {p.avatar_url ? (
+                    <Image
+                      src={p.avatar_url}
+                      alt={p.display_name}
+                      width={40}
+                      height={40}
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-primary-bg text-primary-strong text-sm font-semibold flex items-center justify-center select-none">
+                      {getInitials(p.display_name)}
+                    </div>
+                  )}
+                  {online && (
+                    <span
+                      className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-surface bg-success"
+                      title="Online now"
+                    />
+                  )}
+                </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-text group-hover:text-primary-strong dark:group-hover:text-primary-strong transition-colors truncate">
                     {p.display_name}

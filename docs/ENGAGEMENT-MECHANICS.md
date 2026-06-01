@@ -116,7 +116,7 @@ The one pure module. `currencyForSource(source)`:
 At season end, zaps convert to gems at a rank-based rate (`reset_season`); gems buy digital
 badges and trade for physical merch. See [GLOSSARY.md](GLOSSARY.md) and ADR-013/ADR-024 for
 the currency model. Being pure + framework-independent, this is the natural unit-test target
-(`currency.test.ts`) — see [DECISIONS.md ADR-042](DECISIONS.md) for the test-strategy rationale.
+(`currency.test.ts`) — see [DECISIONS.md ADR-044](DECISIONS.md) for the test-strategy rationale.
 
 ---
 

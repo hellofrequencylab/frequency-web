@@ -14,8 +14,8 @@ export function JoinButton({ token, circleName }: { token: string; circleName: s
       try {
         await joinViaInviteLink(token)
         router.push('/circles')
-      } catch (err: any) {
-        alert(err?.message ?? 'Something went wrong. Please try again.')
+      } catch (err) {
+        alert(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
       }
     })
   }

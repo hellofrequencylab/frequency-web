@@ -48,7 +48,7 @@ export function PostReplies({
     })
   }, [open, loaded, postId])
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent | React.KeyboardEvent) {
     e.preventDefault()
     if (!body.trim()) return
     const text = body
@@ -133,7 +133,7 @@ export function PostReplies({
                 rows={2}
                 disabled={isPending}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSubmit(e as any)
+                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSubmit(e)
                 }}
                 className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs text-text placeholder-subtle focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/40 dark:focus:ring-primary/30 resize-none disabled:opacity-50"
               />

@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { Gem, ShoppingBag } from 'lucide-react'
+import { Gem } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { getStoreData } from './actions'
 import { StoreGrid } from './store-grid'

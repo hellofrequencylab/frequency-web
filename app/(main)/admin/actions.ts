@@ -613,7 +613,7 @@ export async function publishDispatch(id: string) {
         .maybeSingle()
       if (!dispatch) return
 
-      const authorName  = (dispatch.author as any)?.display_name ?? 'A host'
+      const authorName  = dispatch.author?.display_name ?? 'A host'
       const excerpt     = dispatch.excerpt ?? ''
       const appUrl      = process.env.NEXT_PUBLIC_APP_URL ?? 'https://hellofrequency.com'
       const dispatchUrl = `${appUrl}/broadcast/${id}`
@@ -621,23 +621,23 @@ export async function publishDispatch(id: string) {
       let profileIds: string[] = []
       if (dispatch.audience_scope === 'circle') {
         const { data } = await admin.from('memberships').select('profile_id').eq('circle_id', dispatch.audience_id).eq('status', 'active')
-        profileIds = (data ?? []).map((m: any) => m.profile_id)
+        profileIds = (data ?? []).map((m) => m.profile_id)
       } else if (dispatch.audience_scope === 'hub') {
         const { data: circles } = await admin.from('circles').select('id').eq('hub_id', dispatch.audience_id)
-        const cids = (circles ?? []).map((c: any) => c.id)
+        const cids = (circles ?? []).map((c) => c.id)
         if (cids.length > 0) {
           const { data } = await admin.from('memberships').select('profile_id').in('circle_id', cids).eq('status', 'active')
-          profileIds = (data ?? []).map((m: any) => m.profile_id)
+          profileIds = (data ?? []).map((m) => m.profile_id)
         }
       } else if (dispatch.audience_scope === 'nexus') {
         const { data: hubs } = await admin.from('hubs').select('id').eq('nexus_id', dispatch.audience_id)
-        const hids = (hubs ?? []).map((h: any) => h.id)
+        const hids = (hubs ?? []).map((h) => h.id)
         if (hids.length > 0) {
           const { data: circles } = await admin.from('circles').select('id').in('hub_id', hids)
-          const cids = (circles ?? []).map((c: any) => c.id)
+          const cids = (circles ?? []).map((c) => c.id)
           if (cids.length > 0) {
             const { data } = await admin.from('memberships').select('profile_id').in('circle_id', cids).eq('status', 'active')
-            profileIds = (data ?? []).map((m: any) => m.profile_id)
+            profileIds = (data ?? []).map((m) => m.profile_id)
           }
         }
       }

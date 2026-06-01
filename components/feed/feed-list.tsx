@@ -97,11 +97,11 @@ export async function FeedList({
         .eq('status', 'active')
 
       const myCircleIds = [...new Set(
-        (myMemberships ?? []).map((m: any) => m.circle_id).filter(Boolean) as string[]
+        (myMemberships ?? []).map((m) => m.circle_id).filter(Boolean) as string[]
       )]
       const myHubIds = [...new Set(
         (myMemberships ?? [])
-          .map((m: any) => m.circles?.hub_id)
+          .map((m) => m.circles?.hub_id)
           .filter(Boolean) as string[]
       )]
 
@@ -110,7 +110,7 @@ export async function FeedList({
         .select('topical_channel_id')
         .eq('profile_id', myProfileId)
       const myChannelIds = [...new Set(
-        (myChannels ?? []).map((c: any) => c.topical_channel_id).filter(Boolean) as string[]
+        (myChannels ?? []).map((c) => c.topical_channel_id).filter(Boolean) as string[]
       )]
 
       // Circles whose announcements the viewer can reach via a shared hub or a
