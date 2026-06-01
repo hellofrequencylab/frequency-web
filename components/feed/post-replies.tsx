@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition, useEffect } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { Loader2, Send } from 'lucide-react'
 import { createReply, fetchReplies } from '@/app/(main)/feed/actions'
@@ -95,7 +96,7 @@ export function PostReplies({
               <div key={r.id} className="flex items-start gap-2.5 pl-2">
                 <Link href={r.author ? `/people/${r.author.handle}` : '#'} className="shrink-0">
                   {r.author?.avatar_url ? (
-                    <img src={r.author.avatar_url} alt={r.author.display_name} className="w-6 h-6 rounded-full object-cover" />
+                    <Image src={r.author.avatar_url} alt={r.author.display_name} width={24} height={24} className="w-6 h-6 rounded-full object-cover" />
                   ) : (
                     <div className="w-6 h-6 rounded-full bg-primary-bg text-primary-strong text-[10px] font-semibold flex items-center justify-center">
                       {getInitials(r.author?.display_name ?? '?')}

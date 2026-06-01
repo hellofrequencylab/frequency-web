@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { MARKETING_NAV, ORG_LEGAL_NAME, CONTACT_EMAIL } from '@/lib/site'
 
 // Shared footer for the public marketing site. Includes the nav, contact, and
@@ -11,7 +12,7 @@ export function MarketingFooter() {
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-8">
           {/* Brand */}
           <div className="max-w-xs">
-            <img src="/frequency-logo.png" alt="Frequency" className="h-6 w-auto opacity-50 mb-3" />
+            <Image src="/frequency-logo.png" alt="Frequency" width={963} height={170} className="h-6 w-auto opacity-50 mb-3" />
             <p className="text-sm text-muted leading-relaxed">
               A third space for a disconnected generation. Not home, not work.
               A place to be human, together.

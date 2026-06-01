@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { Search } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -50,9 +51,11 @@ export async function SiteHeader({ profile: profileProp, variant = 'light' }: Si
     >
       {/* Logo */}
       <Link href={isAuth ? '/feed' : '/'} className="shrink-0">
-        <img
+        <Image
           src="/frequency-logo.png"
           alt="Frequency"
+          width={963}
+          height={170}
           className={`h-7 w-auto ${isDark ? 'invert' : 'dark:invert'}`}
         />
       </Link>

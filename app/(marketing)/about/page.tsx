@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Render } from '@measured/puck/rsc'
 import { PageHero, ZigZag, Statement, BetaCTA } from '@/components/marketing/marketing-ui'
+import { SiteImage } from '@/components/marketing/site-image'
 import { config } from '@/lib/page-editor/config'
 import { getPublishedData } from '@/lib/page-editor/data'
 
@@ -38,10 +39,12 @@ function LegacyAbout() {
       {/* Image band */}
       <div className="px-6">
         <div className="max-w-5xl mx-auto rounded-3xl overflow-hidden border border-border shadow-sm">
-          <img
+          <SiteImage
             src="/images/site/community-1.jpg"
             alt="A Frequency community gathering"
-            className="w-full object-cover aspect-[21/9]"
+            aspect="21/9"
+            sizes="(min-width: 1024px) 64rem, 100vw"
+            preload
           />
         </div>
       </div>

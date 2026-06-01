@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { UserX, Star } from 'lucide-react'
 import { assignRole, deactivateMember, toggleSeasonComplete, assignLuminary } from './actions'
@@ -140,9 +141,11 @@ export function MemberManager({ members }: { members: MemberItem[] }) {
               >
                 {/* Avatar */}
                 {m.avatarUrl ? (
-                  <img
+                  <Image
                     src={m.avatarUrl}
                     alt={m.displayName}
+                    width={32}
+                    height={32}
                     className="w-8 h-8 rounded-full object-cover shrink-0 mt-0.5"
                   />
                 ) : (
