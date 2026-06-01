@@ -419,9 +419,9 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
 
   return (
     <div className="flex flex-1 flex-col">
-      {/* Top of the rail: scrolls up with the feed. The pb reserves room for the
-          pinned stats bar so it never overlaps the content above it. */}
-      <div className="px-3 py-6 pb-24 space-y-8">
+      {/* Top of the rail: scrolls up with the feed. flex-1 pushes the stats
+          dock to the bottom so its sticky positioning actually pins it. */}
+      <div className="flex-1 px-3 py-6 space-y-8">
         {/* Getting Started. Auto-hides when all items complete */}
         <Suspense fallback={null}>
           <GettingStartedChecklist profileId={profileId} />

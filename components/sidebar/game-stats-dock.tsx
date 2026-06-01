@@ -28,34 +28,8 @@ export function GameStatsDockClient({
 
   return (
     <div className="sticky bottom-0 z-10 border-t border-border bg-canvas">
-      {/* Extra stats — rise up from the bottom when the feed hits the end. */}
-      <div
-        className={`grid transition-[grid-template-rows] duration-300 ease-out ${
-          expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
-        }`}
-      >
-        <div className="overflow-hidden">
-          <div className="grid grid-cols-3 gap-2 px-3 pt-3">
-            <div className="rounded-xl bg-surface-elevated px-2 py-2.5 text-center">
-              <Zap className="w-4 h-4 text-primary fill-current mx-auto mb-1" />
-              <div className="text-sm font-bold text-text tabular-nums leading-none">{zaps.toLocaleString()}</div>
-              <div className="text-[11px] text-subtle mt-1">Zaps</div>
-            </div>
-            <div className="rounded-xl bg-surface-elevated px-2 py-2.5 text-center">
-              <Gem className="w-4 h-4 text-signal mx-auto mb-1" />
-              <div className="text-sm font-bold text-text tabular-nums leading-none">{gems.toLocaleString()}</div>
-              <div className="text-[11px] text-subtle mt-1">Gems</div>
-            </div>
-            <div className="rounded-xl bg-surface-elevated px-2 py-2.5 text-center">
-              <Flame className={`w-4 h-4 mx-auto mb-1 ${streak > 0 ? 'text-primary' : 'text-subtle'}`} />
-              <div className="text-sm font-bold text-text tabular-nums leading-none">{streak}w</div>
-              <div className="text-[11px] text-subtle mt-1">Streak</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Compact summary bar — matched in height to the left-nav profile card. */}
+      {/* Compact summary bar — matched in height to the left-nav profile card.
+          Stays on top; the detail tiles fill in underneath it. */}
       <Link
         href="/crew"
         className="group flex items-center gap-2.5 px-3 py-3.5 hover:bg-surface-elevated transition-colors"
@@ -82,6 +56,33 @@ export function GameStatsDockClient({
           Open →
         </span>
       </Link>
+
+      {/* Extra stats — fill in underneath the bar when the feed hits the end. */}
+      <div
+        className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+          expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+        }`}
+      >
+        <div className="overflow-hidden">
+          <div className="grid grid-cols-3 gap-2 px-3 pb-4">
+            <div className="rounded-xl bg-surface-elevated px-2 py-2.5 text-center">
+              <Zap className="w-4 h-4 text-primary fill-current mx-auto mb-1" />
+              <div className="text-sm font-bold text-text tabular-nums leading-none">{zaps.toLocaleString()}</div>
+              <div className="text-[11px] text-subtle mt-1">Zaps</div>
+            </div>
+            <div className="rounded-xl bg-surface-elevated px-2 py-2.5 text-center">
+              <Gem className="w-4 h-4 text-signal mx-auto mb-1" />
+              <div className="text-sm font-bold text-text tabular-nums leading-none">{gems.toLocaleString()}</div>
+              <div className="text-[11px] text-subtle mt-1">Gems</div>
+            </div>
+            <div className="rounded-xl bg-surface-elevated px-2 py-2.5 text-center">
+              <Flame className={`w-4 h-4 mx-auto mb-1 ${streak > 0 ? 'text-primary' : 'text-subtle'}`} />
+              <div className="text-sm font-bold text-text tabular-nums leading-none">{streak}w</div>
+              <div className="text-[11px] text-subtle mt-1">Streak</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

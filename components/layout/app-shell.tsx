@@ -136,43 +136,8 @@ function ProfileCard({
 }) {
   return (
     <div className="border-t border-border">
-      {/* Quick profile actions — rise up from the bottom when the feed hits the
-          end, in sync with the right stats dock. */}
-      <div
-        className={`grid transition-[grid-template-rows] duration-300 ease-out ${
-          expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
-        }`}
-      >
-        <div className="overflow-hidden">
-          <div className="px-2 pt-2 space-y-0.5">
-            <Link
-              href={profileHref}
-              className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm font-medium text-text hover:bg-surface-elevated transition-colors"
-            >
-              <User className="w-4 h-4 text-muted shrink-0" />
-              View profile
-            </Link>
-            <Link
-              href="/settings"
-              className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm font-medium text-text hover:bg-surface-elevated transition-colors"
-            >
-              <Settings className="w-4 h-4 text-muted shrink-0" />
-              Settings
-            </Link>
-            <form action="/auth/signout" method="POST">
-              <button
-                type="submit"
-                className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-sm font-medium text-danger hover:bg-danger-bg transition-colors"
-              >
-                <LogOut className="w-4 h-4 shrink-0" />
-                Sign out
-              </button>
-            </form>
-          </div>
-        </div>
-      </div>
-
-      {/* Compact identity bar — matched in height to the right stats bar. */}
+      {/* Compact identity bar — matched in height to the right stats bar.
+          Stays on top; the quick actions fill in underneath it. */}
       <div className="flex items-center gap-2.5 px-3 py-3.5">
         <Link href={profileHref} className="shrink-0">
           {profile.avatar_url ? (
@@ -207,6 +172,42 @@ function ProfileCard({
         >
           <Settings className="w-4 h-4" />
         </Link>
+      </div>
+
+      {/* Quick profile actions — fill in underneath the bar when the feed hits
+          the end, in sync with the right stats dock. */}
+      <div
+        className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+          expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+        }`}
+      >
+        <div className="overflow-hidden">
+          <div className="px-2 pb-3 space-y-0.5">
+            <Link
+              href={profileHref}
+              className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm font-medium text-text hover:bg-surface-elevated transition-colors"
+            >
+              <User className="w-4 h-4 text-muted shrink-0" />
+              View profile
+            </Link>
+            <Link
+              href="/settings"
+              className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm font-medium text-text hover:bg-surface-elevated transition-colors"
+            >
+              <Settings className="w-4 h-4 text-muted shrink-0" />
+              Settings
+            </Link>
+            <form action="/auth/signout" method="POST">
+              <button
+                type="submit"
+                className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-sm font-medium text-danger hover:bg-danger-bg transition-colors"
+              >
+                <LogOut className="w-4 h-4 shrink-0" />
+                Sign out
+              </button>
+            </form>
+          </div>
+        </div>
       </div>
     </div>
   )
