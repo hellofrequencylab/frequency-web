@@ -23,22 +23,27 @@ export function MessagesPopover({ initialUnread = 0 }: { initialUnread?: number 
     return () => document.removeEventListener('mousedown', onClick)
   }, [open])
 
-  // Fetch data on first open
-  useEffect(() => {
-    if (!open || data) return
-    setLoading(true)
-    fetchMessagesSummary()
-      .then(d => {
-        setData(d)
-        setUnread(d.totalUnread)
-      })
-      .finally(() => setLoading(false))
-  }, [open, data])
+  // Toggle the popover. The summary is fetched lazily on first open from this
+  // handler rather than an effect, keeping the loading-state update out of the
+  // render/effect cascade (react-hooks/set-state-in-effect).
+  function toggle() {
+    const next = !open
+    setOpen(next)
+    if (next && !data && !loading) {
+      setLoading(true)
+      fetchMessagesSummary()
+        .then(d => {
+          setData(d)
+          setUnread(d.totalUnread)
+        })
+        .finally(() => setLoading(false))
+    }
+  }
 
   return (
     <div ref={ref} className="relative">
       <button
-        onClick={() => setOpen(v => !v)}
+        onClick={toggle}
         aria-label="Messages"
         className="relative p-2 rounded-lg text-muted hover:bg-surface-elevated hover:text-text transition-colors"
       >

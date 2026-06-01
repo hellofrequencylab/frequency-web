@@ -261,7 +261,7 @@ export default async function EventDetailPage({
                 label={isGoing ? '✓ Going' : "RSVP: I'm going"}
                 buttonClassName="rounded-lg px-4 py-2 text-sm font-semibold transition-colors inline-flex items-center gap-1.5 bg-primary text-on-primary hover:bg-primary-hover"
               >
-                <form action={toggleRSVP.bind(null, event.id, myRsvpStatus)}>
+                <form action={toggleRSVP.bind(null, event.id)}>
                   <button
                     type="submit"
                     className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
@@ -305,7 +305,7 @@ export default async function EventDetailPage({
                 <EventCheckInButton eventId={event.id} />
               )}
               {!hasEnded && (
-                <form action={toggleRSVP.bind(null, event.id, myRsvpStatus)}>
+                <form action={toggleRSVP.bind(null, event.id)}>
                   <button
                     type="submit"
                     className="text-xs text-subtle hover:text-danger underline underline-offset-2 transition-colors"
@@ -322,7 +322,7 @@ export default async function EventDetailPage({
               label="RSVP: I'm going"
               buttonClassName="rounded-lg px-4 py-2 text-sm font-semibold transition-colors inline-flex items-center gap-1.5 bg-primary text-on-primary hover:bg-primary-hover"
             >
-              <form action={toggleRSVP.bind(null, event.id, myRsvpStatus)}>
+              <form action={toggleRSVP.bind(null, event.id)}>
                 <button
                   type="submit"
                   className="rounded-lg px-4 py-2 text-sm font-semibold transition-colors bg-primary text-on-primary hover:bg-primary-hover"

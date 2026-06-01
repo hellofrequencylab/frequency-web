@@ -4,6 +4,7 @@ import { BookOpen, Check } from 'lucide-react'
 import { listPrograms, getCompletedProgramSlugs } from '@/lib/programs'
 import { getMyProfileId } from '@/lib/auth'
 import { IndexTemplate } from '@/components/templates/index-template'
+import { EmptyState } from '@/components/ui/empty-state'
 
 export const metadata: Metadata = {
   title: 'Programs',
@@ -24,7 +25,11 @@ export default async function ProgramsPage() {
     >
       <div className="max-w-2xl">
       {programs.length === 0 ? (
-        <p className="text-muted">Programs are coming soon.</p>
+        <EmptyState
+          icon={BookOpen}
+          title="Programs are coming soon"
+          description="Frameworks for starting, running, and growing a circle are on the way. Check back soon."
+        />
       ) : (
         <ul className="space-y-3">
           {programs.map((p) => (

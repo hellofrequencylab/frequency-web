@@ -55,11 +55,19 @@ There are **two** Supabase clients:
   signed-in user's session and **RLS**.
 - `createAdminClient()` (`lib/supabase/admin.ts`) — service-role, **bypasses RLS**.
 
-`createAdminClient()` is used at ~200 call sites because most mutations need to
+`createAdminClient()` is used at ~115 call sites because most mutations need to
 read/write across rows the user can't see under RLS. **Because it bypasses RLS,
 authorization MUST be enforced in application code.** Every server action that
 uses the admin client is responsible for its own authz check. Do not assume the
 database will stop an unauthorized write — it won't.
+
+**RLS convergence is underway (ADR-042).** Own-row and public reads are moving
+back onto the session client (`createClient()`) so RLS enforces them — including
+the caller-identity helpers below, which now read the caller's own profile via
+the session client. Cross-user aggregate reads stay on the admin client until they
+get `SECURITY DEFINER` RPCs + policy tests. When you add a read, prefer the session
+client if RLS already covers it; reach for the admin client only for cross-user
+aggregates, cron/webhooks, or admin-only surfaces.
 
 The canonical caller-identity helpers live in `lib/auth.ts`:
 

@@ -96,7 +96,7 @@ export default async function AdminPage() {
             </div>
           </div>
 
-          {role === 'janitor' && <JanitorPanel profileId={profile.id} />}
+          {role === 'janitor' && <JanitorPanel />}
           {role === 'host'    && <HostPanel    profileId={profile.id} />}
           {role === 'guide'   && <GuidePanel   profileId={profile.id} />}
           {role === 'mentor'  && <MentorPanel  profileId={profile.id} />}
@@ -149,7 +149,7 @@ function StatCard({
 
 // ── Janitor: Full platform overview ──────────────────────────────────────────
 
-async function JanitorPanel({ profileId }: { profileId: string }) {
+async function JanitorPanel() {
   const admin = createAdminClient()
 
   const [circlesRes, hubsRes, nexusesRes, membersRes] = await Promise.all([

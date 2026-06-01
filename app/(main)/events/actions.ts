@@ -89,7 +89,7 @@ export async function createEvent(formData: FormData) {
   redirect(`/events/${slug}`)
 }
 
-export async function toggleRSVP(eventId: string, currentStatus: string | null) {
+export async function toggleRSVP(eventId: string) {
   const myProfileId = await getMyProfileId()
   if (!myProfileId) return
 

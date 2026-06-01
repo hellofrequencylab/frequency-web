@@ -1,8 +1,12 @@
 // Caller-identity helpers for server actions and server components.
 //
 // They resolve the *profile* (profiles.id + community_role) for the currently
-// authenticated auth user, using the admin client for the profile lookup because
-// RLS on `profiles` would otherwise require an active-session policy for the read.
+// authenticated auth user. The profile lookup runs through the session client
+// (RLS-respecting): a user reading their own row is covered by the
+// "profiles: read own or crew+ reads in-region" policy via its
+// `auth_user_id = auth.uid()` clause, so no service-role bypass is needed for
+// the single most-trafficked read in the app. This is the anchor of the RLS
+// convergence effort (BACKLOG section A) — see ADR-042.
 //
 // The auth-user fetch and the profile lookup are each wrapped in React `cache()`,
 // so when a single render composes several of these helpers (e.g. a page calls
@@ -14,7 +18,6 @@ import { cache } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 
 export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
@@ -31,8 +34,10 @@ const resolveCaller = cache(
     const user = await getCachedUser()
     if (!user) return null
 
-    const admin = createAdminClient()
-    const { data } = await admin
+    // Own-row read: RLS lets a signed-in user read their own profile, so the
+    // session client suffices (no service-role bypass).
+    const supabase = await createClient()
+    const { data } = await supabase
       .from('profiles')
       .select('id, community_role')
       .eq('auth_user_id', user.id)
