@@ -795,6 +795,46 @@ surfaces stay at the real role until they migrate to the resolver. Staff/Studio 
 separate axis (the `staff` table) and is intentionally unaffected by view-as.
 
 ---
+
+## ADR-046: Domain migration to frequencylocal.com — served on the apex; Workspace mail authenticated; transactional mail still needs Resend domain verification
+
+**Status:** Accepted / shipped (2026-06-01).
+
+**Decision:** Rebrand the production domain from `findafreq.com` (live on the
+`go.findafreq.com` subdomain) to **`frequencylocal.com`**, served on the **bare apex**
+(no `go.`/`app.` subdomain). The old `go.findafreq.com` host is retained as a permanent
+(308) redirect to the apex to preserve inbound links and SEO.
+
+**As-built:**
+- **DNS (GoDaddy → Vercel):** apex `A @ → 216.198.79.1`; `www` `CNAME → *.vercel-dns-017.com`;
+  `www` and `go.findafreq.com` both 308-redirect to the apex. GoDaddy domain forwarding had
+  to be removed first (it locks the `@` A record).
+- **App config (Vercel):** `NEXT_PUBLIC_SITE_URL` and `NEXT_PUBLIC_APP_URL` set to
+  `https://frequencylocal.com`; the `lib/site.ts` fallback and hardcoded server fallbacks
+  (admin auth `redirectTo`, invite link, privacy page, JSON-LD/contact email) updated.
+- **Auth:** Supabase **Site URL** + redirect allowlist set to the apex; Google OAuth client
+  JS origin + consent-screen branding pointed at the apex (the Google→**Supabase** callback
+  URI is unchanged — it's why sign-in kept working). Google sign-in now sends
+  `prompt=select_account` so the account chooser always appears (app-layer only).
+- **Email (Workspace mailboxes):** primary Workspace domain switched to `frequencylocal.com`;
+  admin renamed `hello@findafreq.com → hello@frequencylocal.com` (old address kept as an
+  alias). MX → Google; SPF authorizes `_spf.google.com` (GoDaddy managed-SPF chain); DKIM
+  `google._domainkey` (2048-bit) enabled; DMARC moved to `p=quarantine` with
+  `rua=mailto:hello@frequencylocal.com`.
+- **Search:** `frequencylocal.com` verified as a Search Console domain property; `sitemap.xml`
+  submitted.
+
+**Consequences / open follow-up (important):** the Workspace SPF/DKIM/DMARC above authenticate
+**human mail sent through Google only**. The product's **transactional/bulk mail sends via
+Resend** (`lib/email.ts`), which is a *separate* sending path. Now that DMARC is enforcing
+(`p=quarantine`), Resend mail from `@frequencylocal.com` will be quarantined unless the domain
+is **verified in Resend** (its own DKIM, ideally on a dedicated `send.` subdomain so bulk
+reputation is isolated from the human-mail apex). This is now a **blocking deliverability
+prerequisite** before sending volume — see BACKLOG §I. The app-side bulk-sender hygiene
+(RFC 8058 one-click `List-Unsubscribe`, hard-bounce/complaint suppression, durable outbox
+with retries) is already in place (ADR-026/043).
+
+---
 ### Decisions intentionally NOT duplicated here
 
 Already fully covered by the repo docs (no ADR needed): the RLS / admin-client
