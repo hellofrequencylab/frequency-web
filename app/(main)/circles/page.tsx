@@ -166,15 +166,15 @@ export default async function CirclesPage({
             the nav sits in the right column under it. grid-auto-flow:dense lets
             the circles flow into the gaps (and under the nav). */}
         <div className="grid grid-cols-2 gap-x-6 gap-y-8 [grid-auto-flow:row_dense] lg:grid-cols-4 lg:auto-rows-[21rem]">
-          {/* Map — top-right 2x2 */}
+          {/* Map — top-right, half width × one row */}
           {locatableCircles.length > 0 && (
-            <div className="col-span-2 lg:col-start-3 lg:row-start-1 lg:row-span-2">
+            <div className="col-span-2 lg:col-start-3 lg:row-start-1">
               <MapPreview />
             </div>
           )}
 
-          {/* Navigation — right column, under the map */}
-          <div className="col-span-2 space-y-6 lg:col-span-1 lg:col-start-4 lg:row-start-3 lg:row-span-2">
+          {/* Navigation — right column, directly under the map */}
+          <div className="col-span-2 space-y-6 lg:col-span-1 lg:col-start-4 lg:row-start-2 lg:row-span-2">
             {interestChips.length > 0 && (
               <div>
                 <SectionHeader title="Browse by interest" />
