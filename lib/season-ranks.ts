@@ -72,3 +72,14 @@ export const RANK_COLORS: Record<SeasonRank, string> = {
 export function getRankDef(rank: SeasonRank) {
   return SEASON_RANKS.find(r => r.rank === rank) ?? SEASON_RANKS[0]
 }
+
+/** The rank a given season-zaps total actually earns (highest tier whose
+ *  threshold is met). Use this as the source of truth for display so a stale
+ *  `current_season_rank` column never shows the wrong tier. */
+export function rankForZaps(zaps: number): SeasonRank {
+  let earned: SeasonRank = SEASON_RANKS[0].rank
+  for (const r of SEASON_RANKS) {
+    if (zaps >= r.minZaps) earned = r.rank
+  }
+  return earned
+}

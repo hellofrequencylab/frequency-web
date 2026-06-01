@@ -2,13 +2,12 @@ import Link from 'next/link'
 import { Suspense } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getInitials, relativeTime } from '@/lib/utils'
-import { RANK_LABELS, seasonRankStyle, SEASON_RANKS, type SeasonRank } from '@/lib/season-ranks'
+import { RANK_LABELS, seasonRankStyle, SEASON_RANKS, rankForZaps, type SeasonRank } from '@/lib/season-ranks'
 import { MapPin, Megaphone, Zap } from 'lucide-react'
 import { GettingStartedChecklist } from '@/components/feed/getting-started'
 import { isOnline, ONLINE_MS } from '@/lib/presence'
 import { WidgetCard } from '@/components/modules/module-card'
 import { GameStatsDockClient, type DockData } from '@/components/sidebar/game-stats-dock'
-import { getChallengesData } from '@/app/(main)/crew/gamification-actions'
 import { getPracticesToLogToday, getRecentPracticeLogs, getMemberPractices } from '@/lib/practices'
 
 export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
@@ -396,36 +395,28 @@ async function GameStatsDock({ profileId }: { profileId: string }) {
     practicesToLog,
     memberPractices,
     recentLogs,
-    challengeData,
-    { data: latestAch },
   ] = await Promise.all([
     admin.from('profiles')
-      .select('current_season_zaps, current_season_rank, lifetime_gems, current_streak, achievement_count')
+      .select('current_season_zaps, lifetime_gems, current_streak')
       .eq('id', profileId).maybeSingle(),
     getPracticesToLogToday(profileId).catch(() => []),
     getMemberPractices(profileId).catch(() => []),
     getRecentPracticeLogs(profileId, 30).catch(() => []),
-    getChallengesData().catch(() => ({ challenges: [], stats: { total: 0, completed: 0 } })),
-    admin.from('user_achievements')
-      .select('achievement:achievements(name)')
-      .eq('profile_id', profileId)
-      .order('unlocked_at', { ascending: false })
-      .limit(1).maybeSingle(),
   ])
 
   const p = profile as {
-    current_season_zaps?: number; current_season_rank?: SeasonRank
-    lifetime_gems?: number; current_streak?: number; achievement_count?: number
+    current_season_zaps?: number; lifetime_gems?: number; current_streak?: number
   } | null
   const zaps = p?.current_season_zaps ?? 0
   const gems = p?.lifetime_gems ?? 0
   const streak = p?.current_streak ?? 0
-  const rank = (p?.current_season_rank ?? 'ghost') as SeasonRank
+  // Derive rank from zaps (the stored current_season_rank can be stale).
+  const rank = rankForZaps(zaps)
 
   // Today's move (North-Star daily action)
   const todaysMove: DockData['todaysMove'] =
     practicesToLog.length > 0
-      ? { kind: 'log', practiceTitle: practicesToLog[0]?.title ?? undefined }
+      ? { kind: 'log' }
       : memberPractices.length > 0
         ? { kind: 'done' }
         : { kind: 'adopt' }
@@ -451,20 +442,6 @@ async function GameStatsDock({ profileId }: { profileId: string }) {
         pct: next.minZaps > curMin ? Math.round(((zaps - curMin) / (next.minZaps - curMin)) * 100) : 0,
       }
     : { nextLabel: null, toGo: 0, pct: 100 }
-
-  // Active challenges — incomplete, closest-to-done first, capped at 3
-  type RawChallenge = { name: string; current: number; target: number; difficulty: string; completedAt: string | null }
-  const challenges = (challengeData.challenges as RawChallenge[])
-    .filter((c) => !c.completedAt)
-    .map((c) => ({
-      name: c.name,
-      current: c.current,
-      target: c.target,
-      difficulty: c.difficulty,
-      pct: c.target > 0 ? Math.round((c.current / c.target) * 100) : 0,
-    }))
-    .sort((a, b) => b.pct - a.pct)
-    .slice(0, 3)
 
   // Current quest (best-effort; tolerant of schema differences)
   let quest: DockData['quest'] = null
@@ -502,12 +479,7 @@ async function GameStatsDock({ profileId }: { profileId: string }) {
     todaysMove,
     last7,
     rankProgress,
-    challenges,
     quest,
-    badge: {
-      count: p?.achievement_count ?? 0,
-      latestName: (latestAch?.achievement as { name?: string } | null)?.name ?? null,
-    },
     vaultGems: gems,
   }
 

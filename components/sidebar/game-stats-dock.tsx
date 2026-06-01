@@ -3,71 +3,40 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import {
-  Zap, Gem, Flame, ChevronUp, Target, Award, Sparkles,
-  CheckCircle2, ArrowRight, Lock,
+  Zap, Gem, Flame, ChevronUp, Target, Sparkles, CheckCircle2, ArrowRight, Lock,
 } from 'lucide-react'
 import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
-import { useFeedAtBottom } from './use-feed-at-bottom'
 
 // ── Data shape (assembled server-side in right-sidebar.tsx) ───────────────────
-
-export type DockChallenge = {
-  name: string
-  current: number
-  target: number
-  difficulty: string
-  pct: number
-}
 
 export type DockData = {
   zaps: number
   gems: number
   streak: number
   rank: SeasonRank | null
-  todaysMove: { kind: 'log' | 'adopt' | 'done'; practiceTitle?: string }
+  todaysMove: { kind: 'log' | 'adopt' | 'done' }
   last7: boolean[]
   rankProgress: { nextLabel: string | null; toGo: number; pct: number }
-  challenges: DockChallenge[]
   quest: { chain: string; step: string; pct: number } | null
-  badge: { count: number; latestName: string | null }
   vaultGems: number
-}
-
-const DIFFICULTY: Record<string, { label: string; dot: string }> = {
-  easy:      { label: 'Easy',      dot: 'bg-success' },
-  normal:    { label: 'Normal',    dot: 'bg-primary' },
-  hard:      { label: 'Hard',      dot: 'bg-signal-strong' },
-  legendary: { label: 'Legendary', dot: 'bg-rank-plum' },
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="px-1 text-[10px] font-semibold uppercase tracking-widest text-subtle">
-      {children}
-    </p>
-  )
-}
-
-function Bar({ pct, className = 'bg-primary' }: { pct: number; className?: string }) {
-  return (
-    <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-elevated">
-      <div className={`h-full rounded-full ${className}`} style={{ width: `${Math.min(100, Math.max(2, pct))}%` }} />
-    </div>
+    <p className="text-[10px] font-semibold uppercase tracking-widest text-subtle">{children}</p>
   )
 }
 
 export function GameStatsDockClient({ data }: { data: DockData }) {
-  const { zaps, gems, streak, rank, todaysMove, last7, rankProgress, challenges, quest, badge, vaultGems } = data
-  const [manualOpen, setManualOpen] = useState(false)
-  const atBottom = useFeedAtBottom()
-  const open = manualOpen || atBottom
+  const { zaps, gems, streak, rank, todaysMove, last7, rankProgress, quest, vaultGems } = data
+  const [open, setOpen] = useState(false)
 
   return (
     <div className="sticky bottom-0 z-10 border-t border-border bg-canvas">
       {/* Compact bar — tap to open/close. Stays on top; panel fills underneath. */}
       <button
         type="button"
-        onClick={() => setManualOpen((v) => !v)}
+        onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         className="group flex w-full items-center gap-2.5 px-3 py-3.5 text-left hover:bg-surface-elevated transition-colors"
       >
@@ -92,50 +61,45 @@ export function GameStatsDockClient({ data }: { data: DockData }) {
         <ChevronUp className={`w-4 h-4 text-muted shrink-0 transition-transform duration-300 ${open ? '' : 'rotate-180'}`} />
       </button>
 
-      {/* Expandable panel — grows upward, caps at ~3/4 screen, scrolls inside. */}
+      {/* Expandable panel — grows upward, capped at ~1/3 screen, scrolls inside. */}
       <div
         className={`grid transition-[grid-template-rows] duration-300 ease-out ${
           open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
         }`}
       >
         <div className="overflow-hidden">
-          <div className="max-h-[72vh] overflow-y-auto px-3 pb-4 pt-1 space-y-4">
+          <div className="max-h-[36vh] overflow-y-auto px-3 pb-4 pt-1 space-y-4">
 
-            {/* Today's move — the North-Star daily action */}
+            {/* Today's move — North-Star action, no box */}
             {todaysMove.kind === 'done' ? (
-              <div className="flex items-center gap-2.5 rounded-xl bg-success-bg/50 px-3 py-2.5">
-                <CheckCircle2 className="w-4 h-4 text-success shrink-0" />
-                <span className="text-sm font-medium text-text">Practiced today — streak safe 🔥</span>
-              </div>
+              <p className="flex items-center gap-2 text-sm font-medium text-success">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                Practiced today — streak safe
+              </p>
             ) : (
               <Link
                 href="/practices"
-                className="flex items-center gap-2.5 rounded-xl bg-primary px-3 py-2.5 text-on-primary hover:bg-primary-hover transition-colors"
+                className="group/move flex items-center gap-2 text-sm font-semibold text-primary-strong hover:text-primary-hover transition-colors"
               >
                 <Flame className="w-4 h-4 shrink-0" />
-                <span className="flex-1 text-sm font-semibold">
-                  {todaysMove.kind === 'adopt' ? 'Adopt a practice to start' : 'Log today’s practice'}
-                </span>
-                <ArrowRight className="w-4 h-4 shrink-0" />
+                <span className="flex-1">{todaysMove.kind === 'adopt' ? 'Adopt a practice to start' : 'Log today’s practice'}</span>
+                <ArrowRight className="w-3.5 h-3.5 shrink-0 transition-transform group-hover/move:translate-x-0.5" />
               </Link>
             )}
 
-            {/* Streak strip */}
-            <div className="space-y-1.5">
-              <SectionLabel>Last 7 days</SectionLabel>
-              <div className="flex gap-1.5 px-1">
+            {/* Streak — subtle 7-day strip */}
+            <div className="flex items-center gap-2">
+              <SectionLabel>Streak</SectionLabel>
+              <div className="flex flex-1 gap-1">
                 {last7.map((on, i) => (
-                  <div
-                    key={i}
-                    className={`h-6 flex-1 rounded ${on ? 'bg-primary' : 'border border-border bg-surface'}`}
-                  />
+                  <div key={i} className={`h-1.5 flex-1 rounded-full ${on ? 'bg-primary' : 'bg-surface-elevated'}`} />
                 ))}
               </div>
             </div>
 
             {/* Rank progress */}
             <div className="space-y-1.5">
-              <div className="flex items-center justify-between px-1">
+              <div className="flex items-center justify-between">
                 <SectionLabel>Rank</SectionLabel>
                 <span className="text-[11px] text-subtle">
                   {rankProgress.nextLabel
@@ -143,39 +107,18 @@ export function GameStatsDockClient({ data }: { data: DockData }) {
                     : 'Top rank reached'}
                 </span>
               </div>
-              <Bar pct={rankProgress.nextLabel ? rankProgress.pct : 100} />
-            </div>
-
-            {/* Active challenges */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between px-1">
-                <SectionLabel>Challenges</SectionLabel>
-                <Link href="/crew/challenges" className="text-[11px] font-semibold text-primary-strong hover:text-primary-hover">All →</Link>
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-elevated">
+                <div
+                  className="h-full rounded-full bg-primary"
+                  style={{ width: `${rankProgress.nextLabel ? Math.min(100, Math.max(2, rankProgress.pct)) : 100}%` }}
+                />
               </div>
-              {challenges.length === 0 ? (
-                <p className="px-1 text-xs text-subtle">No challenges in progress. <Link href="/crew/challenges" className="text-primary-strong hover:underline">Start one →</Link></p>
-              ) : (
-                <div className="space-y-2.5">
-                  {challenges.map((c, i) => (
-                    <div key={i} className="space-y-1">
-                      <div className="flex items-center justify-between gap-2 px-1">
-                        <span className="flex min-w-0 items-center gap-1.5">
-                          <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${DIFFICULTY[c.difficulty]?.dot ?? 'bg-primary'}`} />
-                          <span className="truncate text-xs font-medium text-text">{c.name}</span>
-                        </span>
-                        <span className="shrink-0 text-[11px] tabular-nums text-subtle">{c.current}/{c.target}</span>
-                      </div>
-                      <Bar pct={c.pct} />
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
 
             {/* Current quest */}
             {quest && (
               <div className="space-y-1.5">
-                <div className="flex items-center justify-between px-1">
+                <div className="flex items-center justify-between">
                   <SectionLabel>Quest</SectionLabel>
                   <Link href="/crew/quests" className="text-[11px] font-semibold text-primary-strong hover:text-primary-hover">View →</Link>
                 </div>
@@ -185,23 +128,12 @@ export function GameStatsDockClient({ data }: { data: DockData }) {
                     <span className="truncate text-xs font-semibold text-text">{quest.chain}</span>
                   </div>
                   <p className="mt-0.5 mb-1.5 truncate text-[11px] text-subtle">{quest.step}</p>
-                  <Bar pct={quest.pct} className="bg-signal-strong" />
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface">
+                    <div className="h-full rounded-full bg-signal-strong" style={{ width: `${Math.min(100, Math.max(2, quest.pct))}%` }} />
+                  </div>
                 </div>
               </div>
             )}
-
-            {/* Nearest badge / achievements */}
-            <Link
-              href="/crew/achievements"
-              className="flex items-center gap-2.5 rounded-xl bg-surface-elevated px-3 py-2.5 hover:bg-surface-elevated/70 transition-colors"
-            >
-              <Award className="w-4 h-4 text-signal shrink-0" />
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-text">{badge.count} badge{badge.count === 1 ? '' : 's'} earned</p>
-                {badge.latestName && <p className="truncate text-[11px] text-subtle">Latest: {badge.latestName}</p>}
-              </div>
-              <ArrowRight className="w-3.5 h-3.5 text-muted shrink-0" />
-            </Link>
 
             {/* The Vault — at the very bottom */}
             <Link
@@ -216,7 +148,7 @@ export function GameStatsDockClient({ data }: { data: DockData }) {
                 <Gem className="w-3.5 h-3.5 text-signal" />
                 {vaultGems.toLocaleString()} gems to spend
               </p>
-              <p className="mt-0.5 text-[11px] text-subtle">Titles, cosmetics &amp; membership credits — unlock yours →</p>
+              <p className="mt-0.5 text-[11px] text-subtle">Titles, cosmetics &amp; membership credits →</p>
             </Link>
 
             {/* Full dashboard */}

@@ -455,7 +455,7 @@ function NavLinkList({
               className={`w-[18px] h-[18px] shrink-0 ${isActive('/crew') ? 'text-primary-strong' : 'text-subtle'}`}
               strokeWidth={isActive('/crew') ? 2.5 : 2}
             />
-            Crew
+            Crew Dashboard
           </Link>
         </div>
       )}

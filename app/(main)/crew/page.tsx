@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { Star, CheckCircle, Zap, Award, Flame, Target, Map, TrendingUp, Gem, ShoppingBag } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
-import { SEASON_RANKS, getRankDef, type SeasonRank } from '@/lib/season-ranks'
+import { SEASON_RANKS, getRankDef, rankForZaps, type SeasonRank } from '@/lib/season-ranks'
 import { CompleteButton } from './complete-button'
 import { getInitials } from '@/lib/utils'
 
@@ -47,7 +47,9 @@ export default async function CrewPage() {
   const isCrew = ['crew', 'host', 'guide', 'mentor', 'janitor'].includes((profile as { community_role: string }).community_role ?? '')
 
   const currentSeasonZaps: number = (profile as { current_season_zaps: number }).current_season_zaps ?? 0
-  const currentSeasonRank: SeasonRank = ((profile as { current_season_rank: string | null }).current_season_rank ?? 'ghost') as SeasonRank
+  // Derive the rank from the zaps total so a stale current_season_rank column
+  // never shows the wrong tier (the stored value can lag behind awards).
+  const currentSeasonRank: SeasonRank = rankForZaps(currentSeasonZaps)
   const challengesComplete: boolean = (profile as { season_challenges_complete: boolean }).season_challenges_complete ?? false
   const lifetimeGems: number = (profile as { lifetime_gems: number }).lifetime_gems ?? 0
   const rankDef = getRankDef(currentSeasonRank)
