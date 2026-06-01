@@ -17,6 +17,26 @@ export type MapCircle = {
   neighborhood: string | null
 }
 
+function distanceKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const toRad = (d: number) => (d * Math.PI) / 180
+  const dLat = toRad(lat2 - lat1)
+  const dLng = toRad(lng2 - lng1)
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2
+  return 2 * 6371 * Math.asin(Math.sqrt(a))
+}
+
+// Frame the viewer's location together with their nearest circles, so opening
+// the map shows the closest circles in their area.
+function frameNearest(map: maplibregl.Map, center: [number, number], circles: MapCircle[], count = 5, duration = 800) {
+  const bounds = new maplibregl.LngLatBounds()
+  bounds.extend(center)
+  const nearest = [...circles]
+    .sort((a, b) => distanceKm(center[1], center[0], a.latitude, a.longitude) - distanceKm(center[1], center[0], b.latitude, b.longitude))
+    .slice(0, count)
+  for (const c of nearest) bounds.extend([c.longitude, c.latitude])
+  map.fitBounds(bounds, { padding: 60, maxZoom: 11, duration })
+}
+
 // In-person circles as clustered amber pins. `interactive=false` renders a calm,
 // non-interactive preview (no controls/gestures) — used as the click-to-open
 // preview; the expanded view is fully interactive. Loaded via next/dynamic
@@ -37,12 +57,15 @@ export default function CircleMap({
   const mapRef = useRef<maplibregl.Map | null>(null)
   const centerRef = useRef(center)
 
-  // Ease to the viewer's location once IP geolocation resolves (after first paint).
+  // Once IP geolocation resolves (after first paint), frame the viewer's area
+  // and their nearest circles.
   useEffect(() => {
     centerRef.current = center
     if (center && mapRef.current) {
-      mapRef.current.easeTo({ center, zoom: 9, duration: 900 })
+      frameNearest(mapRef.current, center, circles)
     }
+    // `circles` is stable per map instance (it re-creates the map on change).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [center])
 
   useEffect(() => {
@@ -124,8 +147,8 @@ export default function CircleMap({
       })
 
       if (centerRef.current) {
-        // Viewer location already known -> open on their area.
-        map.jumpTo({ center: centerRef.current, zoom: 9 })
+        // Viewer location already known -> frame them + their nearest circles.
+        frameNearest(map, centerRef.current, circles, 5, 0)
       } else if (features.length > 0) {
         const bounds = new maplibregl.LngLatBounds()
         for (const f of features) bounds.extend(f.geometry.coordinates as [number, number])
