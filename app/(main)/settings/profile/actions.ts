@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Database } from '@/lib/database.types'
+import { sanitizeProfileInput } from '@/lib/profile-input'
 
 export async function updateProfile(data: {
   displayName: string
@@ -11,6 +12,8 @@ export async function updateProfile(data: {
   bio: string
   avatarUrl: string
 }) {
+  const { displayName, handle, bio, avatarUrl } = sanitizeProfileInput(data)
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Unauthorized')
@@ -18,23 +21,23 @@ export async function updateProfile(data: {
   // Handle-uniqueness check spans rows the caller can't see under RLS, so it
   // needs the service role. The actual UPDATE runs under the user's session
   // so the `profiles: self update` policy enforces auth_user_id ownership.
-  if (data.handle) {
+  {
     const admin = createAdminClient()
     const { data: taken } = await admin
       .from('profiles')
       .select('id')
-      .eq('handle', data.handle)
+      .eq('handle', handle)
       .neq('auth_user_id', user.id)
       .maybeSingle()
     if (taken) throw new Error('That handle is already taken.')
   }
 
   const update: Database['public']['Tables']['profiles']['Update'] = {
-    display_name: data.displayName.trim(),
-    handle:       data.handle.trim(),
-    bio:          data.bio.trim() || null,
+    display_name: displayName,
+    handle,
+    bio: bio || null,
   }
-  if (data.avatarUrl) update.avatar_url = data.avatarUrl
+  if (avatarUrl) update.avatar_url = avatarUrl
 
   const { error } = await supabase
     .from('profiles')

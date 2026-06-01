@@ -11,6 +11,23 @@ import { awardGems } from '@/lib/gems'
 
 const HOST_PLUS = ['host', 'guide', 'mentor', 'janitor']
 
+// Is this profile an active member of the circle? Gates writes/reads on
+// group-scoped (private circle) content.
+async function isActiveMember(
+  admin: ReturnType<typeof createAdminClient>,
+  profileId: string,
+  circleId: string,
+): Promise<boolean> {
+  const { data } = await admin
+    .from('memberships')
+    .select('id')
+    .eq('profile_id', profileId)
+    .eq('circle_id', circleId)
+    .eq('status', 'active')
+    .maybeSingle()
+  return !!data
+}
+
 // Notify members @mentioned in a post/reply body: store post_mentions + create
 // in-app 'mention' notifications (best-effort). Shared by createPost + createReply.
 async function fanOutMentions(
@@ -148,7 +165,7 @@ export async function deletePost(postId: string) {
 }
 
 export async function createReply(parentId: string, body: string) {
-  const trimmed = body.trim()
+  const trimmed = body.trim().slice(0, 5000)
   if (!trimmed) return
 
   const profileId = await getMyProfileId()
@@ -162,6 +179,13 @@ export async function createReply(parentId: string, body: string) {
     .eq('id', parentId)
     .maybeSingle()
   if (!parent) return
+
+  // Replying inside a circle requires active membership, same as a top-level
+  // group post (createPost above) — otherwise any user could post into a
+  // private circle's thread by replying.
+  if (parent.visibility === 'group') {
+    if (!parent.scope_id || !(await isActiveMember(admin, profileId, parent.scope_id))) return
+  }
 
   const { data: reply } = await admin.from('posts').insert({
     author_id:  profileId,
@@ -184,7 +208,21 @@ export async function createReply(parentId: string, body: string) {
 }
 
 export async function fetchReplies(parentId: string) {
+  const profileId = await getMyProfileId()
+  if (!profileId) return []
+
   const admin = createAdminClient()
+  // Don't expose replies inside a private circle to non-members.
+  const { data: parent } = await admin
+    .from('posts')
+    .select('scope_id, visibility')
+    .eq('id', parentId)
+    .maybeSingle()
+  if (!parent) return []
+  if (parent.visibility === 'group') {
+    if (!parent.scope_id || !(await isActiveMember(admin, profileId, parent.scope_id))) return []
+  }
+
   const { data } = await admin
     .from('posts')
     .select(
