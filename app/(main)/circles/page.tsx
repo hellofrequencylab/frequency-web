@@ -115,6 +115,7 @@ export default async function CirclesPage({
 
   const myCircles = filtered.filter((c) => myCircleIds.includes(c.id))
   const discover = filtered.filter((c) => !myCircleIds.includes(c.id))
+  const combined = [...myCircles, ...discover] // members first, then discover
   const filtering = !!(type || interest || qLower)
 
   // Near-you data (in-person, located) from the unfiltered set
@@ -161,22 +162,19 @@ export default async function CirclesPage({
         {/* Expanded map lives here (above the grid) so it pushes content down. */}
         <MapBanner />
 
-        {/* ── Top: Your circles (left) · big map + menu (right) ── */}
-        <div className="grid items-start gap-x-8 gap-y-8 lg:grid-cols-2">
-          {myCircles.length > 0 ? (
-            <section>
-              <SectionHeader title="Your circles" count={myCircles.length} />
-              <div className="grid grid-cols-2 gap-x-4 gap-y-6">
-                {myCircles.map((c) => <CircleCard key={c.id} circle={toCardData(c)} isMember />)}
-              </div>
-            </section>
-          ) : (
-            <div className="hidden lg:block" />
+        {/* Masonry: circles fill the grid; the map is a 2x2 block top-right and
+            the nav sits in the right column under it. grid-auto-flow:dense lets
+            the circles flow into the gaps (and under the nav). */}
+        <div className="grid grid-cols-2 gap-x-6 gap-y-8 [grid-auto-flow:row_dense] lg:grid-cols-4 lg:auto-rows-[21rem]">
+          {/* Map — top-right 2x2 */}
+          {locatableCircles.length > 0 && (
+            <div className="col-span-2 lg:col-start-3 lg:row-start-1 lg:row-span-2">
+              <MapPreview />
+            </div>
           )}
 
-          <aside className="space-y-6">
-            <MapPreview />
-
+          {/* Navigation — right column, under the map */}
+          <div className="col-span-2 space-y-6 lg:col-span-1 lg:col-start-4 lg:row-start-3 lg:row-span-2">
             {interestChips.length > 0 && (
               <div>
                 <SectionHeader title="Browse by interest" />
@@ -222,25 +220,24 @@ export default async function CirclesPage({
                 </div>
               </div>
             )}
-          </aside>
-        </div>
+          </div>
 
-        {/* ── Discover: the rest of the circles, full width ── */}
-        <section className="mt-10">
-          <SectionHeader title={filtering ? 'Results' : 'Discover'} count={discover.length} />
-          {discover.length === 0 ? (
-            <EmptyState
-              icon={Users}
-              title={filtering ? 'No circles match these filters' : 'No circles yet'}
-              description={filtering ? 'Try a wider search, or start the first one for this corner of the network.' : 'Be the first — start a circle for your neighborhood or an interest.'}
-              action={user ? <NewCircleCompose interests={interests} buttonLabel="Start a circle" /> : undefined}
-            />
-          ) : (
-            <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
-              {discover.map((c) => <CircleCard key={c.id} circle={toCardData(c)} isMember={false} />)}
+          {/* Circles — yours first, then discover; they fill every other cell */}
+          {combined.length === 0 ? (
+            <div className="col-span-2 lg:col-span-3 lg:row-start-1">
+              <EmptyState
+                icon={Users}
+                title={filtering ? 'No circles match these filters' : 'No circles yet'}
+                description={filtering ? 'Try a wider search, or start the first one for this corner of the network.' : 'Be the first — start a circle for your neighborhood or an interest.'}
+                action={user ? <NewCircleCompose interests={interests} buttonLabel="Start a circle" /> : undefined}
+              />
             </div>
+          ) : (
+            combined.map((c) => (
+              <CircleCard key={c.id} circle={toCardData(c)} isMember={myCircleIds.includes(c.id)} />
+            ))
           )}
-        </section>
+        </div>
       </MapZone>
     </IndexTemplate>
   )
