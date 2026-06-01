@@ -4,6 +4,12 @@ import { ChevronDown, ArrowRight } from 'lucide-react'
 import { getInitials, relativeTime } from '@/lib/utils'
 import { type CommunityRole, ROLE_RANK, RoleBadge } from '@/lib/community-roles'
 import { SiteImage } from '@/components/marketing/site-image'
+import { JoinButton } from '@/components/welcome/join-button'
+
+// "Join" CTAs route into the conversational onboarding funnel (/welcome), which
+// tears the page open from the click. A primary CTA pointing at the old beta
+// waitlist (or unset) is treated as a join.
+const isJoinTarget = (href?: string) => !href || href === '/beta' || href === '/welcome'
 
 // Presentational blocks shared by the Puck config (editor + public render) and
 // the legacy splash fallback. Pure props in, markup out.
@@ -74,12 +80,18 @@ export function HeroBlock({
         {subtitle && <p className="mt-7 text-base sm:text-lg text-white/80 max-w-lg leading-relaxed">{subtitle}</p>}
         <div className="mt-9 flex items-center gap-3 flex-wrap justify-center">
           {ctaPrimaryLabel && (
-            <Link
-              href={ctaPrimaryHref || '/beta'}
-              className="rounded-2xl bg-primary text-on-primary px-8 py-3.5 text-base font-bold hover:bg-primary-hover transition-colors"
-            >
-              {ctaPrimaryLabel}
-            </Link>
+            isJoinTarget(ctaPrimaryHref) ? (
+              <JoinButton className="rounded-2xl bg-primary text-on-primary px-8 py-3.5 text-base font-bold hover:bg-primary-hover transition-colors">
+                {ctaPrimaryLabel}
+              </JoinButton>
+            ) : (
+              <Link
+                href={ctaPrimaryHref || '/welcome'}
+                className="rounded-2xl bg-primary text-on-primary px-8 py-3.5 text-base font-bold hover:bg-primary-hover transition-colors"
+              >
+                {ctaPrimaryLabel}
+              </Link>
+            )
           )}
           {ctaSecondaryLabel && (
             <Link
@@ -240,9 +252,9 @@ export function LiveEventsBlock({ live, pad, vis = '' }: { live?: LiveData; pad?
                   {event.city && <> &middot; {event.city}</>}
                 </p>
               </div>
-              <Link href="/beta" className="flex items-center gap-1 text-sm font-semibold text-primary-strong hover:underline shrink-0">
+              <JoinButton className="flex items-center gap-1 text-sm font-semibold text-primary-strong hover:underline shrink-0">
                 Join <ArrowRight className="w-3 h-3" />
-              </Link>
+              </JoinButton>
             </div>
           )
         })}

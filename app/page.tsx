@@ -8,7 +8,7 @@ import { MarketingHeader } from '@/components/layout/marketing-header'
 import { MarketingFooter } from '@/components/layout/marketing-footer'
 import { Statement, ZigZag, Marquee, BetaCTA } from '@/components/marketing/marketing-ui'
 import { getInitials, relativeTime } from '@/lib/utils'
-import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
+import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, BETA_CTA_LABEL } from '@/lib/site'
 import { type CommunityRole, ROLE_RANK, RoleBadge } from '@/lib/community-roles'
 import { JoinButton } from '@/components/welcome/join-button'
 import { config } from '@/lib/page-editor/config'
@@ -291,12 +291,9 @@ function LegacySplash({ live }: { live: LiveData }) {
                       {event.city && <> &middot; {event.city}</>}
                     </p>
                   </div>
-                  <Link
-                    href={BETA_CTA_HREF}
-                    className="flex items-center gap-1 text-sm font-semibold text-primary-strong hover:underline shrink-0"
-                  >
+                  <JoinButton className="flex items-center gap-1 text-sm font-semibold text-primary-strong hover:underline shrink-0">
                     Join <ArrowRight className="w-3 h-3" />
-                  </Link>
+                  </JoinButton>
                 </div>
               )
             })}
