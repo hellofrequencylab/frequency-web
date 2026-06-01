@@ -154,11 +154,11 @@ on the real domain. **Depends on:** nothing (all in-codebase closeouts).
       distance-sorted "Circles near you" (browser geolocation + haversine, no map dependency)
       (P3.14). *Optional later:* a visual map layer on top (deferred because a map widget
       can't be verified without a browser).
-- [ ] **Apex cutover + owner config**: `go.findafreq.com → findafreq.com`; set
-      `CRON_SECRET`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_APP_URL`, `EMAIL_FROM` in prod.
-      Full step-by-step runbook: [LAUNCH.md](LAUNCH.md).
+- [ ] **Domain + owner config**: point `frequencylocal.com` (GoDaddy → Vercel) at the app;
+      set `CRON_SECRET`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_APP_URL`, `EMAIL_FROM` in prod;
+      update Supabase + Google OAuth redirect URLs. Full step-by-step runbook: [LAUNCH.md](LAUNCH.md).
 
-**Done when:** the loop above works end-to-end on `findafreq.com` and WAM is live on the
+**Done when:** the loop above works end-to-end on `frequencylocal.com` and WAM is live on the
 admin/analytics surface.
 
 ### Stage B: Free Beta + grow the mission  ·  *prove PMF, no money*

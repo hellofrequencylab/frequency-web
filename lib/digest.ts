@@ -37,7 +37,7 @@ export type DigestPayload = {
   rank:             { name: string | null; zaps: number } | null
 }
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://hellofrequency.com'
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
 
 // Build a digest payload for one profile. Returns null if there's nothing
 // to surface (no dispatches AND no upcoming events).

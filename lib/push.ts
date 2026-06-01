@@ -12,7 +12,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 
 const PUBLIC_KEY  = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
 const PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY
-const SUBJECT     = process.env.VAPID_SUBJECT ?? 'mailto:hello@hellofrequency.com'
+const SUBJECT     = process.env.VAPID_SUBJECT ?? 'mailto:hello@frequencylocal.com'
 
 let configured = false
 function configure(): boolean {

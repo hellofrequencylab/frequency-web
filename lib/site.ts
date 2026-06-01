@@ -1,8 +1,9 @@
-// Canonical site URL. Override per-environment with NEXT_PUBLIC_SITE_URL
-// (set it once a custom domain is live); falls back to the Vercel deployment.
+// Canonical site URL. Override per-environment with NEXT_PUBLIC_SITE_URL;
+// falls back to the production apex so canonical/sitemap/OG stay correct even if
+// the env var is missing in a deploy.
 export const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
-  "https://frequency-web-three.vercel.app";
+  "https://frequencylocal.com";
 
 export const SITE_NAME = "Frequency";
 export const SITE_TAGLINE = "A place to be human";
@@ -27,4 +28,4 @@ export const BETA_CTA_HREF = "/beta";
 // Org footer line. Donations / 501(c)(3) framework deferred — no fundraising
 // language on the public site yet (see frequency-site-plan + org-status spec).
 export const ORG_LEGAL_NAME = "Frequency Labs Holdings";
-export const CONTACT_EMAIL = "hello@findafreq.com";
+export const CONTACT_EMAIL = "hello@frequencylocal.com";

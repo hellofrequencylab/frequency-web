@@ -105,7 +105,7 @@ The Circle pricing model (creator pays platform per member) is wrong for Frequen
 ## ⚫ P7 — Foundational hygiene
 
 - [ ] **P7.27 — Audit logging** for role changes, member suspensions, content removals. `admin_audit_log` table.
-- [ ] **P7.28 — Email deliverability hardening.** DKIM/SPF on `hellofrequency.com`, dedicated IP if volume grows.
+- [ ] **P7.28 — Email deliverability hardening.** DKIM/SPF on `frequencylocal.com`, dedicated IP if volume grows.
 - [ ] **P7.29 — Background job durability.** Current cron creates notifications inline; if Resend is down mid-dispatch, emails silently drop. Add `notification_queue` with retries.
 
 ---

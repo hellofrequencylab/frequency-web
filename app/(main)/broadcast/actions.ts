@@ -65,7 +65,7 @@ export async function createAndPublishDispatch(fd: FormData) {
         .eq('id', caller.id)
         .maybeSingle()
       const authorName = authorProfile?.display_name ?? 'A host'
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://hellofrequency.com'
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
       const dispatchUrl = `${appUrl}/broadcast/${dispatch.id}`
 
       let profileIds: string[] = []
