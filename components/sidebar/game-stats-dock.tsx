@@ -6,6 +6,7 @@ import {
   Zap, Gem, Flame, ChevronUp, Target, Sparkles, CheckCircle2, ArrowRight, Lock,
 } from 'lucide-react'
 import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
+import { useFeedAtBottom } from './use-feed-at-bottom'
 
 // ── Data shape (assembled server-side in right-sidebar.tsx) ───────────────────
 
@@ -29,14 +30,17 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 export function GameStatsDockClient({ data }: { data: DockData }) {
   const { zaps, gems, streak, rank, todaysMove, last7, rankProgress, quest, vaultGems } = data
-  const [open, setOpen] = useState(false)
+  const [manualOpen, setManualOpen] = useState(false)
+  const atBottom = useFeedAtBottom()
+  // Opens on tap, or when the feed is scrolled past its bottom (continued scroll).
+  const open = manualOpen || atBottom
 
   return (
     <div className="sticky bottom-0 z-10 border-t border-border bg-canvas">
       {/* Compact bar — tap to open/close. Stays on top; panel fills underneath. */}
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => setManualOpen((v) => !v)}
         aria-expanded={open}
         className="group flex w-full items-center gap-2.5 px-3 py-3.5 text-left hover:bg-surface-elevated transition-colors"
       >
