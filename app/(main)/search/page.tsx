@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { Search, Users, FileText, CalendarDays } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
@@ -206,9 +207,11 @@ export default async function SearchPage({
                     className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-surface-elevated transition-colors -mx-3"
                   >
                     {p.avatar_url ? (
-                      <img
+                      <Image
                         src={p.avatar_url}
                         alt={p.display_name}
+                        width={36}
+                        height={36}
                         className="w-9 h-9 rounded-full object-cover shrink-0"
                       />
                     ) : (
@@ -256,9 +259,11 @@ export default async function SearchPage({
                   >
                     <div className="flex items-center gap-2.5 mb-2">
                       {a?.avatar_url ? (
-                        <img
+                        <Image
                           src={a.avatar_url}
                           alt={a.display_name}
+                          width={28}
+                          height={28}
                           className="w-7 h-7 rounded-full object-cover shrink-0"
                         />
                       ) : (

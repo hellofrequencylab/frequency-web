@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { Heart, ThumbsUp, Megaphone, ArrowRight, Zap } from 'lucide-react'
 import { toggleReaction } from '@/app/(main)/feed/actions'
 import { PostReplies } from './post-replies'
@@ -124,7 +125,7 @@ export function PostCard({
             <div className="shrink-0 relative">
               <Link href={`/people/${author.handle}`} className="block">
                 {author.avatar_url ? (
-                  <img src={author.avatar_url} alt={author.display_name} className="w-8 h-8 rounded-full object-cover" />
+                  <Image src={author.avatar_url} alt={author.display_name} width={32} height={32} className="w-8 h-8 rounded-full object-cover" />
                 ) : (
                   <div className="w-8 h-8 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center select-none">
                     {getInitials(author.display_name)}
@@ -134,7 +135,7 @@ export function PostCard({
               {post.scopeContext?.type === 'wall' && (
                 <Link href={post.scopeContext.href} className="absolute -bottom-1 -right-1.5 ring-2 ring-surface rounded-full">
                   {post.scopeContext.avatar_url ? (
-                    <img src={post.scopeContext.avatar_url} alt={post.scopeContext.name} className="w-5 h-5 rounded-full object-cover" />
+                    <Image src={post.scopeContext.avatar_url} alt={post.scopeContext.name} width={20} height={20} className="w-5 h-5 rounded-full object-cover" />
                   ) : (
                     <div className="w-5 h-5 rounded-full bg-border-strong text-muted text-[8px] font-bold flex items-center justify-center">
                       {getInitials(post.scopeContext.name)}
@@ -187,12 +188,13 @@ export function PostCard({
 
           {/* Post image */}
           {post.media_urls?.length > 0 && (
-            <div className="rounded-xl overflow-hidden mb-3">
-              <img
+            <div className="relative h-96 w-full rounded-xl overflow-hidden mb-3">
+              <Image
                 src={post.media_urls[0]}
                 alt="Post attachment"
-                loading="lazy"
-                className="max-h-96 object-cover w-full"
+                fill
+                sizes="(min-width: 768px) 36rem, 100vw"
+                className="object-cover"
               />
             </div>
           )}
