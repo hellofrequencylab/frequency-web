@@ -1,16 +1,18 @@
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import { getCachedUser } from '@/lib/auth'
 import { rankForZaps } from '@/lib/season-ranks'
 import type { ViewerGamStats } from '@/components/ui/page-header'
 
 // The signed-in viewer's gamification stats (rank derived from zaps), for the
 // shared PageHeader. Null when signed out. Server-only.
+//
+// Own-row read via the session client (RLS-covered); see ADR-042.
 export async function getViewerGamStats(): Promise<ViewerGamStats | null> {
   const user = await getCachedUser()
   if (!user) return null
 
-  const admin = createAdminClient()
-  const { data } = await admin
+  const supabase = await createClient()
+  const { data } = await supabase
     .from('profiles')
     .select('current_season_zaps, lifetime_gems, current_streak')
     .eq('auth_user_id', user.id)

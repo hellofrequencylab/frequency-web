@@ -661,6 +661,43 @@ data sent to Anthropic is data-minimized; crisis/safety routes to humans; AI is
 labeled. See [`BACKLOG.md`](BACKLOG.md) sections D, E, I for the tracked work.
 
 ---
+
+## ADR-042: RLS convergence proceeds own-row-first; aggregates wait for SECURITY DEFINER RPCs + a policy-test harness
+
+**Status:** Accepted (in progress) · executes BACKLOG section A "RLS convergence" ·
+refines the admin-client authorization model in [`ARCHITECTURE.md`](ARCHITECTURE.md).
+**Context:** ~115 files read/write through `createAdminClient()`, which bypasses RLS,
+so authorization lives in application code. The convergence goal is to move reads back
+onto the session client where RLS can enforce them. But not every admin read is equal:
+some are own-row reads the existing policies already cover, while others are cross-user
+aggregates (capacity counts, the feed's scope fan-out, the capability resolver) that
+the session client *cannot* reproduce without leaking or under-counting, because the
+`memberships` SELECT policy only exposes rows in circles the caller already belongs to.
+Migrating those blindly would silently break correctness or open a hole. The repo also
+has no RLS/policy test harness yet (BACKLOG section D), so we cannot yet prove a new or
+relied-upon policy behaves before shipping it.
+**Decision:** Converge in tiers, safest first.
+- **Tier 1 — own-row / public reads (migrate now, no new policy):** reads keyed by the
+  caller's own identity (`auth_user_id = auth.uid()`) or against public-read tables
+  (`circles`/`hubs`/`nexuses`/`outposts`). These are provably covered by existing
+  policies. Done this pass: `lib/auth.ts` `resolveCaller()` (the anchor — every
+  `getMyProfileId`/`getCallerProfile`/`requireProfileId` call across the app now reads
+  identity via RLS), `lib/viewer-stats.ts`, and `components/layout/site-header.tsx`
+  (both own-profile reads on every authenticated page render).
+- **Tier 2 — cross-user aggregates (blocked on RPCs + tests):** capacity counts
+  (`circles/actions.ts`), the feed scope fan-out (`feed-list.tsx`), and the capability
+  resolver (`lib/core/load-capabilities.ts`) get dedicated `SECURITY DEFINER` RPCs with
+  pinned `search_path`, each landing *with* a policy test once the harness exists. Until
+  then they stay on the admin client with their existing in-code authz.
+- **Tier 3 — legitimately service-role (no change):** cron jobs, webhooks, and the
+  admin dashboard (authorization there is "is an admin", which RLS cannot express).
+**Consequences:** The hottest path — caller identity on every authenticated request —
+now respects RLS with zero new policy surface, establishing the pattern without waiting
+on the harness. The remaining bulk is explicitly sequenced behind section D, matching
+the documented critical path (CI gates + harness -> RLS convergence). No migration runs
+without a way to prove the policy it relies on.
+
+---
 ### Decisions intentionally NOT duplicated here
 
 Already fully covered by the repo docs (no ADR needed): the RLS / admin-client
