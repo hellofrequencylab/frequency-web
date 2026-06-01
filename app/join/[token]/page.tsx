@@ -29,7 +29,16 @@ export default async function JoinPage({ params }: Props) {
   if (link.expires_at && new Date(link.expires_at) < new Date()) notFound()
   if (link.max_uses > 0 && link.used_count >= link.max_uses) notFound()
 
-  const circle = link.circle as any
+  const circle = link.circle as unknown as {
+    id: string
+    name: string
+    about: string | null
+    type: string
+    status: string
+    member_count: number | null
+    member_cap: number
+    hub: { name: string } | null
+  } | null
   if (!circle || circle.status === 'archived') notFound()
 
   // Check if user is already signed in

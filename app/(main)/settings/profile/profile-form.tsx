@@ -180,8 +180,8 @@ export function ProfileForm({
         setSaved(true)
         setAvatarFile(null)
         setTimeout(() => setSaved(false), 3000)
-      } catch (err: any) {
-        setSaveError(err?.message ?? 'Something went wrong.')
+      } catch (err) {
+        setSaveError(err instanceof Error ? err.message : 'Something went wrong.')
       }
     })
   }

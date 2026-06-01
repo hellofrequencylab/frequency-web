@@ -92,7 +92,11 @@ async function MembersTab() {
     .order('created_at', { ascending: false })
     .limit(200)
 
-  const allMembers = (members ?? []).map((m: any) => ({ ...m, regionName: m.nexus_regions?.name ?? null }))
+  const allMembers = (members ?? []).map((m) => ({
+    ...m,
+    community_role: m.community_role ?? 'member',
+    regionName: m.nexus_regions?.name ?? null,
+  }))
 
   // Resolve emails by paging through the auth users (a few listUsers calls)
   // instead of one getUserById per member, which was up to 200 sequential

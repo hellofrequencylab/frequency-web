@@ -165,7 +165,7 @@ export function PostCard({
             </div>
 
             <ContextActions
-              role={(viewerRole ?? 'member') as any}
+              role={(viewerRole ?? 'member') as CommunityRole}
               context={{ type: 'post', id: post.id, isPinned: post.is_pinned, isOwn, postType: post.post_type }}
             />
           </div>

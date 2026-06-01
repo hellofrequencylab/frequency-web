@@ -43,7 +43,7 @@ export function CommentSection({
   const [isPending, startTransition] = useTransition()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.SyntheticEvent) {
     e.preventDefault()
     if (!body.trim()) return
     setError('')
@@ -52,8 +52,8 @@ export function CommentSection({
     startTransition(async () => {
       try {
         await addDispatchComment(dispatchId, snapshot)
-      } catch (err: any) {
-        setError(err?.message ?? 'Failed to post comment.')
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to post comment.')
         setBody(snapshot)
       }
     })
@@ -127,7 +127,7 @@ export function CommentSection({
             ref={textareaRef}
             value={body}
             onChange={e => setBody(e.target.value.slice(0, 2000))}
-            onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSubmit(e as any) }}
+            onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSubmit(e) }}
             placeholder="Add a comment… (⌘↵ to post)"
             rows={2}
             disabled={isPending}
