@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { MARKETING_NAV, BETA_CTA_LABEL } from '@/lib/site'
-import { JoinButton } from '@/components/welcome/join-button'
+import { MARKETING_NAV, BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
 
 // Public marketing header. No search box (that's for the community app). When
 // `overHero`, it sits transparent over the dark hero and flips to a solid light
@@ -65,7 +64,8 @@ export function MarketingHeader({ overHero = false }: { overHero?: boolean }) {
       >
         Sign in
       </Link>
-      <JoinButton
+      <Link
+        href={BETA_CTA_HREF}
         className={`rounded-lg px-4 py-2 text-sm font-bold transition-colors whitespace-nowrap ${
           light
             ? 'bg-primary text-on-primary hover:bg-primary-hover'
@@ -73,7 +73,7 @@ export function MarketingHeader({ overHero = false }: { overHero?: boolean }) {
         }`}
       >
         {BETA_CTA_LABEL}
-      </JoinButton>
+      </Link>
     </header>
   )
 }
