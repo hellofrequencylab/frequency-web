@@ -27,7 +27,7 @@
 - [ ] **Grant yourself Studio access** (to load `/studio`): after applying, run
       `insert into public.team_members (profile_id, role) select id, 'owner' from public.profiles where handle = 'danieltyack';`
 - [ ] **Configure the Resend webhook** (Phase 6.2): in the Resend dashboard add a
-      webhook to `https://go.findafreq.com/api/webhooks/resend` for delivery/bounce/
+      webhook to `https://frequencylocal.com/api/webhooks/resend` for delivery/bounce/
       complaint events, and set `RESEND_WEBHOOK_SECRET` (the `whsec_…` value) in env.
       Without it the endpoint rejects all calls (so bounces won't auto-suppress).
 - [ ] **Regenerate DB types** after applying (the new tables use an untyped client

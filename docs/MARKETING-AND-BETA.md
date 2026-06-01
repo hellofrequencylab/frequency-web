@@ -5,8 +5,8 @@ managing it. Built on the existing email spine (ADR-026) and the `contacts` CRM
 (6.3). This is the acquisition layer; [COMMS-CRM-ARCHITECTURE.md](COMMS-CRM-ARCHITECTURE.md)
 covers the engine underneath.
 
-> Status: shipped + live on `go.findafreq.com`. The apex `findafreq.com` is still
-> Squarespace — see "Deferred" below.
+> Status: shipped + live on the apex `frequencylocal.com` (GoDaddy → Vercel). The
+> retired `go.findafreq.com` host 301-redirects here.
 
 ---
 
@@ -161,9 +161,9 @@ Mitigations:
 |---|---|---|
 | `CRON_SECRET` | random 32+ char string | **Critical** — cron auth; without it nothing drains/sends |
 | `RESEND_API_KEY` | Resend key | sending (already set) |
-| `EMAIL_FROM` | verified sender, e.g. `Frequency <noreply@findafreq.com>` | deliverability (SPF/DKIM/DMARC on that domain) |
-| `NEXT_PUBLIC_SITE_URL` | `https://go.findafreq.com` | confirm/invite links, canonical, sitemap, OG |
-| `NEXT_PUBLIC_APP_URL` | `https://go.findafreq.com` | email logo/footer links |
+| `EMAIL_FROM` | verified sender, e.g. `Frequency <noreply@frequencylocal.com>` | deliverability (SPF/DKIM/DMARC on that domain) |
+| `NEXT_PUBLIC_SITE_URL` | `https://frequencylocal.com` | confirm/invite links, canonical, sitemap, OG |
+| `NEXT_PUBLIC_APP_URL` | `https://frequencylocal.com` | email logo/footer links |
 | `BETA_CONFIRM_SECRET` | random string (optional) | stable beta token signing (else falls back to service key) |
 | `RESEND_WEBHOOK_SECRET` | from Resend dashboard | deliverability webhook (6.2) |
 
@@ -174,10 +174,7 @@ Mitigations:
 - **Support Us / donations / 501(c)(3) org-status framework** — spec'd (flip-ready
   `pre_501c3 → 501c3` wording, embedded donation widget, investor path = private
   contact). Held until the Foundation is incorporated.
-- **`findafreq.com` apex cutover** — point apex DNS at Vercel, set it primary,
-  flip `NEXT_PUBLIC_SITE_URL`/`NEXT_PUBLIC_APP_URL`, add to Supabase Auth redirect
-  URLs, 301 `go.` → apex, cancel Squarespace.
-- **Per-Nexus subdomains** (`encinitas.findafreq.com`) — model the data now
+- **Per-Nexus subdomains** (`encinitas.frequencylocal.com`) — model the data now
   (DNS-safe nexus slug + content scope tiers), build the routing when the first
   Nexus crystallizes.
 - Branded sending-subdomain isolation (`send.` transactional / `news.` marketing).

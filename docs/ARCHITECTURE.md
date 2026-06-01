@@ -17,7 +17,7 @@ terms), [DATABASE.md](DATABASE.md) (schema), and [BACKLOG.md](BACKLOG.md) (what'
 
 ### Domain & canonical URL
 
-Production is served at the custom domain **`go.findafreq.com`** (GoDaddy CNAME →
+Production is served at the custom domain **`frequencylocal.com`** (apex; GoDaddy DNS →
 Vercel; Supabase Site URL set to match). This host is hardcoded as the fallback in
 a few server paths (invite signup link, admin auth `redirectTo`, privacy page).
 
@@ -25,8 +25,8 @@ Separately, `lib/site.ts` derives `SITE_URL` — used for **canonical tags, site
 robots, OpenGraph, and JSON-LD** — from `NEXT_PUBLIC_SITE_URL`, falling back to
 `https://frequency-web-three.vercel.app`. **If `NEXT_PUBLIC_SITE_URL` is not set in
 the Vercel project, those SEO surfaces advertise the vercel.app domain even though
-the app is served at go.findafreq.com** (canonical/sitemap drift). Set
-`NEXT_PUBLIC_SITE_URL=https://go.findafreq.com` in Vercel — see BACKLOG.
+the app is served at frequencylocal.com** (canonical/sitemap drift). Set
+`NEXT_PUBLIC_SITE_URL=https://frequencylocal.com` in Vercel — see BACKLOG.
 
 ## Directory map
 

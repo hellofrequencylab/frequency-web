@@ -88,8 +88,8 @@ Help is one leg of the three-home pipeline in [DOCS-PROTOCOL.md](DOCS-PROTOCOL.m
 
 - **Search at scale**: swap the in-component substring search for Pagefind/Orama behind
   the same `<HelpSearch>` props.
-- **Subdomain**: serve at `help.findafreq.com` by rewriting it to `/help` (all content is
-  already under the `/help` path), surviving the `go.` to apex cutover untouched.
+- **Subdomain**: serve at `help.frequencylocal.com` by rewriting it to `/help` (all content
+  is already under the `/help` path).
 - **Non-engineer editing**: a light authoring UI in Studio that commits Markdown via PR,
   keeping git as source of truth.
 - **Localization**: `content/help/<locale>/<category>/...` with a locale segment.

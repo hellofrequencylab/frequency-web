@@ -88,7 +88,7 @@ export async function sendMagicLink(profileId: string) {
     type: 'magiclink',
     email: user.email,
     options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://go.findafreq.com'}/auth/callback`,
+      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'}/auth/callback`,
     },
   })
   if (error) throw new Error(error.message)

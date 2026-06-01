@@ -27,4 +27,4 @@ export const BETA_CTA_HREF = "/beta";
 // Org footer line. Donations / 501(c)(3) framework deferred — no fundraising
 // language on the public site yet (see frequency-site-plan + org-status spec).
 export const ORG_LEGAL_NAME = "Frequency Labs Holdings";
-export const CONTACT_EMAIL = "hello@findafreq.com";
+export const CONTACT_EMAIL = "hello@frequencylocal.com";
