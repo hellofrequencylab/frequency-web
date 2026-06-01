@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Hash, Plus, EyeOff, Users } from 'lucide-react'
+import { Hash, Plus, EyeOff } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { archiveChannel } from '../actions'

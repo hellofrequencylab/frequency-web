@@ -9,7 +9,6 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { sendWelcomeEmail } from '@/lib/email'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 
 export const dynamic = 'force-dynamic'

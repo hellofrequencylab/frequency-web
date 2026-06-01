@@ -13,8 +13,6 @@ import {
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
-const HOST_PLUS: CommunityRole[] = ['host', 'guide', 'mentor', 'janitor']
-
 const CREATE_OPTIONS = [
   { href: '/feed', icon: Home, label: 'Post', desc: 'Share with your circle', minRole: 'crew' as CommunityRole },
   { href: '/feed?announce=true', icon: Megaphone, label: 'Announcement', desc: 'Pin to the top of the feed', minRole: 'host' as CommunityRole },

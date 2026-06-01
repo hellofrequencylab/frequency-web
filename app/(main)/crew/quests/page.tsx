@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { Map, CheckCircle, Circle, ChevronRight, Zap, Lock } from 'lucide-react'
+import { Map, CheckCircle, Zap, Lock } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 

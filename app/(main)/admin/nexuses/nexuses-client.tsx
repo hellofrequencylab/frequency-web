@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Plus, Pencil, Check, X } from 'lucide-react'
-import { createNexus, updateNexus } from '../actions'
+import { Pencil, Check, X } from 'lucide-react'
+import { updateNexus } from '../actions'
 
 type NexusRow = {
   id: string

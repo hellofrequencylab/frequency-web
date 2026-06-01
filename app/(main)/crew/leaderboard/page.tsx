@@ -5,7 +5,6 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { getRankDef, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
 import { getInitials } from '@/lib/utils'
-import { ProfileFlair } from '@/components/profile-flair'
 import { LeaderboardTabs } from './leaderboard-tabs'
 
 interface LeaderboardEntry {

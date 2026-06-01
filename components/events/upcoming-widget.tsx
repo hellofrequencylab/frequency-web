@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { CalendarDays, MapPin } from 'lucide-react'
+import { MapPin } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 type WidgetEvent = {
