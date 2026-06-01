@@ -67,7 +67,7 @@ export default function PrivacyPage() {
             <ul className="text-muted space-y-2 list-disc list-inside">
               <li><strong className="text-text">Supabase</strong>. Database and authentication</li>
               <li><strong className="text-text">Vercel</strong>. Hosting</li>
-              <li><strong className="text-text">Google</strong>. OAuth sign-in (if you choose Google login)</li>
+              <li><strong className="text-text">Google</strong>. OAuth sign-in (if you choose Google login) and Google Analytics for aggregate, anonymized usage measurement</li>
               <li><strong className="text-text">Stripe</strong>. Payment processing (when applicable)</li>
               <li><strong className="text-text">Resend</strong>. Transactional email delivery</li>
             </ul>
@@ -93,8 +93,10 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-lg font-semibold text-text">7. Cookies</h2>
             <p className="text-muted leading-relaxed">
-              We use essential cookies to maintain your login session. We do not use third-party
-              tracking cookies or advertising cookies.
+              We use essential cookies to maintain your login session, and Google Analytics to
+              understand aggregate, anonymized usage so we can improve the platform. We configure
+              Google Analytics with IP anonymization and with advertising and ad-personalization
+              signals turned off. We do not use advertising cookies, and we never sell your data.
             </p>
           </section>
 

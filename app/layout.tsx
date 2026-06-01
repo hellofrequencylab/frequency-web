@@ -4,6 +4,7 @@ import "./globals.css";
 import { SITE_URL, SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION } from "@/lib/site";
 import { JsonLd } from "@/components/json-ld";
 import { organizationSchema, websiteSchema } from "@/lib/jsonld";
+import { GoogleAnalytics } from "@/components/analytics/google-analytics";
 
 // Nunito: closest Google Font to the Frequency brand logo's rounded, bold letterforms.
 // Weights: 400 body, 600 semibold, 700 bold, 800 extrabold, 900 black (headings/branding).
@@ -108,6 +109,8 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         {/* Site-wide structured data for search/answer engines */}
         <JsonLd data={[organizationSchema(), websiteSchema()]} />
+        {/* GA4 — inert unless NEXT_PUBLIC_GA_MEASUREMENT_ID is set in production */}
+        <GoogleAnalytics />
       </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
