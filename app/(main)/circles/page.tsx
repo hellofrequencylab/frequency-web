@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Users, Compass } from 'lucide-react'
+import { Users, Compass, Zap } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { NewCircleCompose } from '@/components/compose/new-circle-compose'
@@ -48,6 +48,15 @@ function toCardData(c: CircleRow): CircleCardData {
     member_count: c.member_count, member_cap: c.member_cap, status: c.status,
     context: contextFor(c), imageUrl: c.image_url,
   }
+}
+
+function Stat({ value, label }: { value: number; label: string }) {
+  return (
+    <div>
+      <div className="text-xl font-bold leading-none tabular-nums text-text">{value.toLocaleString()}</div>
+      <div className="mt-1 text-xs text-subtle">{label}</div>
+    </div>
+  )
 }
 
 export default async function CirclesPage({
@@ -143,10 +152,18 @@ export default async function CirclesPage({
   }
   const nexuses = [...nexusMap.values()].sort((a, b) => b.count - a.count).slice(0, 8)
 
+  // Network stats for the header strip
+  const stats = {
+    circles: all.length,
+    members: all.reduce((s, c) => s + (c.member_count ?? 0), 0),
+    cities: nexusMap.size,
+    interests: interestChips.length,
+  }
+
   return (
     <IndexTemplate
       title="Circles"
-      description="Find your people — anywhere. Browse local circles, search by interest, or wander the network and start one where there's a gap."
+      description="This is where it gets real. Find a circle near you, dive into something you love, or start your own — because showing up, week after week, is how strangers become your people."
       action={user ? <NewCircleCompose interests={interests} buttonLabel="Start a circle" /> : undefined}
       toolbar={
         isAdmin ? (
@@ -156,6 +173,36 @@ export default async function CirclesPage({
         ) : undefined
       }
     >
+      {/* Network stats + gamification prompt */}
+      <div className="mb-6 flex flex-col gap-4 lg:flex-row">
+        <div className="flex flex-wrap items-center gap-x-8 gap-y-3 rounded-2xl border border-border bg-surface px-6 py-4 shadow-sm">
+          <Stat value={stats.circles} label="Circles" />
+          <Stat value={stats.members} label="Members" />
+          <Stat value={stats.cities} label="Cities" />
+          <Stat value={stats.interests} label="Interests" />
+        </div>
+
+        <div className="flex flex-1 items-center gap-4 rounded-2xl border border-primary-bg bg-primary-bg/40 px-6 py-4">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary">
+            <Zap className="h-5 w-5 fill-current" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-text">Circles are where you earn</p>
+            <p className="text-sm text-muted">
+              {myCircleIds.length > 0
+                ? `Showing up to your ${myCircleIds.length} circle${myCircleIds.length === 1 ? '' : 's'} keeps your streak alive — and hosting earns the most zaps.`
+                : 'Join a circle to start earning zaps and keep your streak alive — or host your own and lead the way.'}
+            </p>
+          </div>
+          <Link
+            href="/crew"
+            className="shrink-0 text-sm font-semibold text-primary-strong transition-colors hover:text-primary-hover"
+          >
+            Your rewards →
+          </Link>
+        </div>
+      </div>
+
       <CirclesToolbar interests={interests} />
 
       <MapZone circles={locatableCircles}>
