@@ -74,7 +74,7 @@ State: `[ ]` pending · `[~]` in progress · `[x]` done
 ## 🟢 P3 — Discovery & social trust
 
 - [ ] **P3.14 — Map / proximity Circle discovery.** `circles` already has `lat/lng/city/neighborhood`. Add map view at `/circles` (Mapbox or Leaflet).
-- [ ] **P3.15 — Member directory filters.** By Circle, by rank, by online-now, by city. Currently `/people` is a flat list.
+- [x] **P3.15 — Member directory filters.** ✅ 2026-06-01 — `/people` is no longer a flat list. Server-rendered, URL-driven filters narrow the directory by role/rank (community ladder), Circle, city, Nexus region, and online-now. Circle and city resolve through the `memberships → circles` join (active memberships only; city is where a member's Circle meets); online-now uses `lib/presence.isOnline` on `last_seen_at` and also surfaces a presence dot on each card ([app/(main)/people/page.tsx](<app/(main)/people/page.tsx>)).
 - [ ] **P3.16 — Member profile richness.** Practice history, attendance count, achievements showcase, streaks earned. Data exists; profile page just renders basics.
 - [ ] **P3.17 — @mention rendering + notifications.** `/api/search-handles` exists for autocomplete; finish mention parser + notification fan-out.
 - [ ] **P3.18 — Friend suggestions.** "People in your Circle you haven't met" / "people with overlapping events." Cheap heuristics beat ML at this scale.
