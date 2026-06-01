@@ -6,6 +6,7 @@ import {
   Zap, Gem, Flame, ChevronUp, Target, Sparkles, CheckCircle2, ArrowRight, Lock,
 } from 'lucide-react'
 import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
+import { useFeedAtBottom } from './use-feed-at-bottom'
 
 // ── Data shape (assembled server-side in right-sidebar.tsx) ───────────────────
 
@@ -29,18 +30,18 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 export function GameStatsDockClient({ data }: { data: DockData }) {
   const { zaps, gems, streak, rank, todaysMove, last7, rankProgress, quest, vaultGems } = data
-  // The right dock is NOT pinned: it sits below the rail's top content and
-  // scrolls up with the feed (follows the top up, can go all the way up). It is
-  // open by default so the stats are simply part of the scroll; tapping the bar
-  // collapses/expands it. No scroll triggers, so the motion stays smooth.
-  const [open, setOpen] = useState(true)
+  // Same mechanism as the left profile box: a compact bar stuck to the bottom,
+  // revealing the panel on a continued (force) scroll, or on tap.
+  const [manualOpen, setManualOpen] = useState(false)
+  const atBottom = useFeedAtBottom()
+  const open = manualOpen || atBottom
 
   return (
-    <div className="mt-6 border-t border-border">
-      {/* Compact bar — tap to open/close. */}
+    <div className="sticky bottom-0 z-10 border-t border-border bg-canvas">
+      {/* Compact bar — stuck to the bottom; tap to open/close. */}
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => setManualOpen((v) => !v)}
         aria-expanded={open}
         className="group flex w-full items-center gap-2.5 px-3 py-3.5 text-left hover:bg-surface-elevated transition-colors"
       >
@@ -72,7 +73,7 @@ export function GameStatsDockClient({ data }: { data: DockData }) {
         }`}
       >
         <div className="overflow-hidden">
-          <div className="px-3 pb-4 pt-1 space-y-4">
+          <div className="max-h-[50vh] overflow-y-auto px-3 pb-4 pt-1 space-y-4">
 
             {/* Today's move — North-Star action, no box */}
             {todaysMove.kind === 'done' ? (
