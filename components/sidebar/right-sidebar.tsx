@@ -523,6 +523,11 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
         <ActiveMembersWidget profileId={profileId} circleIds={circleIds} />
 
         {isCrew && <LeaderboardWidget />}
+
+        {/* Sentinel marking the end of the rail's top content. The stats dock
+            watches it: once it scrolls above the viewport top (the top content
+            has scrolled away), the dock follows the top up and reveals. */}
+        <div data-rail-top-end aria-hidden className="h-px w-full" />
       </div>
 
       {/* Game stats sit BELOW the rail content (never overlap it). As the top
