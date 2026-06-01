@@ -16,31 +16,32 @@ export type CircleCardData = {
   imageUrl?: string | null
 }
 
-// Circle card: a circular cover image with the basics underneath (name, place,
-// a line of description, member count, and a join/open action). Centered, calm.
+// Circle card: a large circular cover image with the basics underneath (name,
+// place, a line of description, member count, join/open). Borderless — it sits
+// on the canvas, separated by whitespace, not a boxed card.
 export function CircleCard({ circle, isMember }: { circle: CircleCardData; isMember: boolean }) {
   const full = circle.member_count >= circle.member_cap
 
   return (
-    <div className="flex flex-col items-center rounded-2xl border border-border bg-surface p-5 text-center shadow-sm transition-all hover:border-primary-bg hover:shadow-md">
-      <Link href={`/circles/${circle.slug}`} className="shrink-0">
+    <div className="flex flex-col items-center px-2 text-center">
+      <Link href={`/circles/${circle.slug}`} className="group/img shrink-0">
         {circle.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={circle.imageUrl}
             alt={circle.name}
-            className="h-20 w-20 rounded-full object-cover shadow-sm ring-2 ring-surface"
+            className="h-32 w-32 rounded-full object-cover shadow-sm ring-1 ring-border/60 transition-transform duration-200 group-hover/img:scale-[1.03]"
           />
         ) : (
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary-bg text-primary-strong">
-            <Users className="h-8 w-8" />
+          <div className="flex h-32 w-32 items-center justify-center rounded-full bg-primary-bg text-primary-strong transition-transform duration-200 group-hover/img:scale-[1.03]">
+            <Users className="h-12 w-12" />
           </div>
         )}
       </Link>
 
       <Link
         href={`/circles/${circle.slug}`}
-        className="mt-3 text-base font-semibold text-text transition-colors hover:text-primary-strong"
+        className="mt-4 text-base font-semibold text-text transition-colors hover:text-primary-strong"
       >
         {circle.name}
       </Link>
@@ -50,7 +51,7 @@ export function CircleCard({ circle, isMember }: { circle: CircleCardData; isMem
         <span className="truncate">{circle.context ?? (circle.type === 'in-person' ? 'In person' : 'Online')}</span>
       </div>
 
-      {circle.about && <p className="mt-2 line-clamp-2 text-sm text-muted">{circle.about}</p>}
+      {circle.about && <p className="mt-2 line-clamp-2 max-w-xs text-sm text-muted">{circle.about}</p>}
 
       <p className="mt-2 text-xs text-subtle">
         {circle.member_count} {circle.member_count === 1 ? 'member' : 'members'}

@@ -218,7 +218,7 @@ export default async function CirclesPage({
           {myCircles.length > 0 && (
             <section>
               <SectionHeader title="Your circles" count={myCircles.length} />
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-x-6 gap-y-10 sm:grid-cols-2">
                 {myCircles.map((c) => <CircleCard key={c.id} circle={toCardData(c)} isMember />)}
               </div>
             </section>
@@ -234,7 +234,7 @@ export default async function CirclesPage({
                 action={user ? <NewCircleCompose interests={interests} buttonLabel="Start a circle" /> : undefined}
               />
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-x-6 gap-y-10 sm:grid-cols-2">
                 {discover.map((c) => <CircleCard key={c.id} circle={toCardData(c)} isMember={false} />)}
               </div>
             )}
