@@ -623,6 +623,44 @@ A future backfill could set every row in one pass, but is not required.
 
 ---
 
+## ADR-041: AI fabric and AI webmaster, on one copilot-first, least-privilege kernel
+
+**Status:** Accepted (target) - describes not-yet-built work; extends ADR-027/028
+(Studio agent governance). Detail in [`AI-STRATEGY.md`](AI-STRATEGY.md).
+**Context:** We want Claude embedded across the product (support, encouragement,
+host/guide/mentor copilots, calendar, program management) and as an internal
+"webmaster" that runs periodic security/perf/correctness/docs sweeps and proposes
+updates. Two risks dominate: cost of credits running away, and an autonomous agent
+with repo/infra write becoming a new attack surface.
+**Decision:**
+- **One governance kernel for every AI surface.** Reuse the ADR-028 pattern
+  (bounded typed tools, copilot-first via the Action Queue, per-action-type
+  autonomy tiers that graduate as the audit log earns trust, hard frequency/spend
+  caps, dry-run, kill switch, full audit log). Do not invent a second philosophy
+  per surface.
+- **Cost control is structural:** model tiering (Haiku default, escalate to
+  Sonnet/Opus only when a cheap classifier says so), prompt caching of the system
+  prompt + knowledge base + tool schemas, the Batch API for all non-realtime work,
+  RAG over pgvector instead of stuffing context, and a usage ledger (modeled on the
+  zaps ledger) with per-feature budgets. The richest AI is gated behind membership
+  (ADR-037), making it a conversion driver rather than pure COGS.
+- **The webmaster is two layers:** deterministic CI guardrails (tsc/eslint gating,
+  Dependabot, CodeQL, secret scanning, Supabase advisors, an RLS/authz test suite)
+  do the cheap certain work; agentic sweeps (scheduled, budgeted) do the reasoning
+  and open PRs. It runs least-privilege: a scoped GitHub App that can open PRs but
+  never merge to `main`, no production/secret/PII access, human review required on
+  auth/RLS/migrations/`lib/ai/*`.
+- **Autonomy is gated on a test/consent harness** (ADR-028's rule). Until the
+  vitest verification + `shouldSend` harness exists, all agents run propose-only.
+**Consequences:** A shared `lib/ai/` core (router, cache, RAG, tool registry,
+usage ledger, caps, kill switch) is the first build and every later surface reuses
+it. The webmaster's Layer 1 is the same CI gate the wider codebase needs anyway.
+The critical path is shared with the product roadmap: CI gates + harness -> RLS
+convergence -> live agent + webmaster + member surfaces graduate together. Member
+data sent to Anthropic is data-minimized; crisis/safety routes to humans; AI is
+labeled. See [`BACKLOG.md`](BACKLOG.md) sections D, E, I for the tracked work.
+
+---
 ### Decisions intentionally NOT duplicated here
 
 Already fully covered by the repo docs (no ADR needed): the RLS / admin-client

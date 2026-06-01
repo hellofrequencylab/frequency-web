@@ -37,7 +37,7 @@ app/
     events/ messages/ people/ crew/ notifications/ settings/
     admin/           host+/janitor moderation & management
   api/
-    cron/            5 Vercel Cron endpoints (see "Cron" below)
+    cron/            6 Vercel Cron endpoints (see "Cron" below)
     unsubscribe/     RFC 8058 one-click unsubscribe
   unsubscribe/       no-auth unsubscribe landing page
   discover/          public, logged-out SEO/AEO read-only layer
@@ -72,9 +72,13 @@ The canonical caller-identity helpers live in `lib/auth.ts`:
 Role hierarchy (ascending): `member < crew < host < guide < mentor < janitor`.
 Compare with the `HIERARCHY` array pattern: `HIERARCHY.indexOf(role) >= HIERARCHY.indexOf(min)`.
 
-A DB trigger (`prevent_role_self_escalation`) blocks any `profiles.community_role`
-change unless made by the service role, so role changes must go through admin
-actions.
+Two DB triggers harden `profiles` against self-edit from the browser anon
+client: `prevent_role_self_escalation` blocks `community_role` changes, and
+`prevent_economy_self_edit` blocks changes to the economy/rank/status/cosmetic
+columns (zaps, gems, `current_season_rank`, `season_challenges_complete`,
+`is_active`, `profile_border/flair`, `custom_title`, `profile_theme`). Both
+allow the service role through, so legitimate writes via admin server actions
+work; direct user UPDATEs to these columns are rejected.
 
 ## Server-action error contract
 
@@ -91,9 +95,10 @@ The contract type and helpers live in `lib/action-result.ts`.
 
 ## Cron
 
-Five endpoints under `app/api/cron/`, scheduled in `vercel.json`:
+Six endpoints under `app/api/cron/`, scheduled in `vercel.json`:
 `event-reminders` (*/15m), `lifecycle-triggers` (daily), `weekly-digest`
-(Sun 14:00), `event-occurrences` (daily 02:00), `publish-scheduled`.
+(Sun 14:00), `event-occurrences` (daily 02:00), `publish-scheduled`, and
+`process-queue` (*/2m, drains the outbox/notification queue).
 
 All authenticate via `rejectUnauthorizedCron(req)` in `lib/cron-auth.ts`, which is
 **fail-closed**: a missing `CRON_SECRET` in production rejects every request.
