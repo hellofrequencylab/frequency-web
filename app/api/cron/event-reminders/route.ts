@@ -75,7 +75,7 @@ async function processLead(lead: ReminderLead): Promise<{ events: number; sent: 
   const eventRows = (events ?? []) as EventRow[]
   if (!eventRows.length) return { events: 0, sent: 0 }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://hellofrequency.com'
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
   const sentColumn = lead === '24h' ? 'reminder_24h_sent_at' : 'reminder_2h_sent_at'
 
   let sent = 0

@@ -615,7 +615,7 @@ export async function publishDispatch(id: string) {
 
       const authorName  = dispatch.author?.display_name ?? 'A host'
       const excerpt     = dispatch.excerpt ?? ''
-      const appUrl      = process.env.NEXT_PUBLIC_APP_URL ?? 'https://hellofrequency.com'
+      const appUrl      = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
       const dispatchUrl = `${appUrl}/broadcast/${id}`
 
       let profileIds: string[] = []
