@@ -25,7 +25,9 @@ export default async function MainLayout({
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!user) redirect('/sign-in')
+  // Logged-out visitors hitting an in-app URL go back to the splash (not the
+  // sign-in form) — the splash is the front door for anyone who hasn't signed up.
+  if (!user) redirect('/')
 
   const { data: profile } = await supabase
     .from('profiles')

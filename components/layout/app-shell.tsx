@@ -43,17 +43,23 @@ import {
   ROLE_LABEL,
   roleBadgeStyle,
 } from '@/lib/community-roles'
+import { atLeastRole } from '@/lib/core/roles'
 import { useFeedAtBottom } from '@/components/sidebar/use-feed-at-bottom'
 
 // Grouped nav (IA-STRATEGY §1). Same items + visibility as before — just sorted
 // into labelled sections so a newcomer can read the structure. Crew/Admin are
 // appended (role-gated) below in NavLinkList.
+// One declarative, role-keyed nav config (the single source of truth). An item
+// is shown when the viewer's role is >= its `minRole` (default 'member'); a
+// section with no visible items is skipped. To change who sees a link, or to
+// add/move one, edit this array — nothing else.
 const NAV_SECTIONS: {
   label: string | null
-  items: { href: string; label: string; Icon: React.ElementType }[]
+  items: { href: string; label: string; Icon: React.ElementType; minRole?: CommunityRole }[]
 }[] = [
   { label: null, items: [
-    { href: '/feed', label: 'Feed', Icon: Home },
+    { href: '/',     label: 'Home', Icon: Home },
+    { href: '/feed', label: 'Feed', Icon: FileText },
   ] },
   { label: 'Community', items: [
     { href: '/circles',   label: 'Circles',   Icon: Users },
@@ -62,6 +68,12 @@ const NAV_SECTIONS: {
     { href: '/practices', label: 'Practices', Icon: Sparkles },
     { href: '/programs',  label: 'Programs',  Icon: BookOpen },
     { href: '/partners',  label: 'Partners',  Icon: Store },
+  ] },
+  { label: 'Explore', items: [
+    { href: '/discover',         label: 'Discover', Icon: Search },
+    { href: '/discover/circles', label: 'Circles',  Icon: Users },
+    { href: '/discover/events',  label: 'Events',   Icon: CalendarDays },
+    { href: '/discover/topics',  label: 'Topics',   Icon: Radio },
   ] },
   { label: 'Connect', items: [
     { href: '/broadcast', label: 'Broadcast', Icon: Megaphone },
@@ -422,23 +434,27 @@ function NavLinkList({
 
   return (
     <>
-      {!hideAppNav && NAV_SECTIONS.map((section, i) => (
-        <div key={section.label ?? `top-${i}`} className={`space-y-0.5 ${i > 0 ? 'mt-2' : ''}`}>
-          {section.label && <p className={sectionLabelClass}>{section.label}</p>}
-          {section.items.map(({ href, label, Icon }) => {
-            const active = isActive(href)
-            return (
-              <Link key={href} href={href} onClick={onNavigate} className={itemClass(active)}>
-                <Icon
-                  className={`w-[18px] h-[18px] shrink-0 ${active ? 'text-primary-strong' : 'text-subtle'}`}
-                  strokeWidth={active ? 2.5 : 2}
-                />
-                {label}
-              </Link>
-            )
-          })}
-        </div>
-      ))}
+      {!hideAppNav && NAV_SECTIONS.map((section, i) => {
+        const items = section.items.filter((it) => atLeastRole(role, it.minRole ?? 'member'))
+        if (items.length === 0) return null
+        return (
+          <div key={section.label ?? `top-${i}`} className={`space-y-0.5 ${i > 0 ? 'mt-2' : ''}`}>
+            {section.label && <p className={sectionLabelClass}>{section.label}</p>}
+            {items.map(({ href, label, Icon }) => {
+              const active = isActive(href)
+              return (
+                <Link key={href} href={href} onClick={onNavigate} className={itemClass(active)}>
+                  <Icon
+                    className={`w-[18px] h-[18px] shrink-0 ${active ? 'text-primary-strong' : 'text-subtle'}`}
+                    strokeWidth={active ? 2.5 : 2}
+                  />
+                  {label}
+                </Link>
+              )
+            })}
+          </div>
+        )
+      })}
 
       {extraSections?.map((section, i) => (
         <div key={`extra-${section.label ?? i}`} className="space-y-0.5 mt-2">
