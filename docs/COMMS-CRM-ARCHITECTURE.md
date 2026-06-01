@@ -40,10 +40,14 @@ via `idempotency_key`, source-tagged. Phase 6 makes it multi-subscriber and adds
 ## 2. The spine (communications/sending)
 
 **Built:** durable outbox — `notification_queue` + `lib/queue/outbox.ts`
-(`enqueue`/`processQueue`, retries + exponential backoff) + `/api/cron/process-queue`
-(push handler only today). `shouldSend(profileId, channel, category)` gates 4
-categories × 3 channels; HMAC unsubscribe + RFC 8058 one-click already wired;
-provider is Resend (`lib/email.ts`).
+(`enqueue`/`processQueue`, retries + exponential backoff, terminal dead-letter
+state with `requeueDeadLettered()`/`countDeadLettered()` recovery + visibility,
+ADR-043) + `/api/cron/process-queue` (push handler only today). The Resend webhook
+(`app/api/webhooks/resend/route.ts`) has an explicit error path: it suppresses
+independently of analytics logging and returns 503-to-retry (logged) vs 200-ack so
+delivery-integrity signals are never silently dropped. `shouldSend(profileId,
+channel, category)` gates 4 categories × 3 channels; HMAC unsubscribe + RFC 8058
+one-click already wired; provider is Resend (`lib/email.ts`).
 
 **Target:** one **notification router/registry** — `domain event → registry (event
 → category → channels → template) → per-recipient checks (preferences + consent +
