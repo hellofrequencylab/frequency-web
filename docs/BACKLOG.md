@@ -108,10 +108,10 @@ greenfield initiative (G).
 ## J. CMS / page framework / marketing / SEO
 - [ ] Submit sitemap to Google/Bing + set `NEXT_PUBLIC_SITE_URL` (supersedes the
   custom-domain half of ROADMAP P3.31; the domain is already live). (S)
-- [ ] Apex cutover `go.findafreq.com` -> `findafreq.com` (kill Squarespace,
-  redirect, update auth URLs). (S)
+- [ ] Domain setup: point `frequencylocal.com` (GoDaddy -> Vercel) at the apex,
+  301 the retired `go.findafreq.com`, update auth/OAuth redirect URLs. (S)
 - [ ] Page-editor polish: visual focal-point/crop picker; `page_revisions` rollback. (S)
-- [ ] Per-Nexus subdomains (`encinitas.findafreq.com`). (M)
+- [ ] Per-Nexus subdomains (`encinitas.frequencylocal.com`). (M)
 - [ ] Formal module/widget slot registry + fully scope-aware right rail. (M)
 - [ ] Reconcile "Interests" (member) vs "Topics" (public) wording + the "tune in" verb. (S)
 
