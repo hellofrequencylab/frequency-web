@@ -55,14 +55,14 @@ const NAV_SECTIONS: {
   ] },
   { label: 'Community', items: [
     { href: '/circles',   label: 'Circles',   Icon: Users },
-    { href: '/practices', label: 'Practices', Icon: Sparkles },
-    { href: '/programs',  label: 'Programs',  Icon: BookOpen },
     { href: '/channels',  label: 'Interests', Icon: Radio },
     { href: '/events',    label: 'Events',    Icon: CalendarDays },
-    { href: '/broadcast', label: 'Broadcast', Icon: Megaphone },
+    { href: '/practices', label: 'Practices', Icon: Sparkles },
+    { href: '/programs',  label: 'Programs',  Icon: BookOpen },
     { href: '/partners',  label: 'Partners',  Icon: Store },
   ] },
   { label: 'Connect', items: [
+    { href: '/broadcast', label: 'Broadcast', Icon: Megaphone },
     { href: '/messages',  label: 'Messages',  Icon: MessageSquare },
     { href: '/friends',   label: 'Friends',   Icon: UserPlus },
     { href: '/people',    label: 'Directory', Icon: Globe },
@@ -301,7 +301,7 @@ function AccountDropdown({
                   className="flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-surface-elevated transition-colors"
                 >
                   <Zap className="w-4 h-4 text-primary" />
-                  Crew Dashboard
+                  Dashboard
                 </Link>
               )}
               {showAdminLink && (
@@ -455,7 +455,7 @@ function NavLinkList({
               className={`w-[18px] h-[18px] shrink-0 ${isActive('/crew') ? 'text-primary-strong' : 'text-subtle'}`}
               strokeWidth={isActive('/crew') ? 2.5 : 2}
             />
-            Crew Dashboard
+            Dashboard
           </Link>
         </div>
       )}
