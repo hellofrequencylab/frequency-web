@@ -22,7 +22,7 @@ export default function PrivacyPage() {
             <p className="text-muted leading-relaxed">
               Frequency is operated by Frequency Labs Holdings ("Frequency," "we," "us," or "our").
               This policy describes how we collect, use, and protect your personal information when
-              you use our platform at go.findafreq.com and related services.
+              you use our platform at frequencylocal.com and related services.
             </p>
           </section>
 
@@ -86,7 +86,7 @@ export default function PrivacyPage() {
             <h2 className="text-lg font-semibold text-text">6. Your rights</h2>
             <p className="text-muted leading-relaxed">
               You can update or delete your profile information at any time from your account settings.
-              To request a full data export or account deletion, contact us at hello@findafreq.com.
+              To request a full data export or account deletion, contact us at hello@frequencylocal.com.
             </p>
           </section>
 
@@ -110,8 +110,8 @@ export default function PrivacyPage() {
             <h2 className="text-lg font-semibold text-text">9. Contact</h2>
             <p className="text-muted leading-relaxed">
               Questions about this policy? Email us at{' '}
-              <a href="mailto:hello@findafreq.com" className="text-primary-strong hover:underline">
-                hello@findafreq.com
+              <a href="mailto:hello@frequencylocal.com" className="text-primary-strong hover:underline">
+                hello@frequencylocal.com
               </a>.
             </p>
           </section>

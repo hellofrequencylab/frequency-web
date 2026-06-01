@@ -20,7 +20,7 @@ export function InviteMemberCompose({
   )
   const [copied, setCopied] = useState(false)
 
-  const signupUrl = 'https://go.findafreq.com/sign-in'
+  const signupUrl = 'https://frequencylocal.com/sign-in'
   const mailtoBody = `${message}\n\n${signupUrl}\n\nSee you there!\n${inviterName}`
   const mailto = `mailto:${email}?subject=${encodeURIComponent('Join me on Frequency')}&body=${encodeURIComponent(mailtoBody)}`
 
