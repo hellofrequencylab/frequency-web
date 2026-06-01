@@ -318,12 +318,12 @@ replacing the Squarespace site. **Depends on:** the email spine (6.1) + `contact
       and MARKETING-AND-BETA §1.1.
 - [ ] **Owner config** — set `CRON_SECRET`, `NEXT_PUBLIC_SITE_URL`,
       `NEXT_PUBLIC_APP_URL`, `EMAIL_FROM` in prod (MARKETING-AND-BETA §5).
-- [ ] **Apex cutover** — move from `go.findafreq.com` to `findafreq.com` (kill
-      Squarespace). Deferred: Support/donations (org-status framework), per-Nexus
-      subdomains.
+- [ ] **Domain setup** — point `frequencylocal.com` (GoDaddy → Vercel) at the app on the
+      apex; 301 the retired `go.findafreq.com`. Deferred: Support/donations (org-status
+      framework), per-Nexus subdomains.
 
 **Done when:** a visitor can read the vision, join the beta with double opt-in, and
-land in the CRM; staff can admit them; and the whole thing lives on `findafreq.com`.
+land in the CRM; staff can admit them; and the whole thing lives on `frequencylocal.com`.
 
 ---
 
