@@ -12,7 +12,6 @@
 
 import { Resend } from 'resend'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
-import type { NotificationCategory } from '@/lib/notification-preferences'
 import { enqueue } from '@/lib/queue/outbox'
 import { isSuppressed } from '@/lib/suppression'
 
@@ -583,6 +582,8 @@ function dispatchHtml({ recipientName, authorName, dispatchTitle, excerpt, dispa
     <hr style="${dividerStyle}">
     <p style="font-size:13px;color:#999;">
       Hi ${recipientName} — this dispatch was posted to your community on Frequency.
+      <a href="${BASE_URL}/settings/notifications" style="color:#999;">Manage preferences</a>
+      · <a href="${unsubscribeUrl}" style="color:#999;">Unsubscribe from dispatches</a>.
     </p>
   `)
 }

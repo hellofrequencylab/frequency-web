@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useTransition, useRef, useEffect } from 'react'
-import { UserPlus, Check, Search, Loader2 } from 'lucide-react'
+import { useState, useTransition, useEffect } from 'react'
+import { UserPlus, Check, Search } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { inviteToRoom } from '@/app/(main)/messages/rooms/actions'
 import { CreateModal, cmInput, cmLabel } from '@/components/create-modal'
@@ -21,22 +21,28 @@ export function InviteToRoomButton({ roomId }: { roomId: string }) {
   const [invited, setInvited] = useState<Set<string>>(new Set())
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  useEffect(() => {
-    if (!open) {
-      setQuery(''); setResults([]); setSelected(null); setError(null)
-    }
-  }, [open])
+  // Closing resets the modal's contents in this handler rather than an effect,
+  // keeping the state updates out of React's render/effect cascade
+  // (react-hooks/set-state-in-effect).
+  function closeModal() {
+    setOpen(false)
+    setQuery('')
+    setResults([])
+    setSelected(null)
+    setError(null)
+  }
 
+  // Debounced handle search. Results are only rendered while there's a query
+  // (see below), so there's no need to clear them synchronously when it empties.
   useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    if (!query.trim()) { setResults([]); return }
-    debounceRef.current = setTimeout(async () => {
+    if (!query.trim()) return
+    const timer = setTimeout(async () => {
       const res = await fetch(`/api/search-handles?q=${encodeURIComponent(query)}`)
       const json = await res.json()
       setResults(json.profiles ?? [])
     }, 200)
+    return () => clearTimeout(timer)
   }, [query])
 
   function submit(e: React.FormEvent) {
@@ -67,7 +73,7 @@ export function InviteToRoomButton({ roomId }: { roomId: string }) {
       </button>
 
       <CreateModal
-        open={open} onClose={() => setOpen(false)} onSubmit={submit}
+        open={open} onClose={closeModal} onSubmit={submit}
         title="Invite to Room" titleIcon={UserPlus} titleIconColor="indigo"
         submitLabel="Invite" pendingLabel="Inviting…"
         submitDisabled={!selected} isPending={isPending} error={error}
@@ -85,7 +91,7 @@ export function InviteToRoomButton({ roomId }: { roomId: string }) {
           </div>
         </div>
 
-        {results.length > 0 && (
+        {query.trim() && results.length > 0 && (
           <div className="rounded-lg border border-border max-h-64 overflow-y-auto divide-y divide-border">
             {results.map(r => {
               const isSelected = selected?.id === r.id

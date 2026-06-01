@@ -22,13 +22,6 @@ function renderBodyWithMentions(body: string): React.ReactNode[] {
 
 import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
 
-const POST_TYPE_LABEL: Record<string, { label: string; cls: string }> = {
-  feed:         { label: 'Post',         cls: 'bg-surface-elevated text-muted dark:bg-surface-elevated dark:text-subtle' },
-  announcement: { label: 'Announcement', cls: 'bg-warning-bg text-warning dark:bg-warning-bg dark:text-warning' },
-  blog:         { label: 'Blog',         cls: 'bg-primary-bg text-primary-strong dark:bg-primary-bg dark:text-primary-strong' },
-  recap:        { label: 'Recap',        cls: 'bg-success-bg text-success dark:bg-success-bg' },
-}
-
 export type FeedPost = {
   id: string
   body: string | null
@@ -85,7 +78,6 @@ export function PostCard({
   )
   const isOwn = author.id === myProfileId
   const isAnnouncement = post.post_type === 'announcement'
-  const typeInfo = POST_TYPE_LABEL[post.post_type] ?? POST_TYPE_LABEL.feed
   const totalReactions = heartCount + plusCount
   const replyCount = post.replyCount ?? 0
   // Zaps this post has earned: each reaction is worth 1, each reply 2. One clean
@@ -173,7 +165,7 @@ export function PostCard({
             </div>
 
             <ContextActions
-              role={(viewerRole ?? 'member') as any}
+              role={(viewerRole ?? 'member') as CommunityRole}
               context={{ type: 'post', id: post.id, isPinned: post.is_pinned, isOwn, postType: post.post_type }}
             />
           </div>

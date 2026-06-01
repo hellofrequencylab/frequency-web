@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Plus, Pencil, Trash2, Check, X, ShieldCheck, ShieldX } from 'lucide-react'
-import { createCrewTask, updateCrewTask, deleteCrewTask, approveVerification, rejectVerification } from '../actions'
+import { Pencil, Trash2, Check, X, ShieldCheck, ShieldX } from 'lucide-react'
+import { updateCrewTask, deleteCrewTask, approveVerification, rejectVerification } from '../actions'
 import { getInitials } from '@/lib/utils'
 
 const TASK_TYPES = [

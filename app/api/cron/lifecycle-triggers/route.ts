@@ -9,7 +9,6 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { sendWelcomeEmail } from '@/lib/email'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 
 export const dynamic = 'force-dynamic'
@@ -48,8 +47,8 @@ export async function GET(req: NextRequest) {
   for (const m of memberships ?? []) {
     if (!m.joined_at) continue
     const days = daysSince(m.joined_at)
-    const profile = m.profile as any
-    const circle  = m.circle  as any
+    const profile = m.profile as unknown as { id: string; display_name: string | null; email: string | null } | null
+    const circle  = m.circle  as unknown as { name: string | null } | null
     if (!profile || !circle) continue
 
     const notifBase = {
