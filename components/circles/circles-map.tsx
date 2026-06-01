@@ -56,10 +56,10 @@ export function MapPreview() {
       type="button"
       onClick={() => ctx.setOpen(true)}
       aria-label="Open the circles map"
-      className="group relative block w-full"
+      className="group relative block h-full w-full"
     >
-      <div className="pointer-events-none">
-        <CircleMap circles={ctx.circles} interactive={false} center={ctx.center} className="aspect-[4/3] w-full overflow-hidden rounded-2xl border border-border" />
+      <div className="pointer-events-none h-full">
+        <CircleMap circles={ctx.circles} interactive={false} center={ctx.center} className="h-full min-h-[18rem] w-full overflow-hidden rounded-2xl border border-border" />
       </div>
       <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-text/0 transition-colors group-hover:bg-text/10">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-surface/95 px-3 py-1.5 text-xs font-semibold text-text shadow-sm">
