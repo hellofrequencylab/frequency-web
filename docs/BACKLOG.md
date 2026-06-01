@@ -62,6 +62,11 @@ greenfield initiative (G).
   + caps + kill switch, governance kernel. (M)
 - [ ] Member surfaces in order: support bot, encouragement, host copilot,
   calendar, mentor, program management. (M-L)
+- [ ] **Vera — the resident AI guide (ADR-049 / AI-VERA.md).** Persistent persona
+  debuting as the onboarding concierge (ADR-047 Phase 2), with per-member memory
+  (summary + facts off `engagement_events`), bounded tools, and a pluggable persona
+  registry. Rides on the AI core + consent harness (ADR-028); deterministic tour is
+  the fallback. (L)
 - [ ] Sentinel Layer 2: scheduled sweeps via Agent SDK + scoped GitHub App,
   findings ledger, autonomy tiers (gated on D). (M)
 
@@ -101,6 +106,11 @@ greenfield initiative (G).
   + bounded tools/caps/audit (ADR-028; this is the CRM half of the AI fabric). (L)
 - [ ] Notification router/registry (event -> category -> channels -> template),
   make `engagement_events` truly multi-subscriber. (M)
+- [ ] **First-party analytics + admin dashboard (ADR-050 / ANALYTICS.md).** Canonical
+  event taxonomy via a single dual-emit `track()` helper (writes `engagement_events`
+  + fires GA4 custom events); Studio admin dashboard (activation funnel, WAM/retention,
+  community health, GA acquisition via the GA Data API). First-party is the source of
+  truth; GA4 owns acquisition. (M)
 - [ ] Migrate inline email/push send-sites onto the outbox queue with
   `SELECT … FOR UPDATE SKIP LOCKED`. (M)
 - [ ] **Verify `frequencylocal.com` in Resend (blocking for volume — ADR-046).** Transactional
