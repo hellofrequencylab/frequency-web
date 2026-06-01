@@ -136,13 +136,11 @@ or a new meta-framework. All slower and more locked-in than what you run today.
   a calm compact bar by default, expanding to a ~1/3-screen "progress cockpit" with today's
   move (log practice), a subtle 7-day streak strip, rank progress, the current quest, and The
   Vault (gems to spend) at the very bottom. Kept deliberately small to avoid a spammy dump;
-  challenges/badges live on `/crew`. The right dock is NOT pinned: it sits below the rail's top
-  content (with a gap) and scrolls up with the feed, so it "follows the top up" and can scroll
-  all the way off. Open by default (the stats are just part of the scroll); tapping the bar
-  collapses/expands it. No scroll triggers, so the motion stays smooth (the earlier
-  trigger-driven reveal was jumpy). The LEFT profile box behaves differently by design: it
-  stays pinned to the bottom of the nav and reveals its actions on a continued scroll gesture
-  (`use-feed-at-bottom.ts`).
+  challenges/badges live on `/crew`. Both bottom docks use the SAME mechanism: a compact bar
+  stuck to the bottom, revealing its panel on a continued (force) scroll gesture
+  (`use-feed-at-bottom.ts`) or on tap. The right dock is pushed to the bottom of the rail via a
+  `flex-1` top section; the left lives in the nav column. The reveal is a plain wheel-intent
+  gesture (no IntersectionObserver / position re-eval), which is what keeps it smooth.
 
 ## Next (eyeball + iterate in `npm run dev`)
 

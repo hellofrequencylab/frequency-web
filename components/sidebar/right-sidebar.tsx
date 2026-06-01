@@ -505,9 +505,9 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
 
   return (
     <div className="flex flex-1 flex-col">
-      {/* Top of the rail. The stats dock follows directly below it (not pinned),
-          so the whole rail scrolls up together with the feed. */}
-      <div className="px-3 py-6 space-y-8">
+      {/* Top of the rail scrolls with the feed. flex-1 pushes the stats dock to
+          the bottom so it stays stuck there (like the left profile box). */}
+      <div className="flex-1 px-3 py-6 space-y-8">
         {/* Getting Started. Auto-hides when all items complete */}
         <Suspense fallback={null}>
           <GettingStartedChecklist profileId={profileId} />
