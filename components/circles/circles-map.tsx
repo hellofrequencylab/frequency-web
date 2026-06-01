@@ -59,7 +59,7 @@ export function MapPreview() {
       className="group relative block w-full"
     >
       <div className="pointer-events-none">
-        <CircleMap circles={ctx.circles} interactive={false} center={ctx.center} className="aspect-square w-full overflow-hidden rounded-2xl border border-border" />
+        <CircleMap circles={ctx.circles} interactive={false} center={ctx.center} className="aspect-[4/3] w-full overflow-hidden rounded-2xl border border-border" />
       </div>
       <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-text/0 transition-colors group-hover:bg-text/10">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-surface/95 px-3 py-1.5 text-xs font-semibold text-text shadow-sm">
