@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { NewCircleCompose } from '@/components/compose/new-circle-compose'
 import { IndexTemplate } from '@/components/templates/index-template'
-import { NearYou } from '@/components/circles/near-you'
+import { Nearby } from '@/components/circles/nearby'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { CircleCard, type CircleCardData } from '@/components/circles/circle-card'
@@ -157,11 +157,10 @@ export default async function CirclesPage({
       <CirclesToolbar interests={interests} />
 
       <div className="mt-6 space-y-10">
-        {/* Near you — local-first. (Live map slots in here once the Mapbox token is set.) */}
+        {/* Near you — a live map of nearby in-person circles, with a list toggle. */}
         {!filtering && locatableCircles.length > 0 && (
           <section>
-            <SectionHeader title="Near you" />
-            <NearYou circles={locatableCircles} />
+            <Nearby circles={locatableCircles} />
           </section>
         )}
 
