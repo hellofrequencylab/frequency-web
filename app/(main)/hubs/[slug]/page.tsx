@@ -4,7 +4,6 @@ import { Users } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { HierarchyBreadcrumb } from '@/components/hierarchy/breadcrumb'
 import { StatusBadge } from '@/components/groups/status-badge'
-import { getInitials } from '@/lib/utils'
 
 type HubDetail = {
   id: string

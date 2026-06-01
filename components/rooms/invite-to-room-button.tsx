@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition, useRef, useEffect } from 'react'
-import { UserPlus, Check, Search, Loader2 } from 'lucide-react'
+import { UserPlus, Check, Search } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { inviteToRoom } from '@/app/(main)/messages/rooms/actions'
 import { CreateModal, cmInput, cmLabel } from '@/components/create-modal'
