@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { Flame, CalendarCheck, PenTool, Mic, LogIn, Snowflake } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { getStreaksData } from '../gamification-actions'
-import { STREAK_CONFIG, isStreakActive, getStreakFreezeEarnedAt } from '@/lib/gamification'
+import { STREAK_CONFIG, isStreakActive } from '@/lib/gamification'
 import type { StreakType } from '@/lib/gamification'
 
 const STREAK_ICONS: Record<StreakType, React.ElementType> = {
@@ -70,7 +70,6 @@ export default async function StreaksPage() {
           const active = streak ? isStreakActive(streak.last_activity_at, config.window_days) : false
           const freezes = streak?.freeze_tokens ?? 0
           const milestones = [3, 4, 8, 13]
-          const freezeEarned = getStreakFreezeEarnedAt(longest)
 
           return (
             <div

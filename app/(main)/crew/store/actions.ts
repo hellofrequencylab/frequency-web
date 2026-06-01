@@ -27,7 +27,7 @@ export async function redeemItem(itemId: string): Promise<ActionResult> {
   if (!item.is_active) return fail('Item is no longer available')
   if (item.stock !== null && item.stock <= 0) return fail('Out of stock')
 
-  const gems = (profile as any)?.lifetime_gems ?? 0
+  const gems = profile?.lifetime_gems ?? 0
   if (gems < item.gem_cost) {
     return fail(`Not enough gems. You need ${item.gem_cost - gems} more.`)
   }
@@ -54,7 +54,7 @@ export async function redeemItem(itemId: string): Promise<ActionResult> {
   if (error) return fail(error.message)
 
   // Apply cosmetic effects
-  const meta = item.metadata as any
+  const meta = item.metadata as { type?: string; value?: string } | null
   if (meta?.type === 'border') {
     await admin.from('profiles')
       .update({ profile_border: meta.value })
@@ -120,11 +120,11 @@ export async function getStoreData() {
       ...item,
       owned: ownedIds.has(item.id),
     })),
-    balance: (profile as any)?.lifetime_gems ?? 0,
+    balance: profile?.lifetime_gems ?? 0,
     equipped: {
-      border: (profile as any)?.profile_border ?? null,
-      flair: (profile as any)?.profile_flair ?? null,
-      title: (profile as any)?.custom_title ?? null,
+      border: profile?.profile_border ?? null,
+      flair: profile?.profile_flair ?? null,
+      title: profile?.custom_title ?? null,
     },
   }
 }

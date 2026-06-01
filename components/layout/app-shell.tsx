@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
 import {
@@ -141,9 +142,11 @@ function ProfileCard({
       <div className="flex items-center gap-2.5 px-3 py-3.5">
         <Link href={profileHref} className="shrink-0">
           {profile.avatar_url ? (
-            <img
+            <Image
               src={profile.avatar_url}
               alt={profile.display_name}
+              width={44}
+              height={44}
               className="w-11 h-11 rounded-full object-cover"
             />
           ) : (
@@ -570,7 +573,7 @@ function MobileLeftDrawer({
       >
         <div className="h-14 shrink-0 flex items-center px-4 border-b border-border">
           <Link href="/feed" onClick={onClose} className="flex items-center">
-            <img src="/frequency-logo.png" alt="Frequency" className="h-7 w-auto dark:invert" />
+            <Image src="/frequency-logo.png" alt="Frequency" width={963} height={170} className="h-7 w-auto dark:invert" />
           </Link>
         </div>
 
@@ -622,9 +625,11 @@ function ProfileBottomBar({
         className="flex flex-1 min-w-0 items-center gap-2.5 px-3 hover:bg-surface-elevated/50 transition-colors"
       >
         {profile.avatar_url ? (
-          <img
+          <Image
             src={profile.avatar_url}
             alt={profile.display_name}
+            width={36}
+            height={36}
             className="w-9 h-9 rounded-full object-cover shrink-0"
           />
         ) : (
@@ -781,9 +786,11 @@ export default function AppShell({
         {/* Logo. Full-width header, no vertical divider */}
         <div className="flex items-center pl-1 pr-3 md:px-5">
           <Link href="/feed" className="flex items-center">
-            <img
+            <Image
               src="/frequency-logo.png"
               alt="Frequency"
+              width={963}
+              height={170}
               className="h-7 md:h-8 w-auto dark:invert"
             />
           </Link>

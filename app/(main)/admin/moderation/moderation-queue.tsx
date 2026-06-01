@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import Image from 'next/image'
 import {
   AlertTriangle, CheckCircle, XCircle, EyeOff, MessageSquare, UserX, CalendarX, Flag,
 } from 'lucide-react'
@@ -98,9 +99,11 @@ export function ModerationQueue({ reports }: { reports: ReportItem[] }) {
             {/* Header: reporter + timestamp */}
             <div className="flex items-start gap-3 mb-3">
               {report.reporter.avatar_url ? (
-                <img
+                <Image
                   src={report.reporter.avatar_url}
                   alt={report.reporter.display_name}
+                  width={32}
+                  height={32}
                   className="w-8 h-8 rounded-full object-cover shrink-0"
                 />
               ) : (

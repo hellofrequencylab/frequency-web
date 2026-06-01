@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { MARKETING_NAV, BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
 
 // Public marketing header. No search box (that's for the community app). When
@@ -28,9 +29,11 @@ export function MarketingHeader({ overHero = false }: { overHero?: boolean }) {
     >
       {/* Logo */}
       <Link href="/" className="shrink-0">
-        <img
+        <Image
           src="/frequency-logo.png"
           alt="Frequency"
+          width={963}
+          height={170}
           className={`h-7 w-auto ${light ? 'dark:invert' : 'invert'}`}
         />
       </Link>

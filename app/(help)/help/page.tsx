@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { LifeBuoy } from 'lucide-react'
 import { getAllCategories, helpHref } from '@/lib/help/content'
+import { EmptyState } from '@/components/ui/empty-state'
 
 export const metadata: Metadata = {
   title: 'Help Center',
@@ -51,7 +53,11 @@ export default async function HelpHomePage() {
       </div>
 
       {categories.length === 0 && (
-        <p className="text-muted">Help articles are coming soon.</p>
+        <EmptyState
+          icon={LifeBuoy}
+          title="Help articles are coming soon"
+          description="We're writing up guides for finding Circles, showing up, and how the game works. Check back soon."
+        />
       )}
     </div>
   )

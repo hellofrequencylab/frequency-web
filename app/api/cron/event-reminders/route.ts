@@ -16,6 +16,7 @@ import { sendEventReminderEmail } from '@/lib/email'
 import { shouldSend } from '@/lib/notification-preferences'
 import { sendPushToProfile } from '@/lib/push'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
+import { log } from '@/lib/log'
 
 export const dynamic = 'force-dynamic'
 
@@ -165,10 +166,12 @@ export async function GET(req: NextRequest) {
   const t24 = await processLead('24h')
   const t2  = await processLead('2h')
 
-  console.log(
-    `[event-reminders] 24h: ${t24.sent} sent across ${t24.events} events · ` +
-    `2h: ${t2.sent} sent across ${t2.events} events`
-  )
+  log.info('cron.event_reminders', {
+    sent24h:   t24.sent,
+    events24h: t24.events,
+    sent2h:    t2.sent,
+    events2h:  t2.events,
+  })
 
   return NextResponse.json({
     ok: true,

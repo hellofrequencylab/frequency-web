@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Render } from '@measured/puck/rsc'
 import { PageHero, ZigZag, Statement, BetaCTA } from '@/components/marketing/marketing-ui'
+import { SiteImage } from '@/components/marketing/site-image'
 import { config } from '@/lib/page-editor/config'
 import { getPublishedData } from '@/lib/page-editor/data'
 
@@ -66,10 +67,12 @@ function LegacyTheLab() {
       {/* Hero render */}
       <div className="px-6">
         <div className="max-w-5xl mx-auto rounded-3xl overflow-hidden border border-border shadow-sm">
-          <img
+          <SiteImage
             src="/images/site/lab-storefront.jpg"
             alt="Concept render of a Frequency Lab storefront hosting a movement class"
-            className="w-full object-cover aspect-[21/9]"
+            aspect="21/9"
+            sizes="(min-width: 1024px) 64rem, 100vw"
+            preload
           />
         </div>
       </div>
@@ -119,11 +122,11 @@ function LegacyTheLab() {
                 key={f.title}
                 className="rounded-2xl overflow-hidden border border-border bg-surface hover:border-border-strong transition-colors"
               >
-                <img
+                <SiteImage
                   src={f.img}
                   alt={f.title}
-                  loading="lazy"
-                  className="w-full object-cover aspect-[16/10]"
+                  aspect="16/10"
+                  sizes="(min-width: 640px) 32rem, 100vw"
                 />
                 <div className="p-6">
                   <h3 className="text-xl font-bold text-text mb-1.5">{f.title}</h3>

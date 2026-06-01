@@ -25,6 +25,14 @@ export interface ProcessResult {
 
 const BACKOFF_BASE_MS = 60_000 // 1m → 2m → 4m → 8m …
 
+/**
+ * Terminal "dead-letter" state. A job lands here once it exhausts max_attempts;
+ * it is never retried automatically. Operators recover dead-lettered jobs with
+ * requeueDeadLettered() (e.g. after a provider outage) and watch the backlog
+ * with countDeadLettered(). See ADR-043.
+ */
+export const DEAD_LETTER_STATUS = 'failed' as const
+
 /** Pure retry policy: given the next attempt count, fail past the cap, else retry with exponential backoff. */
 export function nextRetry(
   attempts: number,
@@ -68,13 +76,20 @@ export async function processQueue(
   const client = db()
   const nowIso = new Date().toISOString()
 
-  const { data: jobs } = await client
+  const { data: jobs, error: claimError } = await client
     .from('notification_queue')
     .select('id, kind, payload, attempts, max_attempts')
     .eq('status', 'pending')
     .lte('run_after', nowIso)
     .order('run_after', { ascending: true })
     .limit(limit)
+
+  // A failed claim is not an empty queue — surface it instead of silently
+  // reporting "0 processed" while the backlog grows unworked.
+  if (claimError) {
+    console.error(`[outbox] claim query failed: ${claimError.message}`)
+    throw new Error(`[outbox] claim query failed: ${claimError.message}`)
+  }
 
   const list = (jobs ?? []) as unknown as QueueJob[]
   let done = 0
@@ -96,12 +111,21 @@ export async function processQueue(
       const msg = err instanceof Error ? err.message : String(err)
       const retry = nextRetry(attempts, job.max_attempts)
       if (retry.status === 'failed') {
+        // Dead-letter: exhausted all attempts. Log loudly — this is a dropped
+        // side-effect (e.g. an email Resend never accepted) that no longer
+        // retries on its own and needs operator attention (ADR-043).
+        console.error(
+          `[outbox] dead-lettered job ${job.id} kind=${job.kind} after ${attempts} attempts: ${msg}`,
+        )
         await client
           .from('notification_queue')
-          .update({ status: 'failed', attempts, last_error: msg, updated_at: new Date().toISOString() })
+          .update({ status: DEAD_LETTER_STATUS, attempts, last_error: msg, updated_at: new Date().toISOString() })
           .eq('id', job.id)
         failed++
       } else {
+        console.warn(
+          `[outbox] retrying job ${job.id} kind=${job.kind} attempt ${attempts}/${job.max_attempts} in ${retry.delayMs}ms: ${msg}`,
+        )
         await client
           .from('notification_queue')
           .update({
@@ -118,4 +142,61 @@ export async function processQueue(
   }
 
   return { processed: list.length, done, failed, retried }
+}
+
+/** Count dead-lettered jobs (optionally for one kind) — a health/alerting signal. */
+export async function countDeadLettered(kind?: string): Promise<number> {
+  let query = db()
+    .from('notification_queue')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', DEAD_LETTER_STATUS)
+  if (kind) query = query.eq('kind', kind)
+  const { count, error } = await query
+  if (error) {
+    console.error(`[outbox] countDeadLettered failed: ${error.message}`)
+    return 0
+  }
+  return count ?? 0
+}
+
+/**
+ * Reset dead-lettered jobs back to pending so the next drain retries them.
+ * Use after a resolved provider outage to recover side-effects that exhausted
+ * their attempts while the provider was down. Returns the number revived.
+ */
+export async function requeueDeadLettered(
+  opts?: { kind?: string; limit?: number },
+): Promise<number> {
+  const client = db()
+  let select = client
+    .from('notification_queue')
+    .select('id')
+    .eq('status', DEAD_LETTER_STATUS)
+  if (opts?.kind) select = select.eq('kind', opts.kind)
+  select = select.order('updated_at', { ascending: true }).limit(opts?.limit ?? 100)
+
+  const { data: rows, error: selErr } = await select
+  if (selErr) {
+    console.error(`[outbox] requeueDeadLettered select failed: ${selErr.message}`)
+    return 0
+  }
+  const ids = (rows ?? []).map((r) => (r as { id: string }).id)
+  if (ids.length === 0) return 0
+
+  const { error: updErr } = await client
+    .from('notification_queue')
+    .update({
+      status: 'pending',
+      attempts: 0,
+      last_error: null,
+      run_after: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .in('id', ids)
+  if (updErr) {
+    console.error(`[outbox] requeueDeadLettered update failed: ${updErr.message}`)
+    return 0
+  }
+  console.warn(`[outbox] requeued ${ids.length} dead-lettered job(s)${opts?.kind ? ` kind=${opts.kind}` : ''}`)
+  return ids.length
 }

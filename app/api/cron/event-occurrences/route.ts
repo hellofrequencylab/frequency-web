@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateAllOccurrences } from '@/lib/event-recurrence'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
+import { log } from '@/lib/log'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,10 +13,10 @@ export async function GET(req: NextRequest) {
   if (denied) return denied
 
   const result = await generateAllOccurrences()
-  console.log(
-    `[event-occurrences] processed ${result.anchorCount} anchors, ` +
-    `created ${result.occurrencesCreated} new occurrences`
-  )
+  log.info('cron.event_occurrences', {
+    anchors:            result.anchorCount,
+    occurrencesCreated: result.occurrencesCreated,
+  })
 
   return NextResponse.json({ ok: true, ...result })
 }

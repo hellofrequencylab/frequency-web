@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { Suspense } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getInitials, relativeTime } from '@/lib/utils'
@@ -167,9 +168,11 @@ async function ActiveMembersWidget({ profileId, circleIds }: { profileId: string
             >
               <div className="relative shrink-0">
                 {m.profile.avatar_url ? (
-                  <img
+                  <Image
                     src={m.profile.avatar_url}
                     alt={m.profile.display_name}
+                    width={32}
+                    height={32}
                     className="w-8 h-8 rounded-full object-cover"
                   />
                 ) : (
@@ -340,7 +343,7 @@ async function LeaderboardWidget() {
             >
               <span className={`text-sm font-bold w-4 shrink-0 tabular-nums ${rankColors[i]}`}>{i + 1}</span>
               {member.avatar_url ? (
-                <img src={member.avatar_url} alt={member.display_name} className="w-8 h-8 rounded-full object-cover shrink-0" />
+                <Image src={member.avatar_url} alt={member.display_name} width={32} height={32} className="w-8 h-8 rounded-full object-cover shrink-0" />
               ) : (
                 <div className="w-8 h-8 rounded-full bg-border-strong flex items-center justify-center text-xs font-bold text-muted shrink-0">
                   {getInitials(member.display_name ?? '')}
@@ -501,7 +504,6 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
   const circleIds = (myMemberships ?? []).map((m: { circle_id: string }) => m.circle_id as string)
 
   const isCrew    = ['crew', 'host', 'guide', 'mentor', 'janitor'].includes(role)
-  const isHost    = ['host', 'guide', 'mentor', 'janitor'].includes(role)
 
   return (
     <div className="flex flex-1 flex-col">

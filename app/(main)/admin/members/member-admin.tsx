@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import {
   Search, ChevronDown, ChevronUp, Mail, Pencil,
@@ -24,8 +25,8 @@ interface Member {
   avatar_url: string | null
   bio: string | null
   community_role: string
-  is_active: boolean
-  created_at: string
+  is_active: boolean | null
+  created_at: string | null
   current_season_rank: string | null
   current_season_zaps: number | null
   regionName: string | null
@@ -142,8 +143,8 @@ function MemberRow({
       try {
         const result = await sendMagicLink(m.id)
         setStatus(`Sign-in link sent to ${result.email}`)
-      } catch (err: any) {
-        setStatus(`Error: ${err.message}`)
+      } catch (err) {
+        setStatus(`Error: ${err instanceof Error ? err.message : String(err)}`)
       }
       setTimeout(() => setStatus(null), 3000)
     })
@@ -171,8 +172,8 @@ function MemberRow({
         await deleteUserAccount(m.id)
         setStatus('Account deleted')
         setConfirmDelete(false)
-      } catch (err: any) {
-        setStatus(`Error: ${err.message}`)
+      } catch (err) {
+        setStatus(`Error: ${err instanceof Error ? err.message : String(err)}`)
         setTimeout(() => setStatus(null), 6000)
       }
     })
@@ -195,7 +196,7 @@ function MemberRow({
         className="w-full flex items-center gap-3 px-4 py-3 hover:bg-surface-elevated transition-colors text-left"
       >
         {m.avatar_url ? (
-          <img src={m.avatar_url} alt={m.display_name} className="w-9 h-9 rounded-full object-cover shrink-0" />
+          <Image src={m.avatar_url} alt={m.display_name} width={36} height={36} className="w-9 h-9 rounded-full object-cover shrink-0" />
         ) : (
           <div className="w-9 h-9 rounded-full bg-surface-elevated text-muted text-xs font-semibold flex items-center justify-center shrink-0">
             {initials}
@@ -234,7 +235,7 @@ function MemberRow({
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-wider text-subtle mb-1">Details</p>
               <div className="text-xs text-muted space-y-1">
-                <p>Joined {new Date(m.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                {m.created_at && <p>Joined {new Date(m.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>}
                 {m.regionName && <p>Region: {m.regionName}</p>}
                 {m.current_season_rank && <p>Rank: {m.current_season_rank} ({m.current_season_zaps ?? 0} zaps)</p>}
                 <p>

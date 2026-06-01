@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition, useRef } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { Loader2, Trash2, MessageCircle } from 'lucide-react'
 import { addDispatchComment, deleteDispatchComment } from '../actions'
@@ -43,7 +44,7 @@ export function CommentSection({
   const [isPending, startTransition] = useTransition()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.SyntheticEvent) {
     e.preventDefault()
     if (!body.trim()) return
     setError('')
@@ -52,8 +53,8 @@ export function CommentSection({
     startTransition(async () => {
       try {
         await addDispatchComment(dispatchId, snapshot)
-      } catch (err: any) {
-        setError(err?.message ?? 'Failed to post comment.')
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to post comment.')
         setBody(snapshot)
       }
     })
@@ -83,7 +84,7 @@ export function CommentSection({
           {comments.map(c => (
             <div key={c.id} className="flex gap-3 group">
               {c.author.avatar_url ? (
-                <img src={c.author.avatar_url} alt={c.author.display_name} className="w-7 h-7 rounded-full object-cover shrink-0 mt-0.5" />
+                <Image src={c.author.avatar_url} alt={c.author.display_name} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0 mt-0.5" />
               ) : (
                 <div className="w-7 h-7 rounded-full bg-border-strong flex items-center justify-center text-[10px] font-bold text-muted shrink-0 mt-0.5 select-none">
                   {getInitials(c.author.display_name)}
@@ -127,7 +128,7 @@ export function CommentSection({
             ref={textareaRef}
             value={body}
             onChange={e => setBody(e.target.value.slice(0, 2000))}
-            onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSubmit(e as any) }}
+            onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSubmit(e) }}
             placeholder="Add a comment… (⌘↵ to post)"
             rows={2}
             disabled={isPending}

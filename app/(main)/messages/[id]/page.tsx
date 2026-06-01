@@ -1,4 +1,5 @@
 import { notFound, redirect } from 'next/navigation'
+import Image from 'next/image'
 import Link from 'next/link'
 import { ChevronLeft, LogOut, UsersRound } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -116,7 +117,7 @@ export default async function ConversationPage({
             className="flex items-center gap-2.5 flex-1 min-w-0 hover:opacity-80 transition-opacity"
           >
             {others[0].avatar_url ? (
-              <img src={others[0].avatar_url} alt={others[0].display_name} className="w-9 h-9 rounded-full object-cover shrink-0" />
+              <Image src={others[0].avatar_url} alt={others[0].display_name} width={36} height={36} className="w-9 h-9 rounded-full object-cover shrink-0" />
             ) : (
               <div className="w-9 h-9 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none">
                 {getInitials(others[0].display_name)}
@@ -170,7 +171,7 @@ export default async function ConversationPage({
                     className="flex items-center gap-2.5 px-4 py-2 hover:bg-surface-elevated/50 transition-colors"
                   >
                     {p.avatar_url ? (
-                      <img src={p.avatar_url} alt={p.display_name} className="w-7 h-7 rounded-full object-cover shrink-0" />
+                      <Image src={p.avatar_url} alt={p.display_name} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0" />
                     ) : (
                       <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-[10px] font-semibold flex items-center justify-center shrink-0 select-none">
                         {getInitials(p.display_name)}

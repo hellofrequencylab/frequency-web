@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useTransition, useRef, useEffect } from 'react'
+import { useState, useTransition, useEffect } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { UsersRound, Search, X, Clock, UserPlus } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
@@ -39,29 +40,34 @@ export function NewGroupDMCompose({
   const [recipients, setRecipients] = useState<HandleResult[]>(defaultRecipients)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Re-init defaults when modal reopens
-  useEffect(() => {
-    if (open) {
-      setRecipients(defaultRecipients)
-      setName(defaultName)
-    } else {
-      setQuery(''); setResults([]); setError(null)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open])
+  // Opening/closing resets the modal's contents in these handlers rather than in
+  // an effect, keeping the state updates out of React's render/effect cascade
+  // (react-hooks/set-state-in-effect).
+  function openModal() {
+    setRecipients(defaultRecipients)
+    setName(defaultName)
+    setOpen(true)
+  }
+  function closeModal() {
+    setOpen(false)
+    setQuery('')
+    setResults([])
+    setError(null)
+  }
 
+  // Debounced handle search. Results are only rendered while there's a query
+  // (see below), so there's no need to clear them synchronously when it empties.
   useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    if (!query.trim()) { setResults([]); return }
-    debounceRef.current = setTimeout(async () => {
+    if (!query.trim()) return
+    const timer = setTimeout(async () => {
       const res = await fetch(`/api/search-handles?q=${encodeURIComponent(query)}`)
       const json = await res.json()
       setResults((json.profiles ?? []).filter((p: HandleResult) =>
         !recipients.some(r => r.id === p.id)
       ))
     }, 200)
+    return () => clearTimeout(timer)
   }, [query, recipients])
 
   function addRecipient(p: HandleResult) {
@@ -89,7 +95,7 @@ export function NewGroupDMCompose({
           recipients.map(r => r.id),
           name || null
         )
-        setOpen(false)
+        closeModal()
         router.push(`/messages/${id}`)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to start conversation.')
@@ -99,13 +105,13 @@ export function NewGroupDMCompose({
 
   return (
     <>
-      <button onClick={() => setOpen(true)} className={buttonClass}>
+      <button onClick={openModal} className={buttonClass}>
         <UsersRound className="w-4 h-4" />
         {buttonLabel}
       </button>
 
       <CreateModal
-        open={open} onClose={() => setOpen(false)} onSubmit={submit}
+        open={open} onClose={closeModal} onSubmit={submit}
         title="New Group DM" titleIcon={UsersRound} titleIconColor="indigo"
         submitLabel="Start conversation" pendingLabel="Starting…"
         submitDisabled={recipients.length === 0} isPending={isPending} error={error}
@@ -126,7 +132,7 @@ export function NewGroupDMCompose({
               {recipients.map(r => (
                 <span key={r.id} className="inline-flex items-center gap-1 rounded-md bg-primary-bg border border-primary-bg px-2 py-1 text-xs">
                   {r.avatar_url ? (
-                    <img src={r.avatar_url} alt={r.display_name} className="w-4 h-4 rounded-full object-cover" />
+                    <Image src={r.avatar_url} alt={r.display_name} width={16} height={16} className="w-4 h-4 rounded-full object-cover" />
                   ) : (
                     <span className="w-4 h-4 rounded-full bg-primary-bg dark:bg-primary-bg text-primary-strong text-[8px] font-bold flex items-center justify-center">
                       {getInitials(r.display_name)}
@@ -149,7 +155,7 @@ export function NewGroupDMCompose({
           </div>
         </div>
 
-        {results.length > 0 && (
+        {query.trim() && results.length > 0 && (
           <div className="rounded-lg border border-border max-h-56 overflow-y-auto divide-y divide-border">
             {results.map(r => (
               <ResultRow key={r.id} result={r} onAdd={() => addRecipient(r)} />
@@ -177,8 +183,7 @@ function ResultRow({
   return (
     <div className={`flex items-center gap-2.5 w-full px-3 py-2 ${isFriend ? 'hover:bg-surface-elevated transition-colors' : 'opacity-60'}`}>
       {result.avatar_url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={result.avatar_url} alt={result.display_name} className="w-7 h-7 rounded-full object-cover shrink-0" />
+        <Image src={result.avatar_url} alt={result.display_name} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0" />
       ) : (
         <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-[10px] font-semibold flex items-center justify-center shrink-0">
           {getInitials(result.display_name)}

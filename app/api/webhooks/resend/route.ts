@@ -30,17 +30,44 @@ export async function POST(req: Request) {
   const type = (event.type ?? '').replace(/^email\./, '') || 'unknown'
   const to = Array.isArray(event.data?.to) ? event.data?.to[0] : event.data?.to
 
-  if (to) {
+  // Unmappable event (no recipient): acknowledge with 200. Retrying won't add
+  // the missing field, so a non-2xx would only make Resend redeliver forever.
+  // Log it so silently-skipped events are still visible.
+  if (!to) {
+    console.warn(`[resend-webhook] skipped event with no recipient (type=${type}, id=${id})`)
+    return NextResponse.json({ ok: true, skipped: 'no recipient' })
+  }
+
+  // Suppression is the delivery-integrity-critical step, so run it first and
+  // independently from the analytics log: a failure to record an event must not
+  // stop us from suppressing a bouncing/complaining address, and vice versa.
+  // Any failure is logged and returns 503 so Resend redelivers (suppress() is
+  // idempotent; a redelivered event row is acceptable). Without this, an
+  // unhandled throw became an unlogged 500 and the integrity signal was lost.
+  const errors: string[] = []
+
+  if (type === 'bounced' || type === 'complained') {
+    try {
+      await suppress(to, type === 'bounced' ? 'hard_bounce' : 'complaint')
+    } catch (err) {
+      errors.push(`suppress: ${err instanceof Error ? err.message : String(err)}`)
+    }
+  }
+
+  try {
     await recordEmailEvent({
       email: to,
       eventType: type,
       providerId: event.data?.email_id ?? null,
       payload: event as Record<string, unknown>,
     })
-    // Hard bounce / complaint → never send to this address again.
-    if (type === 'bounced' || type === 'complained') {
-      await suppress(to, type === 'bounced' ? 'hard_bounce' : 'complaint')
-    }
+  } catch (err) {
+    errors.push(`recordEmailEvent: ${err instanceof Error ? err.message : String(err)}`)
+  }
+
+  if (errors.length > 0) {
+    console.error(`[resend-webhook] processing failed (type=${type}, id=${id}): ${errors.join('; ')}`)
+    return NextResponse.json({ ok: false, error: 'processing failed' }, { status: 503 })
   }
 
   return NextResponse.json({ ok: true })

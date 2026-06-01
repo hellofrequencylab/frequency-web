@@ -1,7 +1,7 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { Search } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { MARKETING_NAV } from '@/lib/site'
 import { UserMenu, AuthButtons, type UserMenuProfile } from './user-menu'
 
@@ -27,8 +27,8 @@ export async function SiteHeader({ profile: profileProp, variant = 'light' }: Si
     } = await supabase.auth.getUser()
 
     if (user) {
-      const admin = createAdminClient()
-      const { data } = await admin
+      // Own-row read via the session client (RLS-covered); see ADR-042.
+      const { data } = await supabase
         .from('profiles')
         .select('display_name, handle, avatar_url')
         .eq('auth_user_id', user.id)
@@ -50,9 +50,11 @@ export async function SiteHeader({ profile: profileProp, variant = 'light' }: Si
     >
       {/* Logo */}
       <Link href={isAuth ? '/feed' : '/'} className="shrink-0">
-        <img
+        <Image
           src="/frequency-logo.png"
           alt="Frequency"
+          width={963}
+          height={170}
           className={`h-7 w-auto ${isDark ? 'invert' : 'dark:invert'}`}
         />
       </Link>

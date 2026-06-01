@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import {
   Sparkles, Activity, Heart, MessagesSquare, Megaphone, Palette, Briefcase, Radio, Users, Circle as CircleIcon,
 } from 'lucide-react'
@@ -152,8 +153,7 @@ function ChannelCard({
     <div className="flex flex-col rounded-2xl border border-border bg-surface p-5 shadow-sm transition-all hover:border-primary-bg hover:shadow-md">
       <div className="flex items-start gap-3">
         {channel.cover_image ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={channel.cover_image} alt={channel.name} className="h-12 w-12 shrink-0 rounded-xl object-cover" />
+          <Image src={channel.cover_image} alt={channel.name} width={48} height={48} className="h-12 w-12 shrink-0 rounded-xl object-cover" />
         ) : (
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
             <Icon className="h-6 w-6" />

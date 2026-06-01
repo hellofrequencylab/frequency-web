@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Plus, Pencil, Check, X } from 'lucide-react'
-import { createHub, updateHub } from '../actions'
+import { Pencil, Check, X } from 'lucide-react'
+import { updateHub } from '../actions'
 
 type HubRow = {
   id: string
