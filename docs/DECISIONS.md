@@ -623,6 +623,40 @@ A future backfill could set every row in one pass, but is not required.
 
 ---
 
+## ADR-041: Conversational onboarding funnel (replaces the 4-step wizard)
+
+**Status:** Accepted · prototype shipped (front-end); auth + persistence to follow ·
+supersedes the `/onboarding` 4-step form
+**Context:** Signup was a utilitarian 4-step wizard (name/handle, bio+avatar, region,
+review) reached only after auth. It captured data but did nothing for the emotional pitch
+(belonging, the antidote to loneliness) that the splash makes, and the hand-off felt like
+paperwork. We want the join moment itself to carry the worldview.
+**Decision:** Replace it with a single full-screen **conversational funnel** at `/welcome`.
+The splash **Join** CTA records the click's viewport-Y and routes there; the page **tears
+open** along that seam (two splash-matched panels split apart), the warm `marketing-canvas`
+greets with "welcome," and a **typed conversation** runs an emotional survey interleaved with
+the profile inputs. Each answer widens a centre **reveal mask** so the app assembles from the
+interior out. Specific choices:
+- **Inline 6-digit email OTP** for account creation (`verifyOtp`), so auth happens as another
+  conversational beat with **no redirect** out to an email client (magic-link would break the
+  flow; Google-only would demand commitment before the hook).
+- **`motion`** (framer-motion successor, React 19 compatible) for the tear + interior-out
+  choreography; pure CSS was too costly to orchestrate. One new dependency.
+- Built **front-end first** (stubbed answers, any 6 digits unlock) to tune the feel before
+  wiring Supabase OTP + `profiles` / `topical_channel_memberships` persistence. The step
+  `field` names already mirror the profile columns so persistence drops in without reshaping.
+**Consequences:**
+- The legacy `/onboarding` form stays in place until the funnel's persistence lands, then is
+  retired; `(main)/layout.tsx`'s "no profile -> onboarding" guard will point at the funnel.
+- `prefers-reduced-motion` is honored (no tear/peel/typewriter; content appears whole).
+- New surfaces: `app/welcome/*`, `components/welcome/*`, and a client `JoinButton` swapped in
+  for both the legacy hero CTA and the published `BetaCTA`.
+- Follow-up work: real OTP (requires Supabase email OTP enabled), avatar upload, handle
+  uniqueness check (reuse `/api/check-handle`), region capture, and writing answers/interests
+  through to the profile + a `meta.onboarding_completed` flag.
+
+---
+
 ### Decisions intentionally NOT duplicated here
 
 Already fully covered by the repo docs (no ADR needed): the RLS / admin-client

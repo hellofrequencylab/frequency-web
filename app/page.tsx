@@ -10,6 +10,7 @@ import { Statement, ZigZag, Marquee, BetaCTA } from '@/components/marketing/mark
 import { getInitials, relativeTime } from '@/lib/utils'
 import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
 import { type CommunityRole, ROLE_RANK, RoleBadge } from '@/lib/community-roles'
+import { JoinButton } from '@/components/welcome/join-button'
 import { config } from '@/lib/page-editor/config'
 import { getPublishedData } from '@/lib/page-editor/data'
 import { getJanitor } from '@/lib/page-editor/guard'
@@ -110,12 +111,9 @@ function LegacySplash({ live }: { live: LiveData }) {
           </p>
 
           <div className="mt-9 flex items-center gap-3 flex-wrap justify-center">
-            <Link
-              href={BETA_CTA_HREF}
-              className="rounded-2xl bg-primary text-on-primary px-8 py-3.5 text-base font-bold hover:bg-primary-hover transition-colors"
-            >
+            <JoinButton className="rounded-2xl bg-primary text-on-primary px-8 py-3.5 text-base font-bold hover:bg-primary-hover transition-colors">
               {BETA_CTA_LABEL}
-            </Link>
+            </JoinButton>
             <Link
               href="/sign-in"
               className="rounded-2xl border border-white/30 px-8 py-3.5 text-base font-medium text-white hover:bg-white/10 hover:border-white/50 transition-colors"
