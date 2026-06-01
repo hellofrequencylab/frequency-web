@@ -23,6 +23,7 @@ type CircleRow = {
   latitude: number | null
   longitude: number | null
   neighborhood: string | null
+  image_url: string | null
   topical_channel_id: string | null
   channel: { name: string } | null
   hub: {
@@ -34,7 +35,7 @@ type CircleRow = {
 }
 
 function contextFor(c: CircleRow): string | null {
-  const place = c.hub?.nexus?.outpost?.name ?? c.neighborhood ?? null
+  const place = c.neighborhood ?? c.hub?.nexus?.outpost?.name ?? null
   const nexus = c.hub?.nexus?.name ?? null
   const geo = [place, nexus].filter(Boolean).join(' · ')
   if (geo) return geo
@@ -45,7 +46,7 @@ function toCardData(c: CircleRow): CircleCardData {
   return {
     id: c.id, name: c.name, slug: c.slug, about: c.about, type: c.type,
     member_count: c.member_count, member_cap: c.member_cap, status: c.status,
-    context: contextFor(c),
+    context: contextFor(c), imageUrl: c.image_url,
   }
 }
 
@@ -77,7 +78,7 @@ export default async function CirclesPage({
     .from('circles')
     .select(
       `id, name, slug, about, type, member_count, member_cap, status, created_at,
-       latitude, longitude, neighborhood, topical_channel_id,
+       latitude, longitude, neighborhood, image_url, topical_channel_id,
        channel:topical_channels!topical_channel_id ( name ),
        hub:hubs!hub_id (
          id, name, slug,
@@ -217,7 +218,7 @@ export default async function CirclesPage({
           {myCircles.length > 0 && (
             <section>
               <SectionHeader title="Your circles" count={myCircles.length} />
-              <div className="grid gap-3 xl:grid-cols-2">
+              <div className="grid gap-4 sm:grid-cols-2">
                 {myCircles.map((c) => <CircleCard key={c.id} circle={toCardData(c)} isMember />)}
               </div>
             </section>
@@ -233,7 +234,7 @@ export default async function CirclesPage({
                 action={user ? <NewCircleCompose interests={interests} buttonLabel="Start a circle" /> : undefined}
               />
             ) : (
-              <div className="grid gap-3 xl:grid-cols-2">
+              <div className="grid gap-4 sm:grid-cols-2">
                 {discover.map((c) => <CircleCard key={c.id} circle={toCardData(c)} isMember={false} />)}
               </div>
             )}

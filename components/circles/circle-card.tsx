@@ -1,6 +1,5 @@
 import Link from 'next/link'
-import { Users, MapPin } from 'lucide-react'
-import { StatusBadge } from '@/components/groups/status-badge'
+import { Users, MapPin, Globe } from 'lucide-react'
 import { joinCircle } from '@/app/(main)/circles/actions'
 
 export type CircleCardData = {
@@ -12,86 +11,76 @@ export type CircleCardData = {
   member_count: number
   member_cap: number
   status: string
-  /** Precomputed "Outpost · Nexus" breadcrumb, or the interest name for online circles. */
+  /** Precomputed "Neighborhood · Nexus" line, or the interest for online circles. */
   context?: string | null
+  imageUrl?: string | null
 }
 
-// The one circle card, shared across the Circles surface (near-you, results,
-// region/interest browse). Calm entity card per the browse-page standard.
+// Circle card: a circular cover image with the basics underneath (name, place,
+// a line of description, member count, and a join/open action). Centered, calm.
 export function CircleCard({ circle, isMember }: { circle: CircleCardData; isMember: boolean }) {
-  const pct = Math.min(100, Math.round((circle.member_count / Math.max(1, circle.member_cap)) * 100))
-  const nearCap = circle.member_count >= circle.member_cap * 0.9
   const full = circle.member_count >= circle.member_cap
 
   return (
-    <div className="flex flex-col rounded-2xl border border-border bg-surface p-5 shadow-sm transition-all hover:border-primary-bg hover:shadow-md">
-      <div className="flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
-          <Users className="h-5 w-5" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <Link
-              href={`/circles/${circle.slug}`}
-              className="text-base font-semibold text-text transition-colors hover:text-primary-strong"
-            >
-              {circle.name}
-            </Link>
-            <StatusBadge status={circle.status} />
-            {circle.type === 'in-person' && (
-              <span className="inline-flex items-center gap-1 rounded-md bg-primary-bg px-1.5 py-0.5 text-xs font-medium text-primary-strong">
-                <MapPin className="h-3 w-3" />
-                In person
-              </span>
-            )}
+    <div className="flex flex-col items-center rounded-2xl border border-border bg-surface p-5 text-center shadow-sm transition-all hover:border-primary-bg hover:shadow-md">
+      <Link href={`/circles/${circle.slug}`} className="shrink-0">
+        {circle.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={circle.imageUrl}
+            alt={circle.name}
+            className="h-20 w-20 rounded-full object-cover shadow-sm ring-2 ring-surface"
+          />
+        ) : (
+          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary-bg text-primary-strong">
+            <Users className="h-8 w-8" />
           </div>
-          {circle.context && <p className="mt-0.5 truncate text-xs text-subtle">{circle.context}</p>}
-        </div>
+        )}
+      </Link>
+
+      <Link
+        href={`/circles/${circle.slug}`}
+        className="mt-3 text-base font-semibold text-text transition-colors hover:text-primary-strong"
+      >
+        {circle.name}
+      </Link>
+
+      <div className="mt-1 flex items-center justify-center gap-1.5 text-xs text-subtle">
+        {circle.type === 'in-person' ? <MapPin className="h-3 w-3 shrink-0" /> : <Globe className="h-3 w-3 shrink-0" />}
+        <span className="truncate">{circle.context ?? (circle.type === 'in-person' ? 'In person' : 'Online')}</span>
       </div>
 
-      {circle.about && <p className="mt-3 line-clamp-2 text-sm text-muted">{circle.about}</p>}
+      {circle.about && <p className="mt-2 line-clamp-2 text-sm text-muted">{circle.about}</p>}
 
-      <div className="mt-auto pt-4">
-        <div className="mb-1.5 flex items-center justify-between gap-2">
-          <span className="text-xs text-subtle">
-            {circle.member_count} / {circle.member_cap} members
-          </span>
-          {full ? (
-            <span className="rounded-md bg-danger-bg px-1.5 py-0.5 text-xs font-medium text-danger">Full</span>
-          ) : nearCap ? (
-            <span className="rounded-md bg-warning-bg px-1.5 py-0.5 text-xs font-medium text-warning">Almost full</span>
-          ) : null}
-        </div>
-        <div className="h-1.5 overflow-hidden rounded-full bg-surface-elevated">
-          <div className={`h-full rounded-full ${full ? 'bg-danger' : 'bg-primary'}`} style={{ width: `${pct}%` }} />
-        </div>
+      <p className="mt-2 text-xs text-subtle">
+        {circle.member_count} {circle.member_count === 1 ? 'member' : 'members'}
+      </p>
 
-        <div className="mt-4">
-          {isMember ? (
-            <Link
-              href={`/circles/${circle.slug}`}
-              className="inline-flex rounded-lg bg-primary-bg px-3 py-1.5 text-sm font-semibold text-primary-strong transition-colors hover:bg-primary-bg/70"
+      <div className="mt-3">
+        {isMember ? (
+          <Link
+            href={`/circles/${circle.slug}`}
+            className="inline-flex rounded-lg bg-primary-bg px-3 py-1.5 text-sm font-semibold text-primary-strong transition-colors hover:bg-primary-bg/70"
+          >
+            Open circle →
+          </Link>
+        ) : !full ? (
+          <form action={joinCircle.bind(null, circle.id, circle.slug)}>
+            <button
+              type="submit"
+              className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
             >
-              Open circle →
-            </Link>
-          ) : !full ? (
-            <form action={joinCircle.bind(null, circle.id, circle.slug)}>
-              <button
-                type="submit"
-                className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
-              >
-                Join circle
-              </button>
-            </form>
-          ) : (
-            <Link
-              href={`/circles/${circle.slug}`}
-              className="inline-flex rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:text-text"
-            >
-              View
-            </Link>
-          )}
-        </div>
+              Join circle
+            </button>
+          </form>
+        ) : (
+          <Link
+            href={`/circles/${circle.slug}`}
+            className="inline-flex rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:text-text"
+          >
+            Full · View
+          </Link>
+        )}
       </div>
     </div>
   )
