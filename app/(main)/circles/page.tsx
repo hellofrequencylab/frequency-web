@@ -1,9 +1,10 @@
 import Link from 'next/link'
-import { Users, Compass, Zap } from 'lucide-react'
+import { Users, Compass, Zap, Gem, Flame } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import { rankForZaps, RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { NewCircleCompose } from '@/components/compose/new-circle-compose'
-import { IndexTemplate } from '@/components/templates/index-template'
 import { MapZone, MapPreview, MapBanner } from '@/components/circles/circles-map'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -59,6 +60,16 @@ function Stat({ value, label }: { value: number; label: string }) {
   )
 }
 
+function GamStat({ icon: Icon, value, label, fill }: { icon: LucideIcon; value: string; label: string; fill?: boolean }) {
+  return (
+    <div className="flex flex-col items-center">
+      <Icon className={`h-4 w-4 text-primary ${fill ? 'fill-current' : ''}`} />
+      <span className="mt-1 text-base font-bold leading-none tabular-nums text-text">{value}</span>
+      <span className="mt-1 text-[11px] text-subtle">{label}</span>
+    </div>
+  )
+}
+
 export default async function CirclesPage({
   searchParams,
 }: {
@@ -72,13 +83,23 @@ export default async function CirclesPage({
 
   let myCircleIds: string[] = []
   let isAdmin = false
+  let gam: { zaps: number; gems: number; streak: number; rank: SeasonRank } | null = null
   if (user) {
     const { data: profile } = await admin
-      .from('profiles').select('id, community_role').eq('auth_user_id', user.id).maybeSingle()
-    if (profile) {
-      isAdmin = ['host', 'guide', 'mentor', 'janitor'].includes(profile.community_role ?? '')
+      .from('profiles')
+      .select('id, community_role, current_season_zaps, lifetime_gems, current_streak')
+      .eq('auth_user_id', user.id)
+      .maybeSingle()
+    const p = profile as {
+      id: string; community_role: string | null
+      current_season_zaps?: number; lifetime_gems?: number; current_streak?: number
+    } | null
+    if (p) {
+      isAdmin = ['host', 'guide', 'mentor', 'janitor'].includes(p.community_role ?? '')
+      const zaps = p.current_season_zaps ?? 0
+      gam = { zaps, gems: p.lifetime_gems ?? 0, streak: p.current_streak ?? 0, rank: rankForZaps(zaps) }
       const { data: mems } = await admin
-        .from('memberships').select('circle_id').eq('profile_id', profile.id).eq('status', 'active')
+        .from('memberships').select('circle_id').eq('profile_id', p.id).eq('status', 'active')
       myCircleIds = (mems ?? []).map((m) => m.circle_id as string)
     }
   }
@@ -161,46 +182,54 @@ export default async function CirclesPage({
   }
 
   return (
-    <IndexTemplate
-      title="Circles"
-      description="This is where it gets real. Find a circle near you, dive into something you love, or start your own — because showing up, week after week, is how strangers become your people."
-      action={user ? <NewCircleCompose interests={interests} buttonLabel="Start a circle" /> : undefined}
-      toolbar={
-        isAdmin ? (
-          <Link href="/admin/circles" className="text-sm font-medium text-muted transition-colors hover:text-primary-strong">
-            Manage circles →
-          </Link>
-        ) : undefined
-      }
-    >
-      {/* Network stats + gamification prompt */}
-      <div className="mb-6 flex flex-col gap-4 lg:flex-row">
-        <div className="flex flex-wrap items-center gap-x-8 gap-y-3 rounded-2xl border border-border bg-surface px-6 py-4 shadow-sm">
-          <Stat value={stats.circles} label="Circles" />
-          <Stat value={stats.members} label="Members" />
-          <Stat value={stats.cities} label="Cities" />
-          <Stat value={stats.interests} label="Interests" />
+    <div>
+      {/* ── Header: title + description + button (left) · gamification stats (right) ── */}
+      <header className="mb-6 flex flex-col gap-6 border-b border-border pb-5 lg:flex-row lg:items-start lg:justify-between">
+        <div className="max-w-2xl">
+          <h1 className="mb-1.5 text-2xl font-bold text-text">Circles</h1>
+          <p className="text-sm leading-relaxed text-muted">
+            This is where it gets real. Find a circle near you, dive into something you love, or start your own — because showing up, week after week, is how strangers become your people.
+          </p>
+          {user && (
+            <div className="mt-4 flex flex-wrap items-center gap-4">
+              <NewCircleCompose
+                interests={interests}
+                buttonLabel="Start a circle"
+                buttonClass="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary shadow-sm transition-all hover:bg-primary-hover hover:shadow-md hover:-translate-y-0.5"
+              />
+              {isAdmin && (
+                <Link href="/admin/circles" className="text-sm font-medium text-muted transition-colors hover:text-primary-strong">
+                  Manage circles →
+                </Link>
+              )}
+            </div>
+          )}
         </div>
 
-        <div className="flex flex-1 items-center gap-4 rounded-2xl border border-primary-bg bg-primary-bg/40 px-6 py-4">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary">
-            <Zap className="h-5 w-5 fill-current" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-text">Circles are where you earn</p>
-            <p className="text-sm text-muted">
-              {myCircleIds.length > 0
-                ? `Showing up to your ${myCircleIds.length} circle${myCircleIds.length === 1 ? '' : 's'} keeps your streak alive — and hosting earns the most zaps.`
-                : 'Join a circle to start earning zaps and keep your streak alive — or host your own and lead the way.'}
-            </p>
-          </div>
+        {gam && (
           <Link
             href="/crew"
-            className="shrink-0 text-sm font-semibold text-primary-strong transition-colors hover:text-primary-hover"
+            className="flex shrink-0 items-center gap-5 self-start rounded-2xl border border-border bg-surface px-5 py-4 shadow-sm transition-all hover:border-primary-bg hover:shadow-md"
           >
-            Your rewards →
+            <div className="flex flex-col items-center">
+              <span className="rank-badge text-[11px] font-bold leading-tight" style={seasonRankStyle(gam.rank)}>
+                {RANK_LABELS[gam.rank]}
+              </span>
+              <span className="mt-1.5 text-[11px] text-subtle">Rank</span>
+            </div>
+            <GamStat icon={Zap} value={gam.zaps.toLocaleString()} label="Zaps" fill />
+            <GamStat icon={Gem} value={gam.gems.toLocaleString()} label="Gems" />
+            <GamStat icon={Flame} value={`${gam.streak}w`} label="Streak" />
           </Link>
-        </div>
+        )}
+      </header>
+
+      {/* Network stats strip */}
+      <div className="mb-6 flex flex-wrap items-center gap-x-8 gap-y-3 rounded-2xl border border-border bg-surface px-6 py-4 shadow-sm">
+        <Stat value={stats.circles} label="Circles" />
+        <Stat value={stats.members} label="Members" />
+        <Stat value={stats.cities} label="Cities" />
+        <Stat value={stats.interests} label="Interests" />
       </div>
 
       <CirclesToolbar interests={interests} />
@@ -286,6 +315,6 @@ export default async function CirclesPage({
           )}
         </div>
       </MapZone>
-    </IndexTemplate>
+    </div>
   )
 }
