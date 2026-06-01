@@ -2,12 +2,14 @@ import Link from 'next/link'
 import { Suspense } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getInitials, relativeTime } from '@/lib/utils'
-import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
+import { RANK_LABELS, seasonRankStyle, SEASON_RANKS, type SeasonRank } from '@/lib/season-ranks'
 import { MapPin, Megaphone, Zap } from 'lucide-react'
 import { GettingStartedChecklist } from '@/components/feed/getting-started'
 import { isOnline, ONLINE_MS } from '@/lib/presence'
 import { WidgetCard } from '@/components/modules/module-card'
-import { GameStatsDockClient } from '@/components/sidebar/game-stats-dock'
+import { GameStatsDockClient, type DockData } from '@/components/sidebar/game-stats-dock'
+import { getChallengesData } from '@/app/(main)/crew/gamification-actions'
+import { getPracticesToLogToday, getRecentPracticeLogs, getMemberPractices } from '@/lib/practices'
 
 export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
@@ -379,25 +381,137 @@ async function LeaderboardWidget() {
 }
 
 // ── Game stats dock ───────────────────────────────────────────────────────────
-// Server wrapper: fetch the player's stats, hand them to the interactive dock
-// (components/sidebar/game-stats-dock.tsx) which pins a compact bar to the
-// bottom and reveals the detail tiles as the top of the rail scrolls past.
+// Server wrapper: assemble the player's "progress cockpit" and hand it to the
+// interactive dock (components/sidebar/game-stats-dock.tsx). A compact bar is
+// pinned to the bottom; tapping it (or scrolling to the feed bottom) opens a
+// panel with today's move, streak, rank progress, challenges, a quest, badges,
+// and The Vault at the very bottom. Everything is best-effort — any one source
+// failing degrades to an empty/teaser state rather than breaking the rail.
 
 async function GameStatsDock({ profileId }: { profileId: string }) {
   const admin = createAdminClient()
 
-  const { data: profile } = await admin
-    .from('profiles')
-    .select('current_season_zaps, current_season_rank, lifetime_gems, current_streak')
-    .eq('id', profileId)
-    .maybeSingle()
+  const [
+    { data: profile },
+    practicesToLog,
+    memberPractices,
+    recentLogs,
+    challengeData,
+    { data: latestAch },
+  ] = await Promise.all([
+    admin.from('profiles')
+      .select('current_season_zaps, current_season_rank, lifetime_gems, current_streak, achievement_count')
+      .eq('id', profileId).maybeSingle(),
+    getPracticesToLogToday(profileId).catch(() => []),
+    getMemberPractices(profileId).catch(() => []),
+    getRecentPracticeLogs(profileId, 30).catch(() => []),
+    getChallengesData().catch(() => ({ challenges: [], stats: { total: 0, completed: 0 } })),
+    admin.from('user_achievements')
+      .select('achievement:achievements(name)')
+      .eq('profile_id', profileId)
+      .order('unlocked_at', { ascending: false })
+      .limit(1).maybeSingle(),
+  ])
 
-  const zaps = (profile as { current_season_zaps?: number } | null)?.current_season_zaps ?? 0
-  const gems = (profile as { lifetime_gems?: number } | null)?.lifetime_gems ?? 0
-  const streak = (profile as { current_streak?: number } | null)?.current_streak ?? 0
-  const rank = (profile as { current_season_rank?: SeasonRank } | null)?.current_season_rank ?? null
+  const p = profile as {
+    current_season_zaps?: number; current_season_rank?: SeasonRank
+    lifetime_gems?: number; current_streak?: number; achievement_count?: number
+  } | null
+  const zaps = p?.current_season_zaps ?? 0
+  const gems = p?.lifetime_gems ?? 0
+  const streak = p?.current_streak ?? 0
+  const rank = (p?.current_season_rank ?? 'ghost') as SeasonRank
 
-  return <GameStatsDockClient zaps={zaps} gems={gems} streak={streak} rank={rank} />
+  // Today's move (North-Star daily action)
+  const todaysMove: DockData['todaysMove'] =
+    practicesToLog.length > 0
+      ? { kind: 'log', practiceTitle: practicesToLog[0]?.title ?? undefined }
+      : memberPractices.length > 0
+        ? { kind: 'done' }
+        : { kind: 'adopt' }
+
+  // Last 7 days streak strip
+  const loggedDays = new Set(recentLogs.map((r) => r.logged_for))
+  const today = new Date()
+  const last7 = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(today)
+    d.setDate(d.getDate() - (6 - i))
+    return loggedDays.has(d.toISOString().slice(0, 10))
+  })
+
+  // Rank progress to next tier
+  const idx = SEASON_RANKS.findIndex((r) => r.rank === rank)
+  const curIdx = idx < 0 ? 0 : idx
+  const next = SEASON_RANKS[curIdx + 1]
+  const curMin = SEASON_RANKS[curIdx]?.minZaps ?? 0
+  const rankProgress = next
+    ? {
+        nextLabel: next.label,
+        toGo: Math.max(0, next.minZaps - zaps),
+        pct: next.minZaps > curMin ? Math.round(((zaps - curMin) / (next.minZaps - curMin)) * 100) : 0,
+      }
+    : { nextLabel: null, toGo: 0, pct: 100 }
+
+  // Active challenges — incomplete, closest-to-done first, capped at 3
+  type RawChallenge = { name: string; current: number; target: number; difficulty: string; completedAt: string | null }
+  const challenges = (challengeData.challenges as RawChallenge[])
+    .filter((c) => !c.completedAt)
+    .map((c) => ({
+      name: c.name,
+      current: c.current,
+      target: c.target,
+      difficulty: c.difficulty,
+      pct: c.target > 0 ? Math.round((c.current / c.target) * 100) : 0,
+    }))
+    .sort((a, b) => b.pct - a.pct)
+    .slice(0, 3)
+
+  // Current quest (best-effort; tolerant of schema differences)
+  let quest: DockData['quest'] = null
+  try {
+    const { data: qp } = await admin
+      .from('quest_progress')
+      .select('chain_id, current_step')
+      .eq('profile_id', profileId)
+      .is('completed_at', null)
+      .order('started_at', { ascending: true })
+      .limit(1)
+      .maybeSingle()
+    if (qp) {
+      const [{ data: chain }, { data: steps }] = await Promise.all([
+        admin.from('quest_chains').select('name').eq('id', qp.chain_id).maybeSingle(),
+        admin.from('quest_steps').select('step_order, name').eq('chain_id', qp.chain_id).order('step_order'),
+      ])
+      const total = (steps ?? []).length || 1
+      const cur = (steps ?? []).find((s: { step_order: number }) => s.step_order === qp.current_step) as { name?: string } | undefined
+      quest = {
+        chain: (chain as { name?: string } | null)?.name ?? 'Your quest',
+        step: cur?.name ?? `Step ${qp.current_step}`,
+        pct: Math.round(((qp.current_step - 1) / total) * 100),
+      }
+    }
+  } catch {
+    quest = null
+  }
+
+  const data: DockData = {
+    zaps,
+    gems,
+    streak,
+    rank,
+    todaysMove,
+    last7,
+    rankProgress,
+    challenges,
+    quest,
+    badge: {
+      count: p?.achievement_count ?? 0,
+      latestName: (latestAch?.achievement as { name?: string } | null)?.name ?? null,
+    },
+    vaultGems: gems,
+  }
+
+  return <GameStatsDockClient data={data} />
 }
 
 // ── Right sidebar ─────────────────────────────────────────────────────────────
