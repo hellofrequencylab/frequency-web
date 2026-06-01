@@ -19,8 +19,13 @@ greenfield initiative (G).
 - [ ] Strict CSP with nonces on the theme/JSON-LD inline scripts. (M)
 - [ ] Rate-limit `check-handle` / `search-handles` / beta; webhook replay protection. (S)
 - [ ] `admin_audit_log` for role changes / suspensions / content removals (ROADMAP P7.27). (S)
-- [ ] (G) RLS convergence (Phase 2): 106 files still bypass RLS via the admin
-  client; migrate hot paths to RLS + `SECURITY DEFINER` RPCs with policy tests. (L)
+- [ ] (G) RLS convergence (Phase 2, tiered — ADR-042): ~115 files bypass RLS via the
+  admin client. D Tier 1 own-row/public reads migrated to the session client (the
+  `lib/auth.ts` caller-identity anchor used by every authed request, plus
+  `viewer-stats.ts` and `site-header.tsx`). Tier 2 cross-user aggregates (capacity
+  counts, feed scope fan-out, capability resolver) need `SECURITY DEFINER` RPCs +
+  policy tests — blocked on the harness (section D). Tier 3 (cron/webhooks/admin)
+  stays service-role. (L)
 
 ## B. Performance and scale
 - D hot-path indexes (events/rsvps/memberships), per-request auth `cache()`,
