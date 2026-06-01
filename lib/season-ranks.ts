@@ -57,18 +57,6 @@ export function seasonRankStyle(rank: SeasonRank): React.CSSProperties {
   return rankBadgeStyle(RANK_TO_KEY[rank])
 }
 
-// Tailwind background utility per rank — uses the Dawn rank palette.
-// For pill-style badges, prefer the .rank-badge class + seasonRankStyle()
-// so you get the full core/deep/bright spectrum.
-export const RANK_COLORS: Record<SeasonRank, string> = {
-  ghost:     'bg-rank-stone',
-  runner:    'bg-rank-jade',
-  operative: 'bg-rank-teal',
-  agent:     'bg-rank-slate',
-  conduit:   'bg-rank-indigo',
-  luminary:  'bg-rank-gold',
-}
-
 export function getRankDef(rank: SeasonRank) {
   return SEASON_RANKS.find(r => r.rank === rank) ?? SEASON_RANKS[0]
 }
