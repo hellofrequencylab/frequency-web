@@ -4,13 +4,19 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence, useSpring, useMotionTemplate } from 'motion/react'
 import { ArrowRight, Check, Camera } from 'lucide-react'
-import { AppPreview } from './app-preview'
 import { useTypewriter } from './use-typewriter'
 import { STEPS, REVEAL_STEPS, fillTemplate, type Step } from './steps'
 
 const HERO_IMG = '/images/site/lab-thermal.jpg'
 const HERO_BG = `linear-gradient(to bottom, rgba(0,0,0,0.7), rgba(0,0,0,0.5), rgba(0,0,0,0.85)), url(${HERO_IMG})`
 const EASE_TEAR = [0.7, 0, 0.3, 1] as const
+
+// The real website revealed behind the conversation. `/` renders the live
+// marketing home for signed-out visitors, and server-redirects a signed-in
+// viewer straight to their real /feed — so what assembles from the interior out
+// is the actual product, not a mock. (Once the funnel authenticates inline, this
+// can point at /feed to reveal the member's brand-new feed.)
+const REVEAL_URL = '/'
 
 type Phase = 'tear' | 'welcome' | 'convo'
 type Answers = Record<string, unknown>
@@ -74,8 +80,15 @@ export function WelcomeExperience() {
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-marketing-canvas">
-      {/* The world being revealed, behind everything */}
-      <div className="absolute inset-0 z-0"><AppPreview /></div>
+      {/* The real website being revealed, behind everything. Non-interactive: a
+          living backdrop, not a place to click. */}
+      <iframe
+        src={REVEAL_URL}
+        title="Frequency"
+        aria-hidden
+        tabIndex={-1}
+        className="pointer-events-none absolute inset-0 z-0 h-full w-full border-0"
+      />
 
       {/* Sand sheet with the widening hole */}
       <motion.div

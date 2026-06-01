@@ -650,7 +650,12 @@ interior out. Specific choices:
   retired; `(main)/layout.tsx`'s "no profile -> onboarding" guard will point at the funnel.
 - `prefers-reduced-motion` is honored (no tear/peel/typewriter; content appears whole).
 - New surfaces: `app/welcome/*`, `components/welcome/*`, and a client `JoinButton` swapped in
-  for both the legacy hero CTA and the published `BetaCTA`.
+  for every join CTA (the published Puck hero, the marketing header, the logged-out user menu,
+  and the legacy splash).
+- The surface revealed behind the conversation is the **real site** in a non-interactive
+  same-origin `iframe` of `/` (live marketing home when signed out; server-redirects to the
+  member's real `/feed` when signed in), not a mock. Once the funnel authenticates inline it
+  can point straight at `/feed`.
 - Follow-up work: real OTP (requires Supabase email OTP enabled), avatar upload, handle
   uniqueness check (reuse `/api/check-handle`), region capture, and writing answers/interests
   through to the profile + a `meta.onboarding_completed` flag.
