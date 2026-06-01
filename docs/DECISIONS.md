@@ -835,6 +835,39 @@ prerequisite** before sending volume — see BACKLOG §I. The app-side bulk-send
 with retries) is already in place (ADR-026/043).
 
 ---
+
+## ADR-047: Onboarding becomes progressive and non-blocking; lazy profile capture; AI concierge is a later phase on the AI core
+
+**Status:** Accepted (design) · 2026-06-01. Build spec: [ONBOARDING.md](ONBOARDING.md).
+
+**Context:** Onboarding today is effectively a blocking wizard — profiles auto-create via a
+trigger, new users are funnelled through `app/onboarding/*` to set identity, and surfaces
+`redirect('/onboarding')` when no profile row exists. We want newcomers to explore the
+product immediately and receive guidance progressively, eventually via an AI layer that
+learns about them in conversation.
+
+**Decision:**
+1. **Non-blocking, lazy capture.** Land users in the app on their auto-created profile,
+   requiring nothing up front (backfill a safe default handle/display name when empty).
+   Collect identity/interests/region at contextual moments instead of a gate.
+2. **Progressive, interaction-paced tour.** A declarative tip registry surfaces one
+   contextual coachmark at a time, triggered by reaching a surface and gated by a
+   cooldown / interaction count so tips never stack. Per-user state lives in the existing
+   `profiles.meta` JSONB (`meta.tour`) — **no schema migration**.
+3. **Phase the build.** Phase 0 decouples the gate; **Phase 1 ships the deterministic tour**
+   (no AI cost/risk, immediately useful); **Phase 2 adds an AI concierge** as a separate
+   initiative built on the planned AI core (`lib/ai/` — model router, caps, kill switch,
+   governance kernel; ADR-028/041), with tool-use to personalize. The tip registry is the
+   AI layer's always-on fallback.
+
+**Consequences:** No new schema for Phase 1. The activation funnel becomes measurable via
+`engagement_events` emitted by the tour (feeds the planned analytics dashboard). The "welcome
+new members in the feed" idea folds in as a one-shot tour moment. Phase 2 is gated on the AI
+core and the consent/verification harness (ADR-028) before any autonomous writes — so it does
+not block Phase 1. The current `/onboarding` wizard is demoted to an optional "finish your
+profile" surface rather than a hard gate.
+
+---
 ### Decisions intentionally NOT duplicated here
 
 Already fully covered by the repo docs (no ADR needed): the RLS / admin-client

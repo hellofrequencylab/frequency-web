@@ -66,6 +66,11 @@ greenfield initiative (G).
   findings ledger, autonomy tiers (gated on D). (M)
 
 ## F. Engagement / gamification / practices / programs
+- [ ] **Progressive onboarding (ADR-047 / ONBOARDING.md).** Phase 0: decouple the blocking
+  `/onboarding` gate (lazy profile capture). Phase 1: interaction-paced coachmark tour
+  driven by a declarative tip registry + `profiles.meta.tour` (no migration); folds in the
+  "welcome new members in the feed" moment; emits `engagement_events` for the activation
+  funnel. Phase 2 (later): AI concierge on the AI core (ADR-028/041). (M; Phase 2 = L)
 - [ ] Reward amount-edit UI + member-facing season banner/countdown. (S)
 - [ ] `practice.verified` host/peer verification layers. (M)
 - [ ] Device attestation + mutual-confirm (P2P) verifiers for captures. (M)
