@@ -41,6 +41,7 @@ import {
   ROLE_LABEL,
   roleBadgeStyle,
 } from '@/lib/community-roles'
+import { useFeedAtBottom } from '@/components/sidebar/use-feed-at-bottom'
 
 // Grouped nav (IA-STRATEGY §1). Same items + visibility as before — just sorted
 // into labelled sections so a newcomer can read the structure. Crew/Admin are
@@ -125,44 +126,77 @@ function ProfileCard({
   profile,
   role,
   profileHref,
+  expanded = false,
 }: {
   profile: Profile
   role: CommunityRole
   profileHref: string
+  /** When true, the extra stats row rises up (mirrors the right stats dock). */
+  expanded?: boolean
 }) {
+  const zaps = profile.current_season_zaps ?? 0
+  const gems = profile.lifetime_gems ?? 0
+
   return (
-    <div className="flex items-start gap-2.5 rounded-xl p-2 hover:bg-surface-elevated transition-colors group">
-      <Link href={profileHref} className="shrink-0">
-        {profile.avatar_url ? (
-          <img
-            src={profile.avatar_url}
-            alt={profile.display_name}
-            className="w-11 h-11 rounded-full object-cover"
-          />
-        ) : (
-          <div className="w-11 h-11 rounded-full bg-primary text-on-primary text-sm font-bold flex items-center justify-center select-none">
-            {getInitials(profile.display_name)}
+    <div className="border-t border-border">
+      {/* Extra stats — rise up from the bottom when the feed hits the end,
+          in sync with the right stats dock. */}
+      <div
+        className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+          expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+        }`}
+      >
+        <div className="overflow-hidden">
+          <div className="grid grid-cols-2 gap-2 px-3 pt-3">
+            <div className="rounded-xl bg-surface-elevated px-2 py-2.5 text-center">
+              <Zap className="w-4 h-4 text-primary fill-current mx-auto mb-1" />
+              <div className="text-sm font-bold text-text tabular-nums leading-none">{zaps.toLocaleString()}</div>
+              <div className="text-[11px] text-subtle mt-1">Zaps</div>
+            </div>
+            <div className="rounded-xl bg-surface-elevated px-2 py-2.5 text-center">
+              <Gem className="w-4 h-4 text-signal mx-auto mb-1" />
+              <div className="text-sm font-bold text-text tabular-nums leading-none">{gems.toLocaleString()}</div>
+              <div className="text-[11px] text-subtle mt-1">Gems</div>
+            </div>
           </div>
-        )}
-      </Link>
-      <div className="flex-1 min-w-0">
-        <Link href={profileHref}>
-          <p className="text-sm font-semibold text-text truncate leading-tight">
-            {profile.display_name}
-          </p>
+        </div>
+      </div>
+
+      {/* Compact identity bar — matched in height to the right stats bar. */}
+      <div className="flex items-center gap-2.5 px-3 py-3.5">
+        <Link href={profileHref} className="shrink-0">
+          {profile.avatar_url ? (
+            <img
+              src={profile.avatar_url}
+              alt={profile.display_name}
+              className="w-11 h-11 rounded-full object-cover"
+            />
+          ) : (
+            <div className="w-11 h-11 rounded-full bg-primary text-on-primary text-sm font-bold flex items-center justify-center select-none">
+              {getInitials(profile.display_name)}
+            </div>
+          )}
         </Link>
-        <div className="flex items-center gap-1 mt-1">
-          <span className="rank-badge text-[10px] leading-tight" style={roleBadgeStyle(role)}>
+        <div className="flex-1 min-w-0">
+          <Link href={profileHref}>
+            <p className="text-sm font-semibold text-text truncate leading-tight">
+              {profile.display_name}
+            </p>
+          </Link>
+          <span
+            className="rank-badge mt-1 inline-block text-[10px] leading-tight"
+            style={roleBadgeStyle(role)}
+          >
             {ROLE_LABEL[role]}
           </span>
-          <Link
-            href="/settings"
-            aria-label="Member settings"
-            className="p-1 rounded-md text-subtle hover:text-primary-strong hover:bg-surface-elevated transition-colors"
-          >
-            <Settings className="w-3.5 h-3.5" />
-          </Link>
         </div>
+        <Link
+          href="/settings"
+          aria-label="Member settings"
+          className="shrink-0 p-1.5 rounded-md text-subtle hover:text-primary-strong hover:bg-surface-elevated transition-colors"
+        >
+          <Settings className="w-4 h-4" />
+        </Link>
       </div>
     </div>
   )
@@ -652,6 +686,9 @@ export default function AppShell({
   const { theme, setTheme } = useTheme()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [lastPath, setLastPath] = useState(pathname)
+  // Both bottom docks (left profile, right stats) reveal extra stats when the
+  // feed scroll reaches the bottom.
+  const atBottom = useFeedAtBottom()
 
   // Close mobile drawer when the route changes (covers browser back/forward).
   if (lastPath !== pathname) {
@@ -832,12 +869,10 @@ export default function AppShell({
             </div>
           )}
 
-          {/* Profile card. Public identity anchor */}
-          {/* Avatar · name · role badge → public profile · member settings */}
-          {/* Grows into: points, rank, badges as we build out engagement */}
-          <div className="border-t border-border p-3">
-            <ProfileCard profile={profile} role={role} profileHref={profileHref} />
-          </div>
+          {/* Profile card. Public identity anchor.
+              Avatar · name · role badge → public profile · member settings.
+              Expands to show points when the feed scroll hits the bottom. */}
+          <ProfileCard profile={profile} role={role} profileHref={profileHref} expanded={atBottom} />
         </aside>
 
         {/* Center + right column — ONE shared scroll container (no per-column
@@ -845,7 +880,7 @@ export default function AppShell({
             move together: the rail scrolls up with the feed, and once the rail
             runs out the feed keeps going (right side just shows the divider);
             scrolling back up brings the rail back. Normal flow, no sticky. */}
-        <div className="flex-1 min-w-0 overflow-y-auto pb-[calc(4rem_+_env(safe-area-inset-bottom))] md:pb-0">
+        <div data-feed-scroll className="flex-1 min-w-0 overflow-y-auto pb-[calc(4rem_+_env(safe-area-inset-bottom))] md:pb-0">
           <div className="flex items-stretch min-h-full">
 
             {/* Page content */}
@@ -854,11 +889,11 @@ export default function AppShell({
             </main>
 
             {/* Right sidebar. Only on lg+, hidden on admin/settings.
-                The <aside> spans the full content height so its left border is
-                a full-height divider, flush to the far edge. The rail sits at
-                the top and scrolls with the feed (shared scroll, no sticky). */}
+                The <aside> spans the full content height (flex column) so the
+                rail's top content can scroll while the stats bar stays pinned
+                to the bottom; its left border is a full-height divider. */}
             {showSidebar && (
-              <aside className="hidden lg:block w-72 shrink-0 border-l border-border">
+              <aside className="hidden lg:flex flex-col w-72 shrink-0 border-l border-border">
                 {sidebar}
               </aside>
             )}

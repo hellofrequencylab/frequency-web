@@ -418,7 +418,7 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
   const isHost    = ['host', 'guide', 'mentor', 'janitor'].includes(role)
 
   return (
-    <div className="min-h-full">
+    <div className="flex flex-1 flex-col">
       {/* Top of the rail: scrolls up with the feed. The pb reserves room for the
           pinned stats bar so it never overlaps the content above it. */}
       <div className="px-3 py-6 pb-24 space-y-8">
