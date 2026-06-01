@@ -154,5 +154,13 @@ export default function CircleMap({
     return () => map.remove()
   }, [circles, interactive])
 
-  return <div ref={containerRef} className={className} />
+  // Subtle warm filter so the (cool, grayscale) base tiles sit on the cream
+  // palette instead of fighting it. Amber pins stay amber.
+  return (
+    <div
+      ref={containerRef}
+      className={className}
+      style={{ filter: 'sepia(0.22) saturate(1.08) hue-rotate(-8deg) brightness(1.02)' }}
+    />
+  )
 }

@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { NewCircleCompose } from '@/components/compose/new-circle-compose'
 import { IndexTemplate } from '@/components/templates/index-template'
-import { CirclesMap } from '@/components/circles/circles-map'
+import { MapZone, MapPreview, MapBanner } from '@/components/circles/circles-map'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { CircleCard, type CircleCardData } from '@/components/circles/circle-card'
@@ -156,12 +156,14 @@ export default async function CirclesPage({
     >
       <CirclesToolbar interests={interests} />
 
-      <div className="mt-6 grid grid-cols-1 gap-x-10 gap-y-8 lg:grid-cols-3">
-        {/* ── Interior right column: map + browse + explore, borderless ── */}
+      <MapZone circles={locatableCircles}>
+        {/* Expanded map lives here (above the grid) so it pushes content down. */}
+        <MapBanner />
+
+        <div className="grid grid-cols-1 gap-x-10 gap-y-8 lg:grid-cols-3">
+        {/* ── Interior right column: map preview + browse + explore, borderless ── */}
         <aside className="space-y-8 lg:order-2">
-          {locatableCircles.length > 0 && (
-            <CirclesMap circles={locatableCircles} />
-          )}
+          <MapPreview />
 
           {interestChips.length > 0 && (
             <div>
@@ -237,7 +239,8 @@ export default async function CirclesPage({
             )}
           </section>
         </div>
-      </div>
+        </div>
+      </MapZone>
     </IndexTemplate>
   )
 }
