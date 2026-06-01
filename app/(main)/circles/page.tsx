@@ -156,90 +156,89 @@ export default async function CirclesPage({
     >
       <CirclesToolbar interests={interests} />
 
-      <div className="mt-6 space-y-10">
-        {/* Near you — a live map of nearby in-person circles, with a list toggle. */}
-        {!filtering && locatableCircles.length > 0 && (
-          <section>
-            <Nearby circles={locatableCircles} />
-          </section>
-        )}
-
-        {/* Your circles */}
-        {myCircles.length > 0 && (
-          <section>
-            <SectionHeader title="Your circles" count={myCircles.length} />
-            <div className="grid gap-3 sm:grid-cols-2">
-              {myCircles.map((c) => <CircleCard key={c.id} circle={toCardData(c)} isMember />)}
-            </div>
-          </section>
-        )}
-
-        {/* Results / Discover */}
-        <section>
-          <SectionHeader title={filtering ? 'Results' : 'Discover'} count={discover.length} />
-          {discover.length === 0 ? (
-            <EmptyState
-              icon={Users}
-              title={filtering ? 'No circles match these filters' : 'No circles yet'}
-              description={filtering ? 'Try a wider search, or start the first one for this corner of the network.' : 'Be the first — start a circle for your neighborhood or an interest.'}
-              action={user ? <NewCircleCompose interests={interests} buttonLabel="Start a circle" /> : undefined}
-            />
-          ) : (
-            <div className="grid gap-3 sm:grid-cols-2">
-              {discover.map((c) => <CircleCard key={c.id} circle={toCardData(c)} isMember={false} />)}
+      <div className="mt-6 grid grid-cols-1 gap-x-10 gap-y-8 lg:grid-cols-3">
+        {/* ── Interior right column: browse + explore, borderless and up top ── */}
+        <aside className="space-y-8 lg:order-2">
+          {interestChips.length > 0 && (
+            <div>
+              <SectionHeader title="Browse by interest" />
+              <div className="space-y-0.5">
+                {interestChips.map((i) => {
+                  const active = interest === i.id
+                  return (
+                    <Link
+                      key={i.id}
+                      href={`/circles?interest=${active ? '' : i.id}`}
+                      className={`flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors ${
+                        active
+                          ? 'bg-primary-bg font-semibold text-primary-strong'
+                          : 'text-muted hover:bg-surface-elevated hover:text-text'
+                      }`}
+                    >
+                      <span className="truncate">{i.name}</span>
+                      <span className="text-xs tabular-nums text-subtle">{i.count}</span>
+                    </Link>
+                  )
+                })}
+              </div>
             </div>
           )}
-        </section>
 
-        {/* Browse by interest */}
-        {interestChips.length > 0 && (
-          <section>
-            <SectionHeader title="Browse by interest" />
-            <div className="flex flex-wrap gap-2">
-              {interestChips.map((i) => {
-                const active = interest === i.id
-                return (
+          {nexuses.length > 0 && (
+            <div>
+              <SectionHeader title="Explore the network" />
+              <div className="space-y-0.5">
+                {nexuses.map((nx) => (
                   <Link
-                    key={i.id}
-                    href={`/circles?interest=${active ? '' : i.id}`}
-                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
-                      active
-                        ? 'border-primary-bg bg-primary-bg text-primary-strong'
-                        : 'border-border bg-surface text-muted hover:border-primary-bg hover:text-text'
-                    }`}
+                    key={nx.slug}
+                    href={`/nexuses/${nx.slug}`}
+                    className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-surface-elevated"
                   >
-                    {i.name}
-                    <span className="text-xs tabular-nums text-subtle">{i.count}</span>
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-elevated text-primary-strong">
+                      <Compass className="h-3.5 w-3.5" />
+                    </span>
+                    <span className="flex-1 truncate text-sm font-medium text-text">{nx.name}</span>
+                    <span className="text-xs tabular-nums text-subtle">{nx.count}</span>
                   </Link>
-                )
-              })}
+                ))}
+              </div>
             </div>
-          </section>
-        )}
+          )}
+        </aside>
 
-        {/* Browse the network by region */}
-        {nexuses.length > 0 && (
+        {/* ── Main column: the circles themselves ──────────────────────────── */}
+        <div className="space-y-10 lg:order-1 lg:col-span-2">
+          {!filtering && locatableCircles.length > 0 && (
+            <section>
+              <Nearby circles={locatableCircles} />
+            </section>
+          )}
+
+          {myCircles.length > 0 && (
+            <section>
+              <SectionHeader title="Your circles" count={myCircles.length} />
+              <div className="grid gap-3 xl:grid-cols-2">
+                {myCircles.map((c) => <CircleCard key={c.id} circle={toCardData(c)} isMember />)}
+              </div>
+            </section>
+          )}
+
           <section>
-            <SectionHeader title="Explore the network" />
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {nexuses.map((nx) => (
-                <Link
-                  key={nx.slug}
-                  href={`/nexuses/${nx.slug}`}
-                  className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm transition-all hover:border-primary-bg hover:shadow-md"
-                >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-elevated text-primary-strong">
-                    <Compass className="h-4 w-4" />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-text">{nx.name}</p>
-                    <p className="text-xs text-subtle">{nx.count} circle{nx.count === 1 ? '' : 's'}</p>
-                  </div>
-                </Link>
-              ))}
-            </div>
+            <SectionHeader title={filtering ? 'Results' : 'Discover'} count={discover.length} />
+            {discover.length === 0 ? (
+              <EmptyState
+                icon={Users}
+                title={filtering ? 'No circles match these filters' : 'No circles yet'}
+                description={filtering ? 'Try a wider search, or start the first one for this corner of the network.' : 'Be the first — start a circle for your neighborhood or an interest.'}
+                action={user ? <NewCircleCompose interests={interests} buttonLabel="Start a circle" /> : undefined}
+              />
+            ) : (
+              <div className="grid gap-3 xl:grid-cols-2">
+                {discover.map((c) => <CircleCard key={c.id} circle={toCardData(c)} isMember={false} />)}
+              </div>
+            )}
           </section>
-        )}
+        </div>
       </div>
     </IndexTemplate>
   )

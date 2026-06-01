@@ -76,7 +76,12 @@ export default function CircleMap({ circles }: { circles: MapCircle[] }) {
         type: 'symbol',
         source: 'circles',
         filter: ['has', 'point_count'],
-        layout: { 'text-field': ['get', 'point_count_abbreviated'], 'text-size': 12 },
+        layout: {
+          'text-field': ['get', 'point_count_abbreviated'],
+          'text-size': 12,
+          // OpenFreeMap hosts Noto Sans; the maplibre default (Open Sans) 404s.
+          'text-font': ['Noto Sans Regular'],
+        },
         paint: { 'text-color': '#2A1B06' },
       })
       map.addLayer({
