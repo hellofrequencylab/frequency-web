@@ -10,6 +10,7 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { CircleCard, type CircleCardData } from '@/components/circles/circle-card'
 import { CirclesToolbar } from '@/components/circles/circles-toolbar'
+import { NearYou } from '@/components/circles/near-you'
 
 type CircleRow = {
   id: string
@@ -231,6 +232,9 @@ export default async function CirclesPage({
         <Stat value={stats.cities} label="Cities" />
         <Stat value={stats.interests} label="Interests" />
       </div>
+
+      {/* Proximity hero: one-tap "find circles near me", distance-ranked. */}
+      <NearYou circles={locatableCircles} />
 
       <CirclesToolbar interests={interests} />
 
