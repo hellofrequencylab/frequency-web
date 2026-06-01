@@ -4,7 +4,8 @@ import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { User, Settings, LogOut, ChevronDown } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
-import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
+import { BETA_CTA_LABEL } from '@/lib/site'
+import { JoinButton } from '@/components/welcome/join-button'
 
 export type UserMenuProfile = {
   display_name: string
@@ -27,8 +28,7 @@ export function AuthButtons({ dark = false }: { dark?: boolean }) {
       >
         Sign in
       </Link>
-      <Link
-        href={BETA_CTA_HREF}
+      <JoinButton
         className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors whitespace-nowrap ${
           dark
             ? 'bg-white text-text hover:bg-surface-elevated'
@@ -36,7 +36,7 @@ export function AuthButtons({ dark = false }: { dark?: boolean }) {
         }`}
       >
         {BETA_CTA_LABEL}
-      </Link>
+      </JoinButton>
     </div>
   )
 }
