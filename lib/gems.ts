@@ -3,9 +3,6 @@
 // Called from server actions after user interactions.
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { Database } from '@/lib/database.types'
-
-type ProfileRow = Database['public']['Tables']['profiles']['Row']
 
 type GemAction =
   | 'post_create'
@@ -74,53 +71,6 @@ export async function awardGems(
   }
 
   return { awarded: true, amount, capped: false }
-}
-
-export async function getGemBalance(profileId: string) {
-  const admin = createAdminClient()
-  const { data } = await admin
-    .from('profiles')
-    .select('lifetime_gems, current_season_gems')
-    .eq('id', profileId)
-    .maybeSingle()
-
-  const p = data as Pick<ProfileRow, 'lifetime_gems' | 'current_season_gems'> | null
-  return {
-    lifetime: p?.lifetime_gems ?? 0,
-    season: p?.current_season_gems ?? 0,
-  }
-}
-
-export async function getTodayGemProgress(profileId: string) {
-  const admin = createAdminClient()
-  const todayStart = new Date()
-  todayStart.setHours(0, 0, 0, 0)
-
-  const { data: transactions } = await admin
-    .from('gem_transactions')
-    .select('action_type, amount')
-    .eq('profile_id', profileId)
-    .gte('created_at', todayStart.toISOString())
-
-  const byAction: Record<string, number> = {}
-  let todayTotal = 0
-  for (const t of transactions ?? []) {
-    byAction[t.action_type] = (byAction[t.action_type] ?? 0) + 1
-    todayTotal += t.amount
-  }
-
-  return { byAction, todayTotal }
-}
-
-export async function getSeasonTrophies(profileId: string) {
-  const admin = createAdminClient()
-  const { data } = await admin
-    .from('season_trophies')
-    .select('*')
-    .eq('profile_id', profileId)
-    .order('season', { ascending: false })
-
-  return data ?? []
 }
 
 export const GEM_TIER_THRESHOLDS = [
