@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Flame, Sparkles, Library } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import {
   listPublicPractices,
@@ -8,7 +9,10 @@ import {
 import { LogPracticeButton } from '@/components/practice/log-practice-button'
 import { AdoptPracticeButton } from '@/components/practice/adopt-practice-button'
 import { CreatePracticeForm } from '@/components/practice/create-practice-form'
-import { IndexTemplate } from '@/components/templates/index-template'
+import { PageHeader, StatStrip } from '@/components/ui/page-header'
+import { SectionHeader } from '@/components/ui/section-header'
+import { EmptyState } from '@/components/ui/empty-state'
+import { getViewerGamStats } from '@/lib/viewer-stats'
 
 export const metadata: Metadata = {
   title: 'Practices',
@@ -17,10 +21,11 @@ export const metadata: Metadata = {
 
 export default async function PracticesPage() {
   const profileId = await getMyProfileId()
-  const [library, mine, recent] = await Promise.all([
+  const [library, mine, recent, gam] = await Promise.all([
     listPublicPractices(),
     profileId ? getMemberPractices(profileId) : Promise.resolve([]),
     profileId ? getRecentPracticeLogs(profileId, 60) : Promise.resolve([]),
+    getViewerGamStats(),
   ])
   const mineIds = new Set(mine.map((p) => p.id))
   const unadopted = library.filter((p) => !mineIds.has(p.id))
@@ -36,112 +41,123 @@ export default async function PracticesPage() {
   const daysLogged = last14.filter((d) => loggedDays.has(d)).length
 
   return (
-    <IndexTemplate
-      title="Practices"
-      description="A practice is what you do. Adopt one for yourself or do your circle's, then log it each day to earn zaps and build your streak."
-    >
-      <div className="max-w-2xl">
-      {profileId && (recent.length > 0 || mine.length > 0) && (
-        <section className="mb-10">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-subtle mb-3">
-            Your activity
-          </h2>
-          <div className="rounded-xl border border-border bg-surface-elevated px-4 py-4">
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <span className="text-sm text-muted">Last 14 days</span>
-              <span className="text-sm font-medium text-text">
-                {daysLogged} {daysLogged === 1 ? 'day' : 'days'} practiced
-              </span>
-            </div>
-            <div className="flex gap-1.5">
-              {last14.map((d) => (
-                <div
-                  key={d}
-                  title={d}
-                  className={`h-6 flex-1 rounded ${
-                    loggedDays.has(d) ? 'bg-primary' : 'border border-border bg-surface'
-                  }`}
-                />
-              ))}
-            </div>
-            {recent.length > 0 && (
-              <ul className="mt-4 space-y-1.5">
-                {recent.slice(0, 5).map((r, i) => (
-                  <li key={i} className="flex items-center justify-between text-sm">
-                    <span className="text-text">{r.title ?? 'A practice'}</span>
-                    <span className="text-subtle">{r.logged_for}</span>
-                  </li>
+    <div>
+      <PageHeader
+        title="Practices"
+        description="This is where the points come from. A practice is the thing you actually do — adopt one, then log it every day to earn zaps, climb the ranks, and keep your streak alive."
+        gam={gam}
+      />
+
+      <StatStrip items={[
+        { value: mine.length, label: 'Your practices' },
+        { value: daysLogged, label: 'Days logged (14d)' },
+        { value: library.length, label: 'In the library' },
+      ]} />
+
+      <div className="max-w-2xl space-y-10">
+        {profileId && (recent.length > 0 || mine.length > 0) && (
+          <section>
+            <SectionHeader title="Your activity" />
+            <div className="rounded-2xl border border-border bg-surface px-5 py-4 shadow-sm">
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <span className="flex items-center gap-1.5 text-sm text-muted">
+                  <Flame className="h-4 w-4 text-primary" />Last 14 days
+                </span>
+                <span className="text-sm font-semibold text-text">
+                  {daysLogged} {daysLogged === 1 ? 'day' : 'days'} practiced
+                </span>
+              </div>
+              <div className="flex gap-1.5">
+                {last14.map((d) => (
+                  <div
+                    key={d}
+                    title={d}
+                    className={`h-7 flex-1 rounded-md ${
+                      loggedDays.has(d) ? 'bg-primary' : 'border border-border bg-surface'
+                    }`}
+                  />
                 ))}
-              </ul>
-            )}
-          </div>
+              </div>
+              {recent.length > 0 && (
+                <ul className="mt-4 space-y-1.5 border-t border-border pt-4">
+                  {recent.slice(0, 5).map((r, i) => (
+                    <li key={i} className="flex items-center justify-between text-sm">
+                      <span className="text-text">{r.title ?? 'A practice'}</span>
+                      <span className="tabular-nums text-subtle">{r.logged_for}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </section>
+        )}
+
+        <section>
+          <SectionHeader title="Your practices" count={mine.length} />
+          {mine.length === 0 ? (
+            <EmptyState
+              icon={Sparkles}
+              title="Nothing adopted yet"
+              description="Pick a practice from the library below to start earning zaps and building a streak."
+            />
+          ) : (
+            <ul className="space-y-3">
+              {mine.map((p) => (
+                <li
+                  key={p.id}
+                  className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-surface px-5 py-4 shadow-sm transition-all hover:border-primary-bg hover:shadow-md"
+                >
+                  <div className="min-w-0">
+                    <p className="font-semibold text-text">{p.title}</p>
+                    {p.description && (
+                      <p className="mt-0.5 line-clamp-2 text-sm text-muted">{p.description}</p>
+                    )}
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <LogPracticeButton practiceId={p.id} />
+                    <AdoptPracticeButton practiceId={p.id} adopted />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
-      )}
 
-      <section className="mb-10">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-subtle mb-3">
-          Your practices
-        </h2>
-        {mine.length === 0 ? (
-          <p className="rounded-xl border border-border bg-surface-elevated px-4 py-6 text-sm text-muted">
-            You haven&rsquo;t adopted any practices yet. Pick one from the library below.
-          </p>
-        ) : (
-          <ul className="space-y-3">
-            {mine.map((p) => (
-              <li
-                key={p.id}
-                className="flex items-center justify-between gap-4 rounded-xl border border-border bg-surface-elevated px-4 py-3"
-              >
-                <div className="min-w-0">
-                  <p className="font-medium text-text">{p.title}</p>
-                  {p.description && (
-                    <p className="mt-0.5 text-sm text-muted line-clamp-2">{p.description}</p>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <LogPracticeButton practiceId={p.id} />
-                  <AdoptPracticeButton practiceId={p.id} adopted />
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section>
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-subtle mb-3">
-          Practice library
-        </h2>
-        {profileId && (
-          <div className="mb-3">
-            <CreatePracticeForm />
-          </div>
-        )}
-        {unadopted.length === 0 ? (
-          <p className="text-sm text-muted">You&rsquo;ve adopted everything in the library.</p>
-        ) : (
-          <ul className="space-y-3">
-            {unadopted.map((p) => (
-              <li
-                key={p.id}
-                className="flex items-center justify-between gap-4 rounded-xl border border-border bg-surface px-4 py-3"
-              >
-                <div className="min-w-0">
-                  <p className="font-medium text-text">{p.title}</p>
-                  {p.description && (
-                    <p className="mt-0.5 text-sm text-muted line-clamp-2">{p.description}</p>
-                  )}
-                </div>
-                <div className="shrink-0">
-                  <AdoptPracticeButton practiceId={p.id} adopted={false} />
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+        <section>
+          <SectionHeader title="Practice library" count={library.length} />
+          {profileId && (
+            <div className="mb-3">
+              <CreatePracticeForm />
+            </div>
+          )}
+          {unadopted.length === 0 ? (
+            <EmptyState
+              icon={Library}
+              title="You've adopted everything"
+              description="Every practice in the library is on your list. Nicely done."
+            />
+          ) : (
+            <ul className="space-y-3">
+              {unadopted.map((p) => (
+                <li
+                  key={p.id}
+                  className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-surface px-5 py-4 shadow-sm transition-all hover:border-primary-bg hover:shadow-md"
+                >
+                  <div className="min-w-0">
+                    <p className="font-semibold text-text">{p.title}</p>
+                    {p.description && (
+                      <p className="mt-0.5 line-clamp-2 text-sm text-muted">{p.description}</p>
+                    )}
+                  </div>
+                  <div className="shrink-0">
+                    <AdoptPracticeButton practiceId={p.id} adopted={false} />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </div>
-    </IndexTemplate>
+    </div>
   )
 }
