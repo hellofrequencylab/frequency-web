@@ -136,10 +136,11 @@ or a new meta-framework. All slower and more locked-in than what you run today.
   a calm compact bar by default, expanding to a ~1/3-screen "progress cockpit" with today's
   move (log practice), a subtle 7-day streak strip, rank progress, the current quest, and The
   Vault (gems to spend) at the very bottom. Kept deliberately small to avoid a spammy dump;
-  challenges/badges live on `/crew`. Opens on tap or a continued downward scroll gesture at the
-  feed bottom (`use-feed-at-bottom.ts`). The reveal is gesture-driven (wheel intent), not
-  position-driven: it never pops open on load, works on short pages (a continued scroll past
-  the end reveals it), and can't oscillate when expanding changes the layout height.
+  challenges/badges live on `/crew`. Capped at 50vh. Opens on tap, OR as the rail's top content
+  scrolls up out of view (an IntersectionObserver on a `[data-rail-top-end]` sentinel makes the
+  dock "follow the top up" on long pages), OR via a continued downward scroll gesture at the
+  bottom (`use-feed-at-bottom.ts`) for short pages. None of the triggers pop it open on load,
+  and the sentinel sits in stable top content so expanding can't oscillate it.
 
 ## Next (eyeball + iterate in `npm run dev`)
 

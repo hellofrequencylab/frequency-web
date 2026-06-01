@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
   Zap, Gem, Flame, ChevronUp, Target, Sparkles, CheckCircle2, ArrowRight, Lock,
@@ -31,9 +31,29 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 export function GameStatsDockClient({ data }: { data: DockData }) {
   const { zaps, gems, streak, rank, todaysMove, last7, rankProgress, quest, vaultGems } = data
   const [manualOpen, setManualOpen] = useState(false)
+  const [topAway, setTopAway] = useState(false)
   const atBottom = useFeedAtBottom()
-  // Opens on tap, or when the feed is scrolled past its bottom (continued scroll).
-  const open = manualOpen || atBottom
+
+  // Follow the top up: reveal once the rail's top content has scrolled above
+  // the top of the feed viewport. (On short pages where the top never clears,
+  // `atBottom` from the continued-scroll gesture covers it.)
+  useEffect(() => {
+    const sentinel = document.querySelector('[data-rail-top-end]')
+    const root = document.querySelector('[data-feed-scroll]') as HTMLElement | null
+    if (!sentinel) return
+    const io = new IntersectionObserver(
+      ([e]) => {
+        const rootTop = e.rootBounds?.top ?? 0
+        setTopAway(!e.isIntersecting && e.boundingClientRect.top < rootTop)
+      },
+      { root, threshold: 0 },
+    )
+    io.observe(sentinel)
+    return () => io.disconnect()
+  }, [])
+
+  // Opens on tap, as the top scrolls away, or on a continued scroll at the bottom.
+  const open = manualOpen || topAway || atBottom
 
   return (
     <div className="sticky bottom-0 z-10 border-t border-border bg-canvas">
@@ -72,7 +92,7 @@ export function GameStatsDockClient({ data }: { data: DockData }) {
         }`}
       >
         <div className="overflow-hidden">
-          <div className="max-h-[36vh] overflow-y-auto px-3 pb-4 pt-1 space-y-4">
+          <div className="max-h-[50vh] overflow-y-auto px-3 pb-4 pt-1 space-y-4">
 
             {/* Today's move — North-Star action, no box */}
             {todaysMove.kind === 'done' ? (
