@@ -605,6 +605,24 @@ shadow, color, and header composition, not a second text face.
 
 ---
 
+## ADR-040: Season rank is derived from zaps, not a stored column
+
+**Status:** Accepted · fixes a tally bug · relates to ADR-013/ADR-024 (currencies)
+**Context:** `profiles.current_season_rank` was set at signup and on the admin "complete
+challenges" path, but `awardZaps()` only incremented `current_season_zaps` / `lifetime_zaps`
+and never recomputed the rank. Result: a member with 400 zaps still displayed as **Ghost**
+(0 to 99) with a broken "0 zaps to Runner" progress bar.
+**Decision:** `lib/season-ranks.ts` gains `rankForZaps(zaps)` (highest tier whose `minZaps`
+threshold is met). It is the **source of truth for display** (crew dashboard + the rail stats
+dock derive the rank from `current_season_zaps`, ignoring the stored column), and `awardZaps()`
+now writes `current_season_rank = rankForZaps(newTotal)` on every award so the column self-heals
+and stays in lockstep going forward.
+**Consequences:** Existing stale rows display correctly immediately (derived) and the stored
+value corrects itself on the next zap award. Season rollover (`reset_season`) is unchanged.
+A future backfill could set every row in one pass, but is not required.
+
+---
+
 ### Decisions intentionally NOT duplicated here
 
 Already fully covered by the repo docs (no ADR needed): the RLS / admin-client

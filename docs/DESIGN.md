@@ -132,6 +132,12 @@ or a new meta-framework. All slower and more locked-in than what you run today.
   `eyebrow` slot. The feed now greets the viewer (time-aware "Good morning, {name}" + today's
   date) instead of a thin lone "Feed" title.
 - **Uniformity.** `practices` migrated onto `IndexTemplate` (was ad-hoc), matching `programs`.
+- **Gamification dock.** The right rail's "Your stats" bar is tap-to-open (`game-stats-dock.tsx`):
+  a calm compact bar by default, expanding to a ~1/3-screen "progress cockpit" with today's
+  move (log practice), a subtle 7-day streak strip, rank progress, the current quest, and The
+  Vault (gems to spend) at the very bottom. Kept deliberately small to avoid a spammy dump;
+  challenges/badges live on `/crew`. Tap-only because auto-expand-on-scroll fed back into the
+  shared scroll height and glitched.
 
 ## Next (eyeball + iterate in `npm run dev`)
 
