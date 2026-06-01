@@ -11,6 +11,7 @@ import { sendWeeklyDigestEmail } from '@/lib/email'
 import { shouldSend } from '@/lib/notification-preferences'
 import { assembleDigestForProfile, listProfileIdsForDigest } from '@/lib/digest'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
+import { log } from '@/lib/log'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,9 +48,12 @@ export async function GET(req: NextRequest) {
     sent++
   }
 
-  console.log(
-    `[weekly-digest] candidates=${profileIds.length} sent=${sent} skipped(empty)=${skipped} optOut=${optOut}`
-  )
+  log.info('cron.weekly_digest', {
+    candidates: profileIds.length,
+    sent,
+    skipped,
+    optOut,
+  })
 
   return NextResponse.json({
     ok:        true,

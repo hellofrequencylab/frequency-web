@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { MessageSquare, Hash, Lock, ArrowRight, Loader2 } from 'lucide-react'
 import { getInitials, relativeTime } from '@/lib/utils'
@@ -22,22 +23,27 @@ export function MessagesPopover({ initialUnread = 0 }: { initialUnread?: number 
     return () => document.removeEventListener('mousedown', onClick)
   }, [open])
 
-  // Fetch data on first open
-  useEffect(() => {
-    if (!open || data) return
-    setLoading(true)
-    fetchMessagesSummary()
-      .then(d => {
-        setData(d)
-        setUnread(d.totalUnread)
-      })
-      .finally(() => setLoading(false))
-  }, [open, data])
+  // Toggle the popover. The summary is fetched lazily on first open from this
+  // handler rather than an effect, keeping the loading-state update out of the
+  // render/effect cascade (react-hooks/set-state-in-effect).
+  function toggle() {
+    const next = !open
+    setOpen(next)
+    if (next && !data && !loading) {
+      setLoading(true)
+      fetchMessagesSummary()
+        .then(d => {
+          setData(d)
+          setUnread(d.totalUnread)
+        })
+        .finally(() => setLoading(false))
+    }
+  }
 
   return (
     <div ref={ref} className="relative">
       <button
-        onClick={() => setOpen(v => !v)}
+        onClick={toggle}
         aria-label="Messages"
         className="relative p-2 rounded-lg text-muted hover:bg-surface-elevated hover:text-text transition-colors"
       >
@@ -127,7 +133,7 @@ export function MessagesPopover({ initialUnread = 0 }: { initialUnread?: number 
                       className="flex items-center gap-2.5 px-4 py-2 hover:bg-surface transition-colors"
                     >
                       {firstAvatar?.avatar_url ? (
-                        <img src={firstAvatar.avatar_url} alt={firstAvatar.display_name} className="w-7 h-7 rounded-full object-cover shrink-0" />
+                        <Image src={firstAvatar.avatar_url} alt={firstAvatar.display_name} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0" />
                       ) : (
                         <div className="w-7 h-7 rounded-full bg-surface-elevated text-muted text-[10px] font-semibold flex items-center justify-center shrink-0 select-none">
                           {firstAvatar ? getInitials(firstAvatar.display_name) : '?'}

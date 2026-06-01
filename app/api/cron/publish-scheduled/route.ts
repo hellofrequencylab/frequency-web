@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
+import { log } from '@/lib/log'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -21,7 +22,7 @@ export async function GET(request: Request) {
     .lte('scheduled_for', now)
 
   if (error) {
-    console.error('[cron/publish-scheduled]', error.message)
+    log.error('cron.publish_scheduled.fetch_failed', { error: error.message })
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
@@ -36,7 +37,7 @@ export async function GET(request: Request) {
     .in('id', ids)
 
   if (updateError) {
-    console.error('[cron/publish-scheduled] update error', updateError.message)
+    log.error('cron.publish_scheduled.update_failed', { error: updateError.message })
     return NextResponse.json({ error: updateError.message }, { status: 500 })
   }
 

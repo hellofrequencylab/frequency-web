@@ -14,6 +14,15 @@ export function getInitials(name: string): string {
 }
 
 /**
+ * ISO timestamp for `days` days before now. Kept as a plain helper (rather than
+ * an inline `Date.now()` in a component body) so reads of the current clock stay
+ * out of React's render path — see react-hooks/purity.
+ */
+export function isoDaysAgo(days: number): string {
+  return new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
+}
+
+/**
  * Returns a relative time string from an ISO datetime.
  * e.g. "just now", "3m ago", "2h ago", "4d ago"
  */

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition, useEffect } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { Loader2, Send } from 'lucide-react'
 import { createReply, fetchReplies } from '@/app/(main)/feed/actions'
@@ -47,7 +48,7 @@ export function PostReplies({
     })
   }, [open, loaded, postId])
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent | React.KeyboardEvent) {
     e.preventDefault()
     if (!body.trim()) return
     const text = body
@@ -95,7 +96,7 @@ export function PostReplies({
               <div key={r.id} className="flex items-start gap-2.5 pl-2">
                 <Link href={r.author ? `/people/${r.author.handle}` : '#'} className="shrink-0">
                   {r.author?.avatar_url ? (
-                    <img src={r.author.avatar_url} alt={r.author.display_name} className="w-6 h-6 rounded-full object-cover" />
+                    <Image src={r.author.avatar_url} alt={r.author.display_name} width={24} height={24} className="w-6 h-6 rounded-full object-cover" />
                   ) : (
                     <div className="w-6 h-6 rounded-full bg-primary-bg text-primary-strong text-[10px] font-semibold flex items-center justify-center">
                       {getInitials(r.author?.display_name ?? '?')}
@@ -132,7 +133,7 @@ export function PostReplies({
                 rows={2}
                 disabled={isPending}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSubmit(e as any)
+                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSubmit(e)
                 }}
                 className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs text-text placeholder-subtle focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/40 dark:focus:ring-primary/30 resize-none disabled:opacity-50"
               />

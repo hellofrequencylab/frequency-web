@@ -1,4 +1,5 @@
 import { notFound, redirect } from 'next/navigation'
+import Image from 'next/image'
 import Link from 'next/link'
 import { ChevronLeft, Users, Hash, Lock, LogIn, LogOut } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -181,7 +182,7 @@ export default async function RoomPage({
                   <div className="group flex items-center gap-2.5 px-4 py-2 hover:bg-surface-elevated/50 transition-colors">
                     <Link href={`/people/${p.handle}`} className="flex items-center gap-2.5 flex-1 min-w-0">
                       {p.avatar_url ? (
-                        <img src={p.avatar_url} alt={p.display_name} className="w-7 h-7 rounded-full object-cover shrink-0" />
+                        <Image src={p.avatar_url} alt={p.display_name} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0" />
                       ) : (
                         <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-[10px] font-semibold flex items-center justify-center shrink-0 select-none">
                           {getInitials(p.display_name)}

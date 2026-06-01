@@ -661,6 +661,111 @@ data sent to Anthropic is data-minimized; crisis/safety routes to humans; AI is
 labeled. See [`BACKLOG.md`](BACKLOG.md) sections D, E, I for the tracked work.
 
 ---
+
+## ADR-042: RLS convergence proceeds own-row-first; aggregates wait for SECURITY DEFINER RPCs + a policy-test harness
+
+**Status:** Accepted (in progress) · executes BACKLOG section A "RLS convergence" ·
+refines the admin-client authorization model in [`ARCHITECTURE.md`](ARCHITECTURE.md).
+**Context:** ~115 files read/write through `createAdminClient()`, which bypasses RLS,
+so authorization lives in application code. The convergence goal is to move reads back
+onto the session client where RLS can enforce them. But not every admin read is equal:
+some are own-row reads the existing policies already cover, while others are cross-user
+aggregates (capacity counts, the feed's scope fan-out, the capability resolver) that
+the session client *cannot* reproduce without leaking or under-counting, because the
+`memberships` SELECT policy only exposes rows in circles the caller already belongs to.
+Migrating those blindly would silently break correctness or open a hole. The repo also
+has no RLS/policy test harness yet (BACKLOG section D), so we cannot yet prove a new or
+relied-upon policy behaves before shipping it.
+**Decision:** Converge in tiers, safest first.
+- **Tier 1 — own-row / public reads (migrate now, no new policy):** reads keyed by the
+  caller's own identity (`auth_user_id = auth.uid()`) or against public-read tables
+  (`circles`/`hubs`/`nexuses`/`outposts`). These are provably covered by existing
+  policies. Done this pass: `lib/auth.ts` `resolveCaller()` (the anchor — every
+  `getMyProfileId`/`getCallerProfile`/`requireProfileId` call across the app now reads
+  identity via RLS), `lib/viewer-stats.ts`, and `components/layout/site-header.tsx`
+  (both own-profile reads on every authenticated page render).
+- **Tier 2 — cross-user aggregates (blocked on RPCs + tests):** capacity counts
+  (`circles/actions.ts`), the feed scope fan-out (`feed-list.tsx`), and the capability
+  resolver (`lib/core/load-capabilities.ts`) get dedicated `SECURITY DEFINER` RPCs with
+  pinned `search_path`, each landing *with* a policy test once the harness exists. Until
+  then they stay on the admin client with their existing in-code authz.
+- **Tier 3 — legitimately service-role (no change):** cron jobs, webhooks, and the
+  admin dashboard (authorization there is "is an admin", which RLS cannot express).
+**Consequences:** The hottest path — caller identity on every authenticated request —
+now respects RLS with zero new policy surface, establishing the pattern without waiting
+on the harness. The remaining bulk is explicitly sequenced behind section D, matching
+the documented critical path (CI gates + harness -> RLS convergence). No migration runs
+without a way to prove the policy it relies on.
+
+---
+
+## ADR-043: Email-pipeline durability — explicit webhook error path + logged dead-letters, no new schema
+
+**Status:** Accepted · hardens ADR-022 (durable async job queue) + ADR-026
+(communications spine) · BACKLOG section A "email integrity".
+**Context:** Two silent-failure holes remained in the email path. (1) The Resend
+webhook (`app/api/webhooks/resend/route.ts`) had no error path: an exception from
+`recordEmailEvent`/`suppress` became an unlogged 500, and an event with no
+recipient was silently skipped — so the auto-suppress integrity signal could be
+lost with no trace. (2) The outbox already retried with exponential backoff and
+parked exhausted jobs at `status='failed'`, but that terminal state was never
+logged or surfaced, and a malformed job was marked `done` (silently dropped). When
+Resend is down, an email exhausts its 5 attempts and dead-letters invisibly.
+**Decision:** Harden in place, **without a schema change** — the repo has two
+migrations committed but not yet `db push`ed, so making running code depend on a
+new column risks breaking prod if migration application lags the deploy.
+- **Webhook return-code contract:** invalid signature → 401; bad JSON → 400;
+  unmappable event (no recipient) → **200 ack** + warn log (retrying can't fix it);
+  transient processing failure → **503** + error log so Resend redelivers.
+  Suppression (delivery-critical, idempotent) runs first and independently of the
+  analytics log, so one failing never skips the other.
+- **Dead-letter = the existing terminal `failed` status** (`DEAD_LETTER_STATUS`),
+  now logged loudly on entry, surfaced by the cron drain when `failed > 0`, and
+  recoverable via `requeueDeadLettered()` / observable via `countDeadLettered()`.
+  A failed claim query now throws instead of masquerading as an empty queue.
+- **Handlers throw on malformed payloads** instead of no-op'ing to `done`, so bad
+  jobs dead-letter visibly for inspection.
+**Consequences:** No email-integrity signal fails silently any more; operators can
+see and replay dead-letters (e.g. after a provider outage) from Vercel logs +
+helpers. A dedicated DLQ table, webhook-replay idempotency (BACKLOG line 20), and
+`FOR UPDATE SKIP LOCKED` claiming (BACKLOG section I) remain future work, layered
+on once their migrations ship — this change is deliberately schema-free and
+deploy-safe.
+
+---
+
+## ADR-044: Tests cover the pure core + security primitives, not DB-touching glue
+
+**Status:** Accepted · corroborated by `vitest.config.ts` and the five `*.test.ts` files ·
+relates to ADR-028 (autonomy is gated on a test harness)
+**Context:** The repo runs against Supabase, where most modules call `createAdminClient()` /
+RPCs and the real guarantees live in **RLS policies and SQL functions** — neither of which a
+Node unit test exercises faithfully. Mocking Supabase end-to-end mostly re-asserts the mock,
+not the behavior, and is high-maintenance. But ADR-028 makes a verification harness
+**non-negotiable** before any AI agent earns autonomy, and some logic is genuinely
+pure/security-critical and cheap to test for real. We needed a stance on *what* `vitest`
+owns so coverage tracks risk instead of chasing a line-count target.
+**Decision:** `vitest` (config: `environment: 'node'`, `include: ['**/*.test.ts']`, `@/`
+alias mirroring tsconfig) targets two things only:
+- **Pure, framework-independent core** — deterministic logic with no I/O. Today:
+  `lib/engagement/currency.ts` (source → currency) and `lib/core/capabilities.ts` (the
+  capability resolver / authz). These are the highest-leverage, lowest-cost tests.
+- **Security-critical primitives** where a bug is silent and dangerous —
+  `lib/webhook-verify.ts` (signature verification), `lib/suppression.ts` (the `shouldSend`
+  consent gate ADR-028 names), and `lib/queue/outbox.ts` (idempotent/retrying job drain).
+
+DB-touching code (`events.ts`, `verify.ts`, `capture.ts`, route handlers) is **not**
+unit-tested in-process. Its correctness is owned by the type system + the RLS/RPC layer, and
+the planned **RLS/authz test suite** (ADR-041 Layer 1, run against a real Postgres) is the
+right tool for it — not Node mocks.
+**Consequences:** Keep the pure core genuinely pure so it stays testable (it's a design
+constraint, not just a convenience). New security primitives ship **with** a `*.test.ts`;
+new DB glue does not grow the mock surface — it waits for the RLS suite. The `shouldSend` +
+`vitest` harness that ADR-028 gates agent autonomy on is **partially in place** (suppression
++ pure core); the remaining gate is the RLS/authz suite. Reach for a mock only when logic is
+both impure and security-critical enough that waiting for the RLS suite is too slow.
+
+---
 ### Decisions intentionally NOT duplicated here
 
 Already fully covered by the repo docs (no ADR needed): the RLS / admin-client

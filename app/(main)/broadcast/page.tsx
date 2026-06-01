@@ -44,7 +44,7 @@ export default async function BroadcastPage() {
     .eq('profile_id', profile.id)
     .eq('status', 'active')
 
-  const circleIds = (memberships ?? []).map((m: any) => m.circle_id as string)
+  const circleIds = (memberships ?? []).map((m) => m.circle_id as string)
 
   // Get hub IDs for those circles
   let hubIds: string[] = []
@@ -53,7 +53,7 @@ export default async function BroadcastPage() {
       .from('circles')
       .select('hub_id')
       .in('id', circleIds)
-    hubIds = (circles ?? []).map((c: any) => c.hub_id).filter(Boolean) as string[]
+    hubIds = (circles ?? []).map((c) => c.hub_id).filter(Boolean) as string[]
   }
 
   // Get nexus IDs for those hubs
@@ -63,7 +63,7 @@ export default async function BroadcastPage() {
       .from('hubs')
       .select('nexus_id')
       .in('id', hubIds)
-    nexusIds = (hubs ?? []).map((h: any) => h.nexus_id).filter(Boolean) as string[]
+    nexusIds = (hubs ?? []).map((h) => h.nexus_id).filter(Boolean) as string[]
   }
 
   // Build dispatch query. Fetch all published dispatches visible to this user
@@ -83,8 +83,7 @@ export default async function BroadcastPage() {
       .limit(40)
 
   // Collect all visible dispatches. By audience targeting + own authored dispatches
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const promises: any[] = [
+  const promises: ReturnType<typeof baseQuery>[] = [
     // Always include dispatches this user authored (creators see their own content)
     baseQuery().eq('author_id', profile.id),
   ]
@@ -101,12 +100,12 @@ export default async function BroadcastPage() {
   // Dedupe + sort by published_at
   const seen = new Set<string>()
   dispatches = combined
-    .filter((d: any) => { if (seen.has(d.id)) return false; seen.add(d.id); return true })
-    .sort((a: any, b: any) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime())
+    .filter(d => { if (seen.has(d.id)) return false; seen.add(d.id); return true })
+    .sort((a, b) => new Date(b.published_at ?? 0).getTime() - new Date(a.published_at ?? 0).getTime())
     .slice(0, 20) as unknown as DispatchRow[]
 
   // Audience options for host+ compose form
-  const isHost = HOST_PLUS.includes((profile as any).community_role as CommunityRole)
+  const isHost = HOST_PLUS.includes((profile as { community_role: CommunityRole }).community_role)
   let namedCircles: { id: string; name: string }[] = []
   let namedHubs:    { id: string; name: string }[] = []
   let namedNexuses: { id: string; name: string }[] = []
@@ -203,7 +202,7 @@ export default async function BroadcastPage() {
             </div>
           ) : (
             dispatches.map(d => (
-              <DispatchCard key={d.id} dispatch={d} viewerRole={(profile as any).community_role as CommunityRole} myProfileId={profile.id} />
+              <DispatchCard key={d.id} dispatch={d} viewerRole={(profile as { community_role: CommunityRole }).community_role} myProfileId={profile.id} />
             ))
           )}
         </div>
@@ -221,7 +220,7 @@ export default async function BroadcastPage() {
               <p className="text-xs text-subtle px-4 py-4 text-center">No events scheduled.</p>
             ) : (
               <ul className="divide-y divide-border">
-                {events.map((e: any) => {
+                {events.map((e) => {
                   const d = new Date(e.starts_at)
                   return (
                     <li key={e.id}>
@@ -257,11 +256,11 @@ export default async function BroadcastPage() {
                 <span className="text-xs font-semibold text-text tracking-wide uppercase">Active Challenges</span>
               </div>
               <ul className="divide-y divide-border">
-                {tasks.map((t: any) => (
+                {tasks.map((t) => (
                   <li key={t.id}>
                     <Link href="/crew" className="flex items-center justify-between px-4 py-2.5 hover:bg-surface-elevated transition-colors">
                       <span className="text-xs text-text line-clamp-1">{t.name}</span>
-                      <span className="text-[11px] font-semibold text-primary shrink-0 ml-2">{(t as any).zaps_value} zaps</span>
+                      <span className="text-[11px] font-semibold text-primary shrink-0 ml-2">{t.zaps_value} zaps</span>
                     </Link>
                   </li>
                 ))}

@@ -48,7 +48,7 @@ export function ProfileForm({
   const [displayName,   setDisplayName]   = useState(initial.displayName)
   const [handle,        setHandle]        = useState(initial.handle)
   const [handleTouched, setHandleTouched] = useState(false)
-  const [handleStatus,  setHandleStatus]  = useState<HandleStatus>('available')
+  const [handleCheck,   setHandleCheck]   = useState<{ handle: string; status: 'available' | 'taken' | 'idle' } | null>(null)
   const [bio,           setBio]           = useState(initial.bio)
   const [avatarUrl,     setAvatarUrl]     = useState(initial.avatarUrl)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(initial.avatarUrl || null)
@@ -61,32 +61,44 @@ export function ProfileForm({
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Debounced handle uniqueness check
+  // Handle status is derived during render — the only thing that genuinely needs
+  // an effect is the async uniqueness check, whose result we store tagged with
+  // the handle it applies to so a stale response can't be shown against newer
+  // input. (Deriving here instead of setting state in the effect avoids the
+  // cascading re-renders that react-hooks/set-state-in-effect warns about.)
+  const handleNeedsCheck =
+    handleTouched &&
+    handle !== initial.handle &&
+    handle.length >= 3 &&
+    HANDLE_RE.test(handle)
+
+  let handleStatus: HandleStatus
+  if (!handleTouched || handle === initial.handle) {
+    handleStatus = 'available'      // own handle / untouched is always fine
+  } else if (!handleNeedsCheck) {
+    handleStatus = 'idle'           // too short or invalid characters
+  } else if (handleCheck?.handle === handle) {
+    handleStatus = handleCheck.status
+  } else {
+    handleStatus = 'checking'       // debouncing or awaiting the network result
+  }
+
   useEffect(() => {
-    if (!handleTouched) return
-    if (!handle || handle.length < 3 || !HANDLE_RE.test(handle)) {
-      setHandleStatus('idle')
-      return
-    }
-    // Own current handle is always available
-    if (handle === initial.handle) {
-      setHandleStatus('available')
-      return
-    }
-    setHandleStatus('checking')
+    if (!handleNeedsCheck) return
+    if (handleCheck?.handle === handle) return // already resolved for this value
     const timer = setTimeout(async () => {
       try {
         const res = await fetch(
           `/api/check-handle?handle=${encodeURIComponent(handle)}&userId=${encodeURIComponent(userId)}`
         )
         const { available } = (await res.json()) as { available: boolean }
-        setHandleStatus(available ? 'available' : 'taken')
+        setHandleCheck({ handle, status: available ? 'available' : 'taken' })
       } catch {
-        setHandleStatus('idle')
+        setHandleCheck({ handle, status: 'idle' })
       }
     }, 500)
     return () => clearTimeout(timer)
-  }, [handle, handleTouched, initial.handle, userId])
+  }, [handle, handleNeedsCheck, handleCheck, userId])
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -168,8 +180,8 @@ export function ProfileForm({
         setSaved(true)
         setAvatarFile(null)
         setTimeout(() => setSaved(false), 3000)
-      } catch (err: any) {
-        setSaveError(err?.message ?? 'Something went wrong.')
+      } catch (err) {
+        setSaveError(err instanceof Error ? err.message : 'Something went wrong.')
       }
     })
   }
@@ -184,6 +196,9 @@ export function ProfileForm({
         <label className={lbl}>Photo</label>
         <div className="flex items-center gap-4">
           {avatarPreview ? (
+            // avatarPreview is a local object-URL (blob:) once a file is picked,
+            // so the Next optimizer can't handle it — a plain <img> is correct.
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={avatarPreview}
               alt="Profile photo"
