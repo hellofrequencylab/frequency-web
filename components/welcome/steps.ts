@@ -3,6 +3,10 @@
 // Front-end prototype — `field` names mirror the eventual profile columns so the
 // persistence layer (Supabase email OTP + profiles + topical_channel_memberships)
 // drops in later without reshaping this.
+//
+// Every beat is a STATEMENT (optional lead-in) followed by a QUESTION the visitor
+// answers. The act of answering is the only confirmation — there are no filler
+// "Continue" taps between beats.
 
 import type { LucideIcon } from 'lucide-react'
 import {
@@ -12,18 +16,17 @@ import {
 export type Choice = { value: string; label: string }
 export type InterestOption = { value: string; label: string; icon: LucideIcon }
 
-// Each input step nudges the reveal outward by one layer; `say` steps are pure
-// narration (tap to continue) and do not advance the reveal.
+// `statement` lines type out first (quiet), then `prompt` (the question), then the
+// control. Answering advances and widens the reveal. `reveal` is the final beat.
 export type Step =
-  | { kind: 'say'; id: string; lines: string[] }
-  | { kind: 'choice'; id: string; field: string; prompt: string; choices: Choice[] }
-  | { kind: 'text'; id: string; field: string; prompt: string; placeholder: string; maxLength?: number }
-  | { kind: 'longtext'; id: string; field: string; prompt: string; placeholder: string; optional?: boolean; maxLength?: number }
-  | { kind: 'handle'; id: string; field: string; prompt: string }
-  | { kind: 'avatar'; id: string; field: string; prompt: string }
-  | { kind: 'interests'; id: string; field: string; prompt: string; options: InterestOption[]; min?: number }
-  | { kind: 'email'; id: string; field: string; prompt: string }
-  | { kind: 'otp'; id: string; field: string; prompt: string }
+  | { kind: 'choice'; id: string; field: string; statement?: string[]; prompt: string; choices: Choice[] }
+  | { kind: 'text'; id: string; field: string; statement?: string[]; prompt: string; placeholder: string; maxLength?: number }
+  | { kind: 'longtext'; id: string; field: string; statement?: string[]; prompt: string; placeholder: string; optional?: boolean; maxLength?: number }
+  | { kind: 'handle'; id: string; field: string; statement?: string[]; prompt: string }
+  | { kind: 'avatar'; id: string; field: string; statement?: string[]; prompt: string }
+  | { kind: 'interests'; id: string; field: string; statement?: string[]; prompt: string; options: InterestOption[]; min?: number }
+  | { kind: 'email'; id: string; field: string; statement?: string[]; prompt: string }
+  | { kind: 'otp'; id: string; field: string; statement?: string[]; prompt: string }
   | { kind: 'reveal'; id: string; headline: string; sub: string }
 
 export const INTERESTS: InterestOption[] = [
@@ -37,9 +40,9 @@ export const INTERESTS: InterestOption[] = [
 ]
 
 export const STEPS: Step[] = [
-  { kind: 'say', id: 'hello', lines: ['Can I ask you something honest?'] },
   {
     kind: 'choice', id: 'belonging', field: 'feltPartOf',
+    statement: ['Can I ask you something honest?'],
     prompt: 'When did you last feel truly part of something?',
     choices: [
       { value: 'this-week', label: 'This week' },
@@ -48,10 +51,10 @@ export const STEPS: Step[] = [
       { value: 'still-looking', label: 'I’m still looking for it' },
     ],
   },
-  { kind: 'say', id: 'reassure', lines: ['Yeah. A lot of us are.', 'That’s the whole reason this place exists.'] },
   {
     kind: 'choice', id: 'seeking', field: 'seeking',
-    prompt: 'What are you really after?',
+    statement: ['Yeah. A lot of us are.', 'That’s the whole reason this place exists.'],
+    prompt: 'So what are you really after?',
     choices: [
       { value: 'belonging', label: 'A place to belong' },
       { value: 'friends', label: 'Real friendships' },
@@ -59,24 +62,44 @@ export const STEPS: Step[] = [
       { value: 'do-things', label: 'Things to do with others' },
     ],
   },
-  { kind: 'say', id: 'lets-go', lines: ['Good. Let’s make this yours.', 'First — what should we call you?'] },
-  { kind: 'text', id: 'name', field: 'displayName', prompt: 'Your name', placeholder: 'e.g. Daniel', maxLength: 40 },
-  { kind: 'handle', id: 'handle', field: 'handle', prompt: 'Claim your handle' },
-  { kind: 'say', id: 'nice', lines: ['Nice to meet you, {displayName}.'] },
-  { kind: 'longtext', id: 'bio', field: 'bio', prompt: 'One line about you', placeholder: 'What should people know?', optional: true, maxLength: 140 },
-  { kind: 'avatar', id: 'avatar', field: 'avatar', prompt: 'Put a face to the name?' },
+  {
+    kind: 'text', id: 'name', field: 'displayName',
+    statement: ['Good. Let’s make this yours.'],
+    prompt: 'What should we call you?', placeholder: 'e.g. Daniel', maxLength: 40,
+  },
+  {
+    kind: 'handle', id: 'handle', field: 'handle',
+    statement: ['Nice to meet you, {displayName}.'],
+    prompt: 'What’s your handle?',
+  },
+  {
+    kind: 'longtext', id: 'bio', field: 'bio',
+    prompt: 'What’s one true thing about you?',
+    placeholder: 'Say it however you want.', optional: true, maxLength: 140,
+  },
+  {
+    kind: 'avatar', id: 'avatar', field: 'avatar',
+    prompt: 'Want to put a face to the name?',
+  },
   {
     kind: 'interests', id: 'interests', field: 'interests',
+    statement: ['This is how we find your people.'],
     prompt: 'What lights you up?', options: INTERESTS, min: 1,
   },
-  { kind: 'say', id: 'almost', lines: ['Almost home.', 'Where should we send your key?'] },
-  { kind: 'email', id: 'email', field: 'email', prompt: 'Your email' },
-  { kind: 'otp', id: 'otp', field: 'otp', prompt: 'Enter the 6-digit code we just sent' },
+  {
+    kind: 'email', id: 'email', field: 'email',
+    statement: ['Almost home.'],
+    prompt: 'Where should we send your key?',
+  },
+  {
+    kind: 'otp', id: 'otp', field: 'otp',
+    prompt: 'What’s the 6-digit code we just sent you?',
+  },
   { kind: 'reveal', id: 'done', headline: 'You’re in.', sub: 'Welcome home, {displayName}.' },
 ]
 
-// How many steps move the reveal outward (everything except pure narration).
-export const REVEAL_STEPS = STEPS.filter((s) => s.kind !== 'say' && s.kind !== 'reveal').length
+// Every beat except the final reveal advances the reveal outward.
+export const REVEAL_STEPS = STEPS.filter((s) => s.kind !== 'reveal').length
 
 // Fill {field} placeholders from collected answers.
 export function fillTemplate(text: string, answers: Record<string, unknown>): string {

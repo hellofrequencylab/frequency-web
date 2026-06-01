@@ -33,8 +33,9 @@ export function WelcomeExperience() {
   const [revealDone, setRevealDone] = useState(0)
 
   // Reveal mask: a sand sheet with a hole in the centre that widens as the
-  // funnel progresses — the world assembling from the interior out.
-  const radius = useSpring(0, { stiffness: 46, damping: 22 })
+  // funnel progresses — the world assembling from the interior out. A soft,
+  // low-stiffness spring so each step opens slowly rather than snapping.
+  const radius = useSpring(0, { stiffness: 16, damping: 26, mass: 1.1 })
   const [fullR, setFullR] = useState(1400)
   const mask = useMotionTemplate`radial-gradient(circle at 50% 50%, transparent ${radius}px, #000 calc(${radius}px + 1px))`
 
@@ -125,7 +126,6 @@ export function WelcomeExperience() {
                 step={step}
                 answers={answers}
                 onCommit={commit}
-                onContinue={advance}
                 onFinish={finish}
               />
               <ProgressDots total={REVEAL_STEPS} done={revealDone} />
@@ -188,38 +188,45 @@ function ProgressDots({ total, done }: { total: number; done: number }) {
 // Re-keyed per step, so the typewriter and any local input state reset cleanly.
 
 function ConversationCard({
-  step, answers, onCommit, onContinue, onFinish,
+  step, answers, onCommit, onFinish,
 }: {
   step: Step
   answers: Answers
   onCommit: (field: string, value: unknown) => void
-  onContinue: () => void
   onFinish: () => void
 }) {
+  const isReveal = step.kind === 'reveal'
+  // Quiet statement line(s) first, then the question — typed as one stream.
+  const statement = (!isReveal && 'statement' in step && step.statement) ? step.statement : []
   const lines = useMemo(() => {
-    if (step.kind === 'say') return step.lines.map((l) => fillTemplate(l, answers))
-    if (step.kind === 'reveal') return [fillTemplate(step.headline, answers)]
-    if ('prompt' in step) return [fillTemplate(step.prompt, answers)]
-    return ['']
+    if (isReveal) return [fillTemplate(step.headline, answers)]
+    return [...statement, step.prompt].map((l) => fillTemplate(l, answers))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, answers])
 
   const { shown, done, skip } = useTypewriter(lines)
+  const statementCount = statement.length
 
   const Prompt = (
     <div className="min-h-[3.5rem]" onClick={() => !done && skip()}>
-      {shown.map((line, i) => (
-        <p
-          key={i}
-          className={
-            step.kind === 'reveal'
-              ? 'font-display text-3xl uppercase tracking-wide text-text'
-              : 'text-lg font-semibold leading-snug text-text'
-          }
-        >
-          {line}
-          {!done && i === shown.length - 1 && <Caret />}
-        </p>
-      ))}
+      {shown.map((line, i) => {
+        const isStatement = !isReveal && i < statementCount
+        return (
+          <p
+            key={i}
+            className={
+              isReveal
+                ? 'font-display text-3xl uppercase tracking-wide text-text'
+                : isStatement
+                  ? 'text-base leading-relaxed text-muted'
+                  : 'mt-1.5 text-lg font-semibold leading-snug text-text'
+            }
+          >
+            {line}
+            {!done && i === shown.length - 1 && <Caret />}
+          </p>
+        )
+      })}
     </div>
   )
 
@@ -234,7 +241,7 @@ function ConversationCard({
             transition={{ duration: 0.35, ease: 'easeOut' }}
             className="mt-5"
           >
-            <StepControl step={step} answers={answers} onCommit={onCommit} onContinue={onContinue} onFinish={onFinish} />
+            <StepControl step={step} answers={answers} onCommit={onCommit} onFinish={onFinish} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -249,17 +256,14 @@ function Caret() {
 // ── The right input for each step kind ──────────────────────────────────────
 
 function StepControl({
-  step, answers, onCommit, onContinue, onFinish,
+  step, answers, onCommit, onFinish,
 }: {
   step: Step
   answers: Answers
   onCommit: (field: string, value: unknown) => void
-  onContinue: () => void
   onFinish: () => void
 }) {
   switch (step.kind) {
-    case 'say':
-      return <TapToContinue onClick={onContinue} />
     case 'choice':
       return (
         <div className="grid gap-2">
@@ -301,14 +305,6 @@ function StepControl({
     default:
       return null
   }
-}
-
-function TapToContinue({ onClick }: { onClick: () => void }) {
-  return (
-    <PrimaryButton onClick={onClick}>
-      Continue <ArrowRight className="h-4 w-4" />
-    </PrimaryButton>
-  )
 }
 
 function PrimaryButton({
