@@ -1,22 +1,16 @@
 import Link from 'next/link'
 import {
-  Sparkles,
-  Activity,
-  Heart,
-  MessagesSquare,
-  Megaphone,
-  Palette,
-  Briefcase,
-  Radio,
-  Users,
-  Circle as CircleIcon,
+  Sparkles, Activity, Heart, MessagesSquare, Megaphone, Palette, Briefcase, Radio, Users, Circle as CircleIcon,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { TuneInButton, TunedInButton } from './channel-toggle'
 import { NewChannelCompose } from './new-channel-compose'
-import { IndexTemplate } from '@/components/templates/index-template'
+import { PageHeader, StatStrip } from '@/components/ui/page-header'
+import { SectionHeader } from '@/components/ui/section-header'
+import { EmptyState } from '@/components/ui/empty-state'
+import { getViewerGamStats } from '@/lib/viewer-stats'
 
 type TopicalChannel = {
   id: string
@@ -29,51 +23,38 @@ type TopicalChannel = {
 }
 
 const CATEGORY_ICON: Record<string, LucideIcon> = {
-  spirituality:     Sparkles,
-  movement:         Activity,
+  spirituality: Sparkles,
+  movement: Activity,
   'holistic-health': Heart,
   'human-relating': MessagesSquare,
-  activism:         Megaphone,
-  creative:         Palette,
+  activism: Megaphone,
+  creative: Palette,
   'business-support': Briefcase,
-}
-
-const CATEGORY_ACCENT: Record<string, string> = {
-  spirituality:     'from-signal/20 to-signal/10  text-signal-strong',
-  movement:         'from-emerald-500/20 to-signal/10    text-signal-strong',
-  'holistic-health': 'from-danger/20 to-danger/10       text-danger',
-  'human-relating': 'from-signal/20 to-signal/10        text-signal-strong',
-  activism:         'from-primary/20 to-danger/10      text-warning dark:text-primary',
-  creative:         'from-amber-500/20 to-primary/10    text-warning',
-  'business-support': 'from-muted/20 to-canvas/10    text-muted dark:text-subtle',
 }
 
 export default async function ChannelsPage() {
   const admin = createAdminClient()
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
 
   let myProfileId: string | null = null
   let canCreate = false
   if (user) {
     const { data: profile } = await admin
-      .from('profiles')
-      .select('id, community_role')
-      .eq('auth_user_id', user.id)
-      .maybeSingle()
+      .from('profiles').select('id, community_role').eq('auth_user_id', user.id).maybeSingle()
     myProfileId = profile?.id ?? null
     const role = (profile as { community_role?: string } | null)?.community_role
     canCreate = role === 'host' || role === 'guide' || role === 'mentor' || role === 'janitor'
   }
 
-  const { data: channels } = await admin
-    .from('topical_channels')
-    .select('id, name, slug, category, description, cover_image, display_order')
-    .eq('is_active', true)
-    .order('display_order', { ascending: true })
+  const [{ data: channels }, gam] = await Promise.all([
+    admin.from('topical_channels')
+      .select('id, name, slug, category, description, cover_image, display_order')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true }),
+    getViewerGamStats(),
+  ])
 
   const channelList = (channels ?? []) as TopicalChannel[]
   const channelIds = channelList.map((c) => c.id)
@@ -84,92 +65,80 @@ export default async function ChannelsPage() {
 
   if (channelIds.length > 0) {
     const [{ data: members }, { data: circles }] = await Promise.all([
-      admin
-        .from('topical_channel_memberships')
-        .select('topical_channel_id')
-        .in('topical_channel_id', channelIds),
-      admin
-        .from('circles')
-        .select('topical_channel_id')
-        .in('topical_channel_id', channelIds)
-        .neq('status', 'archived'),
+      admin.from('topical_channel_memberships').select('topical_channel_id').in('topical_channel_id', channelIds),
+      admin.from('circles').select('topical_channel_id').in('topical_channel_id', channelIds).neq('status', 'archived'),
     ])
-
     ;(members ?? []).forEach((m: { topical_channel_id: string }) => {
       memberCounts[m.topical_channel_id] = (memberCounts[m.topical_channel_id] ?? 0) + 1
     })
     ;(circles ?? []).forEach((c: { topical_channel_id: string | null }) => {
-      if (c.topical_channel_id) {
-        circleCounts[c.topical_channel_id] = (circleCounts[c.topical_channel_id] ?? 0) + 1
-      }
+      if (c.topical_channel_id) circleCounts[c.topical_channel_id] = (circleCounts[c.topical_channel_id] ?? 0) + 1
     })
-
     if (myProfileId) {
       const { data: mine } = await admin
-        .from('topical_channel_memberships')
-        .select('topical_channel_id')
-        .in('topical_channel_id', channelIds)
-        .eq('profile_id', myProfileId)
+        .from('topical_channel_memberships').select('topical_channel_id')
+        .in('topical_channel_id', channelIds).eq('profile_id', myProfileId)
       ;(mine ?? []).forEach((m: { topical_channel_id: string }) => myChannelIds.add(m.topical_channel_id))
     }
   }
 
-  const tunedIn  = channelList.filter((c) => myChannelIds.has(c.id))
-  const explore  = channelList.filter((c) => !myChannelIds.has(c.id))
+  const tunedIn = channelList.filter((c) => myChannelIds.has(c.id))
+  const explore = channelList.filter((c) => !myChannelIds.has(c.id))
+
+  const stats = {
+    interests: channelList.length,
+    tunedIn: Object.values(memberCounts).reduce((s, n) => s + n, 0),
+    circles: Object.values(circleCounts).reduce((s, n) => s + n, 0),
+    categories: new Set(channelList.map((c) => c.category)).size,
+  }
 
   return (
-    <IndexTemplate
-      title="Interests"
-      description="Interests are global topics anyone can tune into. Each one carries a seasonal practice that Circles run locally. Pick what you're into, then find the people doing it near you."
-      action={canCreate ? <NewChannelCompose /> : undefined}
-    >
-      {tunedIn.length > 0 && (
-        <section className="mb-10">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-subtle mb-3">
-            Tuned in
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {tunedIn.map((ch) => (
-              <ChannelCard
-                key={ch.id}
-                channel={ch}
-                memberCount={memberCounts[ch.id] ?? 0}
-                circleCount={circleCounts[ch.id] ?? 0}
-                isTunedIn
-                canToggle={!!myProfileId}
-              />
-            ))}
-          </div>
-        </section>
-      )}
+    <div>
+      <PageHeader
+        title="Interests"
+        description="Find your thing. Interests are the global topics anyone can tune into — each carries a seasonal practice that Circles run locally. Pick what lights you up, then go do it with people near you."
+        action={canCreate ? <NewChannelCompose /> : undefined}
+        gam={gam}
+      />
 
-      <section>
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-subtle mb-3">
-          {tunedIn.length > 0 ? 'Explore more' : 'Explore'}
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {explore.map((ch) => (
-            <ChannelCard
-              key={ch.id}
-              channel={ch}
-              memberCount={memberCounts[ch.id] ?? 0}
-              circleCount={circleCounts[ch.id] ?? 0}
-              isTunedIn={false}
-              canToggle={!!myProfileId}
-            />
-          ))}
-        </div>
-      </section>
-    </IndexTemplate>
+      <StatStrip items={[
+        { value: stats.interests, label: 'Interests' },
+        { value: stats.tunedIn, label: 'Tuned in' },
+        { value: stats.circles, label: 'Circles' },
+        { value: stats.categories, label: 'Categories' },
+      ]} />
+
+      <div className="space-y-10">
+        {tunedIn.length > 0 && (
+          <section>
+            <SectionHeader title="Tuned in" count={tunedIn.length} />
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {tunedIn.map((ch) => (
+                <ChannelCard key={ch.id} channel={ch} memberCount={memberCounts[ch.id] ?? 0} circleCount={circleCounts[ch.id] ?? 0} isTunedIn canToggle={!!myProfileId} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        <section>
+          <SectionHeader title={tunedIn.length > 0 ? 'Explore more' : 'Explore'} count={explore.length} />
+          {explore.length === 0 ? (
+            <EmptyState icon={Radio} title="You're tuned into everything" description="You're following every interest going. Find a circle practicing one near you." />
+          ) : (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {explore.map((ch) => (
+                <ChannelCard key={ch.id} channel={ch} memberCount={memberCounts[ch.id] ?? 0} circleCount={circleCounts[ch.id] ?? 0} isTunedIn={false} canToggle={!!myProfileId} />
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+    </div>
   )
 }
 
 function ChannelCard({
-  channel,
-  memberCount,
-  circleCount,
-  isTunedIn,
-  canToggle,
+  channel, memberCount, circleCount, isTunedIn, canToggle,
 }: {
   channel: TopicalChannel
   memberCount: number
@@ -178,46 +147,35 @@ function ChannelCard({
   canToggle: boolean
 }) {
   const Icon = CATEGORY_ICON[channel.category] ?? Radio
-  const accent = CATEGORY_ACCENT[channel.category] ?? 'from-muted/10 to-muted/5 text-muted'
 
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-border bg-surface shadow-sm hover:border-primary-bg dark:hover:border-primary transition-colors">
-      <div className={`absolute inset-0 bg-gradient-to-br ${accent} opacity-40 pointer-events-none`} />
-      <div className="relative p-5">
-        <div className="flex items-start justify-between gap-3 mb-3">
-          <Link href={`/channels/${channel.slug}`} className="flex items-start gap-3 min-w-0 flex-1">
-            <div className={`flex items-center justify-center w-11 h-11 rounded-xl bg-white/80 dark:bg-canvas/40 backdrop-blur-sm shrink-0 ${CATEGORY_ACCENT[channel.category]?.split(' ').filter((c) => c.startsWith('text-')).join(' ')}`}>
-              <Icon className="w-5 h-5" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h3 className="text-base font-semibold text-text leading-tight">
-                {channel.name}
-              </h3>
-              {channel.description && (
-                <p className="text-xs text-muted mt-0.5 line-clamp-2 leading-relaxed">
-                  {channel.description}
-                </p>
-              )}
-            </div>
+    <div className="flex flex-col rounded-2xl border border-border bg-surface p-5 shadow-sm transition-all hover:border-primary-bg hover:shadow-md">
+      <div className="flex items-start gap-3">
+        {channel.cover_image ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={channel.cover_image} alt={channel.name} className="h-12 w-12 shrink-0 rounded-xl object-cover" />
+        ) : (
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
+            <Icon className="h-6 w-6" />
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <Link href={`/channels/${channel.slug}`} className="text-base font-semibold leading-tight text-text transition-colors hover:text-primary-strong">
+            {channel.name}
           </Link>
-          {canToggle && (
-            isTunedIn
-              ? <TunedInButton channelId={channel.id} channelName={channel.name} />
-              : <TuneInButton channelId={channel.id} slug={channel.slug} />
-          )}
+          {channel.description && <p className="mt-0.5 line-clamp-2 text-sm leading-relaxed text-muted">{channel.description}</p>}
         </div>
+        {canToggle && (
+          isTunedIn
+            ? <TunedInButton channelId={channel.id} channelName={channel.name} />
+            : <TuneInButton channelId={channel.id} slug={channel.slug} />
+        )}
+      </div>
 
-        <div className="flex items-center gap-3 text-[11px] text-muted">
-          <span className="flex items-center gap-1">
-            <Users className="w-3 h-3" />
-            {memberCount.toLocaleString()} tuned in
-          </span>
-          <span className="text-subtle/60">·</span>
-          <span className="flex items-center gap-1">
-            <CircleIcon className="w-3 h-3" />
-            {circleCount} {circleCount === 1 ? 'Circle' : 'Circles'}
-          </span>
-        </div>
+      <div className="mt-auto flex items-center gap-3 pt-4 text-xs text-subtle">
+        <span className="flex items-center gap-1"><Users className="h-3 w-3" />{memberCount.toLocaleString()} tuned in</span>
+        <span className="text-subtle/60">·</span>
+        <span className="flex items-center gap-1"><CircleIcon className="h-3 w-3" />{circleCount} {circleCount === 1 ? 'circle' : 'circles'}</span>
       </div>
     </div>
   )

@@ -62,29 +62,33 @@ ON CONFLICT (id) DO NOTHING;
 -- 5. Circles — user home groups (host_id = NULL → forming)
 -- ---------------------------------------------------------------------------
 
-INSERT INTO circles (id, name, slug, hub_id, type, member_cap, status, about)
+INSERT INTO circles (id, name, slug, hub_id, type, member_cap, status, about, latitude, longitude, neighborhood)
 VALUES
   ('55000000-0000-0000-0000-000000000001',
    'Cardiff Morning Circle', 'cardiff-morning',
    '44000000-0000-0000-0000-000000000001',
    'in-person', 50, 'forming',
-   'Early morning riders based in Cardiff-by-the-Sea. We meet Tue/Thu/Sat at 6 AM.'),
+   'Early morning riders based in Cardiff-by-the-Sea. We meet Tue/Thu/Sat at 6 AM.',
+   33.0203, -117.2797, 'Cardiff-by-the-Sea'),
 
   ('55000000-0000-0000-0000-000000000002',
    'Pacific Beach Evening Circle', 'pb-evening',
    '44000000-0000-0000-0000-000000000001',
    'in-person', 50, 'forming',
-   'Evening rides along the boardwalk and Mission Bay. Meet at Crystal Pier Wed/Fri at 6 PM.'),
+   'Evening rides along the boardwalk and Mission Bay. Meet at Crystal Pier Wed/Fri at 6 PM.',
+   32.7986, -117.2558, 'Crystal Pier, Pacific Beach'),
 
   ('55000000-0000-0000-0000-000000000003',
    'Downtown Online Circle', 'downtown-online',
    '44000000-0000-0000-0000-000000000002',
    'online', 100, 'forming',
-   'Virtual rides and discussions for the downtown San Diego community.'),
+   'Virtual rides and discussions for the downtown San Diego community.',
+   NULL, NULL, NULL),
 
   ('55000000-0000-0000-0000-000000000004',
    'Encinitas Morning Circle', 'encinitas-morning',
    '44000000-0000-0000-0000-000000000003',
    'in-person', 50, 'forming',
-   'Meet at Moonlight Beach parking lot Mon/Wed/Fri at 6:30 AM.')
+   'Meet at Moonlight Beach parking lot Mon/Wed/Fri at 6:30 AM.',
+   33.0461, -117.2969, 'Moonlight Beach, Encinitas')
 ON CONFLICT (id) DO NOTHING;

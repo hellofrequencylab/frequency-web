@@ -59,10 +59,10 @@ Still to do (needs eyeballing, see Next):
 - **Type scale.** Establish a deliberate scale and migrate the tiny fixed-px sizes
   (`text-[10px]/[11px]`, heavy `text-xs`) up. Fixed-px sizes do NOT scale with the root
   bump, so the rail still needs a manual pass.
-- **A characterful header face.** Consider a warm serif (e.g. Fraunces) or soft display for
-  in-app section/hero headings, paired with Nunito body, for real editorial warmth. Anton
-  stays the marketing headline face (it is bold/striking, not "warm," so not for in-app body
-  hierarchy).
+- **A characterful header face.** Trialed a warm serif (Fraunces) for in-app page titles and
+  reverted it: in context it read as a different product, not warmer. Decision: **Nunito bold
+  stays the in-app heading face** (it is already the brand-aligned rounded face). Anton stays
+  the marketing headline face only. See ADR in DECISIONS.md.
 - **Radius consistency.** Standardize on a small set (e.g. `rounded-xl` for cards,
   `rounded-lg` for controls, `rounded-full` for pills).
 
@@ -106,17 +106,71 @@ or a new meta-framework. All slower and more locked-in than what you run today.
 
 ## What changed in this pass
 
-- `globals.css`: soft warm shadow tokens; base font-size 16 to 17px.
-- `components/modules/module-card.tsx`: borderless, soft-shadow, larger sentence-case title
-  (fixes the right-rail "stacked boxes" feel).
+- `globals.css`: soft warm shadow tokens. (Base font-size was bumped to 17px then reverted to
+  16px: the +6% scaled spacing too loose vs the live site; kept at 16.)
+- **Right rail: minimal, borderless modules.** `ModuleCard` dropped its border/shadow/box
+  entirely. A module is now a titled group of rows on the canvas, separated from neighbours by
+  whitespace (`space-y-8`), not a stacked box. Settled the earlier border/borderless flip-flop
+  on the side of borderless: the boxes were the "template" tell. The one intentional card left
+  is "Getting started" (a tinted onboarding CTA, a genuinely distinct object).
+- **Right rail: type scale lifted.** Primary content (member/event/dispatch/leaderboard names)
+  went `text-xs` to `text-sm`; meta went `text-[10px]/[11px]` to `text-xs`; avatars/date-chips
+  bumped a step; rows got more vertical padding. The rail no longer reads "tight".
+- **Feed post stats simplified.** Removed the per-post `w-44` stats sidebar (it repeated the
+  date/scope already in the author row, and stamped a static "EARN React +1 / Reply +2" legend
+  on every card). Posts are now single-column; gamification is a single amber zap chip on the
+  reaction bar showing the zaps the post earned (`reactions x1 + replies x2`). Clean cue, not a
+  ledger.
+- **Scroll model: one shared scroll, sticky rail.** Reworked `app-shell.tsx` from three
+  independently-scrolling columns to the "document + sticky rail" model (X / Reddit): the feed
+  and right rail share **one** scroll container, and the rail is `sticky top-0`, flush to the
+  far-right edge (like the left nav is flush left). No more per-column scrollbar / floating
+  cluster. (An earlier attempt capped+centered the whole cluster at `max-w-[68rem]`; that
+  pulled the rail off the right edge and left a dead gutter beside it, so it was reverted.)
+- **Fuller headers.** `StreamTemplate`/`IndexTemplate` headers gained a hairline bottom rule
+  (matching `DetailTemplate`) for a defined band; `StreamTemplate` gained an optional
+  `eyebrow` slot. The feed now greets the viewer (time-aware "Good morning, {name}" + today's
+  date) instead of a thin lone "Feed" title.
+- **Uniformity.** `practices` migrated onto `IndexTemplate` (was ad-hoc), matching `programs`.
+- **Gamification dock.** The right rail's "Your stats" bar is tap-to-open (`game-stats-dock.tsx`):
+  a calm compact bar by default, expanding to a ~1/3-screen "progress cockpit" with today's
+  move (log practice), a subtle 7-day streak strip, rank progress, the current quest, and The
+  Vault (gems to spend) at the very bottom. Kept deliberately small to avoid a spammy dump;
+  challenges/badges live on `/crew`. Both bottom docks use the SAME mechanism: a compact bar
+  stuck to the bottom, revealing its panel on a continued (force) scroll gesture
+  (`use-feed-at-bottom.ts`) or on tap. The right dock is pushed to the bottom of the rail via a
+  `flex-1` top section; the left lives in the nav column. The reveal is a plain wheel-intent
+  gesture (no IntersectionObserver / position re-eval), which is what keeps it smooth.
 
 ## Next (eyeball + iterate in `npm run dev`)
 
-1. Type-scale pass on the right rail and dense lists (lift the fixed-px sizes).
-2. Trial a warm serif/display for in-app headings.
-3. Reduce remaining bordered boxes on the main surfaces to grouped/editorial where they are
+1. Reduce remaining bordered boxes on the main surfaces to grouped/editorial where they are
    lists, not objects.
-4. A real visual designer (or a tool) for logo + brand marks (out of scope for code).
+2. A real visual designer (or a tool) for logo + brand marks (out of scope for code).
+
+## Browse-page redesign standard ("calm, warm, scannable")
+
+The browse pages (Circles, Interests, Events, Practices, Programs, Partners, Directory,
+Broadcast, Messages, Admin) were structurally fine (templates + tokens) but tactically ad-hoc:
+each hand-rolled its own cards, `text-[10px]/[11px]` fonts, and a page-level "sidebar boxes"
+column that duplicated the list. The standard, applied through Frequency's "a place to be
+human" lens (local, human, not a SaaS dashboard):
+
+1. **One page grammar.** Every page = template header (`IndexTemplate`: title + one-line
+   purpose + primary action + optional `toolbar`) over a body. No bespoke headers.
+2. **Editorial sections, not boxed clutter.** Group with `components/ui/section-header.tsx`
+   (`SectionHeader`: title + count + optional action) and whitespace. Drop page-level sidebar
+   boxes that duplicate the list; the global right rail already carries context.
+3. **Type discipline.** No `text-[10px]/[11px]` for content. Card titles `text-base`, body
+   `text-sm`, meta `text-xs`.
+4. **One entity-card shell.** `rounded-2xl border border-border bg-surface p-5 shadow-sm`,
+   hover-lift (`hover:border-primary-bg hover:shadow-md`), an icon/avatar anchor + title +
+   one-line context + 2-line description + a meta/footer row. Responsive grid
+   (`grid gap-3 sm:grid-cols-2`).
+5. **Beautiful empty states** via `components/ui/empty-state.tsx` (`EmptyState`: icon + title +
+   guidance + optional CTA). Warm amber for actions/accents only.
+
+**Circles is the shipped exemplar** of this standard; the other nine pages roll out to match.
 
 ## Page unification: one grammar for every page
 

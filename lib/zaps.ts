@@ -13,6 +13,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/database.types'
+import { rankForZaps } from '@/lib/season-ranks'
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row']
 
@@ -57,11 +58,16 @@ export async function awardZaps(profileId: string, amount: number): Promise<ZapA
 
   const p = data as Pick<ProfileRow, 'current_season_zaps' | 'lifetime_zaps'> | null
 
+  const newSeasonZaps = (p?.current_season_zaps ?? 0) + amount
+
   await admin
     .from('profiles')
     .update({
-      current_season_zaps: (p?.current_season_zaps ?? 0) + amount,
+      current_season_zaps: newSeasonZaps,
       lifetime_zaps: (p?.lifetime_zaps ?? 0) + amount,
+      // Keep the season rank in lockstep with the zaps total so the tally never
+      // drifts (the previous code left current_season_rank stale).
+      current_season_rank: rankForZaps(newSeasonZaps),
     })
     .eq('id', profileId)
 
