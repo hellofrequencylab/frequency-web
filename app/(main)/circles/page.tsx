@@ -160,9 +160,9 @@ export default async function CirclesPage({
         {/* Expanded map lives here (above the grid) so it pushes content down. */}
         <MapBanner />
 
-        <div className="grid grid-cols-1 gap-x-10 gap-y-8 lg:grid-cols-3">
+        <div className="grid grid-cols-1 items-start gap-x-10 gap-y-8 lg:grid-cols-3">
         {/* ── Interior right column: map preview + browse + explore, borderless ── */}
-        <aside className="space-y-8 lg:order-2">
+        <aside className="space-y-8 lg:col-start-3">
           <MapPreview />
 
           {interestChips.length > 0 && (
@@ -213,7 +213,7 @@ export default async function CirclesPage({
         </aside>
 
         {/* ── Main column: the circles themselves ──────────────────────────── */}
-        <div className="space-y-10 lg:order-1 lg:col-span-2">
+        <div className="space-y-10 lg:col-start-1 lg:col-span-2 lg:row-start-1">
           {myCircles.length > 0 && (
             <section>
               <SectionHeader title="Your circles" count={myCircles.length} />
