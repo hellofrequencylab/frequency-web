@@ -90,8 +90,8 @@ What you already have, and why it is right:
   utilities (`bg-surface`, `text-muted`). This *is* the expansion lever: theming, white-label
   per-Nexus, and dark mode are nearly free because nothing hardcodes a color.
 - **`next/font` self-hosted.** No layout shift, no external font request. Keep.
-- **Owned, shadcn-style components** (copied in, built on Radix primitives for a11y). You own
-  the code, no library churn.
+- **Owned, hand-written components** (Tailwind v4 + `lucide-react` only; no component
+  library, no Radix — see ADR-011). You own the code, no library churn.
 
 For future expansion specifically:
 

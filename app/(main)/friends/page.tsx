@@ -51,7 +51,7 @@ export default async function FriendsPage() {
 
   // Fetch profiles for the other party in each row
   const otherIds = Array.from(new Set(rows.map((r) => (r.user_a_id === myId ? r.user_b_id : r.user_a_id))))
-  let profilesById = new Map<string, ProfileLite>()
+  const profilesById = new Map<string, ProfileLite>()
   if (otherIds.length > 0) {
     const { data: profs } = await admin
       .from('profiles')
