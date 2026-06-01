@@ -123,10 +123,12 @@ npm install
 npm run dev          # Next.js dev server (Turbopack)  → http://localhost:3000
 npx tsc --noEmit     # type check — the project's main correctness gate
 npx eslint <paths>   # lint
+npm test             # Vitest — unit tests for core logic (lib/)
 ```
 
-There is **no test framework** in this repo — `tsc` + ESLint + manual
-verification are the safety nets. Schema source of truth is
+Tests cover pure core logic (authz/capabilities, engagement currency, queue,
+suppression, webhook verification) via **Vitest**; `tsc` + ESLint + manual
+verification remain the primary safety nets for the wider app. Schema source of truth is
 `supabase/migrations/`; see [ARCHITECTURE](docs/ARCHITECTURE.md) for the migration
 workflow and the **authorization model you must follow** (the admin client
 bypasses RLS — authz is enforced in application code today, converging on RLS +
