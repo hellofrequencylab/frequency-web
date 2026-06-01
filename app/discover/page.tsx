@@ -7,16 +7,18 @@ import {
   getPublicEvents,
   getPublicPosts,
   getPublicCounts,
+  getPublicCityClusters,
 } from '@/lib/discover'
 import {
   ChannelCard,
   CircleCard,
   EventRow,
   PostPreview,
-  SignInCta,
   SectionHeading,
 } from '@/components/discover/cards'
-import { SITE_NAME, SOCIAL_PROOF_FLOOR, FOUNDING_PLACE } from '@/lib/site'
+import { DiscoverLocator } from '@/components/discover/discover-locator'
+import { InlineBetaCapture } from '@/components/discover/inline-beta-capture'
+import { SITE_NAME, SOCIAL_PROOF_FLOOR, FOUNDING_PLACE, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import {
   breadcrumbSchema,
@@ -68,12 +70,13 @@ export const metadata: Metadata = {
 export const revalidate = 3600
 
 export default async function DiscoverHubPage() {
-  const [channels, circles, events, posts, counts] = await Promise.all([
+  const [channels, circles, events, posts, counts, cityClusters] = await Promise.all([
     getTopicalChannels(),
     getPublicCircles(6),
     getPublicEvents(4),
     getPublicPosts(3),
     getPublicCounts(),
+    getPublicCityClusters(),
   ])
 
   // Circle counts per channel for the topic grid.
@@ -120,6 +123,42 @@ export default async function DiscoverHubPage() {
             <p className="text-sm text-muted">
               Forming now in {FOUNDING_PLACE} — explore the first circles, topics, and events below.
             </p>
+          )}
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+            <Link
+              href={BETA_CTA_HREF}
+              className="inline-flex items-center gap-2 rounded-2xl bg-primary text-on-primary px-7 py-3 text-base font-bold hover:bg-primary-hover transition-colors"
+            >
+              {BETA_CTA_LABEL} <ArrowRight className="w-4 h-4" />
+            </Link>
+            <Link href="/sign-in" className="text-sm font-semibold text-muted hover:text-text transition-colors">
+              or browse free →
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Locator map (privacy-safe: city centroids only) ──────── */}
+      <section className="bg-surface px-6 py-16 border-b border-border/60">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-8">
+            <SectionHeading eyebrow="Where it's happening" title="Find your area" />
+          </div>
+          {cityClusters.length > 0 ? (
+            <DiscoverLocator cities={cityClusters} />
+          ) : (
+            <div className="mx-auto max-w-2xl rounded-2xl border border-border bg-marketing-canvas p-8 text-center">
+              <p className="mb-1 text-lg font-semibold text-text">We&apos;re starting in {FOUNDING_PLACE}.</p>
+              <p className="mb-5 text-sm text-muted leading-relaxed">
+                The first circles are forming now. Be one of the first in your neighborhood.
+              </p>
+              <Link
+                href={BETA_CTA_HREF}
+                className="inline-flex items-center gap-2 rounded-2xl bg-primary text-on-primary px-7 py-3 text-base font-bold hover:bg-primary-hover transition-colors"
+              >
+                {BETA_CTA_LABEL} <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
           )}
         </div>
       </section>
@@ -199,9 +238,10 @@ export default async function DiscoverHubPage() {
                 <PostPreview key={p.id} post={p} />
               ))}
             </div>
-            <SignInCta
-              title="Join to see more"
-              body="Create a free account to access the full feed, events, and your local circle."
+            <InlineBetaCapture
+              source="discover_posts"
+              heading="Join to see more"
+              body="Get an invite to the beta — the full feed, events, and your local circle. No spam, just an invite when a spot opens."
             />
           </div>
         </section>
@@ -241,12 +281,17 @@ export default async function DiscoverHubPage() {
             Frequency is free to join. Sign up, find a circle near you, and start showing up
             this week.
           </p>
-          <Link
-            href="/sign-in"
-            className="inline-flex items-center gap-2 rounded-2xl bg-primary text-on-primary px-10 py-4 text-base font-bold hover:bg-primary-hover transition-colors"
-          >
-            Join Frequency <ArrowRight className="w-4 h-4" />
-          </Link>
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <Link
+              href={BETA_CTA_HREF}
+              className="inline-flex items-center gap-2 rounded-2xl bg-primary text-on-primary px-10 py-4 text-base font-bold hover:bg-primary-hover transition-colors"
+            >
+              {BETA_CTA_LABEL} <ArrowRight className="w-4 h-4" />
+            </Link>
+            <Link href="/sign-in" className="text-sm font-semibold text-muted hover:text-text transition-colors">
+              or sign in free
+            </Link>
+          </div>
         </div>
       </section>
     </>
