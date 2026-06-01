@@ -37,6 +37,7 @@ import {
 import { getInitials } from '@/lib/utils'
 import { NotificationBell } from '@/components/layout/notification-bell'
 import { MessagesPopover } from '@/components/messages/messages-popover'
+import { ViewAsControl } from '@/components/layout/view-as-control'
 import {
   type CommunityRole,
   ROLE_LABEL,
@@ -126,11 +127,14 @@ function useTheme() {
 function ProfileCard({
   profile,
   role,
+  realRole,
   profileHref,
   expanded = false,
 }: {
   profile: Profile
   role: CommunityRole
+  /** True DB role (ignores any view-as override) — gates the janitor control. */
+  realRole: CommunityRole
   profileHref: string
   /** When true, the extra stats row rises up (mirrors the right stats dock). */
   expanded?: boolean
@@ -176,6 +180,10 @@ function ProfileCard({
           <Settings className="w-4 h-4" />
         </Link>
       </div>
+
+      {/* Janitor-only "view as role" — sits directly under the profile box and
+          opens upward. Hidden for everyone else. */}
+      <ViewAsControl realRole={realRole} currentRole={role} />
 
       {/* Quick profile actions — fill in underneath the bar when the feed hits
           the end, in sync with the right stats dock. */}
@@ -680,6 +688,7 @@ function ProfileBottomBar({
 
 export default function AppShell({
   profile,
+  realRole,
   children,
   sidebar,
   unreadCount = 0,
@@ -688,6 +697,9 @@ export default function AppShell({
   isStaff = false,
 }: {
   profile: Profile
+  /** True DB role, ignoring any view-as override. Defaults to the (effective)
+   *  profile role, so the janitor control only appears for actual janitors. */
+  realRole?: CommunityRole
   children: React.ReactNode
   sidebar?: React.ReactNode
   unreadCount?: number
@@ -698,6 +710,7 @@ export default function AppShell({
   const pathname = usePathname()
   const router = useRouter()
   const role = (profile.community_role ?? 'member') as CommunityRole
+  const effectiveRealRole = realRole ?? role
   const profileHref = `/people/${profile.handle}`
   const { theme, setTheme } = useTheme()
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -890,7 +903,7 @@ export default function AppShell({
           {/* Profile card. Public identity anchor.
               Avatar · name · role badge → public profile · member settings.
               Expands to show points when the feed scroll hits the bottom. */}
-          <ProfileCard profile={profile} role={role} profileHref={profileHref} expanded={atBottom} />
+          <ProfileCard profile={profile} role={role} realRole={effectiveRealRole} profileHref={profileHref} expanded={atBottom} />
         </aside>
 
         {/* Center + right column — ONE shared scroll container (no per-column

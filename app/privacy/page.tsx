@@ -20,7 +20,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-lg font-semibold text-text">1. Who we are</h2>
             <p className="text-muted leading-relaxed">
-              Frequency is operated by Frequency Labs Holdings ("Frequency," "we," "us," or "our").
+              Frequency is operated by Frequency Labs Holdings (&quot;Frequency,&quot; &quot;we,&quot; &quot;us,&quot; or &quot;our&quot;).
               This policy describes how we collect, use, and protect your personal information when
               you use our platform at go.findafreq.com and related services.
             </p>
@@ -78,7 +78,7 @@ export default function PrivacyPage() {
             <p className="text-muted leading-relaxed">
               We use industry-standard security measures including encrypted connections (HTTPS),
               secure authentication tokens, and row-level database security policies. Your data is
-              stored in Supabase's infrastructure with encryption at rest.
+              stored in Supabase&apos;s infrastructure with encryption at rest.
             </p>
           </section>
 
