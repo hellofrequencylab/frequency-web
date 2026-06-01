@@ -148,6 +148,30 @@ or a new meta-framework. All slower and more locked-in than what you run today.
    lists, not objects.
 2. A real visual designer (or a tool) for logo + brand marks (out of scope for code).
 
+## Browse-page redesign standard ("calm, warm, scannable")
+
+The browse pages (Circles, Interests, Events, Practices, Programs, Partners, Directory,
+Broadcast, Messages, Admin) were structurally fine (templates + tokens) but tactically ad-hoc:
+each hand-rolled its own cards, `text-[10px]/[11px]` fonts, and a page-level "sidebar boxes"
+column that duplicated the list. The standard, applied through Frequency's "a place to be
+human" lens (local, human, not a SaaS dashboard):
+
+1. **One page grammar.** Every page = template header (`IndexTemplate`: title + one-line
+   purpose + primary action + optional `toolbar`) over a body. No bespoke headers.
+2. **Editorial sections, not boxed clutter.** Group with `components/ui/section-header.tsx`
+   (`SectionHeader`: title + count + optional action) and whitespace. Drop page-level sidebar
+   boxes that duplicate the list; the global right rail already carries context.
+3. **Type discipline.** No `text-[10px]/[11px]` for content. Card titles `text-base`, body
+   `text-sm`, meta `text-xs`.
+4. **One entity-card shell.** `rounded-2xl border border-border bg-surface p-5 shadow-sm`,
+   hover-lift (`hover:border-primary-bg hover:shadow-md`), an icon/avatar anchor + title +
+   one-line context + 2-line description + a meta/footer row. Responsive grid
+   (`grid gap-3 sm:grid-cols-2`).
+5. **Beautiful empty states** via `components/ui/empty-state.tsx` (`EmptyState`: icon + title +
+   guidance + optional CTA). Warm amber for actions/accents only.
+
+**Circles is the shipped exemplar** of this standard; the other nine pages roll out to match.
+
 ## Page unification: one grammar for every page
 
 The other half of "cobbled together" is structural, not visual. Audit: list pages use
