@@ -19,7 +19,7 @@ import { getCircleCapabilities } from '@/lib/core/load-capabilities'
 import { getCircleActivePractice, listPublicPractices } from '@/lib/practices'
 import { LogPracticeButton } from '@/components/practice/log-practice-button'
 import { SetCirclePractice } from '@/components/practice/set-circle-practice'
-import { getInitials } from '@/lib/utils'
+import { getInitials, isoDaysAgo } from '@/lib/utils'
 import { ProfileFlair } from '@/components/profile-flair'
 import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
 
@@ -124,7 +124,7 @@ export default async function CirclePage({
         .select('id')
         .eq('circle_id', circle.id)
         .eq('status', 'active')
-        .gte('joined_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
+        .gte('joined_at', isoDaysAgo(7)),
     ])
 
     const profiles = (memberProfiles ?? []) as any[]
