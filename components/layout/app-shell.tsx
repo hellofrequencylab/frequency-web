@@ -134,30 +134,40 @@ function ProfileCard({
   /** When true, the extra stats row rises up (mirrors the right stats dock). */
   expanded?: boolean
 }) {
-  const zaps = profile.current_season_zaps ?? 0
-  const gems = profile.lifetime_gems ?? 0
-
   return (
     <div className="border-t border-border">
-      {/* Extra stats — rise up from the bottom when the feed hits the end,
-          in sync with the right stats dock. */}
+      {/* Quick profile actions — rise up from the bottom when the feed hits the
+          end, in sync with the right stats dock. */}
       <div
         className={`grid transition-[grid-template-rows] duration-300 ease-out ${
           expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
         }`}
       >
         <div className="overflow-hidden">
-          <div className="grid grid-cols-2 gap-2 px-3 pt-3">
-            <div className="rounded-xl bg-surface-elevated px-2 py-2.5 text-center">
-              <Zap className="w-4 h-4 text-primary fill-current mx-auto mb-1" />
-              <div className="text-sm font-bold text-text tabular-nums leading-none">{zaps.toLocaleString()}</div>
-              <div className="text-[11px] text-subtle mt-1">Zaps</div>
-            </div>
-            <div className="rounded-xl bg-surface-elevated px-2 py-2.5 text-center">
-              <Gem className="w-4 h-4 text-signal mx-auto mb-1" />
-              <div className="text-sm font-bold text-text tabular-nums leading-none">{gems.toLocaleString()}</div>
-              <div className="text-[11px] text-subtle mt-1">Gems</div>
-            </div>
+          <div className="px-2 pt-2 space-y-0.5">
+            <Link
+              href={profileHref}
+              className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm font-medium text-text hover:bg-surface-elevated transition-colors"
+            >
+              <User className="w-4 h-4 text-muted shrink-0" />
+              View profile
+            </Link>
+            <Link
+              href="/settings"
+              className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm font-medium text-text hover:bg-surface-elevated transition-colors"
+            >
+              <Settings className="w-4 h-4 text-muted shrink-0" />
+              Settings
+            </Link>
+            <form action="/auth/signout" method="POST">
+              <button
+                type="submit"
+                className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-sm font-medium text-danger hover:bg-danger-bg transition-colors"
+              >
+                <LogOut className="w-4 h-4 shrink-0" />
+                Sign out
+              </button>
+            </form>
           </div>
         </div>
       </div>
