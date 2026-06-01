@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import Image from 'next/image'
 import { Pencil, Trash2, Check, X, ShieldCheck, ShieldX } from 'lucide-react'
 import { updateCrewTask, deleteCrewTask, approveVerification, rejectVerification } from '../actions'
 import { getInitials } from '@/lib/utils'
@@ -164,7 +165,7 @@ function VerificationQueue({ items }: { items: PendingVerification[] }) {
         {items.map((c) => (
           <div key={c.id} className="flex items-center gap-3 rounded-2xl border border-warning bg-warning-bg/40 dark:bg-warning-bg/20 shadow-sm px-4 py-3">
             {c.member?.avatar_url ? (
-              <img src={c.member.avatar_url} alt={c.member.display_name} className="w-7 h-7 rounded-full object-cover shrink-0" />
+              <Image src={c.member.avatar_url} alt={c.member.display_name} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0" />
             ) : (
               <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0">
                 {getInitials(c.member?.display_name ?? '?')}

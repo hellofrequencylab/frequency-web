@@ -6,7 +6,8 @@
 > capture. It deliberately does **not** design game mechanics (point values,
 > specific rules, reward economy) — those are product decisions that plug into
 > this backbone later. Specializes [TECH-STRATEGY](TECH-STRATEGY.md) and
-> [SCALE-ARCHITECTURE](SCALE-ARCHITECTURE.md).
+> [SCALE-ARCHITECTURE](SCALE-ARCHITECTURE.md). For the **concrete code** that implements
+> this backbone (`lib/engagement/`), see [ENGAGEMENT-MECHANICS.md](ENGAGEMENT-MECHANICS.md).
 
 ---
 

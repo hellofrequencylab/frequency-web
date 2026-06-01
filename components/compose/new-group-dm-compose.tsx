@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition, useEffect } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { UsersRound, Search, X, Clock, UserPlus } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
@@ -131,7 +132,7 @@ export function NewGroupDMCompose({
               {recipients.map(r => (
                 <span key={r.id} className="inline-flex items-center gap-1 rounded-md bg-primary-bg border border-primary-bg px-2 py-1 text-xs">
                   {r.avatar_url ? (
-                    <img src={r.avatar_url} alt={r.display_name} className="w-4 h-4 rounded-full object-cover" />
+                    <Image src={r.avatar_url} alt={r.display_name} width={16} height={16} className="w-4 h-4 rounded-full object-cover" />
                   ) : (
                     <span className="w-4 h-4 rounded-full bg-primary-bg dark:bg-primary-bg text-primary-strong text-[8px] font-bold flex items-center justify-center">
                       {getInitials(r.display_name)}
@@ -182,8 +183,7 @@ function ResultRow({
   return (
     <div className={`flex items-center gap-2.5 w-full px-3 py-2 ${isFriend ? 'hover:bg-surface-elevated transition-colors' : 'opacity-60'}`}>
       {result.avatar_url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={result.avatar_url} alt={result.display_name} className="w-7 h-7 rounded-full object-cover shrink-0" />
+        <Image src={result.avatar_url} alt={result.display_name} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0" />
       ) : (
         <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-[10px] font-semibold flex items-center justify-center shrink-0">
           {getInitials(result.display_name)}

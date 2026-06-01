@@ -15,7 +15,7 @@ export function SiteImage({
   aspect,
   focal = 'object-center',
   sizes = '100vw',
-  priority = false,
+  preload = false,
   className = '',
 }: {
   src: string
@@ -23,7 +23,8 @@ export function SiteImage({
   aspect?: string
   focal?: string
   sizes?: string
-  priority?: boolean
+  /** Preload the image (use for an LCP element). Next 16 replaced `priority` with `preload`. */
+  preload?: boolean
   className?: string
 }) {
   if (!aspect) {
@@ -34,14 +35,14 @@ export function SiteImage({
         width={0}
         height={0}
         sizes={sizes}
-        priority={priority}
+        preload={preload}
         className={`w-full h-auto ${className}`}
       />
     )
   }
   return (
     <div className={`relative w-full ${className}`} style={{ aspectRatio: aspect }}>
-      <Image src={src} alt={alt} fill sizes={sizes} priority={priority} className={`object-cover ${focal}`} />
+      <Image src={src} alt={alt} fill sizes={sizes} preload={preload} className={`object-cover ${focal}`} />
     </div>
   )
 }

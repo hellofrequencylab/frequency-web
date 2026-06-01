@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition, useEffect } from 'react'
+import Image from 'next/image'
 import { UserPlus, Check, Search } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { inviteToRoom } from '@/app/(main)/messages/rooms/actions'
@@ -110,7 +111,7 @@ export function InviteToRoomButton({ roomId }: { roomId: string }) {
                   }`}
                 >
                   {r.avatar_url ? (
-                    <img src={r.avatar_url} alt={r.display_name} className="w-7 h-7 rounded-full object-cover shrink-0" />
+                    <Image src={r.avatar_url} alt={r.display_name} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0" />
                   ) : (
                     <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-[10px] font-semibold flex items-center justify-center shrink-0">
                       {getInitials(r.display_name)}
