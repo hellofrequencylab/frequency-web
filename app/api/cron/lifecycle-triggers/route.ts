@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendWelcomeEmail } from '@/lib/email'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
+import { log } from '@/lib/log'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,7 +38,7 @@ export async function GET(req: NextRequest) {
     .or('lifecycle_day1_sent.eq.false,lifecycle_day3_sent.eq.false,lifecycle_day7_sent.eq.false')
 
   if (error) {
-    console.error('[lifecycle-triggers] Failed to fetch memberships:', error.message)
+    log.error('cron.lifecycle_triggers.fetch_failed', { error: error.message })
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
@@ -65,7 +66,7 @@ export async function GET(req: NextRequest) {
         ...notifBase,
         type: 'lifecycle_day1',
         body: `Welcome to ${circle.name}! Introduce yourself in the circle feed.`,
-      }).then(({ error: e }) => e && console.error('[lifecycle day1]', e.message))
+      }).then(({ error: e }) => e && log.error('cron.lifecycle_triggers.notify_failed', { day: 1, error: e.message }))
 
       await admin
         .from('memberships')
@@ -81,7 +82,7 @@ export async function GET(req: NextRequest) {
         ...notifBase,
         type: 'lifecycle_day3',
         body: `You've been in ${circle.name} for 3 days. Check out upcoming events and earn some Zaps!`,
-      }).then(({ error: e }) => e && console.error('[lifecycle day3]', e.message))
+      }).then(({ error: e }) => e && log.error('cron.lifecycle_triggers.notify_failed', { day: 3, error: e.message }))
 
       await admin
         .from('memberships')
@@ -97,7 +98,7 @@ export async function GET(req: NextRequest) {
         ...notifBase,
         type: 'lifecycle_day7',
         body: `One week in ${circle.name}! Head to the Crew dashboard to see how you stack up on the leaderboard.`,
-      }).then(({ error: e }) => e && console.error('[lifecycle day7]', e.message))
+      }).then(({ error: e }) => e && log.error('cron.lifecycle_triggers.notify_failed', { day: 7, error: e.message }))
 
       await admin
         .from('memberships')
@@ -108,7 +109,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  console.log(`[lifecycle-triggers] day1=${day1Count} day3=${day3Count} day7=${day7Count}`)
+  log.info('cron.lifecycle_triggers', { day1: day1Count, day3: day3Count, day7: day7Count })
 
   return NextResponse.json({
     ok: true,
