@@ -98,6 +98,11 @@ greenfield initiative (G).
   make `engagement_events` truly multi-subscriber. (M)
 - [ ] Migrate inline email/push send-sites onto the outbox queue with
   `SELECT … FOR UPDATE SKIP LOCKED`. (M)
+- [ ] **Verify `frequencylocal.com` in Resend (blocking for volume — ADR-046).** Transactional
+  mail sends via Resend, a separate path from Workspace mail; with DMARC now at `p=quarantine`,
+  Resend mail is quarantined until the domain is verified in Resend (its own DKIM + SPF).
+  Use a dedicated `send.` subdomain to isolate bulk reputation from the human-mail apex, then
+  set `EMAIL_FROM` to that sender. (S)
 - [ ] Deliverability hardening (subdomain reputation isolation, open/click analytics). (M)
 - [ ] Richer Studio engine: segment builder, pipelines (Kanban), drip sequences,
   React Email templates, non-member unsubscribe. (L)
