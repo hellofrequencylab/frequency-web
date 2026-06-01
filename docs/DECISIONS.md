@@ -698,6 +698,41 @@ the documented critical path (CI gates + harness -> RLS convergence). No migrati
 without a way to prove the policy it relies on.
 
 ---
+
+## ADR-043: Email-pipeline durability — explicit webhook error path + logged dead-letters, no new schema
+
+**Status:** Accepted · hardens ADR-022 (durable async job queue) + ADR-026
+(communications spine) · BACKLOG section A "email integrity".
+**Context:** Two silent-failure holes remained in the email path. (1) The Resend
+webhook (`app/api/webhooks/resend/route.ts`) had no error path: an exception from
+`recordEmailEvent`/`suppress` became an unlogged 500, and an event with no
+recipient was silently skipped — so the auto-suppress integrity signal could be
+lost with no trace. (2) The outbox already retried with exponential backoff and
+parked exhausted jobs at `status='failed'`, but that terminal state was never
+logged or surfaced, and a malformed job was marked `done` (silently dropped). When
+Resend is down, an email exhausts its 5 attempts and dead-letters invisibly.
+**Decision:** Harden in place, **without a schema change** — the repo has two
+migrations committed but not yet `db push`ed, so making running code depend on a
+new column risks breaking prod if migration application lags the deploy.
+- **Webhook return-code contract:** invalid signature → 401; bad JSON → 400;
+  unmappable event (no recipient) → **200 ack** + warn log (retrying can't fix it);
+  transient processing failure → **503** + error log so Resend redelivers.
+  Suppression (delivery-critical, idempotent) runs first and independently of the
+  analytics log, so one failing never skips the other.
+- **Dead-letter = the existing terminal `failed` status** (`DEAD_LETTER_STATUS`),
+  now logged loudly on entry, surfaced by the cron drain when `failed > 0`, and
+  recoverable via `requeueDeadLettered()` / observable via `countDeadLettered()`.
+  A failed claim query now throws instead of masquerading as an empty queue.
+- **Handlers throw on malformed payloads** instead of no-op'ing to `done`, so bad
+  jobs dead-letter visibly for inspection.
+**Consequences:** No email-integrity signal fails silently any more; operators can
+see and replay dead-letters (e.g. after a provider outage) from Vercel logs +
+helpers. A dedicated DLQ table, webhook-replay idempotency (BACKLOG line 20), and
+`FOR UPDATE SKIP LOCKED` claiming (BACKLOG section I) remain future work, layered
+on once their migrations ship — this change is deliberately schema-free and
+deploy-safe.
+
+---
 ### Decisions intentionally NOT duplicated here
 
 Already fully covered by the repo docs (no ADR needed): the RLS / admin-client
