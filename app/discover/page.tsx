@@ -136,6 +136,11 @@ export default async function DiscoverHubPage() {
                 <ChannelCard key={ch.id} channel={ch} circleCount={countByChannel.get(ch.slug) ?? 0} />
               ))}
             </div>
+            <div className="text-center mt-8">
+              <Link href="/discover/topics" className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-strong hover:underline">
+                Browse all topics <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
           </div>
         </section>
       )}
@@ -152,6 +157,11 @@ export default async function DiscoverHubPage() {
                 <EventRow key={e.id} event={e} />
               ))}
             </div>
+            <div className="text-center mt-8">
+              <Link href="/discover/events" className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-strong hover:underline">
+                Browse all events <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
           </div>
         </section>
       )}
@@ -167,6 +177,11 @@ export default async function DiscoverHubPage() {
               {circles.map((c) => (
                 <CircleCard key={c.id} circle={c} />
               ))}
+            </div>
+            <div className="text-center mt-8">
+              <Link href="/discover/circles" className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-strong hover:underline">
+                Browse all circles <ArrowRight className="w-4 h-4" />
+              </Link>
             </div>
           </div>
         </section>
