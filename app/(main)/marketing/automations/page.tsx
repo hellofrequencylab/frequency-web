@@ -20,7 +20,7 @@ export default async function AutomationsPage() {
         <RuleForm triggers={AUTOMATION_TRIGGERS} />
       </div>
 
-      <h2 className="text-xs font-semibold uppercase tracking-wider text-subtle mb-2">Rules</h2>
+      <h2 className="text-sm font-bold text-text mb-2">Rules</h2>
       {rules.length === 0 ? (
         <p className="text-sm text-muted">No automations yet.</p>
       ) : (

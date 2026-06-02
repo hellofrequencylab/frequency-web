@@ -10,7 +10,7 @@ function Stat({ label, value, hint }: { label: string; value: string | number; h
       <p className="text-2xl font-bold text-text leading-none mt-1">
         {typeof value === 'number' ? value.toLocaleString() : value}
       </p>
-      {hint && <p className="text-[11px] text-subtle mt-1">{hint}</p>}
+      {hint && <p className="text-xs text-subtle mt-1">{hint}</p>}
     </div>
   )
 }
@@ -35,7 +35,7 @@ export default async function AnalyticsPage() {
       </div>
 
       <section>
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-subtle mb-2">North Star · Verified practice</h2>
+        <h2 className="text-sm font-bold text-text mb-2">North Star · Verified practice</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <Stat label="Weekly Active Members" value={practice.wam} />
           <Stat label="Practices this week" value={practice.verifiedThisWeek} />
@@ -45,7 +45,7 @@ export default async function AnalyticsPage() {
       </section>
 
       <section>
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-subtle mb-2">
+        <h2 className="text-sm font-bold text-text mb-2">
           Practice retention · weekly cohorts
         </h2>
         {retention.length === 0 ? (
@@ -56,7 +56,7 @@ export default async function AnalyticsPage() {
           <div className="overflow-x-auto rounded-2xl border border-border bg-surface shadow-sm">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-[11px] uppercase tracking-wider text-subtle">
+                <tr className="text-xs uppercase tracking-wider text-subtle">
                   <th className="px-3 py-2 text-left font-semibold">Cohort (week of)</th>
                   <th className="px-3 py-2 text-right font-semibold">Members</th>
                   {Array.from({ length: maxWeeks }).map((_, i) => (
@@ -97,7 +97,7 @@ export default async function AnalyticsPage() {
       </section>
 
       <section>
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-subtle mb-2">CRM</h2>
+        <h2 className="text-sm font-bold text-text mb-2">CRM</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <Stat label="Contacts" value={counts.contacts} />
           <Stat label="Campaigns" value={counts.campaigns} />
@@ -106,7 +106,7 @@ export default async function AnalyticsPage() {
       </section>
 
       <section>
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-subtle mb-2">Email · last {email.windowDays} days</h2>
+        <h2 className="text-sm font-bold text-text mb-2">Email · last {email.windowDays} days</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {EMAIL_TYPES.map((t) => (
             <Stat key={t} label={t[0].toUpperCase() + t.slice(1)} value={email.byType[t] ?? 0} />
