@@ -161,7 +161,7 @@ Mitigations:
 |---|---|---|
 | `CRON_SECRET` | random 32+ char string | **Critical** — cron auth; without it nothing drains/sends |
 | `RESEND_API_KEY` | Resend key | sending (already set) |
-| `EMAIL_FROM` | verified sender, e.g. `Frequency <noreply@frequencylocal.com>` | deliverability (SPF/DKIM/DMARC on that domain) |
+| `EMAIL_FROM` | verified sender, e.g. `Frequency <noreply@send.frequencylocal.com>` | deliverability (verify the `send.` subdomain in Resend — LAUNCH §4) |
 | `NEXT_PUBLIC_SITE_URL` | `https://frequencylocal.com` | confirm/invite links, canonical, sitemap, OG |
 | `NEXT_PUBLIC_APP_URL` | `https://frequencylocal.com` | email logo/footer links |
 | `BETA_CONFIRM_SECRET` | random string (optional) | stable beta token signing (else falls back to service key) |
