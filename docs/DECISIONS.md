@@ -1267,6 +1267,36 @@ reaching the bottom, by design. Reveal is a smooth ~500ms animation triggered by
 pixel-scrubbed height), chosen for robustness over a scrub that would re-introduce the feedback
 loop on the in-flow right dock.
 
+> **Numbering note:** there are two ADR-059s above (the practitioner portal and this dock-reveal
+> one) — a collision from parallel work. Left as-is to avoid renumbering across an open PR; to be
+> de-duped in a docs-hygiene pass.
+
+---
+
+## ADR-061: In-app design overhaul — finish and enforce the kit, foundation-first
+
+**Status:** Accepted · plan of record in [`REDESIGN-INAPP.md`](REDESIGN-INAPP.md) · refines DESIGN.md
++ PAGE-FRAMEWORK.md. (ADR-060 is the Broadcast-bar nav change, in an open PR.)
+**Context:** A full design-team audit (8 reviewers: design-systems foundation + 7 page clusters)
+of every `(main)` interior page found that the "warm editorial community" standard and the three
+shells (Stream/Index/Detail) are **right but half-adopted** — `DetailTemplate` is used by zero
+pages, `IndexTemplate` by 2 of ~10, there is no `RoleActions` or single entity-card, and
+`text-[10/11px]` + identical bordered boxes + missing cross-links recur in nearly every cluster.
+That adoption gap — not the language — is the "clunky / too busy" feeling.
+**Decision:** Do **not** invent a new language. Build the missing kit once (codified type/spacing/
+radius scale; `EntityCard`; `StatCard` with deltas; `RoleActions` off the capability resolver,
+built with its first detail-page consumer; borderless section/rail group; the existing Detail/
+Index/Stream templates), then roll adoption page-by-page in phases: **0 foundation → 1 core member
+loop (shell adoption) → 2 dynamic dashboards (Crew + operator) → 3 admin**, with descriptions,
+cross-links, empty states, and resolver-routed role logic woven through. Cohesion pass (preserve
+flows); dashboards made genuinely dynamic. Each phase is its own reviewable PR; no big-bang. Lens:
+the CREATIVE-PLATFORM persona + voice (missed/exhale/home; "design for the body, not the dashboard").
+**Consequences:** After the foundation lands, page redesign is assembly, not authoring — drift
+can't re-accrue because everything composes from one kit. A few product decisions are pulled out
+for the owner (Hubs/Nexuses social vs structural; remove `/groups`; rename The Vault; make the
+streak UI weekly). Built-but-dark features (NearYou proximity, engagement_score, achievement
+celebration) get surfaced as pages are touched.
+
 ---
 
 ---

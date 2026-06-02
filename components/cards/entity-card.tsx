@@ -1,0 +1,72 @@
+import Link from 'next/link'
+
+// The one browse-card shell — every entity grid (circles, channels, events,
+// partners, people, programs) renders through this so cards read identically
+// everywhere instead of each page hand-rolling its own (DESIGN.md "Browse-page
+// redesign standard" §4; REDESIGN-INAPP defect #4). A card means a *distinct
+// object* — so it earns the soft bordered surface; lists/sections do not (use
+// SectionHeader + whitespace).
+//
+// Presentational + server-friendly (no hooks), so it drops into Server
+// Components. The whole card is the link; an optional `action` (its own client
+// component — e.g. one-tap RSVP / tune-in) floats top-right and handles its own
+// click, so it never nests an interactive control inside the anchor.
+//
+//   <EntityCard
+//     href={`/circles/${c.slug}`}
+//     anchor={<Avatar … />}
+//     title={c.name}
+//     context={`${c.city} · ${c.memberCount} members`}
+//     description={c.about}
+//     meta={<><Pill>…</Pill><span>…</span></>}
+//     action={<TuneInButton … />}
+//   />
+
+export function EntityCard({
+  href,
+  anchor,
+  title,
+  context,
+  description,
+  meta,
+  action,
+}: {
+  href: string
+  /** Avatar / icon chip — the visual anchor. */
+  anchor?: React.ReactNode
+  title: React.ReactNode
+  /** One-line context under the title (city · type · count). */
+  context?: React.ReactNode
+  /** Two-line description (clamped). */
+  description?: React.ReactNode
+  /** Footer row — pills, counts, relative time. */
+  meta?: React.ReactNode
+  /** Optional top-right action; its own client component (handles its click). */
+  action?: React.ReactNode
+}) {
+  return (
+    <div className="group relative">
+      <Link
+        href={href}
+        className="flex h-full flex-col rounded-2xl border border-border bg-surface p-5 shadow-sm transition-colors hover:border-primary-bg hover:shadow-md motion-reduce:transition-none"
+      >
+        <div className="flex items-start gap-3">
+          {anchor && <div className="shrink-0">{anchor}</div>}
+          <div className="min-w-0 flex-1">
+            <h3 className="truncate text-base font-bold leading-tight text-text">{title}</h3>
+            {context && <p className="mt-1 truncate text-xs text-subtle">{context}</p>}
+          </div>
+        </div>
+        {description && (
+          <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-muted">{description}</p>
+        )}
+        {meta && (
+          <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-3 text-xs text-subtle">
+            {meta}
+          </div>
+        )}
+      </Link>
+      {action && <div className="absolute right-4 top-4">{action}</div>}
+    </div>
+  )
+}

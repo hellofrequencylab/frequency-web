@@ -228,6 +228,38 @@ checks.** Today role logic is split across `CreateMenu` (hardcoded role arrays),
 Best done on localhost, page by page with eyes on, since each detail page's tab set and
 action list is a small product decision.
 
+## In-app scale — codified (the standard)
+
+The drift the audit found (94+ `text-[9/10/11px]`, six radii, gaps 0.5→8) recurred because the
+scale was never written down. It is now. **Compose from the kit; never set these ad hoc.** New
+primitives bake these in: `EntityCard`, `StatCard`, `SectionHeader`, `EmptyState`, `ModuleCard`,
+the three templates.
+
+**Type — roles, not pixels. Never `text-[10/11px]` for content.**
+
+| Role | Utility | Where |
+|---|---|---|
+| Page title | `text-2xl font-bold` | template headers (Index/Detail/Stream) |
+| Section title | `text-sm font-bold tracking-tight` | `SectionHeader` / `ModuleCard` (sentence case, **not** all-caps) |
+| Card title | `text-base font-bold` | `EntityCard`, list rows |
+| Body | `text-sm leading-relaxed text-muted` | descriptions, prose |
+| Meta / label | `text-xs text-subtle` | counts, timestamps, footer pills (**floor** — nothing smaller for content) |
+| Big stat | `text-2xl font-bold tabular-nums` | `StatCard` |
+
+Anton stays the **marketing** headline face only; Nunito bold is the in-app heading face (ADR).
+
+**Spacing — three rhythms.** Section gap `space-y-8` (rail modules, page sections) · group gap
+`space-y-3` / `gap-3` (rows, card grids) · tight `space-y-1` / `gap-2` (within a row). Card grids:
+`grid gap-3 sm:grid-cols-2 lg:grid-cols-3`. Stop hand-passing one-off gap values.
+
+**Radius — by role.** `rounded-2xl` cards & tiles (EntityCard, StatCard, modals) · `rounded-lg`
+controls (buttons, inputs, chips) · `rounded-full` pills & avatars. Retire `rounded-xl`/`rounded-3xl`
+for in-app surfaces (keep `rounded-3xl` for marketing feature cards only).
+
+**Elevation.** Soft warm shadow tokens only (already in `globals.css`); a resting card is
+`shadow-sm`, hover lifts to `shadow-md`. A card means a *distinct object* — lists/sections group
+with title + whitespace, not a box each.
+
 ## Sources
 
 UI/typography direction drawn from 2026 trend research:
