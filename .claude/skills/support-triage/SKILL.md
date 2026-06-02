@@ -41,7 +41,9 @@ and flag the open question. Leave it in Drafts. **Do not call any send tool.**
 ## 5. Report
 Per thread: classifier, product, what you drafted, what you filed (issue link). Then: drafts
 awaiting review, issues opened, anything you couldn't handle and why. Remind the user **no
-mail was sent** — drafts are in Gmail to review and send.
+mail was sent** — drafts are in Gmail to review and send. Drafted replies and the summary
+follow the **Presentation Standard** ([`docs/PRESENTATION.md`](../../../docs/PRESENTATION.md)):
+warm, concise, on-brand emails; a scannable summary table.
 
 ## Guardrails
 Never send email, archive, delete, close issues, or write to the database. One draft per

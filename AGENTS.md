@@ -21,3 +21,10 @@ When you plan or ship anything, route the docs by audience. Full spec:
 - **Neither** (pure refactor, no operator impact) → git only; no Notion page.
 
 Keep Notion lean: one page per durable subject, instructional voice, link don't duplicate.
+
+# Presentation standard — applies to everything we produce
+
+Every artifact (doc, report, PR, email draft, in-product UI) is presentation-ready in
+whatever surface it lands in. Polished is the default, not a finishing step. Full spec:
+[`docs/PRESENTATION.md`](docs/PRESENTATION.md). Lead with the answer, prefer scannable
+tables, use the ✅/⏳/⚠️/🔴 status legend, never hardcode hex in UI.
