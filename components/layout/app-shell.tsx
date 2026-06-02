@@ -22,6 +22,7 @@ import {
   X,
   Gem,
   Monitor,
+  ChevronUp,
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { NotificationBell } from '@/components/layout/notification-bell'
@@ -37,7 +38,7 @@ import { PrimaryNav } from '@/components/layout/primary-nav'
 import { BrandMark } from '@/components/layout/brand-mark'
 import { CommunityNav } from '@/components/layout/community-nav'
 import { AREA_ICONS } from '@/components/layout/nav-icons'
-import { useFeedAtBottom } from '@/components/sidebar/use-feed-at-bottom'
+import { DockRevealProvider, useDockRevealed, useHoverScrollReveal } from '@/components/sidebar/dock-reveal'
 
 // The sidebar + community bar are built from NAV_AREAS (lib/nav-areas.ts — the
 // single source of truth shared with the permission grid). The whole menu is
@@ -149,18 +150,24 @@ function ProfileCard({
   role,
   realRole,
   profileHref,
-  expanded = false,
 }: {
   profile: Profile
   role: CommunityRole
   /** True DB role (ignores any view-as override) — gates the janitor control. */
   realRole: CommunityRole
   profileHref: string
-  /** When true, the extra stats row rises up (mirrors the right stats dock). */
-  expanded?: boolean
 }) {
+  // Pinned at the bottom of the (non-scrolling) left rail, so it stays put on a
+  // long scroll. The quick-actions panel rises when the feed reaches its end
+  // (shared reveal), on a hover-scroll over the card, or on tapping the chevron.
+  const [manualOpen, setManualOpen] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
+  const revealed = useDockRevealed()
+  const hoverOpen = useHoverScrollReveal(rootRef)
+  const open = manualOpen || revealed || hoverOpen
+
   return (
-    <div className="border-t border-border">
+    <div ref={rootRef} className="border-t border-border">
       {/* Compact identity bar — matched in height to the right stats bar.
           Stays on top; the quick actions fill in underneath it. */}
       <div className="flex items-center gap-2.5 px-3 py-3.5">
@@ -192,28 +199,28 @@ function ProfileCard({
             {ROLE_LABEL[role]}
           </span>
         </div>
-        <Link
-          href="/settings"
-          aria-label="Member settings"
+        <button
+          type="button"
+          onClick={() => setManualOpen((v) => !v)}
+          aria-expanded={open}
+          aria-label={open ? 'Collapse profile menu' : 'Expand profile menu'}
           className="shrink-0 p-1.5 rounded-md text-subtle hover:text-primary-strong hover:bg-surface-elevated transition-colors"
         >
-          <Settings className="w-4 h-4" />
-        </Link>
+          <ChevronUp className={`w-4 h-4 transition-transform duration-300 ${open ? '' : 'rotate-180'}`} />
+        </button>
       </div>
 
-      {/* Janitor-only "view as role" — sits directly under the profile box and
-          opens upward. Hidden for everyone else. */}
-      <ViewAsControl realRole={realRole} currentRole={role} />
-
-      {/* Quick profile actions — fill in underneath the bar when the feed hits
-          the end, in sync with the right stats dock. */}
+      {/* Quick actions — rise underneath the bar in sync with the right stats
+          dock. View-as (janitor only) leads the menu. */}
       <div
-        className={`grid transition-[grid-template-rows] duration-300 ease-out ${
-          expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+        className={`grid transition-[grid-template-rows] duration-500 ease-out motion-reduce:transition-none ${
+          open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
         }`}
       >
         <div className="overflow-hidden">
           <div className="px-2 pb-3 space-y-0.5">
+            {/* Janitor-only "view as role" — first item; opens upward via portal. */}
+            <ViewAsControl realRole={realRole} currentRole={role} />
             <Link
               href={profileHref}
               className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm font-medium text-text hover:bg-surface-elevated transition-colors"
@@ -683,9 +690,6 @@ export default function AppShell({
   const { theme, setTheme } = useTheme()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [lastPath, setLastPath] = useState(pathname)
-  // Both bottom docks (left profile, right stats) reveal extra stats when the
-  // feed scroll reaches the bottom.
-  const atBottom = useFeedAtBottom()
 
   // Close mobile drawer when the route changes (covers browser back/forward).
   if (lastPath !== pathname) {
@@ -826,6 +830,9 @@ export default function AppShell({
       </header>
 
       {/* ── Body ──────────────────────────────────────────── */}
+      {/* DockRevealProvider runs the single shared scroll listener that rises
+          both bottom docks together (left profile, right stats). */}
+      <DockRevealProvider>
       <div className="flex flex-1 min-h-0 overflow-hidden">
 
         {/* Left nav */}
@@ -856,8 +863,8 @@ export default function AppShell({
 
           {/* Profile card. Public identity anchor.
               Avatar · name · role badge → public profile · member settings.
-              Expands to show points when the feed scroll hits the bottom. */}
-          <ProfileCard profile={profile} role={role} realRole={effectiveRealRole} profileHref={profileHref} expanded={atBottom} />
+              Rises to show quick actions when the feed scroll hits the bottom. */}
+          <ProfileCard profile={profile} role={role} realRole={effectiveRealRole} profileHref={profileHref} />
         </aside>
 
         {/* Center + right column — ONE shared scroll container (no per-column
@@ -887,8 +894,9 @@ export default function AppShell({
 
             {/* Right sidebar. Only on lg+, hidden on admin/settings.
                 The <aside> spans the full content height (flex column) so the
-                rail's top content can scroll while the stats bar stays pinned
-                to the bottom; its left border is a full-height divider. */}
+                rail's top widgets scroll up and out, bringing the stats dock up
+                into view as you near the end; its left border is a full-height
+                divider. */}
             {showSidebar && (
               <aside className="hidden lg:flex flex-col w-72 shrink-0 border-l border-border">
                 {sidebar}
@@ -897,6 +905,7 @@ export default function AppShell({
           </div>
         </div>
       </div>
+      </DockRevealProvider>
 
       {/* ── Mobile bottom bar ─────────────────────────────── */}
       {/* Profile (→ /settings) · Bolts + Gems (→ /crew) */}
