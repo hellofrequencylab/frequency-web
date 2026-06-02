@@ -8,9 +8,9 @@ import { DISCOVER_NAV, SITE_NAV, SITE_NAV_MEMBER, type NavLink } from '@/lib/sit
 
 // ── Unified primary navigation ────────────────────────────────────────────────
 // One nav for every header so the splash and the community feel like one place.
-// Two dropdowns — "Discover" (live community) and "About" (mission + site pages).
-// Members get a mission-focused About menu (no Pricing/Demo). Desktop only; the
-// in-app mobile drawer + the marketing Join CTA cover small screens.
+// "Discover" (the live community) is a dropdown; the mission/site pages sit
+// beside it as flat tabs. Members get a mission-focused set (no Pricing/Demo).
+// Desktop only; the in-app mobile drawer + the marketing Join CTA cover phones.
 
 type Variant = 'light' | 'dark'
 
@@ -121,15 +121,33 @@ export function PrimaryNav({
   className = '',
 }: {
   variant?: Variant
-  /** Members get the mission-focused About menu (no Pricing/Demo). */
+  /** Members get the mission-focused tabs (no Pricing/Demo). */
   audience?: 'visitor' | 'member'
   className?: string
 }) {
-  const aboutItems = audience === 'member' ? SITE_NAV_MEMBER : SITE_NAV
+  const pathname = usePathname()
+  const siteItems = audience === 'member' ? SITE_NAV_MEMBER : SITE_NAV
+  const dark = variant === 'dark'
+
+  const tabClass = (active: boolean) =>
+    `px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
+      dark
+        ? active
+          ? 'text-white bg-white/10'
+          : 'text-white/75 hover:text-white hover:bg-white/10'
+        : active
+          ? 'text-text bg-surface-elevated'
+          : 'text-muted hover:text-text hover:bg-surface-elevated'
+    }`
+
   return (
     <nav className={`hidden md:flex items-center gap-0.5 ${className}`} aria-label="Primary">
       <Dropdown label="Discover" items={DISCOVER_NAV} variant={variant} />
-      <Dropdown label="About" items={aboutItems} variant={variant} />
+      {siteItems.map((item) => (
+        <Link key={item.href} href={item.href} className={tabClass(isItemActive(pathname, item.href))}>
+          {item.label}
+        </Link>
+      ))}
     </nav>
   )
 }
