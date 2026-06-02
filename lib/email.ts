@@ -3,8 +3,10 @@
  *
  * Requires env vars:
  *   RESEND_API_KEY  — your Resend API key (get one at resend.com)
- *   EMAIL_FROM      — sender address, e.g. "Frequency <noreply@yourapp.com>"
- *                     Must be from a verified domain in your Resend account.
+ *   EMAIL_FROM      — sender address, e.g. "Frequency <noreply@send.frequencylocal.com>"
+ *                     Must be from a domain verified in your Resend account. We use the
+ *                     `send.` subdomain so bulk-sender reputation is isolated from the
+ *                     human-mail apex (see docs/LAUNCH.md §4 + ADR-046).
  *
  * If RESEND_API_KEY is absent the helpers log a warning and no-op,
  * so the app never crashes due to a missing mail config.
@@ -16,7 +18,7 @@ import { enqueue } from '@/lib/queue/outbox'
 import { isSuppressed } from '@/lib/suppression'
 
 const apiKey  = process.env.RESEND_API_KEY
-const FROM    = process.env.EMAIL_FROM ?? 'Frequency <noreply@frequencylocal.com>'
+const FROM    = process.env.EMAIL_FROM ?? 'Frequency <noreply@send.frequencylocal.com>'
 
 // Headers required by Gmail/Yahoo bulk-sender policies (RFC 8058).
 // `apiUrl` is the POST endpoint mailbox providers call when a user hits
