@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Users, MessageSquare, Settings2, Activity, TrendingUp, Zap, Flame, Pencil } from 'lucide-react'
+import { Users, MessageSquare, Activity, TrendingUp, Zap, Flame, Pencil } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { leaveCircle, joinCircle } from '../actions'
@@ -20,6 +20,8 @@ import { getCircleCapabilities } from '@/lib/core/load-capabilities'
 import { getCircleActivePractice, listPublicPractices } from '@/lib/practices'
 import { LogPracticeButton } from '@/components/practice/log-practice-button'
 import { SetCirclePractice } from '@/components/practice/set-circle-practice'
+import { DetailTemplate } from '@/components/templates/detail-template'
+import { ModuleCard } from '@/components/modules/module-card'
 import { getInitials, isoDaysAgo } from '@/lib/utils'
 import { ProfileFlair } from '@/components/profile-flair'
 import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
@@ -206,344 +208,327 @@ export default async function CirclePage({
 
   return (
     <div>
+      <Link
+        href="/circles"
+        className="mb-3 inline-block text-xs text-subtle hover:text-muted transition-colors"
+      >
+        ← All circles
+      </Link>
 
-      {/* ── Header. Back-link + status/type pills on the top line, title
-              below, then member count + host and the action buttons, with a
-              boxless collapsible description underneath. ──────────────── */}
-      <div className="flex items-center gap-2.5 mb-1.5 min-w-0">
-        <Link
-          href="/circles"
-          className="text-xs text-subtle hover:text-muted transition-colors shrink-0"
-        >
-          ← All circles
-        </Link>
-        <span className={`text-[11px] px-1.5 py-0.5 rounded-md font-medium shrink-0 ${statusPill.cls}`}>
-          {statusPill.label}
-        </span>
-        <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-signal-bg text-signal-strong font-medium shrink-0">
-          {typeLabel}
-        </span>
-      </div>
-
-      <h1 className="text-2xl font-bold text-text leading-tight truncate mb-3">{circle.name}</h1>
-
-      <div className="flex items-end justify-between gap-4 mb-4">
-        {/* Member count + host, beside each other under the title */}
-        <div className="min-w-0">
-          <div className="flex items-center gap-x-4 gap-y-1 flex-wrap">
-            <span className="flex items-center gap-1.5 text-sm text-muted">
-              <Users className="w-4 h-4" />
-              {circle.member_count} of {circle.member_cap} members
+      {/* Unified Detail header (REDESIGN-INAPP Phase 1): title + status/type
+          badges, member/host + capacity below, capability-gated actions right. */}
+      <DetailTemplate
+        title={circle.name}
+        badges={
+          <>
+            <span className={`text-xs px-1.5 py-0.5 rounded-md font-medium ${statusPill.cls}`}>
+              {statusPill.label}
             </span>
-            {circle.host && (
-              <span className="text-sm text-muted">
-                Host{' '}
-                <Link
-                  href={`/people/${circle.host.handle}`}
-                  className="text-primary-strong hover:underline font-medium"
-                >
-                  {circle.host.display_name}
-                </Link>
-              </span>
-            )}
+            <span className="text-xs px-1.5 py-0.5 rounded-md bg-signal-bg text-signal-strong font-medium">
+              {typeLabel}
+            </span>
             {nearCap && !full && (
-              <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-warning-bg text-warning font-medium">
+              <span className="text-xs px-1.5 py-0.5 rounded-md bg-warning-bg text-warning font-medium">
                 Almost full
               </span>
             )}
-          </div>
-          <div className="mt-2 h-1.5 max-w-xs rounded-full bg-border overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all ${full ? 'bg-danger' : 'bg-primary'}`}
-              style={{ width: `${pct}%` }}
-            />
-          </div>
-        </div>
+          </>
+        }
+        subtitle={
+          <>
+            <div className="flex items-center gap-x-4 gap-y-1 flex-wrap">
+              <span className="flex items-center gap-1.5">
+                <Users className="w-4 h-4" />
+                {circle.member_count} of {circle.member_cap} members
+              </span>
+              {circle.host && (
+                <span>
+                  Host{' '}
+                  <Link
+                    href={`/people/${circle.host.handle}`}
+                    className="text-primary-strong hover:underline font-medium"
+                  >
+                    {circle.host.display_name}
+                  </Link>
+                </span>
+              )}
+            </div>
+            <div className="mt-2 h-1.5 max-w-xs rounded-full bg-border overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all ${full ? 'bg-danger' : 'bg-primary'}`}
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+          </>
+        }
+        actions={
+          <>
+            {canManage && <CircleHostMenu circleId={circle.id} />}
 
-        {/* Create / join / leave actions */}
-        <div className="flex items-center gap-3 shrink-0">
-          {canManage && <CircleHostMenu circleId={circle.id} />}
-
-          {isMember && !isHost && (
-            <form action={leaveCircle.bind(null, circle.id)}>
-              <button
-                type="submit"
-                className="shrink-0 inline-flex items-center justify-center rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-text hover:text-danger hover:border-danger transition-colors"
-              >
-                Leave
-              </button>
-            </form>
-          )}
-
-          {!isMember && myProfileId && !full && (
-            <CrewGateButton
-              isCrew={isCrew}
-              label="Join circle"
-              buttonClassName="shrink-0 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover transition-colors"
-            >
-              <form action={joinCircle.bind(null, circle.id, circle.slug)}>
+            {isMember && !isHost && (
+              <form action={leaveCircle.bind(null, circle.id)}>
                 <button
                   type="submit"
-                  className="shrink-0 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover transition-colors"
+                  className="shrink-0 inline-flex items-center justify-center rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-text hover:text-danger hover:border-danger transition-colors"
                 >
-                  Join circle
+                  Leave
                 </button>
               </form>
-            </CrewGateButton>
-          )}
+            )}
 
-          {!isMember && myProfileId && full && (
-            <span className="shrink-0 rounded-lg border border-border px-4 py-2 text-sm font-medium text-subtle cursor-not-allowed">
-              Circle full
-            </span>
-          )}
-        </div>
-      </div>
+            {!isMember && myProfileId && !full && (
+              <CrewGateButton
+                isCrew={isCrew}
+                label="Join circle"
+                buttonClassName="shrink-0 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors"
+              >
+                <form action={joinCircle.bind(null, circle.id, circle.slug)}>
+                  <button
+                    type="submit"
+                    className="shrink-0 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors"
+                  >
+                    Join circle
+                  </button>
+                </form>
+              </CrewGateButton>
+            )}
 
-      {/* ── About (boxless, collapsible) ───────────── */}
-      {circle.about ? (
-        <div className="mb-6">
-          <CollapsibleAbout text={circle.about} />
-        </div>
-      ) : canManage ? (
-        <Link
-          href={`/circles/${circle.slug}?edit=true`}
-          className="inline-block mb-6 text-xs text-subtle hover:text-primary-strong transition-colors"
-        >
-          + Add a description for your circle
-        </Link>
-      ) : null}
+            {!isMember && myProfileId && full && (
+              <span className="shrink-0 rounded-lg border border-border px-4 py-2 text-sm font-medium text-subtle cursor-not-allowed">
+                Circle full
+              </span>
+            )}
+          </>
+        }
+      >
+        {/* ── About (boxless, collapsible) ───────────── */}
+        {circle.about ? (
+          <div className="mb-6">
+            <CollapsibleAbout text={circle.about} />
+          </div>
+        ) : canManage ? (
+          <Link
+            href={`/circles/${circle.slug}?edit=true`}
+            className="inline-block mb-6 text-xs text-subtle hover:text-primary-strong transition-colors"
+          >
+            + Add a description for your circle
+          </Link>
+        ) : null}
 
-      {/* ── This week's practice (host-assigned). Members log it for
-              practice.verified + zaps; hosts set/change it. ──────────── */}
-      {(circlePractice || canManage) && (
-        <div className="mb-6 rounded-xl border border-border bg-surface-elevated p-4">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-wide text-subtle">
-                This week&rsquo;s practice
-              </p>
-              {circlePractice ? (
-                <>
-                  <p className="mt-1 font-medium text-text">{circlePractice.title}</p>
-                  {circlePractice.description && (
-                    <p className="mt-0.5 text-sm text-muted">{circlePractice.description}</p>
-                  )}
-                </>
-              ) : (
-                <p className="mt-1 text-sm text-muted">No practice set yet.</p>
+        {/* ── This week's practice (host-assigned). Members log it for
+                practice.verified + zaps; hosts set/change it. ──────────── */}
+        {(circlePractice || canManage) && (
+          <div className="mb-6 rounded-2xl border border-border bg-surface-elevated p-4">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-subtle">This week&rsquo;s practice</p>
+                {circlePractice ? (
+                  <>
+                    <p className="mt-1 font-medium text-text">{circlePractice.title}</p>
+                    {circlePractice.description && (
+                      <p className="mt-0.5 text-sm text-muted">{circlePractice.description}</p>
+                    )}
+                  </>
+                ) : (
+                  <p className="mt-1 text-sm text-muted">No practice set yet.</p>
+                )}
+              </div>
+              {circlePractice && isMember && (
+                <div className="shrink-0">
+                  <LogPracticeButton practiceId={circlePractice.id} circleId={circle.id} />
+                </div>
               )}
             </div>
-            {circlePractice && isMember && (
-              <div className="shrink-0">
-                <LogPracticeButton practiceId={circlePractice.id} circleId={circle.id} />
+            {canManage && (
+              <div className="mt-3 pt-3 border-t border-border">
+                <SetCirclePractice
+                  circleId={circle.id}
+                  library={practiceLibrary}
+                  current={circlePractice?.id}
+                />
               </div>
             )}
           </div>
-          {canManage && (
-            <div className="mt-3 pt-3 border-t border-border">
-              <SetCirclePractice
-                circleId={circle.id}
-                library={practiceLibrary}
-                current={circlePractice?.id}
-              />
-            </div>
-          )}
-        </div>
-      )}
+        )}
 
-      {/* ── Body. One border-t spans the row so the feed and the right
-              rail hang off the same line (mirrors Channels). Teaser-gated:
-              below-tier viewers preview, then it blurs (no-op until the gate
-              is switched on — see lib/teaser.ts). ──────── */}
-      <TeaserGate
-        allowed={teaserAllowed({ role: isCrew ? 'crew' : 'member', hasAccess: isMember })}
-        resourceKey={`circle:${circle.id}`}
-        previewSeconds={TEASER_PREVIEW_SECONDS}
-        title="Crew unlocks the full circle"
-        body="Take a look around. Crew members can post, join the conversation, and connect with everyone here."
-      >
-      <div className="border-t border-border pt-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* ── Body. One border-t spans the row so the feed and the right
+                rail hang off the same line (mirrors Channels). Teaser-gated:
+                below-tier viewers preview, then it blurs (no-op until the gate
+                is switched on — see lib/teaser.ts). ──────── */}
+        <TeaserGate
+          allowed={teaserAllowed({ role: isCrew ? 'crew' : 'member', hasAccess: isMember })}
+          resourceKey={`circle:${circle.id}`}
+          previewSeconds={TEASER_PREVIEW_SECONDS}
+          title="Crew unlocks the full circle"
+          body="Take a look around. Crew members can post, join the conversation, and connect with everyone here."
+        >
+          <div className="border-t border-border pt-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-          {/* ── Main: circle feed ────────────────────── */}
-          <div className="lg:col-span-2">
-            <div className="mb-4">
-              <h2 className="text-sm font-semibold text-text">Circle Feed</h2>
-              <p className="text-xs text-muted leading-relaxed mt-0.5">
-                {canManage
-                  ? 'Post to your circle. Toggle Announce to broadcast to the wider hub.'
-                  : 'Share with everyone in this circle.'}
-              </p>
-            </div>
-            {isMember ? (
-              <Composer
-                scopeId={circle.id}
-                visibility="group"
-                placeholder={`Share something with ${circle.name}…`}
-                canAnnounce={canManage}
-              />
-            ) : (
-              myProfileId && (
-                <div className="mb-4 rounded-xl border border-dashed border-border bg-surface/60 px-4 py-3">
-                  <p className="text-xs text-muted leading-relaxed">
-                    Join this circle to post and follow it from your feed.
+              {/* ── Main: circle feed ────────────────────── */}
+              <div className="lg:col-span-2">
+                <div className="mb-4">
+                  <h2 className="text-sm font-bold text-text">Circle feed</h2>
+                  <p className="text-xs text-muted leading-relaxed mt-0.5">
+                    {canManage
+                      ? 'Post to your circle. Toggle Announce to broadcast to the wider hub.'
+                      : 'Share with everyone in this circle.'}
                   </p>
                 </div>
-              )
-            )}
-            <FeedList
-              circleIds={[circle.id]} showPublicLayer={false}
-              myProfileId={myProfileId}
-              viewerRole={canManage ? 'host' : isCrew ? 'crew' : 'member'}
-              emptyMessage="No posts yet. Be the first to share something."
-            />
-          </div>
-
-          {/* ── Right rail: host tools, members, events ─ */}
-          <div className="space-y-6">
-
-            {/* Host tools */}
-            {canManage && (
-              <div className="rounded-2xl border border-primary-bg/50 bg-primary-bg/40 dark:bg-primary-bg/10 shadow-sm px-4 py-3">
-                <div className="flex items-center gap-1.5 mb-2.5">
-                  <Settings2 className="w-3.5 h-3.5 text-primary-strong" />
-                  <span className="text-xs font-semibold text-primary-strong uppercase tracking-wider">
-                    Host Tools
-                  </span>
-                </div>
-                <div className="flex items-center flex-wrap gap-2">
-                  <HostInviteButton circleId={circle.id} />
-                  <Link
-                    href={`/circles/${circle.slug}?edit=true`}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text hover:border-primary-bg dark:hover:border-primary transition-colors"
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                    Edit info
-                  </Link>
-                </div>
-                <div className="mt-2">
-                  <HostInviteEmail circleId={circle.id} />
-                </div>
+                {isMember ? (
+                  <Composer
+                    scopeId={circle.id}
+                    visibility="group"
+                    placeholder={`Share something with ${circle.name}…`}
+                    canAnnounce={canManage}
+                  />
+                ) : (
+                  myProfileId && (
+                    <div className="mb-4 rounded-2xl border border-dashed border-border bg-surface/60 px-4 py-3">
+                      <p className="text-xs text-muted leading-relaxed">
+                        Join this circle to post and follow it from your feed.
+                      </p>
+                    </div>
+                  )
+                )}
+                <FeedList
+                  circleIds={[circle.id]} showPublicLayer={false}
+                  myProfileId={myProfileId}
+                  viewerRole={canManage ? 'host' : isCrew ? 'crew' : 'member'}
+                  emptyMessage="No posts yet. Be the first to share something."
+                />
               </div>
-            )}
 
-            {/* Circle health (host+ only) */}
-            {canManage && healthScore.totalZaps > 0 && (
-              <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
-                <div className="px-4 py-2.5 border-b border-border flex items-center gap-2">
-                  <Activity className="w-3.5 h-3.5 text-signal" />
-                  <h3 className="text-[11px] font-semibold uppercase tracking-wider text-subtle">Circle Health</h3>
-                </div>
-                <div className="grid grid-cols-2 gap-px bg-surface-elevated">
-                  <HealthStat label="Avg Zaps" value={healthScore.avgZaps.toLocaleString()} Icon={Zap} />
-                  <HealthStat label="Total Zaps" value={healthScore.totalZaps.toLocaleString()} Icon={TrendingUp} />
-                  <HealthStat label="Active Streaks" value={String(healthScore.activeStreaks)} Icon={Flame} />
-                  <HealthStat label="Badges Earned" value={String(healthScore.totalAchievements)} Icon={Activity} />
-                  <HealthStat label="New This Week" value={String(healthScore.newThisWeek)} Icon={Users} />
-                </div>
-              </div>
-            )}
+              {/* ── Right rail: host tools, members, events. Borderless modules
+                      (group, don't box). ─────────────────── */}
+              <div className="space-y-8">
 
-            {/* Upcoming events */}
-            <div>
-              <h2 className="text-sm font-semibold text-text mb-3">Circle Events</h2>
-              <UpcomingEventsWidget scopeIds={[circle.id]} />
-            </div>
-
-            {/* Members */}
-            <section>
-              <h2 className="text-sm font-semibold text-text mb-3">
-                Members
-                <span className="ml-2 text-xs font-normal text-subtle">{sorted.length}</span>
-              </h2>
-
-              {sorted.length === 0 ? (
-                <p className="text-sm text-subtle">No members yet.</p>
-              ) : (
-                <div className="space-y-0.5">
-                  {sorted.map(({ profile, volunteer_role }) => {
-                    const memberIsHost = circle.host?.id === profile.id
-                    const isSelf = profile.id === myProfileId
-
-                    return (
-                      <div
-                        key={profile.id}
-                        className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-surface transition-colors -mx-3 group"
+                {/* Host tools */}
+                {canManage && (
+                  <ModuleCard title="Host tools">
+                    <div className="flex items-center flex-wrap gap-2">
+                      <HostInviteButton circleId={circle.id} />
+                      <Link
+                        href={`/circles/${circle.slug}?edit=true`}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text hover:border-primary-bg dark:hover:border-primary transition-colors"
                       >
-                        <Link
-                          href={`/people/${profile.handle}`}
-                          className="flex items-center gap-3 flex-1 min-w-0"
-                        >
-                          {profile.avatar_url ? (
-                            <Image
-                              src={profile.avatar_url}
-                              alt={profile.display_name}
-                              width={32}
-                              height={32}
-                              className="w-8 h-8 rounded-full object-cover shrink-0"
-                            />
-                          ) : (
-                            <div className="w-8 h-8 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none">
-                              {getInitials(profile.display_name)}
-                            </div>
-                          )}
+                        <Pencil className="w-3.5 h-3.5" />
+                        Edit info
+                      </Link>
+                    </div>
+                    <div className="mt-2">
+                      <HostInviteEmail circleId={circle.id} />
+                    </div>
+                  </ModuleCard>
+                )}
 
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="text-sm font-medium text-text truncate">
-                                {profile.display_name}
-                              </span>
-                              {memberIsHost && (
-                                <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-success-bg text-success font-medium">
-                                  Host
-                                </span>
-                              )}
-                              {volunteer_role && !memberIsHost && (
-                                <RoleBadge role={volunteer_role} className="text-[11px] leading-tight" />
-                              )}
-                              <ProfileFlair
-                                rank={profile.current_season_rank}
-                                streak={profile.current_streak}
-                                compact
-                              />
-                            </div>
-                            <p className="text-xs text-subtle mt-0.5">@{profile.handle}</p>
-                          </div>
-                        </Link>
+                {/* Circle health (host+ only) */}
+                {canManage && healthScore.totalZaps > 0 && (
+                  <ModuleCard title="Circle health">
+                    <div className="grid grid-cols-2 gap-2">
+                      <HealthStat label="Avg zaps" value={healthScore.avgZaps.toLocaleString()} Icon={Zap} />
+                      <HealthStat label="Total zaps" value={healthScore.totalZaps.toLocaleString()} Icon={TrendingUp} />
+                      <HealthStat label="Active streaks" value={String(healthScore.activeStreaks)} Icon={Flame} />
+                      <HealthStat label="Badges earned" value={String(healthScore.totalAchievements)} Icon={Activity} />
+                      <HealthStat label="New this week" value={String(healthScore.newThisWeek)} Icon={Users} />
+                    </div>
+                  </ModuleCard>
+                )}
 
-                        {/* Message icon. Visible on hover, hidden for self */}
-                        {!isSelf && isMember && (
-                          <form action={startConversation.bind(null, profile.id)}>
-                            <button
-                              type="submit"
-                              title={`Message ${profile.display_name}`}
-                              className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-subtle hover:text-primary-strong hover:bg-primary-bg transition-all"
+                {/* Upcoming events */}
+                <ModuleCard title="Circle events">
+                  <UpcomingEventsWidget scopeIds={[circle.id]} />
+                </ModuleCard>
+
+                {/* Members */}
+                <ModuleCard title="Members" badge={String(sorted.length)}>
+                  {sorted.length === 0 ? (
+                    <p className="text-sm text-subtle">No members yet.</p>
+                  ) : (
+                    <div className="space-y-0.5">
+                      {sorted.map(({ profile, volunteer_role }) => {
+                        const memberIsHost = circle.host?.id === profile.id
+                        const isSelf = profile.id === myProfileId
+
+                        return (
+                          <div
+                            key={profile.id}
+                            className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-surface transition-colors -mx-3 group"
+                          >
+                            <Link
+                              href={`/people/${profile.handle}`}
+                              className="flex items-center gap-3 flex-1 min-w-0"
                             >
-                              <MessageSquare className="w-4 h-4" />
-                            </button>
-                          </form>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </section>
+                              {profile.avatar_url ? (
+                                <Image
+                                  src={profile.avatar_url}
+                                  alt={profile.display_name}
+                                  width={32}
+                                  height={32}
+                                  className="w-8 h-8 rounded-full object-cover shrink-0"
+                                />
+                              ) : (
+                                <div className="w-8 h-8 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none">
+                                  {getInitials(profile.display_name)}
+                                </div>
+                              )}
+
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="text-sm font-medium text-text truncate">
+                                    {profile.display_name}
+                                  </span>
+                                  {memberIsHost && (
+                                    <span className="text-xs px-1.5 py-0.5 rounded-md bg-success-bg text-success font-medium">
+                                      Host
+                                    </span>
+                                  )}
+                                  {volunteer_role && !memberIsHost && (
+                                    <RoleBadge role={volunteer_role} className="text-xs leading-tight" />
+                                  )}
+                                  <ProfileFlair
+                                    rank={profile.current_season_rank}
+                                    streak={profile.current_streak}
+                                    compact
+                                  />
+                                </div>
+                                <p className="text-xs text-subtle mt-0.5">@{profile.handle}</p>
+                              </div>
+                            </Link>
+
+                            {/* Message icon. Visible on hover, hidden for self */}
+                            {!isSelf && isMember && (
+                              <form action={startConversation.bind(null, profile.id)}>
+                                <button
+                                  type="submit"
+                                  title={`Message ${profile.display_name}`}
+                                  className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-subtle hover:text-primary-strong hover:bg-primary-bg transition-all"
+                                >
+                                  <MessageSquare className="w-4 h-4" />
+                                </button>
+                              </form>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </ModuleCard>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-      </TeaserGate>
+        </TeaserGate>
+      </DetailTemplate>
     </div>
   )
 }
 
 function HealthStat({ label, value, Icon }: { label: string; value: string; Icon: React.ElementType }) {
   return (
-    <div className="bg-surface px-3 py-2.5 text-center">
+    <div className="rounded-2xl bg-surface-elevated/60 px-3 py-2.5 text-center">
       <Icon className="w-3.5 h-3.5 text-subtle mx-auto mb-1" />
-      <div className="text-lg font-bold text-text leading-none">{value}</div>
-      <div className="text-[10px] text-subtle mt-0.5">{label}</div>
+      <div className="text-lg font-bold text-text leading-none tabular-nums">{value}</div>
+      <div className="text-xs text-subtle mt-1">{label}</div>
     </div>
   )
 }
