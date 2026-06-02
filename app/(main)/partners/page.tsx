@@ -1,38 +1,38 @@
-import Link from 'next/link'
 import { MapPin, Store, Tag } from 'lucide-react'
 import { listActivePartners, type PartnerSummary } from '@/lib/partners/read'
-import { PageHeader, StatStrip } from '@/components/ui/page-header'
+import { IndexTemplate } from '@/components/templates/index-template'
+import { StatStrip } from '@/components/ui/page-header'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
-import { getViewerGamStats } from '@/lib/viewer-stats'
+import { EntityCard } from '@/components/cards/entity-card'
 
 export const dynamic = 'force-dynamic'
 
 // Partner directory (Phase 3 partners module). Lists aligned local businesses;
 // members find them here and unlock offers in person (NFC plaque / QR -> zaps).
+// On the shared IndexTemplate + EntityCard (REDESIGN-INAPP Phase 1). The viewer's
+// gamification stats live in the right-rail dock, so no per-page strip here.
 export default async function PartnersPage() {
-  const [partners, gam] = await Promise.all([
-    listActivePartners(),
-    getViewerGamStats(),
-  ])
+  const partners = await listActivePartners()
 
   const cities = new Set(partners.map((p) => p.city).filter(Boolean)).size
   const categories = new Set(partners.map((p) => p.category).filter(Boolean)).size
 
   return (
-    <div>
-      <PageHeader
-        title="Partners"
-        description="Local businesses that back the community. Walk in, tap their plaque or scan a code to unlock a members-only offer — and pick up zaps while you are at it."
-        gam={gam}
-      />
-
+    <IndexTemplate
+      title="Partners"
+      description="Local businesses that back the community. Walk in, tap their plaque or scan a code to unlock a members-only offer — and pick up zaps while you’re at it."
+    >
       {partners.length > 0 && (
-        <StatStrip items={[
-          { value: partners.length, label: 'Partners' },
-          { value: cities, label: 'Cities' },
-          { value: categories, label: 'Categories' },
-        ]} />
+        <div className="mb-6">
+          <StatStrip
+            items={[
+              { value: partners.length, label: 'Partners' },
+              { value: cities, label: 'Cities' },
+              { value: categories, label: 'Categories' },
+            ]}
+          />
+        </div>
       )}
 
       <section>
@@ -51,40 +51,37 @@ export default async function PartnersPage() {
           </div>
         )}
       </section>
-    </div>
+    </IndexTemplate>
   )
 }
 
 function PartnerCard({ partner }: { partner: PartnerSummary }) {
   return (
-    <Link
+    <EntityCard
       href={`/partners/${partner.slug}`}
-      className="flex flex-col rounded-2xl border border-border bg-surface p-5 shadow-sm transition-all hover:border-primary-bg hover:shadow-md"
-    >
-      <div className="flex items-start gap-3">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
+      anchor={
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-bg text-primary-strong">
           <Store className="h-6 w-6" />
         </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-base font-semibold leading-tight text-text">{partner.name}</p>
-          {partner.city && (
-            <span className="mt-0.5 flex items-center gap-1 text-xs text-subtle">
-              <MapPin className="h-3 w-3" />{partner.city}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {partner.description && (
-        <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-muted">{partner.description}</p>
-      )}
-
-      {partner.category && (
-        <div className="mt-auto flex items-center gap-1 pt-4 text-xs text-subtle">
-          <Tag className="h-3 w-3" />
-          <span className="capitalize">{partner.category}</span>
-        </div>
-      )}
-    </Link>
+      }
+      title={partner.name}
+      context={
+        partner.city ? (
+          <span className="flex items-center gap-1">
+            <MapPin className="h-3 w-3" />
+            {partner.city}
+          </span>
+        ) : undefined
+      }
+      description={partner.description ?? undefined}
+      meta={
+        partner.category ? (
+          <span className="flex items-center gap-1 capitalize">
+            <Tag className="h-3 w-3" />
+            {partner.category}
+          </span>
+        ) : undefined
+      }
+    />
   )
 }
