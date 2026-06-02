@@ -15,7 +15,7 @@ async function gate(): Promise<{ profileId: string } | null> {
 export async function generateProposals(): Promise<void> {
   if (!(await gate())) return
   await proposeWinbacks()
-  revalidatePath('/studio/agent')
+  revalidatePath('/marketing/agent')
 }
 
 export async function approveAction(id: string): Promise<void> {
@@ -27,7 +27,7 @@ export async function approveAction(id: string): Promise<void> {
     .update({ status: 'approved', decided_by: staff.profileId, decided_at: new Date().toISOString() })
     .eq('id', id)
   await executeAction(id) // runs through the spine
-  revalidatePath('/studio/agent')
+  revalidatePath('/marketing/agent')
 }
 
 export async function dismissAction(id: string): Promise<void> {
@@ -38,5 +38,5 @@ export async function dismissAction(id: string): Promise<void> {
     .from('agent_actions')
     .update({ status: 'dismissed', decided_by: staff.profileId, decided_at: new Date().toISOString() })
     .eq('id', id)
-  revalidatePath('/studio/agent')
+  revalidatePath('/marketing/agent')
 }
