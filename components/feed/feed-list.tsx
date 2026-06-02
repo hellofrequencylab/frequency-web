@@ -68,7 +68,7 @@ export async function FeedList({
   if (myProfileId) {
     if (!showPublicLayer && circleIds.length > 0) {
       // Circle/channel detail page (RLS convergence surface 4, migration
-      // 20240310000000): scoped posts now come from the `scoped_feed_for_viewer`
+      // 20260602194223): scoped posts now come from the `scoped_feed_for_viewer`
       // SECURITY DEFINER RPC on the user client — the SAME reach predicate as the
       // main feed, constrained to these scope ids. So it respects per-post
       // visibility (a non-member sees only the scope's PUBLIC posts, not its

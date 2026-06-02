@@ -26,7 +26,7 @@ export async function fetchMessagesSummary(): Promise<MessagesSummary> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { totalUnread: 0, rooms: [], conversations: [] }
 
-  // RLS convergence surface 5 (migration 20240311000000): rooms + DMs read on the
+  // RLS convergence surface 5 (migration 20260602195209): rooms + DMs read on the
   // user client (am_room_member / am_participant policies); DM participant profiles
   // come from the message_peer_profiles DEFINER RPC.
   const { data: myProfile } = await supabase

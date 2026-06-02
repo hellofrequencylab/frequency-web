@@ -6,10 +6,17 @@ the beta. The domain switch is env-only in code (`lib/site.ts` reads
 
 ## 1. Pre-flight (done)
 
-- The 5 migrations are applied to prod (`zap_config`, `practices`, `seasons`,
-  `blocked_users`, plus the `agent_actions` backfill). Verify: `npx supabase migration list`
-  shows all applied (Local and Remote match).
+- **All migrations are applied to prod** through the RLS-convergence surfaces (notifications,
+  friendships, feed, feed-detail, messages, room-thread) + `fk_indexes`. The repo migration
+  filenames were reconciled to the versions actually in the remote history (the last four were
+  applied under apply-time timestamps), so `supabase migration list` now shows **Local ==
+  Remote**. Verify: `npx supabase migration list` (no pending Local-only files).
 - Feature work is merged to `main`; Vercel auto-deploys `main`.
+- **Code is domain-ready:** `lib/site.ts` `SITE_URL` and every `NEXT_PUBLIC_APP_URL` consumer
+  (auth callback, email, ICS, digest) fall back to `https://frequencylocal.com`, so canonical /
+  email / OAuth-redirect links are correct even before the env vars are set; `robots.ts` +
+  `sitemap.ts` derive from `SITE_URL`; the Resend webhook route (`/api/webhooks/resend`) exists;
+  all six crons are in `vercel.json`; no old-domain or hardcoded-host references remain.
 
 ## 2. Domain setup (frequencylocal.com)
 

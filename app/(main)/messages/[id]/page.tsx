@@ -16,7 +16,7 @@ export default async function ConversationPage({
 }) {
   const { id: conversationId } = await params
 
-  // RLS convergence surface 5 (migration 20240311000000): the whole DM thread now
+  // RLS convergence surface 5 (migration 20260602195209): the whole DM thread now
   // runs on the user-scoped client. conversations / conversation_participants /
   // messages are gated by the am_participant SELECT policy and last_read by the
   // UPDATE-own policy, so the DB enforces that I can only read a conversation I'm
