@@ -84,11 +84,11 @@ export function EventRow({ event }: { event: PublicEvent }) {
   return (
     <Link
       href={`/discover/events/${event.slug}`}
-      className="flex items-center gap-4 rounded-2xl border border-success-bg bg-success-bg/40 px-5 py-4 hover:border-success transition-colors"
+      className="flex items-center gap-4 rounded-2xl border border-border bg-surface px-5 py-4 hover:border-border-strong hover:shadow-pop transition-all"
     >
-      <div className="shrink-0 w-12 h-12 rounded-xl bg-success-bg flex flex-col items-center justify-center">
-        <span className="text-[9px] font-bold text-success leading-none">{badge.month}</span>
-        <span className="text-base font-bold text-success leading-tight">{badge.day}</span>
+      <div className="shrink-0 w-12 h-12 rounded-xl bg-primary-bg flex flex-col items-center justify-center">
+        <span className="text-[9px] font-bold text-primary-strong leading-none">{badge.month}</span>
+        <span className="text-base font-bold text-primary-strong leading-tight">{badge.day}</span>
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-text truncate">{event.title}</p>
@@ -97,7 +97,7 @@ export function EventRow({ event }: { event: PublicEvent }) {
           {event.city && <> &middot; {event.city}</>}
         </p>
       </div>
-      <ArrowRight className="w-4 h-4 text-success shrink-0" />
+      <ArrowRight className="w-4 h-4 text-primary-strong shrink-0" />
     </Link>
   )
 }
@@ -173,84 +173,10 @@ export function SignInCta({
   )
 }
 
-// ── Section heading ───────────────────────────────────────────────────────────
-
-export function SectionHeading({
-  eyebrow,
-  title,
-  tone = 'primary',
-}: {
-  eyebrow: string
-  title: string
-  tone?: 'primary' | 'success'
-}) {
-  const eyebrowCls = tone === 'success' ? 'text-success' : 'text-primary-strong'
-  return (
-    <>
-      <p className={`text-sm font-bold uppercase tracking-[0.25em] mb-4 ${eyebrowCls}`}>
-        {eyebrow}
-      </p>
-      <h2 className="font-display uppercase text-text text-4xl sm:text-5xl">{title}</h2>
-    </>
-  )
-}
-
-// ── Photo hero (shared by the Discover hub + detail pages) ─────────────────────
-// Full-bleed photo under a warm ink wash + amber glow + an LED light-strip seam,
-// matching the splash. Editorial display headline in white. Pass `children` for
-// CTAs/stat lines.
-export function DiscoverHero({
-  image,
-  alt = '',
-  eyebrow,
-  title,
-  subtitle,
-  children,
-  focal = 'object-center',
-}: {
-  image: string
-  alt?: string
-  eyebrow?: string
-  title: React.ReactNode
-  subtitle?: string
-  children?: React.ReactNode
-  focal?: string
-}) {
-  return (
-    <section className="relative overflow-hidden">
-      <Image
-        src={image}
-        alt={alt}
-        fill
-        preload
-        sizes="100vw"
-        className={`object-cover ${focal}`}
-      />
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            'linear-gradient(180deg, rgb(20 18 16 / 0.72) 0%, rgb(20 18 16 / 0.52) 45%, rgb(20 18 16 / 0.92) 100%)',
-        }}
-      />
-      <div className="amber-glow absolute inset-0 pointer-events-none" />
-      <div className="relative z-10 max-w-5xl mx-auto px-6 py-24 sm:py-32 text-center">
-        {eyebrow && (
-          <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary mb-5">{eyebrow}</p>
-        )}
-        <h1 className="font-display uppercase text-white text-5xl sm:text-6xl lg:text-7xl text-balance leading-[0.95]">
-          {title}
-        </h1>
-        {subtitle && (
-          <p className="mt-6 text-lg sm:text-xl text-white/80 leading-relaxed max-w-2xl mx-auto">
-            {subtitle}
-          </p>
-        )}
-        {children && <div className="mt-9">{children}</div>}
-      </div>
-      <div className="light-strip absolute inset-x-0 bottom-0 z-10" />
-    </section>
-  )
-}
+// ── Section heading + photo hero ──────────────────────────────────────────────
+// Re-exported from the marketing kit so Discover and the marketing pages share
+// ONE heading and ONE hero — no divergent copies. `DiscoverHero` is the shared
+// PhotoHero under its historical name (kept so the Discover pages' imports work).
+export { SectionHeading, PhotoHero as DiscoverHero } from '@/components/marketing/marketing-ui'
 
 export { CalendarDays }

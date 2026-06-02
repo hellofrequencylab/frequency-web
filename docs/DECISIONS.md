@@ -1029,6 +1029,41 @@ enriched a touch (amber still leads). Token values only — no structure, no con
 the in-app community (which the stakeholder explicitly wanted left soft).
 
 ---
+### ADR-053 — Agency redesign program: experimental direction, page-editor unpublish, component consolidation
+
+**Status:** Accepted · **Date:** 2026-06
+
+**Context:** A "virtual design agency" pass to make the already-working site feel like one
+deliberate, modern product instead of cobbled-together. Discovery produced two source-of-truth
+docs (`docs/CREATIVE-PLATFORM.md`, `docs/DESIGN-LANGUAGE.md`). Stakeholder direction: **balance
+all three personas** + an **experimental** visual direction. During rollout we found the public
+marketing pages were silently rendering **stale visual-editor (`published_data`) versions** that
+shadowed the new coded designs — and the editor had no way to revert.
+
+**Decisions:**
+1. **Flagship-first execution.** Prove the experimental, motion-forward, story-led language on
+   the **splash** (`app/page.tsx` + `components/marketing/motion.tsx`), then roll it across the
+   site. Motion is opacity/transform only (no CLS), disabled under `prefers-reduced-motion` and
+   `(scripting: none)`; built with `useSyncExternalStore` + callback updates (no setState-in-effect).
+2. **Page-editor `unpublishPage` + Unpublish button.** The editor could publish but not revert;
+   `unpublishPage(slug)` clears `published_data` (keeps the draft) so the public route falls back
+   to the coded design. Button shows only when a page is currently published. This is what made
+   the coded redesigns of The Lab / How it works / About go live.
+3. **Component consolidation (kills the "cobble").** `DiscoverHero` now re-exports the marketing
+   kit's `PhotoHero`; the duplicate `SectionHeading` in `components/discover/cards.tsx` re-exports
+   the kit's single `SectionHeading`; removed the `success`/green palette leak on Discover events
+   (amber-led). Added shared `PhotoHero`, `PullQuote`, `Stat` to the kit.
+4. **`/beta` redesigned** to the system (photo hero + reassurance/founder-trust + honest scarcity)
+   since it's every CTA's destination.
+
+**Consequences:** The flagship + unpublish shipped **straight to `main`** (no PR) at the
+stakeholder's "ship it live" direction; the QA fixes (#2–#4 above + `/beta`) go through a PR for a
+preview. Remaining work (experimental rollout to all pages; shared `Button`/`Card` primitives +
+codified rhythm per the Design-Language P1 backlog) is tracked in `docs/REDESIGN-STATUS.md`.
+Gotcha: publishing the `home` page in the editor would shadow the coded splash flagship the same
+way — leave `home` unpublished or add a guard.
+
+---
 ### Decisions intentionally NOT duplicated here
 
 Already fully covered by the repo docs (no ADR needed): the RLS / admin-client
