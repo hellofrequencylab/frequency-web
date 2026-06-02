@@ -1060,8 +1060,59 @@ shadowed the new coded designs — and the editor had no way to revert.
 stakeholder's "ship it live" direction; the QA fixes (#2–#4 above + `/beta`) go through a PR for a
 preview. Remaining work (experimental rollout to all pages; shared `Button`/`Card` primitives +
 codified rhythm per the Design-Language P1 backlog) is tracked in `docs/REDESIGN-STATUS.md`.
-Gotcha: publishing the `home` page in the editor would shadow the coded splash flagship the same
-way — leave `home` unpublished or add a guard.
+Gotcha (RESOLVED by ADR-054): publishing the `home` page in the editor would shadow the coded
+splash flagship the same way — `home` is now code-locked out of the editor.
+
+---
+### ADR-054 — The splash (`home`) is code-locked, not editor-editable
+
+**Status:** Accepted · corroborated by `lib/page-editor/data.ts` (`EDITABLE_PAGES` has no `home`)
+and `app/page.tsx` (renders the coded splash unconditionally).
+**Context:** ADR-053 shipped a Puck page-editor where a page's `published_data` shadows the coded
+design. `home` was in `EDITABLE_PAGES`, so publishing it would replace the bespoke, motion-forward
+flagship splash (live counts, parallax, broken-grid, `CountUp`) — which the generic block set can't
+reproduce — exactly the trap ADR-053 flagged. A `home` row was in fact already published in prod;
+it only stayed hidden because the splash is visually dominant and few looked logged-out.
+**Decision:** Remove `home` from `EDITABLE_PAGES` and render the coded splash unconditionally
+(dropped the `getPublishedData('home')` branch). Every editor surface (the `/edit` route, the
+`/pages` directory, publish/draft/unpublish) gates on `isEditableSlug`, so one change excludes the
+splash everywhere — the guard is structural, not a flag. The orphaned published `home` row is
+harmless (never read; `home` no longer appears in the directory).
+**Consequences:** The splash can only change in code — correct, since it's the design surface under
+active iteration and isn't expressible in Puck. The other three marketing pages stay editor-
+editable. A Puck-built home would be a deliberate re-add.
+
+### ADR-055 — Standardized, categorized Puck block library (not content-named one-offs)
+
+**Status:** Accepted · corroborated by `lib/page-editor/config.tsx` + `components/page-editor/blocks/*`
+**Context:** The first editor palette was a set of **content-named one-off** blocks — `Pillars`
+("What we're building band"), `BetaCTA`, `LiveStats (members/circles/events)` — modeled on the
+splash's specific content rather than reusable design sections, with a flat, uncategorized left bar
+and inconsistent per-block controls. A real page-builder offers generic, design-system sections the
+way Webflow/Framer/Squarespace do.
+**Decision:** Rebuild the palette as a **standardized library** with one shared control vocabulary
+and left-bar **categories**:
+- **Foundation** (`lib/page-editor/fields.tsx` + `components/page-editor/blocks/kit.tsx`): shared
+  field atoms (`toneField` incl. Dark/Transparent, `widthField`, `alignField`, `imgField`), style
+  resolvers, a universal `<Band>` section wrapper, and typographic atoms (`Eyebrow`,
+  `DisplayHeading`, `CtaButton`). Every block threads the SAME "adjust" controls — **background,
+  content width, alignment, spacing (above/below), responsive visibility** — plus image controls
+  (crop/focal/radius/shadow) where relevant. Built on the existing `layout.ts`/`image-controls.ts`.
+- **Blocks** (one file per group): **Layout** (Container, Columns, Spacer, Divider) · **Content**
+  (Heading, Text, Statement, Quote, Buttons) · **Sections** (Hero, FeatureGrid, Showcase, StatRow,
+  Checklist, Accordion, CallToAction) · **Media** (Image, Gallery, MediaText, Marquee) · **Dynamic**
+  (LiveStats, LiveEvents, LivePosts). Blocks carry **variants** (Hero: image/split/minimal; Quote:
+  pull/testimonial; FeatureGrid: icon/image/number). The content-named `Pillars` → generic
+  **Showcase**; `BetaCTA` → **CallToAction**.
+- **Content re-map** (`lib/page-editor/templates/*`): the-lab / how-it-works / about rebuilt as Puck
+  `Data` from the standard blocks. The `/edit` route seeds from these when a stored draft is empty
+  **or predates the new blocks** (`isRenderable` check) — a load-time default only; nothing is
+  written to the DB until Publish, so old drafts using retired keys can't crash the editor.
+**Consequences:** The editor and the public `<Render>` share one standardized, on-brand kit; the
+janitor composes pages from design sections, not bespoke widgets. Retired block keys (`PageHero`,
+`ZigZag`, `ImageBand`, `FeatureGallery`, `Pillars`) are gone — safe because nothing public depended
+on them (home is code-locked per ADR-054; the other pages were unpublished drafts). Satisfies the
+Design-Language P2 "Puck config exposes the canonical components" guardrail.
 
 ---
 ### Decisions intentionally NOT duplicated here
