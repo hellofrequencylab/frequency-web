@@ -85,11 +85,18 @@ Plus no codified **type / spacing / radius** scale, so the drift keeps re-accrui
 - **Operator:** type hierarchy (kill all-caps + `text-[11px]`); **KPI time-axis + deltas**; bento hierarchy; **drill-downs** (campaign perf, engagement_score); descriptions.
 - **Admin:** unified admin page layout; **replace 16× `text-[11px]` headers**; de-box (26× cards); **cross-links/drill-downs**; grouped sub-nav; inline help.
 
-## Open decisions for the owner
-- **Hubs / Nexuses:** social destinations (add discussion/events/members tabs) or stay structural roll-ups? *(affects Spaces Phase 1)*
-- **`/groups`:** confirm removal (currently a dead redirect to `/circles`).
-- **The Vault → "Gem Store"** rename: ok? *(off-brand "exclusive" connotation per the lens)*
-- **Streak model:** make the UI weekly (match the engine) — confirm weekly is the intended cadence.
+## Decisions (locked with the owner)
+- **Hubs / Nexuses → stay structural.** Clean them up only — `DetailTemplate`, breadcrumb, a
+  one-line description, links down to circles. The social energy stays in Circles; no hub/nexus
+  discussion/events/members tabs.
+- **`/groups` → remove.** Delete the dead redirect routes (`/groups`, `/groups/[slug]`) and any
+  nav references.
+- **The Vault → keep the name.** No rename; keep "The Vault" as the gem-spend surface.
+- **Streaks → make the ENGINE daily.** Switch the backend streak model from weekly to daily to
+  match the daily grid UI (not the other way round). ⚠️ Backend behaviour change — touches
+  `lib/achievements.ts` (`isSameWeek` guard), `STREAK_CONFIG`/`window_days`, and existing streak
+  semantics; sequence carefully in Phase 2 alongside the practice-reminder cron, and migrate/reset
+  existing streak counters intentionally rather than silently.
 
 ---
 
