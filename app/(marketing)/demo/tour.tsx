@@ -154,7 +154,7 @@ function panelFor(key: StepKey) {
 export function PhoneFrame({ children }: { children: React.ReactNode }) {
   return (
     <div className="w-full max-w-sm">
-      <div className="rounded-[2.5rem] border border-border-strong bg-surface-elevated p-2.5 shadow-2xl">
+      <div className="rounded-[2.5rem] border border-border-strong bg-surface-elevated p-2.5 shadow-pop-lg">
         <div className="overflow-hidden rounded-[2rem] border border-border bg-canvas">
           {/* Status / app bar */}
           <div className="flex items-center justify-between px-5 pt-4 pb-3 bg-surface border-b border-border">

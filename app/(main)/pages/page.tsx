@@ -57,7 +57,7 @@ export default async function PagesDirectory() {
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-3">
                       <a
-                        href={p.slug === 'home' ? '/?preview=1' : p.path}
+                        href={p.path}
                         target="_blank"
                         rel="noreferrer"
                         className="inline-flex items-center gap-1 text-xs text-muted hover:text-text"

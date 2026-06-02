@@ -126,7 +126,13 @@ on the real domain. **Depends on:** nothing (all in-codebase closeouts).
       `gem_config`; `awardZapsForAction` reads it; real values seeded. `seasons` table
       (migration `20240229000000`) gives seasons identity (number, name, dates, status);
       `reset_season` now advances them; admin "end season" control on `/admin/gamification`.
-      *Next (optional):* member-facing season banner + countdown; live amount-editing UI.
+      Member-facing **season banner + live countdown** shipped on `/crew` (2026-06-02):
+      `app/(main)/crew/season-banner.tsx` reads `getCurrentSeason()`, shows season number/name/
+      theme, and a hydration-safe live "Nd Nh left" countdown when a season has an end date
+      (else "Ongoing"). **Live amount-editing UI** shipped (2026-06-02): janitor-only reward-economy
+      editor on `/admin/gamification` (`reward-config.tsx` + `reward-actions.ts`) tunes per-action
+      zap/gem amount, daily cap, and on/off — written to `zap_config`/`gem_config`, which the award
+      engines already read at grant time, so changes are live with no redeploy. Reward economy ✅.
 - [~] **Complete `practice.verified` sources**: logged practice + verified node check-in +
       event attendance check-in (old P2.13). The North-Star event must fire from every
       real-practice path, not just event RSVP-checkin. *Done:* practices backbone
@@ -137,12 +143,41 @@ on the real domain. **Depends on:** nothing (all in-codebase closeouts).
       now emits `practice.verified`; `/practices` shows a 14-day activity history; members
       and hosts can create custom practices. *Next:* verification layers (host/peer
       confirm) if desired.
-- [ ] **RLS convergence (Phase 2)**: migrate high-traffic read/write paths from
+- [~] **RLS convergence (Phase 2)**: migrate high-traffic read/write paths from
       admin-client → RLS + `SECURITY DEFINER` RPCs, with policy tests, surface by surface.
-- [ ] **Partner redemption-on-capture**: plaque bump → discount + zaps logged to
-      `partner_redemptions` (closes Phase 3 wiring).
-- [ ] **Live-Claude agent + consent test**: swap the deterministic proposer for the bounded
+      *Surface 1 — notifications (2026-06-02, ✅ migration applied to prod):* migration
+      `20240307000000_notifications_rls_convergence.sql` adds an UPDATE-own policy + the
+      `my_notifications` / `my_unread_notification_count` DEFINER read RPCs (the RPC pattern is
+      needed because the read joins the actor profile, which the `profiles` policy hides from
+      sub-crew/cross-region viewers). `app/(main)/notifications/actions.ts` now runs on the
+      user-scoped client; the row→view-model mapper is unit-tested (`lib/notifications-map.test.ts`)
+      and SQL isolation checks are in the migration footer. **Pattern + deploy-ordering rule:
+      ADR-056.** ⚠️ **Apply the migration (`supabase db push`) + regen types BEFORE this code
+      deploys** — the code calls the new RPC/policy, so shipping it first degrades notifications
+      (empty list, mark-read no-ops) until applied.
+      *Surface 2 — friendships (2026-06-02, ✅ migration applied to prod):* migration
+      `20240308000000_friendships_rls_convergence.sql` adds the `my_friendships` DEFINER read RPC
+      (same restricted-`profiles`-join reason); `app/(main)/friends/page.tsx` now runs on the user
+      client, bucketing logic unit-tested (`lib/friendships-map.test.ts`). Friendship write policies
+      already exist, so friend-actions can converge later with no new migration.
+      ✅ **Both migrations applied to prod 2026-06-02** (`db push`), types regenerated, prod
+      verified (no regression on the live app). The converged code lands when PR #63 merges.
+      *Next surfaces:* the feed read (`getFeed`), then messages.
+- [x] **Partner redemption-on-capture**: plaque bump → discount + zaps logged to
+      `partner_redemptions` (closes Phase 3 wiring). ✅ 2026-06-02 — verified wired end-to-end:
+      `/n/[nodeId]` claim button → `claimNode` action → `captureNode` (`lib/engagement/capture.ts`
+      step 5) logs a `partner_redemptions` row, surfaces the unlocked offer title, awards the
+      node's `zaps_value`, and emits `practice.verified` for non-partner nodes.
+- [x] **Live-Claude agent + consent test**: swap the deterministic proposer for the bounded
       Claude operator; add the `shouldSend` consent test; keep copilot-gated (closes 6.6).
+      ✅ 2026-06-02 — `lib/studio/winback.ts`: `draftWinbackWithClaude` drafts win-back copy via
+      the Anthropic SDK (`claude-opus-4-8`, JSON-constrained, cached system prompt) when
+      `ANTHROPIC_API_KEY` is set, with a deterministic template fallback so nothing breaks
+      without a key. `proposeWinbacks` now gates candidates by `shouldSend(*, 'email',
+      'lifecycle')` *at proposal time* (not just at send), via the injectable `filterByConsent`.
+      Still copilot-gated: the model only drafts a *proposed* action; a human approves before
+      send. Consent + fallback unit-tested (`lib/studio/winback.test.ts`). Set
+      `ANTHROPIC_API_KEY` in prod to enable live drafting (see LAUNCH.md).
 - [x] **Trust & safety floor (ADR-036)**: first-class **blocking** + in-app **account
       deletion**. Shipped: `blocked_users` (migration `20240301000000`) + `lib/blocking.ts`
       (gates DMs both ways, unfriends on block); profile Block/Unblock button; account hard

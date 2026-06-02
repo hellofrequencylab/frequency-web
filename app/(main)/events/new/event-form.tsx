@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import Link from 'next/link'
 import { createEvent } from '@/app/(main)/events/actions'
 
 type Group = {
@@ -206,12 +207,12 @@ export function EventForm({ groups }: { groups: Group[] }) {
         >
           {isPending ? 'Creating…' : 'Create Event'}
         </button>
-        <a
+        <Link
           href="/events"
           className="text-sm text-muted hover:text-text transition-colors"
         >
           Cancel
-        </a>
+        </Link>
       </div>
     </form>
   )

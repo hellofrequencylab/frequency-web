@@ -4,8 +4,11 @@ Make the **marketing pages** (`/`, `/the-lab`, `/how-it-works`, `/about`)
 editable visually — content, images, and section order — without touching the
 member app and without sacrificing speed.
 
-> Status: **spec only, not built.** Decided: **Puck** (open-source, self-hosted)
-> over a hosted builder; constrained to our existing block components.
+> Status: **shipped**, then **reworked into a standardized block library**
+> (ADR-055). **Puck** (open-source, self-hosted), constrained to our DAWN design
+> system. The splash (`/`) is **code-locked** out of the editor (ADR-054) — only
+> `/the-lab`, `/how-it-works`, `/about` are editor-editable. §4 + §12 are current;
+> the rest is original spec kept for history.
 
 ---
 
@@ -84,30 +87,14 @@ alter table public.pages enable row level security;
 
 ---
 
-## 4. Puck config — the block palette (`lib/page-editor/config.tsx`)
+## 4. Puck config — the standardized block library (`lib/page-editor/config.tsx`)
 
-Each block = a Puck component that wraps an existing component and declares its
-editable `fields`. Examples:
-
-| Puck block | Wraps | Editable fields |
-|---|---|---|
-| `Hero` | splash hero | `eyebrow`, `title`, `subtitle`, `bgImage` (Storage), `primaryCta`, `note` |
-| `PageHero` | `PageHero` | `eyebrow`, `title`, `subtitle` |
-| `ZigZag` | `ZigZag` | `image`, `alt`, `eyebrow`, `title`, `kicker`, `body` (textarea), `reverse` (bool), `tone` (select), `imgAspect` (select), `cta` |
-| `Statement` | `Statement` | `text`, `accent` (highlighted word), `tone` |
-| `Marquee` | `Marquee` | `items` (list of strings) |
-| `FeatureGallery` | the Lab tiles | array of `{image, title, body}` |
-| `Pillars` | "what we're building" band | array of `{image, title, body, href}` |
-| `BetaCTA` | `BetaCTA` | `heading`, `body` |
-| `Image` / `Spacer` | generic | url/alt; height |
-| `LiveStats` / `LiveEvents` / `LivePosts` | RPC-backed | *no content fields* — pull live data at render |
-
-- **Accent words:** field `title` + optional `accent` (substring rendered in
-  `text-primary`). Keeps the editor simple; no full rich-text needed for MVP.
-- **Dynamic blocks** (`LiveStats`/`LiveEvents`/`LivePosts`): position is
-  editable; content is fetched live in `render` (same RPCs the splash uses). In
-  the editor they show live data or a labeled placeholder.
-- One `config` object is imported by **both** the editor and the public renderer.
+See **§12** for the full standardized catalog (ADR-055). In short: `config.tsx`
+assembles per-group block fragments from `components/page-editor/blocks/*` into
+one `config` (imported by **both** the editor `<Puck>` and the public `<Render>`),
+and declares left-bar **categories**. Accent words use a `title` + optional
+`accent` substring (rendered `text-primary`); dynamic blocks pull live data in
+`render` via Puck `metadata`.
 
 ---
 
@@ -241,3 +228,50 @@ falls back to `lib/site.ts` defaults. JSON-LD/sitemap unaffected.
 **Packages:** `@measured/puck`. **Infra:** Supabase Storage (have it). **Touches:**
 new `app/(studio)/studio/pages/*`, `lib/page-editor/*`, the 4 marketing page
 files (thin), `next.config` (image host), one migration. **Member app: untouched.**
+
+---
+
+## 12. Standardized block library (ADR-055) — current
+
+The palette is a **standardized, design-system block library** (not content-named
+one-offs), grouped into left-bar **categories**, every block carrying the same
+universal "adjust" controls plus, where relevant, variants.
+
+### Foundation (the frozen contract every block composes from)
+- **`lib/page-editor/fields.tsx`** — shared field atoms + resolvers: `toneField`
+  (White / Cream / Dark / Transparent), `widthField` (Narrow / Default / Wide /
+  Full), `alignField` (Left / Center), `imgField` (upload/pick/URL), `accentize`,
+  and the `toneBg` / `isInk` / `widthClass` / `alignClass` resolvers.
+- **`components/page-editor/blocks/kit.tsx`** — the `<Band>` universal section
+  wrapper (paints background, spacing, visibility, content width + alignment);
+  typographic atoms `Eyebrow` / `DisplayHeading` / `Kicker` / `CtaButton` (one
+  CTA, variants primary/secondary/ghost, `onInk`); `blockFields()` /
+  `blockLayoutDefaults` (the standard trailing adjust group); and the reference
+  `Heading` block. Builds on the pre-existing `layout.ts` (space above/below +
+  responsive visibility) and `image-controls.ts` (crop/focal/size/radius/shadow).
+
+### The "adjust" controls on every block (the "feature block")
+Background tone · content width · alignment · space above · space below ·
+responsive visibility — plus image crop/focal/radius/shadow on image blocks.
+All token-driven selects → fixed Tailwind classes (no raw px, no off-brand CSS).
+
+### Catalog (24 blocks, 5 categories)
+| Category | Blocks |
+|---|---|
+| **Layout** | `Container` (tone band + nested slot), `Columns` (2/3 slots), `Spacer`, `Divider` |
+| **Content** | `Heading` (eyebrow+title+kicker, sizes), `Text` (markdown), `Statement`, `Quote` (pull / testimonial), `Buttons` (group) |
+| **Sections** | `Hero` (image / split / minimal), `FeatureGrid` (icon / image / numbered, 2–4 col), `Showcase` (alternating media+text; replaces `Pillars`), `StatRow`, `Checklist`, `Accordion` (FAQ), `CallToAction` (replaces `BetaCTA`) |
+| **Media** | `Image`, `Gallery`, `MediaText` (replaces `ZigZag`), `Marquee` |
+| **Dynamic** | `LiveStats`, `LiveEvents`, `LivePosts` (live data via Puck `metadata`) |
+
+Files: one per group — `kit.tsx` (Heading), `sections.tsx`, `collections.tsx`,
+`media.tsx`, `primitives.tsx`, `dynamic.tsx`; `config.tsx` merges the fragments +
+defines categories. Retired keys (`PageHero`, `ZigZag`, `ImageBand`,
+`FeatureGallery`, `Pillars`, the old splash `Hero`) are removed.
+
+### Content templates (`lib/page-editor/templates/*`)
+`the-lab`, `how-it-works`, `about` are re-built as Puck `Data` from the standard
+blocks. `app/edit/[slug]/page.tsx` seeds the editor from the matching template
+when the stored draft is empty **or uses retired block types** (`isRenderable`)
+— a load-time default only; nothing is written to the DB until Publish. So a
+legacy draft can never crash the editor.

@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useTransition } from 'react'
 import Link from 'next/link'
 import { Bell } from 'lucide-react'
 import { getMyNotifications, markAllRead } from '@/app/(main)/notifications/actions'
-import type { NotificationItem } from '@/app/(main)/notifications/actions'
+import type { NotificationItem } from '@/lib/notifications-map'
 import { relativeTime } from '@/lib/utils'
 
 const TYPE_ICON: Record<string, string> = {

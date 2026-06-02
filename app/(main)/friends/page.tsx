@@ -1,75 +1,28 @@
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { UserPlus, Users } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { getInitials } from '@/lib/utils'
+import { bucketFriendships, type FriendshipRpcRow, type FriendEntry } from '@/lib/friendships-map'
 import {
   AcceptDeclineButtons,
   CancelOutgoingButton,
   UnfriendButton,
 } from './friend-row-actions'
 
-type FriendshipRow = {
-  id: string
-  user_a_id: string
-  user_b_id: string
-  requested_by: string
-  status: 'pending' | 'accepted'
-  requested_at: string
-}
-
-type ProfileLite = {
-  id: string
-  display_name: string
-  handle: string
-  avatar_url: string | null
-}
-
 export default async function FriendsPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) notFound()
 
-  const admin = createAdminClient()
-  const { data: me } = await admin
-    .from('profiles')
-    .select('id')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
-  if (!me) notFound()
-  const myId = me.id as string
-
-  // All friendships where I'm a party
-  const { data: rawRows } = await admin
-    .from('friendships')
-    .select('id, user_a_id, user_b_id, requested_by, status, requested_at')
-    .or(`user_a_id.eq.${myId},user_b_id.eq.${myId}`)
-    .order('requested_at', { ascending: false })
-
-  const rows = (rawRows ?? []) as FriendshipRow[]
-
-  // Fetch profiles for the other party in each row
-  const otherIds = Array.from(new Set(rows.map((r) => (r.user_a_id === myId ? r.user_b_id : r.user_a_id))))
-  const profilesById = new Map<string, ProfileLite>()
-  if (otherIds.length > 0) {
-    const { data: profs } = await admin
-      .from('profiles')
-      .select('id, display_name, handle, avatar_url')
-      .in('id', otherIds)
-    for (const p of (profs ?? []) as ProfileLite[]) {
-      profilesById.set(p.id, p)
-    }
-  }
-
-  const incoming = rows.filter((r) => r.status === 'pending' && r.requested_by !== myId)
-  const outgoing = rows.filter((r) => r.status === 'pending' && r.requested_by === myId)
-  const accepted = rows.filter((r) => r.status === 'accepted')
-
-  function getOther(r: FriendshipRow): ProfileLite | undefined {
-    return profilesById.get(r.user_a_id === myId ? r.user_b_id : r.user_a_id)
-  }
+  // RLS convergence (migration 20240308000000): own friendships + the other
+  // party's public fields via the user-scoped client through a DEFINER RPC.
+  const { data } = await (supabase as unknown as SupabaseClient).rpc('my_friendships')
+  const { incoming, outgoing, accepted } = bucketFriendships(
+    (data as FriendshipRpcRow[] | null) ?? [],
+  )
 
   return (
     <div>
@@ -92,15 +45,11 @@ export default async function FriendsPage() {
                 Incoming Requests <span className="text-subtle">·</span> {incoming.length}
               </h2>
               <div className="space-y-2">
-                {incoming.map((r) => {
-                  const other = getOther(r)
-                  if (!other) return null
-                  return (
-                    <FriendRow key={r.id} profile={other}>
-                      <AcceptDeclineButtons requesterId={other.id} />
-                    </FriendRow>
-                  )
-                })}
+                {incoming.map((e) => (
+                  <FriendRow key={e.id} profile={e.other}>
+                    <AcceptDeclineButtons requesterId={e.other.id} />
+                  </FriendRow>
+                ))}
               </div>
             </section>
           )}
@@ -112,15 +61,11 @@ export default async function FriendsPage() {
                 Outgoing Requests <span className="text-subtle">·</span> {outgoing.length}
               </h2>
               <div className="space-y-2">
-                {outgoing.map((r) => {
-                  const other = getOther(r)
-                  if (!other) return null
-                  return (
-                    <FriendRow key={r.id} profile={other}>
-                      <CancelOutgoingButton addresseeId={other.id} />
-                    </FriendRow>
-                  )
-                })}
+                {outgoing.map((e) => (
+                  <FriendRow key={e.id} profile={e.other}>
+                    <CancelOutgoingButton addresseeId={e.other.id} />
+                  </FriendRow>
+                ))}
               </div>
             </section>
           )}
@@ -144,15 +89,11 @@ export default async function FriendsPage() {
               </div>
             ) : (
               <div className="space-y-2">
-                {accepted.map((r) => {
-                  const other = getOther(r)
-                  if (!other) return null
-                  return (
-                    <FriendRow key={r.id} profile={other}>
-                      <UnfriendButton otherId={other.id} />
-                    </FriendRow>
-                  )
-                })}
+                {accepted.map((e) => (
+                  <FriendRow key={e.id} profile={e.other}>
+                    <UnfriendButton otherId={e.other.id} />
+                  </FriendRow>
+                ))}
               </div>
             )}
           </section>
@@ -179,7 +120,7 @@ function FriendRow({
   profile,
   children,
 }: {
-  profile: ProfileLite
+  profile: FriendEntry['other']
   children: React.ReactNode
 }) {
   return (
