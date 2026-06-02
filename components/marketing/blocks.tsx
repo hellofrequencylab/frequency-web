@@ -74,7 +74,7 @@ export function HeroBlock({
       <div className="light-strip absolute inset-x-0 bottom-0 z-10" />
       <div className="relative z-10 flex flex-col items-center w-full max-w-4xl">
         {eyebrow && (
-          <p className="text-[11px] sm:text-xs font-bold uppercase tracking-[0.3em] text-primary mb-6">{eyebrow}</p>
+          <p className="text-[11px] sm:text-xs font-bold uppercase tracking-[0.25em] text-primary mb-6">{eyebrow}</p>
         )}
         <h1 className="font-display uppercase text-white text-[2.75rem] leading-[0.95] sm:text-6xl lg:text-7xl max-w-3xl">
           {title}
@@ -184,7 +184,7 @@ export function PillarsBlock({
             </div>
             <div className={`relative z-10 flex flex-col justify-center max-w-md -mt-12 sm:mt-0 ${p.reverse ? 'sm:-mr-20' : 'sm:-ml-20'}`}>
               <h3 className="font-display uppercase text-white text-4xl sm:text-5xl mb-5 px-2 text-center sm:text-left">{p.title}</h3>
-              <div className="bg-surface rounded-3xl p-8 shadow-2xl">
+              <div className="bg-surface rounded-3xl p-8 shadow-pop">
                 <p className="text-base text-muted leading-relaxed">{p.body}</p>
                 {p.href && (
                   <Link href={p.href} className="mt-5 inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide text-primary-strong hover:underline">
