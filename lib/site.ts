@@ -14,8 +14,10 @@ export const SITE_DESCRIPTION =
 // Top-nav items shown on the public site (SiteHeader) + marketing footer.
 // Keep these resolving — every href is a live route.
 export const MARKETING_NAV: { label: string; href: string }[] = [
-  { label: "The Lab", href: "/the-lab" },
   { label: "How it works", href: "/how-it-works" },
+  { label: "Demo", href: "/demo" },
+  { label: "Pricing", href: "/pricing" },
+  { label: "The Lab", href: "/the-lab" },
   { label: "Discover", href: "/discover" },
   { label: "About", href: "/about" },
 ];
