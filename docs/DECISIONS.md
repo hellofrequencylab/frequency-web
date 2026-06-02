@@ -1020,6 +1020,14 @@ updated to match so the visual-editor home renders identically to the hardcoded 
 optionally extend the `ink` tone through `SectionHeading` and roll deeper into Pricing/Demo
 section rhythm.
 
+**Follow-up — sitewide palette harmonization (subtle):** to make the whole product feel of a
+piece without bringing the splash's bold contrast into the community, the shared tokens were
+gently tuned: **dark mode** warmed toward dark wood (canvas/surface/border undertones shifted
+golden-brown — the reference spaces are amber-lit espresso slats), **light mode** got a barely-
+perceptible warm nudge (`canvas`/`surface-elevated`), and the **teal** secondary tint was
+enriched a touch (amber still leads). Token values only — no structure, no contrast change in
+the in-app community (which the stakeholder explicitly wanted left soft).
+
 ---
 ### Decisions intentionally NOT duplicated here
 
