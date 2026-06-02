@@ -2,7 +2,7 @@ import { notFound, redirect } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ChevronLeft, Users, Hash, Lock, LogIn, LogOut } from 'lucide-react'
-import { createAdminClient } from '@/lib/supabase/admin'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import { getInitials } from '@/lib/utils'
 import { joinRoom, leaveRoom } from '../../rooms/actions'
@@ -17,13 +17,17 @@ export default async function RoomPage({
 }) {
   const { roomId } = await params
 
+  // RLS convergence surface 6 (migration 20240312000000): the room thread runs on
+  // the user client. rooms_read / room_members_read / room_messages_read enforce
+  // who can see the room, its roster, and its (members-only) messages. The member
+  // + author profiles — which RLS would hide from sub-crew/cross-region viewers —
+  // come from the visible_room_member_profiles DEFINER RPC (public fields, gated
+  // on the caller being able to see the room).
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/sign-in')
 
-  const admin = createAdminClient()
-
-  const { data: myProfile } = await admin
+  const { data: myProfile } = await supabase
     .from('profiles')
     .select('id')
     .eq('auth_user_id', user.id)
@@ -32,11 +36,11 @@ export default async function RoomPage({
 
   const myProfileId = myProfile.id as string
 
-  // Fetch room
-  const { data: room } = await admin
+  // Room (rooms_read: public/cluster-visibility OR member; a private room is
+  // hidden from non-members by RLS → null → notFound)
+  const { data: room } = await supabase
     .from('rooms')
-    .select(`id, name, description, visibility, member_count, created_at,
-             creator:profiles!creator_id ( id, display_name, handle )`)
+    .select('id, name, description, visibility, member_count, created_at')
     .eq('id', roomId)
     .maybeSingle()
 
@@ -49,11 +53,10 @@ export default async function RoomPage({
     visibility: 'public' | 'private' | 'circle' | 'hub' | 'nexus' | 'outpost'
     member_count: number
     created_at: string
-    creator: { id: string; display_name: string; handle: string } | null
   }
 
   // Check membership
-  const { data: membership } = await admin
+  const { data: membership } = await supabase
     .from('room_members')
     .select('room_id, is_admin')
     .eq('room_id', roomId)
@@ -63,43 +66,45 @@ export default async function RoomPage({
   const isMember = !!membership
   const isAdmin = !!membership?.is_admin
 
-  // Block private rooms for non-members
+  // Defense in depth (RLS already hides private rooms from non-members)
   if (r.visibility === 'private' && !isMember) {
     notFound()
   }
 
-  // Fetch members
-  const { data: rawMembers } = await admin
-    .from('room_members')
-    .select(`is_admin, joined_at,
-             profile:profiles!profile_id ( id, display_name, handle, avatar_url )`)
-    .eq('room_id', roomId)
-    .order('joined_at', { ascending: true })
-    .limit(50)
+  // Members + their public profiles via the DEFINER RPC (visible only if I can
+  // see the room). Authors of messages are members, so this map hydrates both.
+  type MemberProfile = { id: string; display_name: string; handle: string; avatar_url: string | null }
+  const { data: memberRows } = await (supabase as unknown as SupabaseClient)
+    .rpc('visible_room_member_profiles', { _room_id: roomId })
 
-  const members = ((rawMembers ?? []) as unknown as {
-    is_admin: boolean
-    joined_at: string
-    profile: { id: string; display_name: string; handle: string; avatar_url: string | null } | null
-  }[]).filter(m => m.profile)
+  const members = ((memberRows ?? []) as {
+    id: string; display_name: string; handle: string; avatar_url: string | null; is_admin: boolean; joined_at: string
+  }[]).map(m => ({
+    is_admin: m.is_admin,
+    joined_at: m.joined_at,
+    profile: { id: m.id, display_name: m.display_name, handle: m.handle, avatar_url: m.avatar_url } as MemberProfile,
+  }))
 
-  // Fetch recent messages
-  const { data: rawMessages } = await admin
-    .from('room_messages')
-    .select(`id, room_id, author_id, body, created_at,
-             author:profiles!author_id ( id, display_name, handle, avatar_url )`)
-    .eq('room_id', roomId)
-    .order('created_at', { ascending: true })
-    .limit(100)
+  const memberProfileMap = new Map(members.map(m => [m.profile.id, m.profile]))
 
-  const messages = ((rawMessages ?? []) as unknown as {
-    id: string
-    room_id: string
-    author_id: string
-    body: string
-    created_at: string
-    author: { id: string; display_name: string; handle: string; avatar_url: string | null } | null
-  }[])
+  // Recent messages — members-only (room_messages_read = am_room_member). For a
+  // non-member previewing a public room this returns nothing; the page shows the
+  // join panel instead, so we skip the read entirely for them.
+  type RoomMessageRow = { id: string; room_id: string; author_id: string; body: string; created_at: string }
+  let messages: (RoomMessageRow & { author: MemberProfile | null })[] = []
+  if (isMember) {
+    const { data: rawMessages } = await supabase
+      .from('room_messages')
+      .select('id, room_id, author_id, body, created_at')
+      .eq('room_id', roomId)
+      .order('created_at', { ascending: true })
+      .limit(100)
+
+    messages = ((rawMessages ?? []) as RoomMessageRow[]).map(m => ({
+      ...m,
+      author: memberProfileMap.get(m.author_id) ?? null,
+    }))
+  }
 
   return (
     <div className="-mx-6 -my-6 flex flex-col h-[calc(100vh-3.5rem)]">
@@ -158,12 +163,36 @@ export default async function RoomPage({
 
       {/* Body. Three pane (messages + members on the right) */}
       <div className="flex-1 min-h-0 flex">
-        <RoomThread
-          roomId={roomId}
-          initialMessages={messages}
-          myProfileId={myProfileId}
-          canPost={isMember}
-        />
+        {isMember ? (
+          <RoomThread
+            roomId={roomId}
+            initialMessages={messages}
+            myProfileId={myProfileId}
+            canPost={isMember}
+          />
+        ) : (
+          // Non-member previewing a public room: messages are members-only, so
+          // show a join prompt rather than an empty thread.
+          <div className="flex-1 min-w-0 flex items-center justify-center p-8">
+            <div className="text-center max-w-xs">
+              <div className="w-12 h-12 rounded-2xl bg-primary-bg flex items-center justify-center mx-auto mb-3">
+                <Lock className="w-5 h-5 text-primary-strong" />
+              </div>
+              <p className="text-sm font-semibold text-text mb-1">Join to see the conversation</p>
+              <p className="text-xs text-muted leading-relaxed mb-4">
+                This room&rsquo;s messages are visible to members. Join {r.name} to read and post.
+              </p>
+              <form action={joinRoom.bind(null, roomId)}>
+                <button
+                  type="submit"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary-hover transition-colors"
+                >
+                  <LogIn className="w-3.5 h-3.5" /> Join room
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
 
         {/* Members sidebar (desktop) */}
         <aside className="hidden lg:flex w-64 shrink-0 flex-col border-l border-border bg-surface/30 dark:bg-canvas/30">

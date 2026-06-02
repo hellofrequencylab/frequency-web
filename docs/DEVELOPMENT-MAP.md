@@ -192,7 +192,17 @@ on the real domain. **Depends on:** nothing (all in-codebase closeouts).
       (`messages/r/[roomId]`) — its `room_messages` policy is members-only, so converging it changes
       the current non-member public-room message preview (a visibility decision, like circles); and the
       "new members in your circles" prompt in `page.tsx`.
-      *Next surface:* the room thread (needs the preview decision).
+      *Surface 6 — room thread (2026-06-02, ✅ migration applied to prod):* migration
+      `20240312000000_room_thread_rls_convergence.sql` adds the `visible_room_member_profiles` DEFINER
+      RPC. `messages/r/[roomId]/page.tsx` now runs on the user client: rooms_read / room_members_read
+      / room_messages_read enforce who sees the room, its roster, and its (members-only) messages;
+      member + author profiles are hydrated by the RPC (public fields, gated on the caller being able
+      to see the room). Owner-approved behaviour change: **a non-member previewing a public room no
+      longer sees its messages** — the page shows a "join to see the conversation" panel instead
+      (members unaffected; the roster still shows for public rooms). *Still on admin (minor
+      follow-ups):* the "new members in your circles" prompt + the feed's scope/dispatch/event
+      metadata lookups — mechanical, no decision.
+      **RLS convergence (Phase 2): the high-traffic read paths are now DB-enforced.**
 - [x] **Partner redemption-on-capture**: plaque bump → discount + zaps logged to
       `partner_redemptions` (closes Phase 3 wiring). ✅ 2026-06-02 — verified wired end-to-end:
       `/n/[nodeId]` claim button → `claimNode` action → `captureNode` (`lib/engagement/capture.ts`
