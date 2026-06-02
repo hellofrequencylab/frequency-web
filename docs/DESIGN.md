@@ -174,12 +174,18 @@ human" lens (local, human, not a SaaS dashboard):
 
 ## Page unification: one grammar for every page
 
+> **Update 2026-06-02 (in-app overhaul, PRs #81–93 — see [REDESIGN-INAPP.md](REDESIGN-INAPP.md)):**
+> the structural fix below is **largely shipped**. `DetailTemplate` is now adopted by Circle,
+> Channel, and Event detail (0 → 3); all the browse pages are on `IndexTemplate` + `EntityCard`.
+> Remaining: Profile/Programs detail → `DetailTemplate`, and the `<RoleActions>` consolidation
+> (still deferred). The original plan is preserved below as the rationale.
+
 The other half of "cobbled together" is structural, not visual. Audit: list pages use
-`IndexTemplate`; the feed uses `StreamTemplate`; but `DetailTemplate` is **used by zero
-pages**, so every single-entity page (a circle, a profile, an event) is hand-rolled, and a
-couple of pages (Practices, Programs) were also ad-hoc. Mixed shells = mixed headers,
-spacing, and action placement = the cobbled feel. Fix: **every page lives in one of three
-shells, and all role logic flows through the capability resolver.**
+`IndexTemplate`; the feed uses `StreamTemplate`; but `DetailTemplate` **was used by zero
+pages** (now Circle/Channel/Event), so every single-entity page (a circle, a profile, an
+event) was hand-rolled, and a couple of pages (Practices, Programs) were also ad-hoc. Mixed
+shells = mixed headers, spacing, and action placement = the cobbled feel. Fix: **every page
+lives in one of three shells, and all role logic flows through the capability resolver.**
 
 ### The three shells (best practice per area)
 
@@ -218,12 +224,13 @@ checks.** Today role logic is split across `CreateMenu` (hardcoded role arrays),
 ### Migration checklist (page to shell)
 
 - [x] Programs to IndexTemplate (the reference migration)
-- [ ] Practices to IndexTemplate
-- [ ] Circle detail (`/circles/[slug]`) to DetailTemplate + `<RoleActions>` (host/member/janitor)
-- [ ] Profile (`/people/[handle]`) to DetailTemplate (friend/message/block/moderate become RoleActions)
-- [ ] Event detail (`/events/[slug]`) to DetailTemplate
-- [ ] Program + Practice detail to DetailTemplate
-- [ ] Build `<RoleActions>`; route `CreateMenu` through the resolver
+- [x] Practices to IndexTemplate (PR #84)
+- [x] Circle detail (`/circles/[slug]`) to DetailTemplate (PR #85) — actions via the resolver in the slot; `RoleActions` overflow-menu still pending
+- [~] Profile (`/people/[handle]`) — borderless-rail + type cohesion done (PR #88); DetailTemplate header/tabs still pending
+- [x] Event detail (`/events/[slug]`) to DetailTemplate (PR #87)
+- [x] Channel detail (`/channels/[id]`) to DetailTemplate (PR #86)
+- [ ] Program detail (`/programs/[slug]`) to DetailTemplate (still hand-rolled)
+- [ ] Build `<RoleActions>` overflow-menu; route `CreateMenu` through the resolver
 
 Best done on localhost, page by page with eyes on, since each detail page's tab set and
 action list is a small product decision.

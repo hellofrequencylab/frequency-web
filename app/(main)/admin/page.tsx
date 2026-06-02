@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import { SidebarCard } from '@/components/ui/sidebar-card'
 import Link from 'next/link'
 import { Users, Layers, Building2, Plus, CalendarDays, Megaphone, ShieldAlert, Zap, Activity, TrendingUp } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -11,16 +12,6 @@ import type { SeasonRank } from '@/lib/season-ranks'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
-function SidebarCard({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
-      <div className="px-4 py-2.5 border-b border-border">
-        <h3 className="text-sm font-bold text-text">{title}</h3>
-      </div>
-      {children}
-    </div>
-  )
-}
 
 export default async function AdminPage() {
   const supabase = await createClient()

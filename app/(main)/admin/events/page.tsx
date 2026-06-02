@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { SidebarCard } from '@/components/ui/sidebar-card'
 import { notFound } from 'next/navigation'
 import { Plus, CalendarDays, MapPin } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
@@ -6,16 +7,6 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { CancelToggle } from './events-client'
 import { EventCompose } from '@/app/(main)/events/event-compose'
 
-function SidebarCard({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
-      <div className="px-4 py-2.5 border-b border-border">
-        <h3 className="text-sm font-bold text-text">{title}</h3>
-      </div>
-      {children}
-    </div>
-  )
-}
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', {

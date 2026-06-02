@@ -377,7 +377,7 @@ export default async function CrewPage() {
             <QuickLink href="/crew/challenges" Icon={Target} label="Challenges" sub="Season goals" color="bg-primary-bg text-primary-strong" />
             <QuickLink href="/crew/quests" Icon={Map} label="Quests" sub="Multi-step" color="bg-success-bg text-signal-strong" />
             <QuickLink href="/crew/leaderboard" Icon={TrendingUp} label="Leaderboard" sub="Rankings" color="bg-warning-bg text-warning" />
-            <QuickLink href="/crew/store" Icon={ShoppingBag} label="Gem Store" sub="Spend gems" color="bg-teal-50 text-signal-strong" />
+            <QuickLink href="/crew/store" Icon={ShoppingBag} label="Gem Store" sub="Spend gems" color="bg-signal-bg text-signal-strong" />
           </div>
 
           {/* Leaderboard — borderless module. */}

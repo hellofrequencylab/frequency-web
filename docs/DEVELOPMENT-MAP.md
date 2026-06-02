@@ -9,7 +9,11 @@
 > Notion. Where this names something not yet built, the code is still the truth.
 >
 > Companions: [PLATFORM-VISION.md](PLATFORM-VISION.md) (the *why* of the two-entity model)
-> and [DECISIONS.md](DECISIONS.md) (ADR-029→036, the irreversible seams). Updated 2026-05-31.
+> and [DECISIONS.md](DECISIONS.md) (ADR-029→036, the irreversible seams). Updated 2026-06-02.
+>
+> **2026-06-02:** the in-app design overhaul shipped (foundation kit + shell adoption + dashboard/
+> admin cohesion sweeps, PRs #81–93, ADR-061) — see [REDESIGN-INAPP.md](REDESIGN-INAPP.md) for status
+> + the remaining backlog.
 
 ---
 
