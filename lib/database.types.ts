@@ -84,6 +84,197 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_actions: {
+        Row: {
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          id: string
+          kind: string
+          payload: Json
+          rationale: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          kind: string
+          payload?: Json
+          rationale?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          kind?: string
+          payload?: Json
+          rationale?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_actions_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      area_permissions: {
+        Row: {
+          area_key: string
+          min_role: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          area_key: string
+          min_role: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          area_key?: string
+          min_role?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "area_permissions_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      automation_rules: {
+        Row: {
+          action_config: Json
+          action_type: string
+          created_at: string
+          created_by: string | null
+          enabled: boolean
+          id: string
+          name: string
+          trigger_event: string
+        }
+        Insert: {
+          action_config?: Json
+          action_type?: string
+          created_at?: string
+          created_by?: string | null
+          enabled?: boolean
+          id?: string
+          name: string
+          trigger_event: string
+        }
+        Update: {
+          action_config?: Json
+          action_type?: string
+          created_at?: string
+          created_by?: string | null
+          enabled?: boolean
+          id?: string
+          name?: string
+          trigger_event?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_rules_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      blocked_users: {
+        Row: {
+          blocked_id: string
+          blocker_id: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          blocked_id: string
+          blocker_id: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          blocked_id?: string
+          blocker_id?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blocked_users_blocked_id_fkey"
+            columns: ["blocked_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blocked_users_blocker_id_fkey"
+            columns: ["blocker_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaigns: {
+        Row: {
+          body: string
+          created_at: string
+          created_by: string | null
+          id: string
+          recipient_count: number
+          segment: string
+          sent_at: string | null
+          status: string
+          subject: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          recipient_count?: number
+          segment?: string
+          sent_at?: string | null
+          status?: string
+          subject: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          recipient_count?: number
+          segment?: string
+          sent_at?: string | null
+          status?: string
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaigns_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       captures: {
         Row: {
           actor_profile_id: string
@@ -270,6 +461,55 @@ export type Database = {
           },
         ]
       }
+      circle_practices: {
+        Row: {
+          active: boolean
+          circle_id: string
+          created_at: string
+          id: string
+          practice_id: string
+          set_by: string | null
+        }
+        Insert: {
+          active?: boolean
+          circle_id: string
+          created_at?: string
+          id?: string
+          practice_id: string
+          set_by?: string | null
+        }
+        Update: {
+          active?: boolean
+          circle_id?: string
+          created_at?: string
+          id?: string
+          practice_id?: string
+          set_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "circle_practices_circle_id_fkey"
+            columns: ["circle_id"]
+            isOneToOne: false
+            referencedRelation: "circles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "circle_practices_practice_id_fkey"
+            columns: ["practice_id"]
+            isOneToOne: false
+            referencedRelation: "practices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "circle_practices_set_by_fkey"
+            columns: ["set_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       circles: {
         Row: {
           about: string | null
@@ -279,6 +519,7 @@ export type Database = {
           host_id: string | null
           hub_id: string | null
           id: string
+          image_url: string | null
           latitude: number | null
           longitude: number | null
           member_cap: number
@@ -299,6 +540,7 @@ export type Database = {
           host_id?: string | null
           hub_id?: string | null
           id?: string
+          image_url?: string | null
           latitude?: number | null
           longitude?: number | null
           member_cap?: number
@@ -319,6 +561,7 @@ export type Database = {
           host_id?: string | null
           hub_id?: string | null
           id?: string
+          image_url?: string | null
           latitude?: number | null
           longitude?: number | null
           member_cap?: number
@@ -351,6 +594,59 @@ export type Database = {
             columns: ["topical_channel_id"]
             isOneToOne: false
             referencedRelation: "topical_channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contacts: {
+        Row: {
+          consent_state: string
+          created_at: string
+          display_name: string | null
+          email: string
+          engagement_score: number
+          first_seen_at: string
+          id: string
+          last_seen_at: string | null
+          meta: Json
+          profile_id: string | null
+          source: string | null
+          updated_at: string
+        }
+        Insert: {
+          consent_state?: string
+          created_at?: string
+          display_name?: string | null
+          email: string
+          engagement_score?: number
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string | null
+          meta?: Json
+          profile_id?: string | null
+          source?: string | null
+          updated_at?: string
+        }
+        Update: {
+          consent_state?: string
+          created_at?: string
+          display_name?: string | null
+          email?: string
+          engagement_score?: number
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string | null
+          meta?: Json
+          profile_id?: string | null
+          source?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contacts_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -724,6 +1020,51 @@ export type Database = {
           },
         ]
       }
+      email_events: {
+        Row: {
+          created_at: string
+          email: string
+          event_type: string
+          id: string
+          payload: Json
+          provider_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          event_type: string
+          id?: string
+          payload?: Json
+          provider_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          event_type?: string
+          id?: string
+          payload?: Json
+          provider_id?: string | null
+        }
+        Relationships: []
+      }
+      email_suppressions: {
+        Row: {
+          created_at: string
+          email: string
+          reason: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          reason: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          reason?: string
+        }
+        Relationships: []
+      }
       engagement_events: {
         Row: {
           actor_profile_id: string | null
@@ -1089,6 +1430,45 @@ export type Database = {
           {
             foreignKeyName: "invite_links_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      member_practices: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          practice_id: string
+          profile_id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          practice_id: string
+          profile_id: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          practice_id?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_practices_practice_id_fkey"
+            columns: ["practice_id"]
+            isOneToOne: false
+            referencedRelation: "practices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_practices_profile_id_fkey"
+            columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1537,6 +1917,59 @@ export type Database = {
           },
         ]
       }
+      pages: {
+        Row: {
+          data: Json
+          id: string
+          og_image_url: string | null
+          published_at: string | null
+          published_data: Json | null
+          seo_description: string | null
+          seo_title: string | null
+          slug: string
+          status: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          data?: Json
+          id?: string
+          og_image_url?: string | null
+          published_at?: string | null
+          published_data?: Json | null
+          seo_description?: string | null
+          seo_title?: string | null
+          slug: string
+          status?: string
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          data?: Json
+          id?: string
+          og_image_url?: string | null
+          published_at?: string | null
+          published_data?: Json | null
+          seo_description?: string | null
+          seo_title?: string | null
+          slug?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pages_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       partner_offers: {
         Row: {
           active: boolean
@@ -1843,6 +2276,90 @@ export type Database = {
             columns: ["parent_id"]
             isOneToOne: false
             referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      practice_logs: {
+        Row: {
+          circle_id: string | null
+          created_at: string
+          id: string
+          logged_for: string
+          practice_id: string | null
+          profile_id: string
+        }
+        Insert: {
+          circle_id?: string | null
+          created_at?: string
+          id?: string
+          logged_for?: string
+          practice_id?: string | null
+          profile_id: string
+        }
+        Update: {
+          circle_id?: string | null
+          created_at?: string
+          id?: string
+          logged_for?: string
+          practice_id?: string | null
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_logs_circle_id_fkey"
+            columns: ["circle_id"]
+            isOneToOne: false
+            referencedRelation: "circles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_logs_practice_id_fkey"
+            columns: ["practice_id"]
+            isOneToOne: false
+            referencedRelation: "practices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_logs_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      practices: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_public: boolean
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          title: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practices_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -2414,6 +2931,39 @@ export type Database = {
           },
         ]
       }
+      seasons: {
+        Row: {
+          created_at: string
+          ends_at: string | null
+          id: string
+          name: string
+          season_number: number
+          starts_at: string
+          status: string
+          theme: string | null
+        }
+        Insert: {
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          name: string
+          season_number: number
+          starts_at?: string
+          status?: string
+          theme?: string | null
+        }
+        Update: {
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          name?: string
+          season_number?: number
+          starts_at?: string
+          status?: string
+          theme?: string | null
+        }
+        Relationships: []
+      }
       spatial_ref_sys: {
         Row: {
           auth_name: string | null
@@ -2569,6 +3119,35 @@ export type Database = {
           },
         ]
       }
+      team_members: {
+        Row: {
+          created_at: string
+          id: string
+          profile_id: string
+          role: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          profile_id: string
+          role?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          profile_id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_members_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       topical_channel_memberships: {
         Row: {
           id: string
@@ -2676,6 +3255,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      zap_config: {
+        Row: {
+          action_type: string
+          created_at: string
+          daily_cap: number | null
+          description: string | null
+          id: string
+          is_active: boolean
+          zaps_amount: number
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          daily_cap?: number | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          zaps_amount?: number
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          daily_cap?: number | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          zaps_amount?: number
+        }
+        Relationships: []
       }
     }
     Views: {
@@ -3000,7 +3609,38 @@ export type Database = {
       get_my_tuned_channel_ids: { Args: never; Returns: string[] }
       gettransactionid: { Args: never; Returns: unknown }
       handle_is_available: { Args: { check_handle: string }; Returns: boolean }
+      is_blocked_between: { Args: { a: string; b: string }; Returns: boolean }
       longtransactionsenabled: { Args: never; Returns: boolean }
+      my_friendships: {
+        Args: never
+        Returns: {
+          friendship_id: string
+          i_requested: boolean
+          other_avatar_url: string
+          other_display_name: string
+          other_handle: string
+          other_id: string
+          requested_at: string
+          status: string
+        }[]
+      }
+      my_notifications: {
+        Args: { _limit?: number }
+        Returns: {
+          actor_avatar_url: string
+          actor_display_name: string
+          actor_handle: string
+          actor_id: string
+          body: string
+          created_at: string
+          id: string
+          read_at: string
+          reference_id: string
+          reference_type: string
+          type: string
+        }[]
+      }
+      my_unread_notification_count: { Args: never; Returns: number }
       node_within_range: {
         Args: { p_lat: number; p_lng: number; p_node_id: string }
         Returns: boolean
@@ -3912,7 +4552,15 @@ export const Constants = {
       channel_content_type: ["group", "event", "thread"],
       channel_scope_type: ["hub", "nexus", "outpost"],
       circle_type: ["in-person", "online"],
-      community_role: ["member", "crew", "host", "guide", "mentor", "admin", "janitor"],
+      community_role: [
+        "member",
+        "crew",
+        "host",
+        "guide",
+        "mentor",
+        "admin",
+        "janitor",
+      ],
       group_status: ["forming", "active", "inactive", "archived"],
       membership_status: ["active", "pending", "inactive"],
       post_type: ["feed", "blog", "announcement", "recap"],
