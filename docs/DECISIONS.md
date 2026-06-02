@@ -1205,6 +1205,38 @@ overhead and storage, the standard FK-index trade-off. Maintenance findings now 
 home (`docs/maintenance/<date>.md`) and the routine that produces them is `/maintenance`
 (see `docs/WORKFLOW.md`).
 
+## ADR-059: The practitioner portal (The Collective) is a marketplace over Hook-hosted programs — Hook is the source of truth
+
+**Status:** Accepted (strategy locked, build not started) · companion docs
+`docs/HOOK-INTEGRATION.md` + `hook/docs/FREQUENCY-INTEGRATION.md` · first test client
+**danieltyack.com** (Daniel Tyack — Healer & Guide).
+**Context:** We want a practitioner portal — a shop of community-generated programs with
+free / premium / tips payout structures — and to bundle each practitioner their own private
+cohort + branded website. That is the union of two things already on the boards:
+Frequency's **"The Collective" (vertical 7)** + **practitioner personas** (📐 designed), and
+Hook's **courses, multi-tenant communities, per-host branding/custom domains, and Stripe
+Connect creator payouts** (✅ built). The risk is building a second course engine + a second
+Connect integration + a second design language inside Frequency and watching them drift.
+**Decision:** Three **separate** web entities integrated **only through typed contracts, never
+merged code**. **Hook is the single source of truth** for programs/courses, communities,
+websites, and creator payments. **Frequency owns** discovery, the shop UI, payout splits, and
+the gamified + in-person social layer. **The Collective becomes a thin marketplace *over*
+Hook-hosted programs** — it indexes a signed per-creator **catalog feed** from Hook and routes
+fulfillment/checkout to Hook's existing Connect flow (the creator's connected account; v0 may
+be pure discovery / link-out at 0 fee, later an application fee for the marketplace cut). The
+practitioner's **website + private cohort = a Hook tenant** (danieltyack.com is the first).
+The four seams: **catalog feed** (Hook→Frequency), **provisioning** (Frequency→Hook spins up a
+Hook community/site), **identity link** (persona ↔ Hook coach), **payout/Connect** (Hook holds
+Connect). The digital programs shop sits on the **Labs / for-profit** side of the two-entity
+partition, never the Foundation side.
+**Consequences:** No duplicate course/payments stack; Frequency stays on its strengths
+(discovery, engagement ledger, place-based movement). New work is mostly the seam, not new
+primitives — Phases 0–1 (the website + programs) are Hook-side; Frequency's first real work is
+**Phase 2** (consume the catalog feed, render the shop + persona). Open: identity/SSO model
+(shared Supabase auth vs. federation/OIDC), and whether v0 brokers checkout or is pure
+discovery. No cross-repo imports; design systems (DAWN vs. Frequency's) stay separate — the
+seam carries data, not components.
+
 ---
 
 ---
