@@ -1,12 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import Link from 'next/link'
 import {
   Zap, Gem, Flame, ChevronUp, Target, Sparkles, CheckCircle2, ArrowRight, Lock,
 } from 'lucide-react'
 import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
-import { useFeedAtBottom } from './use-feed-at-bottom'
+import { useDockRevealed, useHoverScrollReveal } from './dock-reveal'
 
 // ── Data shape (assembled server-side in right-sidebar.tsx) ───────────────────
 
@@ -30,14 +30,18 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 export function GameStatsDockClient({ data }: { data: DockData }) {
   const { zaps, gems, streak, rank, todaysMove, last7, rankProgress, quest, vaultGems } = data
-  // Same mechanism as the left profile box: a compact bar stuck to the bottom,
-  // revealing the panel on a continued (force) scroll, or on tap.
+  // Mirrors the left profile dock. The bar sits in normal flow at the bottom of
+  // the rail (no sticky), so it scrolls up into view as the rail's top content
+  // leaves; the panel then rises on reaching the feed end (shared reveal), on a
+  // hover-scroll over the bar, or on tap.
   const [manualOpen, setManualOpen] = useState(false)
-  const atBottom = useFeedAtBottom()
-  const open = manualOpen || atBottom
+  const rootRef = useRef<HTMLDivElement>(null)
+  const revealed = useDockRevealed()
+  const hoverOpen = useHoverScrollReveal(rootRef)
+  const open = manualOpen || revealed || hoverOpen
 
   return (
-    <div className="sticky bottom-0 z-10 border-t border-border bg-canvas">
+    <div ref={rootRef} className="border-t border-border bg-canvas">
       {/* Compact bar — stuck to the bottom; tap to open/close. */}
       <button
         type="button"
@@ -68,7 +72,7 @@ export function GameStatsDockClient({ data }: { data: DockData }) {
 
       {/* Expandable panel — grows upward, capped at ~1/3 screen, scrolls inside. */}
       <div
-        className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+        className={`grid transition-[grid-template-rows] duration-500 ease-out motion-reduce:transition-none ${
           open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
         }`}
       >

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useTransition } from 'react'
+import { createPortal } from 'react-dom'
 import { Eye, Check, X, ChevronDown } from 'lucide-react'
 import {
   type CommunityRole,
@@ -10,10 +11,15 @@ import {
 import { ROLE_HIERARCHY } from '@/lib/core/roles'
 import { setViewAsRole } from '@/app/(main)/view-as-actions'
 
-// Janitor-only "view as any role" control. Lives under the sidebar profile box;
-// the menu opens upward. Picking a role downgrades the whole app (nav,
-// capabilities, server enforcement) to preview that role; "Exit" restores the
-// janitor's own view. Rendered only when the REAL role is janitor.
+// Janitor-only "view as any role" control. It lives at the TOP of the left
+// profile dock's slide-up menu; picking a role downgrades the whole app (nav,
+// capabilities, server enforcement) to preview that role, and "Exit" restores
+// the janitor's own view. Rendered only when the REAL role is janitor.
+//
+// The dock panel clips its children (`overflow-hidden`, for the rise/collapse
+// animation), so the role list is rendered through a portal and pinned above
+// the trigger with fixed positioning — it can't be clipped by the panel and
+// always opens upward into clear space.
 export function ViewAsControl({
   realRole,
   currentRole,
@@ -22,16 +28,39 @@ export function ViewAsControl({
   currentRole: CommunityRole
 }) {
   const [open, setOpen] = useState(false)
+  const [anchor, setAnchor] = useState<{ left: number; bottom: number; width: number } | null>(null)
   const [isPending, startTransition] = useTransition()
-  const ref = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  // Position the portal menu just above the trigger; keep it there on resize.
+  function place() {
+    const el = triggerRef.current
+    if (!el) return
+    const r = el.getBoundingClientRect()
+    setAnchor({ left: r.left, bottom: window.innerHeight - r.top + 6, width: r.width })
+  }
 
   useEffect(() => {
-    function handleOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    if (!open) return
+    place()
+    function onOutside(e: MouseEvent) {
+      const t = e.target as Node
+      if (triggerRef.current?.contains(t) || menuRef.current?.contains(t)) return
+      setOpen(false)
     }
-    document.addEventListener('mousedown', handleOutside)
-    return () => document.removeEventListener('mousedown', handleOutside)
-  }, [])
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('mousedown', onOutside)
+    document.addEventListener('keydown', onKey)
+    window.addEventListener('resize', place)
+    return () => {
+      document.removeEventListener('mousedown', onOutside)
+      document.removeEventListener('keydown', onKey)
+      window.removeEventListener('resize', place)
+    }
+  }, [open])
 
   if (realRole !== 'janitor') return null
 
@@ -49,8 +78,9 @@ export function ViewAsControl({
   }
 
   return (
-    <div ref={ref} className="relative px-2 pb-2">
+    <>
       <button
+        ref={triggerRef}
         onClick={() => setOpen((v) => !v)}
         disabled={isPending}
         aria-haspopup="menu"
@@ -65,15 +95,20 @@ export function ViewAsControl({
         <span className="flex-1 text-left truncate">
           {impersonating ? `Viewing as ${ROLE_LABEL[currentRole]}` : 'View as role'}
         </span>
-        <ChevronDown
-          className={`w-3.5 h-3.5 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
-        />
+        <ChevronDown className={`w-3.5 h-3.5 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
-      {open && (
+      {open && anchor && createPortal(
         <div
+          ref={menuRef}
           role="menu"
-          className="absolute bottom-full left-2 right-2 mb-1 rounded-xl border border-border bg-surface-elevated shadow-xl shadow-black/10 py-1 z-50"
+          style={{
+            position: 'fixed',
+            left: anchor.left,
+            bottom: anchor.bottom,
+            width: Math.max(anchor.width, 208),
+          }}
+          className="z-[60] rounded-xl border border-border bg-surface-elevated shadow-xl shadow-black/10 py-1"
         >
           <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-subtle">
             View the app as
@@ -108,8 +143,9 @@ export function ViewAsControl({
               </button>
             </div>
           )}
-        </div>
+        </div>,
+        document.body,
       )}
-    </div>
+    </>
   )
 }

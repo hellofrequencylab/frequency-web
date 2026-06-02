@@ -384,10 +384,11 @@ async function LeaderboardWidget() {
 
 // ── Game stats dock ───────────────────────────────────────────────────────────
 // Server wrapper: assemble the player's "progress cockpit" and hand it to the
-// interactive dock (components/sidebar/game-stats-dock.tsx). A compact bar is
-// pinned to the bottom; tapping it (or scrolling to the feed bottom) opens a
-// panel with today's move, streak, rank progress, challenges, a quest, badges,
-// and The Vault at the very bottom. Everything is best-effort — any one source
+// interactive dock (components/sidebar/game-stats-dock.tsx). A compact bar sits
+// at the bottom of the rail and scrolls up into view as you near the end;
+// tapping it (or reaching the feed bottom, or hover-scrolling it) opens a panel
+// with today's move, streak, rank progress, a quest, and The Vault at the very
+// bottom. Everything is best-effort — any one source
 // failing degrades to an empty/teaser state rather than breaking the rail.
 
 async function GameStatsDock({ profileId }: { profileId: string }) {
