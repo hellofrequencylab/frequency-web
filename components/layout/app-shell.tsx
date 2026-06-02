@@ -784,26 +784,26 @@ export default function AppShell({
           </Link>
         </div>
 
+        {/* Explore (marketing) nav — sits beside the logo. Desktop only.
+            Light brown so it stays unobtrusive over the feed. */}
+        <nav className="hidden md:flex items-center gap-0.5">
+          {DISCOVER_NAV.map((l) => (
+            <Link
+              key={l.href}
+              href={l.href}
+              className={`px-2.5 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
+                isActive(l.href)
+                  ? 'text-[#7a5c3a] bg-[#7a5c3a]/10'
+                  : 'text-[#a98c66] hover:text-[#7a5c3a] hover:bg-[#a98c66]/10'
+              }`}
+            >
+              {l.label}
+            </Link>
+          ))}
+        </nav>
+
         {/* Right section: quick nav · search · notifications · account */}
         <div className="flex flex-1 items-center justify-end gap-1 px-3">
-
-          {/* Explore (marketing) nav. Desktop only — the public Discover pages
-              live in the header bar; the app drilldown lives in the sidebar. */}
-          <nav className="hidden md:flex items-center gap-0.5 mr-2">
-            {DISCOVER_NAV.map((l) => (
-              <Link
-                key={l.href}
-                href={l.href}
-                className={`px-2.5 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
-                  isActive(l.href)
-                    ? 'text-primary-strong bg-primary-bg'
-                    : 'text-primary/90 hover:text-primary hover:bg-surface-elevated'
-                }`}
-              >
-                {l.label}
-              </Link>
-            ))}
-          </nav>
 
           {/* Search pill. Desktop */}
           <Link
