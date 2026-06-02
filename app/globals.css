@@ -18,10 +18,10 @@
      `--color-marketing-canvas` for the splash and any public-facing pages so
      the brand vibe carries on the website while the in-app community feels
      light. */
-  --color-canvas:            #FBFAF6;
+  --color-canvas:            #FBF8F1;
   --color-marketing-canvas:  #F2EAD9;
   --color-surface:           #FFFFFF;
-  --color-surface-elevated:  #FCFAF5;
+  --color-surface-elevated:  #FAF6EC;
 
   /* Borders */
   --color-border:           #E9E1D4;
@@ -52,7 +52,7 @@
   /* Brand. Signal (teal) */
   --color-signal:           #1E9E89;
   --color-signal-strong:    #0F6657;
-  --color-signal-bg:        #DDF1ED;
+  --color-signal-bg:        #D6F0EA;
   --color-text-on-signal:   #04231E;
 
   /* Semantic states */
@@ -85,13 +85,16 @@
 .dark {
   color-scheme: dark;
 
-  --color-canvas:           #16130E;
-  --color-marketing-canvas: #16130E;
-  --color-surface:          #1F1B14;
-  --color-surface-elevated: #28231A;
+  /* Warmed toward dark wood — the reference spaces are espresso slats lit by
+     amber. A subtle golden-brown undertone (R>G>B widened) so surfaces read as
+     warm timber rather than neutral charcoal. Contrast/structure unchanged. */
+  --color-canvas:           #17120B;
+  --color-marketing-canvas: #120E07;
+  --color-surface:          #211A10;
+  --color-surface-elevated: #2B2415;
 
-  --color-border:           #372F22;
-  --color-border-strong:    #4A4030;
+  --color-border:           #3C3220;
+  --color-border-strong:    #50432B;
 
   --color-text:             #EFE8DB;
   --color-text-muted:       #A99C88;
@@ -109,12 +112,14 @@
   --color-primary:          #F2B14E;
   --color-primary-hover:    #F8C56F;
   --color-primary-strong:   #F2B14E;
-  --color-primary-bg:       #2C2110;
+  --color-primary-bg:       #30240F;
   --color-text-on-primary:  #2A1B06;
 
+  /* Teal stays the calibrated secondary (pool-water accent); slightly richer
+     tint so it reads clearly teal against the warm dark wood. Amber still leads. */
   --color-signal:           #5FD3BE;
   --color-signal-strong:    #5FD3BE;
-  --color-signal-bg:        #11241F;
+  --color-signal-bg:        #0F2C24;
   --color-text-on-signal:   #04231E;
 
   --color-success:          #6FCF73;
