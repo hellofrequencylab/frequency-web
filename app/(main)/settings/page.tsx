@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { Moon, Sun, Monitor, Check, User, Shield } from 'lucide-react'
+import { Moon, Sun, Monitor, Check, User, Shield, Bell, CreditCard } from 'lucide-react'
+import { SectionHeader } from '@/components/ui/section-header'
 
 type Theme = 'light' | 'dark' | 'system'
 
@@ -52,51 +53,25 @@ export default function SettingsPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold text-text mb-1">Settings</h1>
+      <h1 className="text-2xl font-bold text-text mb-1">Settings</h1>
       <p className="text-sm text-muted mb-8">
         Manage your preferences.
       </p>
 
-      {/* Profile link */}
+      {/* Account — all of a member's settings reachable from one place. */}
       <section className="mb-8">
-        <h2 className="text-sm font-semibold text-muted uppercase tracking-wide mb-3">
-          Account
-        </h2>
-        <Link
-          href="/settings/profile"
-          className="flex items-center gap-3 rounded-2xl border border-border bg-surface shadow-sm px-4 py-3 hover:border-primary-bg dark:hover:border-primary hover:bg-primary-bg/30 dark:hover:bg-primary-bg transition-colors"
-        >
-          <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-surface-elevated shrink-0">
-            <User className="w-4 h-4 text-muted" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-text">Edit profile</p>
-            <p className="text-xs text-muted mt-0.5">
-              Display name, handle, bio, and photo
-            </p>
-          </div>
-          <span className="text-subtle text-sm">→</span>
-        </Link>
-        <Link
-          href="/settings/account"
-          className="mt-3 flex items-center gap-3 rounded-2xl border border-border bg-surface shadow-sm px-4 py-3 hover:border-primary-bg dark:hover:border-primary hover:bg-primary-bg/30 dark:hover:bg-primary-bg transition-colors"
-        >
-          <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-surface-elevated shrink-0">
-            <Shield className="w-4 h-4 text-muted" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-text">Account &amp; privacy</p>
-            <p className="text-xs text-muted mt-0.5">Blocked members, delete account</p>
-          </div>
-          <span className="text-subtle text-sm">→</span>
-        </Link>
+        <SectionHeader title="Account" />
+        <div className="space-y-3">
+          <SettingLink href="/settings/profile" Icon={User} title="Edit profile" description="Display name, handle, bio, and photo" />
+          <SettingLink href="/settings/account" Icon={Shield} title="Account & privacy" description="Blocked members, delete account" />
+          <SettingLink href="/settings/notifications" Icon={Bell} title="Notifications" description="Email and push preferences" />
+          <SettingLink href="/settings/billing" Icon={CreditCard} title="Billing" description="Membership and payment" />
+        </div>
       </section>
 
       {/* Appearance */}
       <section>
-        <h2 className="text-sm font-semibold text-muted uppercase tracking-wide mb-3">
-          Appearance
-        </h2>
+        <SectionHeader title="Appearance" />
         <div className="rounded-2xl border border-border bg-surface shadow-sm divide-y divide-border/80 dark:divide-border/50 overflow-hidden">
           {THEME_OPTIONS.map(({ value, label, description, Icon }) => {
             const active = theme === value
@@ -132,5 +107,33 @@ export default function SettingsPage() {
         </div>
       </section>
     </div>
+  )
+}
+
+function SettingLink({
+  href,
+  Icon,
+  title,
+  description,
+}: {
+  href: string
+  Icon: typeof Moon
+  title: string
+  description: string
+}) {
+  return (
+    <Link
+      href={href}
+      className="flex items-center gap-3 rounded-2xl border border-border bg-surface shadow-sm px-4 py-3 hover:border-primary-bg dark:hover:border-primary hover:bg-primary-bg/30 dark:hover:bg-primary-bg transition-colors"
+    >
+      <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-surface-elevated shrink-0">
+        <Icon className="w-4 h-4 text-muted" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-text">{title}</p>
+        <p className="text-xs text-muted mt-0.5">{description}</p>
+      </div>
+      <span className="text-subtle text-sm">→</span>
+    </Link>
   )
 }
