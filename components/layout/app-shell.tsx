@@ -33,6 +33,7 @@ import {
   FileText,
   Sparkles,
   BookOpen,
+  Send,
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { NotificationBell } from '@/components/layout/notification-bell'
@@ -50,33 +51,58 @@ import { useFeedAtBottom } from '@/components/sidebar/use-feed-at-bottom'
 // Grouped nav (IA-STRATEGY §1). Same items + visibility as before — just sorted
 // into labelled sections so a newcomer can read the structure. Crew/Admin are
 // appended (role-gated) below in NavLinkList.
-// One declarative, role-keyed nav config (the single source of truth). An item
-// is shown when the viewer's role is >= its `minRole` (default 'member'); a
-// section with no visible items is skipped. To change who sees a link, or to
-// add/move one, edit this array — nothing else.
+// One declarative nav config — the single source of truth. The whole menu is
+// ALWAYS shown; an item the viewer can't reach renders muted (greyed,
+// non-clickable). `access` is the level required to use it. To change who can
+// use a link, or add/move one, edit this array — nothing else.
+type NavAccess = 'visitor' | 'member' | 'crew' | 'host' | 'staff' | 'janitor'
+
 const NAV_SECTIONS: {
   label: string | null
-  items: { href: string; label: string; Icon: React.ElementType; minRole?: CommunityRole }[]
+  items: { href: string; label: string; Icon: React.ElementType; access: NavAccess }[]
 }[] = [
   { label: null, items: [
-    { href: '/',     label: 'Home', Icon: Home },
-    { href: '/feed', label: 'Feed', Icon: FileText },
+    { href: '/feed', label: 'Feed', Icon: Home, access: 'member' },
   ] },
   { label: 'Community', items: [
-    { href: '/circles',   label: 'Circles',   Icon: Users },
-    { href: '/channels',  label: 'Interests', Icon: Radio },
-    { href: '/events',    label: 'Events',    Icon: CalendarDays },
-    { href: '/practices', label: 'Practices', Icon: Sparkles },
-    { href: '/programs',  label: 'Programs',  Icon: BookOpen },
-    { href: '/partners',  label: 'Partners',  Icon: Store },
+    { href: '/circles',   label: 'Circles',   Icon: Users,        access: 'visitor' },
+    { href: '/channels',  label: 'Interests', Icon: Radio,        access: 'visitor' },
+    { href: '/events',    label: 'Events',    Icon: CalendarDays, access: 'member' },
+    { href: '/practices', label: 'Practices', Icon: Sparkles,     access: 'member' },
+    { href: '/programs',  label: 'Programs',  Icon: BookOpen,     access: 'member' },
   ] },
   { label: 'Connect', items: [
-    { href: '/broadcast', label: 'Broadcast', Icon: Megaphone },
-    { href: '/messages',  label: 'Messages',  Icon: MessageSquare },
-    { href: '/friends',   label: 'Friends',   Icon: UserPlus },
-    { href: '/people',    label: 'Directory', Icon: Globe },
+    { href: '/broadcast', label: 'Broadcast', Icon: Megaphone,     access: 'visitor' },
+    { href: '/messages',  label: 'Messages',  Icon: MessageSquare, access: 'member' },
+    { href: '/friends',   label: 'Friends',   Icon: UserPlus,      access: 'member' },
+    { href: '/partners',  label: 'Partners',  Icon: Store,         access: 'member' },
+    { href: '/people',    label: 'Directory', Icon: Globe,         access: 'member' },
+  ] },
+  { label: 'Progress', items: [
+    { href: '/crew',  label: 'Dashboard', Icon: Zap, access: 'crew' },
+    { href: '/vault', label: 'Vault',     Icon: Gem, access: 'member' },
+  ] },
+  { label: 'Manage', items: [
+    { href: '/admin',    label: 'Admin',    Icon: Shield,    access: 'host' },
+    { href: '/studio',   label: 'Studio',   Icon: Briefcase, access: 'staff' },
+    { href: '/outreach', label: 'Outreach', Icon: Send,      access: 'host' },
+    { href: '/pages',    label: 'Pages',    Icon: FileText,  access: 'janitor' },
   ] },
 ]
+
+// Can the viewer USE this item? (else it renders muted.) `role` is the viewer's
+// community role (null = logged-out visitor); `isStaff` is the separate staff axis.
+function canAccess(access: NavAccess, role: CommunityRole | null, isStaff: boolean): boolean {
+  switch (access) {
+    case 'visitor': return true
+    case 'staff':   return isStaff
+    case 'janitor': return role === 'janitor'
+    case 'member':  return role != null
+    case 'crew':    return atLeastRole(role, 'crew')
+    case 'host':    return atLeastRole(role, 'host')
+    default:        return false
+  }
+}
 
 interface Profile {
   display_name: string
@@ -414,9 +440,6 @@ function NavLinkList({
   hideAppNav?: boolean
   isStaff?: boolean
 }) {
-  const showCrew = role === 'crew' || role === 'host' || role === 'guide' || role === 'mentor' || role === 'janitor'
-  const showAdmin = role === 'host' || role === 'guide' || role === 'mentor' || role === 'janitor'
-
   const itemClass = (active: boolean) =>
     `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
       active
@@ -429,29 +452,37 @@ function NavLinkList({
 
   return (
     <>
-      {!hideAppNav && NAV_SECTIONS.map((section, i) => {
-        // Default a missing role to 'member' so base items can never be hidden
-        // (a null role must not blank the whole menu).
-        const items = section.items.filter((it) => atLeastRole(role ?? 'member', it.minRole ?? 'member'))
-        if (items.length === 0) return null
-        return (
-          <div key={section.label ?? `top-${i}`} className={`space-y-0.5 ${i > 0 ? 'mt-2' : ''}`}>
-            {section.label && <p className={sectionLabelClass}>{section.label}</p>}
-            {items.map(({ href, label, Icon }) => {
-              const active = isActive(href)
+      {!hideAppNav && NAV_SECTIONS.map((section, i) => (
+        <div key={section.label ?? `top-${i}`} className={`space-y-0.5 ${i > 0 ? 'mt-2' : ''}`}>
+          {section.label && <p className={sectionLabelClass}>{section.label}</p>}
+          {section.items.map(({ href, label, Icon, access }) => {
+            // Whole menu always shows; mute what the viewer can't reach.
+            if (!canAccess(access, role, isStaff)) {
               return (
-                <Link key={href} href={href} onClick={onNavigate} className={itemClass(active)}>
-                  <Icon
-                    className={`w-[18px] h-[18px] shrink-0 ${active ? 'text-primary-strong' : 'text-subtle'}`}
-                    strokeWidth={active ? 2.5 : 2}
-                  />
+                <div
+                  key={href}
+                  aria-disabled="true"
+                  title="You don't have access to this yet"
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-subtle opacity-50 cursor-not-allowed select-none"
+                >
+                  <Icon className="w-[18px] h-[18px] shrink-0 text-subtle" strokeWidth={2} />
                   {label}
-                </Link>
+                </div>
               )
-            })}
-          </div>
-        )
-      })}
+            }
+            const active = isActive(href)
+            return (
+              <Link key={href} href={href} onClick={onNavigate} className={itemClass(active)}>
+                <Icon
+                  className={`w-[18px] h-[18px] shrink-0 ${active ? 'text-primary-strong' : 'text-subtle'}`}
+                  strokeWidth={active ? 2.5 : 2}
+                />
+                {label}
+              </Link>
+            )
+          })}
+        </div>
+      ))}
 
       {extraSections?.map((section, i) => (
         <div key={`extra-${section.label ?? i}`} className="space-y-0.5 mt-2">
@@ -471,75 +502,6 @@ function NavLinkList({
         </div>
       ))}
 
-      {!hideAppNav && showCrew && (
-        <div className="space-y-0.5 mt-2">
-          <p className={sectionLabelClass}>Progress</p>
-          <Link href="/crew" onClick={onNavigate} className={itemClass(isActive('/crew'))}>
-            <Zap
-              className={`w-[18px] h-[18px] shrink-0 ${isActive('/crew') ? 'text-primary-strong' : 'text-subtle'}`}
-              strokeWidth={isActive('/crew') ? 2.5 : 2}
-            />
-            Dashboard
-          </Link>
-        </div>
-      )}
-
-      {!hideAppNav && (showAdmin || isStaff) && (
-        <div className="space-y-0.5 mt-2">
-          <p className={sectionLabelClass}>Manage</p>
-          {showAdmin && (
-            <Link
-              href="/admin"
-              onClick={onNavigate}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                isActive('/admin')
-                  ? 'bg-signal-bg text-signal-strong'
-                  : 'text-muted hover:bg-surface-elevated hover:text-text'
-              }`}
-            >
-              <Shield
-                className={`w-[18px] h-[18px] shrink-0 ${isActive('/admin') ? 'text-signal-strong' : 'text-subtle'}`}
-                strokeWidth={isActive('/admin') ? 2.5 : 2}
-              />
-              Admin
-            </Link>
-          )}
-          {isStaff && (
-            <Link
-              href="/studio"
-              onClick={onNavigate}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                isActive('/studio')
-                  ? 'bg-signal-bg text-signal-strong'
-                  : 'text-muted hover:bg-surface-elevated hover:text-text'
-              }`}
-            >
-              <Briefcase
-                className={`w-[18px] h-[18px] shrink-0 ${isActive('/studio') ? 'text-signal-strong' : 'text-subtle'}`}
-                strokeWidth={isActive('/studio') ? 2.5 : 2}
-              />
-              Studio
-            </Link>
-          )}
-          {role === 'janitor' && (
-            <Link
-              href="/pages"
-              onClick={onNavigate}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                isActive('/pages')
-                  ? 'bg-signal-bg text-signal-strong'
-                  : 'text-muted hover:bg-surface-elevated hover:text-text'
-              }`}
-            >
-              <FileText
-                className={`w-[18px] h-[18px] shrink-0 ${isActive('/pages') ? 'text-signal-strong' : 'text-subtle'}`}
-                strokeWidth={isActive('/pages') ? 2.5 : 2}
-              />
-              Pages
-            </Link>
-          )}
-        </div>
-      )}
     </>
   )
 }
