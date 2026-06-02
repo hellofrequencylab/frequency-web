@@ -1,7 +1,4 @@
-import type { Config, ComponentConfig } from '@measured/puck'
-import { Statement } from '@/components/marketing/marketing-ui'
-import { accentize, toneField, type Tone } from './fields'
-import { layoutField, layoutDefault, padClass, visClass, type LayoutValue } from './layout'
+import type { Config } from '@measured/puck'
 
 // The STANDARDIZED block library — shared by BOTH the editor (<Puck>) and the
 // public renderer (<Render>). Blocks are organized like a real page-builder:
@@ -9,7 +6,9 @@ import { layoutField, layoutDefault, padClass, visClass, type LayoutValue } from
 // left-bar categories, each with variants + the same universal "adjust" controls
 // (background, width, alignment, spacing, visibility). Every block is built from
 // the kit in components/page-editor/blocks/* against the frozen contract in
-// blocks/kit.tsx + lib/page-editor/fields.tsx. See docs/PAGE-EDITOR-SPEC.md.
+// blocks/kit.tsx + lib/page-editor/fields.tsx. This file is PURE ASSEMBLY: it
+// merges the per-group fragments and declares the left-bar categories — no block
+// is defined here. See docs/PAGE-EDITOR-SPEC.md §12.
 
 import { headingComponents } from '@/components/page-editor/blocks/kit'
 import { sectionsComponents } from '@/components/page-editor/blocks/sections'
@@ -18,34 +17,9 @@ import { mediaComponents } from '@/components/page-editor/blocks/media'
 import { primitivesComponents } from '@/components/page-editor/blocks/primitives'
 import { dynamicComponents } from '@/components/page-editor/blocks/dynamic'
 
-// Big typographic interstitial — a Content primitive kept inline (it's a thin
-// wrapper over the marketing-ui Statement).
-const statementComponents: Record<string, ComponentConfig> = {
-  Statement: {
-    label: 'Statement',
-    fields: {
-      text: { type: 'textarea', label: 'Statement' },
-      accent: { type: 'text', label: 'Accent word (optional)' },
-      tone: toneField,
-      layout: layoutField,
-    },
-    defaultProps: { text: 'A bold statement.', accent: '', tone: 'canvas', layout: layoutDefault },
-    render: ({ text, accent, tone, layout }) => (
-      <Statement
-        tone={(tone === 'none' ? 'surface' : (tone as Tone)) as 'surface' | 'canvas' | 'ink'}
-        pad={padClass(layout as LayoutValue)}
-        vis={visClass(layout as LayoutValue)}
-      >
-        {accentize(text as string, accent as string)}
-      </Statement>
-    ),
-  },
-}
-
 export const config: Config = {
   components: {
     ...headingComponents,
-    ...statementComponents,
     ...primitivesComponents,
     ...sectionsComponents,
     ...collectionsComponents,
