@@ -10,8 +10,6 @@ import {
   type NotificationRpcRow,
 } from '@/lib/notifications-map'
 
-export type { NotificationItem }
-
 // RLS convergence (Phase 2, migration 20240304000000): reads/mark-read run on the
 // user-scoped client so the database enforces ownership — reads via the
 // SECURITY DEFINER RPCs `my_notifications` / `my_unread_notification_count` (which
