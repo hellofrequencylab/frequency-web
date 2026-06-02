@@ -52,7 +52,7 @@ export default async function StreaksPage() {
             Crew
           </Link>
           <span className="text-subtle">/</span>
-          <h1 className="text-xl font-semibold text-text">Streaks</h1>
+          <h1 className="text-2xl font-bold text-text">Streaks</h1>
         </div>
         <p className="text-sm text-muted mt-1">
           Build momentum by showing up consistently. Maintain streaks to earn bonus achievements and freeze tokens.
@@ -90,12 +90,12 @@ export default async function StreaksPage() {
                         {config.label} Streak
                       </h3>
                       {active && current > 0 && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-success-bg text-success font-semibold">
+                        <span className="text-xs px-1.5 py-0.5 rounded-md bg-success-bg text-success font-semibold">
                           Active
                         </span>
                       )}
                       {!active && current > 0 && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-danger-bg dark:bg-danger-bg text-danger font-semibold">
+                        <span className="text-xs px-1.5 py-0.5 rounded-md bg-danger-bg dark:bg-danger-bg text-danger font-semibold">
                           Expired
                         </span>
                       )}
@@ -141,7 +141,7 @@ export default async function StreaksPage() {
                               ? 'bg-gradient-to-r from-amber-400 to-primary'
                               : 'bg-surface-elevated'
                           }`} />
-                          <span className={`text-[10px] font-semibold ${
+                          <span className={`text-xs font-semibold ${
                             reached ? 'text-warning' : 'text-subtle'
                           }`}>
                             {m}w
@@ -154,7 +154,7 @@ export default async function StreaksPage() {
 
                 {/* Last activity */}
                 {streak?.last_activity_at && (
-                  <p className="text-[11px] text-subtle mt-3">
+                  <p className="text-xs text-subtle mt-3">
                     Last recorded: {new Date(streak.last_activity_at).toLocaleDateString('en-US', {
                       month: 'short', day: 'numeric', year: 'numeric',
                     })}
@@ -167,7 +167,7 @@ export default async function StreaksPage() {
       </div>
 
       {/* Streak freeze explanation */}
-      <div className="mt-8 rounded-2xl border border-blue-100 bg-signal-bg/50 p-4">
+      <div className="mt-8 rounded-2xl border border-signal-bg bg-signal-bg/50 p-4">
         <div className="flex items-start gap-3">
           <Snowflake className="w-5 h-5 text-signal-strong shrink-0 mt-0.5" />
           <div>

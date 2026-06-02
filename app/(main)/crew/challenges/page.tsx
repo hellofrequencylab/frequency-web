@@ -36,7 +36,7 @@ export default async function ChallengesPage() {
             Crew
           </Link>
           <span className="text-subtle">/</span>
-          <h1 className="text-xl font-semibold text-text">Season Challenges</h1>
+          <h1 className="text-2xl font-bold text-text">Season Challenges</h1>
         </div>
         <p className="text-sm text-muted mt-1">
           Complete challenges this season to earn bonus zaps and unlock Luminary rank.
@@ -88,7 +88,7 @@ export default async function ChallengesPage() {
                 <h2 className="text-sm font-semibold text-text">
                   {diff.label}
                 </h2>
-                <span className={`text-[11px] px-1.5 py-0.5 rounded-md font-semibold ${diff.bg} ${diff.color}`}>
+                <span className={`text-xs px-1.5 py-0.5 rounded-md font-semibold ${diff.bg} ${diff.color}`}>
                   {items.filter(c => c.completedAt).length}/{items.length}
                 </span>
               </div>
@@ -134,10 +134,10 @@ export default async function ChallengesPage() {
                           {!isComplete && (
                             <div className="mt-2">
                               <div className="flex items-center justify-between mb-1">
-                                <span className="text-[11px] text-subtle">
+                                <span className="text-xs text-subtle">
                                   {challenge.current} / {challenge.target}
                                 </span>
-                                <span className="text-[11px] text-subtle">{progress}%</span>
+                                <span className="text-xs text-subtle">{progress}%</span>
                               </div>
                               <div className="h-1.5 rounded-full bg-surface-elevated overflow-hidden">
                                 <div
@@ -149,7 +149,7 @@ export default async function ChallengesPage() {
                           )}
 
                           {isComplete && challenge.completedAt && (
-                            <p className="text-[11px] text-success mt-1">
+                            <p className="text-xs text-success mt-1">
                               Completed {new Date(challenge.completedAt).toLocaleDateString('en-US', {
                                 month: 'short', day: 'numeric',
                               })}
