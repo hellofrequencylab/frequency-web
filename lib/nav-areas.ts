@@ -16,9 +16,9 @@ export type NavAccess = 'visitor' | CommunityRole
 export const ACCESS_LEVELS: readonly NavAccess[] = ['visitor', ...ROLE_HIERARCHY] as const
 
 // Where an area lives in the in-app chrome:
-//   • 'community' → the horizontal sub-menu under the header (primary community
-//      interaction: the day-to-day social loop), and
-//   • 'sidebar'   → the left rail (features + admin / management).
+//   • 'community' → the horizontal "Broadcast bar" under the header: Feed plus
+//      the time-sensitive comms loop (Dispatches · Messages · Events), and
+//   • 'sidebar'   → the left rail (community spaces, features + admin).
 // The full-site browse nav (PrimaryNav) is separate and lives in the header.
 export type NavPlacement = 'community' | 'sidebar'
 
@@ -34,15 +34,19 @@ export type NavArea = {
   defaultAccess: NavAccess
 }
 
-// Order here IS the render order (community bar, then sidebar by section).
+// Order here IS the render order (Broadcast bar, then sidebar by section).
 export const NAV_AREAS: readonly NavArea[] = [
-  // ── Primary community interaction → the horizontal bar under the header ──────
-  { key: 'feed',      href: '/feed',      label: 'Feed',      section: null,        placement: 'community', defaultAccess: 'member'  },
-  { key: 'circles',   href: '/circles',   label: 'Circles',   section: 'Community', placement: 'community', defaultAccess: 'visitor' },
-  { key: 'channels',  href: '/channels',  label: 'Interests', section: 'Community', placement: 'community', defaultAccess: 'visitor' },
-  { key: 'events',    href: '/events',    label: 'Events',    section: 'Community', placement: 'community', defaultAccess: 'member'  },
-  { key: 'broadcast', href: '/broadcast', label: 'Broadcast', section: 'Connect',   placement: 'community', defaultAccess: 'visitor' },
-  { key: 'messages',  href: '/messages',  label: 'Messages',  section: 'Connect',   placement: 'community', defaultAccess: 'member'  },
+  // ── Broadcast bar → the horizontal sub-menu under the header ─────────────────
+  // Feed is the anchor (always available, set apart in the bar); the rest is the
+  // time-sensitive comms loop.
+  { key: 'feed',      href: '/feed',      label: 'Feed',      section: null,         placement: 'community', defaultAccess: 'member'  },
+  { key: 'broadcast', href: '/broadcast', label: 'Dispatches', section: 'Broadcast', placement: 'community', defaultAccess: 'visitor' },
+  { key: 'messages',  href: '/messages',  label: 'Messages',  section: 'Broadcast',  placement: 'community', defaultAccess: 'member'  },
+  { key: 'events',    href: '/events',    label: 'Events',    section: 'Broadcast',  placement: 'community', defaultAccess: 'member'  },
+
+  // ── Community spaces → top of the left sidebar ──────────────────────────────
+  { key: 'circles',   href: '/circles',   label: 'Circles',   section: 'Community',  placement: 'sidebar',   defaultAccess: 'visitor' },
+  { key: 'channels',  href: '/channels',  label: 'Interests', section: 'Community',  placement: 'sidebar',   defaultAccess: 'visitor' },
 
   // ── Features + admin → the left sidebar ─────────────────────────────────────
   { key: 'practices', href: '/practices', label: 'Practices', section: 'Library',   placement: 'sidebar',   defaultAccess: 'member'  },

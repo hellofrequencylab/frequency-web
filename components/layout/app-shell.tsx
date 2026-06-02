@@ -77,7 +77,8 @@ function buildSections(areas: typeof NAV_AREAS[number][]): NavSectionGroup[] {
   return sections
 }
 
-// Desktop sidebar = features + admin only (the community loop lives in the
+// Desktop sidebar = community spaces (Circles, Interests) + features + admin
+// (the Broadcast bar — Feed · Dispatches · Messages · Events — lives in the
 // horizontal CommunityNav under the header). The mobile drawer is the full menu,
 // so it gets every area for completeness.
 const SIDEBAR_SECTIONS = buildSections(NAV_AREAS.filter((a) => a.placement === 'sidebar'))
@@ -838,7 +839,7 @@ export default function AppShell({
         {/* Left nav */}
         <aside className="hidden md:flex w-52 flex-col shrink-0 border-r border-border bg-surface/80 backdrop-blur-sm">
 
-          {/* Features & admin rail (the community loop lives in the bar up top) */}
+          {/* Community spaces + features + admin rail (the Broadcast bar lives up top) */}
           <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
             <NavLinkList isActive={isActive} role={role} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} />
           </nav>
