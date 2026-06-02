@@ -19,9 +19,12 @@ const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 export async function requestBetaAccess(input: {
   email: string
   name?: string
+  /** Attribution tag for where the lead came from (e.g. 'discover_inline'). */
+  source?: string
 }): Promise<BetaResult> {
   const email = (input.email || '').trim().toLowerCase()
   const name = (input.name || '').trim() || null
+  const source = (input.source || '').trim() || 'beta_waitlist'
 
   if (!EMAIL_RE.test(email)) {
     return { ok: false, error: 'Please enter a valid email address.' }
@@ -64,7 +67,7 @@ export async function requestBetaAccess(input: {
         .from('contacts')
         .update({
           display_name: existing.display_name ?? name,
-          source: 'beta_waitlist',
+          source,
           meta,
           last_seen_at: nowIso,
           updated_at: nowIso,
