@@ -1,11 +1,19 @@
 'use client'
 
-import { LayoutDashboard, Users, Rocket, Megaphone, Workflow, BarChart3, Sparkles } from 'lucide-react'
+import { LayoutDashboard, Users, Rocket, Megaphone, Workflow, BarChart3, Sparkles, ArrowLeft } from 'lucide-react'
 import AppShell, { type NavSection } from '@/components/layout/app-shell'
 
 // Studio nav defined client-side so the icon components don't have to cross the
 // server/client boundary. Rendered as an extra section in the standard AppShell.
+// A "Back to Frequency" link sits up top so the marketing workspace always has a
+// one-click route back to the main site.
 const STUDIO_SECTIONS: NavSection[] = [
+  {
+    label: null,
+    items: [
+      { href: '/feed', label: 'Back to Frequency', Icon: ArrowLeft },
+    ],
+  },
   {
     label: 'Studio',
     items: [

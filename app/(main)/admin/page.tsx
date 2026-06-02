@@ -40,7 +40,7 @@ export default async function AdminPage() {
 
   const role = profile.community_role as CommunityRole
 
-  if (!['host', 'guide', 'mentor', 'janitor'].includes(role)) notFound()
+  if (!['host', 'guide', 'mentor', 'admin', 'janitor'].includes(role)) notFound()
 
   // Overview stat counts. Quick aggregate for all admin roles
   const [membersCount, circlesCount, eventsCount, dispatchesCount] = await Promise.all([

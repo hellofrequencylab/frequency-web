@@ -3740,6 +3740,7 @@ export type Database = {
         | "host"
         | "guide"
         | "mentor"
+        | "admin"
         | "janitor"
       group_status: "forming" | "active" | "inactive" | "archived"
       membership_status: "active" | "pending" | "inactive"
@@ -3911,7 +3912,7 @@ export const Constants = {
       channel_content_type: ["group", "event", "thread"],
       channel_scope_type: ["hub", "nexus", "outpost"],
       circle_type: ["in-person", "online"],
-      community_role: ["member", "crew", "host", "guide", "mentor", "janitor"],
+      community_role: ["member", "crew", "host", "guide", "mentor", "admin", "janitor"],
       group_status: ["forming", "active", "inactive", "archived"],
       membership_status: ["active", "pending", "inactive"],
       post_type: ["feed", "blog", "announcement", "recap"],

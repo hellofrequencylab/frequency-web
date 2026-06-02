@@ -11,7 +11,8 @@ export const ROLE_META: Record<CommunityRole, { emoji: string; blurb: string }> 
   host:    { emoji: '🔑', blurb: 'Runs a circle — creates events and sets the weekly practice.' },
   guide:   { emoji: '🧭', blurb: 'Stewards a hub of circles in their area.' },
   mentor:  { emoji: '🌟', blurb: 'Stewards a nexus; develops hosts and guides.' },
-  janitor: { emoji: '🛡️', blurb: 'Full keys — moderation, members, and the Studio.' },
+  admin:   { emoji: '🗝️', blurb: 'Near-full keys — Studio, structural admin, and marketing pages.' },
+  janitor: { emoji: '🛡️', blurb: 'Full keys — roles, members, moderation, and the permission grid.' },
 }
 
 /** The next role up the ladder, or null if already at the top (janitor). */

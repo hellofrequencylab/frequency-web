@@ -17,8 +17,8 @@ function SidebarCard({ title, children }: { title: string; children: React.React
   )
 }
 
-type AdminRole = 'host' | 'guide' | 'mentor' | 'janitor'
-const ADMIN_ROLES: string[] = ['host', 'guide', 'mentor', 'janitor']
+type AdminRole = 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
+const ADMIN_ROLES: string[] = ['host', 'guide', 'mentor', 'admin', 'janitor']
 
 export default async function AdminDispatchesPage() {
   const supabase = await createClient()
@@ -50,7 +50,7 @@ export default async function AdminDispatchesPage() {
   let hubs:    { id: string; name: string }[] = []
   let nexuses: { id: string; name: string }[] = []
 
-  if (role === 'janitor') {
+  if (role === 'janitor' || role === 'admin') {
     // Mega-admin: all circles, hubs, nexuses
     const [cRes, hRes, nRes] = await Promise.all([
       admin.from('circles').select('id, name').order('name'),
