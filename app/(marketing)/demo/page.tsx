@@ -12,7 +12,7 @@ import {
   Sparkles,
 } from 'lucide-react'
 import {
-  PageHero,
+  PhotoHero,
   Section,
   SectionHeading,
   Statement,
@@ -40,7 +40,10 @@ export const metadata: Metadata = {
 export default function DemoPage() {
   return (
     <>
-      <PageHero
+      <PhotoHero
+        image="/images/site/lab-concept.jpg"
+        alt="Inside The Lab — a warm, plant-filled events space at dusk"
+        focal="object-center"
         eyebrow="Take the tour"
         title="See inside Frequency."
         subtitle="A real look at both halves of it — the app your people live in day to day, and The Lab, the space you walk into. No vapor, no someday. This is what's being built right now."

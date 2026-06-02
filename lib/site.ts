@@ -10,26 +10,49 @@ export const SITE_TAGLINE = "A place to be human";
 export const SITE_DESCRIPTION =
   "Frequency connects neighborhoods into real-world community. Join local circles, show up for events near you, and build lasting friendships with people who live close by.";
 
-// ── Public marketing chrome ───────────────────────────────────────────────────
-// Top-nav items shown on the public site (SiteHeader) + marketing footer.
-// Keep these resolving — every href is a live route.
-export const MARKETING_NAV: { label: string; href: string }[] = [
+// ── Unified site navigation ───────────────────────────────────────────────────
+// One nav, used by every header (the in-app AppShell top bar, the marketing
+// header, and the Discover/SiteHeader) via <PrimaryNav>. Two dropdowns:
+//   • "Discover" — the live community (Circles / Events / Topics)
+//   • "About"    — the mission + site pages (members get a mission-focused subset)
+// `desc` powers the subtitle line in the dropdown panels.
+export type NavLink = { label: string; href: string; desc?: string }
+
+// Discover dropdown — the live-community explore pages.
+export const DISCOVER_NAV: NavLink[] = [
+  { label: "Discover", href: "/discover", desc: "Everything happening near you" },
+  { label: "Circles", href: "/discover/circles", desc: "Small groups around an interest" },
+  { label: "Events", href: "/discover/events", desc: "Gatherings you can show up to" },
+  { label: "Topics", href: "/discover/topics", desc: "Browse by what you practice" },
+];
+
+// The mission / site pages — shown as flat tabs beside the Discover dropdown.
+// Visitors get the full set (including the acquisition pages); members get a
+// mission-focused subset, so the nonprofit stays present in the social area
+// without pushing Pricing/Demo at them. Designed to grow — Mission / Impact /
+// Donate slot straight in here as they ship.
+export const SITE_NAV: NavLink[] = [
   { label: "How it works", href: "/how-it-works" },
+  { label: "The Lab", href: "/the-lab" },
   { label: "Demo", href: "/demo" },
   { label: "Pricing", href: "/pricing" },
-  { label: "The Lab", href: "/the-lab" },
-  { label: "Discover", href: "/discover" },
   { label: "About", href: "/about" },
 ];
 
-// The public Discover/Explore nav — the "marketing" drill-in (public SEO pages),
-// shown in the header bars (in-app top bar + marketing header), NOT the app's
-// community sidebar. The sidebar is the in-product drilldown (circles, feed, etc.).
-export const DISCOVER_NAV: { label: string; href: string }[] = [
+export const SITE_NAV_MEMBER: NavLink[] = [
+  { label: "How it works", href: "/how-it-works" },
+  { label: "The Lab", href: "/the-lab" },
+  { label: "About", href: "/about" },
+];
+
+// Flat list for the marketing footer (every public page, no grouping).
+export const MARKETING_NAV: NavLink[] = [
+  { label: "How it works", href: "/how-it-works" },
+  { label: "The Lab", href: "/the-lab" },
+  { label: "Demo", href: "/demo" },
+  { label: "Pricing", href: "/pricing" },
   { label: "Discover", href: "/discover" },
-  { label: "Circles", href: "/discover/circles" },
-  { label: "Events", href: "/discover/events" },
-  { label: "Topics", href: "/discover/topics" },
+  { label: "About", href: "/about" },
 ];
 
 // Primary acquisition CTA — the Beta lead-capture (double opt-in). Open signup

@@ -99,7 +99,16 @@ function LegacySplash({ live }: { live: LiveData }) {
           role="img"
           aria-label="The thermal circuit at The Lab, glowing warm in low light"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/75 via-black/55 to-black/90" />
+        {/* Warm ink wash (not flat black) + an amber glow rising from the pools,
+            echoing the LED-lit thermal spaces. */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'linear-gradient(180deg, rgb(20 18 16 / 0.74) 0%, rgb(20 18 16 / 0.42) 44%, rgb(20 18 16 / 0.94) 100%)',
+          }}
+        />
+        <div className="amber-glow absolute inset-0 pointer-events-none" />
 
         <div className="relative z-10 flex flex-col items-center w-full max-w-4xl">
           <p className="text-[11px] sm:text-xs font-bold uppercase tracking-[0.3em] text-primary mb-6">
@@ -116,7 +125,7 @@ function LegacySplash({ live }: { live: LiveData }) {
           <div className="mt-9 flex items-center gap-3 flex-wrap justify-center">
             <Link
               href={BETA_CTA_HREF}
-              className="rounded-2xl bg-primary text-on-primary px-8 py-3.5 text-base font-bold hover:bg-primary-hover transition-colors"
+              className="rounded-2xl bg-primary text-on-primary px-8 py-3.5 text-base font-bold hover:bg-primary-hover transition-colors shadow-pop"
             >
               {BETA_CTA_LABEL}
             </Link>
@@ -146,6 +155,9 @@ function LegacySplash({ live }: { live: LiveData }) {
           <span className="text-[11px] font-bold tracking-widest uppercase">See the vision</span>
           <ChevronDown className="w-5 h-5 animate-bounce" aria-hidden />
         </div>
+
+        {/* Warm LED seam closing the hero into the page. */}
+        <div className="light-strip absolute inset-x-0 bottom-0 z-10" />
       </section>
 
       {/* ── What you get (orient a first-time visitor fast) ──────────────── */}
@@ -251,7 +263,7 @@ function LegacySplash({ live }: { live: LiveData }) {
         </p>
       </ZigZag>
 
-      <Statement>
+      <Statement tone="ink">
         That&apos;s when the seed of
         <br />
         <span className="text-primary">Frequency</span> was first planted.
@@ -290,8 +302,9 @@ function LegacySplash({ live }: { live: LiveData }) {
         Coming to your city.
       </Statement>
 
-      {/* ── What we're building (dark band) ──────────────────────────────── */}
-      <section className="bg-text">
+      {/* ── What we're building (dark slat band) ─────────────────────────── */}
+      <section className="relative bg-slat">
+        <div className="light-strip absolute inset-x-0 top-0 z-10" />
         <Marquee items={['What we’re building', 'The Lab', 'The Network', 'The Model']} />
         <div className="max-w-5xl mx-auto px-6 py-24 sm:py-32 space-y-24 sm:space-y-28">
           <Pillar
@@ -317,6 +330,7 @@ function LegacySplash({ live }: { live: LiveData }) {
             href="/pricing"
           />
         </div>
+        <div className="light-strip absolute inset-x-0 bottom-0 z-10" />
       </section>
 
       {/* ── It's already happening (live proof) ──────────────────────────── */}
