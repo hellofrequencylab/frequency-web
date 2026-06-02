@@ -17,7 +17,7 @@ function SidebarCard({ title, children }: { title: string; children: React.React
   )
 }
 
-type CommunityRole = 'host' | 'guide' | 'mentor' | 'janitor'
+type CommunityRole = 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
 
 export default async function AdminCirclesPage() {
   const supabase = await createClient()
@@ -52,7 +52,7 @@ export default async function AdminCirclesPage() {
 
   let circles: CircleRow[] = []
 
-  if (role === 'janitor') {
+  if (role === 'janitor' || role === 'admin') {
     // Mega-admin: all circles
     const { data } = await admin
       .from('circles')

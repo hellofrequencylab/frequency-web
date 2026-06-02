@@ -20,7 +20,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { applyViewAs } from '@/lib/view-as'
 
-export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
+export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
 
 /** The authenticated auth user (or null), memoized per request. */
 export const getCachedUser = cache(async (): Promise<User | null> => {

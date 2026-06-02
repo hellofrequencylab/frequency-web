@@ -34,6 +34,7 @@ import {
   Sparkles,
   BookOpen,
   Send,
+  Contact,
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { NotificationBell } from '@/components/layout/notification-bell'
@@ -44,64 +45,71 @@ import {
   ROLE_LABEL,
   roleBadgeStyle,
 } from '@/lib/community-roles'
-import { atLeastRole } from '@/lib/core/roles'
+import { NAV_AREAS, meetsAccess, type NavAccess } from '@/lib/nav-areas'
 import { DISCOVER_NAV } from '@/lib/site'
 import { useFeedAtBottom } from '@/components/sidebar/use-feed-at-bottom'
 
-// Grouped nav (IA-STRATEGY §1). Same items + visibility as before — just sorted
-// into labelled sections so a newcomer can read the structure. Crew/Admin are
-// appended (role-gated) below in NavLinkList.
-// One declarative nav config — the single source of truth. The whole menu is
-// ALWAYS shown; an item the viewer can't reach renders muted (greyed,
-// non-clickable). `access` is the level required to use it. To change who can
-// use a link, or add/move one, edit this array — nothing else.
-type NavAccess = 'visitor' | 'member' | 'crew' | 'host' | 'staff' | 'janitor'
+// The sidebar is built from NAV_AREAS (lib/nav-areas.ts — the single source of
+// truth shared with the permission grid). The whole menu is ALWAYS shown; an
+// item the viewer can't reach renders muted (greyed, non-clickable). Each area's
+// access level can be overridden per-area from /admin/roles; those overrides are
+// passed in via the `permissions` prop and merged on top of the code defaults.
+// To add/move a link or change its baseline access, edit lib/nav-areas.ts; to
+// give it an icon, add a key here.
+const AREA_ICONS: Record<string, React.ElementType> = {
+  feed: Home,
+  circles: Users,
+  channels: Radio,
+  events: CalendarDays,
+  practices: Sparkles,
+  programs: BookOpen,
+  broadcast: Megaphone,
+  messages: MessageSquare,
+  friends: UserPlus,
+  partners: Store,
+  people: Globe,
+  crew: Zap,
+  vault: Gem,
+  admin: Shield,
+  crm: Contact,
+  studio: Briefcase,
+  outreach: Send,
+  pages: FileText,
+}
 
-const NAV_SECTIONS: {
-  label: string | null
-  items: { href: string; label: string; Icon: React.ElementType; access: NavAccess }[]
-}[] = [
-  { label: null, items: [
-    { href: '/feed', label: 'Feed', Icon: Home, access: 'member' },
-  ] },
-  { label: 'Community', items: [
-    { href: '/circles',   label: 'Circles',   Icon: Users,        access: 'visitor' },
-    { href: '/channels',  label: 'Interests', Icon: Radio,        access: 'visitor' },
-    { href: '/events',    label: 'Events',    Icon: CalendarDays, access: 'member' },
-    { href: '/practices', label: 'Practices', Icon: Sparkles,     access: 'member' },
-    { href: '/programs',  label: 'Programs',  Icon: BookOpen,     access: 'member' },
-  ] },
-  { label: 'Connect', items: [
-    { href: '/broadcast', label: 'Broadcast', Icon: Megaphone,     access: 'visitor' },
-    { href: '/messages',  label: 'Messages',  Icon: MessageSquare, access: 'member' },
-    { href: '/friends',   label: 'Friends',   Icon: UserPlus,      access: 'member' },
-    { href: '/partners',  label: 'Partners',  Icon: Store,         access: 'member' },
-    { href: '/people',    label: 'Directory', Icon: Globe,         access: 'member' },
-  ] },
-  { label: 'Progress', items: [
-    { href: '/crew',  label: 'Dashboard', Icon: Zap, access: 'crew' },
-    { href: '/vault', label: 'Vault',     Icon: Gem, access: 'member' },
-  ] },
-  { label: 'Manage', items: [
-    { href: '/admin',    label: 'Admin',    Icon: Shield,    access: 'host' },
-    { href: '/studio',   label: 'Studio',   Icon: Briefcase, access: 'staff' },
-    { href: '/outreach', label: 'Outreach', Icon: Send,      access: 'host' },
-    { href: '/pages',    label: 'Pages',    Icon: FileText,  access: 'janitor' },
-  ] },
-]
+type MainNavItem = {
+  key: string
+  href: string
+  label: string
+  Icon: React.ElementType
+  defaultAccess: NavAccess
+}
 
-// Can the viewer USE this item? (else it renders muted.) `role` is the viewer's
-// community role (null = logged-out visitor); `isStaff` is the separate staff axis.
-function canAccess(access: NavAccess, role: CommunityRole | null, isStaff: boolean): boolean {
-  switch (access) {
-    case 'visitor': return true
-    case 'staff':   return isStaff
-    case 'janitor': return role === 'janitor'
-    case 'member':  return role != null
-    case 'crew':    return atLeastRole(role, 'crew')
-    case 'host':    return atLeastRole(role, 'host')
-    default:        return false
+// Group NAV_AREAS into sections, preserving declaration order.
+const NAV_SECTIONS: { label: string | null; items: MainNavItem[] }[] = (() => {
+  const sections: { label: string | null; items: MainNavItem[] }[] = []
+  for (const area of NAV_AREAS) {
+    const item: MainNavItem = {
+      key: area.key,
+      href: area.href,
+      label: area.label,
+      Icon: AREA_ICONS[area.key] ?? Globe,
+      defaultAccess: area.defaultAccess,
+    }
+    const last = sections[sections.length - 1]
+    if (last && last.label === area.section) last.items.push(item)
+    else sections.push({ label: area.section, items: [item] })
   }
+  return sections
+})()
+
+// The effective access for an area = a janitor's per-area override, if any,
+// else the code default. `role` is the viewer's community role (null = visitor).
+function effectiveAccess(
+  item: MainNavItem,
+  permissions: Record<string, NavAccess> | undefined,
+): NavAccess {
+  return permissions?.[item.key] ?? item.defaultAccess
 }
 
 interface Profile {
@@ -287,8 +295,8 @@ function AccountDropdown({
     return () => document.removeEventListener('mousedown', handleOutside)
   }, [])
 
-  const showCrewLink = role === 'crew' || role === 'host' || role === 'guide' || role === 'mentor' || role === 'janitor'
-  const showAdminLink = role === 'host' || role === 'guide' || role === 'mentor' || role === 'janitor'
+  const showCrewLink = role === 'crew' || role === 'host' || role === 'guide' || role === 'mentor' || role === 'admin' || role === 'janitor'
+  const showAdminLink = role === 'host' || role === 'guide' || role === 'mentor' || role === 'admin' || role === 'janitor'
 
   return (
     <div ref={ref} className="relative">
@@ -431,14 +439,15 @@ function NavLinkList({
   onNavigate,
   extraSections,
   hideAppNav = false,
-  isStaff = false,
+  permissions,
 }: {
   isActive: (href: string) => boolean
   role: CommunityRole
   onNavigate?: () => void
   extraSections?: NavSection[]
   hideAppNav?: boolean
-  isStaff?: boolean
+  /** Per-area access overrides (janitor-set); merged over code defaults. */
+  permissions?: Record<string, NavAccess>
 }) {
   const itemClass = (active: boolean) =>
     `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -455,9 +464,10 @@ function NavLinkList({
       {!hideAppNav && NAV_SECTIONS.map((section, i) => (
         <div key={section.label ?? `top-${i}`} className={`space-y-0.5 ${i > 0 ? 'mt-2' : ''}`}>
           {section.label && <p className={sectionLabelClass}>{section.label}</p>}
-          {section.items.map(({ href, label, Icon, access }) => {
+          {section.items.map((item) => {
+            const { href, label, Icon } = item
             // Whole menu always shows; mute what the viewer can't reach.
-            if (!canAccess(access, role, isStaff)) {
+            if (!meetsAccess(effectiveAccess(item, permissions), role)) {
               return (
                 <div
                   key={href}
@@ -515,7 +525,7 @@ function MobileLeftDrawer({
   isActive,
   extraSections,
   hideAppNav = false,
-  isStaff = false,
+  permissions,
 }: {
   open: boolean
   onClose: () => void
@@ -523,7 +533,7 @@ function MobileLeftDrawer({
   isActive: (href: string) => boolean
   extraSections?: NavSection[]
   hideAppNav?: boolean
-  isStaff?: boolean
+  permissions?: Record<string, NavAccess>
 }) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -561,7 +571,7 @@ function MobileLeftDrawer({
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-          <NavLinkList isActive={isActive} role={role} onNavigate={onClose} extraSections={extraSections} hideAppNav={hideAppNav} isStaff={isStaff} />
+          <NavLinkList isActive={isActive} role={role} onNavigate={onClose} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} />
         </nav>
 
         {/* Bottom close. Sits in the thumb zone */}
@@ -669,7 +679,7 @@ export default function AppShell({
   unreadCount = 0,
   extraSections,
   hideAppNav = false,
-  isStaff = false,
+  permissions,
 }: {
   profile: Profile
   /** True DB role, ignoring any view-as override. Defaults to the (effective)
@@ -680,7 +690,8 @@ export default function AppShell({
   unreadCount?: number
   extraSections?: NavSection[]
   hideAppNav?: boolean
-  isStaff?: boolean
+  /** Per-area access overrides (janitor-set); merged over code defaults. */
+  permissions?: Record<string, NavAccess>
 }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -852,7 +863,7 @@ export default function AppShell({
 
           {/* Primary nav */}
           <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-            <NavLinkList isActive={isActive} role={role} extraSections={extraSections} hideAppNav={hideAppNav} isStaff={isStaff} />
+            <NavLinkList isActive={isActive} role={role} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} />
           </nav>
 
           {/* Upgrade to Crew CTA. Members only (not janitor) */}
@@ -917,7 +928,7 @@ export default function AppShell({
         isActive={isActive}
         extraSections={extraSections}
         hideAppNav={hideAppNav}
-        isStaff={isStaff}
+        permissions={permissions}
       />
 
     </div>

@@ -946,6 +946,44 @@ no new cookies/consent; GA4 stays per ADR-048 (anonymized, ad signals off; EU co
 Open: GA Data API embed vs link-out, v1 metric priorities, and the client/server split per event.
 
 ---
+
+## ADR-051: `admin` community role + DB-driven nav permissions
+
+**Status:** Accepted · 2026-06-02. Migrations: `20240306000000_admin_role.sql`,
+`20240306000100_area_permissions.sql`.
+
+**Context:** The role ladder topped out at `janitor`, and Studio access lived on a separate
+`team_members` staff axis (ADR-027). We wanted a near-top role for trusted operators, a single
+place to manage who can reach each app area, and a clearer "marketing workspace" boundary.
+
+**Decision:**
+1. **New `admin` role** on the community ladder, between `mentor` and `janitor`
+   (`member < crew < host < guide < mentor < admin < janitor`). Admin carries nearly the full
+   janitor key-ring (Studio, structural admin tabs, marketing Pages, see-all scopes) but **not**
+   the most sensitive keys — **member management, role assignment, and the permission grid stay
+   janitor-only**. `lib/core/roles.ts` is the ordering source of truth; the Postgres enum order is
+   cosmetic.
+2. **Persisted nav permissions.** `lib/nav-areas.ts` is the single source of truth for nav areas
+   and each area's *default* access level. A new `area_permissions` table stores per-area
+   **overrides**; the authed layout reads them (`lib/permissions.ts`) and the app shell merges
+   `override ?? default`. The whole menu always renders — unreachable items are muted, not hidden.
+   A janitor edits the map from `/admin/roles` via a radio grid (`setAreaPermission`, janitor-gated).
+3. **Studio access** = community `admin`/`janitor` **OR** a Studio staff member (the `team_members`
+   axis is kept for backward-compat). Studio reads as a self-contained marketing workspace with a
+   "Back to Frequency" link.
+4. **Micro-CRM** (`/crm`, host+): steward-scoped member cards (host→circles, guide→hub,
+   mentor→nexus, admin/janitor→community) showing only public profile data + a Message action.
+   Birthday / astrology / Human Design / wellbeing are surfaced as **opt-in channels (coming soon)**
+   — no schema for them yet, so nothing sensitive is exposed.
+
+**Consequences:** Adding a ladder role touches every exhaustive `Record<CommunityRole,…>` and the
+many local `CommunityRole` re-declarations + host+ allow-lists; all were widened to include `admin`.
+`area_permissions.min_role` is `text` (not the enum) because `visitor` is a valid access level but
+not a community role. The generated `database.types.ts` enum was hand-edited to add `admin` pending
+a real `supabase gen types`. Open: persisting per-area overrides for *extra* (Studio) sections,
+editable role emojis/badges, and real opt-in CRM data channels.
+
+---
 ### Decisions intentionally NOT duplicated here
 
 Already fully covered by the repo docs (no ADR needed): the RLS / admin-client

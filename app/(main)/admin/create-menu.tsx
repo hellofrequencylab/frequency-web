@@ -7,7 +7,7 @@ import {
   CircleDot, Radio, CalendarDays, Megaphone, Zap, Building2, Network,
 } from 'lucide-react'
 
-type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
+type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
 
 interface CreateMenuProps {
   role: CommunityRole
@@ -22,9 +22,9 @@ export function AdminCreateMenu({ role }: CreateMenuProps) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
-  const canHost   = ['host', 'guide', 'mentor', 'janitor'].includes(role)
-  const canGuide  = ['guide', 'mentor', 'janitor'].includes(role)
-  const canMentor = ['mentor', 'janitor'].includes(role)
+  const canHost   = ['host', 'guide', 'mentor', 'admin', 'janitor'].includes(role)
+  const canGuide  = ['guide', 'mentor', 'admin', 'janitor'].includes(role)
+  const canMentor = ['mentor', 'admin', 'janitor'].includes(role)
 
   useEffect(() => {
     function onClick(e: MouseEvent) {

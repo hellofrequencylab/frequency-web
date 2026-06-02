@@ -11,7 +11,7 @@ import { WidgetCard } from '@/components/modules/module-card'
 import { GameStatsDockClient, type DockData } from '@/components/sidebar/game-stats-dock'
 import { getPracticesToLogToday, getRecentPracticeLogs, getMemberPractices } from '@/lib/practices'
 
-export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
+export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
 
 interface RightSidebarProps {
   profileId: string
@@ -503,7 +503,7 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
 
   const circleIds = (myMemberships ?? []).map((m: { circle_id: string }) => m.circle_id as string)
 
-  const isCrew    = ['crew', 'host', 'guide', 'mentor', 'janitor'].includes(role)
+  const isCrew    = ['crew', 'host', 'guide', 'mentor', 'admin', 'janitor'].includes(role)
 
   return (
     <div className="flex flex-1 flex-col">
