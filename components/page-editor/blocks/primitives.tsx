@@ -6,6 +6,7 @@
 import {
   Band,
   CtaButton,
+  accentize,
   blockFields,
   blockLayoutDefaults,
   padClass,
@@ -19,6 +20,7 @@ import {
   type ComponentConfig,
   type CtaVariant,
 } from './kit'
+import { Statement } from '@/components/marketing/marketing-ui'
 import { toneBg, isInk, widthClass } from '@/lib/page-editor/fields'
 import { richParagraphs } from '@/lib/page-editor/richtext'
 
@@ -125,6 +127,27 @@ export const primitivesComponents: Record<string, ComponentConfig> = {
       <Band tone={tone} width={width} align={align} layout={layout as LayoutValue}>
         <TextBlock body={body as string} size={size as string} />
       </Band>
+    ),
+  },
+
+  // ── Statement — big typographic interstitial ─────────────────────────────────
+  Statement: {
+    label: 'Statement',
+    fields: {
+      text: { type: 'textarea', label: 'Statement' },
+      accent: { type: 'text', label: 'Accent word (optional)' },
+      tone: toneField,
+      layout: layoutField,
+    },
+    defaultProps: { text: 'A bold statement.', accent: '', tone: 'canvas', layout: layoutDefault },
+    render: ({ text, accent, tone, layout }) => (
+      <Statement
+        tone={(tone === 'none' ? 'surface' : tone) as 'surface' | 'canvas' | 'ink'}
+        pad={padClass(layout as LayoutValue)}
+        vis={visClass(layout as LayoutValue)}
+      >
+        {accentize(text as string, accent as string)}
+      </Statement>
     ),
   },
 
