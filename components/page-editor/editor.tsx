@@ -1,12 +1,13 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Puck, usePuck, type Data } from '@measured/puck'
 import '@measured/puck/puck.css'
 import Link from 'next/link'
 import { Check } from 'lucide-react'
 import { config } from '@/lib/page-editor/config'
-import { publishPage } from '@/app/edit/actions'
+import { publishPage, unpublishPage } from '@/app/edit/actions'
 
 // Dynamic publish button: full-colour "Publish now" when there are unpublished
 // edits, dim "Published" (with a check) when the live page matches the editor.
@@ -65,9 +66,57 @@ function PublishButton({ slug }: { slug: string }) {
   )
 }
 
+// Unpublish: clears the live document so the public route falls back to the
+// hardcoded (coded) design. Shown only when the page is currently published.
+// The editor draft is kept, so this is reversible (just Publish again).
+function UnpublishButton({ slug }: { slug: string }) {
+  const router = useRouter()
+  const [status, setStatus] = useState<'idle' | 'working' | 'error'>('idle')
+
+  async function handleUnpublish() {
+    if (status === 'working') return
+    if (
+      !window.confirm(
+        'Unpublish this page? The public site will show the built-in (coded) design instead. Your editor draft is kept, so you can re-publish anytime.',
+      )
+    )
+      return
+    setStatus('working')
+    try {
+      await unpublishPage(slug)
+      router.refresh()
+      setStatus('idle')
+    } catch {
+      setStatus('error')
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleUnpublish}
+      disabled={status === 'working'}
+      title="Take the editor version offline — the public page reverts to the coded design"
+      className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-[#a33] hover:text-[#7a1f1f]"
+    >
+      {status === 'working' ? 'Unpublishing…' : status === 'error' ? 'Retry unpublish' : 'Unpublish'}
+    </button>
+  )
+}
+
 // Full-screen Puck editor for a marketing page. Admin-only (the editor runtime
 // only loads here; the public site never ships it).
-export function PageEditor({ slug, title, data }: { slug: string; title: string; data: Data }) {
+export function PageEditor({
+  slug,
+  title,
+  data,
+  published = false,
+}: {
+  slug: string
+  title: string
+  data: Data
+  published?: boolean
+}) {
   return (
     <Puck
       config={config}
@@ -82,6 +131,7 @@ export function PageEditor({ slug, title, data }: { slug: string; title: string;
             >
               ← Exit
             </Link>
+            {published && <UnpublishButton slug={slug} />}
             <PublishButton slug={slug} />
           </>
         ),

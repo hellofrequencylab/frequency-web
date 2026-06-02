@@ -45,3 +45,26 @@ export async function savePageDraft(slug: string, data: Data): Promise<void> {
     { onConflict: 'slug' },
   )
 }
+
+// Unpublish — clear the live document so the public route falls back to the
+// hardcoded (coded) design. The working draft (`data`) is kept so the editor
+// content isn't lost; only `published_data` is cleared.
+export async function unpublishPage(slug: string): Promise<void> {
+  const janitor = await requireJanitor()
+  if (!isEditableSlug(slug)) return
+
+  const db = createAdminClient() as unknown as SupabaseClient
+  await db
+    .from('pages')
+    .update({
+      published_data: null,
+      status: 'draft',
+      published_at: null,
+      updated_at: new Date().toISOString(),
+      updated_by: janitor.profileId,
+    })
+    .eq('slug', slug)
+
+  revalidatePath(pathForSlug(slug))
+  revalidatePath('/pages')
+}

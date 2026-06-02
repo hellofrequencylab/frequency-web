@@ -24,5 +24,9 @@ export default async function EditPage({
   const data: Data =
     page?.data && Array.isArray((page.data as Data).content) ? (page.data as Data) : EMPTY
 
-  return <PageEditor slug={slug} title={meta.title} data={data} />
+  // Currently overriding the coded design? (a non-empty published document)
+  const pub = page?.published_data as Data | null
+  const published = !!(pub && Array.isArray(pub.content) && pub.content.length > 0)
+
+  return <PageEditor slug={slug} title={meta.title} data={data} published={published} />
 }
