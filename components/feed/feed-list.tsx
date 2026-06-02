@@ -1,7 +1,10 @@
 import Link from 'next/link'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { MessageSquare, Megaphone, Zap, ArrowRight, CalendarDays, MapPin } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import { relativeTime } from '@/lib/utils'
+import { rankFeedPosts } from '@/lib/feed-rank'
 import { PostCard, FeedPost } from './post-card'
 
 interface RawPost {
@@ -83,100 +86,21 @@ export async function FeedList({
         .limit(30)
       rawPosts = (data ?? []) as unknown as RawPost[]
     } else {
-      // Main feed: public posts + the posts the viewer can actually reach.
-      // This mirrors the posts SELECT RLS model (the feed uses the admin
-      // client, so visibility is enforced here in code instead):
-      //   group   → posts in circles the viewer belongs to (circle-only).
-      //   cluster → announcements from the viewer's circles, plus any circle
-      //             in a hub they belong to, plus hub-less circles whose
-      //             topical channel they follow.
-      const { data: myMemberships } = await admin
-        .from('memberships')
-        .select('circle_id, circles!circle_id ( id, hub_id )')
-        .eq('profile_id', myProfileId)
-        .eq('status', 'active')
-
-      const myCircleIds = [...new Set(
-        (myMemberships ?? []).map((m) => m.circle_id).filter(Boolean) as string[]
-      )]
-      const myHubIds = [...new Set(
-        (myMemberships ?? [])
-          .map((m) => m.circles?.hub_id)
-          .filter(Boolean) as string[]
-      )]
-
-      const { data: myChannels } = await admin
-        .from('topical_channel_memberships')
-        .select('topical_channel_id')
-        .eq('profile_id', myProfileId)
-      const myChannelIds = [...new Set(
-        (myChannels ?? []).map((c) => c.topical_channel_id).filter(Boolean) as string[]
-      )]
-
-      // Circles whose announcements the viewer can reach via a shared hub or a
-      // followed topical channel (their own circles are always reachable).
-      const announcementCircleIds = new Set<string>(myCircleIds)
-      const reachableQueries = []
-      if (myHubIds.length > 0) {
-        reachableQueries.push(
-          admin.from('circles').select('id').in('hub_id', myHubIds)
-        )
-      }
-      if (myChannelIds.length > 0) {
-        reachableQueries.push(
-          admin.from('circles').select('id').is('hub_id', null).in('topical_channel_id', myChannelIds)
-        )
-      }
-      if (reachableQueries.length > 0) {
-        const results = await Promise.all(reachableQueries)
-        for (const r of results) {
-          for (const c of (r.data ?? []) as { id: string }[]) announcementCircleIds.add(c.id)
-        }
-      }
-
-      const queries: PromiseLike<{ data: unknown }>[] = [
-        admin.from('posts').select(POST_SELECT)
-          .eq('visibility', 'public').is('parent_id', null).is('hidden_at', null)
-          .order(order, { ascending: false })
-          .limit(20),
-      ]
-      if (myCircleIds.length > 0) {
-        queries.push(
-          admin.from('posts').select(POST_SELECT)
-            .eq('visibility', 'group').in('scope_id', myCircleIds)
-            .is('parent_id', null).is('hidden_at', null)
-            .order(order, { ascending: false })
-            .limit(30)
-        )
-      }
-      if (announcementCircleIds.size > 0) {
-        queries.push(
-          admin.from('posts').select(POST_SELECT)
-            .eq('visibility', 'cluster').in('scope_id', [...announcementCircleIds])
-            .is('parent_id', null).is('hidden_at', null)
-            .order(order, { ascending: false })
-            .limit(30)
-        )
-      }
-
-      const results = await Promise.all(queries)
-      rawPosts = results.flatMap(r => (r.data ?? []) as unknown as RawPost[])
+      // Main feed (RLS convergence, migration 20240309000000): the reach model —
+      // public + group in my circles + cluster reachable via a shared hub or a
+      // tuned topical channel — now lives in the `feed_for_viewer` SECURITY
+      // DEFINER RPC, enforced in the DB and run on the user-scoped client. It
+      // returns the author's public fields + reactions safely (so it works for
+      // members too, whom the crew+ posts policy would otherwise limit to public).
+      const supabase = (await createClient()) as unknown as SupabaseClient
+      const { data } = await supabase.rpc('feed_for_viewer', { _sort: sort, _limit: 40 })
+      rawPosts = (data as RawPost[] | null) ?? []
     }
   }
 
-  // Dedupe + sort
-  const seen = new Set<string>()
-  const posts: FeedPost[] = rawPosts
-    .filter((p: RawPost) => { if (seen.has(p.id)) return false; seen.add(p.id); return true })
-    .sort((a: RawPost, b: RawPost) => {
-      if (sort === 'relevant') {
-        const diff = (b.engagement_score ?? 0) - (a.engagement_score ?? 0)
-        if (diff !== 0) return diff
-      }
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    })
-    .slice(0, 20)
-    .map((p: RawPost) => ({ ...p, replyCount: p.comment_count ?? 0 })) as FeedPost[]
+  const posts: FeedPost[] = rankFeedPosts(rawPosts, sort).map(
+    (p) => ({ ...p, replyCount: p.comment_count ?? 0 }),
+  ) as FeedPost[]
 
   // ── Resolve scope context (wall, circle, channel) ─────────────────────────
   const scopeIds = [...new Set(posts.map(p => p.scope_id).filter(Boolean) as string[])]
