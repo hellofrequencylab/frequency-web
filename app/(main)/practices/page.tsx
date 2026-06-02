@@ -9,10 +9,10 @@ import {
 import { LogPracticeButton } from '@/components/practice/log-practice-button'
 import { AdoptPracticeButton } from '@/components/practice/adopt-practice-button'
 import { CreatePracticeForm } from '@/components/practice/create-practice-form'
-import { PageHeader, StatStrip } from '@/components/ui/page-header'
+import { IndexTemplate } from '@/components/templates/index-template'
+import { StatStrip } from '@/components/ui/page-header'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
-import { getViewerGamStats } from '@/lib/viewer-stats'
 
 export const metadata: Metadata = {
   title: 'Practices',
@@ -21,11 +21,10 @@ export const metadata: Metadata = {
 
 export default async function PracticesPage() {
   const profileId = await getMyProfileId()
-  const [library, mine, recent, gam] = await Promise.all([
+  const [library, mine, recent] = await Promise.all([
     listPublicPractices(),
     profileId ? getMemberPractices(profileId) : Promise.resolve([]),
     profileId ? getRecentPracticeLogs(profileId, 60) : Promise.resolve([]),
-    getViewerGamStats(),
   ])
   const mineIds = new Set(mine.map((p) => p.id))
   const unadopted = library.filter((p) => !mineIds.has(p.id))
@@ -41,24 +40,26 @@ export default async function PracticesPage() {
   const daysLogged = last14.filter((d) => loggedDays.has(d)).length
 
   return (
-    <div>
-      <PageHeader
-        title="Practices"
-        description="This is where the points come from. A practice is the thing you actually do — adopt one, then log it every day to earn zaps, climb the ranks, and keep your streak alive."
-        gam={gam}
-      />
-
-      <StatStrip items={[
-        { value: mine.length, label: 'Your practices' },
-        { value: daysLogged, label: 'Days logged (14d)' },
-        { value: library.length, label: 'In the library' },
-      ]} />
+    <IndexTemplate
+      title="Practices"
+      description="This is where the points come from. A practice is the thing you actually do — adopt one, then log it every day to earn zaps, climb the ranks, and keep your streak alive."
+    >
+      <div className="mb-6">
+        <StatStrip
+          items={[
+            { value: mine.length, label: 'Your practices' },
+            { value: daysLogged, label: 'Days logged (14d)' },
+            { value: library.length, label: 'In the library' },
+          ]}
+        />
+      </div>
 
       <div className="max-w-2xl space-y-10">
         {profileId && (recent.length > 0 || mine.length > 0) && (
           <section>
             <SectionHeader title="Your activity" />
-            <div className="rounded-2xl border border-border bg-surface px-5 py-4 shadow-sm">
+            {/* Grouped on the canvas (no box) — a widget, not a distinct object. */}
+            <div>
               <div className="mb-3 flex items-center justify-between gap-2">
                 <span className="flex items-center gap-1.5 text-sm text-muted">
                   <Flame className="h-4 w-4 text-primary" />Last 14 days
@@ -105,7 +106,7 @@ export default async function PracticesPage() {
               {mine.map((p) => (
                 <li
                   key={p.id}
-                  className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-surface px-5 py-4 shadow-sm transition-all hover:border-primary-bg hover:shadow-md"
+                  className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-surface px-5 py-4 shadow-sm transition-colors hover:border-primary-bg hover:shadow-md"
                 >
                   <div className="min-w-0">
                     <p className="font-semibold text-text">{p.title}</p>
@@ -141,7 +142,7 @@ export default async function PracticesPage() {
               {unadopted.map((p) => (
                 <li
                   key={p.id}
-                  className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-surface px-5 py-4 shadow-sm transition-all hover:border-primary-bg hover:shadow-md"
+                  className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-surface px-5 py-4 shadow-sm transition-colors hover:border-primary-bg hover:shadow-md"
                 >
                   <div className="min-w-0">
                     <p className="font-semibold text-text">{p.title}</p>
@@ -158,6 +159,6 @@ export default async function PracticesPage() {
           )}
         </section>
       </div>
-    </div>
+    </IndexTemplate>
   )
 }
