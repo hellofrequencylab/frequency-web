@@ -6,6 +6,10 @@ import { UserPlus, Users } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { getInitials } from '@/lib/utils'
 import { bucketFriendships, type FriendshipRpcRow, type FriendEntry } from '@/lib/friendships-map'
+import { IndexTemplate } from '@/components/templates/index-template'
+import { SectionHeader } from '@/components/ui/section-header'
+import { EmptyState } from '@/components/ui/empty-state'
+import { ModuleCard } from '@/components/modules/module-card'
 import {
   AcceptDeclineButtons,
   CancelOutgoingButton,
@@ -25,25 +29,15 @@ export default async function FriendsPage() {
   )
 
   return (
-    <div>
-      <div className="flex items-end justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-text mb-1">Friends</h1>
-          <p className="text-sm text-muted leading-relaxed max-w-2xl">
-            Your friends and any pending requests live here. Add someone before
-            you start a direct message or group thread with them.
-          </p>
-        </div>
-      </div>
-
+    <IndexTemplate
+      title="Friends"
+      description="Your friends and any pending requests live here. Add someone before you start a direct message or group thread with them."
+    >
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-8">
-          {/* Incoming requests */}
           {incoming.length > 0 && (
             <section>
-              <h2 className="text-[11px] font-semibold uppercase tracking-wider text-subtle mb-3">
-                Incoming Requests <span className="text-subtle">·</span> {incoming.length}
-              </h2>
+              <SectionHeader title="Incoming requests" count={incoming.length} />
               <div className="space-y-2">
                 {incoming.map((e) => (
                   <FriendRow key={e.id} profile={e.other}>
@@ -54,12 +48,9 @@ export default async function FriendsPage() {
             </section>
           )}
 
-          {/* Outgoing requests */}
           {outgoing.length > 0 && (
             <section>
-              <h2 className="text-[11px] font-semibold uppercase tracking-wider text-subtle mb-3">
-                Outgoing Requests <span className="text-subtle">·</span> {outgoing.length}
-              </h2>
+              <SectionHeader title="Outgoing requests" count={outgoing.length} />
               <div className="space-y-2">
                 {outgoing.map((e) => (
                   <FriendRow key={e.id} profile={e.other}>
@@ -70,23 +61,23 @@ export default async function FriendsPage() {
             </section>
           )}
 
-          {/* Accepted friends */}
           <section>
-            <h2 className="text-[11px] font-semibold uppercase tracking-wider text-subtle mb-3">
-              Friends <span className="text-subtle">·</span> {accepted.length}
-            </h2>
+            <SectionHeader title="Friends" count={accepted.length} />
             {accepted.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-border p-10 text-center">
-                <Users className="w-8 h-8 text-subtle/60 mx-auto mb-3" />
-                <p className="text-sm text-muted mb-3">No friends yet.</p>
-                <Link
-                  href="/people"
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-hover transition-colors"
-                >
-                  <UserPlus className="w-3.5 h-3.5" />
-                  Find people
-                </Link>
-              </div>
+              <EmptyState
+                icon={Users}
+                title="No friends yet"
+                description="Add a few people and they’ll show up here — then you can start a DM or group thread."
+                action={
+                  <Link
+                    href="/people"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                  >
+                    <UserPlus className="h-3.5 w-3.5" />
+                    Find people
+                  </Link>
+                }
+              />
             ) : (
               <div className="space-y-2">
                 {accepted.map((e) => (
@@ -99,20 +90,18 @@ export default async function FriendsPage() {
           </section>
         </div>
 
-        {/* Sidebar */}
+        {/* Context — borderless module (the global rail carries the rest). */}
         <div className="space-y-4">
-          <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
-            <div className="px-4 py-2.5 border-b border-border">
-              <h3 className="text-[11px] font-semibold uppercase tracking-wider text-subtle">About Friends</h3>
-            </div>
-            <p className="px-4 py-3 text-xs text-subtle">
-              You must be friends to start a 1:1 DM or a group DM. Send a request from anyone&apos;s profile.
-              Existing conversations stay accessible to their members regardless of friendship status.
+          <ModuleCard title="About friends">
+            <p className="text-sm leading-relaxed text-muted">
+              You must be friends to start a 1:1 DM or a group DM. Send a request from anyone’s
+              profile. Existing conversations stay accessible to their members regardless of
+              friendship status.
             </p>
-          </div>
+          </ModuleCard>
         </div>
       </div>
-    </div>
+    </IndexTemplate>
   )
 }
 
@@ -124,7 +113,7 @@ function FriendRow({
   children: React.ReactNode
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3">
+    <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3">
       {profile.avatar_url ? (
         <Image src={profile.avatar_url} alt={profile.display_name} width={36} height={36} className="w-9 h-9 rounded-full object-cover shrink-0" />
       ) : (
@@ -135,7 +124,7 @@ function FriendRow({
       <div className="flex-1 min-w-0">
         <Link
           href={`/people/${profile.handle}`}
-          className="text-sm font-medium text-text hover:text-primary-strong dark:hover:text-primary-strong transition-colors truncate block"
+          className="text-sm font-medium text-text hover:text-primary-strong transition-colors truncate block"
         >
           {profile.display_name}
         </Link>

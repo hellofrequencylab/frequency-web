@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import Image from 'next/image'
 import {
   Sparkles, Activity, Heart, MessagesSquare, Megaphone, Palette, Briefcase, Radio, Users, Circle as CircleIcon,
@@ -8,10 +7,11 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { TuneInButton, TunedInButton } from './channel-toggle'
 import { NewChannelCompose } from './new-channel-compose'
-import { PageHeader, StatStrip } from '@/components/ui/page-header'
+import { IndexTemplate } from '@/components/templates/index-template'
+import { StatStrip } from '@/components/ui/page-header'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
-import { getViewerGamStats } from '@/lib/viewer-stats'
+import { EntityCard } from '@/components/cards/entity-card'
 
 type TopicalChannel = {
   id: string
@@ -33,6 +33,9 @@ const CATEGORY_ICON: Record<string, LucideIcon> = {
   'business-support': Briefcase,
 }
 
+// On the shared IndexTemplate + EntityCard (REDESIGN-INAPP Phase 1). Tune-in is
+// the card's floating action; the viewer's gamification stats live in the
+// right-rail dock, so no per-page strip here.
 export default async function ChannelsPage() {
   const admin = createAdminClient()
   const supabase = await createClient()
@@ -49,13 +52,10 @@ export default async function ChannelsPage() {
     canCreate = role === 'host' || role === 'guide' || role === 'mentor' || role === 'admin' || role === 'janitor'
   }
 
-  const [{ data: channels }, gam] = await Promise.all([
-    admin.from('topical_channels')
-      .select('id, name, slug, category, description, cover_image, display_order')
-      .eq('is_active', true)
-      .order('display_order', { ascending: true }),
-    getViewerGamStats(),
-  ])
+  const { data: channels } = await admin.from('topical_channels')
+    .select('id, name, slug, category, description, cover_image, display_order')
+    .eq('is_active', true)
+    .order('display_order', { ascending: true })
 
   const channelList = (channels ?? []) as TopicalChannel[]
   const channelIds = channelList.map((c) => c.id)
@@ -94,20 +94,21 @@ export default async function ChannelsPage() {
   }
 
   return (
-    <div>
-      <PageHeader
-        title="Interests"
-        description="Find your thing. Interests are the global topics anyone can tune into — each carries a seasonal practice that Circles run locally. Pick what lights you up, then go do it with people near you."
-        action={canCreate ? <NewChannelCompose /> : undefined}
-        gam={gam}
-      />
-
-      <StatStrip items={[
-        { value: stats.interests, label: 'Interests' },
-        { value: stats.tunedIn, label: 'Tuned in' },
-        { value: stats.circles, label: 'Circles' },
-        { value: stats.categories, label: 'Categories' },
-      ]} />
+    <IndexTemplate
+      title="Interests"
+      description="Find your thing. Interests are the global topics anyone can tune into — each carries a seasonal practice that Circles run locally. Pick what lights you up, then go do it with people near you."
+      action={canCreate ? <NewChannelCompose /> : undefined}
+    >
+      <div className="mb-6">
+        <StatStrip
+          items={[
+            { value: stats.interests, label: 'Interests' },
+            { value: stats.tunedIn, label: 'Tuned in' },
+            { value: stats.circles, label: 'Circles' },
+            { value: stats.categories, label: 'Categories' },
+          ]}
+        />
+      </div>
 
       <div className="space-y-10">
         {tunedIn.length > 0 && (
@@ -134,7 +135,7 @@ export default async function ChannelsPage() {
           )}
         </section>
       </div>
-    </div>
+    </IndexTemplate>
   )
 }
 
@@ -150,33 +151,32 @@ function ChannelCard({
   const Icon = CATEGORY_ICON[channel.category] ?? Radio
 
   return (
-    <div className="flex flex-col rounded-2xl border border-border bg-surface p-5 shadow-sm transition-all hover:border-primary-bg hover:shadow-md">
-      <div className="flex items-start gap-3">
-        {channel.cover_image ? (
-          <Image src={channel.cover_image} alt={channel.name} width={48} height={48} className="h-12 w-12 shrink-0 rounded-xl object-cover" />
+    <EntityCard
+      href={`/channels/${channel.slug}`}
+      anchor={
+        channel.cover_image ? (
+          <Image src={channel.cover_image} alt={channel.name} width={48} height={48} className="h-12 w-12 rounded-2xl object-cover" />
         ) : (
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-bg text-primary-strong">
             <Icon className="h-6 w-6" />
           </div>
-        )}
-        <div className="min-w-0 flex-1">
-          <Link href={`/channels/${channel.slug}`} className="text-base font-semibold leading-tight text-text transition-colors hover:text-primary-strong">
-            {channel.name}
-          </Link>
-          {channel.description && <p className="mt-0.5 line-clamp-2 text-sm leading-relaxed text-muted">{channel.description}</p>}
-        </div>
-        {canToggle && (
-          isTunedIn
+        )
+      }
+      title={channel.name}
+      description={channel.description ?? undefined}
+      meta={
+        <>
+          <span className="flex items-center gap-1"><Users className="h-3 w-3" />{memberCount.toLocaleString()} tuned in</span>
+          <span className="flex items-center gap-1"><CircleIcon className="h-3 w-3" />{circleCount} {circleCount === 1 ? 'circle' : 'circles'}</span>
+        </>
+      }
+      action={
+        canToggle
+          ? isTunedIn
             ? <TunedInButton channelId={channel.id} channelName={channel.name} />
             : <TuneInButton channelId={channel.id} slug={channel.slug} />
-        )}
-      </div>
-
-      <div className="mt-auto flex items-center gap-3 pt-4 text-xs text-subtle">
-        <span className="flex items-center gap-1"><Users className="h-3 w-3" />{memberCount.toLocaleString()} tuned in</span>
-        <span className="text-subtle/60">·</span>
-        <span className="flex items-center gap-1"><CircleIcon className="h-3 w-3" />{circleCount} {circleCount === 1 ? 'circle' : 'circles'}</span>
-      </div>
-    </div>
+          : undefined
+      }
+    />
   )
 }
