@@ -63,7 +63,15 @@ export function HeroBlock({
           className="object-cover object-center"
         />
       </div>
-      <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/85" />
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            'linear-gradient(180deg, rgb(20 18 16 / 0.74) 0%, rgb(20 18 16 / 0.42) 44%, rgb(20 18 16 / 0.94) 100%)',
+        }}
+      />
+      <div className="amber-glow absolute inset-0 pointer-events-none" />
+      <div className="light-strip absolute inset-x-0 bottom-0 z-10" />
       <div className="relative z-10 flex flex-col items-center w-full max-w-4xl">
         {eyebrow && (
           <p className="text-[11px] sm:text-xs font-bold uppercase tracking-[0.3em] text-primary mb-6">{eyebrow}</p>
@@ -162,7 +170,8 @@ export function PillarsBlock({
   vis?: string
 }) {
   return (
-    <section className={`bg-text ${vis}`}>
+    <section className={`relative bg-slat ${vis}`}>
+      <div className="light-strip absolute inset-x-0 top-0 z-10" />
       <Marquee items={marqueeItems?.length ? marqueeItems : ['What we’re building']} />
       <div className="max-w-5xl mx-auto px-6 py-24 sm:py-28 space-y-24 sm:space-y-28">
         {(pillars || []).map((p, i) => (
@@ -187,6 +196,7 @@ export function PillarsBlock({
           </div>
         ))}
       </div>
+      <div className="light-strip absolute inset-x-0 bottom-0 z-10" />
     </section>
   )
 }

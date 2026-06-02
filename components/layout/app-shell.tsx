@@ -46,7 +46,7 @@ import {
   roleBadgeStyle,
 } from '@/lib/community-roles'
 import { NAV_AREAS, meetsAccess, type NavAccess } from '@/lib/nav-areas'
-import { DISCOVER_NAV } from '@/lib/site'
+import { PrimaryNav } from '@/components/layout/primary-nav'
 import { useFeedAtBottom } from '@/components/sidebar/use-feed-at-bottom'
 
 // The sidebar is built from NAV_AREAS (lib/nav-areas.ts — the single source of
@@ -796,23 +796,10 @@ export default function AppShell({
           </Link>
         </div>
 
-        {/* Explore (marketing) nav — sits beside the logo. Desktop only.
-            Light brown so it stays unobtrusive over the feed. */}
-        <nav className="hidden md:flex items-center gap-0.5">
-          {DISCOVER_NAV.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className={`px-2.5 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
-                isActive(l.href)
-                  ? 'text-[#7a5c3a] bg-[#7a5c3a]/10'
-                  : 'text-[#a98c66] hover:text-[#7a5c3a] hover:bg-[#a98c66]/10'
-              }`}
-            >
-              {l.label}
-            </Link>
-          ))}
-        </nav>
+        {/* Unified primary nav (Discover + About dropdowns) beside the logo.
+            Same component the splash/site uses, so the header matches sitewide.
+            Members get the mission-focused About menu. Desktop only. */}
+        <PrimaryNav audience="member" variant="light" className="ml-1" />
 
         {/* Right section: quick nav · search · notifications · account */}
         <div className="flex flex-1 items-center justify-end gap-1 px-3">

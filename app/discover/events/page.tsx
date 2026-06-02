@@ -1,9 +1,11 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { getPublicEvents } from '@/lib/discover'
-import { EventRow } from '@/components/discover/cards'
+import { DiscoverHero, SectionHeading, EventRow } from '@/components/discover/cards'
+import { Statement, BetaCTA } from '@/components/marketing/marketing-ui'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, eventListSchema } from '@/lib/jsonld'
-import { SITE_NAME } from '@/lib/site'
+import { SITE_NAME, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 
 export const metadata: Metadata = {
   title: 'Upcoming events',
@@ -34,32 +36,68 @@ export default async function DiscoverEventsPage() {
         ]}
       />
 
-      <section className="bg-marketing-canvas px-6 py-16 border-b border-border/60">
-        <div className="max-w-5xl mx-auto text-center">
-          <p className="text-xs font-semibold uppercase tracking-widest text-primary-strong mb-3">
-            Coming up
-          </p>
-          <h1 className="text-3xl sm:text-5xl font-bold text-text mb-4">Upcoming events</h1>
-          <p className="text-muted leading-relaxed max-w-2xl mx-auto">
-            Real-world gatherings near you. Public pages show the city only — the exact venue is
-            shared with members who RSVP.
-          </p>
-        </div>
-      </section>
+      <DiscoverHero
+        image="/images/site/63978107-8b40-4ce2-8eaf-01a2f6f35cb9.jpg"
+        alt="People on the beach at golden hour, arms raised in celebration by the ocean"
+        eyebrow="Coming up"
+        title="Show up in person"
+        subtitle="Real-world gatherings near you. Public pages show the city only — the exact venue is shared with members who RSVP."
+      >
+        <Link
+          href={BETA_CTA_HREF}
+          className="inline-block rounded-2xl bg-primary text-on-primary px-7 py-3 font-bold hover:bg-primary-hover transition-colors shadow-pop"
+        >
+          {BETA_CTA_LABEL}
+        </Link>
+      </DiscoverHero>
 
-      <section className="bg-surface px-6 py-16">
-        <div className="max-w-2xl mx-auto">
-          {events.length === 0 ? (
-            <p className="text-center text-muted">No upcoming events yet — check back soon.</p>
-          ) : (
-            <div className="space-y-3">
-              {events.map((e) => (
-                <EventRow key={e.id} event={e} />
-              ))}
+      {events.length === 0 ? (
+        // Founding state: no events on the calendar yet near the beta. Frame it as a
+        // beginning, not an absence.
+        <section className="bg-surface px-6 py-20 sm:py-24">
+          <div className="max-w-2xl mx-auto text-center">
+            <SectionHeading eyebrow="Founding chapter" title="The first gathering hasn't happened yet" />
+            <p className="mt-6 text-lg text-muted leading-relaxed">
+              We&rsquo;re just getting started in North County San Diego. The calendar is quiet
+              for now — but that&rsquo;s how every circle begins, with a few neighbors deciding to
+              show up. Join the beta and you&rsquo;ll be among the first to know when the first one
+              lands.
+            </p>
+            <Link
+              href={BETA_CTA_HREF}
+              className="mt-9 inline-block rounded-2xl bg-primary text-on-primary px-7 py-3 font-bold hover:bg-primary-hover transition-colors shadow-pop"
+            >
+              {BETA_CTA_LABEL}
+            </Link>
+          </div>
+        </section>
+      ) : (
+        <>
+          <section className="bg-surface px-6 py-20 sm:py-24">
+            <div className="max-w-2xl mx-auto">
+              <div className="text-center mb-12">
+                <SectionHeading eyebrow="On the calendar" title="What's coming up" />
+              </div>
+              <div className="space-y-3">
+                {events.map((e) => (
+                  <div key={e.id} className="transition-transform hover:-translate-y-0.5">
+                    <EventRow event={e} />
+                  </div>
+                ))}
+              </div>
             </div>
-          )}
-        </div>
-      </section>
+          </section>
+
+          <Statement tone="ink">
+            Friendship happens <span className="text-primary">in person</span>.
+          </Statement>
+        </>
+      )}
+
+      <BetaCTA
+        heading="See you there"
+        body="Join the North County San Diego beta — RSVP to gatherings, meet your neighbors, and help shape what we build next."
+      />
     </>
   )
 }

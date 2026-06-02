@@ -3,13 +3,8 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { MARKETING_NAV, BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
-
-// The curated public nav — a conversion-focused funnel (How it works → Demo →
-// Pricing → The Lab → Discover → About). The granular Discover drill-ins
-// (Circles/Events/Topics) live on the in-app SiteHeader, so we keep this bar
-// lean rather than expanding them here.
-const HEADER_NAV = MARKETING_NAV
+import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
+import { PrimaryNav } from '@/components/layout/primary-nav'
 
 // Public marketing header. No search box (that's for the community app). When
 // `overHero`, it sits transparent over the dark hero and flips to a solid light
@@ -44,22 +39,8 @@ export function MarketingHeader({ overHero = false }: { overHero?: boolean }) {
         />
       </Link>
 
-      {/* Nav */}
-      <nav className="hidden md:flex items-center gap-1 ml-3">
-        {HEADER_NAV.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
-              light
-                ? 'text-muted hover:text-text hover:bg-surface-elevated'
-                : 'text-white/75 hover:text-white hover:bg-white/10'
-            }`}
-          >
-            {item.label}
-          </Link>
-        ))}
-      </nav>
+      {/* Unified primary nav (Discover + About dropdowns) */}
+      <PrimaryNav variant={light ? 'light' : 'dark'} audience="visitor" className="ml-3" />
 
       <div className="flex-1" />
 

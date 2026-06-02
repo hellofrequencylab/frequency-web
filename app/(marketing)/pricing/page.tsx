@@ -15,7 +15,7 @@ import {
   ShieldCheck,
 } from 'lucide-react'
 import {
-  PageHero,
+  PhotoHero,
   Section,
   SectionHeading,
   ZigZag,
@@ -42,7 +42,10 @@ export const metadata: Metadata = {
 export default function PricingPage() {
   return (
     <>
-      <PageHero
+      <PhotoHero
+        image="/images/site/lab-lounge.jpg"
+        alt="The connection bar inside The Lab, warm and low-lit"
+        focal="object-center"
         eyebrow="Membership"
         title={
           <>
