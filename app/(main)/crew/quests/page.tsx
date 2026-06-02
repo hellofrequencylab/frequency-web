@@ -45,7 +45,7 @@ export default async function QuestsPage() {
         <div className="flex items-center gap-3">
           <Link href="/crew" className="text-sm text-subtle hover:text-muted dark:hover:text-subtle transition-colors">Crew</Link>
           <span className="text-subtle">/</span>
-          <h1 className="text-xl font-semibold text-text">Quests</h1>
+          <h1 className="text-2xl font-bold text-text">Quests</h1>
         </div>
         <p className="text-sm text-muted mt-1">
           Multi-step journeys that tell a story. Complete each step in order to earn bonus zaps.
@@ -86,15 +86,15 @@ export default async function QuestsPage() {
                     <div className="flex items-center gap-2">
                       <h2 className="text-sm font-bold text-text">{chain.name}</h2>
                       {isComplete && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-success-bg text-success font-semibold">
+                        <span className="text-xs px-1.5 py-0.5 rounded-md bg-success-bg text-success font-semibold">
                           Complete
                         </span>
                       )}
                     </div>
                     <p className="text-xs text-muted mt-0.5">{chain.description}</p>
                     <div className="flex items-center gap-2 mt-2">
-                      <span className="text-[11px] text-subtle">{completedSteps}/{steps.length} steps</span>
-                      <span className="text-[11px] text-primary flex items-center gap-0.5">
+                      <span className="text-xs text-subtle">{completedSteps}/{steps.length} steps</span>
+                      <span className="text-xs text-primary flex items-center gap-0.5">
                         <Zap className="w-3 h-3" />+{chain.zaps_reward} on completion
                       </span>
                     </div>
@@ -150,7 +150,7 @@ export default async function QuestsPage() {
                         {isCurrent && step.target > 1 && (
                           <div className="mt-1.5">
                             <div className="flex items-center justify-between mb-0.5">
-                              <span className="text-[11px] text-subtle">{stepProgress} / {step.target}</span>
+                              <span className="text-xs text-subtle">{stepProgress} / {step.target}</span>
                             </div>
                             <div className="h-1 rounded-full bg-surface-elevated overflow-hidden w-32">
                               <div
@@ -164,7 +164,7 @@ export default async function QuestsPage() {
 
                       <div className="shrink-0 flex items-center gap-1">
                         {step.zaps_reward > 0 && (
-                          <span className={`text-[11px] font-medium flex items-center gap-0.5 ${
+                          <span className={`text-xs font-medium flex items-center gap-0.5 ${
                             isStepComplete ? 'text-success' : 'text-subtle'
                           }`}>
                             <Zap className="w-3 h-3" />+{step.zaps_reward}

@@ -68,7 +68,7 @@ export default async function AchievementsPage() {
             Crew
           </Link>
           <span className="text-subtle">/</span>
-          <h1 className="text-xl font-semibold text-text">Achievements</h1>
+          <h1 className="text-2xl font-bold text-text">Achievements</h1>
         </div>
         <p className="text-sm text-muted mt-1">
           Earn badges by engaging with your community. Some are secret. Keep exploring to find them all.
@@ -111,7 +111,7 @@ export default async function AchievementsPage() {
                 <h2 className="text-sm font-semibold text-text">
                   {catConfig.label}
                 </h2>
-                <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-surface-elevated text-subtle font-medium">
+                <span className="text-xs px-1.5 py-0.5 rounded-md bg-surface-elevated text-subtle font-medium">
                   {earned}/{items.length}
                 </span>
               </div>
@@ -152,7 +152,7 @@ export default async function AchievementsPage() {
                             }`}>
                               {isSecret ? '???' : a.name}
                             </span>
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-semibold ${tier.bg} ${tier.color}`}>
+                            <span className={`text-xs px-1.5 py-0.5 rounded-md font-semibold ${tier.bg} ${tier.color}`}>
                               {tier.label}
                             </span>
                           </div>
@@ -160,7 +160,7 @@ export default async function AchievementsPage() {
                             {isSecret ? 'Keep exploring to discover this achievement.' : a.description}
                           </p>
                           {a.earned && a.unlockedAt && (
-                            <p className="text-[11px] text-subtle mt-1">
+                            <p className="text-xs text-subtle mt-1">
                               Unlocked {new Date(a.unlockedAt).toLocaleDateString('en-US', {
                                 month: 'short', day: 'numeric', year: 'numeric',
                               })}
@@ -169,7 +169,7 @@ export default async function AchievementsPage() {
                           {!a.earned && a.zaps_reward > 0 && !isSecret && (
                             <div className="flex items-center gap-1 mt-1">
                               <Zap className="w-3 h-3 text-primary" />
-                              <span className="text-[11px] font-medium text-subtle">+{a.zaps_reward} zaps</span>
+                              <span className="text-xs font-medium text-subtle">+{a.zaps_reward} zaps</span>
                             </div>
                           )}
                         </div>
