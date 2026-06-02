@@ -1239,6 +1239,36 @@ seam carries data, not components.
 
 ---
 
+## ADR-059: Bottom docks reveal from one shared, intent-driven controller
+
+**Status:** Accepted · `components/sidebar/dock-reveal.tsx`, `components/layout/app-shell.tsx`,
+`components/sidebar/game-stats-dock.tsx`, `components/layout/view-as-control.tsx`.
+**Context:** The two bottom docks (left profile card, right stats dock) "rise" as the feed
+scroll reaches its end. The original build was glitchy: each dock ran its *own* scroll listener
+(`useFeedAtBottom`), so they drifted out of sync; the reveal was *position*-based, so expanding a
+dock grew the scroll height, pushed the viewer off the bottom, and collapsed it again — a
+flicker loop; the right dock was `sticky bottom-0`, which fought both its own expansion and the
+intended "scroll up into view" behaviour; and the "hover the dock and scroll to open" affordance
+was never built.
+**Decision:** One `DockRevealProvider` (context) runs a single listener on `[data-feed-scroll]`
+and drives both docks together. Reveal is **intent-driven, not position-driven**: a continued
+downward gesture near the end reveals; only a clear upward gesture (or scrolling well clear)
+collapses. A layout shift from expanding keeps `scrollTop` steady (no delta) and fires no wheel
+event, so it can't feed back — killing the oscillation. It reads `wheel` (works when pinned at
+the very end) **and** `scroll` deltas (covers touch / keyboard / scrollbar / momentum).
+Per-dock `useHoverScrollReveal(ref)` adds hover-then-scroll reveal; each dock also keeps a manual
+chevron toggle. Left dock stays pinned (non-scrolling rail); right dock drops `sticky` so it
+scrolls up into view as the rail's top content leaves. The janitor **View-as** control moves to
+the top of the left dock's slide-up menu; its role list renders through a **portal** (fixed,
+above the trigger) so the panel's `overflow-hidden` (the rise/collapse clip) can't cut it off.
+**Consequences:** Both docks stay in sync; no flicker; works across all input methods and
+`prefers-reduced-motion`. The right compact bar is no longer permanently pinned — it appears on
+reaching the bottom, by design. Reveal is a smooth ~500ms animation triggered by scroll (not a
+pixel-scrubbed height), chosen for robustness over a scrub that would re-introduce the feedback
+loop on the in-flow right dock.
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 
