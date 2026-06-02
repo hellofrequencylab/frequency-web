@@ -223,7 +223,7 @@ export async function awardAchievement(profileId: string, achievementId: string)
     .maybeSingle()
 
   const role = (caller as Pick<ProfileRow, 'community_role'> | null)?.community_role ?? 'member'
-  if (!['host', 'guide', 'mentor', 'janitor'].includes(role)) {
+  if (!['host', 'guide', 'mentor', 'admin', 'janitor'].includes(role)) {
     throw new Error('Unauthorized')
   }
 
@@ -263,7 +263,7 @@ export async function revokeAchievement(profileId: string, achievementId: string
     .maybeSingle()
 
   const role = (caller as Pick<ProfileRow, 'community_role'> | null)?.community_role ?? 'member'
-  if (!['host', 'guide', 'mentor', 'janitor'].includes(role)) {
+  if (!['host', 'guide', 'mentor', 'admin', 'janitor'].includes(role)) {
     throw new Error('Unauthorized')
   }
 

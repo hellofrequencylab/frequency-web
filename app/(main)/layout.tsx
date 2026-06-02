@@ -5,7 +5,7 @@ import AppShell from '@/components/layout/app-shell'
 import RightSidebar from '@/components/sidebar/right-sidebar'
 import type { CommunityRole } from '@/components/sidebar/right-sidebar'
 import { getUnreadCount } from '@/app/(main)/notifications/actions'
-import { getStaffMember } from '@/lib/staff'
+import { getAreaPermissions } from '@/lib/permissions'
 import { applyViewAs } from '@/lib/view-as'
 import { AchievementToastContainer } from '@/components/achievement-toast'
 import { ZapToastContainer } from '@/components/zap-toast'
@@ -47,8 +47,9 @@ export default async function MainLayout({
   // Unread notification count. Non-blocking, falls back to 0 on error
   const unreadCount = await getUnreadCount().catch(() => 0)
 
-  // Staff members get a "Studio" link in the Manage nav section.
-  const isStaff = !!(await getStaffMember().catch(() => null))
+  // Per-area access overrides (janitor-set from /admin/roles). Drives which menu
+  // items are usable vs. muted. Falls back to {} (code defaults) on error.
+  const permissions = await getAreaPermissions()
 
   // Right sidebar streams in independently. Doesn't block page render
   const sidebar = (
@@ -66,7 +67,7 @@ export default async function MainLayout({
       realRole={realRole}
       sidebar={sidebar}
       unreadCount={unreadCount}
-      isStaff={isStaff}
+      permissions={permissions}
     >
       {children}
       <AchievementToastContainer />

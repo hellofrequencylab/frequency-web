@@ -31,7 +31,7 @@ export default async function ModerationPage() {
   if (!profile) notFound()
 
   const role = profile.community_role as CommunityRole
-  if (!['host', 'guide', 'mentor', 'janitor'].includes(role)) notFound()
+  if (!['host', 'guide', 'mentor', 'admin', 'janitor'].includes(role)) notFound()
 
   // Fetch pending reports with reporter info
   const { data: rawReports } = await admin

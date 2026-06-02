@@ -9,16 +9,18 @@
 import type { RankKey } from '@/lib/season-ranks'
 import { rankBadgeStyle } from '@/lib/season-ranks'
 
-export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
+export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
 
-// Ladder: stone (grey) → clay → jade → teal → indigo → plum (lavender).
-// Six distinct colours, ordered as a felt progression.
+// Ladder: stone (grey) → clay → jade → teal → indigo → rose → plum (lavender).
+// Seven distinct colours, ordered as a felt progression. Admin (rose) sits
+// just below janitor (plum).
 export const ROLE_RANK: Record<CommunityRole, RankKey> = {
   member:  'stone',
   crew:    'clay',
   host:    'jade',
   guide:   'teal',
   mentor:  'indigo',
+  admin:   'rose',
   janitor: 'plum',
 }
 
@@ -28,6 +30,7 @@ export const ROLE_LABEL: Record<CommunityRole, string> = {
   host:    'Host',
   guide:   'Guide',
   mentor:  'Mentor',
+  admin:   'Admin',
   janitor: 'Janitor',
 }
 
