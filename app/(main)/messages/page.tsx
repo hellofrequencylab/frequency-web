@@ -2,6 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { redirect } from 'next/navigation'
 import { MessageSquare, Hash, Lock, Users, Compass, Sparkles, Zap } from 'lucide-react'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { getInitials, relativeTime } from '@/lib/utils'
@@ -86,9 +87,15 @@ export default async function MessagesPage({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/sign-in')
 
+  // RLS convergence surface 5 (migration 20240311000000): rooms + DMs read on the
+  // user client (am_room_member / am_participant SELECT policies); the DM
+  // participants' profiles, which RLS would otherwise hide from sub-crew/
+  // cross-region viewers, come from the message_peer_profiles DEFINER RPC. The
+  // "new members in your circles" prompt below still reads memberships on the
+  // admin client — a separate follow-up surface.
   const admin = createAdminClient()
 
-  const { data: myProfile } = await admin
+  const { data: myProfile } = await supabase
     .from('profiles')
     .select('id, community_role')
     .eq('auth_user_id', user.id)
@@ -98,8 +105,12 @@ export default async function MessagesPage({
   const myProfileId = myProfile.id as string
   const canCreateRoom = CREW_PLUS.includes(myProfile.community_role as CommunityRole)
 
+  // Public profile fields for everyone I share a DM / room with (caller-scoped).
+  const { data: peerRows } = await (supabase as unknown as SupabaseClient).rpc('message_peer_profiles')
+  const peerMap = new Map(((peerRows ?? []) as Profile[]).map(p => [p.id, p]))
+
   // ── Rooms ─────────────────────────────────────────────────────────
-  const { data: myMemberships } = await admin
+  const { data: myMemberships } = await supabase
     .from('room_members')
     .select('room_id, last_read_at')
     .eq('profile_id', myProfileId)
@@ -107,7 +118,7 @@ export default async function MessagesPage({
   const joinedRoomIds = (myMemberships ?? []).map((m: { room_id: string }) => m.room_id)
 
   const { data: myRoomsData } = joinedRoomIds.length > 0
-    ? await admin
+    ? await supabase
         .from('rooms')
         .select('id, name, description, visibility, member_count, last_message_at')
         .in('id', joinedRoomIds)
@@ -118,7 +129,7 @@ export default async function MessagesPage({
     .map(r => ({ ...r, isMember: true }))
 
   // Discover: public rooms not yet joined
-  const { data: publicRoomsData } = await admin
+  const { data: publicRoomsData } = await supabase
     .from('rooms')
     .select('id, name, description, visibility, member_count, last_message_at')
     .eq('visibility', 'public')
@@ -130,7 +141,7 @@ export default async function MessagesPage({
     .map(r => ({ ...r, isMember: false }))
 
   // ── DMs ───────────────────────────────────────────────────────────
-  const { data: myParts } = await admin
+  const { data: myParts } = await supabase
     .from('conversation_participants')
     .select('conversation_id, last_read_at, conversations!conversation_id(id, name, created_at)')
     .eq('profile_id', myProfileId)
@@ -147,14 +158,14 @@ export default async function MessagesPage({
 
   const otherPartMap: Record<string, Profile[]> = {}
   if (convIds.length > 0) {
-    const { data: allParts } = await admin
+    const { data: allParts } = await supabase
       .from('conversation_participants')
-      .select('conversation_id, profile_id, profiles!profile_id(id, display_name, handle, avatar_url)')
+      .select('conversation_id, profile_id')
       .in('conversation_id', convIds)
       .neq('profile_id', myProfileId)
     for (const p of allParts ?? []) {
       const cid = p.conversation_id as string
-      const prof = p.profiles as unknown as Profile | null
+      const prof = peerMap.get(p.profile_id as string)
       if (!prof) continue
       if (!otherPartMap[cid]) otherPartMap[cid] = []
       otherPartMap[cid].push(prof)
@@ -163,7 +174,7 @@ export default async function MessagesPage({
 
   const messagesByConv: Record<string, Array<{ id: string; conversation_id: string; sender_id: string; body: string; created_at: string }>> = {}
   if (convIds.length > 0) {
-    const { data: recentMessages } = await admin
+    const { data: recentMessages } = await supabase
       .from('messages')
       .select('id, conversation_id, sender_id, body, created_at')
       .in('conversation_id', convIds)
