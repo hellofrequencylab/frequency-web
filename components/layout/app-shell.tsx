@@ -47,6 +47,7 @@ import {
 } from '@/lib/community-roles'
 import { NAV_AREAS, meetsAccess, type NavAccess } from '@/lib/nav-areas'
 import { PrimaryNav } from '@/components/layout/primary-nav'
+import { BrandMark } from '@/components/layout/brand-mark'
 import { useFeedAtBottom } from '@/components/sidebar/use-feed-at-bottom'
 
 // The sidebar is built from NAV_AREAS (lib/nav-areas.ts — the single source of
@@ -304,7 +305,7 @@ function AccountDropdown({
         onClick={() => setOpen((v) => !v)}
         aria-label="Account menu"
         aria-expanded={open}
-        className="flex items-center justify-center w-8 h-8 rounded-full bg-surface-elevated text-muted text-[11px] font-semibold hover:bg-surface-elevated transition-colors select-none shrink-0"
+        className="flex items-center justify-center w-8 h-8 rounded-full bg-surface-elevated text-muted text-[11px] font-semibold ring-1 ring-border hover:text-text hover:ring-border-strong transition-colors select-none shrink-0"
       >
         {getInitials(profile.display_name)}
       </button>
@@ -783,35 +784,27 @@ export default function AppShell({
           <Menu className="w-6 h-6" />
         </button>
 
-        {/* Logo. Full-width header, no vertical divider */}
-        <div className="flex items-center pl-1 pr-3 md:px-5">
-          <Link href="/feed" className="flex items-center">
-            <Image
-              src="/frequency-logo.png"
-              alt="Frequency"
-              width={963}
-              height={170}
-              className="h-7 md:h-8 w-auto dark:invert"
-            />
-          </Link>
-        </div>
+        {/* Engraved, interactive wordmark. Full-width header, no vertical divider */}
+        <BrandMark />
 
         {/* Unified primary nav (Discover + About dropdowns) beside the logo.
             Same component the splash/site uses, so the header matches sitewide.
             Members get the mission-focused About menu. Desktop only. */}
         <PrimaryNav audience="member" variant="light" className="ml-1" />
 
-        {/* Right section: quick nav · search · notifications · account */}
-        <div className="flex flex-1 items-center justify-end gap-1 px-3">
+        {/* Right cluster: search · [messages · notifications] · account.
+            Three groups, each set off by a hairline so the icons read as one
+            tidy block of community actions and the account stays distinct. */}
+        <div className="flex flex-1 items-center justify-end gap-1.5 px-3 md:gap-2 md:px-4">
 
           {/* Search pill. Desktop */}
           <Link
             href="/search"
-            className="hidden sm:flex items-center gap-2 rounded-lg border border-border bg-surface-elevated px-3 py-1.5 text-sm text-muted hover:border-border-strong transition-colors mr-1"
+            className="hidden sm:flex items-center gap-2 rounded-full border border-border bg-surface-elevated/70 pl-3 pr-2 py-1.5 text-sm text-muted hover:text-text hover:border-border-strong hover:bg-surface-elevated transition-colors"
           >
-            <Search className="w-3.5 h-3.5" />
+            <Search className="w-4 h-4" />
             <span>Search</span>
-            <kbd className="text-[10px] rounded px-1 border border-border text-subtle">
+            <kbd className="text-[10px] leading-none rounded px-1.5 py-1 border border-border bg-surface text-subtle">
               ⌘K
             </kbd>
           </Link>
@@ -820,26 +813,28 @@ export default function AppShell({
           <Link
             href="/search"
             aria-label="Search"
-            className="sm:hidden p-2 rounded-lg text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+            className="sm:hidden flex items-center justify-center w-9 h-9 rounded-full text-muted hover:text-text hover:bg-surface-elevated transition-colors"
           >
             <Search className="w-5 h-5" />
           </Link>
 
-          {/* Messages */}
-          <MessagesPopover />
+          {/* Community actions — messages + notifications, set off by a divider */}
+          <div className="flex items-center gap-0.5 sm:ml-1 sm:pl-1.5 sm:border-l sm:border-border">
+            <MessagesPopover />
+            <NotificationBell initialUnread={unreadCount} />
+          </div>
 
-          {/* Notifications */}
-          <NotificationBell initialUnread={unreadCount} />
-
-          {/* Account dropdown. Initials, admin/account layer */}
-          <AccountDropdown
-            profile={profile}
-            profileHref={profileHref}
-            role={role}
-            themeLabel={themeLabel}
-            ThemeIcon={ThemeIcon}
-            cycleTheme={cycleTheme}
-          />
+          {/* Account — distinct, with its own divider */}
+          <div className="flex items-center ml-1 pl-1.5 border-l border-border">
+            <AccountDropdown
+              profile={profile}
+              profileHref={profileHref}
+              role={role}
+              themeLabel={themeLabel}
+              ThemeIcon={ThemeIcon}
+              cycleTheme={cycleTheme}
+            />
+          </div>
         </div>
       </header>
 
