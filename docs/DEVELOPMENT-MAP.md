@@ -154,8 +154,14 @@ on the real domain. **Depends on:** nothing (all in-codebase closeouts).
       and SQL isolation checks are in the migration footer. **Pattern + deploy-ordering rule:
       ADR-056.** ⚠️ **Apply the migration (`supabase db push`) + regen types BEFORE this code
       deploys** — the code calls the new RPC/policy, so shipping it first degrades notifications
-      (empty list, mark-read no-ops) until applied. *Next surfaces:* the feed read (`getFeed`),
-      then messages/memberships.
+      (empty list, mark-read no-ops) until applied.
+      *Surface 2 — friendships (2026-06-02, in-repo, pending apply):* migration
+      `20240305000000_friendships_rls_convergence.sql` adds the `my_friendships` DEFINER read RPC
+      (same restricted-`profiles`-join reason); `app/(main)/friends/page.tsx` now runs on the user
+      client, bucketing logic unit-tested (`lib/friendships-map.test.ts`). Friendship write policies
+      already exist, so friend-actions can converge later with no new migration.
+      ⚠️ **Both migrations must be applied + types regenerated before this code deploys.**
+      *Next surfaces:* the feed read (`getFeed`), then messages.
 - [x] **Partner redemption-on-capture**: plaque bump → discount + zaps logged to
       `partner_redemptions` (closes Phase 3 wiring). ✅ 2026-06-02 — verified wired end-to-end:
       `/n/[nodeId]` claim button → `claimNode` action → `captureNode` (`lib/engagement/capture.ts`
