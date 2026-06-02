@@ -255,7 +255,15 @@ Background tone · content width · alignment · space above · space below ·
 responsive visibility — plus image crop/focal/radius/shadow on image blocks.
 All token-driven selects → fixed Tailwind classes (no raw px, no off-brand CSS).
 
-### Catalog (24 blocks, 5 categories)
+**Control parity (standardized 2026-06-02):** every **content/media** block exposes
+the same Background/Width/Align set via `blockFields()` — including `Image` and
+`Gallery`, which are now tone-aware (Gallery renders its own band + ink-aware
+tiles rather than a hardcoded `bg-surface`). The deliberate exceptions keep a
+*purpose-specific* control set: `Marquee` (full-bleed dark strip), the `Dynamic`
+live blocks, and `Spacer` (spacing only); `Container`/`Columns`/`Divider` carry
+their own tone/width because they're structural wrappers.
+
+### Catalog (23 blocks, 5 categories)
 | Category | Blocks |
 |---|---|
 | **Layout** | `Container` (tone band + nested slot), `Columns` (2/3 slots), `Spacer`, `Divider` |
@@ -264,10 +272,13 @@ All token-driven selects → fixed Tailwind classes (no raw px, no off-brand CSS
 | **Media** | `Image`, `Gallery`, `MediaText` (replaces `ZigZag`), `Marquee` |
 | **Dynamic** | `LiveStats`, `LiveEvents`, `LivePosts` (live data via Puck `metadata`) |
 
-Files: one per group — `kit.tsx` (Heading), `sections.tsx`, `collections.tsx`,
-`media.tsx`, `primitives.tsx`, `dynamic.tsx`; `config.tsx` merges the fragments +
-defines categories. Retired keys (`PageHero`, `ZigZag`, `ImageBand`,
-`FeatureGallery`, `Pillars`, the old splash `Hero`) are removed.
+Files: one per group — `kit.tsx` (`Heading`), `primitives.tsx` (`Text`,
+`Statement`, `Buttons`, `Container`, `Columns`, `Spacer`, `Divider`),
+`sections.tsx`, `collections.tsx`, `media.tsx`, `dynamic.tsx`. `config.tsx` is
+**pure assembly** — it merges the fragment records and declares the categories;
+no block is defined there (`Statement` was relocated out of it). Retired keys
+(`PageHero`, `ZigZag`, `ImageBand`, `FeatureGallery`, `Pillars`, the old splash
+`Hero`, and the now-unused `GalleryBlock`) are removed.
 
 ### Content templates (`lib/page-editor/templates/*`)
 `the-lab`, `how-it-works`, `about` are re-built as Puck `Data` from the standard
