@@ -968,9 +968,11 @@ place to manage who can reach each app area, and a clearer "marketing workspace"
    **overrides**; the authed layout reads them (`lib/permissions.ts`) and the app shell merges
    `override ?? default`. The whole menu always renders — unreachable items are muted, not hidden.
    A janitor edits the map from `/admin/roles` via a radio grid (`setAreaPermission`, janitor-gated).
-3. **Studio access** = community `admin`/`janitor` **OR** a Studio staff member (the `team_members`
-   axis is kept for backward-compat). Studio reads as a self-contained marketing workspace with a
-   "Back to Frequency" link.
+3. **Marketing workspace** (renamed from "Studio", `/marketing/*`) = community `admin`/`janitor`
+   **OR** a Studio staff member (the `team_members` axis kept for backward-compat). It now lives
+   **inside the normal app frame** (full left nav + top bar) with a horizontal tab bar for its tools
+   — the same pattern as Admin — instead of its own `hideAppNav` shell. The global right rail is
+   suppressed on `/marketing` to give the workspace room.
 4. **Micro-CRM** (`/crm`, host+): steward-scoped member cards (host→circles, guide→hub,
    mentor→nexus, admin/janitor→community) showing only public profile data + a Message action.
    Birthday / astrology / Human Design / wellbeing are surfaced as **opt-in channels (coming soon)**

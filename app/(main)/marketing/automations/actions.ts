@@ -33,7 +33,7 @@ export async function createRule(input: {
   })
   if (error) return { ok: false, error: error.message }
 
-  revalidatePath('/studio/automations')
+  revalidatePath('/marketing/automations')
   return { ok: true }
 }
 
@@ -43,5 +43,5 @@ export async function toggleRule(id: string, enabled: boolean): Promise<void> {
 
   const db = createAdminClient() as unknown as SupabaseClient
   await db.from('automation_rules').update({ enabled }).eq('id', id)
-  revalidatePath('/studio/automations')
+  revalidatePath('/marketing/automations')
 }

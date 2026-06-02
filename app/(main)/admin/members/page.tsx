@@ -128,7 +128,7 @@ async function SubscribersTab() {
     <>
       <p className="text-sm text-muted mb-4">
         {subs.length} confirmed email {subs.length === 1 ? 'subscriber' : 'subscribers'}.
-        Manage campaigns in <StudioLink href="/studio/contacts">the Studio</StudioLink>.
+        Manage campaigns in <StudioLink href="/marketing/contacts">Marketing</StudioLink>.
       </p>
       {subs.length === 0 ? (
         <Empty>No subscribers yet.</Empty>
@@ -164,7 +164,7 @@ async function BetaTab() {
     <>
       <p className="text-sm text-muted mb-4">
         {stats.confirmed} confirmed and ready to admit · {stats.pending} pending · {stats.invited} invited.
-        Admit signups in <StudioLink href="/studio/beta">the Studio</StudioLink>.
+        Admit signups in <StudioLink href="/marketing/beta">Marketing</StudioLink>.
       </p>
       {signups.length === 0 ? (
         <Empty>No beta signups yet.</Empty>

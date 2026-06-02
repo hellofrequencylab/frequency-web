@@ -46,7 +46,7 @@ export const NAV_AREAS: readonly NavArea[] = [
 
   { key: 'admin',     href: '/admin',     label: 'Admin',     section: 'Manage',    defaultAccess: 'host'    },
   { key: 'crm',       href: '/crm',       label: 'CRM',       section: 'Manage',    defaultAccess: 'host'    },
-  { key: 'studio',    href: '/studio',    label: 'Studio',    section: 'Manage',    defaultAccess: 'admin'   },
+  { key: 'marketing', href: '/marketing', label: 'Marketing', section: 'Manage',    defaultAccess: 'admin'   },
   { key: 'outreach',  href: '/outreach',  label: 'Outreach',  section: 'Manage',    defaultAccess: 'host'    },
   { key: 'pages',     href: '/pages',     label: 'Pages',     section: 'Manage',    defaultAccess: 'admin'   },
 ] as const
