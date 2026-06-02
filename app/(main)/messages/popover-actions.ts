@@ -1,7 +1,7 @@
 'use server'
 
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 
 export interface MessagesSummary {
   totalUnread: number
@@ -26,8 +26,10 @@ export async function fetchMessagesSummary(): Promise<MessagesSummary> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { totalUnread: 0, rooms: [], conversations: [] }
 
-  const admin = createAdminClient()
-  const { data: myProfile } = await admin
+  // RLS convergence surface 5 (migration 20240311000000): rooms + DMs read on the
+  // user client (am_room_member / am_participant policies); DM participant profiles
+  // come from the message_peer_profiles DEFINER RPC.
+  const { data: myProfile } = await supabase
     .from('profiles')
     .select('id')
     .eq('auth_user_id', user.id)
@@ -36,8 +38,14 @@ export async function fetchMessagesSummary(): Promise<MessagesSummary> {
 
   const myProfileId = myProfile.id as string
 
+  const { data: peerRows } = await (supabase as unknown as SupabaseClient).rpc('message_peer_profiles')
+  const peerMap = new Map(
+    ((peerRows ?? []) as { id: string; display_name: string; handle: string; avatar_url: string | null }[])
+      .map(p => [p.id, p]),
+  )
+
   // ── Rooms (top 5 by recent activity) ───────────────────────────────
-  const { data: myRoomMemberships } = await admin
+  const { data: myRoomMemberships } = await supabase
     .from('room_members')
     .select('room_id, last_read_at')
     .eq('profile_id', myProfileId)
@@ -50,7 +58,7 @@ export async function fetchMessagesSummary(): Promise<MessagesSummary> {
 
   let rooms: MessagesSummary['rooms'] = []
   if (roomIds.length > 0) {
-    const { data: roomsData } = await admin
+    const { data: roomsData } = await supabase
       .from('rooms')
       .select('id, name, visibility, last_message_at')
       .in('id', roomIds)
@@ -63,7 +71,7 @@ export async function fetchMessagesSummary(): Promise<MessagesSummary> {
     rooms = await Promise.all(roomList.map(async r => {
       const lastRead = roomReadMap[r.id]
       const sinceCutoff = lastRead ?? '1970-01-01T00:00:00Z'
-      const { count } = await admin
+      const { count } = await supabase
         .from('room_messages')
         .select('id', { count: 'exact', head: true })
         .eq('room_id', r.id)
@@ -74,7 +82,7 @@ export async function fetchMessagesSummary(): Promise<MessagesSummary> {
   }
 
   // ── DMs (top 5 by recent activity) ─────────────────────────────────
-  const { data: myParts } = await admin
+  const { data: myParts } = await supabase
     .from('conversation_participants')
     .select('conversation_id, last_read_at, conversations!conversation_id(id, name)')
     .eq('profile_id', myProfileId)
@@ -92,23 +100,23 @@ export async function fetchMessagesSummary(): Promise<MessagesSummary> {
   const conversations: MessagesSummary['conversations'] = []
   if (convIds.length > 0) {
     // Get other participants
-    const { data: others } = await admin
+    const { data: others } = await supabase
       .from('conversation_participants')
-      .select('conversation_id, profiles!profile_id(id, display_name, handle, avatar_url)')
+      .select('conversation_id, profile_id')
       .in('conversation_id', convIds)
       .neq('profile_id', myProfileId)
 
     const partsByConv: Record<string, MessagesSummary['conversations'][number]['participants']> = {}
     for (const o of others ?? []) {
       const cid = o.conversation_id as string
-      const prof = o.profiles as unknown as MessagesSummary['conversations'][number]['participants'][number] | null
+      const prof = peerMap.get(o.profile_id as string)
       if (!prof) continue
       if (!partsByConv[cid]) partsByConv[cid] = []
       partsByConv[cid].push(prof)
     }
 
     // Get last message per conv + unread count
-    const { data: recentMessages } = await admin
+    const { data: recentMessages } = await supabase
       .from('messages')
       .select('conversation_id, sender_id, body, created_at')
       .in('conversation_id', convIds)

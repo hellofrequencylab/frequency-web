@@ -2,7 +2,7 @@ import { notFound, redirect } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ChevronLeft, LogOut, UsersRound } from 'lucide-react'
-import { createAdminClient } from '@/lib/supabase/admin'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import { MessageThread, type Message } from '@/components/messages/thread'
 import { getInitials } from '@/lib/utils'
@@ -16,13 +16,17 @@ export default async function ConversationPage({
 }) {
   const { id: conversationId } = await params
 
+  // RLS convergence surface 5 (migration 20240311000000): the whole DM thread now
+  // runs on the user-scoped client. conversations / conversation_participants /
+  // messages are gated by the am_participant SELECT policy and last_read by the
+  // UPDATE-own policy, so the DB enforces that I can only read a conversation I'm
+  // in. The one thing RLS hides — the other participants' profiles — is hydrated
+  // from the `message_peer_profiles` DEFINER RPC (public fields, caller-scoped).
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/sign-in')
 
-  const admin = createAdminClient()
-
-  const { data: myProfile } = await admin
+  const { data: myProfile } = await supabase
     .from('profiles')
     .select('id')
     .eq('auth_user_id', user.id)
@@ -30,16 +34,15 @@ export default async function ConversationPage({
   if (!myProfile) redirect('/onboarding')
   const myProfileId = myProfile.id as string
 
-  // Verify the conversation exists and load its name
-  const { data: conv } = await admin
+  // Conversation + my participation (am_participant gates both; not a member → notFound)
+  const { data: conv } = await supabase
     .from('conversations')
     .select('id, name, created_at')
     .eq('id', conversationId)
     .maybeSingle()
   if (!conv) notFound()
 
-  // Verify I'm a participant
-  const { data: myPart } = await admin
+  const { data: myPart } = await supabase
     .from('conversation_participants')
     .select('profile_id, last_read_at')
     .eq('conversation_id', conversationId)
@@ -47,18 +50,19 @@ export default async function ConversationPage({
     .maybeSingle()
   if (!myPart) notFound()
 
-  // Get all participants
-  const { data: rawParts } = await admin
+  // Participant ids via RLS; public profile fields via the hydration RPC.
+  const { data: partRows } = await supabase
     .from('conversation_participants')
-    .select('profile_id, profiles!profile_id(id, display_name, handle, avatar_url)')
+    .select('profile_id')
     .eq('conversation_id', conversationId)
 
-  const participants = ((rawParts ?? []) as unknown as {
-    profile_id: string
-    profiles: { id: string; display_name: string; handle: string; avatar_url: string | null } | null
-  }[])
-    .map(p => p.profiles)
-    .filter((p): p is { id: string; display_name: string; handle: string; avatar_url: string | null } => !!p)
+  type PeerProfile = { id: string; display_name: string; handle: string; avatar_url: string | null }
+  const { data: peerRows } = await (supabase as unknown as SupabaseClient).rpc('message_peer_profiles')
+  const peerMap = new Map(((peerRows ?? []) as PeerProfile[]).map(p => [p.id, p]))
+
+  const participants = ((partRows ?? []) as { profile_id: string }[])
+    .map(p => peerMap.get(p.profile_id))
+    .filter((p): p is PeerProfile => !!p)
 
   const others = participants.filter(p => p.id !== myProfileId)
   const isGroup = others.length > 1
@@ -69,8 +73,8 @@ export default async function ConversationPage({
         (others.length > 3 ? ` +${others.length - 3}` : '')
       : others[0]?.display_name ?? 'Conversation')
 
-  // Load messages
-  const { data: rawMessages } = await admin
+  // Load messages (am_participant read policy)
+  const { data: rawMessages } = await supabase
     .from('messages')
     .select('id, conversation_id, sender_id, body, created_at')
     .eq('conversation_id', conversationId)
@@ -79,8 +83,8 @@ export default async function ConversationPage({
 
   const messages = ((rawMessages ?? []) as unknown as Message[]).reverse()
 
-  // Mark as read
-  await admin
+  // Mark as read (participants_update_own_last_read policy)
+  await supabase
     .from('conversation_participants')
     .update({ last_read_at: new Date().toISOString() })
     .eq('conversation_id', conversationId)
