@@ -12,6 +12,7 @@ import {
   Building2,
   Network,
   ShieldAlert,
+  Shield,
   Users,
   Trophy,
 } from 'lucide-react'
@@ -44,7 +45,10 @@ export function AdminSubNav({ role }: { role: CommunityRole }) {
       ? [{ href: '/admin/nexuses', label: 'Nexuses', Icon: Network } as NavItem]
       : []),
     ...(role === 'janitor'
-      ? [{ href: '/admin/members', label: 'Members', Icon: Users } as NavItem]
+      ? [
+          { href: '/admin/members', label: 'Members', Icon: Users } as NavItem,
+          { href: '/admin/roles', label: 'Roles', Icon: Shield } as NavItem,
+        ]
       : []),
   ]
 
