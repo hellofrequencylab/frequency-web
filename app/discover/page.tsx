@@ -191,7 +191,7 @@ export default async function DiscoverHubPage() {
         <section className="bg-surface px-6 py-16">
           <div className="max-w-2xl mx-auto">
             <div className="text-center mb-10">
-              <SectionHeading eyebrow="Coming up" title="Upcoming events" tone="success" />
+              <SectionHeading eyebrow="Coming up" title="Upcoming events" />
             </div>
             <div className="space-y-3">
               {events.map((e) => (
