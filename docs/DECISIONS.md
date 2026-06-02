@@ -1147,6 +1147,41 @@ Supabase dev branch). The deploy-ordering coupling is the main operational cost 
 work is staged one surface per PR, not batched.
 
 ---
+### ADR-057 — In-app nav split: community sub-menu (top) vs. features/admin sidebar, with a faded full-site browse nav
+
+**Status:** Accepted · corroborated by `lib/nav-areas.ts` (`placement` field),
+`components/layout/community-nav.tsx`, `components/layout/nav-icons.ts`, and the
+`AppShell` header/body in `components/layout/app-shell.tsx`.
+**Context:** The app shell had one flat left sidebar built from `NAV_AREAS` that mixed the
+day-to-day community loop (Feed, Circles, Events, Messages…) with feature and admin areas
+(Vault, CRM, Marketing, Pages…), while the header carried the full-site browse nav
+(`PrimaryNav`, the same Discover/About menu the splash uses). The community interaction —
+the thing we most want members doing — had no visual primacy, and the site-browse nav
+competed for attention with it.
+**Decision:** Split the in-app chrome into three intentional surfaces, all still derived from
+the single `NAV_AREAS` source of truth (so `/admin/roles` permission grid stays in lockstep):
+1. **`placement` on each `NavArea`** (`'community' | 'sidebar'`) decides where it renders.
+   `'community'` = Feed · Circles · Interests · Events · Broadcast · Messages.
+2. **A horizontal community sub-menu** (`CommunityNav`) sits directly under the header as the
+   focal nav — a tab strip with an active underline. It scrolls horizontally on narrow
+   screens, so it doubles as the mobile community nav.
+3. **The left sidebar is features + admin only** (Library, Network, Progress, Manage). The
+   desktop rail renders `placement === 'sidebar'` areas; the **mobile drawer renders ALL
+   areas** (community + sidebar) so the hamburger remains the complete menu.
+4. **The header full-site browse nav fades to ~40% opacity in the shell** ("community mode")
+   and returns to full on hover/`focus-within`, so members can still reach the wider site
+   with ease without it stealing focus from community interaction.
+5. **Section labels are display-only** (sidebar grouping + permission grid); re-slotting
+   areas across sections (`Community`→`Library`/`Network`) is safe and carries no behavior.
+   The shared lucide icon map moved to `components/layout/nav-icons.ts` so the bar and the
+   rail can't drift.
+**Consequences:** Community interaction has clear visual primacy; the sidebar reads as a
+calm features/admin rail; full-site browsing stays one hover away. All gating still flows
+through `meetsAccess` + `permissions` overrides — unreachable areas mute identically in both
+the bar and the rail. Adding/moving a link is still a one-line edit in `lib/nav-areas.ts`
+(set `placement`); giving it an icon is a one-line edit in `nav-icons.ts`.
+
+---
 ### Decisions intentionally NOT duplicated here
 
 Already fully covered by the repo docs (no ADR needed): the RLS / admin-client
