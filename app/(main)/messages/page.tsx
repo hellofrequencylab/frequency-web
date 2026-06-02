@@ -87,7 +87,7 @@ export default async function MessagesPage({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/sign-in')
 
-  // RLS convergence surface 5 (migration 20240311000000): rooms + DMs read on the
+  // RLS convergence surface 5 (migration 20260602195209): rooms + DMs read on the
   // user client (am_room_member / am_participant SELECT policies); the DM
   // participants' profiles, which RLS would otherwise hide from sub-crew/
   // cross-region viewers, come from the message_peer_profiles DEFINER RPC. The
