@@ -10,7 +10,7 @@ import {
   type NotificationRpcRow,
 } from '@/lib/notifications-map'
 
-// RLS convergence (Phase 2, migration 20240304000000): reads/mark-read run on the
+// RLS convergence (Phase 2, migration 20240307000000): reads/mark-read run on the
 // user-scoped client so the database enforces ownership — reads via the
 // SECURITY DEFINER RPCs `my_notifications` / `my_unread_notification_count` (which
 // safely include the actor's public fields), writes via the "users update own"

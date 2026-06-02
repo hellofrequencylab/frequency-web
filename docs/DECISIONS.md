@@ -1116,7 +1116,7 @@ Design-Language P2 "Puck config exposes the canonical components" guardrail.
 
 ### ADR-056 — RLS convergence pattern: DEFINER RPCs for restricted-join reads, UPDATE-own policies, migration-before-deploy
 
-**Status:** Accepted · corroborated by `supabase/migrations/20240304000000_notifications_rls_convergence.sql`
+**Status:** Accepted · corroborated by `supabase/migrations/20240307000000_notifications_rls_convergence.sql`
 + `app/(main)/notifications/actions.ts` (first converged surface).
 **Context:** Phase 2 / Stage A migrates high-traffic paths off the service-role **admin client**
 (which bypasses RLS, so authz lived in hand-written `recipient_id = me` filters) onto the

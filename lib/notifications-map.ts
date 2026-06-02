@@ -1,6 +1,6 @@
 // View-model mapping for notifications, split out of the 'use server' actions so
 // it's a plain (testable) function. The flat row comes from the `my_notifications`
-// SECURITY DEFINER RPC (migration 20240304000000); the UI wants a nested actor.
+// SECURITY DEFINER RPC (migration 20240307000000); the UI wants a nested actor.
 
 export type NotificationItem = {
   id: string
