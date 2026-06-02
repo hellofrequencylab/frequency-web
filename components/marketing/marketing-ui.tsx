@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, ChevronDown } from 'lucide-react'
 import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
 import { SiteImage } from '@/components/marketing/site-image'
 
@@ -213,6 +213,37 @@ export function Stat({
       >
         {label}
       </p>
+    </div>
+  )
+}
+
+// The one FAQ disclosure for marketing. Native <details>/<summary> so the
+// section stays a Server Component (no client JS), with the ChevronDown rotate
+// as the single canonical indicator (retires pricing's `+` and home's copy).
+export function Faq({ q, children }: { q: string; children: React.ReactNode }) {
+  return (
+    <details className="group rounded-2xl border border-border bg-surface px-6 py-5 shadow-sm [&_summary]:list-none">
+      <summary className="flex cursor-pointer items-center justify-between gap-4 text-left select-none">
+        <span className="text-lg font-semibold text-text leading-snug">{q}</span>
+        <ChevronDown
+          className="h-5 w-5 shrink-0 text-subtle transition-transform group-open:rotate-180"
+          aria-hidden
+        />
+      </summary>
+      <div className="mt-4 text-base leading-relaxed text-muted">{children}</div>
+    </details>
+  )
+}
+
+// Stacked FAQ list from a {q, a} array, at the shared vertical rhythm.
+export function FaqList({ items }: { items: readonly { q: string; a: React.ReactNode }[] }) {
+  return (
+    <div className="space-y-3">
+      {items.map((f) => (
+        <Faq key={f.q} q={f.q}>
+          {f.a}
+        </Faq>
+      ))}
     </div>
   )
 }

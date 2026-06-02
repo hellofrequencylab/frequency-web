@@ -1,52 +1,44 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createAdminClient } from '@/lib/supabase/admin'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/supabase/server'
 import { getMyProfileId } from '@/lib/auth'
+import {
+  mapNotificationRow,
+  type NotificationItem,
+  type NotificationRpcRow,
+} from '@/lib/notifications-map'
 
-export type NotificationItem = {
-  id: string
-  type: string
-  reference_type: string | null
-  reference_id: string | null
-  body: string | null
-  read_at: string | null
-  created_at: string
-  actor: {
-    id: string
-    display_name: string
-    handle: string
-    avatar_url: string | null
-  } | null
-}
+// RLS convergence (Phase 2, migration 20240307000000): reads/mark-read run on the
+// user-scoped client so the database enforces ownership — reads via the
+// SECURITY DEFINER RPCs `my_notifications` / `my_unread_notification_count` (which
+// safely include the actor's public fields), writes via the "users update own"
+// policy. No more service-role admin client here, and no hand-written
+// `recipient_id = me` filter. (Inserts — other actors notifying you — keep the
+// service-role path in their own call sites.) The RPCs aren't in the generated
+// types until `supabase gen types` is re-run, so this casts to an untyped handle
+// for the `.rpc()` calls (same convention as lib/seasons.ts / lib/studio/*).
 
 export async function getMyNotifications(): Promise<NotificationItem[]> {
   const profileId = await getMyProfileId()
   if (!profileId) return []
 
-  const admin = createAdminClient()
-  const { data } = await admin
-    .from('notifications')
-    .select(`
-      id, type, reference_type, reference_id, body, read_at, created_at,
-      actor:profiles!actor_id ( id, display_name, handle, avatar_url )
-    `)
-    .eq('recipient_id', profileId)
-    .order('created_at', { ascending: false })
-    .limit(30)
+  const supabase = (await createClient()) as unknown as SupabaseClient
+  const { data } = await supabase.rpc('my_notifications', { _limit: 30 })
 
-  return (data ?? []) as unknown as NotificationItem[]
+  return ((data as NotificationRpcRow[] | null) ?? []).map(mapNotificationRow)
 }
 
 export async function markAllRead() {
   const profileId = await getMyProfileId()
   if (!profileId) return
 
-  const admin = createAdminClient()
-  await admin
+  // RLS ("users update own") scopes this to the caller's rows — no recipient filter.
+  const supabase = await createClient()
+  await supabase
     .from('notifications')
     .update({ read_at: new Date().toISOString() })
-    .eq('recipient_id', profileId)
     .is('read_at', null)
 
   revalidatePath('/', 'layout')
@@ -56,24 +48,19 @@ export async function markOneRead(notificationId: string) {
   const profileId = await getMyProfileId()
   if (!profileId) return
 
-  const admin = createAdminClient()
-  await admin
+  const supabase = await createClient()
+  await supabase
     .from('notifications')
     .update({ read_at: new Date().toISOString() })
     .eq('id', notificationId)
-    .eq('recipient_id', profileId)
 }
 
 export async function getUnreadCount(): Promise<number> {
   const profileId = await getMyProfileId()
   if (!profileId) return 0
 
-  const admin = createAdminClient()
-  const { count } = await admin
-    .from('notifications')
-    .select('id', { count: 'exact', head: true })
-    .eq('recipient_id', profileId)
-    .is('read_at', null)
+  const supabase = (await createClient()) as unknown as SupabaseClient
+  const { data } = await supabase.rpc('my_unread_notification_count')
 
-  return count ?? 0
+  return (data as number | null) ?? 0
 }

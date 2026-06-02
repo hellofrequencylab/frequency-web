@@ -1,8 +1,9 @@
-// The AI operator (Phase 6.6, ADR-028). MVP uses a DETERMINISTIC proposer (a
-// stand-in for a live Claude operator): it surfaces lapsed members as proposed
-// winback emails into the Action Queue. A human approves; on approval the action
-// runs THROUGH the spine (consent + suppression + unsubscribe). The agent can only
-// ever act via these bounded actions. Server-only; untyped client view for now.
+// The AI operator (Phase 6.6, ADR-028). The proposer surfaces lapsed members as
+// proposed winback emails into the Action Queue: a live Claude operator drafts the
+// copy when `ANTHROPIC_API_KEY` is set, falling back to a deterministic template
+// otherwise. A human approves; on approval the action runs THROUGH the spine
+// (consent + suppression + unsubscribe). The agent can only ever act via these
+// bounded, copilot-gated actions — the model drafts, it never sends. Server-only.
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -10,9 +11,15 @@ import { enqueueEmail, listUnsubscribeHeaders } from '@/lib/email'
 import { shouldSend } from '@/lib/notification-preferences'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { SITE_URL } from '@/lib/site'
+import {
+  LAPSE_DAYS,
+  deterministicWinback,
+  draftWinbackWithClaude,
+  filterByConsent,
+  type WinbackCandidate,
+} from '@/lib/studio/winback'
 
 const DAY = 24 * 60 * 60 * 1000
-const LAPSE_DAYS = 14
 
 function db(): SupabaseClient {
   return createAdminClient() as unknown as SupabaseClient
@@ -45,9 +52,12 @@ export async function listActions(status = 'proposed'): Promise<AgentActionRow[]
 }
 
 /**
- * Deterministic proposer (LLM stand-in): propose a winback email for members with
- * no verified practice in the last LAPSE_DAYS. Skips contacts that already have a
- * pending winback proposal. Returns how many proposals were created.
+ * Propose winback emails for members with no verified practice in the last
+ * LAPSE_DAYS. The copy is drafted by the live Claude operator when an API key is
+ * configured, else a deterministic template. Gated up front by lifecycle-email
+ * consent (`shouldSend`), so we never queue a proposal for someone who has opted
+ * out — and skips members who already have a pending winback. Returns how many
+ * proposals were created. (Copilot-gated: these are *proposed*, not sent.)
  */
 export async function proposeWinbacks(limit = 20): Promise<number> {
   const client = db()
@@ -67,9 +77,9 @@ export async function proposeWinbacks(limit = 20): Promise<number> {
     .neq('consent_state', 'unsubscribed')
     .limit(500)
 
-  let created = 0
+  // Lapsed members with an email and no pending proposal → candidates.
+  const candidates: WinbackCandidate[] = []
   for (const m of members ?? []) {
-    if (created >= limit) break
     if (!m.profile_id || !m.email || active.has(m.profile_id)) continue
 
     const { data: dupe } = await client
@@ -81,15 +91,26 @@ export async function proposeWinbacks(limit = 20): Promise<number> {
       .limit(1)
     if (dupe && dupe.length > 0) continue
 
-    const name = (m.display_name as string) || 'there'
+    candidates.push({
+      profileId: m.profile_id as string,
+      email: m.email as string,
+      displayName: (m.display_name as string | null) ?? null,
+    })
+  }
+
+  // Consent gate at proposal time: only members opted in to lifecycle email.
+  const eligible = await filterByConsent(candidates, (id) =>
+    shouldSend(id, 'email', 'lifecycle'),
+  )
+
+  let created = 0
+  for (const c of eligible) {
+    if (created >= limit) break
+    const name = c.displayName || 'there'
+    const draft = (await draftWinbackWithClaude(name)) ?? deterministicWinback(name)
     await client.from('agent_actions').insert({
       kind: 'email_contact',
-      payload: {
-        profileId: m.profile_id,
-        email: m.email,
-        subject: 'We miss you at Frequency',
-        body: `Hi ${name}, it's been a couple of weeks since your last practice. A short session today is all it takes to pick your streak back up. We'd love to see you.`,
-      },
+      payload: { profileId: c.profileId, email: c.email, subject: draft.subject, body: draft.body },
       rationale: `No verified practice in the last ${LAPSE_DAYS} days (lapsed member).`,
       status: 'proposed',
     })

@@ -30,14 +30,22 @@ grid) · warm DAWN + ink/slat contrast · real golden-hour photography. Build ON
    editorial* but not yet motion-forward; bring the validated flagship motion/layout to them.
 2. **Phase-A primitives (Design-Language P1):** shared `Button` + `Card`; bake spacing rhythm +
    container widths into `Section` defaults; retire the remaining inline button/card drift.
-3. **Pre-existing lint error:** `app/(main)/events/new/event-form.tsx` — `<a>` → `next/link`.
-4. **Guard the splash:** publishing the `home` page in the editor would shadow the coded
-   flagship (same trap we hit with The Lab/How it works/About). Leave `home` unpublished, or add a guard.
+3. ~~**Pre-existing lint error:** `event-form.tsx` `<a>` → `next/link`.~~ ✅ Done (audit) — also
+   cleared the stale `opengraph-image` eslint-disable; ESLint is clean.
+4. ~~**Guard the splash.**~~ ✅ Done — **ADR-054**: `home` is code-locked (removed from
+   `EDITABLE_PAGES`; `/` renders the coded splash unconditionally). Structural, not convention.
+
+## ✅ Editor reworked into a standardized block library (ADR-055)
+The Puck palette is no longer content-named one-offs. It's a standardized, categorized design-system
+library (Layout / Content / Sections / Media / Dynamic) with variants + universal adjust controls;
+`the-lab`/`how-it-works`/`about` content is re-mapped into the new blocks as templates. See
+[`PAGE-EDITOR-SPEC.md`](PAGE-EDITOR-SPEC.md) §12.
 
 ## ⚠️ Gotchas
-- Public marketing pages (`home`, `the-lab`, `how-it-works`, `about`) render the editor's
+- The editable marketing pages (`the-lab`, `how-it-works`, `about`) render the editor's
   `published_data` when present, **shadowing the coded design**. Use the editor's **Unpublish**
-  button to revert to code. (Editable slugs: `lib/page-editor/data.ts`.)
+  button to revert to code. (`home` is code-locked — ADR-054 — and exempt.) Editable slugs:
+  `lib/page-editor/data.ts`.
 - The splash (`/`) **redirects logged-in users to `/feed`** — review it **logged out / incognito**.
 - Vercel **preview** deployments are password-protected (403 to automated fetches); **production**
   (`frequencylocal.com`) is public.

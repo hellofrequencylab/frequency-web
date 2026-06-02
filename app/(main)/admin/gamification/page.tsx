@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { Award, Target, Flame, Trophy, Zap, Users } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
@@ -9,6 +10,11 @@ import type { Database } from '@/lib/database.types'
 import { AwardDialog } from './award-dialog'
 import { getCurrentSeason } from '@/lib/seasons'
 import { SeasonControl } from './season-control'
+import { RewardConfig, type RewardRow } from './reward-config'
+
+// zap_config / gem_config aren't in the generated types yet (read via untyped handle).
+type ZapCfgRow = { action_type: string; zaps_amount: number; daily_cap: number | null; is_active: boolean; description: string | null }
+type GemCfgRow = { action_type: string; gems_amount: number; daily_cap: number | null; is_active: boolean; description: string | null }
 
 type TopEarner = Pick<
   Database['public']['Tables']['profiles']['Row'],
@@ -59,6 +65,23 @@ export default async function AdminGamificationPage() {
   const currentSeason = await getCurrentSeason()
   const isJanitor = profile.community_role === 'janitor'
 
+  // Live reward-economy config (janitor-only editor below).
+  let zapRewards: RewardRow[] = []
+  let gemRewards: RewardRow[] = []
+  if (isJanitor) {
+    const cfg = admin as unknown as SupabaseClient
+    const [{ data: zapRows }, { data: gemRows }] = await Promise.all([
+      cfg.from('zap_config').select('action_type, zaps_amount, daily_cap, is_active, description').order('action_type'),
+      cfg.from('gem_config').select('action_type, gems_amount, daily_cap, is_active, description').order('action_type'),
+    ])
+    zapRewards = ((zapRows as ZapCfgRow[] | null) ?? []).map((r) => ({
+      action_type: r.action_type, amount: r.zaps_amount, daily_cap: r.daily_cap, is_active: r.is_active, description: r.description,
+    }))
+    gemRewards = ((gemRows as GemCfgRow[] | null) ?? []).map((r) => ({
+      action_type: r.action_type, amount: r.gems_amount, daily_cap: r.daily_cap, is_active: r.is_active, description: r.description,
+    }))
+  }
+
   return (
     <div>
       <div className="flex items-end justify-between gap-4 mb-6">
@@ -75,6 +98,8 @@ export default async function AdminGamificationPage() {
       </div>
 
       <SeasonControl season={currentSeason} isJanitor={isJanitor} />
+
+      {isJanitor && <RewardConfig zaps={zapRewards} gems={gemRewards} />}
 
       {/* Stats grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
