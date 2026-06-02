@@ -113,7 +113,7 @@ export default async function AdminGamificationPage() {
         {/* Top achievers */}
         <section className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
           <div className="px-4 py-3 border-b border-border">
-            <h2 className="text-[11px] font-semibold uppercase tracking-wider text-subtle flex items-center gap-2">
+            <h2 className="text-sm font-bold text-text flex items-center gap-2">
               <Users className="w-3.5 h-3.5" />
               Top Achievers
             </h2>
@@ -157,7 +157,7 @@ export default async function AdminGamificationPage() {
         {/* Achievement list */}
         <section className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
           <div className="px-4 py-3 border-b border-border">
-            <h2 className="text-[11px] font-semibold uppercase tracking-wider text-subtle flex items-center gap-2">
+            <h2 className="text-sm font-bold text-text flex items-center gap-2">
               <Award className="w-3.5 h-3.5" />
               All Achievements ({achievements?.length ?? 0})
             </h2>
@@ -167,12 +167,12 @@ export default async function AdminGamificationPage() {
               const tier = TIER_CONFIG[a.tier as AchievementTier]
               return (
                 <div key={a.id} className="flex items-center gap-3 px-4 py-2 border-b border-border dark:border-border/30 last:border-0">
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-semibold ${tier.bg} ${tier.color}`}>
+                  <span className={`text-xs px-1.5 py-0.5 rounded-md font-semibold ${tier.bg} ${tier.color}`}>
                     {tier.label}
                   </span>
                   <span className="text-xs text-text flex-1 truncate">{a.name}</span>
                   {a.zaps_reward > 0 && (
-                    <span className="text-[11px] text-subtle flex items-center gap-0.5">
+                    <span className="text-xs text-subtle flex items-center gap-0.5">
                       <Zap className="w-2.5 h-2.5 text-primary" />+{a.zaps_reward}
                     </span>
                   )}
@@ -185,7 +185,7 @@ export default async function AdminGamificationPage() {
         {/* Season challenges list */}
         <section className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden lg:col-span-2">
           <div className="px-4 py-3 border-b border-border">
-            <h2 className="text-[11px] font-semibold uppercase tracking-wider text-subtle flex items-center gap-2">
+            <h2 className="text-sm font-bold text-text flex items-center gap-2">
               <Target className="w-3.5 h-3.5" />
               Season 1 Challenges ({challenges?.length ?? 0})
             </h2>
@@ -195,12 +195,12 @@ export default async function AdminGamificationPage() {
               const diff = DIFFICULTY_CONFIG[c.difficulty as ChallengeDifficulty]
               return (
                 <div key={c.id} className="flex items-center gap-3 px-4 py-2.5">
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-semibold ${diff.bg} ${diff.color}`}>
+                  <span className={`text-xs px-1.5 py-0.5 rounded-md font-semibold ${diff.bg} ${diff.color}`}>
                     {diff.label}
                   </span>
                   <span className="text-xs text-text flex-1">{c.name}</span>
-                  <span className="text-[11px] text-subtle">Target: {c.target}</span>
-                  <span className="text-[11px] text-subtle flex items-center gap-0.5">
+                  <span className="text-xs text-subtle">Target: {c.target}</span>
+                  <span className="text-xs text-subtle flex items-center gap-0.5">
                     <Zap className="w-2.5 h-2.5 text-primary" />+{c.zaps_reward}
                   </span>
                 </div>

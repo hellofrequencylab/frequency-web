@@ -131,14 +131,14 @@ export function ModerationQueue({ reports }: { reports: ReportItem[] }) {
 
             {/* Target type + reason + prior-report badge */}
             <div className="flex items-center gap-2 mb-2 flex-wrap">
-              <span className="text-[11px] px-2 py-0.5 rounded-md bg-primary-bg text-primary-strong dark:bg-primary-bg dark:text-primary-strong font-medium">
+              <span className="text-xs px-2 py-0.5 rounded-md bg-primary-bg text-primary-strong dark:bg-primary-bg dark:text-primary-strong font-medium">
                 {targetLabel}
               </span>
-              <span className={`text-[11px] px-2 py-0.5 rounded-md font-medium ${reasonInfo.cls}`}>
+              <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${reasonInfo.cls}`}>
                 {reasonInfo.label}
               </span>
               {report.target_type === 'member' && (report.priorReports ?? 0) > 1 && (
-                <span className="text-[11px] px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 font-medium flex items-center gap-1">
+                <span className="text-xs px-2 py-0.5 rounded-full bg-danger-bg text-danger font-medium flex items-center gap-1">
                   <Flag className="w-3 h-3" />
                   {report.priorReports} prior report{(report.priorReports ?? 0) === 1 ? '' : 's'}
                 </span>
@@ -155,7 +155,7 @@ export function ModerationQueue({ reports }: { reports: ReportItem[] }) {
             {/* Details */}
             {report.details && (
               <div className="mb-3">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-subtle mb-1">
+                <p className="text-sm font-bold text-text mb-1">
                   Reporter&apos;s note
                 </p>
                 <p className="text-sm text-muted italic">
@@ -254,8 +254,8 @@ function SuspendDurationPicker({
     { label: 'Indefinite', days: null },
   ]
   return (
-    <div className="mt-3 rounded-lg border border-red-200 dark:border-red-900/50 bg-red-50/60 dark:bg-red-950/30 p-3">
-      <p className="text-xs font-semibold text-red-800 dark:text-red-300 mb-2">
+    <div className="mt-3 rounded-lg border border-danger/40 bg-danger-bg p-3">
+      <p className="text-xs font-semibold text-danger mb-2">
         Suspend posting for how long?
       </p>
       <div className="flex flex-wrap gap-2 mb-3">
@@ -264,21 +264,21 @@ function SuspendDurationPicker({
             key={label}
             disabled={disabled}
             onClick={() => onConfirm(days)}
-            className="rounded-md bg-white dark:bg-gray-900 border border-red-200 dark:border-red-900/50 px-2.5 py-1 text-xs font-medium text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-950/50 disabled:opacity-50 transition-colors"
+            className="rounded-md bg-surface border border-danger/40 px-2.5 py-1 text-xs font-medium text-danger hover:bg-danger-bg disabled:opacity-50 transition-colors"
           >
             {label}
           </button>
         ))}
       </div>
       <div className="flex items-center gap-2">
-        <CheckCircle className="w-3 h-3 text-red-600 dark:text-red-400" />
-        <p className="text-[11px] text-red-700 dark:text-red-400">
+        <CheckCircle className="w-3 h-3 text-danger" />
+        <p className="text-xs text-danger">
           Blocks posts, comments, and dispatches. Reading and DMs remain.
         </p>
         <button
           disabled={disabled}
           onClick={onCancel}
-          className="ml-auto text-[11px] text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+          className="ml-auto text-xs text-subtle hover:text-text"
         >
           Cancel
         </button>
