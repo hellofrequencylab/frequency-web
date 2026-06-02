@@ -75,6 +75,18 @@ shop + practitioner persona. Phases 0–1 are Hook-side.
    an application fee?
 3. Persona ↔ Hook coach **account linking** UX and verification state.
 
+## Reuse note: the Puck page-builder graduates to Hook
+
+Hook has no coach-website builder today; Frequency already shipped one
+(`docs/PAGE-EDITOR-SPEC.md`, ADR-054/055: **Puck**, DB-stored block config, draft→publish,
+DAWN-constrained palette, public pages render without the builder runtime). **Hook will adopt
+that proven pattern** for coach sites (first dogfooded on danieltyack.com), extended with a
+**sandboxed custom-code block** that Frequency deliberately refused. If both products converge on
+the same block contract, a **shared block library** is a candidate for later extraction — but
+that's an optimization, not a dependency: the two builders can evolve independently for now. Full
+model (privileged dev-tenant, customization ladder, graduation pipeline) lives in
+`hook/docs/FREQUENCY-INTEGRATION.md`.
+
 ## See also
 
 - `hook/docs/FREQUENCY-INTEGRATION.md` — canonical, fuller strategy + guardrails
