@@ -9,17 +9,8 @@ import { CompleteButton } from './complete-button'
 import { getInitials } from '@/lib/utils'
 import { getCurrentSeason } from '@/lib/seasons'
 import { SeasonBanner } from './season-banner'
-
-function SidebarCard({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
-      <div className="px-4 py-2.5 border-b border-border">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-subtle">{title}</h3>
-      </div>
-      {children}
-    </div>
-  )
-}
+import { StatCard } from '@/components/ui/stat-card'
+import { ModuleCard } from '@/components/modules/module-card'
 
 const TASK_TYPE_LABEL: Record<string, string> = {
   attendance:   'Attendance',
@@ -95,6 +86,14 @@ export default async function CrewPage() {
 
   const completedTaskCount = new Set((completions ?? []).map((c) => c.task_id)).size
 
+  // Dynamic signal: tasks completed in the last 7 days (accurate from completions).
+  const weekAgo = new Date()
+  weekAgo.setDate(weekAgo.getDate() - 7)
+  const weekAgoIso = weekAgo.toISOString()
+  const tasksThisWeek = (completions ?? []).filter(
+    (c) => c.completed_at && (c.completed_at as string) >= weekAgoIso,
+  ).length
+
   // My first active circle membership
   const { data: membership } = await admin
     .from('memberships')
@@ -154,7 +153,7 @@ export default async function CrewPage() {
           <div className="flex items-center gap-2 flex-wrap mb-1">
             <h1 className="text-2xl font-bold text-text">Crew Dashboard</h1>
             {isCrewLead && (
-              <span className="text-[11px] px-2 py-0.5 rounded-md bg-warning-bg dark:bg-warning-bg text-warning font-semibold">
+              <span className="text-xs px-2 py-0.5 rounded-md bg-warning-bg dark:bg-warning-bg text-warning font-semibold">
                 Crew Lead
               </span>
             )}
@@ -183,7 +182,7 @@ export default async function CrewPage() {
       {/* ── Season Progress (full width, top) ────────── */}
       <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden mb-6">
         <div className="px-4 py-2.5 border-b border-border">
-          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-subtle">Season Progress</h3>
+          <h3 className="text-sm font-bold text-text">Season progress</h3>
         </div>
         <div className="px-5 py-4">
           <div className="flex items-center justify-between mb-2">
@@ -197,7 +196,7 @@ export default async function CrewPage() {
                 : 'Max rank'}
             </span>
             {nextRank && currentSeasonRank !== 'conduit' && (
-              <span className="text-[11px] text-subtle">
+              <span className="text-xs text-subtle">
                 {currentSeasonZaps.toLocaleString()} / {nextRank.minZaps.toLocaleString()}
               </span>
             )}
@@ -237,7 +236,7 @@ export default async function CrewPage() {
           </div>
 
           {currentSeasonRank === 'conduit' && !challengesComplete && (
-            <p className="mt-3 text-[11px] text-subtle text-center">
+            <p className="mt-3 text-xs text-subtle text-center">
               Complete all season challenges to unlock Luminary rank.
             </p>
           )}
@@ -250,37 +249,23 @@ export default async function CrewPage() {
         {/* Left: stats tight above tasks */}
         <div className="flex-1 min-w-0 space-y-6">
 
-          {/* 4 stat cards */}
+          {/* 4 stat cards — shared StatCard; Tasks shows a live weekly delta, and
+              each tile drills down to its detail page. */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <StatCard label="Season rank" value={rankDef.label} icon={Star} href="/crew/achievements" />
+            <StatCard label="Zaps" value={currentSeasonZaps.toLocaleString()} icon={Zap} href="/crew/leaderboard" />
+            <StatCard label="Gems" value={lifetimeGems.toLocaleString()} icon={Gem} href="/crew/store" />
             <StatCard
-              label="Season Rank"
-              value={rankDef.label}
-              Icon={Star}
-              colorCls="text-primary-strong bg-primary-bg dark:text-primary-strong"
-            />
-            <StatCard
-              label="Zaps"
-              value={currentSeasonZaps.toLocaleString()}
-              Icon={Zap}
-              colorCls="text-warning bg-warning-bg dark:text-primary"
-            />
-            <StatCard
-              label="Gems"
-              value={lifetimeGems.toLocaleString()}
-              Icon={Gem}
-              colorCls="text-signal-strong bg-success-bg dark:text-signal"
-            />
-            <StatCard
-              label="Tasks Done"
+              label="Tasks done"
               value={String(completedTaskCount)}
-              Icon={CheckCircle}
-              colorCls="text-success bg-success-bg dark:text-success"
+              icon={CheckCircle}
+              delta={tasksThisWeek > 0 ? { label: `+${tasksThisWeek} this week`, trend: 'up' } : undefined}
             />
           </div>
 
           {/* Tasks */}
           <section>
-            <h2 className="text-sm font-semibold text-text mb-3">
+            <h2 className="text-sm font-bold text-text mb-3">
               Tasks
               <span className="ml-2 text-xs font-normal text-subtle">
                 {(tasks ?? []).length} available
@@ -326,16 +311,16 @@ export default async function CrewPage() {
                           }`}>
                             {task.name}
                           </span>
-                          <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-surface-elevated text-muted font-medium">
+                          <span className="text-xs px-1.5 py-0.5 rounded-md bg-surface-elevated text-muted font-medium">
                             {TASK_TYPE_LABEL[task.task_type] ?? task.task_type}
                           </span>
                           {task.is_repeatable && (
-                            <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-signal-bg text-signal-strong font-medium">
+                            <span className="text-xs px-1.5 py-0.5 rounded-md bg-signal-bg text-signal-strong font-medium">
                               Repeatable
                             </span>
                           )}
                           {task.requires_verification && (
-                            <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-warning-bg text-warning dark:text-primary font-medium">
+                            <span className="text-xs px-1.5 py-0.5 rounded-md bg-warning-bg text-warning dark:text-primary font-medium">
                               Needs review
                             </span>
                           )}
@@ -395,10 +380,10 @@ export default async function CrewPage() {
             <QuickLink href="/crew/store" Icon={ShoppingBag} label="Gem Store" sub="Spend gems" color="bg-teal-50 text-signal-strong" />
           </div>
 
-          {/* Leaderboard */}
+          {/* Leaderboard — borderless module. */}
           {leaderboard.length > 0 && (
-            <SidebarCard title={circleName ? `Leaderboard. ${circleName}` : 'Season Leaderboard'}>
-              <div>
+            <ModuleCard title={circleName ? `Leaderboard · ${circleName}` : 'Season leaderboard'}>
+              <div className="space-y-0.5">
                 {leaderboard.map((member, i) => {
                   const isSelf = member.profileId === profile.id
                   const memberRankDef = getRankDef(member.seasonRank)
@@ -411,9 +396,9 @@ export default async function CrewPage() {
                   return (
                     <div
                       key={member.profileId}
-                      className={`flex items-center gap-3 px-4 py-3 ${
-                        i < leaderboard.length - 1 ? 'border-b border-border' : ''
-                      } ${isSelf ? 'bg-primary-bg/60 dark:bg-primary-bg' : ''}`}
+                      className={`flex items-center gap-3 rounded-lg px-2 -mx-2 py-2 ${
+                        isSelf ? 'bg-primary-bg/60 dark:bg-primary-bg' : ''
+                      }`}
                     >
                       <span className={`text-sm font-bold w-5 shrink-0 ${rankColor}`}>{i + 1}</span>
 
@@ -433,12 +418,12 @@ export default async function CrewPage() {
                           }`}
                         >
                           {member.displayName}
-                          {isSelf && <span className="ml-1 text-[11px] text-primary-strong dark:text-primary-strong font-normal">(you)</span>}
+                          {isSelf && <span className="ml-1 text-xs text-primary-strong dark:text-primary-strong font-normal">(you)</span>}
                         </Link>
                       </div>
 
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${memberRankDef.color} text-white`}>
+                        <span className={`text-xs font-bold px-1.5 py-0.5 rounded-md ${memberRankDef.color} text-white`}>
                           {memberRankDef.label}
                         </span>
                         <div className="flex items-center gap-0.5">
@@ -452,31 +437,10 @@ export default async function CrewPage() {
                   )
                 })}
               </div>
-            </SidebarCard>
+            </ModuleCard>
           )}
         </div>
       </div>
-    </div>
-  )
-}
-
-// ── Stat card ────────────────────────────────────────────────────────────────
-
-function StatCard({
-  label, value, Icon, colorCls,
-}: {
-  label:    string
-  value:    string
-  Icon:     React.ElementType
-  colorCls: string
-}) {
-  return (
-    <div className="rounded-2xl border border-border bg-surface shadow-sm p-3">
-      <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2 ${colorCls}`}>
-        <Icon className="w-4 h-4" />
-      </div>
-      <div className="text-xl font-bold text-text leading-none">{value}</div>
-      <div className="text-xs text-muted mt-0.5">{label}</div>
     </div>
   )
 }
