@@ -14,7 +14,9 @@ export function PhotoHero({
   title,
   subtitle,
   children,
+  footer,
   focal = 'object-center',
+  minHeight,
 }: {
   image: string
   alt?: string
@@ -22,10 +24,19 @@ export function PhotoHero({
   title: React.ReactNode
   subtitle?: string
   children?: React.ReactNode
+  /** Optional slot below the CTA (trust line, scroll cue) — used by the splash. */
+  footer?: React.ReactNode
   focal?: string
+  /** `'screen'` makes the hero a full-viewport, center-anchored landing beat. */
+  minHeight?: 'screen'
 }) {
+  const isScreen = minHeight === 'screen'
   return (
-    <section className="relative overflow-hidden">
+    <section
+      className={`relative overflow-hidden ${
+        isScreen ? 'min-h-screen flex flex-col items-center justify-center' : ''
+      }`}
+    >
       <Image src={image} alt={alt} fill preload sizes="100vw" className={`object-cover ${focal}`} />
       <div
         className="absolute inset-0"
@@ -48,6 +59,7 @@ export function PhotoHero({
           </p>
         )}
         {children && <div className="mt-9">{children}</div>}
+        {footer}
       </div>
       <div className="light-strip absolute inset-x-0 bottom-0 z-10" />
     </section>
@@ -136,6 +148,71 @@ export function SectionHeading({
       )}
       <h2 className="font-display uppercase text-text text-4xl sm:text-5xl">{title}</h2>
       {kicker && <p className="mt-4 text-xl italic text-muted">{kicker}</p>}
+    </div>
+  )
+}
+
+// Editorial pull-quote — a centered, oversized display blockquote with an
+// uppercase attribution. Wrap accent words in <span className="text-primary">.
+// Distinct from Statement (no attribution; this carries a voice).
+export function PullQuote({
+  children,
+  cite,
+  tone = 'canvas',
+}: {
+  children: React.ReactNode
+  cite?: string
+  tone?: 'surface' | 'canvas' | 'ink'
+}) {
+  const isInk = tone === 'ink'
+  const bg = tone === 'canvas' ? 'bg-marketing-canvas' : isInk ? 'bg-slat' : 'bg-surface'
+  return (
+    <section className={`${bg} px-6 py-20 sm:py-28`}>
+      <figure className="max-w-4xl mx-auto text-center">
+        <blockquote
+          className={`font-display uppercase text-3xl sm:text-4xl lg:text-5xl leading-[1.08] text-balance ${
+            isInk ? 'text-on-ink' : 'text-text'
+          }`}
+        >
+          {children}
+        </blockquote>
+        {cite && (
+          <figcaption
+            className={`mt-7 text-sm font-bold uppercase tracking-[0.25em] ${
+              isInk ? 'text-on-ink-subtle' : 'text-subtle'
+            }`}
+          >
+            {cite}
+          </figcaption>
+        )}
+      </figure>
+    </section>
+  )
+}
+
+// Big display stat — promoted from the splash so counts look identical sitewide.
+export function Stat({
+  value,
+  label,
+  tone = 'light',
+}: {
+  value: number | string
+  label: string
+  tone?: 'light' | 'ink'
+}) {
+  const isInk = tone === 'ink'
+  return (
+    <div>
+      <p className={`font-display text-6xl sm:text-7xl ${isInk ? 'text-on-ink' : 'text-text'}`}>
+        {value}
+      </p>
+      <p
+        className={`text-xs uppercase tracking-widest font-bold mt-3 ${
+          isInk ? 'text-on-ink-subtle' : 'text-subtle'
+        }`}
+      >
+        {label}
+      </p>
     </div>
   )
 }

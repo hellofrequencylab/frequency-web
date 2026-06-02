@@ -294,6 +294,49 @@ h1, h2, h3, h4, h5, h6 {
   .animate-marquee { animation: none; }
 }
 
+/* ── Scroll-reveal (marketing) ──────────────────────────────────────────────────
+   Sections start slightly lowered + transparent and settle into place once an
+   IntersectionObserver adds `.is-revealed` (see components/marketing/motion.tsx).
+   No-JS / SSR safety: with JS disabled the observer never fires, so reveal-on-load
+   below guarantees content is visible. Reduced motion → no transform, no fade. */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
+.reveal.is-revealed {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+/* No-JS safety: the observer never fires without JS, so never hide content. */
+@media (scripting: none) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ── Soft scroll cue bounce (marketing hero) ──────────────────────────────────── */
+@keyframes cue-bounce {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(6px); }
+}
+.animate-cue {
+  animation: cue-bounce 2.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-cue { animation: none; }
+}
+
 /* ── Marketing contrast elements (DAWN, bold-warm) ──────────────────────────────
    Signature treatments for the public site's dark bands, drawn straight from
    Frequency's spaces: black wood-slat walls, warm LED light strips, cinematic
