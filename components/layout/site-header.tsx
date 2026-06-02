@@ -2,7 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Search } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import { MARKETING_NAV } from '@/lib/site'
+import { MARKETING_NAV, DISCOVER_NAV } from '@/lib/site'
 import { UserMenu, AuthButtons, type UserMenuProfile } from './user-menu'
 
 // ── Public site header ────────────────────────────────────────────────────────
@@ -40,6 +40,13 @@ export async function SiteHeader({ profile: profileProp, variant = 'light' }: Si
   const isAuth = !!profile
   const isDark = variant === 'dark'
 
+  // Keep the menu consistent with wherever the visitor came from. A signed-in
+  // member gets the same explore nav as the in-app top bar (Discover / Circles /
+  // Events / Topics) so the menu doesn't switch out from under them when they
+  // step onto a public /discover page. Logged-out visitors keep the marketing
+  // nav (How it works / Demo / Pricing …) for conversion.
+  const nav = isAuth ? DISCOVER_NAV : MARKETING_NAV
+
   return (
     <header
       className={`fixed top-0 inset-x-0 z-50 h-16 flex items-center gap-3 px-5 sm:px-8 ${
@@ -59,10 +66,11 @@ export async function SiteHeader({ profile: profileProp, variant = 'light' }: Si
         />
       </Link>
 
-      {/* Primary marketing nav (public pages). Desktop only; mobile relies on
-          the prominent Join CTA + footer nav until a drawer ships. */}
+      {/* Primary nav (public pages). Desktop only; mobile relies on the
+          prominent Join CTA + footer nav until a drawer ships. Auth-aware: see
+          `nav` above. */}
       <nav className="hidden md:flex items-center gap-1 ml-2">
-        {MARKETING_NAV.map((item) => (
+        {nav.map((item) => (
           <Link
             key={item.href}
             href={item.href}
