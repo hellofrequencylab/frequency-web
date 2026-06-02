@@ -1,0 +1,11 @@
+-- Add 'admin' to the community-role ladder.
+--
+-- Admin sits just below janitor: it carries nearly the full set of keys
+-- (Studio, structural admin tabs, marketing pages) but NOT the most sensitive
+-- ones reserved for janitor (assigning roles, member management, editing the
+-- permission grid). The TS source of truth for ordering is lib/core/roles.ts;
+-- the enum order here is cosmetic but kept consistent (admin before janitor).
+--
+-- ADD VALUE runs standalone (matching the janitor migration) — the new value is
+-- not consumed elsewhere in this migration, so no in-transaction usage issue.
+ALTER TYPE community_role ADD VALUE IF NOT EXISTS 'admin' BEFORE 'janitor';

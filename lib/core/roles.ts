@@ -12,15 +12,19 @@ export type CommunityRole =
   | 'host'
   | 'guide'
   | 'mentor'
+  | 'admin'
   | 'janitor'
 
-// Ascending privilege: member < crew < host < guide < mentor < janitor.
+// Ascending privilege: member < crew < host < guide < mentor < admin < janitor.
+// 'admin' sits just below janitor — nearly the same keys, minus the most
+// sensitive (role assignment, member management, the permission grid).
 export const ROLE_HIERARCHY: readonly CommunityRole[] = [
   'member',
   'crew',
   'host',
   'guide',
   'mentor',
+  'admin',
   'janitor',
 ] as const
 

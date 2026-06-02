@@ -46,7 +46,7 @@ export default async function ChannelsPage() {
       .from('profiles').select('id, community_role').eq('auth_user_id', user.id).maybeSingle()
     myProfileId = profile?.id ?? null
     const role = (profile as { community_role?: string } | null)?.community_role
-    canCreate = role === 'host' || role === 'guide' || role === 'mentor' || role === 'janitor'
+    canCreate = role === 'host' || role === 'guide' || role === 'mentor' || role === 'admin' || role === 'janitor'
   }
 
   const [{ data: channels }, gam] = await Promise.all([

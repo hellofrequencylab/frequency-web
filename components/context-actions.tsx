@@ -27,7 +27,7 @@ import {
   deleteCrewTask,
 } from '@/app/(main)/admin/actions'
 
-type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
+type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
 
 type PostContext = { type: 'post'; id: string; isPinned: boolean; isOwn: boolean; postType: string }
 type EventContext = { type: 'event'; id: string; slug: string; isHost: boolean; isCancelled: boolean }
@@ -49,7 +49,7 @@ type ContextActionsProps = {
     | MemberContext
 }
 
-const HOST_PLUS: CommunityRole[] = ['host', 'guide', 'mentor', 'janitor']
+const HOST_PLUS: CommunityRole[] = ['host', 'guide', 'mentor', 'admin', 'janitor']
 
 function isHostPlus(role: CommunityRole) {
   return HOST_PLUS.includes(role)

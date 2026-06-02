@@ -17,7 +17,7 @@ import {
   Trophy,
 } from 'lucide-react'
 
-type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
+type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
 
 interface NavItem {
   href: string
@@ -38,12 +38,14 @@ export function AdminSubNav({ role }: { role: CommunityRole }) {
     { href: '/admin/crew-tasks',     label: 'Crew Tasks',     Icon: ClipboardList },
     { href: '/admin/gamification',  label: 'Gamification',  Icon: Trophy },
     { href: '/admin/moderation',    label: 'Moderation',    Icon: ShieldAlert },
-    ...(role === 'guide' || role === 'mentor' || role === 'janitor'
+    ...(role === 'guide' || role === 'mentor' || role === 'admin' || role === 'janitor'
       ? [{ href: '/admin/hubs', label: 'Hubs', Icon: Building2 } as NavItem]
       : []),
-    ...(role === 'mentor' || role === 'janitor'
+    ...(role === 'mentor' || role === 'admin' || role === 'janitor'
       ? [{ href: '/admin/nexuses', label: 'Nexuses', Icon: Network } as NavItem]
       : []),
+    // Members + Roles stay janitor-only — the most sensitive keys (member
+    // management and the permission grid) are not handed to admins.
     ...(role === 'janitor'
       ? [
           { href: '/admin/members', label: 'Members', Icon: Users } as NavItem,

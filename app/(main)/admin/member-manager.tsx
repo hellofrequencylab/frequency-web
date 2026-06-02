@@ -8,7 +8,7 @@ import { assignRole, deactivateMember, toggleSeasonComplete, assignLuminary } fr
 import type { SeasonRank } from '@/lib/season-ranks'
 import { getInitials } from '@/lib/utils'
 
-type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
+type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
 
 export type MemberItem = {
   membershipId: string
@@ -25,7 +25,7 @@ export type MemberItem = {
   seasonChallengesComplete?: boolean
 }
 
-const ROLES: CommunityRole[] = ['member', 'crew', 'host', 'guide', 'mentor', 'janitor']
+const ROLES: CommunityRole[] = ['member', 'crew', 'host', 'guide', 'mentor', 'admin', 'janitor']
 
 const ROLE_LABEL: Record<CommunityRole, string> = {
   member:  'Member',
@@ -33,6 +33,7 @@ const ROLE_LABEL: Record<CommunityRole, string> = {
   host:    'Host',
   guide:   'Guide',
   mentor:  'Mentor',
+  admin:   'Admin',
   janitor: 'Janitor',
 }
 

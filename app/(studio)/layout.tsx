@@ -1,16 +1,18 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { requireStaff } from '@/lib/staff'
+import { getStaffMember } from '@/lib/staff'
+import { atLeastRole } from '@/lib/core/roles'
 import { StudioShell } from '@/components/layout/studio-shell'
 import type { CommunityRole } from '@/lib/community-roles'
 
-// The Studio: admin-gated business cockpit. Renders inside the STANDARD app shell
-// (top header + left sidebar) with the Studio nav added as its own section, so it
-// feels like part of the app. Gated once here (ADR-027).
+// The Studio: the marketing-only cockpit. Renders inside the STANDARD app shell
+// (top header + left sidebar) with the Studio nav added as its own section — a
+// self-contained marketing workspace (CRM / email / pipeline) whose logo always
+// links back to the main site.
+//
+// Access (ADR-027 + admin role): community admin/janitor, OR a Studio staff
+// member (the marketing team on the separate team_members axis).
 export default async function StudioLayout({ children }: { children: React.ReactNode }) {
-  // Staff gate (redirects to '/' if not staff).
-  await requireStaff()
-
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/sign-in')
@@ -22,10 +24,15 @@ export default async function StudioLayout({ children }: { children: React.React
     .maybeSingle()
   if (!profile) redirect('/onboarding')
 
+  const role = (profile.community_role ?? 'member') as CommunityRole
+  // Admins and janitors are in by role; otherwise fall back to the staff axis.
+  if (!atLeastRole(role, 'admin')) {
+    const staff = await getStaffMember().catch(() => null)
+    if (!staff) redirect('/')
+  }
+
   return (
-    <StudioShell
-      profile={{ ...profile, community_role: (profile.community_role ?? 'member') as CommunityRole }}
-    >
+    <StudioShell profile={{ ...profile, community_role: role }}>
       {children}
     </StudioShell>
   )

@@ -5,7 +5,10 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { ROLE_HIERARCHY, type CommunityRole } from '@/lib/core/roles'
 import { ROLE_LABEL, roleBadgeStyle } from '@/lib/community-roles'
 import { ROLE_META } from '@/lib/roles-meta'
+import { getAreaPermissions } from '@/lib/permissions'
+import { NAV_AREA_DEFAULTS } from '@/lib/nav-areas'
 import { RoleManager, type RoleMember } from './role-manager'
+import { PermissionGrid } from './permission-grid'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,6 +32,8 @@ export default async function AdminRolesPage() {
     .eq('is_system', false)
     .order('current_season_zaps', { ascending: false, nullsFirst: false })
     .limit(300)
+
+  const permissions = await getAreaPermissions()
 
   const members: RoleMember[] = (rows ?? []).map((m) => ({
     id: m.id as string,
@@ -73,6 +78,8 @@ export default async function AdminRolesPage() {
       </div>
 
       <RoleManager members={members} />
+
+      <PermissionGrid initial={permissions} defaults={NAV_AREA_DEFAULTS} />
     </div>
   )
 }
