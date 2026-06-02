@@ -44,6 +44,7 @@ import {
   roleBadgeStyle,
 } from '@/lib/community-roles'
 import { atLeastRole } from '@/lib/core/roles'
+import { DISCOVER_NAV } from '@/lib/site'
 import { useFeedAtBottom } from '@/components/sidebar/use-feed-at-bottom'
 
 // Grouped nav (IA-STRATEGY §1). Same items + visibility as before — just sorted
@@ -68,12 +69,6 @@ const NAV_SECTIONS: {
     { href: '/practices', label: 'Practices', Icon: Sparkles },
     { href: '/programs',  label: 'Programs',  Icon: BookOpen },
     { href: '/partners',  label: 'Partners',  Icon: Store },
-  ] },
-  { label: 'Explore', items: [
-    { href: '/discover',         label: 'Discover', Icon: Search },
-    { href: '/discover/circles', label: 'Circles',  Icon: Users },
-    { href: '/discover/events',  label: 'Events',   Icon: CalendarDays },
-    { href: '/discover/topics',  label: 'Topics',   Icon: Radio },
   ] },
   { label: 'Connect', items: [
     { href: '/broadcast', label: 'Broadcast', Icon: Megaphone },
@@ -830,12 +825,10 @@ export default function AppShell({
         {/* Right section: quick nav · search · notifications · account */}
         <div className="flex flex-1 items-center justify-end gap-1 px-3">
 
-          {/* Quick nav. Desktop only — sits next to the search bar. */}
+          {/* Explore (marketing) nav. Desktop only — the public Discover pages
+              live in the header bar; the app drilldown lives in the sidebar. */}
           <nav className="hidden md:flex items-center gap-0.5 mr-2">
-            {[
-              { href: '/feed', label: 'Feed' },
-              { href: '/circles', label: 'Circles' },
-            ].map((l) => (
+            {DISCOVER_NAV.map((l) => (
               <Link
                 key={l.href}
                 href={l.href}
