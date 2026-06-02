@@ -26,22 +26,23 @@ export const DISCOVER_NAV: NavLink[] = [
   { label: "Topics", href: "/discover/topics", desc: "Browse by what you practice" },
 ];
 
-// "About" dropdown — the mission / site pages. Visitors get the full set
-// (including the acquisition pages); members get a mission-focused subset, so the
-// nonprofit stays present in the social area without pushing Pricing/Demo at them.
-// Designed to grow — Mission / Impact / Donate slot in here as they ship.
+// The mission / site pages — shown as flat tabs beside the Discover dropdown.
+// Visitors get the full set (including the acquisition pages); members get a
+// mission-focused subset, so the nonprofit stays present in the social area
+// without pushing Pricing/Demo at them. Designed to grow — Mission / Impact /
+// Donate slot straight in here as they ship.
 export const SITE_NAV: NavLink[] = [
-  { label: "How it works", href: "/how-it-works", desc: "The model, in plain language" },
-  { label: "The Lab", href: "/the-lab", desc: "Our physical third space" },
-  { label: "Take the tour", href: "/demo", desc: "See inside Frequency" },
-  { label: "Pricing", href: "/pricing", desc: "Membership that funds the room" },
-  { label: "Our story", href: "/about", desc: "How Frequency began" },
+  { label: "How it works", href: "/how-it-works" },
+  { label: "The Lab", href: "/the-lab" },
+  { label: "Demo", href: "/demo" },
+  { label: "Pricing", href: "/pricing" },
+  { label: "About", href: "/about" },
 ];
 
 export const SITE_NAV_MEMBER: NavLink[] = [
-  { label: "How it works", href: "/how-it-works", desc: "The model, in plain language" },
-  { label: "The Lab", href: "/the-lab", desc: "Our physical third space" },
-  { label: "Our story", href: "/about", desc: "How Frequency began" },
+  { label: "How it works", href: "/how-it-works" },
+  { label: "The Lab", href: "/the-lab" },
+  { label: "About", href: "/about" },
 ];
 
 // Flat list for the marketing footer (every public page, no grouping).
