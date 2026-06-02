@@ -32,7 +32,7 @@ the app is served at frequencylocal.com** (canonical/sitemap drift). Set
 
 ```
 app/
-  (main)/            authenticated app shell (sidebar layout)
+  (main)/            authenticated app shell (community sub-menu + features/admin sidebar — ADR-057)
     feed/ broadcast/ circles/ hubs/ nexuses/ channels/
     events/ messages/ people/ crew/ notifications/ settings/
     admin/           host+/janitor moderation & management

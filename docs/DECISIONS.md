@@ -1147,8 +1147,45 @@ Supabase dev branch). The deploy-ordering coupling is the main operational cost 
 work is staged one surface per PR, not batched.
 
 ---
+### ADR-057 — In-app nav split: community sub-menu (top) vs. features/admin sidebar, with a faded full-site browse nav
 
-## ADR-052: Foreign-key covering indexes from the maintenance advisor sweep
+**Status:** Accepted · corroborated by `lib/nav-areas.ts` (`placement` field),
+`components/layout/community-nav.tsx`, `components/layout/nav-icons.ts`, and the
+`AppShell` header/body in `components/layout/app-shell.tsx`.
+**Context:** The app shell had one flat left sidebar built from `NAV_AREAS` that mixed the
+day-to-day community loop (Feed, Circles, Events, Messages…) with feature and admin areas
+(Vault, CRM, Marketing, Pages…), while the header carried the full-site browse nav
+(`PrimaryNav`, the same Discover/About menu the splash uses). The community interaction —
+the thing we most want members doing — had no visual primacy, and the site-browse nav
+competed for attention with it.
+**Decision:** Split the in-app chrome into three intentional surfaces, all still derived from
+the single `NAV_AREAS` source of truth (so `/admin/roles` permission grid stays in lockstep):
+1. **`placement` on each `NavArea`** (`'community' | 'sidebar'`) decides where it renders.
+   `'community'` = Feed · Circles · Interests · Events · Broadcast · Messages.
+2. **A horizontal community sub-menu** (`CommunityNav`) — a tab strip with an active
+   underline — is **inset between the two rails** (it lives at the top of the center scroll
+   column, not full-bleed under the header) and **sticks** to the top of the shared scroll,
+   so it reads as the content's own nav. It scrolls horizontally on narrow screens, so it
+   doubles as the mobile community nav.
+3. **The left sidebar is features + admin only** (Library, Network, Progress, Manage). The
+   desktop rail renders `placement === 'sidebar'` areas; the **mobile drawer renders ALL
+   areas** (community + sidebar) so the hamburger remains the complete menu.
+4. **The header full-site browse nav fades to ~40% opacity in the shell** ("community mode")
+   and returns to full on hover/`focus-within`, so members can still reach the wider site
+   with ease without it stealing focus from community interaction. Its **"Discover" dropdown
+   is hidden in the shell** (`showDiscover={false}`) since the community sub-menu already owns
+   discovery — there it's purely full-site browsing.
+5. **Section labels are display-only** (sidebar grouping + permission grid); re-slotting
+   areas across sections (`Community`→`Library`/`Network`) is safe and carries no behavior.
+   The shared lucide icon map moved to `components/layout/nav-icons.ts` so the bar and the
+   rail can't drift.
+**Consequences:** Community interaction has clear visual primacy; the sidebar reads as a
+calm features/admin rail; full-site browsing stays one hover away. All gating still flows
+through `meetsAccess` + `permissions` overrides — unreachable areas mute identically in both
+the bar and the rail. Adding/moving a link is still a one-line edit in `lib/nav-areas.ts`
+(set `placement`); giving it an icon is a one-line edit in `nav-icons.ts`.
+
+## ADR-058: Foreign-key covering indexes from the maintenance advisor sweep
 
 **Status:** Accepted · corroborated by `supabase/migrations/20260602000000_fk_indexes.sql`
 (pending apply) and `docs/maintenance/2026-06-02.md`.
@@ -1158,15 +1195,17 @@ deletes. This is the same class of finding `20240305000000_perf_indexes.sql` add
 read paths, now extended to FK columns surfaced by the advisor.
 **Decision:** Add a single covering index per flagged FK in one additive migration
 (`CREATE INDEX IF NOT EXISTS`, idempotent, no access/behaviour change). The riskier advisor
-findings are **deliberately excluded** from this migration because they change behaviour and
-need per-item review: the 10 `rls_enabled_no_policy` tables (verify intentionally backend-only),
-`auth_rls_initplan` ×41 (rewrite `auth.uid()` → `(select auth.uid())`), and RPC `EXECUTE`
-revokes on SECURITY DEFINER functions. The `rls_disabled_in_public` ERROR on `spatial_ref_sys`
-is a PostGIS system table — acknowledged, no action.
+findings are **deliberately excluded** because they change behaviour and need per-item review:
+the 10 `rls_enabled_no_policy` tables (verify intentionally backend-only), `auth_rls_initplan`
+×41 (rewrite `auth.uid()` → `(select auth.uid())`), and RPC `EXECUTE` revokes on SECURITY
+DEFINER functions. The `rls_disabled_in_public` ERROR on `spatial_ref_sys` is a PostGIS system
+table — acknowledged, no action.
 **Consequences:** Index-only, so safe to apply anytime (`supabase db push`); slightly more write
 overhead and storage, the standard FK-index trade-off. Maintenance findings now have a durable
 home (`docs/maintenance/<date>.md`) and the routine that produces them is `/maintenance`
 (see `docs/WORKFLOW.md`).
+
+---
 
 ---
 ### Decisions intentionally NOT duplicated here
