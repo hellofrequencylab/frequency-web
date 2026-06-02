@@ -5,15 +5,10 @@ import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
 import {
-  Radio,
-  Home,
-  Users,
-  CalendarDays,
   Globe,
   User,
   LogOut,
   Shield,
-  MessageSquare,
   Moon,
   Sun,
   Settings,
@@ -22,19 +17,11 @@ import {
   CreditCard,
   BellRing,
   SlidersHorizontal,
-  Megaphone,
   UserPlus,
   Menu,
   X,
   Gem,
   Monitor,
-  Store,
-  Briefcase,
-  FileText,
-  Sparkles,
-  BookOpen,
-  Send,
-  Contact,
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { NotificationBell } from '@/components/layout/notification-bell'
@@ -48,35 +35,18 @@ import {
 import { NAV_AREAS, meetsAccess, type NavAccess } from '@/lib/nav-areas'
 import { PrimaryNav } from '@/components/layout/primary-nav'
 import { BrandMark } from '@/components/layout/brand-mark'
+import { CommunityNav } from '@/components/layout/community-nav'
+import { AREA_ICONS } from '@/components/layout/nav-icons'
 import { useFeedAtBottom } from '@/components/sidebar/use-feed-at-bottom'
 
-// The sidebar is built from NAV_AREAS (lib/nav-areas.ts — the single source of
-// truth shared with the permission grid). The whole menu is ALWAYS shown; an
-// item the viewer can't reach renders muted (greyed, non-clickable). Each area's
-// access level can be overridden per-area from /admin/roles; those overrides are
-// passed in via the `permissions` prop and merged on top of the code defaults.
-// To add/move a link or change its baseline access, edit lib/nav-areas.ts; to
-// give it an icon, add a key here.
-const AREA_ICONS: Record<string, React.ElementType> = {
-  feed: Home,
-  circles: Users,
-  channels: Radio,
-  events: CalendarDays,
-  practices: Sparkles,
-  programs: BookOpen,
-  broadcast: Megaphone,
-  messages: MessageSquare,
-  friends: UserPlus,
-  partners: Store,
-  people: Globe,
-  crew: Zap,
-  vault: Gem,
-  admin: Shield,
-  crm: Contact,
-  marketing: Briefcase,
-  outreach: Send,
-  pages: FileText,
-}
+// The sidebar + community bar are built from NAV_AREAS (lib/nav-areas.ts — the
+// single source of truth shared with the permission grid). The whole menu is
+// ALWAYS shown; an item the viewer can't reach renders muted (greyed, non-
+// clickable). Each area's access level can be overridden per-area from
+// /admin/roles; those overrides are passed in via the `permissions` prop and
+// merged on top of the code defaults. To add/move a link or change its baseline
+// access (or placement), edit lib/nav-areas.ts; to give it an icon, add a key in
+// components/layout/nav-icons.ts.
 
 type MainNavItem = {
   key: string
@@ -86,10 +56,12 @@ type MainNavItem = {
   defaultAccess: NavAccess
 }
 
-// Group NAV_AREAS into sections, preserving declaration order.
-const NAV_SECTIONS: { label: string | null; items: MainNavItem[] }[] = (() => {
-  const sections: { label: string | null; items: MainNavItem[] }[] = []
-  for (const area of NAV_AREAS) {
+type NavSectionGroup = { label: string | null; items: MainNavItem[] }
+
+// Group a list of areas into ordered sections, preserving declaration order.
+function buildSections(areas: typeof NAV_AREAS[number][]): NavSectionGroup[] {
+  const sections: NavSectionGroup[] = []
+  for (const area of areas) {
     const item: MainNavItem = {
       key: area.key,
       href: area.href,
@@ -102,7 +74,13 @@ const NAV_SECTIONS: { label: string | null; items: MainNavItem[] }[] = (() => {
     else sections.push({ label: area.section, items: [item] })
   }
   return sections
-})()
+}
+
+// Desktop sidebar = features + admin only (the community loop lives in the
+// horizontal CommunityNav under the header). The mobile drawer is the full menu,
+// so it gets every area for completeness.
+const SIDEBAR_SECTIONS = buildSections(NAV_AREAS.filter((a) => a.placement === 'sidebar'))
+const ALL_SECTIONS = buildSections([...NAV_AREAS])
 
 // The effective access for an area = a janitor's per-area override, if any,
 // else the code default. `role` is the viewer's community role (null = visitor).
@@ -441,6 +419,7 @@ function NavLinkList({
   extraSections,
   hideAppNav = false,
   permissions,
+  sections = SIDEBAR_SECTIONS,
 }: {
   isActive: (href: string) => boolean
   role: CommunityRole
@@ -449,6 +428,8 @@ function NavLinkList({
   hideAppNav?: boolean
   /** Per-area access overrides (janitor-set); merged over code defaults. */
   permissions?: Record<string, NavAccess>
+  /** Which area sections to render (desktop rail = sidebar-only; drawer = all). */
+  sections?: NavSectionGroup[]
 }) {
   const itemClass = (active: boolean) =>
     `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -462,7 +443,7 @@ function NavLinkList({
 
   return (
     <>
-      {!hideAppNav && NAV_SECTIONS.map((section, i) => (
+      {!hideAppNav && sections.map((section, i) => (
         <div key={section.label ?? `top-${i}`} className={`space-y-0.5 ${i > 0 ? 'mt-2' : ''}`}>
           {section.label && <p className={sectionLabelClass}>{section.label}</p>}
           {section.items.map((item) => {
@@ -572,7 +553,7 @@ function MobileLeftDrawer({
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-          <NavLinkList isActive={isActive} role={role} onNavigate={onClose} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} />
+          <NavLinkList isActive={isActive} role={role} onNavigate={onClose} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} sections={ALL_SECTIONS} />
         </nav>
 
         {/* Bottom close. Sits in the thumb zone */}
@@ -787,10 +768,16 @@ export default function AppShell({
         {/* Engraved, interactive wordmark. Full-width header, no vertical divider */}
         <BrandMark />
 
-        {/* Unified primary nav (Discover + About dropdowns) beside the logo.
-            Same component the splash/site uses, so the header matches sitewide.
-            Members get the mission-focused About menu. Desktop only. */}
-        <PrimaryNav audience="member" variant="light" className="ml-1" />
+        {/* Full-site browse nav (Discover + About dropdowns) beside the logo —
+            the same component the splash/site uses. In the app shell we're in
+            "community mode", so it fades back to keep attention on the community
+            sub-menu below; hovering or focusing it brings it fully forward so
+            members can still browse the wider site with ease. Desktop only. */}
+        {!hideAppNav && (
+          <div className="hidden md:flex items-stretch ml-1 opacity-40 hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300 motion-reduce:transition-none">
+            <PrimaryNav audience="member" variant="light" />
+          </div>
+        )}
 
         {/* Right cluster: search · [messages · notifications] · account.
             Three groups, each set off by a hairline so the icons read as one
@@ -838,13 +825,21 @@ export default function AppShell({
         </div>
       </header>
 
+      {/* ── Community sub-menu ─────────────────────────────── */}
+      {/* Primary community interaction — the day-to-day social loop, given its
+          own dedicated strip so it's the focal nav. Scrolls on narrow screens,
+          so it doubles as the mobile community nav. */}
+      {!hideAppNav && (
+        <CommunityNav role={role} isActive={isActive} permissions={permissions} />
+      )}
+
       {/* ── Body ──────────────────────────────────────────── */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
 
         {/* Left nav */}
         <aside className="hidden md:flex w-52 flex-col shrink-0 border-r border-border bg-surface/80 backdrop-blur-sm">
 
-          {/* Primary nav */}
+          {/* Features & admin rail (the community loop lives in the bar up top) */}
           <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
             <NavLinkList isActive={isActive} role={role} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} />
           </nav>
