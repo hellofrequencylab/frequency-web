@@ -1185,6 +1185,28 @@ through `meetsAccess` + `permissions` overrides — unreachable areas mute ident
 the bar and the rail. Adding/moving a link is still a one-line edit in `lib/nav-areas.ts`
 (set `placement`); giving it an icon is a one-line edit in `nav-icons.ts`.
 
+## ADR-058: Foreign-key covering indexes from the maintenance advisor sweep
+
+**Status:** Accepted · corroborated by `supabase/migrations/20260602000000_fk_indexes.sql`
+(pending apply) and `docs/maintenance/2026-06-02.md`.
+**Context:** The first automated `/maintenance` Supabase advisor sweep (2026-06-02) flagged 45
+foreign keys with no covering index — they force sequential scans on joins and on cascade
+deletes. This is the same class of finding `20240305000000_perf_indexes.sql` addressed for hot
+read paths, now extended to FK columns surfaced by the advisor.
+**Decision:** Add a single covering index per flagged FK in one additive migration
+(`CREATE INDEX IF NOT EXISTS`, idempotent, no access/behaviour change). The riskier advisor
+findings are **deliberately excluded** because they change behaviour and need per-item review:
+the 10 `rls_enabled_no_policy` tables (verify intentionally backend-only), `auth_rls_initplan`
+×41 (rewrite `auth.uid()` → `(select auth.uid())`), and RPC `EXECUTE` revokes on SECURITY
+DEFINER functions. The `rls_disabled_in_public` ERROR on `spatial_ref_sys` is a PostGIS system
+table — acknowledged, no action.
+**Consequences:** Index-only, so safe to apply anytime (`supabase db push`); slightly more write
+overhead and storage, the standard FK-index trade-off. Maintenance findings now have a durable
+home (`docs/maintenance/<date>.md`) and the routine that produces them is `/maintenance`
+(see `docs/WORKFLOW.md`).
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 
