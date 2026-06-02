@@ -43,13 +43,6 @@ interface DispatchItem {
   linked_task: { id: string; name: string } | null
 }
 
-const POST_SELECT = `
-  id, body, post_type, is_pinned, created_at, media_urls,
-  reaction_count, comment_count, engagement_score, scope_id, visibility,
-  author:profiles!author_id ( id, display_name, handle, avatar_url, community_role ),
-  reactions:post_reactions ( id, reaction_type, profile_id )
-`
-
 export async function FeedList({
   circleIds = [],
   myProfileId,
@@ -67,7 +60,6 @@ export async function FeedList({
   viewerRole?: string
 }) {
   const admin = createAdminClient()
-  const order = sort === 'relevant' ? 'engagement_score' : 'created_at'
 
   // ── Posts ──────────────────────────────────────────────────────────────────
 
@@ -75,16 +67,20 @@ export async function FeedList({
 
   if (myProfileId) {
     if (!showPublicLayer && circleIds.length > 0) {
-      // Circle/channel detail page. Show only scoped posts
-      const { data } = await admin
-        .from('posts')
-        .select(POST_SELECT)
-        .in('scope_id', circleIds)
-        .is('parent_id', null)
-        .is('hidden_at', null)
-        .order(order, { ascending: false })
-        .limit(30)
-      rawPosts = (data ?? []) as unknown as RawPost[]
+      // Circle/channel detail page (RLS convergence surface 4, migration
+      // 20240310000000): scoped posts now come from the `scoped_feed_for_viewer`
+      // SECURITY DEFINER RPC on the user client — the SAME reach predicate as the
+      // main feed, constrained to these scope ids. So it respects per-post
+      // visibility (a non-member sees only the scope's PUBLIC posts, not its
+      // members-only 'group' posts) while still returning a member's group/cluster
+      // posts that the crew+ posts RLS policy would otherwise drop.
+      const supabase = (await createClient()) as unknown as SupabaseClient
+      const { data } = await supabase.rpc('scoped_feed_for_viewer', {
+        _scope_ids: circleIds,
+        _sort: sort,
+        _limit: 30,
+      })
+      rawPosts = (data as RawPost[] | null) ?? []
     } else {
       // Main feed (RLS convergence, migration 20240309000000): the reach model —
       // public + group in my circles + cluster reachable via a shared hub or a
