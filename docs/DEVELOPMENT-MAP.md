@@ -180,7 +180,19 @@ on the real domain. **Depends on:** nothing (all in-codebase closeouts).
       circle's PUBLIC posts** (owner-approved behaviour change), while members still get their
       group/cluster posts and channel forums (public) are unaffected. FeedList's detail branch runs on
       the user client. *Still on admin (follow-up):* the scope/dispatch/event metadata lookups.
-      *Next surface:* messages.
+      *Surface 5 — messages inbox + DM threads (2026-06-02, ✅ migration applied to prod):* migration
+      `20240311000000_messages_rls_convergence.sql` adds the `message_peer_profiles` DEFINER RPC. The
+      messaging tables already have membership-based SELECT policies (`am_participant` /
+      `am_room_member`) + an UPDATE-own last_read policy, and `profiles` allows reading your own row —
+      so the inbox (`messages/page.tsx`), DM thread (`messages/[id]/page.tsx`), and popover summary
+      (`messages/popover-actions.ts`) reads + the mark-as-read write moved to the user client with NO
+      behaviour change. The one thing RLS hides — the other DM participants' profiles — is hydrated by
+      the RPC (public fields only, scoped to people the caller shares a conversation/room with). PRs
+      #71 (surface 4) + #72 (surface 5). *Still on admin (follow-ups):* the **room thread**
+      (`messages/r/[roomId]`) — its `room_messages` policy is members-only, so converging it changes
+      the current non-member public-room message preview (a visibility decision, like circles); and the
+      "new members in your circles" prompt in `page.tsx`.
+      *Next surface:* the room thread (needs the preview decision).
 - [x] **Partner redemption-on-capture**: plaque bump → discount + zaps logged to
       `partner_redemptions` (closes Phase 3 wiring). ✅ 2026-06-02 — verified wired end-to-end:
       `/n/[nodeId]` claim button → `claimNode` action → `captureNode` (`lib/engagement/capture.ts`
