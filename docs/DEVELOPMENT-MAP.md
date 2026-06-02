@@ -162,17 +162,25 @@ on the real domain. **Depends on:** nothing (all in-codebase closeouts).
       already exist, so friend-actions can converge later with no new migration.
       ✅ **Both migrations applied to prod 2026-06-02** (`db push`), types regenerated, prod
       verified (no regression on the live app). Shipped in PR #63.
-      *Surface 3 — main feed (2026-06-02, in-repo, pending apply):* migration
+      *Surface 3 — main feed (2026-06-02, ✅ migration applied to prod):* migration
       `20240309000000_feed_rls_convergence.sql` adds the `feed_for_viewer` DEFINER RPC. The whole
       reach model (public + group-in-my-circles + cluster-via-hub/tuned-channel) — previously
       re-implemented in `components/feed/feed-list.tsx` over the admin client — now lives in SQL,
       reusing the same `get_my_circle_ids`/`get_my_hub_ids`/`get_my_tuned_channel_ids` helpers the
       posts RLS policy uses, for ALL roles (the crew+ posts policy would otherwise drop a member's
       own circle posts). Returns author public fields + reactions safely. FeedList's main branch now
-      runs on the user client; ranking extracted to `lib/feed-rank.ts` (unit-tested). ⚠️ **Apply
-      the migration + regen types before this code deploys.** *Scope:* main feed only — the
-      circle/channel detail mode + scope/dispatch/event lookups stay on admin (follow-up surfaces).
-      *Next surfaces:* feed detail mode, then messages.
+      runs on the user client; ranking extracted to `lib/feed-rank.ts` (unit-tested). *Scope:* main
+      feed only.
+      *Surface 4 — feed DETAIL mode (2026-06-02, ✅ migration applied to prod):* migration
+      `20240310000000_feed_detail_rls_convergence.sql` adds the `scoped_feed_for_viewer` DEFINER RPC
+      (same reach predicate as surface 3, constrained to the requested scope ids). The circle/channel
+      detail FeedList (`showPublicLayer=false`) previously read posts on the admin client filtered
+      only by `scope_id` — with NO visibility check — leaking a circle's members-only ('group') posts
+      to any visitor who could open the page. The RPC closes that: **a non-member now sees only a
+      circle's PUBLIC posts** (owner-approved behaviour change), while members still get their
+      group/cluster posts and channel forums (public) are unaffected. FeedList's detail branch runs on
+      the user client. *Still on admin (follow-up):* the scope/dispatch/event metadata lookups.
+      *Next surface:* messages.
 - [x] **Partner redemption-on-capture**: plaque bump → discount + zaps logged to
       `partner_redemptions` (closes Phase 3 wiring). ✅ 2026-06-02 — verified wired end-to-end:
       `/n/[nodeId]` claim button → `claimNode` action → `captureNode` (`lib/engagement/capture.ts`
