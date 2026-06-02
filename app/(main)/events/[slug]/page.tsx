@@ -8,6 +8,7 @@ import { toggleRSVP } from '../actions'
 import { EventCheckInButton } from './check-in-button'
 import { CrewGateButton } from '@/components/crew-gate-button'
 import { ContextActions } from '@/components/context-actions'
+import { DetailTemplate } from '@/components/templates/detail-template'
 import { getInitials } from '@/lib/utils'
 
 type EventDetail = {
@@ -167,21 +168,22 @@ export default async function EventDetailPage({
     <div>
       <Link
         href="/events"
-        className="inline-flex items-center gap-1 text-xs text-subtle hover:text-muted mb-5 transition-colors"
+        className="inline-flex items-center gap-1 text-xs text-subtle hover:text-muted mb-3 transition-colors"
       >
         ← Events
       </Link>
 
-      {/* ── Header ─────────────────────────────────── */}
-      <div className="mb-6">
-        {event.is_cancelled && (
-          <div className="mb-3 rounded-lg bg-danger-bg border border-danger px-3 py-2">
-            <p className="text-sm font-medium text-danger">This event has been cancelled.</p>
-          </div>
-        )}
+      {event.is_cancelled && (
+        <div className="mb-4 rounded-2xl bg-danger-bg border border-danger px-3 py-2">
+          <p className="text-sm font-medium text-danger">This event has been cancelled.</p>
+        </div>
+      )}
 
-        <div className="flex items-start justify-between gap-2">
-          <h1 className="text-xl font-semibold text-text">{event.title}</h1>
+      {/* Unified Detail header (REDESIGN-INAPP Phase 1): title + the when/where/
+          host meta as subtitle; the host/admin kebab as the action. */}
+      <DetailTemplate
+        title={event.title}
+        actions={
           <ContextActions
             role={myRole}
             context={{
@@ -192,195 +194,196 @@ export default async function EventDetailPage({
               isCancelled: event.is_cancelled,
             }}
           />
-        </div>
-
-        <div className="mt-3 space-y-1.5">
-          <div className="flex items-center gap-2 text-sm text-muted">
-            <CalendarDays className="w-4 h-4 text-subtle shrink-0" />
-            <span>
-              {formatFull(event.starts_at)} at {formatTime(event.starts_at)}
-              {event.ends_at && ` – ${formatTime(event.ends_at)}`}
-            </span>
-          </div>
-
-          {event.location && (
-            <div className="flex items-center gap-2 text-sm text-muted">
-              <MapPin className="w-4 h-4 text-subtle shrink-0" />
-              <span>{event.location}</span>
-            </div>
-          )}
-
-          {(event.recurrence_type !== 'none' || event.parent_event_id) && (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <span aria-hidden className="text-base leading-none">🔁</span>
+        }
+        subtitle={
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <CalendarDays className="w-4 h-4 text-subtle shrink-0" />
               <span>
-                {event.recurrence_type !== 'none'
-                  ? RECURRENCE_LABEL[event.recurrence_type]
-                  : 'Part of a recurring series'}
-                {event.recurrence_until && (
-                  <span className="text-gray-400 ml-1">
-                    · until {new Date(event.recurrence_until).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                  </span>
-                )}
+                {formatFull(event.starts_at)} at {formatTime(event.starts_at)}
+                {event.ends_at && ` – ${formatTime(event.ends_at)}`}
               </span>
             </div>
-          )}
 
-          {scopeName && (
-            <div className="flex items-center gap-2 text-sm text-muted">
-              <Users className="w-4 h-4 text-subtle shrink-0" />
-              {scopeSlug ? (
-                <Link href={`/circles/${scopeSlug}`} className="text-primary-strong hover:underline">
-                  {scopeName}
+            {event.location && (
+              <div className="flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-subtle shrink-0" />
+                <span>{event.location}</span>
+              </div>
+            )}
+
+            {(event.recurrence_type !== 'none' || event.parent_event_id) && (
+              <div className="flex items-center gap-2">
+                <span aria-hidden className="text-base leading-none">🔁</span>
+                <span>
+                  {event.recurrence_type !== 'none'
+                    ? RECURRENCE_LABEL[event.recurrence_type]
+                    : 'Part of a recurring series'}
+                  {event.recurrence_until && (
+                    <span className="text-subtle ml-1">
+                      · until {new Date(event.recurrence_until).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </span>
+                  )}
+                </span>
+              </div>
+            )}
+
+            {scopeName && (
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-subtle shrink-0" />
+                {scopeSlug ? (
+                  <Link href={`/circles/${scopeSlug}`} className="text-primary-strong hover:underline">
+                    {scopeName}
+                  </Link>
+                ) : (
+                  <span>{scopeName}</span>
+                )}
+              </div>
+            )}
+
+            {event.host && (
+              <p>
+                Hosted by{' '}
+                <Link href={`/people/${event.host.handle}`} className="text-primary-strong hover:underline">
+                  {event.host.display_name}
                 </Link>
-              ) : (
-                <span>{scopeName}</span>
-              )}
-            </div>
-          )}
+              </p>
+            )}
+          </div>
+        }
+      >
+        {/* ── Actions: RSVP while upcoming, then Check in at event time ── */}
+        {!event.is_cancelled && myProfileId && (
+          <div className="mb-6">
+            {!isPast ? (
+              /* Upcoming: RSVP toggle + add-to-calendar */
+              <div className="flex items-center gap-3 flex-wrap">
+                <CrewGateButton
+                  isCrew={isCrew}
+                  label={isGoing ? '✓ Going' : "RSVP: I'm going"}
+                  buttonClassName="rounded-lg px-4 py-2 text-sm font-semibold transition-colors inline-flex items-center gap-1.5 bg-primary text-on-primary hover:bg-primary-hover"
+                >
+                  <form action={toggleRSVP.bind(null, event.id)}>
+                    <button
+                      type="submit"
+                      className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
+                        isGoing
+                          ? 'bg-success-bg text-success hover:bg-danger-bg hover:text-danger'
+                          : 'bg-primary text-on-primary hover:bg-primary-hover'
+                      }`}
+                    >
+                      {isGoing ? '✓ Going (click to undo)' : "RSVP: I'm going"}
+                    </button>
+                  </form>
+                </CrewGateButton>
 
-          {event.host && (
-            <p className="text-sm text-muted">
-              Hosted by{' '}
-              <Link href={`/people/${event.host.handle}`} className="text-primary-strong hover:underline">
-                {event.host.display_name}
-              </Link>
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* ── Actions: RSVP while upcoming, then Check in at event time ── */}
-      {!event.is_cancelled && myProfileId && (
-        <div className="mb-6">
-          {!isPast ? (
-            /* Upcoming: RSVP toggle + add-to-calendar */
-            <div className="flex items-center gap-3 flex-wrap">
+                <a
+                  href={googleCalendarUrl(event)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted hover:border-border-strong hover:bg-surface transition-colors"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  Add to Google Calendar
+                </a>
+                <a
+                  href={`/events/${event.slug}/event.ics`}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted hover:border-border-strong hover:bg-surface transition-colors"
+                  title="Apple Calendar, Outlook, and any iCal-compatible app"
+                >
+                  <CalendarDays className="w-3.5 h-3.5" />
+                  Add to Calendar (.ics)
+                </a>
+              </div>
+            ) : isGoing ? (
+              /* Event time, going: Check in is the primary action; Cancel RSVP is a quiet link */
+              <div className="flex items-center gap-4 flex-wrap">
+                {alreadyCheckedIn ? (
+                  <div className="inline-flex items-center gap-2 rounded-lg bg-success-bg text-success px-4 py-2 text-sm font-semibold">
+                    <Check className="w-4 h-4" />
+                    Checked In
+                  </div>
+                ) : (
+                  <EventCheckInButton eventId={event.id} />
+                )}
+                {!hasEnded && (
+                  <form action={toggleRSVP.bind(null, event.id)}>
+                    <button
+                      type="submit"
+                      className="text-xs text-subtle hover:text-danger underline underline-offset-2 transition-colors"
+                    >
+                      Cancel RSVP
+                    </button>
+                  </form>
+                )}
+              </div>
+            ) : !hasEnded ? (
+              /* Event started, not going yet: still allow joining */
               <CrewGateButton
                 isCrew={isCrew}
-                label={isGoing ? '✓ Going' : "RSVP: I'm going"}
+                label="RSVP: I'm going"
                 buttonClassName="rounded-lg px-4 py-2 text-sm font-semibold transition-colors inline-flex items-center gap-1.5 bg-primary text-on-primary hover:bg-primary-hover"
               >
                 <form action={toggleRSVP.bind(null, event.id)}>
                   <button
                     type="submit"
-                    className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-                      isGoing
-                        ? 'bg-success-bg text-success hover:bg-danger-bg hover:text-danger'
-                        : 'bg-primary text-on-primary hover:bg-primary-hover'
-                    }`}
+                    className="rounded-lg px-4 py-2 text-sm font-semibold transition-colors bg-primary text-on-primary hover:bg-primary-hover"
                   >
-                    {isGoing ? '✓ Going (click to undo)' : "RSVP: I'm going"}
+                    RSVP: I&apos;m going
                   </button>
                 </form>
               </CrewGateButton>
-
-              <a
-                href={googleCalendarUrl(event)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted hover:border-border-strong hover:bg-surface transition-colors"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-                Add to Google Calendar
-              </a>
-              <a
-                href={`/events/${event.slug}/event.ics`}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted hover:border-border-strong hover:bg-surface transition-colors"
-                title="Apple Calendar, Outlook, and any iCal-compatible app"
-              >
-                <CalendarDays className="w-3.5 h-3.5" />
-                Add to Calendar (.ics)
-              </a>
-            </div>
-          ) : isGoing ? (
-            /* Event time, going: Check in is the primary action; Cancel RSVP is a quiet link */
-            <div className="flex items-center gap-4 flex-wrap">
-              {alreadyCheckedIn ? (
-                <div className="inline-flex items-center gap-2 rounded-lg bg-success-bg text-success px-4 py-2 text-sm font-semibold">
-                  <Check className="w-4 h-4" />
-                  Checked In
-                </div>
-              ) : (
-                <EventCheckInButton eventId={event.id} />
-              )}
-              {!hasEnded && (
-                <form action={toggleRSVP.bind(null, event.id)}>
-                  <button
-                    type="submit"
-                    className="text-xs text-subtle hover:text-danger underline underline-offset-2 transition-colors"
-                  >
-                    Cancel RSVP
-                  </button>
-                </form>
-              )}
-            </div>
-          ) : !hasEnded ? (
-            /* Event started, not going yet: still allow joining */
-            <CrewGateButton
-              isCrew={isCrew}
-              label="RSVP: I'm going"
-              buttonClassName="rounded-lg px-4 py-2 text-sm font-semibold transition-colors inline-flex items-center gap-1.5 bg-primary text-on-primary hover:bg-primary-hover"
-            >
-              <form action={toggleRSVP.bind(null, event.id)}>
-                <button
-                  type="submit"
-                  className="rounded-lg px-4 py-2 text-sm font-semibold transition-colors bg-primary text-on-primary hover:bg-primary-hover"
-                >
-                  RSVP: I&apos;m going
-                </button>
-              </form>
-            </CrewGateButton>
-          ) : null}
-        </div>
-      )}
-
-      {/* ── Description ────────────────────────────── */}
-      {event.description && (
-        <div className="mb-6 rounded-2xl border border-border/80 bg-surface shadow-sm px-4 py-3">
-          <p className="text-sm text-text leading-relaxed whitespace-pre-wrap">
-            {event.description}
-          </p>
-        </div>
-      )}
-
-      {/* ── Attendees ──────────────────────────────── */}
-      <section>
-        <h2 className="text-sm font-semibold text-text mb-3">
-          Attendees
-          <span className="ml-2 text-xs font-normal text-subtle">{goingRsvps.length} going</span>
-        </h2>
-
-        {goingRsvps.length === 0 ? (
-          <p className="text-sm text-subtle">No RSVPs yet.</p>
-        ) : isCrew ? (
-          <div className="space-y-0.5">
-            {goingRsvps.map(({ profile }) => (
-              <Link
-                key={profile.id}
-                href={`/people/${profile.handle}`}
-                className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-surface transition-colors -mx-3"
-              >
-                {profile.avatar_url ? (
-                  <Image src={profile.avatar_url} alt={profile.display_name} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0" />
-                ) : (
-                  <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none">
-                    {getInitials(profile.display_name)}
-                  </div>
-                )}
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-text truncate">{profile.display_name}</p>
-                  <p className="text-xs text-subtle">@{profile.handle}</p>
-                </div>
-              </Link>
-            ))}
+            ) : null}
           </div>
-        ) : (
-          <p className="text-sm text-muted">
-            {goingRsvps.length} {goingRsvps.length === 1 ? 'person' : 'people'} going.
-          </p>
         )}
-      </section>
+
+        {/* ── Description (open prose, not boxed) ─────── */}
+        {event.description && (
+          <div className="mb-6 max-w-2xl">
+            <p className="text-sm text-text leading-relaxed whitespace-pre-wrap">
+              {event.description}
+            </p>
+          </div>
+        )}
+
+        {/* ── Attendees ──────────────────────────────── */}
+        <section>
+          <h2 className="text-sm font-bold text-text mb-3">
+            Attendees
+            <span className="ml-2 text-xs font-normal text-subtle">{goingRsvps.length} going</span>
+          </h2>
+
+          {goingRsvps.length === 0 ? (
+            <p className="text-sm text-subtle">No RSVPs yet.</p>
+          ) : isCrew ? (
+            <div className="space-y-0.5">
+              {goingRsvps.map(({ profile }) => (
+                <Link
+                  key={profile.id}
+                  href={`/people/${profile.handle}`}
+                  className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-surface transition-colors -mx-3"
+                >
+                  {profile.avatar_url ? (
+                    <Image src={profile.avatar_url} alt={profile.display_name} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0" />
+                  ) : (
+                    <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none">
+                      {getInitials(profile.display_name)}
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-text truncate">{profile.display_name}</p>
+                    <p className="text-xs text-subtle">@{profile.handle}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted">
+              {goingRsvps.length} {goingRsvps.length === 1 ? 'person' : 'people'} going.
+            </p>
+          )}
+        </section>
+      </DetailTemplate>
     </div>
   )
 }
