@@ -26,7 +26,7 @@ export function CommunityNav({
   return (
     <nav
       aria-label="Community"
-      className="shrink-0 flex items-stretch gap-0.5 h-11 px-2 sm:px-4 bg-surface/70 backdrop-blur-sm border-b border-border overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden z-20"
+      className="sticky top-0 z-20 shrink-0 flex items-stretch gap-0.5 h-11 px-3 bg-surface/80 backdrop-blur-sm border-b border-border overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
     >
       {COMMUNITY_AREAS.map((area) => {
         const Icon = AREA_ICONS[area.key] ?? FALLBACK_AREA_ICON
