@@ -3,7 +3,14 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { MARKETING_NAV, BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
+import { MARKETING_NAV, DISCOVER_NAV, BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
+
+// Discover/Explore links first, then the story pages (drop MARKETING_NAV's own
+// "Discover" so it isn't duplicated).
+const HEADER_NAV = [
+  ...DISCOVER_NAV,
+  ...MARKETING_NAV.filter((i) => i.href !== '/discover'),
+]
 
 // Public marketing header. No search box (that's for the community app). When
 // `overHero`, it sits transparent over the dark hero and flips to a solid light
@@ -40,7 +47,7 @@ export function MarketingHeader({ overHero = false }: { overHero?: boolean }) {
 
       {/* Nav */}
       <nav className="hidden md:flex items-center gap-1 ml-3">
-        {MARKETING_NAV.map((item) => (
+        {HEADER_NAV.map((item) => (
           <Link
             key={item.href}
             href={item.href}

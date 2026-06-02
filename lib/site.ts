@@ -20,6 +20,16 @@ export const MARKETING_NAV: { label: string; href: string }[] = [
   { label: "About", href: "/about" },
 ];
 
+// The public Discover/Explore nav — the "marketing" drill-in (public SEO pages),
+// shown in the header bars (in-app top bar + marketing header), NOT the app's
+// community sidebar. The sidebar is the in-product drilldown (circles, feed, etc.).
+export const DISCOVER_NAV: { label: string; href: string }[] = [
+  { label: "Discover", href: "/discover" },
+  { label: "Circles", href: "/discover/circles" },
+  { label: "Events", href: "/discover/events" },
+  { label: "Topics", href: "/discover/topics" },
+];
+
 // Primary acquisition CTA — the Beta lead-capture (double opt-in). Open signup
 // still lives at /sign-in; this featured path captures leads into the CRM.
 export const BETA_CTA_LABEL = "Join the Beta";
