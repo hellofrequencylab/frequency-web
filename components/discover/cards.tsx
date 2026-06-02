@@ -187,11 +187,69 @@ export function SectionHeading({
   const eyebrowCls = tone === 'success' ? 'text-success' : 'text-primary-strong'
   return (
     <>
-      <p className={`text-xs font-semibold uppercase tracking-widest mb-2 ${eyebrowCls}`}>
+      <p className={`text-sm font-bold uppercase tracking-[0.25em] mb-4 ${eyebrowCls}`}>
         {eyebrow}
       </p>
-      <h2 className="text-2xl sm:text-3xl font-bold text-text">{title}</h2>
+      <h2 className="font-display uppercase text-text text-4xl sm:text-5xl">{title}</h2>
     </>
+  )
+}
+
+// ── Photo hero (shared by the Discover hub + detail pages) ─────────────────────
+// Full-bleed photo under a warm ink wash + amber glow + an LED light-strip seam,
+// matching the splash. Editorial display headline in white. Pass `children` for
+// CTAs/stat lines.
+export function DiscoverHero({
+  image,
+  alt = '',
+  eyebrow,
+  title,
+  subtitle,
+  children,
+  focal = 'object-center',
+}: {
+  image: string
+  alt?: string
+  eyebrow?: string
+  title: React.ReactNode
+  subtitle?: string
+  children?: React.ReactNode
+  focal?: string
+}) {
+  return (
+    <section className="relative overflow-hidden">
+      <Image
+        src={image}
+        alt={alt}
+        fill
+        preload
+        sizes="100vw"
+        className={`object-cover ${focal}`}
+      />
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            'linear-gradient(180deg, rgb(20 18 16 / 0.72) 0%, rgb(20 18 16 / 0.52) 45%, rgb(20 18 16 / 0.92) 100%)',
+        }}
+      />
+      <div className="amber-glow absolute inset-0 pointer-events-none" />
+      <div className="relative z-10 max-w-5xl mx-auto px-6 py-24 sm:py-32 text-center">
+        {eyebrow && (
+          <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary mb-5">{eyebrow}</p>
+        )}
+        <h1 className="font-display uppercase text-white text-5xl sm:text-6xl lg:text-7xl text-balance leading-[0.95]">
+          {title}
+        </h1>
+        {subtitle && (
+          <p className="mt-6 text-lg sm:text-xl text-white/80 leading-relaxed max-w-2xl mx-auto">
+            {subtitle}
+          </p>
+        )}
+        {children && <div className="mt-9">{children}</div>}
+      </div>
+      <div className="light-strip absolute inset-x-0 bottom-0 z-10" />
+    </section>
   )
 }
 
