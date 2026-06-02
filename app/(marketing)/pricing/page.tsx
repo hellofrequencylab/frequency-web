@@ -21,6 +21,7 @@ import {
   ZigZag,
   Statement,
   BetaCTA,
+  FaqList,
 } from '@/components/marketing/marketing-ui'
 import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
 
@@ -208,11 +209,7 @@ export default function PricingPage() {
           eyebrow="Straight answers"
           title="Questions, answered plainly."
         />
-        <div className="space-y-3">
-          {FAQS.map((faq) => (
-            <Faq key={faq.q} q={faq.q} a={faq.a} />
-          ))}
-        </div>
+        <FaqList items={FAQS} />
       </Section>
 
       <BetaCTA
@@ -296,7 +293,7 @@ function TierCard({
     <div
       className={`relative flex flex-col h-full rounded-3xl p-7 sm:p-8 ${
         featured
-          ? 'bg-surface border-2 border-primary ring-4 ring-primary-bg shadow-xl lg:-translate-y-3 lg:scale-[1.02]'
+          ? 'bg-surface border-2 border-primary ring-4 ring-primary-bg shadow-pop-lg lg:-translate-y-3 lg:scale-[1.02]'
           : 'bg-surface border border-border shadow-sm'
       }`}
     >
@@ -452,18 +449,3 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
   },
 ]
 
-function Faq({ q, a }: { q: string; a: React.ReactNode }) {
-  return (
-    <details className="group rounded-2xl border border-border bg-surface overflow-hidden">
-      <summary className="flex items-center justify-between gap-4 cursor-pointer list-none px-6 py-5 select-none">
-        <span className="font-bold text-text text-lg leading-snug">{q}</span>
-        <span className="shrink-0 w-7 h-7 rounded-full border border-border-strong flex items-center justify-center text-muted transition-transform group-open:rotate-45">
-          <span className="text-xl leading-none">+</span>
-        </span>
-      </summary>
-      <div className="px-6 pb-6 -mt-1 text-base text-muted leading-relaxed">
-        {a}
-      </div>
-    </details>
-  )
-}

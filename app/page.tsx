@@ -2,8 +2,7 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ChevronDown, ArrowRight, Check, CalendarDays } from 'lucide-react'
-import { Render } from '@measured/puck/rsc'
+import { ArrowRight, Check, CalendarDays } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { MarketingHeader } from '@/components/layout/marketing-header'
 import { MarketingFooter } from '@/components/layout/marketing-footer'
@@ -16,14 +15,13 @@ import {
   PhotoHero,
   PullQuote,
   Stat,
+  Faq,
 } from '@/components/marketing/marketing-ui'
 import { Reveal, Parallax, CountUp, ScrollCue } from '@/components/marketing/motion'
 import { SiteImage } from '@/components/marketing/site-image'
 import { getInitials, relativeTime } from '@/lib/utils'
 import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, BETA_CTA_LABEL, BETA_CTA_HREF, SOCIAL_PROOF_FLOOR, FOUNDING_PLACE } from '@/lib/site'
 import { type CommunityRole, ROLE_RANK, RoleBadge } from '@/lib/community-roles'
-import { config } from '@/lib/page-editor/config'
-import { getPublishedData } from '@/lib/page-editor/data'
 import { getJanitor } from '@/lib/page-editor/guard'
 import { getLiveData } from '@/lib/page-editor/live-data'
 import type { LiveData, LiveEvent } from '@/components/marketing/blocks'
@@ -74,24 +72,15 @@ export default async function RootPage({
     if (!canPreview) redirect('/feed')
   }
 
-  const [pageData, live] = await Promise.all([getPublishedData('home'), getLiveData(supabase)])
-
-  // Published in the visual editor → render that. Otherwise fall back to the
-  // original hardcoded design (zero-downtime). Live data is injected as metadata.
-  if (pageData && Array.isArray(pageData.content) && pageData.content.length > 0) {
-    return (
-      <>
-        <MarketingHeader overHero />
-        <Render config={config} data={pageData} metadata={{ live }} />
-        <MarketingFooter />
-      </>
-    )
-  }
-
-  return <LegacySplash live={live} />
+  // The splash is code-locked (see EDITABLE_PAGES note in lib/page-editor/data):
+  // `home` is intentionally not editable in the visual editor, so the coded
+  // flagship splash is always the source of truth for `/` — no published draft
+  // can shadow it.
+  const live = await getLiveData(supabase)
+  return <Splash live={live} />
 }
 
-function LegacySplash({ live }: { live: LiveData }) {
+function Splash({ live }: { live: LiveData }) {
   const posts = live.posts as PostPreviewRow[]
   const memberCount = live.memberCount
   const circleCount = live.circleCount
@@ -714,23 +703,6 @@ function EventRow({ event }: { event: LiveEvent }) {
         Join <ArrowRight className="h-3 w-3" aria-hidden />
       </Link>
     </div>
-  )
-}
-
-// Objection-handling FAQ. Native <details>/<summary> disclosure so the section
-// stays a Server Component (no client JS for a simple accordion).
-function Faq({ q, children }: { q: string; children: React.ReactNode }) {
-  return (
-    <details className="group rounded-2xl border border-border bg-surface px-6 py-5 shadow-sm [&_summary]:list-none">
-      <summary className="flex cursor-pointer items-center justify-between gap-4 text-left">
-        <span className="text-lg font-semibold text-text">{q}</span>
-        <ChevronDown
-          className="h-5 w-5 shrink-0 text-subtle transition-transform group-open:rotate-180"
-          aria-hidden
-        />
-      </summary>
-      <div className="mt-4 text-base leading-relaxed text-muted">{children}</div>
-    </details>
   )
 }
 
