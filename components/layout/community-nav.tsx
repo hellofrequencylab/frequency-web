@@ -5,12 +5,13 @@ import { NAV_AREAS, meetsAccess, type NavAccess } from '@/lib/nav-areas'
 import type { CommunityRole } from '@/lib/community-roles'
 import { AREA_ICONS, FALLBACK_AREA_ICON } from '@/components/layout/nav-icons'
 
-// The primary community sub-menu: a slim horizontal tab strip under the header
-// for the day-to-day social loop (Feed · Circles · Interests · Events · Broadcast
-// · Messages). Derived straight from NAV_AREAS (placement === 'community'), so it
-// stays in lockstep with the sidebar + permission grid. Areas the viewer can't
-// reach render muted (same convention as the sidebar). The strip scrolls
-// horizontally on narrow screens so it works as the mobile community nav too.
+// The "Broadcast bar": a slim horizontal tab strip under the header. Feed is the
+// anchor (always available, set apart and a touch bolder), followed by the
+// time-sensitive comms loop (Dispatches · Messages · Events). Derived straight
+// from NAV_AREAS (placement === 'community'), so it stays in lockstep with the
+// sidebar + permission grid. Areas the viewer can't reach render muted (same
+// convention as the sidebar). The strip scrolls horizontally on narrow screens
+// so it works as the mobile community nav too.
 const COMMUNITY_AREAS = NAV_AREAS.filter((a) => a.placement === 'community')
 
 export function CommunityNav({
@@ -25,12 +26,15 @@ export function CommunityNav({
 }) {
   return (
     <nav
-      aria-label="Community"
+      aria-label="Broadcast"
       className="sticky top-0 z-20 shrink-0 flex items-stretch gap-0.5 h-11 px-3 bg-surface/80 backdrop-blur-sm border-b border-border overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
     >
       {COMMUNITY_AREAS.map((area) => {
         const Icon = AREA_ICONS[area.key] ?? FALLBACK_AREA_ICON
         const access = permissions?.[area.key] ?? area.defaultAccess
+        // Feed is the bar's anchor: a little bolder, and split off from the
+        // Dispatches/Messages/Events comms group by a hairline.
+        const isFeed = area.key === 'feed'
 
         if (!meetsAccess(access, role)) {
           return (
@@ -48,25 +52,35 @@ export function CommunityNav({
 
         const active = isActive(area.href)
         return (
-          <Link
-            key={area.key}
-            href={area.href}
-            aria-current={active ? 'page' : undefined}
-            className={`relative inline-flex items-center gap-2 px-3 text-sm font-medium whitespace-nowrap rounded-md transition-colors ${
-              active
-                ? 'text-primary-strong'
-                : 'text-muted hover:text-text hover:bg-surface-elevated'
-            }`}
-          >
-            <Icon
-              className={`w-[18px] h-[18px] shrink-0 ${active ? 'text-primary-strong' : 'text-subtle'}`}
-              strokeWidth={active ? 2.5 : 2}
-            />
-            {area.label}
-            {active && (
-              <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-primary" />
+          <div key={area.key} className="flex items-stretch">
+            <Link
+              href={area.href}
+              aria-current={active ? 'page' : undefined}
+              className={`relative inline-flex items-center gap-2 px-3 whitespace-nowrap rounded-md transition-colors ${
+                isFeed ? 'text-sm font-semibold' : 'text-sm font-medium'
+              } ${
+                active
+                  ? 'text-primary-strong'
+                  : isFeed
+                    ? 'text-text hover:bg-surface-elevated'
+                    : 'text-muted hover:text-text hover:bg-surface-elevated'
+              }`}
+            >
+              <Icon
+                className={`w-[18px] h-[18px] shrink-0 ${
+                  active ? 'text-primary-strong' : isFeed ? 'text-text' : 'text-subtle'
+                }`}
+                strokeWidth={active || isFeed ? 2.5 : 2}
+              />
+              {area.label}
+              {active && (
+                <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-primary" />
+              )}
+            </Link>
+            {isFeed && (
+              <span aria-hidden="true" className="my-2 mx-1.5 w-px self-stretch bg-border" />
             )}
-          </Link>
+          </div>
         )
       })}
     </nav>

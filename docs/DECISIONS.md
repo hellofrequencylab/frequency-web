@@ -1239,6 +1239,28 @@ seam carries data, not components.
 
 ---
 
+## ADR-060: Refocus the top sub-menu as the "Broadcast bar"; community spaces move to the sidebar
+
+**Status:** Accepted · refines ADR-057 · `lib/nav-areas.ts`, `components/layout/community-nav.tsx`,
+`components/layout/app-shell.tsx`.
+**Context:** ADR-057's top sub-menu carried the whole social loop (Feed · Circles · Interests ·
+Events · Broadcast · Messages). In practice that mixed two different jobs — *browsing spaces*
+(Circles, Interests) and *time-sensitive comms* (Dispatches, Messages, Events) — in one strip,
+and Feed didn't read as the anchor it is.
+**Decision:** Keep ADR-057's `placement`-driven, single-source-of-truth model, but re-cut the top
+bar as the **Broadcast bar**: **Feed** (the anchor — always available, rendered a touch bolder and
+split off by a hairline) followed by the comms loop **Dispatches** (the `/broadcast` area,
+relabelled from "Broadcast") · **Messages** · **Events**. **Circles** and **Interests** move to a
+new **Community** section at the top of the left sidebar (`placement: 'sidebar'`). The comms items
+get `section: 'Broadcast'` so the mobile drawer groups them sensibly; the desktop bar still renders
+flat. No access levels or permission-grid wiring change — only `placement`, `section`, one `label`,
+and the bar's render order/styling.
+**Consequences:** The bar now has one clear purpose (what's happening / who's reaching me), Feed is
+unmistakably the home, and the sidebar regains the browsable spaces under a "Community" heading.
+Adding/moving an area remains a one-line `nav-areas.ts` edit.
+
+---
+
 ## ADR-059: Bottom docks reveal from one shared, intent-driven controller
 
 **Status:** Accepted · `components/sidebar/dock-reveal.tsx`, `components/layout/app-shell.tsx`,
