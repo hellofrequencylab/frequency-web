@@ -14,10 +14,10 @@ import { getStudioCounts } from '@/lib/studio/analytics'
 
 export const dynamic = 'force-dynamic'
 
-// Studio dashboard: the entry hall to the business cockpit. Every module that
-// lives in the Studio nav also gets a card here, so the dashboard is a real
-// index of the cockpit rather than a single Contacts link. Cards mirror the
-// nav in components/layout/studio-shell.tsx (same icons, same order).
+// Marketing overview: the entry hall to the workspace. Every tool in the
+// Marketing tab bar also gets a card here, so the overview is a real index
+// rather than a single Contacts link. Cards mirror the tabs in
+// app/(main)/marketing/sub-nav.tsx (same icons, same order).
 type Module = {
   href: string
   label: string
@@ -27,37 +27,37 @@ type Module = {
 
 const MODULES: Module[] = [
   {
-    href: '/studio/contacts',
+    href: '/marketing/contacts',
     label: 'Contacts',
     Icon: Users,
     description: 'The unified CRM record for leads, customers, and members.',
   },
   {
-    href: '/studio/beta',
+    href: '/marketing/beta',
     label: 'Beta waitlist',
     Icon: Rocket,
     description: 'Everyone who raised a hand. Triage the list and send invites.',
   },
   {
-    href: '/studio/campaigns',
+    href: '/marketing/campaigns',
     label: 'Campaigns',
     Icon: Megaphone,
     description: 'Compose and send broadcasts — email and push — through the one spine.',
   },
   {
-    href: '/studio/automations',
+    href: '/marketing/automations',
     label: 'Automations',
     Icon: Workflow,
     description: 'Rules that react to the event backbone: welcomes, nudges, follow-ups.',
   },
   {
-    href: '/studio/analytics',
+    href: '/marketing/analytics',
     label: 'Analytics',
     Icon: BarChart3,
     description: 'How it lands. Sends, opens, and engagement read from the one backbone.',
   },
   {
-    href: '/studio/agent',
+    href: '/marketing/agent',
     label: 'Agent',
     Icon: Sparkles,
     description: 'The AI operator. Ask it to draft, segment, and run the busywork.',
@@ -75,8 +75,8 @@ function Kpi({ label, value }: { label: string; value: string | number }) {
   )
 }
 
-export default async function StudioDashboard() {
-  // Live KPIs at a glance — reuses the same read-models as /studio/analytics.
+export default async function MarketingOverview() {
+  // Live KPIs at a glance — reuses the same read-models as /marketing/analytics.
   // Defensive: the dashboard should never error on a data hiccup.
   const [practice, counts] = await Promise.all([
     getPracticeMetrics().catch(() => null),
@@ -85,9 +85,9 @@ export default async function StudioDashboard() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-text mb-1">Studio</h1>
+      <h1 className="text-2xl font-bold text-text mb-1">Marketing</h1>
       <p className="text-sm text-muted leading-relaxed max-w-2xl mb-6">
-        The business cockpit. Contacts, campaigns, automations, analytics, and the AI
+        Your marketing workspace. Contacts, campaigns, automations, analytics, and the AI
         operator live here. Everything sends through the one spine and reads from the
         one event backbone.
       </p>
@@ -99,7 +99,7 @@ export default async function StudioDashboard() {
               At a glance
             </h2>
             <Link
-              href="/studio/analytics"
+              href="/marketing/analytics"
               className="inline-flex items-center gap-1 text-xs font-medium text-primary-strong hover:underline"
             >
               Full analytics <ArrowRight className="h-3.5 w-3.5" />
