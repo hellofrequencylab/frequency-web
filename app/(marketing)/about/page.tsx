@@ -1,7 +1,18 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
+import { ArrowRight, Compass, Users, HandHeart, Home } from 'lucide-react'
 import { Render } from '@measured/puck/rsc'
-import { PageHero, ZigZag, Statement, BetaCTA } from '@/components/marketing/marketing-ui'
-import { SiteImage } from '@/components/marketing/site-image'
+import {
+  PhotoHero,
+  Section,
+  SectionHeading,
+  Lead,
+  Body,
+  ZigZag,
+  Statement,
+  BetaCTA,
+} from '@/components/marketing/marketing-ui'
+import { BETA_CTA_LABEL, BETA_CTA_HREF, FOUNDING_PLACE } from '@/lib/site'
 import { config } from '@/lib/page-editor/config'
 import { getPublishedData } from '@/lib/page-editor/data'
 
@@ -10,7 +21,7 @@ export const revalidate = 3600
 export const metadata: Metadata = {
   title: 'About',
   description:
-    'The story behind Frequency, and why we won’t let it collapse this time. A place to be human, built to outlast any one person.',
+    'The story behind Frequency — born on a cliff at Moonlight Beach in 2020. Guru-free, pay-it-forward, a place to be human, built to outlast any one person.',
   alternates: { canonical: '/about' },
   openGraph: {
     title: 'About Frequency',
@@ -30,44 +41,67 @@ export default async function AboutPage() {
 function LegacyAbout() {
   return (
     <>
-      <PageHero
+      {/* ── Hero ───────────────────────────────────────────────────────────── */}
+      <PhotoHero
+        image="/images/site/moonlight-1.jpg"
+        alt="People embracing at sunrise on the bluffs above Moonlight Beach, where Frequency began"
         eyebrow="Our story"
         title="We&apos;re building the place we wished existed."
-        subtitle="A story that started on a beach, fell apart, and left behind a blueprint for doing it right."
-      />
+        subtitle="It started on a beach in 2020 — no guru, no brand, just a thousand strangers who needed each other. This is how it became a blueprint for doing it right."
+      >
+        <Link
+          href={BETA_CTA_HREF}
+          className="inline-flex items-center gap-2 rounded-2xl bg-primary text-on-primary px-8 py-3.5 text-base font-bold hover:bg-primary-hover transition-colors shadow-pop"
+        >
+          {BETA_CTA_LABEL} <ArrowRight className="w-5 h-5" aria-hidden />
+        </Link>
+      </PhotoHero>
 
-      {/* Image band */}
-      <div className="px-6">
-        <div className="max-w-5xl mx-auto rounded-3xl overflow-hidden border border-border shadow-sm">
-          <SiteImage
-            src="/images/site/community-1.jpg"
-            alt="A Frequency community gathering"
-            aspect="21/9"
-            sizes="(min-width: 1024px) 64rem, 100vw"
-            preload
-          />
-        </div>
-      </div>
+      {/* ── The hunger (intro lead) ────────────────────────────────────────── */}
+      <Section tone="surface">
+        <SectionHeading
+          eyebrow="Where it comes from"
+          title="A hunger nobody could name."
+          kicker="Most of a generation feels it. Almost nobody has a word for it."
+        />
+        <Lead>
+          We didn&apos;t set out to start a company. We set out to find each
+          other — and discovered that the places built to hold people had
+          quietly disappeared.
+        </Lead>
+        <Body>
+          The corner café, the town square, the gathering ground: the third
+          spaces that aren&apos;t home and aren&apos;t work, where you&apos;re
+          known by name and missed when you don&apos;t show up. We traded them
+          for feeds and followers, ended up surrounded yet unseen, and felt the
+          loss long before we could explain it. Frequency is our answer to that
+          ache — and it began the only honest way it could: with a handful of
+          people on a cliff at dawn.
+        </Body>
+      </Section>
 
-      {/* Moonlight */}
+      {/* ── 2020 — the beginning ───────────────────────────────────────────── */}
       <ZigZag
         img="/images/site/moonlight-2.jpg"
-        alt="A gathering on the bluffs at Moonlight Beach"
-        eyebrow="2020"
-        title="It started on a cliff at Moonlight Beach."
+        alt="A gathering on the bluffs at Moonlight Beach at sunrise"
+        eyebrow="2020 · Moonlight Beach"
+        title="It started on a cliff at dawn."
         imgAspect="portrait"
         imgPosition="top"
         reverse
         tone="canvas"
       >
         <p>
-          In a season when everyone felt cut off, a handful of people started
-          meeting on the bluffs at dawn. Just breath, cold air, and each other.
+          In a season when everyone felt cut off, a few people in North County
+          San Diego started meeting on the bluffs above Moonlight Beach. Just
+          breath, cold air, and each other — no membership, no marketing, no one
+          in charge.
         </p>
         <p>
-          Word got out. Within eighteen months, a thousand people were showing
-          up to breathe together at sunrise. No marketing, no membership, no
-          brand. Just a hunger for something real that nobody could quite name.
+          Word got out the way real things do: one person bringing another.
+          Within eighteen months, close to a thousand people were showing up to
+          breathe together at sunrise — drawn by nothing but a hunger for
+          something real that none of them could quite name.
         </p>
       </ZigZag>
 
@@ -76,44 +110,177 @@ function LegacyAbout() {
         <span className="text-primary">enormous</span>.
       </Statement>
 
-      {/* The lesson */}
+      {/* ── The circle grows ───────────────────────────────────────────────── */}
       <ZigZag
-        img="/images/site/moonlight-1.jpg"
-        alt="A Frequency community embracing"
-        eyebrow="The hard part"
-        title="And then it fell apart."
+        img="/images/site/PHOTO-2020-10-17-13-49-14.jpeg"
+        alt="A music circle gathered on the cliffside above the ocean at golden hour"
+        eyebrow="What it felt like"
+        title="No stage. No followers. Just a circle."
         imgAspect="landscape"
       >
         <p>
-          A thousand people, and nowhere to put them. No home, no infrastructure,
-          no way to hold what had been built. It depended entirely on a few
-          people&apos;s energy, and energy runs out.
+          There was no guru on a stage and no audience in rows. People sat in a
+          circle on the grass, passed instruments around, moved and breathed and
+          actually talked. The point was never to watch someone perform
+          belonging — it was to practice it together.
         </p>
         <p>
-          When it faded, it left something behind: a painfully clear picture of
-          exactly what to build so that next time, it could last.
+          That shape mattered more than we understood at the time. A leader you
+          follow can leave, burn out, or let you down. A circle holds itself.
+          The thing we&apos;d stumbled into wasn&apos;t a following at all — it
+          was a community that could carry its own weight.
         </p>
       </ZigZag>
 
-      {/* The mission */}
+      {/* ── The hard part ──────────────────────────────────────────────────── */}
       <ZigZag
-        img="/images/site/lab-lounge.jpg"
-        alt="A warm Frequency third space"
-        eyebrow="Why we exist"
-        title="A place to be human."
+        img="/images/site/971634cd-1d52-4b3a-a0ab-5713d395d58a.jpg"
+        alt="People in a quiet moment of breathwork together outdoors at golden hour"
+        eyebrow="The hard part"
+        title="And then it fell apart."
         imgAspect="landscape"
         reverse
         tone="canvas"
       >
         <p>
-          67% of millennials and Gen Z report feeling lonely. Not for lack of
-          people, but for lack of places. The third spaces that used to hold us,
-          the café, the square, the gathering ground, quietly disappeared.
+          A thousand people, and nowhere to put them. No home, no
+          infrastructure, no way to hold what had been built. It ran entirely on
+          a few people&apos;s energy — and energy runs out. When it faded, it
+          faded fast.
         </p>
         <p>
-          Frequency exists to rebuild them: real physical homes for connection,
-          backed by a community designed to last, and kept open to anyone
-          regardless of what they can pay.
+          But it left something behind: a painfully clear picture of exactly
+          what to build so that next time, it could last. Not more hype. Not a
+          bigger personality. A real home, a model that doesn&apos;t depend on
+          anyone&apos;s stamina, and a way to stay open to everyone.
+        </p>
+      </ZigZag>
+
+      <Statement tone="ink">
+        This time it gets a{' '}
+        <span className="text-primary">home</span>.
+      </Statement>
+
+      {/* ── What we believe (values grid) ──────────────────────────────────── */}
+      <Section tone="surface">
+        <SectionHeading
+          eyebrow="What we believe"
+          title="The principles we won&apos;t trade away."
+          kicker="Four hard rules, learned the hard way."
+        />
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Value
+            icon={Compass}
+            title="Guru-free"
+            body="No charismatic founder to follow, no one to put on a pedestal. The community is the point — not any single voice at the front of the room."
+          />
+          <Value
+            icon={Users}
+            title="Leaderful, not leader-dependent"
+            body="Everyone holds a piece of it. Designed to outlast any one person, so it can&apos;t collapse the moment a few people get tired."
+          />
+          <Value
+            icon={HandHeart}
+            title="Pay-it-forward"
+            body="Circulation, not exclusion. People who can give more keep the doors open for people who can&apos;t. Nobody is priced out of belonging."
+          />
+          <Value
+            icon={Home}
+            title="A third space"
+            body="Not home, not work — a real place to exhale, reset, and be missed when you don&apos;t show up. Built to be returned to, not scrolled past."
+          />
+        </div>
+      </Section>
+
+      {/* ── The mission ────────────────────────────────────────────────────── */}
+      <ZigZag
+        img="/images/site/community-1.jpg"
+        alt="A Frequency community gathered together outdoors, talking and laughing"
+        eyebrow="Why we exist"
+        title="A place to be human."
+        imgAspect="landscape"
+        tone="canvas"
+      >
+        <p>
+          Frequency exists to rebuild the third space: real physical homes for
+          connection, backed by a community designed to last, and kept open to
+          anyone regardless of what they can pay.
+        </p>
+        <p>
+          We&apos;re not building a following. We&apos;re building
+          infrastructure — the kind of thing you can lean your whole weight on
+          and trust to still be standing next year. A place where showing up is
+          easy, being known is the default, and nobody gets left at the door.
+        </p>
+      </ZigZag>
+
+      {/* ── Pull-quote ─────────────────────────────────────────────────────── */}
+      <Section tone="surface" pad="py-16 sm:py-20">
+        <figure className="max-w-3xl mx-auto text-center">
+          <blockquote className="font-display uppercase text-text text-3xl sm:text-4xl lg:text-5xl leading-[1.08] text-balance">
+            &ldquo;We don&apos;t want to be{' '}
+            <span className="text-primary">followed</span>. We want to be{' '}
+            <span className="text-primary">joined</span>.&rdquo;
+          </blockquote>
+          <figcaption className="mt-7 text-sm font-bold uppercase tracking-[0.25em] text-subtle">
+            The Frequency founding circle
+          </figcaption>
+        </figure>
+      </Section>
+
+      {/* ── Timeline ───────────────────────────────────────────────────────── */}
+      <Section tone="canvas">
+        <SectionHeading
+          eyebrow="The arc"
+          title="From a beach to your city."
+          kicker="One circle at a time, the way it always spread."
+        />
+        <ol className="space-y-4">
+          <Milestone
+            marker="2020"
+            title="A cliff at Moonlight Beach"
+            body="A handful of people start meeting at dawn to breathe and reconnect. No brand, no plan — just a standing time and a place to be."
+          />
+          <Milestone
+            marker="2021"
+            title="A thousand people, no home"
+            body="Word of mouth carries it to nearly a thousand. It proves the hunger is real — and proves that without a home, even the most beautiful thing can&apos;t hold."
+          />
+          <Milestone
+            marker="Today"
+            title={`Founding in ${FOUNDING_PLACE}`}
+            body="The blueprint becomes real: a physical home, a community built to last, and a model that keeps the doors open to everyone. The first circles are taking root."
+          />
+          <Milestone
+            marker="Next"
+            title="Coming to your city"
+            body="It spreads the only way it ever has — person to person, circle to circle, city by city. Add your name and help us choose where it seeds next."
+            last
+          />
+        </ol>
+      </Section>
+
+      {/* ── A home for it ──────────────────────────────────────────────────── */}
+      <ZigZag
+        img="/images/site/22a51611-07f6-4c39-8a26-1c996295b6d3.jpg"
+        alt="A Frequency community celebrating and dancing together at golden hour"
+        eyebrow="What lasts"
+        title="Built to outlast any one person."
+        imgAspect="landscape"
+        reverse
+        tone="surface"
+      >
+        <p>
+          The mistake we never want to repeat is letting it ride on a few
+          people&apos;s energy. So everything about Frequency is designed to keep
+          standing on its own — the spaces, the model, the way circles form and
+          carry themselves.
+        </p>
+        <p>
+          That&apos;s the whole point of starting again, deliberately, in{' '}
+          {FOUNDING_PLACE}. Not to recreate a moment, but to give it the
+          foundations the first one never had — and to keep real connection
+          within reach for everyone, not just the few who can afford it.
         </p>
       </ZigZag>
 
@@ -122,10 +289,62 @@ function LegacyAbout() {
         <span className="text-primary">infrastructure</span>.
       </Statement>
 
+      {/* ── Close ──────────────────────────────────────────────────────────── */}
       <BetaCTA
         heading="Be one of the first."
-        body="This time it gets a home. Add your name and help us build it right."
+        body="This time it gets a home. Add your name and help us build it right — a Circle to call yours, and a place to be human, together."
       />
     </>
+  )
+}
+
+// ── Local building blocks ─────────────────────────────────────────────────────
+
+// Values grid card — icon-led principle with a short rationale.
+function Value({
+  icon: Icon,
+  title,
+  body,
+}: {
+  icon: typeof Compass
+  title: string
+  body: string
+}) {
+  return (
+    <div className="flex flex-col rounded-3xl border border-border bg-surface-elevated p-7 shadow-sm">
+      <span className="mb-5 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-bg text-primary-strong">
+        <Icon className="h-5 w-5" aria-hidden />
+      </span>
+      <h3 className="text-lg font-bold text-text mb-2">{title}</h3>
+      <p className="text-base text-muted leading-relaxed">{body}</p>
+    </div>
+  )
+}
+
+// Timeline milestone — a marker chip and a dated beat in the story.
+function Milestone({
+  marker,
+  title,
+  body,
+  last = false,
+}: {
+  marker: string
+  title: React.ReactNode
+  body: React.ReactNode
+  last?: boolean
+}) {
+  return (
+    <li className="relative flex gap-5 pl-1">
+      <div className="flex flex-col items-center">
+        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary-bg font-display text-base uppercase tracking-wide text-primary-strong">
+          {marker}
+        </span>
+        {!last && <span className="mt-2 w-px flex-1 bg-border" aria-hidden />}
+      </div>
+      <div className={last ? '' : 'pb-2'}>
+        <h3 className="text-lg font-bold text-text mb-1.5">{title}</h3>
+        <p className="text-base text-muted leading-relaxed">{body}</p>
+      </div>
+    </li>
   )
 }

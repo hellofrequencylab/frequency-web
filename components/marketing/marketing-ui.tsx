@@ -1,7 +1,58 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { ArrowRight } from 'lucide-react'
 import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
 import { SiteImage } from '@/components/marketing/site-image'
+
+// Full-bleed photo hero — the editorial counterpart to PageHero, for pages that
+// open on imagery. Warm ink wash + amber glow + LED light-strip seam, matching
+// the splash and the Discover heroes. The one uniform hero across the site.
+export function PhotoHero({
+  image,
+  alt = '',
+  eyebrow,
+  title,
+  subtitle,
+  children,
+  focal = 'object-center',
+}: {
+  image: string
+  alt?: string
+  eyebrow?: string
+  title: React.ReactNode
+  subtitle?: string
+  children?: React.ReactNode
+  focal?: string
+}) {
+  return (
+    <section className="relative overflow-hidden">
+      <Image src={image} alt={alt} fill preload sizes="100vw" className={`object-cover ${focal}`} />
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            'linear-gradient(180deg, rgb(20 18 16 / 0.72) 0%, rgb(20 18 16 / 0.52) 45%, rgb(20 18 16 / 0.92) 100%)',
+        }}
+      />
+      <div className="amber-glow absolute inset-0 pointer-events-none" />
+      <div className="relative z-10 max-w-4xl mx-auto px-6 py-24 sm:py-32 text-center">
+        {eyebrow && (
+          <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary mb-5">{eyebrow}</p>
+        )}
+        <h1 className="font-display uppercase text-white text-5xl sm:text-6xl lg:text-7xl text-balance leading-[0.95]">
+          {title}
+        </h1>
+        {subtitle && (
+          <p className="mt-6 text-lg sm:text-xl text-white/80 leading-relaxed max-w-2xl mx-auto">
+            {subtitle}
+          </p>
+        )}
+        {children && <div className="mt-9">{children}</div>}
+      </div>
+      <div className="light-strip absolute inset-x-0 bottom-0 z-10" />
+    </section>
+  )
+}
 
 // ── Shared building blocks for the public marketing pages ─────────────────────
 // Editorial treatment: heavy condensed display headings (.font-display from the
@@ -49,12 +100,17 @@ export function Section({
   vis = '',
 }: {
   children: React.ReactNode
-  tone?: 'surface' | 'canvas'
+  tone?: 'surface' | 'canvas' | 'ink'
   className?: string
   pad?: string
   vis?: string
 }) {
-  const bg = tone === 'canvas' ? 'bg-marketing-canvas' : 'bg-surface'
+  const bg =
+    tone === 'canvas'
+      ? 'bg-marketing-canvas'
+      : tone === 'ink'
+        ? 'bg-slat text-on-ink'
+        : 'bg-surface'
   return (
     <section className={`px-6 ${pad ?? 'py-20 sm:py-24'} ${bg} ${vis} ${className}`}>
       <div className="max-w-3xl mx-auto">{children}</div>
@@ -101,14 +157,19 @@ export function Statement({
   vis = '',
 }: {
   children: React.ReactNode
-  tone?: 'surface' | 'canvas'
+  tone?: 'surface' | 'canvas' | 'ink'
   pad?: string
   vis?: string
 }) {
-  const bg = tone === 'canvas' ? 'bg-marketing-canvas' : 'bg-surface'
+  const isInk = tone === 'ink'
+  const bg = tone === 'canvas' ? 'bg-marketing-canvas' : isInk ? 'bg-slat' : 'bg-surface'
   return (
     <section className={`${bg} px-6 ${pad ?? 'py-16 sm:py-20'} ${vis}`}>
-      <p className="font-display uppercase max-w-4xl mx-auto text-center text-text text-4xl sm:text-5xl lg:text-6xl leading-[1.1]">
+      <p
+        className={`font-display uppercase max-w-4xl mx-auto text-center ${
+          isInk ? 'text-on-ink' : 'text-text'
+        } text-4xl sm:text-5xl lg:text-6xl leading-[1.1]`}
+      >
         {children}
       </p>
     </section>
@@ -140,13 +201,14 @@ export function ZigZag({
   children: React.ReactNode
   cta?: { label: string; href: string }
   reverse?: boolean
-  tone?: 'surface' | 'canvas'
+  tone?: 'surface' | 'canvas' | 'ink'
   imgAspect?: 'square' | 'portrait' | 'landscape' | 'natural'
   imgPosition?: 'top' | 'center' | 'bottom' | 'left' | 'right'
   pad?: string
   vis?: string
 }) {
-  const bg = tone === 'canvas' ? 'bg-marketing-canvas' : 'bg-surface'
+  const isInk = tone === 'ink'
+  const bg = tone === 'canvas' ? 'bg-marketing-canvas' : isInk ? 'bg-slat' : 'bg-surface'
   const cssAspect =
     imgAspect === 'portrait'
       ? '4/5'
@@ -172,9 +234,9 @@ export function ZigZag({
     <section className={`${bg} px-6 ${pad ?? 'py-16 sm:py-20'} ${vis}`}>
       <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-8 md:gap-10 items-center">
         <div
-          className={`w-full ${wrapMax} rounded-3xl overflow-hidden border border-border shadow-sm ${
-            reverse ? 'md:order-last' : ''
-          }`}
+          className={`w-full ${wrapMax} rounded-3xl overflow-hidden border ${
+            isInk ? 'border-ink-border shadow-pop' : 'border-border shadow-md'
+          } ${reverse ? 'md:order-last' : ''}`}
         >
           <SiteImage
             src={img}
@@ -186,19 +248,41 @@ export function ZigZag({
         </div>
         <div>
           {eyebrow && (
-            <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
+            <p
+              className={`text-sm font-bold uppercase tracking-[0.25em] mb-4 ${
+                isInk ? 'text-primary' : 'text-primary-strong'
+              }`}
+            >
               {eyebrow}
             </p>
           )}
-          <h2 className="font-display uppercase text-text text-4xl sm:text-5xl">{title}</h2>
-          {kicker && <p className="mt-3 mb-6 text-xl italic text-muted">{kicker}</p>}
-          <div className={`text-lg text-muted leading-relaxed space-y-4 ${kicker ? '' : 'mt-6'}`}>
+          <h2
+            className={`font-display uppercase text-4xl sm:text-5xl ${
+              isInk ? 'text-on-ink' : 'text-text'
+            }`}
+          >
+            {title}
+          </h2>
+          {kicker && (
+            <p
+              className={`mt-3 mb-6 text-xl italic ${isInk ? 'text-on-ink-muted' : 'text-muted'}`}
+            >
+              {kicker}
+            </p>
+          )}
+          <div
+            className={`text-lg leading-relaxed space-y-4 ${kicker ? '' : 'mt-6'} ${
+              isInk ? 'text-on-ink-muted' : 'text-muted'
+            }`}
+          >
             {children}
           </div>
           {cta && (
             <Link
               href={cta.href}
-              className="mt-6 inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide text-primary-strong hover:underline"
+              className={`mt-6 inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide hover:underline ${
+                isInk ? 'text-primary' : 'text-primary-strong'
+              }`}
             >
               {cta.label} <ArrowRight className="w-4 h-4" />
             </Link>
@@ -239,20 +323,16 @@ export function BetaCTA({
   vis?: string
 }) {
   return (
-    <section className={`relative bg-surface px-6 ${pad ?? 'py-24 sm:py-28'} text-center overflow-hidden ${vis}`}>
-      <div
-        className="absolute inset-0 opacity-25 pointer-events-none"
-        style={{
-          background:
-            'radial-gradient(ellipse 60% 50% at 50% 50%, var(--color-primary-bg) 0%, transparent 70%)',
-        }}
-      />
+    <section className={`relative bg-slat px-6 ${pad ?? 'py-24 sm:py-28'} text-center overflow-hidden ${vis}`}>
+      {/* Warm LED seam at the top edge + amber glow behind the CTA. */}
+      <div className="light-strip absolute inset-x-0 top-0" />
+      <div className="amber-glow absolute inset-0 pointer-events-none" />
       <div className="relative max-w-2xl mx-auto">
-        <h2 className="font-display uppercase text-text text-4xl sm:text-5xl mb-6">{heading}</h2>
-        {body && <p className="text-xl text-muted mb-9 leading-relaxed">{body}</p>}
+        <h2 className="font-display uppercase text-on-ink text-4xl sm:text-5xl mb-6">{heading}</h2>
+        {body && <p className="text-xl text-on-ink-muted mb-9 leading-relaxed">{body}</p>}
         <Link
           href={BETA_CTA_HREF}
-          className="inline-flex items-center gap-2 rounded-2xl bg-primary text-on-primary px-10 py-4 text-lg font-bold hover:bg-primary-hover transition-colors"
+          className="inline-flex items-center gap-2 rounded-2xl bg-primary text-on-primary px-10 py-4 text-lg font-bold hover:bg-primary-hover transition-colors shadow-pop"
         >
           {BETA_CTA_LABEL} <ArrowRight className="w-5 h-5" />
         </Link>

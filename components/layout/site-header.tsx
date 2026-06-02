@@ -2,8 +2,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Search } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import { MARKETING_NAV, DISCOVER_NAV } from '@/lib/site'
 import { UserMenu, AuthButtons, type UserMenuProfile } from './user-menu'
+import { PrimaryNav } from './primary-nav'
 
 // ── Public site header ────────────────────────────────────────────────────────
 // Used on the landing page and any future public-facing pages.
@@ -40,13 +40,6 @@ export async function SiteHeader({ profile: profileProp, variant = 'light' }: Si
   const isAuth = !!profile
   const isDark = variant === 'dark'
 
-  // Keep the menu consistent with wherever the visitor came from. A signed-in
-  // member gets the same explore nav as the in-app top bar (Discover / Circles /
-  // Events / Topics) so the menu doesn't switch out from under them when they
-  // step onto a public /discover page. Logged-out visitors keep the marketing
-  // nav (How it works / Demo / Pricing …) for conversion.
-  const nav = isAuth ? DISCOVER_NAV : MARKETING_NAV
-
   return (
     <header
       className={`fixed top-0 inset-x-0 z-50 h-16 flex items-center gap-3 px-5 sm:px-8 ${
@@ -66,24 +59,14 @@ export async function SiteHeader({ profile: profileProp, variant = 'light' }: Si
         />
       </Link>
 
-      {/* Primary nav (public pages). Desktop only; mobile relies on the
-          prominent Join CTA + footer nav until a drawer ships. Auth-aware: see
-          `nav` above. */}
-      <nav className="hidden md:flex items-center gap-1 ml-2">
-        {nav.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              isDark
-                ? 'text-white/70 hover:text-white hover:bg-white/10'
-                : 'text-muted hover:text-text hover:bg-surface-elevated'
-            }`}
-          >
-            {item.label}
-          </Link>
-        ))}
-      </nav>
+      {/* Unified primary nav (Discover + About dropdowns). Desktop only; mobile
+          relies on the prominent CTA + footer nav until a drawer ships. Members
+          get the mission-focused About menu. */}
+      <PrimaryNav
+        variant={isDark ? 'dark' : 'light'}
+        audience={isAuth ? 'member' : 'visitor'}
+        className="ml-2"
+      />
 
       <div className="flex-1" />
 

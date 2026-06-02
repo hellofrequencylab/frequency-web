@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { getTopicalChannels, getPublicCircles } from '@/lib/discover'
-import { ChannelCard } from '@/components/discover/cards'
+import { ChannelCard, DiscoverHero, SectionHeading } from '@/components/discover/cards'
+import { Statement, BetaCTA } from '@/components/marketing/marketing-ui'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, topicListSchema } from '@/lib/jsonld'
 import { SITE_NAME } from '@/lib/site'
@@ -44,32 +46,52 @@ export default async function DiscoverTopicsPage() {
         ]}
       />
 
-      <section className="bg-marketing-canvas px-6 py-16 border-b border-border/60">
-        <div className="max-w-5xl mx-auto text-center">
-          <p className="text-xs font-semibold uppercase tracking-widest text-primary-strong mb-3">
-            Explore by topic
-          </p>
-          <h1 className="text-3xl sm:text-5xl font-bold text-text mb-4">Topics</h1>
-          <p className="text-muted leading-relaxed max-w-2xl mx-auto">
-            The shared interests neighbors gather around. Pick one and find a circle practicing it
-            near you.
-          </p>
-        </div>
-      </section>
+      <DiscoverHero
+        image="/images/site/36d99363-e483-40a0-b173-7e7ee6c1b379.jpg"
+        alt="A neighbor spinning a hula hoop on the beach beneath a palm tree in bright daylight"
+        eyebrow="Explore by topic"
+        title="Find what you practice"
+        subtitle="A topic is the shared interest neighbors gather around — movement, spirituality, creative practice. Pick one and find a circle living it near you."
+      >
+        <Link
+          href="/discover/circles"
+          className="inline-block rounded-2xl bg-primary text-on-primary px-7 py-3 font-bold hover:bg-primary-hover transition-colors"
+        >
+          Browse circles instead
+        </Link>
+      </DiscoverHero>
 
-      <section className="bg-surface px-6 py-16">
+      <section className="bg-surface px-6 py-20 sm:py-24">
         <div className="max-w-6xl mx-auto">
+          <div className="mb-12 text-center">
+            <SectionHeading eyebrow="The interests" title="Topics" />
+            <p className="mt-4 text-lg text-muted leading-relaxed max-w-2xl mx-auto">
+              Every topic is a doorway to people practicing it nearby. Choose one to see the
+              circles gathering around it.
+            </p>
+          </div>
           {channels.length === 0 ? (
             <p className="text-center text-muted">No topics yet — check back soon.</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {channels.map((ch) => (
-                <ChannelCard key={ch.id} channel={ch} circleCount={countByChannel.get(ch.slug) ?? 0} />
+                <div key={ch.id} className="transition-shadow hover:shadow-pop rounded-2xl">
+                  <ChannelCard channel={ch} circleCount={countByChannel.get(ch.slug) ?? 0} />
+                </div>
               ))}
             </div>
           )}
         </div>
       </section>
+
+      <Statement tone="ink">
+        Two words are all you need to <span className="text-primary">belong</span>.
+      </Statement>
+
+      <BetaCTA
+        heading="Find your people"
+        body="Frequency is opening in North County San Diego. Claim your spot and we’ll help you find the circle practicing what you love."
+      />
     </>
   )
 }
