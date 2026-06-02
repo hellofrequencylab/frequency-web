@@ -58,6 +58,6 @@ export async function sendCampaign(input: {
       .eq('id', campaign.id)
   }
 
-  revalidatePath('/studio/campaigns')
+  revalidatePath('/marketing/campaigns')
   return { ok: true, recipientCount: count }
 }

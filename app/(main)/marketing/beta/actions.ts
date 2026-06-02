@@ -15,7 +15,7 @@ import { SITE_URL } from '@/lib/site'
 export async function drainQueueNow(): Promise<void> {
   await requireStaff('marketer')
   await processQueue(queueHandlers, 100)
-  revalidatePath('/studio/beta')
+  revalidatePath('/marketing/beta')
 }
 
 // Admit a confirmed beta signup: mark invited + email them the "you're in" link.
@@ -47,7 +47,7 @@ export async function admitBetaSignup(id: string): Promise<void> {
     console.error('[beta] failed to queue invite email:', err)
   }
 
-  revalidatePath('/studio/beta')
+  revalidatePath('/marketing/beta')
 }
 
 // Re-queue the double opt-in confirm email for a pending signup.
@@ -64,5 +64,5 @@ export async function resendBetaConfirm(id: string): Promise<void> {
     console.error('[beta] failed to re-queue confirm email:', err)
   }
 
-  revalidatePath('/studio/beta')
+  revalidatePath('/marketing/beta')
 }
