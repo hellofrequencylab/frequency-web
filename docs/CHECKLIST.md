@@ -8,8 +8,15 @@
 > this is the human action list. Work through it on the **test/dev side**, then
 > promote to production when satisfied. Check items off as you go.
 
+> ✅ **Reconciled 2026-06-02:** the 🔴 "Blocking" migrations below are **all applied to prod**
+> (verified via `supabase migration list` — through `20240303000000`, well past this batch), and
+> the 🧹 tech-debt items are **resolved** (`eslint .` is clean repo-wide). This section is kept for
+> history; the live plan is [DEVELOPMENT-MAP.md](DEVELOPMENT-MAP.md). Still genuinely owner-only:
+> Studio access grant, the Resend webhook secret, and the domain/env cutover ([LAUNCH.md](LAUNCH.md)).
+
 ## 🔴 Blocking — do first
-- [ ] **Review + apply the new migrations** — `npx supabase migration list` →
+- [x] **Review + apply the new migrations** — ✅ all applied to prod (verified
+      `supabase migration list`). `npx supabase migration list` →
       `npx supabase db push`. New, unapplied, and written without a live DB to
       test against, so **read them first**:
       - `20240214000000_enable_postgis_geography.sql` (PostGIS + `circles.geog`)
@@ -86,11 +93,11 @@ Still pending:
 - [ ] **Phase 6 remainder:** live Claude operator for the Agent (gated on more spine
       tests); Segments builder + Pipelines; 6.7 Inbox.
 
-## 🧹 Pre-existing tech debt (noticed, not mine to silently change)
-- [ ] `right-sidebar.tsx` — unused imports (`CalendarDays`, `Trophy`, `Target`),
-      `any` types in the gamification widget, unused `isHost`/`streaks`.
-- [ ] `admin/actions.ts` & `broadcast/actions.ts` — `no-explicit-any` lint errors.
-      (None block `tsc`; clean up when convenient.)
+## 🧹 Pre-existing tech debt — ✅ resolved (verified 2026-06-02)
+- [x] `right-sidebar.tsx` (at `components/sidebar/right-sidebar.tsx`) — unused imports /
+      gamification-widget `any` / unused `isHost`/`streaks`. **Clean** (`eslint` exit 0).
+- [x] `admin/actions.ts` & `broadcast/actions.ts` — `no-explicit-any`. **Clean** — the repo-wide
+      `no-explicit-any` debt noted in `LAUNCH.md §7` has been cleared; `eslint .` reports 0 problems.
 
 ## 📌 Then: Phases 2–5
 Per [BUILD-PHASES.md](BUILD-PHASES.md): Phase 2 (authz → RLS+RPC view models),

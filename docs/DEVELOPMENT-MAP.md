@@ -139,8 +139,11 @@ on the real domain. **Depends on:** nothing (all in-codebase closeouts).
       confirm) if desired.
 - [ ] **RLS convergence (Phase 2)**: migrate high-traffic read/write paths from
       admin-client → RLS + `SECURITY DEFINER` RPCs, with policy tests, surface by surface.
-- [ ] **Partner redemption-on-capture**: plaque bump → discount + zaps logged to
-      `partner_redemptions` (closes Phase 3 wiring).
+- [x] **Partner redemption-on-capture**: plaque bump → discount + zaps logged to
+      `partner_redemptions` (closes Phase 3 wiring). ✅ 2026-06-02 — verified wired end-to-end:
+      `/n/[nodeId]` claim button → `claimNode` action → `captureNode` (`lib/engagement/capture.ts`
+      step 5) logs a `partner_redemptions` row, surfaces the unlocked offer title, awards the
+      node's `zaps_value`, and emits `practice.verified` for non-partner nodes.
 - [ ] **Live-Claude agent + consent test**: swap the deterministic proposer for the bounded
       Claude operator; add the `shouldSend` consent test; keep copilot-gated (closes 6.6).
 - [x] **Trust & safety floor (ADR-036)**: first-class **blocking** + in-app **account
