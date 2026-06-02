@@ -10,7 +10,7 @@ function SidebarCard({ title, children }: { title: string; children: React.React
   return (
     <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
       <div className="px-4 py-2.5 border-b border-border">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-subtle">{title}</h3>
+        <h3 className="text-sm font-bold text-text">{title}</h3>
       </div>
       {children}
     </div>
@@ -103,10 +103,10 @@ export default async function AdminChannelsPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-medium text-text">{ch.name}</span>
-                    <span className={`text-[11px] px-1.5 py-0.5 rounded-md font-medium capitalize ${TYPE_COLOR[ch.type] ?? TYPE_COLOR.group}`}>
+                    <span className={`text-xs px-1.5 py-0.5 rounded-md font-medium capitalize ${TYPE_COLOR[ch.type] ?? TYPE_COLOR.group}`}>
                       {ch.type}
                     </span>
-                    <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-surface-elevated text-muted font-medium capitalize">
+                    <span className="text-xs px-1.5 py-0.5 rounded-md bg-surface-elevated text-muted font-medium capitalize">
                       {ch.scope}
                     </span>
                   </div>

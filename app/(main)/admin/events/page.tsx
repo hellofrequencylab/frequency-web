@@ -10,7 +10,7 @@ function SidebarCard({ title, children }: { title: string; children: React.React
   return (
     <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
       <div className="px-4 py-2.5 border-b border-border">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-subtle">{title}</h3>
+        <h3 className="text-sm font-bold text-text">{title}</h3>
       </div>
       {children}
     </div>
@@ -161,7 +161,7 @@ function EventRow({ event }: { event: { id: string; title: string; slug: string;
     <div className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3">
       {/* Date chip */}
       <div className="shrink-0 w-10 flex flex-col items-center rounded-lg bg-surface-elevated py-1.5 text-center">
-        <span className="text-[10px] font-semibold text-subtle uppercase leading-none">
+        <span className="text-xs font-semibold text-subtle uppercase leading-none">
           {new Date(event.starts_at).toLocaleDateString('en-US', { month: 'short' })}
         </span>
         <span className="text-lg font-black text-text leading-none mt-0.5">
@@ -178,7 +178,7 @@ function EventRow({ event }: { event: { id: string; title: string; slug: string;
             {event.title}
           </Link>
           {event.is_cancelled && (
-            <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-danger-bg dark:bg-danger-bg text-danger font-medium">
+            <span className="text-xs px-1.5 py-0.5 rounded-md bg-danger-bg dark:bg-danger-bg text-danger font-medium">
               Cancelled
             </span>
           )}

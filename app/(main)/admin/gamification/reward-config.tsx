@@ -29,7 +29,7 @@ export function RewardConfig({ zaps, gems }: { zaps: RewardRow[]; gems: RewardRo
   return (
     <section className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden mb-8">
       <div className="px-4 py-3 border-b border-border">
-        <h2 className="text-[11px] font-semibold uppercase tracking-wider text-subtle">
+        <h2 className="text-sm font-bold text-text">
           Reward economy
         </h2>
         <p className="text-xs text-muted mt-0.5">
@@ -107,11 +107,11 @@ function RewardTable({
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium text-text truncate">{prettify(row.action_type)}</p>
               {row.description && (
-                <p className="text-[10px] text-subtle truncate">{row.description}</p>
+                <p className="text-xs text-subtle truncate">{row.description}</p>
               )}
             </div>
             <label className="flex items-center gap-1" title="Amount">
-              <span className="text-[10px] text-subtle">amt</span>
+              <span className="text-xs text-subtle">amt</span>
               <input
                 type="number"
                 min={0}
@@ -121,7 +121,7 @@ function RewardTable({
               />
             </label>
             <label className="flex items-center gap-1" title="Daily cap (blank = none)">
-              <span className="text-[10px] text-subtle">cap</span>
+              <span className="text-xs text-subtle">cap</span>
               <input
                 type="number"
                 min={0}
@@ -140,7 +140,7 @@ function RewardTable({
                 onChange={(e) => update(i, { is_active: e.target.checked })}
                 className="accent-primary"
               />
-              <span className="text-[10px] text-subtle">on</span>
+              <span className="text-xs text-subtle">on</span>
             </label>
           </div>
         ))}

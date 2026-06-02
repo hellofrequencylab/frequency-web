@@ -95,7 +95,7 @@ export function RoleManager({ members }: { members: RoleMember[] }) {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <span className="truncate text-sm font-medium text-text">{m.displayName}</span>
-                  <span className="rank-badge text-[10px] font-bold leading-tight" style={roleBadgeStyle(m.role)}>
+                  <span className="rank-badge text-xs font-bold leading-tight" style={roleBadgeStyle(m.role)}>
                     {ROLE_META[m.role].emoji} {ROLE_LABEL[m.role]}
                   </span>
                 </div>

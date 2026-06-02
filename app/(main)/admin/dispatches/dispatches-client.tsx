@@ -397,15 +397,15 @@ export function DispatchesClient({
                     >
                       {d.title}
                     </Link>
-                    <span className={`text-[11px] px-1.5 py-0.5 rounded-md font-medium capitalize ${STATUS_COLOR[d.status]}`}>
+                    <span className={`text-xs px-1.5 py-0.5 rounded-md font-medium capitalize ${STATUS_COLOR[d.status]}`}>
                       {d.status}
                     </span>
                     {d.dispatch_type && (
-                      <span className={`text-[11px] px-1.5 py-0.5 rounded-md font-medium ${TYPE_COLORS[d.dispatch_type]}`}>
+                      <span className={`text-xs px-1.5 py-0.5 rounded-md font-medium ${TYPE_COLORS[d.dispatch_type]}`}>
                         {TYPE_LABELS[d.dispatch_type]}
                       </span>
                     )}
-                    <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-surface-elevated text-muted font-medium capitalize">
+                    <span className="text-xs px-1.5 py-0.5 rounded-md bg-surface-elevated text-muted font-medium capitalize">
                       → {d.audience_scope}
                     </span>
                   </div>

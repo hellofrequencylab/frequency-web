@@ -15,7 +15,7 @@ function SidebarCard({ title, children }: { title: string; children: React.React
   return (
     <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
       <div className="px-4 py-2.5 border-b border-border">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-subtle">{title}</h3>
+        <h3 className="text-sm font-bold text-text">{title}</h3>
       </div>
       {children}
     </div>
@@ -82,7 +82,7 @@ export default async function AdminPage() {
 
           {/* North Star: verified practice */}
           <div className="mt-4">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-subtle mb-2">
+            <p className="text-sm font-bold text-text mb-2">
               North Star · Verified practice
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -473,7 +473,7 @@ async function GuidePanel({ profileId }: { profileId: string }) {
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-text">{circle.name}</span>
                       <StatusBadge status={circle.status} />
-                      <span className="text-[11px] text-subtle">{circle.type}</span>
+                      <span className="text-xs text-subtle">{circle.type}</span>
                     </div>
                     <p className="text-xs text-subtle mt-0.5">
                       {circle.member_count} / {circle.member_cap}

@@ -92,7 +92,7 @@ export function PermissionGrid({
                 Area
               </th>
               {ACCESS_LEVELS.map((lvl) => (
-                <th key={lvl} className="px-2 py-2 text-center text-[11px] font-semibold text-muted">
+                <th key={lvl} className="px-2 py-2 text-center text-xs font-semibold text-muted">
                   {LEVEL_LABEL[lvl]}
                 </th>
               ))}
@@ -137,7 +137,7 @@ function GroupRows({
       <tr>
         <td
           colSpan={ACCESS_LEVELS.length + 1}
-          className="bg-surface-elevated px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-subtle"
+          className="bg-surface-elevated px-3 py-1.5 text-sm font-bold text-text"
         >
           {section}
         </td>
@@ -156,7 +156,7 @@ function GroupRows({
                 {!isDefault && (
                   <span
                     title={`Default: ${LEVEL_LABEL[defaults[area.key]]}`}
-                    className="inline-flex items-center gap-0.5 rounded-full bg-primary-bg px-1.5 py-0.5 text-[9px] font-semibold text-primary-strong"
+                    className="inline-flex items-center gap-0.5 rounded-full bg-primary-bg px-1.5 py-0.5 text-xs font-semibold text-primary-strong"
                   >
                     <RotateCcw className="h-2.5 w-2.5" /> custom
                   </span>

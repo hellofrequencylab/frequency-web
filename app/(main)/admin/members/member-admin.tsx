@@ -205,8 +205,8 @@ function MemberRow({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-text truncate">{m.display_name}</span>
-            <RoleBadge role={m.community_role as CommunityRole} className="text-[10px] leading-tight" />
-            {!m.is_active && <span className="text-[10px] px-1.5 py-0.5 rounded-md font-medium bg-danger-bg text-danger">Inactive</span>}
+            <RoleBadge role={m.community_role as CommunityRole} className="text-xs leading-tight" />
+            {!m.is_active && <span className="text-xs px-1.5 py-0.5 rounded-md font-medium bg-danger-bg text-danger">Inactive</span>}
           </div>
           <p className="text-xs text-subtle truncate">
             @{m.handle}
@@ -233,7 +233,7 @@ function MemberRow({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-subtle mb-1">Details</p>
+              <p className="text-sm font-bold text-text mb-1">Details</p>
               <div className="text-xs text-muted space-y-1">
                 {m.created_at && <p>Joined {new Date(m.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>}
                 {m.regionName && <p>Region: {m.regionName}</p>}
@@ -244,7 +244,7 @@ function MemberRow({
               </div>
             </div>
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-subtle mb-1">Role</p>
+              <p className="text-sm font-bold text-text mb-1">Role</p>
               <select
                 value={m.community_role}
                 onChange={e => handleRoleChange(e.target.value)}
@@ -260,15 +260,15 @@ function MemberRow({
           {editMode ? (
             <form action={handleProfileSave} className="space-y-3 mb-4 rounded-xl border border-border p-3 bg-surface">
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-subtle">Display name</label>
+                <label className="text-sm font-bold text-text">Display name</label>
                 <input name="display_name" defaultValue={m.display_name} className="w-full mt-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs" />
               </div>
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-subtle">Handle</label>
+                <label className="text-sm font-bold text-text">Handle</label>
                 <input name="handle" defaultValue={m.handle} className="w-full mt-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs" />
               </div>
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-subtle">Bio</label>
+                <label className="text-sm font-bold text-text">Bio</label>
                 <textarea name="bio" defaultValue={m.bio ?? ''} rows={2} className="w-full mt-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs resize-none" />
               </div>
               <div className="flex items-center gap-2">
