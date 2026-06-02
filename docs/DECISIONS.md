@@ -1114,6 +1114,38 @@ janitor composes pages from design sections, not bespoke widgets. Retired block 
 on them (home is code-locked per ADR-054; the other pages were unpublished drafts). Satisfies the
 Design-Language P2 "Puck config exposes the canonical components" guardrail.
 
+### ADR-056 — RLS convergence pattern: DEFINER RPCs for restricted-join reads, UPDATE-own policies, migration-before-deploy
+
+**Status:** Accepted · corroborated by `supabase/migrations/20240304000000_notifications_rls_convergence.sql`
++ `app/(main)/notifications/actions.ts` (first converged surface).
+**Context:** Phase 2 / Stage A migrates high-traffic paths off the service-role **admin client**
+(which bypasses RLS, so authz lived in hand-written `recipient_id = me` filters) onto the
+**user-scoped client** so the database enforces access. The first surface (notifications) exposed
+the recurring snag: an owner-scoped read often **joins a table whose own RLS is narrower** — the
+notification row joins the actor's `profiles`, but the profiles read policy only lets crew+ read
+other in-region profiles, so a plain user-client select would null the actor for sub-crew/
+cross-region viewers (a silent visibility regression).
+**Decision:** A repeatable convergence pattern:
+1. **Owner-scoped reads that join a more-restricted table → a `SECURITY DEFINER` RPC** (e.g.
+   `my_notifications`) that scopes to the caller (`auth.uid()` → profile), bypasses RLS for the
+   join, and returns only the **public fields** of the joined row (id/display_name/handle/avatar).
+   Plain RLS selects are fine only when no restricted join is involved.
+2. **Self-service writes → an `UPDATE`/`INSERT`-own policy** (`recipient_id = my profile` in
+   USING + WITH CHECK), then move the write to the user client and drop the manual owner filter.
+3. **Cross-actor writes stay service-role** (e.g. other people creating *your* notifications) —
+   they legitimately write rows you don't own; keep them on the admin client + the existing
+   "service role full access" policy.
+4. **RPCs are `authenticated`-only** (`revoke … from public, anon; grant execute … to authenticated`).
+5. **Deploy ordering is load-bearing:** the converged code calls the new RPC/policy, so the
+   **migration must be applied (`supabase db push`) + types regenerated BEFORE the code deploys**.
+   Shipping code first degrades the surface (empty reads, no-op writes) until the migration lands.
+   Each surface ships as: migration (in-repo) → owner applies → regen types → merge/deploy code.
+**Consequences:** Authz moves into the database, surface by surface, without the big-bang risk of
+converting everything at once. Pure mapping logic (row→view-model) is unit-tested; row-level
+isolation is verified by SQL checks shipped in each migration's footer (run post-apply, or via a
+Supabase dev branch). The deploy-ordering coupling is the main operational cost — it's why this
+work is staged one surface per PR, not batched.
+
 ---
 ### Decisions intentionally NOT duplicated here
 

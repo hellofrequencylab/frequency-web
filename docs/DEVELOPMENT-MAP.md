@@ -140,8 +140,19 @@ on the real domain. **Depends on:** nothing (all in-codebase closeouts).
       now emits `practice.verified`; `/practices` shows a 14-day activity history; members
       and hosts can create custom practices. *Next:* verification layers (host/peer
       confirm) if desired.
-- [ ] **RLS convergence (Phase 2)**: migrate high-traffic read/write paths from
+- [~] **RLS convergence (Phase 2)**: migrate high-traffic read/write paths from
       admin-client → RLS + `SECURITY DEFINER` RPCs, with policy tests, surface by surface.
+      *Surface 1 — notifications (2026-06-02, in-repo, pending apply):* migration
+      `20240304000000_notifications_rls_convergence.sql` adds an UPDATE-own policy + the
+      `my_notifications` / `my_unread_notification_count` DEFINER read RPCs (the RPC pattern is
+      needed because the read joins the actor profile, which the `profiles` policy hides from
+      sub-crew/cross-region viewers). `app/(main)/notifications/actions.ts` now runs on the
+      user-scoped client; the row→view-model mapper is unit-tested (`lib/notifications-map.test.ts`)
+      and SQL isolation checks are in the migration footer. **Pattern + deploy-ordering rule:
+      ADR-056.** ⚠️ **Apply the migration (`supabase db push`) + regen types BEFORE this code
+      deploys** — the code calls the new RPC/policy, so shipping it first degrades notifications
+      (empty list, mark-read no-ops) until applied. *Next surfaces:* the feed read (`getFeed`),
+      then messages/memberships.
 - [x] **Partner redemption-on-capture**: plaque bump → discount + zaps logged to
       `partner_redemptions` (closes Phase 3 wiring). ✅ 2026-06-02 — verified wired end-to-end:
       `/n/[nodeId]` claim button → `claimNode` action → `captureNode` (`lib/engagement/capture.ts`
