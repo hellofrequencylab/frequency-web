@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useRef, useEffect, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
 import { Eye, Check, X, ChevronDown } from 'lucide-react'
 import {
   type CommunityRole,
@@ -25,7 +24,6 @@ export function ViewAsControl({
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
   const ref = useRef<HTMLDivElement>(null)
-  const router = useRouter()
 
   useEffect(() => {
     function handleOutside(e: MouseEvent) {
@@ -44,7 +42,9 @@ export function ViewAsControl({
     startTransition(async () => {
       // Selecting your own real role clears the override.
       await setViewAsRole(role === realRole ? null : role)
-      router.refresh()
+      // Full reload so the new role's content visibility is reflected everywhere
+      // (nav, capabilities, page content) — not just a soft re-render.
+      window.location.reload()
     })
   }
 
