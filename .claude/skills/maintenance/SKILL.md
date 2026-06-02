@@ -49,3 +49,7 @@ Then, draft-and-approve:
   The Stop hook will nudge on drift.
 
 End in chat with: counts per severity, what you auto-fixed, and the top 3 items needing approval.
+
+**Presentation:** format the report, PR body, and chat summary to the **Presentation
+Standard** ([`docs/PRESENTATION.md`](../../../docs/PRESENTATION.md)) — lead with a one-line
+status, worst-first **Severity · Item · Fix** tables, and the ✅/⏳/⚠️/🔴 legend.
