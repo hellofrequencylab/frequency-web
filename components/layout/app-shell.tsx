@@ -435,7 +435,9 @@ function NavLinkList({
   return (
     <>
       {!hideAppNav && NAV_SECTIONS.map((section, i) => {
-        const items = section.items.filter((it) => atLeastRole(role, it.minRole ?? 'member'))
+        // Default a missing role to 'member' so base items can never be hidden
+        // (a null role must not blank the whole menu).
+        const items = section.items.filter((it) => atLeastRole(role ?? 'member', it.minRole ?? 'member'))
         if (items.length === 0) return null
         return (
           <div key={section.label ?? `top-${i}`} className={`space-y-0.5 ${i > 0 ? 'mt-2' : ''}`}>
