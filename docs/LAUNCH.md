@@ -38,16 +38,34 @@ registered at GoDaddy; point it at Vercel.
 |---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_ROLE_KEY` | DB + admin client | already set (prod works) |
 | `NEXT_PUBLIC_SITE_URL` / `NEXT_PUBLIC_APP_URL` | canonical URLs; email + ICS links | set to `https://frequencylocal.com` |
-| `RESEND_API_KEY` / `EMAIL_FROM` | transactional + digest email | `EMAIL_FROM` on `frequencylocal.com` |
+| `RESEND_API_KEY` / `EMAIL_FROM` | transactional + digest email | `EMAIL_FROM` on `send.frequencylocal.com` (verified in Resend — §4) |
 | `CRON_SECRET` | cron auth (fail-closed: crons reject without it) | required or reminders/digests/scheduled publish silently stop |
 | `UNSUBSCRIBE_SECRET` | signed one-click unsubscribe tokens | email compliance |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | web push | push notifications |
 
-## 4. Email deliverability (before sending volume)
+## 4. Email deliverability — verify the domain in Resend (before sending volume)
 
-Verify `frequencylocal.com` in Resend with **SPF, DKIM, DMARC** (ROADMAP P7.28), set `EMAIL_FROM`
-to a `frequencylocal.com` address, and send a test welcome email. Gmail/Yahoo bulk-sender rules
-need these or mail lands in spam.
+Transactional mail (welcome, event reminders, weekly digest, unsubscribe) sends through
+**Resend**, a **separate path** from Google Workspace. The Workspace SPF/DKIM/DMARC authenticate
+only human mail sent via Gmail — they do **not** cover Resend. Because DMARC is now at
+`p=quarantine`, Resend mail from `@frequencylocal.com` is quarantined until the domain is
+verified **in Resend**. Use a dedicated **`send.frequencylocal.com`** subdomain so bulk-sender
+reputation stays isolated from the human-mail apex.
+
+1. **Resend → Domains → Add Domain:** `send.frequencylocal.com`. Resend shows three records:
+   - **MX** on `send` → `feedback-smtp.<region>.amazonses.com` (priority 10) — bounce/complaint feedback.
+   - **TXT (SPF)** on `send` → `v=spf1 include:amazonses.com ~all`.
+   - **TXT (DKIM)** on `resend._domainkey.send` → the long `p=…` value Resend generates (unique per domain).
+2. **GoDaddy DNS:** add those three records exactly as Resend shows them. Host names are relative
+   to the apex, so enter `send` and `resend._domainkey.send` (not the full domain). Click **Verify**.
+3. **(optional) subdomain DMARC:** `_dmarc.send` TXT → `v=DMARC1; p=none; rua=mailto:hello@frequencylocal.com`
+   while you watch reports, then tighten to quarantine.
+4. **Vercel env:** set `EMAIL_FROM = Frequency <noreply@send.frequencylocal.com>` and redeploy.
+5. **Test:** trigger a welcome/test email; confirm it lands in the inbox (not spam) and, via Gmail's
+   "Show original", that **DKIM=pass** and **DMARC=pass**.
+
+App-side bulk hygiene — RFC 8058 one-click `List-Unsubscribe`, hard-bounce/complaint suppression,
+and a durable retrying outbox — is already in place (ADR-026 / ADR-043 / ADR-046).
 
 ## 5. Crons
 
