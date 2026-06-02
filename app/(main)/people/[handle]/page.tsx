@@ -18,9 +18,11 @@ import {
 import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
 import { getProfileCapabilities } from '@/lib/core/load-capabilities'
 import { ModerateProfileButton } from './moderate-profile-button'
+import { ModuleCard } from '@/components/modules/module-card'
+import { SectionHeader } from '@/components/ui/section-header'
 
 const RANK_TIERS = [
-  { name: 'Ghost',    min: 0,    cls: 'bg-surface-elevated text-muted',     bar: 'bg-gray-400' },
+  { name: 'Ghost',    min: 0,    cls: 'bg-surface-elevated text-muted',     bar: 'bg-border-strong' },
   { name: 'Spark',    min: 50,   cls: 'bg-warning-bg text-warning',   bar: 'bg-primary' },
   { name: 'Flame',    min: 150,  cls: 'bg-warning-bg text-warning', bar: 'bg-primary' },
   { name: 'Blaze',    min: 400,  cls: 'bg-danger-bg text-danger',       bar: 'bg-danger' },
@@ -155,7 +157,7 @@ export default async function ProfilePage({
 
   return (
     <div>
-      {/* ── Cover image + avatar header ────────────────────── */}
+      {/* ── Cover image + avatar header (the one hero card) ─────── */}
       <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden mb-6">
         {/* Cover */}
         <div className="relative h-32 sm:h-40 bg-gradient-to-br from-primary via-signal to-signal-strong">
@@ -216,8 +218,8 @@ export default async function ProfilePage({
             </div>
           </div>
 
-          {/* Identity */}
-          <h1 className="text-xl font-bold text-text leading-tight">
+          {/* Identity — lead with the human. */}
+          <h1 className="text-2xl font-bold text-text leading-tight">
             {profile.display_name}
           </h1>
           <p className="text-sm text-muted mt-0.5">@{profile.handle}</p>
@@ -270,9 +272,7 @@ export default async function ProfilePage({
             </div>
           )}
 
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-subtle mb-4">
-            Timeline
-          </h2>
+          <SectionHeader title="Timeline" />
           <ProfileFeed
             profileId={profileId}
             profileHandle={profile.handle as string}
@@ -281,8 +281,8 @@ export default async function ProfilePage({
           />
         </div>
 
-        {/* ── Right sidebar ────────────────────────────────── */}
-        <div className="space-y-4">
+        {/* ── Right sidebar — borderless modules ─────────────── */}
+        <div className="space-y-8">
 
           {/* Stat tiles - compact stacked */}
           <div className="grid grid-cols-2 gap-2">
@@ -295,110 +295,100 @@ export default async function ProfilePage({
           </div>
 
           {/* Season rank */}
-          <SidebarCard title="Season rank">
-            <div className="px-4 py-3">
-              <div className="flex items-center justify-between mb-2">
-                <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${rank.cls}`}>{rank.name}</span>
-                <span className="text-[11px] text-subtle flex items-center gap-1">
-                  <Zap className="w-3 h-3 text-primary" /> {totalZaps}
-                </span>
-              </div>
-              <div className="w-full h-2 bg-surface-elevated rounded-full overflow-hidden">
-                <div className={`h-full rounded-full transition-all ${rank.bar}`} style={{ width: `${progress}%` }} />
-              </div>
-              {nextRank ? (
-                <p className="text-[11px] text-subtle mt-1.5">
-                  {nextRank.min - totalZaps} zaps to <span className="font-medium">{nextRank.name}</span>
-                </p>
-              ) : (
-                <p className="text-[11px] text-subtle mt-1.5">Max rank reached</p>
-              )}
+          <ModuleCard title="Season rank">
+            <div className="flex items-center justify-between mb-2">
+              <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${rank.cls}`}>{rank.name}</span>
+              <span className="text-xs text-subtle flex items-center gap-1">
+                <Zap className="w-3 h-3 text-primary" /> {totalZaps}
+              </span>
             </div>
-          </SidebarCard>
+            <div className="w-full h-2 bg-surface-elevated rounded-full overflow-hidden">
+              <div className={`h-full rounded-full transition-all ${rank.bar}`} style={{ width: `${progress}%` }} />
+            </div>
+            {nextRank ? (
+              <p className="text-xs text-subtle mt-1.5">
+                {nextRank.min - totalZaps} zaps to <span className="font-medium">{nextRank.name}</span>
+              </p>
+            ) : (
+              <p className="text-xs text-subtle mt-1.5">Max rank reached</p>
+            )}
+          </ModuleCard>
 
           {/* Rewards / gamification */}
-          <SidebarCard title="Rewards">
-            <div className="px-4 py-3 space-y-2.5">
+          <ModuleCard title="Rewards">
+            <div className="space-y-2.5">
               <RewardBadge icon={Star} label="Early Adopter" description="Joined during beta" earned />
               <RewardBadge icon={MessageSquare} label="First Post" description="Made your first post" earned={postCount > 0} />
               <RewardBadge icon={Users} label="Circle Up" description="Joined a circle" earned={circles.length > 0} />
               <RewardBadge icon={Zap} label="Spark" description="Earned 50 zaps" earned={totalZaps >= 50} />
               <RewardBadge icon={Trophy} label="Task Master" description="Completed 10 tasks" earned={tasksCompleted >= 10} />
             </div>
-          </SidebarCard>
+          </ModuleCard>
 
           {/* Circles & channels */}
           {(circles.length > 0 || channels.length > 0) && (
-            <SidebarCard title="Groups">
-              <ul className="divide-y divide-border">
+            <ModuleCard title="Groups">
+              <div className="space-y-0.5">
                 {circles.map(c => (
-                  <li key={c.id}>
-                    <Link href={`/circles/${c.slug}`} className="flex items-center gap-2.5 px-4 py-2 hover:bg-surface-elevated transition-colors">
-                      <Users className="w-3.5 h-3.5 text-primary-strong shrink-0" />
-                      <span className="text-xs font-medium text-text truncate">{c.name}</span>
-                      <ArrowRight className="w-3 h-3 text-subtle ml-auto shrink-0" />
-                    </Link>
-                  </li>
+                  <Link key={c.id} href={`/circles/${c.slug}`} className="flex items-center gap-2.5 rounded-lg px-2 py-2 -mx-2 hover:bg-surface-elevated transition-colors">
+                    <Users className="w-3.5 h-3.5 text-primary-strong shrink-0" />
+                    <span className="text-sm font-medium text-text truncate">{c.name}</span>
+                    <ArrowRight className="w-3 h-3 text-subtle ml-auto shrink-0" />
+                  </Link>
                 ))}
                 {channels.map(c => (
-                  <li key={c.id}>
-                    <Link href={`/channels/${c.id}`} className="flex items-center gap-2.5 px-4 py-2 hover:bg-surface-elevated transition-colors">
-                      <Radio className="w-3.5 h-3.5 text-success shrink-0" />
-                      <span className="text-xs font-medium text-text truncate">{c.name}</span>
-                      <ArrowRight className="w-3 h-3 text-subtle ml-auto shrink-0" />
-                    </Link>
-                  </li>
+                  <Link key={c.id} href={`/channels/${c.id}`} className="flex items-center gap-2.5 rounded-lg px-2 py-2 -mx-2 hover:bg-surface-elevated transition-colors">
+                    <Radio className="w-3.5 h-3.5 text-success shrink-0" />
+                    <span className="text-sm font-medium text-text truncate">{c.name}</span>
+                    <ArrowRight className="w-3 h-3 text-subtle ml-auto shrink-0" />
+                  </Link>
                 ))}
-              </ul>
-            </SidebarCard>
+              </div>
+            </ModuleCard>
           )}
 
           {/* Events hosted */}
           {hostedEvents.length > 0 && (
-            <SidebarCard title="Events">
-              <ul className="divide-y divide-border">
+            <ModuleCard title="Events">
+              <div className="space-y-0.5">
                 {hostedEvents.map(e => {
                   const d = new Date(e.starts_at)
                   return (
-                    <li key={e.id}>
-                      <Link href={`/events/${e.slug}`} className="flex items-start gap-3 px-4 py-2.5 hover:bg-surface-elevated transition-colors">
-                        <div className="shrink-0 w-9 text-center">
-                          <div className="text-[9px] font-bold uppercase text-primary leading-none">
-                            {d.toLocaleString('default', { month: 'short' })}
-                          </div>
-                          <div className="text-base font-black text-text leading-tight">
-                            {d.getDate()}
-                          </div>
+                    <Link key={e.id} href={`/events/${e.slug}`} className="flex items-start gap-3 rounded-lg px-2 py-2 -mx-2 hover:bg-surface-elevated transition-colors">
+                      <div className="shrink-0 w-9 text-center">
+                        <div className="text-xs font-bold uppercase text-primary leading-none">
+                          {d.toLocaleString('default', { month: 'short' })}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium text-text line-clamp-1">{e.title}</p>
-                          {e.location && <p className="text-[11px] text-subtle truncate">{e.location}</p>}
+                        <div className="text-base font-black text-text leading-tight">
+                          {d.getDate()}
                         </div>
-                      </Link>
-                    </li>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-text line-clamp-1">{e.title}</p>
+                        {e.location && <p className="text-xs text-subtle truncate">{e.location}</p>}
+                      </div>
+                    </Link>
                   )
                 })}
-              </ul>
-            </SidebarCard>
+              </div>
+            </ModuleCard>
           )}
 
           {/* Dispatches authored */}
           {authoredDispatches.length > 0 && (
-            <SidebarCard title="Dispatches">
-              <ul className="divide-y divide-border">
+            <ModuleCard title="Dispatches">
+              <div className="space-y-0.5">
                 {authoredDispatches.map(d => (
-                  <li key={d.id}>
-                    <Link href={`/broadcast/${d.id}`} className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-surface-elevated transition-colors">
-                      <Megaphone className="w-3.5 h-3.5 text-primary-strong shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-text line-clamp-1">{d.title}</p>
-                        <p className="text-[11px] text-subtle">{relativeTime(d.published_at)}</p>
-                      </div>
-                    </Link>
-                  </li>
+                  <Link key={d.id} href={`/broadcast/${d.id}`} className="flex items-center gap-2.5 rounded-lg px-2 py-2 -mx-2 hover:bg-surface-elevated transition-colors">
+                    <Megaphone className="w-3.5 h-3.5 text-primary-strong shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-text line-clamp-1">{d.title}</p>
+                      <p className="text-xs text-subtle">{relativeTime(d.published_at)}</p>
+                    </div>
+                  </Link>
                 ))}
-              </ul>
-            </SidebarCard>
+              </div>
+            </ModuleCard>
           )}
         </div>
       </div>
@@ -421,16 +411,16 @@ function MiniStat({
     indigo: 'border-primary-bg bg-primary-bg text-primary-strong',
     amber:  'border-warning-bg bg-warning-bg/40 text-warning',
     green:  'border-success bg-success-bg/40 text-success',
-    violet: 'border-violet-100 bg-signal-bg/40 text-signal-strong',
+    violet: 'border-signal-bg bg-signal-bg/40 text-signal-strong',
   }
   const cls = colors[color] ?? colors.indigo
   return (
-    <div className={`rounded-xl border p-3 ${cls}`}>
+    <div className={`rounded-2xl border p-3 ${cls}`}>
       <div className="flex items-center gap-1.5 mb-0.5">
         <Icon className="w-3 h-3" />
-        <span className="text-[10px] font-semibold uppercase tracking-wider">{label}</span>
+        <span className="text-xs font-semibold">{label}</span>
       </div>
-      <p className="text-xl font-black">{value}</p>
+      <p className="text-xl font-black tabular-nums">{value}</p>
     </div>
   )
 }
@@ -453,20 +443,9 @@ function RewardBadge({
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-xs font-medium text-text">{label}</p>
-        <p className="text-[10px] text-subtle">{description}</p>
+        <p className="text-xs text-subtle">{description}</p>
       </div>
-      {earned && <Star className="w-3 h-3 text-primary fill-amber-400 shrink-0" />}
-    </div>
-  )
-}
-
-function SidebarCard({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
-      <div className="px-4 py-2.5 border-b border-border">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-subtle">{title}</h3>
-      </div>
-      {children}
+      {earned && <Star className="w-3 h-3 text-primary fill-primary shrink-0" />}
     </div>
   )
 }
