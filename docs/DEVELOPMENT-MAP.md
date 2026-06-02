@@ -145,7 +145,7 @@ on the real domain. **Depends on:** nothing (all in-codebase closeouts).
       confirm) if desired.
 - [~] **RLS convergence (Phase 2)**: migrate high-traffic read/write paths from
       admin-client → RLS + `SECURITY DEFINER` RPCs, with policy tests, surface by surface.
-      *Surface 1 — notifications (2026-06-02, in-repo, pending apply):* migration
+      *Surface 1 — notifications (2026-06-02, ✅ migration applied to prod):* migration
       `20240307000000_notifications_rls_convergence.sql` adds an UPDATE-own policy + the
       `my_notifications` / `my_unread_notification_count` DEFINER read RPCs (the RPC pattern is
       needed because the read joins the actor profile, which the `profiles` policy hides from
@@ -155,12 +155,13 @@ on the real domain. **Depends on:** nothing (all in-codebase closeouts).
       ADR-056.** ⚠️ **Apply the migration (`supabase db push`) + regen types BEFORE this code
       deploys** — the code calls the new RPC/policy, so shipping it first degrades notifications
       (empty list, mark-read no-ops) until applied.
-      *Surface 2 — friendships (2026-06-02, in-repo, pending apply):* migration
+      *Surface 2 — friendships (2026-06-02, ✅ migration applied to prod):* migration
       `20240308000000_friendships_rls_convergence.sql` adds the `my_friendships` DEFINER read RPC
       (same restricted-`profiles`-join reason); `app/(main)/friends/page.tsx` now runs on the user
       client, bucketing logic unit-tested (`lib/friendships-map.test.ts`). Friendship write policies
       already exist, so friend-actions can converge later with no new migration.
-      ⚠️ **Both migrations must be applied + types regenerated before this code deploys.**
+      ✅ **Both migrations applied to prod 2026-06-02** (`db push`), types regenerated, prod
+      verified (no regression on the live app). The converged code lands when PR #63 merges.
       *Next surfaces:* the feed read (`getFeed`), then messages.
 - [x] **Partner redemption-on-capture**: plaque bump → discount + zaps logged to
       `partner_redemptions` (closes Phase 3 wiring). ✅ 2026-06-02 — verified wired end-to-end:
