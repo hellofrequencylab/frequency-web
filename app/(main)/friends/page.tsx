@@ -17,7 +17,7 @@ export default async function FriendsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) notFound()
 
-  // RLS convergence (migration 20240305000000): own friendships + the other
+  // RLS convergence (migration 20240308000000): own friendships + the other
   // party's public fields via the user-scoped client through a DEFINER RPC.
   const { data } = await (supabase as unknown as SupabaseClient).rpc('my_friendships')
   const { incoming, outgoing, accepted } = bucketFriendships(
