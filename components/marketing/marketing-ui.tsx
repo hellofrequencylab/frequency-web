@@ -1,7 +1,58 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { ArrowRight } from 'lucide-react'
 import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
 import { SiteImage } from '@/components/marketing/site-image'
+
+// Full-bleed photo hero — the editorial counterpart to PageHero, for pages that
+// open on imagery. Warm ink wash + amber glow + LED light-strip seam, matching
+// the splash and the Discover heroes. The one uniform hero across the site.
+export function PhotoHero({
+  image,
+  alt = '',
+  eyebrow,
+  title,
+  subtitle,
+  children,
+  focal = 'object-center',
+}: {
+  image: string
+  alt?: string
+  eyebrow?: string
+  title: React.ReactNode
+  subtitle?: string
+  children?: React.ReactNode
+  focal?: string
+}) {
+  return (
+    <section className="relative overflow-hidden">
+      <Image src={image} alt={alt} fill preload sizes="100vw" className={`object-cover ${focal}`} />
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            'linear-gradient(180deg, rgb(20 18 16 / 0.72) 0%, rgb(20 18 16 / 0.52) 45%, rgb(20 18 16 / 0.92) 100%)',
+        }}
+      />
+      <div className="amber-glow absolute inset-0 pointer-events-none" />
+      <div className="relative z-10 max-w-4xl mx-auto px-6 py-24 sm:py-32 text-center">
+        {eyebrow && (
+          <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary mb-5">{eyebrow}</p>
+        )}
+        <h1 className="font-display uppercase text-white text-5xl sm:text-6xl lg:text-7xl text-balance leading-[0.95]">
+          {title}
+        </h1>
+        {subtitle && (
+          <p className="mt-6 text-lg sm:text-xl text-white/80 leading-relaxed max-w-2xl mx-auto">
+            {subtitle}
+          </p>
+        )}
+        {children && <div className="mt-9">{children}</div>}
+      </div>
+      <div className="light-strip absolute inset-x-0 bottom-0 z-10" />
+    </section>
+  )
+}
 
 // ── Shared building blocks for the public marketing pages ─────────────────────
 // Editorial treatment: heavy condensed display headings (.font-display from the
