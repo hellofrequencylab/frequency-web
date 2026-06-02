@@ -775,7 +775,7 @@ export default function AppShell({
             members can still browse the wider site with ease. Desktop only. */}
         {!hideAppNav && (
           <div className="hidden md:flex items-stretch ml-1 opacity-40 hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300 motion-reduce:transition-none">
-            <PrimaryNav audience="member" variant="light" />
+            <PrimaryNav audience="member" variant="light" showDiscover={false} />
           </div>
         )}
 
@@ -825,14 +825,6 @@ export default function AppShell({
         </div>
       </header>
 
-      {/* ── Community sub-menu ─────────────────────────────── */}
-      {/* Primary community interaction — the day-to-day social loop, given its
-          own dedicated strip so it's the focal nav. Scrolls on narrow screens,
-          so it doubles as the mobile community nav. */}
-      {!hideAppNav && (
-        <CommunityNav role={role} isActive={isActive} permissions={permissions} />
-      )}
-
       {/* ── Body ──────────────────────────────────────────── */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
 
@@ -876,10 +868,22 @@ export default function AppShell({
         <div data-feed-scroll className="flex-1 min-w-0 overflow-y-auto pb-[calc(4rem_+_env(safe-area-inset-bottom))] md:pb-0">
           <div className="flex items-stretch min-h-full">
 
-            {/* Page content */}
-            <main className="flex-1 min-w-0 px-6 py-6">
-              {children}
-            </main>
+            {/* Center column — community sub-menu + page content. The bar lives
+                HERE (between the left rail and the right rail), not full-bleed
+                under the header, so it reads as the content's own nav. It sticks
+                to the top of the shared scroll; the right rail sits beside it. */}
+            <div className="flex-1 min-w-0 flex flex-col">
+
+              {/* Primary community interaction — the day-to-day social loop. */}
+              {!hideAppNav && (
+                <CommunityNav role={role} isActive={isActive} permissions={permissions} />
+              )}
+
+              {/* Page content */}
+              <main className="flex-1 min-w-0 px-6 py-6">
+                {children}
+              </main>
+            </div>
 
             {/* Right sidebar. Only on lg+, hidden on admin/settings.
                 The <aside> spans the full content height (flex column) so the
