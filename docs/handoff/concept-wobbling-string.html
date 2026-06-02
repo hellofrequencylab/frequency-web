@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Frequency — AI strung through every feature</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sand:#F7F3EA; --ink:#1E1A13; --muted:#6B6253; --subtle:#8F8675;
+    --border:#E9E1D4; --borders:#D8CDBB; --surface:#FFFFFF;
+    --amber:#E2912F; --ambers:#9A5E12; --teal:#1E9E89; --tan:#D8C29A;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--sand);color:var(--ink);
+    font-family:'Nunito',system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+  .page{max-width:960px;margin:0 auto;padding:0 20px;}
+  /* header */
+  header{text-align:center;padding:64px 0 8px;}
+  .eyebrow{display:inline-block;font-weight:700;font-size:14px;letter-spacing:.18em;
+    color:var(--ambers);opacity:.78;border:1px solid var(--borders);background:rgba(255,255,255,.5);
+    padding:9px 18px;border-radius:22px;}
+  h1{font-family:'Anton',sans-serif;font-weight:400;text-transform:uppercase;
+    font-size:clamp(40px,7vw,82px);line-height:.98;margin:22px 0 0;color:var(--ink);opacity:.62;}
+  .sub{max-width:620px;margin:20px auto 0;font-size:clamp(16px,2.2vw,20px);
+    line-height:1.5;color:var(--muted);opacity:.82;}
+  /* animated string */
+  .stage{position:relative;width:100%;}
+  .stage canvas{position:absolute;inset:0;width:100%;height:100%;z-index:0;}
+  .node{position:absolute;z-index:2;width:230px;will-change:transform;
+    transition:filter .25s ease;}
+  .node.ai{width:200px;}
+  .card{display:flex;align-items:center;gap:14px;background:rgba(255,255,255,.62);
+    border:1px solid rgba(216,205,187,.85);border-radius:22px;padding:14px 16px;
+    backdrop-filter:blur(2px);}
+  .node.ai .card{flex-direction:column;text-align:center;gap:8px;border-color:rgba(226,145,47,.5);
+    background:rgba(255,255,255,.7);padding:20px 16px;}
+  .chip{flex:0 0 auto;display:grid;place-items:center;width:46px;height:46px;border-radius:14px;
+    background:color-mix(in srgb, var(--c) 14%, transparent);color:var(--c);}
+  .node.ai .chip{width:54px;height:54px;border-radius:50%;}
+  .chip svg{width:24px;height:24px;}
+  .meta{min-width:0;}
+  .title{font-weight:800;font-size:18px;letter-spacing:.02em;color:var(--ink);opacity:.78;line-height:1.1;}
+  .node.ai .title{font-family:'Anton',sans-serif;font-weight:400;font-size:30px;letter-spacing:.02em;}
+  .tag{font-weight:600;font-size:14px;color:var(--muted);opacity:.72;margin-top:3px;}
+  .node:hover{filter:drop-shadow(0 8px 18px rgba(40,30,16,.14));cursor:default;}
+  /* footer */
+  footer{text-align:center;padding:8px 0 70px;}
+  .foot-line{font-family:'Anton',sans-serif;text-transform:uppercase;
+    font-size:clamp(28px,4.5vw,48px);color:var(--ink);opacity:.55;}
+  .swoosh{display:block;width:min(420px,70%);height:10px;margin:6px auto 0;}
+  .cap{margin-top:14px;font-weight:700;color:var(--subtle);opacity:.8;letter-spacing:.02em;}
+  @media (prefers-reduced-motion: reduce){ .node{transition:none;} }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <span class="eyebrow">THE AI LAYER, LACED IN</span>
+    <h1>Strung through<br/>every feature</h1>
+    <p class="sub">Conversation, activity and energy pulse from one vertical to the next —
+    woven by an operator working quietly underneath, so momentum carries itself down the line.</p>
+  </header>
+
+  <div class="stage" id="stage">
+    <canvas id="cords"></canvas>
+    <!-- node cards injected by JS -->
+  </div>
+
+  <footer>
+    <div class="foot-line">Momentum that doesn&rsquo;t drop.</div>
+    <svg class="swoosh" viewBox="0 0 420 10" preserveAspectRatio="none"><path d="M4 7 Q210 1 416 7" fill="none" stroke="#E2912F" stroke-width="5" stroke-linecap="round" opacity="0.55"/></svg>
+    <div class="cap">frequency &middot; a place to be human</div>
+  </footer>
+</div>
+
+<script>
+const ICON = {
+ spark:'<path d="M12 3l1.7 5.1a3 3 0 0 0 1.9 1.9L21 12l-5.4 1.7a3 3 0 0 0-1.9 1.9L12 21l-1.7-5.4a3 3 0 0 0-1.9-1.9L3 12l5.4-1.7a3 3 0 0 0 1.9-1.9Z"/>',
+ users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+ pin:'<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+ zap:'<path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>',
+ trend:'<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>',
+ book:'<path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/>',
+ userplus:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>',
+};
+const ic = (n,c)=>`<svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON[n]}</svg>`;
+
+const TEAL='#1E9E89', AMBER='#E2912F', ROSE='#B5566F';
+const STREAMS=[TEAL,AMBER,ROSE];
+
+const NODES=[
+ {kind:'ai', title:'AI', tag:'the operator', icon:'spark', c:'#E2912F'},
+ {title:'COMMUNITY', tag:'circles & feed', icon:'users', c:'#1E9E89'},
+ {title:'GATHERINGS', tag:'events & check-ins', icon:'pin', c:'#E2912F'},
+ {title:'THE GAME', tag:'zaps & ranks', icon:'zap', c:'#B5566F'},
+ {title:'STUDIO', tag:'insight & nudges', icon:'trend', c:'#4E7BA6'},
+ {title:'PROGRAMS', tag:'frameworks', icon:'book', c:'#5A6BB0'},
+ {title:'GROWTH', tag:'new members', icon:'userplus', c:'#5E9E5A'},
+];
+
+const stage = document.getElementById('stage');
+const canvas = document.getElementById('cords');
+const ctx = canvas.getContext('2d');
+const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// build cards
+NODES.forEach((nd,i)=>{
+  const el=document.createElement('div');
+  el.className='node'+(nd.kind==='ai'?' ai':'');
+  if(nd.kind==='ai'){
+    el.innerHTML=`<div class="card"><div class="chip" style="--c:${nd.c}">${ic(nd.icon,nd.c)}</div>`+
+      `<div class="meta"><div class="title">${nd.title}</div><div class="tag">${nd.tag}</div></div></div>`;
+  } else {
+    el.innerHTML=`<div class="card"><div class="chip" style="--c:${nd.c}">${ic(nd.icon,nd.c)}</div>`+
+      `<div class="meta"><div class="title">${nd.title}</div><div class="tag">${nd.tag}</div></div></div>`;
+  }
+  el.addEventListener('mouseenter',()=>nd.hover=true);
+  el.addEventListener('mouseleave',()=>nd.hover=false);
+  stage.appendChild(el);
+  nd.el=el;
+});
+
+let W=0,H=0,cx=0,offset=0,startY=70,gapY=210,dpr=1;
+const cords=[];
+
+function layout(){
+  W = stage.clientWidth;
+  cx = W/2;
+  offset = Math.max(70, Math.min(W*0.22, 205));
+  gapY = (W<560)? 188 : 210;
+  startY = 76;
+  NODES.forEach((nd,i)=>{
+    nd.baseX = (i===0)? cx : cx + ((i%2===1)? -offset : offset);
+    nd.baseY = startY + i*gapY;
+    // place card; bob applied via transform
+    nd.el.style.left = nd.baseX+'px';
+    nd.el.style.top  = nd.baseY+'px';
+  });
+  H = startY + (NODES.length-1)*gapY + 90;
+  stage.style.height = H+'px';
+  dpr = Math.min(window.devicePixelRatio||1, 2);
+  canvas.width = W*dpr; canvas.height = H*dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  cords.length=0;
+  for(let i=0;i<NODES.length-1;i++) cords.push({phase: i*0.27, color: STREAMS[i%3]});
+}
+
+function cubic(p0,c0,c1,p1,t){
+  const u=1-t, a=u*u*u, b=3*u*u*t, d=3*u*t*t, e=t*t*t;
+  return {x:a*p0.x+b*c0.x+d*c1.x+e*p1.x, y:a*p0.y+b*c0.y+d*c1.y+e*p1.y};
+}
+
+const POS=[];
+let t0=performance.now();
+function frame(now){
+  const t=(now-t0)/1000;
+  // node positions (base + gentle bob)
+  for(let i=0;i<NODES.length;i++){
+    const nd=NODES[i];
+    const bx = reduce?0: Math.sin(t*0.9 + i*1.7)*11;
+    const by = reduce?0: Math.sin(t*0.74 + i*2.3)*7;
+    POS[i]={x:nd.baseX+bx, y:nd.baseY+by};
+    const s = nd.hover?1.06:1;
+    nd.el.style.transform=`translate(-50%,-50%) translate(${bx.toFixed(2)}px,${by.toFixed(2)}px) scale(${s})`;
+  }
+  ctx.clearRect(0,0,W,H);
+  // cords
+  for(let i=0;i<cords.length;i++){
+    const p0=POS[i], p1=POS[i+1];
+    const dy=(p1.y-p0.y)*0.45;
+    const c0={x:p0.x, y:p0.y+dy}, c1={x:p1.x, y:p1.y-dy};
+    const hot = NODES[i].hover || NODES[i+1].hover;
+    // base cord
+    const g=ctx.createLinearGradient(p0.x,p0.y,p1.x,p1.y);
+    g.addColorStop(0,'#E2912F'); g.addColorStop(1,'#1E9E89');
+    ctx.beginPath();
+    ctx.moveTo(p0.x,p0.y); ctx.bezierCurveTo(c0.x,c0.y,c1.x,c1.y,p1.x,p1.y);
+    ctx.strokeStyle=g; ctx.globalAlpha=hot?0.55:0.32; ctx.lineWidth=hot?3.2:2.4; ctx.stroke();
+    ctx.globalAlpha=1;
+    // pulses
+    const len=Math.hypot(p1.x-p0.x,p1.y-p0.y);
+    if(!reduce) cords[i].phase += (88/len)*0.016;
+    const K=2;
+    for(let k=0;k<K;k++){
+      let tt=((cords[i].phase + k/K)%1+1)%1;
+      const col=cords[i].color;
+      for(let s=0;s<5;s++){
+        const ts=tt - s*0.045;
+        if(ts<0.02||ts>0.99) continue;
+        const pt=cubic(p0,c0,c1,p1,ts);
+        const r=[4.6,3.4,2.5,1.7,1.1][s];
+        ctx.globalAlpha=[0.95,0.6,0.4,0.25,0.14][s];
+        ctx.fillStyle=col;
+        ctx.beginPath(); ctx.arc(pt.x,pt.y,r,0,7); ctx.fill();
+      }
+      ctx.globalAlpha=1;
+    }
+  }
+  requestAnimationFrame(frame);
+}
+
+window.addEventListener('resize',layout);
+layout();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
