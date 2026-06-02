@@ -2,12 +2,23 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ChevronDown, ArrowRight, Check, Heart, MapPin, Users, CalendarDays } from 'lucide-react'
+import { ChevronDown, ArrowRight, Check, CalendarDays } from 'lucide-react'
 import { Render } from '@measured/puck/rsc'
 import { createClient } from '@/lib/supabase/server'
 import { MarketingHeader } from '@/components/layout/marketing-header'
 import { MarketingFooter } from '@/components/layout/marketing-footer'
-import { Statement, ZigZag, Marquee, BetaCTA, Section, SectionHeading } from '@/components/marketing/marketing-ui'
+import {
+  Statement,
+  Marquee,
+  BetaCTA,
+  Section,
+  SectionHeading,
+  PhotoHero,
+  PullQuote,
+  Stat,
+} from '@/components/marketing/marketing-ui'
+import { Reveal, Parallax, CountUp, ScrollCue } from '@/components/marketing/motion'
+import { SiteImage } from '@/components/marketing/site-image'
 import { getInitials, relativeTime } from '@/lib/utils'
 import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, BETA_CTA_LABEL, BETA_CTA_HREF, SOCIAL_PROOF_FLOOR, FOUNDING_PLACE } from '@/lib/site'
 import { type CommunityRole, ROLE_RANK, RoleBadge } from '@/lib/community-roles'
@@ -91,291 +102,357 @@ function LegacySplash({ live }: { live: LiveData }) {
     <>
       <MarketingHeader overHero />
 
-      {/* ── Hero ────────────────────────────────────────────────────────── */}
-      <section className="relative min-h-screen flex flex-col items-center justify-center text-center px-6 overflow-hidden">
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat scale-105"
-          style={{ backgroundImage: 'url(/images/site/lab-thermal.jpg)' }}
-          role="img"
-          aria-label="The thermal circuit at The Lab, glowing warm in low light"
-        />
-        {/* Warm ink wash (not flat black) + an amber glow rising from the pools,
-            echoing the LED-lit thermal spaces. */}
+      {/* ── BEAT 1 · The ache (recognition) ───────────────────────────────
+          Full-bleed golden-hour gathering, one felt line, one calm CTA.
+          The LCP image is the hero photo (preloaded inside PhotoHero). */}
+      <PhotoHero
+        minHeight="screen"
+        image="/images/site/971634cd-1d52-4b3a-a0ab-5713d395d58a.jpg"
+        alt="A circle of people sitting together on the grass at golden hour, eyes closed, arms wide, breathing as one"
+        focal="object-center"
+        eyebrow="Connected to everything, close to no one"
+        title={
+          <>
+            A place to be <span className="text-primary">missed.</span>
+          </>
+        }
+        subtitle="Not another feed. A third space — half app, half physical — where you're seen in person, missed when you're gone, and welcomed in for who you are, not what you can pay."
+        footer={
+          <>
+            <p className="mt-8 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-white/55">
+              <span className="font-semibold text-white/75">Free during the beta.</span>
+              <span aria-hidden className="text-white/25">·</span>
+              <span>No card. Founder pricing locked. Leave anytime.</span>
+            </p>
+            <p className="mt-2 text-sm text-white/40">
+              The first circles are taking root in {FOUNDING_PLACE}.{' '}
+              <Link href="/sign-in" className="underline hover:text-white/70 transition-colors">
+                Already a member? Sign in
+              </Link>
+            </p>
+            <ScrollCue label="Why we built this" />
+          </>
+        }
+      >
+        <div className="flex items-center justify-center">
+          <Link
+            href={BETA_CTA_HREF}
+            className="inline-flex items-center gap-2 rounded-2xl bg-primary text-on-primary px-8 py-3.5 text-base font-bold hover:bg-primary-hover transition-colors shadow-pop"
+          >
+            {BETA_CTA_LABEL} <ArrowRight className="w-5 h-5" aria-hidden />
+          </Link>
+        </div>
+      </PhotoHero>
+
+      {/* ── BEAT 2 · The diagnosis (it's not you) ──────────────────────────
+          Broken-grid editorial: an oversized statement column that overlaps a
+          tall photo, asymmetric. Relief: the places left, not you. */}
+      <section className="relative bg-surface px-6 py-24 sm:py-32 overflow-hidden">
+        <div className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-12 lg:gap-0">
+          <Reveal className="relative z-10 lg:col-span-7 lg:pr-8">
+            <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-5">
+              It&apos;s not you
+            </p>
+            <h2 className="font-display uppercase text-text text-5xl sm:text-6xl lg:text-7xl leading-[0.95] text-balance">
+              The places that
+              <br />
+              held us just{' '}
+              <span className="text-primary">vanished.</span>
+            </h2>
+            <div className="mt-7 max-w-md space-y-4 text-lg text-muted leading-relaxed">
+              <p>
+                Most of a generation reports feeling lonely. Not for lack of
+                people — for lack of <em>places</em>. The corner café, the town
+                square, the gathering ground all quietly closed.
+              </p>
+              <p>
+                We traded them for feeds and followers and ended up surrounded
+                yet unseen. You&apos;re not broken. The third place is.
+              </p>
+            </div>
+          </Reveal>
+          {/* Overlapping photo, pushed off the grid and given light parallax. */}
+          <Reveal
+            delay={120}
+            className="relative lg:col-span-6 lg:col-start-7 lg:-ml-16 xl:-ml-24"
+          >
+            <Parallax speed={-0.1}>
+              <div className="overflow-hidden rounded-3xl border border-border shadow-pop">
+                <SiteImage
+                  src="/images/site/fd40d12c-7667-4d4e-b4c0-3b828170d9b1.jpg"
+                  alt="A handwritten 'you are beautiful' card tucked into an aloe plant beside people resting on the grass in savasana"
+                  aspect="4/5"
+                  focal="object-center"
+                  sizes="(min-width: 1024px) 32rem, 100vw"
+                />
+              </div>
+            </Parallax>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ── BEAT 8 (pre-echo) · the wedge, said out loud once ───────────────
+          A quotable line the visitor repeats to a friend. */}
+      <PullQuote tone="canvas" cite="The wedge, in one line">
+        Seen, not followed.
+        <br />
+        <span className="text-primary">Missed,</span> not muted.
+      </PullQuote>
+
+      {/* ── BEAT 3 · The proof it can come back — MOONLIGHT, the SPINE ──────
+          The emotional center of gravity: full-bleed beach photograph, dark
+          editorial overlay, the 2020 origin as evidence. Light parallax on the
+          backdrop; reduced motion freezes it. */}
+      <section className="relative bg-slat overflow-hidden">
+        <div className="light-strip absolute inset-x-0 top-0 z-20" />
+        <Parallax speed={-0.18} className="absolute inset-0">
+          <Image
+            src="/images/site/63978107-8b40-4ce2-8eaf-01a2f6f35cb9.jpg"
+            alt="Roughly a thousand people gathered on the sand at Moonlight Beach, arms raised in celebration at sunrise"
+            fill
+            sizes="100vw"
+            className="object-cover object-center scale-110"
+          />
+        </Parallax>
         <div
           className="absolute inset-0"
           style={{
             background:
-              'linear-gradient(180deg, rgb(20 18 16 / 0.74) 0%, rgb(20 18 16 / 0.42) 44%, rgb(20 18 16 / 0.94) 100%)',
+              'linear-gradient(180deg, rgb(20 18 16 / 0.78) 0%, rgb(20 18 16 / 0.62) 48%, rgb(20 18 16 / 0.9) 100%)',
           }}
         />
         <div className="amber-glow absolute inset-0 pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col items-center w-full max-w-4xl">
-          <p className="text-[11px] sm:text-xs font-bold uppercase tracking-[0.3em] text-primary mb-6">
-            A third space for a disconnected generation
-          </p>
-          <h1 className="font-display uppercase text-white text-[2.75rem] leading-[0.95] sm:text-6xl lg:text-7xl max-w-3xl text-balance">
-            Find your people. Feel at home again.
-          </h1>
-          <p className="mt-7 text-base sm:text-lg text-white/80 max-w-xl leading-relaxed">
-            Not home. Not work. A real place to exhale, reset, and be missed when
-            you don&apos;t show up — half app, half physical space, all human.
-          </p>
-
-          <div className="mt-9 flex items-center gap-3 flex-wrap justify-center">
-            <Link
-              href={BETA_CTA_HREF}
-              className="rounded-2xl bg-primary text-on-primary px-8 py-3.5 text-base font-bold hover:bg-primary-hover transition-colors shadow-pop"
-            >
-              {BETA_CTA_LABEL}
-            </Link>
-            <Link
-              href="/how-it-works"
-              className="rounded-2xl border border-white/30 px-8 py-3.5 text-base font-medium text-white hover:bg-white/10 hover:border-white/50 transition-colors"
-            >
-              See how it works
-            </Link>
+        <div className="relative z-10 mx-auto max-w-5xl px-6 py-28 sm:py-40">
+          <Reveal>
+            <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary mb-5">
+              Moonlight Beach · 2020
+            </p>
+            <h2 className="font-display uppercase text-white text-5xl sm:text-6xl lg:text-8xl leading-[0.9] text-balance">
+              It already
+              <br />
+              <span className="text-primary">happened once.</span>
+            </h2>
+          </Reveal>
+          <div className="mt-12 grid gap-10 lg:grid-cols-12">
+            <Reveal as="div" delay={100} className="lg:col-span-7 lg:col-start-6">
+              <div className="space-y-5 text-lg sm:text-xl text-white/85 leading-relaxed">
+                <p>
+                  A few of us started gathering on the cliffs every morning to
+                  breathe and reconnect. Within eighteen months, a thousand
+                  people were showing up.
+                </p>
+                <p className="text-white/70">
+                  No guru. No brand. No agenda. Just people who needed each other
+                  and a place to be. It proved the hunger is real — and that it
+                  can be answered.
+                </p>
+              </div>
+              <Link
+                href="/about"
+                className="mt-7 inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide text-primary hover:underline"
+              >
+                Read the full story <ArrowRight className="w-4 h-4" aria-hidden />
+              </Link>
+            </Reveal>
           </div>
-
-          {/* Honest trust line — founding framing, no fabricated metrics */}
-          <p className="mt-8 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-white/55">
-            <span className="font-semibold text-white/75">Free during the beta.</span>
-            <span aria-hidden className="text-white/25">·</span>
-            <span>No card. Founder pricing locked. Leave anytime.</span>
-          </p>
-          <p className="mt-2 text-sm text-white/40">
-            The first circles are taking root in {FOUNDING_PLACE}.{' '}
-            <Link href="/sign-in" className="underline hover:text-white/70 transition-colors">
-              Already a member? Sign in
-            </Link>
-          </p>
+          {/* The numbers, alive — count up the first time they're seen. */}
+          <Reveal delay={200} className="mt-16 grid grid-cols-3 gap-6 max-w-2xl">
+            <div>
+              <p className="font-display text-5xl sm:text-7xl text-white">
+                <CountUp value={1000} />
+              </p>
+              <p className="mt-3 text-xs uppercase tracking-widest font-bold text-white/50">
+                People, at the peak
+              </p>
+            </div>
+            <div>
+              <p className="font-display text-5xl sm:text-7xl text-white">
+                <CountUp value={18} />
+              </p>
+              <p className="mt-3 text-xs uppercase tracking-widest font-bold text-white/50">
+                Months to get there
+              </p>
+            </div>
+            <div>
+              <p className="font-display text-5xl sm:text-7xl text-primary">0</p>
+              <p className="mt-3 text-xs uppercase tracking-widest font-bold text-white/50">
+                Gurus involved
+              </p>
+            </div>
+          </Reveal>
         </div>
-
-        <div className="absolute bottom-10 flex flex-col items-center gap-2 text-white/40">
-          <span className="text-[11px] font-bold tracking-widest uppercase">See the vision</span>
-          <ChevronDown className="w-5 h-5 animate-bounce" aria-hidden />
-        </div>
-
-        {/* Warm LED seam closing the hero into the page. */}
-        <div className="light-strip absolute inset-x-0 bottom-0 z-10" />
+        <div className="light-strip absolute inset-x-0 bottom-0 z-20" />
       </section>
 
-      {/* ── What you get (orient a first-time visitor fast) ──────────────── */}
-      <Section tone="surface" pad="py-20 sm:py-24">
-        <div className="text-center mb-12">
-          <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
-            What you actually get
-          </p>
-          <h2 className="font-display uppercase text-text text-4xl sm:text-5xl text-balance">
-            Belonging, with a shape.
-          </h2>
-          <p className="mt-5 text-lg text-muted leading-relaxed max-w-xl mx-auto">
-            Three moves to go from scrolling alone to showing up with people who
-            know your name.
-          </p>
-        </div>
-        <div className="grid gap-5 sm:grid-cols-3">
-          <Step
-            icon={Heart}
-            step="01"
-            title="Pick what you practice"
-            body="Movement, breathwork, creativity, human relating. Your Interests connect you to people who care about the same things."
-          />
-          <Step
-            icon={Users}
-            step="02"
-            title="Join a Circle near you"
-            body="A small group around your Interest, with an always-on space online and a standing time to meet in person."
-          />
-          <Step
-            icon={MapPin}
-            step="03"
-            title="Show up — online and at The Lab"
-            body="Movement studios, a thermal circuit, a connection bar. The environment does the work; you just arrive."
-          />
-        </div>
-        <div className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm font-bold uppercase tracking-wide text-primary-strong">
-          <Link href="/how-it-works" className="inline-flex items-center gap-1.5 hover:underline">
-            How it works <ArrowRight className="w-4 h-4" aria-hidden />
-          </Link>
-          <Link href="/the-lab" className="inline-flex items-center gap-1.5 hover:underline">
-            Tour The Lab <ArrowRight className="w-4 h-4" aria-hidden />
-          </Link>
-          <Link href="/pricing" className="inline-flex items-center gap-1.5 hover:underline">
-            See pricing <ArrowRight className="w-4 h-4" aria-hidden />
-          </Link>
-          <Link href="/demo" className="inline-flex items-center gap-1.5 hover:underline">
-            Take a look inside <ArrowRight className="w-4 h-4" aria-hidden />
-          </Link>
-        </div>
-      </Section>
-
-      {/* ── Problem ──────────────────────────────────────────────────────── */}
-      <ZigZag
-        img="/images/site/community-1.jpg"
-        alt="A Frequency community gathered together outdoors, talking and laughing"
-        eyebrow="Something is broken"
-        title="And everyone feels it."
-        tone="canvas"
-        imgAspect="landscape"
-        imgPosition="center"
-      >
-        <p>
-          Most of a generation reports feeling lonely. Not because there
-          aren&apos;t people around, but because the <em>places</em> that used to
-          hold us have quietly disappeared.
-        </p>
-        <p>
-          The corner café, the town square, the gathering ground. We traded them
-          for feeds and followers, and ended up surrounded yet unseen. It
-          didn&apos;t work — and we all feel it.
-        </p>
-      </ZigZag>
-
-      {/* ── Story ────────────────────────────────────────────────────────── */}
-      <ZigZag
-        img="/images/site/moonlight-2.jpg"
-        alt="A Frequency gathering on the bluffs at Moonlight Beach at sunrise"
-        reverse
-        imgAspect="portrait"
-        imgPosition="top"
-        title={
-          <>
-            <span className="block text-3xl sm:text-4xl tracking-[0.12em] text-muted">
-              The Frequency
-            </span>
-            <span className="block text-6xl sm:text-7xl text-text">Story</span>
-          </>
-        }
-        kicker="Moonlight and the mission"
-        cta={{ label: 'Read the full story', href: '/about' }}
-      >
-        <p>It started on the cliffs of Moonlight Beach in 2020.</p>
-        <p>
-          A few of us gathered every morning to breathe and reconnect. Within
-          eighteen months, a thousand people were showing up. No guru, no brand,
-          no agenda. Just people who needed each other and a place to be.
-        </p>
-        <p>
-          It proved the hunger is real. It also proved that without a home, even
-          the most beautiful community can&apos;t hold. So we set out to build
-          one that could.
-        </p>
-      </ZigZag>
-
-      <Statement tone="ink">
-        That&apos;s when the seed of
-        <br />
-        <span className="text-primary">Frequency</span> was first planted.
-      </Statement>
-
-      {/* ── Vision ───────────────────────────────────────────────────────── */}
-      <ZigZag
-        img="/images/site/moonlight-1.jpg"
-        alt="Members of the Frequency community embracing on the beach"
-        eyebrow="The vision"
-        tone="canvas"
-        imgAspect="natural"
-        title={
-          <>
-            The vision <span className="text-primary">lives on</span>
-          </>
-        }
-        cta={{ label: 'See how it works', href: '/how-it-works' }}
-      >
-        <p>
-          Frequency is social infrastructure <em>and</em> physical space.
-          Designed from the ground up to regulate your nervous system and bring
-          you back to people who actually see you.
-        </p>
-        <p>
-          Guru-free, and built to outlast any one person. A model that keeps real
-          connection within reach for everyone — not just the few who can afford
-          it.
-        </p>
-      </ZigZag>
-
+      {/* ── BEAT 4 · The honest hard truth ─────────────────────────────────
+          The vulnerability that earns trust and sets up the build. */}
       <Statement tone="surface">
-        Starting in{' '}
-        <span className="text-primary whitespace-nowrap">{FOUNDING_PLACE}.</span>
+        But a beautiful crowd with no home
         <br />
-        Coming to your city.
+        <span className="text-primary">can&apos;t hold.</span>
       </Statement>
 
-      {/* ── What we're building (dark slat band) ─────────────────────────── */}
+      {/* ── BEAT 5 · The answer, with a shape (The Lab / Network / Model) ───
+          Dark pillar band — the concrete model as the fulfillment of a promise,
+          not a pitch. Marquee + seamed light-strips. */}
       <section className="relative bg-slat">
         <div className="light-strip absolute inset-x-0 top-0 z-10" />
-        <Marquee items={['What we’re building', 'The Lab', 'The Network', 'The Model']} />
+        <Marquee items={['So we built it a home', 'The Lab', 'The Network', 'The Model']} />
         <div className="max-w-5xl mx-auto px-6 py-24 sm:py-32 space-y-24 sm:space-y-28">
-          <Pillar
-            img="/images/site/lab-storefront.jpg"
-            alt="The storefront of The Lab, Frequency's prototype third space"
-            title="The Lab"
-            body="A prototype third space: movement studios, a thermal circuit, a connection bar, and an events floor. Part regulation studio, part social hub, part venue. The environment does the work."
-            href="/the-lab"
-          />
-          <Pillar
-            img="/images/site/community-1.jpg"
-            alt="A Frequency Circle meeting in person"
-            title="The Network"
-            body="A community that spreads city by city. Circles cluster into neighborhoods, neighborhoods into whole areas. Bottom-up and never appointed, so it grows on its own momentum."
-            href="/how-it-works"
-            reverse
-          />
-          <Pillar
-            img="/images/site/lab-pool.jpg"
-            alt="The cold pool in the thermal circuit at The Lab"
-            title="The Model"
-            body="Built to last and built to include. Memberships sustain the spaces so connection stays within reach. Nobody is excluded, and people who can pay more fund those who can't. Circulation, not exclusion."
-            href="/pricing"
-          />
+          <Reveal>
+            <Pillar
+              img="/images/site/lab-storefront.jpg"
+              alt="The warm-lit storefront of The Lab, Frequency's prototype third space, at dusk"
+              index="01"
+              title="The Lab"
+              body="A third space with a front door: movement studios, a thermal circuit, a connection bar, an events floor. Part regulation studio, part social hub, part venue. The environment does the work — you just walk in."
+              href="/the-lab"
+            />
+          </Reveal>
+          <Reveal>
+            <Pillar
+              img="/images/site/36d99363-e483-40a0-b173-7e7ee6c1b379.jpg"
+              alt="A small group spinning hula hoops together on the beach beneath a lone palm at golden hour"
+              index="02"
+              title="The Network"
+              body="Belonging that spreads city by city. Small Circles cluster into neighborhoods, neighborhoods into whole areas — bottom-up, never appointed, growing on its own momentum. Leaderful, not leader-dependent."
+              href="/how-it-works"
+              reverse
+            />
+          </Reveal>
+          <Reveal>
+            <Pillar
+              img="/images/site/lab-pool.jpg"
+              alt="The cold plunge pool in the cedar thermal circuit at The Lab, lit by warm amber light"
+              index="03"
+              title="The Model"
+              body="Built to last and built to include. Memberships sustain the spaces so connection stays within reach. Those who can pay more quietly fund those who can't. Circulation, not exclusion — belonging shouldn't depend on what you can afford."
+              href="/pricing"
+            />
+          </Reveal>
         </div>
         <div className="light-strip absolute inset-x-0 bottom-0 z-10" />
       </section>
 
-      {/* ── It's already happening (live proof) ──────────────────────────── */}
-      <section className="bg-surface px-6 py-24 sm:py-28">
-        <div className="max-w-3xl mx-auto text-center">
-          <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
-            Not a someday idea
-          </p>
-          <h2 className="font-display uppercase text-text text-4xl sm:text-5xl mb-6">
-            It&apos;s already happening.
-          </h2>
+      {/* ── BEAT 6 · The relief (what belonging here feels like) ───────────
+          The exhale beat. Faces and rituals, full-bleed, sensory copy. This is
+          where the High-Functioning Lonely converts. */}
+      <section className="relative bg-marketing-canvas px-6 py-24 sm:py-32 overflow-hidden">
+        <div className="mx-auto max-w-6xl">
+          <Reveal className="max-w-2xl">
+            <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-5">
+              The exhale
+            </p>
+            <h2 className="font-display uppercase text-text text-5xl sm:text-6xl lg:text-7xl leading-[0.95] text-balance">
+              What it feels like
+              <br />
+              to be <span className="text-primary">known.</span>
+            </h2>
+            <p className="mt-7 text-lg sm:text-xl text-muted leading-relaxed">
+              A standing time. A handful of faces that light up when you arrive.
+              A room of settled nervous systems that settles yours, too. You
+              don&apos;t have to perform — you just have to show up.
+            </p>
+          </Reveal>
+          {/* Broken-grid photo collage of real rituals. */}
+          <div className="mt-14 grid grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-12 lg:gap-6">
+            <Reveal className="lg:col-span-7 lg:row-span-2">
+              <div className="overflow-hidden rounded-3xl border border-border shadow-md">
+                <SiteImage
+                  src="/images/site/971634cd-1d52-4b3a-a0ab-5713d395d58a.jpg"
+                  alt="A wide circle of people sitting cross-legged on the grass, eyes closed and arms outstretched, in a morning breathwork ritual"
+                  aspect="4/3"
+                  focal="object-center"
+                  sizes="(min-width: 1024px) 40rem, 50vw"
+                />
+              </div>
+            </Reveal>
+            <Reveal delay={100} className="lg:col-span-5">
+              <div className="overflow-hidden rounded-3xl border border-border shadow-md lg:mt-8">
+                <SiteImage
+                  src="/images/site/22a51611-07f6-4c39-8a26-1c996295b6d3.jpg"
+                  alt="People dancing together with arms raised at golden hour, faces lit and joyful"
+                  aspect="4/5"
+                  focal="object-top"
+                  sizes="(min-width: 1024px) 28rem, 50vw"
+                />
+              </div>
+            </Reveal>
+            <Reveal delay={160} className="lg:col-span-5">
+              <div className="overflow-hidden rounded-3xl border border-border shadow-md lg:-mt-4">
+                <SiteImage
+                  src="/images/site/PHOTO-2020-09-09-16-38-27.jpeg"
+                  alt="Dozens of people practicing yoga together on a sunlit lawn between palm trees in a North County San Diego neighborhood"
+                  aspect="3/2"
+                  focal="object-center"
+                  sizes="(min-width: 1024px) 28rem, 50vw"
+                />
+              </div>
+            </Reveal>
+          </div>
+        </div>
+      </section>
+
+      <PullQuote tone="surface" cite="The whole point">
+        We shift you from
+        <br />
+        <span className="text-primary">longing</span> to belonging.
+      </PullQuote>
+
+      {/* ── BEAT 7 · It's real, and it's early (honest proof) ──────────────
+          Live, gated counts (founding framing below the floor). Dark band so
+          the proof reads as a deliberate beat. */}
+      <section className="relative bg-slat px-6 py-24 sm:py-28 overflow-hidden">
+        <div className="light-strip absolute inset-x-0 top-0 z-10" />
+        <div className="amber-glow absolute inset-0 pointer-events-none" />
+        <div className="relative z-10 mx-auto max-w-3xl text-center">
+          <Reveal>
+            <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary mb-4">
+              Not a someday idea
+            </p>
+            <h2 className="font-display uppercase text-on-ink text-4xl sm:text-5xl mb-6">
+              It&apos;s already happening.
+            </h2>
+          </Reveal>
           {hasProof ? (
-            <>
-              <p className="text-lg leading-relaxed text-muted max-w-xl mx-auto mb-12">
-                Real people, real Circles, real gatherings — growing in{' '}
+            <Reveal delay={100}>
+              <p className="text-lg leading-relaxed text-on-ink-muted max-w-xl mx-auto mb-12">
+                Real people, real Circles, real gatherings — taking root in{' '}
                 {FOUNDING_PLACE} right now.
               </p>
               <div className="grid grid-cols-3 gap-6 max-w-xl mx-auto">
-                <Stat value={memberCount} label="Members" />
-                <Stat value={circleCount} label="Circles" />
-                <Stat value={upcomingEvents.length} label="Events soon" />
+                <Stat value={memberCount} label="Members" tone="ink" />
+                <Stat value={circleCount} label="Circles" tone="ink" />
+                <Stat value={upcomingEvents.length} label="Events soon" tone="ink" />
               </div>
-            </>
+            </Reveal>
           ) : (
-            <p className="text-lg leading-relaxed text-muted max-w-xl mx-auto">
-              The first circles are forming in {FOUNDING_PLACE}. The founding
-              members are shaping what this becomes — come be one of them.
-            </p>
+            <Reveal delay={100}>
+              <p className="text-lg leading-relaxed text-on-ink-muted max-w-xl mx-auto">
+                The first Circles are forming in {FOUNDING_PLACE}. The founding
+                members are shaping what this becomes — come be one of them.
+              </p>
+            </Reveal>
           )}
         </div>
+        <div className="light-strip absolute inset-x-0 bottom-0 z-10" />
       </section>
 
       {/* ── Upcoming events (live) ───────────────────────────────────────── */}
       {upcomingEvents.length > 0 && (
         <section className="bg-marketing-canvas px-6 py-20 sm:py-24">
           <div className="max-w-2xl mx-auto">
-            <div className="flex items-center justify-center gap-2 mb-9">
+            <Reveal className="flex items-center justify-center gap-2 mb-9">
               <CalendarDays className="w-5 h-5 text-primary-strong" aria-hidden />
               <h2 className="font-display uppercase text-text text-3xl sm:text-4xl text-center">
                 Coming up near you
               </h2>
-            </div>
+            </Reveal>
             <div className="space-y-3">
-              {upcomingEvents.map((event) => (
-                <EventRow key={event.id} event={event} />
+              {upcomingEvents.map((event, i) => (
+                <Reveal key={event.id} delay={i * 60}>
+                  <EventRow event={event} />
+                </Reveal>
               ))}
             </div>
           </div>
@@ -386,15 +463,19 @@ function LegacySplash({ live }: { live: LiveData }) {
       {posts.length > 0 && (
         <section className="bg-surface px-6 py-20 sm:py-24">
           <div className="max-w-2xl mx-auto">
-            <p className="text-center text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
-              In their own words
-            </p>
-            <h2 className="text-center font-display uppercase text-text text-3xl sm:text-4xl mb-10 text-balance">
-              People showing up for each other
-            </h2>
+            <Reveal className="text-center">
+              <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
+                In their own words
+              </p>
+              <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-10 text-balance">
+                People showing up for each other
+              </h2>
+            </Reveal>
             <div className="space-y-4">
-              {posts.map((post) => (
-                <PostPreviewCard key={post.id} post={post} />
+              {posts.map((post, i) => (
+                <Reveal key={post.id} delay={i * 60}>
+                  <PostPreviewCard post={post} />
+                </Reveal>
               ))}
             </div>
           </div>
@@ -402,13 +483,20 @@ function LegacySplash({ live }: { live: LiveData }) {
       )}
 
       {/* ── Is this for you? (objection handling / short FAQ) ────────────── */}
-      <Section tone="canvas" pad="py-20 sm:py-24">
-        <SectionHeading
-          eyebrow="Honest answers"
-          title="Is this for you?"
-          kicker="The real questions people ask before they join."
-        />
+      <Section tone="canvas">
+        <Reveal>
+          <SectionHeading
+            eyebrow="Honest answers"
+            title="Is this for you?"
+            kicker="The real questions people ask before they join."
+          />
+        </Reveal>
         <div className="space-y-3">
+          <Faq q="Do I have to be outgoing?">
+            No. Circles are small on purpose — a handful of people, not a crowd.
+            You don&apos;t have to perform or network. You just have to show up,
+            and the structure does the rest.
+          </Faq>
           <Faq q="What does it cost?">
             Crew membership is $10/mo — and completely free during the beta. No
             card today. Join now and your founder pricing is locked in when paid
@@ -417,11 +505,6 @@ function LegacySplash({ live }: { live: LiveData }) {
               See the full breakdown
             </Link>
             .
-          </Faq>
-          <Faq q="Do I have to be outgoing?">
-            No. Circles are small on purpose — a handful of people, not a crowd.
-            You don&apos;t have to perform or network. You just have to show up,
-            and the structure does the rest.
           </Faq>
           <Faq q="Is there a catch or a guru?">
             None. Frequency is leaderful, not leader-dependent — built to outlast
@@ -441,40 +524,43 @@ function LegacySplash({ live }: { live: LiveData }) {
         </div>
       </Section>
 
-      {/* ── Founding-cohort scarcity (true) ──────────────────────────────── */}
+      {/* ── BEAT 8 · The invitation — true scarcity, one calm path ─────────
+          Founding-cohort framing: the constraint is the care, not a countdown. */}
       <Section tone="surface" pad="py-16 sm:py-20">
-        <div className="rounded-3xl border border-border bg-marketing-canvas px-7 py-9 sm:px-10 sm:py-11">
-          <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
-            Founding cohort
-          </p>
-          <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5 text-balance">
-            We&apos;re opening a few spots at a time.
-          </h2>
-          <p className="text-lg text-muted leading-relaxed mb-6 max-w-xl">
-            A community is only as good as the people who start it, so we&apos;re
-            growing the beta deliberately — a small group at a time, so every new
-            member is actually welcomed in. Add your name and we&apos;ll reach out
-            when the next spots open.
-          </p>
-          <ul className="grid gap-3 sm:grid-cols-2 mb-8">
-            <Perk>Free for the whole beta — no card</Perk>
-            <Perk>Founder pricing locked for life</Perk>
-            <Perk>Shape the Circles from day one</Perk>
-            <Perk>First through the doors at The Lab</Perk>
-          </ul>
-          <Link
-            href={BETA_CTA_HREF}
-            className="inline-flex items-center gap-2 rounded-2xl bg-primary text-on-primary px-8 py-3.5 text-base font-bold hover:bg-primary-hover transition-colors"
-          >
-            {BETA_CTA_LABEL} <ArrowRight className="w-5 h-5" aria-hidden />
-          </Link>
-        </div>
+        <Reveal>
+          <div className="rounded-3xl border border-border bg-marketing-canvas px-7 py-9 sm:px-10 sm:py-11 shadow-sm">
+            <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
+              Founding cohort
+            </p>
+            <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-5 text-balance">
+              We open a few spots at a time.
+            </h2>
+            <p className="text-lg text-muted leading-relaxed mb-6 max-w-xl">
+              A community is only as good as the people who start it — so we grow
+              the beta deliberately, a small group at a time, so every new member
+              is actually welcomed in. The constraint is the care. Add your name
+              and we&apos;ll reach out when the next spots open.
+            </p>
+            <ul className="grid gap-3 sm:grid-cols-2 mb-8">
+              <Perk>Free for the whole beta — no card</Perk>
+              <Perk>Founder pricing locked for life</Perk>
+              <Perk>Shape the Circles from day one</Perk>
+              <Perk>First through the doors at The Lab</Perk>
+            </ul>
+            <Link
+              href={BETA_CTA_HREF}
+              className="inline-flex items-center gap-2 rounded-2xl bg-primary text-on-primary px-8 py-3.5 text-base font-bold hover:bg-primary-hover transition-colors shadow-pop"
+            >
+              {BETA_CTA_LABEL} <ArrowRight className="w-5 h-5" aria-hidden />
+            </Link>
+          </div>
+        </Reveal>
       </Section>
 
       {/* ── Closing CTA ──────────────────────────────────────────────────── */}
       <BetaCTA
-        heading="Be one of the first."
-        body="Two words to belong, a Circle to call yours, and a place to be human — together. Add your name and we'll reach out when a spot opens."
+        heading="Come be one of the first."
+        body="A Circle to call yours, a standing time, and a place to be human — together. Add your name and we'll reach out when a spot opens."
       />
 
       <MarketingFooter />
@@ -492,6 +578,7 @@ function Pillar({
   title,
   body,
   href,
+  index,
   reverse = false,
 }: {
   img: string
@@ -499,6 +586,7 @@ function Pillar({
   title: string
   body: string
   href?: string
+  index?: string
   reverse?: boolean
 }) {
   return (
@@ -521,9 +609,10 @@ function Pillar({
         }`}
       >
         <h3 className="font-display uppercase text-white text-4xl sm:text-5xl mb-5 px-2 text-center sm:text-left">
+          {index && <span className="text-primary mr-3 align-baseline">{index}</span>}
           {title}
         </h3>
-        <div className="bg-surface rounded-3xl p-8 shadow-2xl">
+        <div className="bg-surface rounded-3xl p-8 shadow-pop">
           <p className="text-base text-muted leading-relaxed">{body}</p>
           {href && (
             <Link
@@ -535,15 +624,6 @@ function Pillar({
           )}
         </div>
       </div>
-    </div>
-  )
-}
-
-function Stat({ value, label }: { value: number | string; label: string }) {
-  return (
-    <div>
-      <p className="font-display text-6xl sm:text-7xl text-text">{value}</p>
-      <p className="text-xs text-subtle mt-3 uppercase tracking-widest font-bold">{label}</p>
     </div>
   )
 }
@@ -601,34 +681,6 @@ function PostPreviewCard({ post }: { post: PostPreviewRow }) {
         )}
       </div>
     </article>
-  )
-}
-
-// "What you get" step — numbered, icon-led, benefit-first card.
-function Step({
-  icon: Icon,
-  step,
-  title,
-  body,
-}: {
-  icon: typeof Heart
-  step: string
-  title: string
-  body: string
-}) {
-  return (
-    <div className="flex flex-col rounded-3xl border border-border bg-surface-elevated p-7 shadow-sm">
-      <div className="flex items-center justify-between mb-5">
-        <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-bg text-primary-strong">
-          <Icon className="h-5 w-5" aria-hidden />
-        </span>
-        <span className="font-display text-2xl text-border-strong" aria-hidden>
-          {step}
-        </span>
-      </div>
-      <h3 className="text-lg font-bold text-text mb-2">{title}</h3>
-      <p className="text-base text-muted leading-relaxed">{body}</p>
-    </div>
   )
 }
 
