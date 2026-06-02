@@ -147,8 +147,16 @@ on the real domain. **Depends on:** nothing (all in-codebase closeouts).
       `/n/[nodeId]` claim button → `claimNode` action → `captureNode` (`lib/engagement/capture.ts`
       step 5) logs a `partner_redemptions` row, surfaces the unlocked offer title, awards the
       node's `zaps_value`, and emits `practice.verified` for non-partner nodes.
-- [ ] **Live-Claude agent + consent test**: swap the deterministic proposer for the bounded
+- [x] **Live-Claude agent + consent test**: swap the deterministic proposer for the bounded
       Claude operator; add the `shouldSend` consent test; keep copilot-gated (closes 6.6).
+      ✅ 2026-06-02 — `lib/studio/winback.ts`: `draftWinbackWithClaude` drafts win-back copy via
+      the Anthropic SDK (`claude-opus-4-8`, JSON-constrained, cached system prompt) when
+      `ANTHROPIC_API_KEY` is set, with a deterministic template fallback so nothing breaks
+      without a key. `proposeWinbacks` now gates candidates by `shouldSend(*, 'email',
+      'lifecycle')` *at proposal time* (not just at send), via the injectable `filterByConsent`.
+      Still copilot-gated: the model only drafts a *proposed* action; a human approves before
+      send. Consent + fallback unit-tested (`lib/studio/winback.test.ts`). Set
+      `ANTHROPIC_API_KEY` in prod to enable live drafting (see LAUNCH.md).
 - [x] **Trust & safety floor (ADR-036)**: first-class **blocking** + in-app **account
       deletion**. Shipped: `blocked_users` (migration `20240301000000`) + `lib/blocking.ts`
       (gates DMs both ways, unfriends on block); profile Block/Unblock button; account hard

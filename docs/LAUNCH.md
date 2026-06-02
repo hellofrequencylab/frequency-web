@@ -42,6 +42,7 @@ registered at GoDaddy; point it at Vercel.
 | `CRON_SECRET` | cron auth (fail-closed: crons reject without it) | required or reminders/digests/scheduled publish silently stop |
 | `UNSUBSCRIBE_SECRET` | signed one-click unsubscribe tokens | email compliance |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | web push | push notifications |
+| `ANTHROPIC_API_KEY` | Studio AI operator (win-back drafting) | **optional** — without it the proposer uses a deterministic template; the agent stays copilot-gated either way |
 
 ## 4. Email deliverability — verify the domain in Resend (before sending volume)
 
