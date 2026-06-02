@@ -19,7 +19,7 @@
      the brand vibe carries on the website while the in-app community feels
      light. */
   --color-canvas:            #FBFAF6;
-  --color-marketing-canvas:  #F7F3EA;
+  --color-marketing-canvas:  #F2EAD9;
   --color-surface:           #FFFFFF;
   --color-surface-elevated:  #FCFAF5;
 
@@ -31,6 +31,16 @@
   --color-text:             #1E1A13;
   --color-text-muted:       #6B6253;
   --color-text-subtle:      #8F8675;
+
+  /* Ink. Deep warm near-black for the public site's dark bands — drawn from
+     Frequency's black wood-slat interiors. This is the load-bearing half of the
+     bold dark↔light contrast on marketing pages. Near-neutral warm, NOT brown. */
+  --color-ink:              #141210;
+  --color-ink-elevated:     #211D17;
+  --color-ink-border:       #393227;
+  --color-on-ink:           #F3EEE3;
+  --color-on-ink-muted:     #B5A893;
+  --color-on-ink-subtle:    #857A66;
 
   /* Brand. Primary (amber-gold) */
   --color-primary:          #E2912F;
@@ -87,6 +97,15 @@
   --color-text-muted:       #A99C88;
   --color-text-subtle:      #7E735F;
 
+  /* Ink runs even deeper than the dark canvas so the splash dark bands still
+     read as a deliberate, cinematic black in dark mode. */
+  --color-ink:              #0E0C09;
+  --color-ink-elevated:     #1A1611;
+  --color-ink-border:       #2F281F;
+  --color-on-ink:           #EFE8DB;
+  --color-on-ink-muted:     #A99C88;
+  --color-on-ink-subtle:    #7E735F;
+
   --color-primary:          #F2B14E;
   --color-primary-hover:    #F8C56F;
   --color-primary-strong:   #F2B14E;
@@ -128,6 +147,13 @@
   --color-text:             var(--color-text);
   --color-muted:            var(--color-text-muted);
   --color-subtle:           var(--color-text-subtle);
+
+  --color-ink:              var(--color-ink);
+  --color-ink-elevated:     var(--color-ink-elevated);
+  --color-ink-border:       var(--color-ink-border);
+  --color-on-ink:           var(--color-on-ink);
+  --color-on-ink-muted:     var(--color-on-ink-muted);
+  --color-on-ink-subtle:    var(--color-on-ink-subtle);
 
   --color-primary:          var(--color-primary);
   --color-primary-hover:    var(--color-primary-hover);
@@ -179,6 +205,12 @@
   --shadow-md:  0 2px 4px rgb(40 30 16 / 0.05), 0 6px 16px -4px rgb(40 30 16 / 0.08);
   --shadow-lg:  0 4px 8px rgb(40 30 16 / 0.06), 0 12px 28px -6px rgb(40 30 16 / 0.10);
   --shadow-xl:  0 8px 16px rgb(40 30 16 / 0.08), 0 24px 48px -12px rgb(40 30 16 / 0.12);
+
+  /* Marketing "pop" elevation — a deliberate step stronger than the soft in-app
+     scale above, for the splash hero card, pricing tiers, and the demo device
+     frame. Use `shadow-pop` / `shadow-pop-lg`. The in-app UI keeps the soft set. */
+  --shadow-pop:    0 4px 12px -2px rgb(20 16 10 / 0.16), 0 16px 40px -10px rgb(20 16 10 / 0.22);
+  --shadow-pop-lg: 0 10px 24px -6px rgb(20 16 10 / 0.20), 0 36px 70px -16px rgb(20 16 10 / 0.30);
 }
 
 /* ── Base ────────────────────────────────────────────────────────────────── */
@@ -255,6 +287,46 @@ h1, h2, h3, h4, h5, h6 {
 }
 @media (prefers-reduced-motion: reduce) {
   .animate-marquee { animation: none; }
+}
+
+/* ── Marketing contrast elements (DAWN, bold-warm) ──────────────────────────────
+   Signature treatments for the public site's dark bands, drawn straight from
+   Frequency's spaces: black wood-slat walls, warm LED light strips, cinematic
+   depth. All token-driven; decorative only (no a11y dependence).               */
+
+/* Vertical wood-slat texture over an ink surface. Sets its own ink background,
+   so `<div class="bg-slat">` is enough. A faint warm sheen at the top mimics the
+   way the LED light grazes the slats. */
+.bg-slat {
+  background-color: var(--color-ink);
+  background-image:
+    linear-gradient(180deg, color-mix(in srgb, var(--color-primary) 7%, transparent) 0%, transparent 22%),
+    repeating-linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--color-on-ink) 6%, transparent) 0,
+      color-mix(in srgb, var(--color-on-ink) 6%, transparent) 1px,
+      transparent 1px,
+      transparent 11px
+    );
+}
+
+/* Warm amber "light strip" — a glowing hairline like the LED strips in the
+   spaces. Drop between sections (especially at a dark↔light seam) for a crisp,
+   intentional transition. */
+.light-strip {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--color-primary), transparent);
+  box-shadow: 0 0 16px 1px color-mix(in srgb, var(--color-primary) 55%, transparent);
+}
+
+/* Soft amber radial glow backdrop, e.g. behind a hero CTA or within a dark band.
+   Place as an absolutely-positioned, pointer-events-none layer. */
+.amber-glow {
+  background: radial-gradient(
+    ellipse 60% 55% at 50% 42%,
+    color-mix(in srgb, var(--color-primary) 28%, transparent) 0%,
+    transparent 70%
+  );
 }
 
 /* ── Display face (public marketing headlines) ─────────────────────────────────

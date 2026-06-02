@@ -986,6 +986,41 @@ a real `supabase gen types`. Open: persisting per-area overrides for *extra* (St
 editable role emojis/badges, and real opt-in CRM data channels.
 
 ---
+### ADR-052 — Bold-warm contrast layer for the public site (ink + slat + light-strip)
+
+**Status:** Accepted · **Date:** 2026-06
+
+**Context:** DAWN reads beautifully in-app but too *soft* on the public/marketing pages —
+light sections (`surface`/`marketing-canvas`/`surface-elevated`) sit within a few % of each
+other, borders barely register, shadows are intentionally faint, and the "dark band" used the
+warm-near-black `--color-text` (#1E1A13), which reads muddy rather than deliberate. Stakeholder
+direction (with reference photography of Frequency's spaces — black wood-slat walls, warm LED
+strips, teal water, lush greenery) was: **more contrast on the splash, "bold but warm," as a
+full-site token system**, without disturbing the in-app feel that already works.
+
+**Decision:** Add a contrast layer to DAWN (`app/globals.css`), not a new system:
+1. **Ink tokens** — `--color-ink` (deep *near-neutral* warm black, #141210 light / #0E0C09 dark)
+   plus `-elevated`, `-border`, and `--color-on-ink` / `-muted` / `-subtle`. The load-bearing
+   dark half of the dark↔light contrast; replaces ad-hoc `bg-text` dark bands.
+2. **Deeper `--color-marketing-canvas`** (#F7F3EA → #F2EAD9) so alternating sand↔white bands
+   actually register.
+3. **`--shadow-pop` / `-pop-lg`** — a marketing-only elevation step above the soft in-app scale,
+   for the hero CTA, pricing tiers, and the demo device frame. **In-app `--shadow-*` is unchanged.**
+4. **Signature motifs** drawn from the brand spaces: `.bg-slat` (vertical wood-slat texture over
+   ink), `.light-strip` (glowing amber LED-style seam at dark↔light transitions), `.amber-glow`
+   (radial warm glow). Token-driven, decorative only (no a11y dependence).
+5. The shared kit (`Section`/`Statement`/`ZigZag`) gained an `ink` tone, and the site-wide closing
+   `BetaCTA` is now a dark slat band with a light-strip seam + amber glow, so every public page
+   ends on the same dramatic beat.
+
+**Consequences:** The in-app experience is untouched (only `marketing-canvas`, which the app
+doesn't use as a primary surface, shifts). All a11y rules (focus ring, reduced-motion,
+`text-on-*` pairings) are preserved. The Puck blocks (`components/marketing/blocks.tsx`) were
+updated to match so the visual-editor home renders identically to the hardcoded splash. Open:
+optionally extend the `ink` tone through `SectionHeading` and roll deeper into Pricing/Demo
+section rhythm.
+
+---
 ### Decisions intentionally NOT duplicated here
 
 Already fully covered by the repo docs (no ADR needed): the RLS / admin-client
