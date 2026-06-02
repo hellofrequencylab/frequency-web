@@ -72,7 +72,7 @@ export default async function BetaPage() {
         <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border text-left text-[11px] uppercase tracking-wider text-subtle">
+              <tr className="border-b border-border text-left text-xs uppercase tracking-wider text-subtle">
                 <th className="px-4 py-2.5 font-semibold">Email</th>
                 <th className="px-4 py-2.5 font-semibold">Name</th>
                 <th className="px-4 py-2.5 font-semibold">Status</th>
@@ -86,7 +86,7 @@ export default async function BetaPage() {
                   <td className="px-4 py-2.5 text-text">{s.email}</td>
                   <td className="px-4 py-2.5 text-muted">{s.displayName ?? '-'}</td>
                   <td className="px-4 py-2.5">
-                    <span className={`text-[11px] px-1.5 py-0.5 rounded-md font-medium ${STATUS_STYLE[s.status]}`}>
+                    <span className={`text-xs px-1.5 py-0.5 rounded-md font-medium ${STATUS_STYLE[s.status]}`}>
                       {STATUS_LABEL[s.status]}
                     </span>
                   </td>
@@ -141,7 +141,7 @@ function Stat({
   return (
     <div className="rounded-2xl border border-border bg-surface px-4 py-3.5">
       <p className={`text-2xl font-bold ${accent}`}>{value.toLocaleString()}</p>
-      <p className="text-[11px] uppercase tracking-wider text-subtle mt-1 font-semibold">{label}</p>
+      <p className="text-xs uppercase tracking-wider text-subtle mt-1 font-semibold">{label}</p>
     </div>
   )
 }

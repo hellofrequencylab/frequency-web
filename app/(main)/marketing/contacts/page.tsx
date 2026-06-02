@@ -75,7 +75,7 @@ export default async function ContactsPage({
         <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border text-left text-[11px] uppercase tracking-wider text-subtle">
+              <tr className="border-b border-border text-left text-xs uppercase tracking-wider text-subtle">
                 <th className="px-4 py-2.5 font-semibold">Email</th>
                 <th className="px-4 py-2.5 font-semibold">Name</th>
                 <th className="px-4 py-2.5 font-semibold">Member</th>
@@ -96,7 +96,7 @@ export default async function ContactsPage({
                   </td>
                   <td className="px-4 py-2.5 text-muted">{c.source ?? '-'}</td>
                   <td className="px-4 py-2.5">
-                    <span className={`text-[11px] px-1.5 py-0.5 rounded-md font-medium ${CONSENT_STYLE[c.consentState] ?? CONSENT_STYLE.unknown}`}>
+                    <span className={`text-xs px-1.5 py-0.5 rounded-md font-medium ${CONSENT_STYLE[c.consentState] ?? CONSENT_STYLE.unknown}`}>
                       {c.consentState}
                     </span>
                   </td>

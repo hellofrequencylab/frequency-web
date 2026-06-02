@@ -32,7 +32,7 @@ export default async function PagesDirectory() {
       <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden max-w-3xl">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-border text-left text-[11px] uppercase tracking-wider text-subtle">
+            <tr className="border-b border-border text-left text-xs uppercase tracking-wider text-subtle">
               <th className="px-4 py-2.5 font-semibold">Page</th>
               <th className="px-4 py-2.5 font-semibold">Status</th>
               <th className="px-4 py-2.5 font-semibold text-right">Actions</th>
@@ -47,7 +47,7 @@ export default async function PagesDirectory() {
                   <td className="px-4 py-3 text-text font-medium">{p.title}</td>
                   <td className="px-4 py-3">
                     <span
-                      className={`text-[11px] px-1.5 py-0.5 rounded-md font-medium ${
+                      className={`text-xs px-1.5 py-0.5 rounded-md font-medium ${
                         published ? 'bg-success-bg text-success' : 'bg-surface-elevated text-muted'
                       }`}
                     >

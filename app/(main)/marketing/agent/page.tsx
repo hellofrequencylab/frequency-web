@@ -27,7 +27,7 @@ export default async function AgentPage() {
         </button>
       </form>
 
-      <h2 className="text-xs font-semibold uppercase tracking-wider text-subtle mb-2">
+      <h2 className="text-sm font-bold text-text mb-2">
         Action queue ({proposed.length})
       </h2>
       {proposed.length === 0 ? (
@@ -58,7 +58,7 @@ export default async function AgentPage() {
         </div>
       )}
 
-      <h2 className="text-xs font-semibold uppercase tracking-wider text-subtle mb-2">Recently executed</h2>
+      <h2 className="text-sm font-bold text-text mb-2">Recently executed</h2>
       {executed.length === 0 ? (
         <p className="text-sm text-muted">Nothing executed yet.</p>
       ) : (

@@ -19,7 +19,7 @@ export default async function CampaignsPage() {
         <CampaignComposer />
       </div>
 
-      <h2 className="text-xs font-semibold uppercase tracking-wider text-subtle mb-2">Sent</h2>
+      <h2 className="text-sm font-bold text-text mb-2">Sent</h2>
       {campaigns.length === 0 ? (
         <p className="text-sm text-muted">No campaigns yet.</p>
       ) : (

@@ -189,8 +189,8 @@ export default async function CrmPage() {
               {/* Opt-in data channels — coming soon. Shows the shape of what
                   members will be able to share with their leaders. */}
               <div className="mt-3 rounded-lg border border-dashed border-border bg-marketing-canvas/50 px-3 py-2">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-subtle">Opt-in channels — soon</p>
-                <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-subtle">
+                <p className="text-sm font-bold text-text">Opt-in channels — soon</p>
+                <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-subtle">
                   <span className="inline-flex items-center gap-1"><Cake className="h-3 w-3" /> Birthday</span>
                   <span className="inline-flex items-center gap-1"><Sparkles className="h-3 w-3" /> Astro / HD</span>
                   <span className="inline-flex items-center gap-1"><HeartPulse className="h-3 w-3" /> Wellbeing</span>
