@@ -153,7 +153,7 @@ export default async function LeaderboardPage({
         <div className="flex items-center gap-3">
           <Link href="/crew" className="text-sm text-subtle hover:text-muted dark:hover:text-subtle transition-colors">Crew</Link>
           <span className="text-subtle">/</span>
-          <h1 className="text-xl font-semibold text-text">Leaderboard</h1>
+          <h1 className="text-2xl font-bold text-text">Leaderboard</h1>
         </div>
         <p className="text-sm text-muted mt-1">
           Season rankings across your community. Compete with your circle, hub, nexus, or everyone.
@@ -178,7 +178,7 @@ export default async function LeaderboardPage({
       ) : (
         <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
           {/* Header */}
-          <div className="grid grid-cols-[2.5rem_1fr_5rem_4rem_4rem_5rem] gap-2 px-4 py-2 border-b border-border text-[10px] font-semibold uppercase tracking-wider text-subtle">
+          <div className="grid grid-cols-[2.5rem_1fr_5rem_4rem_4rem_5rem] gap-2 px-4 py-2 border-b border-border text-xs font-semibold uppercase tracking-wider text-subtle">
             <span>#</span>
             <span>Member</span>
             <span className="text-right">{scope === 'gems' ? 'Gems' : 'Zaps'}</span>
@@ -205,13 +205,13 @@ export default async function LeaderboardPage({
                   {entry.avatarUrl ? (
                     <Image src={entry.avatarUrl} alt={entry.displayName} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0" />
                   ) : (
-                    <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-[10px] font-bold flex items-center justify-center shrink-0">
+                    <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-xs font-bold flex items-center justify-center shrink-0">
                       {getInitials(entry.displayName)}
                     </div>
                   )}
                   <span className={`text-sm truncate ${isSelf ? 'font-semibold text-primary-strong' : 'text-text'}`}>
                     {entry.displayName}
-                    {isSelf && <span className="text-[11px] font-normal text-primary-strong ml-1">(you)</span>}
+                    {isSelf && <span className="text-xs font-normal text-primary-strong ml-1">(you)</span>}
                   </span>
                 </Link>
 
@@ -244,7 +244,7 @@ export default async function LeaderboardPage({
                 </span>
 
                 <span
-                  className="rank-badge text-[10px] font-bold leading-tight"
+                  className="rank-badge text-xs font-bold leading-tight"
                   style={seasonRankStyle(rankDef.rank)}
                 >
                   {rankDef.label}
