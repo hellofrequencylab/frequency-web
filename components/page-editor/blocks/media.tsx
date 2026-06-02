@@ -7,7 +7,6 @@
 
 import { ZigZag } from '@/components/marketing/marketing-ui'
 import { Marquee as MarqueeStrip } from '@/components/marketing/marketing-ui'
-import { GalleryBlock } from '@/components/marketing/blocks'
 import { SiteImage } from '@/components/marketing/site-image'
 import { richParagraphs } from '@/lib/page-editor/richtext'
 import {
@@ -23,7 +22,15 @@ import {
   aspectValue,
 } from '@/lib/page-editor/image-controls'
 import {
+  Eyebrow,
+  DisplayHeading,
   accentize,
+  toneField,
+  alignField,
+  toneBg,
+  isInk,
+  widthClass,
+  alignClass,
   layoutField,
   layoutDefault,
   padClass,
@@ -101,6 +108,8 @@ export function ImageBlock({
   radius,
   shadow,
   caption,
+  tone,
+  align,
   pad,
   vis,
 }: {
@@ -112,14 +121,18 @@ export function ImageBlock({
   radius?: string
   shadow?: string
   caption?: string
+  tone?: string
+  align?: string
   pad?: string
   vis?: string
 }) {
   const ar = aspectValue(aspect)
+  // `size` is the image width; `align` justifies it within the band (left/center).
+  const justify = align === 'left' ? 'mr-auto' : 'mx-auto'
   return (
-    <div className={`px-6 ${pad ?? 'py-4'} ${vis ?? ''}`}>
+    <div className={`px-6 ${pad ?? 'py-4'} ${toneBg(tone)} ${vis ?? ''}`}>
       <div
-        className={`${sizeClass(size)} mx-auto overflow-hidden border border-border ${radiusClass(radius)} ${shadowClass(shadow)}`}
+        className={`${sizeClass(size)} ${justify} overflow-hidden border border-border ${radiusClass(radius)} ${shadowClass(shadow)}`}
       >
         <SiteImage
           src={image || '/images/site/lab-storefront.jpg'}
@@ -130,7 +143,7 @@ export function ImageBlock({
         />
       </div>
       {caption && (
-        <p className="mt-3 text-sm text-center text-subtle">{caption}</p>
+        <p className={`mt-3 text-sm text-center ${isInk(tone) ? 'text-on-ink-muted' : 'text-subtle'}`}>{caption}</p>
       )}
     </div>
   )
@@ -140,6 +153,12 @@ export function ImageBlock({
 // 3. GalleryMediaBlock — image grid (standardizes the old FeatureGallery)
 // ─────────────────────────────────────────────────────────────────────────────
 
+const GALLERY_COLS: Record<string, string> = {
+  '2': 'sm:grid-cols-2',
+  '3': 'sm:grid-cols-2 lg:grid-cols-3',
+  '4': 'sm:grid-cols-2 lg:grid-cols-4',
+}
+
 export function GalleryMediaBlock({
   eyebrow,
   heading,
@@ -147,6 +166,9 @@ export function GalleryMediaBlock({
   columns,
   tileAspect,
   radius,
+  tone,
+  width,
+  align,
   pad,
   vis,
 }: {
@@ -156,20 +178,45 @@ export function GalleryMediaBlock({
   columns?: string
   tileAspect?: string
   radius?: string
+  tone?: string
+  width?: string
+  align?: string
   pad?: string
   vis?: string
 }) {
+  const ink = isInk(tone)
+  const cols = GALLERY_COLS[columns ?? '2'] ?? GALLERY_COLS['2']
+  const tileRadius = radiusClass(radius, 'rounded-2xl')
   return (
-    <GalleryBlock
-      eyebrow={eyebrow || undefined}
-      heading={heading || undefined}
-      items={items || []}
-      cols={columns ?? '2'}
-      tileAspect={tileAspect ?? '16/10'}
-      tileRadius={radiusClass(radius, 'rounded-2xl')}
-      pad={pad}
-      vis={vis}
-    />
+    <section className={`px-6 ${pad ?? 'py-16 sm:py-20'} ${toneBg(tone)} ${vis ?? ''}`}>
+      <div className={`${widthClass(width)} mx-auto ${alignClass(align)}`}>
+        {(eyebrow || heading) && (
+          <div className="mb-8">
+            {eyebrow && <Eyebrow ink={ink}>{eyebrow}</Eyebrow>}
+            {heading && <DisplayHeading ink={ink}>{heading}</DisplayHeading>}
+          </div>
+        )}
+        <div className={`grid grid-cols-1 ${cols} gap-5 text-left`}>
+          {(items || []).map((f, i) => (
+            <article
+              key={i}
+              className={`${tileRadius} overflow-hidden border ${ink ? 'border-white/10 bg-white/5' : 'border-border bg-surface'}`}
+            >
+              <SiteImage
+                src={f.image || '/images/site/lab-pool.jpg'}
+                alt={f.title || ''}
+                aspect={tileAspect ?? '16/10'}
+                sizes="(min-width: 640px) 40rem, 100vw"
+              />
+              <div className="p-6">
+                {f.title && <h3 className={`text-xl font-bold mb-1.5 ${ink ? 'text-on-ink' : 'text-text'}`}>{f.title}</h3>}
+                {f.body && <p className={`text-base leading-relaxed ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{f.body}</p>}
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
   )
 }
 
@@ -289,6 +336,9 @@ export const mediaComponents: Record<string, ComponentConfig> = {
       radius: radiusField,
       shadow: shadowField,
       caption: { type: 'text', label: 'Caption (optional)' },
+      // Width is the image's own `size`; expose Background + Align for parity.
+      tone: toneField,
+      align: alignField,
       layout: layoutField,
     },
     defaultProps: {
@@ -300,9 +350,11 @@ export const mediaComponents: Record<string, ComponentConfig> = {
       radius: 'lg',
       shadow: 'sm',
       caption: '',
+      tone: 'surface',
+      align: 'center',
       layout: layoutDefault,
     },
-    render: ({ image, alt, aspect, focal, size, radius, shadow, caption, layout }) => (
+    render: ({ image, alt, aspect, focal, size, radius, shadow, caption, tone, align, layout }) => (
       <ImageBlock
         image={image as string}
         alt={alt as string}
@@ -312,6 +364,8 @@ export const mediaComponents: Record<string, ComponentConfig> = {
         radius={radius as string}
         shadow={shadow as string}
         caption={(caption as string) || undefined}
+        tone={tone as string}
+        align={align as string}
         pad={padClass(layout as LayoutValue)}
         vis={visClass(layout as LayoutValue)}
       />
@@ -353,7 +407,7 @@ export const mediaComponents: Record<string, ComponentConfig> = {
         ],
       },
       radius: radiusField,
-      layout: layoutField,
+      ...blockFields(),
     },
     defaultProps: {
       eyebrow: '',
@@ -362,9 +416,9 @@ export const mediaComponents: Record<string, ComponentConfig> = {
       columns: '2',
       tileAspect: '16/10',
       radius: 'md',
-      layout: layoutDefault,
+      ...blockLayoutDefaults,
     },
-    render: ({ eyebrow, heading, items, columns, tileAspect, radius, layout }) => (
+    render: ({ eyebrow, heading, items, columns, tileAspect, radius, tone, width, align, layout }) => (
       <GalleryMediaBlock
         eyebrow={(eyebrow as string) || undefined}
         heading={(heading as string) || undefined}
@@ -372,6 +426,9 @@ export const mediaComponents: Record<string, ComponentConfig> = {
         columns={columns as string}
         tileAspect={tileAspect as string}
         radius={radius as string}
+        tone={tone as string}
+        width={width as string}
+        align={align as string}
         pad={padClass(layout as LayoutValue)}
         vis={visClass(layout as LayoutValue)}
       />
