@@ -20,6 +20,8 @@ import { TuneInButton, TunedInButton } from '../channel-toggle'
 import { Composer } from '@/components/feed/composer'
 import { FeedList } from '@/components/feed/feed-list'
 import { NewCircleCompose } from '@/components/compose/new-circle-compose'
+import { DetailTemplate } from '@/components/templates/detail-template'
+import { EmptyState } from '@/components/ui/empty-state'
 
 type TopicalChannel = {
   id: string
@@ -143,61 +145,57 @@ export default async function ChannelPage({
     <div>
       <Link
         href="/channels"
-        className="inline-flex items-center gap-1 text-xs text-subtle hover:text-muted mb-4 transition-colors"
+        className="inline-flex items-center gap-1 text-xs text-subtle hover:text-muted mb-3 transition-colors"
       >
         ← Channels
       </Link>
 
-      {/* ── Header. Same shape as every other page (mb-6, h1 text-2xl,
-              max-w-2xl description). Description is sized to roughly two
-              lines fullscreen so the header stays compact; the explainer
-              copy moves below the right column. ────────────────────── */}
-      <div className="flex items-end justify-between gap-4 mb-6">
-        <div className="min-w-0">
-          <div className="flex items-center gap-3 mb-1">
-            <div className={`flex items-center justify-center w-10 h-10 rounded-lg shrink-0 ${accent}`}>
-              <Icon className="w-5 h-5" />
+      {/* Unified Detail header (REDESIGN-INAPP Phase 1) — the category icon rides
+          in the title node; description + counts as subtitle; tune-in / start a
+          circle as the actions. */}
+      <DetailTemplate
+        title={
+          <span className="inline-flex items-center gap-3">
+            <span className={`flex h-9 w-9 items-center justify-center rounded-2xl shrink-0 ${accent}`}>
+              <Icon className="h-5 w-5" />
+            </span>
+            {channel.name}
+          </span>
+        }
+        subtitle={
+          <>
+            <p className="max-w-2xl leading-relaxed">{description}</p>
+            <div className="mt-2 flex items-center gap-2 text-xs">
+              <Users className="w-3 h-3" />
+              <span>{(memberCount ?? 0).toLocaleString()} tuned in</span>
+              <span className="text-subtle/60">·</span>
+              <CircleIcon className="w-3 h-3" />
+              <span>{circles.length} {circles.length === 1 ? 'Circle' : 'Circles'} practicing</span>
             </div>
-            <h1 className="text-2xl font-bold text-text leading-tight">
-              {channel.name}
-            </h1>
-          </div>
-          <p className="text-sm text-muted leading-relaxed max-w-2xl">
-            {description}
-          </p>
-          <div className="flex items-center gap-2 mt-3 text-xs text-muted">
-            <Users className="w-3 h-3" />
-            <span>{(memberCount ?? 0).toLocaleString()} tuned in</span>
-            <span className="text-subtle/60">·</span>
-            <CircleIcon className="w-3 h-3" />
-            <span>{circles.length} {circles.length === 1 ? 'Circle' : 'Circles'} practicing</span>
-          </div>
-        </div>
-
-        {myProfileId && (
-          <div className="flex items-center gap-2 shrink-0">
-            <NewCircleCompose
-              topicalChannelId={channel.id}
-              topicalChannelName={channel.name}
-              buttonLabel="Start a Circle"
-            />
-            {isTunedIn
-              ? <TunedInButton channelId={channel.id} channelName={channel.name} size="md" />
-              : <TuneInButton channelId={channel.id} slug={channel.slug} size="md" />
-            }
-          </div>
-        )}
-      </div>
-
-      {/* ── Body. One border-t spans the whole row so Forum and "Circles
-              practicing X" hang off the same line, top-aligned. ─────── */}
-      <div className="border-t border-border pt-6">
+          </>
+        }
+        actions={
+          myProfileId ? (
+            <>
+              <NewCircleCompose
+                topicalChannelId={channel.id}
+                topicalChannelName={channel.name}
+                buttonLabel="Start a Circle"
+              />
+              {isTunedIn
+                ? <TunedInButton channelId={channel.id} channelName={channel.name} size="md" />
+                : <TuneInButton channelId={channel.id} slug={channel.slug} size="md" />
+              }
+            </>
+          ) : undefined
+        }
+      >
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
           {/* ── Main: forum feed ─────────────────────── */}
           <div className="lg:col-span-2">
             <div className="mb-4">
-              <h2 className="text-sm font-semibold text-text">Forum</h2>
+              <h2 className="text-sm font-bold text-text">Forum</h2>
               <p className="text-xs text-muted leading-relaxed mt-0.5">
                 Open to anyone tuned in. Talk shop, share, swap notes.
               </p>
@@ -210,7 +208,7 @@ export default async function ChannelPage({
               />
             ) : (
               myProfileId && (
-                <div className="mb-4 rounded-xl border border-dashed border-border bg-surface/60 px-4 py-3">
+                <div className="mb-4 rounded-2xl border border-dashed border-border bg-surface/60 px-4 py-3">
                   <p className="text-xs text-muted leading-relaxed">
                     Tune in to post and follow this forum from your feed.
                   </p>
@@ -232,7 +230,7 @@ export default async function ChannelPage({
           {/* ── Sidebar: Circles practicing this Channel ─ */}
           <div>
             <div className="mb-4">
-              <h2 className="text-sm font-semibold text-text">
+              <h2 className="text-sm font-bold text-text">
                 Circles practicing {channel.name}
               </h2>
               <p className="text-xs text-muted leading-relaxed mt-0.5">
@@ -241,37 +239,33 @@ export default async function ChannelPage({
             </div>
 
             {circles.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-border bg-surface/50 p-6 text-center">
-                <CircleIcon className="w-6 h-6 text-subtle/60 mx-auto mb-3" />
-                <p className="text-sm font-medium text-text mb-1">
-                  No circles yet.
-                </p>
-                <p className="text-xs text-muted leading-relaxed mb-4 max-w-xs mx-auto">
-                  Be the first to start a local crew practicing {channel.name}.
-                </p>
-                {myProfileId && (
-                  <div className="flex justify-center">
+              <EmptyState
+                icon={CircleIcon}
+                title="No circles yet"
+                description={`Be the first to start a local crew practicing ${channel.name}.`}
+                action={
+                  myProfileId ? (
                     <NewCircleCompose
                       topicalChannelId={channel.id}
                       topicalChannelName={channel.name}
                       buttonLabel="Create the first Circle"
                     />
-                  </div>
-                )}
-              </div>
+                  ) : undefined
+                }
+              />
             ) : (
               <div className="space-y-2">
                 {circles.map((c) => (
                   <Link
                     key={c.id}
                     href={`/circles/${c.slug}`}
-                    className="block rounded-xl border border-border bg-surface px-3 py-2.5 hover:border-primary-bg dark:hover:border-primary transition-colors"
+                    className="block rounded-2xl border border-border bg-surface px-3 py-2.5 hover:border-primary-bg dark:hover:border-primary transition-colors"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-medium text-text truncate">
+                      <span className="text-sm font-medium text-text truncate">
                         {c.name}
                       </span>
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium shrink-0 ${
+                      <span className={`text-xs px-1.5 py-0.5 rounded-md font-medium shrink-0 ${
                         c.type === 'in-person'
                           ? 'bg-success-bg text-success'
                           : 'bg-signal-bg text-signal-strong'
@@ -279,7 +273,7 @@ export default async function ChannelPage({
                         {c.type === 'in-person' ? 'In-person' : 'Online'}
                       </span>
                     </div>
-                    <div className="mt-1 flex items-center gap-2 text-[11px] text-muted">
+                    <div className="mt-1 flex items-center gap-2 text-xs text-muted">
                       {(c.city || c.neighborhood) && (
                         <span className="flex items-center gap-0.5">
                           <MapPin className="w-2.5 h-2.5" />
@@ -306,7 +300,7 @@ export default async function ChannelPage({
             </p>
           </div>
         </div>
-      </div>
+      </DetailTemplate>
     </div>
   )
 }
