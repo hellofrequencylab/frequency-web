@@ -95,7 +95,7 @@ export default async function MarketingOverview() {
       {practice && (
         <section className="mb-8 max-w-2xl">
           <div className="mb-2 flex items-center justify-between">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-subtle">
+            <h2 className="text-sm font-bold text-text">
               At a glance
             </h2>
             <Link
