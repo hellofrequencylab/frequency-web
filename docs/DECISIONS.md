@@ -1261,7 +1261,7 @@ Adding/moving an area remains a one-line `nav-areas.ts` edit.
 
 ---
 
-## ADR-059: Bottom docks reveal from one shared, intent-driven controller
+## ADR-062: Bottom docks reveal from one shared, intent-driven controller
 
 **Status:** Accepted · `components/sidebar/dock-reveal.tsx`, `components/layout/app-shell.tsx`,
 `components/sidebar/game-stats-dock.tsx`, `components/layout/view-as-control.tsx`.
@@ -1289,15 +1289,15 @@ reaching the bottom, by design. Reveal is a smooth ~500ms animation triggered by
 pixel-scrubbed height), chosen for robustness over a scrub that would re-introduce the feedback
 loop on the in-flow right dock.
 
-> **Numbering note:** there are two ADR-059s above (the practitioner portal and this dock-reveal
-> one) — a collision from parallel work. Left as-is to avoid renumbering across an open PR; to be
-> de-duped in a docs-hygiene pass.
+> **Numbering note:** ADR-059 is the practitioner portal (above). This dock-reveal decision was a
+> parallel-work numbering collision (originally also 059) and is **renumbered to ADR-062** here.
 
 ---
 
 ## ADR-061: In-app design overhaul — finish and enforce the kit, foundation-first
 
-**Status:** Accepted · plan of record in [`REDESIGN-INAPP.md`](REDESIGN-INAPP.md) · refines DESIGN.md
+**Status:** Accepted · **Phase 0–1 shipped, Phase 2–3 swept (PRs #81–93, 2026-06-02)** · plan of
+record in [`REDESIGN-INAPP.md`](REDESIGN-INAPP.md) · refines DESIGN.md
 + PAGE-FRAMEWORK.md. (ADR-060 is the Broadcast-bar nav change, in an open PR.)
 **Context:** A full design-team audit (8 reviewers: design-systems foundation + 7 page clusters)
 of every `(main)` interior page found that the "warm editorial community" standard and the three
