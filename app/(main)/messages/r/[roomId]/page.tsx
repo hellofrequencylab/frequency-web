@@ -17,7 +17,7 @@ export default async function RoomPage({
 }) {
   const { roomId } = await params
 
-  // RLS convergence surface 6 (migration 20240312000000): the room thread runs on
+  // RLS convergence surface 6 (migration 20260602200701): the room thread runs on
   // the user client. rooms_read / room_members_read / room_messages_read enforce
   // who can see the room, its roster, and its (members-only) messages. The member
   // + author profiles — which RLS would hide from sub-crew/cross-region viewers —

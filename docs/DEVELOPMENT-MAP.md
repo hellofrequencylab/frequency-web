@@ -172,7 +172,7 @@ on the real domain. **Depends on:** nothing (all in-codebase closeouts).
       runs on the user client; ranking extracted to `lib/feed-rank.ts` (unit-tested). *Scope:* main
       feed only.
       *Surface 4 — feed DETAIL mode (2026-06-02, ✅ migration applied to prod):* migration
-      `20240310000000_feed_detail_rls_convergence.sql` adds the `scoped_feed_for_viewer` DEFINER RPC
+      `20260602194223_feed_detail_rls_convergence.sql` adds the `scoped_feed_for_viewer` DEFINER RPC
       (same reach predicate as surface 3, constrained to the requested scope ids). The circle/channel
       detail FeedList (`showPublicLayer=false`) previously read posts on the admin client filtered
       only by `scope_id` — with NO visibility check — leaking a circle's members-only ('group') posts
@@ -181,7 +181,7 @@ on the real domain. **Depends on:** nothing (all in-codebase closeouts).
       group/cluster posts and channel forums (public) are unaffected. FeedList's detail branch runs on
       the user client. *Still on admin (follow-up):* the scope/dispatch/event metadata lookups.
       *Surface 5 — messages inbox + DM threads (2026-06-02, ✅ migration applied to prod):* migration
-      `20240311000000_messages_rls_convergence.sql` adds the `message_peer_profiles` DEFINER RPC. The
+      `20260602195209_messages_rls_convergence.sql` adds the `message_peer_profiles` DEFINER RPC. The
       messaging tables already have membership-based SELECT policies (`am_participant` /
       `am_room_member`) + an UPDATE-own last_read policy, and `profiles` allows reading your own row —
       so the inbox (`messages/page.tsx`), DM thread (`messages/[id]/page.tsx`), and popover summary
@@ -193,7 +193,7 @@ on the real domain. **Depends on:** nothing (all in-codebase closeouts).
       the current non-member public-room message preview (a visibility decision, like circles); and the
       "new members in your circles" prompt in `page.tsx`.
       *Surface 6 — room thread (2026-06-02, ✅ migration applied to prod):* migration
-      `20240312000000_room_thread_rls_convergence.sql` adds the `visible_room_member_profiles` DEFINER
+      `20260602200701_room_thread_rls_convergence.sql` adds the `visible_room_member_profiles` DEFINER
       RPC. `messages/r/[roomId]/page.tsx` now runs on the user client: rooms_read / room_members_read
       / room_messages_read enforce who sees the room, its roster, and its (members-only) messages;
       member + author profiles are hydrated by the RPC (public fields, gated on the caller being able

@@ -1187,7 +1187,7 @@ the bar and the rail. Adding/moving a link is still a one-line edit in `lib/nav-
 
 ## ADR-058: Foreign-key covering indexes from the maintenance advisor sweep
 
-**Status:** Accepted · corroborated by `supabase/migrations/20260602000000_fk_indexes.sql`
+**Status:** Accepted · corroborated by `supabase/migrations/20260602195255_fk_indexes.sql`
 (pending apply) and `docs/maintenance/2026-06-02.md`.
 **Context:** The first automated `/maintenance` Supabase advisor sweep (2026-06-02) flagged 45
 foreign keys with no covering index — they force sequential scans on joins and on cascade
