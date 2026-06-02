@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { ChevronDown, ArrowRight } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import { getInitials, relativeTime } from '@/lib/utils'
 import { type CommunityRole, ROLE_RANK, RoleBadge } from '@/lib/community-roles'
 import { SiteImage } from '@/components/marketing/site-image'
@@ -25,87 +25,6 @@ export type LiveData = {
 
 function hasRole(role: string | null | undefined): role is CommunityRole {
   return !!role && role in ROLE_RANK
-}
-
-// ── Splash hero (full-bleed image + overlay) ──────────────────────────────────
-export function HeroBlock({
-  eyebrow,
-  title,
-  subtitle,
-  bgImage,
-  ctaPrimaryLabel,
-  ctaPrimaryHref,
-  ctaSecondaryLabel,
-  ctaSecondaryHref,
-  note,
-  vis = '',
-}: {
-  eyebrow?: string
-  title: React.ReactNode
-  subtitle?: string
-  bgImage?: string
-  ctaPrimaryLabel?: string
-  ctaPrimaryHref?: string
-  ctaSecondaryLabel?: string
-  ctaSecondaryHref?: string
-  note?: string
-  vis?: string
-}) {
-  return (
-    <section className={`relative min-h-screen flex flex-col items-center justify-center text-center px-6 overflow-hidden ${vis}`}>
-      <div className="absolute inset-0 scale-105">
-        <Image
-          src={bgImage || '/images/site/lab-thermal.jpg'}
-          alt=""
-          fill
-          preload
-          sizes="100vw"
-          className="object-cover object-center"
-        />
-      </div>
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            'linear-gradient(180deg, rgb(20 18 16 / 0.74) 0%, rgb(20 18 16 / 0.42) 44%, rgb(20 18 16 / 0.94) 100%)',
-        }}
-      />
-      <div className="amber-glow absolute inset-0 pointer-events-none" />
-      <div className="light-strip absolute inset-x-0 bottom-0 z-10" />
-      <div className="relative z-10 flex flex-col items-center w-full max-w-4xl">
-        {eyebrow && (
-          <p className="text-[11px] sm:text-xs font-bold uppercase tracking-[0.25em] text-primary mb-6">{eyebrow}</p>
-        )}
-        <h1 className="font-display uppercase text-white text-[2.75rem] leading-[0.95] sm:text-6xl lg:text-7xl max-w-3xl">
-          {title}
-        </h1>
-        {subtitle && <p className="mt-7 text-base sm:text-lg text-white/80 max-w-lg leading-relaxed">{subtitle}</p>}
-        <div className="mt-9 flex items-center gap-3 flex-wrap justify-center">
-          {ctaPrimaryLabel && (
-            <Link
-              href={ctaPrimaryHref || '/beta'}
-              className="rounded-2xl bg-primary text-on-primary px-8 py-3.5 text-base font-bold hover:bg-primary-hover transition-colors"
-            >
-              {ctaPrimaryLabel}
-            </Link>
-          )}
-          {ctaSecondaryLabel && (
-            <Link
-              href={ctaSecondaryHref || '/sign-in'}
-              className="rounded-2xl border border-white/30 px-8 py-3.5 text-base font-medium text-white hover:bg-white/10 hover:border-white/50 transition-colors"
-            >
-              {ctaSecondaryLabel}
-            </Link>
-          )}
-        </div>
-        {note && <p className="mt-8 text-sm text-white/45">{note}</p>}
-      </div>
-      <div className="absolute bottom-10 flex flex-col items-center gap-2 text-white/40">
-        <span className="text-[11px] font-bold tracking-widest uppercase">See the vision</span>
-        <ChevronDown className="w-5 h-5 animate-bounce" />
-      </div>
-    </section>
-  )
 }
 
 // ── Feature gallery (image tiles) ─────────────────────────────────────────────
@@ -153,50 +72,6 @@ export function GalleryBlock({
           ))}
         </div>
       </div>
-    </section>
-  )
-}
-
-// ── "What we're building" dark band (marquee + circular pillars) ──────────────
-import { Marquee } from '@/components/marketing/marketing-ui'
-
-export function PillarsBlock({
-  marqueeItems,
-  pillars,
-  vis = '',
-}: {
-  marqueeItems: string[]
-  pillars: { image?: string; title?: string; body?: string; href?: string; reverse?: boolean }[]
-  vis?: string
-}) {
-  return (
-    <section className={`relative bg-slat ${vis}`}>
-      <div className="light-strip absolute inset-x-0 top-0 z-10" />
-      <Marquee items={marqueeItems?.length ? marqueeItems : ['What we’re building']} />
-      <div className="max-w-5xl mx-auto px-6 py-24 sm:py-28 space-y-24 sm:space-y-28">
-        {(pillars || []).map((p, i) => (
-          <div
-            key={i}
-            className={`flex flex-col items-center sm:items-stretch sm:flex-row ${p.reverse ? 'sm:flex-row-reverse' : ''}`}
-          >
-            <div className="relative w-80 h-80 sm:w-[32rem] sm:h-[32rem] rounded-full overflow-hidden border-4 border-white/10 shrink-0">
-              <Image src={p.image || '/images/site/lab-storefront.jpg'} alt={p.title || ''} fill sizes="(min-width: 640px) 32rem, 20rem" className="object-cover" />
-            </div>
-            <div className={`relative z-10 flex flex-col justify-center max-w-md -mt-12 sm:mt-0 ${p.reverse ? 'sm:-mr-20' : 'sm:-ml-20'}`}>
-              <h3 className="font-display uppercase text-white text-4xl sm:text-5xl mb-5 px-2 text-center sm:text-left">{p.title}</h3>
-              <div className="bg-surface rounded-3xl p-8 shadow-pop">
-                <p className="text-base text-muted leading-relaxed">{p.body}</p>
-                {p.href && (
-                  <Link href={p.href} className="mt-5 inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide text-primary-strong hover:underline">
-                    Learn more <ArrowRight className="w-4 h-4" />
-                  </Link>
-                )}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="light-strip absolute inset-x-0 bottom-0 z-10" />
     </section>
   )
 }
