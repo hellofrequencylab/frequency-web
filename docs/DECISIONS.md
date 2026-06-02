@@ -1162,15 +1162,19 @@ competed for attention with it.
 the single `NAV_AREAS` source of truth (so `/admin/roles` permission grid stays in lockstep):
 1. **`placement` on each `NavArea`** (`'community' | 'sidebar'`) decides where it renders.
    `'community'` = Feed · Circles · Interests · Events · Broadcast · Messages.
-2. **A horizontal community sub-menu** (`CommunityNav`) sits directly under the header as the
-   focal nav — a tab strip with an active underline. It scrolls horizontally on narrow
-   screens, so it doubles as the mobile community nav.
+2. **A horizontal community sub-menu** (`CommunityNav`) — a tab strip with an active
+   underline — is **inset between the two rails** (it lives at the top of the center scroll
+   column, not full-bleed under the header) and **sticks** to the top of the shared scroll,
+   so it reads as the content's own nav. It scrolls horizontally on narrow screens, so it
+   doubles as the mobile community nav.
 3. **The left sidebar is features + admin only** (Library, Network, Progress, Manage). The
    desktop rail renders `placement === 'sidebar'` areas; the **mobile drawer renders ALL
    areas** (community + sidebar) so the hamburger remains the complete menu.
 4. **The header full-site browse nav fades to ~40% opacity in the shell** ("community mode")
    and returns to full on hover/`focus-within`, so members can still reach the wider site
-   with ease without it stealing focus from community interaction.
+   with ease without it stealing focus from community interaction. Its **"Discover" dropdown
+   is hidden in the shell** (`showDiscover={false}`) since the community sub-menu already owns
+   discovery — there it's purely full-site browsing.
 5. **Section labels are display-only** (sidebar grouping + permission grid); re-slotting
    areas across sections (`Community`→`Library`/`Network`) is safe and carries no behavior.
    The shared lucide icon map moved to `components/layout/nav-icons.ts` so the bar and the
