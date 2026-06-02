@@ -66,7 +66,7 @@ export default async function AdminRolesPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-xl leading-none">{ROLE_META[r].emoji}</span>
-                <span className="rank-badge text-[11px] font-bold leading-tight" style={roleBadgeStyle(r)}>
+                <span className="rank-badge text-xs font-bold leading-tight" style={roleBadgeStyle(r)}>
                   {ROLE_LABEL[r]}
                 </span>
               </div>

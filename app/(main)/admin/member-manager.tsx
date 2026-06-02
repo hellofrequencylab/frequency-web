@@ -165,12 +165,12 @@ export function MemberManager({ members }: { members: MemberItem[] }) {
                       {m.displayName}
                     </Link>
                     {m.isCrewLead && (
-                      <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-warning-bg dark:bg-warning-bg text-warning font-medium">
+                      <span className="text-xs px-1.5 py-0.5 rounded-md bg-warning-bg dark:bg-warning-bg text-warning font-medium">
                         Crew Lead
                       </span>
                     )}
                     {isLuminary && (
-                      <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-warning-bg text-warning font-medium flex items-center gap-0.5">
+                      <span className="text-xs px-1.5 py-0.5 rounded-md bg-warning-bg text-warning font-medium flex items-center gap-0.5">
                         <Star className="w-2.5 h-2.5" /> Luminary
                       </span>
                     )}
@@ -210,7 +210,7 @@ export function MemberManager({ members }: { members: MemberItem[] }) {
                       onClick={() => handleToggleSeason(m.profileId, m.seasonChallengesComplete ?? false)}
                       disabled={isPending}
                       title={m.seasonChallengesComplete ? 'Mark season challenges incomplete' : 'Mark season challenges complete'}
-                      className={`text-[11px] px-2 py-1 rounded-lg border font-medium transition-colors disabled:opacity-50 ${
+                      className={`text-xs px-2 py-1 rounded-lg border font-medium transition-colors disabled:opacity-50 ${
                         m.seasonChallengesComplete
                           ? 'border-success bg-success-bg text-success dark:bg-success-bg/30 dark:text-success'
                           : 'border-border text-muted hover:border-success hover:text-success'
@@ -225,7 +225,7 @@ export function MemberManager({ members }: { members: MemberItem[] }) {
                       onClick={() => handleLuminary(m.profileId)}
                       disabled={isPending}
                       title="Promote to Luminary"
-                      className="text-[11px] px-2 py-1 rounded-lg border border-yellow-300 bg-warning-bg text-warning dark:text-primary font-medium hover:bg-warning-bg transition-colors disabled:opacity-50"
+                      className="text-xs px-2 py-1 rounded-lg border border-yellow-300 bg-warning-bg text-warning dark:text-primary font-medium hover:bg-warning-bg transition-colors disabled:opacity-50"
                     >
                       → Luminary
                     </button>

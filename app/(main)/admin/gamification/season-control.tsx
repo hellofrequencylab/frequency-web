@@ -30,7 +30,7 @@ export function SeasonControl({
         <div className="flex items-center gap-2">
           <Trophy className="w-4 h-4 text-warning" />
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-subtle">
+            <p className="text-sm font-bold text-text">
               Current season
             </p>
             <p className="text-sm font-medium text-text">

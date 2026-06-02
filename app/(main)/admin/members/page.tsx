@@ -175,7 +175,7 @@ async function BetaTab() {
               <Td className="text-text">{s.email}</Td>
               <Td>{s.displayName ?? '-'}</Td>
               <Td>
-                <span className={`text-[11px] px-1.5 py-0.5 rounded-md font-medium capitalize ${BETA_STYLE[s.status]}`}>
+                <span className={`text-xs px-1.5 py-0.5 rounded-md font-medium capitalize ${BETA_STYLE[s.status]}`}>
                   {s.status}
                 </span>
               </Td>
@@ -210,7 +210,7 @@ function Table({ head, children }: { head: string[]; children: React.ReactNode }
     <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-border text-left text-[11px] uppercase tracking-wider text-subtle">
+          <tr className="border-b border-border text-left text-xs uppercase tracking-wider text-subtle">
             {head.map((h) => (
               <th key={h} className="px-4 py-2.5 font-semibold">{h}</th>
             ))}
