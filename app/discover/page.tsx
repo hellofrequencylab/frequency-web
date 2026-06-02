@@ -15,7 +15,9 @@ import {
   EventRow,
   PostPreview,
   SectionHeading,
+  DiscoverHero,
 } from '@/components/discover/cards'
+import { Statement, ZigZag, BetaCTA } from '@/components/marketing/marketing-ui'
 import { DiscoverLocator } from '@/components/discover/discover-locator'
 import { InlineBetaCapture } from '@/components/discover/inline-beta-capture'
 import { SITE_NAME, SOCIAL_PROOF_FLOOR, FOUNDING_PLACE, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
@@ -98,45 +100,39 @@ export default async function DiscoverHubPage() {
         ]}
       />
 
-      {/* ── Intro ─────────────────────────────────────────────── */}
-      <section className="bg-marketing-canvas px-6 py-16 border-b border-border/60">
-        <div className="max-w-5xl mx-auto text-center">
-          <p className="text-xs font-semibold uppercase tracking-widest text-primary-strong mb-3">
-            Discover Frequency
-          </p>
-          <h1 className="text-3xl sm:text-5xl font-bold text-text mb-4">
-            Real community, near you
-          </h1>
-          <p className="text-muted leading-relaxed max-w-2xl mx-auto mb-8">
-            Explore the circles, events, and topics bringing neighbors together in person.
-            Browse freely — sign up free to join a circle, RSVP to an event, or post.
-          </p>
-          {counts.members >= SOCIAL_PROOF_FLOOR ? (
-            <div className="flex items-center justify-center gap-6 text-sm text-muted">
-              <span><strong className="text-text">{counts.members}</strong> members</span>
-              <span className="text-border">|</span>
-              <span><strong className="text-text">{counts.circles}</strong> circles</span>
-              <span className="text-border">|</span>
-              <span><strong className="text-text">{events.length}</strong> upcoming events</span>
-            </div>
-          ) : (
-            <p className="text-sm text-muted">
-              Forming now in {FOUNDING_PLACE} — explore the first circles, topics, and events below.
-            </p>
-          )}
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-            <Link
-              href={BETA_CTA_HREF}
-              className="inline-flex items-center gap-2 rounded-2xl bg-primary text-on-primary px-7 py-3 text-base font-bold hover:bg-primary-hover transition-colors"
-            >
-              {BETA_CTA_LABEL} <ArrowRight className="w-4 h-4" />
-            </Link>
-            <Link href="/sign-in" className="text-sm font-semibold text-muted hover:text-text transition-colors">
-              or browse free →
-            </Link>
+      {/* ── Hero ──────────────────────────────────────────────── */}
+      <DiscoverHero
+        image="/images/site/PHOTO-2020-09-09-16-38-27.jpeg"
+        alt="A large Frequency yoga gathering on a lawn at golden hour in North County San Diego"
+        eyebrow="Discover Frequency"
+        title="Real community, near you"
+        subtitle="Explore the circles, events, and topics bringing neighbors together in person. Browse freely — sign up free to join a circle, RSVP to an event, or post."
+      >
+        {counts.members >= SOCIAL_PROOF_FLOOR ? (
+          <div className="flex items-center justify-center gap-6 text-sm text-white/80">
+            <span><strong className="text-white">{counts.members}</strong> members</span>
+            <span className="text-white/30">|</span>
+            <span><strong className="text-white">{counts.circles}</strong> circles</span>
+            <span className="text-white/30">|</span>
+            <span><strong className="text-white">{events.length}</strong> upcoming events</span>
           </div>
+        ) : (
+          <p className="text-sm text-white/80">
+            Forming now in {FOUNDING_PLACE} — explore the first circles, topics, and events below.
+          </p>
+        )}
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+          <Link
+            href={BETA_CTA_HREF}
+            className="inline-flex items-center gap-2 rounded-2xl bg-primary text-on-primary px-7 py-3 text-base font-bold hover:bg-primary-hover transition-colors shadow-pop"
+          >
+            {BETA_CTA_LABEL} <ArrowRight className="w-4 h-4" />
+          </Link>
+          <Link href="/sign-in" className="text-sm font-semibold text-white/80 hover:text-white transition-colors">
+            or browse free →
+          </Link>
         </div>
-      </section>
+      </DiscoverHero>
 
       {/* ── Locator map (privacy-safe: city centroids only) ──────── */}
       <section className="bg-surface px-6 py-16 border-b border-border/60">
@@ -165,7 +161,7 @@ export default async function DiscoverHubPage() {
 
       {/* ── Topics ────────────────────────────────────────────── */}
       {channels.length > 0 && (
-        <section className="bg-surface px-6 py-16">
+        <section className="bg-marketing-canvas px-6 py-16">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-10">
               <SectionHeading eyebrow="Explore by topic" title="Topics" />
@@ -184,9 +180,15 @@ export default async function DiscoverHubPage() {
         </section>
       )}
 
+      {/* ── Dark beat ─────────────────────────────────────────── */}
+      <Statement tone="ink">
+        Not a someday idea.{' '}
+        <span className="text-primary">It&apos;s already happening.</span>
+      </Statement>
+
       {/* ── Upcoming events ───────────────────────────────────── */}
       {events.length > 0 && (
-        <section className="bg-marketing-canvas px-6 py-16">
+        <section className="bg-surface px-6 py-16">
           <div className="max-w-2xl mx-auto">
             <div className="text-center mb-10">
               <SectionHeading eyebrow="Coming up" title="Upcoming events" tone="success" />
@@ -207,7 +209,7 @@ export default async function DiscoverHubPage() {
 
       {/* ── Featured circles ──────────────────────────────────── */}
       {circles.length > 0 && (
-        <section className="bg-surface px-6 py-16">
+        <section className="bg-marketing-canvas px-6 py-16">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-10">
               <SectionHeading eyebrow="Find your people" title="Circles forming now" />
@@ -225,6 +227,26 @@ export default async function DiscoverHubPage() {
           </div>
         </section>
       )}
+
+      {/* ── Tender accent ─────────────────────────────────────── */}
+      <ZigZag
+        tone="surface"
+        img="/images/site/fd40d12c-7667-4d4e-b4c0-3b828170d9b1.jpg"
+        alt="A Frequency member resting in savasana beside a hand-lettered “you are beautiful” sign"
+        imgAspect="landscape"
+        eyebrow="Why we show up"
+        title="You are beautiful"
+        kicker="And you were never meant to do this alone."
+      >
+        <p>
+          Frequency is built on a simple belief: people are happier, healthier, and more
+          themselves when they belong to a community that knows them.
+        </p>
+        <p>
+          Every circle and every event is an invitation to be seen — to trade the scroll for a
+          real morning on the grass with neighbors who show up for you.
+        </p>
+      </ZigZag>
 
       {/* ── Feed preview ──────────────────────────────────────── */}
       {posts.length > 0 && (
@@ -255,7 +277,7 @@ export default async function DiscoverHubPage() {
           </div>
           <dl className="space-y-6">
             {DISCOVER_FAQS.map((item) => (
-              <div key={item.q} className="rounded-2xl border border-border bg-marketing-canvas p-5">
+              <div key={item.q} className="rounded-2xl border border-border bg-marketing-canvas p-5 transition-shadow hover:shadow-pop">
                 <dt className="text-base font-semibold text-text mb-1.5">{item.q}</dt>
                 <dd className="text-sm text-muted leading-relaxed">{item.a}</dd>
               </div>
@@ -265,35 +287,10 @@ export default async function DiscoverHubPage() {
       </section>
 
       {/* ── Final CTA ─────────────────────────────────────────── */}
-      <section className="relative bg-surface px-6 py-20 text-center overflow-hidden">
-        <div
-          className="absolute inset-0 opacity-20 pointer-events-none"
-          style={{
-            background:
-              'radial-gradient(ellipse 60% 50% at 50% 50%, var(--color-primary-bg) 0%, transparent 70%)',
-          }}
-        />
-        <div className="relative max-w-xl mx-auto">
-          <h2 className="text-2xl sm:text-4xl font-bold text-text mb-4">
-            Ready to find your people?
-          </h2>
-          <p className="text-muted mb-8 leading-relaxed text-lg">
-            Frequency is free to join. Sign up, find a circle near you, and start showing up
-            this week.
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <Link
-              href={BETA_CTA_HREF}
-              className="inline-flex items-center gap-2 rounded-2xl bg-primary text-on-primary px-10 py-4 text-base font-bold hover:bg-primary-hover transition-colors"
-            >
-              {BETA_CTA_LABEL} <ArrowRight className="w-4 h-4" />
-            </Link>
-            <Link href="/sign-in" className="text-sm font-semibold text-muted hover:text-text transition-colors">
-              or sign in free
-            </Link>
-          </div>
-        </div>
-      </section>
+      <BetaCTA
+        heading="Ready to find your people?"
+        body="Frequency is free to join. Sign up, find a circle near you, and start showing up this week."
+      />
     </>
   )
 }
