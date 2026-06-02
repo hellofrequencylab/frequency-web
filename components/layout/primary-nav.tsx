@@ -119,11 +119,15 @@ export function PrimaryNav({
   variant = 'light',
   audience = 'visitor',
   className = '',
+  showDiscover = true,
 }: {
   variant?: Variant
   /** Members get the mission-focused tabs (no Pricing/Demo). */
   audience?: 'visitor' | 'member'
   className?: string
+  /** Hide the "Discover" dropdown — e.g. in the app shell, where the community
+   *  sub-menu already owns discovery and this nav is just full-site browsing. */
+  showDiscover?: boolean
 }) {
   const pathname = usePathname()
   const siteItems = audience === 'member' ? SITE_NAV_MEMBER : SITE_NAV
@@ -142,7 +146,7 @@ export function PrimaryNav({
 
   return (
     <nav className={`hidden md:flex items-center gap-0.5 ${className}`} aria-label="Primary">
-      <Dropdown label="Discover" items={DISCOVER_NAV} variant={variant} />
+      {showDiscover && <Dropdown label="Discover" items={DISCOVER_NAV} variant={variant} />}
       {siteItems.map((item) => (
         <Link key={item.href} href={item.href} className={tabClass(isItemActive(pathname, item.href))}>
           {item.label}
