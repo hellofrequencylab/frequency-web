@@ -243,7 +243,13 @@ bespoke layout.
 
 ---
 
-## 7. Migration path (incremental, low-risk — not yet)
+## 7. Migration path (incremental, low-risk — Phase 0–1 shipped)
+
+> **Update 2026-06-02:** the template migration shipped (PRs #81–93, see
+> [REDESIGN-INAPP.md](REDESIGN-INAPP.md)). `Index`/`Stream`/`Detail` templates are live;
+> `DetailTemplate` is adopted by Circle/Channel/Event (step 4–5, in progress — Profile/Programs
+> remain). The capability-module/`WidgetSlot` system (steps 1–2) is still a future seam, not yet
+> built; the right rail remains hand-wired.
 
 1. **Extract** the shared shell pieces that exist informally:
    `WidgetCard` → `components/widgets/widget-card.tsx`; a `Scope` type;

@@ -1,19 +1,10 @@
 import { notFound } from 'next/navigation'
+import { SidebarCard } from '@/components/ui/sidebar-card'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { HubsClient } from './hubs-client'
 import { NewHubCompose } from '@/components/compose/new-hub-compose'
 
-function SidebarCard({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
-      <div className="px-4 py-2.5 border-b border-border">
-        <h3 className="text-sm font-bold text-text">{title}</h3>
-      </div>
-      {children}
-    </div>
-  )
-}
 
 export default async function AdminHubsPage() {
   const supabase = await createClient()

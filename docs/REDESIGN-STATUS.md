@@ -1,5 +1,8 @@
 # Marketing Redesign — Status & Handoff
 
+> ⚠️ **This doc covers the MARKETING / public-site redesign.** For the **in-app** design overhaul
+> (interior `(main)` pages, the design kit, Phases 0–3), see [REDESIGN-INAPP.md](REDESIGN-INAPP.md).
+
 Snapshot of the agency redesign program so the next thread starts with a clear map.
 Source of truth for direction: [`CREATIVE-PLATFORM.md`](CREATIVE-PLATFORM.md) (audience,
 story, voice, conversion) and [`DESIGN-LANGUAGE.md`](DESIGN-LANGUAGE.md) (the codified
