@@ -7,6 +7,8 @@ import { createClient } from '@/lib/supabase/server'
 import { SEASON_RANKS, getRankDef, rankForZaps, type SeasonRank } from '@/lib/season-ranks'
 import { CompleteButton } from './complete-button'
 import { getInitials } from '@/lib/utils'
+import { getCurrentSeason } from '@/lib/seasons'
+import { SeasonBanner } from './season-banner'
 
 function SidebarCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -63,6 +65,13 @@ export default async function CrewPage() {
         ((currentSeasonZaps - rankDef.minZaps) / (nextRank.minZaps - rankDef.minZaps)) * 100
       ))
     : 100
+
+  // Active season for the member-facing banner. End date is preformatted here
+  // (server) so the client banner has no locale/timezone hydration mismatch.
+  const season = await getCurrentSeason()
+  const seasonEndsLabel = season?.ends_at
+    ? new Date(season.ends_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    : null
 
   // Available tasks
   const { data: tasks } = await admin
@@ -159,6 +168,17 @@ export default async function CrewPage() {
           </p>
         </div>
       </div>
+
+      {/* ── Season banner + live countdown ──────────── */}
+      {season && (
+        <SeasonBanner
+          seasonNumber={season.season_number}
+          name={season.name}
+          theme={season.theme}
+          endsAt={season.ends_at}
+          endsLabel={seasonEndsLabel}
+        />
+      )}
 
       {/* ── Season Progress (full width, top) ────────── */}
       <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden mb-6">

@@ -18,6 +18,9 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **Season banner**: your Crew dashboard now shows the current season — its name and a live
+  countdown to when it ends (or "Ongoing" while it's open) — so you always know how long is
+  left to climb the ranks.
 - **Lifecycle rewards**: earn zaps for starting a circle, activating it with a practice,
   and inviting someone who joins (attending already rewarded). The circle journey now
   pays off.

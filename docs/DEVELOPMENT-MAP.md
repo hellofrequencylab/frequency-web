@@ -126,7 +126,10 @@ on the real domain. **Depends on:** nothing (all in-codebase closeouts).
       `gem_config`; `awardZapsForAction` reads it; real values seeded. `seasons` table
       (migration `20240229000000`) gives seasons identity (number, name, dates, status);
       `reset_season` now advances them; admin "end season" control on `/admin/gamification`.
-      *Next (optional):* member-facing season banner + countdown; live amount-editing UI.
+      Member-facing **season banner + live countdown** shipped on `/crew` (2026-06-02):
+      `app/(main)/crew/season-banner.tsx` reads `getCurrentSeason()`, shows season number/name/
+      theme, and a hydration-safe live "Nd Nh left" countdown when a season has an end date
+      (else "Ongoing"). *Next (optional):* live amount-editing UI.
 - [~] **Complete `practice.verified` sources**: logged practice + verified node check-in +
       event attendance check-in (old P2.13). The North-Star event must fire from every
       real-practice path, not just event RSVP-checkin. *Done:* practices backbone
