@@ -72,7 +72,7 @@ const AREA_ICONS: Record<string, React.ElementType> = {
   vault: Gem,
   admin: Shield,
   crm: Contact,
-  studio: Briefcase,
+  marketing: Briefcase,
   outreach: Send,
   pages: FileText,
 }
@@ -724,7 +724,7 @@ export default function AppShell({
   }, [router])
 
   function isActive(href: string) {
-    if (href === '/studio')   return pathname === '/studio'
+    if (href === '/marketing') return pathname === '/marketing'
     if (href === '/feed')     return pathname === '/feed'
     if (href === '/circles')  return pathname === '/circles' || pathname.startsWith('/circles/') || pathname.startsWith('/hubs/') || pathname.startsWith('/nexuses/')
     if (href === '/channels') return pathname === '/channels' || pathname.startsWith('/channels/')
@@ -749,10 +749,11 @@ export default function AppShell({
 
   // Hide right sidebar only where it would crowd or distract:
   // /settings (narrow focused forms); /messages/<id> (chat needs full width);
-  // entity detail pages (they bring their own scoped rail).
+  // /marketing (a wide workspace with its own tab bar); entity detail pages.
   const showSidebar =
     !!sidebar &&
     !pathname.startsWith('/settings') &&
+    !pathname.startsWith('/marketing') &&
     !(pathname.startsWith('/messages/') && pathname !== '/messages') &&
     !isEntityDetail
 

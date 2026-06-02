@@ -52,7 +52,7 @@ export default async function ContactsPage({
         {FILTERS.map((f) => {
           const active = filter === f.key
           const count = applyFilter(all, f.key).length
-          const href = f.key === 'all' ? '/studio/contacts' : `/studio/contacts?filter=${f.key}`
+          const href = f.key === 'all' ? '/marketing/contacts' : `/marketing/contacts?filter=${f.key}`
           return (
             <Link
               key={f.key}

@@ -3,14 +3,13 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { MARKETING_NAV, DISCOVER_NAV, BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
+import { MARKETING_NAV, BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
 
-// Discover/Explore links first, then the story pages (drop MARKETING_NAV's own
-// "Discover" so it isn't duplicated).
-const HEADER_NAV = [
-  ...DISCOVER_NAV,
-  ...MARKETING_NAV.filter((i) => i.href !== '/discover'),
-]
+// The curated public nav — a conversion-focused funnel (How it works → Demo →
+// Pricing → The Lab → Discover → About). The granular Discover drill-ins
+// (Circles/Events/Topics) live on the in-app SiteHeader, so we keep this bar
+// lean rather than expanding them here.
+const HEADER_NAV = MARKETING_NAV
 
 // Public marketing header. No search box (that's for the community app). When
 // `overHero`, it sits transparent over the dark hero and flips to a solid light

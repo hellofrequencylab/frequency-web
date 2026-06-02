@@ -17,5 +17,5 @@ export async function setContactConsent(
     .from('contacts')
     .update({ consent_state: state, updated_at: new Date().toISOString() })
     .eq('id', id)
-  revalidatePath('/studio/contacts')
+  revalidatePath('/marketing/contacts')
 }
