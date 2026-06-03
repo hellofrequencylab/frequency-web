@@ -1,10 +1,10 @@
-import { listCampaigns } from '@/lib/studio/campaigns'
+import { listCampaigns, listSegmentOptions } from '@/lib/studio/campaigns'
 import { CampaignComposer } from './campaign-composer'
 
 export const dynamic = 'force-dynamic'
 
 export default async function CampaignsPage() {
-  const campaigns = await listCampaigns()
+  const [campaigns, segmentOptions] = await Promise.all([listCampaigns(), listSegmentOptions()])
 
   return (
     <div>
@@ -16,7 +16,7 @@ export default async function CampaignsPage() {
       </p>
 
       <div className="mb-8">
-        <CampaignComposer />
+        <CampaignComposer options={segmentOptions} />
       </div>
 
       <h2 className="text-sm font-bold text-text mb-2">Sent</h2>

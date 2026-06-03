@@ -179,6 +179,26 @@ export interface SegmentSummary extends SegmentRow {
   sample: MemberRef[]
 }
 
+/** Resolve a saved segment (by slug) to the profile ids of its current members.
+ *  The activation entry point (Phase 4): feeds campaign audiences. */
+export async function resolveSegmentProfileIds(slug: string): Promise<string[]> {
+  const { data: seg } = await db()
+    .from('segments')
+    .select('definition')
+    .eq('slug', slug)
+    .maybeSingle()
+  if (!seg) return []
+  const definition = (seg as { definition: SegmentDefinition }).definition
+  const snapshots = await loadMemberSnapshots()
+  return snapshots.filter((m) => evaluateSegment(definition, m)).map((m) => m.profileId)
+}
+
+/** Saved segments as `{ slug, name }` (for audience pickers). */
+export async function listSegmentChoices(): Promise<Array<{ slug: string; name: string }>> {
+  const { data } = await db().from('segments').select('slug, name').order('name')
+  return ((data ?? []) as Array<{ slug: string; name: string }>).map((s) => ({ slug: s.slug, name: s.name }))
+}
+
 /** Every segment with its live member count + a sample of matched members. Loads the
  *  member dataset once and evaluates all segments against it. */
 export async function listSegmentsDetailed(sampleLimit = 8): Promise<SegmentSummary[]> {
