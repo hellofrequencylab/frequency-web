@@ -1,6 +1,6 @@
 # Member Data Platform — the governed library of member variables
 
-Status: **Phase 1 shipped (dark).** Decision: [ADR-069](DECISIONS.md). Projects off the event
+Status: **Phases 1–2 shipped (dark).** Decision: [ADR-069](DECISIONS.md). Projects off the event
 ledger ([ENGAGEMENT-ARCHITECTURE.md](ENGAGEMENT-ARCHITECTURE.md), ADR-025) and feeds the analytics
 dashboard ([ANALYTICS.md](ANALYTICS.md), ADR-050), gamification, marketing, and Vera
 ([AI-VERA.md](AI-VERA.md)).
@@ -24,7 +24,7 @@ contacts   _events      computed)   audiences)  automation_rules / Vera
 |---|---|---|
 | Identity | members, leads, staff | `profiles`, `contacts`, `team_members` |
 | Events | the raw behavioral truth (typed, idempotent) | `engagement_events` |
-| **Traits** | tags + computed per-member variables | `member_tags` ✅, `member_traits` ⏳ |
+| **Traits** | tags + computed per-member variables | `member_tags` ✅, `member_traits` ✅ |
 | **Segments** | saved, reusable audience definitions | ⏳ Phase 3 |
 | Activation | send / segment / automate | `campaigns`, `automation_rules`, comms spine |
 
@@ -69,7 +69,7 @@ against the registry — **a typo can't mint a tag.**
 | Phase | Deliverable | Status |
 |---|---|---|
 | **1 · Foundation** | registry + `member_tags` + `web_beta` backfill + ADR/doc | ✅ shipped (dark) |
-| **2 · Computed traits** | `member_traits` projection + nightly job (lifecycle/cohort/usage/WAM/RFM) | ⏳ |
+| **2 · Computed traits** | `member_traits` projection + nightly job (lifecycle/cohort/usage/WAM/RFM) | ✅ shipped (dark) |
 | **3 · Segments** | saved segment definitions + Studio admin (name, predicates, member count) | ⏳ |
 | **4 · Activation** | segment → audience reverse-ETL into `campaigns` / `contacts` | ⏳ |
 | **5 · Consent & experiments** | consent records + retention enforcement + experiment-assignment trait + holdouts | ⏳ |
@@ -91,5 +91,8 @@ against the registry — **a typo can't mint a tag.**
 |---|---|
 | `lib/traits/registry.ts` | the catalog — typed trait/tag definitions (the library) |
 | `lib/traits/tags.ts` | `assignTag` / `removeTag` / `getMemberTags` / `hasTag` (registry-validated) |
-| `supabase/migrations/*_member_tags.sql` | `member_tags` table + RLS + founding-cohort backfill |
-| `lib/traits/registry.test.ts` | registry integrity + `isTagKey` |
+| `lib/traits/compute.ts` | pure trait computation (cohort, lifecycle, WAM, RFM…) — unit-tested |
+| `lib/traits/refresh.ts` | the nightly job — RPC aggregates → compute → upsert `member_traits` |
+| `app/api/cron/refresh-traits/route.ts` | Vercel Cron entrypoint (02:30 daily; `CRON_SECRET`-guarded) |
+| `supabase/migrations/*_member_tags.sql` · `*_member_traits.sql` | tables + RLS + `member_engagement_stats` RPC + founding-cohort backfill |
+| `lib/traits/*.test.ts` | registry integrity, `isTagKey`, and the compute layer |
