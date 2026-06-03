@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Sparkles, Check, X, Send } from 'lucide-react'
+import Link from 'next/link'
+import { Sparkles, Check, X, Send, ArrowRight } from 'lucide-react'
 import { conciergeTurn, confirmProposal } from '@/app/onboarding/vera-actions'
 import type { ProposedToolCall } from '@/lib/ai/vera/concierge'
 import type { VeraMessage } from '@/lib/ai/vera/agent-claude'
@@ -125,6 +126,19 @@ export function VeraConcierge() {
           </div>
         </>
       )}
+
+      {/* The concrete next action toward a real thing — always available, emphasized
+          once Vera has done her job (AI-VERA §3: get them to a circle, then step back). */}
+      <Link
+        href="/circles"
+        className={
+          done
+            ? 'mt-2 inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover'
+            : 'mt-1 inline-flex items-center gap-1 text-xs font-medium text-subtle transition-colors hover:text-text'
+        }
+      >
+        Find your circle <ArrowRight className="h-3.5 w-3.5" />
+      </Link>
     </div>
   )
 }
