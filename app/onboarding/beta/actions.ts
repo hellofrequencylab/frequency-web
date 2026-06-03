@@ -59,14 +59,19 @@ export async function completeBetaInduction(data: {
   handle: string
   bio: string
   avatarUrl: string
-  regionId: string
+  location: string
+  lat: number | null
+  lng: number | null
   intent: string
+  interests: string
   heardAbout: string
   oaths: OathId[]
 }) {
   const { displayName, handle, bio, avatarUrl } = sanitizeProfileInput(data)
   const intent = data.intent.trim().slice(0, 500)
+  const interests = data.interests.trim().slice(0, 200)
   const heardAbout = data.heardAbout.trim().slice(0, 120)
+  const location = data.location.trim().slice(0, 160)
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -82,7 +87,6 @@ export async function completeBetaInduction(data: {
       handle,
       bio: bio || null,
       avatar_url: avatarUrl || null,
-      nexus_region_id: data.regionId || null,
       meta: {
         ...meta,
         onboarding_completed: true,
@@ -96,7 +100,9 @@ export async function completeBetaInduction(data: {
             oaths: data.oaths,
           },
           intent: intent || null,
+          interests: interests || null,
           heard_about: heardAbout || null,
+          location: location ? { label: location, lat: data.lat, lng: data.lng } : null,
           completed_at: new Date().toISOString(),
         },
       },
@@ -115,5 +121,6 @@ export async function completeBetaInduction(data: {
     sendWelcomeEmail({ to: user.email, displayName }).catch(() => {})
   }
 
-  redirect('/circles')
+  // Land in the feed and kick off the first-post step of onboarding.
+  redirect('/feed?intro=1')
 }
