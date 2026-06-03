@@ -62,8 +62,8 @@ export default async function DispatchDetailPage({ params }: Props) {
       const table: 'circles' | 'hubs' | 'nexuses' =
         dispatch.audience_scope === 'circle' ? 'circles' :
         dispatch.audience_scope === 'hub'    ? 'hubs'    : 'nexuses'
-      const { data } = await admin.from(table).select('name').eq('id', dispatch.audience_id).maybeSingle()
-      return data?.name ?? ''
+      const { data } = await admin.from(table).select('name, slug').eq('id', dispatch.audience_id).maybeSingle()
+      return (data as { name: string; slug: string } | null) ?? null
     })(),
     admin.from('dispatch_likes').select('id', { count: 'exact', head: true }).eq('dispatch_id', id),
     myProfileId
@@ -84,7 +84,13 @@ export default async function DispatchDetailPage({ params }: Props) {
       : Promise.resolve({ data: [] }),
   ])
 
-  const audienceName = audienceRes as string
+  const audience = audienceRes as { name: string; slug: string } | null
+  const audienceHref = audience
+    ? dispatch.audience_scope === 'circle' ? `/circles/${audience.slug}`
+      : dispatch.audience_scope === 'hub' ? `/hubs/${audience.slug}`
+      : dispatch.audience_scope === 'nexus' ? `/nexuses/${audience.slug}`
+      : null
+    : null
   const likeCount  = likesRes.count ?? 0
   const hasLiked   = !!myLikeRes.data
   const comments   = (commentsRes.data ?? []) as unknown as {
@@ -146,10 +152,16 @@ export default async function DispatchDetailPage({ params }: Props) {
               {dispatch.audience_scope} broadcast
             </span>
           </div>
-          {audienceName && (
+          {audience && (
             <>
               <span className="text-subtle/60">·</span>
-              <span className="text-xs font-semibold text-muted">{audienceName}</span>
+              {audienceHref ? (
+                <Link href={audienceHref} className="text-xs font-semibold text-muted hover:text-primary-strong transition-colors">
+                  {audience.name}
+                </Link>
+              ) : (
+                <span className="text-xs font-semibold text-muted">{audience.name}</span>
+              )}
             </>
           )}
           <span className={`text-[11px] px-2 py-0.5 rounded-md font-semibold ${TYPE_COLORS[dispType]}`}>
