@@ -44,17 +44,15 @@ export default async function PracticesPage() {
       title="Practices"
       description="This is where the points come from. A practice is the thing you actually do — adopt one, then log it every day to earn zaps, climb the ranks, and keep your streak alive."
     >
-      <div className="mb-6">
-        <StatStrip
-          items={[
-            { value: mine.length, label: 'Your practices' },
-            { value: daysLogged, label: 'Days logged (14d)' },
-            { value: library.length, label: 'In the library' },
-          ]}
-        />
-      </div>
+      <StatStrip
+        items={[
+          { value: mine.length, label: 'Your practices' },
+          { value: daysLogged, label: 'Days logged (14d)' },
+          { value: library.length, label: 'In the library' },
+        ]}
+      />
 
-      <div className="max-w-2xl space-y-10">
+      <div className="max-w-2xl space-y-8">
         {profileId && (recent.length > 0 || mine.length > 0) && (
           <section>
             <SectionHeader title="Your activity" />
@@ -73,7 +71,7 @@ export default async function PracticesPage() {
                   <div
                     key={d}
                     title={d}
-                    className={`h-7 flex-1 rounded-md ${
+                    className={`h-7 flex-1 rounded-lg ${
                       loggedDays.has(d) ? 'bg-primary' : 'border border-border bg-surface'
                     }`}
                   />
@@ -109,9 +107,9 @@ export default async function PracticesPage() {
                   className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-surface px-5 py-4 shadow-sm transition-colors hover:border-primary-bg hover:shadow-md"
                 >
                   <div className="min-w-0">
-                    <p className="font-semibold text-text">{p.title}</p>
+                    <p className="text-base font-bold text-text">{p.title}</p>
                     {p.description && (
-                      <p className="mt-0.5 line-clamp-2 text-sm text-muted">{p.description}</p>
+                      <p className="mt-0.5 line-clamp-2 text-sm leading-relaxed text-muted">{p.description}</p>
                     )}
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
@@ -145,9 +143,9 @@ export default async function PracticesPage() {
                   className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-surface px-5 py-4 shadow-sm transition-colors hover:border-primary-bg hover:shadow-md"
                 >
                   <div className="min-w-0">
-                    <p className="font-semibold text-text">{p.title}</p>
+                    <p className="text-base font-bold text-text">{p.title}</p>
                     {p.description && (
-                      <p className="mt-0.5 line-clamp-2 text-sm text-muted">{p.description}</p>
+                      <p className="mt-0.5 line-clamp-2 text-sm leading-relaxed text-muted">{p.description}</p>
                     )}
                   </div>
                   <div className="shrink-0">
