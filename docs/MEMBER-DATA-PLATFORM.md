@@ -71,7 +71,7 @@ against the registry — **a typo can't mint a tag.**
 | **1 · Foundation** | registry + `member_tags` + `web_beta` backfill + ADR/doc | ✅ shipped (dark) |
 | **2 · Computed traits** | `member_traits` projection + nightly job (lifecycle/cohort/usage/WAM/RFM) | ✅ shipped (dark) |
 | **3 · Segments** | saved segment definitions + Studio admin (name, predicates, member count) | ✅ shipped |
-| **4 · Activation** | segment → audience reverse-ETL into `campaigns` / `contacts` | ⏳ |
+| **4 · Activation** | trait segments selectable as campaign audiences (`seg:<slug>` → member contacts, consent-aware) | ✅ shipped |
 | **5 · Consent & experiments** | consent records + retention enforcement + experiment-assignment trait + holdouts | ⏳ |
 
 ## Future-proofing (set up now, not retrofitted)
