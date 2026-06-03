@@ -15,12 +15,10 @@ import { CircleLocationSearch } from '@/components/circles/circle-location-searc
 import { SectionHeader } from '@/components/ui/section-header'
 import { formatDistance } from '@/lib/geocode'
 import { demoModeEnabled } from '@/lib/platform-flags'
+import type { ProfileIdentity } from '@/lib/types/profile'
 
-type Profile = {
+type Profile = ProfileIdentity & {
   id: string
-  display_name: string
-  handle: string
-  avatar_url: string | null
   community_role: CommunityRole
   last_seen_at: string | null
   is_demo: boolean
