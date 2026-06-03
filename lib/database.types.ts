@@ -2376,6 +2376,24 @@ export type Database = {
           },
         ]
       }
+      platform_flags: {
+        Row: {
+          key: string
+          updated_at: string | null
+          value: boolean
+        }
+        Insert: {
+          key: string
+          updated_at?: string | null
+          value: boolean
+        }
+        Update: {
+          key?: string
+          updated_at?: string | null
+          value?: boolean
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           is_demo: boolean
