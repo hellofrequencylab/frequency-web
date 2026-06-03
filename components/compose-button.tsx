@@ -17,7 +17,7 @@ const CREATE_OPTIONS = [
   { href: '/feed', icon: Home, label: 'Post', desc: 'Share with your circle', minRole: 'crew' as CommunityRole },
   { href: '/feed?announce=true', icon: Megaphone, label: 'Announcement', desc: 'Pin to the top of the feed', minRole: 'host' as CommunityRole },
   { href: '/events/new', icon: CalendarDays, label: 'Event', desc: 'Schedule a gathering', minRole: 'crew' as CommunityRole },
-  { href: '/broadcast?compose=true', icon: Radio, label: 'Dispatch', desc: 'Broadcast to your audience', minRole: 'host' as CommunityRole },
+  { href: '/broadcast?compose=true', icon: Radio, label: 'Broadcast', desc: 'Broadcast to your audience', minRole: 'host' as CommunityRole },
   { href: '/channels/new', icon: Hash, label: 'Channel', desc: 'Create a discussion channel', minRole: 'host' as CommunityRole },
 ]
 

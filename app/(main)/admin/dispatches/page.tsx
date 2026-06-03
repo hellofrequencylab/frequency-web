@@ -84,9 +84,9 @@ export default async function AdminDispatchesPage() {
     <div>
       <div className="flex items-end justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-text">Dispatches</h1>
+          <h1 className="text-2xl font-bold text-text">Broadcasts</h1>
           <p className="text-sm text-muted mt-1">
-            Publish announcements to your community. Dispatches appear on the Broadcast page and drop into the main feed.
+            Publish announcements to your community. Broadcasts appear on the Broadcasts page and drop into the main feed.
           </p>
         </div>
         <BroadcastCompose circles={circles} hubs={hubs} nexuses={nexuses} />
@@ -122,7 +122,7 @@ export default async function AdminDispatchesPage() {
           <SidebarCard title="Quick Actions">
             <div className="p-2 space-y-0.5">
               <Link href="/broadcast" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-text hover:bg-surface-elevated transition-colors">
-                <Megaphone className="w-4 h-4 text-subtle" /> New Dispatch
+                <Megaphone className="w-4 h-4 text-subtle" /> New Broadcast
               </Link>
             </div>
             <p className="px-4 py-3 text-xs text-subtle">Target dispatches to a specific circle, hub, or nexus. Published dispatches are visible to all members in the selected audience.</p>

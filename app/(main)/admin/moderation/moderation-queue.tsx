@@ -41,7 +41,7 @@ const REASON_BADGE: Record<string, { label: string; cls: string }> = {
 
 const TARGET_LABEL: Record<string, string> = {
   post:     'Post',
-  dispatch: 'Dispatch',
+  dispatch: 'Broadcast',
   comment:  'Comment',
   member:   'Member',
   event:    'Event',

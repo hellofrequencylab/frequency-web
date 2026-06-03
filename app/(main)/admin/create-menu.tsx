@@ -38,7 +38,7 @@ export function AdminCreateMenu({ role }: CreateMenuProps) {
     { icon: CircleDot,    label: 'New Circle',   href: '/admin/circles',     show: canHost },
     { icon: Radio,        label: 'New Channel',  href: '/channels',          show: canHost },
     { icon: CalendarDays, label: 'New Event',    href: '/events',            show: canHost },
-    { icon: Megaphone,    label: 'New Dispatch', href: '/broadcast',         show: canHost },
+    { icon: Megaphone,    label: 'New Broadcast', href: '/broadcast',         show: canHost },
     { icon: Zap,          label: 'New Task',     href: '/admin/crew-tasks',  show: canHost },
     { icon: Building2,    label: 'New Hub',      href: '/admin/hubs',        show: canGuide },
     { icon: Network,      label: 'New Nexus',    href: '/admin/nexuses',     show: canMentor },

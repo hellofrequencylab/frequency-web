@@ -143,7 +143,7 @@ export default async function DispatchDetailPage({ params }: Props) {
           <div className="flex items-center gap-1.5">
             <Megaphone className="w-4 h-4 text-primary-strong" />
             <span className="text-xs font-black uppercase tracking-[0.15em] text-primary-strong">
-              {dispatch.audience_scope} dispatch
+              {dispatch.audience_scope} broadcast
             </span>
           </div>
           {audienceName && (
