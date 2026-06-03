@@ -20,28 +20,52 @@ export const BETA_OATHS: { id: OathId; label: string }[] = [
   { id: 'build', label: "I'm here to build this, not browse it." },
 ]
 
-export type TourBeat = {
-  key: 'feed' | 'circles' | 'events'
-  title: string
-  line: string
-}
+/**
+ * The intro reel — a cinematic slideshow that crossfades between vector
+ * "renders" of features and atmospheric imagery of the place. Data-driven so
+ * real product screenshots can be slotted in later (just add `kind:'image'`
+ * entries pointing at the screenshot files) without touching the component.
+ */
+export type ReelSlide =
+  | { kind: 'render'; render: 'feed' | 'circles' | 'events'; title: string; line: string }
+  | { kind: 'image'; src: string; title: string; line: string }
 
-/** The core triad we show in the tour — Vera, hot but earned. */
-export const TOUR: TourBeat[] = [
+export const REEL: ReelSlide[] = [
   {
-    key: 'feed',
+    kind: 'image',
+    src: '/images/site/community-1.jpg',
+    title: 'This one is real',
+    line: "Not another feed. A community you can actually walk into.",
+  },
+  {
+    kind: 'render',
+    render: 'feed',
     title: 'The Feed',
-    line: "The pulse — what's actually happening near you. No algorithm deciding what you'd rage at. Just your people, in motion.",
+    line: "The pulse — what's happening near you. No algorithm deciding what you'd rage at.",
   },
   {
-    key: 'circles',
+    kind: 'render',
+    render: 'circles',
     title: 'Circles',
-    line: 'Small rooms around one thing you care about. This is where you stop lurking and start belonging.',
+    line: 'Small rooms around one thing you care about. Where you stop lurking.',
   },
   {
-    key: 'events',
+    kind: 'image',
+    src: '/images/site/moonlight-1.jpg',
+    title: 'Then you show up',
+    line: 'The screen is just how we find each other. The point is out here.',
+  },
+  {
+    kind: 'render',
+    render: 'events',
     title: 'Events',
-    line: 'Then you close the laptop. Meeting in the real world is the whole point — the screen is just how we find each other.',
+    line: 'Close the laptop. Meeting in the real world is the whole thing.',
+  },
+  {
+    kind: 'image',
+    src: '/images/site/lab-lounge.jpg',
+    title: 'And you belong',
+    line: 'A door with your name on it, and people who notice when you walk in.',
   },
 ]
 
