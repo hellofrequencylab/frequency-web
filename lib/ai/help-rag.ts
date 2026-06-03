@@ -8,7 +8,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { helpHref } from '@/lib/help/content'
 import { completeText } from './complete'
 import { embedText } from './embed'
-import { aiAvailable, featureOverBudget, recordAiUsage } from './usage'
+import { aiAvailable, featureOverBudget, recordAiUsage, logHelpQuery } from './usage'
 
 const FEATURE = 'help-search'
 const MATCH_COUNT = 6
@@ -73,11 +73,26 @@ function deflect(chunks: Chunk[], confidence: number): HelpAnswer {
   return { answer: null, citations: toCitations(chunks.slice(0, 3)), confidence, deflected: true }
 }
 
-/** Answer a help question via RAG, or deflect. Never throws. */
+/** Answer a help question via RAG, or deflect. Never throws. Logs every real
+ *  query (demand side of the living-docs loop) — best-effort. */
 export async function answerHelpQuestion(question: string, profileId?: string | null): Promise<HelpAnswer> {
   const q = question.trim()
   if (!q) return { answer: null, citations: [], confidence: 0, deflected: true }
 
+  const result = await resolveHelpAnswer(q, profileId)
+  void logHelpQuery({
+    question: q,
+    confidence: result.confidence,
+    answered: result.answer !== null,
+    deflected: result.deflected,
+    topCategory: result.citations[0]?.category ?? null,
+    topSlug: result.citations[0]?.slug ?? null,
+    profileId,
+  })
+  return result
+}
+
+async function resolveHelpAnswer(q: string, profileId?: string | null): Promise<HelpAnswer> {
   // Kill switch + budget cap. Fail closed to the deflect path.
   if (!(await aiAvailable()) || (await featureOverBudget(FEATURE))) return deflect([], 0)
 
