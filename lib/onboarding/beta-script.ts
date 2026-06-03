@@ -15,9 +15,9 @@ export type OathId = 'unfinished' | 'report' | 'build'
 
 /** The gate. All three must be checked to enter. Single source of truth. */
 export const BETA_OATHS: { id: OathId; label: string }[] = [
-  { id: 'unfinished', label: 'I agree to break things on this website' },
-  { id: 'report', label: 'I agree to submit bug reports and screenshots' },
-  { id: 'build', label: 'I agree to be a Frequency Web Founder' },
+  { id: 'unfinished', label: 'I agree to break things' },
+  { id: 'report', label: 'I agree to report bugs' },
+  { id: 'build', label: 'I agree to be a Founder' },
 ]
 
 /** "How did you hear about us?" — captured on the intake into meta.beta.heard_about. */
@@ -46,7 +46,7 @@ export const REEL: ReelSlide[] = [
     kind: 'render',
     render: 'feed',
     title: 'The Feed',
-    line: 'The pulse of your people — what’s happening near you, right now. No algorithm. No outrage. Just real life.',
+    line: 'The pulse of your people. What’s happening near you, right now. No algorithm, no outrage, just real life.',
   },
   {
     kind: 'render',
@@ -66,25 +66,25 @@ export const REEL: ReelSlide[] = [
 export const VERA = {
   oath: {
     eyebrow: 'Before you come in',
-    heading: "This isn't a product yet. It's a promise.",
-    body: 'A promise that the people near you are worth finding — and that gathering can feel good again. We’re building that in the open, and you’re one of the very first. Come help us make it real.',
-    cta: "I'm in.",
+    heading: "This isn't a product. It's a promise.",
+    body: 'A promise that the people near you are worth finding, and that gathering can feel good again. We’re building it in the open, and you’re one of the very first.',
+    cta: "I'm in",
   },
   intro: {
     eyebrow: 'Welcome, Founder',
     heading: "You're not a user. You're a Founder.",
-    body: 'Everyone else shows up once it’s polished and easy. Not you. You’re here while it’s raw — shaping the room the whole community will walk into. Let’s build something worth belonging to.',
+    body: 'Everyone else waits until it’s polished. You’re here while it’s raw, shaping the room they’ll all walk into. Let’s build something worth belonging to.',
     cta: "Let's go",
   },
   identity: {
-    heading: 'So — who are you?',
+    heading: 'So, who are you?',
     body: 'Put a name and a face to it. This is how your people will know you in here.',
   },
   place: {
     heading: 'Where are you?',
-    body: 'We’ll connect you with the Founders closest to you — and learn what you’re hoping to find.',
+    body: 'We’ll connect you with the Founders closest to you, and learn what you’re hoping to find.',
     intentLabel: 'What are you hoping to find here?',
-    intentPlaceholder: 'Say it plainly — it helps us point you at your people.',
+    intentPlaceholder: 'Say it plainly. It helps us point you at your people.',
   },
   tour: {
     eyebrow: "Here's the place",
@@ -94,8 +94,8 @@ export const VERA = {
   },
   enter: {
     eyebrow: 'Last step',
-    heading: 'Ready, Founder?',
-    body: 'Step in — we’ll drop you straight into Circles, so you land in a room full of people instead of an empty page.',
-    cta: 'Enter Frequency',
+    heading: 'Hey, Founder!',
+    body: 'One thing before you explore: say hello. Your first post is how the community meets you. Let’s write it together, then the place is yours.',
+    cta: 'Create your first post',
   },
 } as const

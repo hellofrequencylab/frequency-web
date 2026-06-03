@@ -1,41 +1,41 @@
-// Circles render — the beta-induction "vector render" for Circles (ADR-068).
-// TEMPORARY: deleted with the induction at launch. Disposable inline SVG.
+// Circles render — a desktop "circles page" mockup (ADR-068). TEMPORARY, disposable SVG.
 
-import { RenderFrame, InnerCard, Bar } from './frame'
+import { RenderFrame, InnerCard, Label } from './frame'
 
-/** One circle tile: a cluster of member avatars + a name/meta line. */
-function CircleTile({ x, y, accent = false }: { x: number; y: number; accent?: boolean }) {
+function Tile({ x, y, name, members, accent }: { x: number; y: number; name: string; members: string; accent?: boolean }) {
+  const cx = x + 60
   return (
     <>
-      <InnerCard x={x} y={y} w={138} h={150} />
-      {/* overlapping avatar cluster */}
+      <InnerCard x={x} y={y} w={120} h={104} />
       <g className={accent ? 'text-primary' : 'text-primary-bg'}>
-        <circle cx={x + 46} cy={y + 50} r={22} fill="currentColor" />
+        <circle cx={cx - 12} cy={y + 32} r={14} fill="currentColor" />
       </g>
       <g className="text-primary-bg">
-        <circle cx={x + 76} cy={y + 50} r={18} fill="currentColor" />
+        <circle cx={cx + 8} cy={y + 32} r={11} fill="currentColor" />
       </g>
-      <g className="text-border-strong" opacity={0.45}>
-        <circle cx={x + 100} cy={y + 50} r={14} fill="currentColor" />
+      <g className="text-border-strong" opacity={0.4}>
+        <circle cx={cx + 26} cy={y + 32} r={9} fill="currentColor" />
       </g>
-      {/* name + meta */}
-      <Bar x={x + 22} y={y + 92} w={94} h={9} o={0.7} />
-      <Bar x={x + 22} y={y + 110} w={60} h={7} o={0.4} />
-      {/* join chip */}
+      <Label x={cx} y={y + 64} size={10} weight={700} anchor="middle">{name}</Label>
+      <Label x={cx} y={y + 78} size={8} weight={500} tone="text-subtle" anchor="middle">{members}</Label>
       <g className={accent ? 'text-primary' : 'text-border-strong'} opacity={accent ? 1 : 0.4}>
-        <rect x={x + 22} y={y + 124} width={48} height={12} rx={6} fill="currentColor" />
+        <rect x={cx - 24} y={y + 86} width={48} height={14} rx={7} fill="currentColor" />
       </g>
+      {accent && <Label x={cx} y={y + 96} size={8} weight={700} tone="text-on-primary" anchor="middle">Joined</Label>}
     </>
   )
 }
 
 export function CirclesRender({ animate = true }: { animate?: boolean }) {
   return (
-    <RenderFrame label="A preview of Frequency circles" animate={animate}>
-      <CircleTile x={24} y={86} accent />
-      <CircleTile x={198} y={86} />
-      <CircleTile x={24} y={256} />
-      <CircleTile x={198} y={256} accent />
+    <RenderFrame label="A preview of Frequency circles" title="Circles" active={1} animate={animate}>
+      <Label x={140} y={96} size={9} weight={600} tone="text-subtle">SMALL ROOMS NEAR YOU</Label>
+      <Tile x={140} y={106} name="Sunrise Hikers" members="24 members" accent />
+      <Tile x={268} y={106} name="Book Club" members="12 members" />
+      <Tile x={396} y={106} name="Makers" members="31 members" />
+      <Tile x={140} y={222} name="Sound Baths" members="18 members" />
+      <Tile x={268} y={222} name="Cold Plunge" members="9 members" accent />
+      <Tile x={396} y={222} name="Potluck" members="22 members" />
     </RenderFrame>
   )
 }

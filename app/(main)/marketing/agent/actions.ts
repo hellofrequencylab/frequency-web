@@ -5,6 +5,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getStaffMember, atLeastStaff } from '@/lib/staff'
 import { proposeWinbacks, executeAction } from '@/lib/studio/agent'
+import { proposeContentDrafts } from '@/lib/marketing/content'
 
 async function gate(): Promise<{ profileId: string } | null> {
   const staff = await getStaffMember()
@@ -15,6 +16,12 @@ async function gate(): Promise<{ profileId: string } | null> {
 export async function generateProposals(): Promise<void> {
   if (!(await gate())) return
   await proposeWinbacks()
+  revalidatePath('/marketing/agent')
+}
+
+export async function generateContentDrafts(): Promise<void> {
+  if (!(await gate())) return
+  await proposeContentDrafts()
   revalidatePath('/marketing/agent')
 }
 
