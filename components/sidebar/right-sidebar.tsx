@@ -222,7 +222,7 @@ async function RecentDispatchesWidget({
   if (dispatches.length === 0) return null
 
   return (
-    <WidgetCard title="Dispatches">
+    <WidgetCard title="Broadcasts">
       <div className="space-y-0.5">
         {dispatches.map((d) => (
           <Link

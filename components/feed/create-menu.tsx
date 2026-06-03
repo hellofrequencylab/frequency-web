@@ -55,7 +55,7 @@ const ITEMS: Item[] = [
   },
   {
     href: '/broadcast',
-    label: 'New Dispatch',
+    label: 'New Broadcast',
     hint: 'Announcement to the community',
     Icon: Megaphone,
     roles: HOST_PLUS,
