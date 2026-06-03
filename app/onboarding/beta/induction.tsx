@@ -310,12 +310,12 @@ export default function BetaInduction({ userId, userEmail, initialHandle, previe
                 </h1>
                 <p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-muted">{VERA.oath.body}</p>
 
-                {/* Agreements + I'm in, all on one flexible line (no overflow, no wrap). */}
-                <div className="mx-auto mt-10 flex w-full max-w-4xl flex-col items-stretch gap-3 sm:flex-row">
+                {/* Agreements + I'm in, in a 2×2 grid (two rows). */}
+                <div className="mx-auto mt-10 grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-2">
                   {BETA_OATHS.map((o) => (
                     <label
                       key={o.id}
-                      className={`flex flex-1 cursor-pointer items-center justify-center gap-2.5 whitespace-nowrap rounded-2xl border px-3 py-4 transition-colors ${oaths[o.id] ? 'border-primary bg-primary/10' : 'border-border bg-surface hover:border-primary/40'}`}
+                      className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-4 text-left transition-colors ${oaths[o.id] ? 'border-primary bg-primary/10' : 'border-border bg-surface hover:border-primary/40'}`}
                     >
                       <input
                         type="checkbox"
@@ -323,10 +323,10 @@ export default function BetaInduction({ userId, userEmail, initialHandle, previe
                         onChange={(e) => setOaths((prev) => ({ ...prev, [o.id]: e.target.checked }))}
                         className="h-5 w-5 shrink-0 accent-primary"
                       />
-                      <span className={`text-sm font-medium ${oaths[o.id] ? 'text-text' : 'text-muted'}`}>{o.label}</span>
+                      <span className={`text-base font-medium ${oaths[o.id] ? 'text-text' : 'text-muted'}`}>{o.label}</span>
                     </label>
                   ))}
-                  <button disabled={!allOathsChecked || accepting} onClick={passOath} className={`${btnPrimary} sm:flex-1`}>
+                  <button disabled={!allOathsChecked || accepting} onClick={passOath} className={`${btnPrimary} h-full`}>
                     {accepting ? 'One sec…' : VERA.oath.cta}
                     {!accepting && <ArrowRight />}
                   </button>
@@ -353,65 +353,68 @@ export default function BetaInduction({ userId, userEmail, initialHandle, previe
 
             {/* ── Beat 2: The reel (desktop website mockup) ── */}
             {beat === 2 && (
-              <div className="mx-auto max-w-3xl">
+              <div className="mx-auto max-w-5xl">
                 <p className={eyebrow}>{VERA.tour.eyebrow}</p>
-                <h1 className={`mt-3 text-5xl sm:text-6xl ${heading}`}>{VERA.tour.heading}</h1>
+                <h1 className={`mt-3 text-4xl sm:text-5xl ${heading}`}>{VERA.tour.heading}</h1>
 
-                <div className="relative mx-auto mt-7 w-full max-w-xl" style={{ aspectRatio: '540 / 348' }}>
-                  {REEL.map((s, i) => {
-                    const active = i === reelIndex
-                    const C = s.kind === 'render' ? RENDERS[s.render] : null
-                    return (
-                      <div key={i} className={`absolute inset-0 transition-opacity duration-700 ${active ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-                        {C && <C animate={active} />}
-                      </div>
-                    )
-                  })}
-                </div>
+                <div className="mt-8 flex flex-col items-center gap-8 md:flex-row md:items-center md:justify-center md:gap-12">
+                  {/* desktop mockup, left */}
+                  <div className="relative w-full max-w-xl shrink-0" style={{ aspectRatio: '540 / 348' }}>
+                    {REEL.map((s, i) => {
+                      const active = i === reelIndex
+                      const C = s.kind === 'render' ? RENDERS[s.render] : null
+                      return (
+                        <div key={i} className={`absolute inset-0 transition-opacity duration-700 ${active ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                          {C && <C animate={active} />}
+                        </div>
+                      )
+                    })}
+                  </div>
 
-                <div className="mx-auto mt-5 min-h-[64px] max-w-lg">
-                  <p className="text-2xl font-bold text-text">{slide.title}</p>
-                  <p className="mt-1.5 text-base leading-relaxed text-muted">{slide.line}</p>
-                </div>
-
-                <div className="flex items-center justify-center gap-2">
-                  {REEL.map((s, i) => (
-                    <button
-                      key={i}
-                      aria-label={`Show ${s.title}`}
-                      onClick={() => setReelIndex(i)}
-                      className={`h-2 rounded-full transition-all ${i === reelIndex ? 'w-6 bg-primary' : 'w-2 bg-border-strong hover:bg-primary/60'}`}
-                    />
-                  ))}
-                </div>
-
-                <div className="mt-7 flex flex-col items-center gap-3">
-                  <button onClick={() => (isLastSlide ? setBeat(3) : setReelIndex(reelIndex + 1))} className={btnPrimary}>
-                    {isLastSlide ? VERA.tour.cta : 'Next'}
-                    <ArrowRight />
-                  </button>
-                  <button onClick={() => setBeat(1)} className={backLink}>Back</button>
+                  {/* caption + dots + action, right */}
+                  <div className="max-w-xs text-center md:text-left">
+                    <p className="text-3xl font-bold text-text">{slide.title}</p>
+                    <p className="mt-2 text-lg leading-relaxed text-muted">{slide.line}</p>
+                    <div className="mt-5 flex items-center justify-center gap-2 md:justify-start">
+                      {REEL.map((s, i) => (
+                        <button
+                          key={i}
+                          aria-label={`Show ${s.title}`}
+                          onClick={() => setReelIndex(i)}
+                          className={`h-2 rounded-full transition-all ${i === reelIndex ? 'w-6 bg-primary' : 'w-2 bg-border-strong hover:bg-primary/60'}`}
+                        />
+                      ))}
+                    </div>
+                    <div className="mt-7 flex flex-col items-center gap-3 md:items-start">
+                      <button onClick={() => (isLastSlide ? setBeat(3) : setReelIndex(reelIndex + 1))} className={btnPrimary}>
+                        {isLastSlide ? VERA.tour.cta : 'Next'}
+                        <ArrowRight />
+                      </button>
+                      <button onClick={() => setBeat(1)} className={backLink}>Back</button>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
 
             {/* ── Beat 3: Identity ── */}
             {beat === 3 && (
-              <div className="mx-auto max-w-md">
+              <div className="mx-auto max-w-4xl">
                 <h1 className={`text-5xl sm:text-6xl ${heading}`}>{VERA.identity.heading}</h1>
-                <p className="mx-auto mt-4 max-w-lg text-lg text-muted">{VERA.identity.body}</p>
 
-                <div className="mx-auto mt-8 flex w-full flex-col items-center gap-5">
-                  <button type="button" onClick={() => fileInputRef.current?.click()} className="group">
-                    <div className="rounded-full ring-4 ring-surface shadow-sm">{renderAvatar()}</div>
-                    <span className="mt-2 block text-xs font-semibold text-primary group-hover:underline">
-                      {avatarPreview ? 'Change photo' : 'Add a photo'}
-                    </span>
-                  </button>
-                  <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-                  {uploadError && <p className="text-xs text-danger">{uploadError}</p>}
+                <div className="mt-9 flex flex-col items-center gap-10 text-left md:flex-row md:items-center md:justify-center md:gap-12">
+                  {/* left: avatar + form card */}
+                  <div className="flex w-full max-w-sm flex-col items-center gap-4">
+                    <button type="button" onClick={() => fileInputRef.current?.click()} className="group">
+                      <div className="rounded-full ring-4 ring-surface shadow-sm">{renderAvatar()}</div>
+                      <span className="mt-2 block text-center text-xs font-semibold text-primary group-hover:underline">
+                        {avatarPreview ? 'Change photo' : 'Add a photo'}
+                      </span>
+                    </button>
+                    <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+                    {uploadError && <p className="text-xs text-danger">{uploadError}</p>}
 
-                  <div className="w-full space-y-4 rounded-3xl border border-border bg-surface p-6 shadow-sm">
+                    <div className="w-full space-y-4 rounded-3xl border border-border bg-surface p-6 shadow-sm">
                     <div>
                       <label className={fieldLabel}>Display name</label>
                       <input
@@ -470,24 +473,29 @@ export default function BetaInduction({ userId, userEmail, initialHandle, previe
                       />
                     </div>
                   </div>
-                </div>
+                  </div>
 
-                <div className="mt-8 flex flex-col items-center gap-3">
-                  <button disabled={!identityValid || uploading} onClick={advanceFromIdentity} className={btnPrimary}>
-                    {uploading ? 'Uploading…' : 'Continue'}{!uploading && <ArrowRight />}
-                  </button>
-                  <button onClick={() => setBeat(2)} className={backLink}>Back</button>
+                  {/* right: copy + actions under it */}
+                  <div className="w-full max-w-xs text-center md:text-left">
+                    <p className="text-lg leading-relaxed text-muted">{VERA.identity.body}</p>
+                    <div className="mt-6 flex flex-col items-center gap-3 md:items-start">
+                      <button disabled={!identityValid || uploading} onClick={advanceFromIdentity} className={btnPrimary}>
+                        {uploading ? 'Uploading…' : 'Continue'}{!uploading && <ArrowRight />}
+                      </button>
+                      <button onClick={() => setBeat(2)} className={backLink}>Back</button>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
 
             {/* ── Beat 4: Place + intent ── */}
             {beat === 4 && (
-              <div className="mx-auto max-w-md">
+              <div className="mx-auto max-w-4xl">
                 <h1 className={`text-5xl sm:text-6xl ${heading}`}>{VERA.place.heading}</h1>
-                <p className="mx-auto mt-4 max-w-lg text-lg text-muted">{VERA.place.body}</p>
 
-                <div className="mx-auto mt-8 w-full space-y-4 rounded-3xl border border-border bg-surface p-6 text-left shadow-sm">
+                <div className="mt-9 flex flex-col items-center gap-10 text-left md:flex-row md:items-center md:justify-center md:gap-12">
+                  <div className="w-full max-w-sm space-y-4 rounded-3xl border border-border bg-surface p-6 shadow-sm">
                   <div>
                     <label className={fieldLabel}>Your city</label>
                     <div className="relative">
@@ -550,11 +558,16 @@ export default function BetaInduction({ userId, userEmail, initialHandle, previe
                       ))}
                     </select>
                   </div>
-                </div>
+                  </div>
 
-                <div className="mt-8 flex flex-col items-center gap-3">
-                  <button onClick={() => setBeat(5)} className={btnPrimary}>Continue<ArrowRight /></button>
-                  <button onClick={() => setBeat(3)} className={backLink}>Back</button>
+                  {/* right: copy + actions under it */}
+                  <div className="w-full max-w-xs text-center md:text-left">
+                    <p className="text-lg leading-relaxed text-muted">{VERA.place.body}</p>
+                    <div className="mt-6 flex flex-col items-center gap-3 md:items-start">
+                      <button onClick={() => setBeat(5)} className={btnPrimary}>Continue<ArrowRight /></button>
+                      <button onClick={() => setBeat(3)} className={backLink}>Back</button>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
