@@ -4,6 +4,7 @@ import { Users } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { HierarchyBreadcrumb } from '@/components/hierarchy/breadcrumb'
 import { StatusBadge } from '@/components/groups/status-badge'
+import type { CircleBase } from '@/lib/types/circle'
 
 type HubDetail = {
   id: string
@@ -23,14 +24,9 @@ type HubDetail = {
   } | null
 }
 
-type CircleRow = {
-  id: string
-  name: string
+type CircleRow = CircleBase & {
   slug: string
   type: 'in-person' | 'online'
-  member_count: number
-  member_cap: number
-  status: string
   host: { display_name: string; handle: string } | null
 }
 
