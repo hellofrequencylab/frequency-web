@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import Link from 'next/link'
 import {
   Sparkles, Activity, Heart, MessagesSquare, Megaphone, Palette, Briefcase, Radio, Users, Circle as CircleIcon,
 } from 'lucide-react'
@@ -8,7 +9,6 @@ import { createClient } from '@/lib/supabase/server'
 import { TuneInButton, TunedInButton } from './channel-toggle'
 import { NewChannelCompose } from './new-channel-compose'
 import { IndexTemplate } from '@/components/templates/index-template'
-import { StatStrip } from '@/components/ui/page-header'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { EntityCard } from '@/components/cards/entity-card'
@@ -93,47 +93,124 @@ export default async function ChannelsPage() {
     categories: new Set(channelList.map((c) => c.category)).size,
   }
 
+  // Right-column data: categories (with counts) + a featured interest (most circles).
+  const categoryCounts = new Map<string, number>()
+  for (const c of channelList) categoryCounts.set(c.category, (categoryCounts.get(c.category) ?? 0) + 1)
+  const categories = [...categoryCounts.entries()]
+    .map(([slug, count]) => ({
+      slug,
+      count,
+      label: slug.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+    }))
+    .sort((a, b) => b.count - a.count)
+
+  const featured = [...channelList].sort((a, b) => (circleCounts[b.id] ?? 0) - (circleCounts[a.id] ?? 0))[0] ?? null
+  const FeaturedIcon = featured ? (CATEGORY_ICON[featured.category] ?? Radio) : Radio
+
   return (
     <IndexTemplate
       title="Interests"
       description="Find your thing. Interests are the global topics anyone can tune into — each carries a seasonal practice that Circles run locally. Pick what lights you up, then go do it with people near you."
       action={canCreate ? <NewChannelCompose /> : undefined}
     >
-      <StatStrip
-        items={[
-          { value: stats.interests, label: 'Interests' },
-          { value: stats.tunedIn, label: 'Tuned in' },
-          { value: stats.circles, label: 'Circles' },
-          { value: stats.categories, label: 'Categories' },
-        ]}
-      />
+      <div className="grid grid-cols-1 gap-x-8 gap-y-8 lg:grid-cols-3">
+        {/* Left: the interest cards, two-up (squished left). */}
+        <div className="space-y-8 lg:col-span-2">
+          {tunedIn.length > 0 && (
+            <section>
+              <SectionHeader title="Tuned in" count={tunedIn.length} />
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {tunedIn.map((ch) => (
+                  <ChannelCard key={ch.id} channel={ch} memberCount={memberCounts[ch.id] ?? 0} circleCount={circleCounts[ch.id] ?? 0} isTunedIn canToggle={!!myProfileId} />
+                ))}
+              </div>
+            </section>
+          )}
 
-      <div className="space-y-8">
-        {tunedIn.length > 0 && (
           <section>
-            <SectionHeader title="Tuned in" count={tunedIn.length} />
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {tunedIn.map((ch) => (
-                <ChannelCard key={ch.id} channel={ch} memberCount={memberCounts[ch.id] ?? 0} circleCount={circleCounts[ch.id] ?? 0} isTunedIn canToggle={!!myProfileId} />
-              ))}
+            <SectionHeader title={tunedIn.length > 0 ? 'Explore more' : 'Explore'} count={explore.length} />
+            {explore.length === 0 ? (
+              <EmptyState icon={Radio} title="You're tuned into everything" description="You're following every interest going. Find a circle practicing one near you." />
+            ) : (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {explore.map((ch) => (
+                  <ChannelCard key={ch.id} channel={ch} memberCount={memberCounts[ch.id] ?? 0} circleCount={circleCounts[ch.id] ?? 0} isTunedIn={false} canToggle={!!myProfileId} />
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
+
+        {/* Right: the interior menu — stats · categories · featured. */}
+        <aside className="space-y-8">
+          {/* At a glance */}
+          <section>
+            <SectionHeader title="At a glance" />
+            <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+              <Stat value={stats.interests} label="Interests" />
+              <Stat value={stats.tunedIn} label="Tuned in" />
+              <Stat value={stats.circles} label="Circles" />
+              <Stat value={stats.categories} label="Categories" />
             </div>
           </section>
-        )}
 
-        <section>
-          <SectionHeader title={tunedIn.length > 0 ? 'Explore more' : 'Explore'} count={explore.length} />
-          {explore.length === 0 ? (
-            <EmptyState icon={Radio} title="You're tuned into everything" description="You're following every interest going. Find a circle practicing one near you." />
-          ) : (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {explore.map((ch) => (
-                <ChannelCard key={ch.id} channel={ch} memberCount={memberCounts[ch.id] ?? 0} circleCount={circleCounts[ch.id] ?? 0} isTunedIn={false} canToggle={!!myProfileId} />
-              ))}
+          {/* Categories */}
+          <section>
+            <SectionHeader title="Categories" count={categories.length} />
+            <div className="space-y-0.5">
+              {categories.map((cat) => {
+                const Icon = CATEGORY_ICON[cat.slug] ?? Radio
+                return (
+                  <div key={cat.slug} className="flex items-center gap-2.5 rounded-lg px-2 py-1.5">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-elevated text-primary-strong">
+                      <Icon className="h-3.5 w-3.5" />
+                    </span>
+                    <span className="flex-1 truncate text-sm font-medium text-text">{cat.label}</span>
+                    <span className="text-xs tabular-nums text-subtle">{cat.count}</span>
+                  </div>
+                )
+              })}
             </div>
+          </section>
+
+          {/* Featured */}
+          {featured && (
+            <section>
+              <SectionHeader title="Featured" />
+              <Link
+                href={`/channels/${featured.slug}`}
+                className="block rounded-2xl border border-border bg-surface p-4 shadow-sm transition-colors hover:border-primary-bg hover:shadow-md"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary-bg text-primary-strong">
+                    <FeaturedIcon className="h-5 w-5" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate text-base font-bold text-text">{featured.name}</p>
+                    <p className="text-xs text-subtle">
+                      {circleCounts[featured.id] ?? 0} {(circleCounts[featured.id] ?? 0) === 1 ? 'circle' : 'circles'} · {memberCounts[featured.id] ?? 0} tuned in
+                    </p>
+                  </div>
+                </div>
+                {featured.description && (
+                  <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted">{featured.description}</p>
+                )}
+              </Link>
+            </section>
           )}
-        </section>
+        </aside>
       </div>
     </IndexTemplate>
+  )
+}
+
+// De-boxed stat — a value over a label, in the right column.
+function Stat({ value, label }: { value: number; label: string }) {
+  return (
+    <div>
+      <div className="text-xl font-bold leading-none tabular-nums text-text">{value.toLocaleString()}</div>
+      <div className="mt-1 text-xs text-subtle">{label}</div>
+    </div>
   )
 }
 
