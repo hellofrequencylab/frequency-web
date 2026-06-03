@@ -14,6 +14,8 @@ import { PresenceHeartbeat } from '@/components/presence/heartbeat'
 import { PushRegistration } from '@/components/push/registration'
 import { SupportLauncher } from '@/components/support/support-launcher'
 import { getSearchIndex } from '@/lib/help/content'
+import { TourProvider } from '@/components/onboarding/tour-provider'
+import type { TourState } from '@/lib/onboarding/select'
 
 // Authenticated app layout. Wraps Feed, Groups, Events, Admin.
 // Pages outside this group (onboarding, settings, sign-in, /people) render
@@ -34,7 +36,7 @@ export default async function MainLayout({
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, display_name, handle, avatar_url, community_role, current_season_zaps, lifetime_gems')
+    .select('id, display_name, handle, avatar_url, community_role, current_season_zaps, lifetime_gems, meta')
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
@@ -57,6 +59,14 @@ export default async function MainLayout({
   // Help index for the app-wide support launcher (docs/SUPPORT-SYSTEM.md §1).
   // Small + read from local Markdown; cheap to load with the shell.
   const helpIndex = await getSearchIndex()
+
+  // Deterministic onboarding tour state from profiles.meta.tour (ADR-047 P1).
+  const tourMeta = (profile.meta as { tour?: Partial<TourState> } | null)?.tour
+  const tourState: TourState = {
+    seen: tourMeta?.seen ?? [],
+    dismissed: tourMeta?.dismissed ?? [],
+    lastShownAt: tourMeta?.lastShownAt ?? null,
+  }
 
   // Right sidebar streams in independently. Doesn't block page render
   const sidebar = (
@@ -90,6 +100,7 @@ export default async function MainLayout({
       <PresenceHeartbeat />
       <PushRegistration />
       <SupportLauncher index={helpIndex} />
+      <TourProvider initialState={tourState} />
     </AppShell>
   )
 }
