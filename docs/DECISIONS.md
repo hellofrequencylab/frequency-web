@@ -1721,6 +1721,35 @@ instrumentation) build on this seam.
 
 ---
 
+## ADR-075: Instrument the new-member activation funnel + Vera profile-completion nudge
+
+**Status:** Accepted · 2026-06-03 · follows [ADR-074](DECISIONS.md). Wires the activation funnel on
+the governed taxonomy ([ADR-070](DECISIONS.md), `lib/analytics/events.ts`). No schema change.
+
+**Context:** The engagement funnel (`/admin/engagement`) existed but its lifecycle steps were hollow:
+`circle.joined`, `practice.adopted`, and `profile.completed` were **defined in the taxonomy but never
+emitted** by any code path, and there was no onboarding-specific funnel — so "where do new founders
+drop between induction → Vera → first circle → first practice?" was unanswerable.
+
+**Decision:**
+- **Emit the missing lifecycle events** via the governed `track()` helper (best-effort, never blocks a
+  user action): `onboarding.induction_completed` + `profile.completed` (in `completeBetaInduction`),
+  `onboarding.vera_opened` (the concierge page), `circle.joined` (in `joinCircle` — also fixes the
+  broad funnel), and `practice.adopted` (in `adoptPractice`). Two new taxonomy entries added.
+- **Add a `New-member activation` funnel** (`ACTIVATION_FUNNEL` in `lib/analytics/dashboard.ts`):
+  induction → Vera → joined a circle → adopted → verified, computed from the same per-type actor
+  counts as the existing funnel (no new query). Surfaced first on `/admin/engagement`, above the
+  broad engagement funnel, via one shared `FunnelView`.
+- **In-flow profile completion (light).** Vera's system prompt now treats finishing a thin profile
+  (a one-line `bio` via `set_profile_field`, a photo via `/settings/profile`) as a *secondary* win —
+  one gentle offer, never before a circle. The tool + propose-and-confirm path already existed.
+
+**Consequences:** The activation funnel reflects real drop-off the moment events accrue — the PMF lens
+Stage A needs. Events are server-authoritative (`clientEmittable: false`), so they can't be spoofed.
+No migration. Profile-completion stays circle-first and consent-gated like every other Vera write.
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 

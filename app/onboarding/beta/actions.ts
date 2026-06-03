@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase/server'
 import { sendWelcomeEmail } from '@/lib/email'
 import { sanitizeProfileInput } from '@/lib/profile-input'
 import { rememberFacts } from '@/lib/ai/memory'
+import { track } from '@/lib/analytics/track'
 import { BETA_INDUCTION_VERSION, type OathId } from '@/lib/onboarding/beta-script'
 import type { Json } from '@/lib/database.types'
 
@@ -133,6 +134,11 @@ export async function completeBetaInduction(data: {
       goals: intent ? [intent] : [],
       neighborhood: location || null,
     })
+    // Activation-funnel instrumentation (ADR-075): the head of the new-member
+    // funnel. Best-effort; never blocks onboarding. Name + handle are required to
+    // get here, so profile is "completed" by our funnel's definition.
+    await track('onboarding.induction_completed', { hasAvatar: !!avatarUrl, hasIntent: !!intent }, prof.id)
+    await track('profile.completed', { hasAvatar: !!avatarUrl }, prof.id)
   }
 
   if (user.email) {
