@@ -17,6 +17,10 @@
       "schedule": "30 2 * * *"
     },
     {
+      "path": "/api/cron/enforce-retention",
+      "schedule": "45 2 * * *"
+    },
+    {
       "path": "/api/cron/event-reminders",
       "schedule": "*/15 * * * *"
     },
