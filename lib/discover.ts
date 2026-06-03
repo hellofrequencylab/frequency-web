@@ -212,34 +212,10 @@ export async function getPublicCityClusters(): Promise<CityCluster[]> {
 }
 
 // ── Shared formatting helpers for the discover UI ─────────────────────────────
-
-export function formatEventDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  })
-}
-
-export function formatEventDateTime(iso: string): string {
-  return new Date(iso).toLocaleString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  })
-}
+// The pure date formatters now live in lib/utils (shared with the feed cards +
+// marketing event row); re-exported here so discover consumers keep one import.
+export { formatEventDate, formatEventDateTime, eventDateBadge } from '@/lib/utils'
 
 export function hasEventEnded(event: PublicEvent): boolean {
   return new Date(event.ends_at ?? event.starts_at).getTime() < Date.now()
-}
-
-export function eventDateBadge(iso: string): { month: string; day: number } {
-  const d = new Date(iso)
-  return {
-    month: d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase(),
-    day: d.getDate(),
-  }
 }

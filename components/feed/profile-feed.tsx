@@ -1,33 +1,8 @@
 import Link from 'next/link'
 import { CalendarDays, MapPin, AtSign, Megaphone, Zap, ArrowRight, MessageSquare, PenLine } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { relativeTime } from '@/lib/utils'
-import { PostCard, type FeedPost } from './post-card'
-
-interface RawPost {
-  id: string
-  body: string | null
-  post_type: string
-  is_pinned: boolean
-  created_at: string
-  media_urls: string[]
-  is_demo: boolean
-  reaction_count: number | null
-  comment_count: number | null
-  engagement_score: number | null
-  author: {
-    id: string
-    display_name: string
-    handle: string
-    avatar_url: string | null
-    community_role: string
-  }
-  reactions: Array<{
-    id: string
-    reaction_type: string
-    profile_id: string
-  }>
-}
+import { relativeTime, eventDateBadge, formatEventDate } from '@/lib/utils'
+import { PostCard, type FeedPost, type RawPost } from './post-card'
 
 interface DispatchItem {
   id: string
@@ -355,10 +330,8 @@ function DispatchTimelineCard({ dispatch: d }: { dispatch: DispatchItem }) {
 }
 
 function EventTimelineCard({ event: e }: { event: EventItem }) {
-  const d = new Date(e.starts_at)
-  const month = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()
-  const day = d.getDate()
-  const dateStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+  const { month, day } = eventDateBadge(e.starts_at)
+  const dateStr = formatEventDate(e.starts_at)
 
   return (
     <Link

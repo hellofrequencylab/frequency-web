@@ -11,16 +11,12 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { CircleCard, type CircleCardData } from '@/components/circles/circle-card'
 import { CirclesToolbar } from '@/components/circles/circles-toolbar'
 import { demoModeEnabled } from '@/lib/platform-flags'
+import type { CircleBase } from '@/lib/types/circle'
 
-type CircleRow = {
-  id: string
-  name: string
+type CircleRow = CircleBase & {
   slug: string
   about: string | null
   type: 'in-person' | 'online'
-  member_count: number
-  member_cap: number
-  status: string
   created_at: string
   latitude: number | null
   longitude: number | null
