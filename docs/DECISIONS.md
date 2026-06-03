@@ -1486,6 +1486,46 @@ articles) needs **no AI** and is the highest-leverage first step.
 
 ---
 
+## ADR-068: Beta induction — a deliberate, temporary onboarding gate (separate from launch onboarding)
+
+**Status:** Accepted · 2026-06-03 · a scoped **exception** to the non-blocking onboarding model
+([ADR-047](DECISIONS.md)/[ONBOARDING.md](ONBOARDING.md)); scripted in Vera's voice
+([AI-VERA.md](AI-VERA.md)) ahead of the live AI kernel. Spec: [BETA-INDUCTION.md](BETA-INDUCTION.md).
+
+**Context:** The beta cohort is not the general public — these are people who raised their hand to
+*build and test* Frequency. We want them to (a) feel the weight of that ("I'm here to build this,
+not browse it"), (b) get a fast, stoked orientation to the core of the product, and (c) hand us the
+profile + CRM signal (who they are, where, what they're hoping for) — without a slow form. This is
+in direct tension with ADR-047's "non-blocking, explore-first, no wizard" rule, which is correct for
+the **public launch** but wrong for a founding cohort.
+
+**Decision:**
+- **Ship a distinct, throwaway "beta induction"** at `/onboarding/beta`, separate from the
+  steady-state onboarding. It is the live path **only during beta**; `/onboarding` redirects into it
+  behind a single flag (`BETA_INDUCTION_ACTIVE` in `lib/onboarding/beta-script.ts`). At launch we
+  flip the flag and delete the route — ADR-047's progressive tour is the permanent model.
+- **One deliberate gate: the Oath.** Three commitment checkboxes (unfinished / report bugs / here to
+  build) must be accepted to enter. This is the *single* blocking step and the whole reason a gate is
+  acceptable here — the friction is the filter. Consent is stamped to `profiles.meta.beta.oath`.
+- **Vera runs hot, scripted.** All copy is deterministic, authored in Vera's **hot register**
+  (AI-VERA.md §2) — conviction, not confetti. No live AI calls (kernel/kill-switch not required); the
+  script is also the Phase-2 fallback when live Vera lands.
+- **Capture does double duty:** identity (name/handle/avatar → `profiles`), place
+  (`nexus_region_id`), and **one intent question** ("what are you hoping for here?") →
+  `profiles.meta.beta.intent` — the CRM gold and the future `suggest_circle` seed. Mirroring intent
+  into the CRM `contacts.meta` / `ai_member_context.facts` is a follow-up, not this build.
+- **Feature only the core triad** (Feed → Circles → Events) as **disposable inline-SVG "renders"**
+  (DAWN-tokenized, `components/onboarding/renders/`) — cheap to delete when the design changes; no
+  commissioned art.
+
+**Consequences:** No migration — everything rides `profiles.meta` (like ADR-047's `meta.tour`). A new
+route + client flow + three render components, all clearly marked temporary. The Vera bible gains a
+**hot register** (the beta is its first home) without weakening the "bridge, not destination"
+doctrine. When live Vera (ADR-066 Phase D) arrives, the induction script becomes its fallback; when
+launch arrives, the whole induction is deleted in one PR.
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 
