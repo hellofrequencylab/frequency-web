@@ -108,6 +108,26 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
   },
 ] as const
 
+/** The admin group that owns a path — by longest matching link href (so `/admin`
+ *  resolves to Community, `/admin/hubs` to Structure, etc.). Used to drive the
+ *  per-category sub-tabs (layer 2) from the current URL. Falls back to the first
+ *  visible group. */
+export function groupForPath(pathname: string, role: CommunityRole): AdminGroup {
+  const groups = visibleGroups(role)
+  let best: AdminGroup | null = null
+  let bestLen = -1
+  for (const g of groups) {
+    for (const l of g.links) {
+      const match = l.exact ? pathname === l.href : pathname === l.href || pathname.startsWith(`${l.href}/`)
+      if (match && l.href.length > bestLen) {
+        best = g
+        bestLen = l.href.length
+      }
+    }
+  }
+  return best ?? groups[0]
+}
+
 /** The groups (with only the links) a given role may see. Empty groups drop out. */
 export function visibleGroups(role: CommunityRole): AdminGroup[] {
   return ADMIN_GROUPS.map((g) => ({
