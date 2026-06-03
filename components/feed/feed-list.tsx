@@ -14,6 +14,7 @@ interface RawPost {
   is_pinned: boolean
   created_at: string
   media_urls: string[]
+  is_demo: boolean
   reaction_count: number | null
   comment_count: number | null
   engagement_score: number | null
