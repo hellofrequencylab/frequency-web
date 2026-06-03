@@ -22,6 +22,9 @@ activated — guided start-to-finish by **scripted Vera**.
 
 The induction is the live path **only during beta**, behind one flag: `BETA_INDUCTION_ACTIVE` in
 `lib/onboarding/beta-script.ts`. `/onboarding` redirects into `/onboarding/beta` while it's `true`.
+It is the **mandatory opening sequence**: `app/(main)/layout.tsx` routes any signed-in user whose
+`meta.onboarding_completed` is not `true` to `/onboarding` (gated on the same flag, so it auto-reverts
+to the non-blocking model at launch; no loop since `/onboarding` is outside the `(main)` layout).
 At launch: flip the flag, delete `app/onboarding/beta/` + `components/onboarding/renders/`.
 
 ## Look & feel — a cinematic sequence, not a form
