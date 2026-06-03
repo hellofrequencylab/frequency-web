@@ -17,6 +17,7 @@ import { PageViewTracker } from '@/components/analytics/track-provider'
 import { getSearchIndex } from '@/lib/help/content'
 import { TourProvider } from '@/components/onboarding/tour-provider'
 import type { TourState } from '@/lib/onboarding/select'
+import { BETA_INDUCTION_ACTIVE } from '@/lib/onboarding/beta-script'
 
 // Authenticated app layout. Wraps Feed, Groups, Events, Admin.
 // Pages outside this group (onboarding, settings, sign-in, /people) render
@@ -43,6 +44,13 @@ export default async function MainLayout({
 
   // No profile row means the trigger hasn't run yet. Send to onboarding.
   if (!profile) redirect('/onboarding')
+
+  // During beta, the induction is the mandatory opening sequence: anyone who
+  // hasn't completed it is routed in. `/onboarding` (outside this layout, so no
+  // loop) forwards to /onboarding/beta. Flipping BETA_INDUCTION_ACTIVE off at
+  // launch reverts to the non-blocking model (ADR-047).
+  const meta = profile.meta as { onboarding_completed?: boolean } | null
+  if (BETA_INDUCTION_ACTIVE && !meta?.onboarding_completed) redirect('/onboarding')
 
   // Effective role honours a janitor's "view as" override so the whole shell
   // (nav + capabilities) previews the chosen role; realRole is the true role,
