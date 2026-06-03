@@ -57,8 +57,16 @@ export const NAV_AREAS: readonly NavArea[] = [
   { key: 'crew',      href: '/crew',      label: 'Dashboard', section: 'Progress',  defaultAccess: 'crew'    },
   { key: 'vault',     href: '/vault',     label: 'Vault',     section: 'Progress',  defaultAccess: 'member'  },
 
-  // ── Admin ───────────────────────────────────────────────────────────────────
-  { key: 'admin',     href: '/admin',     label: 'Admin',     section: 'Manage',    defaultAccess: 'host'    },
+  // ── Manage ──────────────────────────────────────────────────────────────────
+  // The admin surface is split into its five categories (the groups in
+  // app/(main)/admin/sections.ts) so each is a primary entry in the rail; the
+  // active category's pages render as a short sub-tab strip (two-layer nav). Each
+  // category deep-links to its landing page and gates at the group's floor role.
+  { key: 'admin-community', href: '/admin',            label: 'Community', section: 'Manage', defaultAccess: 'host'    },
+  { key: 'admin-structure', href: '/admin/hubs',       label: 'Structure', section: 'Manage', defaultAccess: 'guide'   },
+  { key: 'admin-insights',  href: '/admin/engagement', label: 'Insights',  section: 'Manage', defaultAccess: 'janitor' },
+  { key: 'admin-vera',      href: '/admin/vera',       label: 'Vera',      section: 'Manage', defaultAccess: 'janitor' },
+  { key: 'admin-platform',  href: '/admin/members',    label: 'Platform',  section: 'Manage', defaultAccess: 'janitor' },
   { key: 'crm',       href: '/crm',       label: 'CRM',       section: 'Manage',    defaultAccess: 'host'    },
   { key: 'marketing', href: '/marketing', label: 'Marketing', section: 'Manage',    defaultAccess: 'admin'   },
   { key: 'outreach',  href: '/outreach',  label: 'Outreach',  section: 'Manage',    defaultAccess: 'host'    },

@@ -18,6 +18,10 @@ import {
   BookOpen,
   Send,
   Contact,
+  LayoutDashboard,
+  Building2,
+  Activity,
+  Bot,
 } from 'lucide-react'
 
 // Maps each NAV_AREAS key (lib/nav-areas.ts — the framework-free source of truth)
@@ -38,7 +42,11 @@ export const AREA_ICONS: Record<string, ElementType> = {
   people: Globe,
   crew: Zap,
   vault: Gem,
-  admin: Shield,
+  'admin-community': LayoutDashboard,
+  'admin-structure': Building2,
+  'admin-insights': Activity,
+  'admin-vera': Bot,
+  'admin-platform': Shield,
   crm: Contact,
   marketing: Briefcase,
   outreach: Send,

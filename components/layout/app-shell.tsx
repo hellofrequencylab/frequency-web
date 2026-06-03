@@ -463,8 +463,13 @@ function NavLinkList({
           {section.label && <p className={sectionLabelClass}>{section.label}</p>}
           {section.items.map((item) => {
             const { href, label, Icon } = item
-            // Whole menu always shows; mute what the viewer can't reach.
-            if (!meetsAccess(effectiveAccess(item, permissions), role)) {
+            // Whole menu always shows; mute what the viewer can't reach — EXCEPT the
+            // Manage section, whose entries are operator consoles, not aspirational
+            // member features. There we telescope (hide) so the rail stays tight and
+            // a host isn't shown five greyed-out janitor tools.
+            const reachable = meetsAccess(effectiveAccess(item, permissions), role)
+            if (!reachable && section.label === 'Manage') return null
+            if (!reachable) {
               return (
                 <div
                   key={href}

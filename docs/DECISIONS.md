@@ -1658,6 +1658,37 @@ Pages remain sibling rail areas (out of scope here); a future pass may apply the
 
 ---
 
+## ADR-073: Admin nav goes two-layer — categories in the rail, the active category's pages as sub-tabs
+
+**Status:** Accepted · 2026-06-03 · refines [ADR-072](DECISIONS.md). The single horizontal bar there
+held all ~19 admin destinations + five group labels in one scroll — legible, but long. No schema or
+gate change.
+
+**Context:** With every admin surface reachable (ADR-072), the one horizontal sub-nav became the jam:
+19 leaves across five groups in a single scrolling strip. The fix is to spread the depth across two
+layers instead of one.
+
+**Decision:**
+- **Layer 1 — the rail carries the categories.** The single `admin` nav-area is replaced by the five
+  admin **categories** (`admin-community` host · `admin-structure` guide · `admin-insights`,
+  `admin-vera`, `admin-platform` janitor) under the **Manage** section of `lib/nav-areas.ts`, each
+  deep-linking to its landing page, beside CRM/Marketing/Outreach/Pages.
+- **Layer 2 — the sub-nav shows only the active category's pages.** `sub-nav.tsx` derives the active
+  group from the URL (`groupForPath`, `sections.ts`) and renders just that group's ≤7 leaves as a
+  short tab strip (mirrors the marketing workspace). Switching categories happens in the rail.
+- **Telescope Manage, don't grey it out.** The rail normally shows every area muted-if-unreachable;
+  for **Manage** we hide unreachable categories instead (`app-shell.tsx`), because operator consoles
+  aren't aspirational member features — so a host sees ~2 Manage entries, a janitor all nine. Neither
+  layer jams.
+
+**Consequences:** No route moves, no gate change — `sections.ts` stays the single catalog feeding the
+rail categories, the sub-tabs, and the Overview launchpad. The permission grid (`/admin/roles`) gains
+the five granular category rows automatically (a janitor can now gate Insights separately from
+Community). Any stored `area_permissions` override keyed to the old `admin` key is harmlessly orphaned
+(defaults apply).
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 
