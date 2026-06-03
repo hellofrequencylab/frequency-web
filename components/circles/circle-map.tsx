@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
+import { distanceKm } from '@/lib/distance'
 
 // Default to OpenFreeMap (free vector tiles, no API key) so the map works out of
 // the box. Override with a Mapbox/MapTiler style URL via NEXT_PUBLIC_MAP_STYLE.
@@ -25,14 +26,6 @@ export type MapCircle = {
   latitude: number
   longitude: number
   neighborhood: string | null
-}
-
-function distanceKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const toRad = (d: number) => (d * Math.PI) / 180
-  const dLat = toRad(lat2 - lat1)
-  const dLng = toRad(lng2 - lng1)
-  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2
-  return 2 * 6371 * Math.asin(Math.sqrt(a))
 }
 
 // Frame the viewer's location together with their nearest circles, so opening
