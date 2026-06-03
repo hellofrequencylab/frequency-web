@@ -29,6 +29,10 @@ const nextConfig: NextConfig = {
         hostname: "**.supabase.co",
         pathname: "/storage/v1/object/public/**",
       },
+      // Demo/seed placeholder imagery (circle covers + member avatars). Harmless
+      // to allow; simply unreferenced once demo content is cleared.
+      { protocol: "https", hostname: "picsum.photos" },
+      { protocol: "https", hostname: "i.pravatar.cc" },
     ],
   },
 };

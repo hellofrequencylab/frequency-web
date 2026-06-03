@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
-import { X, Maximize2, Minimize2, Crosshair } from 'lucide-react'
+import { X, Maximize2, Minimize2, Crosshair, LocateFixed } from 'lucide-react'
 import type { MapCircle } from './circle-map'
 
 // maplibre must not run on the server — load the map client-side only.
@@ -11,7 +11,13 @@ const CircleMap = dynamic(() => import('./circle-map'), {
   loading: () => <div className="h-full w-full animate-pulse rounded-2xl border border-border bg-surface-elevated" />,
 })
 
-type Ctx = { open: boolean; setOpen: (v: boolean) => void; circles: MapCircle[]; center: [number, number] | null }
+type Ctx = {
+  open: boolean
+  setOpen: (v: boolean) => void
+  circles: MapCircle[]
+  center: [number, number] | null
+  setCenter: (c: [number, number]) => void
+}
 const MapCtx = createContext<Ctx | null>(null)
 
 // Provider wraps the page content so the expanded 16:9 banner can render ABOVE
@@ -43,7 +49,41 @@ export function MapZone({ circles, children }: { circles: MapCircle[]; children:
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [open])
-  return <MapCtx.Provider value={{ open, setOpen, circles, center }}><div className="mt-6">{children}</div></MapCtx.Provider>
+  return <MapCtx.Provider value={{ open, setOpen, circles, center, setCenter }}><div>{children}</div></MapCtx.Provider>
+}
+
+// "Find circles near me" — uses precise browser geolocation to recentre the map
+// on the viewer, then opens it. Denied/unsupported still opens (on the IP centre).
+// Lives inside MapZone so it shares the one open/centre state.
+export function FindNearMeButton({ className }: { className?: string }) {
+  const ctx = useContext(MapCtx)
+  const [loading, setLoading] = useState(false)
+  if (!ctx) return null
+
+  function find() {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      ctx!.setOpen(true)
+      return
+    }
+    setLoading(true)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => { ctx!.setCenter([pos.coords.longitude, pos.coords.latitude]); ctx!.setOpen(true); setLoading(false) },
+      () => { ctx!.setOpen(true); setLoading(false) },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={find}
+      disabled={loading}
+      className={className ?? 'inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2 text-sm font-semibold text-text transition-colors hover:border-primary-bg hover:text-primary-strong disabled:opacity-60'}
+    >
+      <LocateFixed className="h-4 w-4" />
+      {loading ? 'Locating…' : 'Find circles near me'}
+    </button>
+  )
 }
 
 // Square, non-interactive preview at the top of the right column. Click to open.
