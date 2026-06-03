@@ -9,7 +9,7 @@ import { isError } from '@/lib/action-result'
 const CATEGORIES: { key: NotificationCategory; label: string; description: string }[] = [
   {
     key:         'dispatches',
-    label:       'Dispatches',
+    label:       'Broadcasts',
     description: 'Broadcast posts from your hosts and the wider community.',
   },
   {

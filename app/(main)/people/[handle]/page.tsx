@@ -398,7 +398,7 @@ export default async function ProfilePage({
 
           {/* Dispatches authored */}
           {authoredDispatches.length > 0 && (
-            <ModuleCard title="Dispatches">
+            <ModuleCard title="Broadcasts">
               <div className="space-y-0.5">
                 {authoredDispatches.map(d => (
                   <Link key={d.id} href={`/broadcast/${d.id}`} className="flex items-center gap-2.5 rounded-lg px-2 py-2 -mx-2 hover:bg-surface-elevated transition-colors">
