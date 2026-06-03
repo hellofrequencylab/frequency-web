@@ -1350,6 +1350,61 @@ this change stays a pure consolidation. Adding/moving an area remains a one-line
 
 ---
 
+## ADR-064: Beta demo content is flagged, badged, and recedes — one `is_demo` contract
+
+**Status:** Accepted · realizes the Beta seed (PRs: demo seed, demo badge)
+
+**Context:** The Beta needs a community that already looks alive — members, circles, posts,
+events across San Diego + five national metros — without those fakes ever being mistaken for
+real members or polluting real surfaces (search, leaderboards). It also has to disappear cleanly
+as real content seeds in.
+
+**Decision:** A single per-row `is_demo boolean NOT NULL DEFAULT false` on the demo-able tables
+(`profiles`, `circles`, `events`, `posts`, `practices`) is the whole contract. A global
+`platform_flags.demo_mode` (public-read, service-role-write, like `gem_config`) gates whether demo
+content surfaces. Teardown is uniform — `DELETE FROM <table> WHERE is_demo` — no UUID lists, no
+special-casing. Demo members are **auth-less** (`auth_user_id NULL`), with last names that are
+playful variants of "Demo" (Demo, Demø, Demonski, …) as the human tell. In the UI every demo row
+wears one understated **Beta Demo** pill (`components/ui/demo-badge.tsx`) and **recedes** (demo
+profiles/circles are greyed + desaturated) so real content always reads as primary. The feed RPCs
+(`feed_for_viewer`, `scoped_feed_for_viewer`) gained an `is_demo` projection — projection only, the
+reach predicate is unchanged. Programs are intentionally **not** seeded (they are file-based under
+`content/programs/`, not a table).
+
+**Consequences:** Demo content is self-cleaning — purge the flag and the badges/greying vanish with
+it; nothing to untangle. Location search and "real circles only" surfaces filter on `NOT is_demo`
+cheaply (partial indexes). The seed is idempotent (deterministic UUIDs + `ON CONFLICT DO NOTHING`),
+so re-running is safe. There is no CI step that applies migrations — the seed and these RPC changes
+were applied to production via the Supabase MCP; the migration files are the source of truth.
+
+---
+
+## ADR-065: Directory location search uses Photon (OSM) + a PostGIS `circles_near` RPC
+
+**Status:** Accepted · owner-approved geocoder choice
+
+**Context:** The Directory needed a "start typing your city and it autocompletes" search that
+finds **real** circles near a place (or the viewer's location). Circles already carry a PostGIS
+`geog` generated column + GiST index, but nothing used it for proximity, and the app had no
+geocoder. The stack is deliberately key-free (MapLibre + OpenFreeMap).
+
+**Decision:** Geocoding/autocomplete uses **Photon** (`photon.komoot.io`, OpenStreetMap-backed) —
+free, no API key, CORS-enabled, so it runs straight from the browser and keeps the stack key-free.
+Google Places (owner's first instinct) and Mapbox were rejected for the Beta because both require
+an account, a key, and billing; Photon's city/town coverage is sufficient and we can swap providers
+later behind `lib/geocode.ts` if quality demands it. Proximity ranking is a `circles_near(_lat,
+_lng, _limit)` SQL function using the `geog` `<->` nearest-neighbour operator, which **hard-excludes
+`is_demo` circles** (and non-active ones) so location search only ever surfaces real groups. The
+search is URL-driven (`near`/`place`) and lives on `/people` (the "directory"); the component is
+self-contained and portable to `/circles`.
+
+**Consequences:** No new secrets, no billing, no vendor lock-in for the Beta. Results are correct
+but sparse until real circles get coordinates (most lack them today) — the RPC + UI are ready for
+that fill-in. If Photon rate limits or coverage become a problem, swapping to a keyed provider is a
+single-module change.
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 
