@@ -6,6 +6,8 @@ import { getMemberContext } from '@/lib/ai/memory'
 import { runVeraTurn } from '@/lib/ai/vera/loop'
 import { runVeraClaudeTurn, type VeraMessage } from '@/lib/ai/vera/agent-claude'
 import { executeConfirmedTool } from '@/lib/ai/vera/execute'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { joinCircle } from '@/app/(main)/circles/actions'
 import type { ConciergeStage, ProposedToolCall } from '@/lib/ai/vera/concierge'
 
 async function callerProfileId(): Promise<string | null> {
@@ -51,5 +53,27 @@ export async function confirmProposal(tool: string, argsJson: string): Promise<{
   } catch {
     return { ok: false, error: 'Bad arguments.' }
   }
+
+  // join_circle is an app-level action (capacity checks + rewards + redirect), so it's
+  // handled here rather than in the lib executor.
+  if (tool === 'join_circle') return joinCircleForMember(String(args.circle ?? ''))
+
   return executeConfirmedTool(profileId, tool, args)
+}
+
+/** Resolve a circle (by slug, then name) and join the member via the canonical
+ *  joinCircle — which enforces capacity, awards, and redirects to the circle on success. */
+async function joinCircleForMember(ref: string): Promise<{ ok: boolean; error?: string }> {
+  const term = ref.trim()
+  if (!term) return { ok: false, error: 'No circle specified.' }
+  const admin = createAdminClient()
+  const bySlug = await admin.from('circles').select('id, slug').eq('slug', term).eq('is_demo', false).maybeSingle()
+  let circle = bySlug.data
+  if (!circle) {
+    const byName = await admin.from('circles').select('id, slug').ilike('name', `%${term}%`).eq('is_demo', false).limit(1)
+    circle = (byName.data ?? [])[0] ?? null
+  }
+  if (!circle) return { ok: false, error: `Couldn't find a circle matching "${term}".` }
+  await joinCircle(circle.id, circle.slug) // redirects to /circles/<slug> on success
+  return { ok: true }
 }
