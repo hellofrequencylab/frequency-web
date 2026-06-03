@@ -39,11 +39,11 @@ export default async function ProgramPage({ params }: Params) {
         subtitle={program.description ?? undefined}
         badges={
           <>
-            <span className="text-xs px-1.5 py-0.5 rounded-md bg-primary-bg text-primary-strong font-medium">
+            <span className="text-xs px-2 py-0.5 rounded-full bg-primary-bg text-primary-strong font-medium">
               {program.audience === 'host' ? 'For hosts' : 'For everyone'}
             </span>
             {program.duration && (
-              <span className="text-xs px-1.5 py-0.5 rounded-md bg-surface-elevated text-subtle font-medium">
+              <span className="text-xs px-2 py-0.5 rounded-full bg-surface-elevated text-subtle font-medium">
                 {program.duration}
               </span>
             )}

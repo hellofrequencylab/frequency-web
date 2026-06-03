@@ -7,6 +7,7 @@ import { IndexTemplate } from '@/components/templates/index-template'
 import { StatStrip } from '@/components/ui/page-header'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
+import { EntityCard } from '@/components/cards/entity-card'
 import { RsvpButton } from '@/components/events/rsvp-button'
 
 type EventRow = {
@@ -202,7 +203,7 @@ export default async function EventsPage() {
         />
       </div>
 
-      <div className="space-y-10">
+      <div className="space-y-8">
         {goingEvents.length > 0 && (
           <section>
             <SectionHeader title="You're going" count={goingEvents.length} />
@@ -269,44 +270,32 @@ function EventCard({
   canRsvp: boolean
 }) {
   return (
-    <div className="group relative">
-      <Link
-        href={`/events/${event.slug}`}
-        className="flex items-start gap-4 rounded-2xl border border-border bg-surface p-4 shadow-sm transition-colors hover:border-primary-bg hover:shadow-md"
-      >
-        <DateBlock iso={event.starts_at} />
-        <div className="min-w-0 flex-1 pr-16">
-          <p className="truncate text-base font-semibold leading-tight text-text">{event.title}</p>
-          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
-            <span>{formatWhen(event.starts_at, now)}</span>
-            {event.location && (
-              <span className="flex items-center gap-0.5 text-subtle">
-                <MapPin className="h-3 w-3" />{event.location}
-              </span>
-            )}
-          </div>
-          <div className="mt-2.5 flex flex-wrap items-center gap-2">
-            {circleName && (
-              <span className="rounded-md bg-primary-bg px-1.5 py-0.5 text-xs font-medium text-primary-strong">
-                {circleName}
-              </span>
-            )}
-            {going > 0 && (
-              <span className="flex items-center gap-1 text-xs text-subtle">
-                <Users className="h-3 w-3" />{going} going
-              </span>
-            )}
-            {event.host && (
-              <span className="text-xs text-subtle">Hosted by {event.host.display_name}</span>
-            )}
-          </div>
-        </div>
-      </Link>
-      {canRsvp && (
-        <div className="absolute right-3 top-3">
-          <RsvpButton eventId={event.id} isGoing={isGoing} />
-        </div>
-      )}
-    </div>
+    <EntityCard
+      href={`/events/${event.slug}`}
+      anchor={<DateBlock iso={event.starts_at} />}
+      title={event.title}
+      context={formatWhen(event.starts_at, now)}
+      meta={
+        <>
+          {circleName && (
+            <span className="rounded-full bg-primary-bg px-2 py-0.5 font-medium text-primary-strong">
+              {circleName}
+            </span>
+          )}
+          {event.location && (
+            <span className="flex items-center gap-0.5">
+              <MapPin className="h-3 w-3" />{event.location}
+            </span>
+          )}
+          {going > 0 && (
+            <span className="flex items-center gap-1">
+              <Users className="h-3 w-3" />{going} going
+            </span>
+          )}
+          {event.host && <span>Hosted by {event.host.display_name}</span>}
+        </>
+      }
+      action={canRsvp ? <RsvpButton eventId={event.id} isGoing={isGoing} /> : undefined}
+    />
   )
 }
