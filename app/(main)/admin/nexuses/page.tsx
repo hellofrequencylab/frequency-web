@@ -1,25 +1,15 @@
-import { notFound } from 'next/navigation'
 import { SidebarCard } from '@/components/ui/sidebar-card'
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireAdmin } from '@/lib/admin/guard'
+import { AdminPage } from '@/components/admin/admin-page'
 import { NexusesClient } from './nexuses-client'
 import { NewNexusCompose } from '@/components/compose/new-nexus-compose'
 
 
 export default async function AdminNexusesPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) notFound()
+  await requireAdmin('mentor')
 
   const admin = createAdminClient()
-  const { data: profile } = await admin
-    .from('profiles')
-    .select('id, community_role')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
-
-  if (!profile || !['mentor', 'janitor'].includes(profile.community_role as string)) notFound()
-
   const { data: rawNexuses } = await admin
     .from('nexuses')
     .select(`id, name, status, member_cap, mentor_id,
@@ -50,16 +40,13 @@ export default async function AdminNexusesPage() {
     .order('name')
 
   return (
-    <div>
-      <div className="flex items-end justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-text">Nexuses</h1>
-          <p className="text-sm text-muted mt-1">
-            Top-level geographic groupings. Each nexus contains hubs, which contain circles.
-          </p>
-        </div>
-        <NewNexusCompose outposts={outposts ?? []} />
-      </div>
+    <AdminPage
+      title="Nexuses"
+      eyebrow="Structure"
+      description="Top-level geographic groupings. Each nexus contains hubs, which contain circles."
+      actions={<NewNexusCompose outposts={outposts ?? []} />}
+      width="default"
+    >
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <NexusesClient nexuses={nexuses} mentors={mentors ?? []} />
@@ -70,6 +57,6 @@ export default async function AdminNexusesPage() {
           </SidebarCard>
         </div>
       </div>
-    </div>
+    </AdminPage>
   )
 }

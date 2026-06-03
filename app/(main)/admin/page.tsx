@@ -1,39 +1,22 @@
-import { notFound } from 'next/navigation'
-import { SidebarCard } from '@/components/ui/sidebar-card'
 import Link from 'next/link'
-import { Users, Layers, Building2, Plus, CalendarDays, Megaphone, ShieldAlert, Zap, Activity, TrendingUp } from 'lucide-react'
+import { Users, Layers, Building2, Plus, CalendarDays, Megaphone, Zap, Activity, TrendingUp } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getPracticeMetrics } from '@/lib/analytics/practice'
-import { createClient } from '@/lib/supabase/server'
+import { requireAdmin } from '@/lib/admin/guard'
+import { AdminPage, AdminSection } from '@/components/admin/admin-page'
+import { AdminLaunchpad } from '@/components/admin/admin-launchpad'
+import { StatCard } from '@/components/ui/stat-card'
 import { AdminCreateMenu } from './create-menu'
 import { StatusBadge } from '@/components/groups/status-badge'
 import { MemberManager, type MemberItem } from './member-manager'
+import type { CommunityRole } from '@/lib/core/roles'
 import type { SeasonRank } from '@/lib/season-ranks'
 
-type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
-
-
-export default async function AdminPage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) notFound()
-
+export default async function AdminPageView() {
+  const { profileId, role } = await requireAdmin('host')
   const admin = createAdminClient()
-  const { data: profile } = await admin
-    .from('profiles')
-    .select('id, community_role')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
 
-  if (!profile) notFound()
-
-  const role = profile.community_role as CommunityRole
-
-  if (!['host', 'guide', 'mentor', 'admin', 'janitor'].includes(role)) notFound()
-
-  // Overview stat counts. Quick aggregate for all admin roles
+  // Overview stat counts — a quick aggregate for all admin roles.
   const [membersCount, circlesCount, eventsCount, dispatchesCount] = await Promise.all([
     admin.from('memberships').select('id', { count: 'exact', head: true }).eq('status', 'active'),
     admin.from('circles').select('id', { count: 'exact', head: true }),
@@ -44,101 +27,137 @@ export default async function AdminPage() {
   // North Star: verified-practice metrics off the event backbone.
   const practice = await getPracticeMetrics()
 
+  const description =
+    role === 'janitor'
+      ? 'Full platform access — every surface below.'
+      : `Scoped to your ${role} level.`
+
   return (
-    <div>
-      <div className="flex items-end justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-text mb-1">Overview</h1>
-          <p className="text-sm text-muted leading-relaxed max-w-2xl">
-            {role === 'janitor' ? (
-              <span className="font-medium text-signal-strong">Janitor, full platform access.</span>
-            ) : (
-              <>Scoped to your <span className="font-medium capitalize">{role}</span> level.</>
-            )}
-          </p>
+    <AdminPage
+      title="Overview"
+      eyebrow="Community"
+      description={description}
+      actions={<AdminCreateMenu role={role} />}
+    >
+      <AdminSection title="At a glance">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <StatCard label="Members" value={(membersCount.count ?? 0).toLocaleString()} icon={Users} />
+          <StatCard label="Circles" value={(circlesCount.count ?? 0).toLocaleString()} icon={Layers} />
+          <StatCard label="Events" value={(eventsCount.count ?? 0).toLocaleString()} icon={CalendarDays} />
+          <StatCard label="Broadcasts" value={(dispatchesCount.count ?? 0).toLocaleString()} icon={Megaphone} />
         </div>
-        <AdminCreateMenu role={role} />
-      </div>
+      </AdminSection>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main content */}
-        <div className="lg:col-span-2 space-y-8">
-          {/* Quick stats */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatCard label="Members"     value={membersCount.count ?? 0}    Icon={Users} />
-            <StatCard label="Circles"     value={circlesCount.count ?? 0}    Icon={Layers} />
-            <StatCard label="Events"      value={eventsCount.count ?? 0}     Icon={CalendarDays} />
-            <StatCard label="Broadcasts"  value={dispatchesCount.count ?? 0} Icon={Megaphone} />
-          </div>
-
-          {/* North Star: verified practice */}
-          <div className="mt-4">
-            <p className="text-sm font-bold text-text mb-2">
-              North Star · Verified practice
-            </p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <StatCard label="Weekly Active Members" value={practice.wam} Icon={Zap} />
-              <StatCard label="Practices this week" value={practice.verifiedThisWeek} Icon={Activity} />
-              <StatCard
-                label={`Activation 7d (${practice.activated}/${practice.newMembers})`}
-                value={`${Math.round(practice.activationRate * 100)}%`}
-                Icon={TrendingUp}
-              />
-            </div>
-          </div>
-
-          {role === 'janitor' && <JanitorPanel />}
-          {role === 'host'    && <HostPanel    profileId={profile.id} />}
-          {role === 'guide'   && <GuidePanel   profileId={profile.id} />}
-          {role === 'mentor'  && <MentorPanel  profileId={profile.id} />}
+      <AdminSection title="North Star · Verified practice">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <StatCard label="Weekly active members" value={practice.wam} icon={Zap} />
+          <StatCard label="Practices this week" value={practice.verifiedThisWeek} icon={Activity} />
+          <StatCard
+            label={`Activation 7d (${practice.activated}/${practice.newMembers})`}
+            value={`${Math.round(practice.activationRate * 100)}%`}
+            icon={TrendingUp}
+          />
         </div>
+      </AdminSection>
 
-        {/* Sidebar */}
-        <div className="space-y-4">
-          <SidebarCard title="Quick Actions">
-            <div className="p-2 space-y-0.5">
-              <Link href="/events/new" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-text hover:bg-surface-elevated transition-colors">
-                <CalendarDays className="w-4 h-4 text-subtle" /> New Event
-              </Link>
-              <Link href="/broadcast" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-text hover:bg-surface-elevated transition-colors">
-                <Megaphone className="w-4 h-4 text-subtle" /> New Broadcast
-              </Link>
-              <Link href="/admin/moderation" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-text hover:bg-surface-elevated transition-colors">
-                <ShieldAlert className="w-4 h-4 text-subtle" /> Moderation Queue
-              </Link>
-            </div>
-          </SidebarCard>
-        </div>
-      </div>
-    </div>
+      <AdminSection title="Jump to" description="Everything you can manage, grouped by area.">
+        <AdminLaunchpad role={role} />
+      </AdminSection>
+
+      {role === 'janitor' && <JanitorPanel />}
+      {role === 'host' && <HostPanel profileId={profileId} />}
+      {role === 'guide' && <GuidePanel profileId={profileId} />}
+      {role === 'mentor' && <MentorPanel profileId={profileId} />}
+    </AdminPage>
   )
 }
 
-// ── Shared stat card ─────────────────────────────────────────────────────────
-
-function StatCard({
-  label,
-  value,
-  Icon,
+// A circle row used in the operational panels below.
+function CircleRow({
+  href,
+  name,
+  status,
+  meta,
 }: {
-  label: string
-  value: number | string
-  Icon: React.ElementType
+  href: string
+  name: string
+  status: string
+  meta: string
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-surface shadow-sm p-4">
-      <div className="flex items-center gap-2 mb-1">
-        <Icon className="w-4 h-4 text-subtle" />
-        <span className="text-xs text-muted font-medium">{label}</span>
+    <Link
+      href={href}
+      className="flex items-center justify-between rounded-2xl bg-surface-elevated/60 px-4 py-3 transition-colors hover:bg-surface-elevated"
+    >
+      <div className="min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="truncate text-sm font-medium text-text">{name}</span>
+          <StatusBadge status={status} />
+        </div>
+        <p className="mt-0.5 text-xs text-subtle">{meta}</p>
       </div>
-      <p className="text-2xl font-bold text-text leading-none">
-        {typeof value === 'number' ? value.toLocaleString() : value}
-      </p>
+      <span className="text-xs text-subtle">→</span>
+    </Link>
+  )
+}
+
+function EmptyState({ message, cta }: { message: string; cta?: { href: string; label: string } }) {
+  return (
+    <div className="rounded-2xl border border-dashed border-border bg-surface/50 p-8 text-center">
+      <p className="text-sm text-muted">{message}</p>
+      {cta && (
+        <Link
+          href={cta.href}
+          className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          {cta.label}
+        </Link>
+      )}
     </div>
   )
 }
 
-// ── Janitor: Full platform overview ──────────────────────────────────────────
+// Shared membership → MemberItem mapping (identical across the role panels).
+type MembershipRow = {
+  id: string
+  joined_at: string
+  profile: {
+    id: string
+    display_name: string
+    handle: string
+    avatar_url: string | null
+    community_role: string
+    current_season_rank: string | null
+    current_season_zaps: number
+    season_challenges_complete: boolean
+    is_crew_lead: boolean | null
+  }
+  circle: { name: string } | null
+}
+
+function toMemberItems(rows: MembershipRow[]): MemberItem[] {
+  return rows.map((m) => ({
+    membershipId: m.id,
+    profileId: m.profile.id,
+    displayName: m.profile.display_name,
+    handle: m.profile.handle,
+    avatarUrl: m.profile.avatar_url,
+    role: m.profile.community_role as CommunityRole,
+    circleName: m.circle?.name ?? undefined,
+    joinedAt: m.joined_at,
+    isCrewLead: m.profile.is_crew_lead ?? false,
+    currentSeasonRank: (m.profile.current_season_rank ?? undefined) as SeasonRank | undefined,
+    currentSeasonZaps: m.profile.current_season_zaps ?? 0,
+    seasonChallengesComplete: m.profile.season_challenges_complete ?? false,
+  }))
+}
+
+const MEMBERSHIP_SELECT = `id, volunteer_role, joined_at,
+   profile:profiles!profile_id ( id, display_name, handle, avatar_url, community_role, current_season_rank, current_season_zaps, season_challenges_complete, is_crew_lead ),
+   circle:circles!circle_id ( name )`
+
+// ── Janitor: full platform overview ──────────────────────────────────────────
 
 async function JanitorPanel() {
   const admin = createAdminClient()
@@ -147,216 +166,111 @@ async function JanitorPanel() {
     admin.from('circles').select('id, name, slug, status, type, member_count, member_cap, hub:hubs!hub_id(name)').order('name'),
     admin.from('hubs').select('id, name, slug, status').order('name'),
     admin.from('nexuses').select('id, name, slug, status').order('name'),
-    admin.from('memberships').select(
-      `id, volunteer_role, joined_at,
-       profile:profiles!profile_id ( id, display_name, handle, avatar_url, community_role, current_season_rank, current_season_zaps, season_challenges_complete, is_crew_lead ),
-       circle:circles!circle_id ( name )`
-    ).eq('status', 'active').order('joined_at', { ascending: true }).limit(200),
+    admin.from('memberships').select(MEMBERSHIP_SELECT).eq('status', 'active').order('joined_at', { ascending: true }).limit(200),
   ])
 
-  const circles  = circlesRes.data  ?? []
-  const hubs     = hubsRes.data     ?? []
-  const nexuses  = nexusesRes.data  ?? []
-  const rawMembers = membersRes.data ?? []
-
-  const typedMembers = rawMembers as unknown as Array<{
-    id: string; volunteer_role: string | null; joined_at: string;
-    profile: { id: string; display_name: string; handle: string; avatar_url: string | null; community_role: string; current_season_rank: string | null; current_season_zaps: number; season_challenges_complete: boolean; is_crew_lead: boolean | null };
-    circle: { name: string } | null;
-  }>
-
-  const members: MemberItem[] = typedMembers.map((m) => ({
-    membershipId: m.id,
-    profileId:                m.profile.id,
-    displayName:              m.profile.display_name,
-    handle:                   m.profile.handle,
-    avatarUrl:                m.profile.avatar_url,
-    role:                     m.profile.community_role as CommunityRole,
-    circleName:               m.circle?.name ?? undefined,
-    joinedAt:                 m.joined_at,
-    isCrewLead:               m.profile.is_crew_lead ?? false,
-    currentSeasonRank:        (m.profile.current_season_rank ?? undefined) as SeasonRank | undefined,
-    currentSeasonZaps:        m.profile.current_season_zaps ?? 0,
-    seasonChallengesComplete: m.profile.season_challenges_complete ?? false,
-  }))
-
-  const typedCircles = circles as unknown as Array<{
-    id: string; name: string; slug: string; status: string; type: string;
-    member_count: number; member_cap: number; hub: { name: string } | null;
+  const hubs = hubsRes.data ?? []
+  const nexuses = nexusesRes.data ?? []
+  const members = toMemberItems((membersRes.data ?? []) as unknown as MembershipRow[])
+  const circles = (circlesRes.data ?? []) as unknown as Array<{
+    id: string; name: string; slug: string; status: string; member_count: number; member_cap: number; hub: { name: string } | null
   }>
 
   return (
-    <div className="space-y-8">
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <StatCard label="Nexuses" value={nexuses.length} Icon={Building2} />
-        <StatCard label="Hubs"    value={hubs.length}    Icon={Building2} />
-        <StatCard label="Circles" value={typedCircles.length} Icon={Layers}    />
-        <StatCard label="Members" value={members.length} Icon={Users}     />
-      </div>
+    <>
+      <AdminSection title="Platform totals">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <StatCard label="Nexuses" value={nexuses.length} icon={Building2} />
+          <StatCard label="Hubs" value={hubs.length} icon={Building2} />
+          <StatCard label="Circles" value={circles.length} icon={Layers} />
+          <StatCard label="Members" value={members.length} icon={Users} />
+        </div>
+      </AdminSection>
 
-      {/* All circles */}
-      <section>
-        <h2 className="text-sm font-semibold text-text mb-3">All Circles</h2>
+      <AdminSection title="All circles">
         <div className="space-y-2">
-          {typedCircles.map((circle) => (
-            <Link
-              key={circle.id}
-              href={`/circles/${circle.slug}`}
-              className="flex items-center justify-between rounded-2xl border border-border bg-surface shadow-sm px-4 py-3 hover:border-primary-bg dark:hover:border-primary transition-colors"
-            >
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-text">{circle.name}</span>
-                  <StatusBadge status={circle.status} />
-                </div>
-                <p className="text-xs text-subtle mt-0.5">
-                  {circle.member_count} / {circle.member_cap} · {circle.hub?.name}
-                </p>
-              </div>
-              <span className="text-xs text-subtle">→</span>
-            </Link>
+          {circles.map((c) => (
+            <CircleRow
+              key={c.id}
+              href={`/circles/${c.slug}`}
+              name={c.name}
+              status={c.status}
+              meta={`${c.member_count} / ${c.member_cap}${c.hub?.name ? ` · ${c.hub.name}` : ''}`}
+            />
           ))}
         </div>
-      </section>
+      </AdminSection>
 
-      {/* Member management */}
-      <section>
-        <h2 className="text-sm font-semibold text-text mb-3">
-          All Members
-          <span className="ml-2 text-xs font-normal text-subtle">{members.length}</span>
-        </h2>
-        {members.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border bg-surface/50 dark:bg-canvas/50 p-8 text-center">
-            <p className="text-sm text-muted">No members yet.</p>
-          </div>
-        ) : (
-          <MemberManager members={members} />
-        )}
-      </section>
-    </div>
+      <AdminSection title={`All members · ${members.length}`}>
+        {members.length === 0 ? <EmptyState message="No members yet." /> : <MemberManager members={members} />}
+      </AdminSection>
+    </>
   )
 }
 
-// ── Host: Circle + member overview ──────────────────────────────────────────
+// ── Host: circle + member overview ───────────────────────────────────────────
 
 async function HostPanel({ profileId }: { profileId: string }) {
   const admin = createAdminClient()
 
   const { data: circles } = await admin
     .from('circles')
-    .select(
-      `id, name, slug, status, type, member_count, member_cap,
-       hub:hubs!hub_id ( name, slug )`
-    )
+    .select(`id, name, slug, status, type, member_count, member_cap, hub:hubs!hub_id ( name, slug )`)
     .eq('host_id', profileId)
     .order('name')
 
   const circleIds = (circles ?? []).map((c) => c.id)
-
   const { data: rawMembers } = await admin
     .from('memberships')
-    .select(
-      `id, volunteer_role, joined_at,
-       profile:profiles!profile_id ( id, display_name, handle, avatar_url, community_role, current_season_rank, current_season_zaps, season_challenges_complete, is_crew_lead ),
-       circle:circles!circle_id ( name )`
-    )
+    .select(MEMBERSHIP_SELECT)
     .in('circle_id', circleIds.length > 0 ? circleIds : ['__none__'])
     .eq('status', 'active')
     .order('joined_at', { ascending: true })
 
-  type MembershipRow = {
-    id: string; volunteer_role: string | null; joined_at: string;
-    profile: { id: string; display_name: string; handle: string; avatar_url: string | null; community_role: string; current_season_rank: string | null; current_season_zaps: number; season_challenges_complete: boolean; is_crew_lead: boolean | null };
-    circle: { name: string } | null;
-  }
-  const hostMembers = (rawMembers ?? []) as unknown as MembershipRow[]
-  const members: MemberItem[] = hostMembers.map((m) => ({
-    membershipId:             m.id,
-    profileId:                m.profile.id,
-    displayName:              m.profile.display_name,
-    handle:                   m.profile.handle,
-    avatarUrl:                m.profile.avatar_url,
-    role:                     m.profile.community_role as CommunityRole,
-    circleName:               m.circle?.name ?? undefined,
-    joinedAt:                 m.joined_at,
-    isCrewLead:               m.profile.is_crew_lead ?? false,
-    currentSeasonRank:        (m.profile.current_season_rank ?? undefined) as SeasonRank | undefined,
-    currentSeasonZaps:        m.profile.current_season_zaps ?? 0,
-    seasonChallengesComplete: m.profile.season_challenges_complete ?? false,
-  }))
-
-  type HostCircleRow = {
-    id: string; name: string; slug: string; status: string; type: string;
-    member_count: number; member_cap: number; hub: { name: string; slug: string } | null;
-  }
-  const hostCircles = (circles ?? []) as unknown as HostCircleRow[]
+  const members = toMemberItems((rawMembers ?? []) as unknown as MembershipRow[])
+  const hostCircles = (circles ?? []) as unknown as Array<{
+    id: string; name: string; slug: string; status: string; member_count: number; member_cap: number; hub: { name: string; slug: string } | null
+  }>
 
   return (
-    <div className="space-y-8">
-      {/* Stats */}
-      <div className="grid grid-cols-2 gap-3">
-        <StatCard label="Circles"  value={hostCircles.length}  Icon={Layers} />
-        <StatCard label="Members"  value={members.length}          Icon={Users}  />
-      </div>
+    <>
+      <AdminSection title="Your community">
+        <div className="grid grid-cols-2 gap-3">
+          <StatCard label="Circles" value={hostCircles.length} icon={Layers} />
+          <StatCard label="Members" value={members.length} icon={Users} />
+        </div>
+      </AdminSection>
 
-      {/* Circles */}
-      <section>
-        <h2 className="text-sm font-semibold text-text mb-3">Your Circles</h2>
+      <AdminSection title="Your circles">
         {hostCircles.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border bg-surface/50 dark:bg-canvas/50 p-8 text-center">
-            <p className="text-sm text-muted mb-3">No circles yet.</p>
-            <Link
-              href="/admin/circles"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-hover transition-colors"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Create a circle
-            </Link>
-          </div>
+          <EmptyState message="No circles yet." cta={{ href: '/admin/circles', label: 'Create a circle' }} />
         ) : (
           <div className="space-y-2">
-            {hostCircles.map((circle) => (
-              <Link
-                key={circle.id}
-                href={`/circles/${circle.slug}`}
-                className="flex items-center justify-between rounded-2xl border border-border bg-surface shadow-sm px-4 py-3 hover:border-primary-bg dark:hover:border-primary transition-colors"
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-text">{circle.name}</span>
-                    <StatusBadge status={circle.status} />
-                  </div>
-                  <p className="text-xs text-subtle mt-0.5">
-                    {circle.member_count} / {circle.member_cap} · {circle.hub?.name}
-                  </p>
-                </div>
-                <span className="text-xs text-subtle">→</span>
-              </Link>
+            {hostCircles.map((c) => (
+              <CircleRow
+                key={c.id}
+                href={`/circles/${c.slug}`}
+                name={c.name}
+                status={c.status}
+                meta={`${c.member_count} / ${c.member_cap}${c.hub?.name ? ` · ${c.hub.name}` : ''}`}
+              />
             ))}
           </div>
         )}
-      </section>
+      </AdminSection>
 
-      {/* Members */}
-      <section>
-        <h2 className="text-sm font-semibold text-text mb-3">
-          Members
-          <span className="ml-2 text-xs font-normal text-subtle">{members.length}</span>
-        </h2>
+      <AdminSection title={`Members · ${members.length}`}>
         {members.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border bg-surface/50 dark:bg-canvas/50 p-8 text-center">
-            <p className="text-sm text-muted">No members yet. Share your circle link to get started.</p>
-          </div>
+          <EmptyState message="No members yet. Share your circle link to get started." />
         ) : (
           <MemberManager members={members} />
         )}
-      </section>
-    </div>
+      </AdminSection>
+    </>
   )
 }
 
-// ── Guide: Hub + member overview ─────────────────────────────────────────────
+// ── Guide: hub + member overview ─────────────────────────────────────────────
 
 async function GuidePanel({ profileId }: { profileId: string }) {
   const admin = createAdminClient()
@@ -377,136 +291,71 @@ async function GuidePanel({ profileId }: { profileId: string }) {
   const typedHubs = (hubs ?? []) as unknown as GuideHub[]
 
   const allCircleIds = typedHubs.flatMap((h) => h.circles.map((c) => c.id))
-  const totalCircles = allCircleIds.length
-  const totalMembers = typedHubs.reduce(
-    (sum: number, h) =>
-      sum + h.circles.reduce((s: number, c) => s + (c.member_count ?? 0), 0),
-    0
-  )
+  const totalMembers = typedHubs.reduce((sum, h) => sum + h.circles.reduce((s, c) => s + (c.member_count ?? 0), 0), 0)
 
   const { data: rawMembers } = await admin
     .from('memberships')
-    .select(
-      `id, volunteer_role, joined_at,
-       profile:profiles!profile_id ( id, display_name, handle, avatar_url, community_role, current_season_rank, current_season_zaps, season_challenges_complete, is_crew_lead ),
-       circle:circles!circle_id ( name )`
-    )
+    .select(MEMBERSHIP_SELECT)
     .in('circle_id', allCircleIds.length > 0 ? allCircleIds : ['__none__'])
     .eq('status', 'active')
     .order('joined_at', { ascending: true })
 
-  type GuideMemberRow = {
-    id: string; volunteer_role: string | null; joined_at: string;
-    profile: { id: string; display_name: string; handle: string; avatar_url: string | null; community_role: string; current_season_rank: string | null; current_season_zaps: number; season_challenges_complete: boolean; is_crew_lead: boolean | null };
-    circle: { name: string } | null;
-  }
-  const guideMembers = (rawMembers ?? []) as unknown as GuideMemberRow[]
-  const members: MemberItem[] = guideMembers.map((m) => ({
-    membershipId:             m.id,
-    profileId:                m.profile.id,
-    displayName:              m.profile.display_name,
-    handle:                   m.profile.handle,
-    avatarUrl:                m.profile.avatar_url,
-    role:                     m.profile.community_role as CommunityRole,
-    circleName:               m.circle?.name ?? undefined,
-    joinedAt:                 m.joined_at,
-    isCrewLead:               m.profile.is_crew_lead ?? false,
-    currentSeasonRank:        (m.profile.current_season_rank ?? undefined) as SeasonRank | undefined,
-    currentSeasonZaps:        m.profile.current_season_zaps ?? 0,
-    seasonChallengesComplete: m.profile.season_challenges_complete ?? false,
-  }))
+  const members = toMemberItems((rawMembers ?? []) as unknown as MembershipRow[])
 
   return (
-    <div className="space-y-8">
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-3">
-        <StatCard label="Hubs"    value={typedHubs.length} Icon={Building2} />
-        <StatCard label="Circles" value={totalCircles}        Icon={Layers}    />
-        <StatCard label="Members" value={totalMembers}        Icon={Users}     />
-      </div>
+    <>
+      <AdminSection title="Your area">
+        <div className="grid grid-cols-3 gap-3">
+          <StatCard label="Hubs" value={typedHubs.length} icon={Building2} />
+          <StatCard label="Circles" value={allCircleIds.length} icon={Layers} />
+          <StatCard label="Members" value={totalMembers} icon={Users} />
+        </div>
+      </AdminSection>
 
-      {/* Hubs + circles */}
       {typedHubs.map((hub) => (
-        <section key={hub.id}>
-          <div className="flex items-center gap-2 mb-3">
-            <h2 className="text-sm font-semibold text-text">{hub.name}</h2>
-            <StatusBadge status={hub.status} />
-            {hub.nexus && (
-              <Link
-                href={`/nexuses/${hub.nexus.slug}`}
-                className="text-xs text-primary-strong hover:underline ml-auto"
-              >
+        <AdminSection
+          key={hub.id}
+          title={hub.name}
+          actions={
+            hub.nexus && (
+              <Link href={`/nexuses/${hub.nexus.slug}`} className="text-xs text-primary-strong hover:underline">
                 {hub.nexus.name} →
               </Link>
-            )}
-          </div>
-
+            )
+          }
+        >
           {hub.circles.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-border bg-surface/50 dark:bg-canvas/50 p-6 text-center">
-              <p className="text-sm text-muted mb-3">No circles in this hub yet.</p>
-              <Link
-                href="/admin/circles"
-                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-hover transition-colors"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                Add a circle
-              </Link>
-            </div>
+            <EmptyState message="No circles in this hub yet." cta={{ href: '/admin/circles', label: 'Add a circle' }} />
           ) : (
             <div className="space-y-2">
-              {hub.circles.map((circle) => (
-                <Link
-                  key={circle.id}
-                  href={`/circles/${circle.slug}`}
-                  className="flex items-center justify-between rounded-2xl border border-border bg-surface shadow-sm px-4 py-3 hover:border-primary-bg dark:hover:border-primary transition-colors"
-                >
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-text">{circle.name}</span>
-                      <StatusBadge status={circle.status} />
-                      <span className="text-xs text-subtle">{circle.type}</span>
-                    </div>
-                    <p className="text-xs text-subtle mt-0.5">
-                      {circle.member_count} / {circle.member_cap}
-                      {circle.host && ` · Host: ${circle.host.display_name}`}
-                    </p>
-                  </div>
-                  <span className="text-xs text-subtle">→</span>
-                </Link>
+              {hub.circles.map((c) => (
+                <CircleRow
+                  key={c.id}
+                  href={`/circles/${c.slug}`}
+                  name={c.name}
+                  status={c.status}
+                  meta={`${c.member_count} / ${c.member_cap}${c.host ? ` · Host: ${c.host.display_name}` : ''}`}
+                />
               ))}
             </div>
           )}
-        </section>
+        </AdminSection>
       ))}
 
       {typedHubs.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-border bg-surface/50 dark:bg-canvas/50 p-8 text-center">
-          <p className="text-sm text-muted mb-3">No hubs assigned yet.</p>
-          <Link
-            href="/admin/hubs"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-hover transition-colors"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Set up a hub
-          </Link>
-        </div>
+        <EmptyState message="No hubs assigned yet." cta={{ href: '/admin/hubs', label: 'Set up a hub' }} />
       )}
 
-      {/* Members */}
       {members.length > 0 && (
-        <section>
-          <h2 className="text-sm font-semibold text-text mb-3">
-            All Members
-            <span className="ml-2 text-xs font-normal text-subtle">{members.length}</span>
-          </h2>
+        <AdminSection title={`All members · ${members.length}`}>
           <MemberManager members={members} />
-        </section>
+        </AdminSection>
       )}
-    </div>
+    </>
   )
 }
 
-// ── Mentor: Nexus overview + full member management ──────────────────────────
+// ── Mentor: nexus overview + full member management ──────────────────────────
 
 async function MentorPanel({ profileId }: { profileId: string }) {
   const admin = createAdminClient()
@@ -530,143 +379,73 @@ async function MentorPanel({ profileId }: { profileId: string }) {
   type MentorNexus = { id: string; name: string; slug: string; status: string; member_cap: number; outpost: { name: string } | null; hubs: MentorHub[] }
   const typedNexuses = (nexuses ?? []) as unknown as MentorNexus[]
 
-  const allHubIds = typedNexuses.flatMap((n) => n.hubs.map((h) => h.id))
   const allCircleIds: string[] = []
-
   for (const nexus of typedNexuses) {
     for (const hub of nexus.hubs ?? []) {
-      for (const circle of hub.circles ?? []) {
-        allCircleIds.push(circle.id)
-      }
+      for (const circle of hub.circles ?? []) allCircleIds.push(circle.id)
     }
   }
-
+  const totalHubs = typedNexuses.flatMap((n) => n.hubs.map((h) => h.id)).length
   const totalMembers = typedNexuses.reduce(
-    (sum: number, n) =>
-      sum +
-      n.hubs.reduce(
-        (hs: number, h) =>
-          hs + h.circles.reduce((cs: number, c) => cs + (c.member_count ?? 0), 0),
-        0
-      ),
+    (sum, n) => sum + n.hubs.reduce((hs, h) => hs + h.circles.reduce((cs, c) => cs + (c.member_count ?? 0), 0), 0),
     0
   )
-  const totalCircles = allCircleIds.length
-  const totalHubs = allHubIds.length
 
   const { data: rawMembers } = await admin
     .from('memberships')
-    .select(
-      `id, volunteer_role, joined_at,
-       profile:profiles!profile_id ( id, display_name, handle, avatar_url, community_role, current_season_rank, current_season_zaps, season_challenges_complete, is_crew_lead ),
-       circle:circles!circle_id ( name )`
-    )
+    .select(MEMBERSHIP_SELECT)
     .in('circle_id', allCircleIds.length > 0 ? allCircleIds : ['__none__'])
     .eq('status', 'active')
     .order('joined_at', { ascending: true })
 
-  type MentorMemberRow = {
-    id: string; volunteer_role: string | null; joined_at: string;
-    profile: { id: string; display_name: string; handle: string; avatar_url: string | null; community_role: string; current_season_rank: string | null; current_season_zaps: number; season_challenges_complete: boolean; is_crew_lead: boolean | null };
-    circle: { name: string } | null;
-  }
-  const mentorMembers = (rawMembers ?? []) as unknown as MentorMemberRow[]
-  const members: MemberItem[] = mentorMembers.map((m) => ({
-    membershipId:             m.id,
-    profileId:                m.profile.id,
-    displayName:              m.profile.display_name,
-    handle:                   m.profile.handle,
-    avatarUrl:                m.profile.avatar_url,
-    role:                     m.profile.community_role as CommunityRole,
-    circleName:               m.circle?.name ?? undefined,
-    joinedAt:                 m.joined_at,
-    isCrewLead:               m.profile.is_crew_lead ?? false,
-    currentSeasonRank:        (m.profile.current_season_rank ?? undefined) as SeasonRank | undefined,
-    currentSeasonZaps:        m.profile.current_season_zaps ?? 0,
-    seasonChallengesComplete: m.profile.season_challenges_complete ?? false,
-  }))
+  const members = toMemberItems((rawMembers ?? []) as unknown as MembershipRow[])
 
   return (
-    <div className="space-y-8">
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <StatCard label="Nexuses" value={typedNexuses.length} Icon={Building2} />
-        <StatCard label="Hubs"    value={totalHubs}              Icon={Building2} />
-        <StatCard label="Circles" value={totalCircles}           Icon={Layers}    />
-        <StatCard label="Members" value={totalMembers}           Icon={Users}     />
-      </div>
+    <>
+      <AdminSection title="Your region">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <StatCard label="Nexuses" value={typedNexuses.length} icon={Building2} />
+          <StatCard label="Hubs" value={totalHubs} icon={Building2} />
+          <StatCard label="Circles" value={allCircleIds.length} icon={Layers} />
+          <StatCard label="Members" value={totalMembers} icon={Users} />
+        </div>
+      </AdminSection>
 
-      {/* Nexus / hub overview */}
       {typedNexuses.map((nexus) => {
-        const nexusTotal = nexus.hubs.reduce(
-          (sum: number, h) =>
-            sum + h.circles.reduce((s: number, c) => s + (c.member_count ?? 0), 0),
-          0
-        )
+        const nexusTotal = nexus.hubs.reduce((sum, h) => sum + h.circles.reduce((s, c) => s + (c.member_count ?? 0), 0), 0)
         return (
-          <section key={nexus.id}>
-            <div className="flex items-center gap-2 mb-1">
-              <h2 className="text-sm font-semibold text-text">{nexus.name}</h2>
-              <StatusBadge status={nexus.status} />
-            </div>
-            <p className="text-xs text-subtle mb-3">
-              {nexus.outpost?.name} · {nexusTotal} / {nexus.member_cap} members
-            </p>
-
+          <AdminSection
+            key={nexus.id}
+            title={nexus.name}
+            description={`${nexus.outpost?.name ?? ''} · ${nexusTotal} / ${nexus.member_cap} members`}
+          >
             <div className="space-y-2">
               {nexus.hubs.map((hub) => {
-                const hubTotal = hub.circles.reduce(
-                  (s: number, c) => s + (c.member_count ?? 0),
-                  0
-                )
+                const hubTotal = hub.circles.reduce((s, c) => s + (c.member_count ?? 0), 0)
                 return (
-                  <Link
+                  <CircleRow
                     key={hub.id}
                     href={`/hubs/${hub.slug}`}
-                    className="flex items-center justify-between rounded-2xl border border-border bg-surface shadow-sm px-4 py-3 hover:border-primary-bg dark:hover:border-primary transition-colors"
-                  >
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-text">{hub.name}</span>
-                        <StatusBadge status={hub.status} />
-                      </div>
-                      <p className="text-xs text-subtle mt-0.5">
-                        {hub.circles.length} circles · {hubTotal} members
-                        {hub.guide && ` · Guide: ${hub.guide.display_name}`}
-                      </p>
-                    </div>
-                    <span className="text-xs text-subtle">→</span>
-                  </Link>
+                    name={hub.name}
+                    status={hub.status}
+                    meta={`${hub.circles.length} circles · ${hubTotal} members${hub.guide ? ` · Guide: ${hub.guide.display_name}` : ''}`}
+                  />
                 )
               })}
             </div>
-          </section>
+          </AdminSection>
         )
       })}
 
       {typedNexuses.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-border bg-surface/50 dark:bg-canvas/50 p-8 text-center">
-          <p className="text-sm text-muted mb-3">No nexuses assigned yet.</p>
-          <Link
-            href="/admin/nexuses"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-hover transition-colors"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Create a nexus
-          </Link>
-        </div>
+        <EmptyState message="No nexuses assigned yet." cta={{ href: '/admin/nexuses', label: 'Create a nexus' }} />
       )}
 
-      {/* Full member management */}
       {members.length > 0 && (
-        <section>
-          <h2 className="text-sm font-semibold text-text mb-3">
-            All Members
-            <span className="ml-2 text-xs font-normal text-subtle">{members.length}</span>
-          </h2>
+        <AdminSection title={`All members · ${members.length}`}>
           <MemberManager members={members} />
-        </section>
+        </AdminSection>
       )}
-    </div>
+    </>
   )
 }

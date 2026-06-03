@@ -1,8 +1,5 @@
-import { notFound } from 'next/navigation'
-import Link from 'next/link'
-import { Target } from 'lucide-react'
-import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { requireAdmin } from '@/lib/admin/guard'
+import { AdminPage, AdminSection } from '@/components/admin/admin-page'
 import { getOutcomeReport, type ChallengeOutcome, type QuestOutcome } from '@/lib/analytics/outcomes'
 
 // Janitor-only: program/game outcomes (ENGAGEMENT-MARKETING-ENGINE.md Phase C).
@@ -22,35 +19,19 @@ function RateCell({ rate, started }: { rate: number | null; started: number }) {
 }
 
 export default async function OutcomesPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) notFound()
-
-  const admin = createAdminClient()
-  const { data: profile } = await admin
-    .from('profiles')
-    .select('community_role')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
-  if (!profile || profile.community_role !== 'janitor') notFound()
+  await requireAdmin('janitor')
 
   const { challenges, quests, circles, circleStatus } = await getOutcomeReport()
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="flex items-center gap-2 text-2xl font-bold text-text">
-        <Target className="h-5 w-5 text-primary-strong" />
-        Outcomes
-      </h1>
-      <p className="mb-6 mt-1 text-sm text-muted">
-        Completion + stall points across the game and circles. A low rate with real starts (⚠️) is
-        where a program isn&rsquo;t landing.{' '}
-        <Link href="/admin" className="text-primary-strong hover:underline">Back to admin</Link>.
-      </p>
-
+    <AdminPage
+      title="Outcomes"
+      eyebrow="Insights"
+      description="Completion + stall points across the game and circles. A low rate with real starts (⚠️) is where a program isn’t landing."
+      width="wide"
+    >
       {/* Challenges */}
-      <section className="mb-8">
-        <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-subtle">Challenges</h2>
+      <AdminSection title="Challenges">
         {challenges.length === 0 ? (
           <p className="text-sm text-muted">No challenge activity yet.</p>
         ) : (
@@ -80,11 +61,10 @@ export default async function OutcomesPage() {
             </table>
           </div>
         )}
-      </section>
+      </AdminSection>
 
       {/* Quests */}
-      <section className="mb-8">
-        <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-subtle">Quests</h2>
+      <AdminSection title="Quests">
         {quests.length === 0 ? (
           <p className="text-sm text-muted">No quest activity yet.</p>
         ) : (
@@ -113,11 +93,10 @@ export default async function OutcomesPage() {
             </table>
           </div>
         )}
-      </section>
+      </AdminSection>
 
       {/* Circles */}
-      <section>
-        <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-subtle">Circles</h2>
+      <AdminSection title="Circles">
         {circleStatus.length > 0 && (
           <div className="mb-3 flex flex-wrap gap-1.5">
             {circleStatus.map((s) => (
@@ -142,7 +121,7 @@ export default async function OutcomesPage() {
             ))}
           </ul>
         )}
-      </section>
-    </div>
+      </AdminSection>
+    </AdminPage>
   )
 }

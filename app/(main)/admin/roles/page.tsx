@@ -1,7 +1,7 @@
-import { notFound } from 'next/navigation'
 import { Shield } from 'lucide-react'
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireAdmin } from '@/lib/admin/guard'
+import { AdminPage } from '@/components/admin/admin-page'
 import { ROLE_HIERARCHY, type CommunityRole } from '@/lib/core/roles'
 import { ROLE_LABEL, roleBadgeStyle } from '@/lib/community-roles'
 import { ROLE_META } from '@/lib/roles-meta'
@@ -13,19 +13,10 @@ import { PermissionGrid } from './permission-grid'
 export const dynamic = 'force-dynamic'
 
 export default async function AdminRolesPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) notFound()
+  // Role management is janitor-only (full keys).
+  await requireAdmin('janitor')
 
   const admin = createAdminClient()
-  const { data: caller } = await admin
-    .from('profiles')
-    .select('id, community_role')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
-  // Role management is janitor-only (full keys).
-  if (!caller || caller.community_role !== 'janitor') notFound()
-
   const { data: rows } = await admin
     .from('profiles')
     .select('id, display_name, handle, avatar_url, community_role, current_season_zaps')
@@ -50,17 +41,15 @@ export default async function AdminRolesPage() {
   }, {} as Record<CommunityRole, number>)
 
   return (
-    <div>
-      <div className="mb-1 flex items-center gap-2">
-        <Shield className="h-5 w-5 text-primary-strong" />
-        <h1 className="text-2xl font-bold text-text">Roles &amp; permissions</h1>
-      </div>
-      <p className="mb-6 text-sm text-muted">
-        Assign roles, spot members ready to advance, and see what each role unlocks.
-      </p>
-
+    <AdminPage
+      title="Roles & permissions"
+      eyebrow="Platform"
+      icon={Shield}
+      description="Assign roles, spot members ready to advance, and see what each role unlocks."
+      width="default"
+    >
       {/* Role roster */}
-      <div className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {ROLE_HIERARCHY.map((r) => (
           <div key={r} className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
             <div className="flex items-center justify-between">
@@ -80,6 +69,6 @@ export default async function AdminRolesPage() {
       <RoleManager members={members} />
 
       <PermissionGrid initial={permissions} defaults={NAV_AREA_DEFAULTS} />
-    </div>
+    </AdminPage>
   )
 }
