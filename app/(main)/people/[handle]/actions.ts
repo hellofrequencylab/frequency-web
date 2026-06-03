@@ -43,6 +43,33 @@ export async function moderateUpdateProfile(
   return { ok: true }
 }
 
+// Owner inline-edit of their OWN header (display name + bio) straight from the
+// profile page. Identity/handle/avatar changes still live on /settings/profile;
+// this is the quick "fix my name or bio in place" path.
+export async function updateOwnProfile(
+  data: { displayName: string; bio: string },
+): Promise<ModerateProfileResult> {
+  const myId = await getMyProfileId()
+  if (!myId) return { ok: false, error: 'Not signed in.' }
+
+  const displayName = data.displayName.trim()
+  if (!displayName) return { ok: false, error: 'Display name is required.' }
+
+  const admin = createAdminClient()
+  const { data: me } = await admin.from('profiles').select('handle').eq('id', myId).maybeSingle()
+
+  const { error } = await admin
+    .from('profiles')
+    .update({ display_name: displayName, bio: data.bio.trim() || null })
+    .eq('id', myId)
+  if (error) return { ok: false, error: error.message }
+
+  if (me?.handle) revalidatePath(`/people/${me.handle}`)
+  revalidatePath('/feed')
+  revalidatePath('/people')
+  return { ok: true }
+}
+
 // Block / unblock a member (self only). Blocking also unfriends and stops DMs
 // in both directions (lib/blocking.ts).
 export async function blockProfileAction(profileId: string): Promise<{ ok: boolean }> {
