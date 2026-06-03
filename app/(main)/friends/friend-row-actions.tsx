@@ -17,7 +17,7 @@ export function AcceptDeclineButtons({ requesterId }: { requesterId: string }) {
         type="button"
         disabled={isPending}
         onClick={() => startTransition(() => acceptFriendRequest(requesterId).then(() => {}))}
-        className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-hover disabled:opacity-50 transition-colors"
+        className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-50 transition-colors"
       >
         <Check className="w-3.5 h-3.5" />
         Accept

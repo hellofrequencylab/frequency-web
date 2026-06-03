@@ -1,15 +1,16 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { redirect } from 'next/navigation'
-import { MessageSquare, Hash, Lock, Users, Compass, Sparkles, Zap } from 'lucide-react'
+import { MessageSquare, Hash, Lock, Users } from 'lucide-react'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { getInitials, relativeTime } from '@/lib/utils'
-import { isOnline } from '@/lib/presence'
 import { NewRoomCompose } from '@/components/compose/new-room-compose'
 import { NewGroupDMCompose } from '@/components/compose/new-group-dm-compose'
 import { CrewLeadQuickAction } from '@/components/messages/crew-lead-quick-action'
+import { IndexTemplate } from '@/components/templates/index-template'
+import { SectionHeader } from '@/components/ui/section-header'
+import { EmptyState } from '@/components/ui/empty-state'
 
 type Profile = {
   id: string
@@ -54,26 +55,6 @@ const FILTERS: { value: Filter; label: string }[] = [
 
 const ACTIVE_WINDOW_MS = 30 * 60 * 1000
 
-function SidebarCard({
-  title,
-  icon: Icon,
-  children,
-}: {
-  title: string
-  icon?: React.ElementType
-  children: React.ReactNode
-}) {
-  return (
-    <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
-      <div className="px-4 py-2.5 border-b border-border flex items-center gap-1.5">
-        {Icon && <Icon className="w-3.5 h-3.5 text-subtle" />}
-        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-subtle">{title}</h3>
-      </div>
-      {children}
-    </div>
-  )
-}
-
 export default async function MessagesPage({
   searchParams,
 }: {
@@ -90,11 +71,7 @@ export default async function MessagesPage({
   // RLS convergence surface 5 (migration 20260602195209): rooms + DMs read on the
   // user client (am_room_member / am_participant SELECT policies); the DM
   // participants' profiles, which RLS would otherwise hide from sub-crew/
-  // cross-region viewers, come from the message_peer_profiles DEFINER RPC. The
-  // "new members in your circles" prompt below still reads memberships on the
-  // admin client — a separate follow-up surface.
-  const admin = createAdminClient()
-
+  // cross-region viewers, come from the message_peer_profiles DEFINER RPC.
   const { data: myProfile } = await supabase
     .from('profiles')
     .select('id, community_role')
@@ -245,276 +222,128 @@ export default async function MessagesPage({
     .filter(it => !activeIds.has(`${it.kind}:${it.id}`))
     .filter(it => filter === 'all' || (filter === 'rooms' ? it.kind === 'room' : it.kind === 'dm'))
 
-  const totalUnread =
-    conversations.reduce((sum, c) => sum + c.unreadCount, 0)
+  const totalUnread = conversations.reduce((sum, c) => sum + c.unreadCount, 0)
 
-  // ── Conversation prompt: new members in user's circles (last 7 days) ─
-  const sevenDaysAgo = new Date(nowMs - 7 * 24 * 60 * 60 * 1000).toISOString()
-  const { data: myCircleMemberships } = await admin
-    .from('memberships')
-    .select('circle_id')
-    .eq('profile_id', myProfileId)
-    .eq('status', 'active')
-
-  const myCircleIds = (myCircleMemberships ?? []).map((m: { circle_id: string }) => m.circle_id as string)
-
-  const newMembers: { profile_id: string; display_name: string; handle: string; avatar_url: string | null; last_seen_at: string | null }[] = []
-  if (myCircleIds.length > 0) {
-    const { data: recent } = await admin
-      .from('memberships')
-      .select('profile_id, joined_at, profile:profiles!profile_id(id, display_name, handle, avatar_url, last_seen_at)')
-      .in('circle_id', myCircleIds)
-      .eq('status', 'active')
-      .neq('profile_id', myProfileId)
-      .gte('joined_at', sevenDaysAgo)
-      .order('joined_at', { ascending: false })
-      .limit(5)
-
-    const seen = new Set<string>()
-    for (const r of recent ?? []) {
-      const prof = (r as unknown as { profile: (Profile & { last_seen_at: string | null }) | null }).profile
-      if (!prof || seen.has(prof.id)) continue
-      seen.add(prof.id)
-      newMembers.push({
-        profile_id: prof.id,
-        display_name: prof.display_name,
-        handle: prof.handle,
-        avatar_url: prof.avatar_url,
-        last_seen_at: prof.last_seen_at,
-      })
-    }
-  }
+  // Segmented filter — lives in the "Your threads" section header.
+  const filterTabs = (
+    <div className="flex items-center gap-0.5 rounded-lg bg-surface-elevated p-0.5">
+      {FILTERS.map(f => (
+        <Link
+          key={f.value}
+          href={f.value === 'all' ? '/messages' : `/messages?filter=${f.value}`}
+          className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+            filter === f.value ? 'bg-surface text-text shadow-sm' : 'text-muted hover:text-text'
+          }`}
+        >
+          {f.label}
+        </Link>
+      ))}
+    </div>
+  )
 
   return (
-    <div>
-
-      {/* Header */}
-      <div className="flex items-end justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-text mb-1">
-            Messages
-            {totalUnread > 0 && (
-              <span className="ml-2 inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-on-primary text-[10px] font-bold align-middle">
-                {totalUnread > 9 ? '9+' : totalUnread}
-              </span>
-            )}
-          </h1>
-          <p className="text-sm text-muted leading-relaxed max-w-2xl">
-            Every conversation in one place. Direct messages, group threads,
-            and rooms with the wider community.
-          </p>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap justify-end">
+    <IndexTemplate
+      title={
+        <span className="flex items-center gap-2">
+          Messages
+          {totalUnread > 0 && (
+            <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-bold text-on-primary">
+              {totalUnread > 9 ? '9+' : totalUnread}
+            </span>
+          )}
+        </span>
+      }
+      description="Every conversation in one place. Direct messages, group threads, and rooms with the wider community."
+      action={
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <CrewLeadQuickAction />
           <NewGroupDMCompose />
           {canCreateRoom && <NewRoomCompose />}
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        {/* ── Main column ──────────────────────────────────────── */}
-        <div className="lg:col-span-2 space-y-6">
-
-          {/* Active Now */}
-          {activeItems.length > 0 && (
-            <section>
-              <div className="flex items-center gap-1.5 mb-3">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-success" />
-                </span>
-                <h2 className="text-xs font-semibold uppercase tracking-widest text-signal-strong">
-                  Active Now <span className="text-subtle">· {activeItems.length}</span>
-                </h2>
-              </div>
-              <div className="space-y-1">
-                {activeItems.map(it =>
-                  it.kind === 'room'
-                    ? <RoomRow key={`r-${it.id}`} room={it.room} />
-                    : <DMRow key={`d-${it.id}`} conv={it.conv} myProfileId={myProfileId} />
-                )}
-              </div>
-            </section>
-          )}
-
-          {/* Your Threads */}
+      }
+    >
+      <div className="space-y-8">
+        {/* Active now */}
+        {activeItems.length > 0 && (
           <section>
-            <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-subtle">
-                Your Threads {filteredItems.length > 0 && <span className="text-subtle">· {filteredItems.length}</span>}
-              </h2>
-              <div className="flex items-center gap-0.5 bg-surface-elevated rounded-lg p-0.5">
-                {FILTERS.map(f => (
-                  <Link
-                    key={f.value}
-                    href={f.value === 'all' ? '/messages' : `/messages?filter=${f.value}`}
-                    className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
-                      filter === f.value
-                        ? 'bg-white text-text shadow-sm'
-                        : 'text-muted hover:text-text'
-                    }`}
-                  >
-                    {f.label}
-                  </Link>
-                ))}
-              </div>
+            <SectionHeader title="Active now" count={activeItems.length} />
+            <div className="space-y-1">
+              {activeItems.map(it =>
+                it.kind === 'room'
+                  ? <RoomRowItem key={`r-${it.id}`} room={it.room} />
+                  : <DMRowItem key={`d-${it.id}`} conv={it.conv} myProfileId={myProfileId} />
+              )}
             </div>
-
-            {filteredItems.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-border bg-surface/50 dark:bg-canvas/50 p-8 text-center">
-                <MessageSquare className="w-7 h-7 text-subtle/60 mx-auto mb-2" />
-                <p className="text-sm text-muted">
-                  {filter === 'rooms' ? 'No rooms joined yet.' :
-                    filter === 'dms'   ? 'No direct conversations yet.' :
-                                         'Your threads will appear here.'}
-                </p>
-                <p className="text-xs text-subtle mt-1">
-                  {filter === 'rooms' && (canCreateRoom ? 'Create one above or browse Discover.' : 'Join one from Discover below.')}
-                  {filter === 'dms'   && 'Start one from any member’s profile.'}
-                  {filter === 'all'   && 'Join a room or start a DM to begin.'}
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-1">
-                {filteredItems.map(it =>
-                  it.kind === 'room'
-                    ? <RoomRow key={`r-${it.id}`} room={it.room} />
-                    : <DMRow key={`d-${it.id}`} conv={it.conv} myProfileId={myProfileId} />
-                )}
-              </div>
-            )}
           </section>
+        )}
 
-          {/* Discover. Only when not filtered to DMs */}
-          {filter !== 'dms' && discoverRooms.length > 0 && (
-            <section>
-              <div className="flex items-center gap-1.5 mb-3">
-                <Compass className="w-3.5 h-3.5 text-subtle" />
-                <h2 className="text-xs font-semibold uppercase tracking-widest text-subtle">
-                  Discover
-                </h2>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {discoverRooms.slice(0, 6).map(room => (
-                  <Link
-                    key={room.id}
-                    href={`/messages/r/${room.id}`}
-                    className="flex items-start gap-2.5 rounded-xl border border-border bg-surface px-3 py-2.5 hover:border-primary-bg dark:hover:border-primary hover:bg-primary-bg/30 dark:hover:bg-primary-bg transition-colors"
-                  >
-                    <div className="shrink-0 w-8 h-8 rounded-lg bg-primary-bg flex items-center justify-center">
-                      <Hash className="w-3.5 h-3.5 text-primary-strong" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-text truncate">{room.name}</p>
-                      <p className="text-[11px] text-subtle truncate">
-                        <Users className="w-2.5 h-2.5 inline mr-0.5 -mt-px" />
-                        {room.member_count} {room.member_count === 1 ? 'member' : 'members'}
-                        {room.description && <> &middot; {room.description}</>}
-                      </p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </section>
-          )}
-        </div>
-
-        {/* ── In-page context column ───────────────────────────── */}
-        <div className="space-y-4">
-
-          {/* Welcome them. Conversation prompt */}
-          {newMembers.length > 0 && (
-            <SidebarCard title="Say hi" icon={Sparkles}>
-              <div className="px-4 py-3">
-                <p className="text-xs text-muted mb-3 leading-snug">
-                  {newMembers.length === 1
-                    ? '1 new member joined your circles this week.'
-                    : `${newMembers.length} new members joined your circles this week.`}
-                </p>
-                <ul className="space-y-1.5">
-                  {newMembers.map(m => {
-                    const online = isOnline(m.last_seen_at)
-                    return (
-                      <li key={m.profile_id}>
-                        <Link
-                          href={`/people/${m.handle}`}
-                          className="flex items-center gap-2 rounded-lg px-1 py-1 hover:bg-surface-elevated transition-colors"
-                        >
-                          <div className="relative shrink-0">
-                            {m.avatar_url ? (
-                              <Image src={m.avatar_url} alt={m.display_name} width={28} height={28} className="w-7 h-7 rounded-full object-cover" />
-                            ) : (
-                              <div className="w-7 h-7 rounded-full bg-border-strong flex items-center justify-center text-[10px] font-bold text-muted select-none">
-                                {getInitials(m.display_name)}
-                              </div>
-                            )}
-                            {online && (
-                              <span
-                                aria-label="Online now"
-                                className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-success ring-2 ring-surface"
-                              />
-                            )}
-                          </div>
-                          <span className="text-xs font-medium text-text truncate flex-1">{m.display_name}</span>
-                          <MessageSquare className="w-3 h-3 text-subtle shrink-0" />
-                        </Link>
-                      </li>
-                    )
-                  })}
-                </ul>
-              </div>
-            </SidebarCard>
-          )}
-
-          {/* Quick actions */}
-          <SidebarCard title="Quick Actions" icon={Zap}>
-            <div className="px-4 py-3 space-y-2">
-              <p className="text-[11px] text-muted leading-snug">
-                Start a fresh conversation with anyone, or open a new room around a topic.
-              </p>
-              <div className="flex flex-wrap gap-2 pt-1">
-                <NewGroupDMCompose />
-                {canCreateRoom && <NewRoomCompose />}
-              </div>
+        {/* Your threads */}
+        <section>
+          <SectionHeader
+            title="Your threads"
+            count={filteredItems.length > 0 ? filteredItems.length : undefined}
+            action={filterTabs}
+          />
+          {filteredItems.length === 0 ? (
+            <EmptyState
+              icon={MessageSquare}
+              title={filter === 'rooms' ? 'No rooms joined yet' : filter === 'dms' ? 'No direct conversations yet' : 'No threads yet'}
+              description={
+                filter === 'rooms'
+                  ? (canCreateRoom ? 'Create one above, or browse Discover below.' : 'Join one from Discover below.')
+                  : filter === 'dms'
+                    ? 'Start one from any member’s profile.'
+                    : 'Join a room or start a DM to begin.'
+              }
+            />
+          ) : (
+            <div className="space-y-1">
+              {filteredItems.map(it =>
+                it.kind === 'room'
+                  ? <RoomRowItem key={`r-${it.id}`} room={it.room} />
+                  : <DMRowItem key={`d-${it.id}`} conv={it.conv} myProfileId={myProfileId} />
+              )}
             </div>
-          </SidebarCard>
-
-          {/* Discover (sidebar variant) */}
-          {discoverRooms.length > 6 && (
-            <SidebarCard title="Discover Rooms" icon={Compass}>
-              <ul className="divide-y divide-border">
-                {discoverRooms.slice(6, 12).map(room => (
-                  <li key={room.id}>
-                    <Link
-                      href={`/messages/r/${room.id}`}
-                      className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-surface-elevated transition-colors"
-                    >
-                      <Hash className="w-3.5 h-3.5 text-subtle shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-text truncate">{room.name}</p>
-                        <p className="text-[10px] text-subtle">
-                          <Users className="w-2.5 h-2.5 inline mr-0.5 -mt-px" />
-                          {room.member_count}
-                        </p>
-                      </div>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </SidebarCard>
           )}
-        </div>
+        </section>
+
+        {/* Discover — public rooms to join (hidden when filtered to DMs) */}
+        {filter !== 'dms' && discoverRooms.length > 0 && (
+          <section>
+            <SectionHeader title="Discover rooms" count={discoverRooms.length} />
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {discoverRooms.map(room => (
+                <Link
+                  key={room.id}
+                  href={`/messages/r/${room.id}`}
+                  className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm transition-colors hover:border-primary-bg hover:shadow-md"
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary-bg text-primary-strong">
+                    <Hash className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-base font-bold leading-tight text-text">{room.name}</p>
+                    <p className="mt-1 flex items-center gap-1 truncate text-xs text-subtle">
+                      <Users className="h-3 w-3 shrink-0" />
+                      {room.member_count} {room.member_count === 1 ? 'member' : 'members'}
+                      {room.description && <> &middot; {room.description}</>}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
-    </div>
+    </IndexTemplate>
   )
 }
 
-function RoomRow({ room }: { room: RoomRow }) {
+function RoomRowItem({ room }: { room: RoomRow }) {
   return (
     <Link
       href={`/messages/r/${room.id}`}
-      className="flex items-center gap-3 rounded-xl px-3 py-3 hover:bg-surface-elevated transition-colors"
+      className="flex items-center gap-3 rounded-lg px-3 py-3 hover:bg-surface-elevated transition-colors"
     >
       <div className="shrink-0 w-10 h-10 rounded-lg bg-primary-bg flex items-center justify-center">
         {room.visibility === 'private'
@@ -525,7 +354,7 @@ function RoomRow({ room }: { room: RoomRow }) {
         <div className="flex items-center justify-between gap-2">
           <span className="text-sm font-semibold text-text truncate">{room.name}</span>
           {room.last_message_at && (
-            <span className="text-[11px] text-subtle shrink-0">{relativeTime(room.last_message_at)}</span>
+            <span className="text-xs text-subtle shrink-0">{relativeTime(room.last_message_at)}</span>
           )}
         </div>
         <p className="text-xs text-subtle truncate">
@@ -538,7 +367,7 @@ function RoomRow({ room }: { room: RoomRow }) {
   )
 }
 
-function DMRow({ conv, myProfileId }: { conv: ConversationRow; myProfileId: string }) {
+function DMRowItem({ conv, myProfileId }: { conv: ConversationRow; myProfileId: string }) {
   const hasUnread = conv.unreadCount > 0
   const isGroup = conv.participants.length > 1
   const display = conv.name || (isGroup
@@ -549,7 +378,7 @@ function DMRow({ conv, myProfileId }: { conv: ConversationRow; myProfileId: stri
   return (
     <Link
       href={`/messages/${conv.id}`}
-      className={`flex items-center gap-3 rounded-xl px-3 py-3 transition-colors ${
+      className={`flex items-center gap-3 rounded-lg px-3 py-3 transition-colors ${
         hasUnread
           ? 'bg-primary-bg/70 hover:bg-primary-bg dark:hover:bg-primary-bg'
           : 'hover:bg-surface-elevated'
@@ -572,7 +401,7 @@ function DMRow({ conv, myProfileId }: { conv: ConversationRow; myProfileId: stri
             {display}
           </span>
           {conv.lastMessage && (
-            <span className="text-[11px] text-subtle shrink-0">{relativeTime(conv.lastMessage.created_at)}</span>
+            <span className="text-xs text-subtle shrink-0">{relativeTime(conv.lastMessage.created_at)}</span>
           )}
         </div>
         <div className="flex items-center gap-1.5 mt-0.5">
@@ -602,7 +431,7 @@ function GroupAvatars({ participants }: { participants: Profile[] }) {
             className={`${size} ${pos} rounded-full object-cover ring-2 ring-surface`} />
         ) : (
           <div key={p.id}
-            className={`${size} ${pos} rounded-full bg-primary-bg text-primary-strong text-[9px] font-semibold flex items-center justify-center ring-2 ring-surface`}>
+            className={`${size} ${pos} rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center ring-2 ring-surface`}>
             {getInitials(p.display_name)}
           </div>
         )

@@ -99,18 +99,16 @@ export default async function ChannelsPage() {
       description="Find your thing. Interests are the global topics anyone can tune into — each carries a seasonal practice that Circles run locally. Pick what lights you up, then go do it with people near you."
       action={canCreate ? <NewChannelCompose /> : undefined}
     >
-      <div className="mb-6">
-        <StatStrip
-          items={[
-            { value: stats.interests, label: 'Interests' },
-            { value: stats.tunedIn, label: 'Tuned in' },
-            { value: stats.circles, label: 'Circles' },
-            { value: stats.categories, label: 'Categories' },
-          ]}
-        />
-      </div>
+      <StatStrip
+        items={[
+          { value: stats.interests, label: 'Interests' },
+          { value: stats.tunedIn, label: 'Tuned in' },
+          { value: stats.circles, label: 'Circles' },
+          { value: stats.categories, label: 'Categories' },
+        ]}
+      />
 
-      <div className="space-y-10">
+      <div className="space-y-8">
         {tunedIn.length > 0 && (
           <section>
             <SectionHeader title="Tuned in" count={tunedIn.length} />

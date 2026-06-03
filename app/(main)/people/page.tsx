@@ -1,15 +1,15 @@
 import Link from 'next/link'
-import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Database } from '@/lib/database.types'
 import { Globe } from 'lucide-react'
-import { getInitials } from '@/lib/utils'
 import { isOnline } from '@/lib/presence'
 import { InviteMemberCompose } from '@/components/compose/invite-member-compose'
 import { type CommunityRole, ROLE_LABEL, RoleBadge } from '@/lib/community-roles'
 import { IndexTemplate } from '@/components/templates/index-template'
+import { EmptyState } from '@/components/ui/empty-state'
+import { PersonCard } from '@/components/cards/person-card'
 
 type Profile = {
   id: string
@@ -140,24 +140,13 @@ export default async function DirectoryPage({
     online: onlineFilter,
   }
 
-  const pillBase = 'px-2.5 py-1 rounded-md text-xs font-medium border transition-colors'
+  const pillBase = 'px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors'
   const pillOn = 'bg-primary text-on-primary border-primary'
   const pillOff = 'bg-surface text-muted border-border hover:border-primary'
 
-  return (
-    <IndexTemplate
-      title={
-        <span className="flex items-center gap-2">
-          <Globe className="w-5 h-5 text-primary-strong" />
-          Directory
-        </span>
-      }
-      description="Everyone in the community. Browse, find someone interesting, say hi."
-      action={<InviteMemberCompose inviterName={viewerName} />}
-    >
-
-      {/* Filters */}
-      <div className="flex flex-col gap-2 mb-6">
+  // Filters live in the IndexTemplate `toolbar` slot (URL-driven, server-rendered).
+  const filters = (
+    <div className="flex flex-col gap-2">
         {/* Role (rank) filter */}
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="text-xs text-muted font-medium w-12 shrink-0">Role:</span>
@@ -258,61 +247,48 @@ export default async function DirectoryPage({
           </Link>
         </div>
       </div>
+  )
 
+  return (
+    <IndexTemplate
+      title={
+        <span className="flex items-center gap-2">
+          <Globe className="w-5 h-5 text-primary-strong" />
+          Directory
+        </span>
+      }
+      description="Everyone in the community. Browse, find someone interesting, say hi."
+      action={<InviteMemberCompose inviterName={viewerName} />}
+      toolbar={filters}
+    >
       {/* Member count */}
       <p className="text-xs text-subtle mb-4">{filtered.length} member{filtered.length !== 1 ? 's' : ''}</p>
 
       {/* Grid */}
       {filtered.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border bg-surface/50 dark:bg-canvas/50 p-12 text-center">
-          <Globe className="w-8 h-8 text-subtle/60 mx-auto mb-3" />
-          <p className="text-sm text-muted">No members match these filters.</p>
-        </div>
+        <EmptyState
+          icon={Globe}
+          title="No members match these filters"
+          description="Try widening or clearing a filter to see more of the community."
+        />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((p) => {
             const role = (p.community_role ?? 'member') as CommunityRole
-            const online = isOnline(p.last_seen_at)
             return (
-              <Link
+              <PersonCard
                 key={p.id}
-                href={`/people/${p.handle}`}
-                className="group flex items-start gap-3 rounded-2xl border border-border bg-surface shadow-sm p-4 hover:border-primary-bg dark:hover:border-primary hover:shadow-md transition-all"
-              >
-                <div className="relative shrink-0">
-                  {p.avatar_url ? (
-                    <Image
-                      src={p.avatar_url}
-                      alt={p.display_name}
-                      width={40}
-                      height={40}
-                      className="w-10 h-10 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-primary-bg text-primary-strong text-sm font-semibold flex items-center justify-center select-none">
-                      {getInitials(p.display_name)}
-                    </div>
-                  )}
-                  {online && (
-                    <span
-                      className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-surface bg-success"
-                      title="Online now"
-                    />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-text group-hover:text-primary-strong dark:group-hover:text-primary-strong transition-colors truncate">
-                    {p.display_name}
-                  </p>
-                  <p className="text-xs text-subtle truncate">@{p.handle}</p>
-                  <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                    <RoleBadge role={role} className="text-[11px] leading-tight" />
-                    {p.nexus_regions?.name && (
-                      <span className="text-[11px] text-subtle">{p.nexus_regions.name}</span>
-                    )}
-                  </div>
-                </div>
-              </Link>
+                handle={p.handle}
+                displayName={p.display_name}
+                avatarUrl={p.avatar_url}
+                online={isOnline(p.last_seen_at)}
+                meta={
+                  <>
+                    <RoleBadge role={role} className="text-xs leading-tight" />
+                    {p.nexus_regions?.name && <span>{p.nexus_regions.name}</span>}
+                  </>
+                }
+              />
             )
           })}
         </div>
