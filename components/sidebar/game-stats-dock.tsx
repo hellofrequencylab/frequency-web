@@ -30,10 +30,10 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 export function GameStatsDockClient({ data }: { data: DockData }) {
   const { zaps, gems, streak, rank, todaysMove, last7, rankProgress, quest, vaultGems } = data
-  // Mirrors the left profile dock. The bar sits in normal flow at the bottom of
-  // the rail (no sticky), so it scrolls up into view as the rail's top content
-  // leaves; the panel then rises on reaching the feed end (shared reveal), on a
-  // hover-scroll over the bar, or on tap.
+  // Mirrors the left profile dock. The bar is sticky-pinned to the bottom of the
+  // shared scroll viewport, so at REST it sits at the same height as the left
+  // profile dock (not buried at the end of a tall rail). The panel rises on
+  // reaching the feed end (shared reveal), on a hover-scroll over the bar, or on tap.
   const [manualOpen, setManualOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
   const revealed = useDockRevealed()
@@ -41,7 +41,7 @@ export function GameStatsDockClient({ data }: { data: DockData }) {
   const open = manualOpen || revealed || hoverOpen
 
   return (
-    <div ref={rootRef} className="border-t border-border bg-canvas">
+    <div ref={rootRef} className="sticky bottom-0 z-10 border-t border-border bg-canvas">
       {/* Compact bar — stuck to the bottom; tap to open/close. */}
       <button
         type="button"

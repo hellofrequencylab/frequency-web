@@ -480,7 +480,9 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
         {isCrew && <LeaderboardWidget />}
       </div>
 
-      {/* Game stats sit below the rail content and scroll up with it. */}
+      {/* Game stats dock — sticky-pinned to the bottom of the shared scroll
+          viewport (see game-stats-dock.tsx), so at rest it lines up with the
+          left profile dock instead of sitting at the end of the tall rail. */}
       <GameStatsDock profileId={profileId} />
     </div>
   )
