@@ -43,7 +43,7 @@ export function DispatchTicker({ items }: { items: TickerItem[] }) {
         className="flex shrink-0 items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-signal-strong transition-colors hover:text-primary-strong"
       >
         <Megaphone className="h-3.5 w-3.5" />
-        Dispatches
+        Broadcasts
       </Link>
 
       <span aria-hidden className="h-4 w-px shrink-0 bg-border" />
