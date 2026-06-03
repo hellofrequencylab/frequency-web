@@ -53,7 +53,9 @@ against the registry — **a typo can't mint a tag.**
 - Every entry has a **`pii` class** (`none` / `identity` / `sensitive`) and **`retentionDays`**.
 - Members can **view their own tags** (RLS `member_tags_select_own`); tags are **erased with the
   account** (FK `on delete cascade`) — extending the Vera member-erase path (ADR-066).
-- `contacts.consent_state` already exists; Phase 5 formalizes consent records + retention enforcement.
+- `contacts.consent_state` already exists; Phase 5b adds an append-only **consent ledger**
+  (`consent_records`, latest-record-per-scope wins) + a nightly **retention cron** — `hasConsent()`
+  is what AI/Vera writes gate on (the ADR-028 harness).
 
 ## Examples → mechanism
 
@@ -72,7 +74,7 @@ against the registry — **a typo can't mint a tag.**
 | **2 · Computed traits** | `member_traits` projection + nightly job (lifecycle/cohort/usage/WAM/RFM) | ✅ shipped (dark) |
 | **3 · Segments** | saved segment definitions + Studio admin (name, predicates, member count) | ✅ shipped |
 | **4 · Activation** | trait segments selectable as campaign audiences (`seg:<slug>` → member contacts, consent-aware) | ✅ shipped |
-| **5 · Consent & experiments** | deterministic experiment assignment + holdouts (`lib/experiments`) ✅; consent records + retention enforcement ⏳ | ◑ experiments shipped |
+| **5 · Consent & experiments** | experiments + holdouts (`lib/experiments`) · append-only consent ledger + retention cron (`lib/consent`) | ✅ shipped |
 
 ## Future-proofing (set up now, not retrofitted)
 
@@ -99,3 +101,6 @@ against the registry — **a typo can't mint a tag.**
 | `supabase/migrations/*_member_tags.sql` · `*_member_traits.sql` | tables + RLS + `member_engagement_stats` RPC + founding-cohort backfill |
 | `lib/traits/*.test.ts` | registry integrity, `isTagKey`, and the compute layer |
 | `lib/experiments/registry.ts` · `assign.ts` | experiment catalog + deterministic, storage-free variant assignment (holdout = `control`) |
+| `lib/consent/scopes.ts` · `consent.ts` | consent scope registry + `latestByScope` / `recordConsent` / `hasConsent` (the harness) |
+| `lib/consent/retention.ts` · `app/api/cron/enforce-retention` | purge expired data nightly (`isExpired` pure-tested) |
+| `supabase/migrations/*_consent_records.sql` | append-only consent ledger + RLS |
