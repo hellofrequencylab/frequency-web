@@ -18,6 +18,9 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **A much bigger help center**: new guides covering circles, hubs, channels and events;
+  finding people, friends, messages and search; posting and broadcasts; season ranks;
+  membership and the Vault; and reporting and safety — so "how do I…?" has an answer.
 - **Season banner**: your Crew dashboard now shows the current season — its name and a live
   countdown to when it ends (or "Ongoing" while it's open) — so you always know how long is
   left to climb the ranks.

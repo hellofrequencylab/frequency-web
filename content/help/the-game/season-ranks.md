@@ -1,0 +1,31 @@
+---
+title: Season ranks
+description: How zaps move you up the ranks each season.
+category: the-game
+order: 2
+updated: 2026-06-03
+audience: member
+featureKeys: [ranks]
+status: published
+---
+
+Ranks are your standing in the current season, earned by showing up — especially in person. They're driven by **zaps** (see [Zaps & gems](/help/the-game/zaps-and-gems)).
+
+## The ranks
+
+You climb as you earn season zaps:
+
+- **Ghost**
+- **Runner** — at 100 zaps
+- **Operative** — at 300 zaps
+- **Agent** — at 750 zaps
+- **Conduit** — at 1,500 zaps
+- **Luminary** — the top, awarded by hand for those who've truly carried their community
+
+The first five advance automatically as your zaps add up. Luminary is a recognition, not just a number.
+
+## Seasons reset (your gems don't)
+
+A season runs for a stretch, then resets so everyone gets a fresh start. When it does, a share of your season zaps converts into **gems** — the durable, spendable currency that sticks with you. So the season is the "doing," and gems are what you keep.
+
+Want to know what counts? See [Zaps & gems](/help/the-game/zaps-and-gems).
