@@ -1,8 +1,9 @@
 # Analytics — first-party tracking + admin dashboard (and GA4)
 
-Status: **design.** GA4 acquisition tag is **shipped** (ADR-048). This doc specs the
-**first-party event layer + admin dashboard** and how GA4 is "fully embedded." Decision:
-[DECISIONS.md ADR-050](DECISIONS.md).
+Status: **design.** GA4 acquisition tag is **shipped** (ADR-048); the **dual-emit `track()` helper
++ taxonomy + page-view capture are shipped** (ADR-070, [ENGAGEMENT-MARKETING-ENGINE.md](ENGAGEMENT-MARKETING-ENGINE.md)
+Phase A) — the admin dashboard (below) is the remaining build. This doc specs the **first-party
+event layer + admin dashboard** and how GA4 is "fully embedded." Decision: [DECISIONS.md ADR-050](DECISIONS.md).
 
 ## Goal
 
