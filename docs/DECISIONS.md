@@ -1405,6 +1405,87 @@ single-module change.
 
 ---
 
+## ADR-066: Vera integration — the bridge doctrine, a memory table, one concierge+help voice
+
+**Status:** Accepted (design) · 2026-06-03 · extends ADR-049 (Vera persona), runs on ADR-041/028
+(AI kernel + governance), is the AI layer of ADR-047 (onboarding). Spec: [AI-VERA.md](AI-VERA.md).
+
+**Context:** We want Vera to do onboarding *and* act as a personal help bot that remembers a member
+and helps them as they go — **without** members leaning on AI (time-in-chat is the failure mode, not
+the goal). Three things were unspecified or open: how restraint becomes a build constraint rather
+than a vibe; where her memory lives (the ADR-049 open decision); and how she relates to the separate
+onboarding tour and help-center/RAG work so we don't build three different AI philosophies.
+
+**Decision:**
+- **The bridge doctrine is a hard constraint.** We optimize the *inverse* of a chatbot: minimize
+  time-to-human, maximize deflection-to-human, and let Vera's footprint **decay** per established
+  member. Enforced by five build rules — deterministic-first (every surface has a non-AI baseline
+  and fallback), offer-then-step-back (short answers ending in a concrete real-world next action),
+  contextual-not-a-home (no "Vera tab"/persistent open chat as a primary surface), cap-the-spiral
+  (bounded turns before routing outward), point-at-people (name the human, offer a warm intro).
+- **Memory = a dedicated `ai_member_context` table** (one row/member: rolling `summary`, `facts`,
+  derived `milestones`, `interaction_count`), **not** `profiles.meta.ai`. Source of truth is
+  `engagement_events` (memory can't disagree with analytics); summary regenerated on the Batch API;
+  `facts` captured via a `remember_fact` tool; member-readable + one-click erasable; RLS own-row;
+  data-minimized to Anthropic. (`profiles.meta` stays for tour state per ADR-047.)
+- **One voice across surfaces on the shared kernel.** Vera *is* the onboarding concierge (Phase 2
+  of ADR-047, the deterministic tour as fallback) and *is* the help center's voice (grounded + cited
+  RAG over `content/help`, confidence-gated hand-off). Not separate bots.
+- **Resolved ADR-049 open decisions:** autonomy = propose-and-confirm everywhere (act-and-undo only
+  for trivially reversible self-facts), graduating per-action via the audit log; first non-onboarding
+  surface = **help**, then encouragement.
+
+**Consequences:** Onboarding, help, and the engagement loop converge on one persona + one kernel —
+the kernel (`lib/ai/`) and the RAG help bot are the shared first builds (Phases A–B), so this and the
+support-system/AI-search initiative are the same critical path. A new migration adds
+`ai_member_context` (+ RLS). The doctrine reframes success metrics: the activation funnel,
+deflection-to-human, and footprint-decay — **not** messages-to-Vera. All ADR-028 guardrails apply
+unchanged: bounded typed tools, copilot-first, caps + kill switch, crisis→human, AI labeled, and
+**no autonomous writes until the test/consent harness exists.**
+
+---
+
+## ADR-067: Support system — AI/RAG search and a living-docs loop on the docs-as-code help center
+
+**Status:** Accepted (design) · 2026-06-03 · builds on the docs-as-code help center
+([HELP-CENTER.md](HELP-CENTER.md)) + the docs router ([DOCS-PROTOCOL.md](DOCS-PROTOCOL.md)); runs on
+the AI kernel (ADR-041/028); Vera is the voice (ADR-066). Spec: [SUPPORT-SYSTEM.md](SUPPORT-SYSTEM.md).
+
+**Context:** We want a help desk that (a) lets members ask in natural language and get a trustworthy
+answer, (b) documents every feature/category, and (c) keeps itself current as the product changes,
+with **minimal ongoing management**. The help center already exists (docs-as-code, `featureKeys`
+drift signal, drift hooks + CI, `/sync-docs`, CHANGELOG), pgvector + the Claude SDK are present, and
+AI-STRATEGY already specs a RAG support bot — but search is substring-only, the drift signal only
+*nudges a human*, there's no measure of coverage, and **no embedding pipeline is built (only the
+`vector(384)` column).** We needed to lock the search approach, the embedding model, and the
+auto-update/review model before building.
+
+**Decision:**
+- **AI search = RAG over `content/help` on the shared `lib/ai/` kernel** — embed → retrieve →
+  Haiku answers **grounded only in retrieved chunks, with citations**, in Vera's voice,
+  confidence-gated to a human hand-off; a deterministic substring fallback is always available
+  (kill switch / over-budget / keyless safe). The "Ask Vera" tier of the support menu *is* this.
+- **Embeddings = gte-small via a Supabase Edge Function** (Transformers.js): 384-d (matches the
+  existing column), zero per-call cost, server-side, key-free — chosen over Voyage/OpenAI to stay
+  on the anti-lock-in + cost posture. Standardized platform-wide; the same model embeds index + query.
+- **A living-docs loop with PR-based staff review.** The `featureKeys` drift signal triggers an AI
+  doc-writer that drafts the article + CHANGELOG line from the diff and opens/updates a **PR with a
+  staff review checklist**; staff approve in GitHub; merge re-embeds. **Nothing auto-publishes**
+  (ADR-028 copilot-first, applied to docs). An in-product Studio review queue is a deliberate later
+  option, not the first build.
+- **Coverage is measured**, not vibes: a canonical feature-key registry + a coverage matrix (every
+  key → a published, fresh article; flag missing/stale), and the demand side logs every AI query +
+  confidence (`ai_help_queries`) so recurring unanswered questions become the to-write list.
+
+**Consequences:** New data: a `help_chunks` table + `match_help_chunks` RPC + an `ai_help_queries`
+log + a gte-small Edge Function + a `pnpm help:index` CI step (the missing embedding pipeline). The
+`lib/ai/` kernel and the RAG help bot are the **shared first builds with Vera** (ADR-066 Phases A–B)
+— this and the Vera initiative are one critical path, not two. All ADR-028 guardrails apply
+unchanged. Phase 0 (feature-key registry + coverage matrix + the support-menu launcher + backfilled
+articles) needs **no AI** and is the highest-leverage first step.
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 

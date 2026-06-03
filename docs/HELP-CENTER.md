@@ -84,10 +84,17 @@ Help is one leg of the three-home pipeline in [DOCS-PROTOCOL.md](DOCS-PROTOCOL.m
 4. **CI drift check** (`.github/workflows/docs-drift.yml`): annotates a PR when
    user-facing routes change without help/docs updates.
 
+> **Becoming a living help desk.** The pipeline above (drift nudge → a human writes the doc) is the
+> baseline. The planned next level — AI/RAG search, an AI doc-writer that drafts updates + a staff
+> review checklist, and a measured coverage matrix — is specified in
+> [SUPPORT-SYSTEM.md](SUPPORT-SYSTEM.md) (decisions: [ADR-067](DECISIONS.md)).
+
 ## Future expansion (designed-for, not built)
 
-- **Search at scale**: swap the in-component substring search for Pagefind/Orama behind
-  the same `<HelpSearch>` props.
+- **AI search**: the chosen direction is **RAG over `content/help` in Vera's voice**, with citations
+  + a human fallback, behind the same `<HelpSearch>` props — see
+  [SUPPORT-SYSTEM.md](SUPPORT-SYSTEM.md). (Pagefind/Orama remain the no-AI substring upgrade if ever
+  needed.)
 - **Subdomain**: serve at `help.frequencylocal.com` by rewriting it to `/help` (all content
   is already under the `/help` path).
 - **Non-engineer editing**: a light authoring UI in Studio that commits Markdown via PR,
