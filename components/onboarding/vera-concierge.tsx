@@ -3,7 +3,8 @@
 import { useState, useTransition } from 'react'
 import { Sparkles, Check, X, Send } from 'lucide-react'
 import { conciergeTurn, confirmProposal } from '@/app/onboarding/vera-actions'
-import type { ConciergeStage, ProposedToolCall } from '@/lib/ai/vera/concierge'
+import type { ProposedToolCall } from '@/lib/ai/vera/concierge'
+import type { VeraMessage } from '@/lib/ai/vera/agent-claude'
 
 // Vera's onboarding concierge (ADR-066 Phase D). A bounded, paced conversation that
 // gets the member toward a real circle/person, then steps back. Runs the deterministic
@@ -16,7 +17,7 @@ interface Msg {
 
 export function VeraConcierge() {
   const [started, setStarted] = useState(false)
-  const [stage, setStage] = useState<ConciergeStage>('greet')
+  const [stage, setStage] = useState<string>('greet')
   const [messages, setMessages] = useState<Msg[]>([])
   const [proposals, setProposals] = useState<ProposedToolCall[]>([])
   const [suggestions, setSuggestions] = useState<string[]>([])
@@ -25,11 +26,13 @@ export function VeraConcierge() {
   const [pending, start] = useTransition()
 
   function turn(text: string) {
+    // Prior turns (before this message) become the live loop's conversation history.
+    const history: VeraMessage[] = messages.map((m) => ({ role: m.from === 'you' ? 'user' : 'assistant', text: m.text }))
     if (text) setMessages((m) => [...m, { from: 'you', text }])
     setProposals([])
     setSuggestions([])
     start(async () => {
-      const r = await conciergeTurn(stage, text)
+      const r = await conciergeTurn(stage, text, history)
       setMessages((m) => [...m, { from: 'vera', text: r.message }])
       setStage(r.stage)
       setProposals(r.proposals)
