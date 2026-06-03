@@ -121,8 +121,9 @@ still supports it) — no component changes.
 ✅ One gate, everything else skippable · ✅ < 90s, visible progress · ✅ once-per-user + resumable
 (idempotent `meta` flag; returning users redirect to `/feed`) · ✅ keyboard + focus management on
 each beat · ✅ `prefers-reduced-motion` honored by every render · ✅ mobile-first (the desktop brand
-rail collapses) · ✅ ends on a real next step (lands in `/circles` to make the first join) · ✅ Vera's
-voice, hot but earned.
+rail collapses) · ✅ ends on a real next step — **hands off to the Vera concierge** (`/onboarding/vera`,
+ADR-074) who bridges them to a first circle, with a one-tap escape to `/circles` and a feed first-run
+banner catching anyone who skips · ✅ Vera's voice, hot but earned.
 
 ## Success metrics
 
