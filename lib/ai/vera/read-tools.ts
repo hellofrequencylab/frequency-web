@@ -9,11 +9,11 @@ function db(): SupabaseClient {
   return createAdminClient() as unknown as SupabaseClient
 }
 
-/** Suggest a couple of real circles, optionally matched to an interest. */
+/** Suggest a couple of real circles (with their slugs, so Vera can offer to join). */
 async function suggestCircle(interest?: unknown): Promise<string> {
   let q = db()
     .from('circles')
-    .select('name, neighborhood, member_count, about')
+    .select('name, slug, neighborhood, member_count, about')
     .eq('is_demo', false)
     .order('member_count', { ascending: false })
     .limit(3)
@@ -21,9 +21,10 @@ async function suggestCircle(interest?: unknown): Promise<string> {
   if (term) q = q.ilike('name', `%${term}%`)
 
   const { data } = await q
-  const rows = (data ?? []) as Array<{ name: string; neighborhood: string | null }>
+  const rows = (data ?? []) as Array<{ name: string; slug: string; neighborhood: string | null }>
   if (rows.length === 0) return 'No matching circles are live yet — point them at /circles to browse.'
-  return rows.map((c) => (c.neighborhood ? `${c.name} (${c.neighborhood})` : c.name)).join('; ')
+  // Include the slug so a follow-up join_circle can target it precisely.
+  return rows.map((c) => `${c.name}${c.neighborhood ? ` (${c.neighborhood})` : ''} [slug: ${c.slug}]`).join('; ')
 }
 
 /** Name a host who runs a relevant circle, so Vera can offer a warm intro. */
