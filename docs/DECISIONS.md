@@ -1594,6 +1594,35 @@ pipeline. Ships incrementally and dark-safe.
 
 ---
 
+## ADR-071: Open the beta now — "Join the Beta" goes straight to sign-in + induction (waitlist parked for the gated phase)
+
+**Status:** Accepted · 2026-06-03 · supersedes the lead-capture routing of the primary CTA; builds on
+the beta induction ([ADR-068](DECISIONS.md)) and the open passwordless auth.
+
+**Context:** Until now the featured "Join the Beta" CTA pointed at `/beta` — a marketing + **waitlist**
+page (`BetaForm` → `requestBetaAccess`, "we'll reach out when a spot opens"). The founder wants the
+content flywheel moving *now*: anyone who clicks "Join the Beta" should land directly in the cinematic
+beta induction and become a real, building member — no queue. The waitlist framing is for a **later**
+gated phase, not today.
+
+**Decision:**
+- **Flip the one CTA constant.** `BETA_CTA_HREF` (`lib/site.ts`) → `/sign-in`. Every sitewide "Join
+  the Beta" button reads this single constant, so the whole funnel opens with one change. Sign-in is
+  open passwordless (magic link + Google) and **creates the account on first use**; the `(main)`
+  layout then routes any member without `meta.onboarding_completed` into `/onboarding` →
+  `/onboarding/beta` (ADR-068). Result: click → sign-in → induction → real member.
+- **Park, don't delete, the waitlist.** The `/beta` page, `BetaForm`, and `requestBetaAccess` stay
+  intact and reachable by direct link — they are the lead-capture surface for the **future gated
+  weekly-cohort phase** (AI admits a batch on a metric, with automated onboarding emails). Reviving
+  it is a routing change, not a rebuild.
+
+**Consequences:** No migration, no new route — a one-line href change plus this record. The beta is now
+self-serve. When the gated phase lands, the CTA can point back at `/beta` (or a new admission flow) and
+the induction stays exactly as-is behind it. The future gated/cohort system (AI-driven admission +
+automated onboarding email sequence) is the next design, tracked separately.
+
+---
+
 ## ADR-072: Admin IA — one grouped catalog, one page shell, one guard
 
 **Status:** Accepted · 2026-06-03 · a presentational/organizational refactor of the `/admin`
