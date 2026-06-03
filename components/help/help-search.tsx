@@ -3,35 +3,15 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import type { HelpSearchEntry } from '@/lib/help/content'
+import { searchHelp } from '@/lib/help/search'
 
 // Client-side help search over a static index passed from the server. No backend,
-// no search SaaS: a lightweight scored substring match, owned and instant. The
-// index is small; if it ever grows large we can swap in Pagefind/Orama behind
-// this same component without touching callers (see docs/HELP-CENTER.md).
-function score(entry: HelpSearchEntry, q: string): number {
-  const hay = `${entry.title} ${entry.description} ${entry.categoryTitle} ${entry.excerpt}`.toLowerCase()
-  const terms = q.toLowerCase().split(/\s+/).filter(Boolean)
-  let s = 0
-  for (const t of terms) {
-    if (entry.title.toLowerCase().includes(t)) s += 5
-    else if (hay.includes(t)) s += 1
-    else return 0
-  }
-  return s
-}
-
+// no search SaaS: a lightweight scored substring match, owned and instant (scoring
+// shared via lib/help/search). The index is small; if it ever grows large we can
+// swap the impl there without touching callers (see docs/HELP-CENTER.md).
 export function HelpSearch({ index }: { index: HelpSearchEntry[] }) {
   const [q, setQ] = useState('')
-  const results = useMemo(() => {
-    const query = q.trim()
-    if (query.length < 2) return []
-    return index
-      .map((e) => ({ e, s: score(e, query) }))
-      .filter((r) => r.s > 0)
-      .sort((a, b) => b.s - a.s)
-      .slice(0, 8)
-      .map((r) => r.e)
-  }, [q, index])
+  const results = useMemo(() => searchHelp(index, q), [q, index])
 
   return (
     <div className="relative">
