@@ -73,6 +73,13 @@ export const VERA_TOOLS: readonly VeraToolDef[] = [
       { name: 'note', type: 'string', required: false, description: 'An optional personal note.' },
     ],
   },
+  {
+    key: 'join_circle',
+    description: 'Get the member into a circle they chose. Use the exact slug from suggest_circle. This is the goal of onboarding — propose it as soon as a circle fits.',
+    mode: 'write',
+    confirmLabel: 'Join this circle',
+    params: [{ name: 'circle', type: 'string', required: true, description: 'The slug (preferred) or name of the circle to join.' }],
+  },
 ] as const
 
 const BY_KEY = new Map(VERA_TOOLS.map((t) => [t.key, t]))
