@@ -257,7 +257,7 @@ function buildActions(
       if (context.isAuthor || isHostPlus(role)) {
         items.push({
           key: 'edit',
-          label: 'Edit dispatch',
+          label: 'Edit broadcast',
           icon: <Pencil className={iconCls} />,
           kind: 'link',
           href: `/broadcast/${context.id}?edit=true`,
@@ -271,7 +271,7 @@ function buildActions(
         })
         items.push({
           key: 'delete',
-          label: 'Delete dispatch',
+          label: 'Delete broadcast',
           icon: <Trash2 className={iconCls} />,
           destructive: true,
           kind: 'action',

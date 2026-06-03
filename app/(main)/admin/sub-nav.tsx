@@ -34,7 +34,7 @@ export function AdminSubNav({ role }: { role: CommunityRole }) {
     { href: '/admin/circles',     label: 'Circles',     Icon: CircleDot },
     { href: '/admin/channels',    label: 'Channels',    Icon: Radio },
     { href: '/admin/events',      label: 'Events',      Icon: CalendarDays },
-    { href: '/admin/dispatches',  label: 'Dispatches',  Icon: Megaphone },
+    { href: '/admin/dispatches',  label: 'Broadcasts',  Icon: Megaphone },
     { href: '/admin/crew-tasks',     label: 'Crew Tasks',     Icon: ClipboardList },
     { href: '/admin/gamification',  label: 'Gamification',  Icon: Trophy },
     { href: '/admin/moderation',    label: 'Moderation',    Icon: ShieldAlert },

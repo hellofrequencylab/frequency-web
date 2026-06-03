@@ -68,7 +68,7 @@ export default async function AdminPage() {
             <StatCard label="Members"     value={membersCount.count ?? 0}    Icon={Users} />
             <StatCard label="Circles"     value={circlesCount.count ?? 0}    Icon={Layers} />
             <StatCard label="Events"      value={eventsCount.count ?? 0}     Icon={CalendarDays} />
-            <StatCard label="Dispatches"  value={dispatchesCount.count ?? 0} Icon={Megaphone} />
+            <StatCard label="Broadcasts"  value={dispatchesCount.count ?? 0} Icon={Megaphone} />
           </div>
 
           {/* North Star: verified practice */}
@@ -101,7 +101,7 @@ export default async function AdminPage() {
                 <CalendarDays className="w-4 h-4 text-subtle" /> New Event
               </Link>
               <Link href="/broadcast" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-text hover:bg-surface-elevated transition-colors">
-                <Megaphone className="w-4 h-4 text-subtle" /> New Dispatch
+                <Megaphone className="w-4 h-4 text-subtle" /> New Broadcast
               </Link>
               <Link href="/admin/moderation" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-text hover:bg-surface-elevated transition-colors">
                 <ShieldAlert className="w-4 h-4 text-subtle" /> Moderation Queue

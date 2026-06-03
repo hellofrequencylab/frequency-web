@@ -8,7 +8,7 @@ import { processUnsubscribe } from './actions'
 import { isError } from '@/lib/action-result'
 
 const CATEGORY_LABELS: Record<string, string> = {
-  dispatches: 'broadcast dispatches',
+  dispatches: 'broadcasts',
   events:     'event reminders',
   mentions:   'mention notifications',
   lifecycle:  'onboarding nudges',
