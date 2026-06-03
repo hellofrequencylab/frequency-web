@@ -130,6 +130,13 @@ export async function executeAction(id: string): Promise<{ ok: boolean; error?: 
   if (!action) return { ok: false, error: 'Action not found.' }
   if (action.status !== 'approved') return { ok: false, error: 'Action is not approved.' }
 
+  // Content drafts are NEVER auto-published — approval just marks them ready for a
+  // human to post (human-approves-anything-public; MARKETING-AI guardrail).
+  if (action.kind === 'content_draft') {
+    await client.from('agent_actions').update({ status: 'executed' }).eq('id', id)
+    return { ok: true }
+  }
+
   if (action.kind === 'email_contact') {
     const p = (action.payload ?? {}) as { profileId?: string; email?: string; subject?: string; body?: string }
     if (p.profileId && p.email && (await shouldSend(p.profileId, 'email', 'lifecycle'))) {
