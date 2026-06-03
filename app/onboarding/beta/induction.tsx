@@ -402,19 +402,9 @@ export default function BetaInduction({ userId, userEmail, initialHandle, previe
               <div className="mx-auto max-w-4xl">
                 <h1 className={`text-5xl sm:text-6xl ${heading}`}>{VERA.identity.heading}</h1>
 
-                <div className="mt-9 flex flex-col items-center gap-10 text-left md:flex-row md:items-center md:justify-center md:gap-12">
-                  {/* left: avatar + form card */}
-                  <div className="flex w-full max-w-sm flex-col items-center gap-4">
-                    <button type="button" onClick={() => fileInputRef.current?.click()} className="group">
-                      <div className="rounded-full ring-4 ring-surface shadow-sm">{renderAvatar()}</div>
-                      <span className="mt-2 block text-center text-xs font-semibold text-primary group-hover:underline">
-                        {avatarPreview ? 'Change photo' : 'Add a photo'}
-                      </span>
-                    </button>
-                    <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-                    {uploadError && <p className="text-xs text-danger">{uploadError}</p>}
-
-                    <div className="w-full space-y-4 rounded-3xl border border-border bg-surface p-6 shadow-sm">
+                <div className="mt-9 flex flex-col items-center gap-8 text-left md:flex-row md:items-center md:justify-center md:gap-10">
+                  {/* left: form card */}
+                  <div className="w-full max-w-sm space-y-4 rounded-3xl border border-border bg-surface p-6 shadow-sm">
                     <div>
                       <label className={fieldLabel}>Display name</label>
                       <input
@@ -473,12 +463,19 @@ export default function BetaInduction({ userId, userEmail, initialHandle, previe
                       />
                     </div>
                   </div>
-                  </div>
 
-                  {/* right: copy + actions under it */}
-                  <div className="w-full max-w-xs text-center md:text-left">
+                  {/* right: avatar over the copy, button under */}
+                  <div className="flex w-full max-w-xs flex-col items-center gap-4 text-center md:items-start md:text-left">
+                    <button type="button" onClick={() => fileInputRef.current?.click()} className="group">
+                      <div className="rounded-full ring-4 ring-surface shadow-sm">{renderAvatar()}</div>
+                      <span className="mt-2 block text-center text-xs font-semibold text-primary group-hover:underline">
+                        {avatarPreview ? 'Change photo' : 'Add a photo'}
+                      </span>
+                    </button>
+                    <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+                    {uploadError && <p className="text-xs text-danger">{uploadError}</p>}
                     <p className="text-lg leading-relaxed text-muted">{VERA.identity.body}</p>
-                    <div className="mt-6 flex flex-col items-center gap-3 md:items-start">
+                    <div className="mt-2 flex flex-col items-center gap-3 md:items-start">
                       <button disabled={!identityValid || uploading} onClick={advanceFromIdentity} className={btnPrimary}>
                         {uploading ? 'Uploading…' : 'Continue'}{!uploading && <ArrowRight />}
                       </button>
@@ -494,7 +491,7 @@ export default function BetaInduction({ userId, userEmail, initialHandle, previe
               <div className="mx-auto max-w-4xl">
                 <h1 className={`text-5xl sm:text-6xl ${heading}`}>{VERA.place.heading}</h1>
 
-                <div className="mt-9 flex flex-col items-center gap-10 text-left md:flex-row md:items-center md:justify-center md:gap-12">
+                <div className="mt-9 flex flex-col items-center gap-8 text-left md:flex-row md:items-center md:justify-center md:gap-10">
                   <div className="w-full max-w-sm space-y-4 rounded-3xl border border-border bg-surface p-6 shadow-sm">
                   <div>
                     <label className={fieldLabel}>Your city</label>
@@ -578,7 +575,7 @@ export default function BetaInduction({ userId, userEmail, initialHandle, previe
                 <p className={eyebrow}>{VERA.enter.eyebrow}</p>
                 <h1 className={`mt-4 text-5xl sm:text-6xl ${heading}`}>{VERA.enter.heading}</h1>
 
-                <div className="mt-9 flex flex-col items-center gap-10 md:flex-row md:items-center md:justify-center md:gap-16">
+                <div className="mt-9 flex flex-col items-center gap-8 md:flex-row md:items-center md:justify-center md:gap-10">
                   {/* portrait profile card with blank slots */}
                   <div className="w-72 shrink-0 rounded-3xl border border-border bg-surface p-7 text-center shadow-sm">
                     <div className="mx-auto w-fit rounded-full ring-4 ring-surface">{renderAvatar()}</div>
@@ -591,17 +588,17 @@ export default function BetaInduction({ userId, userEmail, initialHandle, previe
                     </div>
                   </div>
 
-                  {/* copy to the right */}
-                  <p className="max-w-xs text-lg leading-relaxed text-muted md:text-left">{VERA.enter.body}</p>
-                </div>
-
-                {submitError && <p className="mt-5 text-sm text-danger">{submitError}</p>}
-
-                <div className="mt-9 flex flex-col items-center gap-3">
-                  <button onClick={submit} disabled={submitting} className={btnPrimary}>
-                    {submitting ? 'Stepping in…' : VERA.enter.cta}{!submitting && <ArrowRight />}
-                  </button>
-                  <button onClick={() => setBeat(4)} className={backLink}>Back</button>
+                  {/* copy + button under it, right */}
+                  <div className="w-full max-w-xs text-center md:text-left">
+                    <p className="text-lg leading-relaxed text-muted">{VERA.enter.body}</p>
+                    {submitError && <p className="mt-3 text-sm text-danger">{submitError}</p>}
+                    <div className="mt-6 flex flex-col items-center gap-3 md:items-start">
+                      <button onClick={submit} disabled={submitting} className={btnPrimary}>
+                        {submitting ? 'Stepping in…' : VERA.enter.cta}{!submitting && <ArrowRight />}
+                      </button>
+                      <button onClick={() => setBeat(4)} className={backLink}>Back</button>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
