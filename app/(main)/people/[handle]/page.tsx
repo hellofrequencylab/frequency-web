@@ -6,20 +6,16 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { startConversation } from '@/app/(main)/messages/actions'
 import { Composer } from '@/components/feed/composer'
 import { ProfileFeed } from '@/components/feed/profile-feed'
-import { getInitials, relativeTime } from '@/lib/utils'
+import { getInitials } from '@/lib/utils'
 import { FriendButton, type FriendState } from './friend-button'
 import { BlockButton } from './block-button'
 import { hasBlocked } from '@/lib/blocking'
-import {
-  MessageSquare, CalendarDays, Zap, Users, Megaphone, Radio,
-  MapPin, Pencil, ArrowRight, Trophy, Star, Sparkles, Flame,
-} from 'lucide-react'
-
+import { MessageSquare, CalendarDays, Zap, Gem, Users, MapPin, Settings, Trophy, Star, Flame } from 'lucide-react'
 import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
 import { getProfileCapabilities } from '@/lib/core/load-capabilities'
 import { ModerateProfileButton } from './moderate-profile-button'
-import { ModuleCard } from '@/components/modules/module-card'
 import { SectionHeader } from '@/components/ui/section-header'
+import { EditableIdentity } from './editable-identity'
 
 const RANK_TIERS = [
   { name: 'Ghost',    min: 0,    cls: 'bg-surface-elevated text-muted',     bar: 'bg-border-strong' },
@@ -62,6 +58,8 @@ export default async function ProfilePage({
       avatar_url,
       community_role,
       created_at,
+      current_streak,
+      lifetime_gems,
       nexus_regions!nexus_region_id ( name )
     `)
     .eq('handle', handle)
@@ -124,32 +122,21 @@ export default async function ProfilePage({
     isBlocked = await hasBlocked(myProfileId, profileId)
   }
 
-  const [zapsResult, completionsCountResult, postsCountResult, circlesResult, channelsResult, eventsResult, dispatchesResult, practicesCountResult, streakResult] = await Promise.all([
+  const [zapsResult, completionsCountResult, postsCountResult, circlesResult] = await Promise.all([
     admin.from('crew_completions').select('zaps_earned').eq('profile_id', profileId),
     admin.from('crew_completions').select('id', { count: 'exact', head: true }).eq('profile_id', profileId),
     admin.from('posts').select('id', { count: 'exact', head: true }).eq('author_id', profileId).is('parent_id', null).is('hidden_at', null),
     admin.from('memberships').select('circles!circle_id ( id, name, slug )').eq('profile_id', profileId).eq('status', 'active'),
-    admin.from('channel_memberships').select('channels!channel_id ( id, name )').eq('profile_id', profileId).eq('status', 'active'),
-    admin.from('events').select('id, title, starts_at, location, slug').eq('host_id', profileId).eq('is_cancelled', false).order('starts_at', { ascending: false }).limit(3),
-    admin.from('dispatches').select('id, title, published_at, audience_scope').eq('author_id', profileId).eq('status', 'published').is('hidden_at', null).order('published_at', { ascending: false }).limit(3),
-    admin.from('engagement_events').select('id', { count: 'exact', head: true }).eq('actor_profile_id', profileId).eq('event_type', 'practice.verified'),
-    admin.from('profiles').select('current_streak').eq('id', profileId).maybeSingle(),
   ])
 
   const totalZaps = (zapsResult.data ?? []).reduce((sum: number, r: { zaps_earned: number }) => sum + (r.zaps_earned ?? 0), 0)
   const tasksCompleted = completionsCountResult.count ?? 0
   const postCount = postsCountResult.count ?? 0
-  const verifiedPractices = practicesCountResult.count ?? 0
-  const currentStreak = (streakResult.data as { current_streak: number } | null)?.current_streak ?? 0
+  const currentStreak = (profile.current_streak as number | null) ?? 0
+  const gems = (profile.lifetime_gems as number | null) ?? 0
 
   const circles = ((circlesResult.data ?? []) as unknown as { circles: { id: string; name: string; slug: string } | null }[])
     .map(m => m.circles).filter((c): c is { id: string; name: string; slug: string } => !!c)
-
-  const channels = ((channelsResult.data ?? []) as unknown as { channels: { id: string; name: string } | null }[])
-    .map(m => m.channels).filter((c): c is { id: string; name: string } => !!c)
-
-  const hostedEvents = (eventsResult.data ?? []) as { id: string; title: string; starts_at: string; location: string | null; slug: string }[]
-  const authoredDispatches = (dispatchesResult.data ?? []) as { id: string; title: string; published_at: string; audience_scope: string }[]
 
   const rank = getRank(totalZaps)
   const nextRank = getNextRank(totalZaps)
@@ -171,7 +158,7 @@ export default async function ProfilePage({
   const rewardsEarned = rewards.filter((r) => r.earned).length
 
   return (
-    <div>
+    <div className="max-w-2xl">
       {/* ── Cover image + avatar header (the one hero card) ─────── */}
       <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden mb-6">
         {/* Cover */}
@@ -203,8 +190,8 @@ export default async function ProfilePage({
                   href="/settings/profile"
                   className="flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-elevated transition-colors"
                 >
-                  <Pencil className="w-3.5 h-3.5" />
-                  Edit
+                  <Settings className="w-3.5 h-3.5" />
+                  Settings
                 </Link>
               ) : user ? (
                 <>
@@ -233,260 +220,125 @@ export default async function ProfilePage({
             </div>
           </div>
 
-          {/* Identity — lead with the human. */}
-          <h1 className="text-2xl font-bold text-text leading-tight">
-            {profile.display_name}
-          </h1>
-          <p className="text-sm text-muted mt-0.5">@{profile.handle}</p>
-
-          <div className="flex items-center gap-2 mt-2.5 flex-wrap">
-            <RoleBadge role={role} className="text-xs leading-tight" />
-            <span className={`px-2.5 py-0.5 rounded-md text-xs font-medium ${rank.cls}`}>
-              {rank.name}
-            </span>
-          </div>
-
-          {(profile.bio || regionName) && (
-            <div className="mt-4 space-y-2">
-              {profile.bio && (
-                <p className="text-sm text-text whitespace-pre-wrap leading-relaxed">
-                  {profile.bio}
-                </p>
-              )}
-              <div className="flex items-center gap-4 flex-wrap">
-                {regionName && (
-                  <span className="flex items-center gap-1 text-xs text-subtle">
-                    <MapPin className="w-3 h-3" /> {regionName}
-                  </span>
-                )}
-                <span className="flex items-center gap-1 text-xs text-subtle">
-                  <CalendarDays className="w-3 h-3" /> Joined {joinedDate}
-                </span>
+          {/* Identity — inline-editable for the owner */}
+          <EditableIdentity
+            isOwner={isOwner}
+            displayName={profile.display_name}
+            handle={profile.handle as string}
+            bio={profile.bio ?? ''}
+            badges={
+              <div className="flex items-center gap-2 flex-wrap">
+                <RoleBadge role={role} className="text-xs leading-tight" />
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${rank.cls}`}>{rank.name}</span>
               </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── Two-column layout ──────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        {/* Main column: composer + timeline */}
-        <div className="lg:col-span-2">
-          {myProfileId && (
-            <div className="mb-5">
-              <Composer
-                scopeId={profileId}
-                visibility="public"
-                placeholder={
-                  isOwner
-                    ? 'What’s on your mind?'
-                    : `Leave something for ${firstName}…`
-                }
-              />
-            </div>
-          )}
-
-          <SectionHeader title={isOwner ? 'Your timeline' : `${firstName}’s timeline`} />
-          <ProfileFeed
-            profileId={profileId}
-            profileHandle={profile.handle as string}
-            myProfileId={myProfileId}
-            viewerRole={myRole}
+            }
+            meta={
+              <div className="mt-4 flex items-center gap-4 flex-wrap text-xs text-subtle">
+                {regionName && (
+                  <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {regionName}</span>
+                )}
+                <span className="flex items-center gap-1"><CalendarDays className="w-3 h-3" /> Joined {joinedDate}</span>
+                {circles.length > 0 && (
+                  <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {circles.length} {circles.length === 1 ? 'circle' : 'circles'}</span>
+                )}
+              </div>
+            }
           />
-        </div>
 
-        {/* ── Right sidebar — borderless modules ─────────────── */}
-        <div className="space-y-8">
-
-          {/* Stat tiles - compact stacked */}
-          <div className="grid grid-cols-2 gap-2">
-            <MiniStat icon={Sparkles} label="Practices" value={verifiedPractices} color="green" />
-            <MiniStat icon={Flame} label="Streak" value={currentStreak} color="amber" />
-            <MiniStat icon={MessageSquare} label="Posts" value={postCount} color="indigo" />
-            <MiniStat icon={Zap} label="Zaps" value={totalZaps} color="amber" />
-            <MiniStat icon={Trophy} label="Tasks" value={tasksCompleted} color="green" />
-            <MiniStat icon={Users} label="Circles" value={circles.length} color="violet" />
-          </div>
-
-          {/* Season rank */}
-          <ModuleCard title="Season rank">
-            <div className="flex items-center justify-between mb-2">
-              <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${rank.cls}`}>{rank.name}</span>
-              <span className="text-xs text-subtle flex items-center gap-1">
-                <Zap className="w-3 h-3 text-primary" /> {totalZaps}
+          {/* ── Gamification: rank · core stats · achievements ─── */}
+          <div className="mt-5 border-t border-border pt-4">
+            <div className="mb-1.5 flex items-center justify-between gap-2">
+              <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${rank.cls}`}>{rank.name}</span>
+              <span className="text-xs text-subtle">
+                {nextRank ? <>{nextRank.min - totalZaps} zaps to <span className="font-medium text-muted">{nextRank.name}</span></> : 'Max rank reached'}
               </span>
             </div>
-            <div className="w-full h-2 bg-surface-elevated rounded-full overflow-hidden">
+            <div className="h-2 w-full overflow-hidden rounded-full bg-surface-elevated">
               <div className={`h-full rounded-full transition-all ${rank.bar}`} style={{ width: `${progress}%` }} />
             </div>
-            {nextRank ? (
-              <p className="text-xs text-subtle mt-1.5">
-                {nextRank.min - totalZaps} zaps to <span className="font-medium">{nextRank.name}</span>
-              </p>
-            ) : (
-              <p className="text-xs text-subtle mt-1.5">Max rank reached</p>
-            )}
-          </ModuleCard>
 
-          {/* Rewards / gamification — earned first, then the closest to earning. */}
-          <ModuleCard title="Rewards" badge={`${rewardsEarned}/${rewards.length}`}>
-            <div className="space-y-2.5">
-              {rewards.map((r) => (
-                <RewardBadge
-                  key={r.label}
-                  icon={r.icon}
-                  label={r.label}
-                  description={r.description}
-                  earned={r.earned}
-                  current={r.current}
-                  target={r.target}
-                  milestone={r.milestone}
-                />
-              ))}
+            <div className="mt-4 grid grid-cols-3 gap-3">
+              <HeaderStat icon={Zap} label="Zaps" value={totalZaps} />
+              <HeaderStat icon={Gem} label="Gems" value={gems} />
+              <HeaderStat icon={Flame} label="Streak" value={currentStreak} />
             </div>
-          </ModuleCard>
 
-          {/* Circles & channels */}
-          {(circles.length > 0 || channels.length > 0) && (
-            <ModuleCard title="Groups">
-              <div className="space-y-0.5">
-                {circles.map(c => (
-                  <Link key={c.id} href={`/circles/${c.slug}`} className="flex items-center gap-2.5 rounded-lg px-2 py-2 -mx-2 hover:bg-surface-elevated transition-colors">
-                    <Users className="w-3.5 h-3.5 text-primary-strong shrink-0" />
-                    <span className="text-sm font-medium text-text truncate">{c.name}</span>
-                    <ArrowRight className="w-3 h-3 text-subtle ml-auto shrink-0" />
-                  </Link>
-                ))}
-                {channels.map(c => (
-                  <Link key={c.id} href={`/channels/${c.id}`} className="flex items-center gap-2.5 rounded-lg px-2 py-2 -mx-2 hover:bg-surface-elevated transition-colors">
-                    <Radio className="w-3.5 h-3.5 text-success shrink-0" />
-                    <span className="text-sm font-medium text-text truncate">{c.name}</span>
-                    <ArrowRight className="w-3 h-3 text-subtle ml-auto shrink-0" />
-                  </Link>
+            <div className="mt-4">
+              <p className="mb-2 text-xs font-bold tracking-tight text-text">
+                Achievements <span className="font-medium text-subtle">· {rewardsEarned}/{rewards.length}</span>
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {rewards.map((r) => (
+                  <AchievementChip key={r.label} icon={r.icon} label={r.label} earned={r.earned} current={r.current} target={r.target} milestone={r.milestone} />
                 ))}
               </div>
-            </ModuleCard>
-          )}
-
-          {/* Events hosted */}
-          {hostedEvents.length > 0 && (
-            <ModuleCard title="Events">
-              <div className="space-y-0.5">
-                {hostedEvents.map(e => {
-                  const d = new Date(e.starts_at)
-                  return (
-                    <Link key={e.id} href={`/events/${e.slug}`} className="flex items-start gap-3 rounded-lg px-2 py-2 -mx-2 hover:bg-surface-elevated transition-colors">
-                      <div className="shrink-0 w-9 text-center">
-                        <div className="text-xs font-bold uppercase text-primary leading-none">
-                          {d.toLocaleString('default', { month: 'short' })}
-                        </div>
-                        <div className="text-base font-black text-text leading-tight">
-                          {d.getDate()}
-                        </div>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-text line-clamp-1">{e.title}</p>
-                        {e.location && <p className="text-xs text-subtle truncate">{e.location}</p>}
-                      </div>
-                    </Link>
-                  )
-                })}
-              </div>
-            </ModuleCard>
-          )}
-
-          {/* Dispatches authored */}
-          {authoredDispatches.length > 0 && (
-            <ModuleCard title="Broadcasts">
-              <div className="space-y-0.5">
-                {authoredDispatches.map(d => (
-                  <Link key={d.id} href={`/broadcast/${d.id}`} className="flex items-center gap-2.5 rounded-lg px-2 py-2 -mx-2 hover:bg-surface-elevated transition-colors">
-                    <Megaphone className="w-3.5 h-3.5 text-primary-strong shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-text line-clamp-1">{d.title}</p>
-                      <p className="text-xs text-subtle">{relativeTime(d.published_at)}</p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </ModuleCard>
-          )}
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* ── Composer + timeline (single column; the global rail is on the right) ── */}
+      {myProfileId && (
+        <div className="mb-5">
+          <Composer
+            scopeId={profileId}
+            visibility="public"
+            placeholder={isOwner ? 'What’s on your mind?' : `Leave something for ${firstName}…`}
+          />
+        </div>
+      )}
+
+      <SectionHeader title={isOwner ? 'Your timeline' : `${firstName}’s timeline`} />
+      <ProfileFeed
+        profileId={profileId}
+        profileHandle={profile.handle as string}
+        myProfileId={myProfileId}
+        viewerRole={myRole}
+      />
     </div>
   )
 }
 
-function MiniStat({
-  icon: Icon,
-  label,
-  value,
-  color,
-}: {
-  icon: React.ElementType
-  label: string
-  value: number
-  color: string
-}) {
-  const colors: Record<string, string> = {
-    indigo: 'border-primary-bg bg-primary-bg text-primary-strong',
-    amber:  'border-warning-bg bg-warning-bg/40 text-warning',
-    green:  'border-success bg-success-bg/40 text-success',
-    violet: 'border-signal-bg bg-signal-bg/40 text-signal-strong',
-  }
-  const cls = colors[color] ?? colors.indigo
+// A single big gamification stat in the header (Zaps · Gems · Streak).
+function HeaderStat({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: number }) {
   return (
-    <div className={`rounded-2xl border p-3 ${cls}`}>
-      <div className="flex items-center gap-1.5 mb-0.5">
-        <Icon className="w-3 h-3" />
-        <span className="text-xs font-semibold">{label}</span>
+    <div className="rounded-2xl bg-surface-elevated/60 px-3 py-2.5">
+      <div className="flex items-center gap-1.5 text-xs font-semibold text-subtle">
+        <Icon className="h-3.5 w-3.5 text-primary" />
+        {label}
       </div>
-      <p className="text-xl font-black tabular-nums">{value}</p>
+      <p className="mt-0.5 text-2xl font-bold tabular-nums text-text">{value.toLocaleString()}</p>
     </div>
   )
 }
 
-function RewardBadge({
-  icon: Icon,
-  label,
-  description,
-  earned,
-  current,
-  target,
-  milestone,
+// A compact achievement pill — filled + star when earned, outline + progress
+// when not (the "nearly earned" nudge).
+function AchievementChip({
+  icon: Icon, label, earned, current, target, milestone,
 }: {
   icon: React.ElementType
   label: string
-  description: string
   earned: boolean
   current: number
   target: number
-  /** Binary milestone (no count to show) vs a progress goal. */
   milestone?: boolean
 }) {
-  // Unearned + non-milestone → show how close you are (the "nearly earned" nudge).
   const showProgress = !earned && !milestone
-  const pct = Math.min(100, Math.round((current / target) * 100))
   return (
-    <div className={`flex items-center gap-3 ${earned ? '' : 'opacity-80'}`}>
-      <div className={`shrink-0 w-7 h-7 rounded-lg flex items-center justify-center ${earned ? 'bg-warning-bg dark:bg-warning-bg/40' : 'bg-surface-elevated'}`}>
-        <Icon className={`w-3.5 h-3.5 ${earned ? 'text-primary' : 'text-subtle'}`} />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className={`text-xs font-medium ${earned ? 'text-text' : 'text-muted'}`}>{label}</p>
-        {showProgress ? (
-          <div className="mt-1 flex items-center gap-2">
-            <div className="h-1 flex-1 rounded-full bg-surface-elevated overflow-hidden">
-              <div className="h-full rounded-full bg-primary/60" style={{ width: `${pct}%` }} />
-            </div>
-            <span className="text-xs tabular-nums text-subtle shrink-0">{current}/{target}</span>
-          </div>
-        ) : (
-          <p className="text-xs text-subtle">{description}</p>
-        )}
-      </div>
-      {earned && <Star className="w-3 h-3 text-primary fill-primary shrink-0" />}
-    </div>
+    <span
+      title={earned ? `${label} — earned` : showProgress ? `${label} — ${current}/${target}` : label}
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
+        earned ? 'bg-warning-bg text-primary' : 'border border-border text-muted'
+      }`}
+    >
+      <Icon className={`h-3.5 w-3.5 ${earned ? 'text-primary' : 'text-subtle'}`} />
+      {label}
+      {earned ? (
+        <Star className="h-3 w-3 fill-primary text-primary" />
+      ) : showProgress ? (
+        <span className="tabular-nums text-subtle">{current}/{target}</span>
+      ) : null}
+    </span>
   )
 }

@@ -742,7 +742,11 @@ export default function AppShell({
   // section (e.g. /circles/<slug>, /people/<handle>, /channels/<id>), while the
   // index (/circles) keeps the global rail.
   // Only sections whose detail page renders its own scoped right column.
-  const SCOPED_SECTIONS = ['/circles/', '/people/', '/channels/']
+  // Circle + channel detail render their own scope-scoped rail in the page body,
+  // so the global rail is suppressed there. Profiles now use the standard global
+  // rail (the person's own gamification lives in their header), so /people/ is
+  // intentionally NOT in this list.
+  const SCOPED_SECTIONS = ['/circles/', '/channels/']
   const isEntityDetail = SCOPED_SECTIONS.some(
     (s) => pathname.startsWith(s) && pathname.slice(s.length).length > 0,
   )
