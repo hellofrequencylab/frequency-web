@@ -37,14 +37,14 @@ export const NAV_AREAS: readonly NavArea[] = [
   // alone above the section groups (section: null) so it reads as the anchor.
   { key: 'feed',      href: '/feed',      label: 'Feed',      section: null,        defaultAccess: 'member'  },
 
-  // ── Broadcast → the live comms loop, just under Feed ────────────────────────
-  { key: 'broadcast', href: '/broadcast', label: 'Dispatches', section: 'Broadcast', defaultAccess: 'visitor' },
-  { key: 'messages',  href: '/messages',  label: 'Messages',  section: 'Broadcast', defaultAccess: 'member'  },
-  { key: 'events',    href: '/events',    label: 'Events',    section: 'Broadcast', defaultAccess: 'member'  },
-
-  // ── Community spaces ────────────────────────────────────────────────────────
+  // ── Community spaces — the places you belong, right under Feed ──────────────
   { key: 'circles',   href: '/circles',   label: 'Circles',   section: 'Community', defaultAccess: 'visitor' },
   { key: 'channels',  href: '/channels',  label: 'Interests', section: 'Community', defaultAccess: 'visitor' },
+
+  // ── Broadcasts → the live comms loop (broadcasts · messages · events) ───────
+  { key: 'broadcast', href: '/broadcast', label: 'Broadcasts', section: 'Broadcasts', defaultAccess: 'visitor' },
+  { key: 'messages',  href: '/messages',  label: 'Messages',  section: 'Broadcasts', defaultAccess: 'member'  },
+  { key: 'events',    href: '/events',    label: 'Events',    section: 'Broadcasts', defaultAccess: 'member'  },
 
   // ── Features ────────────────────────────────────────────────────────────────
   { key: 'practices', href: '/practices', label: 'Practices', section: 'Library',   defaultAccess: 'member'  },

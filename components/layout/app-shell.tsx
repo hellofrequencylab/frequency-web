@@ -77,8 +77,8 @@ function buildSections(areas: typeof NAV_AREAS[number][]): NavSectionGroup[] {
 }
 
 // One vertical rail holds every destination: Feed (the home anchor, pinned top),
-// then the Broadcast comms loop (Dispatches · Messages · Events), community
-// spaces, features, and admin — grouped by section. The desktop rail and the
+// then community spaces, the Broadcasts comms loop (Broadcasts · Messages ·
+// Events), features, and admin — grouped by section. The desktop rail and the
 // mobile drawer render the same set.
 const NAV_SECTIONS = buildSections([...NAV_AREAS])
 
