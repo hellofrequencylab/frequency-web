@@ -10,6 +10,7 @@ import { isOnline, ONLINE_MS } from '@/lib/presence'
 import { WidgetCard } from '@/components/modules/module-card'
 import { GameStatsDockClient, type DockData } from '@/components/sidebar/game-stats-dock'
 import { getPracticesToLogToday, getRecentPracticeLogs, getMemberPractices } from '@/lib/practices'
+import { getRecentDispatchesForProfile } from '@/lib/dispatches'
 
 export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
 
@@ -215,71 +216,22 @@ async function RecentDispatchesWidget({
   profileId: string
   circleIds: string[]
 }) {
-  const admin = createAdminClient()
-
-  // Resolve hub → nexus IDs for the user's circles
-  let hubIds: string[] = []
-  let nexusIds: string[] = []
-  if (circleIds.length > 0) {
-    const { data: circles } = await admin.from('circles').select('hub_id').in('id', circleIds)
-    hubIds = (circles ?? []).map((c: { hub_id: string | null }) => c.hub_id).filter(Boolean) as string[]
-  }
-  if (hubIds.length > 0) {
-    const { data: hubs } = await admin.from('hubs').select('nexus_id').in('id', hubIds)
-    nexusIds = (hubs ?? []).map((h: { nexus_id: string | null }) => h.nexus_id).filter(Boolean) as string[]
-  }
-
-  const select = `id, title, audience_scope, published_at,
-    author:profiles!author_id ( display_name ),
-    linked_task:crew_tasks!linked_task_id ( id, name )`
-
-  type DispatchRow = {
-    id: string
-    title: string
-    audience_scope: string
-    published_at: string
-    author: { display_name: string } | null
-    linked_task: { id: string; name: string } | null
-  }
-
-  const promises: Promise<{ data: DispatchRow[] | null }>[] = [
-    admin.from('dispatches').select(select).eq('status', 'published').eq('author_id', profileId)
-      .order('published_at', { ascending: false }).limit(5) as unknown as Promise<{ data: DispatchRow[] | null }>,
-  ]
-  if (circleIds.length > 0)
-    promises.push(admin.from('dispatches').select(select).eq('status', 'published')
-      .eq('audience_scope', 'circle').in('audience_id', circleIds)
-      .order('published_at', { ascending: false }).limit(5) as unknown as Promise<{ data: DispatchRow[] | null }>)
-  if (hubIds.length > 0)
-    promises.push(admin.from('dispatches').select(select).eq('status', 'published')
-      .eq('audience_scope', 'hub').in('audience_id', hubIds)
-      .order('published_at', { ascending: false }).limit(5) as unknown as Promise<{ data: DispatchRow[] | null }>)
-  if (nexusIds.length > 0)
-    promises.push(admin.from('dispatches').select(select).eq('status', 'published')
-      .eq('audience_scope', 'nexus').in('audience_id', nexusIds)
-      .order('published_at', { ascending: false }).limit(5) as unknown as Promise<{ data: DispatchRow[] | null }>)
-
-  const results = await Promise.all(promises)
-  const combined = results.flatMap((r) => r.data ?? [])
-  const seen = new Set<string>()
-  const dispatches = combined
-    .filter((d: DispatchRow) => { if (seen.has(d.id)) return false; seen.add(d.id); return true })
-    .sort((a: DispatchRow, b: DispatchRow) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime())
-    .slice(0, 5)
+  // Shared with the community news ticker — one query, one source of truth.
+  const dispatches = await getRecentDispatchesForProfile(profileId, { circleIds, limit: 5 })
 
   if (dispatches.length === 0) return null
 
   return (
     <WidgetCard title="Dispatches">
       <div className="space-y-0.5">
-        {dispatches.map((d: DispatchRow) => (
+        {dispatches.map((d) => (
           <Link
             key={d.id}
             href={`/broadcast/${d.id}`}
             className="flex items-start gap-3 px-1 py-2 rounded-lg hover:bg-surface-elevated transition-colors"
           >
             <div className="shrink-0 w-7 h-7 rounded-lg bg-signal-bg flex items-center justify-center mt-0.5">
-              {d.linked_task ? (
+              {d.linkedTaskId ? (
                 <Zap className="w-3.5 h-3.5 text-primary" />
               ) : (
                 <Megaphone className="w-3.5 h-3.5 text-signal-strong" />
@@ -290,7 +242,7 @@ async function RecentDispatchesWidget({
                 {d.title}
               </p>
               <p className="text-xs text-subtle mt-0.5">
-                {d.author?.display_name} · {relativeTime(d.published_at)}
+                {d.authorName} · {relativeTime(d.publishedAt)}
               </p>
             </div>
           </Link>
