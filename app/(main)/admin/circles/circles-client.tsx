@@ -4,15 +4,11 @@ import { useState, useTransition } from 'react'
 import { Pencil, Archive, Check, X } from 'lucide-react'
 import { updateCircle, archiveCircle } from '../actions'
 import { InviteLinkButton } from './invite-link-button'
+import type { CircleBase } from '@/lib/types/circle'
 
-type CircleRow = {
-  id: string
-  name: string
+type CircleRow = CircleBase & {
   about: string | null
   type: string
-  status: string
-  member_count: number
-  member_cap: number
   hub_id: string | null
   host_id: string | null
   hub: { id: string; name: string } | null
