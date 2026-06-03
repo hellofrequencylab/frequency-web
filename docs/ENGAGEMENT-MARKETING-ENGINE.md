@@ -1,6 +1,6 @@
 # Engagement & Marketing Intelligence Engine
 
-Status: **Phase A shipped (instrumentation pipeline).** Decision: [ADR-070](DECISIONS.md).
+Status: **Phases A–B shipped (pipeline + janitor dashboard).** Decision: [ADR-070](DECISIONS.md).
 Converges three existing threads onto one event ledger + one AI brain:
 [ANALYTICS.md](ANALYTICS.md) (ADR-050, dashboard), [MARKETING-AI.md](MARKETING-AI.md) (the Market
 Read), and [MEMBER-DATA-PLATFORM.md](MEMBER-DATA-PLATFORM.md) (ADR-069, traits/segments).
@@ -29,7 +29,7 @@ privacy** for anything outbound, and **human-approves-anything-public**.
 | Phase | Deliverable | Status |
 |---|---|---|
 | **A · Instrumentation depth** | `track()` dual-emit helper + taxonomy module + page-view capture + `useTrack` for features | ✅ shipped |
-| **B · Janitor dashboard** | activation funnel + **where-it-jams** drop-off + WAM/retention + feature adoption + realtime | ⏳ next |
+| **B · Janitor dashboard** | activation funnel + **where-it-jams** drop-off + WAM/retention + feature adoption | ✅ shipped |
 | **C · Program/circle/game outcomes** | completion + drop-point analytics per program/circle/game step | ⏳ |
 | **D · AI reads** | Engagement Read + live-kernel Market Read — analyze strategy, name what's landing | ⏳ |
 | **E · AI content** | live generation → Action Queue → comms spine (human-approves-public) | ⏳ |
@@ -42,6 +42,8 @@ privacy** for anything outbound, and **human-approves-anything-public**.
 | `lib/analytics/track.ts` | server `track()` → `engagement_events` (validated, best-effort) + `sanitizeProps` |
 | `app/api/track/route.ts` | first-party client sink — accepts client-emittable events only, member-tied, no spoofing |
 | `components/analytics/track-provider.tsx` | `PageViewTracker` (auto nav capture) + `trackClient`/`useTrack` (GA4 mirror + first-party) |
+| `lib/analytics/dashboard.ts` | dashboard read-models — funnel (pure, tested) + ledger aggregates via `engagement_*` RPCs |
+| `app/(main)/admin/engagement/page.tsx` | the janitor dashboard — WAM/activation, funnel, activity by type, top pages + features |
 
 **Dual-emit:** one `track()` call records first-party (the source of truth) and mirrors to GA4 —
 the two can't drift. **No new cookies** (member-tied first-party; GA4 per ADR-048).
