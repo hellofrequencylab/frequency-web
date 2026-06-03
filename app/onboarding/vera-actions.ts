@@ -1,7 +1,10 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { aiEnabled } from '@/lib/ai'
+import { getMemberContext } from '@/lib/ai/memory'
 import { runVeraTurn } from '@/lib/ai/vera/loop'
+import { runVeraClaudeTurn, type VeraMessage } from '@/lib/ai/vera/agent-claude'
 import { executeConfirmedTool } from '@/lib/ai/vera/execute'
 import type { ConciergeStage, ProposedToolCall } from '@/lib/ai/vera/concierge'
 
@@ -15,15 +18,26 @@ async function callerProfileId(): Promise<string | null> {
 
 export interface ConciergeTurnResult {
   message: string
-  stage: ConciergeStage
+  /** 'chat' once the live loop is driving (the deterministic stages no longer apply). */
+  stage: ConciergeStage | 'chat'
   proposals: ProposedToolCall[]
   suggestions: string[]
   done: boolean
 }
 
-/** One concierge turn. Pure-ish: produces the reply + proposed writes (never executed). */
-export async function conciergeTurn(stage: ConciergeStage, memberText: string): Promise<ConciergeTurnResult> {
-  const turn = await runVeraTurn({ stage, memberText })
+/** One concierge turn. Live Claude when the kernel is on (grounded in memory, with
+ *  the bounded tools); the deterministic concierge otherwise. Either way, write
+ *  proposals are returned, never executed. */
+export async function conciergeTurn(stage: string, memberText: string, history: VeraMessage[] = []): Promise<ConciergeTurnResult> {
+  if (aiEnabled()) {
+    const profileId = await callerProfileId()
+    const memberContext = profileId ? await getMemberContext(profileId) : null
+    const live = await runVeraClaudeTurn({ history, memberText, memberContext })
+    if (live) return { message: live.reply, stage: 'chat', proposals: live.proposals, suggestions: [], done: false }
+  }
+
+  // Deterministic fallback (also the path when AI is off / over budget).
+  const turn = await runVeraTurn({ stage: stage === 'chat' ? 'done' : (stage as ConciergeStage), memberText })
   return { message: turn.message, stage: turn.stage, proposals: turn.proposals, suggestions: turn.suggestions, done: turn.done }
 }
 
