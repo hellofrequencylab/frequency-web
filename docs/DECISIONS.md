@@ -1526,6 +1526,40 @@ launch arrives, the whole induction is deleted in one PR.
 
 ---
 
+## ADR-069: Member Data Platform — a governed trait/tag layer projected off the event ledger
+
+**Status:** Accepted (design) · 2026-06-03 · builds on the event ledger ([ADR-025](DECISIONS.md),
+`engagement_events`) and the analytics source-of-truth split ([ADR-050](DECISIONS.md)/[ANALYTICS.md](ANALYTICS.md));
+privacy posture extends the member-erase path (ADR-066). Spec: [MEMBER-DATA-PLATFORM.md](MEMBER-DATA-PLATFORM.md).
+
+**Context:** We want a meaningful, durable library of per-member variables — for gamification ranks,
+marketing (e.g. a *Web Beta* badge → discounts / early access), and product metrics — and to "fine-tune
+the experience" with cohort/usage data. The hard part already exists: one append-only, typed event
+ledger (the keystone, ADR-025) plus a rich `profiles` table. What's missing is a governed layer on top:
+declarative **tags**, derived **computed traits**, reusable **segments**, and — critically — a **catalog**
+that makes each variable defined, typed, owned, and privacy-classed instead of a junk drawer of columns.
+
+**Decision:**
+- **Project, don't fork.** Member traits are a *projection* of `engagement_events` (ADR-025 "many
+  projections"), never a parallel tracking system. Raw events stay the source of truth.
+- **Two kinds, kept separate.** *Tags* (declarative membership, time + source aware) in `member_tags`;
+  *computed traits* (lifecycle, cohort, usage, WAM) materialized on a schedule (Phase 2, `member_traits`).
+- **The registry is the library.** Variable *definitions* live in code/git (`lib/traits/registry.ts`,
+  reviewed in PRs, the same governance pattern as the help feature-key registry); *values* live in
+  Postgres. Assignment goes through `assignTag`, validated against the registry — typos can't mint tags.
+- **Privacy-by-design from row one.** Every registry entry carries a `pii` class + `retentionDays`;
+  members can VIEW their own tags (RLS) and tags are erased with the account (FK cascade), extending the
+  Vera member-erase path.
+- **Phasing:** (1) registry + `member_tags` + *Web Beta* backfill of the founding cohort ✅ this PR;
+  (2) computed traits nightly off the ledger; (3) segments/audiences + Studio admin; (4) activation
+  (segment → `campaigns`/`contacts` reverse-ETL); (5) consent records + experiment-assignment traits.
+
+**Consequences:** Gamification ranks, marketing segments, and Vera's personalization all read one
+governed catalog. Adding a variable = a reviewed registry entry (+ a derivation for computed), not an
+ad-hoc column. The trait layer is dark-safe and additive; nothing depends on it until read.
+
+---
+
 ## ADR-070: Engagement & Marketing Intelligence — one Studio face on the ledger + AI kernel
 
 **Status:** Accepted (design) · 2026-06-03 · convergence of the first-party analytics dashboard
