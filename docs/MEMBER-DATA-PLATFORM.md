@@ -1,6 +1,6 @@
 # Member Data Platform — the governed library of member variables
 
-Status: **Phases 1–2 shipped (dark).** Decision: [ADR-069](DECISIONS.md). Projects off the event
+Status: **Phases 1–3 shipped.** Decision: [ADR-069](DECISIONS.md). Projects off the event
 ledger ([ENGAGEMENT-ARCHITECTURE.md](ENGAGEMENT-ARCHITECTURE.md), ADR-025) and feeds the analytics
 dashboard ([ANALYTICS.md](ANALYTICS.md), ADR-050), gamification, marketing, and Vera
 ([AI-VERA.md](AI-VERA.md)).
@@ -70,7 +70,7 @@ against the registry — **a typo can't mint a tag.**
 |---|---|---|
 | **1 · Foundation** | registry + `member_tags` + `web_beta` backfill + ADR/doc | ✅ shipped (dark) |
 | **2 · Computed traits** | `member_traits` projection + nightly job (lifecycle/cohort/usage/WAM/RFM) | ✅ shipped (dark) |
-| **3 · Segments** | saved segment definitions + Studio admin (name, predicates, member count) | ⏳ |
+| **3 · Segments** | saved segment definitions + Studio admin (name, predicates, member count) | ✅ shipped |
 | **4 · Activation** | segment → audience reverse-ETL into `campaigns` / `contacts` | ⏳ |
 | **5 · Consent & experiments** | consent records + retention enforcement + experiment-assignment trait + holdouts | ⏳ |
 
@@ -93,6 +93,8 @@ against the registry — **a typo can't mint a tag.**
 | `lib/traits/tags.ts` | `assignTag` / `removeTag` / `getMemberTags` / `hasTag` (registry-validated) |
 | `lib/traits/compute.ts` | pure trait computation (cohort, lifecycle, WAM, RFM…) — unit-tested |
 | `lib/traits/refresh.ts` | the nightly job — RPC aggregates → compute → upsert `member_traits` |
+| `lib/traits/segments.ts` | segment model + pure evaluator/validator/describer + live counts |
+| `app/(main)/admin/segments/page.tsx` | Studio admin — segments with live counts + member previews |
 | `app/api/cron/refresh-traits/route.ts` | Vercel Cron entrypoint (02:30 daily; `CRON_SECRET`-guarded) |
 | `supabase/migrations/*_member_tags.sql` · `*_member_traits.sql` | tables + RLS + `member_engagement_stats` RPC + founding-cohort backfill |
 | `lib/traits/*.test.ts` | registry integrity, `isTagKey`, and the compute layer |
