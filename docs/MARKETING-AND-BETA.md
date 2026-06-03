@@ -21,7 +21,7 @@ own chrome (not the member shell).
 | `/the-lab` | `app/(marketing)/the-lab/page.tsx` | Venue vision (narrative only — no demand-proving) |
 | `/how-it-works` | `app/(marketing)/how-it-works/page.tsx` | Interests / Circles model |
 | `/about` | `app/(marketing)/about/page.tsx` | Moonlight origin story |
-| `/beta`, `/beta/confirm` | `app/(marketing)/beta/*` | The acquisition funnel (§2) |
+| `/beta`, `/beta/confirm` | `app/(marketing)/beta/*` | Waitlist — **PARKED** for the future gated phase (§2); not the live CTA target |
 | `/discover` | (existing) | Public read-only community browse |
 
 **Chrome & primitives**
@@ -34,7 +34,8 @@ own chrome (not the member shell).
 - Display face: **Anton** via the `.font-display` utility (`app/globals.css`,
   wired in `app/layout.tsx`). Body stays Nunito.
 - Config in `lib/site.ts`: `MARKETING_NAV`, `BETA_CTA_LABEL`/`BETA_CTA_HREF`
-  (`/beta`), `SITE_URL`, `ORG_LEGAL_NAME`, `CONTACT_EMAIL`.
+  (**`/sign-in`** — the beta is open/self-serve; see §2 + ADR-071), `SITE_URL`,
+  `ORG_LEGAL_NAME`, `CONTACT_EMAIL`. This one constant is the whole funnel switch.
 - Imagery: `public/images/site/` (pulled from the old Squarespace, optimized).
 - **No em dashes** in marketing copy (house rule).
 
@@ -76,10 +77,30 @@ opens on the real design.
 
 ---
 
-## 2. Beta acquisition funnel — double opt-in
+## 2. Beta acquisition funnel — open / self-serve (ADR-071)
 
-No gated signup (open signup still lives at `/sign-in`). "Join the Beta" is a
-**featured lead-capture with double opt-in** that lands people in the CRM.
+**Current model: the beta is OPEN.** "Join the Beta" routes straight to sign-in →
+induction → real member. No queue, no lead-capture gate. The single switch is
+`BETA_CTA_HREF = "/sign-in"` in `lib/site.ts` (§1) — every sitewide "Join the Beta"
+button reads it, so the whole funnel opens (or re-closes) with one constant.
+
+```
+"Join the Beta"  ──BETA_CTA_HREF──▶  /sign-in   (open passwordless: magic link + Google,
+                                                  account created on first use)
+        │
+        ▼  (main) layout routes a member with no meta.onboarding_completed
+/onboarding  ──▶  /onboarding/beta   (cinematic beta induction, ADR-068)
+        │
+        ▼
+real, building member
+```
+
+### 2.1 Parked: the waitlist (for the future gated phase)
+
+The waitlist surface is **intact and reachable by direct link** — it is *parked*, not
+deleted — and becomes the lead-capture front door again when the **gated weekly-cohort
+phase** lands (AI admits a batch on a metric, with automated onboarding emails). Reviving
+it is a routing change (point `BETA_CTA_HREF` back at `/beta`), not a rebuild.
 
 ```
 /beta form  ──requestBetaAccess()──▶  contacts row
@@ -96,7 +117,7 @@ No gated signup (open signup still lives at `/sign-in`). "Join the Beta" is a
 admitBetaSignup()  ──▶  meta.beta_status='invited' + queue invite email (spine)
 ```
 
-**Pieces**
+**Pieces (parked, still present)**
 - `app/(marketing)/beta/actions.ts` — `requestBetaAccess` (validates, skips
   suppressed, upserts contact, queues confirm email).
 - `app/(marketing)/beta/confirm/page.tsx` — verifies token, flips consent.
