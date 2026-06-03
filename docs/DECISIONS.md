@@ -1405,6 +1405,46 @@ single-module change.
 
 ---
 
+## ADR-066: Vera integration — the bridge doctrine, a memory table, one concierge+help voice
+
+**Status:** Accepted (design) · 2026-06-03 · extends ADR-049 (Vera persona), runs on ADR-041/028
+(AI kernel + governance), is the AI layer of ADR-047 (onboarding). Spec: [AI-VERA.md](AI-VERA.md).
+
+**Context:** We want Vera to do onboarding *and* act as a personal help bot that remembers a member
+and helps them as they go — **without** members leaning on AI (time-in-chat is the failure mode, not
+the goal). Three things were unspecified or open: how restraint becomes a build constraint rather
+than a vibe; where her memory lives (the ADR-049 open decision); and how she relates to the separate
+onboarding tour and help-center/RAG work so we don't build three different AI philosophies.
+
+**Decision:**
+- **The bridge doctrine is a hard constraint.** We optimize the *inverse* of a chatbot: minimize
+  time-to-human, maximize deflection-to-human, and let Vera's footprint **decay** per established
+  member. Enforced by five build rules — deterministic-first (every surface has a non-AI baseline
+  and fallback), offer-then-step-back (short answers ending in a concrete real-world next action),
+  contextual-not-a-home (no "Vera tab"/persistent open chat as a primary surface), cap-the-spiral
+  (bounded turns before routing outward), point-at-people (name the human, offer a warm intro).
+- **Memory = a dedicated `ai_member_context` table** (one row/member: rolling `summary`, `facts`,
+  derived `milestones`, `interaction_count`), **not** `profiles.meta.ai`. Source of truth is
+  `engagement_events` (memory can't disagree with analytics); summary regenerated on the Batch API;
+  `facts` captured via a `remember_fact` tool; member-readable + one-click erasable; RLS own-row;
+  data-minimized to Anthropic. (`profiles.meta` stays for tour state per ADR-047.)
+- **One voice across surfaces on the shared kernel.** Vera *is* the onboarding concierge (Phase 2
+  of ADR-047, the deterministic tour as fallback) and *is* the help center's voice (grounded + cited
+  RAG over `content/help`, confidence-gated hand-off). Not separate bots.
+- **Resolved ADR-049 open decisions:** autonomy = propose-and-confirm everywhere (act-and-undo only
+  for trivially reversible self-facts), graduating per-action via the audit log; first non-onboarding
+  surface = **help**, then encouragement.
+
+**Consequences:** Onboarding, help, and the engagement loop converge on one persona + one kernel —
+the kernel (`lib/ai/`) and the RAG help bot are the shared first builds (Phases A–B), so this and the
+support-system/AI-search initiative are the same critical path. A new migration adds
+`ai_member_context` (+ RLS). The doctrine reframes success metrics: the activation funnel,
+deflection-to-human, and footprint-decay — **not** messages-to-Vera. All ADR-028 guardrails apply
+unchanged: bounded typed tools, copilot-first, caps + kill switch, crisis→human, AI labeled, and
+**no autonomous writes until the test/consent harness exists.**
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 
