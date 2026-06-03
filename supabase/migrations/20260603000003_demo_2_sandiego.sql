@@ -73,8 +73,8 @@ SELECT
 -- =====================================================================
 INSERT INTO circles (id, name, slug, hub_id, type, member_cap, status, about,
                      latitude, longitude, neighborhood, city, topical_channel_id, image_url, is_demo)
-SELECT v.id, v.name, v.slug,
-       CASE WHEN v.hub = 'enc' THEN ctx.encinitas_hub_id ELSE ctx.coastal_hub_id END,
+SELECT v.id::uuid, v.name, v.slug,
+       NULL::uuid,  -- hub_id NULL: circles are topic+location; the 5-per-hub cap trigger skips NULL
        'in-person', 50, 'active', v.about, v.lat, v.lng, v.neighborhood, v.city,
        CASE v.interest
          WHEN 'movement'        THEN ctx.tc_movement
@@ -135,7 +135,7 @@ ON CONFLICT (id) DO NOTHING;
 INSERT INTO profiles (id, auth_user_id, display_name, handle, community_role,
                       nexus_region_id, bio, avatar_url, current_season_zaps,
                       lifetime_gems, current_streak, last_seen_at, is_active, is_demo)
-SELECT m.id, NULL, m.display_name, m.handle, m.role::community_role,
+SELECT m.id::uuid, NULL, m.display_name, m.handle, m.role::community_role,
        ctx.sd_region_id, m.bio,
        CASE WHEN m.avatar THEN 'https://i.pravatar.cc/240?u=' || m.handle ELSE NULL END,
        m.zaps, m.gems, m.streak,
@@ -257,7 +257,7 @@ ON CONFLICT (id) DO NOTHING;
 --    Each member's primary circle (below). A subset also joins a 2nd circle.
 -- =====================================================================
 INSERT INTO memberships (profile_id, circle_id, status, volunteer_role)
-SELECT mm.profile_id, mm.circle_id, 'active'::membership_status,
+SELECT mm.profile_id::uuid, mm.circle_id::uuid, 'active'::membership_status,
        NULLIF(p.community_role, 'member'::community_role)  -- members get NULL volunteer_role
 FROM (VALUES
  -- Circle 1
@@ -366,7 +366,7 @@ FROM (VALUES
  ('c1000000-0000-0000-0000-000000000058','c2000000-0000-0000-0000-000000000003'),  -- Cedros illustrator also Leucadia makers
  ('c1000000-0000-0000-0000-000000000080','c2000000-0000-0000-0000-000000000005')   -- CSUSM student also breathwork
 ) AS mm(profile_id, circle_id)
-JOIN profiles p ON p.id = mm.profile_id
+JOIN profiles p ON p.id = mm.profile_id::uuid
 ON CONFLICT (profile_id, circle_id) DO NOTHING;
 
 -- =====================================================================
@@ -374,7 +374,7 @@ ON CONFLICT (profile_id, circle_id) DO NOTHING;
 --    scope_id = circle id, visibility 'group', post_type default 'feed'.
 -- =====================================================================
 INSERT INTO posts (id, author_id, scope_id, visibility, body, is_demo)
-SELECT v.id, v.author_id, v.circle_id, 'group'::post_visibility, v.body, true
+SELECT v.id::uuid, v.author_id::uuid, v.circle_id::uuid, 'group'::post_visibility, v.body, true
 FROM (VALUES
  -- Circle 1: Swami's Dawn Patrol
  ('c4000000-0000-0000-0000-000000000001','c1000000-0000-0000-0000-000000000001','c2000000-0000-0000-0000-000000000001',
@@ -488,14 +488,14 @@ FROM (VALUES
  ('c4000000-0000-0000-0000-000000000044','c1000000-0000-0000-0000-000000000081','c2000000-0000-0000-0000-000000000012',
    'A reflection as the term winds down: you don''t need to be good at meditation to benefit from it. Showing up and sitting with the restlessness IS the practice. Proud of this little circle.')
 ) AS v(id, author_id, circle_id, body)
-WHERE NOT EXISTS (SELECT 1 FROM posts p WHERE p.id = v.id);
+WHERE NOT EXISTS (SELECT 1 FROM posts p WHERE p.id = v.id::uuid);
 
 -- =====================================================================
 -- 5. EVENTS — upcoming (next ~2–3 weeks) for 8 of the 12 circles.
 --    host_id = that circle's host; scope_type 'circle'; fixed UUIDs (c5…).
 -- =====================================================================
 INSERT INTO events (id, host_id, scope_id, scope_type, title, slug, starts_at, ends_at, location, is_cancelled, is_demo)
-SELECT v.id, v.host_id, v.circle_id, 'circle', v.title, v.slug,
+SELECT v.id::uuid, v.host_id::uuid, v.circle_id::uuid, 'circle', v.title, v.slug,
        v.starts_at::timestamptz, v.ends_at::timestamptz, v.location, false, true
 FROM (VALUES
  ('c5000000-0000-0000-0000-000000000001','c1000000-0000-0000-0000-000000000001','c2000000-0000-0000-0000-000000000001',
@@ -531,6 +531,6 @@ FROM (VALUES
    (now() + interval '8 days')::date + time '06:00', (now() + interval '8 days')::date + time '08:30',
    'Oceanside Pier, north side')
 ) AS v(id, host_id, circle_id, title, slug, starts_at, ends_at, location)
-WHERE NOT EXISTS (SELECT 1 FROM events e WHERE e.id = v.id);
+WHERE NOT EXISTS (SELECT 1 FROM events e WHERE e.id = v.id::uuid);
 
 COMMIT;
