@@ -3510,6 +3510,25 @@ export type Database = {
         | { Args: { table_name: string }; Returns: string }
       enablelongtransactions: { Args: never; Returns: string }
       equals: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
+      circles_near: {
+        Args: { _lat: number; _lng: number; _limit?: number }
+        Returns: {
+          id: string
+          name: string
+          slug: string
+          about: string | null
+          type: string
+          member_count: number
+          member_cap: number
+          status: string
+          neighborhood: string | null
+          city: string | null
+          image_url: string | null
+          latitude: number | null
+          longitude: number | null
+          distance_m: number
+        }[]
+      }
       feed_for_viewer: {
         Args: { _limit?: number; _sort?: string }
         Returns: {

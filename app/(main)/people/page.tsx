@@ -3,13 +3,17 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Database } from '@/lib/database.types'
-import { Globe } from 'lucide-react'
+import { Globe, MapPin } from 'lucide-react'
 import { isOnline } from '@/lib/presence'
 import { InviteMemberCompose } from '@/components/compose/invite-member-compose'
 import { type CommunityRole, ROLE_LABEL, RoleBadge } from '@/lib/community-roles'
 import { IndexTemplate } from '@/components/templates/index-template'
 import { EmptyState } from '@/components/ui/empty-state'
 import { PersonCard } from '@/components/cards/person-card'
+import { CircleCard, type CircleCardData } from '@/components/circles/circle-card'
+import { CircleLocationSearch } from '@/components/circles/circle-location-search'
+import { SectionHeader } from '@/components/ui/section-header'
+import { formatDistance } from '@/lib/geocode'
 
 type Profile = {
   id: string
@@ -32,7 +36,13 @@ type Filters = {
   city?: string
   region?: string
   online?: string
+  /** "lat,lng" set by the geolocation / city-autocomplete search. */
+  near?: string
+  /** Human label for the chosen place, e.g. "Encinitas, California". */
+  place?: string
 }
+
+type NearbyCircle = CircleCardData & { distanceLabel: string }
 
 export default async function DirectoryPage({
   searchParams,
@@ -49,9 +59,51 @@ export default async function DirectoryPage({
     city: cityFilter,
     region: regionFilter,
     online: onlineFilter,
+    near: nearParam,
+    place: placeParam,
   } = await searchParams
 
   const admin = createAdminClient()
+
+  // Geolocation / city-autocomplete search → nearest REAL circles (the
+  // circles_near RPC hard-excludes demo content). Only runs when a place is set.
+  let nearbyCircles: NearbyCircle[] = []
+  let nearbyMemberIds = new Set<string>()
+  if (nearParam) {
+    const [latStr, lngStr] = nearParam.split(',')
+    const lat = Number(latStr)
+    const lng = Number(lngStr)
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      const { data: near } = await admin.rpc('circles_near', { _lat: lat, _lng: lng, _limit: 12 })
+      const nearList = near ?? []
+
+      // Which of these the viewer already belongs to (for the Join/Open state).
+      const nearIds = nearList.map((c) => c.id)
+      if (nearIds.length > 0) {
+        const { data: mine } = await admin
+          .from('memberships')
+          .select('circle_id, profiles!profile_id!inner ( auth_user_id )')
+          .eq('status', 'active')
+          .in('circle_id', nearIds)
+          .eq('profiles.auth_user_id', user.id)
+        nearbyMemberIds = new Set((mine ?? []).map((m) => m.circle_id as string))
+      }
+
+      nearbyCircles = nearList.map((c) => ({
+        id: c.id,
+        name: c.name,
+        slug: c.slug,
+        about: c.about,
+        type: c.type as 'in-person' | 'online',
+        member_count: c.member_count,
+        member_cap: c.member_cap,
+        status: c.status,
+        imageUrl: c.image_url,
+        context: [formatDistance(c.distance_m), c.neighborhood].filter(Boolean).join(' · '),
+        distanceLabel: formatDistance(c.distance_m),
+      }))
+    }
+  }
 
   // Get viewer's display name for the Invite Member modal
   const { data: viewer } = await admin
@@ -128,6 +180,8 @@ export default async function DirectoryPage({
     if (params.city) p.set('city', params.city)
     if (params.region) p.set('region', params.region)
     if (params.online) p.set('online', params.online)
+    if (params.near) p.set('near', params.near)
+    if (params.place) p.set('place', params.place)
     const s = p.toString()
     return s ? `/people?${s}` : '/people'
   }
@@ -139,6 +193,8 @@ export default async function DirectoryPage({
     city: cityFilter,
     region: regionFilter,
     online: onlineFilter,
+    near: nearParam,
+    place: placeParam,
   }
 
   const pillBase = 'px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors'
@@ -147,7 +203,11 @@ export default async function DirectoryPage({
 
   // Filters live in the IndexTemplate `toolbar` slot (URL-driven, server-rendered).
   const filters = (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-3">
+        {/* Smart location search — city autocomplete + geolocation → nearby
+            REAL circles (demo excluded). */}
+        <CircleLocationSearch activePlace={placeParam} />
+
         {/* Role (rank) filter */}
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="text-xs text-muted font-medium w-12 shrink-0">Role:</span>
@@ -262,6 +322,30 @@ export default async function DirectoryPage({
       action={<InviteMemberCompose inviterName={viewerName} />}
       toolbar={filters}
     >
+      {/* Nearby real circles — only when a place is searched. Demo circles are
+          excluded by the circles_near RPC, so this is "real circles only". */}
+      {nearParam && (
+        <div className="mb-8">
+          <SectionHeader
+            title={`Circles near ${placeParam ?? 'you'}`}
+            count={nearbyCircles.length > 0 ? nearbyCircles.length : undefined}
+          />
+          {nearbyCircles.length === 0 ? (
+            <EmptyState
+              icon={MapPin}
+              title={`No circles near ${placeParam ?? 'you'} yet`}
+              description="We’re just getting started here. Be the first to start a circle for this area — others are looking too."
+            />
+          ) : (
+            <div className="grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
+              {nearbyCircles.map((c) => (
+                <CircleCard key={c.id} circle={c} isMember={nearbyMemberIds.has(c.id)} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Member count */}
       <p className="text-xs text-subtle mb-4">{filtered.length} member{filtered.length !== 1 ? 's' : ''}</p>
 
