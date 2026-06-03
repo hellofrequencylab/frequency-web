@@ -676,6 +676,7 @@ export default function AppShell({
   realRole,
   children,
   sidebar,
+  ticker,
   unreadCount = 0,
   extraSections,
   hideAppNav = false,
@@ -687,6 +688,8 @@ export default function AppShell({
   realRole?: CommunityRole
   children: React.ReactNode
   sidebar?: React.ReactNode
+  /** Community news ticker pinned above the page content (streamed via Suspense). */
+  ticker?: React.ReactNode
   unreadCount?: number
   extraSections?: NavSection[]
   hideAppNav?: boolean
@@ -886,10 +889,12 @@ export default function AppShell({
         <div data-feed-scroll className="flex-1 min-w-0 overflow-y-auto pb-[calc(4rem_+_env(safe-area-inset-bottom))] md:pb-0">
           <div className="flex items-stretch min-h-full">
 
-            {/* Center column — page content. Navigation lives entirely in the
-                single left rail now (Feed + sections), so the center is just the
-                content; the right rail sits beside it in the shared scroll. */}
+            {/* Center column — an ambient dispatch ticker pinned on top, then the
+                page content. Navigation lives entirely in the single left rail
+                (Feed + sections); the right rail sits beside this in the shared
+                scroll. */}
             <div className="flex-1 min-w-0 flex flex-col">
+              {!hideAppNav && ticker}
               <main className="flex-1 min-w-0 px-6 py-6">
                 {children}
               </main>

@@ -146,12 +146,12 @@ export function PrimaryNav({
 
   return (
     <nav className={`hidden md:flex items-center gap-0.5 ${className}`} aria-label="Primary">
-      {showDiscover && <Dropdown label="Discover" items={DISCOVER_NAV} variant={variant} />}
       {siteItems.map((item) => (
         <Link key={item.href} href={item.href} className={tabClass(isItemActive(pathname, item.href))}>
           {item.label}
         </Link>
       ))}
+      {showDiscover && <Dropdown label="Discover" items={DISCOVER_NAV} variant={variant} align="right" />}
     </nav>
   )
 }
