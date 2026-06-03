@@ -1,43 +1,38 @@
-// Feed render — a 9:16 mini "feed page" (ADR-068). TEMPORARY, disposable SVG.
+// Feed render — a desktop "feed page" mockup (ADR-068). TEMPORARY, disposable SVG.
 
 import { RenderFrame, InnerCard, Bar, Label } from './frame'
 
 function Post({ y, name, meta, accent }: { y: number; name: string; meta: string; accent?: boolean }) {
   return (
     <>
-      <InnerCard x={18} y={y} w={252} h={120} />
+      <InnerCard x={140} y={y} w={376} h={66} />
       <g className={accent ? 'text-primary' : 'text-primary-bg'}>
-        <circle cx={46} cy={y + 28} r={15} fill="currentColor" />
+        <circle cx={166} cy={y + 26} r={13} fill="currentColor" />
       </g>
-      <Label x={70} y={y + 26} size={12} weight={700}>{name}</Label>
-      <Label x={70} y={y + 41} size={9} weight={500} tone="text-subtle">{meta}</Label>
-      <Bar x={36} y={y + 58} w={216} />
-      <Bar x={36} y={y + 73} w={168} />
-      {/* reactions */}
+      <Label x={188} y={y + 24} size={11} weight={700}>{name}</Label>
+      <Label x={188} y={y + 38} size={9} weight={500} tone="text-subtle">{meta}</Label>
+      <Bar x={188} y={y + 50} w={250} />
       <g className="text-primary">
-        <rect x={36} y={y + 90} width={46} height={16} rx={8} fill="currentColor" />
+        <rect x={452} y={y + 16} width={50} height={16} rx={8} fill="currentColor" />
       </g>
-      <Label x={59} y={y + 101} size={9} weight={700} tone="text-on-primary" anchor="middle">♥ 12</Label>
-      <g className="text-border-strong" opacity={0.4}>
-        <rect x={90} y={y + 90} width={40} height={16} rx={8} fill="currentColor" />
-      </g>
+      <Label x={477} y={y + 27} size={9} weight={700} tone="text-on-primary" anchor="middle">♥ 12</Label>
     </>
   )
 }
 
 export function FeedRender({ animate = true }: { animate?: boolean }) {
   return (
-    <RenderFrame label="A preview of the Frequency feed" title="Feed" animate={animate}>
+    <RenderFrame label="A preview of the Frequency feed" title="Feed" active={0} animate={animate}>
       {/* composer */}
-      <InnerCard x={18} y={78} w={252} h={40} tone="text-marketing-canvas" />
+      <InnerCard x={140} y={84} w={376} h={34} />
       <g className="text-primary-bg">
-        <circle cx={42} cy={98} r={12} fill="currentColor" />
+        <circle cx={162} cy={101} r={10} fill="currentColor" />
       </g>
-      <Label x={62} y={102} size={11} weight={500} tone="text-subtle">Share something…</Label>
+      <Label x={182} y={105} size={10} weight={500} tone="text-subtle">Share something with your people…</Label>
 
-      <Post y={130} name="Maya R." meta="2h · near you" accent />
-      <Post y={262} name="Theo K." meta="4h · Riverside" />
-      <Post y={394} name="Priya N." meta="6h · Downtown" />
+      <Post y={128} name="Maya R." meta="2h · near you" accent />
+      <Post y={202} name="Theo K." meta="4h · Riverside" />
+      <Post y={276} name="Priya N." meta="6h · Downtown" />
     </RenderFrame>
   )
 }

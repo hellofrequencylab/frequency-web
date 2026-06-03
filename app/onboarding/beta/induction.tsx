@@ -1,29 +1,29 @@
 'use client'
 
 // Beta induction — the founding-cohort flow (ADR-068, docs/BETA-INDUCTION.md).
-// TEMPORARY: deleted at launch. A centered, cinematic sequence on a warm light
-// stage (Hook-style: warm canvas + soft amber glow), content always centered
-// with a top/bottom buffer. Scripted Vera (hot register). Handle-check +
-// avatar-upload mirror the legacy form. The `preview` prop mocks auth-dependent
-// calls for the public demo.
+// TEMPORARY: deleted at launch. Centered, warm-light cinematic sequence; logo on
+// top, content centered with a generous buffer, progress pinned to the bottom.
+// Scripted Vera (hot register). The `preview` prop mocks the auth writes; the
+// city search + reel run for real in preview too.
 
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getInitials } from '@/lib/utils'
+import { searchPlaces, type PlaceSuggestion } from '@/lib/geocode'
 import { BETA_OATHS, VERA, REEL, HEARD_ABOUT, type OathId } from '@/lib/onboarding/beta-script'
 import { acceptBetaOath, completeBetaInduction } from './actions'
 import { FeedRender } from '@/components/onboarding/renders/feed-render'
 import { CirclesRender } from '@/components/onboarding/renders/circles-render'
 import { EventsRender } from '@/components/onboarding/renders/events-render'
 
-type Region = { id: string; name: string }
 type HandleStatus = 'idle' | 'checking' | 'available' | 'taken'
 
 type Props = {
   userId: string
   userEmail: string
   initialHandle: string
-  regions: Region[]
+  /** Legacy prop (region list) — no longer used; city is free-search now. */
+  regions?: { id: string; name: string }[]
   /** Preview mode: no auth, no server writes — for the public /preview route only. */
   preview?: boolean
 }
@@ -32,7 +32,7 @@ const HANDLE_RE = /^[a-z0-9_]+$/
 const RENDERS = { feed: FeedRender, circles: CirclesRender, events: EventsRender }
 const BEAT_COUNT = 6 // 0 oath · 1 intro · 2 reel · 3 identity · 4 place · 5 enter
 
-// No separator — "Daniel Tyack" → "danieltyack" (no dashes or underscores).
+// No separator — "Daniel Tyack" → "danieltyack".
 function suggestHandle(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30)
 }
@@ -45,7 +45,7 @@ function ArrowRight() {
   )
 }
 
-export default function BetaInduction({ userId, userEmail, initialHandle, regions, preview = false }: Props) {
+export default function BetaInduction({ userId, userEmail, initialHandle, preview = false }: Props) {
   const [beat, setBeat] = useState(0)
   const [previewDone, setPreviewDone] = useState(false)
 
@@ -59,6 +59,8 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
   const [handle, setHandle] = useState('')
   const [handleTouched, setHandleTouched] = useState(false)
   const [check, setCheck] = useState<{ handle: string; result: 'available' | 'taken' | 'idle' } | null>(null)
+  const [bio, setBio] = useState('')
+  const [interests, setInterests] = useState('')
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [avatarUrl, setAvatarUrl] = useState('')
@@ -66,10 +68,12 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
   const [uploadError, setUploadError] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Place
-  const [regionId, setRegionId] = useState('')
-  const [regionQuery, setRegionQuery] = useState('')
-  const [regionOpen, setRegionOpen] = useState(false)
+  // Place (free city search via Photon)
+  const [locQuery, setLocQuery] = useState('')
+  const [location, setLocation] = useState('')
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null)
+  const [locResults, setLocResults] = useState<PlaceSuggestion[]>([])
+  const [locOpen, setLocOpen] = useState(false)
   const [intent, setIntent] = useState('')
   const [heardAbout, setHeardAbout] = useState('')
 
@@ -80,9 +84,9 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
 
-  // Debounced handle uniqueness check (identical to the legacy form).
+  // Debounced handle uniqueness check.
   useEffect(() => {
-    if (preview) return // no backend in preview; handle is always "available"
+    if (preview) return
     const valid = handle.length >= 3 && HANDLE_RE.test(handle)
     if (!valid || handle === initialHandle) return
     let cancelled = false
@@ -101,6 +105,27 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
     }
   }, [handle, initialHandle, userId, preview])
 
+  // City autocomplete (Photon / OpenStreetMap — no prepopulated list, runs in the
+  // browser, same source as the Circles page).
+  useEffect(() => {
+    const term = locQuery.trim()
+    if (term === location) return
+    const ctrl = new AbortController()
+    const t = setTimeout(async () => {
+      if (term.length < 2) {
+        setLocResults([])
+        return
+      }
+      const r = await searchPlaces(term, ctrl.signal)
+      setLocResults(r)
+      setLocOpen(true)
+    }, 280)
+    return () => {
+      clearTimeout(t)
+      ctrl.abort()
+    }
+  }, [locQuery, location])
+
   // Auto-advance the reel one slide at a time; settle on the last (no loop).
   useEffect(() => {
     if (beat !== 2 || reelIndex >= REEL.length - 1) return
@@ -118,10 +143,6 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
     ? check.result
     : 'checking'
   const identityValid = displayName.trim().length > 0 && formatOk && handleStatus === 'available'
-
-  const regionMatches = regions
-    .filter((r) => r.name.toLowerCase().includes(regionQuery.trim().toLowerCase()))
-    .slice(0, 6)
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -159,7 +180,7 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
       try {
         await acceptBetaOath(accepted)
       } catch {
-        // Non-fatal: completion re-affirms the oath. Don't block the founder.
+        // Non-fatal: completion re-affirms the oath.
       }
     }
     setAccepting(false)
@@ -185,14 +206,17 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
       await completeBetaInduction({
         displayName: displayName.trim(),
         handle,
-        bio: '',
+        bio,
         avatarUrl: finalAvatarUrl,
-        regionId,
+        location,
+        lat: coords?.lat ?? null,
+        lng: coords?.lng ?? null,
         intent,
+        interests,
         heardAbout,
         oaths: accepted,
       })
-      // Redirects to /circles on success; execution stops here.
+      // Redirects to /feed?intro=1 on success; execution stops here.
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Something went wrong.')
       setSubmitting(false)
@@ -213,24 +237,22 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
   }
 
   // ── Styles (warm light throughout) ───────────────────────────────────────────
-  // Inset field used inside the white profile cards (warm fill so it reads as nested).
   const inputInset =
     'w-full rounded-xl border border-border bg-marketing-canvas px-4 py-3 text-base text-text placeholder:text-subtle transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25'
   const fieldLabel = 'mb-1.5 block text-left text-xs font-semibold uppercase tracking-wider text-subtle'
   const backLink = 'text-sm font-medium text-subtle underline-offset-4 transition-colors hover:text-muted hover:underline'
   const btnPrimary =
-    'inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-10 py-4 text-base font-semibold text-on-primary shadow-lg shadow-primary/25 transition-all hover:bg-primary-hover enabled:hover:-translate-y-0.5 enabled:hover:shadow-xl disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0'
+    'text-emboss inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-2xl bg-primary px-8 py-4 text-base font-semibold text-on-primary shadow-lg shadow-primary/25 transition-all hover:bg-primary-hover enabled:hover:-translate-y-0.5 enabled:hover:shadow-xl disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0'
   const eyebrow = 'text-sm font-semibold uppercase tracking-[0.25em] text-primary'
-  // Headings use the warm engraved brand-mark tone (desaturated, blends with the canvas).
   const heading = 'font-display uppercase leading-[1.0] text-[var(--brand-mark)]'
 
   const slide = REEL[reelIndex]
+  const isLastSlide = reelIndex >= REEL.length - 1
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-marketing-canvas">
       {/* Soft warm glow (Hook-style), centered behind the content. */}
-      <div aria-hidden className="pointer-events-none fixed left-1/2 top-[42%] h-[760px] w-[760px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary opacity-[0.10] blur-[150px]" />
-      <div aria-hidden className="pointer-events-none fixed left-1/2 top-[20%] h-[360px] w-[520px] -translate-x-1/2 rounded-full bg-signal opacity-[0.05] blur-[150px]" />
+      <div aria-hidden className="pointer-events-none fixed left-1/2 top-1/2 h-[720px] w-[720px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary opacity-[0.09] blur-[160px]" />
 
       {/* Preview-only badge (subtle; public /preview route; ADR-068). */}
       {preview && (
@@ -241,15 +263,15 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
         </div>
       )}
 
-      {/* Preview end-state — submit can't redirect without auth, so show completion. */}
+      {/* Preview end-state. */}
       {preview && previewDone && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6">
           <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-7 text-center shadow-lg">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary-bg text-2xl text-primary-strong">✓</div>
             <h2 className="mt-4 text-xl font-bold text-text">Welcome in, Founder.</h2>
             <p className="mt-2 text-sm leading-relaxed text-muted">
-              In the real induction this writes your profile + intent and drops you into Circles.
-              Here it just stops — nothing was saved.
+              In the real induction this writes your profile and drops you into the feed to make your
+              first post. Here it just stops, nothing was saved.
             </p>
             <button
               onClick={() => {
@@ -266,311 +288,318 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
         </div>
       )}
 
-      {/* Stage — logo on top, content centered, progress pinned to the bottom. */}
-      <div className="relative z-10 flex min-h-screen flex-col px-6 py-12">
-        <div className="flex shrink-0 flex-col items-center pt-2">
+      {/* Centered stage: logo top · content centered · progress bottom, with buffer. */}
+      <div className="relative z-10 flex min-h-screen flex-col px-6 py-16">
+        <div className="flex shrink-0 flex-col items-center">
           <span className="brandmark-link block">
-            <span className="brandmark h-16 aspect-[963/170] sm:h-[72px]" aria-hidden />
+            <span className="brandmark h-12 aspect-[963/170] sm:h-[52px]" aria-hidden />
           </span>
-          <span className="mt-3 text-[11px] font-bold uppercase tracking-[0.32em] text-subtle">Beta</span>
+          <span className="mt-3 text-[10px] font-bold uppercase tracking-[0.36em] text-subtle">Beta</span>
         </div>
 
-        <div className="flex flex-1 items-center justify-center py-8">
+        <div className="flex flex-1 items-center justify-center py-10">
           <div key={beat} className="w-full animate-[slideUp_0.5s_ease-out] text-center">
-          {/* ── Beat 0: The Oath ── */}
-          {beat === 0 && (
-            <div className="mx-auto max-w-5xl">
-              <p className={eyebrow}>{VERA.oath.eyebrow}</p>
-              <h1 className={`mt-4 text-6xl sm:text-7xl ${heading}`}>{VERA.oath.heading}</h1>
-              <p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-muted">{VERA.oath.body}</p>
+            {/* ── Beat 0: The Oath ── */}
+            {beat === 0 && (
+              <div className="mx-auto max-w-5xl">
+                <p className={eyebrow}>{VERA.oath.eyebrow}</p>
+                <h1 className={`mt-4 text-6xl sm:text-7xl ${heading}`}>
+                  This isn&rsquo;t a product.
+                  <br />
+                  It&rsquo;s a promise.
+                </h1>
+                <p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-muted">{VERA.oath.body}</p>
 
-              {/* Three agreements + the I'm in button, in a 2×2 grid. */}
-              <div className="mx-auto mt-10 grid max-w-3xl grid-cols-1 gap-3 sm:grid-cols-2">
-                {BETA_OATHS.map((o) => (
-                  <label
-                    key={o.id}
-                    className={`flex cursor-pointer items-center gap-3 rounded-2xl border p-4 text-left transition-colors ${oaths[o.id] ? 'border-primary bg-primary/10' : 'border-border bg-surface hover:border-primary/40'}`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={oaths[o.id]}
-                      onChange={(e) => setOaths((prev) => ({ ...prev, [o.id]: e.target.checked }))}
-                      className="h-5 w-5 shrink-0 accent-primary"
-                    />
-                    <span className={`text-base font-medium ${oaths[o.id] ? 'text-text' : 'text-muted'}`}>{o.label}</span>
-                  </label>
-                ))}
-                <button disabled={!allOathsChecked || accepting} onClick={passOath} className={`${btnPrimary} h-full`}>
-                  {accepting ? 'One sec…' : VERA.oath.cta}
-                  {!accepting && <ArrowRight />}
-                </button>
+                {/* Agreements + I'm in, all on one flexible line (no overflow, no wrap). */}
+                <div className="mx-auto mt-10 flex w-full max-w-4xl flex-col items-stretch gap-3 sm:flex-row">
+                  {BETA_OATHS.map((o) => (
+                    <label
+                      key={o.id}
+                      className={`flex flex-1 cursor-pointer items-center justify-center gap-2.5 whitespace-nowrap rounded-2xl border px-3 py-4 transition-colors ${oaths[o.id] ? 'border-primary bg-primary/10' : 'border-border bg-surface hover:border-primary/40'}`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={oaths[o.id]}
+                        onChange={(e) => setOaths((prev) => ({ ...prev, [o.id]: e.target.checked }))}
+                        className="h-5 w-5 shrink-0 accent-primary"
+                      />
+                      <span className={`text-sm font-medium ${oaths[o.id] ? 'text-text' : 'text-muted'}`}>{o.label}</span>
+                    </label>
+                  ))}
+                  <button disabled={!allOathsChecked || accepting} onClick={passOath} className={`${btnPrimary} sm:flex-1`}>
+                    {accepting ? 'One sec…' : VERA.oath.cta}
+                    {!accepting && <ArrowRight />}
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* ── Beat 1: Intro ── */}
-          {beat === 1 && (
-            <div className="mx-auto max-w-3xl">
-              <p className={eyebrow}>{VERA.intro.eyebrow}</p>
-              <h1 className={`mt-4 text-6xl sm:text-7xl ${heading}`}>
-                You&rsquo;re not a user.
-                <br />
-                You&rsquo;re a Founder.
-              </h1>
-              <p className="mx-auto mt-6 max-w-xl text-xl leading-relaxed text-muted">{VERA.intro.body}</p>
-              <div className="mt-10 flex flex-col items-center gap-3">
-                <button onClick={() => setBeat(2)} className={btnPrimary}>{VERA.intro.cta}<ArrowRight /></button>
-                <button onClick={() => setBeat(0)} className={backLink}>Back</button>
+            {/* ── Beat 1: Intro ── */}
+            {beat === 1 && (
+              <div className="mx-auto max-w-4xl">
+                <p className={eyebrow}>{VERA.intro.eyebrow}</p>
+                <h1 className={`mt-4 text-6xl sm:text-8xl ${heading}`}>
+                  You&rsquo;re not a user.
+                  <br />
+                  You&rsquo;re a Founder.
+                </h1>
+                <p className="mx-auto mt-6 max-w-2xl text-2xl leading-relaxed text-muted">{VERA.intro.body}</p>
+                <div className="mt-10 flex flex-col items-center gap-3">
+                  <button onClick={() => setBeat(2)} className={btnPrimary}>{VERA.intro.cta}<ArrowRight /></button>
+                  <button onClick={() => setBeat(0)} className={backLink}>Back</button>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* ── Beat 2: The reel — horizontal: render beside the copy + action ── */}
-          {beat === 2 && (
-            <div className="mx-auto max-w-5xl">
-              <p className={eyebrow}>{VERA.tour.eyebrow}</p>
-              <h1 className={`mt-3 text-5xl sm:text-6xl ${heading}`}>{VERA.tour.heading}</h1>
+            {/* ── Beat 2: The reel (desktop website mockup) ── */}
+            {beat === 2 && (
+              <div className="mx-auto max-w-3xl">
+                <p className={eyebrow}>{VERA.tour.eyebrow}</p>
+                <h1 className={`mt-3 text-5xl sm:text-6xl ${heading}`}>{VERA.tour.heading}</h1>
 
-              <div className="mt-9 flex flex-col items-center gap-10 md:flex-row md:justify-center md:gap-14">
-                {/* Render stage (9:16 mini web page) */}
-                <div className="relative h-[420px] w-[236px] shrink-0">
+                <div className="relative mx-auto mt-7 w-full max-w-xl" style={{ aspectRatio: '540 / 348' }}>
                   {REEL.map((s, i) => {
                     const active = i === reelIndex
+                    const C = s.kind === 'render' ? RENDERS[s.render] : null
                     return (
-                      <div
-                        key={i}
-                        className={`absolute inset-0 flex items-center justify-center transition-opacity duration-700 ${active ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-                      >
-                        {s.kind === 'render'
-                          ? (() => {
-                              const C = RENDERS[s.render]
-                              return <div className="w-full"><C animate={active} /></div>
-                            })()
-                          : (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={s.src} alt={s.title} className="h-full w-full rounded-3xl object-cover shadow-2xl ring-1 ring-border" />
-                          )}
+                      <div key={i} className={`absolute inset-0 transition-opacity duration-700 ${active ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                        {C && <C animate={active} />}
                       </div>
                     )
                   })}
                 </div>
 
-                {/* Copy + dots + action */}
-                <div className="max-w-sm text-center md:text-left">
-                  <p className="text-3xl font-bold text-text">{slide.title}</p>
-                  <p className="mt-2 text-lg leading-relaxed text-muted">{slide.line}</p>
+                <div className="mx-auto mt-5 min-h-[64px] max-w-lg">
+                  <p className="text-2xl font-bold text-text">{slide.title}</p>
+                  <p className="mt-1.5 text-base leading-relaxed text-muted">{slide.line}</p>
+                </div>
 
-                  <div className="mt-5 flex items-center justify-center gap-2 md:justify-start">
-                    {REEL.map((s, i) => (
-                      <button
-                        key={i}
-                        aria-label={`Show ${s.title}`}
-                        onClick={() => setReelIndex(i)}
-                        className={`h-2 rounded-full transition-all ${i === reelIndex ? 'w-6 bg-primary' : 'w-2 bg-border-strong hover:bg-primary/60'}`}
-                      />
-                    ))}
-                  </div>
-
-                  <div className="mt-7 flex flex-col items-center gap-3 md:flex-row md:items-center">
+                <div className="flex items-center justify-center gap-2">
+                  {REEL.map((s, i) => (
                     <button
-                      onClick={() => (reelIndex >= REEL.length - 1 ? setBeat(3) : setReelIndex(reelIndex + 1))}
-                      className={btnPrimary}
-                    >
-                      {reelIndex >= REEL.length - 1 ? VERA.tour.cta : 'Next'}
-                      <ArrowRight />
-                    </button>
-                    <button onClick={() => setBeat(1)} className={backLink}>Back</button>
-                  </div>
+                      key={i}
+                      aria-label={`Show ${s.title}`}
+                      onClick={() => setReelIndex(i)}
+                      className={`h-2 rounded-full transition-all ${i === reelIndex ? 'w-6 bg-primary' : 'w-2 bg-border-strong hover:bg-primary/60'}`}
+                    />
+                  ))}
+                </div>
+
+                <div className="mt-7 flex flex-col items-center gap-3">
+                  <button onClick={() => (isLastSlide ? setBeat(3) : setReelIndex(reelIndex + 1))} className={btnPrimary}>
+                    {isLastSlide ? VERA.tour.cta : 'Next'}
+                    <ArrowRight />
+                  </button>
+                  <button onClick={() => setBeat(1)} className={backLink}>Back</button>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* ── Beat 3: Identity ── */}
-          {beat === 3 && (
-            <div className="mx-auto max-w-xl">
-              <h1 className={`text-5xl sm:text-6xl ${heading}`}>{VERA.identity.heading}</h1>
-              <p className="mx-auto mt-4 max-w-lg text-lg text-muted">{VERA.identity.body}</p>
+            {/* ── Beat 3: Identity ── */}
+            {beat === 3 && (
+              <div className="mx-auto max-w-md">
+                <h1 className={`text-5xl sm:text-6xl ${heading}`}>{VERA.identity.heading}</h1>
+                <p className="mx-auto mt-4 max-w-lg text-lg text-muted">{VERA.identity.body}</p>
 
-              <div className="mx-auto mt-8 flex w-full max-w-md flex-col items-center gap-5">
-                <button type="button" onClick={() => fileInputRef.current?.click()} className="group">
-                  <div className="rounded-full ring-4 ring-surface shadow-sm">{renderAvatar()}</div>
-                  <span className="mt-2 block text-xs font-semibold text-primary group-hover:underline">
-                    {avatarPreview ? 'Change photo' : 'Add a photo'}
-                  </span>
-                </button>
-                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-                {uploadError && <p className="text-xs text-danger">{uploadError}</p>}
+                <div className="mx-auto mt-8 flex w-full flex-col items-center gap-5">
+                  <button type="button" onClick={() => fileInputRef.current?.click()} className="group">
+                    <div className="rounded-full ring-4 ring-surface shadow-sm">{renderAvatar()}</div>
+                    <span className="mt-2 block text-xs font-semibold text-primary group-hover:underline">
+                      {avatarPreview ? 'Change photo' : 'Add a photo'}
+                    </span>
+                  </button>
+                  <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+                  {uploadError && <p className="text-xs text-danger">{uploadError}</p>}
 
-                <div className="w-full space-y-4 rounded-3xl border border-border bg-surface p-6 shadow-sm">
-                  <div>
-                    <label className={fieldLabel}>Display name</label>
-                    <input
-                      type="text"
-                      value={displayName}
-                      onChange={(e) => {
-                        const v = e.target.value
-                        setDisplayName(v)
-                        if (!handleTouched) setHandle(suggestHandle(v))
-                      }}
-                      placeholder="Your name"
-                      autoFocus
-                      className={inputInset}
-                    />
-                  </div>
-                  <div>
-                    <label className={fieldLabel}>Handle</label>
-                    <div className="relative">
-                      <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-base text-subtle">@</span>
+                  <div className="w-full space-y-4 rounded-3xl border border-border bg-surface p-6 shadow-sm">
+                    <div>
+                      <label className={fieldLabel}>Display name</label>
                       <input
                         type="text"
-                        value={handle}
+                        value={displayName}
                         onChange={(e) => {
-                          setHandleTouched(true)
-                          setHandle(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))
+                          const v = e.target.value
+                          setDisplayName(v)
+                          if (!handleTouched) setHandle(suggestHandle(v))
                         }}
-                        placeholder="yourname"
-                        className={`${inputInset} pl-9 pr-9`}
+                        placeholder="Your name"
+                        autoFocus
+                        className={inputInset}
                       />
-                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm leading-none">
-                        {handleStatus === 'checking' && <span className="animate-pulse text-subtle">•••</span>}
-                        {handleStatus === 'available' && <span className="text-success">✓</span>}
-                        {handleStatus === 'taken' && <span className="text-danger">✗</span>}
-                      </span>
                     </div>
-                    {handleStatus === 'taken' && <p className="mt-1.5 text-left text-xs text-danger">That handle is already taken.</p>}
+                    <div>
+                      <label className={fieldLabel}>Handle</label>
+                      <div className="relative">
+                        <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-base text-subtle">@</span>
+                        <input
+                          type="text"
+                          value={handle}
+                          onChange={(e) => {
+                            setHandleTouched(true)
+                            setHandle(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))
+                          }}
+                          placeholder="yourname"
+                          className={`${inputInset} pl-9 pr-9`}
+                        />
+                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm leading-none">
+                          {handleStatus === 'checking' && <span className="animate-pulse text-subtle">•••</span>}
+                          {handleStatus === 'available' && <span className="text-success">✓</span>}
+                          {handleStatus === 'taken' && <span className="text-danger">✗</span>}
+                        </span>
+                      </div>
+                      {handleStatus === 'taken' && <p className="mt-1.5 text-left text-xs text-danger">That handle is already taken.</p>}
+                    </div>
+                    <div>
+                      <label className={fieldLabel}>One-line bio <span className="font-normal normal-case text-subtle">· optional</span></label>
+                      <input
+                        type="text"
+                        value={bio}
+                        onChange={(e) => setBio(e.target.value.slice(0, 140))}
+                        placeholder="Coffee, trail runs, and good books."
+                        className={inputInset}
+                      />
+                    </div>
+                    <div>
+                      <label className={fieldLabel}>What are you into? <span className="font-normal normal-case text-subtle">· optional</span></label>
+                      <input
+                        type="text"
+                        value={interests}
+                        onChange={(e) => setInterests(e.target.value.slice(0, 120))}
+                        placeholder="hiking, vinyl, cold plunges…"
+                        className={inputInset}
+                      />
+                    </div>
                   </div>
                 </div>
+
+                <div className="mt-8 flex flex-col items-center gap-3">
+                  <button disabled={!identityValid || uploading} onClick={advanceFromIdentity} className={btnPrimary}>
+                    {uploading ? 'Uploading…' : 'Continue'}{!uploading && <ArrowRight />}
+                  </button>
+                  <button onClick={() => setBeat(2)} className={backLink}>Back</button>
+                </div>
               </div>
+            )}
 
-              <div className="mt-8 flex flex-col items-center gap-3">
-                <button disabled={!identityValid || uploading} onClick={advanceFromIdentity} className={btnPrimary}>
-                  {uploading ? 'Uploading…' : 'Continue'}{!uploading && <ArrowRight />}
-                </button>
-                <button onClick={() => setBeat(2)} className={backLink}>Back</button>
-              </div>
-            </div>
-          )}
+            {/* ── Beat 4: Place + intent ── */}
+            {beat === 4 && (
+              <div className="mx-auto max-w-md">
+                <h1 className={`text-5xl sm:text-6xl ${heading}`}>{VERA.place.heading}</h1>
+                <p className="mx-auto mt-4 max-w-lg text-lg text-muted">{VERA.place.body}</p>
 
-          {/* ── Beat 4: Place + intent ── */}
-          {beat === 4 && (
-            <div className="mx-auto max-w-md">
-              <h1 className={`text-5xl sm:text-6xl ${heading}`}>{VERA.place.heading}</h1>
-              <p className="mx-auto mt-4 max-w-lg text-lg text-muted">{VERA.place.body}</p>
+                <div className="mx-auto mt-8 w-full space-y-4 rounded-3xl border border-border bg-surface p-6 text-left shadow-sm">
+                  <div>
+                    <label className={fieldLabel}>Your city</label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={locQuery}
+                        onChange={(e) => {
+                          setLocQuery(e.target.value)
+                          setLocation('')
+                          setCoords(null)
+                          setLocOpen(true)
+                        }}
+                        onFocus={() => locResults.length > 0 && setLocOpen(true)}
+                        onBlur={() => setTimeout(() => setLocOpen(false), 150)}
+                        placeholder="Start typing your city…"
+                        className={inputInset}
+                        autoComplete="off"
+                      />
+                      {location && <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-success">✓</span>}
+                      {locOpen && locResults.length > 0 && (
+                        <ul className="absolute z-20 mt-2 max-h-56 w-full overflow-auto rounded-xl border border-border bg-surface shadow-lg">
+                          {locResults.map((r) => (
+                            <li key={`${r.label}-${r.lat}`}>
+                              <button
+                                type="button"
+                                onMouseDown={() => {
+                                  setLocation(r.label)
+                                  setLocQuery(r.label)
+                                  setCoords({ lat: r.lat, lng: r.lng })
+                                  setLocOpen(false)
+                                }}
+                                className="block w-full px-4 py-2.5 text-left text-base text-text transition-colors hover:bg-primary-bg"
+                              >
+                                {r.label}
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  </div>
 
-              <div className="mx-auto mt-8 w-full space-y-4 rounded-3xl border border-border bg-surface p-6 text-left shadow-sm">
-                <div>
-                  <label className={fieldLabel}>Your region</label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={regionQuery}
-                      onChange={(e) => {
-                        setRegionQuery(e.target.value)
-                        setRegionId('')
-                        setRegionOpen(true)
-                      }}
-                      onFocus={() => setRegionOpen(true)}
-                      onBlur={() => setTimeout(() => setRegionOpen(false), 150)}
-                      placeholder="Start typing your city or region…"
-                      className={inputInset}
-                      autoComplete="off"
+                  <div>
+                    <label className={fieldLabel}>{VERA.place.intentLabel}</label>
+                    <textarea
+                      value={intent}
+                      onChange={(e) => setIntent(e.target.value.slice(0, 500))}
+                      placeholder={VERA.place.intentPlaceholder}
+                      rows={3}
+                      className={`${inputInset} resize-none`}
                     />
-                    {regionId && (
-                      <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-success">✓</span>
-                    )}
-                    {regionOpen && regionMatches.length > 0 && (
-                      <ul className="absolute z-20 mt-2 max-h-56 w-full overflow-auto rounded-xl border border-border bg-surface shadow-lg">
-                        {regionMatches.map((r) => (
-                          <li key={r.id}>
-                            <button
-                              type="button"
-                              onMouseDown={() => {
-                                setRegionId(r.id)
-                                setRegionQuery(r.name)
-                                setRegionOpen(false)
-                              }}
-                              className="block w-full px-4 py-2.5 text-left text-base text-text transition-colors hover:bg-primary-bg"
-                            >
-                              {r.name}
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
                   </div>
-                  {regions.length === 0 && (
-                    <p className="mt-1.5 text-xs text-subtle">No regions yet — we&rsquo;ll sort you later.</p>
-                  )}
+
+                  <div>
+                    <label className={fieldLabel}>How did you hear about us?</label>
+                    <select value={heardAbout} onChange={(e) => setHeardAbout(e.target.value)} className={inputInset}>
+                      <option value="">Choose one…</option>
+                      {HEARD_ABOUT.map((h) => (
+                        <option key={h} value={h}>{h}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
-                <div>
-                  <label className={fieldLabel}>{VERA.place.intentLabel}</label>
-                  <textarea
-                    value={intent}
-                    onChange={(e) => setIntent(e.target.value.slice(0, 500))}
-                    placeholder={VERA.place.intentPlaceholder}
-                    rows={3}
-                    className={`${inputInset} resize-none`}
-                  />
-                </div>
-
-                <div>
-                  <label className={fieldLabel}>How did you hear about us?</label>
-                  <select value={heardAbout} onChange={(e) => setHeardAbout(e.target.value)} className={inputInset}>
-                    <option value="">Choose one…</option>
-                    {HEARD_ABOUT.map((h) => (
-                      <option key={h} value={h}>{h}</option>
-                    ))}
-                  </select>
+                <div className="mt-8 flex flex-col items-center gap-3">
+                  <button onClick={() => setBeat(5)} className={btnPrimary}>Continue<ArrowRight /></button>
+                  <button onClick={() => setBeat(3)} className={backLink}>Back</button>
                 </div>
               </div>
+            )}
 
-              <div className="mt-8 flex flex-col items-center gap-3">
-                <button onClick={() => setBeat(5)} className={btnPrimary}>Continue<ArrowRight /></button>
-                <button onClick={() => setBeat(3)} className={backLink}>Back</button>
-              </div>
-            </div>
-          )}
+            {/* ── Beat 5: Enter (profile card left, copy right) ── */}
+            {beat === 5 && (
+              <div className="mx-auto max-w-4xl">
+                <p className={eyebrow}>{VERA.enter.eyebrow}</p>
+                <h1 className={`mt-4 text-5xl sm:text-6xl ${heading}`}>{VERA.enter.heading}</h1>
 
-          {/* ── Beat 5: Enter ── */}
-          {beat === 5 && (
-            <div className="mx-auto max-w-4xl">
-              <p className={eyebrow}>{VERA.enter.eyebrow}</p>
-              <h1 className={`mt-4 text-5xl sm:text-6xl ${heading}`}>{VERA.enter.heading}</h1>
+                <div className="mt-9 flex flex-col items-center gap-10 md:flex-row md:items-center md:justify-center md:gap-16">
+                  {/* portrait profile card with blank slots */}
+                  <div className="w-72 shrink-0 rounded-3xl border border-border bg-surface p-7 text-center shadow-sm">
+                    <div className="mx-auto w-fit rounded-full ring-4 ring-surface">{renderAvatar()}</div>
+                    <p className="mt-4 text-xl font-semibold text-text">{displayName || <span className="text-subtle">Your name</span>}</p>
+                    <p className="text-sm text-muted">@{handle || 'handle'}</p>
+                    <div className="mt-4 space-y-2 border-t border-border pt-4 text-left text-sm">
+                      <p className="text-text">{location || <span className="italic text-subtle">Add your city</span>}</p>
+                      <p className="text-muted">{bio || <span className="italic text-subtle">Add a one-line bio</span>}</p>
+                      <p className="text-muted">{interests || <span className="italic text-subtle">What you’re into</span>}</p>
+                    </div>
+                  </div>
 
-              <div className="mt-9 flex flex-col items-center gap-10 md:flex-row md:items-center md:justify-center md:gap-14">
-                {/* description to the left of the card */}
-                <p className="max-w-xs text-lg leading-relaxed text-muted md:text-left">{VERA.enter.body}</p>
+                  {/* copy to the right */}
+                  <p className="max-w-xs text-lg leading-relaxed text-muted md:text-left">{VERA.enter.body}</p>
+                </div>
 
-                {/* portrait profile card */}
-                <div className="w-64 shrink-0 rounded-3xl border border-border bg-surface p-7 text-center shadow-sm">
-                  <div className="mx-auto w-fit rounded-full ring-4 ring-surface">{renderAvatar()}</div>
-                  <p className="mt-4 text-xl font-semibold text-text">{displayName || 'You'}</p>
-                  <p className="text-sm text-muted">@{handle}</p>
-                  {regionId && <p className="mt-2 text-xs text-subtle">{regions.find((r) => r.id === regionId)?.name}</p>}
-                  {intent.trim() && <p className="mt-3 text-sm italic text-muted">“{intent.trim()}”</p>}
+                {submitError && <p className="mt-5 text-sm text-danger">{submitError}</p>}
+
+                <div className="mt-9 flex flex-col items-center gap-3">
+                  <button onClick={submit} disabled={submitting} className={btnPrimary}>
+                    {submitting ? 'Stepping in…' : VERA.enter.cta}{!submitting && <ArrowRight />}
+                  </button>
+                  <button onClick={() => setBeat(4)} className={backLink}>Back</button>
                 </div>
               </div>
-
-              {submitError && <p className="mt-5 text-sm text-danger">{submitError}</p>}
-
-              <div className="mt-9 flex flex-col items-center gap-3">
-                <button onClick={submit} disabled={submitting} className={btnPrimary}>
-                  {submitting ? 'Stepping in…' : VERA.enter.cta}{!submitting && <ArrowRight />}
-                </button>
-                <button onClick={() => setBeat(4)} className={backLink}>Back</button>
-              </div>
-            </div>
-          )}
+            )}
           </div>
         </div>
 
-        {/* Progress — placed below the experience. */}
-        <div className="flex shrink-0 justify-center pb-2">
+        {/* Progress — below the experience. */}
+        <div className="flex shrink-0 justify-center">
           <div className="flex w-full max-w-sm items-center gap-1.5">
             {Array.from({ length: BEAT_COUNT }).map((_, i) => (
-              <span key={i} className={`h-1 flex-1 rounded-full transition-colors duration-500 ${i <= beat ? 'bg-primary' : 'bg-border-strong'}`} />
+              <span key={i} className={`h-1 flex-1 rounded-full transition-colors duration-700 ${i <= beat ? 'bg-primary' : 'bg-border-strong'}`} />
             ))}
           </div>
         </div>
