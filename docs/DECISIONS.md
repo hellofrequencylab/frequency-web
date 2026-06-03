@@ -1526,6 +1526,40 @@ launch arrives, the whole induction is deleted in one PR.
 
 ---
 
+## ADR-070: Engagement & Marketing Intelligence — one Studio face on the ledger + AI kernel
+
+**Status:** Accepted (design) · 2026-06-03 · convergence of the first-party analytics dashboard
+([ADR-050](DECISIONS.md)/[ANALYTICS.md](ANALYTICS.md)), the AI marketing operator
+([MARKETING-AI.md](MARKETING-AI.md)), and the trait/segment layer ([ADR-069](DECISIONS.md)), on the
+event ledger ([ADR-025](DECISIONS.md)) + AI kernel ([ADR-041](DECISIONS.md)). Spec:
+[ENGAGEMENT-MARKETING-ENGINE.md](ENGAGEMENT-MARKETING-ENGINE.md).
+
+**Context:** We want deep product + marketing intelligence: what members do, which features get
+used, where navigation jams, how they progress through programs/circles/the game, plus AI that
+analyzes strategy and drafts content — surfaced on a live janitor dashboard. Most of this is
+already specced or prototyped across three docs; the risk is building it as a fourth parallel
+system instead of one face on what exists.
+
+**Decision:**
+- **One brain, many faces.** This is a Studio *face* on the existing ledger + AI kernel, not a new
+  system. Instrumentation feeds `engagement_events`; dashboards + AI reads are projections of it.
+- **Dual-emit, taxonomy-governed.** A single `track()` helper records first-party (authoritative)
+  and mirrors GA4; every event is named in one taxonomy module so coverage is reviewable.
+  Server-authoritative events can't be spoofed from the client (`clientEmittable` gate).
+- **Privacy-by-design.** All first-party + member-tied (no new cookies, per ADR-050); **marketing
+  is aggregate-only** (never references an individual — recognition, not surveillance, per
+  MARKETING-AI); **human-approves-anything-public**; consent/erase lands with ADR-069 Phase 5.
+- **Phasing:** (A) instrumentation depth — `track()` + taxonomy + page-view capture ✅ this PR;
+  (B) janitor dashboard (activation funnel + where-it-jams + WAM/retention + feature adoption);
+  (C) program/circle/game outcome analytics; (D) AI reads (Engagement Read + live-kernel Market
+  Read); (E) AI content → Action Queue → comms spine.
+
+**Consequences:** Product analytics, marketing AI, and member data share one ledger and one
+governance kernel. Adding tracking = a reviewed taxonomy entry + a `track()` call, not a new
+pipeline. Ships incrementally and dark-safe.
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 
