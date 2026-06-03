@@ -26,15 +26,19 @@ export function EntityCard({
   href,
   anchor,
   title,
+  badge,
   context,
   description,
   meta,
   action,
+  dimmed = false,
 }: {
   href: string
   /** Avatar / icon chip — the visual anchor. */
   anchor?: React.ReactNode
   title: React.ReactNode
+  /** Small pill shown next to the title (e.g. a Beta-demo marker). */
+  badge?: React.ReactNode
   /** One-line context under the title (city · type · count). */
   context?: React.ReactNode
   /** Two-line description (clamped). */
@@ -43,17 +47,24 @@ export function EntityCard({
   meta?: React.ReactNode
   /** Optional top-right action; its own client component (handles its click). */
   action?: React.ReactNode
+  /** Recede the card (muted + desaturated) — used for Beta demo content. */
+  dimmed?: boolean
 }) {
   return (
     <div className="group relative">
       <Link
         href={href}
-        className="flex h-full flex-col rounded-2xl border border-border bg-surface p-5 shadow-sm transition-colors hover:border-primary-bg hover:shadow-md motion-reduce:transition-none"
+        className={`flex h-full flex-col rounded-2xl border border-border bg-surface p-5 shadow-sm transition-colors hover:border-primary-bg hover:shadow-md motion-reduce:transition-none ${
+          dimmed ? 'opacity-[0.72]' : ''
+        }`}
       >
         <div className="flex items-start gap-3">
-          {anchor && <div className="shrink-0">{anchor}</div>}
+          {anchor && <div className={`shrink-0 ${dimmed ? 'grayscale-[0.5]' : ''}`}>{anchor}</div>}
           <div className="min-w-0 flex-1">
-            <h3 className="truncate text-base font-bold leading-tight text-text">{title}</h3>
+            <div className="flex items-center gap-1.5">
+              <h3 className="truncate text-base font-bold leading-tight text-text">{title}</h3>
+              {badge}
+            </div>
             {context && <p className="mt-1 truncate text-xs text-subtle">{context}</p>}
           </div>
         </div>

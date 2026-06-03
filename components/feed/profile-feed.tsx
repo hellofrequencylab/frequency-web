@@ -11,6 +11,7 @@ interface RawPost {
   is_pinned: boolean
   created_at: string
   media_urls: string[]
+  is_demo: boolean
   reaction_count: number | null
   comment_count: number | null
   engagement_score: number | null
@@ -49,7 +50,7 @@ interface EventItem {
 }
 
 const POST_SELECT = `
-  id, body, post_type, is_pinned, created_at, media_urls,
+  id, body, post_type, is_pinned, created_at, media_urls, is_demo,
   reaction_count, comment_count, engagement_score, scope_id, visibility,
   author:profiles!author_id ( id, display_name, handle, avatar_url, community_role ),
   reactions:post_reactions ( id, reaction_type, profile_id )

@@ -8,6 +8,7 @@ import { StatStrip } from '@/components/ui/page-header'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { EntityCard } from '@/components/cards/entity-card'
+import { DemoBadge } from '@/components/ui/demo-badge'
 import { RsvpButton } from '@/components/events/rsvp-button'
 
 type EventRow = {
@@ -18,6 +19,7 @@ type EventRow = {
   starts_at: string
   ends_at: string | null
   is_cancelled: boolean
+  is_demo: boolean
   scope_id: string
   scope_type: string
   host: { id: string; display_name: string; handle: string } | null
@@ -122,7 +124,7 @@ export default async function EventsPage() {
   const { data: rawEvents } = await admin
     .from('events')
     .select(
-      `id, title, slug, location, starts_at, ends_at, is_cancelled,
+      `id, title, slug, location, starts_at, ends_at, is_cancelled, is_demo,
        scope_id, scope_type,
        host:profiles!host_id ( id, display_name, handle )`
     )
@@ -274,6 +276,7 @@ function EventCard({
       href={`/events/${event.slug}`}
       anchor={<DateBlock iso={event.starts_at} />}
       title={event.title}
+      badge={event.is_demo ? <DemoBadge /> : undefined}
       context={formatWhen(event.starts_at, now)}
       meta={
         <>

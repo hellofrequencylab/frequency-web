@@ -18,6 +18,7 @@ type Profile = {
   avatar_url: string | null
   community_role: CommunityRole
   last_seen_at: string | null
+  is_demo: boolean
   nexus_regions: { name: string } | null
 }
 
@@ -62,7 +63,7 @@ export default async function DirectoryPage({
 
   let query = admin
     .from('profiles')
-    .select('id, display_name, handle, avatar_url, community_role, last_seen_at, nexus_regions!nexus_region_id ( name )')
+    .select('id, display_name, handle, avatar_url, community_role, last_seen_at, is_demo, nexus_regions!nexus_region_id ( name )')
     .eq('is_active', true)
     .eq('is_system', false) // hide system accounts (e.g. @moderation) from the directory
     .order('display_name', { ascending: true })
@@ -282,6 +283,7 @@ export default async function DirectoryPage({
                 displayName={p.display_name}
                 avatarUrl={p.avatar_url}
                 online={isOnline(p.last_seen_at)}
+                isDemo={p.is_demo}
                 meta={
                   <>
                     <RoleBadge role={role} className="text-xs leading-tight" />

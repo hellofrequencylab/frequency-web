@@ -4,6 +4,7 @@ import { Heart, ThumbsUp, Megaphone, ArrowRight, Zap } from 'lucide-react'
 import { toggleReaction } from '@/app/(main)/feed/actions'
 import { PostReplies } from './post-replies'
 import { ContextActions } from '@/components/context-actions'
+import { DemoBadge } from '@/components/ui/demo-badge'
 import { getInitials, relativeTime } from '@/lib/utils'
 
 function renderBodyWithMentions(body: string): React.ReactNode[] {
@@ -30,6 +31,7 @@ export type FeedPost = {
   is_pinned: boolean
   created_at: string
   media_urls: string[]
+  is_demo?: boolean
   scope_id?: string | null
   visibility?: string | null
   replyCount?: number
@@ -146,6 +148,7 @@ export function PostCard({
                   {author.display_name}
                 </Link>
                 <RoleBadge role={role} className="text-[11px] leading-tight" />
+                {post.is_demo && <DemoBadge />}
                 {post.scopeContext && (
                   <>
                     <ArrowRight className="w-3 h-3 text-subtle shrink-0" />
