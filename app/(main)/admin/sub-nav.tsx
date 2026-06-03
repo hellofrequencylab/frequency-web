@@ -52,6 +52,7 @@ export function AdminSubNav({ role }: { role: CommunityRole }) {
           { href: '/admin/members', label: 'Members', Icon: Users } as NavItem,
           { href: '/admin/roles', label: 'Roles', Icon: Shield } as NavItem,
           { href: '/admin/demo', label: 'Demo', Icon: FlaskConical } as NavItem,
+          { href: '/admin/help-gaps', label: 'Help gaps', Icon: ClipboardList } as NavItem,
         ]
       : []),
   ]
