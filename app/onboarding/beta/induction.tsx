@@ -1,16 +1,17 @@
 'use client'
 
 // Beta induction — the founding-cohort flow (ADR-068, docs/BETA-INDUCTION.md).
-// TEMPORARY: deleted at launch. A centered, cinematic intro sequence (not a
-// form): a soft-glow dark stage that crossfades a reel of feature renders +
-// site imagery, with the oath gate and lightweight capture woven through it.
-// Scripted Vera (hot register). Handle-check + avatar-upload mirror the legacy
-// form. The `preview` prop mocks the auth-dependent calls for the public demo.
+// TEMPORARY: deleted at launch. A centered, cinematic sequence that starts in a
+// dark stage and *lightens beat by beat* until it lands on the feed's light
+// theme — a vector reel slides through the core rooms, the oath gates it, and
+// lightweight capture is woven in. Scripted Vera (hot register). Handle-check +
+// avatar-upload mirror the legacy form. The `preview` prop mocks auth-dependent
+// calls for the public demo.
 
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getInitials } from '@/lib/utils'
-import { BETA_OATHS, VERA, REEL, type OathId } from '@/lib/onboarding/beta-script'
+import { BETA_OATHS, VERA, REEL, HEARD_ABOUT, type OathId } from '@/lib/onboarding/beta-script'
 import { acceptBetaOath, completeBetaInduction } from './actions'
 import { FeedRender } from '@/components/onboarding/renders/feed-render'
 import { CirclesRender } from '@/components/onboarding/renders/circles-render'
@@ -31,6 +32,17 @@ type Props = {
 const HANDLE_RE = /^[a-z0-9_]+$/
 const RENDERS = { feed: FeedRender, circles: CirclesRender, events: EventsRender }
 const BEAT_COUNT = 6 // 0 oath · 1 intro · 2 reel · 3 identity · 4 place · 5 enter
+
+// Per-beat scene: the dark scrim lifts each step until the feed's light theme
+// shows through, and the text flips from light-on-dark to dark-on-light.
+const SCENES = [
+  { scrim: 1.0, light: false }, // 0 oath  — darkest
+  { scrim: 0.8, light: false }, // 1 intro
+  { scrim: 0.55, light: false }, // 2 reel
+  { scrim: 0.3, light: true }, // 3 identity
+  { scrim: 0.12, light: true }, // 4 place
+  { scrim: 0.0, light: true }, // 5 enter — feed theme (light)
+] as const
 
 function suggestHandle(name: string): string {
   return name.toLowerCase().trim().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '').slice(0, 30)
@@ -60,6 +72,7 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
   // Place
   const [regionId, setRegionId] = useState('')
   const [intent, setIntent] = useState('')
+  const [heardAbout, setHeardAbout] = useState('')
 
   // Reel
   const [reelIndex, setReelIndex] = useState(0)
@@ -174,6 +187,7 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
         avatarUrl: finalAvatarUrl,
         regionId,
         intent,
+        heardAbout,
         oaths: accepted,
       })
       // Redirects to /circles on success; execution stops here.
@@ -197,23 +211,43 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
     )
   }
 
-  // ── Shared styles (dark, cinematic — pills not boxes) ────────────────────────
+  // ── Scene-aware tokens ───────────────────────────────────────────────────────
+  const scene = SCENES[beat]
+  const tText = scene.light ? 'text-text' : 'text-on-ink'
+  const tMuted = scene.light ? 'text-muted' : 'text-on-ink-muted'
+  const inputCls = scene.light
+    ? 'w-full rounded-xl border border-border bg-surface px-4 py-3 text-center text-base text-text placeholder:text-subtle transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25'
+    : 'w-full rounded-xl border border-ink-border bg-ink-elevated px-4 py-3 text-center text-base text-on-ink placeholder:text-on-ink-subtle transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30'
+  const backLink = scene.light
+    ? 'text-xs font-medium text-subtle underline-offset-4 transition-colors hover:text-muted hover:underline'
+    : 'text-xs font-medium text-on-ink-subtle underline-offset-4 transition-colors hover:text-on-ink-muted hover:underline'
+
   const btnPrimary =
-    'inline-flex items-center justify-center gap-1.5 rounded-full bg-primary px-8 py-3 text-sm font-semibold text-on-primary shadow-sm transition-all hover:bg-primary-hover hover:shadow-md enabled:hover:-translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0'
-  const btnGhost =
-    'inline-flex items-center justify-center rounded-full px-6 py-3 text-sm font-semibold text-on-ink-muted transition-colors hover:text-on-ink'
-  const inputBase =
-    'w-full rounded-xl border border-ink-border bg-ink-elevated px-4 py-3 text-center text-base text-on-ink placeholder:text-on-ink-subtle transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30'
+    'inline-flex items-center justify-center gap-1.5 rounded-full bg-primary px-9 py-3.5 text-sm font-semibold text-on-primary shadow-md shadow-primary/20 transition-all hover:bg-primary-hover enabled:hover:-translate-y-0.5 enabled:hover:shadow-lg disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0'
   const eyebrow = 'text-xs font-semibold uppercase tracking-[0.22em] text-primary'
-  const heading = 'font-display uppercase leading-[1.03] text-on-ink'
+  const headingBase = 'font-display uppercase leading-[1.03]'
 
   const slide = REEL[reelIndex]
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-ink text-on-ink">
+    <main className="relative min-h-screen overflow-hidden bg-canvas">
+      {/* Lightening scrim — lifts the dark stage toward the feed's light theme. */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 bg-ink transition-opacity duration-[1100ms] ease-out"
+        style={{ opacity: scene.scrim }}
+      />
       {/* Soft glow */}
-      <div aria-hidden className="pointer-events-none absolute left-1/2 top-1/3 h-[660px] w-[660px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary opacity-[0.16] blur-[150px]" />
-      <div aria-hidden className="pointer-events-none absolute left-1/2 top-1/4 h-[300px] w-[300px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-signal opacity-[0.10] blur-[130px]" />
+      <div
+        aria-hidden
+        className="pointer-events-none fixed left-1/2 top-1/3 h-[680px] w-[680px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary blur-[150px] transition-opacity duration-1000"
+        style={{ opacity: scene.light ? 0.13 : 0.2 }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none fixed left-1/2 top-1/4 h-[320px] w-[320px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-signal blur-[130px] transition-opacity duration-1000"
+        style={{ opacity: scene.light ? 0.06 : 0.1 }}
+      />
 
       {/* Preview-only banner (public /preview route; ADR-068, torn down at launch). */}
       {preview && (
@@ -225,10 +259,10 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
       {/* Preview end-state — submit can't redirect without auth, so show completion. */}
       {preview && previewDone && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6">
-          <div className="w-full max-w-sm rounded-2xl border border-ink-border bg-ink-elevated p-7 text-center shadow-lg">
+          <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-7 text-center shadow-lg">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary-bg text-2xl text-primary-strong">✓</div>
-            <h2 className="mt-4 text-xl font-bold text-on-ink">That&rsquo;s the whole sequence.</h2>
-            <p className="mt-2 text-sm leading-relaxed text-on-ink-muted">
+            <h2 className="mt-4 text-xl font-bold text-text">Welcome in, Founder.</h2>
+            <p className="mt-2 text-sm leading-relaxed text-muted">
               In the real induction this writes your profile + intent and drops you into Circles.
               Here it just stops — nothing was saved.
             </p>
@@ -239,7 +273,7 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
                 setReelIndex(0)
                 setOaths({ unfinished: false, report: false, build: false })
               }}
-              className={`${btnGhost} mt-5 w-full border border-ink-border`}
+              className="mt-5 w-full rounded-full border border-border px-6 py-3 text-sm font-semibold text-muted transition-colors hover:text-text"
             >
               Run it again
             </button>
@@ -252,25 +286,25 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
         <header className="flex items-center justify-between pt-8">
           <div className="flex items-center gap-2">
             <div className="h-7 w-7 rounded-lg bg-primary" />
-            <span className="font-display text-lg uppercase tracking-tight text-on-ink">Frequency</span>
+            <span className={`font-display text-lg uppercase tracking-tight transition-colors ${tText}`}>Frequency</span>
           </div>
-          <span className="rounded-full border border-ink-border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-on-ink-subtle">Beta</span>
+          <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest transition-colors ${scene.light ? 'border-border-strong text-subtle' : 'border-ink-border text-on-ink-subtle'}`}>Beta</span>
         </header>
         <div className="mt-6 flex items-center gap-1.5">
           {Array.from({ length: BEAT_COUNT }).map((_, i) => (
-            <span key={i} className={`h-1 flex-1 rounded-full transition-colors duration-500 ${i <= beat ? 'bg-primary' : 'bg-on-ink/15'}`} />
+            <span key={i} className={`h-1 flex-1 rounded-full transition-colors duration-700 ${i <= beat ? 'bg-primary' : scene.light ? 'bg-border-strong' : 'bg-on-ink/15'}`} />
           ))}
         </div>
 
         {/* Centered stage */}
         <div className="flex flex-1 items-center justify-center py-10">
-          <div key={beat} className="w-full animate-[slideUp_0.45s_ease-out] text-center">
+          <div key={beat} className="w-full animate-[slideUp_0.5s_ease-out] text-center">
             {/* ── Beat 0: The Oath ── */}
             {beat === 0 && (
               <div>
                 <p className={eyebrow}>{VERA.oath.eyebrow}</p>
-                <h1 className={`mt-3 text-3xl sm:text-4xl ${heading}`}>{VERA.oath.heading}</h1>
-                <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-on-ink-muted">{VERA.oath.body}</p>
+                <h1 className={`mt-3 text-4xl sm:text-5xl ${headingBase} ${tText}`}>{VERA.oath.heading}</h1>
+                <p className={`mx-auto mt-4 max-w-md text-sm leading-relaxed ${tMuted}`}>{VERA.oath.body}</p>
 
                 <div className="mt-8 space-y-3 text-left">
                   {BETA_OATHS.map((o) => (
@@ -289,9 +323,11 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
                   ))}
                 </div>
 
-                <button disabled={!allOathsChecked || accepting} onClick={passOath} className={`${btnPrimary} mt-8`}>
-                  {accepting ? 'One sec…' : VERA.oath.cta}
-                </button>
+                <div className="mt-9 flex flex-col items-center">
+                  <button disabled={!allOathsChecked || accepting} onClick={passOath} className={btnPrimary}>
+                    {accepting ? 'One sec…' : VERA.oath.cta}
+                  </button>
+                </div>
               </div>
             )}
 
@@ -299,9 +335,12 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
             {beat === 1 && (
               <div>
                 <p className={eyebrow}>{VERA.intro.eyebrow}</p>
-                <h1 className={`mt-3 text-4xl sm:text-5xl ${heading}`}>{VERA.intro.heading}</h1>
-                <p className="mx-auto mt-5 max-w-md text-base leading-relaxed text-on-ink-muted">{VERA.intro.body}</p>
-                <button onClick={() => setBeat(2)} className={`${btnPrimary} mt-8`}>{VERA.intro.cta}</button>
+                <h1 className={`mt-3 text-4xl sm:text-5xl ${headingBase} ${tText}`}>{VERA.intro.heading}</h1>
+                <p className={`mx-auto mt-5 max-w-md text-base leading-relaxed ${tMuted}`}>{VERA.intro.body}</p>
+                <div className="mt-9 flex flex-col items-center gap-3">
+                  <button onClick={() => setBeat(2)} className={btnPrimary}>{VERA.intro.cta}</button>
+                  <button onClick={() => setBeat(0)} className={backLink}>Back</button>
+                </div>
               </div>
             )}
 
@@ -309,16 +348,16 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
             {beat === 2 && (
               <div>
                 <p className={eyebrow}>{VERA.tour.eyebrow}</p>
-                <h1 className={`mt-3 text-2xl sm:text-3xl ${heading}`}>{VERA.tour.heading}</h1>
+                <h1 className={`mt-3 text-3xl sm:text-4xl ${headingBase} ${tText}`}>{VERA.tour.heading}</h1>
 
                 {/* Crossfading stage */}
-                <div className="relative mx-auto mt-7 h-[420px] w-full max-w-[300px]">
+                <div className="relative mx-auto mt-7 h-[400px] w-full max-w-[300px]">
                   {REEL.map((s, i) => {
                     const active = i === reelIndex
                     return (
                       <div
                         key={i}
-                        className={`absolute inset-0 flex items-center justify-center transition-opacity duration-700 ${active ? 'opacity-100' : 'opacity-0'} ${active ? '' : 'pointer-events-none'}`}
+                        className={`absolute inset-0 flex items-center justify-center transition-opacity duration-700 ${active ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
                       >
                         {s.kind === 'render'
                           ? (() => {
@@ -334,10 +373,10 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
                   })}
                 </div>
 
-                {/* Caption */}
-                <div className="mx-auto mt-5 min-h-[66px] max-w-sm">
-                  <p className="text-base font-semibold text-on-ink">{slide.title}</p>
-                  <p className="mt-1 text-sm leading-relaxed text-on-ink-muted">{slide.line}</p>
+                {/* Caption — pronounced + warm */}
+                <div className="mx-auto mt-6 min-h-[84px] max-w-sm">
+                  <p className={`text-xl font-bold ${tText}`}>{slide.title}</p>
+                  <p className={`mt-1.5 text-base leading-relaxed ${tMuted}`}>{slide.line}</p>
                 </div>
 
                 {/* Dots */}
@@ -347,14 +386,14 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
                       key={i}
                       aria-label={`Show ${s.title}`}
                       onClick={() => setReelIndex(i)}
-                      className={`h-2 rounded-full transition-all ${i === reelIndex ? 'w-6 bg-primary' : 'w-2 bg-on-ink/20 hover:bg-on-ink/40'}`}
+                      className={`h-2 rounded-full transition-all ${i === reelIndex ? 'w-6 bg-primary' : `w-2 ${scene.light ? 'bg-border-strong' : 'bg-on-ink/20'} hover:bg-primary/60`}`}
                     />
                   ))}
                 </div>
 
-                <div className="mt-7 flex items-center justify-center gap-2">
-                  <button onClick={() => setBeat(1)} className={btnGhost}>Back</button>
+                <div className="mt-8 flex flex-col items-center gap-3">
                   <button onClick={() => setBeat(3)} className={btnPrimary}>{VERA.tour.cta}</button>
+                  <button onClick={() => setBeat(1)} className={backLink}>Back</button>
                 </div>
               </div>
             )}
@@ -362,8 +401,8 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
             {/* ── Beat 3: Identity ── */}
             {beat === 3 && (
               <div>
-                <h1 className={`text-3xl sm:text-4xl ${heading}`}>{VERA.identity.heading}</h1>
-                <p className="mx-auto mt-3 max-w-md text-sm text-on-ink-muted">{VERA.identity.body}</p>
+                <h1 className={`text-3xl sm:text-4xl ${headingBase} ${tText}`}>{VERA.identity.heading}</h1>
+                <p className={`mx-auto mt-3 max-w-md text-sm ${tMuted}`}>{VERA.identity.body}</p>
 
                 <div className="mt-7 flex flex-col items-center gap-5">
                   <button type="button" onClick={() => fileInputRef.current?.click()} className="group relative">
@@ -386,10 +425,10 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
                       }}
                       placeholder="Your name"
                       autoFocus
-                      className={`${inputBase} text-lg`}
+                      className={`${inputCls} text-lg`}
                     />
                     <div className="relative">
-                      <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-base text-on-ink-subtle">@</span>
+                      <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-base text-subtle">@</span>
                       <input
                         type="text"
                         value={handle}
@@ -398,10 +437,10 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
                           setHandle(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))
                         }}
                         placeholder="handle"
-                        className={`${inputBase} px-9`}
+                        className={`${inputCls} px-9`}
                       />
                       <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm leading-none">
-                        {handleStatus === 'checking' && <span className="animate-pulse text-on-ink-subtle">•••</span>}
+                        {handleStatus === 'checking' && <span className="animate-pulse text-subtle">•••</span>}
                         {handleStatus === 'available' && <span className="text-success">✓</span>}
                         {handleStatus === 'taken' && <span className="text-danger">✗</span>}
                       </span>
@@ -410,11 +449,11 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
                   </div>
                 </div>
 
-                <div className="mt-8 flex items-center justify-center gap-2">
-                  <button onClick={() => setBeat(2)} className={btnGhost}>Back</button>
+                <div className="mt-8 flex flex-col items-center gap-3">
                   <button disabled={!identityValid || uploading} onClick={advanceFromIdentity} className={btnPrimary}>
                     {uploading ? 'Uploading…' : 'Continue'}
                   </button>
+                  <button onClick={() => setBeat(2)} className={backLink}>Back</button>
                 </div>
               </div>
             )}
@@ -422,14 +461,14 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
             {/* ── Beat 4: Place + intent ── */}
             {beat === 4 && (
               <div>
-                <h1 className={`text-3xl sm:text-4xl ${heading}`}>{VERA.place.heading}</h1>
-                <p className="mx-auto mt-3 max-w-md text-sm text-on-ink-muted">{VERA.place.body}</p>
+                <h1 className={`text-3xl sm:text-4xl ${headingBase} ${tText}`}>{VERA.place.heading}</h1>
+                <p className={`mx-auto mt-3 max-w-md text-sm ${tMuted}`}>{VERA.place.body}</p>
 
                 <div className="mx-auto mt-7 w-full max-w-xs space-y-4">
                   {regions.length === 0 ? (
-                    <p className="rounded-xl border border-dashed border-ink-border px-4 py-5 text-sm text-on-ink-subtle">No regions yet — we&rsquo;ll sort you later.</p>
+                    <p className="rounded-xl border border-dashed border-border px-4 py-5 text-sm text-subtle">No regions yet — we&rsquo;ll sort you later.</p>
                   ) : (
-                    <select value={regionId} onChange={(e) => setRegionId(e.target.value)} className={inputBase}>
+                    <select value={regionId} onChange={(e) => setRegionId(e.target.value)} className={inputCls}>
                       <option value="">Where are you?</option>
                       {regions.map((r) => (
                         <option key={r.id} value={r.id}>{r.name}</option>
@@ -438,20 +477,27 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
                   )}
 
                   <div className="text-left">
-                    <p className="mb-2 text-center text-sm font-medium text-on-ink">{VERA.place.intentLabel}</p>
+                    <p className={`mb-2 text-center text-sm font-medium ${tText}`}>{VERA.place.intentLabel}</p>
                     <textarea
                       value={intent}
                       onChange={(e) => setIntent(e.target.value.slice(0, 500))}
                       placeholder={VERA.place.intentPlaceholder}
                       rows={4}
-                      className={`${inputBase} resize-none text-left`}
+                      className={`${inputCls} resize-none text-left`}
                     />
                   </div>
+
+                  <select value={heardAbout} onChange={(e) => setHeardAbout(e.target.value)} className={inputCls}>
+                    <option value="">How did you hear about us?</option>
+                    {HEARD_ABOUT.map((h) => (
+                      <option key={h} value={h}>{h}</option>
+                    ))}
+                  </select>
                 </div>
 
-                <div className="mt-8 flex items-center justify-center gap-2">
-                  <button onClick={() => setBeat(3)} className={btnGhost}>Back</button>
+                <div className="mt-8 flex flex-col items-center gap-3">
                   <button onClick={() => setBeat(5)} className={btnPrimary}>Continue</button>
+                  <button onClick={() => setBeat(3)} className={backLink}>Back</button>
                 </div>
               </div>
             )}
@@ -460,26 +506,26 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
             {beat === 5 && (
               <div>
                 <p className={eyebrow}>{VERA.enter.eyebrow}</p>
-                <h1 className={`mt-3 text-3xl sm:text-4xl ${heading}`}>{VERA.enter.heading}</h1>
-                <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-on-ink-muted">{VERA.enter.body}</p>
+                <h1 className={`mt-3 text-3xl sm:text-4xl ${headingBase} ${tText}`}>{VERA.enter.heading}</h1>
+                <p className={`mx-auto mt-3 max-w-md text-sm leading-relaxed ${tMuted}`}>{VERA.enter.body}</p>
 
-                <div className="mx-auto mt-7 flex max-w-xs flex-col items-center gap-3 rounded-2xl border border-ink-border bg-ink-elevated p-6">
+                <div className="mx-auto mt-7 flex max-w-xs flex-col items-center gap-3 rounded-2xl border border-border bg-surface p-6 shadow-sm">
                   {renderAvatar('lg')}
                   <div>
-                    <p className="text-lg font-semibold text-on-ink">{displayName || 'You'}</p>
-                    <p className="text-sm text-on-ink-muted">@{handle}</p>
+                    <p className="text-lg font-semibold text-text">{displayName || 'You'}</p>
+                    <p className="text-sm text-muted">@{handle}</p>
                   </div>
-                  {regionId && <p className="text-xs text-on-ink-subtle">{regions.find((r) => r.id === regionId)?.name}</p>}
-                  {intent.trim() && <p className="mt-1 max-w-[16rem] text-sm italic text-on-ink-muted">“{intent.trim()}”</p>}
+                  {regionId && <p className="text-xs text-subtle">{regions.find((r) => r.id === regionId)?.name}</p>}
+                  {intent.trim() && <p className="mt-1 max-w-[16rem] text-sm italic text-muted">“{intent.trim()}”</p>}
                 </div>
 
                 {submitError && <p className="mt-4 text-sm text-danger">{submitError}</p>}
 
-                <div className="mt-8 flex items-center justify-center gap-2">
-                  <button onClick={() => setBeat(4)} className={btnGhost}>Back</button>
+                <div className="mt-8 flex flex-col items-center gap-3">
                   <button onClick={submit} disabled={submitting} className={btnPrimary}>
                     {submitting ? 'Stepping in…' : VERA.enter.cta}
                   </button>
+                  <button onClick={() => setBeat(4)} className={backLink}>Back</button>
                 </div>
               </div>
             )}

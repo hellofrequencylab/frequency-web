@@ -15,9 +15,20 @@ export type OathId = 'unfinished' | 'report' | 'build'
 
 /** The gate. All three must be checked to enter. Single source of truth. */
 export const BETA_OATHS: { id: OathId; label: string }[] = [
-  { id: 'unfinished', label: 'I know this is unfinished. Things will break.' },
-  { id: 'report', label: "When it breaks, I'll tell you — not just leave." },
-  { id: 'build', label: "I'm here to build this, not browse it." },
+  { id: 'unfinished', label: 'I agree to break things on this website' },
+  { id: 'report', label: 'I agree to submit bug reports and screenshots' },
+  { id: 'build', label: 'I agree to be a Frequency Web Founder' },
+]
+
+/** "How did you hear about us?" — captured on the intake into meta.beta.heard_about. */
+export const HEARD_ABOUT = [
+  'A friend or member',
+  'Instagram',
+  'X / Twitter',
+  'TikTok',
+  'An event or meetup',
+  'Search',
+  'Somewhere else',
 ]
 
 /**
@@ -32,40 +43,22 @@ export type ReelSlide =
 
 export const REEL: ReelSlide[] = [
   {
-    kind: 'image',
-    src: '/images/site/community-1.jpg',
-    title: 'This one is real',
-    line: "Not another feed. A community you can actually walk into.",
-  },
-  {
     kind: 'render',
     render: 'feed',
     title: 'The Feed',
-    line: "The pulse — what's happening near you. No algorithm deciding what you'd rage at.",
+    line: 'The pulse of your people — what’s happening near you, right now. No algorithm. No outrage. Just real life.',
   },
   {
     kind: 'render',
     render: 'circles',
     title: 'Circles',
-    line: 'Small rooms around one thing you care about. Where you stop lurking.',
-  },
-  {
-    kind: 'image',
-    src: '/images/site/moonlight-1.jpg',
-    title: 'Then you show up',
-    line: 'The screen is just how we find each other. The point is out here.',
+    line: 'Small rooms around the things you love. This is where strangers turn into your people.',
   },
   {
     kind: 'render',
     render: 'events',
     title: 'Events',
-    line: 'Close the laptop. Meeting in the real world is the whole thing.',
-  },
-  {
-    kind: 'image',
-    src: '/images/site/lab-lounge.jpg',
-    title: 'And you belong',
-    line: 'A door with your name on it, and people who notice when you walk in.',
+    line: 'Then you close the laptop and show up. The whole point is meeting for real.',
   },
 ]
 
@@ -73,36 +66,36 @@ export const REEL: ReelSlide[] = [
 export const VERA = {
   oath: {
     eyebrow: 'Before you come in',
-    heading: "This isn't a product yet. It's a bet.",
-    body: "And you're early — earlier than almost anyone. Check these like you mean them. If you can't, close the tab; no hard feelings either way.",
+    heading: "This isn't a product yet. It's a promise.",
+    body: 'A promise that the people near you are worth finding — and that gathering can feel good again. We’re building that in the open, and you’re one of the very first. Come help us make it real.',
     cta: "I'm in.",
   },
   intro: {
-    eyebrow: 'Welcome, founder',
-    heading: "You're not a user here. You're a founder.",
-    body: "The feed hollowed everyone out. We're building the thing that takes the attention back — a real place, with real people, near you. You got here while the paint's still wet. Let's go.",
+    eyebrow: 'Welcome, Founder',
+    heading: "You're not a user. You're a Founder.",
+    body: 'Everyone else shows up once it’s polished and easy. Not you. You’re here while it’s raw — shaping the room the whole community will walk into. Let’s build something worth belonging to.',
     cta: "Let's go",
   },
   identity: {
     heading: 'So — who are you?',
-    body: 'Name and handle are how the community knows you. The photo is optional, but a face goes a long way in here.',
+    body: 'Put a name and a face to it. This is how your people will know you in here.',
   },
   place: {
-    heading: 'Where are you, and what are you after?',
-    body: "Region connects you to the people nearest you. The second one's the real question — and there are no wrong answers.",
-    intentLabel: 'What are you actually hoping for here?',
-    intentPlaceholder: "Be honest — it helps me point you at the right people.",
+    heading: 'Where are you?',
+    body: 'We’ll connect you with the Founders closest to you — and learn what you’re hoping to find.',
+    intentLabel: 'What are you hoping to find here?',
+    intentPlaceholder: 'Say it plainly — it helps us point you at your people.',
   },
   tour: {
     eyebrow: "Here's the place",
-    heading: 'Three rooms. That’s the whole thing.',
-    body: "Everything else is detail. Get these and you get Frequency.",
-    cta: 'I see it',
+    heading: 'Three rooms. One real community.',
+    body: 'Everything else is detail. Get these and you get Frequency.',
+    cta: 'Love it',
   },
   enter: {
     eyebrow: 'Last step',
-    heading: 'Ready to build?',
-    body: "That's everything. Step in — I'll drop you straight into Circles so you're not standing in an empty room.",
+    heading: 'Ready, Founder?',
+    body: 'Step in — we’ll drop you straight into Circles, so you land in a room full of people instead of an empty page.',
     cta: 'Enter Frequency',
   },
 } as const
