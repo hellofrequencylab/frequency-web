@@ -145,7 +145,9 @@ did).
 ## Phased rollout
 
 1. **Support bot over the help center.** Narrow, highly cacheable, copilot-first.
-   Stand up the AI core + usage ledger + caps here.
+   Stand up the AI core + usage ledger + caps here. Full build spec — RAG search,
+   gte-small embeddings, the living-docs loop — in [SUPPORT-SYSTEM.md](SUPPORT-SYSTEM.md)
+   (ADR-067); it shares the kernel with Vera ([AI-VERA.md](AI-VERA.md), ADR-066).
 2. **Encouragement** (Batch + Haiku). Proves the proactive/cron path and the cost
    model at volume.
 3. **Host copilot.** First revenue-gated surface.

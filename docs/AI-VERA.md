@@ -197,8 +197,8 @@ is her fallback.
 ## 8. Help & support integration (RAG)
 
 Vera is the **voice of the help center**, not a separate bot. This is the contextual-help surface
-and it reuses the help-search architecture (see [HELP-CENTER.md](HELP-CENTER.md) and the AI-search
-plan in [AI-STRATEGY.md](AI-STRATEGY.md)):
+and it reuses the help-desk architecture — full spec in [SUPPORT-SYSTEM.md](SUPPORT-SYSTEM.md)
+(ADR-067), on the docs-as-code help center ([HELP-CENTER.md](HELP-CENTER.md)):
 
 - **Grounded + cited:** she answers **only** from retrieved `content/help` chunks (pgvector RAG)
   and links her sources. No retrieved chunk ⇒ no answer.
@@ -208,8 +208,8 @@ plan in [AI-STRATEGY.md](AI-STRATEGY.md)):
   priority order — **instant article search (free)** → **ask Vera (rationed)** → **talk to a human**.
   Help is always one tap; a person is always one tap past that.
 - **The flywheel:** every Vera help query + its confidence is logged; recurring low-confidence
-  questions become the to-write list for the living-docs loop (the support-system plan). Real
-  questions write the docs.
+  questions become the to-write list for the living-docs loop
+  ([SUPPORT-SYSTEM.md §6](SUPPORT-SYSTEM.md)). Real questions write the docs.
 
 ---
 

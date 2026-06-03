@@ -1445,6 +1445,47 @@ unchanged: bounded typed tools, copilot-first, caps + kill switch, crisis→huma
 
 ---
 
+## ADR-067: Support system — AI/RAG search and a living-docs loop on the docs-as-code help center
+
+**Status:** Accepted (design) · 2026-06-03 · builds on the docs-as-code help center
+([HELP-CENTER.md](HELP-CENTER.md)) + the docs router ([DOCS-PROTOCOL.md](DOCS-PROTOCOL.md)); runs on
+the AI kernel (ADR-041/028); Vera is the voice (ADR-066). Spec: [SUPPORT-SYSTEM.md](SUPPORT-SYSTEM.md).
+
+**Context:** We want a help desk that (a) lets members ask in natural language and get a trustworthy
+answer, (b) documents every feature/category, and (c) keeps itself current as the product changes,
+with **minimal ongoing management**. The help center already exists (docs-as-code, `featureKeys`
+drift signal, drift hooks + CI, `/sync-docs`, CHANGELOG), pgvector + the Claude SDK are present, and
+AI-STRATEGY already specs a RAG support bot — but search is substring-only, the drift signal only
+*nudges a human*, there's no measure of coverage, and **no embedding pipeline is built (only the
+`vector(384)` column).** We needed to lock the search approach, the embedding model, and the
+auto-update/review model before building.
+
+**Decision:**
+- **AI search = RAG over `content/help` on the shared `lib/ai/` kernel** — embed → retrieve →
+  Haiku answers **grounded only in retrieved chunks, with citations**, in Vera's voice,
+  confidence-gated to a human hand-off; a deterministic substring fallback is always available
+  (kill switch / over-budget / keyless safe). The "Ask Vera" tier of the support menu *is* this.
+- **Embeddings = gte-small via a Supabase Edge Function** (Transformers.js): 384-d (matches the
+  existing column), zero per-call cost, server-side, key-free — chosen over Voyage/OpenAI to stay
+  on the anti-lock-in + cost posture. Standardized platform-wide; the same model embeds index + query.
+- **A living-docs loop with PR-based staff review.** The `featureKeys` drift signal triggers an AI
+  doc-writer that drafts the article + CHANGELOG line from the diff and opens/updates a **PR with a
+  staff review checklist**; staff approve in GitHub; merge re-embeds. **Nothing auto-publishes**
+  (ADR-028 copilot-first, applied to docs). An in-product Studio review queue is a deliberate later
+  option, not the first build.
+- **Coverage is measured**, not vibes: a canonical feature-key registry + a coverage matrix (every
+  key → a published, fresh article; flag missing/stale), and the demand side logs every AI query +
+  confidence (`ai_help_queries`) so recurring unanswered questions become the to-write list.
+
+**Consequences:** New data: a `help_chunks` table + `match_help_chunks` RPC + an `ai_help_queries`
+log + a gte-small Edge Function + a `pnpm help:index` CI step (the missing embedding pipeline). The
+`lib/ai/` kernel and the RAG help bot are the **shared first builds with Vera** (ADR-066 Phases A–B)
+— this and the Vera initiative are one critical path, not two. All ADR-028 guardrails apply
+unchanged. Phase 0 (feature-key registry + coverage matrix + the support-menu launcher + backfilled
+articles) needs **no AI** and is the highest-leverage first step.
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 
