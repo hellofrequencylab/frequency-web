@@ -12,6 +12,8 @@ import { AchievementToastContainer } from '@/components/achievement-toast'
 import { ZapToastContainer } from '@/components/zap-toast'
 import { PresenceHeartbeat } from '@/components/presence/heartbeat'
 import { PushRegistration } from '@/components/push/registration'
+import { SupportLauncher } from '@/components/support/support-launcher'
+import { getSearchIndex } from '@/lib/help/content'
 
 // Authenticated app layout. Wraps Feed, Groups, Events, Admin.
 // Pages outside this group (onboarding, settings, sign-in, /people) render
@@ -52,6 +54,10 @@ export default async function MainLayout({
   // items are usable vs. muted. Falls back to {} (code defaults) on error.
   const permissions = await getAreaPermissions()
 
+  // Help index for the app-wide support launcher (docs/SUPPORT-SYSTEM.md §1).
+  // Small + read from local Markdown; cheap to load with the shell.
+  const helpIndex = await getSearchIndex()
+
   // Right sidebar streams in independently. Doesn't block page render
   const sidebar = (
     <Suspense fallback={<RightSidebarSkeleton />}>
@@ -83,6 +89,7 @@ export default async function MainLayout({
       <ZapToastContainer />
       <PresenceHeartbeat />
       <PushRegistration />
+      <SupportLauncher index={helpIndex} />
     </AppShell>
   )
 }
