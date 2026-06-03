@@ -1,11 +1,9 @@
 'use client'
 
 // Beta induction — the founding-cohort flow (ADR-068, docs/BETA-INDUCTION.md).
-// TEMPORARY: deleted at launch. A centered, cinematic sequence that starts in a
-// dark stage and *lightens beat by beat* until it lands on the feed's light
-// theme — a vector reel slides through the core rooms, the oath gates it, and
-// lightweight capture is woven in. Everything is centered (logo on top); a warm
-// amber glow carries the fade. Scripted Vera (hot register). Handle-check +
+// TEMPORARY: deleted at launch. A centered, cinematic sequence on a warm light
+// stage (Hook-style: warm canvas + soft amber glow), content always centered
+// with a top/bottom buffer. Scripted Vera (hot register). Handle-check +
 // avatar-upload mirror the legacy form. The `preview` prop mocks auth-dependent
 // calls for the public demo.
 
@@ -34,19 +32,7 @@ const HANDLE_RE = /^[a-z0-9_]+$/
 const RENDERS = { feed: FeedRender, circles: CirclesRender, events: EventsRender }
 const BEAT_COUNT = 6 // 0 oath · 1 intro · 2 reel · 3 identity · 4 place · 5 enter
 
-// Per-beat scene: a dark scrim lifts each step until the feed's light theme
-// shows through; a warm amber glow intensifies in the dark beats so the
-// midtones read as a sunrise, not gray mud. Text flips light→dark in step.
-const SCENES = [
-  { scrim: 1.0, light: false }, // 0 oath  — darkest
-  { scrim: 0.86, light: false }, // 1 intro
-  { scrim: 0.64, light: false }, // 2 reel
-  { scrim: 0.34, light: true }, // 3 identity
-  { scrim: 0.14, light: true }, // 4 place
-  { scrim: 0.0, light: true }, // 5 enter — feed theme (light)
-] as const
-
-// The Frequency wordmark, filled with currentColor so it adapts to each scene.
+// The Frequency wordmark, filled with currentColor so it inherits the text color.
 const LOGO_MASK: React.CSSProperties = {
   backgroundColor: 'currentColor',
   WebkitMaskImage: "url('/frequency-logo.png')",
@@ -59,8 +45,17 @@ const LOGO_MASK: React.CSSProperties = {
   maskSize: 'contain',
 }
 
+// No separator — "Daniel Tyack" → "danieltyack" (no dashes or underscores).
 function suggestHandle(name: string): string {
-  return name.toLowerCase().trim().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '').slice(0, 30)
+  return name.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30)
+}
+
+function ArrowRight() {
+  return (
+    <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.25" aria-hidden>
+      <path d="M4 10h11M11 5l5 5-5 5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
 }
 
 export default function BetaInduction({ userId, userEmail, initialHandle, regions, preview = false }: Props) {
@@ -86,6 +81,8 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
 
   // Place
   const [regionId, setRegionId] = useState('')
+  const [regionQuery, setRegionQuery] = useState('')
+  const [regionOpen, setRegionOpen] = useState(false)
   const [intent, setIntent] = useState('')
   const [heardAbout, setHeardAbout] = useState('')
 
@@ -117,8 +114,7 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
     }
   }, [handle, initialHandle, userId, preview])
 
-  // Auto-advance the reel (paused under prefers-reduced-motion). Restarts on
-  // manual navigation so a slide you jumped to gets a full dwell.
+  // Auto-advance the reel (paused under prefers-reduced-motion).
   useEffect(() => {
     if (beat !== 2) return
     if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
@@ -135,6 +131,10 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
     ? check.result
     : 'checking'
   const identityValid = displayName.trim().length > 0 && formatOk && handleStatus === 'available'
+
+  const regionMatches = regions
+    .filter((r) => r.name.toLowerCase().includes(regionQuery.trim().toLowerCase()))
+    .slice(0, 6)
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -225,56 +225,27 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
     )
   }
 
-  // ── Scene-aware tokens ───────────────────────────────────────────────────────
-  const scene = SCENES[beat]
-  const tText = scene.light ? 'text-text' : 'text-on-ink'
-  const tMuted = scene.light ? 'text-muted' : 'text-on-ink-muted'
-  const tSubtle = scene.light ? 'text-subtle' : 'text-on-ink-subtle'
-  const inputCls = scene.light
-    ? 'w-full rounded-2xl border border-border bg-surface px-5 py-4 text-center text-lg text-text placeholder:text-subtle transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25'
-    : 'w-full rounded-2xl border border-ink-border bg-ink-elevated px-5 py-4 text-center text-lg text-on-ink placeholder:text-on-ink-subtle transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30'
-  const backLink = scene.light
-    ? 'text-sm font-medium text-subtle underline-offset-4 transition-colors hover:text-muted hover:underline'
-    : 'text-sm font-medium text-on-ink-subtle underline-offset-4 transition-colors hover:text-on-ink-muted hover:underline'
-
+  // ── Styles (warm light throughout) ───────────────────────────────────────────
+  const inputCls =
+    'w-full rounded-2xl border border-border bg-surface px-5 py-4 text-base text-text placeholder:text-subtle shadow-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25'
+  const backLink = 'text-sm font-medium text-subtle underline-offset-4 transition-colors hover:text-muted hover:underline'
   const btnPrimary =
-    'inline-flex items-center justify-center gap-1.5 rounded-full bg-primary px-10 py-4 text-base font-semibold text-on-primary shadow-lg shadow-primary/25 transition-all hover:bg-primary-hover enabled:hover:-translate-y-0.5 enabled:hover:shadow-xl disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0'
+    'inline-flex items-center justify-center gap-2 rounded-full bg-primary px-10 py-4 text-base font-semibold text-on-primary shadow-lg shadow-primary/25 transition-all hover:bg-primary-hover enabled:hover:-translate-y-0.5 enabled:hover:shadow-xl disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0'
   const eyebrow = 'text-sm font-semibold uppercase tracking-[0.25em] text-primary'
-  const headingBase = 'font-display uppercase leading-[1.02]'
-  // Amber glow intensifies the darker the scene (sunrise, not mud).
-  const glowOpacity = 0.1 + scene.scrim * 0.2
+  const heading = 'font-display uppercase leading-[1.0] text-text'
 
   const slide = REEL[reelIndex]
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-canvas">
-      {/* Lightening scrim — lifts the dark stage toward the feed's light theme. */}
-      <div
-        aria-hidden
-        className="pointer-events-none fixed inset-0 bg-ink transition-opacity duration-[1100ms] ease-out"
-        style={{ opacity: scene.scrim }}
-      />
-      {/* Warm glows — stronger in the dark beats so the fade reads as sunrise. */}
-      <div
-        aria-hidden
-        className="pointer-events-none fixed left-1/2 top-[38%] h-[820px] w-[820px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary blur-[160px] transition-opacity duration-1000"
-        style={{ opacity: glowOpacity }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none fixed bottom-[-14%] left-1/2 h-[440px] w-[680px] -translate-x-1/2 rounded-full bg-primary blur-[150px] transition-opacity duration-1000"
-        style={{ opacity: glowOpacity * 0.6 }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none fixed left-1/2 top-1/4 h-[320px] w-[320px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-signal blur-[140px] transition-opacity duration-1000"
-        style={{ opacity: scene.light ? 0.05 : 0.09 }}
-      />
+    <main className="relative min-h-screen overflow-hidden bg-marketing-canvas">
+      {/* Soft warm glow (Hook-style), centered behind the content. */}
+      <div aria-hidden className="pointer-events-none fixed left-1/2 top-[42%] h-[760px] w-[760px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary opacity-[0.10] blur-[150px]" />
+      <div aria-hidden className="pointer-events-none fixed left-1/2 top-[20%] h-[360px] w-[520px] -translate-x-1/2 rounded-full bg-signal opacity-[0.05] blur-[150px]" />
 
       {/* Preview-only badge (subtle; public /preview route; ADR-068). */}
       {preview && (
         <div className="pointer-events-none fixed inset-x-0 top-3 z-50 flex justify-center">
-          <span className={`rounded-full px-3 py-1 text-[11px] font-medium backdrop-blur-sm transition-colors ${scene.light ? 'bg-black/5 text-subtle' : 'bg-white/10 text-on-ink-subtle'}`}>
+          <span className="rounded-full bg-black/5 px-3 py-1 text-[11px] font-medium text-subtle backdrop-blur-sm">
             Preview · nothing is saved
           </span>
         </div>
@@ -282,7 +253,7 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
 
       {/* Preview end-state — submit can't redirect without auth, so show completion. */}
       {preview && previewDone && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6">
           <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-7 text-center shadow-lg">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary-bg text-2xl text-primary-strong">✓</div>
             <h2 className="mt-4 text-xl font-bold text-text">Welcome in, Founder.</h2>
@@ -305,30 +276,31 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
         </div>
       )}
 
-      {/* Centered stage — logo, progress, and content, all centered in the viewport. */}
-      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 py-10">
-        <div role="img" aria-label="Frequency" className={`h-11 w-[210px] shrink-0 transition-colors ${tText}`} style={LOGO_MASK} />
-        <span className={`mt-2.5 text-[11px] font-bold uppercase tracking-[0.32em] transition-colors ${tSubtle}`}>Beta</span>
+      {/* Centered stage — content always vertically centered with a top/bottom buffer. */}
+      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 py-20">
+        <div role="img" aria-label="Frequency" className="h-11 w-[210px] shrink-0 text-text" style={LOGO_MASK} />
+        <span className="mt-2.5 text-[11px] font-bold uppercase tracking-[0.32em] text-subtle">Beta</span>
 
         <div className="mt-7 flex w-full max-w-sm items-center gap-1.5">
           {Array.from({ length: BEAT_COUNT }).map((_, i) => (
-            <span key={i} className={`h-1 flex-1 rounded-full transition-colors duration-700 ${i <= beat ? 'bg-primary' : scene.light ? 'bg-border-strong' : 'bg-on-ink/15'}`} />
+            <span key={i} className={`h-1 flex-1 rounded-full transition-colors duration-500 ${i <= beat ? 'bg-primary' : 'bg-border-strong'}`} />
           ))}
         </div>
 
-        <div key={beat} className="mt-9 w-full max-w-xl animate-[slideUp_0.5s_ease-out] text-center">
+        <div key={beat} className="mt-10 w-full animate-[slideUp_0.5s_ease-out] text-center">
           {/* ── Beat 0: The Oath ── */}
           {beat === 0 && (
-            <div>
+            <div className="mx-auto max-w-5xl">
               <p className={eyebrow}>{VERA.oath.eyebrow}</p>
-              <h1 className={`mt-4 text-5xl sm:text-6xl ${headingBase} ${tText}`}>{VERA.oath.heading}</h1>
-              <p className={`mx-auto mt-5 max-w-lg text-lg leading-relaxed ${tMuted}`}>{VERA.oath.body}</p>
+              <h1 className={`mt-4 text-6xl sm:text-7xl ${heading}`}>{VERA.oath.heading}</h1>
+              <p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-muted">{VERA.oath.body}</p>
 
-              <div className="mx-auto mt-8 max-w-md space-y-3 text-left">
+              {/* Three agreements in a row + the I'm in button, all in a line. */}
+              <div className="mt-10 flex flex-col items-stretch justify-center gap-3 md:flex-row">
                 {BETA_OATHS.map((o) => (
                   <label
                     key={o.id}
-                    className={`flex cursor-pointer items-center gap-3.5 rounded-2xl border p-4 transition-colors ${oaths[o.id] ? 'border-primary bg-primary/10' : 'border-ink-border bg-ink-elevated hover:border-on-ink-subtle'}`}
+                    className={`flex flex-1 cursor-pointer items-center gap-3 rounded-2xl border p-4 text-left transition-colors ${oaths[o.id] ? 'border-primary bg-primary/10' : 'border-border bg-surface hover:border-primary/40'}`}
                   >
                     <input
                       type="checkbox"
@@ -336,14 +308,12 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
                       onChange={(e) => setOaths((prev) => ({ ...prev, [o.id]: e.target.checked }))}
                       className="h-5 w-5 shrink-0 accent-primary"
                     />
-                    <span className={`text-base font-medium ${oaths[o.id] ? 'text-on-ink' : 'text-on-ink-muted'}`}>{o.label}</span>
+                    <span className={`text-sm font-medium ${oaths[o.id] ? 'text-text' : 'text-muted'}`}>{o.label}</span>
                   </label>
                 ))}
-              </div>
-
-              <div className="mt-9 flex justify-center">
-                <button disabled={!allOathsChecked || accepting} onClick={passOath} className={btnPrimary}>
+                <button disabled={!allOathsChecked || accepting} onClick={passOath} className={`${btnPrimary} md:self-stretch`}>
                   {accepting ? 'One sec…' : VERA.oath.cta}
+                  {!accepting && <ArrowRight />}
                 </button>
               </div>
             </div>
@@ -351,78 +321,79 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
 
           {/* ── Beat 1: Intro ── */}
           {beat === 1 && (
-            <div>
+            <div className="mx-auto max-w-3xl">
               <p className={eyebrow}>{VERA.intro.eyebrow}</p>
-              <h1 className={`mt-4 text-5xl sm:text-6xl ${headingBase} ${tText}`}>{VERA.intro.heading}</h1>
-              <p className={`mx-auto mt-5 max-w-lg text-lg leading-relaxed ${tMuted}`}>{VERA.intro.body}</p>
-              <div className="mt-9 flex flex-col items-center gap-3">
-                <button onClick={() => setBeat(2)} className={btnPrimary}>{VERA.intro.cta}</button>
+              <h1 className={`mt-4 text-6xl sm:text-7xl ${heading}`}>{VERA.intro.heading}</h1>
+              <p className="mx-auto mt-6 max-w-xl text-xl leading-relaxed text-muted">{VERA.intro.body}</p>
+              <div className="mt-10 flex flex-col items-center gap-3">
+                <button onClick={() => setBeat(2)} className={btnPrimary}>{VERA.intro.cta}<ArrowRight /></button>
                 <button onClick={() => setBeat(0)} className={backLink}>Back</button>
               </div>
             </div>
           )}
 
-          {/* ── Beat 2: The reel ── */}
+          {/* ── Beat 2: The reel — horizontal: render beside the copy + action ── */}
           {beat === 2 && (
-            <div>
+            <div className="mx-auto max-w-5xl">
               <p className={eyebrow}>{VERA.tour.eyebrow}</p>
-              <h1 className={`mt-3 text-4xl sm:text-5xl ${headingBase} ${tText}`}>{VERA.tour.heading}</h1>
+              <h1 className={`mt-3 text-5xl sm:text-6xl ${heading}`}>{VERA.tour.heading}</h1>
 
-              {/* Crossfading stage */}
-              <div className="relative mx-auto mt-6 h-[300px] w-full max-w-[240px]">
-                {REEL.map((s, i) => {
-                  const active = i === reelIndex
-                  return (
-                    <div
-                      key={i}
-                      className={`absolute inset-0 flex items-center justify-center transition-opacity duration-700 ${active ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-                    >
-                      {s.kind === 'render'
-                        ? (() => {
-                            const C = RENDERS[s.render]
-                            return <div className="w-full"><C animate={active} /></div>
-                          })()
-                        : (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={s.src} alt={s.title} className="h-full w-full rounded-3xl object-cover shadow-2xl ring-1 ring-on-ink/10" />
-                        )}
-                    </div>
-                  )
-                })}
-              </div>
+              <div className="mt-9 flex flex-col items-center gap-10 md:flex-row md:justify-center md:gap-14">
+                {/* Render stage */}
+                <div className="relative h-[300px] w-[240px] shrink-0">
+                  {REEL.map((s, i) => {
+                    const active = i === reelIndex
+                    return (
+                      <div
+                        key={i}
+                        className={`absolute inset-0 flex items-center justify-center transition-opacity duration-700 ${active ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                      >
+                        {s.kind === 'render'
+                          ? (() => {
+                              const C = RENDERS[s.render]
+                              return <div className="w-full"><C animate={active} /></div>
+                            })()
+                          : (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={s.src} alt={s.title} className="h-full w-full rounded-3xl object-cover shadow-2xl ring-1 ring-border" />
+                          )}
+                      </div>
+                    )
+                  })}
+                </div>
 
-              {/* Caption — pronounced + warm */}
-              <div className="mx-auto mt-5 min-h-[78px] max-w-md">
-                <p className={`text-2xl font-bold ${tText}`}>{slide.title}</p>
-                <p className={`mt-1.5 text-base leading-relaxed ${tMuted}`}>{slide.line}</p>
-              </div>
+                {/* Copy + dots + action */}
+                <div className="max-w-sm text-center md:text-left">
+                  <p className="text-3xl font-bold text-text">{slide.title}</p>
+                  <p className="mt-2 text-lg leading-relaxed text-muted">{slide.line}</p>
 
-              {/* Dots */}
-              <div className="flex items-center justify-center gap-2">
-                {REEL.map((s, i) => (
-                  <button
-                    key={i}
-                    aria-label={`Show ${s.title}`}
-                    onClick={() => setReelIndex(i)}
-                    className={`h-2 rounded-full transition-all ${i === reelIndex ? 'w-6 bg-primary' : `w-2 ${scene.light ? 'bg-border-strong' : 'bg-on-ink/20'} hover:bg-primary/60`}`}
-                  />
-                ))}
-              </div>
+                  <div className="mt-5 flex items-center justify-center gap-2 md:justify-start">
+                    {REEL.map((s, i) => (
+                      <button
+                        key={i}
+                        aria-label={`Show ${s.title}`}
+                        onClick={() => setReelIndex(i)}
+                        className={`h-2 rounded-full transition-all ${i === reelIndex ? 'w-6 bg-primary' : 'w-2 bg-border-strong hover:bg-primary/60'}`}
+                      />
+                    ))}
+                  </div>
 
-              <div className="mt-6 flex flex-col items-center gap-2.5">
-                <button onClick={() => setBeat(3)} className={btnPrimary}>{VERA.tour.cta}</button>
-                <button onClick={() => setBeat(1)} className={backLink}>Back</button>
+                  <div className="mt-7 flex flex-col items-center gap-3 md:flex-row md:items-center">
+                    <button onClick={() => setBeat(3)} className={btnPrimary}>{VERA.tour.cta}<ArrowRight /></button>
+                    <button onClick={() => setBeat(1)} className={backLink}>Back</button>
+                  </div>
+                </div>
               </div>
             </div>
           )}
 
           {/* ── Beat 3: Identity ── */}
           {beat === 3 && (
-            <div>
-              <h1 className={`text-4xl sm:text-5xl ${headingBase} ${tText}`}>{VERA.identity.heading}</h1>
-              <p className={`mx-auto mt-4 max-w-lg text-lg ${tMuted}`}>{VERA.identity.body}</p>
+            <div className="mx-auto max-w-xl">
+              <h1 className={`text-5xl sm:text-6xl ${heading}`}>{VERA.identity.heading}</h1>
+              <p className="mx-auto mt-4 max-w-lg text-lg text-muted">{VERA.identity.body}</p>
 
-              <div className="mt-7 flex flex-col items-center gap-5">
+              <div className="mt-8 flex flex-col items-center gap-5">
                 <button type="button" onClick={() => fileInputRef.current?.click()} className="group relative">
                   {renderAvatar()}
                   <span className="mt-2 block text-xs font-semibold text-primary group-hover:underline">
@@ -443,7 +414,7 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
                     }}
                     placeholder="Your name"
                     autoFocus
-                    className={`${inputCls} text-xl`}
+                    className={`${inputCls} text-center text-xl`}
                   />
                   <div className="relative">
                     <span className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-lg text-subtle">@</span>
@@ -455,7 +426,7 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
                         setHandle(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))
                       }}
                       placeholder="handle"
-                      className={`${inputCls} px-10`}
+                      className={`${inputCls} px-10 text-center`}
                     />
                     <span className="absolute right-5 top-1/2 -translate-y-1/2 text-sm leading-none">
                       {handleStatus === 'checking' && <span className="animate-pulse text-subtle">•••</span>}
@@ -467,9 +438,9 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
                 </div>
               </div>
 
-              <div className="mt-8 flex flex-col items-center gap-3">
+              <div className="mt-9 flex flex-col items-center gap-3">
                 <button disabled={!identityValid || uploading} onClick={advanceFromIdentity} className={btnPrimary}>
-                  {uploading ? 'Uploading…' : 'Continue'}
+                  {uploading ? 'Uploading…' : 'Continue'}{!uploading && <ArrowRight />}
                 </button>
                 <button onClick={() => setBeat(2)} className={backLink}>Back</button>
               </div>
@@ -478,30 +449,62 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
 
           {/* ── Beat 4: Place + intent ── */}
           {beat === 4 && (
-            <div>
-              <h1 className={`text-4xl sm:text-5xl ${headingBase} ${tText}`}>{VERA.place.heading}</h1>
-              <p className={`mx-auto mt-4 max-w-lg text-lg ${tMuted}`}>{VERA.place.body}</p>
+            <div className="mx-auto max-w-xl">
+              <h1 className={`text-5xl sm:text-6xl ${heading}`}>{VERA.place.heading}</h1>
+              <p className="mx-auto mt-4 max-w-lg text-lg text-muted">{VERA.place.body}</p>
 
-              <div className="mx-auto mt-7 w-full max-w-md space-y-4">
-                {regions.length === 0 ? (
-                  <p className="rounded-2xl border border-dashed border-border px-4 py-5 text-sm text-subtle">No regions yet — we&rsquo;ll sort you later.</p>
-                ) : (
-                  <select value={regionId} onChange={(e) => setRegionId(e.target.value)} className={inputCls}>
-                    <option value="">Where are you?</option>
-                    {regions.map((r) => (
-                      <option key={r.id} value={r.id}>{r.name}</option>
-                    ))}
-                  </select>
-                )}
+              <div className="mx-auto mt-8 w-full max-w-md space-y-4">
+                {/* Active region typeahead */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={regionQuery}
+                    onChange={(e) => {
+                      setRegionQuery(e.target.value)
+                      setRegionId('')
+                      setRegionOpen(true)
+                    }}
+                    onFocus={() => setRegionOpen(true)}
+                    onBlur={() => setTimeout(() => setRegionOpen(false), 150)}
+                    placeholder="Start typing your city or region…"
+                    className={inputCls}
+                    autoComplete="off"
+                  />
+                  {regionId && (
+                    <span className="pointer-events-none absolute right-5 top-1/2 -translate-y-1/2 text-success">✓</span>
+                  )}
+                  {regionOpen && regionMatches.length > 0 && (
+                    <ul className="absolute z-20 mt-2 max-h-64 w-full overflow-auto rounded-2xl border border-border bg-surface text-left shadow-lg">
+                      {regionMatches.map((r) => (
+                        <li key={r.id}>
+                          <button
+                            type="button"
+                            onMouseDown={() => {
+                              setRegionId(r.id)
+                              setRegionQuery(r.name)
+                              setRegionOpen(false)
+                            }}
+                            className="block w-full px-5 py-3 text-left text-base text-text transition-colors hover:bg-primary-bg"
+                          >
+                            {r.name}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {regions.length === 0 && (
+                    <p className="mt-2 text-sm text-subtle">No regions yet — we&rsquo;ll sort you later.</p>
+                  )}
+                </div>
 
                 <div className="text-left">
-                  <p className={`mb-2 text-center text-base font-medium ${tText}`}>{VERA.place.intentLabel}</p>
+                  <p className="mb-2 text-center text-base font-medium text-text">{VERA.place.intentLabel}</p>
                   <textarea
                     value={intent}
                     onChange={(e) => setIntent(e.target.value.slice(0, 500))}
                     placeholder={VERA.place.intentPlaceholder}
                     rows={3}
-                    className={`${inputCls} resize-none text-left`}
+                    className={`${inputCls} resize-none`}
                   />
                 </div>
 
@@ -513,8 +516,8 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
                 </select>
               </div>
 
-              <div className="mt-8 flex flex-col items-center gap-3">
-                <button onClick={() => setBeat(5)} className={btnPrimary}>Continue</button>
+              <div className="mt-9 flex flex-col items-center gap-3">
+                <button onClick={() => setBeat(5)} className={btnPrimary}>Continue<ArrowRight /></button>
                 <button onClick={() => setBeat(3)} className={backLink}>Back</button>
               </div>
             </div>
@@ -522,12 +525,12 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
 
           {/* ── Beat 5: Enter ── */}
           {beat === 5 && (
-            <div>
+            <div className="mx-auto max-w-xl">
               <p className={eyebrow}>{VERA.enter.eyebrow}</p>
-              <h1 className={`mt-4 text-4xl sm:text-5xl ${headingBase} ${tText}`}>{VERA.enter.heading}</h1>
-              <p className={`mx-auto mt-4 max-w-lg text-lg leading-relaxed ${tMuted}`}>{VERA.enter.body}</p>
+              <h1 className={`mt-4 text-5xl sm:text-6xl ${heading}`}>{VERA.enter.heading}</h1>
+              <p className="mx-auto mt-4 max-w-lg text-lg leading-relaxed text-muted">{VERA.enter.body}</p>
 
-              <div className="mx-auto mt-7 flex max-w-sm flex-col items-center gap-3 rounded-2xl border border-border bg-surface p-6 shadow-sm">
+              <div className="mx-auto mt-8 flex max-w-sm flex-col items-center gap-3 rounded-2xl border border-border bg-surface p-6 shadow-sm">
                 {renderAvatar()}
                 <div>
                   <p className="text-lg font-semibold text-text">{displayName || 'You'}</p>
@@ -539,9 +542,9 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
 
               {submitError && <p className="mt-4 text-sm text-danger">{submitError}</p>}
 
-              <div className="mt-8 flex flex-col items-center gap-3">
+              <div className="mt-9 flex flex-col items-center gap-3">
                 <button onClick={submit} disabled={submitting} className={btnPrimary}>
-                  {submitting ? 'Stepping in…' : VERA.enter.cta}
+                  {submitting ? 'Stepping in…' : VERA.enter.cta}{!submitting && <ArrowRight />}
                 </button>
                 <button onClick={() => setBeat(4)} className={backLink}>Back</button>
               </div>
