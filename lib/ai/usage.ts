@@ -67,3 +67,30 @@ export async function featureOverBudget(feature: string): Promise<boolean> {
     return false
   }
 }
+
+/** Log an Ask Vera query + its outcome (demand side of the living-docs loop:
+ *  recurring deflected questions become the to-write list). Best-effort. */
+export async function logHelpQuery(input: {
+  question: string
+  confidence: number
+  answered: boolean
+  deflected: boolean
+  topCategory?: string | null
+  topSlug?: string | null
+  profileId?: string | null
+}): Promise<void> {
+  try {
+    const admin = createAdminClient() as unknown as SupabaseClient
+    await admin.from('ai_help_queries').insert({
+      question: input.question.slice(0, 500),
+      confidence: input.confidence,
+      answered: input.answered,
+      deflected: input.deflected,
+      top_category: input.topCategory ?? null,
+      top_slug: input.topSlug ?? null,
+      profile_id: input.profileId ?? null,
+    })
+  } catch {
+    /* logging is best-effort; never break the answer path */
+  }
+}
