@@ -288,16 +288,16 @@ export default function BetaInduction({ userId, userEmail, initialHandle, previe
         </div>
       )}
 
-      {/* Centered stage: Beta + logo top · content centered · progress bottom. */}
-      <div className="relative z-10 flex min-h-screen flex-col px-6 py-14">
-        <div className="flex shrink-0 flex-col items-center">
+      {/* Stage split in half: Beta+logo centered in the top half, content in the bottom half. */}
+      <div className="relative z-10 flex min-h-screen flex-col px-6 py-12">
+        <div className="flex flex-1 flex-col items-center justify-center">
           <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-subtle">Beta</span>
           <span className="brandmark-link mt-5 block">
             <span className="brandmark h-12 aspect-[963/170] sm:h-[52px]" aria-hidden />
           </span>
         </div>
 
-        <div className="flex flex-1 items-center justify-center py-6">
+        <div className="flex flex-1 items-center justify-center">
           <div key={beat} className="w-full animate-[slideUp_0.5s_ease-out] text-center">
             {/* ── Beat 0: The Oath ── */}
             {beat === 0 && (
