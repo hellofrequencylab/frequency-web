@@ -1,28 +1,25 @@
-// Feed render — the beta-induction "vector render" for the Feed (ADR-068).
-// TEMPORARY: deleted with the induction at launch. Disposable inline SVG.
+// Feed render — a 9:16 mini "feed page" (ADR-068). TEMPORARY, disposable SVG.
 
-import { RenderFrame, InnerCard, Bar } from './frame'
+import { RenderFrame, InnerCard, Bar, Label } from './frame'
 
-/** One stacked post card: avatar, two text lines, a reaction pill. */
-function PostCard({ y, accent = false }: { y: number; accent?: boolean }) {
+function Post({ y, name, meta, accent }: { y: number; name: string; meta: string; accent?: boolean }) {
   return (
     <>
-      <InnerCard x={24} y={y} w={312} h={104} />
-      {/* avatar */}
-      <g className="text-primary-bg">
-        <circle cx={52} cy={y + 30} r={16} fill="currentColor" />
+      <InnerCard x={18} y={y} w={252} h={120} />
+      <g className={accent ? 'text-primary' : 'text-primary-bg'}>
+        <circle cx={46} cy={y + 28} r={15} fill="currentColor" />
       </g>
-      <Bar x={78} y={y + 18} w={120} h={9} o={0.7} />
-      <Bar x={78} y={y + 34} w={68} h={7} o={0.4} />
-      {/* body lines */}
-      <Bar x={40} y={y + 56} w={280} />
-      <Bar x={40} y={y + 72} w={210} />
-      {/* reaction pills */}
-      <g className={accent ? 'text-primary' : 'text-border-strong'} opacity={accent ? 1 : 0.45}>
-        <rect x={40} y={y + 88} width={40} height={12} rx={6} fill="currentColor" />
+      <Label x={70} y={y + 26} size={12} weight={700}>{name}</Label>
+      <Label x={70} y={y + 41} size={9} weight={500} tone="text-subtle">{meta}</Label>
+      <Bar x={36} y={y + 58} w={216} />
+      <Bar x={36} y={y + 73} w={168} />
+      {/* reactions */}
+      <g className="text-primary">
+        <rect x={36} y={y + 90} width={46} height={16} rx={8} fill="currentColor" />
       </g>
-      <g className="text-border-strong" opacity={0.45}>
-        <rect x={88} y={y + 88} width={40} height={12} rx={6} fill="currentColor" />
+      <Label x={59} y={y + 101} size={9} weight={700} tone="text-on-primary" anchor="middle">♥ 12</Label>
+      <g className="text-border-strong" opacity={0.4}>
+        <rect x={90} y={y + 90} width={40} height={16} rx={8} fill="currentColor" />
       </g>
     </>
   )
@@ -30,10 +27,17 @@ function PostCard({ y, accent = false }: { y: number; accent?: boolean }) {
 
 export function FeedRender({ animate = true }: { animate?: boolean }) {
   return (
-    <RenderFrame label="A preview of the Frequency feed" animate={animate}>
-      <PostCard y={86} accent />
-      <PostCard y={206} />
-      <PostCard y={326} />
+    <RenderFrame label="A preview of the Frequency feed" title="Feed" animate={animate}>
+      {/* composer */}
+      <InnerCard x={18} y={78} w={252} h={40} tone="text-marketing-canvas" />
+      <g className="text-primary-bg">
+        <circle cx={42} cy={98} r={12} fill="currentColor" />
+      </g>
+      <Label x={62} y={102} size={11} weight={500} tone="text-subtle">Share something…</Label>
+
+      <Post y={130} name="Maya R." meta="2h · near you" accent />
+      <Post y={262} name="Theo K." meta="4h · Riverside" />
+      <Post y={394} name="Priya N." meta="6h · Downtown" />
     </RenderFrame>
   )
 }

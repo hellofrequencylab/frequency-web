@@ -94,8 +94,8 @@ export const VERA = {
   },
   enter: {
     eyebrow: 'Last step',
-    heading: 'Ready, Founder?',
-    body: 'Step in — we’ll drop you straight into Circles, so you land in a room full of people instead of an empty page.',
-    cta: 'Enter Frequency',
+    heading: 'Hey, Founder!',
+    body: 'One thing before you explore: say hello. Your first post is how the community meets you — let’s write it together, then the place is yours.',
+    cta: 'Create your first post',
   },
 } as const

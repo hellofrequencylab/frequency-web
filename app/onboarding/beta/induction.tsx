@@ -101,12 +101,12 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
     }
   }, [handle, initialHandle, userId, preview])
 
-  // Auto-advance the reel (paused under prefers-reduced-motion).
+  // Auto-advance the reel one slide at a time; settle on the last (no loop).
   useEffect(() => {
-    if (beat !== 2) return
+    if (beat !== 2 || reelIndex >= REEL.length - 1) return
     if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
-    const t = setInterval(() => setReelIndex((i) => (i + 1) % REEL.length), 3800)
-    return () => clearInterval(t)
+    const t = setTimeout(() => setReelIndex((i) => Math.min(i + 1, REEL.length - 1)), 3800)
+    return () => clearTimeout(t)
   }, [beat, reelIndex])
 
   const formatOk = handle.length >= 3 && HANDLE_RE.test(handle)
@@ -213,8 +213,10 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
   }
 
   // ── Styles (warm light throughout) ───────────────────────────────────────────
-  const inputCls =
-    'w-full rounded-2xl border border-border bg-surface px-5 py-4 text-base text-text placeholder:text-subtle shadow-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25'
+  // Inset field used inside the white profile cards (warm fill so it reads as nested).
+  const inputInset =
+    'w-full rounded-xl border border-border bg-marketing-canvas px-4 py-3 text-base text-text placeholder:text-subtle transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25'
+  const fieldLabel = 'mb-1.5 block text-left text-xs font-semibold uppercase tracking-wider text-subtle'
   const backLink = 'text-sm font-medium text-subtle underline-offset-4 transition-colors hover:text-muted hover:underline'
   const btnPrimary =
     'inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-10 py-4 text-base font-semibold text-on-primary shadow-lg shadow-primary/25 transition-all hover:bg-primary-hover enabled:hover:-translate-y-0.5 enabled:hover:shadow-xl disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0'
@@ -310,7 +312,11 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
           {beat === 1 && (
             <div className="mx-auto max-w-3xl">
               <p className={eyebrow}>{VERA.intro.eyebrow}</p>
-              <h1 className={`mt-4 text-6xl sm:text-7xl ${heading}`}>{VERA.intro.heading}</h1>
+              <h1 className={`mt-4 text-6xl sm:text-7xl ${heading}`}>
+                You&rsquo;re not a user.
+                <br />
+                You&rsquo;re a Founder.
+              </h1>
               <p className="mx-auto mt-6 max-w-xl text-xl leading-relaxed text-muted">{VERA.intro.body}</p>
               <div className="mt-10 flex flex-col items-center gap-3">
                 <button onClick={() => setBeat(2)} className={btnPrimary}>{VERA.intro.cta}<ArrowRight /></button>
@@ -326,8 +332,8 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
               <h1 className={`mt-3 text-5xl sm:text-6xl ${heading}`}>{VERA.tour.heading}</h1>
 
               <div className="mt-9 flex flex-col items-center gap-10 md:flex-row md:justify-center md:gap-14">
-                {/* Render stage */}
-                <div className="relative h-[300px] w-[240px] shrink-0">
+                {/* Render stage (9:16 mini web page) */}
+                <div className="relative h-[420px] w-[236px] shrink-0">
                   {REEL.map((s, i) => {
                     const active = i === reelIndex
                     return (
@@ -366,7 +372,13 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
                   </div>
 
                   <div className="mt-7 flex flex-col items-center gap-3 md:flex-row md:items-center">
-                    <button onClick={() => setBeat(3)} className={btnPrimary}>{VERA.tour.cta}<ArrowRight /></button>
+                    <button
+                      onClick={() => (reelIndex >= REEL.length - 1 ? setBeat(3) : setReelIndex(reelIndex + 1))}
+                      className={btnPrimary}
+                    >
+                      {reelIndex >= REEL.length - 1 ? VERA.tour.cta : 'Next'}
+                      <ArrowRight />
+                    </button>
                     <button onClick={() => setBeat(1)} className={backLink}>Back</button>
                   </div>
                 </div>
@@ -380,9 +392,9 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
               <h1 className={`text-5xl sm:text-6xl ${heading}`}>{VERA.identity.heading}</h1>
               <p className="mx-auto mt-4 max-w-lg text-lg text-muted">{VERA.identity.body}</p>
 
-              <div className="mt-8 flex flex-col items-center gap-5">
-                <button type="button" onClick={() => fileInputRef.current?.click()} className="group relative">
-                  {renderAvatar()}
+              <div className="mx-auto mt-8 flex w-full max-w-md flex-col items-center gap-5">
+                <button type="button" onClick={() => fileInputRef.current?.click()} className="group">
+                  <div className="rounded-full ring-4 ring-surface shadow-sm">{renderAvatar()}</div>
                   <span className="mt-2 block text-xs font-semibold text-primary group-hover:underline">
                     {avatarPreview ? 'Change photo' : 'Add a photo'}
                   </span>
@@ -390,42 +402,48 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
                 <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
                 {uploadError && <p className="text-xs text-danger">{uploadError}</p>}
 
-                <div className="w-full max-w-md space-y-3">
-                  <input
-                    type="text"
-                    value={displayName}
-                    onChange={(e) => {
-                      const v = e.target.value
-                      setDisplayName(v)
-                      if (!handleTouched) setHandle(suggestHandle(v))
-                    }}
-                    placeholder="Your name"
-                    autoFocus
-                    className={`${inputCls} text-center text-xl`}
-                  />
-                  <div className="relative">
-                    <span className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-lg text-subtle">@</span>
+                <div className="w-full space-y-4 rounded-3xl border border-border bg-surface p-6 shadow-sm">
+                  <div>
+                    <label className={fieldLabel}>Display name</label>
                     <input
                       type="text"
-                      value={handle}
+                      value={displayName}
                       onChange={(e) => {
-                        setHandleTouched(true)
-                        setHandle(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))
+                        const v = e.target.value
+                        setDisplayName(v)
+                        if (!handleTouched) setHandle(suggestHandle(v))
                       }}
-                      placeholder="handle"
-                      className={`${inputCls} px-10 text-center`}
+                      placeholder="Your name"
+                      autoFocus
+                      className={inputInset}
                     />
-                    <span className="absolute right-5 top-1/2 -translate-y-1/2 text-sm leading-none">
-                      {handleStatus === 'checking' && <span className="animate-pulse text-subtle">•••</span>}
-                      {handleStatus === 'available' && <span className="text-success">✓</span>}
-                      {handleStatus === 'taken' && <span className="text-danger">✗</span>}
-                    </span>
                   </div>
-                  {handleStatus === 'taken' && <p className="text-xs text-danger">That handle is already taken.</p>}
+                  <div>
+                    <label className={fieldLabel}>Handle</label>
+                    <div className="relative">
+                      <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-base text-subtle">@</span>
+                      <input
+                        type="text"
+                        value={handle}
+                        onChange={(e) => {
+                          setHandleTouched(true)
+                          setHandle(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))
+                        }}
+                        placeholder="yourname"
+                        className={`${inputInset} pl-9 pr-9`}
+                      />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm leading-none">
+                        {handleStatus === 'checking' && <span className="animate-pulse text-subtle">•••</span>}
+                        {handleStatus === 'available' && <span className="text-success">✓</span>}
+                        {handleStatus === 'taken' && <span className="text-danger">✗</span>}
+                      </span>
+                    </div>
+                    {handleStatus === 'taken' && <p className="mt-1.5 text-left text-xs text-danger">That handle is already taken.</p>}
+                  </div>
                 </div>
               </div>
 
-              <div className="mt-9 flex flex-col items-center gap-3">
+              <div className="mt-8 flex flex-col items-center gap-3">
                 <button disabled={!identityValid || uploading} onClick={advanceFromIdentity} className={btnPrimary}>
                   {uploading ? 'Uploading…' : 'Continue'}{!uploading && <ArrowRight />}
                 </button>
@@ -436,74 +454,79 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
 
           {/* ── Beat 4: Place + intent ── */}
           {beat === 4 && (
-            <div className="mx-auto max-w-xl">
+            <div className="mx-auto max-w-md">
               <h1 className={`text-5xl sm:text-6xl ${heading}`}>{VERA.place.heading}</h1>
               <p className="mx-auto mt-4 max-w-lg text-lg text-muted">{VERA.place.body}</p>
 
-              <div className="mx-auto mt-8 w-full max-w-md space-y-4">
-                {/* Active region typeahead */}
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={regionQuery}
-                    onChange={(e) => {
-                      setRegionQuery(e.target.value)
-                      setRegionId('')
-                      setRegionOpen(true)
-                    }}
-                    onFocus={() => setRegionOpen(true)}
-                    onBlur={() => setTimeout(() => setRegionOpen(false), 150)}
-                    placeholder="Start typing your city or region…"
-                    className={inputCls}
-                    autoComplete="off"
-                  />
-                  {regionId && (
-                    <span className="pointer-events-none absolute right-5 top-1/2 -translate-y-1/2 text-success">✓</span>
-                  )}
-                  {regionOpen && regionMatches.length > 0 && (
-                    <ul className="absolute z-20 mt-2 max-h-64 w-full overflow-auto rounded-2xl border border-border bg-surface text-left shadow-lg">
-                      {regionMatches.map((r) => (
-                        <li key={r.id}>
-                          <button
-                            type="button"
-                            onMouseDown={() => {
-                              setRegionId(r.id)
-                              setRegionQuery(r.name)
-                              setRegionOpen(false)
-                            }}
-                            className="block w-full px-5 py-3 text-left text-base text-text transition-colors hover:bg-primary-bg"
-                          >
-                            {r.name}
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
+              <div className="mx-auto mt-8 w-full space-y-4 rounded-3xl border border-border bg-surface p-6 text-left shadow-sm">
+                <div>
+                  <label className={fieldLabel}>Your region</label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={regionQuery}
+                      onChange={(e) => {
+                        setRegionQuery(e.target.value)
+                        setRegionId('')
+                        setRegionOpen(true)
+                      }}
+                      onFocus={() => setRegionOpen(true)}
+                      onBlur={() => setTimeout(() => setRegionOpen(false), 150)}
+                      placeholder="Start typing your city or region…"
+                      className={inputInset}
+                      autoComplete="off"
+                    />
+                    {regionId && (
+                      <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-success">✓</span>
+                    )}
+                    {regionOpen && regionMatches.length > 0 && (
+                      <ul className="absolute z-20 mt-2 max-h-56 w-full overflow-auto rounded-xl border border-border bg-surface shadow-lg">
+                        {regionMatches.map((r) => (
+                          <li key={r.id}>
+                            <button
+                              type="button"
+                              onMouseDown={() => {
+                                setRegionId(r.id)
+                                setRegionQuery(r.name)
+                                setRegionOpen(false)
+                              }}
+                              className="block w-full px-4 py-2.5 text-left text-base text-text transition-colors hover:bg-primary-bg"
+                            >
+                              {r.name}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                   {regions.length === 0 && (
-                    <p className="mt-2 text-sm text-subtle">No regions yet — we&rsquo;ll sort you later.</p>
+                    <p className="mt-1.5 text-xs text-subtle">No regions yet — we&rsquo;ll sort you later.</p>
                   )}
                 </div>
 
-                <div className="text-left">
-                  <p className="mb-2 text-center text-base font-medium text-text">{VERA.place.intentLabel}</p>
+                <div>
+                  <label className={fieldLabel}>{VERA.place.intentLabel}</label>
                   <textarea
                     value={intent}
                     onChange={(e) => setIntent(e.target.value.slice(0, 500))}
                     placeholder={VERA.place.intentPlaceholder}
                     rows={3}
-                    className={`${inputCls} resize-none`}
+                    className={`${inputInset} resize-none`}
                   />
                 </div>
 
-                <select value={heardAbout} onChange={(e) => setHeardAbout(e.target.value)} className={inputCls}>
-                  <option value="">How did you hear about us?</option>
-                  {HEARD_ABOUT.map((h) => (
-                    <option key={h} value={h}>{h}</option>
-                  ))}
-                </select>
+                <div>
+                  <label className={fieldLabel}>How did you hear about us?</label>
+                  <select value={heardAbout} onChange={(e) => setHeardAbout(e.target.value)} className={inputInset}>
+                    <option value="">Choose one…</option>
+                    {HEARD_ABOUT.map((h) => (
+                      <option key={h} value={h}>{h}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
-              <div className="mt-9 flex flex-col items-center gap-3">
+              <div className="mt-8 flex flex-col items-center gap-3">
                 <button onClick={() => setBeat(5)} className={btnPrimary}>Continue<ArrowRight /></button>
                 <button onClick={() => setBeat(3)} className={backLink}>Back</button>
               </div>
@@ -512,22 +535,25 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
 
           {/* ── Beat 5: Enter ── */}
           {beat === 5 && (
-            <div className="mx-auto max-w-xl">
+            <div className="mx-auto max-w-4xl">
               <p className={eyebrow}>{VERA.enter.eyebrow}</p>
               <h1 className={`mt-4 text-5xl sm:text-6xl ${heading}`}>{VERA.enter.heading}</h1>
-              <p className="mx-auto mt-4 max-w-lg text-lg leading-relaxed text-muted">{VERA.enter.body}</p>
 
-              <div className="mx-auto mt-8 flex max-w-sm flex-col items-center gap-3 rounded-2xl border border-border bg-surface p-6 shadow-sm">
-                {renderAvatar()}
-                <div>
-                  <p className="text-lg font-semibold text-text">{displayName || 'You'}</p>
+              <div className="mt-9 flex flex-col items-center gap-10 md:flex-row md:items-center md:justify-center md:gap-14">
+                {/* description to the left of the card */}
+                <p className="max-w-xs text-lg leading-relaxed text-muted md:text-left">{VERA.enter.body}</p>
+
+                {/* portrait profile card */}
+                <div className="w-64 shrink-0 rounded-3xl border border-border bg-surface p-7 text-center shadow-sm">
+                  <div className="mx-auto w-fit rounded-full ring-4 ring-surface">{renderAvatar()}</div>
+                  <p className="mt-4 text-xl font-semibold text-text">{displayName || 'You'}</p>
                   <p className="text-sm text-muted">@{handle}</p>
+                  {regionId && <p className="mt-2 text-xs text-subtle">{regions.find((r) => r.id === regionId)?.name}</p>}
+                  {intent.trim() && <p className="mt-3 text-sm italic text-muted">“{intent.trim()}”</p>}
                 </div>
-                {regionId && <p className="text-xs text-subtle">{regions.find((r) => r.id === regionId)?.name}</p>}
-                {intent.trim() && <p className="mt-1 max-w-[18rem] text-sm italic text-muted">“{intent.trim()}”</p>}
               </div>
 
-              {submitError && <p className="mt-4 text-sm text-danger">{submitError}</p>}
+              {submitError && <p className="mt-5 text-sm text-danger">{submitError}</p>}
 
               <div className="mt-9 flex flex-col items-center gap-3">
                 <button onClick={submit} disabled={submitting} className={btnPrimary}>
