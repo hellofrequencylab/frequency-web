@@ -31,8 +31,8 @@ privacy** for anything outbound, and **human-approves-anything-public**.
 | **A · Instrumentation depth** | `track()` dual-emit helper + taxonomy module + page-view capture + `useTrack` for features | ✅ shipped |
 | **B · Janitor dashboard** | activation funnel + **where-it-jams** drop-off + WAM/retention + feature adoption | ✅ shipped |
 | **C · Program/circle/game outcomes** | completion + stall-point analytics per challenge/quest + circle health | ✅ shipped |
-| **D · AI reads** | Engagement Read + live-kernel Market Read — analyze strategy, name what's landing | ⏳ |
-| **E · AI content** | live generation → Action Queue → comms spine (human-approves-public) | ⏳ |
+| **D · AI reads** | Engagement Read (`/admin/insights`) + Market Read — analyze strategy, name what's landing | ◑ Engagement Read shipped (deterministic; live narration slots in behind `summarize()`) |
+| **E · AI content** | Market-Read content drafts → Action Queue, approve/dismiss, never auto-published | ✅ shipped (drafts propose into `agent_actions`; human-approves-public) |
 
 ## Phase A — what shipped
 
