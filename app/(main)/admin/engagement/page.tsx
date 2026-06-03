@@ -1,0 +1,118 @@
+import { notFound } from 'next/navigation'
+import Link from 'next/link'
+import { Activity, Users, Flame, TrendingUp } from 'lucide-react'
+import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { StatCard } from '@/components/ui/stat-card'
+import { getEngagementDashboard } from '@/lib/analytics/dashboard'
+
+// Janitor-only: the live engagement dashboard (ENGAGEMENT-MARKETING-ENGINE.md Phase B).
+// WAM + activation, the activation funnel (where it jams), what's happening in the
+// ledger, and the most-used pages + features. Reads first-party aggregates only.
+export const dynamic = 'force-dynamic'
+
+export default async function EngagementDashboardPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) notFound()
+
+  const admin = createAdminClient()
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('community_role')
+    .eq('auth_user_id', user.id)
+    .maybeSingle()
+  if (!profile || profile.community_role !== 'janitor') notFound()
+
+  const d = await getEngagementDashboard(30)
+  const pct = (n: number) => `${Math.round(n * 100)}%`
+
+  return (
+    <div className="mx-auto max-w-3xl px-4 py-8">
+      <h1 className="flex items-center gap-2 text-2xl font-bold text-text">
+        <Activity className="h-5 w-5 text-primary-strong" />
+        Engagement
+      </h1>
+      <p className="mb-6 mt-1 text-sm text-muted">
+        Live first-party signal over the last {d.windowDays} days.{' '}
+        <Link href="/admin" className="text-primary-strong hover:underline">Back to admin</Link>.
+      </p>
+
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <StatCard label="Weekly active" value={d.practice.wam} icon={Users} />
+        <StatCard label="Verified (7d)" value={d.practice.verifiedThisWeek} icon={Flame} />
+        <StatCard label="New (30d)" value={d.practice.newMembers} icon={TrendingUp} />
+        <StatCard label="Activation" value={pct(d.practice.activationRate)} icon={TrendingUp} />
+      </div>
+
+      {/* Activation funnel — where members drop off */}
+      <section className="mt-8">
+        <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-subtle">Activation funnel</h2>
+        <div className="space-y-2">
+          {d.funnel.map((s) => (
+            <div key={s.eventType} className="flex items-center justify-between rounded-xl border border-border bg-surface px-4 py-2.5">
+              <span className="text-sm text-text">{s.step}</span>
+              <span className="flex items-center gap-3">
+                {s.dropPct !== null && s.dropPct > 0 && (
+                  <span className="text-xs font-semibold text-danger">−{s.dropPct}%</span>
+                )}
+                <span className="font-bold text-text">{s.actors}</span>
+              </span>
+            </div>
+          ))}
+        </div>
+        <p className="mt-1.5 text-xs text-subtle">Distinct members reaching each step. Drop-off fills in as page + feature events accrue.</p>
+      </section>
+
+      {/* What's happening — event volume by type */}
+      <section className="mt-8">
+        <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-subtle">Activity by type</h2>
+        {d.byType.length === 0 ? (
+          <p className="text-sm text-muted">No events yet in this window.</p>
+        ) : (
+          <div className="overflow-hidden rounded-xl border border-border">
+            <table className="w-full text-sm">
+              <thead className="bg-surface-elevated text-left text-xs text-subtle">
+                <tr><th className="px-4 py-2 font-medium">Event</th><th className="px-4 py-2 text-right font-medium">Events</th><th className="px-4 py-2 text-right font-medium">Members</th></tr>
+              </thead>
+              <tbody>
+                {d.byType.map((r) => (
+                  <tr key={r.eventType} className="border-t border-border">
+                    <td className="px-4 py-2 font-mono text-xs text-text">{r.eventType}</td>
+                    <td className="px-4 py-2 text-right text-muted">{r.events}</td>
+                    <td className="px-4 py-2 text-right text-muted">{r.actors}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <div className="mt-8 grid gap-6 sm:grid-cols-2">
+        <TopList title="Top pages" rows={d.topPages} empty="No page views yet." />
+        <TopList title="Top features" rows={d.topFeatures} empty="No feature events yet." />
+      </div>
+    </div>
+  )
+}
+
+function TopList({ title, rows, empty }: { title: string; rows: { value: string; n: number }[]; empty: string }) {
+  return (
+    <section>
+      <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-subtle">{title}</h2>
+      {rows.length === 0 ? (
+        <p className="text-sm text-muted">{empty}</p>
+      ) : (
+        <ul className="space-y-1">
+          {rows.map((r) => (
+            <li key={r.value} className="flex items-center justify-between gap-2 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm">
+              <span className="truncate font-mono text-xs text-muted">{r.value}</span>
+              <span className="shrink-0 font-bold text-text">{r.n}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  )
+}

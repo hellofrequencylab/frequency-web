@@ -13,6 +13,7 @@ import { ZapToastContainer } from '@/components/zap-toast'
 import { PresenceHeartbeat } from '@/components/presence/heartbeat'
 import { PushRegistration } from '@/components/push/registration'
 import { SupportLauncher } from '@/components/support/support-launcher'
+import { PageViewTracker } from '@/components/analytics/track-provider'
 import { getSearchIndex } from '@/lib/help/content'
 import { TourProvider } from '@/components/onboarding/tour-provider'
 import type { TourState } from '@/lib/onboarding/select'
@@ -100,6 +101,7 @@ export default async function MainLayout({
       <PresenceHeartbeat />
       <PushRegistration />
       <SupportLauncher index={helpIndex} />
+      <PageViewTracker />
       <TourProvider initialState={tourState} />
     </AppShell>
   )
