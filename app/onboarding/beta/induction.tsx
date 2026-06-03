@@ -10,7 +10,7 @@ import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getInitials } from '@/lib/utils'
 import { searchPlaces, type PlaceSuggestion } from '@/lib/geocode'
-import { BETA_OATHS, VERA, REEL, HEARD_ABOUT, type OathId } from '@/lib/onboarding/beta-script'
+import { BETA_OATHS as DEFAULT_OATHS, VERA as DEFAULT_VERA, REEL, HEARD_ABOUT as DEFAULT_HEARD, type OathId } from '@/lib/onboarding/beta-script'
 import { acceptBetaOath, completeBetaInduction } from './actions'
 import { FeedRender } from '@/components/onboarding/renders/feed-render'
 import { CirclesRender } from '@/components/onboarding/renders/circles-render'
@@ -26,6 +26,12 @@ type Props = {
   regions?: { id: string; name: string }[]
   /** Preview mode: no auth, no server writes — for the public /preview route only. */
   preview?: boolean
+  /** Operator copy overrides from /admin/vera (defaults to the beta-script copy). */
+  copy?: {
+    vera?: typeof DEFAULT_VERA
+    oaths?: { id: OathId; label: string }[]
+    heardAbout?: string[]
+  }
 }
 
 const HANDLE_RE = /^[a-z0-9_]+$/
@@ -45,7 +51,13 @@ function ArrowRight() {
   )
 }
 
-export default function BetaInduction({ userId, userEmail, initialHandle, preview = false }: Props) {
+export default function BetaInduction({ userId, userEmail, initialHandle, preview = false, copy }: Props) {
+  // Operator-tunable copy (defaults to the beta-script copy) — shadows the imports so
+  // every existing VERA./BETA_OATHS/HEARD_ABOUT reference picks up the overrides.
+  const VERA = copy?.vera ?? DEFAULT_VERA
+  const BETA_OATHS = copy?.oaths ?? DEFAULT_OATHS
+  const HEARD_ABOUT = copy?.heardAbout ?? DEFAULT_HEARD
+
   const [beat, setBeat] = useState(0)
   const [previewDone, setPreviewDone] = useState(false)
 
