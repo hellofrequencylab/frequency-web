@@ -133,7 +133,7 @@ export default async function CirclesPage({
   if (sort === 'active') filtered = [...filtered].sort(byMember)
   else if (sort === 'new') filtered = [...filtered].sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at))
   else if (sort === 'open') filtered = [...filtered].sort((a, b) => (b.member_cap - b.member_count) - (a.member_cap - a.member_count))
-  else filtered = [...filtered].sort((a, b) => a.name.localeCompare(b.name)) // "nearest" -> name; the near-you hero does real proximity
+  else filtered = [...filtered].sort((a, b) => a.name.localeCompare(b.name)) // "nearest" -> name; the map's find-near-me does real proximity
 
   const myCircles = filtered.filter((c) => myCircleIds.includes(c.id))
   const discover = filtered.filter((c) => !myCircleIds.includes(c.id))
