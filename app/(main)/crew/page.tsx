@@ -1,9 +1,10 @@
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Star, CheckCircle, Zap, Award, Flame, Target, Map, TrendingUp, Gem, ShoppingBag } from 'lucide-react'
+import { Star, CheckCircle, Zap, Award, Flame, Target, Map, TrendingUp, Gem, ShoppingBag, CalendarDays, ArrowRight } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { getPracticesToLogToday } from '@/lib/practices'
 import { SEASON_RANKS, getRankDef, rankForZaps, type SeasonRank } from '@/lib/season-ranks'
 import { CompleteButton } from './complete-button'
 import { getInitials } from '@/lib/utils'
@@ -63,6 +64,13 @@ export default async function CrewPage() {
   const seasonEndsLabel = season?.ends_at
     ? new Date(season.ends_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
     : null
+
+  // Next-best-action: the one thing to do right now. Log today's practice (the
+  // North-Star action) if any are unlogged; otherwise nudge toward a gathering.
+  const practicesToLog = await getPracticesToLogToday(profile.id)
+  const nextAction = practicesToLog.length > 0
+    ? { title: 'Log today’s practice', desc: 'The one move that keeps your streak — and your circle — alive.', href: '/practices', label: 'Log it', Icon: Flame }
+    : { title: 'Find your next gathering', desc: 'Showing up in person is where it gets real. See what your circles are running.', href: '/events', label: 'See events', Icon: CalendarDays }
 
   // Available tasks
   const { data: tasks } = await admin
@@ -178,6 +186,24 @@ export default async function CrewPage() {
           endsLabel={seasonEndsLabel}
         />
       )}
+
+      {/* ── Next best action — the one thing to do right now ── */}
+      <Link
+        href={nextAction.href}
+        className="mb-6 flex items-center gap-4 rounded-2xl border border-primary-bg bg-primary-bg/40 dark:bg-primary-bg/15 p-5 transition-colors hover:bg-primary-bg/60 dark:hover:bg-primary-bg/25"
+      >
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-on-primary">
+          <nextAction.Icon className="h-5 w-5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-medium text-subtle">Next step</p>
+          <p className="text-base font-bold leading-tight text-text">{nextAction.title}</p>
+          <p className="mt-0.5 text-sm leading-relaxed text-muted">{nextAction.desc}</p>
+        </div>
+        <span className="hidden shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-on-primary sm:inline-flex">
+          {nextAction.label}<ArrowRight className="h-3.5 w-3.5" />
+        </span>
+      </Link>
 
       {/* ── Season Progress (full width, top) ────────── */}
       <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden mb-6">
