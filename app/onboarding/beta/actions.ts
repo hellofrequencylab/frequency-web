@@ -9,6 +9,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { sendWelcomeEmail } from '@/lib/email'
 import { sanitizeProfileInput } from '@/lib/profile-input'
+import { rememberFacts } from '@/lib/ai/memory'
 import { BETA_INDUCTION_VERSION, type OathId } from '@/lib/onboarding/beta-script'
 import type { Json } from '@/lib/database.types'
 
@@ -115,6 +116,23 @@ export async function completeBetaInduction(data: {
       throw new Error('That handle was just taken. Go back and choose another.')
     }
     throw new Error(error.message)
+  }
+
+  // Seed Vera's memory so she already knows who just arrived — their interests,
+  // what they came for, where they are (AI-VERA §5). Member-provided, best-effort;
+  // never blocks onboarding.
+  const { data: prof } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('auth_user_id', user.id)
+    .maybeSingle()
+  if (prof?.id) {
+    const interestList = interests.split(',').map((s) => s.trim()).filter(Boolean).slice(0, 10)
+    await rememberFacts(prof.id, {
+      interests: interestList,
+      goals: intent ? [intent] : [],
+      neighborhood: location || null,
+    })
   }
 
   if (user.email) {
