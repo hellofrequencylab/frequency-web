@@ -9,6 +9,7 @@ import {
   Megaphone,
   Workflow,
   BarChart3,
+  Radar,
   Sparkles,
 } from 'lucide-react'
 
@@ -28,6 +29,7 @@ const TABS: NavItem[] = [
   { href: '/marketing/campaigns',   label: 'Campaigns',    Icon: Megaphone },
   { href: '/marketing/automations', label: 'Automations',  Icon: Workflow },
   { href: '/marketing/analytics',   label: 'Analytics',    Icon: BarChart3 },
+  { href: '/marketing/market-read', label: 'Market read',  Icon: Radar },
   { href: '/marketing/agent',       label: 'Agent',        Icon: Sparkles },
 ]
 
