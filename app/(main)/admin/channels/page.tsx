@@ -1,9 +1,7 @@
-import Link from 'next/link'
-import { SidebarCard } from '@/components/ui/sidebar-card'
-import { notFound } from 'next/navigation'
-import { Hash, Plus, EyeOff } from 'lucide-react'
-import { createClient } from '@/lib/supabase/server'
+import { Hash, EyeOff } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireAdmin } from '@/lib/admin/guard'
+import { AdminPage, AdminSection } from '@/components/admin/admin-page'
 import { archiveChannel } from '../actions'
 import { NewChannelCompose } from '@/components/compose/new-channel-compose'
 
@@ -15,18 +13,8 @@ const TYPE_COLOR: Record<string, string> = {
 }
 
 export default async function AdminChannelsPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) notFound()
-
+  const { profileId } = await requireAdmin('host')
   const admin = createAdminClient()
-  const { data: profile } = await admin
-    .from('profiles')
-    .select('id, community_role')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
-
-  if (!profile || !['host', 'guide', 'mentor', 'janitor'].includes(profile.community_role ?? '')) notFound()
 
   // Derive scope options for the New Channel modal from the admin's primary circle
   const scopeOptions: { scope: 'hub' | 'nexus' | 'outpost'; scopeId: string; label: string }[] = []
@@ -35,7 +23,7 @@ export default async function AdminChannelsPage() {
     .select(`circle:circles!circle_id (
       hub:hubs!hub_id ( id, name, nexus:nexuses!nexus_id ( id, name, outpost:outposts!outpost_id ( id, name ) ) )
     )`)
-    .eq('profile_id', profile.id)
+    .eq('profile_id', profileId)
     .eq('status', 'active')
     .order('joined_at', { ascending: true })
     .limit(1)
@@ -67,88 +55,69 @@ export default async function AdminChannelsPage() {
   const hidden   = typedChannels.filter((c) => !c.is_public)
 
   return (
-    <div>
-      <div className="flex items-end justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-text">Channels</h1>
-          <p className="text-sm text-muted mt-1">
-            Manage channels across your scope. Archiving hides from discovery.
-          </p>
-        </div>
-        {scopeOptions.length > 0 && <NewChannelCompose scopeOptions={scopeOptions} />}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main content */}
-        <div className="lg:col-span-2">
-          {/* Active */}
-          <div className="space-y-2 mb-6">
-            {visible.length === 0 && (
-              <p className="text-sm text-subtle py-6 text-center">No public channels yet.</p>
-            )}
-            {visible.map((ch) => (
-              <div key={ch.id} className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 group">
-                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-surface-elevated shrink-0">
-                  <Hash className="w-4 h-4 text-subtle" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-medium text-text">{ch.name}</span>
-                    <span className={`text-xs px-1.5 py-0.5 rounded-md font-medium capitalize ${TYPE_COLOR[ch.type] ?? TYPE_COLOR.group}`}>
-                      {ch.type}
-                    </span>
-                    <span className="text-xs px-1.5 py-0.5 rounded-md bg-surface-elevated text-muted font-medium capitalize">
-                      {ch.scope}
-                    </span>
-                  </div>
-                  {ch.description && (
-                    <p className="text-xs text-subtle mt-0.5 truncate">{ch.description}</p>
-                  )}
-                </div>
-                <form action={archiveChannel.bind(null, ch.id)}>
-                  <button
-                    type="submit"
-                    title="Hide from discovery"
-                    className="p-1.5 rounded-lg text-subtle hover:text-warning hover:bg-warning-bg dark:hover:bg-warning-bg/30 transition-all"
-                  >
-                    <EyeOff className="w-3.5 h-3.5" />
-                  </button>
-                </form>
-              </div>
-            ))}
-          </div>
-
-          {/* Hidden */}
-          {hidden.length > 0 && (
-            <details>
-              <summary className="text-xs font-medium text-subtle cursor-pointer hover:text-muted select-none">
-                {hidden.length} hidden channel{hidden.length > 1 ? 's' : ''}
-              </summary>
-              <div className="space-y-2 mt-2 opacity-60">
-                {hidden.map((ch) => (
-                  <div key={ch.id} className="flex items-center gap-3 rounded-xl border border-border px-4 py-3">
-                    <Hash className="w-4 h-4 text-subtle shrink-0" />
-                    <span className="text-sm text-muted flex-1">{ch.name}</span>
-                    <span className="text-xs text-subtle">hidden</span>
-                  </div>
-                ))}
-              </div>
-            </details>
+    <AdminPage
+      title="Channels"
+      eyebrow="Community"
+      description="Manage channels across your scope. Archiving hides from discovery."
+      actions={scopeOptions.length > 0 ? <NewChannelCompose scopeOptions={scopeOptions} /> : undefined}
+      width="default"
+    >
+      <AdminSection>
+        <div className="space-y-2">
+          {visible.length === 0 && (
+            <p className="py-6 text-center text-sm text-subtle">No public channels yet.</p>
           )}
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-4">
-          <SidebarCard title="Quick Actions">
-            <div className="p-2 space-y-0.5">
-              <Link href="/channels" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-text hover:bg-surface-elevated transition-colors">
-                <Plus className="w-4 h-4 text-subtle" /> New Channel
-              </Link>
+          {visible.map((ch) => (
+            <div key={ch.id} className="group flex items-center gap-3 rounded-2xl bg-surface-elevated/60 px-4 py-3">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-elevated">
+                <Hash className="h-4 w-4 text-subtle" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-medium text-text">{ch.name}</span>
+                  <span className={`rounded-md px-1.5 py-0.5 text-xs font-medium capitalize ${TYPE_COLOR[ch.type] ?? TYPE_COLOR.group}`}>
+                    {ch.type}
+                  </span>
+                  <span className="rounded-md bg-surface-elevated px-1.5 py-0.5 text-xs font-medium capitalize text-muted">
+                    {ch.scope}
+                  </span>
+                </div>
+                {ch.description && (
+                  <p className="mt-0.5 truncate text-xs text-subtle">{ch.description}</p>
+                )}
+              </div>
+              <form action={archiveChannel.bind(null, ch.id)}>
+                <button
+                  type="submit"
+                  title="Hide from discovery"
+                  className="rounded-lg p-1.5 text-subtle transition-all hover:bg-warning-bg hover:text-warning dark:hover:bg-warning-bg/30"
+                >
+                  <EyeOff className="h-3.5 w-3.5" />
+                </button>
+              </form>
             </div>
-            <p className="px-4 py-3 text-xs text-subtle">Hidden channels are removed from discovery but remain accessible via direct link.</p>
-          </SidebarCard>
+          ))}
         </div>
-      </div>
-    </div>
+      </AdminSection>
+
+      {hidden.length > 0 && (
+        <AdminSection>
+          <details>
+            <summary className="cursor-pointer select-none text-xs font-medium text-subtle hover:text-muted">
+              {hidden.length} hidden channel{hidden.length > 1 ? 's' : ''}
+            </summary>
+            <div className="mt-2 space-y-2 opacity-60">
+              {hidden.map((ch) => (
+                <div key={ch.id} className="flex items-center gap-3 rounded-2xl bg-surface-elevated/60 px-4 py-3">
+                  <Hash className="h-4 w-4 shrink-0 text-subtle" />
+                  <span className="flex-1 text-sm text-muted">{ch.name}</span>
+                  <span className="text-xs text-subtle">hidden</span>
+                </div>
+              ))}
+            </div>
+          </details>
+        </AdminSection>
+      )}
+    </AdminPage>
   )
 }

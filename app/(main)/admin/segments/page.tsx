@@ -1,8 +1,5 @@
-import { notFound } from 'next/navigation'
-import Link from 'next/link'
-import { Users } from 'lucide-react'
-import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { requireAdmin } from '@/lib/admin/guard'
+import { AdminPage, AdminSection } from '@/components/admin/admin-page'
 import { listSegmentsDetailed, describeSegment } from '@/lib/traits/segments'
 
 // Staff-only: saved audiences over tags + computed traits (MEMBER-DATA-PLATFORM.md
@@ -11,32 +8,19 @@ import { listSegmentsDetailed, describeSegment } from '@/lib/traits/segments'
 export const dynamic = 'force-dynamic'
 
 export default async function SegmentsPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) notFound()
-
-  const admin = createAdminClient()
-  const { data: profile } = await admin
-    .from('profiles')
-    .select('community_role')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
-  if (!profile || profile.community_role !== 'janitor') notFound()
+  await requireAdmin('janitor')
 
   const segments = await listSegmentsDetailed()
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="flex items-center gap-2 text-2xl font-bold text-text">
-        <Users className="h-5 w-5 text-primary-strong" />
-        Segments
-      </h1>
-      <p className="mb-6 mt-1 text-sm text-muted">
-        Saved audiences over member tags + computed traits, with live counts.{' '}
-        <Link href="/admin" className="text-primary-strong hover:underline">Back to admin</Link>.
-      </p>
-
-      <div className="grid gap-4 sm:grid-cols-2">
+    <AdminPage
+      title="Segments"
+      eyebrow="Insights"
+      description="Saved audiences over member tags + computed traits, with live counts."
+      width="wide"
+    >
+      <AdminSection>
+        <div className="grid gap-4 sm:grid-cols-2">
         {segments.map((s) => (
           <div key={s.id} className="rounded-2xl border border-border bg-surface p-4">
             <div className="flex items-start justify-between gap-3">
@@ -63,9 +47,9 @@ export default async function SegmentsPage() {
             )}
           </div>
         ))}
-      </div>
-
-      {segments.length === 0 && <p className="text-sm text-muted">No segments defined yet.</p>}
-    </div>
+        </div>
+        {segments.length === 0 && <p className="text-sm text-muted">No segments defined yet.</p>}
+      </AdminSection>
+    </AdminPage>
   )
 }

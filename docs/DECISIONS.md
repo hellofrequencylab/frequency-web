@@ -1623,6 +1623,41 @@ automated onboarding email sequence) is the next design, tracked separately.
 
 ---
 
+## ADR-072: Admin IA — one grouped catalog, one page shell, one guard
+
+**Status:** Accepted · 2026-06-03 · a presentational/organizational refactor of the `/admin`
+surface. No schema or behavior change. Builds on the role ladder ([ADR-017](DECISIONS.md)
+capabilities, `lib/core/roles.ts`) and the nav-areas model (`lib/nav-areas.ts`).
+
+**Context:** `/admin` had grown to 19 pages behind a flat horizontal tab bar with no grouping,
+**five routes orphaned with no nav link at all** (engagement, outcomes, insights, segments, vera),
+and heavy page-to-page redundancy: every page repeated ~12 lines of identical auth/role boilerplate
+and hand-rolled its own header at an inconsistent width (`max-w-3xl` here, something else there),
+several with manual "Back to admin" links. One page even re-implemented `StatCard` locally. There
+was no defined home for a number of features, and nothing enforced consistency.
+
+**Decision:**
+- **One catalog is the source of truth.** `app/(main)/admin/sections.ts` declares every admin
+  surface in five role-gated groups — **Community** (host), **Structure** (guide/mentor),
+  **Insights** (janitor), **Vera** (janitor), **Platform** (janitor). Both the nav (`sub-nav.tsx`)
+  and the Overview launchpad render from it via `visibleGroups(role)`, so a feature is declared once
+  and **can never be orphaned again**. Groups telescope by role — a host sees Community; a janitor
+  sees all five — mirroring "each role manages the people/surfaces under them."
+- **One guard.** `lib/admin/guard.ts` `requireAdmin(min)` replaces the per-page auth boilerplate,
+  built on the request-cached `getCallerProfile()`. Pages assert their own floor
+  (`requireAdmin('janitor')`, etc.); the layout gates host+.
+- **One shell.** `components/admin/admin-page.tsx` (`<AdminPage>` + `<AdminSection>`) gives every
+  page an identical header, width, and rhythm. Stat tiles use the shared `components/ui/stat-card`
+  (the local duplicate is deleted). The Overview gains a grouped **launchpad**
+  (`components/admin/admin-launchpad.tsx`) — every reachable surface, visible from one home.
+
+**Consequences:** No route moves, no logic change — links and gates are unchanged; only the chrome
+and organization are unified. New admin pages now cost one entry in `sections.ts` + an `<AdminPage>`
+wrapper, and inherit the nav, the launchpad, and a consistent look for free. CRM/Marketing/Outreach/
+Pages remain sibling rail areas (out of scope here); a future pass may apply the same shell to them.
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 

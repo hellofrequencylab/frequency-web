@@ -1,9 +1,10 @@
-import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { Award, Target, Flame, Trophy, Zap, Users } from 'lucide-react'
+import { requireAdmin } from '@/lib/admin/guard'
+import { AdminPage, AdminSection } from '@/components/admin/admin-page'
+import { StatCard } from '@/components/ui/stat-card'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { createClient } from '@/lib/supabase/server'
 import { TIER_CONFIG, DIFFICULTY_CONFIG } from '@/lib/gamification'
 import type { AchievementTier, ChallengeDifficulty } from '@/lib/gamification'
 import type { Database } from '@/lib/database.types'
@@ -22,21 +23,9 @@ type TopEarner = Pick<
 >
 
 export default async function AdminGamificationPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) notFound()
+  const { role } = await requireAdmin('host')
 
   const admin = createAdminClient()
-
-  const { data: profile } = await admin
-    .from('profiles')
-    .select('community_role')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
-
-  if (!profile || !['host', 'guide', 'mentor', 'janitor'].includes(profile.community_role ?? '')) {
-    notFound()
-  }
 
   // Stats
   const [
@@ -63,7 +52,7 @@ export default async function AdminGamificationPage() {
   ] as const)
 
   const currentSeason = await getCurrentSeason()
-  const isJanitor = profile.community_role === 'janitor'
+  const isJanitor = role === 'janitor'
 
   // Live reward-economy config (janitor-only editor below).
   let zapRewards: RewardRow[] = []
@@ -83,31 +72,30 @@ export default async function AdminGamificationPage() {
   }
 
   return (
-    <div>
-      <div className="flex items-end justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-text">Gamification</h1>
-          <p className="text-sm text-muted mt-1">
-            Overview of achievements, challenges, and engagement stats.
-          </p>
-        </div>
+    <AdminPage
+      title="Gamification"
+      eyebrow="Community"
+      description="Overview of achievements, challenges, and engagement stats."
+      width="default"
+      actions={
         <AwardDialog
           achievements={(achievements ?? []).map(a => ({ id: a.id, name: a.name, tier: a.tier }))}
           members={(allMembers ?? []).map(m => ({ id: m.id, display_name: m.display_name, handle: m.handle }))}
         />
-      </div>
-
+      }
+    >
       <SeasonControl season={currentSeason} isJanitor={isJanitor} />
 
       {isJanitor && <RewardConfig zaps={zapRewards} gems={gemRewards} />}
 
-      {/* Stats grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-        <StatCard label="Achievements" value={String(totalAchievements ?? 0)} Icon={Award} color="text-signal-strong bg-signal-bg dark:text-signal" />
-        <StatCard label="Times Unlocked" value={String(totalUnlocked ?? 0)} Icon={Trophy} color="text-warning bg-warning-bg dark:text-primary" />
-        <StatCard label="Season Challenges" value={String(totalChallenges ?? 0)} Icon={Target} color="text-primary-strong bg-primary-bg dark:text-primary-strong" />
-        <StatCard label="Challenges Completed" value={String(totalChallengesCompleted ?? 0)} Icon={Flame} color="text-warning bg-warning-bg dark:text-primary" />
-      </div>
+      <AdminSection>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <StatCard label="Achievements" value={totalAchievements ?? 0} icon={Award} />
+          <StatCard label="Times Unlocked" value={totalUnlocked ?? 0} icon={Trophy} />
+          <StatCard label="Season Challenges" value={totalChallenges ?? 0} icon={Target} />
+          <StatCard label="Challenges Completed" value={totalChallengesCompleted ?? 0} icon={Flame} />
+        </div>
+      </AdminSection>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top achievers */}
@@ -209,18 +197,6 @@ export default async function AdminGamificationPage() {
           </div>
         </section>
       </div>
-    </div>
-  )
-}
-
-function StatCard({ label, value, Icon, color }: { label: string; value: string; Icon: React.ElementType; color: string }) {
-  return (
-    <div className="rounded-2xl border border-border bg-surface shadow-sm p-3">
-      <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2 ${color}`}>
-        <Icon className="w-4 h-4" />
-      </div>
-      <div className="text-xl font-bold text-text leading-none">{value}</div>
-      <div className="text-xs text-muted mt-0.5">{label}</div>
-    </div>
+    </AdminPage>
   )
 }

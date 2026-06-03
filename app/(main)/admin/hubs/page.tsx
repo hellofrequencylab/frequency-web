@@ -1,25 +1,15 @@
-import { notFound } from 'next/navigation'
 import { SidebarCard } from '@/components/ui/sidebar-card'
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireAdmin } from '@/lib/admin/guard'
+import { AdminPage } from '@/components/admin/admin-page'
 import { HubsClient } from './hubs-client'
 import { NewHubCompose } from '@/components/compose/new-hub-compose'
 
 
 export default async function AdminHubsPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) notFound()
+  await requireAdmin('guide')
 
   const admin = createAdminClient()
-  const { data: profile } = await admin
-    .from('profiles')
-    .select('id, community_role')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
-
-  if (!profile || !['guide', 'mentor', 'janitor'].includes(profile.community_role ?? '')) notFound()
-
   const { data: rawHubs } = await admin
     .from('hubs')
     .select(`id, name, status, nexus_id, guide_id,
@@ -52,16 +42,13 @@ export default async function AdminHubsPage() {
     .order('display_name')
 
   return (
-    <div>
-      <div className="flex items-end justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-text">Hubs</h1>
-          <p className="text-sm text-muted mt-1">
-            Hubs group circles within a nexus. Assign a guide to each hub.
-          </p>
-        </div>
-        <NewHubCompose nexuses={nexuses ?? []} />
-      </div>
+    <AdminPage
+      title="Hubs"
+      eyebrow="Structure"
+      description="Hubs group circles within a nexus. Assign a guide to each hub."
+      actions={<NewHubCompose nexuses={nexuses ?? []} />}
+      width="default"
+    >
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <HubsClient hubs={hubs} nexuses={nexuses ?? []} guides={guides ?? []} />
@@ -72,6 +59,6 @@ export default async function AdminHubsPage() {
           </SidebarCard>
         </div>
       </div>
-    </div>
+    </AdminPage>
   )
 }

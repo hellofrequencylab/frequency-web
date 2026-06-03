@@ -1,25 +1,15 @@
-import { notFound } from 'next/navigation'
-import Link from 'next/link'
-import { FlaskConical } from 'lucide-react'
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireAdmin } from '@/lib/admin/guard'
+import { AdminPage } from '@/components/admin/admin-page'
+import { FlaskConical } from 'lucide-react'
 import { DemoControls } from './demo-controls'
 
 // Janitor-only: the operator controls for the Beta demo content layer
 // (docs/DEMO-SYSTEM.md) — the global show/hide switch and the permanent purge.
 export default async function AdminDemoPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) notFound()
+  await requireAdmin('janitor')
 
   const admin = createAdminClient()
-  const { data: profile } = await admin
-    .from('profiles')
-    .select('community_role')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
-  if (!profile || profile.community_role !== 'janitor') notFound()
-
   const head = { count: 'exact' as const, head: true }
   const [flag, members, circles, events, posts, practices] = await Promise.all([
     admin.from('platform_flags').select('value').eq('key', 'demo_mode').maybeSingle(),
@@ -41,17 +31,14 @@ export default async function AdminDemoPage() {
   const total = counts.reduce((s, c) => s + c.count, 0)
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="flex items-center gap-2 text-2xl font-bold text-text">
-        <FlaskConical className="h-5 w-5 text-primary-strong" />
-        Demo content
-      </h1>
-      <p className="mb-6 mt-1 text-sm text-muted">
-        Seeded Beta content that makes the community look alive. Show or hide it everywhere with one
-        switch, or purge it for good once real content has taken over.{' '}
-        <Link href="/admin" className="text-primary-strong hover:underline">Back to admin</Link>.
-      </p>
+    <AdminPage
+      title="Demo content"
+      eyebrow="Platform"
+      icon={FlaskConical}
+      description="Seeded Beta content that makes the community look alive. Show or hide it everywhere with one switch, or purge it for good once real content has taken over."
+      width="narrow"
+    >
       <DemoControls enabled={enabled} counts={counts} total={total} />
-    </div>
+    </AdminPage>
   )
 }
