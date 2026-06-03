@@ -130,9 +130,9 @@ export async function createPost(formData: FormData) {
   }
 
   // Fire gamification events (non-blocking)
-  processGamificationEvent({ type: 'post_create', profileId }).catch(() => {})
-  recordStreakActivity(profileId, 'posting').catch(() => {})
-  awardGems(profileId, 'post_create').catch(() => {})
+  processGamificationEvent({ type: 'post_create', profileId }).catch((e) => console.error('[feed gamification]', e))
+  recordStreakActivity(profileId, 'posting').catch((e) => console.error('[feed gamification]', e))
+  awardGems(profileId, 'post_create').catch((e) => console.error('[feed gamification]', e))
 
   // Notify mentioned members (best-effort, non-blocking).
   if (post) await fanOutMentions(admin, post.id, body || '', profileId, 'a post')
@@ -199,8 +199,8 @@ export async function createReply(parentId: string, body: string) {
   // Notify members @mentioned in the reply (same fan-out as top-level posts).
   if (reply) await fanOutMentions(admin, reply.id, trimmed, profileId, 'a reply')
 
-  awardGems(profileId, 'comment_reply').catch(() => {})
-  processGamificationEvent({ type: 'post_create', profileId }).catch(() => {})
+  awardGems(profileId, 'comment_reply').catch((e) => console.error('[feed gamification]', e))
+  processGamificationEvent({ type: 'post_create', profileId }).catch((e) => console.error('[feed gamification]', e))
 
   revalidatePath('/feed')
   revalidatePath('/circles', 'layout')
@@ -268,7 +268,7 @@ export async function toggleReaction(
       profile_id: profileId,
       reaction_type: reactionType,
     })
-    awardGems(profileId, 'reaction').catch(() => {})
+    awardGems(profileId, 'reaction').catch((e) => console.error('[feed gamification]', e))
   }
 
   revalidatePath('/feed')
