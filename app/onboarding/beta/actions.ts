@@ -61,10 +61,12 @@ export async function completeBetaInduction(data: {
   avatarUrl: string
   regionId: string
   intent: string
+  heardAbout: string
   oaths: OathId[]
 }) {
   const { displayName, handle, bio, avatarUrl } = sanitizeProfileInput(data)
   const intent = data.intent.trim().slice(0, 500)
+  const heardAbout = data.heardAbout.trim().slice(0, 120)
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -94,6 +96,7 @@ export async function completeBetaInduction(data: {
             oaths: data.oaths,
           },
           intent: intent || null,
+          heard_about: heardAbout || null,
           completed_at: new Date().toISOString(),
         },
       },
