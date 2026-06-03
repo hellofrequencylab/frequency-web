@@ -73,7 +73,7 @@ export default async function FeedPage({
   })
 
   return (
-    <div className="max-w-2xl mx-auto w-full">
+    <div className="max-w-2xl w-full">
       <StreamTemplate
         eyebrow={today}
         title={greeting}
