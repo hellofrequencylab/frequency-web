@@ -11,12 +11,10 @@ import { CrewLeadQuickAction } from '@/components/messages/crew-lead-quick-actio
 import { IndexTemplate } from '@/components/templates/index-template'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
+import type { ProfileIdentity } from '@/lib/types/profile'
 
-type Profile = {
+type Profile = ProfileIdentity & {
   id: string
-  display_name: string
-  handle: string
-  avatar_url: string | null
 }
 
 type ConversationRow = {

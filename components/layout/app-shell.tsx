@@ -34,6 +34,7 @@ import {
   roleBadgeStyle,
 } from '@/lib/community-roles'
 import { NAV_AREAS, meetsAccess, type NavAccess } from '@/lib/nav-areas'
+import type { ProfileIdentity } from '@/lib/types/profile'
 import { PrimaryNav } from '@/components/layout/primary-nav'
 import { BrandMark } from '@/components/layout/brand-mark'
 import { AREA_ICONS } from '@/components/layout/nav-icons'
@@ -91,10 +92,7 @@ function effectiveAccess(
   return permissions?.[item.key] ?? item.defaultAccess
 }
 
-interface Profile {
-  display_name: string
-  handle: string
-  avatar_url: string | null
+interface Profile extends ProfileIdentity {
   community_role: CommunityRole
   current_season_zaps?: number | null
   lifetime_gems?: number | null
