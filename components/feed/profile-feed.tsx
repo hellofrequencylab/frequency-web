@@ -194,14 +194,14 @@ export async function ProfileFeed({
 
   const dispatchPromises: Promise<{ data: DispatchItem[] | null }>[] = [
     admin.from('dispatches').select(dispatchSelect)
-      .eq('status', 'published').eq('author_id', profileId)
+      .eq('status', 'published').is('hidden_at', null).eq('author_id', profileId)
       .order('published_at', { ascending: false }).limit(5) as unknown as Promise<{ data: DispatchItem[] | null }>,
   ]
 
   if (circleIds.length > 0) {
     dispatchPromises.push(
       admin.from('dispatches').select(dispatchSelect)
-        .eq('status', 'published').eq('audience_scope', 'circle')
+        .eq('status', 'published').is('hidden_at', null).eq('audience_scope', 'circle')
         .in('audience_id', circleIds)
         .order('published_at', { ascending: false }).limit(5) as unknown as Promise<{ data: DispatchItem[] | null }>
     )
@@ -209,7 +209,7 @@ export async function ProfileFeed({
   if (hubIds.length > 0) {
     dispatchPromises.push(
       admin.from('dispatches').select(dispatchSelect)
-        .eq('status', 'published').eq('audience_scope', 'hub')
+        .eq('status', 'published').is('hidden_at', null).eq('audience_scope', 'hub')
         .in('audience_id', hubIds)
         .order('published_at', { ascending: false }).limit(5) as unknown as Promise<{ data: DispatchItem[] | null }>
     )
@@ -217,7 +217,7 @@ export async function ProfileFeed({
   if (nexusIds.length > 0) {
     dispatchPromises.push(
       admin.from('dispatches').select(dispatchSelect)
-        .eq('status', 'published').eq('audience_scope', 'nexus')
+        .eq('status', 'published').is('hidden_at', null).eq('audience_scope', 'nexus')
         .in('audience_id', nexusIds)
         .order('published_at', { ascending: false }).limit(5) as unknown as Promise<{ data: DispatchItem[] | null }>
     )

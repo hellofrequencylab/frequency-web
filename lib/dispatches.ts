@@ -58,7 +58,7 @@ export async function getRecentDispatchesForProfile(
     linked_task: { id: string } | null
   }
 
-  const base = () => admin.from('dispatches').select(select).eq('status', 'published')
+  const base = () => admin.from('dispatches').select(select).eq('status', 'published').is('hidden_at', null)
   const promises: Promise<{ data: Row[] | null }>[] = [
     base().eq('author_id', profileId).order('published_at', { ascending: false }).limit(limit) as unknown as Promise<{ data: Row[] | null }>,
   ]
