@@ -3,6 +3,8 @@
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { getVeraConfig } from '@/lib/ai/vera/config'
+import { VERA, BETA_OATHS, HEARD_ABOUT } from '@/lib/onboarding/beta-script'
 import BetaInduction from './induction'
 
 export default async function BetaInductionPage() {
@@ -25,12 +27,26 @@ export default async function BetaInductionPage() {
     .eq('depth', 0)
     .order('name')
 
+  // Operator copy overrides from /admin/vera (defaults to the beta-script copy).
+  const ind = (await getVeraConfig()).induction
+  const copy = {
+    // Widened strings cast back to the const shape the component expects.
+    vera: {
+      ...VERA,
+      oath: { ...VERA.oath, heading: ind.oathHeading, body: ind.oathBody },
+      intro: { ...VERA.intro, heading: ind.introHeading, body: ind.introBody },
+    } as typeof VERA,
+    oaths: BETA_OATHS.map((o, i) => ({ id: o.id, label: ind.oathLabels[i] || o.label })),
+    heardAbout: ind.heardAbout.length ? ind.heardAbout : [...HEARD_ABOUT],
+  }
+
   return (
     <BetaInduction
       userId={user.id}
       userEmail={user.email ?? ''}
       initialHandle={profile?.handle ?? ''}
       regions={regions ?? []}
+      copy={copy}
     />
   )
 }
