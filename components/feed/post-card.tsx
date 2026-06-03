@@ -59,6 +59,37 @@ export type FeedPost = {
   }>
 }
 
+// The raw post row as fetched (feed RPCs / direct selects) before it's mapped to
+// FeedPost. Looser than FeedPost on purpose — author.community_role and
+// reaction_type arrive as plain strings and are narrowed when cast to FeedPost.
+// Shared by the main feed and the profile feed so the query shape lives once.
+export interface RawPost {
+  id: string
+  body: string | null
+  post_type: string
+  is_pinned: boolean
+  created_at: string
+  media_urls: string[]
+  is_demo: boolean
+  reaction_count: number | null
+  comment_count: number | null
+  engagement_score: number | null
+  scope_id: string | null
+  visibility: string | null
+  author: {
+    id: string
+    display_name: string
+    handle: string
+    avatar_url: string | null
+    community_role: string
+  }
+  reactions: Array<{
+    id: string
+    reaction_type: string
+    profile_id: string
+  }>
+}
+
 export function PostCard({
   post,
   myProfileId,

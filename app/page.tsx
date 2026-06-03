@@ -19,7 +19,7 @@ import {
 } from '@/components/marketing/marketing-ui'
 import { Reveal, Parallax, CountUp, ScrollCue } from '@/components/marketing/motion'
 import { SiteImage } from '@/components/marketing/site-image'
-import { getInitials, relativeTime } from '@/lib/utils'
+import { getInitials, relativeTime, eventDateBadge, formatEventDate } from '@/lib/utils'
 import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, BETA_CTA_LABEL, BETA_CTA_HREF, SOCIAL_PROOF_FLOOR, FOUNDING_PLACE } from '@/lib/site'
 import { type CommunityRole, ROLE_RANK, RoleBadge } from '@/lib/community-roles'
 import { getJanitor } from '@/lib/page-editor/guard'
@@ -675,14 +675,8 @@ function PostPreviewCard({ post }: { post: PostPreviewRow }) {
 
 // Live event row — date chip + title, links to the beta capture.
 function EventRow({ event }: { event: LiveEvent }) {
-  const d = new Date(event.starts_at)
-  const month = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()
-  const day = d.getDate()
-  const dateStr = d.toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  })
+  const { month, day } = eventDateBadge(event.starts_at)
+  const dateStr = formatEventDate(event.starts_at)
   return (
     <div className="flex items-center gap-4 rounded-2xl border border-border bg-surface px-5 py-4 shadow-sm">
       <div className="shrink-0 flex h-12 w-12 flex-col items-center justify-center rounded-xl bg-primary-bg">

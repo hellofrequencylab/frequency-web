@@ -49,3 +49,37 @@ export function slugify(s: string): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
 }
+
+// ── Event date formatting ─────────────────────────────────────────────────────
+// Shared by the discover UI, the feed event cards, and the marketing event row,
+// so an event date reads identically everywhere.
+
+/** Short date line, e.g. "Fri, Jun 24". */
+export function formatEventDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  })
+}
+
+/** Full date + time, e.g. "Friday, June 24, 2026 at 3:00 PM". */
+export function formatEventDateTime(iso: string): string {
+  return new Date(iso).toLocaleString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
+
+/** Calendar-chip parts: uppercase month + day-of-month, e.g. { month: "JUN", day: 24 }. */
+export function eventDateBadge(iso: string): { month: string; day: number } {
+  const d = new Date(iso)
+  return {
+    month: d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase(),
+    day: d.getDate(),
+  }
+}

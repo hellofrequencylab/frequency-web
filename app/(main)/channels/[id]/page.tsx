@@ -22,6 +22,7 @@ import { FeedList } from '@/components/feed/feed-list'
 import { NewCircleCompose } from '@/components/compose/new-circle-compose'
 import { DetailTemplate } from '@/components/templates/detail-template'
 import { EmptyState } from '@/components/ui/empty-state'
+import type { CircleBase } from '@/lib/types/circle'
 
 type TopicalChannel = {
   id: string
@@ -33,14 +34,9 @@ type TopicalChannel = {
   is_active: boolean
 }
 
-type CircleRow = {
-  id: string
-  name: string
+type CircleRow = CircleBase & {
   slug: string
   type: 'in-person' | 'online'
-  member_count: number
-  member_cap: number
-  status: string
   city: string | null
   neighborhood: string | null
   host: { display_name: string; handle: string } | null
