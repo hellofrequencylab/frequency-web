@@ -13,6 +13,7 @@ import { ZapToastContainer } from '@/components/zap-toast'
 import { PresenceHeartbeat } from '@/components/presence/heartbeat'
 import { PushRegistration } from '@/components/push/registration'
 import { SupportLauncher } from '@/components/support/support-launcher'
+import { PageViewTracker } from '@/components/analytics/track-provider'
 import { getSearchIndex } from '@/lib/help/content'
 
 // Authenticated app layout. Wraps Feed, Groups, Events, Admin.
@@ -90,6 +91,7 @@ export default async function MainLayout({
       <PresenceHeartbeat />
       <PushRegistration />
       <SupportLauncher index={helpIndex} />
+      <PageViewTracker />
     </AppShell>
   )
 }
