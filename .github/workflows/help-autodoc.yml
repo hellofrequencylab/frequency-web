@@ -1,0 +1,33 @@
+# AI doc-writer (advisory). On a PR that touches app routes, post ONE comment with
+# a staff checklist of help articles to review/update (docs/SUPPORT-SYSTEM.md §6).
+# Propose-only: it never commits or merges. Needs the ANTHROPIC_API_KEY secret; the
+# built-in GITHUB_TOKEN (pull-requests: write) posts the comment. Degrades to a
+# manual-review checklist if the key is absent.
+name: help-autodoc
+
+on:
+  pull_request:
+    paths: ['app/**']
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  autodoc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - name: Review help docs for drift
+        run: node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/help-autodoc.mts
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
