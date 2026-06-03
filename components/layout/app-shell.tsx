@@ -36,7 +36,6 @@ import {
 import { NAV_AREAS, meetsAccess, type NavAccess } from '@/lib/nav-areas'
 import { PrimaryNav } from '@/components/layout/primary-nav'
 import { BrandMark } from '@/components/layout/brand-mark'
-import { CommunityNav } from '@/components/layout/community-nav'
 import { AREA_ICONS } from '@/components/layout/nav-icons'
 import { DockRevealProvider, useDockRevealed, useHoverScrollReveal } from '@/components/sidebar/dock-reveal'
 
@@ -77,12 +76,11 @@ function buildSections(areas: typeof NAV_AREAS[number][]): NavSectionGroup[] {
   return sections
 }
 
-// Desktop sidebar = community spaces (Circles, Interests) + features + admin
-// (the Broadcast bar — Feed · Dispatches · Messages · Events — lives in the
-// horizontal CommunityNav under the header). The mobile drawer is the full menu,
-// so it gets every area for completeness.
-const SIDEBAR_SECTIONS = buildSections(NAV_AREAS.filter((a) => a.placement === 'sidebar'))
-const ALL_SECTIONS = buildSections([...NAV_AREAS])
+// One vertical rail holds every destination: Feed (the home anchor, pinned top),
+// then the Broadcast comms loop (Dispatches · Messages · Events), community
+// spaces, features, and admin — grouped by section. The desktop rail and the
+// mobile drawer render the same set.
+const NAV_SECTIONS = buildSections([...NAV_AREAS])
 
 // The effective access for an area = a janitor's per-area override, if any,
 // else the code default. `role` is the viewer's community role (null = visitor).
@@ -427,7 +425,7 @@ function NavLinkList({
   extraSections,
   hideAppNav = false,
   permissions,
-  sections = SIDEBAR_SECTIONS,
+  sections = NAV_SECTIONS,
 }: {
   isActive: (href: string) => boolean
   role: CommunityRole
@@ -436,14 +434,18 @@ function NavLinkList({
   hideAppNav?: boolean
   /** Per-area access overrides (janitor-set); merged over code defaults. */
   permissions?: Record<string, NavAccess>
-  /** Which area sections to render (desktop rail = sidebar-only; drawer = all). */
+  /** Which area sections to render. Defaults to the full rail (NAV_SECTIONS). */
   sections?: NavSectionGroup[]
 }) {
-  const itemClass = (active: boolean) =>
-    `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+  // `emphasize` = the home anchor (Feed): a touch bolder and full-strength text
+  // even when inactive, so it reads as the rail's "home" without shouting.
+  const itemClass = (active: boolean, emphasize = false) =>
+    `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
       active
-        ? 'bg-primary-bg text-primary-strong'
-        : 'text-muted hover:bg-surface-elevated hover:text-text'
+        ? 'bg-primary-bg text-primary-strong font-semibold'
+        : emphasize
+          ? 'text-text font-semibold hover:bg-surface-elevated'
+          : 'text-muted font-medium hover:bg-surface-elevated hover:text-text'
     }`
 
   const sectionLabelClass =
@@ -451,8 +453,15 @@ function NavLinkList({
 
   return (
     <>
-      {!hideAppNav && sections.map((section, i) => (
-        <div key={section.label ?? `top-${i}`} className={`space-y-0.5 ${i > 0 ? 'mt-2' : ''}`}>
+      {!hideAppNav && sections.map((section, i) => {
+        // The leading label-less group is the home anchor (Feed): set it apart
+        // from the destination groups with a hairline below and bolder items.
+        const isHomeAnchor = i === 0 && section.label === null
+        return (
+        <div
+          key={section.label ?? `top-${i}`}
+          className={`space-y-0.5 ${i > 0 ? 'mt-2' : ''} ${isHomeAnchor ? 'pb-2 mb-1 border-b border-border' : ''}`}
+        >
           {section.label && <p className={sectionLabelClass}>{section.label}</p>}
           {section.items.map((item) => {
             const { href, label, Icon } = item
@@ -472,17 +481,18 @@ function NavLinkList({
             }
             const active = isActive(href)
             return (
-              <Link key={href} href={href} onClick={onNavigate} className={itemClass(active)}>
+              <Link key={href} href={href} onClick={onNavigate} className={itemClass(active, isHomeAnchor)}>
                 <Icon
-                  className={`w-[18px] h-[18px] shrink-0 ${active ? 'text-primary-strong' : 'text-subtle'}`}
-                  strokeWidth={active ? 2.5 : 2}
+                  className={`w-[18px] h-[18px] shrink-0 ${active ? 'text-primary-strong' : isHomeAnchor ? 'text-text' : 'text-subtle'}`}
+                  strokeWidth={active || isHomeAnchor ? 2.5 : 2}
                 />
                 {label}
               </Link>
             )
           })}
         </div>
-      ))}
+        )
+      })}
 
       {extraSections?.map((section, i) => (
         <div key={`extra-${section.label ?? i}`} className="space-y-0.5 mt-2">
@@ -561,7 +571,7 @@ function MobileLeftDrawer({
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-          <NavLinkList isActive={isActive} role={role} onNavigate={onClose} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} sections={ALL_SECTIONS} />
+          <NavLinkList isActive={isActive} role={role} onNavigate={onClose} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} sections={NAV_SECTIONS} />
         </nav>
 
         {/* Bottom close. Sits in the thumb zone */}
@@ -876,18 +886,10 @@ export default function AppShell({
         <div data-feed-scroll className="flex-1 min-w-0 overflow-y-auto pb-[calc(4rem_+_env(safe-area-inset-bottom))] md:pb-0">
           <div className="flex items-stretch min-h-full">
 
-            {/* Center column — community sub-menu + page content. The bar lives
-                HERE (between the left rail and the right rail), not full-bleed
-                under the header, so it reads as the content's own nav. It sticks
-                to the top of the shared scroll; the right rail sits beside it. */}
+            {/* Center column — page content. Navigation lives entirely in the
+                single left rail now (Feed + sections), so the center is just the
+                content; the right rail sits beside it in the shared scroll. */}
             <div className="flex-1 min-w-0 flex flex-col">
-
-              {/* Primary community interaction — the day-to-day social loop. */}
-              {!hideAppNav && (
-                <CommunityNav role={role} isActive={isActive} permissions={permissions} />
-              )}
-
-              {/* Page content */}
               <main className="flex-1 min-w-0 px-6 py-6">
                 {children}
               </main>

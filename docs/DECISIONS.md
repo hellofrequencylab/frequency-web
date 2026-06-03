@@ -1241,7 +1241,8 @@ seam carries data, not components.
 
 ## ADR-060: Refocus the top sub-menu as the "Broadcast bar"; community spaces move to the sidebar
 
-**Status:** Accepted · refines ADR-057 · `lib/nav-areas.ts`, `components/layout/community-nav.tsx`,
+**Status:** ~~Accepted~~ **Superseded by ADR-063** (the horizontal bar is retired in favour of a
+single rail) · refines ADR-057 · `lib/nav-areas.ts`, `components/layout/community-nav.tsx`,
 `components/layout/app-shell.tsx`.
 **Context:** ADR-057's top sub-menu carried the whole social loop (Feed · Circles · Interests ·
 Events · Broadcast · Messages). In practice that mixed two different jobs — *browsing spaces*
@@ -1318,6 +1319,34 @@ can't re-accrue because everything composes from one kit. A few product decision
 for the owner (Hubs/Nexuses social vs structural; remove `/groups`; rename The Vault; make the
 streak UI weekly). Built-but-dark features (NearYou proximity, engagement_score, achievement
 celebration) get surfaced as pages are touched.
+
+---
+
+## ADR-063: Collapse the in-app nav to a single left rail (retire the Broadcast bar)
+
+**Status:** Accepted · **supersedes ADR-060** · realizes the single-rail vision in
+[`IA-STRATEGY.md`](IA-STRATEGY.md) §1 · `lib/nav-areas.ts`, `components/layout/app-shell.tsx`,
+`app/(main)/feed/page.tsx`; deletes `components/layout/community-nav.tsx`.
+**Context:** ADR-060 split navigation across two axes — a vertical rail *and* a horizontal
+"Broadcast bar" (Feed · Dispatches · Messages · Events) pinned under the header. That L-shape ran
+two primary navs at once: members had to scan two places for a destination, and Feed living
+horizontally while every other space lived vertically broke the mental model. It also misaligned
+content — the centered Feed column pushed "Wednesday / Good morning" far right of the bar's first
+item. IA-STRATEGY.md §1 had already prescribed the fix (one grouped rail, Feed as the headerless
+home anchor); ADR-060 was an interim step away from it.
+**Decision:** Retire the horizontal bar entirely and run **one vertical rail**. **Feed** is pinned
+to the very top as the home anchor (`section: null`, rendered a touch bolder with a hairline below
+it). The comms loop — **Dispatches · Messages · Events** — moves into the rail directly under Feed
+as the **Broadcast** section. The `placement` field (and `NavPlacement` type) are removed from
+`nav-areas.ts` since there is now a single surface; the desktop rail and mobile drawer render the
+same `NAV_SECTIONS`. The Feed page's reading column drops `mx-auto` so it left-aligns with the rail
+and with every other page (Circles, etc.), giving one consistent content edge. No access levels or
+permission-grid wiring change.
+**Consequences:** One nav, one mental model; the center column reclaims the ~44px the sticky bar
+held; content left-edges are consistent across pages. Messages keeps its header popover for quick
+peeks; the rail is its destination. The finer IA-STRATEGY re-grouping it also proposes (a CONNECT
+cluster, pulling Hubs/Nexuses out of the member rail) is **not** done here — left as follow-up so
+this change stays a pure consolidation. Adding/moving an area remains a one-line `nav-areas.ts` edit.
 
 ---
 

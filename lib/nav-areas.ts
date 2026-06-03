@@ -15,55 +15,54 @@ export type NavAccess = 'visitor' | CommunityRole
 
 export const ACCESS_LEVELS: readonly NavAccess[] = ['visitor', ...ROLE_HIERARCHY] as const
 
-// Where an area lives in the in-app chrome:
-//   • 'community' → the horizontal "Broadcast bar" under the header: Feed plus
-//      the time-sensitive comms loop (Dispatches · Messages · Events), and
-//   • 'sidebar'   → the left rail (community spaces, features + admin).
-// The full-site browse nav (PrimaryNav) is separate and lives in the header.
-export type NavPlacement = 'community' | 'sidebar'
+// The in-app nav is a SINGLE vertical rail (the left sidebar). Feed is the rail's
+// home anchor (pinned to the very top, above the section groups); below it sit
+// the Broadcast comms loop, community spaces, features, and admin — grouped by
+// `section`. The full-site browse nav (PrimaryNav) is separate (lives in header).
 
 export type NavArea = {
   /** Stable key — used as the area_permissions primary key. */
   key: string
   href: string
   label: string
-  /** Section header — groups the sidebar rail and the permission grid. */
+  /** Section header — groups the rail and the permission grid. */
   section: string | null
-  /** Which in-app nav surface this area renders in. */
-  placement: NavPlacement
   defaultAccess: NavAccess
 }
 
-// Order here IS the render order (Broadcast bar, then sidebar by section).
+// Order here IS the render order down the rail (Feed, then each section).
 export const NAV_AREAS: readonly NavArea[] = [
-  // ── Broadcast bar → the horizontal sub-menu under the header ─────────────────
-  // Feed is the anchor (always available, set apart in the bar); the rest is the
-  // time-sensitive comms loop.
-  { key: 'feed',      href: '/feed',      label: 'Feed',      section: null,         placement: 'community', defaultAccess: 'member'  },
-  { key: 'broadcast', href: '/broadcast', label: 'Dispatches', section: 'Broadcast', placement: 'community', defaultAccess: 'visitor' },
-  { key: 'messages',  href: '/messages',  label: 'Messages',  section: 'Broadcast',  placement: 'community', defaultAccess: 'member'  },
-  { key: 'events',    href: '/events',    label: 'Events',    section: 'Broadcast',  placement: 'community', defaultAccess: 'member'  },
+  // ── Home anchor → pinned to the very top of the rail ─────────────────────────
+  // Feed is "home": the default landing and the day-to-day social loop. It sits
+  // alone above the section groups (section: null) so it reads as the anchor.
+  { key: 'feed',      href: '/feed',      label: 'Feed',      section: null,        defaultAccess: 'member'  },
 
-  // ── Community spaces → top of the left sidebar ──────────────────────────────
-  { key: 'circles',   href: '/circles',   label: 'Circles',   section: 'Community',  placement: 'sidebar',   defaultAccess: 'visitor' },
-  { key: 'channels',  href: '/channels',  label: 'Interests', section: 'Community',  placement: 'sidebar',   defaultAccess: 'visitor' },
+  // ── Broadcast → the live comms loop, just under Feed ────────────────────────
+  { key: 'broadcast', href: '/broadcast', label: 'Dispatches', section: 'Broadcast', defaultAccess: 'visitor' },
+  { key: 'messages',  href: '/messages',  label: 'Messages',  section: 'Broadcast', defaultAccess: 'member'  },
+  { key: 'events',    href: '/events',    label: 'Events',    section: 'Broadcast', defaultAccess: 'member'  },
 
-  // ── Features + admin → the left sidebar ─────────────────────────────────────
-  { key: 'practices', href: '/practices', label: 'Practices', section: 'Library',   placement: 'sidebar',   defaultAccess: 'member'  },
-  { key: 'programs',  href: '/programs',  label: 'Programs',  section: 'Library',   placement: 'sidebar',   defaultAccess: 'member'  },
+  // ── Community spaces ────────────────────────────────────────────────────────
+  { key: 'circles',   href: '/circles',   label: 'Circles',   section: 'Community', defaultAccess: 'visitor' },
+  { key: 'channels',  href: '/channels',  label: 'Interests', section: 'Community', defaultAccess: 'visitor' },
 
-  { key: 'friends',   href: '/friends',   label: 'Friends',   section: 'Network',   placement: 'sidebar',   defaultAccess: 'member'  },
-  { key: 'partners',  href: '/partners',  label: 'Partners',  section: 'Network',   placement: 'sidebar',   defaultAccess: 'member'  },
-  { key: 'people',    href: '/people',    label: 'Directory', section: 'Network',   placement: 'sidebar',   defaultAccess: 'member'  },
+  // ── Features ────────────────────────────────────────────────────────────────
+  { key: 'practices', href: '/practices', label: 'Practices', section: 'Library',   defaultAccess: 'member'  },
+  { key: 'programs',  href: '/programs',  label: 'Programs',  section: 'Library',   defaultAccess: 'member'  },
 
-  { key: 'crew',      href: '/crew',      label: 'Dashboard', section: 'Progress',  placement: 'sidebar',   defaultAccess: 'crew'    },
-  { key: 'vault',     href: '/vault',     label: 'Vault',     section: 'Progress',  placement: 'sidebar',   defaultAccess: 'member'  },
+  { key: 'friends',   href: '/friends',   label: 'Friends',   section: 'Network',   defaultAccess: 'member'  },
+  { key: 'partners',  href: '/partners',  label: 'Partners',  section: 'Network',   defaultAccess: 'member'  },
+  { key: 'people',    href: '/people',    label: 'Directory', section: 'Network',   defaultAccess: 'member'  },
 
-  { key: 'admin',     href: '/admin',     label: 'Admin',     section: 'Manage',    placement: 'sidebar',   defaultAccess: 'host'    },
-  { key: 'crm',       href: '/crm',       label: 'CRM',       section: 'Manage',    placement: 'sidebar',   defaultAccess: 'host'    },
-  { key: 'marketing', href: '/marketing', label: 'Marketing', section: 'Manage',    placement: 'sidebar',   defaultAccess: 'admin'   },
-  { key: 'outreach',  href: '/outreach',  label: 'Outreach',  section: 'Manage',    placement: 'sidebar',   defaultAccess: 'host'    },
-  { key: 'pages',     href: '/pages',     label: 'Pages',     section: 'Manage',    placement: 'sidebar',   defaultAccess: 'admin'   },
+  { key: 'crew',      href: '/crew',      label: 'Dashboard', section: 'Progress',  defaultAccess: 'crew'    },
+  { key: 'vault',     href: '/vault',     label: 'Vault',     section: 'Progress',  defaultAccess: 'member'  },
+
+  // ── Admin ───────────────────────────────────────────────────────────────────
+  { key: 'admin',     href: '/admin',     label: 'Admin',     section: 'Manage',    defaultAccess: 'host'    },
+  { key: 'crm',       href: '/crm',       label: 'CRM',       section: 'Manage',    defaultAccess: 'host'    },
+  { key: 'marketing', href: '/marketing', label: 'Marketing', section: 'Manage',    defaultAccess: 'admin'   },
+  { key: 'outreach',  href: '/outreach',  label: 'Outreach',  section: 'Manage',    defaultAccess: 'host'    },
+  { key: 'pages',     href: '/pages',     label: 'Pages',     section: 'Manage',    defaultAccess: 'admin'   },
 ] as const
 
 /** Quick lookup of an area's baseline access by key. */
