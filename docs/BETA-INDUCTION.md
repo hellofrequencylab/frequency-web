@@ -24,19 +24,29 @@ The induction is the live path **only during beta**, behind one flag: `BETA_INDU
 `lib/onboarding/beta-script.ts`. `/onboarding` redirects into `/onboarding/beta` while it's `true`.
 At launch: flip the flag, delete `app/onboarding/beta/` + `components/onboarding/renders/`.
 
+## Look & feel — a cinematic sequence, not a form
+
+The whole thing is **centered on a dark, soft-glow stage** (DAWN `ink` tokens + a blurred
+`primary`/`signal` radial glow), one focus per screen, large display type, pill buttons, and
+minimal centered inputs — deliberately *not* a labeled two-column form. The spine is **the reel**
+(beat 2): a crossfading slideshow that alternates the vector feature **renders** with atmospheric
+**site imagery**. It's data-driven (`REEL` in `lib/onboarding/beta-script.ts`), so real product
+**screenshots** drop in later by adding `kind:'image'` slides — no component changes.
+
 ## The flow — 6 beats, < 90 seconds
 
 | # | Beat | Vera register | Captures | Blocking? |
 |---|---|---|---|---|
 | 0 | **The Oath** — 3 commitment checkboxes | Hot | `meta.beta.oath` | ✅ the one gate |
 | 1 | **Intro** — "you're a founder, not a user" | Hot | — | skippable |
-| 2 | **Who you are** — name · handle · photo | Cool | `display_name`, `handle`, `avatar_url` | skippable* |
-| 3 | **Where + why** — region · the intent question | Cool→warm | `nexus_region_id`, `meta.beta.intent` | skippable* |
-| 4 | **The tour** — Feed → Circles → Events renders | Hot | — | skippable |
+| 2 | **The reel** — crossfading renders + imagery (auto-advancing) | Hot | — | skippable |
+| 3 | **Who you are** — name · handle · photo | Cool | `display_name`, `handle`, `avatar_url` | name+handle req'd |
+| 4 | **Where + why** — region · the intent question | Cool→warm | `nexus_region_id`, `meta.beta.intent` | skippable* |
 | 5 | **Enter** — review + "Enter Frequency" | Hot | writes all + `meta.onboarding_completed` | — |
 
-\* Name + handle are required to enter (a profile can't function without them); bio, photo, region,
-and intent are optional but asked for plainly. Everything persists only on the final **Enter**.
+\* Name + handle are required to enter (a profile can't function without them); photo, region, and
+intent are optional but asked for plainly. The reel auto-advances (paused under
+`prefers-reduced-motion`) with clickable dots. Everything persists only on the final **Enter**.
 
 ### The Oath (beat 0)
 
@@ -92,6 +102,10 @@ The "vector renders" of each section are **inline SVG components**, not commissi
 - Animated with the existing `slideUp` keyframe + CSS transitions; **respect `prefers-reduced-motion`**.
 - **Only the core triad** (Feed/Circles/Events) — showing all 18 nav areas would violate "quick."
 - Cheap to throw away: deleted in the same PR as the route when the design changes.
+
+In the reel they're **interleaved with site imagery** (`public/images/site/*`) and crossfade on a
+timer. To add a real product **screenshot**, drop the file in `public/` and add a `kind:'image'`
+entry to `REEL` — the component renders it the same as the photography, no code changes.
 
 ## Accessibility & UX rules (the "do everything" checklist)
 

@@ -1,19 +1,16 @@
 'use client'
 
 // Beta induction — the founding-cohort flow (ADR-068, docs/BETA-INDUCTION.md).
-// TEMPORARY: deleted at launch. Scripted Vera (hot register), one gate (the Oath),
-// six beats, the core-triad tour. Handle-check + avatar-upload mirror the legacy
-// onboarding form so behavior is identical.
+// TEMPORARY: deleted at launch. A centered, cinematic intro sequence (not a
+// form): a soft-glow dark stage that crossfades a reel of feature renders +
+// site imagery, with the oath gate and lightweight capture woven through it.
+// Scripted Vera (hot register). Handle-check + avatar-upload mirror the legacy
+// form. The `preview` prop mocks the auth-dependent calls for the public demo.
 
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getInitials } from '@/lib/utils'
-import {
-  BETA_OATHS,
-  VERA,
-  TOUR,
-  type OathId,
-} from '@/lib/onboarding/beta-script'
+import { BETA_OATHS, VERA, REEL, type OathId } from '@/lib/onboarding/beta-script'
 import { acceptBetaOath, completeBetaInduction } from './actions'
 import { FeedRender } from '@/components/onboarding/renders/feed-render'
 import { CirclesRender } from '@/components/onboarding/renders/circles-render'
@@ -33,14 +30,13 @@ type Props = {
 
 const HANDLE_RE = /^[a-z0-9_]+$/
 const RENDERS = { feed: FeedRender, circles: CirclesRender, events: EventsRender }
-const BEAT_LABELS = ['The oath', 'Welcome', 'You', 'Your place', 'The tour', 'Step in']
+const BEAT_COUNT = 6 // 0 oath · 1 intro · 2 reel · 3 identity · 4 place · 5 enter
 
 function suggestHandle(name: string): string {
   return name.toLowerCase().trim().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '').slice(0, 30)
 }
 
 export default function BetaInduction({ userId, userEmail, initialHandle, regions, preview = false }: Props) {
-  // 0 oath · 1 intro · 2 identity · 3 place · 4 tour · 5 enter
   const [beat, setBeat] = useState(0)
   const [previewDone, setPreviewDone] = useState(false)
 
@@ -54,7 +50,6 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
   const [handle, setHandle] = useState('')
   const [handleTouched, setHandleTouched] = useState(false)
   const [check, setCheck] = useState<{ handle: string; result: 'available' | 'taken' | 'idle' } | null>(null)
-  const [bio, setBio] = useState('')
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [avatarUrl, setAvatarUrl] = useState('')
@@ -66,8 +61,8 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
   const [regionId, setRegionId] = useState('')
   const [intent, setIntent] = useState('')
 
-  // Tour
-  const [tourIndex, setTourIndex] = useState(0)
+  // Reel
+  const [reelIndex, setReelIndex] = useState(0)
 
   // Submit
   const [submitting, setSubmitting] = useState(false)
@@ -81,9 +76,7 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
     let cancelled = false
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(
-          `/api/check-handle?handle=${encodeURIComponent(handle)}&userId=${encodeURIComponent(userId)}`
-        )
+        const res = await fetch(`/api/check-handle?handle=${encodeURIComponent(handle)}&userId=${encodeURIComponent(userId)}`)
         const { available } = (await res.json()) as { available: boolean }
         if (!cancelled) setCheck({ handle, result: available ? 'available' : 'taken' })
       } catch {
@@ -96,6 +89,15 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
     }
   }, [handle, initialHandle, userId, preview])
 
+  // Auto-advance the reel (paused under prefers-reduced-motion). Restarts on
+  // manual navigation so a slide you jumped to gets a full dwell.
+  useEffect(() => {
+    if (beat !== 2) return
+    if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
+    const t = setInterval(() => setReelIndex((i) => (i + 1) % REEL.length), 3800)
+    return () => clearInterval(t)
+  }, [beat, reelIndex])
+
   const formatOk = handle.length >= 3 && HANDLE_RE.test(handle)
   const handleStatus: HandleStatus = !formatOk
     ? 'idle'
@@ -104,7 +106,6 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
     : check && check.handle === handle
     ? check.result
     : 'checking'
-
   const identityValid = displayName.trim().length > 0 && formatOk && handleStatus === 'available'
 
   // ── Helpers ────────────────────────────────────────────────────────────────
@@ -152,7 +153,7 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
 
   async function advanceFromIdentity() {
     if (!preview && avatarFile && !avatarUrl) await uploadAvatar()
-    setBeat(3)
+    setBeat(4)
   }
 
   async function submit() {
@@ -169,7 +170,7 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
       await completeBetaInduction({
         displayName: displayName.trim(),
         handle,
-        bio,
+        bio: '',
         avatarUrl: finalAvatarUrl,
         regionId,
         intent,
@@ -183,10 +184,10 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
   }
 
   function renderAvatar(size: 'md' | 'lg' = 'md') {
-    const dim = size === 'lg' ? 'w-20 h-20 text-2xl' : 'w-16 h-16 text-xl'
+    const dim = size === 'lg' ? 'w-24 h-24 text-3xl' : 'w-16 h-16 text-xl'
     if (avatarPreview) {
       // eslint-disable-next-line @next/next/no-img-element
-      return <img src={avatarPreview} alt="Avatar preview" className={`${dim} rounded-full object-cover shrink-0 ring-2 ring-primary-bg`} />
+      return <img src={avatarPreview} alt="Avatar preview" className={`${dim} rounded-full object-cover shrink-0 ring-2 ring-primary`} />
     }
     const initials = getInitials(displayName || userEmail)
     return (
@@ -196,34 +197,38 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
     )
   }
 
-  // ── Shared styles (match the legacy form) ────────────────────────────────────
+  // ── Shared styles (dark, cinematic — pills not boxes) ────────────────────────
   const btnPrimary =
-    'inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-on-primary shadow-sm transition-all hover:bg-primary-hover hover:shadow-md enabled:hover:-translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0'
-  const btnSecondary =
-    'inline-flex items-center justify-center rounded-xl border border-border-strong bg-surface px-5 py-3 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated'
+    'inline-flex items-center justify-center gap-1.5 rounded-full bg-primary px-8 py-3 text-sm font-semibold text-on-primary shadow-sm transition-all hover:bg-primary-hover hover:shadow-md enabled:hover:-translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0'
+  const btnGhost =
+    'inline-flex items-center justify-center rounded-full px-6 py-3 text-sm font-semibold text-on-ink-muted transition-colors hover:text-on-ink'
   const inputBase =
-    'w-full rounded-xl border border-border bg-surface px-4 py-3 text-base text-text placeholder:text-subtle transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25'
-  const eyebrow = 'text-xs font-semibold uppercase tracking-[0.18em] text-primary-strong'
+    'w-full rounded-xl border border-ink-border bg-ink-elevated px-4 py-3 text-center text-base text-on-ink placeholder:text-on-ink-subtle transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30'
+  const eyebrow = 'text-xs font-semibold uppercase tracking-[0.22em] text-primary'
+  const heading = 'font-display uppercase leading-[1.03] text-on-ink'
 
-  const tourBeat = TOUR[tourIndex]
-  const RenderComp = RENDERS[tourBeat.key]
+  const slide = REEL[reelIndex]
 
   return (
-    <main className="flex min-h-screen bg-marketing-canvas">
+    <main className="relative min-h-screen overflow-hidden bg-ink text-on-ink">
+      {/* Soft glow */}
+      <div aria-hidden className="pointer-events-none absolute left-1/2 top-1/3 h-[660px] w-[660px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary opacity-[0.16] blur-[150px]" />
+      <div aria-hidden className="pointer-events-none absolute left-1/2 top-1/4 h-[300px] w-[300px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-signal opacity-[0.10] blur-[130px]" />
+
       {/* Preview-only banner (public /preview route; ADR-068, torn down at launch). */}
       {preview && (
         <div className="fixed inset-x-0 top-0 z-50 bg-signal px-4 py-1.5 text-center text-xs font-semibold text-on-signal">
-          Preview · nothing is saved — this is the beta induction flow with sample data
+          Preview · nothing is saved — this is the beta induction with sample data
         </div>
       )}
 
       {/* Preview end-state — submit can't redirect without auth, so show completion. */}
       {preview && previewDone && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-6">
-          <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-7 text-center shadow-lg">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6">
+          <div className="w-full max-w-sm rounded-2xl border border-ink-border bg-ink-elevated p-7 text-center shadow-lg">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary-bg text-2xl text-primary-strong">✓</div>
-            <h2 className="mt-4 text-xl font-bold text-text">That&rsquo;s the whole flow.</h2>
-            <p className="mt-2 text-sm leading-relaxed text-muted">
+            <h2 className="mt-4 text-xl font-bold text-on-ink">That&rsquo;s the whole sequence.</h2>
+            <p className="mt-2 text-sm leading-relaxed text-on-ink-muted">
               In the real induction this writes your profile + intent and drops you into Circles.
               Here it just stops — nothing was saved.
             </p>
@@ -231,9 +236,10 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
               onClick={() => {
                 setPreviewDone(false)
                 setBeat(0)
+                setReelIndex(0)
                 setOaths({ unfinished: false, report: false, build: false })
               }}
-              className={`${btnSecondary} mt-5 w-full`}
+              className={`${btnGhost} mt-5 w-full border border-ink-border`}
             >
               Run it again
             </button>
@@ -241,83 +247,36 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
         </div>
       )}
 
-      {/* Brand rail — beta framing + beat tracker (desktop only). */}
-      <aside className="relative hidden w-[44%] max-w-xl shrink-0 overflow-hidden lg:block">
-        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: 'url(/images/site/community-1.jpg)' }} />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/85" />
-        <div className="relative flex h-full flex-col justify-between p-12 text-white">
+      <div className={`relative z-10 mx-auto flex min-h-screen max-w-lg flex-col px-6 ${preview ? 'pt-6' : ''}`}>
+        {/* Header + progress */}
+        <header className="flex items-center justify-between pt-8">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-primary" />
-            <span className="font-display text-xl uppercase tracking-tight">Frequency</span>
-            <span className="ml-1 rounded-full border border-white/40 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-white/80">Beta</span>
-          </div>
-
-          <div>
-            <h2 className="font-display text-5xl uppercase leading-[0.95]">
-              You&rsquo;re
-              <br />
-              early.
-            </h2>
-            <p className="mt-5 max-w-sm leading-relaxed text-white/75">
-              Not a customer. A founder. The next two minutes set you up &mdash; then you&rsquo;re
-              building this with us.
-            </p>
-          </div>
-
-          <ol className="space-y-2.5">
-            {BEAT_LABELS.map((label, i) => {
-              const done = beat > i
-              const current = beat === i
-              return (
-                <li key={label} className={`flex items-center gap-3 text-sm transition-colors ${current ? 'text-white' : done ? 'text-white/80' : 'text-white/45'}`}>
-                  <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${done ? 'bg-primary text-on-primary' : current ? 'bg-white text-text' : 'border border-white/30'}`}>
-                    {done ? '✓' : i + 1}
-                  </span>
-                  {label}
-                </li>
-              )
-            })}
-          </ol>
-        </div>
-      </aside>
-
-      {/* Content column */}
-      <section className="flex flex-1 items-center justify-center px-5 py-10 sm:px-10">
-        <div className="w-full max-w-md">
-          <div className="mb-8 flex items-center gap-2 lg:hidden">
             <div className="h-7 w-7 rounded-lg bg-primary" />
-            <span className="font-display text-lg uppercase tracking-tight text-text">Frequency</span>
-            <span className="rounded-full border border-border-strong px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-subtle">Beta</span>
+            <span className="font-display text-lg uppercase tracking-tight text-on-ink">Frequency</span>
           </div>
+          <span className="rounded-full border border-ink-border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-on-ink-subtle">Beta</span>
+        </header>
+        <div className="mt-6 flex items-center gap-1.5">
+          {Array.from({ length: BEAT_COUNT }).map((_, i) => (
+            <span key={i} className={`h-1 flex-1 rounded-full transition-colors duration-500 ${i <= beat ? 'bg-primary' : 'bg-on-ink/15'}`} />
+          ))}
+        </div>
 
-          {/* Progress */}
-          <div className="mb-9">
-            <div className="flex items-center gap-1.5">
-              {BEAT_LABELS.map((label, i) => (
-                <span key={label} className={`h-1.5 flex-1 rounded-full transition-colors duration-500 ${i <= beat ? 'bg-primary' : 'bg-border-strong'}`} />
-              ))}
-            </div>
-            <p className="mt-3 text-xs font-medium text-subtle">
-              Step {beat + 1} of {BEAT_LABELS.length} · <span className="text-muted">{BEAT_LABELS[beat]}</span>
-            </p>
-          </div>
-
-          {/* Keyed by beat so each eases in. */}
-          <div key={beat} className="animate-[slideUp_0.35s_ease-out]">
+        {/* Centered stage */}
+        <div className="flex flex-1 items-center justify-center py-10">
+          <div key={beat} className="w-full animate-[slideUp_0.45s_ease-out] text-center">
             {/* ── Beat 0: The Oath ── */}
             {beat === 0 && (
-              <div className="space-y-6">
-                <div>
-                  <p className={eyebrow}>{VERA.oath.eyebrow}</p>
-                  <h1 className="mt-2 text-2xl font-bold text-text">{VERA.oath.heading}</h1>
-                  <p className="mt-2 text-sm leading-relaxed text-muted">{VERA.oath.body}</p>
-                </div>
+              <div>
+                <p className={eyebrow}>{VERA.oath.eyebrow}</p>
+                <h1 className={`mt-3 text-3xl sm:text-4xl ${heading}`}>{VERA.oath.heading}</h1>
+                <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-on-ink-muted">{VERA.oath.body}</p>
 
-                <div className="space-y-3">
+                <div className="mt-8 space-y-3 text-left">
                   {BETA_OATHS.map((o) => (
                     <label
                       key={o.id}
-                      className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors ${oaths[o.id] ? 'border-primary bg-primary-bg' : 'border-border bg-surface hover:bg-surface-elevated'}`}
+                      className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition-colors ${oaths[o.id] ? 'border-primary bg-primary/10' : 'border-ink-border bg-ink-elevated hover:border-on-ink-subtle'}`}
                     >
                       <input
                         type="checkbox"
@@ -325,12 +284,12 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
                         onChange={(e) => setOaths((prev) => ({ ...prev, [o.id]: e.target.checked }))}
                         className="mt-0.5 h-5 w-5 shrink-0 accent-primary"
                       />
-                      <span className={`text-sm font-medium ${oaths[o.id] ? 'text-primary-strong' : 'text-text'}`}>{o.label}</span>
+                      <span className={`text-sm font-medium ${oaths[o.id] ? 'text-on-ink' : 'text-on-ink-muted'}`}>{o.label}</span>
                     </label>
                   ))}
                 </div>
 
-                <button disabled={!allOathsChecked || accepting} onClick={passOath} className={`${btnPrimary} w-full`}>
+                <button disabled={!allOathsChecked || accepting} onClick={passOath} className={`${btnPrimary} mt-8`}>
                   {accepting ? 'One sec…' : VERA.oath.cta}
                 </button>
               </div>
@@ -338,31 +297,86 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
 
             {/* ── Beat 1: Intro ── */}
             {beat === 1 && (
-              <div className="space-y-6">
-                <div>
-                  <p className={eyebrow}>{VERA.intro.eyebrow}</p>
-                  <h1 className="mt-2 text-3xl font-bold leading-tight text-text">{VERA.intro.heading}</h1>
-                  <p className="mt-3 text-base leading-relaxed text-muted">{VERA.intro.body}</p>
-                </div>
-                <button onClick={() => setBeat(2)} className={`${btnPrimary} w-full`}>{VERA.intro.cta}</button>
+              <div>
+                <p className={eyebrow}>{VERA.intro.eyebrow}</p>
+                <h1 className={`mt-3 text-4xl sm:text-5xl ${heading}`}>{VERA.intro.heading}</h1>
+                <p className="mx-auto mt-5 max-w-md text-base leading-relaxed text-on-ink-muted">{VERA.intro.body}</p>
+                <button onClick={() => setBeat(2)} className={`${btnPrimary} mt-8`}>{VERA.intro.cta}</button>
               </div>
             )}
 
-            {/* ── Beat 2: Identity ── */}
+            {/* ── Beat 2: The reel ── */}
             {beat === 2 && (
-              <div className="space-y-6">
-                <div>
-                  <h1 className="text-2xl font-bold text-text">{VERA.identity.heading}</h1>
-                  <p className="mt-1.5 text-sm text-muted">{VERA.identity.body}</p>
+              <div>
+                <p className={eyebrow}>{VERA.tour.eyebrow}</p>
+                <h1 className={`mt-3 text-2xl sm:text-3xl ${heading}`}>{VERA.tour.heading}</h1>
+
+                {/* Crossfading stage */}
+                <div className="relative mx-auto mt-7 h-[420px] w-full max-w-[300px]">
+                  {REEL.map((s, i) => {
+                    const active = i === reelIndex
+                    return (
+                      <div
+                        key={i}
+                        className={`absolute inset-0 flex items-center justify-center transition-opacity duration-700 ${active ? 'opacity-100' : 'opacity-0'} ${active ? '' : 'pointer-events-none'}`}
+                      >
+                        {s.kind === 'render'
+                          ? (() => {
+                              const C = RENDERS[s.render]
+                              return <div className="w-full"><C animate={active} /></div>
+                            })()
+                          : (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={s.src} alt={s.title} className="h-full w-full rounded-3xl object-cover shadow-2xl ring-1 ring-on-ink/10" />
+                          )}
+                      </div>
+                    )
+                  })}
                 </div>
 
-                <div className="space-y-4">
-                  <div>
-                    <label htmlFor="displayName" className="mb-1.5 block text-sm font-medium text-text">
-                      Display name <span className="text-danger">*</span>
-                    </label>
+                {/* Caption */}
+                <div className="mx-auto mt-5 min-h-[66px] max-w-sm">
+                  <p className="text-base font-semibold text-on-ink">{slide.title}</p>
+                  <p className="mt-1 text-sm leading-relaxed text-on-ink-muted">{slide.line}</p>
+                </div>
+
+                {/* Dots */}
+                <div className="flex items-center justify-center gap-2">
+                  {REEL.map((s, i) => (
+                    <button
+                      key={i}
+                      aria-label={`Show ${s.title}`}
+                      onClick={() => setReelIndex(i)}
+                      className={`h-2 rounded-full transition-all ${i === reelIndex ? 'w-6 bg-primary' : 'w-2 bg-on-ink/20 hover:bg-on-ink/40'}`}
+                    />
+                  ))}
+                </div>
+
+                <div className="mt-7 flex items-center justify-center gap-2">
+                  <button onClick={() => setBeat(1)} className={btnGhost}>Back</button>
+                  <button onClick={() => setBeat(3)} className={btnPrimary}>{VERA.tour.cta}</button>
+                </div>
+              </div>
+            )}
+
+            {/* ── Beat 3: Identity ── */}
+            {beat === 3 && (
+              <div>
+                <h1 className={`text-3xl sm:text-4xl ${heading}`}>{VERA.identity.heading}</h1>
+                <p className="mx-auto mt-3 max-w-md text-sm text-on-ink-muted">{VERA.identity.body}</p>
+
+                <div className="mt-7 flex flex-col items-center gap-5">
+                  <button type="button" onClick={() => fileInputRef.current?.click()} className="group relative">
+                    {renderAvatar('lg')}
+                    <span className="mt-2 block text-xs font-semibold text-primary group-hover:underline">
+                      {avatarPreview ? 'Change photo' : 'Add a photo'}
+                    </span>
+                  </button>
+                  <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+                  {uploadError && <p className="text-xs text-danger">{uploadError}</p>}
+
+                  <div className="w-full max-w-xs space-y-3">
                     <input
-                      id="displayName"
                       type="text"
                       value={displayName}
                       onChange={(e) => {
@@ -370,209 +384,100 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
                         setDisplayName(v)
                         if (!handleTouched) setHandle(suggestHandle(v))
                       }}
-                      placeholder="Jane Smith"
+                      placeholder="Your name"
                       autoFocus
-                      className={inputBase}
+                      className={`${inputBase} text-lg`}
                     />
-                  </div>
-
-                  <div>
-                    <label htmlFor="handle" className="mb-1.5 block text-sm font-medium text-text">
-                      Handle <span className="text-danger">*</span>
-                    </label>
                     <div className="relative">
-                      <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-base text-subtle">@</span>
+                      <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-base text-on-ink-subtle">@</span>
                       <input
-                        id="handle"
                         type="text"
                         value={handle}
                         onChange={(e) => {
                           setHandleTouched(true)
                           setHandle(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))
                         }}
-                        placeholder="jane_smith"
-                        className={`${inputBase} pl-8 pr-9`}
+                        placeholder="handle"
+                        className={`${inputBase} px-9`}
                       />
                       <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm leading-none">
-                        {handleStatus === 'checking' && <span className="animate-pulse text-subtle">•••</span>}
+                        {handleStatus === 'checking' && <span className="animate-pulse text-on-ink-subtle">•••</span>}
                         {handleStatus === 'available' && <span className="text-success">✓</span>}
                         {handleStatus === 'taken' && <span className="text-danger">✗</span>}
                       </span>
                     </div>
-                    {handleStatus === 'taken' && <p className="mt-1.5 text-xs text-danger">That handle is already taken.</p>}
-                    {handle && !HANDLE_RE.test(handle) && <p className="mt-1.5 text-xs text-danger">Only lowercase letters, numbers, and underscores.</p>}
-                  </div>
-
-                  <div className="flex items-center gap-4 rounded-2xl border border-border bg-surface p-4">
-                    {renderAvatar()}
-                    <div className="flex flex-col items-start gap-1">
-                      <button type="button" onClick={() => fileInputRef.current?.click()} className="text-sm font-semibold text-primary-strong hover:underline">
-                        {avatarPreview ? 'Change photo' : 'Upload a photo'}
-                      </button>
-                      {avatarPreview && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setAvatarFile(null)
-                            setAvatarPreview(null)
-                            setAvatarUrl('')
-                            if (fileInputRef.current) fileInputRef.current.value = ''
-                          }}
-                          className="text-sm text-subtle hover:text-muted"
-                        >
-                          Remove
-                        </button>
-                      )}
-                      <p className="text-xs text-subtle">Optional · JPG, PNG, or GIF up to 5 MB</p>
-                    </div>
-                    <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-                  </div>
-                  {uploadError && <p className="text-xs text-danger">{uploadError}</p>}
-
-                  <div>
-                    <label htmlFor="bio" className="mb-1.5 block text-sm font-medium text-text">One line about you</label>
-                    <textarea
-                      id="bio"
-                      value={bio}
-                      onChange={(e) => setBio(e.target.value.slice(0, 280))}
-                      placeholder="What should people know?"
-                      rows={3}
-                      className={`${inputBase} resize-none`}
-                    />
-                    <p className={`mt-1.5 text-right text-xs tabular-nums ${bio.length >= 260 ? 'text-primary' : 'text-subtle'}`}>{bio.length} / 280</p>
+                    {handleStatus === 'taken' && <p className="text-xs text-danger">That handle is already taken.</p>}
                   </div>
                 </div>
 
-                <div className="flex gap-3">
-                  <button onClick={() => setBeat(1)} className={`${btnSecondary} flex-1`}>Back</button>
-                  <button disabled={!identityValid || uploading} onClick={advanceFromIdentity} className={`${btnPrimary} flex-1`}>
+                <div className="mt-8 flex items-center justify-center gap-2">
+                  <button onClick={() => setBeat(2)} className={btnGhost}>Back</button>
+                  <button disabled={!identityValid || uploading} onClick={advanceFromIdentity} className={btnPrimary}>
                     {uploading ? 'Uploading…' : 'Continue'}
                   </button>
                 </div>
               </div>
             )}
 
-            {/* ── Beat 3: Place + intent ── */}
-            {beat === 3 && (
-              <div className="space-y-6">
-                <div>
-                  <h1 className="text-2xl font-bold text-text">{VERA.place.heading}</h1>
-                  <p className="mt-1.5 text-sm text-muted">{VERA.place.body}</p>
-                </div>
+            {/* ── Beat 4: Place + intent ── */}
+            {beat === 4 && (
+              <div>
+                <h1 className={`text-3xl sm:text-4xl ${heading}`}>{VERA.place.heading}</h1>
+                <p className="mx-auto mt-3 max-w-md text-sm text-on-ink-muted">{VERA.place.body}</p>
 
-                <div className="space-y-4">
-                  <div>
-                    <label htmlFor="region" className="mb-1.5 block text-sm font-medium text-text">Region</label>
-                    {regions.length === 0 ? (
-                      <p className="rounded-xl border border-dashed border-border bg-surface/50 px-4 py-6 text-center text-sm text-subtle">No regions available yet — we&rsquo;ll sort you later.</p>
-                    ) : (
-                      <select id="region" value={regionId} onChange={(e) => setRegionId(e.target.value)} className={inputBase}>
-                        <option value="">Select a region…</option>
-                        {regions.map((r) => (
-                          <option key={r.id} value={r.id}>{r.name}</option>
-                        ))}
-                      </select>
-                    )}
-                  </div>
+                <div className="mx-auto mt-7 w-full max-w-xs space-y-4">
+                  {regions.length === 0 ? (
+                    <p className="rounded-xl border border-dashed border-ink-border px-4 py-5 text-sm text-on-ink-subtle">No regions yet — we&rsquo;ll sort you later.</p>
+                  ) : (
+                    <select value={regionId} onChange={(e) => setRegionId(e.target.value)} className={inputBase}>
+                      <option value="">Where are you?</option>
+                      {regions.map((r) => (
+                        <option key={r.id} value={r.id}>{r.name}</option>
+                      ))}
+                    </select>
+                  )}
 
-                  <div>
-                    <label htmlFor="intent" className="mb-1.5 block text-sm font-medium text-text">{VERA.place.intentLabel}</label>
+                  <div className="text-left">
+                    <p className="mb-2 text-center text-sm font-medium text-on-ink">{VERA.place.intentLabel}</p>
                     <textarea
-                      id="intent"
                       value={intent}
                       onChange={(e) => setIntent(e.target.value.slice(0, 500))}
                       placeholder={VERA.place.intentPlaceholder}
                       rows={4}
-                      className={`${inputBase} resize-none`}
+                      className={`${inputBase} resize-none text-left`}
                     />
                   </div>
                 </div>
 
-                <div className="flex gap-3">
-                  <button onClick={() => setBeat(2)} className={`${btnSecondary} flex-1`}>Back</button>
-                  <button onClick={() => setBeat(4)} className={`${btnPrimary} flex-1`}>Continue</button>
-                </div>
-              </div>
-            )}
-
-            {/* ── Beat 4: The tour ── */}
-            {beat === 4 && (
-              <div className="space-y-6">
-                <div>
-                  <p className={eyebrow}>{VERA.tour.eyebrow}</p>
-                  <h1 className="mt-2 text-2xl font-bold text-text">{VERA.tour.heading}</h1>
-                </div>
-
-                {/* Render — re-mounts per section so it eases in. */}
-                <div key={tourBeat.key} className="flex justify-center">
-                  <RenderComp />
-                </div>
-
-                <div className="rounded-2xl border border-border bg-surface p-5">
-                  <p className="text-sm font-semibold text-primary-strong">{tourBeat.title}</p>
-                  <p className="mt-1 text-sm leading-relaxed text-muted">{tourBeat.line}</p>
-                </div>
-
-                {/* Section dots */}
-                <div className="flex items-center justify-center gap-2">
-                  {TOUR.map((t, i) => (
-                    <span key={t.key} className={`h-2 rounded-full transition-all ${i === tourIndex ? 'w-6 bg-primary' : 'w-2 bg-border-strong'}`} />
-                  ))}
-                </div>
-
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => (tourIndex === 0 ? setBeat(3) : setTourIndex((i) => i - 1))}
-                    className={`${btnSecondary} flex-1`}
-                  >
-                    Back
-                  </button>
-                  <button
-                    onClick={() => (tourIndex < TOUR.length - 1 ? setTourIndex((i) => i + 1) : setBeat(5))}
-                    className={`${btnPrimary} flex-1`}
-                  >
-                    {tourIndex < TOUR.length - 1 ? 'Next' : VERA.tour.cta}
-                  </button>
+                <div className="mt-8 flex items-center justify-center gap-2">
+                  <button onClick={() => setBeat(3)} className={btnGhost}>Back</button>
+                  <button onClick={() => setBeat(5)} className={btnPrimary}>Continue</button>
                 </div>
               </div>
             )}
 
             {/* ── Beat 5: Enter ── */}
             {beat === 5 && (
-              <div className="space-y-6">
-                <div>
-                  <p className={eyebrow}>{VERA.enter.eyebrow}</p>
-                  <h1 className="mt-2 text-2xl font-bold text-text">{VERA.enter.heading}</h1>
-                  <p className="mt-2 text-sm leading-relaxed text-muted">{VERA.enter.body}</p>
-                </div>
+              <div>
+                <p className={eyebrow}>{VERA.enter.eyebrow}</p>
+                <h1 className={`mt-3 text-3xl sm:text-4xl ${heading}`}>{VERA.enter.heading}</h1>
+                <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-on-ink-muted">{VERA.enter.body}</p>
 
-                <div className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
-                  <div className="flex items-center gap-4 p-5">
-                    {renderAvatar('lg')}
-                    <div className="min-w-0">
-                      <p className="truncate text-lg font-semibold text-text">{displayName}</p>
-                      <p className="text-sm text-muted">@{handle}</p>
-                    </div>
+                <div className="mx-auto mt-7 flex max-w-xs flex-col items-center gap-3 rounded-2xl border border-ink-border bg-ink-elevated p-6">
+                  {renderAvatar('lg')}
+                  <div>
+                    <p className="text-lg font-semibold text-on-ink">{displayName || 'You'}</p>
+                    <p className="text-sm text-on-ink-muted">@{handle}</p>
                   </div>
-                  {regionId && (
-                    <div className="px-5 py-4">
-                      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-subtle">Region</p>
-                      <p className="text-sm text-text">{regions.find((r) => r.id === regionId)?.name}</p>
-                    </div>
-                  )}
-                  {intent.trim() && (
-                    <div className="px-5 py-4">
-                      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-subtle">Hoping for</p>
-                      <p className="whitespace-pre-wrap text-sm text-text">{intent.trim()}</p>
-                    </div>
-                  )}
+                  {regionId && <p className="text-xs text-on-ink-subtle">{regions.find((r) => r.id === regionId)?.name}</p>}
+                  {intent.trim() && <p className="mt-1 max-w-[16rem] text-sm italic text-on-ink-muted">“{intent.trim()}”</p>}
                 </div>
 
-                {submitError && <p className="text-center text-sm text-danger">{submitError}</p>}
+                {submitError && <p className="mt-4 text-sm text-danger">{submitError}</p>}
 
-                <div className="flex gap-3">
-                  <button onClick={() => setBeat(4)} className={`${btnSecondary} flex-1`}>Back</button>
-                  <button onClick={submit} disabled={submitting} className={`${btnPrimary} flex-1`}>
+                <div className="mt-8 flex items-center justify-center gap-2">
+                  <button onClick={() => setBeat(4)} className={btnGhost}>Back</button>
+                  <button onClick={submit} disabled={submitting} className={btnPrimary}>
                     {submitting ? 'Stepping in…' : VERA.enter.cta}
                   </button>
                 </div>
@@ -580,7 +485,7 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
             )}
           </div>
         </div>
-      </section>
+      </div>
     </main>
   )
 }
