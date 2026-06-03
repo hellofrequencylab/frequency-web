@@ -2,84 +2,51 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import {
-  LayoutDashboard,
-  CircleDot,
-  Radio,
-  CalendarDays,
-  Megaphone,
-  ClipboardList,
-  Building2,
-  Network,
-  ShieldAlert,
-  Shield,
-  Users,
-  Trophy,
-  FlaskConical,
-} from 'lucide-react'
+import type { CommunityRole } from '@/lib/core/roles'
+import { visibleGroups } from './sections'
 
-type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
-
-interface NavItem {
-  href: string
-  label: string
-  Icon: React.ElementType
-  exact?: boolean
-}
+// Admin top nav. Renders the grouped catalog from sections.ts (one source of
+// truth, shared with the Overview launchpad) so every surface is reachable and
+// nothing is orphaned. Groups telescope by role via visibleGroups(): a host sees
+// Community; a guide adds Structure; a janitor adds Insights, Vera, Platform.
+// Faint group separators keep the horizontal bar legible without a wall of tabs.
 
 export function AdminSubNav({ role }: { role: CommunityRole }) {
   const pathname = usePathname()
-
-  const tabs: NavItem[] = [
-    { href: '/admin',             label: 'Overview',    Icon: LayoutDashboard, exact: true },
-    { href: '/admin/circles',     label: 'Circles',     Icon: CircleDot },
-    { href: '/admin/channels',    label: 'Channels',    Icon: Radio },
-    { href: '/admin/events',      label: 'Events',      Icon: CalendarDays },
-    { href: '/admin/dispatches',  label: 'Broadcasts',  Icon: Megaphone },
-    { href: '/admin/crew-tasks',     label: 'Crew Tasks',     Icon: ClipboardList },
-    { href: '/admin/gamification',  label: 'Gamification',  Icon: Trophy },
-    { href: '/admin/moderation',    label: 'Moderation',    Icon: ShieldAlert },
-    ...(role === 'guide' || role === 'mentor' || role === 'admin' || role === 'janitor'
-      ? [{ href: '/admin/hubs', label: 'Hubs', Icon: Building2 } as NavItem]
-      : []),
-    ...(role === 'mentor' || role === 'admin' || role === 'janitor'
-      ? [{ href: '/admin/nexuses', label: 'Nexuses', Icon: Network } as NavItem]
-      : []),
-    // Members + Roles stay janitor-only — the most sensitive keys (member
-    // management and the permission grid) are not handed to admins.
-    ...(role === 'janitor'
-      ? [
-          { href: '/admin/members', label: 'Members', Icon: Users } as NavItem,
-          { href: '/admin/roles', label: 'Roles', Icon: Shield } as NavItem,
-          { href: '/admin/demo', label: 'Demo', Icon: FlaskConical } as NavItem,
-          { href: '/admin/help-gaps', label: 'Help gaps', Icon: ClipboardList } as NavItem,
-        ]
-      : []),
-  ]
+  const groups = visibleGroups(role)
 
   return (
-    <div className="border-b border-border bg-surface/95 backdrop-blur-sm sticky top-0 z-20">
-      <nav className="flex overflow-x-auto px-4 gap-0 scrollbar-none">
-        {tabs.map(({ href, label, Icon, exact }) => {
-          const active = exact ? pathname === href : pathname.startsWith(href)
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={`flex items-center gap-1.5 px-3 py-3 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors shrink-0 ${
-                active
-                  ? 'border-primary text-primary-strong dark:border-primary dark:text-primary-strong'
-                  : 'border-transparent text-muted hover:text-text hover:border-border-strong dark:hover:border-border-strong'
-              }`}
-            >
-              <Icon
-                className={`w-3.5 h-3.5 shrink-0 ${active ? 'text-primary-strong' : 'text-subtle'}`}
-                strokeWidth={active ? 2.5 : 2}
-              />
-              {label}
-            </Link>
-          )
-        })}
+    <div className="sticky top-0 z-20 border-b border-border bg-surface/95 backdrop-blur-sm">
+      <nav className="scrollbar-none flex items-stretch overflow-x-auto px-4">
+        {groups.map((group, gi) => (
+          <div key={group.key} className="flex items-stretch">
+            {gi > 0 && <span className="my-2 w-px shrink-0 self-center bg-border" aria-hidden />}
+            <span className="flex shrink-0 items-center pl-3 pr-1.5 text-[10px] font-semibold uppercase tracking-wide text-subtle/70">
+              {group.label}
+            </span>
+            {group.links.map(({ href, label, Icon, exact }) => {
+              const active = exact ? pathname === href : pathname.startsWith(href)
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  aria-current={active ? 'page' : undefined}
+                  className={`-mb-px flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-2.5 py-3 text-sm font-medium transition-colors ${
+                    active
+                      ? 'border-primary text-primary-strong'
+                      : 'border-transparent text-muted hover:border-border-strong hover:text-text'
+                  }`}
+                >
+                  <Icon
+                    className={`h-3.5 w-3.5 shrink-0 ${active ? 'text-primary-strong' : 'text-subtle'}`}
+                    strokeWidth={active ? 2.5 : 2}
+                  />
+                  {label}
+                </Link>
+              )
+            })}
+          </div>
+        ))}
       </nav>
     </div>
   )

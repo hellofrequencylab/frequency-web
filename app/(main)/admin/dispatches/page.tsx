@@ -1,30 +1,12 @@
-import Link from 'next/link'
-import { SidebarCard } from '@/components/ui/sidebar-card'
-import { notFound } from 'next/navigation'
-import { Megaphone } from 'lucide-react'
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireAdmin } from '@/lib/admin/guard'
+import { AdminPage, AdminSection } from '@/components/admin/admin-page'
 import { DispatchesClient } from './dispatches-client'
 import { BroadcastCompose } from '@/app/(main)/broadcast/broadcast-compose'
 
-
-type AdminRole = 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
-const ADMIN_ROLES: string[] = ['host', 'guide', 'mentor', 'admin', 'janitor']
-
 export default async function AdminDispatchesPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) notFound()
-
+  const { profileId, role } = await requireAdmin('host')
   const admin = createAdminClient()
-  const { data: profile } = await admin
-    .from('profiles')
-    .select('id, community_role')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
-
-  if (!profile || !ADMIN_ROLES.includes(profile.community_role ?? '')) notFound()
-  const role = profile.community_role as AdminRole
 
   // Fetch dispatches authored by this user
   const { data: dispatches } = await admin
@@ -33,7 +15,7 @@ export default async function AdminDispatchesPage() {
       id, title, excerpt, dispatch_type, audience_scope, audience_id, status, published_at, scheduled_for, created_at,
       linked_task:crew_tasks!linked_task_id ( id, name )
     `)
-    .eq('author_id', profile.id)
+    .eq('author_id', profileId)
     .order('created_at', { ascending: false })
 
   // Audience options. Janitor gets everything; others scoped to their org
@@ -52,10 +34,10 @@ export default async function AdminDispatchesPage() {
     hubs    = hRes.data ?? []
     nexuses = nRes.data ?? []
   } else if (role === 'host') {
-    const { data } = await admin.from('circles').select('id, name').eq('host_id', profile.id).order('name')
+    const { data } = await admin.from('circles').select('id, name').eq('host_id', profileId).order('name')
     circles = data ?? []
   } else if (role === 'guide') {
-    const { data: h } = await admin.from('hubs').select('id, name').eq('guide_id', profile.id).order('name')
+    const { data: h } = await admin.from('hubs').select('id, name').eq('guide_id', profileId).order('name')
     hubs = h ?? []
     if (hubs.length > 0) {
       const { data: c } = await admin.from('circles').select('id, name').in('hub_id', hubs.map(h => h.id)).order('name')
@@ -63,7 +45,7 @@ export default async function AdminDispatchesPage() {
     }
   } else {
     // mentor
-    const { data: nx } = await admin.from('nexuses').select('id, name').eq('mentor_id', profile.id).order('name')
+    const { data: nx } = await admin.from('nexuses').select('id, name').eq('mentor_id', profileId).order('name')
     nexuses = nx ?? []
     if (nexuses.length > 0) {
       const { data: h } = await admin.from('hubs').select('id, name').in('nexus_id', nexuses.map(n => n.id)).order('name')
@@ -81,54 +63,35 @@ export default async function AdminDispatchesPage() {
     .order('name')
 
   return (
-    <div>
-      <div className="flex items-end justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-text">Broadcasts</h1>
-          <p className="text-sm text-muted mt-1">
-            Publish announcements to your community. Broadcasts appear on the Broadcasts page and drop into the main feed.
-          </p>
-        </div>
-        <BroadcastCompose circles={circles} hubs={hubs} nexuses={nexuses} />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main content */}
-        <div className="lg:col-span-2">
-          <DispatchesClient
-            dispatches={(dispatches ?? []) as unknown as Array<{
-              id: string
-              title: string
-              excerpt: string | null
-              dispatch_type: 'post' | 'poll' | 'challenge' | 'article'
-              audience_scope: 'circle' | 'hub' | 'nexus'
-              audience_id: string
-              status: 'draft' | 'published'
-              published_at: string | null
-              scheduled_for: string | null
-              created_at: string
-              linked_task: { id: string; name: string } | null
-            }>}
-            role={role}
-            circles={circles}
-            hubs={hubs}
-            nexuses={nexuses}
-            tasks={tasks ?? []}
-          />
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-4">
-          <SidebarCard title="Quick Actions">
-            <div className="p-2 space-y-0.5">
-              <Link href="/broadcast" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-text hover:bg-surface-elevated transition-colors">
-                <Megaphone className="w-4 h-4 text-subtle" /> New Broadcast
-              </Link>
-            </div>
-            <p className="px-4 py-3 text-xs text-subtle">Target dispatches to a specific circle, hub, or nexus. Published dispatches are visible to all members in the selected audience.</p>
-          </SidebarCard>
-        </div>
-      </div>
-    </div>
+    <AdminPage
+      title="Broadcasts"
+      eyebrow="Community"
+      description="Publish announcements to your community. Broadcasts appear on the Broadcasts page and drop into the main feed."
+      actions={<BroadcastCompose circles={circles} hubs={hubs} nexuses={nexuses} />}
+      width="default"
+    >
+      <AdminSection>
+        <DispatchesClient
+          dispatches={(dispatches ?? []) as unknown as Array<{
+            id: string
+            title: string
+            excerpt: string | null
+            dispatch_type: 'post' | 'poll' | 'challenge' | 'article'
+            audience_scope: 'circle' | 'hub' | 'nexus'
+            audience_id: string
+            status: 'draft' | 'published'
+            published_at: string | null
+            scheduled_for: string | null
+            created_at: string
+            linked_task: { id: string; name: string } | null
+          }>}
+          role={role as 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'}
+          circles={circles}
+          hubs={hubs}
+          nexuses={nexuses}
+          tasks={tasks ?? []}
+        />
+      </AdminSection>
+    </AdminPage>
   )
 }

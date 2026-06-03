@@ -1,28 +1,14 @@
-import { notFound } from 'next/navigation'
 import { SidebarCard } from '@/components/ui/sidebar-card'
-import { createClient } from '@/lib/supabase/server'
+import { requireAdmin } from '@/lib/admin/guard'
+import { AdminPage } from '@/components/admin/admin-page'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ModerationQueue } from './moderation-queue'
 
 
-type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
-
 export default async function ModerationPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) notFound()
+  await requireAdmin('host')
 
   const admin = createAdminClient()
-  const { data: profile } = await admin
-    .from('profiles')
-    .select('id, community_role')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
-
-  if (!profile) notFound()
-
-  const role = profile.community_role as CommunityRole
-  if (!['host', 'guide', 'mentor', 'admin', 'janitor'].includes(role)) notFound()
 
   // Fetch pending reports with reporter info
   const { data: rawReports } = await admin
@@ -128,14 +114,12 @@ export default async function ModerationPage() {
   })
 
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-text">Moderation</h1>
-        <p className="text-sm text-muted mt-1">
-          Review reports submitted by community members.
-        </p>
-      </div>
-
+    <AdminPage
+      title="Moderation"
+      eyebrow="Community"
+      description="Review reports submitted by community members."
+      width="wide"
+    >
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main content */}
         <div className="lg:col-span-2">
@@ -155,6 +139,6 @@ export default async function ModerationPage() {
           </SidebarCard>
         </div>
       </div>
-    </div>
+    </AdminPage>
   )
 }
