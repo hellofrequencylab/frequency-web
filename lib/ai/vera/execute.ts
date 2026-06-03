@@ -5,7 +5,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { validateToolCall, requiresConfirmation } from './tools'
+import { validateToolCall } from './tools'
 import { hasConsent } from '@/lib/consent/consent'
 import { rememberFacts, type MemberFacts } from '@/lib/ai/memory'
 
@@ -17,8 +17,12 @@ function factField(category: unknown): keyof MemberFacts {
   return c === 'interests' || c === 'constraints' ? c : 'goals'
 }
 
+/** Tools that write to the member's record/memory — these gate on ai_memory consent.
+ *  Direct member-confirmed actions (e.g. join_circle, handled in the app action) don't. */
+const MEMORY_TOOLS = new Set(['remember_fact', 'set_profile_field'])
+
 /** Execute a member-CONFIRMED tool call. Validates against the bounded surface, then
- *  consent-gates writes, then performs the (small, reversible) mutation. */
+ *  consent-gates memory writes, then performs the (small, reversible) mutation. */
 export async function executeConfirmedTool(
   profileId: string,
   tool: string,
@@ -27,7 +31,7 @@ export async function executeConfirmedTool(
   const v = validateToolCall(tool, args)
   if (!v.ok) return { ok: false, error: v.errors.join(' ') }
 
-  if (requiresConfirmation(tool) && !(await hasConsent(profileId, 'ai_memory'))) {
+  if (MEMORY_TOOLS.has(tool) && !(await hasConsent(profileId, 'ai_memory'))) {
     return { ok: false, error: 'Vera-memory consent is off — nothing was saved.' }
   }
 

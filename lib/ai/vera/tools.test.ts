@@ -17,6 +17,7 @@ describe('Vera tool surface', () => {
   it('classifies confirmation by mode', () => {
     expect(requiresConfirmation('remember_fact')).toBe(true) // write
     expect(requiresConfirmation('set_profile_field')).toBe(true)
+    expect(requiresConfirmation('join_circle')).toBe(true) // write
     expect(requiresConfirmation('suggest_circle')).toBe(false) // read
     expect(requiresConfirmation('nope')).toBe(false)
   })
