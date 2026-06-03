@@ -141,7 +141,7 @@ export default async function AdminChannelsPage() {
         <div className="space-y-4">
           <SidebarCard title="Quick Actions">
             <div className="p-2 space-y-0.5">
-              <Link href="/channels/new" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-text hover:bg-surface-elevated transition-colors">
+              <Link href="/channels" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-text hover:bg-surface-elevated transition-colors">
                 <Plus className="w-4 h-4 text-subtle" /> New Channel
               </Link>
             </div>
