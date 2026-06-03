@@ -13,7 +13,12 @@
 >
 > **2026-06-02:** the in-app design overhaul shipped (foundation kit + shell adoption + dashboard/
 > admin cohesion sweeps, PRs #81–93, ADR-061) — see [REDESIGN-INAPP.md](REDESIGN-INAPP.md) for status
-> + the remaining backlog.
+> + the remaining backlog. A 4-agent review pass reconciled the docs + deduped (PR #94).
+>
+> **2026-06-03:** the focused design round began (Feed content pass, PR #95), and the **AI marketing
+> operator's first wedge — "The Market Read"** shipped under Studio (vertical 11): outbound
+> acquisition, live signal → named pain points → brand-voice drafts, deterministic for now with the
+> live-Claude operator slotting in behind it (PR #96). Plan of record: [MARKETING-AI.md](MARKETING-AI.md).
 
 ---
 
@@ -233,9 +238,9 @@ on the real domain. **Depends on:** nothing (all in-codebase closeouts).
       distance-sorted "Circles near you" (browser geolocation + haversine, no map dependency)
       (P3.14). *Optional later:* a visual map layer on top (deferred because a map widget
       can't be verified without a browser).
-- [ ] **Domain + owner config**: point `frequencylocal.com` (GoDaddy → Vercel) at the app;
-      set `CRON_SECRET`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_APP_URL`, `EMAIL_FROM` in prod;
-      update Supabase + Google OAuth redirect URLs. Full step-by-step runbook: [LAUNCH.md](LAUNCH.md).
+- [~] **Domain + owner config**: `frequencylocal.com` is **live** (DNS → Vercel; the app serves on
+      the apex). Remaining owner steps: confirm the prod env vars (`CRON_SECRET`, `NEXT_PUBLIC_SITE_URL`,
+      `NEXT_PUBLIC_APP_URL`, `EMAIL_FROM`) + the Supabase/Google OAuth redirect URLs. Full runbook: [LAUNCH.md](LAUNCH.md).
 
 **Done when:** the loop above works end-to-end on `frequencylocal.com` and WAM is live on the
 admin/analytics surface.
