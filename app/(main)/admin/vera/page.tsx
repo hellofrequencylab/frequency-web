@@ -1,8 +1,5 @@
-import { notFound } from 'next/navigation'
-import Link from 'next/link'
-import { Bot } from 'lucide-react'
-import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { requireAdmin } from '@/lib/admin/guard'
+import { AdminPage } from '@/components/admin/admin-page'
 import { getVeraConfig } from '@/lib/ai/vera/config'
 import { saveVera } from './actions'
 
@@ -14,27 +11,19 @@ const FIELD = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-
 const LABEL = 'block text-xs font-semibold uppercase tracking-wide text-subtle'
 
 export default async function VeraAdminPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) notFound()
-  const admin = createAdminClient()
-  const { data: profile } = await admin.from('profiles').select('community_role').eq('auth_user_id', user.id).maybeSingle()
-  if (!profile || profile.community_role !== 'janitor') notFound()
+  await requireAdmin('janitor')
 
   const cfg = await getVeraConfig()
   const oaths = [0, 1, 2].map((i) => cfg.induction.oathLabels[i] ?? '')
 
   return (
-    <form action={saveVera} className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="flex items-center gap-2 text-2xl font-bold text-text">
-        <Bot className="h-5 w-5 text-primary-strong" />
-        Manage Vera
-      </h1>
-      <p className="mb-6 mt-1 text-sm text-muted">
-        Tune Vera&rsquo;s voice, her live responses, and the founder-induction copy — saved instantly, no deploy.{' '}
-        <Link href="/admin" className="text-primary-strong hover:underline">Back to admin</Link>.
-      </p>
-
+    <AdminPage
+      title="Manage Vera"
+      eyebrow="Vera"
+      description="Tune Vera’s voice, her live responses, and the founder-induction copy — saved instantly, no deploy."
+      width="narrow"
+    >
+      <form action={saveVera} className="space-y-6">
       {/* Style + responses */}
       <section className="space-y-4 rounded-2xl border border-border bg-surface p-4">
         <h2 className="text-sm font-bold text-text">Voice & responses</h2>
@@ -112,6 +101,7 @@ export default async function VeraAdminPage() {
         </button>
         <span className="text-xs text-subtle">Changes apply to new conversations immediately.</span>
       </div>
-    </form>
+      </form>
+    </AdminPage>
   )
 }

@@ -1,8 +1,6 @@
-import { notFound } from 'next/navigation'
-import Link from 'next/link'
-import { Activity, Users, Flame, TrendingUp } from 'lucide-react'
-import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { Users, Flame, TrendingUp } from 'lucide-react'
+import { requireAdmin } from '@/lib/admin/guard'
+import { AdminPage, AdminSection } from '@/components/admin/admin-page'
 import { StatCard } from '@/components/ui/stat-card'
 import { getEngagementDashboard } from '@/lib/analytics/dashboard'
 
@@ -12,42 +10,32 @@ import { getEngagementDashboard } from '@/lib/analytics/dashboard'
 export const dynamic = 'force-dynamic'
 
 export default async function EngagementDashboardPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) notFound()
-
-  const admin = createAdminClient()
-  const { data: profile } = await admin
-    .from('profiles')
-    .select('community_role')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
-  if (!profile || profile.community_role !== 'janitor') notFound()
+  await requireAdmin('janitor')
 
   const d = await getEngagementDashboard(30)
   const pct = (n: number) => `${Math.round(n * 100)}%`
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="flex items-center gap-2 text-2xl font-bold text-text">
-        <Activity className="h-5 w-5 text-primary-strong" />
-        Engagement
-      </h1>
-      <p className="mb-6 mt-1 text-sm text-muted">
-        Live first-party signal over the last {d.windowDays} days.{' '}
-        <Link href="/admin" className="text-primary-strong hover:underline">Back to admin</Link>.
-      </p>
-
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatCard label="Weekly active" value={d.practice.wam} icon={Users} />
-        <StatCard label="Verified (7d)" value={d.practice.verifiedThisWeek} icon={Flame} />
-        <StatCard label="New (30d)" value={d.practice.newMembers} icon={TrendingUp} />
-        <StatCard label="Activation" value={pct(d.practice.activationRate)} icon={TrendingUp} />
-      </div>
+    <AdminPage
+      title="Engagement"
+      eyebrow="Insights"
+      description={`Live first-party signal over the last ${d.windowDays} days.`}
+      width="wide"
+    >
+      <AdminSection>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <StatCard label="Weekly active" value={d.practice.wam} icon={Users} />
+          <StatCard label="Verified (7d)" value={d.practice.verifiedThisWeek} icon={Flame} />
+          <StatCard label="New (30d)" value={d.practice.newMembers} icon={TrendingUp} />
+          <StatCard label="Activation" value={pct(d.practice.activationRate)} icon={TrendingUp} />
+        </div>
+      </AdminSection>
 
       {/* Activation funnel — where members drop off */}
-      <section className="mt-8">
-        <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-subtle">Activation funnel</h2>
+      <AdminSection
+        title="Activation funnel"
+        description="Distinct members reaching each step. Drop-off fills in as page + feature events accrue."
+      >
         <div className="space-y-2">
           {d.funnel.map((s) => (
             <div key={s.eventType} className="flex items-center justify-between rounded-xl border border-border bg-surface px-4 py-2.5">
@@ -61,12 +49,10 @@ export default async function EngagementDashboardPage() {
             </div>
           ))}
         </div>
-        <p className="mt-1.5 text-xs text-subtle">Distinct members reaching each step. Drop-off fills in as page + feature events accrue.</p>
-      </section>
+      </AdminSection>
 
       {/* What's happening — event volume by type */}
-      <section className="mt-8">
-        <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-subtle">Activity by type</h2>
+      <AdminSection title="Activity by type">
         {d.byType.length === 0 ? (
           <p className="text-sm text-muted">No events yet in this window.</p>
         ) : (
@@ -87,20 +73,19 @@ export default async function EngagementDashboardPage() {
             </table>
           </div>
         )}
-      </section>
+      </AdminSection>
 
-      <div className="mt-8 grid gap-6 sm:grid-cols-2">
+      <div className="grid gap-6 sm:grid-cols-2">
         <TopList title="Top pages" rows={d.topPages} empty="No page views yet." />
         <TopList title="Top features" rows={d.topFeatures} empty="No feature events yet." />
       </div>
-    </div>
+    </AdminPage>
   )
 }
 
 function TopList({ title, rows, empty }: { title: string; rows: { value: string; n: number }[]; empty: string }) {
   return (
-    <section>
-      <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-subtle">{title}</h2>
+    <AdminSection title={title}>
       {rows.length === 0 ? (
         <p className="text-sm text-muted">{empty}</p>
       ) : (
@@ -113,6 +98,6 @@ function TopList({ title, rows, empty }: { title: string; rows: { value: string;
           ))}
         </ul>
       )}
-    </section>
+    </AdminSection>
   )
 }

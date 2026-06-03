@@ -1,24 +1,15 @@
-import { notFound } from 'next/navigation'
 import { SidebarCard } from '@/components/ui/sidebar-card'
-import { createClient } from '@/lib/supabase/server'
+import { requireAdmin } from '@/lib/admin/guard'
+import { AdminPage } from '@/components/admin/admin-page'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { CrewTasksClient } from './crew-tasks-client'
 import { NewTaskCompose } from '@/components/compose/new-task-compose'
 
 
 export default async function AdminCrewTasksPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) notFound()
+  await requireAdmin('host')
 
   const admin = createAdminClient()
-  const { data: profile } = await admin
-    .from('profiles')
-    .select('id, community_role')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
-
-  if (!profile || !['host', 'guide', 'mentor', 'janitor'].includes(profile.community_role ?? '')) notFound()
 
   const [tasksRes, pendingRes] = await Promise.all([
     admin
@@ -74,17 +65,13 @@ export default async function AdminCrewTasksPage() {
   }))
 
   return (
-    <div>
-      <div className="flex items-end justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-text">Crew Tasks</h1>
-          <p className="text-sm text-muted mt-1">
-            Define the tasks members can complete to earn zaps. Changes apply immediately across the app.
-          </p>
-        </div>
-        <NewTaskCompose />
-      </div>
-
+    <AdminPage
+      title="Crew Tasks"
+      eyebrow="Community"
+      description="Define the tasks members can complete to earn zaps. Changes apply immediately across the app."
+      width="wide"
+      actions={<NewTaskCompose />}
+    >
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main content */}
         <div className="lg:col-span-2">
@@ -101,6 +88,6 @@ export default async function AdminCrewTasksPage() {
           </SidebarCard>
         </div>
       </div>
-    </div>
+    </AdminPage>
   )
 }

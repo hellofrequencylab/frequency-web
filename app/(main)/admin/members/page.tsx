@@ -1,7 +1,7 @@
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireAdmin } from '@/lib/admin/guard'
+import { AdminPage } from '@/components/admin/admin-page'
 import { Users, Mail, Rocket, ArrowUpRight } from 'lucide-react'
 import { MemberAdmin } from './member-admin'
 import { listSubscribers, type ContactRow } from '@/lib/studio/contacts'
@@ -28,29 +28,19 @@ export default async function AdminMembersPage({
 }: {
   searchParams: Promise<{ view?: string }>
 }) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) notFound()
-
-  const admin = createAdminClient()
-  const { data: caller } = await admin
-    .from('profiles')
-    .select('id, community_role')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
-  if (!caller || caller.community_role !== 'janitor') notFound()
+  await requireAdmin('janitor')
 
   const { view } = await searchParams
   const tab: TabKey = view === 'subscribers' || view === 'beta' ? view : 'members'
 
   return (
-    <div>
-      <div className="flex items-center gap-2 mb-1">
-        <Users className="w-5 h-5 text-primary-strong" />
-        <h1 className="text-2xl font-bold text-text">People &amp; lists</h1>
-      </div>
-      <p className="text-sm text-muted mb-5">Members, email subscribers, and the beta waitlist.</p>
-
+    <AdminPage
+      title="People & lists"
+      eyebrow="Platform"
+      icon={Users}
+      description="Members, email subscribers, and the beta waitlist."
+      width="wide"
+    >
       {/* Tabs */}
       <div className="flex gap-1 border-b border-border mb-6">
         {TABS.map(({ key, label, Icon }) => {
@@ -74,7 +64,7 @@ export default async function AdminMembersPage({
       {tab === 'members' && <MembersTab />}
       {tab === 'subscribers' && <SubscribersTab />}
       {tab === 'beta' && <BetaTab />}
-    </div>
+    </AdminPage>
   )
 }
 
