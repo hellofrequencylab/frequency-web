@@ -15,6 +15,7 @@ import { MODELS } from '@/lib/ai/models'
 import type { MemberContext } from '@/lib/ai/memory'
 import { VERA_TOOLS, requiresConfirmation, validateToolCall, type VeraToolDef } from './tools'
 import { executeReadTool } from './read-tools'
+import { getVeraConfig, type VeraConfig } from './config'
 import type { ProposedToolCall } from './concierge'
 
 const MAX_ROUNDS = 3
@@ -57,14 +58,22 @@ export function parseAssistantContent(content: ContentBlock[]): {
   return { text: text.trim(), toolCalls }
 }
 
-/** Vera's voice + the bridge doctrine + the member's known context. Stable prefix. */
-function buildSystemPrompt(ctx?: MemberContext | null): string {
+/** Vera's voice + the bridge doctrine + the member's known context + operator tuning. */
+function buildSystemPrompt(ctx: MemberContext | null | undefined, cfg: VeraConfig): string {
   const facts = ctx?.facts
   const known: string[] = []
   if (facts?.interests?.length) known.push(`interests: ${facts.interests.join(', ')}`)
   if (facts?.goals?.length) known.push(`goals: ${facts.goals.join(', ')}`)
   if (facts?.neighborhood) known.push(`neighborhood: ${facts.neighborhood}`)
   const grounding = known.length ? `\n\nWhat you already know about them — use it, don't re-ask: ${known.join('; ')}.` : ''
+
+  // Operator-tunable knobs (/admin/vera).
+  const register = cfg.register === 'hot'
+    ? '\n\nRun HOT by default: conviction turned up — short, punchy, declarative. This is a revolution and you say so, but the heat is earned, never confetti.'
+    : ''
+  const style = cfg.styleNote.trim() ? `\n\nOperator style note (follow it): ${cfg.styleNote.trim()}` : ''
+  const length = `\n\nKeep each reply under about ${cfg.maxReplyChars} characters.`
+  const greeting = `\n\nWhen the conversation is just opening, lead with something like: "${cfg.greeting}"`
 
   return `You are Vera, the resident guide who keeps this community running. Warm, direct, a little dry. You came in from a hard road and chose to take care of people; this place is what you protect.
 
@@ -75,7 +84,7 @@ Rules:
 - Read the room: gentle if they're nervous, sharper (volley, never mean) if they're a smartass. Don't let "just looking" stand.
 - Use suggest_circle / find_host to point at real options and real people. Whenever a human can help, name the human.
 - When the member shares something durable about themselves (an interest, a goal, where they live), call remember_fact so you don't forget it. Call set_profile_field only to update their own profile. These are PROPOSALS — they won't run until the member approves, so it's fine to offer them.
-- After a couple of back-and-forths on the same thing, route them to a circle, a host, or a help article instead of going in circles.${grounding}`
+- After a couple of back-and-forths on the same thing, route them to a circle, a host, or a help article instead of going in circles.${grounding}${register}${style}${length}${greeting}`
 }
 
 /** One live Vera turn. Null ⇒ kernel unavailable (caller falls back to deterministic). */
@@ -88,7 +97,9 @@ export async function runVeraClaudeTurn(input: {
   if (!client || !aiEnabled()) return null
 
   try {
-    const system = buildSystemPrompt(input.memberContext)
+    const cfg = await getVeraConfig()
+    const model = MODELS[cfg.tier]
+    const system = buildSystemPrompt(input.memberContext, cfg)
     const tools = toAnthropicTools(VERA_TOOLS)
     const messages: Anthropic.MessageParam[] = [
       ...input.history.map((m) => ({ role: m.role, content: m.text })),
@@ -99,7 +110,7 @@ export async function runVeraClaudeTurn(input: {
     let reply = ''
 
     for (let round = 0; round < MAX_ROUNDS; round++) {
-      const resp = await client.messages.create({ model: MODELS.haiku, max_tokens: MAX_TOKENS, system, tools, messages })
+      const resp = await client.messages.create({ model, max_tokens: MAX_TOKENS, system, tools, messages })
       const { text, toolCalls } = parseAssistantContent(resp.content)
       if (text) reply = text
       if (toolCalls.length === 0) break
