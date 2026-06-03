@@ -512,6 +512,7 @@ export type Database = {
       }
       circles: {
         Row: {
+          is_demo: boolean
           about: string | null
           city: string | null
           created_at: string | null
@@ -533,6 +534,7 @@ export type Database = {
           type: Database["public"]["Enums"]["circle_type"]
         }
         Insert: {
+          is_demo?: boolean
           about?: string | null
           city?: string | null
           created_at?: string | null
@@ -554,6 +556,7 @@ export type Database = {
           type?: Database["public"]["Enums"]["circle_type"]
         }
         Update: {
+          is_demo?: boolean
           about?: string | null
           city?: string | null
           created_at?: string | null
@@ -1153,6 +1156,7 @@ export type Database = {
       }
       events: {
         Row: {
+          is_demo: boolean
           created_at: string | null
           description: string | null
           ends_at: string | null
@@ -1172,6 +1176,7 @@ export type Database = {
           title: string
         }
         Insert: {
+          is_demo?: boolean
           created_at?: string | null
           description?: string | null
           ends_at?: string | null
@@ -1191,6 +1196,7 @@ export type Database = {
           title: string
         }
         Update: {
+          is_demo?: boolean
           created_at?: string | null
           description?: string | null
           ends_at?: string | null
@@ -2200,6 +2206,7 @@ export type Database = {
       }
       posts: {
         Row: {
+          is_demo: boolean
           author_id: string
           body: string | null
           comment_count: number
@@ -2219,6 +2226,7 @@ export type Database = {
           visibility: Database["public"]["Enums"]["post_visibility"] | null
         }
         Insert: {
+          is_demo?: boolean
           author_id: string
           body?: string | null
           comment_count?: number
@@ -2238,6 +2246,7 @@ export type Database = {
           visibility?: Database["public"]["Enums"]["post_visibility"] | null
         }
         Update: {
+          is_demo?: boolean
           author_id?: string
           body?: string | null
           comment_count?: number
@@ -2331,6 +2340,7 @@ export type Database = {
       }
       practices: {
         Row: {
+          is_demo: boolean
           created_at: string
           created_by: string | null
           description: string | null
@@ -2339,6 +2349,7 @@ export type Database = {
           title: string
         }
         Insert: {
+          is_demo?: boolean
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -2347,6 +2358,7 @@ export type Database = {
           title: string
         }
         Update: {
+          is_demo?: boolean
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -2366,6 +2378,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          is_demo: boolean
           achievement_count: number
           auth_user_id: string | null
           avatar_url: string | null
@@ -2403,6 +2416,7 @@ export type Database = {
           website: string | null
         }
         Insert: {
+          is_demo?: boolean
           achievement_count?: number
           auth_user_id?: string | null
           avatar_url?: string | null
@@ -2440,6 +2454,7 @@ export type Database = {
           website?: string | null
         }
         Update: {
+          is_demo?: boolean
           achievement_count?: number
           auth_user_id?: string | null
           avatar_url?: string | null
@@ -3495,6 +3510,25 @@ export type Database = {
         | { Args: { table_name: string }; Returns: string }
       enablelongtransactions: { Args: never; Returns: string }
       equals: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
+      circles_near: {
+        Args: { _lat: number; _lng: number; _limit?: number }
+        Returns: {
+          id: string
+          name: string
+          slug: string
+          about: string | null
+          type: string
+          member_count: number
+          member_cap: number
+          status: string
+          neighborhood: string | null
+          city: string | null
+          image_url: string | null
+          latitude: number | null
+          longitude: number | null
+          distance_m: number
+        }[]
+      }
       feed_for_viewer: {
         Args: { _limit?: number; _sort?: string }
         Returns: {

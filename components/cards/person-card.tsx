@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import { getInitials } from '@/lib/utils'
 import { EntityCard } from '@/components/cards/entity-card'
+import { DemoBadge } from '@/components/ui/demo-badge'
 
 // The one "person" card — Friends, Directory, and any people list render through
 // this so a person reads identically everywhere. It wraps EntityCard with a round
@@ -14,6 +15,7 @@ export function PersonCard({
   context,
   meta,
   action,
+  isDemo = false,
 }: {
   handle: string
   displayName: string
@@ -26,10 +28,14 @@ export function PersonCard({
   meta?: React.ReactNode
   /** Floating top-right action (its own client component): Friend / Message / Accept… */
   action?: React.ReactNode
+  /** Beta demo profile — badge it and grey it back behind real members. */
+  isDemo?: boolean
 }) {
   return (
     <EntityCard
       href={`/people/${handle}`}
+      badge={isDemo ? <DemoBadge /> : undefined}
+      dimmed={isDemo}
       anchor={
         <div className="relative">
           {avatarUrl ? (

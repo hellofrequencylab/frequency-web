@@ -16,6 +16,7 @@ import { getProfileCapabilities } from '@/lib/core/load-capabilities'
 import { ModerateProfileButton } from './moderate-profile-button'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EditableIdentity } from './editable-identity'
+import { DemoBadge } from '@/components/ui/demo-badge'
 
 const RANK_TIERS = [
   { name: 'Ghost',    min: 0,    cls: 'bg-surface-elevated text-muted',     bar: 'bg-border-strong' },
@@ -60,6 +61,7 @@ export default async function ProfilePage({
       created_at,
       current_streak,
       lifetime_gems,
+      is_demo,
       nexus_regions!nexus_region_id ( name )
     `)
     .eq('handle', handle)
@@ -73,6 +75,7 @@ export default async function ProfilePage({
   const isOwner = !!user && profile.auth_user_id === user.id
 
   const role = (profile.community_role ?? 'member') as CommunityRole
+  const isDemo = (profile as { is_demo?: boolean }).is_demo ?? false
   const initials = getInitials(profile.display_name)
   const regionName = (profile.nexus_regions as unknown as { name: string } | null)?.name
   const joinedDate = new Date(profile.created_at as string).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
@@ -176,7 +179,7 @@ export default async function ProfilePage({
                   alt={profile.display_name}
                   width={96}
                   height={96}
-                  className="w-24 h-24 rounded-full object-cover ring-4 ring-surface"
+                  className={`w-24 h-24 rounded-full object-cover ring-4 ring-surface ${isDemo ? 'grayscale-[0.5]' : ''}`}
                 />
               ) : (
                 <div className="w-24 h-24 rounded-full bg-primary-bg text-primary-strong text-3xl font-semibold flex items-center justify-center ring-4 ring-surface">
@@ -230,6 +233,7 @@ export default async function ProfilePage({
               <div className="flex items-center gap-2 flex-wrap">
                 <RoleBadge role={role} className="text-xs leading-tight" />
                 <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${rank.cls}`}>{rank.name}</span>
+                {isDemo && <DemoBadge />}
               </div>
             }
             meta={
