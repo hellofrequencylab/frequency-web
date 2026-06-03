@@ -1,8 +1,14 @@
-# Onboarding — progressive, non-blocking, eventually AI-guided
+# Onboarding — progressive, non-blocking, AI-guided
 
-Status: **design / not yet built.** Decision recorded in [DECISIONS.md ADR-047](DECISIONS.md).
-This doc is the build spec for Phase 0 + Phase 1; Phase 2 (AI) is sketched and deferred
-to the AI core (ADR-028/041).
+Status: **the Vera concierge path is ✅ LIVE** (shipped 2026-06-03, ADR-074/075) and is the
+**primary new-member path** — induction redirects to `/onboarding/vera` (the Vera concierge,
+[AI-VERA.md](AI-VERA.md)), with a feed first-run banner catching anyone who skips, and the
+activation funnel instrumented end-to-end (ADR-075: `onboarding.induction_completed` →
+`onboarding.vera_opened` → `circle.joined` → `practice.adopted` → `profile.completed`, surfaced
+on `/admin/engagement`). The deterministic **coachmark tour (Phase 1) remains the designed
+fallback** for when the AI kernel is off (kill switch) or over budget — built spec below, not
+yet built. Original decision: [DECISIONS.md ADR-047](DECISIONS.md); Vera handoff +
+instrumentation: ADR-074 / ADR-075.
 
 ## Why
 
@@ -108,7 +114,11 @@ practice adopted), WAM lift, tour completion & drop-off per step.
 Each step is **skippable**, never re-shown once `seen`/`dismissed`, and the next one only
 appears after the pacing gate clears — so it reads as a guide noticing you, not a wizard.
 
-### Phase 2 — AI concierge (separate initiative; depends on the AI core)
+### Phase 2 — AI concierge ✅ (shipped as Vera, 2026-06-03 — ADR-074/075)
+
+This is the path that **shipped** and is now the primary new-member experience (`/onboarding/vera`,
+[AI-VERA.md](AI-VERA.md)); the Phase 1 coachmark tour above is its deterministic fallback when the
+AI kernel is off. The original spec:
 
 A conversational surface (slide-in) where Claude greets the newcomer, explains Frequency,
 and **learns** their interests / neighborhood / goals — then calls **tools** to set profile
