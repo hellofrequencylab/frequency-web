@@ -36,7 +36,6 @@ import {
 import { NAV_AREAS, meetsAccess, type NavAccess } from '@/lib/nav-areas'
 import { PrimaryNav } from '@/components/layout/primary-nav'
 import { BrandMark } from '@/components/layout/brand-mark'
-import { CommunityNav } from '@/components/layout/community-nav'
 import { AREA_ICONS } from '@/components/layout/nav-icons'
 import { DockRevealProvider, useDockRevealed, useHoverScrollReveal } from '@/components/sidebar/dock-reveal'
 
@@ -77,12 +76,11 @@ function buildSections(areas: typeof NAV_AREAS[number][]): NavSectionGroup[] {
   return sections
 }
 
-// Desktop sidebar = Feed (the home anchor, pinned top) + community spaces
-// (Circles, Interests) + features + admin. The Broadcast bar — Dispatches ·
-// Messages · Events — lives in the horizontal CommunityNav under the header. The
-// mobile drawer is the full menu, so it gets every area for completeness.
-const SIDEBAR_SECTIONS = buildSections(NAV_AREAS.filter((a) => a.placement === 'sidebar'))
-const ALL_SECTIONS = buildSections([...NAV_AREAS])
+// One vertical rail holds every destination: Feed (the home anchor, pinned top),
+// then the Broadcast comms loop (Dispatches · Messages · Events), community
+// spaces, features, and admin — grouped by section. The desktop rail and the
+// mobile drawer render the same set.
+const NAV_SECTIONS = buildSections([...NAV_AREAS])
 
 // The effective access for an area = a janitor's per-area override, if any,
 // else the code default. `role` is the viewer's community role (null = visitor).
@@ -427,7 +425,7 @@ function NavLinkList({
   extraSections,
   hideAppNav = false,
   permissions,
-  sections = SIDEBAR_SECTIONS,
+  sections = NAV_SECTIONS,
 }: {
   isActive: (href: string) => boolean
   role: CommunityRole
@@ -436,7 +434,7 @@ function NavLinkList({
   hideAppNav?: boolean
   /** Per-area access overrides (janitor-set); merged over code defaults. */
   permissions?: Record<string, NavAccess>
-  /** Which area sections to render (desktop rail = sidebar-only; drawer = all). */
+  /** Which area sections to render. Defaults to the full rail (NAV_SECTIONS). */
   sections?: NavSectionGroup[]
 }) {
   // `emphasize` = the home anchor (Feed): a touch bolder and full-strength text
@@ -573,7 +571,7 @@ function MobileLeftDrawer({
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-          <NavLinkList isActive={isActive} role={role} onNavigate={onClose} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} sections={ALL_SECTIONS} />
+          <NavLinkList isActive={isActive} role={role} onNavigate={onClose} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} sections={NAV_SECTIONS} />
         </nav>
 
         {/* Bottom close. Sits in the thumb zone */}
@@ -888,18 +886,10 @@ export default function AppShell({
         <div data-feed-scroll className="flex-1 min-w-0 overflow-y-auto pb-[calc(4rem_+_env(safe-area-inset-bottom))] md:pb-0">
           <div className="flex items-stretch min-h-full">
 
-            {/* Center column — community sub-menu + page content. The bar lives
-                HERE (between the left rail and the right rail), not full-bleed
-                under the header, so it reads as the content's own nav. It sticks
-                to the top of the shared scroll; the right rail sits beside it. */}
+            {/* Center column — page content. Navigation lives entirely in the
+                single left rail now (Feed + sections), so the center is just the
+                content; the right rail sits beside it in the shared scroll. */}
             <div className="flex-1 min-w-0 flex flex-col">
-
-              {/* Primary community interaction — the day-to-day social loop. */}
-              {!hideAppNav && (
-                <CommunityNav role={role} isActive={isActive} permissions={permissions} />
-              )}
-
-              {/* Page content */}
               <main className="flex-1 min-w-0 px-6 py-6">
                 {children}
               </main>

@@ -62,6 +62,12 @@ Groups"; grouping is the single biggest cognitive-load reducer in a sidebar).
   Admin
 ```
 
+> **Status (2026-06-03, ADR-063):** the **single grouped rail** is now shipped — Feed is the
+> headerless home anchor at the top, and the comms loop (Dispatches · Messages · Events) lives in a
+> **Broadcast** group directly under it (the old horizontal "Broadcast bar" is retired). The finer
+> re-cut above — a **CONNECT** cluster and moving **Hubs/Nexuses** out of the member rail — is still
+> **proposed**, not yet built.
+
 **Move Hubs & Nexuses out of primary nav for members.** They become:
 - a contextual breadcrumb/link on a Circle page ("Part of the *Austin Hub*"),
 - and full pages inside **Admin** (where `/admin/hubs`, `/admin/nexuses` already
