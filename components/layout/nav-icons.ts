@@ -21,9 +21,9 @@ import {
 } from 'lucide-react'
 
 // Maps each NAV_AREAS key (lib/nav-areas.ts — the framework-free source of truth)
-// to its lucide icon. Shared by the community sub-menu (community-nav.tsx) and the
-// sidebar rail (app-shell.tsx) so both surfaces stay in lockstep. To give a new
-// area an icon, add its key here.
+// to its lucide icon. Used by the single left rail (app-shell.tsx) — desktop and
+// the mobile drawer — so every surface stays in lockstep. To give a new area an
+// icon, add its key here.
 export const AREA_ICONS: Record<string, ElementType> = {
   feed: Home,
   circles: Users,
