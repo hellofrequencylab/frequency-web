@@ -191,3 +191,19 @@ documents everything" until you can *measure* what "everything" is.
 - **The living-docs loop with PR-based staff review** (AI drafts + checklist → human approves in
   GitHub → merge re-embeds). In-product review queue is a later option, not first.
 - **Coverage is measured** via a feature-key registry + matrix; the AI works the gap/staleness list.
+
+## 13. Go-live / enablement checklist (turning AI search on)
+
+AI search ships **dark** — the kernel + data layer exist but answer nothing until enabled, by design
+(the kill switch defaults OFF). To turn it on, in order:
+
+1. ⏳ **CI secrets** — add `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` to the repo, then
+   run the `help-index` workflow (or `pnpm help:index`) to **populate `help_chunks`** (embeddings).
+2. ⏳ **Build the RAG endpoint** (Step 6) and **wire "Ask Vera"** into the support launcher (Step 7).
+3. ⏳ **Flip the kill switch** — set `platform_flags.ai_enabled = true` once the index is populated
+   and the endpoint is live.
+4. ⏳ **Confirm cost guardrails** — `ANTHROPIC_API_KEY` present, per-feature daily cap set
+   (`FEATURE_DAILY_CAP_USD` in `lib/ai/budget.ts`).
+
+Until step 3, the launcher's "Ask" stays a placeholder and search falls back to the instant
+substring match — the product is whole either way.
