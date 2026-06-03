@@ -1,0 +1,29 @@
+# Re-embed the help center into help_chunks whenever articles change on main
+# (docs/SUPPORT-SYSTEM.md §5). Keeps AI search fresh without pg_cron. Needs repo
+# secrets: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.
+name: help-index
+
+on:
+  push:
+    branches: [main]
+    paths: ['content/help/**']
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  index:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      # No install needed: the pipeline reads local Markdown (fs only) and embeds
+      # via the Edge Function over HTTP. Node strips TS types natively.
+      - name: Build the help index
+        run: node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/help-index.mts
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
