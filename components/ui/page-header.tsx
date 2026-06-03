@@ -10,7 +10,7 @@ function GamStat({ icon: Icon, value, label, fill }: { icon: LucideIcon; value: 
     <div className="flex flex-col items-center">
       <Icon className={`h-4 w-4 text-primary ${fill ? 'fill-current' : ''}`} />
       <span className="mt-1 text-base font-bold leading-none tabular-nums text-text">{value}</span>
-      <span className="mt-1 text-[11px] text-subtle">{label}</span>
+      <span className="mt-1 text-xs text-subtle">{label}</span>
     </div>
   )
 }
@@ -50,10 +50,10 @@ export function PageHeader({
           className="flex shrink-0 items-center gap-5 self-start rounded-2xl border border-border bg-surface px-5 py-4 shadow-sm transition-all hover:border-primary-bg hover:shadow-md"
         >
           <div className="flex flex-col items-center">
-            <span className="rank-badge text-[11px] font-bold leading-tight" style={seasonRankStyle(gam.rank)}>
+            <span className="rank-badge text-xs font-bold leading-tight" style={seasonRankStyle(gam.rank)}>
               {RANK_LABELS[gam.rank]}
             </span>
-            <span className="mt-1.5 text-[11px] text-subtle">Rank</span>
+            <span className="mt-1.5 text-xs text-subtle">Rank</span>
           </div>
           <GamStat icon={Zap} value={gam.zaps.toLocaleString()} label="Zaps" fill />
           <GamStat icon={Gem} value={gam.gems.toLocaleString()} label="Gems" />
@@ -64,10 +64,12 @@ export function PageHeader({
   )
 }
 
-// A calm stats strip — a row of value/label counts in a light card.
+// A calm stats strip — a borderless row of value/label counts on the canvas
+// (not a boxed card). Matches the de-boxed treatment the Circles exemplar uses,
+// so every page's stat row reads the same way (DESIGN.md "group, don't box").
 export function StatStrip({ items }: { items: { value: number; label: string }[] }) {
   return (
-    <div className="mb-6 flex flex-wrap items-center gap-x-8 gap-y-3 rounded-2xl border border-border bg-surface px-6 py-4 shadow-sm">
+    <div className="mb-6 flex flex-wrap items-center gap-x-8 gap-y-3">
       {items.map((it) => (
         <div key={it.label}>
           <div className="text-xl font-bold leading-none tabular-nums text-text">{it.value.toLocaleString()}</div>

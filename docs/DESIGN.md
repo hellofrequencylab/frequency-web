@@ -172,6 +172,14 @@ human" lens (local, human, not a SaaS dashboard):
 
 **Circles is the shipped exemplar** of this standard; the other nine pages roll out to match.
 
+> **Update 2026-06-03 (cohesion sweep, PR #106):** the rollout is **shipped** — Broadcasts,
+> Messages, Interests, Practices, Programs, Events, Friends, Partners, Directory all run on
+> `IndexTemplate` + the kit. Two systemic fixes landed at the primitive level: `StatStrip` was
+> **de-boxed** (borderless canvas row, matching Circles — every page's stat row now reads the same),
+> and a shared **`PersonCard`** (`components/cards/person-card.tsx`, wrapping `EntityCard`) gives
+> Friends / Directory / any people list one identical person card. Broadcasts & Messages dropped
+> their page-level sidebars + colored KPI tiles (the global right rail carries that context).
+
 ## Page unification: one grammar for every page
 
 > **Update 2026-06-02 (in-app overhaul, PRs #81–93 — see [REDESIGN-INAPP.md](REDESIGN-INAPP.md)):**
