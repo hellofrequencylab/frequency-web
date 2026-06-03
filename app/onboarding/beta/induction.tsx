@@ -288,30 +288,30 @@ export default function BetaInduction({ userId, userEmail, initialHandle, previe
         </div>
       )}
 
-      {/* Centered stage: logo top · content centered · progress bottom, with buffer. */}
-      <div className="relative z-10 flex min-h-screen flex-col px-6 py-16">
+      {/* Centered stage: Beta + logo top · content centered · progress bottom. */}
+      <div className="relative z-10 flex min-h-screen flex-col px-6 py-14">
         <div className="flex shrink-0 flex-col items-center">
-          <span className="brandmark-link block">
+          <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-subtle">Beta</span>
+          <span className="brandmark-link mt-5 block">
             <span className="brandmark h-12 aspect-[963/170] sm:h-[52px]" aria-hidden />
           </span>
-          <span className="mt-3 text-[10px] font-bold uppercase tracking-[0.36em] text-subtle">Beta</span>
         </div>
 
-        <div className="flex flex-1 items-center justify-center py-10">
+        <div className="flex flex-1 items-center justify-center py-6">
           <div key={beat} className="w-full animate-[slideUp_0.5s_ease-out] text-center">
             {/* ── Beat 0: The Oath ── */}
             {beat === 0 && (
               <div className="mx-auto max-w-5xl">
                 <p className={eyebrow}>{VERA.oath.eyebrow}</p>
-                <h1 className={`mt-4 text-6xl sm:text-7xl ${heading}`}>
+                <h1 className={`mt-3 text-6xl sm:text-7xl ${heading}`}>
                   This isn&rsquo;t a product.
                   <br />
                   It&rsquo;s a promise.
                 </h1>
-                <p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-muted">{VERA.oath.body}</p>
+                <p className="mx-auto mt-4 max-w-xl text-lg leading-relaxed text-muted">{VERA.oath.body}</p>
 
                 {/* Agreements + I'm in, in a 2×2 grid (two rows). */}
-                <div className="mx-auto mt-10 grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="mx-auto mt-7 grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-2">
                   {BETA_OATHS.map((o) => (
                     <label
                       key={o.id}
@@ -338,13 +338,13 @@ export default function BetaInduction({ userId, userEmail, initialHandle, previe
             {beat === 1 && (
               <div className="mx-auto max-w-4xl">
                 <p className={eyebrow}>{VERA.intro.eyebrow}</p>
-                <h1 className={`mt-4 text-6xl sm:text-8xl ${heading}`}>
+                <h1 className={`mt-3 text-6xl sm:text-7xl ${heading}`}>
                   You&rsquo;re not a user.
                   <br />
                   You&rsquo;re a Founder.
                 </h1>
-                <p className="mx-auto mt-6 max-w-2xl text-2xl leading-relaxed text-muted">{VERA.intro.body}</p>
-                <div className="mt-10 flex flex-col items-center gap-3">
+                <p className="mx-auto mt-4 max-w-2xl text-xl leading-relaxed text-muted">{VERA.intro.body}</p>
+                <div className="mt-8 flex flex-col items-center gap-3">
                   <button onClick={() => setBeat(2)} className={btnPrimary}>{VERA.intro.cta}<ArrowRight /></button>
                   <button onClick={() => setBeat(0)} className={backLink}>Back</button>
                 </div>
@@ -357,7 +357,7 @@ export default function BetaInduction({ userId, userEmail, initialHandle, previe
                 <p className={eyebrow}>{VERA.tour.eyebrow}</p>
                 <h1 className={`mt-3 text-4xl sm:text-5xl ${heading}`}>{VERA.tour.heading}</h1>
 
-                <div className="mt-8 flex flex-col items-center gap-8 md:flex-row md:items-center md:justify-center md:gap-12">
+                <div className="mt-6 flex flex-col items-center gap-8 md:flex-row md:items-center md:justify-center md:gap-12">
                   {/* desktop mockup, left */}
                   <div className="relative w-full max-w-xl shrink-0" style={{ aspectRatio: '540 / 348' }}>
                     {REEL.map((s, i) => {
@@ -402,7 +402,7 @@ export default function BetaInduction({ userId, userEmail, initialHandle, previe
               <div className="mx-auto max-w-4xl">
                 <h1 className={`text-5xl sm:text-6xl ${heading}`}>{VERA.identity.heading}</h1>
 
-                <div className="mt-9 flex flex-col items-center gap-8 text-left md:flex-row md:items-center md:justify-center md:gap-10">
+                <div className="mt-7 flex flex-col items-center gap-8 text-left md:flex-row md:items-center md:justify-center md:gap-10">
                   {/* left: form card */}
                   <div className="w-full max-w-sm space-y-4 rounded-3xl border border-border bg-surface p-6 shadow-sm">
                     <div>
@@ -491,7 +491,7 @@ export default function BetaInduction({ userId, userEmail, initialHandle, previe
               <div className="mx-auto max-w-4xl">
                 <h1 className={`text-5xl sm:text-6xl ${heading}`}>{VERA.place.heading}</h1>
 
-                <div className="mt-9 flex flex-col items-center gap-8 text-left md:flex-row md:items-center md:justify-center md:gap-10">
+                <div className="mt-7 flex flex-col items-center gap-8 text-left md:flex-row md:items-center md:justify-center md:gap-10">
                   <div className="w-full max-w-sm space-y-4 rounded-3xl border border-border bg-surface p-6 shadow-sm">
                   <div>
                     <label className={fieldLabel}>Your city</label>
@@ -573,9 +573,9 @@ export default function BetaInduction({ userId, userEmail, initialHandle, previe
             {beat === 5 && (
               <div className="mx-auto max-w-4xl">
                 <p className={eyebrow}>{VERA.enter.eyebrow}</p>
-                <h1 className={`mt-4 text-5xl sm:text-6xl ${heading}`}>{VERA.enter.heading}</h1>
+                <h1 className={`mt-3 text-5xl sm:text-6xl ${heading}`}>{VERA.enter.heading}</h1>
 
-                <div className="mt-9 flex flex-col items-center gap-8 md:flex-row md:items-center md:justify-center md:gap-10">
+                <div className="mt-7 flex flex-col items-center gap-8 md:flex-row md:items-center md:justify-center md:gap-10">
                   {/* portrait profile card with blank slots */}
                   <div className="w-72 shrink-0 rounded-3xl border border-border bg-surface p-7 text-center shadow-sm">
                     <div className="mx-auto w-fit rounded-full ring-4 ring-surface">{renderAvatar()}</div>
