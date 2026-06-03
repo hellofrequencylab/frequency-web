@@ -155,6 +155,21 @@ export default async function ProfilePage({
   const nextRank = getNextRank(totalZaps)
   const progress = nextRank ? Math.min(100, Math.round(((totalZaps - rank.min) / (nextRank.min - rank.min)) * 100)) : 100
 
+  // Rewards — surface the "nearly earned" ones so the next milestone feels within
+  // reach (the celebration hook from the Progress spec), not just dimmed-out.
+  // Earned float to the top; among the rest, the closest comes first.
+  const firstName = (profile.display_name as string).trim().split(/\s+/)[0]
+  const rewards = [
+    { icon: Star, label: 'Early Adopter', description: 'Here from the beginning', current: 1, target: 1, milestone: true },
+    { icon: MessageSquare, label: 'First Post', description: 'Said your first hello', current: postCount, target: 1 },
+    { icon: Users, label: 'Circle Up', description: 'Found your first circle', current: circles.length, target: 1 },
+    { icon: Zap, label: 'Spark', description: '50 zaps earned', current: totalZaps, target: 50 },
+    { icon: Trophy, label: 'Task Master', description: '10 tasks done', current: tasksCompleted, target: 10 },
+  ]
+    .map((r) => ({ ...r, earned: r.current >= r.target, ratio: Math.min(1, r.current / r.target) }))
+    .sort((a, b) => Number(b.earned) - Number(a.earned) || b.ratio - a.ratio)
+  const rewardsEarned = rewards.filter((r) => r.earned).length
+
   return (
     <div>
       {/* ── Cover image + avatar header (the one hero card) ─────── */}
@@ -265,14 +280,14 @@ export default async function ProfilePage({
                 visibility="public"
                 placeholder={
                   isOwner
-                    ? 'Share something...'
-                    : `Write on ${profile.display_name}'s wall...`
+                    ? 'What’s on your mind?'
+                    : `Leave something for ${firstName}…`
                 }
               />
             </div>
           )}
 
-          <SectionHeader title="Timeline" />
+          <SectionHeader title={isOwner ? 'Your timeline' : `${firstName}’s timeline`} />
           <ProfileFeed
             profileId={profileId}
             profileHandle={profile.handle as string}
@@ -314,14 +329,21 @@ export default async function ProfilePage({
             )}
           </ModuleCard>
 
-          {/* Rewards / gamification */}
-          <ModuleCard title="Rewards">
+          {/* Rewards / gamification — earned first, then the closest to earning. */}
+          <ModuleCard title="Rewards" badge={`${rewardsEarned}/${rewards.length}`}>
             <div className="space-y-2.5">
-              <RewardBadge icon={Star} label="Early Adopter" description="Joined during beta" earned />
-              <RewardBadge icon={MessageSquare} label="First Post" description="Made your first post" earned={postCount > 0} />
-              <RewardBadge icon={Users} label="Circle Up" description="Joined a circle" earned={circles.length > 0} />
-              <RewardBadge icon={Zap} label="Spark" description="Earned 50 zaps" earned={totalZaps >= 50} />
-              <RewardBadge icon={Trophy} label="Task Master" description="Completed 10 tasks" earned={tasksCompleted >= 10} />
+              {rewards.map((r) => (
+                <RewardBadge
+                  key={r.label}
+                  icon={r.icon}
+                  label={r.label}
+                  description={r.description}
+                  earned={r.earned}
+                  current={r.current}
+                  target={r.target}
+                  milestone={r.milestone}
+                />
+              ))}
             </div>
           </ModuleCard>
 
@@ -430,20 +452,39 @@ function RewardBadge({
   label,
   description,
   earned,
+  current,
+  target,
+  milestone,
 }: {
   icon: React.ElementType
   label: string
   description: string
   earned: boolean
+  current: number
+  target: number
+  /** Binary milestone (no count to show) vs a progress goal. */
+  milestone?: boolean
 }) {
+  // Unearned + non-milestone → show how close you are (the "nearly earned" nudge).
+  const showProgress = !earned && !milestone
+  const pct = Math.min(100, Math.round((current / target) * 100))
   return (
-    <div className={`flex items-center gap-3 ${earned ? '' : 'opacity-35'}`}>
+    <div className={`flex items-center gap-3 ${earned ? '' : 'opacity-80'}`}>
       <div className={`shrink-0 w-7 h-7 rounded-lg flex items-center justify-center ${earned ? 'bg-warning-bg dark:bg-warning-bg/40' : 'bg-surface-elevated'}`}>
         <Icon className={`w-3.5 h-3.5 ${earned ? 'text-primary' : 'text-subtle'}`} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-xs font-medium text-text">{label}</p>
-        <p className="text-xs text-subtle">{description}</p>
+        <p className={`text-xs font-medium ${earned ? 'text-text' : 'text-muted'}`}>{label}</p>
+        {showProgress ? (
+          <div className="mt-1 flex items-center gap-2">
+            <div className="h-1 flex-1 rounded-full bg-surface-elevated overflow-hidden">
+              <div className="h-full rounded-full bg-primary/60" style={{ width: `${pct}%` }} />
+            </div>
+            <span className="text-xs tabular-nums text-subtle shrink-0">{current}/{target}</span>
+          </div>
+        ) : (
+          <p className="text-xs text-subtle">{description}</p>
+        )}
       </div>
       {earned && <Star className="w-3 h-3 text-primary fill-primary shrink-0" />}
     </div>
