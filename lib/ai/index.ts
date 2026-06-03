@@ -13,3 +13,11 @@ export {
   FEATURE_DAILY_CAP_USD,
   type TokenUsage,
 } from './budget'
+export {
+  getMemberContext,
+  rememberFacts,
+  eraseMemberContext,
+  mergeFacts,
+  type MemberFacts,
+  type MemberContext,
+} from './memory'
