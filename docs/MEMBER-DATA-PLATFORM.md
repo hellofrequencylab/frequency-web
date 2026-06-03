@@ -72,7 +72,7 @@ against the registry — **a typo can't mint a tag.**
 | **2 · Computed traits** | `member_traits` projection + nightly job (lifecycle/cohort/usage/WAM/RFM) | ✅ shipped (dark) |
 | **3 · Segments** | saved segment definitions + Studio admin (name, predicates, member count) | ✅ shipped |
 | **4 · Activation** | trait segments selectable as campaign audiences (`seg:<slug>` → member contacts, consent-aware) | ✅ shipped |
-| **5 · Consent & experiments** | consent records + retention enforcement + experiment-assignment trait + holdouts | ⏳ |
+| **5 · Consent & experiments** | deterministic experiment assignment + holdouts (`lib/experiments`) ✅; consent records + retention enforcement ⏳ | ◑ experiments shipped |
 
 ## Future-proofing (set up now, not retrofitted)
 
@@ -98,3 +98,4 @@ against the registry — **a typo can't mint a tag.**
 | `app/api/cron/refresh-traits/route.ts` | Vercel Cron entrypoint (02:30 daily; `CRON_SECRET`-guarded) |
 | `supabase/migrations/*_member_tags.sql` · `*_member_traits.sql` | tables + RLS + `member_engagement_stats` RPC + founding-cohort backfill |
 | `lib/traits/*.test.ts` | registry integrity, `isTagKey`, and the compute layer |
+| `lib/experiments/registry.ts` · `assign.ts` | experiment catalog + deterministic, storage-free variant assignment (holdout = `control`) |
