@@ -288,17 +288,16 @@ export default function BetaInduction({ userId, userEmail, initialHandle, previe
         </div>
       )}
 
-      {/* Stage split in half: Beta+logo centered in the top half, content in the bottom half. */}
-      <div className="relative z-10 flex min-h-screen flex-col px-6 py-12">
-        <div className="flex flex-1 flex-col items-center justify-center">
+      {/* Stage: one centered column — logo, content, progress — with tight, consistent gaps. */}
+      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 py-12">
+        <div className="flex shrink-0 flex-col items-center">
           <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-subtle">Beta</span>
           <span className="brandmark-link mt-5 block">
             <span className="brandmark h-12 aspect-[963/170] sm:h-[52px]" aria-hidden />
           </span>
         </div>
 
-        <div className="flex flex-1 items-center justify-center">
-          <div key={beat} className="w-full animate-[slideUp_0.5s_ease-out] text-center">
+        <div key={beat} className="mt-10 w-full animate-[slideUp_0.5s_ease-out] text-center">
             {/* ── Beat 0: The Oath ── */}
             {beat === 0 && (
               <div className="mx-auto max-w-5xl">
@@ -603,11 +602,10 @@ export default function BetaInduction({ userId, userEmail, initialHandle, previe
               </div>
             )}
           </div>
-        </div>
 
-        {/* Progress — below the experience. */}
-        <div className="flex shrink-0 justify-center">
-          <div className="flex w-full max-w-sm items-center gap-1.5">
+        {/* Progress — tight under the content. */}
+        <div className="mt-9 w-full max-w-sm shrink-0">
+          <div className="flex w-full items-center gap-1.5">
             {Array.from({ length: BEAT_COUNT }).map((_, i) => (
               <span key={i} className={`h-1 flex-1 rounded-full transition-colors duration-700 ${i <= beat ? 'bg-primary' : 'bg-border-strong'}`} />
             ))}
