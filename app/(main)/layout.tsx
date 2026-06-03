@@ -3,6 +3,7 @@ import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import AppShell from '@/components/layout/app-shell'
 import RightSidebar from '@/components/sidebar/right-sidebar'
+import { DispatchTickerSlot } from '@/components/layout/dispatch-ticker-slot'
 import type { CommunityRole } from '@/components/sidebar/right-sidebar'
 import { getUnreadCount } from '@/app/(main)/notifications/actions'
 import { getAreaPermissions } from '@/lib/permissions'
@@ -61,11 +62,19 @@ export default async function MainLayout({
     </Suspense>
   )
 
+  // Community news ticker — streams in independently, never blocks the shell.
+  const ticker = (
+    <Suspense fallback={null}>
+      <DispatchTickerSlot profileId={profile.id} />
+    </Suspense>
+  )
+
   return (
     <AppShell
       profile={{ ...profile, community_role: effectiveRole }}
       realRole={realRole}
       sidebar={sidebar}
+      ticker={ticker}
       unreadCount={unreadCount}
       permissions={permissions}
     >
