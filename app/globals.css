@@ -88,6 +88,7 @@
   --brand-emboss-dark:  rgba(42, 24, 8, 0.50);
   --brand-burn:         rgba(74, 40, 12, 0.45);
   --brand-shine:        rgba(255, 244, 222, 0.65);
+  --brand-wash:         rgba(194, 88, 18, 0.62);
 }
 
 .dark {
@@ -149,6 +150,7 @@
   --brand-emboss-dark:  rgba(0, 0, 0, 0.66);
   --brand-burn:         rgba(20, 9, 0, 0.60);
   --brand-shine:        rgba(255, 230, 190, 0.42);
+  --brand-wash:         rgba(232, 134, 54, 0.55);
 }
 
 /* ── Tailwind wiring ────────────────────────────────────────────────────────
@@ -410,16 +412,18 @@ h1, h2, h3, h4, h5, h6 {
      `brand-shine` keyframes sweep across once a cycle. */
   background-image: linear-gradient(
     105deg,
-    transparent 38%,
-    var(--brand-shine) 50%,
-    transparent 62%
+    transparent 28%,
+    var(--brand-shine) 43%,
+    var(--brand-wash) 50%,
+    var(--brand-shine) 57%,
+    transparent 72%
   );
   background-repeat: no-repeat;
-  background-size: 220% 100%;
-  background-position: 220% 0;
+  background-size: 240% 100%;
+  background-position: 240% 0;
   -webkit-mask: url('/frequency-logo.png') left center / contain no-repeat;
           mask: url('/frequency-logo.png') left center / contain no-repeat;
-  opacity: 0.62;
+  opacity: 0.9;
   /* Light/rest state = raised EMBOSS: a catch-light on the top edge, a soft
      shadow beneath, so the wordmark reads as pressed UP out of the surface. */
   filter:
@@ -427,13 +431,13 @@ h1, h2, h3, h4, h5, h6 {
     drop-shadow(0 1px 1px var(--brand-emboss-dark));
   transition: opacity 280ms ease, filter 280ms ease, transform 130ms ease;
   will-change: opacity, filter, transform, background-position;
-  /* Occasional life: a shine sweep ~once every 8s (idles off-screen between). */
-  animation: brand-shine 8s ease-in-out 3.5s infinite;
+  /* A dark-orange wash sweeps across ~once every 6s (idles off-screen between). */
+  animation: brand-shine 6s ease-in-out 2.5s infinite;
 }
 /* The wiggle rides the link wrapper so it never fights the press transform on
    the mark itself; synced to the same cadence as the shine. */
 .brandmark-link {
-  animation: brand-wiggle 8s ease-in-out 3.5s infinite;
+  animation: brand-wiggle 6s ease-in-out 2.5s infinite;
 }
 .brandmark-link:hover .brandmark {
   opacity: 1;
@@ -458,9 +462,9 @@ h1, h2, h3, h4, h5, h6 {
     drop-shadow(0 0 3px var(--brand-burn));
 }
 @keyframes brand-shine {
-  0%   { background-position: 220% 0; }
-  12%  { background-position: -120% 0; }
-  100% { background-position: -120% 0; }
+  0%   { background-position: 240% 0; }
+  20%  { background-position: -140% 0; }
+  100% { background-position: -140% 0; }
 }
 @keyframes brand-wiggle {
   0%, 4%    { transform: rotate(0deg) translateX(0); }
