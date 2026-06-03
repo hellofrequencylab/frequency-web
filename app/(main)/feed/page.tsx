@@ -5,6 +5,7 @@ import { Composer } from '@/components/feed/composer'
 import { FeedList } from '@/components/feed/feed-list'
 import { CreateMenu } from '@/components/feed/create-menu'
 import { StreamTemplate } from '@/components/templates/stream-template'
+import { SectionHeader } from '@/components/ui/section-header'
 import { PracticePrompt } from '@/components/practice/practice-prompt'
 import { getPracticesToLogToday } from '@/lib/practices'
 
@@ -76,7 +77,7 @@ export default async function FeedPage({
       <StreamTemplate
         eyebrow={today}
         title={greeting}
-        description={hasCircle ? "Here's what your circles are up to right now." : "What's happening across the community."}
+        description={hasCircle ? 'What your people are up to today.' : "What's happening around you."}
         action={<CreateMenu role={myRole} />}
       >
 
@@ -88,7 +89,7 @@ export default async function FeedPage({
           <Composer
             scopeId={composerScopeId}
             visibility={composerVisibility}
-            placeholder={primaryCircleId ? 'Share something with your circle…' : 'Share something…'}
+            placeholder={primaryCircleId ? 'What’s on your mind? Your circle’s listening.' : 'What’s on your mind?'}
             canAnnounce={canAnnounce}
           />
           {!primaryCircleId && (
@@ -104,38 +105,41 @@ export default async function FeedPage({
 
       {/* Sort toggle + feed */}
       <section className="mt-8">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-subtle">
-            {sort === 'relevant' ? 'For You' : 'Recent'}
-          </h2>
-          <div className="flex items-center gap-0.5 bg-surface-elevated rounded-lg p-0.5">
-            <Link
-              href="?sort=relevant"
-              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
-                sort === 'relevant'
-                  ? 'bg-white text-text shadow-sm'
-                  : 'text-muted hover:text-text'
-              }`}
-            >
-              For You
-            </Link>
-            <Link
-              href="?sort=recent"
-              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
-                sort === 'recent'
-                  ? 'bg-white text-text shadow-sm'
-                  : 'text-muted hover:text-text'
-              }`}
-            >
-              Recent
-            </Link>
-          </div>
-        </div>
+        <SectionHeader
+          title={sort === 'relevant' ? 'For you' : 'Recent'}
+          action={
+            <div className="flex items-center gap-0.5 bg-surface-elevated rounded-lg p-0.5">
+              <Link
+                href="?sort=relevant"
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                  sort === 'relevant'
+                    ? 'bg-surface text-text shadow-sm'
+                    : 'text-muted hover:text-text'
+                }`}
+              >
+                For you
+              </Link>
+              <Link
+                href="?sort=recent"
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                  sort === 'recent'
+                    ? 'bg-surface text-text shadow-sm'
+                    : 'text-muted hover:text-text'
+                }`}
+              >
+                Recent
+              </Link>
+            </div>
+          }
+        />
 
         <FeedList
           myProfileId={myProfileId}
           sort={sort}
           viewerRole={myRole}
+          emptyMessage={hasCircle
+            ? 'Your circle’s quiet right now. Share what’s on your mind.'
+            : 'Find your people to fill this up — or share something with the community.'}
         />
       </section>
       </StreamTemplate>
