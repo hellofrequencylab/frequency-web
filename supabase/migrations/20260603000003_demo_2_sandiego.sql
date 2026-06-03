@@ -491,7 +491,7 @@ FROM (VALUES
 WHERE NOT EXISTS (SELECT 1 FROM posts p WHERE p.id = v.id);
 
 -- =====================================================================
--- 5. EVENTS — upcoming (next ~2–3 weeks) for 7 of the 12 circles.
+-- 5. EVENTS — upcoming (next ~2–3 weeks) for 8 of the 12 circles.
 --    host_id = that circle's host; scope_type 'circle'; fixed UUIDs (c5…).
 -- =====================================================================
 INSERT INTO events (id, host_id, scope_id, scope_type, title, slug, starts_at, ends_at, location, is_cancelled, is_demo)
