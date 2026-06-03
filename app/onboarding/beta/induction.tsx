@@ -32,19 +32,6 @@ const HANDLE_RE = /^[a-z0-9_]+$/
 const RENDERS = { feed: FeedRender, circles: CirclesRender, events: EventsRender }
 const BEAT_COUNT = 6 // 0 oath · 1 intro · 2 reel · 3 identity · 4 place · 5 enter
 
-// The Frequency wordmark, filled with currentColor so it inherits the text color.
-const LOGO_MASK: React.CSSProperties = {
-  backgroundColor: 'currentColor',
-  WebkitMaskImage: "url('/frequency-logo.png')",
-  maskImage: "url('/frequency-logo.png')",
-  WebkitMaskRepeat: 'no-repeat',
-  maskRepeat: 'no-repeat',
-  WebkitMaskPosition: 'center',
-  maskPosition: 'center',
-  WebkitMaskSize: 'contain',
-  maskSize: 'contain',
-}
-
 // No separator — "Daniel Tyack" → "danieltyack" (no dashes or underscores).
 function suggestHandle(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30)
@@ -230,9 +217,10 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
     'w-full rounded-2xl border border-border bg-surface px-5 py-4 text-base text-text placeholder:text-subtle shadow-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25'
   const backLink = 'text-sm font-medium text-subtle underline-offset-4 transition-colors hover:text-muted hover:underline'
   const btnPrimary =
-    'inline-flex items-center justify-center gap-2 rounded-full bg-primary px-10 py-4 text-base font-semibold text-on-primary shadow-lg shadow-primary/25 transition-all hover:bg-primary-hover enabled:hover:-translate-y-0.5 enabled:hover:shadow-xl disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0'
+    'inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-10 py-4 text-base font-semibold text-on-primary shadow-lg shadow-primary/25 transition-all hover:bg-primary-hover enabled:hover:-translate-y-0.5 enabled:hover:shadow-xl disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0'
   const eyebrow = 'text-sm font-semibold uppercase tracking-[0.25em] text-primary'
-  const heading = 'font-display uppercase leading-[1.0] text-text'
+  // Headings use the warm engraved brand-mark tone (desaturated, blends with the canvas).
+  const heading = 'font-display uppercase leading-[1.0] text-[var(--brand-mark)]'
 
   const slide = REEL[reelIndex]
 
@@ -276,18 +264,17 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
         </div>
       )}
 
-      {/* Centered stage — content always vertically centered with a top/bottom buffer. */}
-      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 py-20">
-        <div role="img" aria-label="Frequency" className="h-11 w-[210px] shrink-0 text-text" style={LOGO_MASK} />
-        <span className="mt-2.5 text-[11px] font-bold uppercase tracking-[0.32em] text-subtle">Beta</span>
-
-        <div className="mt-7 flex w-full max-w-sm items-center gap-1.5">
-          {Array.from({ length: BEAT_COUNT }).map((_, i) => (
-            <span key={i} className={`h-1 flex-1 rounded-full transition-colors duration-500 ${i <= beat ? 'bg-primary' : 'bg-border-strong'}`} />
-          ))}
+      {/* Stage — logo on top, content centered, progress pinned to the bottom. */}
+      <div className="relative z-10 flex min-h-screen flex-col px-6 py-12">
+        <div className="flex shrink-0 flex-col items-center pt-2">
+          <span className="brandmark-link block">
+            <span className="brandmark h-16 aspect-[963/170] sm:h-[72px]" aria-hidden />
+          </span>
+          <span className="mt-3 text-[11px] font-bold uppercase tracking-[0.32em] text-subtle">Beta</span>
         </div>
 
-        <div key={beat} className="mt-10 w-full animate-[slideUp_0.5s_ease-out] text-center">
+        <div className="flex flex-1 items-center justify-center py-8">
+          <div key={beat} className="w-full animate-[slideUp_0.5s_ease-out] text-center">
           {/* ── Beat 0: The Oath ── */}
           {beat === 0 && (
             <div className="mx-auto max-w-5xl">
@@ -295,12 +282,12 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
               <h1 className={`mt-4 text-6xl sm:text-7xl ${heading}`}>{VERA.oath.heading}</h1>
               <p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-muted">{VERA.oath.body}</p>
 
-              {/* Three agreements in a row + the I'm in button, all in a line. */}
-              <div className="mt-10 flex flex-col items-stretch justify-center gap-3 md:flex-row">
+              {/* Three agreements + the I'm in button, in a 2×2 grid. */}
+              <div className="mx-auto mt-10 grid max-w-3xl grid-cols-1 gap-3 sm:grid-cols-2">
                 {BETA_OATHS.map((o) => (
                   <label
                     key={o.id}
-                    className={`flex flex-1 cursor-pointer items-center gap-3 rounded-2xl border p-4 text-left transition-colors ${oaths[o.id] ? 'border-primary bg-primary/10' : 'border-border bg-surface hover:border-primary/40'}`}
+                    className={`flex cursor-pointer items-center gap-3 rounded-2xl border p-4 text-left transition-colors ${oaths[o.id] ? 'border-primary bg-primary/10' : 'border-border bg-surface hover:border-primary/40'}`}
                   >
                     <input
                       type="checkbox"
@@ -308,10 +295,10 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
                       onChange={(e) => setOaths((prev) => ({ ...prev, [o.id]: e.target.checked }))}
                       className="h-5 w-5 shrink-0 accent-primary"
                     />
-                    <span className={`text-sm font-medium ${oaths[o.id] ? 'text-text' : 'text-muted'}`}>{o.label}</span>
+                    <span className={`text-base font-medium ${oaths[o.id] ? 'text-text' : 'text-muted'}`}>{o.label}</span>
                   </label>
                 ))}
-                <button disabled={!allOathsChecked || accepting} onClick={passOath} className={`${btnPrimary} md:self-stretch`}>
+                <button disabled={!allOathsChecked || accepting} onClick={passOath} className={`${btnPrimary} h-full`}>
                   {accepting ? 'One sec…' : VERA.oath.cta}
                   {!accepting && <ArrowRight />}
                 </button>
@@ -550,6 +537,16 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
               </div>
             </div>
           )}
+          </div>
+        </div>
+
+        {/* Progress — placed below the experience. */}
+        <div className="flex shrink-0 justify-center pb-2">
+          <div className="flex w-full max-w-sm items-center gap-1.5">
+            {Array.from({ length: BEAT_COUNT }).map((_, i) => (
+              <span key={i} className={`h-1 flex-1 rounded-full transition-colors duration-500 ${i <= beat ? 'bg-primary' : 'bg-border-strong'}`} />
+            ))}
+          </div>
         </div>
       </div>
     </main>
