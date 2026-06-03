@@ -139,6 +139,10 @@ export async function completeBetaInduction(data: {
     sendWelcomeEmail({ to: user.email, displayName }).catch(() => {})
   }
 
-  // Land in the feed and kick off the first-post step of onboarding.
-  redirect('/feed?intro=1')
+  // Hand off to Vera (ADR-066 Phase D): she already has their interests/intent in
+  // memory (seeded just above), so her one job now is bridging them to a real
+  // circle — the activation lever — then stepping back. Dark-safe: if the AI kernel
+  // is off, the concierge falls back to its deterministic script. There's always a
+  // one-tap escape to /circles, and the feed first-run banner catches skippers.
+  redirect('/onboarding/vera')
 }

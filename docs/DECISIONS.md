@@ -1689,6 +1689,38 @@ Community). Any stored `area_permissions` override keyed to the old `admin` key 
 
 ---
 
+## ADR-074: Onboarding hands off to the Vera concierge — connect the bridge, fix the feed first-run
+
+**Status:** Accepted · 2026-06-03 · wiring change to the new-member flow. Builds on the beta induction
+([ADR-068](DECISIONS.md)) and the Vera concierge ([ADR-066](DECISIONS.md) Phase D). No schema change.
+
+**Context:** The induction captured a founder's identity + intent and **seeded Vera's memory** with
+their interests/goals/neighborhood — then redirected to `/feed?intro=1`, an **orphaned** path: nothing
+read `intro=1`, so the member landed on a quiet feed with no next step, while the concierge built to
+bridge them to a circle (`/onboarding/vera`, already holding their interests in memory) sat unreachable.
+Stage A's whole goal is *sign up → **join a circle** → attend → earn → WAM* — and the leading lever
+(first circle join) had no guide pointing at it.
+
+**Decision:**
+- **Induction → Vera.** `completeBetaInduction` now redirects to `/onboarding/vera` instead of
+  `/feed?intro=1`. The final beat's CTA is reframed from "Create your first post" to **"Meet Vera"** —
+  a first *circle*, not a first *post*, is the activation step. Dark-safe: the concierge falls back to
+  its deterministic script when the AI kernel is off, and "Skip to circles" always escapes (ADR-066 §3:
+  never trap them on Vera).
+- **Feed first-run as the fallback.** A `FeedWelcome` banner renders at the top of the feed for any
+  signed-in member with **no circle yet** — a warm "find your first circle" with `Browse circles` +
+  `Ask Vera`. It self-dismisses on first join; the sidebar "Getting started" checklist carries the
+  remaining steps. This catches anyone who skipped the concierge and makes the first step visible on
+  mobile (the sidebar checklist isn't).
+
+**Consequences:** The already-built concierge is now on the happy path — Vera is genuinely "aware of
+new people and feeds them in," the vision for the gated-cohort phase. No migration; `meta.beta` and
+`ai_member_context` seeding are unchanged. The dead `intro=1` query param is retired (the feed never
+read it). Next onboarding steps (in-flow profile completion via `set_profile_field`, activation-funnel
+instrumentation) build on this seam.
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 
