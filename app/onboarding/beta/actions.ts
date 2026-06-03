@@ -115,5 +115,6 @@ export async function completeBetaInduction(data: {
     sendWelcomeEmail({ to: user.email, displayName }).catch(() => {})
   }
 
-  redirect('/circles')
+  // Land in the feed and kick off the first-post step of onboarding.
+  redirect('/feed?intro=1')
 }
