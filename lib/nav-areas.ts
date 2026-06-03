@@ -16,9 +16,11 @@ export type NavAccess = 'visitor' | CommunityRole
 export const ACCESS_LEVELS: readonly NavAccess[] = ['visitor', ...ROLE_HIERARCHY] as const
 
 // Where an area lives in the in-app chrome:
-//   • 'community' → the horizontal "Broadcast bar" under the header: Feed plus
-//      the time-sensitive comms loop (Dispatches · Messages · Events), and
-//   • 'sidebar'   → the left rail (community spaces, features + admin).
+//   • 'community' → the horizontal "Broadcast bar" under the header: the
+//      time-sensitive comms loop (Dispatches · Messages · Events), and
+//   • 'sidebar'   → the left rail. Feed is the rail's home anchor (pinned to the
+//      very top, above the section groups); below it sit community spaces,
+//      features, and admin.
 // The full-site browse nav (PrimaryNav) is separate and lives in the header.
 export type NavPlacement = 'community' | 'sidebar'
 
@@ -36,10 +38,13 @@ export type NavArea = {
 
 // Order here IS the render order (Broadcast bar, then sidebar by section).
 export const NAV_AREAS: readonly NavArea[] = [
+  // ── Home anchor → pinned to the very top of the left sidebar ─────────────────
+  // Feed is "home": the default landing and the day-to-day social loop. It sits
+  // alone above the section groups (section: null) so it reads as the anchor.
+  { key: 'feed',      href: '/feed',      label: 'Feed',      section: null,         placement: 'sidebar',   defaultAccess: 'member'  },
+
   // ── Broadcast bar → the horizontal sub-menu under the header ─────────────────
-  // Feed is the anchor (always available, set apart in the bar); the rest is the
-  // time-sensitive comms loop.
-  { key: 'feed',      href: '/feed',      label: 'Feed',      section: null,         placement: 'community', defaultAccess: 'member'  },
+  // The time-sensitive comms loop (Dispatches · Messages · Events).
   { key: 'broadcast', href: '/broadcast', label: 'Dispatches', section: 'Broadcast', placement: 'community', defaultAccess: 'visitor' },
   { key: 'messages',  href: '/messages',  label: 'Messages',  section: 'Broadcast',  placement: 'community', defaultAccess: 'member'  },
   { key: 'events',    href: '/events',    label: 'Events',    section: 'Broadcast',  placement: 'community', defaultAccess: 'member'  },

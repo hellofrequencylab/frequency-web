@@ -77,10 +77,10 @@ function buildSections(areas: typeof NAV_AREAS[number][]): NavSectionGroup[] {
   return sections
 }
 
-// Desktop sidebar = community spaces (Circles, Interests) + features + admin
-// (the Broadcast bar — Feed · Dispatches · Messages · Events — lives in the
-// horizontal CommunityNav under the header). The mobile drawer is the full menu,
-// so it gets every area for completeness.
+// Desktop sidebar = Feed (the home anchor, pinned top) + community spaces
+// (Circles, Interests) + features + admin. The Broadcast bar — Dispatches ·
+// Messages · Events — lives in the horizontal CommunityNav under the header. The
+// mobile drawer is the full menu, so it gets every area for completeness.
 const SIDEBAR_SECTIONS = buildSections(NAV_AREAS.filter((a) => a.placement === 'sidebar'))
 const ALL_SECTIONS = buildSections([...NAV_AREAS])
 
@@ -439,11 +439,15 @@ function NavLinkList({
   /** Which area sections to render (desktop rail = sidebar-only; drawer = all). */
   sections?: NavSectionGroup[]
 }) {
-  const itemClass = (active: boolean) =>
-    `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+  // `emphasize` = the home anchor (Feed): a touch bolder and full-strength text
+  // even when inactive, so it reads as the rail's "home" without shouting.
+  const itemClass = (active: boolean, emphasize = false) =>
+    `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
       active
-        ? 'bg-primary-bg text-primary-strong'
-        : 'text-muted hover:bg-surface-elevated hover:text-text'
+        ? 'bg-primary-bg text-primary-strong font-semibold'
+        : emphasize
+          ? 'text-text font-semibold hover:bg-surface-elevated'
+          : 'text-muted font-medium hover:bg-surface-elevated hover:text-text'
     }`
 
   const sectionLabelClass =
@@ -451,8 +455,15 @@ function NavLinkList({
 
   return (
     <>
-      {!hideAppNav && sections.map((section, i) => (
-        <div key={section.label ?? `top-${i}`} className={`space-y-0.5 ${i > 0 ? 'mt-2' : ''}`}>
+      {!hideAppNav && sections.map((section, i) => {
+        // The leading label-less group is the home anchor (Feed): set it apart
+        // from the destination groups with a hairline below and bolder items.
+        const isHomeAnchor = i === 0 && section.label === null
+        return (
+        <div
+          key={section.label ?? `top-${i}`}
+          className={`space-y-0.5 ${i > 0 ? 'mt-2' : ''} ${isHomeAnchor ? 'pb-2 mb-1 border-b border-border' : ''}`}
+        >
           {section.label && <p className={sectionLabelClass}>{section.label}</p>}
           {section.items.map((item) => {
             const { href, label, Icon } = item
@@ -472,17 +483,18 @@ function NavLinkList({
             }
             const active = isActive(href)
             return (
-              <Link key={href} href={href} onClick={onNavigate} className={itemClass(active)}>
+              <Link key={href} href={href} onClick={onNavigate} className={itemClass(active, isHomeAnchor)}>
                 <Icon
-                  className={`w-[18px] h-[18px] shrink-0 ${active ? 'text-primary-strong' : 'text-subtle'}`}
-                  strokeWidth={active ? 2.5 : 2}
+                  className={`w-[18px] h-[18px] shrink-0 ${active ? 'text-primary-strong' : isHomeAnchor ? 'text-text' : 'text-subtle'}`}
+                  strokeWidth={active || isHomeAnchor ? 2.5 : 2}
                 />
                 {label}
               </Link>
             )
           })}
         </div>
-      ))}
+        )
+      })}
 
       {extraSections?.map((section, i) => (
         <div key={`extra-${section.label ?? i}`} className="space-y-0.5 mt-2">
