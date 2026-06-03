@@ -112,7 +112,8 @@ ADR-047 funnel when the analytics surface lands.
 | Path | Role |
 |---|---|
 | `app/onboarding/beta/page.tsx` | Server page — auth guard, fetch profile + regions |
-| `app/onboarding/beta/induction.tsx` | Client flow — Oath gate + 6 beats |
+| `app/onboarding/beta/preview/page.tsx` | **Public, no-auth visual preview** (`/onboarding/beta/preview`) — sample data, no writes; exempted in `proxy.ts`, noindexed; torn down at launch |
+| `app/onboarding/beta/induction.tsx` | Client flow — Oath gate + 6 beats (`preview` prop mocks the auth-dependent calls) |
 | `app/onboarding/beta/actions.ts` | `acceptBetaOath`, `completeBetaInduction` |
 | `lib/onboarding/beta-script.ts` | Vera's scripted copy, `BETA_OATHS`, `BETA_INDUCTION_ACTIVE` flag |
 | `components/onboarding/renders/{feed,circles,events}-render.tsx` | Disposable section renders |

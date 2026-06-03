@@ -62,7 +62,11 @@ export async function proxy(request: NextRequest) {
   // the event link should be able to add it to their calendar. Events are
   // already anon-readable via the public_landing_reads RLS policies.
   const isShareableFeed = pathname.endsWith('.ics')
-  const isProtected = !isShareableFeed && PROTECTED_PATHS.some((p) => pathname.startsWith(p))
+  // The beta-induction preview is a public, no-auth visual demo (ADR-068);
+  // it overrides the '/onboarding' protected prefix. Removed at launch.
+  const isBetaPreview = pathname.startsWith('/onboarding/beta/preview')
+  const isProtected =
+    !isShareableFeed && !isBetaPreview && PROTECTED_PATHS.some((p) => pathname.startsWith(p))
 
   if (!user && isProtected) {
     const signInUrl = request.nextUrl.clone()

@@ -27,6 +27,8 @@ type Props = {
   userEmail: string
   initialHandle: string
   regions: Region[]
+  /** Preview mode: no auth, no server writes — for the public /preview route only. */
+  preview?: boolean
 }
 
 const HANDLE_RE = /^[a-z0-9_]+$/
@@ -37,9 +39,10 @@ function suggestHandle(name: string): string {
   return name.toLowerCase().trim().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '').slice(0, 30)
 }
 
-export default function BetaInduction({ userId, userEmail, initialHandle, regions }: Props) {
+export default function BetaInduction({ userId, userEmail, initialHandle, regions, preview = false }: Props) {
   // 0 oath · 1 intro · 2 identity · 3 place · 4 tour · 5 enter
   const [beat, setBeat] = useState(0)
+  const [previewDone, setPreviewDone] = useState(false)
 
   // Oath
   const [oaths, setOaths] = useState<Record<OathId, boolean>>({ unfinished: false, report: false, build: false })
@@ -72,6 +75,7 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
 
   // Debounced handle uniqueness check (identical to the legacy form).
   useEffect(() => {
+    if (preview) return // no backend in preview; handle is always "available"
     const valid = handle.length >= 3 && HANDLE_RE.test(handle)
     if (!valid || handle === initialHandle) return
     let cancelled = false
@@ -90,12 +94,12 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
       cancelled = true
       clearTimeout(timer)
     }
-  }, [handle, initialHandle, userId])
+  }, [handle, initialHandle, userId, preview])
 
   const formatOk = handle.length >= 3 && HANDLE_RE.test(handle)
   const handleStatus: HandleStatus = !formatOk
     ? 'idle'
-    : handle === initialHandle
+    : preview || handle === initialHandle
     ? 'available'
     : check && check.handle === handle
     ? check.result
@@ -135,21 +139,27 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
   async function passOath() {
     setAccepting(true)
     const accepted = BETA_OATHS.filter((o) => oaths[o.id]).map((o) => o.id)
-    try {
-      await acceptBetaOath(accepted)
-    } catch {
-      // Non-fatal: completion re-affirms the oath. Don't block the founder.
+    if (!preview) {
+      try {
+        await acceptBetaOath(accepted)
+      } catch {
+        // Non-fatal: completion re-affirms the oath. Don't block the founder.
+      }
     }
     setAccepting(false)
     setBeat(1)
   }
 
   async function advanceFromIdentity() {
-    if (avatarFile && !avatarUrl) await uploadAvatar()
+    if (!preview && avatarFile && !avatarUrl) await uploadAvatar()
     setBeat(3)
   }
 
   async function submit() {
+    if (preview) {
+      setPreviewDone(true)
+      return
+    }
     setSubmitting(true)
     setSubmitError('')
     let finalAvatarUrl = avatarUrl
@@ -200,6 +210,37 @@ export default function BetaInduction({ userId, userEmail, initialHandle, region
 
   return (
     <main className="flex min-h-screen bg-marketing-canvas">
+      {/* Preview-only banner (public /preview route; ADR-068, torn down at launch). */}
+      {preview && (
+        <div className="fixed inset-x-0 top-0 z-50 bg-signal px-4 py-1.5 text-center text-xs font-semibold text-on-signal">
+          Preview · nothing is saved — this is the beta induction flow with sample data
+        </div>
+      )}
+
+      {/* Preview end-state — submit can't redirect without auth, so show completion. */}
+      {preview && previewDone && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-6">
+          <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-7 text-center shadow-lg">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary-bg text-2xl text-primary-strong">✓</div>
+            <h2 className="mt-4 text-xl font-bold text-text">That&rsquo;s the whole flow.</h2>
+            <p className="mt-2 text-sm leading-relaxed text-muted">
+              In the real induction this writes your profile + intent and drops you into Circles.
+              Here it just stops — nothing was saved.
+            </p>
+            <button
+              onClick={() => {
+                setPreviewDone(false)
+                setBeat(0)
+                setOaths({ unfinished: false, report: false, build: false })
+              }}
+              className={`${btnSecondary} mt-5 w-full`}
+            >
+              Run it again
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Brand rail — beta framing + beat tracker (desktop only). */}
       <aside className="relative hidden w-[44%] max-w-xl shrink-0 overflow-hidden lg:block">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: 'url(/images/site/community-1.jpg)' }} />
