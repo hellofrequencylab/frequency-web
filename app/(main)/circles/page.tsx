@@ -4,13 +4,12 @@ import { rankForZaps, type SeasonRank } from '@/lib/season-ranks'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { NewCircleCompose } from '@/components/compose/new-circle-compose'
-import { MapZone, MapPreview, MapBanner } from '@/components/circles/circles-map'
+import { MapZone, MapPreview, MapBanner, FindNearMeButton } from '@/components/circles/circles-map'
 import { PageHeader } from '@/components/ui/page-header'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { CircleCard, type CircleCardData } from '@/components/circles/circle-card'
 import { CirclesToolbar } from '@/components/circles/circles-toolbar'
-import { NearYou } from '@/components/circles/near-you'
 
 type CircleRow = {
   id: string
@@ -183,22 +182,6 @@ export default async function CirclesPage({
         title="Circles"
         description="This is where it gets real. Find a circle near you, dive into something you love, or start your own — because showing up, week after week, is how strangers become your people."
         gam={gam}
-        action={
-          user ? (
-            <NewCircleCompose
-              interests={interests}
-              buttonLabel="Start a circle"
-              buttonClass="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary shadow-sm transition-all hover:bg-primary-hover hover:shadow-md hover:-translate-y-0.5"
-            />
-          ) : undefined
-        }
-        secondaryAction={
-          user && isAdmin ? (
-            <Link href="/admin/circles" className="text-sm font-medium text-muted transition-colors hover:text-primary-strong">
-              Manage circles →
-            </Link>
-          ) : undefined
-        }
       />
 
       {/* Reassurance — the introvert's worry, named and answered up front. */}
@@ -207,47 +190,63 @@ export default async function CirclesPage({
         anyone, and you don&rsquo;t have to say much. You just have to show up.
       </p>
 
-      {/* Proximity hero: one-tap "find circles near me", distance-ranked. */}
-      <NearYou circles={locatableCircles} />
-
-      {/* De-boxed network stats — a quiet row on the canvas, not another card. */}
-      <div className="mb-6 flex flex-wrap items-center gap-x-8 gap-y-3">
-        <Stat value={stats.circles} label="Circles" />
-        <Stat value={stats.members} label="Members" />
-        <Stat value={stats.cities} label="Cities" />
-        <Stat value={stats.interests} label="Interests" />
-      </div>
-
-      {/* Flywheel nudge — when circles are filling up, invite the next host. */}
-      {user && nearlyFull.length > 0 && (
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary-bg bg-primary-bg/40 p-4 dark:bg-primary-bg/15">
-          <div className="flex items-start gap-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
-              <Sparkles className="h-5 w-5" />
-            </span>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-text">
-                {nearlyFull.length} {nearlyFull.length === 1 ? 'circle is' : 'circles are'} filling up
-              </p>
-              <p className="text-sm text-muted">
-                A full circle is a good problem — it means the next one&rsquo;s ready to start. Open the
-                door for the people still looking for their room.
-              </p>
-            </div>
-          </div>
-          <NewCircleCompose
-            interests={interests}
-            buttonLabel="Start the next circle"
-            buttonClass="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
-          />
-        </div>
-      )}
-
-      <CirclesToolbar interests={interests} />
-
       <MapZone circles={locatableCircles}>
-        {/* Expanded map lives here (above the grid) so it pushes content down. */}
-        <MapBanner />
+        {/* Control bar: network stats (left) · find-near-me + start/manage (right). */}
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-4 rounded-2xl border border-border bg-surface px-5 py-4 shadow-sm">
+          <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
+            <Stat value={stats.circles} label="Circles" />
+            <Stat value={stats.members} label="Members" />
+            <Stat value={stats.cities} label="Cities" />
+            <Stat value={stats.interests} label="Interests" />
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            {locatableCircles.length > 0 && <FindNearMeButton />}
+            {user && (
+              <NewCircleCompose
+                interests={interests}
+                buttonLabel="Start a circle"
+                buttonClass="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
+              />
+            )}
+            {user && isAdmin && (
+              <Link href="/admin/circles" className="text-sm font-medium text-muted transition-colors hover:text-primary-strong">
+                Manage circles →
+              </Link>
+            )}
+          </div>
+        </div>
+
+        {/* Flywheel nudge — when circles are filling up, invite the next host. */}
+        {user && nearlyFull.length > 0 && (
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary-bg bg-primary-bg/40 p-4 dark:bg-primary-bg/15">
+            <div className="flex items-start gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
+                <Sparkles className="h-5 w-5" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-text">
+                  {nearlyFull.length} {nearlyFull.length === 1 ? 'circle is' : 'circles are'} filling up
+                </p>
+                <p className="text-sm text-muted">
+                  A full circle is a good problem — it means the next one&rsquo;s ready to start. Open the
+                  door for the people still looking for their room.
+                </p>
+              </div>
+            </div>
+            <NewCircleCompose
+              interests={interests}
+              buttonLabel="Start the next circle"
+              buttonClass="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+            />
+          </div>
+        )}
+
+        <CirclesToolbar interests={interests} />
+
+        {/* Expanded map — opens above the grid (the Find-near-me button opens it). */}
+        <div className="mt-6">
+          <MapBanner />
+        </div>
 
         {/* Masonry: circles fill the grid; the map is a 2x2 block top-right and
             the nav sits in the right column under it. grid-auto-flow:dense lets
