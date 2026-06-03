@@ -3,12 +3,11 @@
 import { useState, useTransition } from 'react'
 import { Send, Check, AlertCircle } from 'lucide-react'
 import { sendCampaign, type SendCampaignResult } from './actions'
-import { SEGMENTS, type SegmentKey } from '@/lib/studio/campaigns'
 
-export function CampaignComposer() {
+export function CampaignComposer({ options }: { options: { key: string; label: string }[] }) {
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
-  const [segment, setSegment] = useState<SegmentKey>('members')
+  const [segment, setSegment] = useState<string>(options[0]?.key ?? 'members')
   const [result, setResult] = useState<SendCampaignResult | null>(null)
   const [pending, start] = useTransition()
 
@@ -31,10 +30,10 @@ export function CampaignComposer() {
 
       <select
         value={segment}
-        onChange={(e) => setSegment(e.target.value as SegmentKey)}
+        onChange={(e) => setSegment(e.target.value)}
         className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:border-primary focus:outline-none"
       >
-        {SEGMENTS.map((s) => (
+        {options.map((s) => (
           <option key={s.key} value={s.key}>{s.label}</option>
         ))}
       </select>
