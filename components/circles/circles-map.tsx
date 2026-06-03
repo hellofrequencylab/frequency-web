@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { X, Maximize2, Minimize2, Crosshair, LocateFixed } from 'lucide-react'
 import type { MapCircle } from './circle-map'
+import { getApproxLocationByIP } from '@/lib/geolocation'
 
 // maplibre must not run on the server — load the map client-side only.
 const CircleMap = dynamic(() => import('./circle-map'), {
@@ -31,16 +32,11 @@ export function MapZone({ circles, children }: { circles: MapCircle[]; children:
   const [center, setCenter] = useState<[number, number] | null>(null)
 
   useEffect(() => {
-    let cancelled = false
-    fetch('https://ipapi.co/json/')
-      .then((r) => r.json())
-      .then((d: { latitude?: number; longitude?: number }) => {
-        if (!cancelled && typeof d?.latitude === 'number' && typeof d?.longitude === 'number') {
-          setCenter([d.longitude, d.latitude])
-        }
-      })
-      .catch(() => {})
-    return () => { cancelled = true }
+    const ctrl = new AbortController()
+    getApproxLocationByIP(ctrl.signal).then((loc) => {
+      if (loc) setCenter([loc.lng, loc.lat])
+    })
+    return () => ctrl.abort()
   }, [])
 
   useEffect(() => {

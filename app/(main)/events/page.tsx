@@ -10,6 +10,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { EntityCard } from '@/components/cards/entity-card'
 import { DemoBadge } from '@/components/ui/demo-badge'
 import { RsvpButton } from '@/components/events/rsvp-button'
+import { demoModeEnabled } from '@/lib/platform-flags'
 
 type EventRow = {
   id: string
@@ -121,7 +122,7 @@ export default async function EventsPage() {
   const now = nowDate.toISOString()
   const future = new Date(nowDate.getTime() + 60 * 24 * 60 * 60 * 1000).toISOString()
 
-  const { data: rawEvents } = await admin
+  let eventsQuery = admin
     .from('events')
     .select(
       `id, title, slug, location, starts_at, ends_at, is_cancelled, is_demo,
@@ -133,6 +134,9 @@ export default async function EventsPage() {
     .gte('starts_at', now)
     .lte('starts_at', future)
     .order('starts_at', { ascending: true })
+  // Global demo switch: when demo_mode is off, hide seeded demo events.
+  if (!(await demoModeEnabled())) eventsQuery = eventsQuery.eq('is_demo', false)
+  const { data: rawEvents } = await eventsQuery
     .limit(30)
 
   const events = (rawEvents ?? []) as unknown as EventRow[]

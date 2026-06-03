@@ -358,6 +358,8 @@ verticals never ship a high-value reward that isn't tied to `practice.verified`.
 - [PLATFORM-VISION.md](PLATFORM-VISION.md), why (two-entity model, the seams).
 - [DECISIONS.md](DECISIONS.md), ADRs (irreversible decisions + rationale).
 - [OVERVIEW.md](OVERVIEW.md), mission + the whole-picture synthesis.
+- [DEMO-SYSTEM.md](DEMO-SYSTEM.md), the Beta `is_demo` content layer + `demo_mode`
+  switch, badge/recede UI, geolocation, and teardown (ADR-064/065).
 - Domain/architecture detail, GLOSSARY, DATABASE, ARCHITECTURE, SCALE-ARCHITECTURE,
   ENGAGEMENT-ARCHITECTURE, CAPABILITIES-AND-MOBILE, COMMS-CRM-ARCHITECTURE.
 - [ROADMAP.md](../ROADMAP.md) + [BUILD-PHASES.md](BUILD-PHASES.md), **superseded**, kept for

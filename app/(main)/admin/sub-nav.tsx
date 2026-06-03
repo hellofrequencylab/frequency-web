@@ -15,6 +15,7 @@ import {
   Shield,
   Users,
   Trophy,
+  FlaskConical,
 } from 'lucide-react'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
@@ -50,6 +51,7 @@ export function AdminSubNav({ role }: { role: CommunityRole }) {
       ? [
           { href: '/admin/members', label: 'Members', Icon: Users } as NavItem,
           { href: '/admin/roles', label: 'Roles', Icon: Shield } as NavItem,
+          { href: '/admin/demo', label: 'Demo', Icon: FlaskConical } as NavItem,
         ]
       : []),
   ]

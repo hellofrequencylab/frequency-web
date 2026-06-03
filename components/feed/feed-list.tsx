@@ -148,6 +148,7 @@ export async function FeedList({
     const [dispatchR, eventR] = await Promise.all([
       admin.from('dispatches').select(dispatchSelect)
         .eq('status', 'published')
+        .is('hidden_at', null)
         .order('published_at', { ascending: false })
         .limit(1),
       admin.from('events').select('id, title, starts_at, location, slug')

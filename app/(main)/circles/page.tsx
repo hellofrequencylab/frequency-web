@@ -10,6 +10,7 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { CircleCard, type CircleCardData } from '@/components/circles/circle-card'
 import { CirclesToolbar } from '@/components/circles/circles-toolbar'
+import { demoModeEnabled } from '@/lib/platform-flags'
 
 type CircleRow = {
   id: string
@@ -96,7 +97,7 @@ export default async function CirclesPage({
     }
   }
 
-  const { data: rawCircles } = await admin
+  let circlesQuery = admin
     .from('circles')
     .select(
       `id, name, slug, about, type, member_count, member_cap, status, created_at,
@@ -109,6 +110,9 @@ export default async function CirclesPage({
     )
     .neq('status', 'archived')
     .order('name', { ascending: true })
+  // Global demo switch: when demo_mode is off, hide seeded demo circles.
+  if (!(await demoModeEnabled())) circlesQuery = circlesQuery.eq('is_demo', false)
+  const { data: rawCircles } = await circlesQuery
 
   const all = (rawCircles ?? []) as unknown as CircleRow[]
 
@@ -133,7 +137,7 @@ export default async function CirclesPage({
   if (sort === 'active') filtered = [...filtered].sort(byMember)
   else if (sort === 'new') filtered = [...filtered].sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at))
   else if (sort === 'open') filtered = [...filtered].sort((a, b) => (b.member_cap - b.member_count) - (a.member_cap - a.member_count))
-  else filtered = [...filtered].sort((a, b) => a.name.localeCompare(b.name)) // "nearest" -> name; the near-you hero does real proximity
+  else filtered = [...filtered].sort((a, b) => a.name.localeCompare(b.name)) // "nearest" -> name; the map's find-near-me does real proximity
 
   const myCircles = filtered.filter((c) => myCircleIds.includes(c.id))
   const discover = filtered.filter((c) => !myCircleIds.includes(c.id))

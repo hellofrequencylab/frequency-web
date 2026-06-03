@@ -78,10 +78,10 @@ export async function createEvent(formData: FormData) {
     )
   }
 
-  processGamificationEvent({ type: 'event_host', profileId: myProfileId }).catch(() => {})
+  processGamificationEvent({ type: 'event_host', profileId: myProfileId }).catch((e) => console.error('[events gamification]', e))
   // Hosting an in-person gathering is external/organizing → zaps (not gems).
-  awardZapsForAction(myProfileId, 'event_host').catch(() => {})
-  recordStreakActivity(myProfileId, 'hosting').catch(() => {})
+  awardZapsForAction(myProfileId, 'event_host').catch((e) => console.error('[events gamification]', e))
+  recordStreakActivity(myProfileId, 'hosting').catch((e) => console.error('[events gamification]', e))
 
   revalidatePath('/events')
   revalidatePath('/feed')
@@ -111,8 +111,8 @@ export async function toggleRSVP(eventId: string) {
       .eq('id', existing.id)
 
     if (newStatus === 'going') {
-      processGamificationEvent({ type: 'event_attend', profileId: myProfileId }).catch(() => {})
-      recordStreakActivity(myProfileId, 'attendance').catch(() => {})
+      processGamificationEvent({ type: 'event_attend', profileId: myProfileId }).catch((e) => console.error('[events gamification]', e))
+      recordStreakActivity(myProfileId, 'attendance').catch((e) => console.error('[events gamification]', e))
       // No gems here: the `event_rsvp` gem has no daily cap, so awarding it on
       // every not_going -> going flip let a user farm unlimited gems by
       // toggling. Gems are granted once, on the first RSVP (the insert path
@@ -124,10 +124,10 @@ export async function toggleRSVP(eventId: string) {
       profile_id: myProfileId,
       status: 'going',
     })
-    processGamificationEvent({ type: 'event_attend', profileId: myProfileId }).catch(() => {})
-    recordStreakActivity(myProfileId, 'attendance').catch(() => {})
+    processGamificationEvent({ type: 'event_attend', profileId: myProfileId }).catch((e) => console.error('[events gamification]', e))
+    recordStreakActivity(myProfileId, 'attendance').catch((e) => console.error('[events gamification]', e))
     // First RSVP only (one row per (event, profile), so this fires once).
-    awardGems(myProfileId, 'event_rsvp').catch(() => {})
+    awardGems(myProfileId, 'event_rsvp').catch((e) => console.error('[events gamification]', e))
   }
 
   revalidatePath('/events')
@@ -183,7 +183,7 @@ export async function checkInEvent(eventId: string): Promise<CheckInResult> {
   } catch {
     // never let a reward read break the check-in
   }
-  await recordStreakActivity(myProfileId, 'attendance').catch(() => {})
+  await recordStreakActivity(myProfileId, 'attendance').catch((e) => console.error('[events gamification]', e))
   return { ok: true, zapsAwarded }
 }
 

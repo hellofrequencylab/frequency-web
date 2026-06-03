@@ -5,6 +5,8 @@ import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { MapPin } from 'lucide-react'
 import type { MapCity } from './discover-map'
+import { distanceKm } from '@/lib/distance'
+import { getApproxLocationByIP } from '@/lib/geolocation'
 
 // maplibre is client-only.
 const DiscoverMap = dynamic(() => import('./discover-map'), {
@@ -14,16 +16,6 @@ const DiscoverMap = dynamic(() => import('./discover-map'), {
   ),
 })
 
-function distanceKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const toRad = (d: number) => (d * Math.PI) / 180
-  const dLat = toRad(lat2 - lat1)
-  const dLng = toRad(lng2 - lng1)
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2
-  return 2 * 6371 * Math.asin(Math.sqrt(a))
-}
-
 // Privacy-safe locator: a city-centroid map + a ranked city list. On mount it
 // IP-geolocates the viewer (no permission prompt) to center the map and sort the
 // list by nearest city. Every path routes to the city's circles (→ the beta CTA).
@@ -31,18 +23,11 @@ export function DiscoverLocator({ cities }: { cities: MapCity[] }) {
   const [center, setCenter] = useState<[number, number] | null>(null)
 
   useEffect(() => {
-    let cancelled = false
-    fetch('https://ipapi.co/json/')
-      .then((r) => r.json())
-      .then((d: { latitude?: number; longitude?: number }) => {
-        if (!cancelled && typeof d?.latitude === 'number' && typeof d?.longitude === 'number') {
-          setCenter([d.longitude, d.latitude])
-        }
-      })
-      .catch(() => {})
-    return () => {
-      cancelled = true
-    }
+    const ctrl = new AbortController()
+    getApproxLocationByIP(ctrl.signal).then((loc) => {
+      if (loc) setCenter([loc.lng, loc.lat])
+    })
+    return () => ctrl.abort()
   }, [])
 
   if (cities.length === 0) return null
