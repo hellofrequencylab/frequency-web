@@ -66,7 +66,7 @@ export const REEL: ReelSlide[] = [
 export const VERA = {
   oath: {
     eyebrow: 'Before you come in',
-    heading: "This isn't a product yet. It's a promise.",
+    heading: "This isn't a product. It's a promise.",
     body: 'A promise that the people near you are worth finding — and that gathering can feel good again. We’re building that in the open, and you’re one of the very first. Come help us make it real.',
     cta: "I'm in.",
   },
