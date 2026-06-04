@@ -145,10 +145,12 @@ export async function completeBetaInduction(data: {
     sendWelcomeEmail({ to: user.email, displayName }).catch(() => {})
   }
 
-  // Hand off to Vera (ADR-066 Phase D): she already has their interests/intent in
-  // memory (seeded just above), so her one job now is bridging them to a real
-  // circle — the activation lever — then stepping back. Dark-safe: if the AI kernel
-  // is off, the concierge falls back to its deterministic script. There's always a
-  // one-tap escape to /circles, and the feed first-run banner catches skippers.
-  redirect('/onboarding/vera')
+  // Hand off to Vera (ADR-066 Phase D): drop them straight into the feed (the real
+  // product) with Vera's onboarding lightbox over it. She already has their
+  // interests/intent in memory (seeded just above) AND in meta.beta, so the
+  // lightbox continues the thread instead of opening cold. Dark-safe: if the AI
+  // kernel is off, the concierge falls back to its deterministic script. There's
+  // always a one-tap escape to /circles, and the feed first-run banner catches
+  // skippers.
+  redirect('/feed?welcome=vera')
 }

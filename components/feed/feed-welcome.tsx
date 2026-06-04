@@ -27,7 +27,7 @@ export function FeedWelcome() {
               <Compass className="h-4 w-4" /> Browse circles
             </Link>
             <Link
-              href="/onboarding/vera"
+              href="/feed?welcome=vera"
               className="inline-flex items-center gap-1.5 rounded-xl bg-surface px-3.5 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
             >
               <Sparkles className="h-4 w-4 text-primary-strong" /> Ask Vera
