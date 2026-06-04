@@ -1,5 +1,5 @@
 -- =====================================================================
--- Phase D (COMMS-STRATEGY / ADR-086): add the platform-wide `global`
+-- Phase D (COMMS-STRATEGY / ADR-088): add the platform-wide `global`
 -- dispatch tier.
 --
 -- Dispatch reach was Circle → Hub → Nexus (audience_scope check). The comms
