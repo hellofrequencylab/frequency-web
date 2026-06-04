@@ -49,8 +49,11 @@ community). Surfaces gate on it:
 
 ## How demo content reads in the UI
 
-- A small, muted **Beta Demo** pill (`components/ui/demo-badge.tsx`) on every demo
-  member, circle, post, and event.
+- A small **yellow ⚡ bolt** badge (`components/ui/demo-badge.tsx`) on every demo
+  member, circle, post, event, and practice — the at-a-glance tell for Beta testers.
+- A right-sidebar **DemoNotice** card (`components/sidebar/demo-notice.tsx`) explains
+  the ⚡ and shows the *honest* headcount ("250 demo members + N real ones — Help us
+  make this real!"); it self-hides when `demo_mode` is off or the demo is purged.
 - Demo **profiles & circles recede** — reduced opacity + desaturated avatar/image —
   so real member content always reads as primary (`EntityCard` `dimmed`/`badge`
   slots; `PersonCard`/`CircleCard` `isDemo`).
@@ -70,3 +73,42 @@ Two levers, in order of severity:
 2. **Purge** (permanent): `DELETE FROM <table> WHERE is_demo;` across the five
    tables — uniform, no UUID lists, no special-casing. Badges/greying vanish with
    the rows.
+
+
+## Demo content is wizard-generated (ADR-092)
+
+The hand-built 250-cast was **retired**. Demo content is now generated on demand
+by the **Seed Studio** (`/admin/demo/studio`, `lib/demo/engine.ts`) and cleaned
+by the `/admin/demo` purge button + the nightly decay cron. Every row is still
+`is_demo`, badged with the yellow bolt, and counted honestly. See ADR-091/092.
+
+
+## Claim this Circle (ADR-091, Phase 2)
+
+A signed-in real member viewing a demo circle sees a ⚡ banner ("This is a sample
+circle — make it real?") and a short wizard (`components/circles/claim-circle.tsx`):
+*what would it be about? · which practice to start with? · what to call it?*
+
+`claimCircle` (`app/(main)/circles/[slug]/claim-actions.ts`) converts the circle
+**in place**: `is_demo -> false`, `host_id -> the claimer`, applies their answers,
+sets the active practice, awards the circle start/activate zaps, and logs a
+`circle.claimed` engagement event. The demo neighbours stay (a furnished circle,
+not an empty one) and recede as real members join. Next: the decay cron (P3).
+
+
+## Decay — natural disappearance (ADR-091, Phase 3)
+
+`lib/demo/decay.ts` (`runDecay`) recedes + purges demo content as an area goes
+real, keyed off `is_demo` + geo (no schema). Nightly via
+`app/api/cron/demo-decay` (registered in `vercel.json`, `?dry=1` to report only),
+and on demand from the Seed Studio's **Decay pass** panel.
+
+- **Area decay** — per demo circle, count real active circles within ~12 mi:
+  `>= 3` purges the demo circle (+ orphaned demo members); `>= 1` prunes its demo
+  posts older than 30 days.
+- **Neighbour decay** — a claimed/real circle sheds demo "neighbours" toward a
+  floor that hits 0 once it has 5+ real members (so the furnished circle becomes
+  fully real over time).
+
+Deletes only, idempotent, converges. The honest "N demo + M real" count slides
+toward all-real on its own.

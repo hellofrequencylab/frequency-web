@@ -2162,6 +2162,120 @@ go-build-it intent.
 vocabulary for newcomers to learn (Hub/Nexus); offset by clearer sense of scale. Circle-creation
 volume rises — the momentum-gated room provisioning (ADR-088) is the pressure valve.
 
+## ADR-090: Demo content v2 — a year-old, viral, local Encinitas community
+
+**Decision.** Replace the first-generation demo seed (the old North County SD `c…`
+cast and the five out-of-area national metros `d…`) with one fully-local demo
+community centered on **Encinitas**: ~250 auth-less members across 12 circles,
+modeling a community that is one year old and "went viral" but stayed inside the
+North County border (Oceanside / Vista / San Marcos / Poway / La Mesa / San Diego
+proper). Migration series `20260605000001`–`…000300`. Casting bible + build spec:
+[DEMO-CAST.md](DEMO-CAST.md).
+
+**Why.** The brief wanted a believable, *bounded* local community, not a national
+sprinkle. The story is carried by **maturity signals** (deep streaks, full trophy
+cases, a 10-event history with attendance, dense reply threads, a real rank
+pyramid 3/12/30/55/80/70) rather than inflated headcounts — counts stay **honest**
+(see the DemoNotice below). National metros were out of scope, so teardown retires
+them.
+
+**Practices got a real schema (migration …000000).** `practices` gained
+`header_image, summary, body, category, icon, cadence, reward_zaps, reward_note`.
+`logPractice` applies a practice's `reward_zaps` as the per-log override — so the
+reward attaches to the *doing*, and a cold plunge can be worth more than a journal
+entry. The 16 existing practices were backfilled and 18 new ones added.
+
+**Programs reward the doing, not the reading.** Program frontmatter gained
+`header_image` + `reward`; the detail page renders the image and a "what you earn"
+callout whose copy points at the circle-lifecycle zaps (start +50, activate +40,
+host +50, attend +25, invite +30). Completing a program still records progress
+without awarding points — preserving the North-Star guardrail.
+
+**Controls + the tell.** Reuses the existing `is_demo` contract, the
+`platform_flags.demo_mode` kill switch, and the `/admin/demo` toggle+purge. The
+demo tell is now a small **yellow ⚡ bolt** badge across members/circles/posts/
+events/practices, and a right-sidebar **DemoNotice** card explains it and shows
+the honest *"N demo members + N real ones — Help us make this real!"* count
+(self-hides when demo is off or purged).
+
+**Validation.** Every v2 migration was executed against a throwaway PG16 cluster
+(minimal schema mirroring the real constraints) before commit. This caught a wrong
+`circle_practices` ON CONFLICT target (10 files), two misaligned `VALUES` aliases,
+and a duplicate handle — none of which static review had surfaced.
+
+**Consequences.** All demo content carries `is_demo` and purges in one
+`DELETE … WHERE is_demo`; `demo_mode` hides it in one flip. Set-generated
+engagement (reactions, RSVPs, achievement unlocks, streaks, member-practice
+adoptions) is deterministic + idempotent and cascades away with the cast.
+
+---
+
+## ADR-091: Demo Seed Studio + the seed -> claim -> decay model
+
+**Decision.** Evolve demo content from a one-off hand-seeded cast into a
+repeatable **growth engine**. Three pillars: (1) a janitor-only **Seed Studio**
+wizard that generates a believable community for any new area on demand; (2) a
+template + variable **generation engine** (`lib/demo/engine.ts`) that produces
+people with *journeys* (tenure + rank drive what they post and when),
+conversations between them, events, and gamification; (3) a **claim -> decay
+lifecycle** so demo content converts to real and disappears as an area
+propagates. Guiding principle: **demo content is scaffolding, not furniture** —
+it exists to make an empty area feel alive long enough for real people to take
+root, then dissolves on its own.
+
+**Why these shapes.**
+- **Service-role server actions, not SQL.** The Studio seeds through the admin
+  client (`auth.role() = 'service_role'`), which satisfies the
+  lock_economy_columns guard — sidestepping the SQL-editor / MCP-approval / guard
+  problems that blocked the raw bundle. Economy columns are still written to
+  their *designed* values so the achievement-award trigger cannot drift them.
+- **Area = geo centre + radius (PostGIS geog), no schema change.** Seeding,
+  per-area purge, and the future decay cron all operate on a geo cohort, so the
+  feature ships without a migration.
+- **Templates by default, AI optional.** Curated per-channel template pools with
+  seeded RNG are deterministic, free, offline, and controllable; an AI-polish
+  toggle (Vera) is wired for later as an enhancer, never the dependency.
+- **Honesty invariant.** Counts stay real, every demo row keeps the yellow bolt,
+  `demo_mode` + purge remain master switches.
+
+**Phasing.** P1 (this ADR): engine + Seed Studio (preview + seed + per-area
+purge). P2: member-facing **"Claim this Circle"** — a real member converts a
+demo circle in place (`is_demo -> false`, host -> them) via a short wizard ("If
+this were your circle, what would it be about?"), inheriting a furnished circle.
+P3: a nightly **decay cron** computing each area's real/demo ratio and
+auto-receding then purging demo as real content grows (sprouting -> established
+-> self-sustaining).
+
+**Consequences.** Operators can light up a new metro in minutes; the long-term
+cleanup is automatic; the same `is_demo` contract governs everything. Large
+"thriving" seeds make hundreds of inserts via sequential server-action calls and
+may need a background job (noted for P1b).
+
+---
+
+## ADR-092: Retire the hand-built 250-cast; the Seed Studio is the demo seeding path
+
+**Decision.** Abandon the one-off 250-person Encinitas demo cast — its seed
+migrations (`20260605000001`-`…000300`) and the `DEMO-CAST.md` casting bible are
+removed. All demo content is now generated on demand by the **Seed Studio**
+wizard (ADR-091) and cleaned by the purge button + nightly decay. The practices
+rich-content schema (`20260605000000`) is kept; the demo practice rows are purged
+with the rest. The live database is swept of all `is_demo` content via the
+`/admin/demo` purge.
+
+**Why.** A static hand-seeded community proved brittle to apply (SQL-editor /
+MCP-approval / economy-guard friction) and is not the product direction. The
+wizard makes any area seedable, previewable, and reversible — so we keep the
+engine, not the one-off cast. Supersedes the *seeding* portion of ADR-090
+(its `is_demo` / `demo_mode` / purge infrastructure still stands).
+
+**Consequences.** Fresh databases no longer ship a prebuilt demo community;
+operators seed areas via the Studio. `is_demo` + purge + decay remain the
+contract. `lib/demo/generate.ts` looks practices up at runtime (no hard-coded
+seed UUIDs) so it survives the purge.
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 

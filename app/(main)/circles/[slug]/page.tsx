@@ -25,6 +25,7 @@ import { ModuleCard } from '@/components/modules/module-card'
 import { getInitials, isoDaysAgo } from '@/lib/utils'
 import { ProfileFlair } from '@/components/profile-flair'
 import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
+import { ClaimCircle } from '@/components/circles/claim-circle'
 
 type CircleDetail = {
   id: string
@@ -35,6 +36,7 @@ type CircleDetail = {
   member_count: number
   member_cap: number
   status: string
+  is_demo: boolean
   host: { id: string; display_name: string; handle: string; avatar_url: string | null } | null
   hub: {
     id: string
@@ -81,7 +83,7 @@ export default async function CirclePage({
   const { data: rawCircle } = await admin
     .from('circles')
     .select(
-      `id, name, slug, about, type, member_count, member_cap, status,
+      `id, name, slug, about, type, member_count, member_cap, status, is_demo,
        host:profiles!host_id ( id, display_name, handle, avatar_url ),
        hub:hubs!hub_id (
          id, name, slug,
@@ -177,7 +179,7 @@ export default async function CirclePage({
   // This week's practice (host-assigned). Library only needed for the host picker.
   const [circlePractice, practiceLibrary] = await Promise.all([
     getCircleActivePractice(circle.id),
-    canManage ? listPublicPractices() : Promise.resolve([]),
+    canManage || circle.is_demo ? listPublicPractices() : Promise.resolve([]),
   ])
 
   // Sort: host first → by join date
@@ -214,6 +216,16 @@ export default async function CirclePage({
       >
         ← All circles
       </Link>
+
+      {/* Demo circles invite a real member to claim + host them in place. */}
+      {circle.is_demo && user && (
+        <ClaimCircle
+          circleId={circle.id}
+          name={circle.name}
+          about={circle.about}
+          practices={practiceLibrary.map((p) => ({ id: p.id, title: p.title }))}
+        />
+      )}
 
       {/* Unified Detail header (REDESIGN-INAPP Phase 1): title + status/type
           badges, member/host + capacity below, capability-gated actions right. */}

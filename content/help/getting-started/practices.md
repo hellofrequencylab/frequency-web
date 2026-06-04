@@ -3,7 +3,7 @@ title: Practices, choose, do, log
 description: Adopt a practice or follow your circle's, then log it each day to earn zaps and build your streak.
 category: getting-started
 order: 3
-updated: 2026-05-31
+updated: 2026-06-04
 audience: member
 featureKeys: [practices, gamification]
 status: published
@@ -35,3 +35,18 @@ the streak pulling you back, which is exactly the point.
 Adopt as many practices as you like from the library, and remove any that no longer
 fit. If you host a circle, you can change the circle's practice whenever the focus
 shifts.
+
+
+## What each practice shows
+
+Open any practice and you will find more than a title: a short summary of what it
+is, a "how to do it" walk-through, a category (movement, holistic health,
+spirituality, creative, human relating, business support), and a cadence hint
+(daily, weekly, as needed). The library is browsable by what you are drawn to.
+
+## Rewards vary by practice
+
+Most practices earn the standard zaps when you log them, but some reward a little
+more — a cold plunge or a dawn surf asks more of you, so it gives back more. Each
+practice shows its reward (e.g. "+20 zaps · streak +1") so you know what logging it
+is worth before you commit.
