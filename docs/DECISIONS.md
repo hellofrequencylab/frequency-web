@@ -2406,6 +2406,46 @@ seed UUIDs) so it survives the purge.
 
 ---
 
+## ADR-093: Seed Studio generates the full connection web — AI palette + templates, zero side effects
+
+**Decision.** The Seed Studio engine (`lib/demo/engine.ts`) seeds the *whole* web
+of local-community connections, not just circles/people/posts: an event **cadence**
+(two past + one upcoming) with going RSVPs, a circle practice with member adoptions
+and recent `practice_logs`, post **reactions** from circle-mates, **attendance
+streaks**, **achievements**, and open **Journeys** (`journey_plans` + items +
+adoptions). Generation is **demographic-aware** via a *palette + templates* hybrid:
+ONE cheap Haiku call per area (`lib/demo/ai-palette.ts`) returns locale-fitting
+names, real local activities, a vibe phrase, and journey titles; the deterministic
+`buildPlan()` expands that palette into every row. The AI pass is an opt-in wizard
+toggle (default on) that **fails soft** to the built-in template pools — seeding
+never depends on it.
+
+**Why.** Demographic believability wants intelligence; reliability and cost want
+determinism. One palette call per *area* (not per row) gives both: an Encinitas
+seed reads surf/wellness with fitting names, a Midwest town reads different, and a
+"thriving" seed is still one model call. Richer connection types make the demo read
+*lived-in* (attended events, streak-backed practices, an adopted Journeys library)
+instead of a wall of posts.
+
+**Unobtrusive contract (two senses).** (1) **No real-world side effects** — writes
+go direct via the admin client, never through the app's award/notify helpers, so no
+automations fire; RSVP reminders are **pre-stamped** (`reminder_*_sent_at`) so the
+cron never emails; seeded achievements are **zero-reward** so the award trigger is a
+no-op and the economy can't drift. (2) **Recedes/cleans up** — every parent row is
+`is_demo` (children cascade). The one exception, `journey_plans`, carries no
+`is_demo` flag and its `author_id` is `ON DELETE SET NULL`, so a shared
+`deletePlansByAuthors()` (`lib/journey-plans.ts`) removes demo plans by their demo
+author **before** the profiles in every teardown path — per-area purge, global
+purge, and the nightly decay pass.
+
+**Consequences.** Journey tables aren't in the generated `Database` types yet, so
+journey writes go through the untyped admin handle (repo convention,
+`lib/journey-plans.ts`). Large "thriving" seeds still make hundreds of sequential
+inserts (the ID-capturing loops); the heavy engagement rows are batch-inserted, but
+a background job remains the path for very large areas (carried from ADR-091).
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 
