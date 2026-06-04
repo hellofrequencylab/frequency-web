@@ -8,6 +8,9 @@
 // merged on top of these defaults at request time (see lib/permissions.ts).
 
 import { ROLE_HIERARCHY, type CommunityRole } from '@/lib/core/roles'
+// Type-only — lib/staff is server-only (admin client); this import is erased at
+// build, so nav-areas stays client-safe.
+import type { StaffRole } from '@/lib/staff'
 
 // Access levels, lowest → highest. 'visitor' = everyone (even logged-out); the
 // rest map onto the community-role ladder.
@@ -32,6 +35,10 @@ export type NavArea = {
    *  browse the page in preview (muted), rather than greying it out. The page then
    *  gates earning/spending behind an upgrade prompt. Used for the Quest. */
   previewBelowAccess?: boolean
+  /** Minimum STAFF role (team_members axis) that also unlocks this item, regardless
+   *  of the trust-ladder `defaultAccess`. Used by the Studio group so the business
+   *  cockpit rides the staff axis (ADR-027), not the community role. */
+  staffAccess?: StaffRole
 }
 
 // Order here IS the render order down the rail (IA redesign, IA-STRATEGY.md ★ /
@@ -74,7 +81,7 @@ export const NAV_AREAS: readonly NavArea[] = [
   { key: 'admin-structure', href: '/admin/hubs', label: 'Hubs & Nexuses', section: 'Structure', defaultAccess: 'guide' },
   // Studio — the business cockpit. Rides the STAFF axis (team_members) in Phase 2;
   // gated 'admin' for now until nav visibility unions the staff axis.
-  { key: 'marketing',       href: '/marketing', label: 'Marketing', section: 'Studio', defaultAccess: 'admin' },
+  { key: 'marketing',       href: '/marketing', label: 'Marketing', section: 'Studio', defaultAccess: 'admin', staffAccess: 'analyst' },
   // Platform — operator controls (trust janitor).
   { key: 'admin-insights',  href: '/admin/engagement', label: 'Insights', section: 'Platform', defaultAccess: 'janitor' },
   { key: 'admin-vera',      href: '/admin/vera',       label: 'Vera',     section: 'Platform', defaultAccess: 'janitor' },
@@ -94,4 +101,16 @@ export function meetsAccess(access: NavAccess, role: CommunityRole | null): bool
   if (access === 'member') return true
   // access is now one of crew/host/guide/mentor/admin/janitor — a ladder rank.
   return ROLE_HIERARCHY.indexOf(role) >= ROLE_HIERARCHY.indexOf(access)
+}
+
+// Staff axis (team_members) — local pure rank check so nav-areas stays client-safe
+// (the server-only lib/staff isn't imported at runtime).
+const STAFF_ORDER: readonly StaffRole[] = ['analyst', 'marketer', 'admin', 'owner']
+
+/** Does the viewer's STAFF role (null = not staff) unlock this area via its
+ *  `staffAccess` floor? Unioned with `meetsAccess` so an item shows if EITHER the
+ *  trust ladder OR the staff axis grants it. */
+export function meetsStaff(area: { staffAccess?: StaffRole }, staffRole: StaffRole | null): boolean {
+  if (!area.staffAccess || staffRole == null) return false
+  return STAFF_ORDER.indexOf(staffRole) >= STAFF_ORDER.indexOf(area.staffAccess)
 }

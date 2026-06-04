@@ -36,7 +36,8 @@ import {
   ROLE_LABEL,
   roleBadgeStyle,
 } from '@/lib/community-roles'
-import { NAV_AREAS, meetsAccess, type NavAccess } from '@/lib/nav-areas'
+import { NAV_AREAS, meetsAccess, meetsStaff, type NavAccess } from '@/lib/nav-areas'
+import type { StaffRole } from '@/lib/staff'
 import type { ProfileIdentity } from '@/lib/types/profile'
 import { PrimaryNav } from '@/components/layout/primary-nav'
 import { BrandMark } from '@/components/layout/brand-mark'
@@ -61,6 +62,8 @@ type MainNavItem = {
   defaultAccess: NavAccess
   /** Below-access viewers may still click through to a muted preview. */
   preview?: boolean
+  /** Min staff role (team_members) that also unlocks this item. */
+  staffAccess?: StaffRole
 }
 
 type NavSectionGroup = { label: string | null; items: MainNavItem[] }
@@ -76,6 +79,7 @@ function buildSections(areas: typeof NAV_AREAS[number][]): NavSectionGroup[] {
       Icon: AREA_ICONS[area.key] ?? Globe,
       defaultAccess: area.defaultAccess,
       preview: area.previewBelowAccess,
+      staffAccess: area.staffAccess,
     }
     const last = sections[sections.length - 1]
     if (last && last.label === area.section) last.items.push(item)
@@ -463,6 +467,7 @@ function NavLinkList({
   extraSections,
   hideAppNav = false,
   permissions,
+  staffRole = null,
   sections = NAV_SECTIONS,
 }: {
   isActive: (href: string) => boolean
@@ -473,6 +478,8 @@ function NavLinkList({
   hideAppNav?: boolean
   /** Per-area access overrides (janitor-set); merged over code defaults. */
   permissions?: Record<string, NavAccess>
+  /** Viewer's staff role (team_members axis); unlocks Studio independent of trust. */
+  staffRole?: StaffRole | null
   /** Which area sections to render. Defaults to the full rail (NAV_SECTIONS). */
   sections?: NavSectionGroup[]
 }) {
@@ -500,7 +507,9 @@ function NavLinkList({
         // group (header included) when nothing is reachable.
         const adminSection = TELESCOPE_SECTIONS.has(section.label ?? '')
         const visibleItems = adminSection
-          ? section.items.filter((it) => meetsAccess(effectiveAccess(it, permissions), role))
+          ? section.items.filter(
+              (it) => meetsAccess(effectiveAccess(it, permissions), role) || meetsStaff(it, staffRole),
+            )
           : section.items
         if (visibleItems.length === 0) return null
         return (
@@ -513,7 +522,7 @@ function NavLinkList({
             const { href, label, Icon } = item
             // Member worlds always show (muting/preview below); admin sections were
             // pre-filtered to reachable items above.
-            const reachable = meetsAccess(effectiveAccess(item, permissions), role)
+            const reachable = meetsAccess(effectiveAccess(item, permissions), role) || meetsStaff(item, staffRole)
             // Preview-able areas (the Quest) stay CLICKABLE but read as a muted
             // "dead" state for below-access viewers; the page gates engagement.
             if (!reachable && item.preview) {
@@ -593,6 +602,7 @@ function MobileLeftDrawer({
   extraSections,
   hideAppNav = false,
   permissions,
+  staffRole = null,
 }: {
   open: boolean
   onClose: () => void
@@ -601,6 +611,7 @@ function MobileLeftDrawer({
   extraSections?: NavSection[]
   hideAppNav?: boolean
   permissions?: Record<string, NavAccess>
+  staffRole?: StaffRole | null
 }) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -638,7 +649,7 @@ function MobileLeftDrawer({
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-          <NavLinkList isActive={isActive} role={role} onNavigate={onClose} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} sections={NAV_SECTIONS} />
+          <NavLinkList isActive={isActive} role={role} onNavigate={onClose} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} staffRole={staffRole} sections={NAV_SECTIONS} />
         </nav>
 
         {/* Bottom close. Sits in the thumb zone */}
@@ -749,6 +760,7 @@ export default function AppShell({
   extraSections,
   hideAppNav = false,
   permissions,
+  staffRole = null,
 }: {
   profile: Profile
   /** True DB role, ignoring any view-as override. Defaults to the (effective)
@@ -766,6 +778,8 @@ export default function AppShell({
   hideAppNav?: boolean
   /** Per-area access overrides (janitor-set); merged over code defaults. */
   permissions?: Record<string, NavAccess>
+  /** Viewer's staff role (team_members axis); unlocks Studio. Null under view-as. */
+  staffRole?: StaffRole | null
 }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -934,7 +948,7 @@ export default function AppShell({
 
           {/* Community spaces + features + admin rail (the Broadcast bar lives up top) */}
           <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-            <NavLinkList isActive={isActive} role={gateRole} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} />
+            <NavLinkList isActive={isActive} role={gateRole} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} staffRole={staffRole} />
           </nav>
 
           {/* Upgrade to Crew. Non-paying members only; one-time pitch that
@@ -995,6 +1009,7 @@ export default function AppShell({
         extraSections={extraSections}
         hideAppNav={hideAppNav}
         permissions={permissions}
+        staffRole={staffRole}
       />
 
     </div>
