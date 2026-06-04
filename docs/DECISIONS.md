@@ -1904,6 +1904,34 @@ for what is now an Arc** — the one remaining player-facing instance of the col
 
 ---
 
+## ADR-081: Vera onboarding moves into a lightbox over the feed, and continues from induction
+
+**Status:** Accepted · 2026-06-04 · extends ADR-066 (Phase D). Shipped.
+
+**Context:** Post-induction we redirected the new member to a standalone `/onboarding/vera`
+page whose concierge opened cold ("What brought you here? And don't say 'just looking'"). But
+by then induction has already gathered who they are, where they are, and what they came for
+(`profiles.meta.beta`: `intent`, `interests`, `location`, plus `display_name`), and seeded
+Vera's memory. Asking again read as the system not listening, and a separate page pulled the
+Founder out of the product on their first second inside.
+
+**Decision:**
+- After induction (and legacy onboarding), redirect to **`/feed?welcome=vera`** — the real
+  product — and render Vera's onboarding as a **lightbox over the feed**, not a separate page.
+- The lightbox is a short, personalized **deck → chat**: an inspirational continuance slide that
+  reflects the member's own induction words back, one instruction ("Circles are your people.
+  Show up."), then Vera's chat **seeded with a warm opening that picks up the thread** and points
+  at the one next action (a real circle). She never re-asks what we already know.
+- The opening + slides are built by **pure, dark-safe functions** (`lib/onboarding/vera-welcome.ts`),
+  so the continuance works identically whether or not the AI kernel is live; unit-tested.
+- Doctrine preserved (AI-VERA §3): one-tap escape to `/circles`, never trap them on Vera; the
+  feed first-run banner still catches skippers (its "Ask Vera" now opens the lightbox too).
+
+**Consequences:** The standalone `/onboarding/vera` page remains as a direct-nav fallback. The
+lightbox reads `meta.beta` only on `?welcome=vera` (no cost on normal feed loads). Continuance
+quality scales with induction data richness and degrades gracefully (intent → interests → bare
+welcome).
+
 ---
 ### Decisions intentionally NOT duplicated here
 
