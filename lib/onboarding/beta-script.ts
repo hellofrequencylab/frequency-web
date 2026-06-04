@@ -8,6 +8,12 @@
 /** Master switch. While true, `/onboarding` redirects into `/onboarding/beta`. */
 export const BETA_INDUCTION_ACTIVE = true
 
+/** During the Beta, every member gets Crew (full gamification) for free — they
+ *  rack up points in the game and can downgrade to Member anytime (/upgrade).
+ *  Flip OFF at Launch: new members default to Member, and unpaid members lose
+ *  the Crew surfaces + the ability to spend gems (see ADR-084). */
+export const BETA_MEMBERS_GET_CREW = true
+
 /** Bumped if the oath/flow materially changes, so we can tell cohorts apart. */
 export const BETA_INDUCTION_VERSION = 1
 

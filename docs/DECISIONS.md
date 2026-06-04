@@ -1988,6 +1988,34 @@ when the trend is ungrounded). The **Vera-narration layer remains a future enhan
 wrap these grounded findings, never replace them. New tests added in
 `lib/analytics/marketing-forecast.test.ts`.
 
+## ADR-084: Beta members get Crew (full gamification) for free; Launch limits the unpaid
+
+**Status:** Accepted · 2026-06-04 · flag `BETA_MEMBERS_GET_CREW` in `lib/onboarding/beta-script.ts`.
+Code shipped; Launch half is spec.
+
+**Context:** Crew is the first paid tier ($10/mo) and the gate for the whole Quest (dashboard,
+arcs, store, gem economy). During the Beta we want everyone *in* the game — racking up zaps/gems,
+forming the founding leaderboard — not paywalled out of it.
+
+**Decision:**
+- **Beta = Crew for free.** Every member who completes induction is granted `crew`
+  (`grantBetaCrew` in `app/onboarding/beta/actions.ts`, gated by `BETA_MEMBERS_GET_CREW`). Only
+  members are upgraded — leaders (host+) and existing crew are untouched; role writes go through
+  the admin client because the `prevent_role_self_escalation` trigger blocks non-`service_role`
+  changes. Existing real members were backfilled to crew.
+- **Downgrade anytime.** The existing `/upgrade` toggle (`toggleCrewRole`) already switches a
+  member ↔ crew (never touching host+), so members can step down whenever they like.
+- **The "Upgrade to Crew" sidebar box** is the re-upgrade pitch — it only shows to `member`
+  (i.e. someone who downgraded), one-time, collapsing to a tab.
+- **Launch transition (spec):** flip `BETA_MEMBERS_GET_CREW` OFF. New members default to Member;
+  any member left **unpaid** keeps their earned gems but loses the Crew surfaces and the ability
+  to **spend** gems (the store/redeem gates on crew + entitlement). The carrot to convert: unlock
+  the game they already have points in. Ties into the freemium/Vault entitlement work (Section K).
+
+**Consequences:** During the Beta the upgrade box is effectively dormant (almost everyone is
+crew). The Launch gem-spend lock needs the entitlement/payment input on the capability resolver
+(ADR-037) before it can switch on; until then this is a one-flag policy + a backfill.
+
 ---
 ### Decisions intentionally NOT duplicated here
 
