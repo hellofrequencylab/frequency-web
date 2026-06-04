@@ -27,6 +27,32 @@ It is the **mandatory opening sequence**: `app/(main)/layout.tsx` routes any sig
 to the non-blocking model at launch; no loop since `/onboarding` is outside the `(main)` layout).
 At launch: flip the flag, delete `app/onboarding/beta/` + `components/onboarding/renders/`.
 
+## Sequences — one template, audience-targeted copy ([ADR-094](DECISIONS.md))
+
+The induction is **audience-parameterized**: same cinematic engine, swappable voice.
+A *sequence* (`lib/onboarding/beta-sequences.ts`) bundles a public **splash**, the
+induction's **voiced copy** (`VeraCopy`), and a durable **marketing tag**:
+
+| Slug | Audience | Tag (registry) | Splash |
+|---|---|---|---|
+| `early-adopter` *(default)* | Followers from Daniel's video | `beta_early_adopter` | `/beta/early-adopter` |
+| `personal` | Daniel's hand-invites "into the dream" | `beta_personal` | `/beta/personal` |
+| `founding-partner` | Collaborators + businesses ("Founder energy") | `beta_founding_partner` | `/beta/founding-partner` |
+
+**How it flows.** The splash CTA carries the audience into the induction via `?seq=`;
+a 30-day `fq_beta_seq` cookie keeps it across the deferred sign-in round-trip. On
+completion `writeBetaInduction` records `meta.beta.sequence` and stamps the cohort's
+marketing tag (best-effort; never blocks). Tags are governed — declared in
+`lib/traits/registry.ts` (snake_case), and `assignTag` refuses unregistered keys so
+the founding cohort stays segmentable by entry path **forever**, even after this flow
+is deleted at launch.
+
+**Authoring.** Copy lives in code (reviewed in PRs); a janitor-only **splash-page
+creator** at `/admin/beta-sequences` lists + previews every sequence (copy, tag,
+shareable link). Operator overrides from `/admin/vera` still apply to the **default**
+sequence only (that's what they were authored against). Editing copy in-app (DB-backed
+override, vera_config pattern) is the noted follow-on.
+
 ## Look & feel — a cinematic sequence, not a form
 
 The whole thing is **centered, one focus per screen** (Hook-style), large display type, a single
@@ -138,13 +164,18 @@ ADR-047 funnel when the analytics surface lands.
 | `app/onboarding/beta/page.tsx` | Server page — auth guard, fetch profile + regions |
 | `app/onboarding/beta/preview/page.tsx` | **Public, no-auth visual preview** (`/onboarding/beta/preview`) — sample data, no writes; exempted in `proxy.ts`, noindexed; torn down at launch |
 | `app/onboarding/beta/induction.tsx` | Client flow — Oath gate + 6 beats (`preview` prop mocks the auth-dependent calls) |
-| `app/onboarding/beta/actions.ts` | `acceptBetaOath`, `completeBetaInduction` |
-| `lib/onboarding/beta-script.ts` | Vera's scripted copy, `BETA_OATHS`, `BETA_INDUCTION_ACTIVE` flag |
+| `app/onboarding/beta/actions.ts` | `acceptBetaOath`, `completeBetaInduction`; reads `?seq` cookie → records `meta.beta.sequence` + stamps the cohort tag |
+| `lib/onboarding/beta-script.ts` | Vera's scripted copy, `BETA_OATHS`, `BETA_INDUCTION_ACTIVE` flag, the `VeraCopy` type |
+| `lib/onboarding/beta-sequences.ts` | The 3 audience sequences (splash + copy + marketing tag) |
+| `app/(marketing)/beta/[slug]/page.tsx` | Public per-audience splash (`/beta/<slug>`) |
+| `app/(main)/admin/beta-sequences/page.tsx` | Janitor splash-page creator — lists + previews sequences |
 | `components/onboarding/renders/{feed,circles,events}-render.tsx` | Disposable section renders |
 | `app/onboarding/page.tsx` | Redirects to `/onboarding/beta` while the flag is on |
 
 ## Teardown at launch (one PR)
 
 1. Set `BETA_INDUCTION_ACTIVE = false` (or delete the flag + the redirect in `app/onboarding/page.tsx`).
-2. Delete `app/onboarding/beta/` and `components/onboarding/renders/`.
-3. Keep `meta.beta.*` data (it's harmless history); the launch onboarding ignores it.
+2. Delete `app/onboarding/beta/`, `components/onboarding/renders/`, `lib/onboarding/beta-sequences.ts`,
+   `app/(marketing)/beta/[slug]/`, and `app/(main)/admin/beta-sequences/`.
+3. Keep `meta.beta.*` data and the `beta_*` cohort **tags** (harmless, durable history — the whole
+   point of tagging at the door); the launch onboarding ignores the rest.
