@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getMemberPractices } from '@/lib/practices'
 
 // The 4 Pillars are the `domains` table (Mind · Body · Spirit · Expression) — the
 // organizing axis for practices (practices.domain_id) and, next, the open Journeys
@@ -48,4 +49,22 @@ export async function getPillars(): Promise<Pillar[]> {
 /** Index pillars by id, for mapping a practice's `domain_id` → its Pillar. */
 export function pillarsById(pillars: Pillar[]): Map<string, Pillar> {
   return new Map(pillars.map((p) => [p.id, p]))
+}
+
+export interface PillarCount {
+  slug: PillarSlug
+  name: string
+  count: number
+}
+
+/** A member's adopted practices counted per Pillar, in pillar order — the
+ *  "balance" read for the feed Journey board. Always returns all four pillars
+ *  (zero-filled) so the balance reads as coverage, not just what they have. */
+export async function getMemberPillarBalance(profileId: string): Promise<PillarCount[]> {
+  const [practices, pillars] = await Promise.all([getMemberPractices(profileId), getPillars()])
+  const counts = new Map<string, number>()
+  for (const p of practices) {
+    if (p.domain_id) counts.set(p.domain_id, (counts.get(p.domain_id) ?? 0) + 1)
+  }
+  return pillars.map((pl) => ({ slug: pl.slug, name: pl.name, count: counts.get(pl.id) ?? 0 }))
 }
