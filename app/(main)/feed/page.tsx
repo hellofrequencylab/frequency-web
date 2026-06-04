@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { Composer } from '@/components/feed/composer'
@@ -23,7 +24,8 @@ export default async function FeedPage({
   searchParams: Promise<{ sort?: string; welcome?: string; v?: string }>
 }) {
   const { sort: sortParam, welcome, v } = await searchParams
-  const sort: 'recent' | 'relevant' = sortParam === 'recent' ? 'recent' : 'relevant'
+  const sort: 'recent' | 'relevant' | 'nearby' =
+    sortParam === 'recent' ? 'recent' : sortParam === 'nearby' ? 'nearby' : 'relevant'
   const showVeraWelcome = welcome === 'vera'
   // "Ask Vera" opens straight in chat; the post-induction welcome plays the deck.
   const veraStartInChat = v === 'chat'
@@ -38,6 +40,9 @@ export default async function FeedPage({
   let canAnnounce = false
   let firstName: string | null = null
   let streak = 0
+  let homeLat: number | null = null
+  let homeLng: number | null = null
+  let feedRadiusM = 25000
   let veraWelcome: { slides: ReturnType<typeof buildWelcomeSlides>; opening: ReturnType<typeof buildVeraOpening> } | null = null
 
   if (user) {
@@ -52,6 +57,18 @@ export default async function FeedPage({
       myRole = (profile.community_role ?? 'member') as CommunityRole
       firstName = (profile.display_name ?? '').trim().split(/\s+/)[0] || null
       streak = (profile.current_streak as number | null) ?? 0
+
+      // Member geo (ADR-088) — read through an untyped handle since the new columns
+      // aren't in the generated types yet (cast pattern, per lib/practices.ts).
+      const { data: geoRow } = await (admin as unknown as SupabaseClient)
+        .from('profiles')
+        .select('home_lat, home_lng, feed_radius_m')
+        .eq('id', profile.id)
+        .maybeSingle()
+      const geo = (geoRow ?? null) as { home_lat: number | null; home_lng: number | null; feed_radius_m: number | null } | null
+      homeLat = geo?.home_lat ?? null
+      homeLng = geo?.home_lng ?? null
+      feedRadiusM = geo?.feed_radius_m ?? 25000
 
       // Vera's onboarding lightbox continues from what induction already learned
       // (profiles.meta.beta), so she never opens cold. Built only when arriving
@@ -88,6 +105,7 @@ export default async function FeedPage({
   const composerScopeId = primaryCircleId ?? myProfileId
   const composerVisibility: 'public' | 'group' = primaryCircleId ? 'group' : 'public'
   const hasCircle = !!primaryCircleId
+  const hasHome = homeLat != null && homeLng != null
 
   // Adopted practices not yet logged today -> the feed "log today" nudge (WAM).
   const practicesToLog = myProfileId ? await getPracticesToLogToday(myProfileId) : []
@@ -157,9 +175,21 @@ export default async function FeedPage({
       {/* Sort toggle + feed */}
       <section className="mt-8">
         <SectionHeader
-          title={sort === 'relevant' ? 'For you' : 'Recent'}
+          title={sort === 'nearby' ? 'Nearby' : sort === 'relevant' ? 'For you' : 'Recent'}
           action={
             <div className="flex items-center gap-0.5 bg-surface-elevated rounded-lg p-0.5">
+              {hasHome && (
+                <Link
+                  href="?sort=nearby"
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                    sort === 'nearby'
+                      ? 'bg-surface text-text shadow-sm'
+                      : 'text-muted hover:text-text'
+                  }`}
+                >
+                  Nearby
+                </Link>
+              )}
               <Link
                 href="?sort=relevant"
                 className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
@@ -188,6 +218,7 @@ export default async function FeedPage({
           myProfileId={myProfileId}
           sort={sort}
           viewerRole={myRole}
+          nearby={hasHome && homeLat != null && homeLng != null ? { lat: homeLat, lng: homeLng, radiusM: feedRadiusM } : null}
           emptyMessage={hasCircle
             ? 'Your circle’s quiet right now. Share what’s on your mind.'
             : 'Find your people to fill this up — or share something with the community.'}

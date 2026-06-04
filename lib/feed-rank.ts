@@ -10,7 +10,9 @@ export interface RankablePost {
 
 export function rankFeedPosts<T extends RankablePost>(
   posts: T[],
-  sort: 'recent' | 'relevant',
+  // 'nearby' selects WHICH posts in the DB (the closest, within radius); the final
+  // display order is recency, same as 'recent'.
+  sort: 'recent' | 'relevant' | 'nearby',
   limit = 20,
 ): T[] {
   const seen = new Set<string>()
