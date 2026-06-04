@@ -11,6 +11,7 @@ import { WidgetCard } from '@/components/modules/module-card'
 import { GameStatsDockClient, type DockData } from '@/components/sidebar/game-stats-dock'
 import { getPracticesToLogToday, getRecentPracticeLogs, getMemberPractices } from '@/lib/practices'
 import { getRecentDispatchesForProfile } from '@/lib/dispatches'
+import { DemoNotice } from '@/components/sidebar/demo-notice'
 
 export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
 
@@ -463,6 +464,12 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
       {/* Top of the rail scrolls with the feed. flex-1 pushes the stats dock to
           the bottom so it stays stuck there (like the left profile box). */}
       <div className="flex-1 px-3 py-6 space-y-8">
+        {/* Beta demo explainer + honest headcount. Self-hides when demo_mode is
+            off or there is no demo content left to explain. */}
+        <Suspense fallback={null}>
+          <DemoNotice />
+        </Suspense>
+
         {/* Getting Started. Auto-hides when all items complete */}
         <Suspense fallback={null}>
           <GettingStartedChecklist profileId={profileId} />
