@@ -9,15 +9,15 @@ import {
   getPublicCounts,
   getPublicCityClusters,
 } from '@/lib/discover'
+import { ChannelCard, CircleCard, EventRow, PostPreview } from '@/components/discover/cards'
 import {
-  ChannelCard,
-  CircleCard,
-  EventRow,
-  PostPreview,
+  Statement,
+  ZigZag,
+  BetaCTA,
+  PhotoHero,
   SectionHeading,
-  DiscoverHero,
-} from '@/components/discover/cards'
-import { Statement, ZigZag, BetaCTA } from '@/components/marketing/marketing-ui'
+  Button,
+} from '@/components/marketing/marketing-ui'
 import { DiscoverLocator } from '@/components/discover/discover-locator'
 import { InlineBetaCapture } from '@/components/discover/inline-beta-capture'
 import { SITE_NAME, SOCIAL_PROOF_FLOOR, FOUNDING_PLACE, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
@@ -101,7 +101,7 @@ export default async function DiscoverHubPage() {
       />
 
       {/* ── Hero ──────────────────────────────────────────────── */}
-      <DiscoverHero
+      <PhotoHero
         image="/images/site/PHOTO-2020-09-09-16-38-27.jpeg"
         alt="A large Frequency yoga gathering on a lawn at golden hour in North County San Diego"
         eyebrow="Discover Frequency"
@@ -122,17 +122,14 @@ export default async function DiscoverHubPage() {
           </p>
         )}
         <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-          <Link
-            href={BETA_CTA_HREF}
-            className="inline-flex items-center gap-2 rounded-2xl bg-primary text-on-primary px-7 py-3 text-base font-bold hover:bg-primary-hover transition-colors shadow-pop"
-          >
+          <Button href={BETA_CTA_HREF}>
             {BETA_CTA_LABEL} <ArrowRight className="w-4 h-4" />
-          </Link>
+          </Button>
           <Link href="/sign-in" className="text-sm font-semibold text-white/80 hover:text-white transition-colors">
             or browse free →
           </Link>
         </div>
-      </DiscoverHero>
+      </PhotoHero>
 
       {/* ── Locator map (privacy-safe: city centroids only) ──────── */}
       <section className="bg-surface px-6 py-16 border-b border-border/60">
@@ -148,12 +145,9 @@ export default async function DiscoverHubPage() {
               <p className="mb-5 text-sm text-muted leading-relaxed">
                 The first circles are forming now. Be one of the first in your neighborhood.
               </p>
-              <Link
-                href={BETA_CTA_HREF}
-                className="inline-flex items-center gap-2 rounded-2xl bg-primary text-on-primary px-7 py-3 text-base font-bold hover:bg-primary-hover transition-colors"
-              >
+              <Button href={BETA_CTA_HREF}>
                 {BETA_CTA_LABEL} <ArrowRight className="w-4 h-4" />
-              </Link>
+              </Button>
             </div>
           )}
         </div>

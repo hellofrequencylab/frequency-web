@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import {
   ArrowRight,
   Compass,
@@ -8,6 +7,9 @@ import {
   Sprout,
   Network,
   HandHeart,
+  Sunrise,
+  MessageCircle,
+  MapPin,
 } from 'lucide-react'
 import { Render } from '@measured/puck/rsc'
 import {
@@ -18,10 +20,13 @@ import {
   Statement,
   Marquee,
   BetaCTA,
+  Button,
+  Card,
 } from '@/components/marketing/marketing-ui'
 import { config } from '@/lib/page-editor/config'
 import { getPublishedData } from '@/lib/page-editor/data'
 import { BETA_CTA_LABEL, BETA_CTA_HREF, FOUNDING_PLACE } from '@/lib/site'
+import { ProductTour } from './tour'
 
 export const revalidate = 3600
 
@@ -61,12 +66,9 @@ function LegacyHowItWorks() {
         }
         subtitle="Most communities are a feed and a hope. Frequency has a structure that actually grows — and it only takes two words to belong."
       >
-        <Link
-          href={BETA_CTA_HREF}
-          className="inline-flex items-center gap-2 rounded-2xl bg-primary text-on-primary px-8 py-3.5 font-bold hover:bg-primary-hover transition-colors shadow-pop"
-        >
+        <Button href={BETA_CTA_HREF}>
           {BETA_CTA_LABEL} <ArrowRight className="w-5 h-5" />
-        </Link>
+        </Button>
       </PhotoHero>
 
       {/* The three steps — how you actually get from curious to belonging */}
@@ -121,6 +123,22 @@ function LegacyHowItWorks() {
           you&apos;re missed when you don&apos;t show up.
         </p>
       </ZigZag>
+
+      {/* The app — an interactive look at what carries the thread day to day */}
+      <Section tone="canvas">
+        <div className="max-w-3xl mx-auto text-center mb-10">
+          <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
+            The app
+          </p>
+          <h2 className="font-display uppercase text-text text-4xl sm:text-5xl">
+            Your people, in your pocket.
+          </h2>
+          <p className="mt-4 text-xl italic text-muted">
+            Tap through the four things you&apos;ll actually use.
+          </p>
+        </div>
+        <ProductTour />
+      </Section>
 
       <Statement tone="surface">
         Two words are all you need to{' '}
@@ -241,6 +259,41 @@ function LegacyHowItWorks() {
         <span className="text-primary">the people</span> are the point.
       </Statement>
 
+      {/* A day in Frequency — how the structure plays out in real life */}
+      <Section tone="canvas">
+        <SectionHeading
+          eyebrow="A day in Frequency"
+          title="One ordinary Tuesday."
+          kicker="How the thread pulls you back to people."
+        />
+        <ol className="space-y-5">
+          <DayBeat
+            icon={Sunrise}
+            time="6:15a"
+            title="The bluff before work"
+            body="Your Sunrise Breathwork circle meets on Moonlight Beach. Cold, gold, quiet. You leave regulated instead of wired."
+          />
+          <DayBeat
+            icon={MessageCircle}
+            time="9:40a"
+            title="A ping from the circle"
+            body="Someone posts a photo from the morning. A few zaps, a couple of replies. The thread keeps the warmth alive between meetings."
+          />
+          <DayBeat
+            icon={CalendarCheck}
+            time="1:00p"
+            title="One tap to RSVP"
+            body="An event drops for Saturday's thermal circuit. You tap RSVP. Now you're expected — and you'll be missed if you don't show."
+          />
+          <DayBeat
+            icon={MapPin}
+            time="6:30p"
+            title="Meet in the flesh"
+            body="After work you walk into the room. Faces you know from the feed are already there. The app brought you here; the people take over."
+          />
+        </ol>
+      </Section>
+
       {/* Where it's happening now — grounding in the real beta */}
       <Section tone="canvas">
         <SectionHeading
@@ -280,7 +333,7 @@ function Step({
   text: string
 }) {
   return (
-    <div className="relative flex flex-col rounded-3xl border border-border bg-surface p-7 shadow-sm">
+    <Card tone="feature" className="relative flex flex-col">
       <div className="flex items-center justify-between mb-5">
         <span className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-primary-bg/50">
           <Icon className="w-5 h-5 text-primary-strong" />
@@ -291,7 +344,7 @@ function Step({
       </div>
       <h3 className="font-display uppercase text-text text-2xl mb-2">{title}</h3>
       <p className="text-sm text-muted leading-relaxed">{text}</p>
-    </div>
+    </Card>
   )
 }
 
@@ -305,13 +358,13 @@ function Layer({
   text: string
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-surface p-6">
+    <Card tone="feature">
       <div className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-primary-bg/50 mb-4">
         <Icon className="w-5 h-5 text-primary-strong" />
       </div>
       <h3 className="font-display uppercase text-text text-xl mb-2">{title}</h3>
       <p className="text-sm text-muted leading-relaxed">{text}</p>
-    </div>
+    </Card>
   )
 }
 
@@ -325,12 +378,43 @@ function Hold({
   text: string
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-surface p-6">
+    <Card tone="feature">
       <div className="flex items-center gap-2.5 mb-3">
         <Icon className="w-5 h-5 text-primary-strong" />
         <h3 className="font-bold text-text text-lg leading-snug">{title}</h3>
       </div>
       <p className="text-sm text-muted leading-relaxed">{text}</p>
-    </div>
+    </Card>
+  )
+}
+
+function DayBeat({
+  icon: Icon,
+  time,
+  title,
+  body,
+}: {
+  icon: IconType
+  time: string
+  title: string
+  body: string
+}) {
+  return (
+    <li className="flex items-start gap-4 rounded-3xl border border-border bg-surface p-5 sm:p-6 shadow-sm">
+      <div className="shrink-0 w-12 h-12 rounded-2xl bg-primary-bg flex items-center justify-center">
+        <Icon className="w-6 h-6 text-primary-strong" aria-hidden />
+      </div>
+      <div className="min-w-0">
+        <div className="flex items-center gap-3 flex-wrap">
+          <span className="font-display uppercase text-text text-xl leading-none">
+            {title}
+          </span>
+          <span className="text-xs font-bold uppercase tracking-widest text-primary-strong">
+            {time}
+          </span>
+        </div>
+        <p className="mt-2 text-base text-muted leading-relaxed">{body}</p>
+      </div>
+    </li>
   )
 }
