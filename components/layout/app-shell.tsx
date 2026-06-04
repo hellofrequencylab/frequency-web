@@ -57,6 +57,8 @@ type MainNavItem = {
   label: string
   Icon: React.ElementType
   defaultAccess: NavAccess
+  /** Below-access viewers may still click through to a muted preview. */
+  preview?: boolean
 }
 
 type NavSectionGroup = { label: string | null; items: MainNavItem[] }
@@ -71,6 +73,7 @@ function buildSections(areas: typeof NAV_AREAS[number][]): NavSectionGroup[] {
       label: area.label,
       Icon: AREA_ICONS[area.key] ?? Globe,
       defaultAccess: area.defaultAccess,
+      preview: area.previewBelowAccess,
     }
     const last = sections[sections.length - 1]
     if (last && last.label === area.section) last.items.push(item)
@@ -482,6 +485,25 @@ function NavLinkList({
             // a host isn't shown five greyed-out janitor tools.
             const reachable = meetsAccess(effectiveAccess(item, permissions), role)
             if (!reachable && section.label === 'Manage') return null
+            // Preview-able areas (the Quest) stay CLICKABLE but read as a muted
+            // "dead" state for below-access viewers; the page gates engagement.
+            if (!reachable && item.preview) {
+              const active = isActive(href)
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  onClick={onNavigate}
+                  title="Preview — upgrade to Crew to engage"
+                  className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    active ? 'bg-surface-elevated text-muted' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
+                  }`}
+                >
+                  <Icon className="h-[18px] w-[18px] shrink-0 text-subtle" strokeWidth={2} />
+                  {label}
+                </Link>
+              )
+            }
             if (!reachable) {
               return (
                 <div

@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getStoreData } from './actions'
 import { StoreGrid } from './store-grid'
+import { CrewPreviewBanner } from '@/components/crew/crew-preview-banner'
+import { CrewGate } from '@/components/crew/upgrade-lightbox'
 
 export default async function StorePage() {
   const supabase = await createClient()
@@ -17,11 +19,14 @@ export default async function StorePage() {
   // your spendable Gem balance.
   const { data: prof } = await createAdminClient()
     .from('profiles')
-    .select('current_season_zaps, current_streak')
+    .select('current_season_zaps, current_streak, community_role')
     .eq('auth_user_id', user.id)
     .maybeSingle()
   const zaps = (prof?.current_season_zaps as number | null) ?? 0
   const streak = (prof?.current_streak as number | null) ?? 0
+  const isCrew = ['crew', 'host', 'guide', 'mentor', 'janitor'].includes(
+    (prof?.community_role as string) ?? '',
+  )
 
   const categories = [
     { key: 'cosmetic',    label: 'Profile Cosmetics',  desc: 'Borders, flair icons, and visual upgrades' },
@@ -32,6 +37,7 @@ export default async function StorePage() {
 
   return (
     <div>
+      {!isCrew && <CrewPreviewBanner />}
       <div className="mb-6">
         <div className="flex items-center gap-3">
           <Link href="/crew" className="text-sm text-subtle hover:text-muted dark:hover:text-subtle transition-colors">Crew</Link>
@@ -97,23 +103,26 @@ export default async function StorePage() {
         )}
       </div>
 
-      {/* Store categories */}
-      <div className="space-y-8">
-        {categories.map(cat => {
-          const catItems = items.filter(i => i.category === cat.key)
-          if (catItems.length === 0) return null
+      {/* Store categories. Members can browse everything but can't spend —
+          the grid renders muted and a click opens the upgrade lightbox. */}
+      <CrewGate locked={!isCrew}>
+        <div className="space-y-8">
+          {categories.map(cat => {
+            const catItems = items.filter(i => i.category === cat.key)
+            if (catItems.length === 0) return null
 
-          return (
-            <section key={cat.key}>
-              <div className="mb-3">
-                <h2 className="text-sm font-semibold text-text">{cat.label}</h2>
-                <p className="text-xs text-subtle mt-0.5">{cat.desc}</p>
-              </div>
-              <StoreGrid items={catItems} balance={balance} />
-            </section>
-          )
-        })}
-      </div>
+            return (
+              <section key={cat.key}>
+                <div className="mb-3">
+                  <h2 className="text-sm font-semibold text-text">{cat.label}</h2>
+                  <p className="text-xs text-subtle mt-0.5">{cat.desc}</p>
+                </div>
+                <StoreGrid items={catItems} balance={balance} />
+              </section>
+            )
+          })}
+        </div>
+      </CrewGate>
     </div>
   )
 }

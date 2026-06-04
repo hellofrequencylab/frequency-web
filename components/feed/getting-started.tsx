@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { CheckCircle2, Circle, Sparkles } from 'lucide-react'
+import { Circle, Sparkles } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMemberPractices } from '@/lib/practices'
 
@@ -53,6 +53,9 @@ export async function GettingStartedChecklist({ profileId }: { profileId: string
 
   const pct = Math.round((doneCount / items.length) * 100)
 
+  // Only ever prompt for what's NOT done — completed steps drop off the list.
+  const todo = items.filter(i => !i.done)
+
   return (
     <div className="rounded-2xl bg-primary-bg/50 dark:bg-primary-bg/30 p-3">
       {/* Header */}
@@ -76,28 +79,20 @@ export async function GettingStartedChecklist({ profileId }: { profileId: string
         />
       </div>
 
-      {/* Items */}
+      {/* Items — only the incomplete ones; done steps fall away. */}
       <div className="space-y-0.5">
-        {items.map(item => (
-          <div key={item.key}>
-            {item.done ? (
-              <div className="flex items-center gap-2.5 px-1 py-1.5 opacity-40">
-                <CheckCircle2 className="w-4 h-4 text-success shrink-0" />
-                <span className="text-sm text-muted line-through">{item.label}</span>
-              </div>
-            ) : (
-              <Link
-                href={item.href}
-                className="flex items-center gap-2.5 rounded-lg px-1 py-1.5 hover:bg-primary-bg dark:hover:bg-primary-bg transition-colors group"
-              >
-                <Circle className="w-4 h-4 text-primary-strong dark:text-primary-strong shrink-0" />
-                <span className="text-sm font-medium text-text dark:text-subtle/60 group-hover:text-primary-strong dark:group-hover:text-primary-strong transition-colors flex-1">
-                  {item.label}
-                </span>
-                <span className="text-xs text-primary-strong opacity-0 group-hover:opacity-100 transition-opacity shrink-0">→</span>
-              </Link>
-            )}
-          </div>
+        {todo.map(item => (
+          <Link
+            key={item.key}
+            href={item.href}
+            className="flex items-center gap-2.5 rounded-lg px-1 py-1.5 hover:bg-primary-bg dark:hover:bg-primary-bg transition-colors group"
+          >
+            <Circle className="w-4 h-4 text-primary-strong dark:text-primary-strong shrink-0" />
+            <span className="text-sm font-medium text-text dark:text-subtle/60 group-hover:text-primary-strong dark:group-hover:text-primary-strong transition-colors flex-1">
+              {item.label}
+            </span>
+            <span className="text-xs text-primary-strong opacity-0 group-hover:opacity-100 transition-opacity shrink-0">→</span>
+          </Link>
         ))}
       </div>
     </div>

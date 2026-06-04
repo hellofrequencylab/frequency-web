@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Map, CheckCircle, Zap, Lock } from 'lucide-react'
+import { CrewPreviewBanner } from '@/components/crew/crew-preview-banner'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
@@ -13,11 +14,15 @@ export default async function ArcsPage() {
 
   const { data: profile } = await admin
     .from('profiles')
-    .select('id')
+    .select('id, community_role')
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
   if (!profile) notFound()
+
+  const isCrew = ['crew', 'host', 'guide', 'mentor', 'janitor'].includes(
+    (profile.community_role as string) ?? '',
+  )
 
   const [{ data: chains }, { data: allSteps }, { data: allProgress }] = await Promise.all([
     admin.from('arc_chains').select('*').order('sort_order'),
@@ -41,6 +46,7 @@ export default async function ArcsPage() {
 
   return (
     <div>
+      {!isCrew && <CrewPreviewBanner />}
       <div className="mb-6">
         <div className="flex items-center gap-3">
           <Link href="/crew" className="text-sm text-subtle hover:text-muted dark:hover:text-subtle transition-colors">Crew</Link>
