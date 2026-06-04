@@ -6,11 +6,21 @@ import { createClient } from '@/lib/supabase/server'
 import { getVeraConfig } from '@/lib/ai/vera/config'
 import { VERA, BETA_OATHS, HEARD_ABOUT } from '@/lib/onboarding/beta-script'
 import BetaInduction from './induction'
+import { BetaWelcome } from './welcome'
 
-export default async function BetaInductionPage() {
+export default async function BetaInductionPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>
+}) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/sign-in')
+  // Signed-out visitors get the cinematic opening of the sequence (sign-in embedded),
+  // not a bounce to the cold /sign-in form. After auth the cookie returns them here.
+  if (!user) {
+    const { error } = await searchParams
+    return <BetaWelcome error={error} />
+  }
 
   const { data: profile } = await supabase
     .from('profiles')
