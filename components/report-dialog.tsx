@@ -71,7 +71,7 @@ export function ReportDialog({ targetType, targetId, open, onClose }: ReportDial
             <div className="flex justify-end">
               <button
                 onClick={handleClose}
-                className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-hover transition-colors"
+                className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary hover:bg-primary-hover transition-colors"
               >
                 Done
               </button>

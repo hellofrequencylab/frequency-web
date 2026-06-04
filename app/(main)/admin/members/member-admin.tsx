@@ -272,7 +272,7 @@ function MemberRow({
                 <textarea name="bio" defaultValue={m.bio ?? ''} rows={2} className="w-full mt-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs resize-none" />
               </div>
               <div className="flex items-center gap-2">
-                <button type="submit" disabled={isPending} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary disabled:opacity-50">
+                <button type="submit" disabled={isPending} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-on-primary hover:bg-primary disabled:opacity-50">
                   Save changes
                 </button>
                 <button type="button" onClick={() => setEditMode(false)} className="rounded-lg px-3 py-1.5 text-xs font-medium text-muted hover:bg-surface-elevated">

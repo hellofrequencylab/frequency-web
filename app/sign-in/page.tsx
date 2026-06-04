@@ -45,12 +45,12 @@ export default async function SignInPage({
               autoComplete="email"
               required
               placeholder="you@example.com"
-              className="mt-1 block w-full rounded-lg border border-border-strong bg-white px-3 py-2 text-sm placeholder-subtle shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="mt-1 block w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-sm placeholder-subtle shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
           <button
             type="submit"
-            className="w-full rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+            className="w-full rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-sm hover:bg-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
           >
             Send magic link
           </button>
@@ -70,7 +70,7 @@ export default async function SignInPage({
           {nextValue && <input type="hidden" name="next" value={nextValue} />}
           <button
             type="submit"
-            className="flex w-full items-center justify-center gap-3 rounded-lg border border-border-strong bg-white px-4 py-2 text-sm font-medium text-text shadow-sm hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-400"
+            className="flex w-full items-center justify-center gap-3 rounded-lg border border-border-strong bg-surface px-4 py-2 text-sm font-medium text-text shadow-sm hover:bg-surface-elevated focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-400"
           >
             <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
               <path

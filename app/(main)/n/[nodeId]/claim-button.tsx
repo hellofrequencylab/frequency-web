@@ -63,7 +63,7 @@ export function ClaimButton({ nodeId }: { nodeId: string }) {
           }
         })
       }
-      className="inline-flex items-center gap-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-sm font-semibold px-5 py-3 shadow-sm transition-colors disabled:opacity-60"
+      className="inline-flex items-center gap-2 rounded-xl bg-primary hover:bg-primary-hover text-on-primary text-sm font-semibold px-5 py-3 shadow-sm transition-colors disabled:opacity-60"
     >
       <Zap className="w-4 h-4" strokeWidth={2.5} />
       {pending ? 'Claiming…' : 'Claim'}

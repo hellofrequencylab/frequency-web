@@ -108,7 +108,7 @@ export function CreateModal({
           <button
             type="submit"
             disabled={submitDisabled || isPending}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-5 py-2 text-xs font-semibold text-white hover:bg-primary-hover disabled:opacity-40 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-5 py-2 text-xs font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-40 transition-colors"
           >
             {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
             {isPending ? pendingLabel : submitLabel}
