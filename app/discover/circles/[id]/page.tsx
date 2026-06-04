@@ -45,7 +45,7 @@ export default async function CirclePage({
   if (!circle) notFound()
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-12">
+    <div className="max-w-3xl mx-auto px-6 py-20 sm:py-24">
       <JsonLd
         data={breadcrumbSchema([
           { name: 'Discover', path: '/discover' },
@@ -65,8 +65,11 @@ export default async function CirclePage({
 
       {/* Header */}
       <header className="mb-8">
+        <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
+          Find your people
+        </p>
         <div className="flex items-start justify-between gap-3 mb-3">
-          <h1 className="text-3xl sm:text-4xl font-bold text-text">{circle.name}</h1>
+          <h1 className="font-display uppercase text-text text-4xl sm:text-5xl">{circle.name}</h1>
           {circle.status === 'forming' && (
             <span className="shrink-0 mt-2 text-xs px-2 py-1 rounded-md font-medium bg-warning-bg text-warning capitalize">
               forming
@@ -98,7 +101,7 @@ export default async function CirclePage({
       {/* About */}
       {circle.about && (
         <section className="mb-10">
-          <p className="text-base text-text leading-relaxed whitespace-pre-line">{circle.about}</p>
+          <p className="text-lg text-muted leading-relaxed whitespace-pre-line">{circle.about}</p>
         </section>
       )}
 

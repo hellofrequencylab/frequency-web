@@ -56,7 +56,7 @@ export default async function TopicPage({
   const circles = await getPublicCirclesByChannel(channel.slug)
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-12">
+    <div className="max-w-4xl mx-auto px-6 py-20 sm:py-24">
       <JsonLd
         data={[
           breadcrumbSchema([
@@ -78,8 +78,11 @@ export default async function TopicPage({
       </nav>
 
       {/* Header */}
-      <header className="mb-12 max-w-2xl">
-        <h1 className="text-3xl sm:text-4xl font-bold text-text mb-3">{channel.name}</h1>
+      <header className="mb-12 max-w-prose">
+        <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
+          Explore by topic
+        </p>
+        <h1 className="font-display uppercase text-text text-4xl sm:text-5xl mb-4">{channel.name}</h1>
         {channel.description && (
           <p className="text-lg text-muted leading-relaxed">{channel.description}</p>
         )}

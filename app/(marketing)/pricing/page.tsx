@@ -245,7 +245,7 @@ const CREW_BENEFIT_ICONS = [
 function BetaBanner() {
   return (
     <section className="px-6 -mt-2 mb-2">
-      <div className="max-w-3xl mx-auto rounded-3xl border border-primary-bg bg-primary-bg/40 px-6 py-5 sm:px-8 sm:py-6">
+      <div className="max-w-3xl mx-auto rounded-2xl border border-primary-bg bg-primary-bg/40 px-6 py-5 sm:px-8 sm:py-6">
         <div className="flex flex-wrap items-center gap-2.5 mb-2">
           <span className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-widest text-primary-strong">
             <Sparkles className="w-4 h-4" /> Free during beta

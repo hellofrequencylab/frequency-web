@@ -18,6 +18,7 @@ import {
   PhotoHero,
   SectionHeading,
   Button,
+  FaqList,
 } from '@/components/marketing/marketing-ui'
 import { DiscoverLocator } from '@/components/discover/discover-locator'
 import { InlineBetaCapture } from '@/components/discover/inline-beta-capture'
@@ -139,9 +140,9 @@ export default async function DiscoverHubPage() {
       </PhotoHero>
 
       {/* ── Locator map (privacy-safe: city centroids only) ──────── */}
-      <section className="bg-surface px-6 py-16 border-b border-border/60">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-8">
+      <section className="bg-surface px-6 py-20 sm:py-24 border-b border-border/60">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center">
             <SectionHeading eyebrow="Where it's happening" title="Find your area" />
           </div>
           {cityClusters.length > 0 ? (
@@ -172,9 +173,9 @@ export default async function DiscoverHubPage() {
 
       {/* ── Topics ────────────────────────────────────────────── */}
       {channels.length > 0 && (
-        <section className="bg-marketing-canvas px-6 py-16">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-10">
+        <section className="bg-marketing-canvas px-6 py-20 sm:py-24">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center">
               <SectionHeading eyebrow="Explore by topic" title="Topics" />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -199,9 +200,9 @@ export default async function DiscoverHubPage() {
 
       {/* ── Upcoming events ───────────────────────────────────── */}
       {events.length > 0 && (
-        <section className="bg-surface px-6 py-16">
-          <div className="max-w-2xl mx-auto">
-            <div className="text-center mb-10">
+        <section className="bg-surface px-6 py-20 sm:py-24">
+          <div className="max-w-3xl mx-auto">
+            <div className="text-center">
               <SectionHeading eyebrow="Coming up" title="Upcoming events" />
             </div>
             <div className="space-y-3">
@@ -220,9 +221,9 @@ export default async function DiscoverHubPage() {
 
       {/* ── Featured circles ──────────────────────────────────── */}
       {circles.length > 0 && (
-        <section className="bg-marketing-canvas px-6 py-16">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-10">
+        <section className="bg-marketing-canvas px-6 py-20 sm:py-24">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center">
               <SectionHeading eyebrow="Find your people" title="Circles forming now" />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -261,9 +262,9 @@ export default async function DiscoverHubPage() {
 
       {/* ── Feed preview ──────────────────────────────────────── */}
       {posts.length > 0 && (
-        <section className="bg-marketing-canvas px-6 py-16">
-          <div className="max-w-2xl mx-auto">
-            <div className="text-center mb-10">
+        <section className="bg-marketing-canvas px-6 py-20 sm:py-24">
+          <div className="max-w-3xl mx-auto">
+            <div className="text-center">
               <SectionHeading eyebrow="What people are saying" title="From the community" />
             </div>
             <div className="space-y-3 mb-3">
@@ -281,19 +282,12 @@ export default async function DiscoverHubPage() {
       )}
 
       {/* ── FAQ ───────────────────────────────────────────────── */}
-      <section className="bg-surface px-6 py-16 border-t border-border/60">
-        <div className="max-w-2xl mx-auto">
-          <div className="text-center mb-10">
+      <section className="bg-surface px-6 py-20 sm:py-24 border-t border-border/60">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center">
             <SectionHeading eyebrow="Good to know" title="Frequently asked" />
           </div>
-          <dl className="space-y-6">
-            {DISCOVER_FAQS.map((item) => (
-              <div key={item.q} className="rounded-2xl border border-border bg-marketing-canvas p-5 transition-shadow hover:shadow-pop">
-                <dt className="text-base font-semibold text-text mb-1.5">{item.q}</dt>
-                <dd className="text-sm text-muted leading-relaxed">{item.a}</dd>
-              </div>
-            ))}
-          </dl>
+          <FaqList items={DISCOVER_FAQS.map((f) => ({ q: f.q, a: f.a }))} />
         </div>
       </section>
 

@@ -56,7 +56,7 @@ export default async function DiscoverEventsPage() {
         // Founding state: no events on the calendar yet near the beta. Frame it as a
         // beginning, not an absence.
         <section className="bg-surface px-6 py-20 sm:py-24">
-          <div className="max-w-2xl mx-auto text-center">
+          <div className="max-w-3xl mx-auto text-center">
             <SectionHeading eyebrow="Founding chapter" title="The first gathering hasn't happened yet" />
             <p className="mt-6 text-lg text-muted leading-relaxed">
               We&rsquo;re just getting started in North County San Diego. The calendar is quiet
@@ -72,8 +72,8 @@ export default async function DiscoverEventsPage() {
       ) : (
         <>
           <section className="bg-surface px-6 py-20 sm:py-24">
-            <div className="max-w-2xl mx-auto">
-              <div className="text-center mb-12">
+            <div className="max-w-3xl mx-auto">
+              <div className="text-center mb-9">
                 <SectionHeading eyebrow="On the calendar" title="What's coming up" />
               </div>
               <div className="space-y-3">

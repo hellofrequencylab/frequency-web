@@ -48,7 +48,7 @@ export default async function EventPage({
   const hasEnded = hasEventEnded(event)
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-12">
+    <div className="max-w-3xl mx-auto px-6 py-20 sm:py-24">
       <JsonLd
         data={[
           eventSchema(event),
@@ -71,12 +71,15 @@ export default async function EventPage({
 
       {/* Header */}
       <header className="mb-8">
+        <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
+          Coming up
+        </p>
         {hasEnded && (
           <span className="inline-block text-xs px-2 py-1 rounded-md font-medium bg-surface-elevated text-muted mb-3">
             This event has ended
           </span>
         )}
-        <h1 className="text-3xl sm:text-4xl font-bold text-text mb-4">{event.title}</h1>
+        <h1 className="font-display uppercase text-text text-4xl sm:text-5xl mb-5">{event.title}</h1>
 
         <div className="space-y-2 text-sm">
           <div className="flex items-center gap-2 text-text">
@@ -106,7 +109,7 @@ export default async function EventPage({
       {/* Description */}
       {event.description && (
         <section className="mb-8">
-          <p className="text-base text-text leading-relaxed whitespace-pre-line">
+          <p className="text-lg text-muted leading-relaxed whitespace-pre-line">
             {event.description}
           </p>
         </section>
