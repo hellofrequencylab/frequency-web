@@ -51,11 +51,28 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
     }).catch(() => {})
   }
 
+  // Owner-owned codes — member connect/referral codes AND crew marketing funnels —
+  // credit their owner: drop the referral cookie for an ANONYMOUS scanner so a later
+  // signup is attributed at onboarding (app/onboarding/actions.ts). A signed-in
+  // member is already here, so there's nothing to attribute.
+  const creditOwner = !profileId && !!code.owner_profile_id
+  const withReferral = (res: NextResponse) => {
+    if (creditOwner && code.owner_profile_id) {
+      res.cookies.set('fq_ref', code.owner_profile_id, {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 30,
+      })
+    }
+    return res
+  }
+
   if (code.destination_type === 'url' && code.target_url) {
-    return NextResponse.redirect(new URL(code.target_url, origin))
+    return withReferral(NextResponse.redirect(new URL(code.target_url, origin)))
   }
   if (code.destination_type === 'node' && code.node_id) {
-    return to(`/n/${code.node_id}`)
+    return withReferral(to(`/n/${code.node_id}`))
   }
 
   if (code.destination_type === 'action' && code.owner_profile_id) {
@@ -65,16 +82,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
         const handle = await ownerHandle(admin, code.owner_profile_id)
         return to(handle ? `/people/${handle}` : '/')
       }
-      // New visitor — remember who referred them, then send to sign-in. The
-      // attribution is applied at onboarding (app/onboarding/actions.ts).
-      const res = to('/sign-in')
-      res.cookies.set('fq_ref', code.owner_profile_id, {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 60 * 60 * 24 * 30,
-      })
-      return res
+      // New visitor — remember who referred them, then send to sign-in.
+      return withReferral(to('/sign-in'))
     }
     if (code.purpose === 'gift_zap') {
       if (!profileId) return to(`/sign-in?next=/q/${slug}`)
