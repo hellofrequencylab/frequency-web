@@ -142,7 +142,7 @@ abuse, routes gray areas to moderators. Reuses `moderation_actions` / suspension
 
 | Phase | Slice | Why first |
 |---|---|---|
-| **A** 🥇 ⏳ | Member geo + nearby-first feed + join/start onboarding | Unlocks the core promise · **DB layer shipped** (`20260604180000_member_geo_and_local_feed`) |
+| **A** 🥇 ⏳ | Member geo + nearby-first feed + join/start onboarding | Unlocks the core promise · **DB layer shipped** (`20260604185000_member_geo_and_local_feed`) |
 | **B** | Messaging restructure (DM→1:1, group→private rooms, Channel open rooms) | Cleans the spine before AI |
 | **C** | Room AI layer (catch-up, search, Q&A, surfacing) | Depends on B |
 | **D** | Dispatch `global` tier + liveness signals + smart digest | Polish "always alive" |
@@ -159,7 +159,7 @@ abuse, routes gray areas to moderators. Reuses `moderation_actions` / suspension
 
 | Date | Slice | What landed |
 |---|---|---|
-| 2026-06-04 | A — DB layer | `profiles` geo columns (`home_lat/lng/label/timezone`, generated `home_geog` + GiST, `feed_radius_m`, `live_*`, `location_mode`); backfill from `meta.beta.location`; `feed_for_viewer` gains a `nearby` sort + `_lat/_lng/_radius_m` params + `distance_m` output — **backward-compatible** (old 2-arg calls unchanged). Migration `20260604180000`. ⏳ Needs apply on a Supabase branch + type regen before prod. |
+| 2026-06-04 | A — DB layer | `profiles` geo columns (`home_lat/lng/label/timezone`, generated `home_geog` + GiST, `feed_radius_m`, `live_*`, `location_mode`); backfill from `meta.beta.location`; `feed_for_viewer` gains a `nearby` sort + `_lat/_lng/_radius_m` params + `distance_m` output — **backward-compatible** (old 2-arg calls unchanged). Migration `20260604185000`. ⏳ Needs apply on a Supabase branch + type regen before prod. |
 | 2026-06-04 | D — dispatch `global` | `dispatches.audience_scope` widened to include `global`; `audience_id` nullable only for `global` (scoped tiers still require a target). Migration `20260604190000`. Staff-only authoring enforced app-side (writes are service-role). ⏳ Needs apply + type regen before prod. |
 
 ## Open guardrails / risks
