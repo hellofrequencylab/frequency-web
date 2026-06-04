@@ -1888,6 +1888,22 @@ for what is now an Arc** — the one remaining player-facing instance of the col
 
 ---
 
+## ADR-080: Content architecture — Channels = 4 Domains over the existing posts substrate; rank for real-world connection
+
+**Status:** Accepted · 2026-06-04 · blueprint in [CONTENT-ARCHITECTURE.md](CONTENT-ARCHITECTURE.md). Foundation shipped (migration `20260604010000`); reach/UI + ranker staged.
+
+**Context:** The vision is "Facebook-level content with a clean way to find what you need." A deep mapping pass found the activity substrate already exists: `posts` (polymorphic `scope_id` + `visibility`) is the unified content table, comments are self-referential posts, and `feed_for_viewer`/`scoped_feed_for_viewer` (SECURITY DEFINER RPCs) are the safe query layer (base `posts` RLS is crew+-only). Wall and Feed are already two lenses over it.
+
+**Decision:**
+- **Channels = the 4 Domains (Mind/Body/Spirit/Expression)** as the top taxonomy layer (`domains` table); the existing `topical_channels` become the **Interests/Topics** underneath (`domain_id`); multi-topic tagging via `circle_topics` (then `event_topics`/`post_topics`). Naming: "Channel" = domain, "Interest/Topic" = topical_channel, the legacy `channels` table (hub/nexus/outpost streams) is a separate internal concept.
+- **Don't rebuild the substrate** — extend the existing RPCs + tagging for Channel reach; keep Wall/Feed/Channel/Circle as queries over `posts`.
+- **The ranker is "an algorithm you get to choose":** explicit Channels are the primary signal; a transparent, tunable score (recency-decay × affinity × locality × in-person bias) ranks within them.
+- **Guardrail:** optimize for **real-world connection, never engagement-time.**
+
+**Consequences:** Foundation is additive + non-breaking (new tables/column, public-read, writes via service_role). Staged next: Channel reach (`get_my_tuned_domain_ids`) + Channel browse pages + IA re-label, `event_topics`/`post_topics`, ranker v1. The 7 seeded interests were backfilled onto the 4 domains (editable data).
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 
