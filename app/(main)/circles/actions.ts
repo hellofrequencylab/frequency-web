@@ -10,6 +10,7 @@ import { awardGems } from '@/lib/gems'
 import { sendInviteEmail } from '@/lib/email'
 import { SITE_URL } from '@/lib/site'
 import { getCircleCapabilities } from '@/lib/core/load-capabilities'
+import { track } from '@/lib/analytics/track'
 
 export async function joinCircle(circleId: string, circleSlug: string) {
   const myProfileId = await getMyProfileId()
@@ -81,6 +82,8 @@ export async function joinCircle(circleId: string, circleSlug: string) {
 
   processGamificationEvent({ type: 'circle_join', profileId: myProfileId }).catch(() => {})
   awardGems(myProfileId, 'circle_join').catch(() => {})
+  // Activation-funnel step 3 + the engagement funnel's join step (ADR-075). Best-effort.
+  await track('circle.joined', { circleId }, myProfileId)
 
   revalidatePath('/circles')
   revalidatePath('/feed')

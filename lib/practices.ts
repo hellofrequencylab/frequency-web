@@ -11,6 +11,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { recordEngagementEvent } from '@/lib/engagement/events'
+import { track } from '@/lib/analytics/track'
 import { awardZapsForAction } from '@/lib/zaps'
 import { recordStreakActivity } from '@/lib/achievements'
 
@@ -124,6 +125,8 @@ export async function adoptPractice(profileId: string, practiceId: string): Prom
       { profile_id: profileId, practice_id: practiceId, active: true },
       { onConflict: 'profile_id,practice_id' },
     )
+  // Activation-funnel step 4 (ADR-075). Best-effort; never blocks the adopt.
+  await track('practice.adopted', { practiceId }, profileId)
 }
 
 export async function dropMemberPractice(profileId: string, practiceId: string): Promise<void> {

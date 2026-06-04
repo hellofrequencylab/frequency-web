@@ -30,11 +30,23 @@ export interface EngagementDashboard {
   topPages: PropCount[]
   topFeatures: PropCount[]
   funnel: FunnelStep[]
+  /** The new-member journey: induction → Vera → first circle → first practice. */
+  activationFunnel: FunnelStep[]
 }
 
 const FUNNEL: ReadonlyArray<{ step: string; eventType: string }> = [
   { step: 'Viewed a page', eventType: 'nav.page_view' },
   { step: 'Used a feature', eventType: 'feature.used' },
+  { step: 'Adopted a practice', eventType: 'practice.adopted' },
+  { step: 'Verified a practice', eventType: 'practice.verified' },
+]
+
+// The new-member activation funnel (ADR-075): where a founder drops between
+// finishing induction and the North-Star moment (a verified practice).
+const ACTIVATION_FUNNEL: ReadonlyArray<{ step: string; eventType: string }> = [
+  { step: 'Completed induction', eventType: 'onboarding.induction_completed' },
+  { step: 'Met Vera', eventType: 'onboarding.vera_opened' },
+  { step: 'Joined a circle', eventType: 'circle.joined' },
   { step: 'Adopted a practice', eventType: 'practice.adopted' },
   { step: 'Verified a practice', eventType: 'practice.verified' },
 ]
@@ -70,6 +82,7 @@ export async function getEngagementDashboard(windowDays = 30): Promise<Engagemen
   }))
   const actorsFor = (et: string) => byType.find((b) => b.eventType === et)?.actors ?? 0
   const funnel = computeFunnel(FUNNEL.map((s) => ({ ...s, actors: actorsFor(s.eventType) })))
+  const activationFunnel = computeFunnel(ACTIVATION_FUNNEL.map((s) => ({ ...s, actors: actorsFor(s.eventType) })))
 
   return {
     windowDays,
@@ -78,5 +91,6 @@ export async function getEngagementDashboard(windowDays = 30): Promise<Engagemen
     topPages: mapProps(pagesRes.data),
     topFeatures: mapProps(featuresRes.data),
     funnel,
+    activationFunnel,
   }
 }
