@@ -23,9 +23,12 @@ import { setViewAsRole } from '@/app/(main)/view-as-actions'
 export function ViewAsControl({
   realRole,
   currentRole,
+  asVisitor = false,
 }: {
   realRole: CommunityRole
   currentRole: CommunityRole
+  /** True when previewing the logged-out visitor experience. */
+  asVisitor?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const [anchor, setAnchor] = useState<{ left: number; bottom: number; width: number } | null>(null)
@@ -64,9 +67,9 @@ export function ViewAsControl({
 
   if (realRole !== 'janitor') return null
 
-  const impersonating = currentRole !== realRole
+  const impersonating = asVisitor || currentRole !== realRole
 
-  function choose(role: CommunityRole) {
+  function choose(role: CommunityRole | 'visitor') {
     setOpen(false)
     startTransition(async () => {
       // Selecting your own real role clears the override.
@@ -93,7 +96,7 @@ export function ViewAsControl({
       >
         <Eye className="w-4 h-4 shrink-0" />
         <span className="flex-1 text-left truncate">
-          {impersonating ? `Viewing as ${ROLE_LABEL[currentRole]}` : 'View as role'}
+          {impersonating ? `Viewing as ${asVisitor ? 'Visitor' : ROLE_LABEL[currentRole]}` : 'View as role'}
         </span>
         <ChevronDown className={`w-3.5 h-3.5 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
@@ -114,7 +117,7 @@ export function ViewAsControl({
             View the app as
           </p>
           {ROLE_HIERARCHY.map((r) => {
-            const active = r === currentRole
+            const active = !asVisitor && r === currentRole
             const isSelf = r === realRole
             return (
               <button
@@ -131,6 +134,18 @@ export function ViewAsControl({
               </button>
             )
           })}
+          {/* Visitor — the logged-out preview (below member). */}
+          <button
+            role="menuitem"
+            onClick={() => choose('visitor')}
+            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-text hover:bg-surface transition-colors"
+          >
+            <span className="rounded-full bg-surface px-2 py-0.5 text-[10px] font-semibold leading-tight text-muted">
+              Visitor
+            </span>
+            <span className="text-xs text-subtle">logged out</span>
+            {asVisitor && <Check className="w-3.5 h-3.5 ml-auto text-primary-strong" />}
+          </button>
           {impersonating && (
             <div className="border-t border-border mt-1 pt-1">
               <button

@@ -7,7 +7,7 @@ import { DispatchTickerSlot } from '@/components/layout/dispatch-ticker-slot'
 import type { CommunityRole } from '@/components/sidebar/right-sidebar'
 import { getUnreadCount } from '@/app/(main)/notifications/actions'
 import { getAreaPermissions } from '@/lib/permissions'
-import { applyViewAs } from '@/lib/view-as'
+import { applyViewAs, viewingAsVisitor } from '@/lib/view-as'
 import { AchievementToastContainer } from '@/components/achievement-toast'
 import { ZapToastContainer } from '@/components/zap-toast'
 import { PresenceHeartbeat } from '@/components/presence/heartbeat'
@@ -57,6 +57,9 @@ export default async function MainLayout({
   // used only to show the janitor control itself. See lib/view-as.ts.
   const realRole = (profile.community_role ?? 'member') as CommunityRole
   const effectiveRole = await applyViewAs(realRole)
+  // Janitor previewing the logged-out experience: server caps drop to member
+  // (effectiveRole), and the NAV gates as a visitor (driven by this flag).
+  const previewVisitor = await viewingAsVisitor(realRole)
 
   // Unread notification count. Non-blocking, falls back to 0 on error
   const unreadCount = await getUnreadCount().catch(() => 0)
@@ -98,6 +101,7 @@ export default async function MainLayout({
     <AppShell
       profile={{ ...profile, community_role: effectiveRole }}
       realRole={realRole}
+      previewVisitor={previewVisitor}
       sidebar={sidebar}
       ticker={ticker}
       unreadCount={unreadCount}
