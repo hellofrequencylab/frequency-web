@@ -59,7 +59,7 @@ export const NAV_AREAS: readonly NavArea[] = [
   // ── The Quest → the gamified progression loop. The Store holds your Vault
   //    (balance + everything you earn by showing up). ───────────────────────────
   { key: 'crew',      href: '/crew',       label: 'Dashboard', section: 'The Quest', defaultAccess: 'crew', previewBelowAccess: true },
-  { key: 'arcs',      href: '/crew/arcs',  label: 'Arcs',      section: 'The Quest', defaultAccess: 'crew', previewBelowAccess: true },
+  { key: 'arcs',      href: '/crew/arcs',  label: 'Journeys',      section: 'The Quest', defaultAccess: 'crew', previewBelowAccess: true },
   { key: 'store',     href: '/crew/store', label: 'Store',     section: 'The Quest', defaultAccess: 'crew', previewBelowAccess: true },
 
   // ── Manage ──────────────────────────────────────────────────────────────────
