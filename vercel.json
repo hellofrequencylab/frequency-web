@@ -29,6 +29,10 @@
       "schedule": "0 14 * * 0"
     },
     {
+      "path": "/api/cron/demo-decay",
+      "schedule": "15 3 * * *"
+    },
+    {
       "path": "/api/cron/process-queue",
       "schedule": "*/2 * * * *"
     }

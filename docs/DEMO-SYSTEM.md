@@ -104,3 +104,21 @@ circle — make it real?") and a short wizard (`components/circles/claim-circle.
 sets the active practice, awards the circle start/activate zaps, and logs a
 `circle.claimed` engagement event. The demo neighbours stay (a furnished circle,
 not an empty one) and recede as real members join. Next: the decay cron (P3).
+
+
+## Decay — natural disappearance (ADR-081, Phase 3)
+
+`lib/demo/decay.ts` (`runDecay`) recedes + purges demo content as an area goes
+real, keyed off `is_demo` + geo (no schema). Nightly via
+`app/api/cron/demo-decay` (registered in `vercel.json`, `?dry=1` to report only),
+and on demand from the Seed Studio's **Decay pass** panel.
+
+- **Area decay** — per demo circle, count real active circles within ~12 mi:
+  `>= 3` purges the demo circle (+ orphaned demo members); `>= 1` prunes its demo
+  posts older than 30 days.
+- **Neighbour decay** — a claimed/real circle sheds demo "neighbours" toward a
+  floor that hits 0 once it has 5+ real members (so the furnished circle becomes
+  fully real over time).
+
+Deletes only, idempotent, converges. The honest "N demo + M real" count slides
+toward all-real on its own.

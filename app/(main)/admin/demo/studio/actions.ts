@@ -5,10 +5,19 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { atLeastRole } from '@/lib/core/roles'
 import { buildPlan, previewPlan, commitPlan, type AreaSpec } from '@/lib/demo/engine'
+import { runDecay, type DecayReport } from '@/lib/demo/decay'
 
 async function requireJanitor() {
   const caller = await getCallerProfile()
   if (!caller || !atLeastRole(caller.community_role, 'janitor')) throw new Error('Unauthorized')
+}
+
+// Run the decay pass on demand (dry run = report without writing).
+export async function runDemoDecay(dryRun: boolean): Promise<DecayReport> {
+  await requireJanitor()
+  const report = await runDecay({ dryRun })
+  if (!dryRun) revalidatePath('/', 'layout')
+  return report
 }
 
 // Step 5: render a non-destructive preview of what the spec would generate.
