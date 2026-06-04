@@ -1,5 +1,5 @@
 -- =====================================================================
--- Phase A (COMMS-STRATEGY / ADR-086): put the MEMBER on the map and make
+-- Phase A (COMMS-STRATEGY / ADR-088): put the MEMBER on the map and make
 -- the feed location-aware ("nearby activity first").
 --
 -- Today only *circles* are geo-indexed (PostGIS geog, migration 20240214).
@@ -22,7 +22,7 @@ alter table public.profiles
   add column if not exists home_lng       numeric(9,6),
   add column if not exists home_label     text,
   add column if not exists home_timezone  text,
-  -- "how local" bleed-over radius (metres) — the member radius slider (ADR-086).
+  -- "how local" bleed-over radius (metres) — the member radius slider (ADR-088).
   -- 25 km default: sensible city-scale starting point.
   add column if not exists feed_radius_m  integer not null default 25000,
   -- Transient live location (only set when the member opts into the live-GPS
@@ -52,7 +52,7 @@ create index if not exists profiles_home_geog_gix
 comment on column public.profiles.home_geog is
   'Auto-generated PostGIS point from home_lat/home_lng (SRID 4326). Proximity only; do not write directly.';
 comment on column public.profiles.feed_radius_m is
-  'Member-controlled "how local" radius in metres (the feed radius slider, ADR-086).';
+  'Member-controlled "how local" radius in metres (the feed radius slider, ADR-088).';
 
 -- ---------------------------------------------------------------------
 -- 2. Backfill home_* from the existing onboarding JSON (meta.beta.location)

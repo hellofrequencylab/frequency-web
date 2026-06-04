@@ -48,7 +48,7 @@ each surface gets and *how it's governed* once anyone can post in open Channel r
 | 15 | DM gating | **Message requests for strangers** |
 | 16 | First build | **Location feed + onboarding** |
 
-ADRs: **ADR-086** (architecture) and **ADR-087** (hierarchy visibility + always-offer-start)
+ADRs: **ADR-088** (architecture) and **ADR-089** (hierarchy visibility + always-offer-start)
 in `DECISIONS.md`.
 
 ## 1. New-member flow (the first build) 🥇
@@ -160,7 +160,7 @@ abuse, routes gray areas to moderators. Reuses `moderation_actions` / suspension
 | Date | Slice | What landed |
 |---|---|---|
 | 2026-06-04 | A — DB layer | `profiles` geo columns (`home_lat/lng/label/timezone`, generated `home_geog` + GiST, `feed_radius_m`, `live_*`, `location_mode`); backfill from `meta.beta.location`; `feed_for_viewer` gains a `nearby` sort + `_lat/_lng/_radius_m` params + `distance_m` output — **backward-compatible** (old 2-arg calls unchanged). Migration `20260604185000`. ⏳ Needs apply on a Supabase branch + type regen before prod. |
-| 2026-06-04 | D — dispatch `global` | `dispatches.audience_scope` widened to include `global`; `audience_id` nullable only for `global` (scoped tiers still require a target). Migration `20260604190000`. Staff-only authoring enforced app-side (writes are service-role). ⏳ Needs apply + type regen before prod. |
+| 2026-06-04 | D — dispatch `global` | `dispatches.audience_scope` widened to include `global`; `audience_id` nullable only for `global` (scoped tiers still require a target). Migration `20260604200000`. Staff-only authoring enforced app-side (writes are service-role). ⏳ Needs apply + type regen before prod. |
 
 ## Open guardrails / risks
 

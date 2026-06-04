@@ -2034,7 +2034,7 @@ breadcrumbs, dashboard, dock, the-quest marketing, admin). Types regenerated.
 keyed `arcs` is orphaned (reverts to the `crew` default — the intended baseline). The DB still has
 constraint/index names containing "arc" (cosmetic; functional).
 
-## ADR-086: Community communication architecture — six surfaces, Channels as feed+room, 1:1 DM with group→rooms, location-first feed
+## ADR-088: Community communication architecture — six surfaces, Channels as feed+room, 1:1 DM with group→rooms, location-first feed
 
 **Status:** Accepted · 2026-06-04 · spec in `COMMS-STRATEGY.md`. Staged build A→E; no code shipped yet.
 
@@ -2079,14 +2079,14 @@ message-integrity verification pass. Choosing server-readable DMs trades maximal
 extensible AI/moderation surface (revisit if E2E becomes a requirement). `feed_for_viewer` and the
 `dispatches` enum change are additive/backward-compatible.
 
-## ADR-087: Member-visible hierarchy + always-offer "Start a Circle" (supersedes IA-STRATEGY hide-and-join-only)
+## ADR-089: Member-visible hierarchy + always-offer "Start a Circle" (supersedes IA-STRATEGY hide-and-join-only)
 
 **Status:** Accepted · 2026-06-04. Supersedes the "Circle + Interest only, hubs/nexuses contextual"
 and "join, don't found" guidance in `IA-STRATEGY.md` (update that doc on build).
 
 **Context:** `IA-STRATEGY.md` deliberately hid Hub/Nexus jargon from members and steered newcomers
 to *join* (not found) Circles, to avoid a map littered with thin/empty Circles. The communication
-strategy (ADR-086) instead wants the full place-tree to feel real and navigable, and wants every
+strategy (ADR-088) instead wants the full place-tree to feel real and navigable, and wants every
 newcomer offered *both* "join nearby" and "start here" from day one — reinforcing the local,
 go-build-it intent.
 
@@ -2102,7 +2102,7 @@ go-build-it intent.
 
 **Consequences:** `IA-STRATEGY.md` must be updated (it currently states the opposite). More
 vocabulary for newcomers to learn (Hub/Nexus); offset by clearer sense of scale. Circle-creation
-volume rises — the momentum-gated room provisioning (ADR-086) is the pressure valve.
+volume rises — the momentum-gated room provisioning (ADR-088) is the pressure valve.
 
 ---
 ### Decisions intentionally NOT duplicated here
