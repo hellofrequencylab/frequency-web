@@ -1932,6 +1932,31 @@ lightbox reads `meta.beta` only on `?welcome=vera` (no cost on normal feed loads
 quality scales with induction data richness and degrades gracefully (intent → interests → bare
 welcome).
 
+## ADR-082: "Join the Beta" opens the induction immediately — no login wall; sign-in deferred to the final step
+
+**Status:** Accepted · 2026-06-04 · supersedes the signed-out `BetaWelcome` gate. Shipped.
+
+**Context:** Signed-out visitors who clicked "Join the Beta" hit `BetaWelcome` — a "Become a
+Founder" sign-in card — *before* experiencing anything. It read as a login wall on a marketing
+CTA and bled momentum at the exact moment intent is highest.
+
+**Decision:** Signed-out `/onboarding/beta` now renders the **full cinematic induction
+unauthenticated** (`BetaInduction deferred`). They run oath → reel → identity → place with no
+login. Sign-in is collected at the **final "step in" beat** (email magic-link or Google). The
+answers are stashed across the auth round-trip — text in a short-lived httpOnly cookie
+(`fq_pending_induction`), the avatar (too big for a cookie) as a data URL in `localStorage` —
+and written at the new auth-gated `/onboarding/beta/complete`, which uploads the avatar, calls
+the shared `writeBetaInduction` core, clears the stash, and drops them into `/feed?welcome=vera`
+(the Vera lightbox, ADR-081). The proxy already bypasses the whole `/onboarding/beta` prefix.
+
+**Consequences:** No write happens until the member is authenticated (oath/avatar/handle checks
+are deferred or run read-only). `completeBetaInduction` (authed direct path) and
+`finalizePendingInduction` (deferred path) share one write core. **Known limitation:** a magic
+link opened on a *different* device loses the browser-local stash (cookie + localStorage), so
+that visitor restarts induction — acceptable for beta; same-browser and Google OAuth are
+seamless. `BetaWelcome` is now unused (left in place; removed with the rest of the beta induction
+at launch).
+
 ---
 ### Decisions intentionally NOT duplicated here
 
