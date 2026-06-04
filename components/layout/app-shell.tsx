@@ -177,7 +177,7 @@ function ProfileCard({
       {/* Compact identity bar — matched in height to the right stats bar.
           Stays on top; the quick actions fill in underneath it. */}
       <div className="flex items-center gap-2.5 px-3 py-3.5">
-        <Link href={profileHref} className="shrink-0">
+        <Link href={profileHref} className="shrink-0" data-tour-anchor="avatar">
           {profile.avatar_url ? (
             <Image
               src={profile.avatar_url}
@@ -932,7 +932,7 @@ export default function AppShell({
                 scroll. */}
             <div className="flex-1 min-w-0 flex flex-col">
               {!hideAppNav && ticker}
-              <main className="flex-1 min-w-0 px-4 py-6 sm:px-6">
+              <main className="flex-1 min-w-0 px-4 py-6 sm:px-6" data-tour-anchor="content">
                 <Breadcrumbs />
                 {children}
               </main>
