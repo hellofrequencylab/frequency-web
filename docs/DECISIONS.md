@@ -2016,6 +2016,33 @@ forming the founding leaderboard — not paywalled out of it.
 crew). The Launch gem-spend lock needs the entitlement/payment input on the capability resolver
 (ADR-037) before it can switch on; until then this is a one-flag policy + a backfill.
 
+## ADR-091: Per-member codes + referral attribution
+
+**Status:** Accepted · 2026-06-05 · migration `20260605020000_member_qr_codes` (applied to prod), `lib/qr/member-codes.ts`, `lib/qr/referral.ts`, `app/(main)/codes/`, `app/q/[slug]/route.ts`, `app/(main)/g/[slug]/`
+
+**Context:** Phase 3 of the QR platform. Every member should have an editable personal code
+tied to The Quest + personal outreach; codes should also support in-app member actions
+(referral, gift-a-zap), not just URL/node redirects.
+
+**Decision:** Each member owns up to three persistent `qr_codes` keyed by a new `purpose`
+column (`connect` | `referral` | `gift_zap`), lazily provisioned by `ensureMemberCodes`
+(unique `(owner_profile_id, purpose)` index = idempotent). They're managed + restyled by the
+member on `/codes` (the Phase-2 `StyleEditor`, gated by an ownership check in
+`updateMyCodeStyle`); the member's avatar is dropped in as the default center logo. The
+`destination_type` CHECK gains **`action`**, and the `/q/[slug]` resolver became a **route
+handler** (so it can set cookies) that branches on `purpose`: **referral** drops an `fq_ref`
+cookie → sign-in, attributed once at onboarding (`applyReferralAttribution` sets
+`profiles.referred_by_profile_id` + rewards the referrer via the ledger's `invite_accepted`
+zaps, idempotent on the pair); **gift_zap** routes a signed-in scanner to a confirm page
+(`/g/[slug]`) whose action awards the owner a zap, idempotent per giver/day. All member codes
+encode `/q/<slug>`, so they're tracked + retargetable like every managed code.
+
+**Consequences:** `referred_by_profile_id` is a reusable growth signal (referral counts, viral
+loops). Codes now span url/node/**action**; new action kinds slot in behind `purpose`. The /q
+page→route conversion moved the dead-end UI to `/code-unavailable`. Crew "marketing funnel"
+codes (next) and Google-Analytics tie-in build on this.
+
+---
 ## ADR-090: Beautiful codes via an isomorphic styled SVG renderer (no new dep)
 
 **Status:** Accepted · 2026-06-05 · `lib/qr/style.ts`, `lib/qr/render-styled.ts`, `app/(main)/admin/qr/style-editor.tsx`. No migration (reuses `qr_codes.style` jsonb from ADR-089).

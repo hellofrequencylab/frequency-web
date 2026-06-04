@@ -2082,6 +2082,7 @@ export type Database = {
           node_id: string | null
           owner_profile_id: string | null
           partner_id: string | null
+          purpose: string | null
           scan_count: number
           slug: string
           style: Json
@@ -2100,6 +2101,7 @@ export type Database = {
           node_id?: string | null
           owner_profile_id?: string | null
           partner_id?: string | null
+          purpose?: string | null
           scan_count?: number
           slug: string
           style?: Json
@@ -2118,6 +2120,7 @@ export type Database = {
           node_id?: string | null
           owner_profile_id?: string | null
           partner_id?: string | null
+          purpose?: string | null
           scan_count?: number
           slug?: string
           style?: Json
@@ -2915,6 +2918,7 @@ export type Database = {
           longest_streak: number
           meta: Json | null
           nexus_region_id: string | null
+          referred_by_profile_id: string | null
           phone: string | null
           profile_border: string | null
           profile_flair: string | null
@@ -2955,6 +2959,7 @@ export type Database = {
           longest_streak?: number
           meta?: Json | null
           nexus_region_id?: string | null
+          referred_by_profile_id?: string | null
           phone?: string | null
           profile_border?: string | null
           profile_flair?: string | null
@@ -2995,6 +3000,7 @@ export type Database = {
           longest_streak?: number
           meta?: Json | null
           nexus_region_id?: string | null
+          referred_by_profile_id?: string | null
           phone?: string | null
           profile_border?: string | null
           profile_flair?: string | null

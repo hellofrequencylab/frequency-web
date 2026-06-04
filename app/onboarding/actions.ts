@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { sendWelcomeEmail } from '@/lib/email'
 import { sanitizeProfileInput } from '@/lib/profile-input'
+import { applyReferralAttribution } from '@/lib/qr/referral'
 
 export async function completeOnboarding(data: {
   displayName: string
@@ -19,7 +20,7 @@ export async function completeOnboarding(data: {
 
   if (!user) throw new Error('Unauthorized')
 
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from('profiles')
     .update({
       display_name: displayName,
@@ -33,6 +34,8 @@ export async function completeOnboarding(data: {
       meta: { onboarding_completed: true },
     })
     .eq('auth_user_id', user.id)
+    .select('id')
+    .maybeSingle()
 
   if (error) {
     // 23505 = unique_violation. Handle was claimed between check and submit
@@ -41,6 +44,9 @@ export async function completeOnboarding(data: {
     }
     throw new Error(error.message)
   }
+
+  // Credit the referrer if this member arrived via a scanned referral code.
+  if (updated?.id) await applyReferralAttribution(updated.id)
 
   // Fire welcome email. Non-blocking, never throws
   if (user.email) {
