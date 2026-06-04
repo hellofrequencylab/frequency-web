@@ -31,10 +31,10 @@ export const revalidate = 3600
 export const metadata: Metadata = {
   title: 'Pricing',
   description:
-    'Membership that keeps the room open. Free during beta, no card required. Crew is $10/mo when paid memberships launch — and early members lock in Founder pricing forever.',
+    'Membership that keeps the room open. Free during beta, no card required. Crew is $10/mo when paid memberships launch, and early members lock in Founder pricing forever.',
   alternates: { canonical: '/pricing' },
   openGraph: {
-    title: 'Frequency pricing — membership that keeps the room open',
+    title: 'Frequency pricing: membership that keeps the room open',
     description:
       'Free during beta, no card required. Pay-it-forward membership that sustains the spaces. Founder pricing locked for early members.',
     url: '/pricing',
@@ -55,7 +55,7 @@ export default function PricingPage() {
             <br className="hidden sm:block" /> the room open.
           </>
         }
-        subtitle="Frequency runs on circulation, not exclusion. Your membership sustains the spaces and the people in them — so connection stays within reach for the next person who walks in."
+        subtitle="Frequency runs on circulation, not exclusion. Your membership sustains the spaces and the people in them, so connection stays within reach for the next person who walks in."
       />
 
       <BetaBanner />
@@ -131,7 +131,7 @@ export default function PricingPage() {
       <Section tone="canvas">
         <SectionHeading
           eyebrow="A note on status"
-          title="Host, Guide, and Mentor are earned — not bought."
+          title="Host, Guide, and Mentor are earned, not bought."
           kicker="You can't buy your way to the front of the room."
         />
         <div className="grid sm:grid-cols-3 gap-5">
@@ -150,7 +150,7 @@ export default function PricingPage() {
         </div>
         <p className="mt-8 text-lg text-muted leading-relaxed">
           Membership is how you fund and access the community. Leadership is
-          something you grow into. Frequency is leaderful by design — those
+          something you grow into. Frequency is leaderful by design: those
           roles come from the people, not from a price tag.
         </p>
       </Section>
@@ -171,7 +171,7 @@ export default function PricingPage() {
         tone="canvas"
       >
         <p>
-          Frequency is more than an app. It&apos;s a physical home — movement
+          Frequency is more than an app. It&apos;s a physical home: movement
           studios, a thermal circuit, a connection bar, a floor for gatherings.
           Real rooms cost real money to keep open.
         </p>
@@ -420,15 +420,15 @@ function Assurance({
 const FAQS: { q: string; a: React.ReactNode }[] = [
   {
     q: 'Is it really free right now?',
-    a: 'Yes. Frequency is in free beta — every feature is unlocked for everyone, and we don’t ask for a card to join. The prices on this page are what membership will cost later, so you know what you’re locking in.',
+    a: 'Yes. Frequency is in free beta: every feature is unlocked for everyone, and we don’t ask for a card to join. The prices on this page are what membership will cost later, so you know what you’re locking in.',
   },
   {
     q: 'What happens after beta?',
-    a: 'When paid memberships launch, Crew will be $10/mo. Everyone who joins during the beta keeps Founder pricing — locked in for you, as a thank-you for being early. We’ll give you plenty of notice before anything changes, and you’ll never be charged without choosing to.',
+    a: 'When paid memberships launch, Crew will be $10/mo. Everyone who joins during the beta keeps Founder pricing, locked in for you, as a thank-you for being early. We’ll give you plenty of notice before anything changes, and you’ll never be charged without choosing to.',
   },
   {
     q: 'Do I have to pay to attend anything?',
-    a: 'No. Members can browse and attend open gatherings for free, forever. Crew unlocks the full community — feed, circles, events you create, channels, Zaps, and crew progress — but showing up and meeting people never costs you anything during beta.',
+    a: 'No. Members can browse and attend open gatherings for free, forever. Crew unlocks the full community: feed, circles, events you create, channels, Zaps, and crew progress. But showing up and meeting people never costs you anything during beta.',
   },
   {
     q: 'Can I leave anytime?',
@@ -436,15 +436,15 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
   },
   {
     q: 'Where does the money go?',
-    a: 'Into keeping the room open. Membership sustains the physical spaces — the studios, the thermal circuit, the connection bar — and the community that gathers in them. People who pay more cover neighbors who can’t pay yet. Circulation, not exclusion.',
+    a: 'Into keeping the room open. Membership sustains the physical spaces, the studios, the thermal circuit, the connection bar, and the community that gathers in them. People who pay more cover neighbors who can’t pay yet. Circulation, not exclusion.',
   },
   {
     q: 'What about refunds?',
-    a: 'Nothing to refund during beta, since nothing is charged. When paid memberships launch, we’ll publish clear billing and refund terms before you ever enter a card — and you can cancel at any time.',
+    a: 'Nothing to refund during beta, since nothing is charged. When paid memberships launch, we’ll publish clear billing and refund terms before you ever enter a card, and you can cancel at any time.',
   },
   {
     q: 'Can I buy my way into a Host or Guide role?',
-    a: 'No, and that’s on purpose. Host, Guide, and Mentor are earned by showing up and looking after the people around you. Frequency is leaderful by design — those roles come from the community, never from a checkout page.',
+    a: 'No, and that’s on purpose. Host, Guide, and Mentor are earned by showing up and looking after the people around you. Frequency is leaderful by design: those roles come from the community, never from a checkout page.',
   },
 ]
 

@@ -42,7 +42,7 @@ const DISCOVER_FAQS = [
   },
   {
     q: 'What is a circle?',
-    a: 'A circle is a small local group of up to 50 people centered on a shared topic — like Movement, Spirituality, or Creative practice. Small enough to know everyone, big enough to always have plans.',
+    a: 'A circle is a small local group of up to 50 people centered on a shared topic, like Movement, Spirituality, or Creative practice. Small enough to know everyone, big enough to always have plans.',
   },
   {
     q: 'Do I need an account to browse?',
@@ -60,7 +60,7 @@ export const metadata: Metadata = {
     'Browse local circles, upcoming real-world events, and topics across the Frequency community. Find your people and show up in person.',
   alternates: { canonical: '/discover' },
   openGraph: {
-    title: `Discover the community — ${SITE_NAME}`,
+    title: `Discover the community · ${SITE_NAME}`,
     description:
       'Browse local circles, upcoming real-world events, and topics across the Frequency community.',
     url: '/discover',
@@ -106,7 +106,7 @@ export default async function DiscoverHubPage() {
         alt="A large Frequency yoga gathering on a lawn at golden hour in North County San Diego"
         eyebrow="Discover Frequency"
         title="Real community, near you"
-        subtitle="Explore the circles, events, and topics bringing neighbors together in person. Browse freely — sign up free to join a circle, RSVP to an event, or post."
+        subtitle="Explore the circles, events, and topics bringing neighbors together in person. Browse freely; sign up free to join a circle, RSVP to an event, or post."
       >
         {counts.members >= SOCIAL_PROOF_FLOOR ? (
           <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-white/80">
@@ -118,7 +118,7 @@ export default async function DiscoverHubPage() {
           </div>
         ) : (
           <p className="text-sm text-white/80">
-            Forming now in {FOUNDING_PLACE} — explore the first circles, topics, and events below.
+            Forming now in {FOUNDING_PLACE}: explore the first circles, topics, and events below.
           </p>
         )}
         <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
@@ -237,7 +237,7 @@ export default async function DiscoverHubPage() {
           themselves when they belong to a community that knows them.
         </p>
         <p>
-          Every circle and every event is an invitation to be seen — to trade the scroll for a
+          Every circle and every event is an invitation to be seen: to trade the scroll for a
           real morning on the grass with neighbors who show up for you.
         </p>
       </ZigZag>
@@ -257,7 +257,7 @@ export default async function DiscoverHubPage() {
             <InlineBetaCapture
               source="discover_posts"
               heading="Join to see more"
-              body="Get an invite to the beta — the full feed, events, and your local circle. No spam, just an invite when a spot opens."
+              body="Get an invite to the beta: the full feed, events, and your local circle. No spam, just an invite when a spot opens."
             />
           </div>
         </section>

@@ -9,7 +9,7 @@ featureKeys: [channels]
 status: published
 ---
 
-**Channels** are the topics Frequency is organized around. Every circle declares one channel, so you can explore by what you're into — not just where you are.
+**Channels** are the topics Frequency is organized around. Every circle declares one channel, so you can explore by what you're into, not just where you are.
 
 ## The topics
 

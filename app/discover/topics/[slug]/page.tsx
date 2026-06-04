@@ -37,7 +37,7 @@ export async function generateMetadata({
     description,
     alternates: { canonical: `/discover/topics/${channel.slug}` },
     openGraph: {
-      title: `${channel.name} — ${SITE_NAME}`,
+      title: `${channel.name} · ${SITE_NAME}`,
       description,
       url: `/discover/topics/${channel.slug}`,
     },

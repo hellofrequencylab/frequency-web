@@ -64,7 +64,7 @@ function LegacyHowItWorks() {
             <br className="hidden sm:block" /> a shape.
           </>
         }
-        subtitle="Most communities are a feed and a hope. Frequency has a structure that actually grows — and it only takes two words to belong."
+        subtitle="Most communities are a feed and a hope. Frequency has a structure that actually grows, and it only takes two words to belong."
       >
         <Button href={BETA_CTA_HREF}>
           {BETA_CTA_LABEL} <ArrowRight className="w-5 h-5" />
@@ -83,7 +83,7 @@ function LegacyHowItWorks() {
             n="01"
             icon={Compass}
             title="Pick what you practice"
-            text="Choose an Interest — movement, breathwork, holistic health, creativity, human relating. It's the thread that ties you to people who care about the same thing."
+            text="Choose an Interest: movement, breathwork, holistic health, creativity, human relating. It's the thread that ties you to people who care about the same thing."
           />
           <Step
             n="02"
@@ -95,7 +95,7 @@ function LegacyHowItWorks() {
             n="03"
             icon={CalendarCheck}
             title="Show up"
-            text="That's the whole secret. Small enough that you're missed when you don't come — so showing up stops feeling like effort and starts feeling like home."
+            text="That's the whole secret. Small enough that you're missed when you don't come, so showing up stops feeling like effort and starts feeling like home."
           />
         </div>
       </Section>
@@ -188,7 +188,7 @@ function LegacyHowItWorks() {
           <Layer
             icon={Sprout}
             title="A community"
-            text="A whole local ecosystem — leaderful, self-sustaining, grown rather than built."
+            text="A whole local ecosystem: leaderful, self-sustaining, grown rather than built."
           />
         </div>
       </Section>
@@ -244,7 +244,7 @@ function LegacyHowItWorks() {
           <Hold
             icon={Sprout}
             title="Earned, not appointed"
-            text="Leaders rise from showing up and looking after the people around them — never from being anointed from above."
+            text="Leaders rise from showing up and looking after the people around them, never from being anointed from above."
           />
           <Hold
             icon={HandHeart}
@@ -283,7 +283,7 @@ function LegacyHowItWorks() {
             icon={CalendarCheck}
             time="1:00p"
             title="One tap to RSVP"
-            body="An event drops for Saturday's thermal circuit. You tap RSVP. Now you're expected — and you'll be missed if you don't show."
+            body="An event drops for Saturday's thermal circuit. You tap RSVP. Now you're expected, and you'll be missed if you don't show."
           />
           <DayBeat
             icon={MapPin}
@@ -303,7 +303,7 @@ function LegacyHowItWorks() {
         />
         <p className="text-lg text-muted leading-relaxed">
           Every cell starts somewhere. Ours is taking root in{' '}
-          {FOUNDING_PLACE} — real Circles, real gatherings, real neighbors who
+          {FOUNDING_PLACE}: real Circles, real gatherings, real neighbors who
           show up for each other. Join the beta and you&apos;re not a number on a
           waitlist; you&apos;re one of the people this whole thing grows from.
         </p>

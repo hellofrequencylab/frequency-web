@@ -9,10 +9,10 @@ import { SITE_NAME, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 export const metadata: Metadata = {
   title: 'Local circles',
   description:
-    'Browse the local circles forming on Frequency — small groups of up to 50 neighbors meeting in person around something they share.',
+    'Browse the local circles forming on Frequency: small groups of up to 50 neighbors meeting in person around something they share.',
   alternates: { canonical: '/discover/circles' },
   openGraph: {
-    title: `Local circles — ${SITE_NAME}`,
+    title: `Local circles · ${SITE_NAME}`,
     description: 'Browse the local circles forming on Frequency and find your people.',
     url: '/discover/circles',
   },
@@ -40,7 +40,7 @@ export default async function DiscoverCirclesPage() {
         alt="A group gathered outdoors at golden hour, arms thrown open mid-breathwork"
         eyebrow="Find your people"
         title="Circles forming now"
-        subtitle="A circle is a small group of up to 50 neighbors who meet in person around something they share — a practice, a place, a love. Browse freely; join a free account to take part."
+        subtitle="A circle is a small group of up to 50 neighbors who meet in person around something they share: a practice, a place, a love. Browse freely; join a free account to take part."
       >
         <Button href={BETA_CTA_HREF}>{BETA_CTA_LABEL}</Button>
       </PhotoHero>
@@ -51,11 +51,11 @@ export default async function DiscoverCirclesPage() {
             <SectionHeading eyebrow="Near you" title="Browse the circles" />
             <p className="mt-5 text-lg text-muted leading-relaxed">
               Every circle here is real and forming in North County San Diego. Find one that
-              sounds like your people — or a reason to start your own.
+              sounds like your people, or a reason to start your own.
             </p>
           </div>
           {circles.length === 0 ? (
-            <p className="text-center text-muted">No public circles yet — check back soon.</p>
+            <p className="text-center text-muted">No public circles yet. Check back soon.</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {circles.map((c) => (
@@ -78,12 +78,12 @@ export default async function DiscoverCirclesPage() {
         kicker="Fifty is not a limit. It's the edge of intimacy."
       >
         <p>
-          Circles gather around something small and true — a sunrise swim, a guitar, a grief.
+          Circles gather around something small and true: a sunrise swim, a guitar, a grief.
           They stay where you can still learn everyone&apos;s name.
         </p>
         <p>
-          When a circle outgrows that closeness, it doesn&apos;t sprawl. It divides — like a cell,
-          like a family at a long table — so the warmth carries into two rooms instead of thinning
+          When a circle outgrows that closeness, it doesn&apos;t sprawl. It divides, like a cell,
+          like a family at a long table, so the warmth carries into two rooms instead of thinning
           across one.
         </p>
       </ZigZag>

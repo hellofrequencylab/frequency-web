@@ -14,7 +14,7 @@ Frequency has a few ways to talk directly, beyond posting in your feed.
 ## Direct messages
 
 - **1:1 and group threads** with people you're connected to.
-- You need to be [friends](/help/connecting/friends) with someone before starting a DM — so add them first.
+- You need to be [friends](/help/connecting/friends) with someone before starting a DM, so add them first.
 
 ## Rooms
 
@@ -24,4 +24,4 @@ Frequency has a few ways to talk directly, beyond posting in your feed.
 ## Tips
 
 - Use DMs for the personal stuff and your feed/circle for things the whole group should see.
-- Notifications keep you on top of replies — tune them in [Settings](/help/getting-started/notifications).
+- Notifications keep you on top of replies; tune them in [Settings](/help/getting-started/notifications).

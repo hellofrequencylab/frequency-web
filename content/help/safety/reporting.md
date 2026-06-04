@@ -14,7 +14,7 @@ Frequency is meant to feel safe. If something's wrong, you have direct ways to a
 ## Reporting
 
 - You can **report** a post, comment, person, or event when something crosses a line.
-- A report goes to the moderation queue for a human to review — it isn't decided by a bot.
+- A report goes to the moderation queue for a human to review; it isn't decided by a bot.
 
 ## Blocking
 
@@ -22,8 +22,8 @@ Frequency is meant to feel safe. If something's wrong, you have direct ways to a
 
 ## How moderation works here
 
-- Frequency is moderated by **people** — the roles ladder (hosts, guides, mentors, and platform admins) handles safety, escalating as needed.
+- Frequency is moderated by **people**: the roles ladder (hosts, guides, mentors, and platform admins) handles safety, escalating as needed.
 - When action is taken, a member may receive a direct message from the official moderation account.
 - Repeated or serious harm can lead to a member being suspended.
 
-If you're ever worried about someone's safety, reach a human — a host or the platform team — rather than handling it alone.
+If you're ever worried about someone's safety, reach a human, a host or the platform team, rather than handling it alone.

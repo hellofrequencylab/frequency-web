@@ -13,12 +13,12 @@ Search helps you jump straight to what you're looking for instead of browsing fo
 
 ## What you can find
 
-- **People** — members by name or handle.
-- **Circles** — groups by name or topic.
+- **People**: members by name or handle.
+- **Circles**: groups by name or topic.
 - Other content across the community.
 
 ## Tips
 
 - Searching for a person? Their **handle** is the most reliable way to land on the right profile.
 - Looking for a group near you? The [directory's location search](/help/connecting/find-people) is better for "what's around me," while search is better for "I know what it's called."
-- Looking for how-to answers about Frequency itself? That's what this **help center** is for — use the search box at the top of help.
+- Looking for how-to answers about Frequency itself? That's what this **help center** is for; use the search box at the top of help.

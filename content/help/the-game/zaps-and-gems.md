@@ -9,7 +9,7 @@ featureKeys: [gamification, zaps, gems]
 status: published
 ---
 
-Frequency's game is called **The Quest** — a light, seasonal game that rewards
+Frequency's game is called **The Quest**: a light, seasonal game that rewards
 real community. There are two currencies, split by where the activity happens.
 
 ## Zaps: the in-person currency

@@ -10,7 +10,7 @@ import { requestBetaAccess } from '@/app/(marketing)/beta/actions'
 export function InlineBetaCapture({
   source = 'discover_inline',
   heading = 'Get an invite',
-  body = 'Join the beta — we open to a small group at a time. No spam, just an invite when a spot opens near you.',
+  body = 'Join the beta: we open to a small group at a time. No spam, just an invite when a spot opens near you.',
 }: {
   source?: string
   heading?: string
@@ -45,7 +45,7 @@ export function InlineBetaCapture({
         </h3>
         <p className="mt-1 text-sm text-muted leading-relaxed">
           {status === 'already'
-            ? "You're confirmed and on the waitlist — we'll be in touch when a spot opens."
+            ? "You're confirmed and on the waitlist. We'll be in touch when a spot opens."
             : `We just emailed ${email}. Click the link to confirm your spot.`}
         </p>
       </div>

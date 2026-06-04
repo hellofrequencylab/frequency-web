@@ -9,7 +9,7 @@ featureKeys: [people]
 status: published
 ---
 
-The directory is how you find members and circles — by topic, and by place.
+The directory is how you find members and circles: by topic, and by place.
 
 ## Browsing
 
@@ -23,4 +23,4 @@ The directory is how you find members and circles — by topic, and by place.
 
 ## A note on privacy
 
-Location search works at the **city** level. Frequency never exposes a member's precise address or a circle's exact coordinates — only the general area — so you can find what's nearby without anyone being pinpointed on a map.
+Location search works at the **city** level. Frequency never exposes a member's precise address or a circle's exact coordinates, only the general area, so you can find what's nearby without anyone being pinpointed on a map.

@@ -28,7 +28,7 @@ export async function generateMetadata({
     description,
     alternates: { canonical: `/discover/circles/${circle.id}` },
     openGraph: {
-      title: `${circle.name} — ${SITE_NAME}`,
+      title: `${circle.name} · ${SITE_NAME}`,
       description,
       url: `/discover/circles/${circle.id}`,
     },
@@ -104,7 +104,7 @@ export default async function CirclePage({
 
       <SignInCta
         title="Sign in to join this circle"
-        body="Frequency circles are small on purpose — up to 50 neighbors. Sign up free to request to join and see what's happening."
+        body="Frequency circles are small on purpose: up to 50 neighbors. Sign up free to request to join and see what's happening."
         action="Sign in to join"
       />
     </div>
