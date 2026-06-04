@@ -9,6 +9,82 @@
 
 ---
 
+## ★ Navigation redesign (2026-06-05) — CANONICAL
+
+> Owner-reviewed full redesign (4-agent study of code + docs). **Supersedes the
+> grouped-rail spec in §1 below** (kept for history) and folds in ADR-089. Locked via
+> ADR-095.
+
+### Principle — nav is *computed from three axes*, not hand-placed
+The fix for the "hodge-podge" rail: derive each person's menu from the three
+orthogonal identity axes the platform already has. Nav **grows** along whichever axes
+a person holds — never by inflating one role enum.
+
+| Axis | What it is | Lights up |
+|---|---|---|
+| **Trust ladder** (member→…→janitor) | community standing + stewardship | The Quest (crew) · Manage › Steward (host) · Structure (guide/mentor) · Platform (janitor) |
+| **Staff role** (`team_members`: analyst→owner) | the *business* cockpit | Manage › **Studio** |
+| **Persona / hats** (practitioner · **business/Partner** · affiliate) | behavioral tracks | persona surfaces (Business · Practitioner · Affiliate) |
+| **+ Membership tier** (free→paid entitlement) | freemium gate | the *spend* side of The Quest (Store & Vault), premium Journeys |
+
+### The member rail — five worlds (anchored by Home)
+```
+◆ HOME        Feed
+◆ COMMUNITY   Circles · Channels · Events        (Channels = the primary topical level;
+                                                   Interests live WITHIN a Channel)
+◆ PRACTICE    Practices · Journeys · Programs     (the North-Star / WAM engine — its own world)
+◆ CONNECT     Messages · Friends · Directory
+◆ THE QUEST   Dashboard · Store & Vault           (preview for non-crew → full at crew/paid)
+◆ MANAGE      Steward · Structure · Studio · Platform   (telescoped; axis-gated)
+```
+- **Personal utilities → the account menu, not the rail:** Settings · Billing · Notifications ·
+  **My Code** · **Help** (Help is currently orphaned — this fixes it).
+- **Persona surfaces appear only when the verified hat is active:** Business · Practitioner · Affiliate.
+
+### Visibility matrix (what each axis adds)
+| You are… | You also see |
+|---|---|
+| Visitor | public previews of Community + Directory (muted → sign in) |
+| Member | Home · Community · Practice · Connect |
+| Crew *(or paid)* | The Quest unlocks (Dashboard, Store & Vault) |
+| Host | Manage › **Steward** (scoped to your circle) |
+| Guide / Mentor | Manage › **Structure** (Hubs / Nexuses) |
+| Janitor | Manage › **Platform** + view-as |
+| Staff (team_members) | Manage › **Studio** — *independent of trust role* |
+| Business persona (Partner) | **Business** (Storefront · Offers · Payouts) + Partner directory listing |
+| Practitioner persona | **Practitioner** (My Offerings) |
+
+### Manage — split by the axis that grants it
+| Group | Gated by | Holds |
+|---|---|---|
+| **Steward** | trust **host+** (scoped) | Overview · Circles · Events · Broadcasts · Crew tasks · Moderation · QR · CRM · Outreach |
+| **Structure** | trust **guide/mentor** | Hubs · Nexuses |
+| **Studio** | **staff axis** (team_members) | Marketing · Campaigns · Automations · Analytics · Market-read · Agent · Contacts · Segments · Beta |
+| **Platform** | trust **janitor** | Members · Roles & permissions · Insights · Vera · Help-gaps · Demo/Seed · Pages |
+
+The business cockpit (Studio) now rides the **staff axis**, distinct from community stewardship.
+
+### Partner / business = a persona, not a role
+**Partner = a verified "Business" hat on a normal account** (ADR-030/034). It lights up the
+Business cockpit (storefront/offers/Stripe payouts) + the Partner directory listing, and tags money
+to the right entity (Labs). No new trust tier. Same model for practitioners, affiliates, sellers.
+
+### Renames + cleanups (locked)
+- Trust role **`admin` → `operator`** (so it never blurs with the separate staff `admin`).
+- **`Vault` folds into `Store & Vault`** (one Quest item).
+- **Personal utilities → account menu** (Settings/Billing/Notifications/My Code/Help leave the rail).
+- **`Channels` stays the primary topical level; Interests nest within** (no rename).
+- **Broadcasts/Dispatches** unified: member-facing "Broadcasts," the verb is "Dispatch."
+- **Orphans:** Help → account menu + footer; `/crew/quests` redirect retired; `/g` `/n` `/edit` are
+  internal (documented, out of nav).
+
+### Phased migration (non-destructive — mostly re-grouping the single `NAV_AREAS` source)
+1. **IA pass (no schema):** re-author `NAV_AREAS` into the 5 worlds + 4 Manage groups; renames; orphan fixes; account-menu moves.
+2. **Resolver pass:** extend nav visibility to *union* trust + staff + tier (today only trust gates) → Studio appears on the staff axis.
+3. **Persona pass (when `profile_personas` ships):** persona-gated groups + Business/Partner.
+
+---
+
 ## 0. The core problem
 
 The model is good; the *presentation* over-exposes it. A first-time member is
