@@ -36,7 +36,7 @@ export async function getOnboardingStatus(profileId: string): Promise<Onboarding
   const admin = createAdminClient()
 
   const [profileRes, membershipRes, practiceRes, myPractices] = await Promise.all([
-    admin.from('profiles').select('avatar_url').eq('id', profileId).maybeSingle(),
+    admin.from('profiles').select('avatar_url, meta').eq('id', profileId).maybeSingle(),
     admin.from('memberships').select('id').eq('profile_id', profileId).eq('status', 'active').limit(1),
     admin
       .from('engagement_events')
@@ -84,6 +84,13 @@ export async function getOnboardingStatus(profileId: string): Promise<Onboarding
       done: (practiceRes.count ?? 0) > 0,
     },
   ]
+
+  // Force-complete overrides: a member can force a step done via the onboarding
+  // guide's obscured escape hatch (forceOnboardingStep). Stored in
+  // profiles.meta.onboarding.forced[]. Treated as done so the guide can graduate.
+  const meta = (profileRes.data?.meta ?? null) as { onboarding?: { forced?: string[] } } | null
+  const forced = new Set(meta?.onboarding?.forced ?? [])
+  for (const s of steps) if (forced.has(s.key)) s.done = true
 
   const todo = steps.filter((s) => !s.done)
   const doneCount = steps.length - todo.length

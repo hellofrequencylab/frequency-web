@@ -86,7 +86,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     links: [
       { href: '/admin/engagement', label: 'Engagement', desc: 'Active members and the activation funnel.', Icon: Activity, min: 'janitor' },
       { href: '/admin/intel', label: 'Marketing intel', desc: 'Real-time growth, demand, and leader signal.', Icon: Telescope, min: 'janitor' },
-      { href: '/admin/outcomes', label: 'Outcomes', desc: 'Where programs and Quests stall.', Icon: Target, min: 'janitor' },
+      { href: '/admin/outcomes', label: 'Outcomes', desc: 'Where programs and Journeys stall.', Icon: Target, min: 'janitor' },
       { href: '/admin/insights', label: 'AI read', desc: 'A narrative of what to do next.', Icon: Sparkles, min: 'janitor' },
       { href: '/admin/segments', label: 'Segments', desc: 'Saved audiences by tag and trait.', Icon: PieChart, min: 'janitor' },
     ],
@@ -107,8 +107,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     links: [
       { href: '/admin/members', label: 'Members', desc: 'Roster, subscribers, and accounts.', Icon: Users, min: 'janitor' },
       { href: '/admin/roles', label: 'Roles', desc: 'Assign roles and the permission grid.', Icon: Shield, min: 'janitor' },
-      { href: '/admin/demo', label: 'Demo data', desc: 'Toggle and purge seeded content.', Icon: FlaskConical, min: 'janitor', exact: true },
-      { href: '/admin/demo/studio', label: 'Seed Studio', desc: 'Generate a believable demo community for a new area.', Icon: Sparkles, min: 'janitor' },
+      { href: '/admin/demo', label: 'Demo Studio', desc: 'Generate, manage, and purge seeded demo content.', Icon: FlaskConical, min: 'janitor' },
     ],
   },
 ] as const
