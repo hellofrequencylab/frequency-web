@@ -229,7 +229,7 @@ export function MessageThread({
       </div>
 
       {/* ── Composer ──────────────────────────────── */}
-      <div className="shrink-0 border-t border-border bg-white px-4 py-3">
+      <div className="shrink-0 border-t border-border bg-surface px-4 py-3">
         <div className="flex items-end gap-2">
           <textarea
             ref={textareaRef}
@@ -249,7 +249,7 @@ export function MessageThread({
             aria-label="Send message"
           >
             <svg
-              className="w-4 h-4 text-white"
+              className="w-4 h-4 text-on-primary"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"

@@ -9,7 +9,7 @@ import { recordEngagementEvent } from '@/lib/engagement/events'
 // "Claim this Circle" — a real member converts a demo circle into their own,
 // in place. The circle stops being demo, they become its host, their answers
 // reshape it, and they inherit a furnished circle (the demo neighbours stay and
-// decay as real members join). See docs/DEMO-SYSTEM.md + ADR-081 (Phase 2).
+// decay as real members join). See docs/DEMO-SYSTEM.md + ADR-091 (Phase 2).
 export async function claimCircle(
   circleId: string,
   answers: { name?: string; about?: string; practiceId?: string | null },

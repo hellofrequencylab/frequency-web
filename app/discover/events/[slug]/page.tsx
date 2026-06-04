@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { ChevronRight, CalendarDays, MapPin, Lock } from 'lucide-react'
 import { getPublicEventBySlug, formatEventDateTime, hasEventEnded } from '@/lib/discover'
 import { SignInCta } from '@/components/discover/cards'
+import { FrequencyArcs } from '@/components/marketing/vector-art'
 import { SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { eventSchema, breadcrumbSchema } from '@/lib/jsonld'
@@ -48,7 +49,12 @@ export default async function EventPage({
   const hasEnded = hasEventEnded(event)
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-12">
+    <div className="relative overflow-hidden max-w-3xl mx-auto px-6 py-20 sm:py-24">
+      {/* Frequency arcs radiating up under the event, tying it to a real place. */}
+      <FrequencyArcs
+        aria-hidden
+        className="pointer-events-none absolute -top-10 right-0 w-[28rem] max-w-none text-primary opacity-[0.05]"
+      />
       <JsonLd
         data={[
           eventSchema(event),
@@ -71,12 +77,15 @@ export default async function EventPage({
 
       {/* Header */}
       <header className="mb-8">
+        <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
+          Coming up
+        </p>
         {hasEnded && (
           <span className="inline-block text-xs px-2 py-1 rounded-md font-medium bg-surface-elevated text-muted mb-3">
             This event has ended
           </span>
         )}
-        <h1 className="text-3xl sm:text-4xl font-bold text-text mb-4">{event.title}</h1>
+        <h1 className="font-display uppercase text-text text-4xl sm:text-5xl mb-5">{event.title}</h1>
 
         <div className="space-y-2 text-sm">
           <div className="flex items-center gap-2 text-text">
@@ -104,10 +113,18 @@ export default async function EventPage({
       </header>
 
       {/* Description */}
-      {event.description && (
+      {event.description ? (
         <section className="mb-8">
-          <p className="text-base text-text leading-relaxed whitespace-pre-line">
+          <p className="text-lg text-muted leading-relaxed whitespace-pre-line">
             {event.description}
+          </p>
+        </section>
+      ) : (
+        <section className="mb-8">
+          <p className="text-lg text-muted leading-relaxed">
+            A real-world gathering near you: a standing time, a handful of regulars, and a seat
+            that gets noticed when it&apos;s empty. The kind of plan that pulls you off the couch
+            and into a room where people are glad you came.
           </p>
         </section>
       )}
@@ -125,8 +142,8 @@ export default async function EventPage({
         title={hasEnded ? 'Join Frequency' : 'Sign in to RSVP'}
         body={
           hasEnded
-            ? 'This event has passed, but there is always something happening. Sign up free to find the next one near you.'
-            : 'RSVP, see who else is going, and get the venue details. Free to join.'
+            ? 'This one has passed, but somewhere near you another circle is already deciding on the next. Sign up free to find it, and be one of the faces the next person walks in and recognizes.'
+            : 'RSVP and you are expected: see who else is coming, get the exact venue, and let the host know to save you a seat. Free to join, two words to belong.'
         }
         action={hasEnded ? 'Get started' : 'Sign in to RSVP'}
       />

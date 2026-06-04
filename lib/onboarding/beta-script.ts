@@ -8,16 +8,25 @@
 /** Master switch. While true, `/onboarding` redirects into `/onboarding/beta`. */
 export const BETA_INDUCTION_ACTIVE = true
 
+/** During the Beta, every member gets Crew (full gamification) for free — they
+ *  rack up points in the game and can downgrade to Member anytime (/upgrade).
+ *  Flip OFF at Launch: new members default to Member, and unpaid members lose
+ *  the Crew surfaces + the ability to spend gems (see ADR-084). */
+export const BETA_MEMBERS_GET_CREW = true
+
 /** Bumped if the oath/flow materially changes, so we can tell cohorts apart. */
 export const BETA_INDUCTION_VERSION = 1
 
 export type OathId = 'unfinished' | 'report' | 'build'
 
-/** The gate. All three must be checked to enter. Single source of truth. */
+/** The gate. All three must be checked to enter. Single source of truth.
+ *  The first two are the practical beta pact; the third is the spirit of it,
+ *  framed as an identity to step into (echoing "You're not a user. You're a
+ *  Founder.") rather than an obligation to "agree to be". */
 export const BETA_OATHS: { id: OathId; label: string }[] = [
   { id: 'unfinished', label: 'I agree to break things' },
   { id: 'report', label: 'I agree to report bugs' },
-  { id: 'build', label: 'I agree to be a Founder' },
+  { id: 'build', label: "I'm here to help build it" },
 ]
 
 /** "How did you hear about us?" — captured on the intake into meta.beta.heard_about. */

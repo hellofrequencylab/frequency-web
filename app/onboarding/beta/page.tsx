@@ -10,7 +10,27 @@ import BetaInduction from './induction'
 export default async function BetaInductionPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/sign-in')
+
+  // Operator copy overrides from /admin/vera (defaults to the beta-script copy).
+  const ind = (await getVeraConfig()).induction
+  const copy = {
+    // Widened strings cast back to the const shape the component expects.
+    vera: {
+      ...VERA,
+      oath: { ...VERA.oath, heading: ind.oathHeading, body: ind.oathBody },
+      intro: { ...VERA.intro, heading: ind.introHeading, body: ind.introBody },
+    } as typeof VERA,
+    oaths: BETA_OATHS.map((o, i) => ({ id: o.id, label: ind.oathLabels[i] || o.label })),
+    heardAbout: ind.heardAbout.length ? ind.heardAbout : [...HEARD_ABOUT],
+  }
+
+  // Signed-out visitors run the WHOLE cinematic induction with no login wall
+  // (ADR-082): "Join the Beta" opens the sequence immediately. Sign-in is
+  // collected at the final "step in" beat; the answers are stashed and written at
+  // /onboarding/beta/complete after auth.
+  if (!user) {
+    return <BetaInduction deferred copy={copy} />
+  }
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -26,19 +46,6 @@ export default async function BetaInductionPage() {
     .select('id, name')
     .eq('depth', 0)
     .order('name')
-
-  // Operator copy overrides from /admin/vera (defaults to the beta-script copy).
-  const ind = (await getVeraConfig()).induction
-  const copy = {
-    // Widened strings cast back to the const shape the component expects.
-    vera: {
-      ...VERA,
-      oath: { ...VERA.oath, heading: ind.oathHeading, body: ind.oathBody },
-      intro: { ...VERA.intro, heading: ind.introHeading, body: ind.introBody },
-    } as typeof VERA,
-    oaths: BETA_OATHS.map((o, i) => ({ id: o.id, label: ind.oathLabels[i] || o.label })),
-    heardAbout: ind.heardAbout.length ? ind.heardAbout : [...HEARD_ABOUT],
-  }
 
   return (
     <BetaInduction

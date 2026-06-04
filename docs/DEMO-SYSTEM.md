@@ -75,15 +75,15 @@ Two levers, in order of severity:
    the rows.
 
 
-## Demo content is wizard-generated (ADR-082)
+## Demo content is wizard-generated (ADR-092)
 
 The hand-built 250-cast was **retired**. Demo content is now generated on demand
 by the **Seed Studio** (`/admin/demo/studio`, `lib/demo/engine.ts`) and cleaned
 by the `/admin/demo` purge button + the nightly decay cron. Every row is still
-`is_demo`, badged with the yellow bolt, and counted honestly. See ADR-081/082.
+`is_demo`, badged with the yellow bolt, and counted honestly. See ADR-091/092.
 
 
-## Claim this Circle (ADR-081, Phase 2)
+## Claim this Circle (ADR-091, Phase 2)
 
 A signed-in real member viewing a demo circle sees a ⚡ banner ("This is a sample
 circle — make it real?") and a short wizard (`components/circles/claim-circle.tsx`):
@@ -96,7 +96,7 @@ sets the active practice, awards the circle start/activate zaps, and logs a
 not an empty one) and recede as real members join. Next: the decay cron (P3).
 
 
-## Decay — natural disappearance (ADR-081, Phase 3)
+## Decay — natural disappearance (ADR-091, Phase 3)
 
 `lib/demo/decay.ts` (`runDecay`) recedes + purges demo content as an area goes
 real, keyed off `is_demo` + geo (no schema). Nightly via

@@ -9,6 +9,7 @@ import {
   Body,
   ZigZag,
   Statement,
+  PullQuote,
   BetaCTA,
   Button,
   Card,
@@ -213,18 +214,11 @@ function LegacyAbout() {
       </ZigZag>
 
       {/* ── Pull-quote ─────────────────────────────────────────────────────── */}
-      <Section tone="surface" pad="py-16 sm:py-20">
-        <figure className="max-w-3xl mx-auto text-center">
-          <blockquote className="font-display uppercase text-text text-3xl sm:text-4xl lg:text-5xl leading-[1.08] text-balance">
-            &ldquo;We don&apos;t want to be{' '}
-            <span className="text-primary">followed</span>. We want to be{' '}
-            <span className="text-primary">joined</span>.&rdquo;
-          </blockquote>
-          <figcaption className="mt-7 text-sm font-bold uppercase tracking-[0.25em] text-subtle">
-            The Frequency founding circle
-          </figcaption>
-        </figure>
-      </Section>
+      <PullQuote tone="surface" cite="The Frequency founding circle">
+        &ldquo;We don&apos;t want to be{' '}
+        <span className="text-primary">followed</span>. We want to be{' '}
+        <span className="text-primary">joined</span>.&rdquo;
+      </PullQuote>
 
       {/* ── Timeline ───────────────────────────────────────────────────────── */}
       <Section tone="canvas">

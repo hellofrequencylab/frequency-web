@@ -7,7 +7,7 @@ import { DispatchTickerSlot } from '@/components/layout/dispatch-ticker-slot'
 import type { CommunityRole } from '@/components/sidebar/right-sidebar'
 import { getUnreadCount } from '@/app/(main)/notifications/actions'
 import { getAreaPermissions } from '@/lib/permissions'
-import { applyViewAs } from '@/lib/view-as'
+import { applyViewAs, viewingAsVisitor } from '@/lib/view-as'
 import { AchievementToastContainer } from '@/components/achievement-toast'
 import { ZapToastContainer } from '@/components/zap-toast'
 import { PresenceHeartbeat } from '@/components/presence/heartbeat'
@@ -17,6 +17,7 @@ import { PageViewTracker } from '@/components/analytics/track-provider'
 import { getSearchIndex } from '@/lib/help/content'
 import { TourProvider } from '@/components/onboarding/tour-provider'
 import type { TourState } from '@/lib/onboarding/select'
+import { getOnboardingStatus } from '@/lib/onboarding/status'
 import { BETA_INDUCTION_ACTIVE } from '@/lib/onboarding/beta-script'
 
 // Authenticated app layout. Wraps Feed, Groups, Events, Admin.
@@ -57,6 +58,9 @@ export default async function MainLayout({
   // used only to show the janitor control itself. See lib/view-as.ts.
   const realRole = (profile.community_role ?? 'member') as CommunityRole
   const effectiveRole = await applyViewAs(realRole)
+  // Janitor previewing the logged-out experience: server caps drop to member
+  // (effectiveRole), and the NAV gates as a visitor (driven by this flag).
+  const previewVisitor = await viewingAsVisitor(realRole)
 
   // Unread notification count. Non-blocking, falls back to 0 on error
   const unreadCount = await getUnreadCount().catch(() => 0)
@@ -76,6 +80,14 @@ export default async function MainLayout({
     dismissed: tourMeta?.dismissed ?? [],
     lastShownAt: tourMeta?.lastShownAt ?? null,
   }
+
+  // Cues whose activation task is already done are suppressed (don't tell someone
+  // to add a photo they have). Only pay for the status lookup when a task-cue is
+  // still unseen — otherwise there's nothing to suppress.
+  const TASK_CUES = ['profile_face', 'circles_find', 'practice_adopt']
+  const tourSatisfied: string[] = TASK_CUES.some((id) => !tourState.seen.includes(id))
+    ? (await getOnboardingStatus(profile.id)).steps.filter((s) => s.done).map((s) => s.key)
+    : []
 
   // Right sidebar streams in independently. Doesn't block page render
   const sidebar = (
@@ -98,6 +110,7 @@ export default async function MainLayout({
     <AppShell
       profile={{ ...profile, community_role: effectiveRole }}
       realRole={realRole}
+      previewVisitor={previewVisitor}
       sidebar={sidebar}
       ticker={ticker}
       unreadCount={unreadCount}
@@ -110,7 +123,7 @@ export default async function MainLayout({
       <PushRegistration />
       <SupportLauncher index={helpIndex} />
       <PageViewTracker />
-      <TourProvider initialState={tourState} />
+      <TourProvider initialState={tourState} satisfied={tourSatisfied} />
     </AppShell>
   )
 }

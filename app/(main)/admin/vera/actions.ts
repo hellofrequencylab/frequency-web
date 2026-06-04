@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { saveVeraConfig } from '@/lib/ai/vera/config'
+import { refreshFeaturedPosts, unfeaturePost } from '@/lib/ai/vera/feature-posts'
 import type { ModelTier } from '@/lib/ai/models'
 
 async function janitor(): Promise<{ profileId: string } | null> {
@@ -48,4 +49,25 @@ export async function saveVera(formData: FormData): Promise<void> {
     staff.profileId,
   )
   revalidatePath('/admin/vera')
+}
+
+/** Re-run Vera's auto-curation of the splash "showing up for each other" feed
+ *  (janitor only). Best-effort: leaves the section untouched if AI is unavailable. */
+export async function refreshFeatured(): Promise<void> {
+  const staff = await janitor()
+  if (!staff) return
+  await refreshFeaturedPosts()
+  revalidatePath('/admin/vera')
+  revalidatePath('/')
+}
+
+/** Janitor veto: drop one post from the featured splash feed. */
+export async function vetoFeatured(formData: FormData): Promise<void> {
+  const staff = await janitor()
+  if (!staff) return
+  const postId = String(formData.get('postId') ?? '').trim()
+  if (!postId) return
+  await unfeaturePost(postId)
+  revalidatePath('/admin/vera')
+  revalidatePath('/')
 }

@@ -17,11 +17,14 @@ const CATEGORIES: Array<{ value: string; label: string }> = [
   { value: 'business-support', label: 'Business Support' },
 ]
 
-export function NewChannelCompose() {
+type DomainOption = { id: string; name: string }
+
+export function NewChannelCompose({ domains = [] }: { domains?: DomainOption[] }) {
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [category, setCategory] = useState(CATEGORIES[0].value)
+  const [domainId, setDomainId] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
@@ -34,6 +37,7 @@ export function NewChannelCompose() {
     fd.set('name', name.trim())
     fd.set('description', description.trim())
     fd.set('category', category)
+    if (domainId) fd.set('domainId', domainId)
 
     startTransition(async () => {
       try {
@@ -78,8 +82,9 @@ export function NewChannelCompose() {
       >
         <div className="px-6 py-5 space-y-5">
           <p className="text-sm text-muted leading-relaxed">
-            Channels are global topics anyone can tune into. Pick a name, a
-            category, and a short description of what people will find inside.
+            Interests are global topics anyone can tune into, sorted under a
+            Channel. Pick a name, the Channel it belongs to, a category, and a
+            short description of what people will find inside.
           </p>
 
           <div>
@@ -95,6 +100,28 @@ export function NewChannelCompose() {
               required
             />
           </div>
+
+          {domains.length > 0 && (
+            <div>
+              <label htmlFor="ch-domain" className={cmLabel}>
+                Channel <span className="text-subtle font-normal">(optional)</span>
+              </label>
+              <select
+                id="ch-domain"
+                value={domainId}
+                onChange={(e) => setDomainId(e.target.value)}
+                className={cmInput}
+              >
+                <option value="">Unsorted (assign later)</option>
+                {domains.map((d) => (
+                  <option key={d.id} value={d.id}>{d.name}</option>
+                ))}
+              </select>
+              <p className="mt-1 text-[11px] text-subtle">
+                The Channel (Mind, Body, Spirit, Expression) this Interest sits under.
+              </p>
+            </div>
+          )}
 
           <div>
             <label htmlFor="ch-category" className={cmLabel}>Category</label>

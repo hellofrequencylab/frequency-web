@@ -1,0 +1,27 @@
+# Frequency
+
+> Frequency is rebuilding the "third place": real-world community built around a physical space (The Lab), local interest groups (Circles, organized into Channels), and a light, transparent game (The Quest) that rewards showing up in person. Not another feed, a place to be seen in person, missed when you are gone, and welcomed for who you are. Free during the beta, taking root in North County San Diego.
+
+## What it is
+Frequency connects neighborhoods into real-world community. Members find their people by interest, join a Circle (a small standing local group), show up to nearby Events, and gather at The Lab (a physical third space with a sauna, cold plunge, movement studios, and gathering rooms). The Quest is an in-person-first game that rewards real life over scrolling. The model: Place (The Lab), People (The Community), Path (The Quest).
+
+## Key pages
+- [The Lab](https://frequencylocal.com/the-lab): the physical third space, what it is and why community needs a body.
+- [The Community](https://frequencylocal.com/the-community): how you find your people, through Channels, Interests, and Circles.
+- [The Quest](https://frequencylocal.com/the-quest): the gamified path, zaps and gems, season ranks, and Arcs.
+- [About](https://frequencylocal.com/about): the mission and the origin story.
+- [Discover](https://frequencylocal.com/discover): live Circles, Events, and Interests near you.
+- [Join the Beta](https://frequencylocal.com/onboarding/beta): begin the founding-member induction.
+
+## Vocabulary
+- Channel: one of four Domains (Mind, Body, Spirit, Expression) that organize interests.
+- Interest (Topic): a specific interest inside a Channel, for example running, sound baths, supper clubs.
+- Circle: a small standing local group around an Interest.
+- The Lab: the physical third space; the first is in North County San Diego.
+- The Quest: the seasonal game. Zaps are the in-person currency that drive season ranks (ghost, runner, operative, agent, conduit, luminary); Gems are the durable on-platform currency; Arcs are multi-step seasonal journeys.
+
+## Facts
+- Free during the beta. No card required. Founder pricing is locked for life. Leave anytime.
+- First location: North County San Diego; the community can be started anywhere.
+- Nonprofit-spirited: memberships sustain the physical spaces and hold the door for those who cannot pay. The rule is "circulation, not exclusion."
+- Contact: hello@frequencylocal.com

@@ -5,7 +5,7 @@ import { Sparkles } from 'lucide-react'
 import { StudioWizard } from './studio-wizard'
 
 // Janitor-only: the Seed Studio — generate a believable demo community for any
-// new area on demand (docs/DEMO-SYSTEM.md, ADR-081). Everything it creates is
+// new area on demand (docs/DEMO-SYSTEM.md, ADR-091). Everything it creates is
 // is_demo, area-scoped, previewable, and reversible.
 export default async function SeedStudioPage() {
   await requireAdmin('janitor')

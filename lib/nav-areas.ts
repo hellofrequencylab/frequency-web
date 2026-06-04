@@ -28,34 +28,39 @@ export type NavArea = {
   /** Section header — groups the rail and the permission grid. */
   section: string | null
   defaultAccess: NavAccess
+  /** When a viewer is BELOW the required access, still let them click through to
+   *  browse the page in preview (muted), rather than greying it out. The page then
+   *  gates earning/spending behind an upgrade prompt. Used for the Quest. */
+  previewBelowAccess?: boolean
 }
 
-// Order here IS the render order down the rail (Feed, then each section).
+// Order here IS the render order down the rail. Feed is the lone pinned home
+// anchor; then the pillars in order — Community, Network, The Quest — then Manage.
 export const NAV_AREAS: readonly NavArea[] = [
-  // ── Home anchor → pinned to the very top of the rail ─────────────────────────
-  // Feed is "home": the default landing and the day-to-day social loop. It sits
-  // alone above the section groups (section: null) so it reads as the anchor.
+  // ── Home anchor → pinned above the section groups ────────────────────────────
+  // Feed is "home": the default landing and the day-to-day social loop. It always
+  // sits at the very top (section: null) and reads in the brand's dark brown.
   { key: 'feed',      href: '/feed',      label: 'Feed',      section: null,        defaultAccess: 'member'  },
 
-  // ── Community spaces — the places you belong, right under Feed ──────────────
+  // ── Community → the places you belong + the live comms loop + the practice ───
+  { key: 'broadcast', href: '/broadcast', label: 'Broadcasts', section: 'Community', defaultAccess: 'visitor' },
   { key: 'circles',   href: '/circles',   label: 'Circles',   section: 'Community', defaultAccess: 'visitor' },
-  { key: 'channels',  href: '/channels',  label: 'Interests', section: 'Community', defaultAccess: 'visitor' },
+  { key: 'channels',  href: '/channels',  label: 'Channels',  section: 'Community', defaultAccess: 'visitor' },
+  { key: 'events',    href: '/events',    label: 'Events',    section: 'Community', defaultAccess: 'member'  },
+  { key: 'practices', href: '/practices', label: 'Practices', section: 'Community', defaultAccess: 'member'  },
+  { key: 'programs',  href: '/programs',  label: 'Programs',  section: 'Community', defaultAccess: 'member'  },
 
-  // ── Broadcasts → the live comms loop (broadcasts · messages · events) ───────
-  { key: 'broadcast', href: '/broadcast', label: 'Broadcasts', section: 'Broadcasts', defaultAccess: 'visitor' },
-  { key: 'messages',  href: '/messages',  label: 'Messages',  section: 'Broadcasts', defaultAccess: 'member'  },
-  { key: 'events',    href: '/events',    label: 'Events',    section: 'Broadcasts', defaultAccess: 'member'  },
-
-  // ── Features ────────────────────────────────────────────────────────────────
-  { key: 'practices', href: '/practices', label: 'Practices', section: 'Library',   defaultAccess: 'member'  },
-  { key: 'programs',  href: '/programs',  label: 'Programs',  section: 'Library',   defaultAccess: 'member'  },
-
+  // ── Network → your people + DMs + partners (above The Quest) ─────────────────
+  { key: 'messages',  href: '/messages',  label: 'Messages',  section: 'Network',   defaultAccess: 'member'  },
   { key: 'friends',   href: '/friends',   label: 'Friends',   section: 'Network',   defaultAccess: 'member'  },
   { key: 'partners',  href: '/partners',  label: 'Partners',  section: 'Network',   defaultAccess: 'member'  },
   { key: 'people',    href: '/people',    label: 'Directory', section: 'Network',   defaultAccess: 'member'  },
 
-  { key: 'crew',      href: '/crew',      label: 'Dashboard', section: 'Progress',  defaultAccess: 'crew'    },
-  { key: 'vault',     href: '/vault',     label: 'Vault',     section: 'Progress',  defaultAccess: 'member'  },
+  // ── The Quest → the gamified progression loop. The Store holds your Vault
+  //    (balance + everything you earn by showing up). ───────────────────────────
+  { key: 'crew',      href: '/crew',       label: 'Dashboard', section: 'The Quest', defaultAccess: 'crew', previewBelowAccess: true },
+  { key: 'quests',    href: '/crew/quests',   label: 'Quests',   section: 'The Quest', defaultAccess: 'crew', previewBelowAccess: true },
+  { key: 'store',     href: '/crew/store', label: 'Store',     section: 'The Quest', defaultAccess: 'crew', previewBelowAccess: true },
 
   // ── Manage ──────────────────────────────────────────────────────────────────
   // The admin surface is split into its five categories (the groups in

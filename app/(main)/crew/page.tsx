@@ -12,6 +12,7 @@ import { getCurrentSeason } from '@/lib/seasons'
 import { SeasonBanner } from './season-banner'
 import { StatCard } from '@/components/ui/stat-card'
 import { ModuleCard } from '@/components/modules/module-card'
+import { CrewPreviewBanner } from '@/components/crew/crew-preview-banner'
 
 const TASK_TYPE_LABEL: Record<string, string> = {
   attendance:   'Attendance',
@@ -155,6 +156,7 @@ export default async function CrewPage() {
 
   return (
     <div>
+      {!isCrew && <CrewPreviewBanner />}
       {/* ── Header ──────────────────────────────────── */}
       <div className="flex items-end justify-between gap-4 mb-6">
         <div>
@@ -401,7 +403,7 @@ export default async function CrewPage() {
             <QuickLink href="/crew/achievements" Icon={Award} label="Achievements" sub="Earn badges" color="bg-signal-bg text-signal-strong" />
             <QuickLink href="/crew/streaks" Icon={Flame} label="Streaks" sub="Stay consistent" color="bg-warning-bg text-warning dark:text-primary" />
             <QuickLink href="/crew/challenges" Icon={Target} label="Challenges" sub="Season goals" color="bg-primary-bg text-primary-strong" />
-            <QuickLink href="/crew/arcs" Icon={Map} label="Arcs" sub="Multi-step" color="bg-success-bg text-signal-strong" />
+            <QuickLink href="/crew/quests" Icon={Map} label="Quests" sub="Guided tracks" color="bg-success-bg text-signal-strong" />
             <QuickLink href="/crew/leaderboard" Icon={TrendingUp} label="Leaderboard" sub="Rankings" color="bg-warning-bg text-warning" />
             <QuickLink href="/crew/store" Icon={ShoppingBag} label="Gem Store" sub="Spend gems" color="bg-signal-bg text-signal-strong" />
           </div>

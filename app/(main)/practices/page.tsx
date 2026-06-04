@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { Flame, Sparkles, Library, Zap } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import {
@@ -6,9 +7,11 @@ import {
   getMemberPractices,
   getRecentPracticeLogs,
 } from '@/lib/practices'
+import { getPillars, pillarsById } from '@/lib/pillars'
 import { LogPracticeButton } from '@/components/practice/log-practice-button'
 import { AdoptPracticeButton } from '@/components/practice/adopt-practice-button'
 import { CreatePracticeForm } from '@/components/practice/create-practice-form'
+import { PillarBadge } from '@/components/practice/pillar-badge'
 import { IndexTemplate } from '@/components/templates/index-template'
 import { StatStrip } from '@/components/ui/page-header'
 import { SectionHeader } from '@/components/ui/section-header'
@@ -44,15 +47,43 @@ function PracticeMeta({
   )
 }
 
-export default async function PracticesPage() {
+function PillarFilterChip({ label, href, active }: { label: string; href: string; active: boolean }) {
+  return (
+    <Link
+      href={href}
+      scroll={false}
+      className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+        active
+          ? 'bg-primary-bg text-primary-strong'
+          : 'bg-surface-elevated text-muted hover:text-text'
+      }`}
+    >
+      {label}
+    </Link>
+  )
+}
+
+export default async function PracticesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ pillar?: string }>
+}) {
   const profileId = await getMyProfileId()
-  const [library, mine, recent] = await Promise.all([
+  const [library, mine, recent, pillars] = await Promise.all([
     listPublicPractices(),
     profileId ? getMemberPractices(profileId) : Promise.resolve([]),
     profileId ? getRecentPracticeLogs(profileId, 60) : Promise.resolve([]),
+    getPillars(),
   ])
+  const byId = pillarsById(pillars)
   const mineIds = new Set(mine.map((p) => p.id))
-  const unadopted = library.filter((p) => !mineIds.has(p.id))
+
+  // Library filter by Pillar (URL-driven, so it's shareable + needs no client JS).
+  const { pillar: pillarParam } = await searchParams
+  const activePillar = pillars.find((p) => p.slug === pillarParam)?.id ?? null
+  const unadopted = library
+    .filter((p) => !mineIds.has(p.id))
+    .filter((p) => !activePillar || p.domain_id === activePillar)
 
   // Last 14 days as a simple activity strip (filled = logged a practice that day).
   const loggedDays = new Set(recent.map((r) => r.logged_for))
@@ -132,7 +163,10 @@ export default async function PracticesPage() {
                   className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-surface px-5 py-4 shadow-sm transition-colors hover:border-primary-bg hover:shadow-md"
                 >
                   <div className="min-w-0">
-                    <p className="text-base font-bold text-text">{p.title}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-base font-bold text-text">{p.title}</p>
+                      {p.domain_id && byId.has(p.domain_id) && <PillarBadge name={byId.get(p.domain_id)!.name} />}
+                    </div>
                     {(p.summary ?? p.description) && (
                       <p className="mt-0.5 line-clamp-2 text-sm leading-relaxed text-muted">
                         {p.summary ?? p.description}
@@ -152,6 +186,20 @@ export default async function PracticesPage() {
 
         <section>
           <SectionHeader title="Practice library" count={library.length} />
+
+          {/* Filter the library by Pillar (Mind / Body / Spirit / Expression). */}
+          <div className="mb-3 flex flex-wrap gap-1.5">
+            <PillarFilterChip label="All" href="/practices" active={!activePillar} />
+            {pillars.map((pl) => (
+              <PillarFilterChip
+                key={pl.slug}
+                label={pl.name}
+                href={`/practices?pillar=${pl.slug}`}
+                active={pillarParam === pl.slug}
+              />
+            ))}
+          </div>
+
           {profileId && (
             <div className="mb-3">
               <CreatePracticeForm />
@@ -171,7 +219,10 @@ export default async function PracticesPage() {
                   className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-surface px-5 py-4 shadow-sm transition-colors hover:border-primary-bg hover:shadow-md"
                 >
                   <div className="min-w-0">
-                    <p className="text-base font-bold text-text">{p.title}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-base font-bold text-text">{p.title}</p>
+                      {p.domain_id && byId.has(p.domain_id) && <PillarBadge name={byId.get(p.domain_id)!.name} />}
+                    </div>
                     {(p.summary ?? p.description) && (
                       <p className="mt-0.5 line-clamp-2 text-sm leading-relaxed text-muted">
                         {p.summary ?? p.description}

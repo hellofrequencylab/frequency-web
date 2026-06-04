@@ -19,9 +19,17 @@ function matchesRoute(pathname: string, trigger: string): boolean {
 }
 
 /** The highest-priority tip eligible right now, or null. Eligible = not already
- *  seen/dismissed, its route matches, its prerequisites are met, and the pacing
- *  cooldown since the last tip has cleared. */
-export function selectTip(tips: Tip[], state: TourState, pathname: string, now: number): Tip | null {
+ *  seen/dismissed, its route matches, its prerequisites are met, the pacing
+ *  cooldown since the last tip has cleared, AND its activation task isn't already
+ *  done (`satisfied` = the set of completed step keys — so we never nudge someone
+ *  to do a thing they've already done, e.g. add a photo they already have). */
+export function selectTip(
+  tips: Tip[],
+  state: TourState,
+  pathname: string,
+  now: number,
+  satisfied: ReadonlySet<string> = new Set(),
+): Tip | null {
   if (state.lastShownAt) {
     const last = Date.parse(state.lastShownAt)
     if (!Number.isNaN(last) && now - last < COOLDOWN_MS) return null
@@ -31,6 +39,7 @@ export function selectTip(tips: Tip[], state: TourState, pathname: string, now: 
   const eligible = tips.filter(
     (t) =>
       !done.has(t.id) &&
+      !(t.satisfiedKey && satisfied.has(t.satisfiedKey)) &&
       matchesRoute(pathname, t.trigger) &&
       (t.prerequisite ?? []).every((p) => seen.has(p)),
   )

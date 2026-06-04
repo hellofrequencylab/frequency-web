@@ -17,9 +17,12 @@ import {
   Statement,
   ZigZag,
   Marquee,
+  PillarNav,
   BetaCTA,
   Button,
   Card,
+  Lead,
+  Body,
 } from '@/components/marketing/marketing-ui'
 import { BETA_CTA_LABEL, BETA_CTA_HREF, FOUNDING_PLACE } from '@/lib/site'
 import { config } from '@/lib/page-editor/config'
@@ -104,16 +107,16 @@ function LegacyTheLab() {
           title="Community needs a body."
           kicker="The app is the thread. This is where it lands."
         />
-        <p className="text-xl text-text/85 leading-relaxed">
+        <Lead>
           A feed can keep people warm between meetings. It can&apos;t hold a
           sound bath, a cold plunge, or the hour after when nobody wants to
           leave. The Lab is the room those things happen in: a place built to
           be felt, not scrolled.
-        </p>
-        <p className="mt-5 text-lg text-muted leading-relaxed">
+        </Lead>
+        <Body>
           Light, sound, temperature, and the people around you are all tuned to
           do one thing: bring you back to yourself, then back to each other.
-        </p>
+        </Body>
       </Section>
 
       <Statement tone="surface">
@@ -274,21 +277,23 @@ function LegacyTheLab() {
           title="Founded in North County San Diego."
           kicker="The first room, built by the first members."
         />
-        <p className="text-xl text-text/85 leading-relaxed">
+        <Lead>
           The first Lab is a prototype: a flagship rooted in one neighborhood,
           shaped by the people it serves. By the time a place is ready for a
           Lab, the community is already there: the circles are meeting, the
           rituals are forming, the regulars know each other&apos;s names.
-        </p>
-        <p className="mt-5 text-lg text-muted leading-relaxed">
+        </Lead>
+        <Body>
           It&apos;s built from day one to be repeatable, so the version that
           works in {FOUNDING_PLACE} can open in your city next. The community
           always comes first; the Lab is simply where it gets a body.
-        </p>
+        </Body>
         <p className="mt-7 inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.2em] text-primary-strong">
           <MapPin className="w-4 h-4" aria-hidden /> {FOUNDING_PLACE}
         </p>
       </Section>
+
+      <PillarNav current="/the-lab" tone="surface" />
 
       <BetaCTA
         heading="Be part of building the first one."

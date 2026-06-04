@@ -1,7 +1,22 @@
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminPage } from '@/components/admin/admin-page'
 import { getVeraConfig } from '@/lib/ai/vera/config'
-import { saveVera } from './actions'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { saveVera, refreshFeatured, vetoFeatured } from './actions'
+
+type FeaturedRow = {
+  id: string
+  body: string
+  featured_at: string
+  author_display_name: string | null
+  author_handle: string | null
+  author_avatar_url: string | null
+}
+
+async function getFeatured(): Promise<FeaturedRow[]> {
+  const { data } = await createAdminClient().rpc('public_featured_posts', { _limit: 12 })
+  return (data ?? []) as FeaturedRow[]
+}
 
 // Janitor-only: tune Vera — her style + live responses + the induction/funnel copy,
 // no deploy needed (AI-VERA.md). Writes vera_config; read live by the loop + induction.
@@ -13,7 +28,7 @@ const LABEL = 'block text-xs font-semibold uppercase tracking-wide text-subtle'
 export default async function VeraAdminPage() {
   await requireAdmin('janitor')
 
-  const cfg = await getVeraConfig()
+  const [cfg, featured] = await Promise.all([getVeraConfig(), getFeatured()])
   const oaths = [0, 1, 2].map((i) => cfg.induction.oathLabels[i] ?? '')
 
   return (
@@ -102,6 +117,49 @@ export default async function VeraAdminPage() {
         <span className="text-xs text-subtle">Changes apply to new conversations immediately.</span>
       </div>
       </form>
+
+      {/* Featured splash feed — Vera auto-curates, janitor can veto */}
+      <section className="mt-6 space-y-4 rounded-2xl border border-border bg-surface p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-sm font-bold text-text">Splash feed: people showing up for each other</h2>
+            <p className="mt-0.5 text-xs text-muted">
+              Vera picks the warmest recent posts for the public home page. Refresh to re-curate; veto any pick to drop it.
+            </p>
+          </div>
+          <form action={refreshFeatured}>
+            <button type="submit" className="rounded-lg border border-border bg-surface px-4 py-2 text-sm font-semibold text-text shadow-sm transition-colors hover:bg-surface-elevated">
+              Refresh featured posts
+            </button>
+          </form>
+        </div>
+
+        {featured.length === 0 ? (
+          <p className="rounded-lg border border-border bg-surface-elevated px-3 py-2 text-xs text-subtle">
+            Nothing featured yet. The home page falls back to the latest public posts until Vera curates a set.
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {featured.map((post) => (
+              <li key={post.id} className="flex items-start gap-3 rounded-lg border border-border bg-surface-elevated px-3 py-2">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-text">
+                    {post.author_display_name ?? 'Community member'}
+                    {post.author_handle && <span className="font-normal text-subtle"> @{post.author_handle}</span>}
+                  </p>
+                  <p className="mt-0.5 line-clamp-2 text-sm text-muted">{post.body}</p>
+                </div>
+                <form action={vetoFeatured} className="shrink-0">
+                  <input type="hidden" name="postId" value={post.id} />
+                  <button type="submit" className="rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-danger-bg hover:text-danger">
+                    Veto
+                  </button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </AdminPage>
   )
 }

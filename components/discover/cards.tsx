@@ -5,9 +5,12 @@ import { getInitials, relativeTime } from '@/lib/utils'
 import { eventDateBadge, formatEventDate } from '@/lib/discover'
 import type { PublicCircle, PublicEvent, PublicPost, TopicalChannel } from '@/lib/discover'
 import { Button, Card } from '@/components/marketing/marketing-ui'
+import { communityHref } from '@/lib/community-href'
 
 // Presentational building blocks shared by the /discover hub and detail pages.
-// All read-only: every interaction control is a link to /sign-in.
+// Social items (circles, events, authors) route to the real in-app community
+// item via communityHref — straight there when authed, through /sign-in?next=
+// when not. Topic cards stay on the public /discover/topics browse.
 
 // ── Channel card ──────────────────────────────────────────────────────────────
 
@@ -41,9 +44,9 @@ export function ChannelCard({
 
 // ── Circle card ───────────────────────────────────────────────────────────────
 
-export function CircleCard({ circle }: { circle: PublicCircle }) {
+export function CircleCard({ circle, isAuthed = false }: { circle: PublicCircle; isAuthed?: boolean }) {
   return (
-    <Link href={`/discover/circles/${circle.id}`} className="group block h-full">
+    <Link href={communityHref(`/circles/${circle.slug}`, isAuthed)} className="group block h-full">
       <Card tone="feature" className="h-full p-5 hover:border-border-strong transition-colors flex flex-col">
       <div className="flex items-start justify-between gap-3 mb-2">
         <h3 className="text-base font-bold text-text group-hover:text-primary-strong transition-colors">
@@ -78,10 +81,10 @@ export function CircleCard({ circle }: { circle: PublicCircle }) {
 
 // ── Event row ─────────────────────────────────────────────────────────────────
 
-export function EventRow({ event }: { event: PublicEvent }) {
+export function EventRow({ event, isAuthed = false }: { event: PublicEvent; isAuthed?: boolean }) {
   const badge = eventDateBadge(event.starts_at)
   return (
-    <Link href={`/discover/events/${event.slug}`} className="block">
+    <Link href={communityHref(`/events/${event.slug}`, isAuthed)} className="block">
       <Card
         tone="feature"
         className="flex items-center gap-4 px-5 py-4 hover:border-border-strong hover:shadow-pop transition-all"
@@ -105,34 +108,47 @@ export function EventRow({ event }: { event: PublicEvent }) {
 
 // ── Post preview (read-only social proof) ─────────────────────────────────────
 
-export function PostPreview({ post }: { post: PublicPost }) {
+export function PostPreview({ post, isAuthed = false }: { post: PublicPost; isAuthed?: boolean }) {
   const initials = post.author_display_name ? getInitials(post.author_display_name) : '?'
+  const avatar = post.author_avatar_url ? (
+    <Image
+      src={post.author_avatar_url}
+      alt={post.author_display_name ?? 'Member'}
+      width={40}
+      height={40}
+      className="w-10 h-10 rounded-full object-cover shrink-0"
+    />
+  ) : (
+    <div className="w-10 h-10 rounded-full bg-surface-elevated text-muted text-xs font-semibold flex items-center justify-center shrink-0 select-none">
+      {initials}
+    </div>
+  )
+  const identity = (
+    <>
+      {avatar}
+      <div className="flex-1 min-w-0">
+        <span className="text-sm font-semibold text-text truncate block">
+          {post.author_display_name ?? 'Community member'}
+        </span>
+        <p className="text-[11px] text-subtle mt-0.5">
+          {post.author_handle && <>@{post.author_handle} · </>}
+          {relativeTime(post.created_at)}
+        </p>
+      </div>
+    </>
+  )
   return (
     <article className="rounded-2xl border border-border bg-surface shadow-sm p-4">
-      <div className="flex items-start gap-3 mb-3">
-        {post.author_avatar_url ? (
-          <Image
-            src={post.author_avatar_url}
-            alt={post.author_display_name ?? 'Member'}
-            width={40}
-            height={40}
-            className="w-10 h-10 rounded-full object-cover shrink-0"
-          />
-        ) : (
-          <div className="w-10 h-10 rounded-full bg-surface-elevated text-muted text-xs font-semibold flex items-center justify-center shrink-0 select-none">
-            {initials}
-          </div>
-        )}
-        <div className="flex-1 min-w-0">
-          <span className="text-sm font-semibold text-text truncate block">
-            {post.author_display_name ?? 'Community member'}
-          </span>
-          <p className="text-[11px] text-subtle mt-0.5">
-            {post.author_handle && <>@{post.author_handle} · </>}
-            {relativeTime(post.created_at)}
-          </p>
-        </div>
-      </div>
+      {post.author_handle ? (
+        <Link
+          href={communityHref(`/people/${post.author_handle}`, isAuthed)}
+          className="flex items-start gap-3 mb-3 group"
+        >
+          {identity}
+        </Link>
+      ) : (
+        <div className="flex items-start gap-3 mb-3">{identity}</div>
+      )}
       <p className="text-sm text-text leading-relaxed line-clamp-3 mb-3">{post.body}</p>
       {post.media_urls && post.media_urls.length > 0 && (
         <div className="relative h-72 w-full rounded-xl overflow-hidden border border-border">

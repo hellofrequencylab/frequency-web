@@ -2,23 +2,31 @@ import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { Composer } from '@/components/feed/composer'
-import { FeedList } from '@/components/feed/feed-list'
 import { CreateMenu } from '@/components/feed/create-menu'
+import { FeedList } from '@/components/feed/feed-list'
 import { StreamTemplate } from '@/components/templates/stream-template'
 import { SectionHeader } from '@/components/ui/section-header'
 import { PracticePrompt } from '@/components/practice/practice-prompt'
-import { FeedWelcome } from '@/components/feed/feed-welcome'
+import { FeedOnboardingGuide } from '@/components/feed/feed-onboarding-guide'
+import { JourneyBoard } from '@/components/feed/journey-board'
+import { VeraLightbox } from '@/components/onboarding/vera-lightbox'
+import { buildVeraOpening, buildWelcomeSlides } from '@/lib/onboarding/vera-welcome'
 import { getPracticesToLogToday } from '@/lib/practices'
+import { getOnboardingStatus } from '@/lib/onboarding/status'
+import { getMemberPillarBalance } from '@/lib/pillars'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
 export default async function FeedPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sort?: string }>
+  searchParams: Promise<{ sort?: string; welcome?: string; v?: string }>
 }) {
-  const { sort: sortParam } = await searchParams
+  const { sort: sortParam, welcome, v } = await searchParams
   const sort: 'recent' | 'relevant' = sortParam === 'recent' ? 'recent' : 'relevant'
+  const showVeraWelcome = welcome === 'vera'
+  // "Ask Vera" opens straight in chat; the post-induction welcome plays the deck.
+  const veraStartInChat = v === 'chat'
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -29,11 +37,13 @@ export default async function FeedPage({
   let primaryCircleId: string | null = null
   let canAnnounce = false
   let firstName: string | null = null
+  let streak = 0
+  let veraWelcome: { slides: ReturnType<typeof buildWelcomeSlides>; opening: ReturnType<typeof buildVeraOpening> } | null = null
 
   if (user) {
     const { data: profile } = await admin
       .from('profiles')
-      .select('id, community_role, display_name')
+      .select('id, community_role, display_name, current_streak, meta')
       .eq('auth_user_id', user.id)
       .maybeSingle()
 
@@ -41,6 +51,25 @@ export default async function FeedPage({
       myProfileId = profile.id
       myRole = (profile.community_role ?? 'member') as CommunityRole
       firstName = (profile.display_name ?? '').trim().split(/\s+/)[0] || null
+      streak = (profile.current_streak as number | null) ?? 0
+
+      // Vera's onboarding lightbox continues from what induction already learned
+      // (profiles.meta.beta), so she never opens cold. Built only when arriving
+      // straight from induction (?welcome=vera).
+      if (showVeraWelcome) {
+        const beta = ((profile.meta as Record<string, unknown> | null)?.beta ?? {}) as {
+          intent?: string | null
+          interests?: string | null
+          location?: { label?: string | null } | null
+        }
+        const ctx = {
+          firstName,
+          intent: beta.intent ?? null,
+          interests: beta.interests ?? null,
+          location: beta.location?.label ?? null,
+        }
+        veraWelcome = { slides: buildWelcomeSlides(ctx), opening: buildVeraOpening(ctx) }
+      }
       canAnnounce = ['host', 'guide', 'mentor', 'janitor'].includes(myRole)
 
       const { data: membership } = await admin
@@ -63,18 +92,32 @@ export default async function FeedPage({
   // Adopted practices not yet logged today -> the feed "log today" nudge (WAM).
   const practicesToLog = myProfileId ? await getPracticesToLogToday(myProfileId) : []
 
+  // The feed "hero" slot: a persistent teal onboarding guide until a member is fully
+  // set up, then it graduates into the JourneyBoard. One shared status drives both.
+  const onboarding = myProfileId ? await getOnboardingStatus(myProfileId) : null
+
+  // Pillar balance for the graduated board — only needed once onboarding is done.
+  const pillarBalance = myProfileId && onboarding?.complete
+    ? await getMemberPillarBalance(myProfileId)
+    : undefined
+
   // Warm, time-aware greeting headline (the feed is "home", so it greets you).
-  const hour = new Date().getHours()
+  // Greet in the community's timezone (the beta is North County San Diego) so the
+  // server's UTC clock doesn't roll the date + greeting forward late at night.
+  const tz = 'America/Los_Angeles'
+  const hour = Number(new Date().toLocaleString('en-US', { timeZone: tz, hour: '2-digit', hour12: false }))
   const partOfDay = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
   const greeting = firstName ? `${partOfDay}, ${firstName}` : partOfDay
   const today = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
     month: 'long',
     day: 'numeric',
+    timeZone: tz,
   })
 
   return (
     <div className="max-w-2xl mx-auto w-full">
+      {veraWelcome && <VeraLightbox slides={veraWelcome.slides} opening={veraWelcome.opening} startInChat={veraStartInChat} />}
       <StreamTemplate
         eyebrow={today}
         title={greeting}
@@ -82,11 +125,14 @@ export default async function FeedPage({
         action={<CreateMenu role={myRole} />}
       >
 
-      {/* First-run nudge toward the activation lever — a member with no circle yet
-          (also the fallback for anyone who skipped Vera at onboarding). */}
-      {myProfileId && !hasCircle && <FeedWelcome />}
+      {/* Hero slot. Onboarding incomplete → the persistent teal guide sits up top and
+          the streak box (if any) rides below it. Complete → the guide is gone and the
+          streak box graduates into the JourneyBoard, which takes the top spot. */}
+      {onboarding && !onboarding.complete && <FeedOnboardingGuide status={onboarding} />}
 
-      <PracticePrompt practices={practicesToLog} />
+      {onboarding?.complete
+        ? <JourneyBoard practices={practicesToLog} streak={streak} pillarBalance={pillarBalance} />
+        : <PracticePrompt practices={practicesToLog} streak={streak} />}
 
       {/* Composer */}
       {composerScopeId && (

@@ -226,142 +226,6 @@ export type Database = {
           },
         ]
       }
-      arc_chains: {
-        Row: {
-          created_at: string
-          description: string
-          icon: string
-          id: string
-          name: string
-          season: number | null
-          slug: string
-          sort_order: number
-          zaps_reward: number
-        }
-        Insert: {
-          created_at?: string
-          description: string
-          icon?: string
-          id?: string
-          name: string
-          season?: number | null
-          slug: string
-          sort_order?: number
-          zaps_reward?: number
-        }
-        Update: {
-          created_at?: string
-          description?: string
-          icon?: string
-          id?: string
-          name?: string
-          season?: number | null
-          slug?: string
-          sort_order?: number
-          zaps_reward?: number
-        }
-        Relationships: []
-      }
-      arc_progress: {
-        Row: {
-          chain_id: string
-          completed_at: string | null
-          current_step: number
-          id: string
-          profile_id: string
-          started_at: string
-          step_progress: number
-        }
-        Insert: {
-          chain_id: string
-          completed_at?: string | null
-          current_step?: number
-          id?: string
-          profile_id: string
-          started_at?: string
-          step_progress?: number
-        }
-        Update: {
-          chain_id?: string
-          completed_at?: string | null
-          current_step?: number
-          id?: string
-          profile_id?: string
-          started_at?: string
-          step_progress?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "quest_progress_chain_id_fkey"
-            columns: ["chain_id"]
-            isOneToOne: false
-            referencedRelation: "arc_chains"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "quest_progress_chain_id_fkey"
-            columns: ["chain_id"]
-            isOneToOne: false
-            referencedRelation: "quest_chains"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "quest_progress_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      arc_steps: {
-        Row: {
-          chain_id: string
-          criteria: Json
-          description: string
-          id: string
-          name: string
-          step_order: number
-          target: number
-          zaps_reward: number
-        }
-        Insert: {
-          chain_id: string
-          criteria?: Json
-          description: string
-          id?: string
-          name: string
-          step_order: number
-          target?: number
-          zaps_reward?: number
-        }
-        Update: {
-          chain_id?: string
-          criteria?: Json
-          description?: string
-          id?: string
-          name?: string
-          step_order?: number
-          target?: number
-          zaps_reward?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "quest_steps_chain_id_fkey"
-            columns: ["chain_id"]
-            isOneToOne: false
-            referencedRelation: "arc_chains"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "quest_steps_chain_id_fkey"
-            columns: ["chain_id"]
-            isOneToOne: false
-            referencedRelation: "quest_chains"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       area_permissions: {
         Row: {
           area_key: string
@@ -743,6 +607,39 @@ export type Database = {
             columns: ["set_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      circle_topics: {
+        Row: {
+          circle_id: string
+          created_at: string
+          topical_channel_id: string
+        }
+        Insert: {
+          circle_id: string
+          created_at?: string
+          topical_channel_id: string
+        }
+        Update: {
+          circle_id?: string
+          created_at?: string
+          topical_channel_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "circle_topics_circle_id_fkey"
+            columns: ["circle_id"]
+            isOneToOne: false
+            referencedRelation: "circles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "circle_topics_topical_channel_id_fkey"
+            columns: ["topical_channel_id"]
+            isOneToOne: false
+            referencedRelation: "topical_channels"
             referencedColumns: ["id"]
           },
         ]
@@ -1297,6 +1194,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      domains: {
+        Row: {
+          accent: string | null
+          cover_image: string | null
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          is_active: boolean
+          name: string
+          slug: string
+        }
+        Insert: {
+          accent?: string | null
+          cover_image?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          slug: string
+        }
+        Update: {
+          accent?: string | null
+          cover_image?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          slug?: string
+        }
+        Relationships: []
       }
       email_events: {
         Row: {
@@ -2629,6 +2562,7 @@ export type Database = {
           comment_count: number
           created_at: string | null
           engagement_score: number
+          featured_at: string | null
           hidden_at: string | null
           hidden_by: string | null
           id: string
@@ -2649,6 +2583,7 @@ export type Database = {
           comment_count?: number
           created_at?: string | null
           engagement_score?: number
+          featured_at?: string | null
           hidden_at?: string | null
           hidden_by?: string | null
           id?: string
@@ -2669,6 +2604,7 @@ export type Database = {
           comment_count?: number
           created_at?: string | null
           engagement_score?: number
+          featured_at?: string | null
           hidden_at?: string | null
           hidden_by?: string | null
           id?: string
@@ -2758,30 +2694,57 @@ export type Database = {
       }
       practices: {
         Row: {
+          body: string | null
+          cadence: string | null
+          category: string | null
           created_at: string
           created_by: string | null
           description: string | null
+          domain_id: string | null
+          header_image: string | null
+          icon: string
           id: string
           is_demo: boolean
           is_public: boolean
+          reward_note: string | null
+          reward_zaps: number | null
+          summary: string | null
           title: string
         }
         Insert: {
+          body?: string | null
+          cadence?: string | null
+          category?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
+          domain_id?: string | null
+          header_image?: string | null
+          icon?: string
           id?: string
           is_demo?: boolean
           is_public?: boolean
+          reward_note?: string | null
+          reward_zaps?: number | null
+          summary?: string | null
           title: string
         }
         Update: {
+          body?: string | null
+          cadence?: string | null
+          category?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
+          domain_id?: string | null
+          header_image?: string | null
+          icon?: string
           id?: string
           is_demo?: boolean
           is_public?: boolean
+          reward_note?: string | null
+          reward_zaps?: number | null
+          summary?: string | null
           title?: string
         }
         Relationships: [
@@ -2792,6 +2755,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "practices_domain_id_fkey"
+            columns: ["domain_id"]
+            isOneToOne: false
+            referencedRelation: "domains"
+            referencedColumns: ["id"]
+          },
         ]
       }
       profiles: {
@@ -2800,6 +2770,7 @@ export type Database = {
           auth_user_id: string | null
           avatar_url: string | null
           bio: string | null
+          city: string | null
           community_role: Database["public"]["Enums"]["community_role"] | null
           created_at: string | null
           current_season_gems: number
@@ -2822,6 +2793,7 @@ export type Database = {
           longest_streak: number
           meta: Json | null
           nexus_region_id: string | null
+          phone: string | null
           profile_border: string | null
           profile_flair: string | null
           profile_theme: string | null
@@ -2838,6 +2810,7 @@ export type Database = {
           auth_user_id?: string | null
           avatar_url?: string | null
           bio?: string | null
+          city?: string | null
           community_role?: Database["public"]["Enums"]["community_role"] | null
           created_at?: string | null
           current_season_gems?: number
@@ -2860,6 +2833,7 @@ export type Database = {
           longest_streak?: number
           meta?: Json | null
           nexus_region_id?: string | null
+          phone?: string | null
           profile_border?: string | null
           profile_flair?: string | null
           profile_theme?: string | null
@@ -2876,6 +2850,7 @@ export type Database = {
           auth_user_id?: string | null
           avatar_url?: string | null
           bio?: string | null
+          city?: string | null
           community_role?: Database["public"]["Enums"]["community_role"] | null
           created_at?: string | null
           current_season_gems?: number
@@ -2898,6 +2873,7 @@ export type Database = {
           longest_streak?: number
           meta?: Json | null
           nexus_region_id?: string | null
+          phone?: string | null
           profile_border?: string | null
           profile_flair?: string | null
           profile_theme?: string | null
@@ -2963,6 +2939,128 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quest_chains: {
+        Row: {
+          created_at: string
+          description: string
+          icon: string
+          id: string
+          name: string
+          season: number | null
+          slug: string
+          sort_order: number
+          zaps_reward: number
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          icon?: string
+          id?: string
+          name: string
+          season?: number | null
+          slug: string
+          sort_order?: number
+          zaps_reward?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          icon?: string
+          id?: string
+          name?: string
+          season?: number | null
+          slug?: string
+          sort_order?: number
+          zaps_reward?: number
+        }
+        Relationships: []
+      }
+      quest_progress: {
+        Row: {
+          chain_id: string
+          completed_at: string | null
+          current_step: number
+          id: string
+          profile_id: string
+          started_at: string
+          step_progress: number
+        }
+        Insert: {
+          chain_id: string
+          completed_at?: string | null
+          current_step?: number
+          id?: string
+          profile_id: string
+          started_at?: string
+          step_progress?: number
+        }
+        Update: {
+          chain_id?: string
+          completed_at?: string | null
+          current_step?: number
+          id?: string
+          profile_id?: string
+          started_at?: string
+          step_progress?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quest_progress_chain_id_fkey"
+            columns: ["chain_id"]
+            isOneToOne: false
+            referencedRelation: "quest_chains"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quest_progress_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quest_steps: {
+        Row: {
+          chain_id: string
+          criteria: Json
+          description: string
+          id: string
+          name: string
+          step_order: number
+          target: number
+          zaps_reward: number
+        }
+        Insert: {
+          chain_id: string
+          criteria?: Json
+          description: string
+          id?: string
+          name: string
+          step_order: number
+          target?: number
+          zaps_reward?: number
+        }
+        Update: {
+          chain_id?: string
+          criteria?: Json
+          description?: string
+          id?: string
+          name?: string
+          step_order?: number
+          target?: number
+          zaps_reward?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quest_steps_chain_id_fkey"
+            columns: ["chain_id"]
+            isOneToOne: false
+            referencedRelation: "quest_chains"
             referencedColumns: ["id"]
           },
         ]
@@ -3546,6 +3644,7 @@ export type Database = {
           created_at: string
           description: string | null
           display_order: number
+          domain_id: string | null
           id: string
           is_active: boolean
           name: string
@@ -3557,6 +3656,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           display_order?: number
+          domain_id?: string | null
           id?: string
           is_active?: boolean
           name: string
@@ -3568,12 +3668,21 @@ export type Database = {
           created_at?: string
           description?: string | null
           display_order?: number
+          domain_id?: string | null
           id?: string
           is_active?: boolean
           name?: string
           slug?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "topical_channels_domain_id_fkey"
+            columns: ["domain_id"]
+            isOneToOne: false
+            referencedRelation: "domains"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_achievements: {
         Row: {
@@ -3713,142 +3822,6 @@ export type Database = {
           type?: string | null
         }
         Relationships: []
-      }
-      quest_chains: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          icon: string | null
-          id: string | null
-          name: string | null
-          season: number | null
-          slug: string | null
-          sort_order: number | null
-          zaps_reward: number | null
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          icon?: string | null
-          id?: string | null
-          name?: string | null
-          season?: number | null
-          slug?: string | null
-          sort_order?: number | null
-          zaps_reward?: number | null
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          icon?: string | null
-          id?: string | null
-          name?: string | null
-          season?: number | null
-          slug?: string | null
-          sort_order?: number | null
-          zaps_reward?: number | null
-        }
-        Relationships: []
-      }
-      quest_progress: {
-        Row: {
-          chain_id: string | null
-          completed_at: string | null
-          current_step: number | null
-          id: string | null
-          profile_id: string | null
-          started_at: string | null
-          step_progress: number | null
-        }
-        Insert: {
-          chain_id?: string | null
-          completed_at?: string | null
-          current_step?: number | null
-          id?: string | null
-          profile_id?: string | null
-          started_at?: string | null
-          step_progress?: number | null
-        }
-        Update: {
-          chain_id?: string | null
-          completed_at?: string | null
-          current_step?: number | null
-          id?: string | null
-          profile_id?: string | null
-          started_at?: string | null
-          step_progress?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "quest_progress_chain_id_fkey"
-            columns: ["chain_id"]
-            isOneToOne: false
-            referencedRelation: "arc_chains"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "quest_progress_chain_id_fkey"
-            columns: ["chain_id"]
-            isOneToOne: false
-            referencedRelation: "quest_chains"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "quest_progress_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      quest_steps: {
-        Row: {
-          chain_id: string | null
-          criteria: Json | null
-          description: string | null
-          id: string | null
-          name: string | null
-          step_order: number | null
-          target: number | null
-          zaps_reward: number | null
-        }
-        Insert: {
-          chain_id?: string | null
-          criteria?: Json | null
-          description?: string | null
-          id?: string | null
-          name?: string | null
-          step_order?: number | null
-          target?: number | null
-          zaps_reward?: number | null
-        }
-        Update: {
-          chain_id?: string | null
-          criteria?: Json | null
-          description?: string | null
-          id?: string | null
-          name?: string | null
-          step_order?: number | null
-          target?: number | null
-          zaps_reward?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "quest_steps_chain_id_fkey"
-            columns: ["chain_id"]
-            isOneToOne: false
-            referencedRelation: "arc_chains"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "quest_steps_chain_id_fkey"
-            columns: ["chain_id"]
-            isOneToOne: false
-            referencedRelation: "quest_chains"
-            referencedColumns: ["id"]
-          },
-        ]
       }
     }
     Functions: {
@@ -4229,6 +4202,60 @@ export type Database = {
           id: string
         }[]
       }
+      mkt_content_performance: {
+        Args: { _days?: number; _limit?: number }
+        Returns: {
+          author: string
+          comments: number
+          created_at: string
+          engagement_score: number
+          excerpt: string
+          post_id: string
+          reactions: number
+        }[]
+      }
+      mkt_geo: {
+        Args: never
+        Returns: {
+          circles: number
+          city: string
+          members: number
+        }[]
+      }
+      mkt_growth: {
+        Args: { _days?: number }
+        Returns: {
+          new_circles: number
+          new_events: number
+          new_members: number
+          week: string
+        }[]
+      }
+      mkt_interest_demand: {
+        Args: never
+        Returns: {
+          circles: number
+          domain: string
+          interest: string
+          interest_slug: string
+          members: number
+          tune_ins: number
+        }[]
+      }
+      mkt_leader_activity: {
+        Args: never
+        Returns: {
+          circles: number
+          last_event: string
+          last_post: string
+          leader: string
+          lifetime_gems: number
+          members: number
+          profile_id: string
+          role: string
+          season_zaps: number
+        }[]
+      }
       my_friendships: {
         Args: never
         Returns: {
@@ -4360,6 +4387,19 @@ export type Database = {
           slug: string
           starts_at: string
           title: string
+        }[]
+      }
+      public_featured_posts: {
+        Args: { _limit?: number }
+        Returns: {
+          author_avatar_url: string
+          author_display_name: string
+          author_handle: string
+          body: string
+          created_at: string
+          featured_at: string
+          id: string
+          media_urls: string[]
         }[]
       }
       public_member_count: { Args: never; Returns: number }

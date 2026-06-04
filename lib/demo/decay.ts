@@ -1,4 +1,4 @@
-// Demo decay — the "naturally disappears" engine (ADR-081, Phase 3).
+// Demo decay — the "naturally disappears" engine (ADR-091, Phase 3).
 //
 // As real content grows in an area, demo content recedes then purges itself, so
 // scaffolding never outlives its purpose and nobody has to clean up by hand.

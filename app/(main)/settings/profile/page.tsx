@@ -11,7 +11,7 @@ export default async function ProfileSettingsPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('display_name, handle, bio, avatar_url')
+    .select('display_name, handle, bio, avatar_url, phone, city, website')
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
@@ -24,7 +24,7 @@ export default async function ProfileSettingsPage() {
       </Link>
       <h1 className="text-2xl font-bold text-text mb-1">Edit Profile</h1>
       <p className="text-sm text-muted mb-8">
-        Update your display name, handle, bio, and photo.
+        Update your display name, handle, photo, and personal contact info.
       </p>
       <ProfileForm
         userId={user.id}
@@ -33,6 +33,10 @@ export default async function ProfileSettingsPage() {
           handle:      profile.handle ?? '',
           bio:         profile.bio ?? '',
           avatarUrl:   profile.avatar_url ?? '',
+          email:       user.email ?? '',
+          phone:       profile.phone ?? '',
+          city:        profile.city ?? '',
+          website:     profile.website ?? '',
         }}
       />
     </div>
