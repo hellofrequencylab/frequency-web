@@ -759,19 +759,16 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
           </div>
         </div>
 
-        {/* An unobtrusive way out — never trap anyone in the induction. */}
-        <p className="mt-5 shrink-0 text-center text-sm text-subtle">
-          <Link href="/" className="font-medium text-muted underline-offset-4 transition-colors hover:text-text hover:underline">
+        {/* A quiet way out on every step — never trap anyone, but keep focus on
+            the onboarding (small + low-contrast). */}
+        <p className="mt-6 shrink-0 text-center text-xs text-subtle/70">
+          <Link href="/" className="underline-offset-4 transition-colors hover:text-muted hover:underline">
             Home
           </Link>
-          {deferred && (
-            <>
-              <span className="px-2 text-border-strong" aria-hidden>|</span>
-              <Link href="/sign-in" className="font-medium text-muted underline-offset-4 transition-colors hover:text-text hover:underline">
-                Log into account
-              </Link>
-            </>
-          )}
+          <span className="px-1.5 text-border" aria-hidden>|</span>
+          <Link href="/sign-in" className="underline-offset-4 transition-colors hover:text-muted hover:underline">
+            Log in to account
+          </Link>
         </p>
       </div>
     </main>

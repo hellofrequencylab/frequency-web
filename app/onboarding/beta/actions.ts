@@ -196,11 +196,7 @@ export async function stashPendingInduction(data: Omit<InductionData, 'avatarUrl
   })
 }
 
-/**
- * Has the signed-in caller already completed onboarding? Used to protect an
- * existing account from being overwritten by induction answers a signed-out
- * visitor just typed before signing in with that account's email/Google.
- */
+/** Has the signed-in caller already completed onboarding? Decides write vs merge. */
 async function callerAlreadyOnboarded(): Promise<boolean> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -213,35 +209,101 @@ async function callerAlreadyOnboarded(): Promise<boolean> {
   return !!(data?.meta as { onboarding_completed?: boolean } | null)?.onboarding_completed
 }
 
+/** Union two comma-separated lists: existing order kept, new ones appended,
+ *  case-insensitive dedupe. Used to merge interests without losing any. */
+function mergeCsv(existing: string, incoming: string): string {
+  const out: string[] = []
+  const seen = new Set<string>()
+  for (const part of `${existing},${incoming}`.split(',')) {
+    const v = part.trim()
+    if (!v) continue
+    const key = v.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(v)
+  }
+  return out.slice(0, 20).join(', ')
+}
+
 /**
- * Pre-flight for the deferred /complete page, BEFORE any avatar upload or write.
- * If the now-signed-in account already onboarded, discard the pending answers so
- * nothing overwrites their existing profile.
+ * Returning member re-ran the beta intake: intelligently MERGE whatever new info
+ * they entered into their existing profile. New non-empty values win; a blank
+ * field never wipes existing data; interests are unioned; handle is left untouched
+ * (unique identity). Never deletes good info.
  */
-export async function pendingInductionGuard(): Promise<{ hasPending: boolean; alreadyOnboarded: boolean }> {
-  const store = await cookies()
-  const hasPending = !!store.get(PENDING_INDUCTION_COOKIE)?.value
-  const alreadyOnboarded = await callerAlreadyOnboarded()
-  if (hasPending && alreadyOnboarded) store.delete(PENDING_INDUCTION_COOKIE)
-  return { hasPending, alreadyOnboarded }
+async function mergeBetaInduction(data: InductionData): Promise<void> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Unauthorized')
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id, meta')
+    .eq('auth_user_id', user.id)
+    .maybeSingle()
+  if (!profile) return
+
+  const meta = (profile.meta as Meta) ?? {}
+  const beta = (meta.beta as Meta) ?? {}
+
+  const clean = sanitizeProfileInput(data)
+  const newDisplayName = clean.displayName?.trim()
+  const newBio = clean.bio?.trim()
+  const newAvatar = clean.avatarUrl?.trim()
+  const newIntent = data.intent.trim().slice(0, 500)
+  const newInterests = data.interests.trim().slice(0, 200)
+  const newHeardAbout = data.heardAbout.trim().slice(0, 120)
+  const newLocation = data.location.trim().slice(0, 160)
+  const mergedInterests = mergeCsv(typeof beta.interests === 'string' ? beta.interests : '', newInterests)
+
+  const mergedMeta: Meta = {
+    ...meta,
+    onboarding_completed: true,
+    beta: {
+      ...beta,
+      version: BETA_INDUCTION_VERSION,
+      intent: newIntent || (beta.intent ?? null),
+      interests: mergedInterests || (beta.interests ?? null),
+      heard_about: newHeardAbout || (beta.heard_about ?? null),
+      location: newLocation
+        ? { label: newLocation, lat: data.lat, lng: data.lng }
+        : (beta.location ?? null),
+      merged_at: new Date().toISOString(),
+    },
+  }
+
+  // Only set top-level fields when the new value is non-empty (never blank out
+  // existing data). Handle is identity + unique, so it is never changed on a merge.
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      ...(newDisplayName ? { display_name: newDisplayName } : {}),
+      ...(newBio ? { bio: newBio } : {}),
+      ...(newAvatar ? { avatar_url: newAvatar } : {}),
+      meta: mergedMeta,
+    })
+    .eq('auth_user_id', user.id)
+  if (error) throw new Error(error.message)
+
+  // Fold the merged interests/intent/place into Vera's memory (best-effort).
+  const interestList = mergedInterests.split(',').map((s) => s.trim()).filter(Boolean).slice(0, 10)
+  await rememberFacts(profile.id as string, {
+    interests: interestList,
+    goals: newIntent ? [newIntent] : [],
+    neighborhood: newLocation || null,
+  }).catch(() => {})
 }
 
 /**
  * Deferred path, step 2 (now authed, at /onboarding/beta/complete): read the
- * parked answers, fold in the uploaded avatar URL, write the profile, and clear
- * the cookie. Returns ok so the client can navigate AFTER the avatar upload.
+ * parked answers + uploaded avatar. A brand-new account is written in full; a
+ * returning member's answers are MERGED into their existing profile (new info
+ * harvested, blanks ignored). Then clear the cookie.
  */
-export async function finalizePendingInduction(avatarUrl: string | null): Promise<{ ok: boolean; error?: string; alreadyOnboarded?: boolean }> {
+export async function finalizePendingInduction(avatarUrl: string | null): Promise<{ ok: boolean; error?: string; merged?: boolean }> {
   const store = await cookies()
   const raw = store.get(PENDING_INDUCTION_COOKIE)?.value
   if (!raw) return { ok: false, error: 'No pending induction.' }
-
-  // Never overwrite an account that already completed onboarding (defense in
-  // depth — the /complete page also checks via pendingInductionGuard first).
-  if (await callerAlreadyOnboarded()) {
-    store.delete(PENDING_INDUCTION_COOKIE)
-    return { ok: true, alreadyOnboarded: true }
-  }
 
   let data: InductionData
   try {
@@ -251,8 +313,15 @@ export async function finalizePendingInduction(avatarUrl: string | null): Promis
     return { ok: false, error: 'Could not read your answers.' }
   }
 
+  const payload: InductionData = { ...data, avatarUrl: avatarUrl ?? '' }
+
   try {
-    await writeBetaInduction({ ...data, avatarUrl: avatarUrl ?? '' })
+    if (await callerAlreadyOnboarded()) {
+      await mergeBetaInduction(payload)
+      store.delete(PENDING_INDUCTION_COOKIE)
+      return { ok: true, merged: true }
+    }
+    await writeBetaInduction(payload)
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Something went wrong.' }
   }
