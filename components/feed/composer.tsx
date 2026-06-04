@@ -202,7 +202,7 @@ export function Composer({
   }, [suggestions.length])
 
   return (
-    <div className="rounded-xl border border-border bg-surface p-4 mb-4 relative">
+    <div className="rounded-xl border border-border bg-surface p-4 mb-4 relative transition-colors focus-within:border-border-strong">
       <textarea
         ref={textareaRef}
         value={body}
@@ -211,7 +211,7 @@ export function Composer({
         placeholder={placeholder}
         rows={3}
         disabled={isPending}
-        className="w-full resize-none bg-transparent text-sm text-text placeholder-subtle outline-none leading-relaxed disabled:opacity-60"
+        className="w-full resize-none bg-transparent text-sm text-text placeholder-subtle outline-none focus-visible:shadow-none leading-relaxed disabled:opacity-60"
       />
 
       {/* Image preview */}

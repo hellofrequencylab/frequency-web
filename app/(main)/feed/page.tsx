@@ -29,11 +29,12 @@ export default async function FeedPage({
   let primaryCircleId: string | null = null
   let canAnnounce = false
   let firstName: string | null = null
+  let streak = 0
 
   if (user) {
     const { data: profile } = await admin
       .from('profiles')
-      .select('id, community_role, display_name')
+      .select('id, community_role, display_name, current_streak')
       .eq('auth_user_id', user.id)
       .maybeSingle()
 
@@ -41,6 +42,7 @@ export default async function FeedPage({
       myProfileId = profile.id
       myRole = (profile.community_role ?? 'member') as CommunityRole
       firstName = (profile.display_name ?? '').trim().split(/\s+/)[0] || null
+      streak = (profile.current_streak as number | null) ?? 0
       canAnnounce = ['host', 'guide', 'mentor', 'janitor'].includes(myRole)
 
       const { data: membership } = await admin
@@ -64,13 +66,17 @@ export default async function FeedPage({
   const practicesToLog = myProfileId ? await getPracticesToLogToday(myProfileId) : []
 
   // Warm, time-aware greeting headline (the feed is "home", so it greets you).
-  const hour = new Date().getHours()
+  // Greet in the community's timezone (the beta is North County San Diego) so the
+  // server's UTC clock doesn't roll the date + greeting forward late at night.
+  const tz = 'America/Los_Angeles'
+  const hour = Number(new Date().toLocaleString('en-US', { timeZone: tz, hour: '2-digit', hour12: false }))
   const partOfDay = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
   const greeting = firstName ? `${partOfDay}, ${firstName}` : partOfDay
   const today = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
     month: 'long',
     day: 'numeric',
+    timeZone: tz,
   })
 
   return (
@@ -86,7 +92,7 @@ export default async function FeedPage({
           (also the fallback for anyone who skipped Vera at onboarding). */}
       {myProfileId && !hasCircle && <FeedWelcome />}
 
-      <PracticePrompt practices={practicesToLog} />
+      <PracticePrompt practices={practicesToLog} streak={streak} />
 
       {/* Composer */}
       {composerScopeId && (
