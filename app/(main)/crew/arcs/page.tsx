@@ -51,10 +51,10 @@ export default async function ArcsPage() {
         <div className="flex items-center gap-3">
           <Link href="/crew" className="text-sm text-subtle hover:text-muted dark:hover:text-subtle transition-colors">Crew</Link>
           <span className="text-subtle">/</span>
-          <h1 className="text-2xl font-bold text-text">Arcs</h1>
+          <h1 className="text-2xl font-bold text-text">Journeys</h1>
         </div>
         <p className="text-sm text-muted mt-1">
-          Multi-step journeys that tell a story. Complete each step in order to earn bonus zaps.
+          Guided, multi-step journeys that tell a story. Complete each step in order to earn bonus zaps.
         </p>
       </div>
 

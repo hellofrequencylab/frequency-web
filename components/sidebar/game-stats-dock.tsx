@@ -128,7 +128,7 @@ export function GameStatsDockClient({ data }: { data: DockData }) {
             {arc && (
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <SectionLabel>Arc</SectionLabel>
+                  <SectionLabel>Journey</SectionLabel>
                   <Link href="/crew/arcs" className="text-[11px] font-semibold text-primary-strong hover:text-primary-hover">View →</Link>
                 </div>
                 <div className="rounded-xl bg-surface-elevated px-3 py-2.5">
