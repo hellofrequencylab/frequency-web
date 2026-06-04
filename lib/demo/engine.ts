@@ -136,12 +136,6 @@ const CH: Record<string, Channel> = {
 const DAYS = ['Saturday','Sunday','Tuesday','Thursday','this weekend','Friday']
 const TIMES = ['the golden','first','early','dusk','morning']
 
-// ── Aliveness → shape ────────────────────────────────────────────────────────
-const ALIVE: Record<string, { circles: [number, number]; size: [number, number]; postsPer: number }> = {
-  sprouting: { circles: [2, 3], size: [6, 10], postsPer: 0.6 },
-  growing:   { circles: [4, 6], size: [10, 16], postsPer: 0.8 },
-  thriving:  { circles: [8, 12], size: [16, 24], postsPer: 1.0 },
-}
 // Rank bands (ghost -> luminary) — economy values per rank.
 const BAND = {
   ghost:     { z: [5, 95],     g: [5, 60],     s: [0, 3],   a: [1, 4] },
@@ -169,7 +163,11 @@ export type AreaSpec = {
   centerLat: number
   centerLng: number
   radiusMi: number
-  aliveness: keyof typeof ALIVE
+  /** Explicit size controls (replace the old aliveness presets). */
+  circles: number
+  membersPerCircle: number
+  /** % of people who also join a 2nd circle (cross-circle connections). */
+  connectednessPct: number
   channels: string[]
   flavorWords: string[]
   aiPolish: boolean
@@ -188,7 +186,12 @@ export type CirclePlan = {
   posts: { authorKey: string; body: string; ageMin: number; replies: { authorKey: string; body: string }[] }[]
   event: { title: string; daysOut: number }
 }
-export type AreaPlan = { spec: AreaSpec; circles: CirclePlan[]; totals: Record<string, number> }
+export type AreaPlan = {
+  spec: AreaSpec
+  circles: CirclePlan[]
+  crossLinks: { personKey: string; circleKey: string }[]
+  totals: Record<string, number>
+}
 
 function tenureForRank(r: Rand, rank: Rank): number {
   const map: Record<Rank, [number, number]> = {
@@ -199,15 +202,14 @@ function tenureForRank(r: Rand, rank: Rank): number {
 }
 
 export function buildPlan(spec: AreaSpec): AreaPlan {
-  const r = rng(spec.seed ?? `${spec.areaName}:${spec.aliveness}:${spec.channels.join(',')}`)
-  const shape = ALIVE[spec.aliveness]
-  const nCircles = int(r, ...shape.circles)
+  const r = rng(spec.seed ?? `${spec.areaName}:${spec.circles}x${spec.membersPerCircle}:${spec.channels.join(',')}`)
+  const nCircles = Math.max(1, Math.min(30, Math.round(spec.circles)))
   const channels = spec.channels.length ? spec.channels : ['movement', 'holistic-health', 'creative']
   const usedHandles = new Set<string>()
   const flavor = spec.flavorWords.filter(Boolean)
 
   const circles: CirclePlan[] = []
-  const totals = { circles: 0, people: 0, posts: 0, replies: 0, events: 0 }
+  const totals = { circles: 0, people: 0, posts: 0, replies: 0, events: 0, connections: 0 }
 
   for (let c = 0; c < nCircles; c++) {
     const chSlug = channels[c % channels.length]
@@ -216,7 +218,7 @@ export function buildPlan(spec: AreaSpec): AreaPlan {
     const activity = pick(r, ch.activities)
     const name = `${place} ${ch.label}`.slice(0, 60)
     const slug = `${name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}-${int(r, 100, 999)}`
-    const size = int(r, ...shape.size)
+    const size = Math.max(3, Math.round(spec.membersPerCircle + (r() - 0.5) * 4))
     const ranks = rosterRanks(r, size)
     // scatter circle within radius (~1 mi ≈ 0.0145 deg lat)
     const degRad = (spec.radiusMi * 0.0145)
@@ -241,7 +243,7 @@ export function buildPlan(spec: AreaSpec): AreaPlan {
 
     // posts: stage-appropriate, timestamped across tenure; ~postsPer * size
     const posts: CirclePlan['posts'] = []
-    const nPosts = Math.max(3, Math.round(size * shape.postsPer))
+    const nPosts = Math.max(3, Math.round(size * 0.9))
     for (let p = 0; p < nPosts; p++) {
       const author = people[int(r, 0, people.length - 1)]
       const poolByStage =
@@ -269,7 +271,24 @@ export function buildPlan(spec: AreaSpec): AreaPlan {
     totals.circles++; totals.people += people.length; totals.posts += posts.length; totals.events++
   }
 
-  return { spec, circles, totals }
+  // Connections: a slice of people also join a 2nd circle (cross-circle ties).
+  const allPeople = circles.flatMap((c) => c.people.map((p) => ({ key: p.key, circleKey: c.key })))
+  const nCross = circles.length > 1 ? Math.round((allPeople.length * spec.connectednessPct) / 100) : 0
+  const crossLinks: { personKey: string; circleKey: string }[] = []
+  const crossSeen = new Set<string>()
+  let guard = 0
+  while (crossLinks.length < nCross && guard++ < nCross * 8 + 20) {
+    const person = allPeople[int(r, 0, allPeople.length - 1)]
+    const circle = circles[int(r, 0, circles.length - 1)]
+    if (circle.key === person.circleKey) continue
+    const k = `${person.key}|${circle.key}`
+    if (crossSeen.has(k)) continue
+    crossSeen.add(k)
+    crossLinks.push({ personKey: person.key, circleKey: circle.key })
+  }
+  totals.connections = crossLinks.length
+
+  return { spec, circles, crossLinks, totals }
 }
 
 // A tiny slice for the wizard's preview step (no DB writes).
@@ -307,7 +326,10 @@ async function regionId(d: SupabaseClient): Promise<string | null> {
 export async function commitPlan(plan: AreaPlan): Promise<Record<string, number>> {
   const d = db()
   const region = await regionId(d)
-  const done = { circles: 0, members: 0, posts: 0, events: 0 }
+  const done = { circles: 0, members: 0, posts: 0, events: 0, connections: 0 }
+  // Global key -> id maps so cross-circle links resolve after all circles exist.
+  const profileIdByKey: Record<string, string> = {}
+  const circleIdByKey: Record<string, string> = {}
 
   for (const c of plan.circles) {
     const chId = await channelId(d, c.channel)
@@ -320,9 +342,9 @@ export async function commitPlan(plan: AreaPlan): Promise<Record<string, number>
     if (!circ) continue
     const circleId = (circ as { id: string }).id
     done.circles++
+    circleIdByKey[c.key] = circleId
 
-    // people + memberships, capture ids by key
-    const idByKey: Record<string, string> = {}
+    // people + memberships, capture ids by key (global, for cross-links)
     let hostId: string | null = null
     for (const p of c.people) {
       const { data: prof } = await d.from('profiles').insert({
@@ -337,7 +359,7 @@ export async function commitPlan(plan: AreaPlan): Promise<Record<string, number>
       }).select('id').single()
       if (!prof) continue
       const pid = (prof as { id: string }).id
-      idByKey[p.key] = pid
+      profileIdByKey[p.key] = pid
       if (p.role === 'host') hostId = pid
       await d.from('memberships').insert({
         profile_id: pid, circle_id: circleId, status: 'active',
@@ -348,7 +370,7 @@ export async function commitPlan(plan: AreaPlan): Promise<Record<string, number>
 
     // posts + replies
     for (const post of c.posts) {
-      const authorId = idByKey[post.authorKey]
+      const authorId = profileIdByKey[post.authorKey]
       if (!authorId) continue
       const { data: pp } = await d.from('posts').insert({
         author_id: authorId, scope_id: circleId, visibility: 'group', body: post.body,
@@ -357,7 +379,7 @@ export async function commitPlan(plan: AreaPlan): Promise<Record<string, number>
       done.posts++
       const parentId = (pp as { id: string } | null)?.id
       for (const rep of post.replies) {
-        const rid = idByKey[rep.authorKey]
+        const rid = profileIdByKey[rep.authorKey]
         if (!rid || !parentId) continue
         await d.from('posts').insert({
           author_id: rid, parent_id: parentId, scope_id: circleId, visibility: 'group',
@@ -378,5 +400,17 @@ export async function commitPlan(plan: AreaPlan): Promise<Record<string, number>
       done.events++
     }
   }
+
+  // Cross-circle connections: a slice of people also join a 2nd circle.
+  for (const link of plan.crossLinks) {
+    const pid = profileIdByKey[link.personKey]
+    const cid = circleIdByKey[link.circleKey]
+    if (!pid || !cid) continue
+    const { error } = await d
+      .from('memberships')
+      .insert({ profile_id: pid, circle_id: cid, status: 'active', volunteer_role: null })
+    if (!error) done.connections++
+  }
+
   return done
 }
