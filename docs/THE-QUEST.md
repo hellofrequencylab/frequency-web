@@ -12,8 +12,8 @@ game ("The Quest") and the existing multi-step feature (`quest_chains`).
 | **Zaps** ⚡ | In-person / external currency. Season XP that drives ranks. Resets each season. | `lib/zaps.ts`, `current_season_zaps`, `lifetime_zaps` |
 | **Gems** 💎 | On-platform currency. The spendable one (store, merch). Durable. | `lib/gems.ts`, `gem_transactions`, `store_*` |
 | **Season Ranks** | ghost → runner → operative → agent → conduit → luminary | `current_season_rank` |
-| **Arcs** | Multi-step seasonal journeys a member chooses. Was "quests". | `quest_chains` → `arc_*` (migration pending) |
-| **Steps** | The stages within an Arc (each ~a weekly action). | `quest_steps` |
+| **Arcs** | Multi-step seasonal journeys a member chooses. Was "quests". | `arc_chains` (renamed from `quest_chains`) |
+| **Steps** | The stages within an Arc (each ~a weekly action). | `arc_steps` |
 | **Challenges** | Community-wide seasonal goals (everyone wins together). | `season_challenges`, `challenge_progress` |
 | **Achievements** | Permanent unlock badges. | `achievements`, `user_achievements` |
 | **Streaks** | Daily/weekly consistency (the "daily minimum"). | `streaks` |
@@ -27,26 +27,26 @@ Arc.** No player-facing surface calls an Arc a "quest." Internal table names are
 being migrated from `quest_*` to `arc_*` but are invisible to members, so the
 visible collision is already gone once UI strings + routes are renamed.
 
-## Migration checklist (quest_* → arc_*) — run in dev, with type regen + tests
+## Migration status (quest_* → arc_*) — DONE 2026-06-04 (ADR-079)
 
-Do this as a deliberate refactor, not a blind edit, because it touches a migration
-and generated types.
+✅ Shipped:
+1. Migration `20260604000000_rename_quests_to_arcs.sql`: tables renamed
+   `quest_chains/steps/progress` → `arc_chains/steps/progress` (constraints, RLS,
+   FKs, indexes follow). The `quest_outcomes()` RPC was recreated against the new
+   tables. **`security_invoker` compatibility views** named `quest_*` were left in
+   place for one release so the always-loaded stats dock kept working across deploy.
+2. `lib/database.types.ts` regenerated.
+3. Symbols renamed: `QuestChain/QuestStep/QuestProgress` → `ArcChain/ArcStep/ArcProgress`;
+   `isQuestStepRelevant` → `isArcStepRelevant`; the dock `quest` field → `arc`.
+4. Route `app/(main)/crew/quests/` → `app/(main)/crew/arcs/`, with a redirect stub at
+   the old path; nav + links updated.
+5. UI strings "Quest"/"Quests" (the multi-step feature) → "Arc"/"Arcs" in the dock,
+   the moved page, and the admin outcomes view.
 
-1. New migration `*_rename_quests_to_arcs.sql`: `ALTER TABLE quest_chains RENAME TO
-   arc_chains;` (same for `quest_steps` → `arc_steps`, `quest_progress` →
-   `arc_progress`); rename FKs/indexes/policies; optionally add temporary updatable
-   **views** named `quest_chains` etc. for one release to avoid a hard cutover.
-2. Regenerate `lib/database.types.ts` (`supabase gen types`).
-3. Rename symbols: `QuestChain` → `ArcChain`, `QuestStep` → `ArcStep`,
-   `quest_complete` event → `arc_complete`, etc. (grep for the exact identifiers
-   from GLOSSARY, not the substring "quest" — it collides with "request").
-4. Route: `app/(main)/crew/quests/` → `app/(main)/crew/arcs/`; add a redirect from
-   `/crew/quests` → `/crew/arcs`; update nav (`lib/nav-areas.ts`) and links.
-5. UI strings: "Quest" / "Quests" → "Arc" / "Arcs" in the moved page + dock +
-   notifications.
-6. Analytics: rename `quest`-keyed outcome events in `lib/analytics/` and
-   `lib/analytics/outcomes.ts` to `arc`; keep a mapping note so historical
-   `engagement_events` rows remain interpretable.
-7. Update `docs/GLOSSARY.md` to drop the "migration pending" note once done.
-
-Until step 1 ships, docs intentionally say "Arc (quest_chains in schema)".
+⏳ Deliberately deferred (invisible to members, so not urgent):
+- **Drop the compat views** `quest_*` in a follow-up migration once the deploy is
+  confirmed stable.
+- **`quest_outcomes()` RPC** kept under its name (internal admin analytics) rather
+  than renamed to `arc_outcomes`.
+- **`quest_complete`** engagement source key kept for historical-data continuity
+  (`engagement_events` rows already use it); renaming needs a data migration + mapping.

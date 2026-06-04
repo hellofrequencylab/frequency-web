@@ -14,6 +14,7 @@ type GemAction =
   | 'event_rsvp'
   | 'circle_join'
   | 'achievement'
+  // 'quest_complete' kept for historical continuity; the feature is now an "Arc" (see THE-QUEST.md).
   | 'quest_complete'
   | 'challenge_complete'
   | 'season_convert'

@@ -82,7 +82,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     blurb: 'Read-only signal on what is working and what is jamming.',
     links: [
       { href: '/admin/engagement', label: 'Engagement', desc: 'Active members and the activation funnel.', Icon: Activity, min: 'janitor' },
-      { href: '/admin/outcomes', label: 'Outcomes', desc: 'Where programs and quests stall.', Icon: Target, min: 'janitor' },
+      { href: '/admin/outcomes', label: 'Outcomes', desc: 'Where programs and Arcs stall.', Icon: Target, min: 'janitor' },
       { href: '/admin/insights', label: 'AI read', desc: 'A narrative of what to do next.', Icon: Sparkles, min: 'janitor' },
       { href: '/admin/segments', label: 'Segments', desc: 'Saved audiences by tag and trait.', Icon: PieChart, min: 'janitor' },
     ],

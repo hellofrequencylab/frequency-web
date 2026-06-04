@@ -1,5 +1,6 @@
 // Program/game outcome analytics (ADR-070 Phase C). Completion + stall points per
-// challenge / quest, plus circle health — "what's working / what isn't." Reads the
+// challenge / Arc (the multi-step feature), plus circle health — "what's working /
+// what isn't." Reads the
 // outcome RPCs (named via their definition tables) + circles directly. Server-only;
 // pure rate math is unit-tested. RPCs/circles cast (repo convention).
 
@@ -50,6 +51,8 @@ export async function getOutcomeReport(): Promise<OutcomeReport> {
   const db = createAdminClient() as unknown as SupabaseClient
   const [chRes, qRes, circlesRes] = await Promise.all([
     db.rpc('challenge_outcomes'),
+    // RPC kept as 'quest_outcomes' — the function still exists under that name;
+    // renaming it to arc_* is a deferred follow-up (see THE-QUEST.md).
     db.rpc('quest_outcomes'),
     db.from('circles').select('name, member_count, member_cap, status, is_demo').eq('is_demo', false),
   ])

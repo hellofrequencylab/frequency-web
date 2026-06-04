@@ -18,7 +18,7 @@ export type DockData = {
   todaysMove: { kind: 'log' | 'adopt' | 'done' }
   last7: boolean[]
   rankProgress: { nextLabel: string | null; toGo: number; pct: number }
-  quest: { chain: string; step: string; pct: number } | null
+  arc: { chain: string; step: string; pct: number } | null
   vaultGems: number
 }
 
@@ -29,7 +29,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 export function GameStatsDockClient({ data }: { data: DockData }) {
-  const { zaps, gems, streak, rank, todaysMove, last7, rankProgress, quest, vaultGems } = data
+  const { zaps, gems, streak, rank, todaysMove, last7, rankProgress, arc, vaultGems } = data
   // Mirrors the left profile dock. The bar is sticky-pinned to the bottom of the
   // shared scroll viewport, so at REST it sits at the same height as the left
   // profile dock (not buried at the end of a tall rail). The panel rises on
@@ -124,21 +124,21 @@ export function GameStatsDockClient({ data }: { data: DockData }) {
               </div>
             </div>
 
-            {/* Current quest */}
-            {quest && (
+            {/* Current arc */}
+            {arc && (
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <SectionLabel>Quest</SectionLabel>
-                  <Link href="/crew/quests" className="text-[11px] font-semibold text-primary-strong hover:text-primary-hover">View →</Link>
+                  <SectionLabel>Arc</SectionLabel>
+                  <Link href="/crew/arcs" className="text-[11px] font-semibold text-primary-strong hover:text-primary-hover">View →</Link>
                 </div>
                 <div className="rounded-xl bg-surface-elevated px-3 py-2.5">
                   <div className="flex items-center gap-1.5">
                     <Target className="w-3.5 h-3.5 text-signal-strong shrink-0" />
-                    <span className="truncate text-xs font-semibold text-text">{quest.chain}</span>
+                    <span className="truncate text-xs font-semibold text-text">{arc.chain}</span>
                   </div>
-                  <p className="mt-0.5 mb-1.5 truncate text-[11px] text-subtle">{quest.step}</p>
+                  <p className="mt-0.5 mb-1.5 truncate text-[11px] text-subtle">{arc.step}</p>
                   <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface">
-                    <div className="h-full rounded-full bg-signal-strong" style={{ width: `${Math.min(100, Math.max(2, quest.pct))}%` }} />
+                    <div className="h-full rounded-full bg-signal-strong" style={{ width: `${Math.min(100, Math.max(2, arc.pct))}%` }} />
                   </div>
                 </div>
               </div>

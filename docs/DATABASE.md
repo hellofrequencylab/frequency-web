@@ -45,9 +45,13 @@ these tables mean.
 
 **Gamification**
 `achievements`, `user_achievements`, `streaks`, `challenge_progress`,
-`quest_chains`, `quest_steps`, `quest_progress`, `season_challenges`,
+`arc_chains`, `arc_steps`, `arc_progress`, `season_challenges`,
 `season_trophies`, `seasons`, `crew_tasks`, `crew_completions`, `gem_config`,
 `gem_transactions`, `zap_config`, `store_items`, `store_redemptions`
+
+> **`arc_chains` / `arc_steps` / `arc_progress`** were renamed from
+> `quest_chains` / `quest_steps` / `quest_progress` (compat `quest_*` views still
+> exist) — the multi-step feature is now an "Arc" (the GAME remains "The Quest").
 
 > **`seasons`** gives seasons a first-class identity (`season_number`, `name`,
 > `theme`, `starts_at`/`ends_at`, `status`; one `active` at a time). `reset_season()`
