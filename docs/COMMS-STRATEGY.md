@@ -49,7 +49,28 @@ each surface gets and *how it's governed* once anyone can post in open Channel r
 | 16 | First build | **Location feed + onboarding** |
 
 ADRs: **ADR-088** (architecture) and **ADR-089** (hierarchy visibility + always-offer-start)
-in `DECISIONS.md`.
+in `DECISIONS.md`. *(Note: concurrent QR/demo sessions double-booked ADR-088/089/090 in
+`DECISIONS.md`; a single coordinated renumber pass is needed — not fixed here to avoid
+churning a file three sessions are editing.)*
+
+## Dialed refinements (owner review, 2026-06-05)
+
+A second pass with the owner refined eight points on top of the locked table:
+
+| # | Area | Refinement |
+|---|---|---|
+| R1 | Feed model | Smart **auto-blend** that niches as you engage, **+ optional `Nearby` / `My Circles` shortcut chips** to override on demand. |
+| R2 | Channels | **Destination + feed-peek:** Channels are their own place (topic feed + open room); *highlights* from tuned-in Channels peek into the main feed, full experience in the Channel. |
+| R3 | Sparse-area liveness | A **cascade** when local is quiet: widen the radius → backfill with Channels → prompt **"Start a Circle"** → seeded/demo activity. |
+| R4 | Rooms home | **Contextual + unified:** rooms live in their place (Circle/Channel/Hub) **and** list in `/messages` in a separate "Rooms" section. |
+| R5 | Public rooms | **Always place/topic-anchored** — every public room belongs to a Channel/Circle/Hub; no free-floating rooms. |
+| R6 | DM hardening | Confirmed set: message requests · per-DM settings (mute/disappearing) · report-a-message · **presence controls** (read-receipt/typing visibility) · blocking. |
+| R7 | AI-in-rooms | **Lean:** ship **topic menu + semantic search** (on-demand) first; catch-me-up, Q&A, and intent-surfacing are *later* — keep the AI quiet, not a chatbot. |
+| R8 | Build order | **Reconcile-first:** before applying Phase A, fix the two conflicting migrations (below), so nothing regresses. |
+
+**Posting in Channel rooms:** read/join open to anyone; **posting requires one-tap tune-in**
+(light belonging without gating engagement). **Channel→Global dispatch** confirmed: Circle→circle,
+Hub→hub, Nexus→nexus, **Global = staff/janitor only**.
 
 ## 1. New-member flow (the first build) 🥇
 
@@ -142,6 +163,7 @@ abuse, routes gray areas to moderators. Reuses `moderation_actions` / suspension
 
 | Phase | Slice | Why first |
 |---|---|---|
+| **0** 🛠️ | **Reconcile the two conflicting migrations** (see Conflicts below) + apply Phase A cleanly | The geo `feed_for_viewer` and channel-room RLS were authored before the demo-mode + messages-RLS-convergence work and **regress them as-is** — merge before apply |
 | **A** 🥇 ⏳ | Member geo + nearby-first feed + join/start onboarding | Unlocks the core promise · **DB layer shipped** (`20260604185000_member_geo_and_local_feed`) |
 | **B** | Messaging restructure (DM→1:1, group→private rooms, Channel open rooms) | Cleans the spine before AI |
 | **C** | Room AI layer (catch-up, search, Q&A, surfacing) | Depends on B |
@@ -163,6 +185,29 @@ abuse, routes gray areas to moderators. Reuses `moderation_actions` / suspension
 | 2026-06-04 | D — dispatch `global` | `dispatches.audience_scope` widened to include `global`; `audience_id` nullable only for `global` (scoped tiers still require a target). Migration `20260604200000`. Staff-only authoring enforced app-side (writes are service-role). ⏳ Needs apply + type regen before prod. |
 | 2026-06-04 | B — Channel open rooms | `rooms.visibility` += `channel`; one open room auto-provisioned per active topical channel (backfill + insert trigger); channel-room messages world-readable, posting service-role (tune-in gated app-side); `creator_id` nullable for system-owned channel rooms; unique room per channel. Migration `20260604210000`. Validated locally (provision / trigger / unique / creator-check all pass). ⏳ Apply + type regen + server-action posting gate before prod. |
 | 2026-06-04 | B — group→private rooms | Group conversations (created_by / name / >2 participants) copied to `rooms` (`private`) with members, messages, read-state, admin=creator; `conversations.migrated_to_room_id` + `conversation_room_migration` mapping make it **reversible** (no deletes). 1:1 threads untouched; hard 1:1 invariant deferred to a post-verify follow-up. Migration `20260604220000`. Validated locally — 14 checks incl message-count integrity, `member_count` trigger, `last_message_at`. ⏳ Apply + app-layer (remove group-create, filter inbox) before prod. |
+
+## Conflicts to reconcile before applying (verified against the live DB, 2026-06-05)
+
+The Phase A/B migrations were authored on a branch *before* the demo-mode + RLS-convergence
+work landed on main. Applying them as-is would regress live features:
+
+| Migration | Conflict | Reconcile |
+|---|---|---|
+| `member_geo` `feed_for_viewer` | The live function carries **demo-mode logic** (`not is_demo or demo_mode flag`); the migration's replacement **drops it** → demo feed breaks. | Merge: take the geo-aware version, re-add the demo predicate to its `WHERE`. |
+| `channel_open_rooms` RLS | **Rewrites** `rooms`/`room_messages`/`room_members` policies that `messages_rls_convergence` + `room_thread_rls_convergence` just rewrote. | Merge: add the `visibility='channel'` read path *into* the converged policies, don't replace them. |
+| `group_dms_to_private_rooms` | Reversible **data** migration; applying it without app-layer filtering shows group chats **twice** (conversation + room copy). | Pair with app code: filter `migrated_to_room_id IS NULL` in the inbox + remove the group-create path, *then* apply. |
+
+## Applied so far (2026-06-05)
+
+- ✅ **`dispatch_global_tier`** — applied (constraint widening; self-contained, no conflict). The
+  `global` scope exists in the DB; the staff-gated authoring UI is Phase D app work.
+- ✅ **Member geo columns + backfill** — applied as a safe additive subset (`home_lat/lng/label/
+  timezone`, generated `home_geog` + GiST index, `feed_radius_m`, `live_*`, `location_mode`;
+  backfilled from `meta.beta.location`). The **`feed_for_viewer` replacement was deliberately
+  deferred** to the feed phase, where it's merged with the demo logic + wired in app together.
+- ⏳ **Not applied:** `channel_open_rooms`, `group_dms_to_private_rooms`, and the geo `feed_for_viewer`
+  — each pairs with its app code per the Conflicts table + Phase B. (Migrations + app land together,
+  not as a dark schema flip.)
 
 ## Open guardrails / risks
 
