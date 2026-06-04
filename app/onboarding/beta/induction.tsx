@@ -417,7 +417,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                 <h1 className={`mt-3 text-6xl sm:text-7xl ${heading}`}>
                   You&rsquo;re not a user.
                   <br />
-                  You&rsquo;re a Founder.
+                  You&rsquo;re a <span className="text-primary">Founder.</span>
                 </h1>
                 <p className="mx-auto mt-4 max-w-2xl text-xl leading-relaxed text-muted">{VERA.intro.body}</p>
                 <div className="mt-8 flex flex-col items-center gap-3">
