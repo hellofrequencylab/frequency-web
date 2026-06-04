@@ -37,6 +37,14 @@
 > renderer (`lib/qr/render-styled.ts`) over the QR matrix — brand colors/gradients, module & eye
 > shapes, center logo, CTA frame — driven by a live-preview editor in the dynamic-links Studio and
 > persisted to `qr_codes.style`. No new dependency, no migration. Next: Phase 3 per-member codes.
+>
+> **2026-06-05:** QR platform **Phase 3 — per-member codes** (ADR-091). Every member gets three
+> editable personal codes (connect / referral / gift-a-zap, `qr_codes.purpose`), restyled on
+> `/codes`; the `/q` resolver is now a route handler with an `action` destination type; referral
+> attribution (`profiles.referred_by_profile_id`, set at onboarding) rewards the referrer, and a
+> gift-a-zap confirm flow (`/g/[slug]`) awards the owner. Migration `20260605020000` applied to prod.
+> In flight next (owner request 2026-06-05): editor v2 (more themes, all shapes, connected
+> rounded-end modules), crew marketing-funnel codes (≤3, circle/event), and a Google-Analytics tie-in.
 
 ---
 
