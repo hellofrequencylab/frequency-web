@@ -5,11 +5,22 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { atLeastRole } from '@/lib/core/roles'
 import { buildPlan, previewPlan, commitPlan, type AreaSpec } from '@/lib/demo/engine'
+import { getDemographicPalette } from '@/lib/demo/ai-palette'
+import { deletePlansByAuthors } from '@/lib/journey-plans'
 import { runDecay, type DecayReport } from '@/lib/demo/decay'
 
 async function requireJanitor() {
   const caller = await getCallerProfile()
   if (!caller || !atLeastRole(caller.community_role, 'janitor')) throw new Error('Unauthorized')
+}
+
+// Build the plan, fetching a demographic AI palette first when requested (and
+// available); buildPlan falls back to its template pools when palette is null.
+async function planFor(spec: AreaSpec) {
+  const palette = spec.aiPolish
+    ? await getDemographicPalette({ areaName: spec.areaName, lat: spec.centerLat, lng: spec.centerLng, channels: spec.channels })
+    : null
+  return buildPlan(spec, palette)
 }
 
 // Run the decay pass on demand (dry run = report without writing).
@@ -23,14 +34,14 @@ export async function runDemoDecay(dryRun: boolean): Promise<DecayReport> {
 // Step 5: render a non-destructive preview of what the spec would generate.
 export async function previewArea(spec: AreaSpec) {
   await requireJanitor()
-  return previewPlan(buildPlan(spec))
+  return previewPlan(await planFor(spec))
 }
 
 // Step 6: generate + write the area via the service-role admin client
 // (auth.role() = 'service_role' satisfies the economy guard).
 export async function seedArea(spec: AreaSpec) {
   await requireJanitor()
-  const counts = await commitPlan(buildPlan(spec))
+  const counts = await commitPlan(await planFor(spec))
   revalidatePath('/', 'layout')
   return counts
 }
@@ -58,6 +69,9 @@ export async function purgeArea(centerLat: number, centerLng: number, radiusMi: 
   await d.from('posts').delete().eq('is_demo', true).in('scope_id', ids)
   await d.from('events').delete().eq('is_demo', true).in('scope_id', ids)
   await d.from('circles').delete().eq('is_demo', true).in('id', ids)
+  // Demo journeys have no is_demo column; identify them by their demo author and
+  // delete BEFORE the profiles (author_id is ON DELETE SET NULL, not cascade).
+  await deletePlansByAuthors(profileIds)
   if (profileIds.length) await d.from('profiles').delete().eq('is_demo', true).in('id', profileIds)
 
   revalidatePath('/', 'layout')

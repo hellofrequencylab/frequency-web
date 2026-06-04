@@ -17,6 +17,7 @@
 // Deletes only; idempotent; converges. dryRun reports without writing.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { deletePlansByAuthors } from '@/lib/journey-plans'
 import { isoDaysAgo } from '@/lib/utils'
 import { log } from '@/lib/log'
 
@@ -56,7 +57,11 @@ async function removeOrphans(
   const kept = new Set((still ?? []).map((m) => (m as { profile_id: string }).profile_id))
   const orphans = profileIds.filter((id) => !kept.has(id))
   if (!orphans.length) return 0
-  if (!dryRun) await d.from('profiles').delete().eq('is_demo', true).in('id', orphans)
+  if (!dryRun) {
+    // their journeys (no is_demo flag; author SET NULL on delete) go first
+    await deletePlansByAuthors(orphans)
+    await d.from('profiles').delete().eq('is_demo', true).in('id', orphans)
+  }
   return orphans.length
 }
 
