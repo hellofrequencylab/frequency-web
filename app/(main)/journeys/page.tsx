@@ -61,7 +61,7 @@ export default async function JourneysPage() {
           <SectionHeader title="Start a journey" />
           <form action={createPlanAction} className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
             <div className="flex items-center gap-2.5">
-              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-signal-bg text-signal-strong">
+              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
                 <Map className="h-5 w-5" />
               </span>
               <input
@@ -73,7 +73,7 @@ export default async function JourneysPage() {
               />
               <button
                 type="submit"
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-signal px-4 py-2 text-sm font-semibold text-on-signal transition-colors hover:opacity-90"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
               >
                 <Plus className="h-4 w-4" /> Create
               </button>
