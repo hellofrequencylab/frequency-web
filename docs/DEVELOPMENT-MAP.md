@@ -9,7 +9,8 @@
 > Notion. Where this names something not yet built, the code is still the truth.
 >
 > Companions: [PLATFORM-VISION.md](PLATFORM-VISION.md) (the *why* of the two-entity model)
-> and [DECISIONS.md](DECISIONS.md) (ADR-029→036, the irreversible seams). Updated 2026-06-02.
+> and [DECISIONS.md](DECISIONS.md) (ADR-029→036, the irreversible seams). Updated 2026-06-03 ·
+> ADR-071–075 (open beta, admin IA redesign, onboarding→Vera handoff, activation instrumentation).
 >
 > **2026-06-02:** the in-app design overhaul shipped (foundation kit + shell adoption + dashboard/
 > admin cohesion sweeps, PRs #81–93, ADR-061) — see [REDESIGN-INAPP.md](REDESIGN-INAPP.md) for status
@@ -241,6 +242,21 @@ on the real domain. **Depends on:** nothing (all in-codebase closeouts).
 - [~] **Domain + owner config**: `frequencylocal.com` is **live** (DNS → Vercel; the app serves on
       the apex). Remaining owner steps: confirm the prod env vars (`CRON_SECRET`, `NEXT_PUBLIC_SITE_URL`,
       `NEXT_PUBLIC_APP_URL`, `EMAIL_FROM`) + the Supabase/Google OAuth redirect URLs. Full runbook: [LAUNCH.md](LAUNCH.md).
+- [x] **Admin IA redesign** (ADR-072/073): the `/admin` surface is now **one grouped catalog**
+      (`app/(main)/admin/sections.ts`, five role-gated groups — Community/Structure/Insights/Vera/
+      Platform) feeding a launchpad, a shared `requireAdmin` guard (`lib/admin/guard.ts`), and a shared
+      `AdminPage`/`AdminSection` shell (`components/admin/admin-page.tsx`). Nav went **two-layer**: the
+      left rail "Manage" carries the five admin categories (`NAV_AREAS` replaced the single `admin`
+      area with `admin-community`/`admin-structure`/`admin-insights`/`admin-vera`/`admin-platform`),
+      and the sub-nav shows only the active category's pages. No route moves, no gate change — just
+      chrome + organization unified.
+- [x] **Onboarding → Vera handoff + activation instrumentation** (ADR-074/075): induction now redirects
+      to **`/onboarding/vera`** (the Vera concierge — the primary new-member path), with a feed
+      first-run banner catching anyone who skips; the dead `/feed?intro=1` param is retired. The
+      activation funnel is instrumented — `track()` emits `onboarding.induction_completed`,
+      `onboarding.vera_opened`, `circle.joined`, `practice.adopted`, `profile.completed`, surfaced as a
+      **New-member activation** funnel on `/admin/engagement`. See [ONBOARDING.md](ONBOARDING.md) +
+      [AI-VERA.md](AI-VERA.md).
 
 **Done when:** the loop above works end-to-end on `frequencylocal.com` and WAM is live on the
 admin/analytics surface.
@@ -249,9 +265,14 @@ admin/analytics surface.
 **Goal:** prove the practice-retention loop (PMF) and enrich the mission with the free
 verticals that don't need the money foundation. **Depends on:** Stage A.
 
-- [ ] **Launch the free Beta**; instrument WAM, 7-day activation, cohort retention.
+- [x] **Launch the free Beta** (ADR-071): the **self-serve beta is open** — "Join the Beta" →
+      `/sign-in` → induction → real member (`BETA_CTA_HREF = "/sign-in"`, one switch in `lib/site.ts`);
+      the `/beta` waitlist + `requestBetaAccess` are **parked** for the future gated weekly-cohort phase.
       *Instrumentation:* WAM + activation live on `/studio/analytics`; weekly practice-
-      retention cohorts shipped there too (`getPracticeRetention`), the PMF lens.
+      retention cohorts shipped there too (`getPracticeRetention`), the PMF lens. The **New-member
+      activation funnel is ✅ live on `/admin/engagement`** (ADR-075: `onboarding.induction_completed`
+      → `onboarding.vera_opened` → `circle.joined` → `practice.adopted` → `profile.completed` via
+      `track()`), not just `/studio/analytics`.
 - [x] **Member-driven circle creation** (the flywheel enabler): any signed-in member can
       start a circle around an Interest and become its host (was admin-only). Creator is
       auto-enrolled as host + member. Matches what the Programs guides teach.
