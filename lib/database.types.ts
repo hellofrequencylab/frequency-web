@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       achievements: {
@@ -121,6 +96,268 @@ export type Database = {
             columns: ["decided_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_help_queries: {
+        Row: {
+          answered: boolean
+          confidence: number
+          created_at: string
+          deflected: boolean
+          id: string
+          profile_id: string | null
+          question: string
+          top_category: string | null
+          top_slug: string | null
+        }
+        Insert: {
+          answered?: boolean
+          confidence?: number
+          created_at?: string
+          deflected?: boolean
+          id?: string
+          profile_id?: string | null
+          question: string
+          top_category?: string | null
+          top_slug?: string | null
+        }
+        Update: {
+          answered?: boolean
+          confidence?: number
+          created_at?: string
+          deflected?: boolean
+          id?: string
+          profile_id?: string | null
+          question?: string
+          top_category?: string | null
+          top_slug?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_help_queries_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_member_context: {
+        Row: {
+          created_at: string
+          facts: Json
+          interaction_count: number
+          last_summarized_at: string | null
+          milestones: Json
+          profile_id: string
+          summary: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          facts?: Json
+          interaction_count?: number
+          last_summarized_at?: string | null
+          milestones?: Json
+          profile_id: string
+          summary?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          facts?: Json
+          interaction_count?: number
+          last_summarized_at?: string | null
+          milestones?: Json
+          profile_id?: string
+          summary?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_member_context_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_usage: {
+        Row: {
+          cost_usd: number
+          created_at: string
+          feature: string
+          id: string
+          input_tokens: number
+          model: string
+          output_tokens: number
+          profile_id: string | null
+        }
+        Insert: {
+          cost_usd?: number
+          created_at?: string
+          feature: string
+          id?: string
+          input_tokens?: number
+          model: string
+          output_tokens?: number
+          profile_id?: string | null
+        }
+        Update: {
+          cost_usd?: number
+          created_at?: string
+          feature?: string
+          id?: string
+          input_tokens?: number
+          model?: string
+          output_tokens?: number
+          profile_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_usage_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      arc_chains: {
+        Row: {
+          created_at: string
+          description: string
+          icon: string
+          id: string
+          name: string
+          season: number | null
+          slug: string
+          sort_order: number
+          zaps_reward: number
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          icon?: string
+          id?: string
+          name: string
+          season?: number | null
+          slug: string
+          sort_order?: number
+          zaps_reward?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          icon?: string
+          id?: string
+          name?: string
+          season?: number | null
+          slug?: string
+          sort_order?: number
+          zaps_reward?: number
+        }
+        Relationships: []
+      }
+      arc_progress: {
+        Row: {
+          chain_id: string
+          completed_at: string | null
+          current_step: number
+          id: string
+          profile_id: string
+          started_at: string
+          step_progress: number
+        }
+        Insert: {
+          chain_id: string
+          completed_at?: string | null
+          current_step?: number
+          id?: string
+          profile_id: string
+          started_at?: string
+          step_progress?: number
+        }
+        Update: {
+          chain_id?: string
+          completed_at?: string | null
+          current_step?: number
+          id?: string
+          profile_id?: string
+          started_at?: string
+          step_progress?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quest_progress_chain_id_fkey"
+            columns: ["chain_id"]
+            isOneToOne: false
+            referencedRelation: "arc_chains"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quest_progress_chain_id_fkey"
+            columns: ["chain_id"]
+            isOneToOne: false
+            referencedRelation: "quest_chains"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quest_progress_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      arc_steps: {
+        Row: {
+          chain_id: string
+          criteria: Json
+          description: string
+          id: string
+          name: string
+          step_order: number
+          target: number
+          zaps_reward: number
+        }
+        Insert: {
+          chain_id: string
+          criteria?: Json
+          description: string
+          id?: string
+          name: string
+          step_order: number
+          target?: number
+          zaps_reward?: number
+        }
+        Update: {
+          chain_id?: string
+          criteria?: Json
+          description?: string
+          id?: string
+          name?: string
+          step_order?: number
+          target?: number
+          zaps_reward?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quest_steps_chain_id_fkey"
+            columns: ["chain_id"]
+            isOneToOne: false
+            referencedRelation: "arc_chains"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quest_steps_chain_id_fkey"
+            columns: ["chain_id"]
+            isOneToOne: false
+            referencedRelation: "quest_chains"
             referencedColumns: ["id"]
           },
         ]
@@ -512,7 +749,6 @@ export type Database = {
       }
       circles: {
         Row: {
-          is_demo: boolean
           about: string | null
           city: string | null
           created_at: string | null
@@ -521,6 +757,7 @@ export type Database = {
           hub_id: string | null
           id: string
           image_url: string | null
+          is_demo: boolean
           latitude: number | null
           longitude: number | null
           member_cap: number
@@ -534,7 +771,6 @@ export type Database = {
           type: Database["public"]["Enums"]["circle_type"]
         }
         Insert: {
-          is_demo?: boolean
           about?: string | null
           city?: string | null
           created_at?: string | null
@@ -543,6 +779,7 @@ export type Database = {
           hub_id?: string | null
           id?: string
           image_url?: string | null
+          is_demo?: boolean
           latitude?: number | null
           longitude?: number | null
           member_cap?: number
@@ -556,7 +793,6 @@ export type Database = {
           type?: Database["public"]["Enums"]["circle_type"]
         }
         Update: {
-          is_demo?: boolean
           about?: string | null
           city?: string | null
           created_at?: string | null
@@ -565,6 +801,7 @@ export type Database = {
           hub_id?: string | null
           id?: string
           image_url?: string | null
+          is_demo?: boolean
           latitude?: number | null
           longitude?: number | null
           member_cap?: number
@@ -597,6 +834,44 @@ export type Database = {
             columns: ["topical_channel_id"]
             isOneToOne: false
             referencedRelation: "topical_channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      consent_records: {
+        Row: {
+          created_at: string
+          granted: boolean
+          id: string
+          note: string | null
+          profile_id: string
+          scope: string
+          source: string
+        }
+        Insert: {
+          created_at?: string
+          granted: boolean
+          id?: string
+          note?: string | null
+          profile_id: string
+          scope: string
+          source?: string
+        }
+        Update: {
+          created_at?: string
+          granted?: boolean
+          id?: string
+          note?: string | null
+          profile_id?: string
+          scope?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consent_records_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1156,13 +1431,13 @@ export type Database = {
       }
       events: {
         Row: {
-          is_demo: boolean
           created_at: string | null
           description: string | null
           ends_at: string | null
           host_id: string | null
           id: string
           is_cancelled: boolean | null
+          is_demo: boolean
           location: string | null
           mux_playback_id: string | null
           mux_stream_id: string | null
@@ -1176,13 +1451,13 @@ export type Database = {
           title: string
         }
         Insert: {
-          is_demo?: boolean
           created_at?: string | null
           description?: string | null
           ends_at?: string | null
           host_id?: string | null
           id?: string
           is_cancelled?: boolean | null
+          is_demo?: boolean
           location?: string | null
           mux_playback_id?: string | null
           mux_stream_id?: string | null
@@ -1196,13 +1471,13 @@ export type Database = {
           title: string
         }
         Update: {
-          is_demo?: boolean
           created_at?: string | null
           description?: string | null
           ends_at?: string | null
           host_id?: string | null
           id?: string
           is_cancelled?: boolean | null
+          is_demo?: boolean
           location?: string | null
           mux_playback_id?: string | null
           mux_stream_id?: string | null
@@ -1346,6 +1621,39 @@ export type Database = {
           },
         ]
       }
+      help_chunks: {
+        Row: {
+          category: string
+          content: string
+          content_hash: string
+          embedding: string
+          heading: string
+          id: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          content: string
+          content_hash: string
+          embedding: string
+          heading?: string
+          id?: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          content?: string
+          content_hash?: string
+          embedding?: string
+          heading?: string
+          id?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       hubs: {
         Row: {
           created_at: string | null
@@ -1474,6 +1782,98 @@ export type Database = {
           },
           {
             foreignKeyName: "member_practices_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      member_tags: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          context: Json
+          created_at: string
+          expires_at: string | null
+          id: string
+          profile_id: string
+          source: string
+          tag_key: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          context?: Json
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          profile_id: string
+          source?: string
+          tag_key: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          context?: Json
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          profile_id?: string
+          source?: string
+          tag_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_tags_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_tags_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      member_traits: {
+        Row: {
+          computed_at: string
+          profile_id: string
+          trait_key: string
+          value_bool: boolean | null
+          value_json: Json | null
+          value_num: number | null
+          value_text: string | null
+          value_ts: string | null
+        }
+        Insert: {
+          computed_at?: string
+          profile_id: string
+          trait_key: string
+          value_bool?: boolean | null
+          value_json?: Json | null
+          value_num?: number | null
+          value_text?: string | null
+          value_ts?: string | null
+        }
+        Update: {
+          computed_at?: string
+          profile_id?: string
+          trait_key?: string
+          value_bool?: boolean | null
+          value_json?: Json | null
+          value_num?: number | null
+          value_text?: string | null
+          value_ts?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_traits_profile_id_fkey"
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -2129,6 +2529,24 @@ export type Database = {
           },
         ]
       }
+      platform_flags: {
+        Row: {
+          key: string
+          updated_at: string | null
+          value: boolean
+        }
+        Insert: {
+          key: string
+          updated_at?: string | null
+          value?: boolean
+        }
+        Update: {
+          key?: string
+          updated_at?: string | null
+          value?: boolean
+        }
+        Relationships: []
+      }
       post_mentions: {
         Row: {
           created_at: string | null
@@ -2206,7 +2624,6 @@ export type Database = {
       }
       posts: {
         Row: {
-          is_demo: boolean
           author_id: string
           body: string | null
           comment_count: number
@@ -2215,6 +2632,7 @@ export type Database = {
           hidden_at: string | null
           hidden_by: string | null
           id: string
+          is_demo: boolean
           is_pinned: boolean | null
           media_urls: string[] | null
           parent_id: string | null
@@ -2226,7 +2644,6 @@ export type Database = {
           visibility: Database["public"]["Enums"]["post_visibility"] | null
         }
         Insert: {
-          is_demo?: boolean
           author_id: string
           body?: string | null
           comment_count?: number
@@ -2235,6 +2652,7 @@ export type Database = {
           hidden_at?: string | null
           hidden_by?: string | null
           id?: string
+          is_demo?: boolean
           is_pinned?: boolean | null
           media_urls?: string[] | null
           parent_id?: string | null
@@ -2246,7 +2664,6 @@ export type Database = {
           visibility?: Database["public"]["Enums"]["post_visibility"] | null
         }
         Update: {
-          is_demo?: boolean
           author_id?: string
           body?: string | null
           comment_count?: number
@@ -2255,6 +2672,7 @@ export type Database = {
           hidden_at?: string | null
           hidden_by?: string | null
           id?: string
+          is_demo?: boolean
           is_pinned?: boolean | null
           media_urls?: string[] | null
           parent_id?: string | null
@@ -2340,29 +2758,29 @@ export type Database = {
       }
       practices: {
         Row: {
-          is_demo: boolean
           created_at: string
           created_by: string | null
           description: string | null
           id: string
+          is_demo: boolean
           is_public: boolean
           title: string
         }
         Insert: {
-          is_demo?: boolean
           created_at?: string
           created_by?: string | null
           description?: string | null
           id?: string
+          is_demo?: boolean
           is_public?: boolean
           title: string
         }
         Update: {
-          is_demo?: boolean
           created_at?: string
           created_by?: string | null
           description?: string | null
           id?: string
+          is_demo?: boolean
           is_public?: boolean
           title?: string
         }
@@ -2376,27 +2794,8 @@ export type Database = {
           },
         ]
       }
-      platform_flags: {
-        Row: {
-          key: string
-          updated_at: string | null
-          value: boolean
-        }
-        Insert: {
-          key: string
-          updated_at?: string | null
-          value: boolean
-        }
-        Update: {
-          key?: string
-          updated_at?: string | null
-          value?: boolean
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
-          is_demo: boolean
           achievement_count: number
           auth_user_id: string | null
           avatar_url: string | null
@@ -2415,6 +2814,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           is_crew_lead: boolean | null
+          is_demo: boolean
           is_system: boolean
           last_seen_at: string | null
           lifetime_gems: number
@@ -2434,7 +2834,6 @@ export type Database = {
           website: string | null
         }
         Insert: {
-          is_demo?: boolean
           achievement_count?: number
           auth_user_id?: string | null
           avatar_url?: string | null
@@ -2453,6 +2852,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_crew_lead?: boolean | null
+          is_demo?: boolean
           is_system?: boolean
           last_seen_at?: string | null
           lifetime_gems?: number
@@ -2472,7 +2872,6 @@ export type Database = {
           website?: string | null
         }
         Update: {
-          is_demo?: boolean
           achievement_count?: number
           auth_user_id?: string | null
           avatar_url?: string | null
@@ -2491,6 +2890,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_crew_lead?: boolean | null
+          is_demo?: boolean
           is_system?: boolean
           last_seen_at?: string | null
           lifetime_gems?: number
@@ -2563,128 +2963,6 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      quest_chains: {
-        Row: {
-          created_at: string
-          description: string
-          icon: string
-          id: string
-          name: string
-          season: number | null
-          slug: string
-          sort_order: number
-          zaps_reward: number
-        }
-        Insert: {
-          created_at?: string
-          description: string
-          icon?: string
-          id?: string
-          name: string
-          season?: number | null
-          slug: string
-          sort_order?: number
-          zaps_reward?: number
-        }
-        Update: {
-          created_at?: string
-          description?: string
-          icon?: string
-          id?: string
-          name?: string
-          season?: number | null
-          slug?: string
-          sort_order?: number
-          zaps_reward?: number
-        }
-        Relationships: []
-      }
-      quest_progress: {
-        Row: {
-          chain_id: string
-          completed_at: string | null
-          current_step: number
-          id: string
-          profile_id: string
-          started_at: string
-          step_progress: number
-        }
-        Insert: {
-          chain_id: string
-          completed_at?: string | null
-          current_step?: number
-          id?: string
-          profile_id: string
-          started_at?: string
-          step_progress?: number
-        }
-        Update: {
-          chain_id?: string
-          completed_at?: string | null
-          current_step?: number
-          id?: string
-          profile_id?: string
-          started_at?: string
-          step_progress?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "quest_progress_chain_id_fkey"
-            columns: ["chain_id"]
-            isOneToOne: false
-            referencedRelation: "quest_chains"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "quest_progress_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      quest_steps: {
-        Row: {
-          chain_id: string
-          criteria: Json
-          description: string
-          id: string
-          name: string
-          step_order: number
-          target: number
-          zaps_reward: number
-        }
-        Insert: {
-          chain_id: string
-          criteria?: Json
-          description: string
-          id?: string
-          name: string
-          step_order: number
-          target?: number
-          zaps_reward?: number
-        }
-        Update: {
-          chain_id?: string
-          criteria?: Json
-          description?: string
-          id?: string
-          name?: string
-          step_order?: number
-          target?: number
-          zaps_reward?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "quest_steps_chain_id_fkey"
-            columns: ["chain_id"]
-            isOneToOne: false
-            referencedRelation: "quest_chains"
             referencedColumns: ["id"]
           },
         ]
@@ -2997,6 +3275,50 @@ export type Database = {
         }
         Relationships: []
       }
+      segments: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          definition: Json
+          description: string | null
+          id: string
+          is_system: boolean
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          definition: Json
+          description?: string | null
+          id?: string
+          is_system?: boolean
+          name: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          definition?: Json
+          description?: string | null
+          id?: string
+          is_system?: boolean
+          name?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "segments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       spatial_ref_sys: {
         Row: {
           auth_name: string | null
@@ -3289,6 +3611,35 @@ export type Database = {
           },
         ]
       }
+      vera_config: {
+        Row: {
+          config: Json
+          id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          config?: Json
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          config?: Json
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vera_config_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       zap_config: {
         Row: {
           action_type: string
@@ -3362,6 +3713,142 @@ export type Database = {
           type?: string | null
         }
         Relationships: []
+      }
+      quest_chains: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          icon: string | null
+          id: string | null
+          name: string | null
+          season: number | null
+          slug: string | null
+          sort_order: number | null
+          zaps_reward: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string | null
+          name?: string | null
+          season?: number | null
+          slug?: string | null
+          sort_order?: number | null
+          zaps_reward?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string | null
+          name?: string | null
+          season?: number | null
+          slug?: string | null
+          sort_order?: number | null
+          zaps_reward?: number | null
+        }
+        Relationships: []
+      }
+      quest_progress: {
+        Row: {
+          chain_id: string | null
+          completed_at: string | null
+          current_step: number | null
+          id: string | null
+          profile_id: string | null
+          started_at: string | null
+          step_progress: number | null
+        }
+        Insert: {
+          chain_id?: string | null
+          completed_at?: string | null
+          current_step?: number | null
+          id?: string | null
+          profile_id?: string | null
+          started_at?: string | null
+          step_progress?: number | null
+        }
+        Update: {
+          chain_id?: string | null
+          completed_at?: string | null
+          current_step?: number | null
+          id?: string | null
+          profile_id?: string | null
+          started_at?: string | null
+          step_progress?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quest_progress_chain_id_fkey"
+            columns: ["chain_id"]
+            isOneToOne: false
+            referencedRelation: "arc_chains"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quest_progress_chain_id_fkey"
+            columns: ["chain_id"]
+            isOneToOne: false
+            referencedRelation: "quest_chains"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quest_progress_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quest_steps: {
+        Row: {
+          chain_id: string | null
+          criteria: Json | null
+          description: string | null
+          id: string | null
+          name: string | null
+          step_order: number | null
+          target: number | null
+          zaps_reward: number | null
+        }
+        Insert: {
+          chain_id?: string | null
+          criteria?: Json | null
+          description?: string | null
+          id?: string | null
+          name?: string | null
+          step_order?: number | null
+          target?: number | null
+          zaps_reward?: number | null
+        }
+        Update: {
+          chain_id?: string | null
+          criteria?: Json | null
+          description?: string | null
+          id?: string | null
+          name?: string | null
+          step_order?: number | null
+          target?: number | null
+          zaps_reward?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quest_steps_chain_id_fkey"
+            columns: ["chain_id"]
+            isOneToOne: false
+            referencedRelation: "arc_chains"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quest_steps_chain_id_fkey"
+            columns: ["chain_id"]
+            isOneToOne: false
+            referencedRelation: "quest_chains"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {
@@ -3495,6 +3982,35 @@ export type Database = {
       am_participant: { Args: { p_conversation_id: string }; Returns: boolean }
       am_room_member: { Args: { p_room_id: string }; Returns: boolean }
       are_friends: { Args: { a: string; b: string }; Returns: boolean }
+      challenge_outcomes: {
+        Args: never
+        Returns: {
+          challenge_id: string
+          completed: number
+          difficulty: string
+          name: string
+          started: number
+        }[]
+      }
+      circles_near: {
+        Args: { _lat: number; _limit?: number; _lng: number }
+        Returns: {
+          about: string
+          city: string
+          distance_m: number
+          id: string
+          image_url: string
+          latitude: number
+          longitude: number
+          member_cap: number
+          member_count: number
+          name: string
+          neighborhood: string
+          slug: string
+          status: string
+          type: string
+        }[]
+      }
       disablelongtransactions: { Args: never; Returns: string }
       dropgeometrycolumn:
         | {
@@ -3527,26 +4043,22 @@ export type Database = {
         | { Args: { schema_name: string; table_name: string }; Returns: string }
         | { Args: { table_name: string }; Returns: string }
       enablelongtransactions: { Args: never; Returns: string }
-      equals: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
-      circles_near: {
-        Args: { _lat: number; _lng: number; _limit?: number }
+      engagement_event_counts: {
+        Args: { _days?: number }
         Returns: {
-          id: string
-          name: string
-          slug: string
-          about: string | null
-          type: string
-          member_count: number
-          member_cap: number
-          status: string
-          neighborhood: string | null
-          city: string | null
-          image_url: string | null
-          latitude: number | null
-          longitude: number | null
-          distance_m: number
+          actors: number
+          event_type: string
+          events: number
         }[]
       }
+      engagement_prop_counts: {
+        Args: { _days?: number; _event: string; _limit?: number; _prop: string }
+        Returns: {
+          n: number
+          value: string
+        }[]
+      }
+      equals: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
       feed_for_viewer: {
         Args: { _limit?: number; _sort?: string }
         Returns: {
@@ -3556,6 +4068,7 @@ export type Database = {
           created_at: string
           engagement_score: number
           id: string
+          is_demo: boolean
           is_pinned: boolean
           media_urls: string[]
           post_type: string
@@ -3681,6 +4194,41 @@ export type Database = {
       handle_is_available: { Args: { check_handle: string }; Returns: boolean }
       is_blocked_between: { Args: { a: string; b: string }; Returns: boolean }
       longtransactionsenabled: { Args: never; Returns: boolean }
+      match_help_chunks: {
+        Args: {
+          match_count?: number
+          min_similarity?: number
+          query_embedding: string
+        }
+        Returns: {
+          category: string
+          content: string
+          heading: string
+          similarity: number
+          slug: string
+        }[]
+      }
+      member_engagement_stats: {
+        Args: never
+        Returns: {
+          created_at: string
+          distinct_active_days_30: number
+          event_count_30d: number
+          first_verified_practice_at: string
+          last_event_at: string
+          profile_id: string
+          verified_practices_7d: number
+        }[]
+      }
+      message_peer_profiles: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          display_name: string
+          handle: string
+          id: string
+        }[]
+      }
       my_friendships: {
         Args: never
         Returns: {
@@ -3827,7 +4375,36 @@ export type Database = {
           media_urls: string[]
         }[]
       }
+      quest_outcomes: {
+        Args: never
+        Returns: {
+          avg_stall_step: number
+          chain_id: string
+          completed: number
+          name: string
+          started: number
+        }[]
+      }
       reset_season: { Args: never; Returns: undefined }
+      scoped_feed_for_viewer: {
+        Args: { _limit?: number; _scope_ids: string[]; _sort?: string }
+        Returns: {
+          author: Json
+          body: string
+          comment_count: number
+          created_at: string
+          engagement_score: number
+          id: string
+          is_demo: boolean
+          is_pinned: boolean
+          media_urls: string[]
+          post_type: string
+          reaction_count: number
+          reactions: Json
+          scope_id: string
+          visibility: string
+        }[]
+      }
       search_handles_public: {
         Args: { q: string }
         Returns: {
@@ -4429,6 +5006,17 @@ export type Database = {
         }
         Returns: string
       }
+      visible_room_member_profiles: {
+        Args: { _room_id: string }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          handle: string
+          id: string
+          is_admin: boolean
+          joined_at: string
+        }[]
+      }
     }
     Enums: {
       achievement_category:
@@ -4603,9 +5191,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       achievement_category: [

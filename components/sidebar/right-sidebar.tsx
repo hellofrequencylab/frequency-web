@@ -339,7 +339,7 @@ async function LeaderboardWidget() {
 // interactive dock (components/sidebar/game-stats-dock.tsx). A compact bar sits
 // at the bottom of the rail and scrolls up into view as you near the end;
 // tapping it (or reaching the feed bottom, or hover-scrolling it) opens a panel
-// with today's move, streak, rank progress, a quest, and The Vault at the very
+// with today's move, streak, rank progress, an arc, and The Vault at the very
 // bottom. Everything is best-effort — any one source
 // failing degrades to an empty/teaser state rather than breaking the rail.
 
@@ -399,11 +399,11 @@ async function GameStatsDock({ profileId }: { profileId: string }) {
       }
     : { nextLabel: null, toGo: 0, pct: 100 }
 
-  // Current quest (best-effort; tolerant of schema differences)
-  let quest: DockData['quest'] = null
+  // Current arc (best-effort; tolerant of schema differences)
+  let arc: DockData['arc'] = null
   try {
     const { data: qp } = await admin
-      .from('quest_progress')
+      .from('arc_progress')
       .select('chain_id, current_step')
       .eq('profile_id', profileId)
       .is('completed_at', null)
@@ -412,19 +412,19 @@ async function GameStatsDock({ profileId }: { profileId: string }) {
       .maybeSingle()
     if (qp) {
       const [{ data: chain }, { data: steps }] = await Promise.all([
-        admin.from('quest_chains').select('name').eq('id', qp.chain_id).maybeSingle(),
-        admin.from('quest_steps').select('step_order, name').eq('chain_id', qp.chain_id).order('step_order'),
+        admin.from('arc_chains').select('name').eq('id', qp.chain_id).maybeSingle(),
+        admin.from('arc_steps').select('step_order, name').eq('chain_id', qp.chain_id).order('step_order'),
       ])
       const total = (steps ?? []).length || 1
       const cur = (steps ?? []).find((s: { step_order: number }) => s.step_order === qp.current_step) as { name?: string } | undefined
-      quest = {
-        chain: (chain as { name?: string } | null)?.name ?? 'Your quest',
+      arc = {
+        chain: (chain as { name?: string } | null)?.name ?? 'Your arc',
         step: cur?.name ?? `Step ${qp.current_step}`,
         pct: Math.round(((qp.current_step - 1) / total) * 100),
       }
     }
   } catch {
-    quest = null
+    arc = null
   }
 
   const data: DockData = {
@@ -435,7 +435,7 @@ async function GameStatsDock({ profileId }: { profileId: string }) {
     todaysMove,
     last7,
     rankProgress,
-    quest,
+    arc,
     vaultGems: gems,
   }
 

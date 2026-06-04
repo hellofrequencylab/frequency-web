@@ -62,11 +62,11 @@ natural calendar (spring / summer / fall / winter) that resets, so every season 
 a fresh climb.
 
 > Terminology is **canonical**: say **zaps**, not "points". Say **Arc** for a
-> multi-step seasonal journey (the feature implemented by the `quest_chains` /
-> `quest_steps` / `quest_progress` tables — schema rename to `arc_*` is a pending
-> migration; see the Quest naming ADR). Never call an Arc a "quest" in player-
-> facing copy — that word is reserved for the game as a whole. The martial-arts
-> rank names (deshi/sempai/sensei…) are **legacy** — ignore them.
+> multi-step seasonal journey (the feature implemented by the `arc_chains` /
+> `arc_steps` / `arc_progress` tables, renamed from `quest_*`; see ADR-079 +
+> THE-QUEST.md). Never call an Arc a "quest" in player-facing copy — that word is
+> reserved for the game as a whole. The martial-arts rank names
+> (deshi/sempai/sensei…) are **legacy** — ignore them.
 
 **Two currencies, split by where the activity happens:**
 
@@ -89,9 +89,10 @@ a fresh climb.
   seasonal "doing", gems are the durable spendable that accrues from it.
 - **Arcs** — multi-step seasonal journeys a member chooses and works through over
   a season (e.g. "The Connector", "Host in Training"). Implemented by
-  `quest_chains` (the Arc), `quest_steps` (each step / weekly action), and
-  `quest_progress` (per-member progress). Each Arc carries a `season` and a domain
-  tag (Mind / Body / Spirit / Expression). **Player-facing name: Arc.**
+  `arc_chains` (the Arc), `arc_steps` (each step / weekly action), and
+  `arc_progress` (per-member progress; all renamed from `quest_*`). Each Arc
+  carries a `season` and a domain tag (Mind / Body / Spirit / Expression).
+  **Player-facing name: Arc.**
 - **Achievements / streaks** — `achievements`, `user_achievements`, `streaks`,
   `challenge_progress`, `season_challenges`, `season_trophies`.
 

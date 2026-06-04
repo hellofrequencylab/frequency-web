@@ -204,7 +204,8 @@ export const DIFFICULTY_CONFIG: Record<ChallengeDifficulty, {
 // Quest chains
 // ---------------------------------------------------------------------------
 
-export interface QuestChain {
+// Arcs — the multi-step seasonal journeys (was "quests"; see THE-QUEST.md / ADR-079).
+export interface ArcChain {
   id: string
   slug: string
   name: string
@@ -214,7 +215,7 @@ export interface QuestChain {
   zaps_reward: number
 }
 
-export interface QuestStep {
+export interface ArcStep {
   id: string
   chain_id: string
   step_order: number
@@ -225,7 +226,7 @@ export interface QuestStep {
   zaps_reward: number
 }
 
-export interface QuestProgress {
+export interface ArcProgress {
   id: string
   profile_id: string
   chain_id: string
