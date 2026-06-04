@@ -26,6 +26,8 @@ import {
   BetaCTA,
   Button,
   Card,
+  Lead,
+  Body,
 } from '@/components/marketing/marketing-ui'
 import { config } from '@/lib/page-editor/config'
 import { getPublishedData } from '@/lib/page-editor/data'
@@ -125,19 +127,19 @@ function LegacyTheQuest() {
           title="Most games waste your life. This one builds it."
           kicker="The reward loop, pointed at the things that actually matter."
         />
-        <p className="text-xl text-text/85 leading-relaxed">
+        <Lead>
           We know what a good game does to a person: it pulls you back, gives you
           something to climb, makes progress feel inevitable. The trouble is that
           almost every game spends that pull on nothing. The Quest spends it on
           the opposite. It points the whole loop at the things that genuinely
           make a life: showing up, being missed, holding the door for the next
           person.
-        </p>
-        <p className="mt-5 text-lg text-muted leading-relaxed">
+        </Lead>
+        <Body>
           You don&apos;t grind points. You build a reputation in a real place,
           with real people, who notice when you&apos;re there and feel it when
           you&apos;re not. The score is just a mirror held up to that.
-        </p>
+        </Body>
       </Section>
 
       <Statement tone="surface">
@@ -349,13 +351,13 @@ function LegacyTheQuest() {
           title="Your first season begins now."
           kicker={`The founding cohort is climbing it together in ${FOUNDING_PLACE}.`}
         />
-        <p className="text-lg text-muted leading-relaxed">
+        <Body>
           Every player starts as a ghost. Join the beta and you start your first
           season alongside the founding members, the people shaping what these
           ranks and Arcs even mean. Show up once, earn your first zap, and watch
           the path light up. You can begin anywhere: all it takes is a Circle and
           a standing time.
-        </p>
+        </Body>
         <p className="mt-7 inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.2em] text-primary-strong">
           <Trophy className="w-4 h-4" aria-hidden /> Season one is open
         </p>

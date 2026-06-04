@@ -185,8 +185,8 @@ export function PullQuote({
   const isInk = tone === 'ink'
   const bg = tone === 'canvas' ? 'bg-marketing-canvas' : isInk ? 'bg-slat' : 'bg-surface'
   return (
-    <section className={`${bg} px-6 py-20 sm:py-28`}>
-      <figure className="max-w-4xl mx-auto text-center">
+    <section className={`${bg} px-6 py-20 sm:py-24`}>
+      <figure className="max-w-3xl mx-auto text-center">
         <blockquote
           className={`font-display uppercase text-3xl sm:text-4xl lg:text-5xl leading-[1.08] text-balance ${
             isInk ? 'text-on-ink' : 'text-text'
@@ -379,9 +379,9 @@ export function Statement({
   const isInk = tone === 'ink'
   const bg = tone === 'canvas' ? 'bg-marketing-canvas' : isInk ? 'bg-slat' : 'bg-surface'
   return (
-    <section className={`${bg} px-6 ${pad ?? 'py-16 sm:py-20'} ${vis}`}>
+    <section className={`${bg} px-6 ${pad ?? 'py-20 sm:py-24'} ${vis}`}>
       <p
-        className={`font-display uppercase max-w-4xl mx-auto text-center ${
+        className={`font-display uppercase max-w-3xl mx-auto text-center ${
           isInk ? 'text-on-ink' : 'text-text'
         } text-4xl sm:text-5xl lg:text-6xl leading-[1.1]`}
       >
@@ -446,10 +446,10 @@ export function ZigZag({
   // text column and leave a big empty gap below the section.
   const wrapMax = imgAspect === 'portrait' || imgAspect === 'square' ? 'max-w-sm mx-auto' : ''
   return (
-    <section className={`${bg} px-6 ${pad ?? 'py-16 sm:py-20'} ${vis}`}>
-      <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-8 md:gap-10 items-center">
+    <section className={`${bg} px-6 ${pad ?? 'py-20 sm:py-24'} ${vis}`}>
+      <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-8 md:gap-10 items-center">
         <div
-          className={`w-full ${wrapMax} rounded-3xl overflow-hidden border ${
+          className={`w-full ${wrapMax} rounded-2xl overflow-hidden border ${
             isInk ? 'border-ink-border shadow-pop' : 'border-border shadow-md'
           } ${reverse ? 'md:order-last' : ''}`}
         >
@@ -461,7 +461,7 @@ export function ZigZag({
             sizes="(min-width: 768px) 40rem, 100vw"
           />
         </div>
-        <div>
+        <div className="max-w-prose">
           {eyebrow && (
             <p
               className={`text-sm font-bold uppercase tracking-[0.25em] mb-4 ${

@@ -27,6 +27,8 @@ import {
   BetaCTA,
   Button,
   Card,
+  Lead,
+  Body,
 } from '@/components/marketing/marketing-ui'
 import { config } from '@/lib/page-editor/config'
 import { getPublishedData } from '@/lib/page-editor/data'
@@ -107,17 +109,17 @@ function LegacyTheCommunity() {
           title="The cure for too many feeds isn't one more."
           kicker="It's a few real people, near you, who notice when you're gone."
         />
-        <p className="text-xl text-text/85 leading-relaxed">
+        <Lead>
           You already have the apps. What you&apos;re missing is the standing time,
           the handful of faces, the small group small enough that your absence
           leaves a hole. That&apos;s not a feature you download. It&apos;s a
           structure you join.
-        </p>
-        <p className="mt-5 text-lg text-muted leading-relaxed">
+        </Lead>
+        <Body>
           Frequency gives community a shape: four channels to find your practice,
           interests to find your people, and Circles to actually belong. No
           application, no audition, two words and you&apos;re in the room.
-        </p>
+        </Body>
       </Section>
 
       <Statement tone="surface">
@@ -211,17 +213,11 @@ function LegacyTheCommunity() {
 
       {/* The app — an interactive look at what carries the thread day to day */}
       <Section tone="canvas">
-        <div className="max-w-3xl mx-auto text-center mb-10">
-          <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
-            The app
-          </p>
-          <h2 className="font-display uppercase text-text text-4xl sm:text-5xl">
-            Your people, in your pocket.
-          </h2>
-          <p className="mt-4 text-xl italic text-muted">
-            Tap through the four things you&apos;ll actually use.
-          </p>
-        </div>
+        <SectionHeading
+          eyebrow="The app"
+          title="Your people, in your pocket."
+          kicker="Tap through the four things you'll actually use."
+        />
         <ProductTour />
       </Section>
 
@@ -301,7 +297,7 @@ function LegacyTheCommunity() {
       </ZigZag>
 
       {/* Rhythm band — marquee inside a dark slat band */}
-      <section className="bg-slat">
+      <div className="bg-slat">
         <Marquee
           items={[
             'Pick what you practice',
@@ -312,13 +308,14 @@ function LegacyTheCommunity() {
             'Pay it forward',
           ]}
         />
-      </section>
+      </div>
 
       {/* What makes a Circle hold — the pay-it-forward heart */}
       <Section tone="surface">
         <SectionHeading
           eyebrow="What holds it together"
           title="Leaderful, not leader-dependent."
+          kicker="Three things keep a Circle standing on its own."
         />
         <div className="grid gap-5 sm:grid-cols-3">
           <Hold
@@ -386,13 +383,13 @@ function LegacyTheCommunity() {
           title="It begins in one real place."
           kicker={`The founding community is taking shape in ${FOUNDING_PLACE}.`}
         />
-        <p className="text-lg text-muted leading-relaxed">
+        <Body>
           Every cell starts somewhere. Ours is taking root in {FOUNDING_PLACE}:
           real Circles, real gatherings, real neighbors who show up for each other.
           Join the beta and you&apos;re not a number on a waitlist; you&apos;re one
           of the people this whole thing grows from. And you can start anywhere: a
           Circle only needs a few people and a standing time.
-        </p>
+        </Body>
       </Section>
 
       <PillarNav current="/the-community" tone="surface" />
@@ -488,7 +485,7 @@ function DayBeat({
   body: string
 }) {
   return (
-    <li className="flex items-start gap-4 rounded-3xl border border-border bg-surface p-5 sm:p-6 shadow-sm">
+    <li className="flex items-start gap-4 rounded-2xl border border-border bg-surface p-5 sm:p-6 shadow-sm">
       <div className="shrink-0 w-12 h-12 rounded-2xl bg-primary-bg flex items-center justify-center">
         <Icon className="w-6 h-6 text-primary-strong" aria-hidden />
       </div>
