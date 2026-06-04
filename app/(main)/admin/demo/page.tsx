@@ -49,9 +49,8 @@ export default async function AdminDemoPage() {
   return (
     <AdminPage
       title="Demo Studio"
-      eyebrow="Platform"
       icon={Sparkles}
-      description="Generate a believable, year-old-feeling community for any area — then show, hide, grow, or purge it. Everything is tagged demo (⚡), previewable before it writes, and reversible."
+      description="Generate a believable community for any area, then manage or purge it — all tagged demo (⚡), previewable, and reversible."
       width="narrow"
     >
       <AdminSection

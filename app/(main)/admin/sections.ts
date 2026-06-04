@@ -27,7 +27,6 @@ import {
   HelpCircle,
   Users,
   Shield,
-  FlaskConical,
   QrCode,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -107,7 +106,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     links: [
       { href: '/admin/members', label: 'Members', desc: 'Roster, subscribers, and accounts.', Icon: Users, min: 'janitor' },
       { href: '/admin/roles', label: 'Roles', desc: 'Assign roles and the permission grid.', Icon: Shield, min: 'janitor' },
-      { href: '/admin/demo', label: 'Demo Studio', desc: 'Generate, manage, and purge seeded demo content.', Icon: FlaskConical, min: 'janitor' },
+      { href: '/admin/demo', label: 'Demo Studio', desc: 'Generate, manage, and purge seeded demo content.', Icon: Sparkles, min: 'janitor' },
     ],
   },
 ] as const
