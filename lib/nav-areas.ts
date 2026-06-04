@@ -48,6 +48,7 @@ export const NAV_AREAS: readonly NavArea[] = [
   { key: 'channels',  href: '/channels',  label: 'Channels',  section: 'Community', defaultAccess: 'visitor' },
   { key: 'events',    href: '/events',    label: 'Events',    section: 'Community', defaultAccess: 'member'  },
   { key: 'practices', href: '/practices', label: 'Practices', section: 'Community', defaultAccess: 'member'  },
+  { key: 'journeys',  href: '/journeys',  label: 'Journeys',  section: 'Community', defaultAccess: 'member'  },
   { key: 'programs',  href: '/programs',  label: 'Programs',  section: 'Community', defaultAccess: 'member'  },
 
   // ── Network → your people + DMs + partners (above The Quest) ─────────────────

@@ -21,6 +21,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   store: 'Store',
   vault: 'Vault',
   practices: 'Practices',
+  journeys: 'Journeys',
   programs: 'Programs',
   friends: 'Friends',
   partners: 'Partners',

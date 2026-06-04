@@ -23,6 +23,7 @@ import {
   Activity,
   Bot,
   Map,
+  Route,
   QrCode,
 } from 'lucide-react'
 
@@ -36,6 +37,7 @@ export const AREA_ICONS: Record<string, ElementType> = {
   channels: Radio,
   events: CalendarDays,
   practices: Sparkles,
+  journeys: Route,
   programs: BookOpen,
   broadcast: Megaphone,
   messages: MessageSquare,
