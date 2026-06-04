@@ -101,11 +101,12 @@ export function StyleEditor({
                 ['square', 'Square'],
                 ['rounded', 'Rounded'],
                 ['dots', 'Dots'],
+                ['connected', 'Connected'],
               ]}
               onChange={(v) => set('moduleShape', v as ModuleShape)}
             />
             <Select
-              label="Eye shape"
+              label="Eye frame"
               value={value.eyeShape}
               options={[
                 ['square', 'Square'],
@@ -113,6 +114,16 @@ export function StyleEditor({
                 ['circle', 'Circle'],
               ]}
               onChange={(v) => set('eyeShape', v as EyeShape)}
+            />
+            <Select
+              label="Eye pupil"
+              value={value.pupilShape}
+              options={[
+                ['square', 'Square'],
+                ['rounded', 'Rounded'],
+                ['circle', 'Circle'],
+              ]}
+              onChange={(v) => set('pupilShape', v as EyeShape)}
             />
           </div>
 
