@@ -762,7 +762,6 @@ export default function AppShell({
     !pathname.startsWith('/settings') &&
     !pathname.startsWith('/marketing') &&
     !(pathname.startsWith('/messages/') && pathname !== '/messages') &&
-    !(pathname.startsWith('/people/') && pathname !== '/people') &&
     !isEntityDetail
 
   function cycleTheme() {
