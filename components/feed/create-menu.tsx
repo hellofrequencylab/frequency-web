@@ -2,65 +2,8 @@
 
 import Link from 'next/link'
 import { useState, useEffect, useRef } from 'react'
-import {
-  Plus,
-  CalendarDays,
-  Megaphone,
-  Users,
-  Hash,
-  MessageSquare,
-} from 'lucide-react'
-
-type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
-
-const CREW_PLUS: CommunityRole[] = ['crew', 'host', 'guide', 'mentor', 'admin', 'janitor']
-const HOST_PLUS: CommunityRole[] = ['host', 'guide', 'mentor', 'admin', 'janitor']
-
-type Item = {
-  href: string
-  label: string
-  hint: string
-  Icon: React.ElementType
-  roles: CommunityRole[]
-}
-
-const ITEMS: Item[] = [
-  {
-    href: '/messages?compose=dm',
-    label: 'New Conversation',
-    hint: 'Direct or group message',
-    Icon: MessageSquare,
-    roles: ['member', ...CREW_PLUS],
-  },
-  {
-    href: '/events/new',
-    label: 'New Event',
-    hint: 'Gathering, ride, meetup',
-    Icon: CalendarDays,
-    roles: CREW_PLUS,
-  },
-  {
-    href: '/messages?compose=room',
-    label: 'New Room',
-    hint: 'Topic-based chat space',
-    Icon: Hash,
-    roles: HOST_PLUS,
-  },
-  {
-    href: '/circles/new',
-    label: 'New Circle',
-    hint: 'Place-based practice group',
-    Icon: Users,
-    roles: HOST_PLUS,
-  },
-  {
-    href: '/broadcast',
-    label: 'New Broadcast',
-    hint: 'Announcement to the community',
-    Icon: Megaphone,
-    roles: HOST_PLUS,
-  },
-]
+import { Plus } from 'lucide-react'
+import { createItemsForRole, type CommunityRole } from './create-actions'
 
 export function CreateMenu({ role }: { role: CommunityRole }) {
   const [open, setOpen] = useState(false)
@@ -74,7 +17,7 @@ export function CreateMenu({ role }: { role: CommunityRole }) {
     return () => document.removeEventListener('mousedown', handleOutside)
   }, [])
 
-  const visible = ITEMS.filter((it) => it.roles.includes(role))
+  const visible = createItemsForRole(role)
   if (visible.length === 0) return null
 
   return (
