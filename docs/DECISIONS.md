@@ -1824,6 +1824,43 @@ follow-up touch pass, not blockers. Rules added to [DESIGN.md](DESIGN.md).
 
 ---
 
+## ADR-078: Home goes Lab-first (Place → People → Path), "Game" → "Quest", CTA enters the induction
+
+**Status:** Accepted · 2026-06-04 · revises the splash spine set in ADR-076. Content/IA + one routing
+change; no schema change.
+
+**Context:** ADR-076 led the home with the abstract "third space" model and presented the Lab as one of
+three co-equal pillars, with "the Game" in the middle. The differentiator (a real physical room) was
+buried, and the engagement system was still called "the Game" in marketing even though the live product
+already calls it "the Quest" (the stats dock shows a Quest section linking to `/crew/quests`).
+
+**Decision:**
+1. **Re-sequence the splash as Place → People → Path.** The **Lab leads** as the emblem — the hero is
+   the thermal-circuit photo (`lab-thermal.jpg`), copy "We're rebuilding the third place." The ache is
+   compressed to one beat so we don't sell solution-first into cold traffic, the **Lab** expands as the
+   first feature, **community carries the "start anywhere" on-ramp** immediately after (so non-local
+   visitors aren't stranded — North County San Diego is the named beachhead, not a gate), and the
+   **Quest closes the feature arc** right before the CTA ("Real life is the high score").
+2. **Rename "the Game" → "the Quest" in all member/visitor-facing copy** (home, help center, metadata),
+   aligning marketing to the product's existing vocabulary. Internal code identifiers
+   (`GameStatsDockClient`, `game-stats-dock.tsx`, the "Field game system" comment) are invisible to
+   users and left as-is — not a code refactor.
+3. **"Join the Beta" now enters the beta flow.** `BETA_CTA_HREF` carries `?next=/onboarding/beta`, and
+   sign-in plumbs a validated same-origin `next` through the magic-link / OAuth `emailRedirectTo` into
+   `/auth/callback` (which re-validates it). New members land in the cinematic induction instead of the
+   bare feed. Previously `next` was never propagated, so every new account defaulted to `/feed`.
+
+Also fixed in the same pass: the white-on-white CTA in dark mode (`text-text` → `text-ink` on
+white-over-dark pills — the marketing header, the in-app header, the onboarding step indicator).
+
+**Consequences:** The front door now leads with the un-copyable thing (a real room), keeps the emotional
+on-ramp, and gives non-local visitors a path — while routing every "Join" straight into the induction.
+The `/the-lab` page stays the deep-dive; the home Lab beat is the trailer (links to it). Verified by
+tsc + lint + 153 tests + a production compile/typecheck (page-data collection needs Supabase env, which
+the Vercel build has). SEO/AEO structured-data pass still pending from ADR-076.
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 
