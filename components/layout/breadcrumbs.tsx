@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ChevronRight } from 'lucide-react'
-import { adminGroupLabelForPath } from '@/app/(main)/admin/sections'
 
 // Site-wide breadcrumb trail, auto-derived from the path. Known segments get a
 // canonical label (matching the nav); unknown segments (slugs) are titleized.
@@ -65,30 +64,21 @@ export function Breadcrumbs({
 }) {
   const pathname = usePathname()
 
-  // Admin pages live under a UI "group" (Platform, Community, …) that isn't a URL
-  // segment, so the plain path-derived trail would skip it. Inject it so the trail
-  // reflects the IA — e.g. Admin › Platform › Demo Studio. The group crumb has no
-  // index page, so it's rendered as plain text (href '').
-  const adminTrail = (): Crumb[] => {
-    const leaf = pathname.split('/').filter(Boolean).slice(-1)[0]
-    const group = adminGroupLabelForPath(pathname)
-    const t: Crumb[] = [{ href: '/admin', label: 'Admin' }]
-    if (group) t.push({ href: '', label: group })
-    t.push({ href: '', label: SEGMENT_LABELS[leaf] ?? titleize(leaf) })
-    return t
-  }
+  // Admin carries its own wayfinding in the sub-nav (sub-nav.tsx) — a breadcrumb
+  // prefix (Admin › Group) folded into the same row as the tabs — so a separate
+  // site breadcrumb here would just duplicate it. Skip it on /admin unless a page
+  // passes an explicit trail.
+  if (!trail && pathname.startsWith('/admin')) return null
 
   const crumbs: Crumb[] =
     trail ??
-    (pathname.startsWith('/admin') && pathname !== '/admin'
-      ? adminTrail()
-      : pathname
-          .split('/')
-          .filter(Boolean)
-          .map((seg, i, all) => ({
-            href: '/' + all.slice(0, i + 1).join('/'),
-            label: SEGMENT_LABELS[seg] ?? titleize(seg),
-          })))
+    pathname
+      .split('/')
+      .filter(Boolean)
+      .map((seg, i, all) => ({
+        href: '/' + all.slice(0, i + 1).join('/'),
+        label: SEGMENT_LABELS[seg] ?? titleize(seg),
+      }))
 
   if (crumbs.length < 2) return null
 
@@ -100,18 +90,16 @@ export function Breadcrumbs({
       {crumbs.map((c, i) => {
         const last = i === crumbs.length - 1
         return (
-          <span key={`${i}-${c.label}`} className="flex items-center gap-1.5">
+          <span key={c.href} className="flex items-center gap-1.5">
             {i > 0 && <ChevronRight className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />}
             {last ? (
               <span className="max-w-[14rem] truncate font-medium text-text" aria-current="page">
                 {c.label}
               </span>
-            ) : c.href ? (
+            ) : (
               <Link href={c.href} className="max-w-[11rem] truncate transition-colors hover:text-text">
                 {c.label}
               </Link>
-            ) : (
-              <span className="max-w-[11rem] truncate">{c.label}</span>
             )}
           </span>
         )
