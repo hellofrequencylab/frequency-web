@@ -8,6 +8,7 @@ import type { CommunityRole } from '@/components/sidebar/right-sidebar'
 import { getUnreadCount } from '@/app/(main)/notifications/actions'
 import { getAreaPermissions } from '@/lib/permissions'
 import { applyViewAs, viewingAsVisitor } from '@/lib/view-as'
+import { getStaffMember } from '@/lib/staff'
 import { AchievementToastContainer } from '@/components/achievement-toast'
 import { ZapToastContainer } from '@/components/zap-toast'
 import { PresenceHeartbeat } from '@/components/presence/heartbeat'
@@ -69,6 +70,13 @@ export default async function MainLayout({
   // items are usable vs. muted. Falls back to {} (code defaults) on error.
   const permissions = await getAreaPermissions()
 
+  // Staff axis (team_members) — unlocks the Studio nav group independent of trust
+  // role (ADR-027). Suppressed while previewing a lower role/visitor so the janitor
+  // "view as" accurately reflects what that role sees.
+  const previewingDown = previewVisitor || effectiveRole !== realRole
+  const staff = previewingDown ? null : await getStaffMember()
+  const staffRole = staff?.role ?? null
+
   // Help index for the app-wide support launcher (docs/SUPPORT-SYSTEM.md §1).
   // Small + read from local Markdown; cheap to load with the shell.
   const helpIndex = await getSearchIndex()
@@ -115,6 +123,7 @@ export default async function MainLayout({
       ticker={ticker}
       unreadCount={unreadCount}
       permissions={permissions}
+      staffRole={staffRole}
     >
       {children}
       <AchievementToastContainer />
