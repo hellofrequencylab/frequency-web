@@ -75,22 +75,12 @@ Two levers, in order of severity:
    the rows.
 
 
-## v2 cast (the live Beta community) — ADR-080
+## Demo content is wizard-generated (ADR-082)
 
-The demo layer was rebuilt as one bounded, local **Encinitas** community (replacing
-the old SD `c…` cast and the out-of-area national `d…` metros). Migration series
-`supabase/migrations/20260605000001`–`…000300`; casting bible + build spec in
-[DEMO-CAST.md](DEMO-CAST.md).
-
-- **~250 members · 12 circles**, a rank pyramid (3 luminary / 12 conduit / 30 agent
-  / 55 operative / 80 runner / 70 ghost), 16 events (10 past + 6 upcoming), ~300
-  posts + ~144 replies, ~40 cross-memberships.
-- **Set-generated engagement** (deterministic, idempotent): post reactions + synced
-  counters, event RSVPs, achievement unlocks, attendance streaks, member-practice
-  adoptions — all keyed to `is_demo` so they purge with the cast.
-- **Counts stay honest** — no inflated `member_count` (the membership trigger keeps
-  it true); the "year-old, went viral" feel comes from maturity signals, not numbers.
-- Every v2 migration was validated against a throwaway PG16 cluster before commit.
+The hand-built 250-cast was **retired**. Demo content is now generated on demand
+by the **Seed Studio** (`/admin/demo/studio`, `lib/demo/engine.ts`) and cleaned
+by the `/admin/demo` purge button + the nightly decay cron. Every row is still
+`is_demo`, badged with the yellow bolt, and counted honestly. See ADR-081/082.
 
 
 ## Claim this Circle (ADR-081, Phase 2)

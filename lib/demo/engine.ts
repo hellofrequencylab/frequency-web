@@ -142,7 +142,7 @@ const ALIVE: Record<string, { circles: [number, number]; size: [number, number];
   growing:   { circles: [4, 6], size: [10, 16], postsPer: 0.8 },
   thriving:  { circles: [8, 12], size: [16, 24], postsPer: 1.0 },
 }
-// Rank bands (docs/DEMO-CAST.md §3) — economy values per rank.
+// Rank bands (ghost -> luminary) — economy values per rank.
 const BAND = {
   ghost:     { z: [5, 95],     g: [5, 60],     s: [0, 3],   a: [1, 4] },
   runner:    { z: [100, 290],  g: [50, 150],   s: [2, 8],   a: [4, 7] },
