@@ -2034,6 +2034,76 @@ breadcrumbs, dashboard, dock, the-quest marketing, admin). Types regenerated.
 keyed `arcs` is orphaned (reverts to the `crew` default — the intended baseline). The DB still has
 constraint/index names containing "arc" (cosmetic; functional).
 
+## ADR-086: Community communication architecture — six surfaces, Channels as feed+room, 1:1 DM with group→rooms, location-first feed
+
+**Status:** Accepted · 2026-06-04 · spec in `COMMS-STRATEGY.md`. Staged build A→E; no code shipped yet.
+
+**Context:** Community communication had grown three overlapping concepts — topical Channels
+(a feed/discovery taxonomy), Rooms (`visibility` public/private/scoped, Discord-ish), and a
+`conversations` table that served **both** 1:1 and group DMs. The product intent is a *local-first,
+always-alive* place: a newcomer should see nearby activity and Circles, the feed should niche from
+global → local as they engage, and messaging should have one obvious 1:1 DM plus a community board
+for everything multi-party. The overlap made "where does X live?" ambiguous and blocked a clean AI
+layer.
+
+**Decision:** Collapse communication into **six non-overlapping surfaces** (Feed, Channels, Circle
+[+Hub/Nexus], Dispatch, Rooms, Direct Messages — see `COMMS-STRATEGY.md` table) with these rulings:
+- **Channel = feed + one open public room.** A topical Channel gets both its content feed and a
+  single always-on public room anyone tuned-in can post to — the answer to "engage even without a
+  related Circle." Circles stay the local/real-world unit; Channels the global/topical unit.
+- **DM is strictly 1:1.** `conversations` becomes 1:1-only; existing group conversations are
+  **migrated to `rooms`** with `visibility='private'` ("private chat room = group message").
+  Public rooms remain Discord-style threads (`room_messages.parent_id` activated).
+- **DM security = hardened, server-readable** (RLS + TLS, **message requests** for strangers,
+  disappearing-message option, block/report UX) — **not** E2E, deliberately, so AI + moderation can
+  extend to messaging later.
+- **Location-first feed.** Member location becomes first-class (promote `profiles.meta.beta.location`
+  to geo columns + PostGIS; member joins the map, not just Circles). `feed_for_viewer` gains
+  distance ranking + a `radius_m` param driven by a **member radius slider**; home location with an
+  optional **live-GPS toggle**.
+- **Dispatch ceiling.** Add `global` to `dispatches.audience_scope` gated to **staff/janitor only**;
+  Circle/Hub/Nexus leaders keep their scoped reach.
+- **Room AI (all four jobs):** catch-me-up summaries, topic menu + semantic search (reuse the
+  gte-small embeddings already running for help search, over `room_messages`), Q&A over history,
+  and intent-driven surfacing of Circles/events/Quest actions — under the existing per-feature AI
+  budget ledger.
+- **Liveness without fatigue:** real-time push only for the personal (DMs, dispatches *to you*,
+  @mentions, your event RSVPs); ambient activity rolls into a "near you" pulse/digest via the
+  durable `notification_queue`. Ship all four liveness signals (presence, typing, near-you-now
+  counter, recent-activity markers).
+- **Open-room moderation = AI pre-screen + human escalation** (reuses `moderation_actions`).
+
+**Consequences:** First build (Phase A) is member geo + nearby-first feed + the join/start
+onboarding. Group-DM→private-room is a one-time, reversible data migration needing a participant/
+message-integrity verification pass. Choosing server-readable DMs trades maximal privacy for an
+extensible AI/moderation surface (revisit if E2E becomes a requirement). `feed_for_viewer` and the
+`dispatches` enum change are additive/backward-compatible.
+
+## ADR-087: Member-visible hierarchy + always-offer "Start a Circle" (supersedes IA-STRATEGY hide-and-join-only)
+
+**Status:** Accepted · 2026-06-04. Supersedes the "Circle + Interest only, hubs/nexuses contextual"
+and "join, don't found" guidance in `IA-STRATEGY.md` (update that doc on build).
+
+**Context:** `IA-STRATEGY.md` deliberately hid Hub/Nexus jargon from members and steered newcomers
+to *join* (not found) Circles, to avoid a map littered with thin/empty Circles. The communication
+strategy (ADR-086) instead wants the full place-tree to feel real and navigable, and wants every
+newcomer offered *both* "join nearby" and "start here" from day one — reinforcing the local,
+go-build-it intent.
+
+**Decision:**
+- **Surface the full hierarchy.** Circle → Hub → Nexus are member-visible, navigable layers (not
+  just backstage context).
+- **Always offer join + start.** New members see "Join a Circle near you" and "Start a Circle here"
+  side by side, regardless of nearby density.
+- **Empty-Circle guardrail.** Mitigate the thin-Circle risk from `IA-STRATEGY.md` by **deferring a
+  Circle's heavier surfaces** — its private room and richer tooling — until it crosses a small
+  activity/size threshold (auto-provision on momentum). Founding stays easy; ghost Circles stay
+  lightweight.
+
+**Consequences:** `IA-STRATEGY.md` must be updated (it currently states the opposite). More
+vocabulary for newcomers to learn (Hub/Nexus); offset by clearer sense of scale. Circle-creation
+volume rises — the momentum-gated room provisioning (ADR-086) is the pressure valve.
+
 ---
 ### Decisions intentionally NOT duplicated here
 
