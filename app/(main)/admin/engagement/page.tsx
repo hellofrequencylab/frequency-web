@@ -2,7 +2,7 @@ import { Users, Flame, TrendingUp } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminPage, AdminSection } from '@/components/admin/admin-page'
 import { StatCard } from '@/components/ui/stat-card'
-import { getEngagementDashboard } from '@/lib/analytics/dashboard'
+import { getEngagementDashboard, type FunnelStep } from '@/lib/analytics/dashboard'
 
 // Janitor-only: the live engagement dashboard (ENGAGEMENT-MARKETING-ENGINE.md Phase B).
 // WAM + activation, the activation funnel (where it jams), what's happening in the
@@ -31,24 +31,20 @@ export default async function EngagementDashboardPage() {
         </div>
       </AdminSection>
 
-      {/* Activation funnel — where members drop off */}
+      {/* New-member activation — induction → Vera → first circle → first practice */}
       <AdminSection
-        title="Activation funnel"
+        title="New-member activation"
+        description="Distinct founders reaching each step of the journey. The drop tells you where to focus."
+      >
+        <FunnelView steps={d.activationFunnel} />
+      </AdminSection>
+
+      {/* Broad engagement funnel — where members drop off across the app */}
+      <AdminSection
+        title="Engagement funnel"
         description="Distinct members reaching each step. Drop-off fills in as page + feature events accrue."
       >
-        <div className="space-y-2">
-          {d.funnel.map((s) => (
-            <div key={s.eventType} className="flex items-center justify-between rounded-xl border border-border bg-surface px-4 py-2.5">
-              <span className="text-sm text-text">{s.step}</span>
-              <span className="flex items-center gap-3">
-                {s.dropPct !== null && s.dropPct > 0 && (
-                  <span className="text-xs font-semibold text-danger">−{s.dropPct}%</span>
-                )}
-                <span className="font-bold text-text">{s.actors}</span>
-              </span>
-            </div>
-          ))}
-        </div>
+        <FunnelView steps={d.funnel} />
       </AdminSection>
 
       {/* What's happening — event volume by type */}
@@ -80,6 +76,24 @@ export default async function EngagementDashboardPage() {
         <TopList title="Top features" rows={d.topFeatures} empty="No feature events yet." />
       </div>
     </AdminPage>
+  )
+}
+
+function FunnelView({ steps }: { steps: FunnelStep[] }) {
+  return (
+    <div className="space-y-2">
+      {steps.map((s) => (
+        <div key={s.eventType} className="flex items-center justify-between rounded-xl border border-border bg-surface px-4 py-2.5">
+          <span className="text-sm text-text">{s.step}</span>
+          <span className="flex items-center gap-3">
+            {s.dropPct !== null && s.dropPct > 0 && (
+              <span className="text-xs font-semibold text-danger">−{s.dropPct}%</span>
+            )}
+            <span className="font-bold text-text">{s.actors}</span>
+          </span>
+        </div>
+      ))}
+    </div>
   )
 }
 
