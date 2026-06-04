@@ -35,12 +35,12 @@ export function CircleCard({ circle, isMember }: { circle: CircleCardData; isMem
             alt={circle.name}
             width={144}
             height={144}
-            className={`h-36 w-36 rounded-full object-cover shadow-sm ring-1 ring-border/60 transition-transform duration-200 group-hover/img:scale-[1.03] ${
+            className={`h-28 w-28 sm:h-36 sm:w-36 rounded-full object-cover shadow-sm ring-1 ring-border/60 transition-transform duration-200 group-hover/img:scale-[1.03] ${
               circle.isDemo ? 'grayscale-[0.5]' : ''
             }`}
           />
         ) : (
-          <div className="flex h-36 w-36 items-center justify-center rounded-full bg-primary-bg text-primary-strong transition-transform duration-200 group-hover/img:scale-[1.03]">
+          <div className="flex h-28 w-28 sm:h-36 sm:w-36 items-center justify-center rounded-full bg-primary-bg text-primary-strong transition-transform duration-200 group-hover/img:scale-[1.03]">
             <Users className="h-14 w-14" />
           </div>
         )}

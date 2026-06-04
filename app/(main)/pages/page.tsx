@@ -29,7 +29,7 @@ export default async function PagesDirectory() {
         affected.
       </p>
 
-      <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden max-w-3xl">
+      <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-x-auto max-w-3xl">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border text-left text-xs uppercase tracking-wider text-subtle">

@@ -72,7 +72,7 @@ export default async function ContactsPage({
           <p className="text-sm text-muted">No contacts in this view.</p>
         </div>
       ) : (
-        <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
+        <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-left text-xs uppercase tracking-wider text-subtle">

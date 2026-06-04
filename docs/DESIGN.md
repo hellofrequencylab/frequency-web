@@ -275,6 +275,18 @@ for in-app surfaces (keep `rounded-3xl` for marketing feature cards only).
 `shadow-sm`, hover lifts to `shadow-md`. A card means a *distinct object* — lists/sections group
 with title + whitespace, not a box each.
 
+## Responsive (mobile-first) rules
+
+The site is the mobile app (no native app until Stage C). Build mobile-first; verify at 320–390px.
+Four rules keep it from drifting (ADR-077):
+
+1. **Tables scroll, never clip.** Every `<table>` lives in an `overflow-x-auto` wrapper.
+2. **No fixed widths wider than the phone.** Avoid `w-[..px/rem]` / `min-w-[..]` over ~300px on
+   in-flow content; use fluid widths + `max-w-*`, or a smaller base that scales up at `sm:`+.
+3. **Grids start narrow.** Multi-column grids base at `grid-cols-1` (or 2) and widen at breakpoints —
+   never a base `grid-cols-3+`.
+4. **Anything hidden at `md:` needs a mobile equivalent** (e.g. the marketing nav → hamburger sheet).
+
 ## Sources
 
 UI/typography direction drawn from 2026 trend research:

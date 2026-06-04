@@ -1786,6 +1786,44 @@ SEO/AEO metadata + structured data is the next pass, now that the page structure
 
 ---
 
+## ADR-077: Mobile-responsive sweep + the standing responsive rules
+
+**Status:** Accepted · 2026-06-04 · a QA/fix sweep of the mobile (PWA) web experience + a written
+standard so the drift doesn't re-accrue. No native app (that's Stage C); "the mobile app" is the
+responsive website. No schema change.
+
+**Context:** A full sweep of the app at 320–390px. The codebase was already strongly mobile-built
+(the app-shell collapses to a drawer + bottom bar; compose modals are bottom sheets; grids use
+single-column bases; templates use `min-w-0`/`truncate`/`flex-wrap`). The sweep found a focused set of
+real bugs rather than a systemic problem.
+
+**Decision (fixes):**
+- **Wide data tables scroll, not clip.** 7 admin/marketing tables wrapped their `<table>` in
+  `overflow-hidden` (clips columns on a phone) → changed to `overflow-x-auto`
+  (`/admin/engagement|members|outcomes`, `/marketing/contacts|beta`, `/pages`; the permission grid
+  already scrolled).
+- **Fixed widths that exceeded a 320px viewport** reduced/made fluid: the home model `Pillar` circle
+  (`w-80`→`w-64` base), the induction profile card (`w-72`→`w-full max-w-72`), the discover hero stat
+  row (`flex`→`flex-wrap`).
+- **Marketing header gained a mobile menu.** The desktop `PrimaryNav` is `hidden md:flex`, so phones
+  had no way to reach How-it-works/The Lab/Pricing/About/Discover — only the Join CTA. A hamburger
+  sheet (`components/layout/marketing-mobile-menu.tsx`) now carries the full splash + Discover nav.
+- **App main padding** `px-6`→`px-4 sm:px-6` for breathing room on phones.
+
+**The standing rules (so it stays fixed):**
+1. Every `<table>` lives in an `overflow-x-auto` wrapper.
+2. No fixed `w-[..px/rem]`/`min-w-[..]` wider than ~300px on in-flow content — use fluid + `max-w-*` or
+   a smaller mobile base that scales up at `sm:`+.
+3. Multi-column grids start at `grid-cols-1` (or 2) and widen at breakpoints — never base `grid-cols-3+`.
+4. Any nav hidden at `md:` needs a mobile equivalent.
+
+**Consequences:** Verified by code review at small widths, not on-device — a few items are flagged for a
+real-phone glance (induction cinematic headings at `text-5xl` base; hover-only affordances that are
+invisible to touch; a couple of pre-existing `bg-white`/`text-white` token violations). Those are a
+follow-up touch pass, not blockers. Rules added to [DESIGN.md](DESIGN.md).
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 

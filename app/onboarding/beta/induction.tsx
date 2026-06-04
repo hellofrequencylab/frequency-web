@@ -588,7 +588,7 @@ export default function BetaInduction({ userId, userEmail, initialHandle, previe
 
                 <div className="mt-7 flex flex-col items-center gap-8 md:flex-row md:items-center md:justify-center md:gap-10">
                   {/* portrait profile card with blank slots */}
-                  <div className="w-72 shrink-0 rounded-3xl border border-border bg-surface p-7 text-center shadow-sm">
+                  <div className="w-full max-w-72 shrink-0 rounded-3xl border border-border bg-surface p-7 text-center shadow-sm">
                     <div className="mx-auto w-fit rounded-full ring-4 ring-surface">{renderAvatar()}</div>
                     <p className="mt-4 text-xl font-semibold text-text">{displayName || <span className="text-subtle">Your name</span>}</p>
                     <p className="text-sm text-muted">@{handle || 'handle'}</p>

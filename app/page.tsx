@@ -566,8 +566,8 @@ function Pillar({
         alt={alt}
         width={512}
         height={512}
-        sizes="(min-width: 640px) 32rem, 20rem"
-        className="w-80 h-80 sm:w-[32rem] sm:h-[32rem] rounded-full object-cover border-4 border-white/10 shrink-0"
+        sizes="(min-width: 640px) 32rem, 16rem"
+        className="w-64 h-64 sm:w-[32rem] sm:h-[32rem] rounded-full object-cover border-4 border-white/10 shrink-0"
       />
       <div
         className={`relative z-10 flex flex-col justify-center max-w-md -mt-12 sm:mt-0 ${

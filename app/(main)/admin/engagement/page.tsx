@@ -52,7 +52,7 @@ export default async function EngagementDashboardPage() {
         {d.byType.length === 0 ? (
           <p className="text-sm text-muted">No events yet in this window.</p>
         ) : (
-          <div className="overflow-hidden rounded-xl border border-border">
+          <div className="overflow-x-auto rounded-xl border border-border">
             <table className="w-full text-sm">
               <thead className="bg-surface-elevated text-left text-xs text-subtle">
                 <tr><th className="px-4 py-2 font-medium">Event</th><th className="px-4 py-2 text-right font-medium">Events</th><th className="px-4 py-2 text-right font-medium">Members</th></tr>
