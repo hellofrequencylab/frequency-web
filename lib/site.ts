@@ -59,15 +59,15 @@ export const MARKETING_NAV: NavLink[] = [
   { label: "About", href: "/about" },
 ];
 
-// Primary acquisition CTA. The beta is OPEN — clicking "Join the Beta" drops the
-// member into passwordless sign-in carrying `next=/onboarding/beta`, so once the
-// account is created they land directly in the cinematic beta induction instead of
-// the bare feed. (sign-in plumbs `next` into the auth callback, which re-validates
-// it as a same-origin path.) The /beta marketing + waitlist page (BetaForm →
-// requestBetaAccess) is kept intact for the future gated weekly-cohort phase, when
-// AI-driven admission re-introduces the lead capture.
+// Primary acquisition CTA. The beta is OPEN — clicking "Join the Beta" opens the
+// beta induction SEQUENCE directly (/onboarding/beta). Signed-out visitors get the
+// sequence's cinematic welcome with sign-in embedded (app/onboarding/beta/welcome.tsx),
+// not a cold sign-in form; after auth the route renders the full induction. The /beta
+// marketing + waitlist page (BetaForm → requestBetaAccess) is kept intact for the
+// future gated weekly-cohort phase, when AI-driven admission re-introduces the lead
+// capture.
 export const BETA_CTA_LABEL = "Join the Beta";
-export const BETA_CTA_HREF = "/sign-in?next=/onboarding/beta";
+export const BETA_CTA_HREF = "/onboarding/beta";
 
 // Org footer line. Donations / 501(c)(3) framework deferred — no fundraising
 // language on the public site yet (see frequency-site-plan + org-status spec).
