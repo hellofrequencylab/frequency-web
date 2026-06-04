@@ -28,6 +28,7 @@ import {
   Users,
   Shield,
   FlaskConical,
+  QrCode,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
@@ -65,6 +66,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
       { href: '/admin/dispatches', label: 'Broadcasts', desc: 'Posts and polls to your people.', Icon: Megaphone, min: 'host' },
       { href: '/admin/crew-tasks', label: 'Crew tasks', desc: 'Define and verify member tasks.', Icon: ClipboardList, min: 'host' },
       { href: '/admin/gamification', label: 'Gamification', desc: 'Achievements, seasons, rewards.', Icon: Trophy, min: 'host' },
+      { href: '/admin/qr', label: 'QR Studio', desc: 'Create and manage scannable check-in codes.', Icon: QrCode, min: 'host' },
       { href: '/admin/moderation', label: 'Moderation', desc: 'Review and resolve reports.', Icon: ShieldAlert, min: 'host' },
     ],
   },

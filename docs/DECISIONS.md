@@ -2016,6 +2016,32 @@ forming the founding leaderboard — not paywalled out of it.
 crew). The Launch gem-spend lock needs the entitlement/payment input on the capability resolver
 (ADR-037) before it can switch on; until then this is a one-flag policy + a backfill.
 
+## ADR-088: QR Studio authors codes on the existing node engine (no new schema)
+
+**Status:** Accepted · 2026-06-04 · `app/(main)/admin/qr/`, `lib/qr/`, `app/api/qr/`, `app/(main)/codes/`
+
+**Context:** The owner asked for a "QR code generator" tied to members, activities, and
+gamification, with an admin editor and easy member access. The physical-engagement engine
+already exists — `nodes` (qr/nfc/ghost) + `captures`, server-authoritative verify → ledger →
+zaps → `practice.verified` / partner redemption (ADR-020/023). What was missing was the
+**authoring surface** and **image generation** (no QR library was installed), not the backend.
+
+**Decision:** Build the studio *on top of* the engine rather than a parallel system. A "code"
+is a `nodes` row; **no migration**. (1) `lib/qr/links.ts` builds the only thing a code encodes —
+a stable same-site URL (`/n/<nodeId>` for earning, `/people/<handle>` for a member's connect
+code) — so every code is **dynamic**: edit its behaviour in the DB, never reprint. (2)
+`lib/qr/render.ts` renders SVG/PNG via the pure-JS `qrcode` dep (no `sharp`). (3) `/admin/qr`
+(host+, in the Community admin group) creates/edits/retires codes with inline QR preview; (4)
+`/api/qr` serves print downloads, gated to signed-in callers and **same-site links only** (not
+an open generator); (5) `/codes` gives every member their personal connect QR.
+
+**Consequences:** The feature ships functional against the live DB today (qr/nfc, no
+`location`/`secret` authoring). Deferred, each clearly seamed: ghost-node geo authoring (needs
+a `SECURITY DEFINER` node-upsert RPC to build the PostGIS point), signed payloads (the `/n`
+claim flow must forward `?s=`), and first-class binding of a code to a specific event/activity
+entity (a `nodes.entity_type/entity_id` column). `qrcode` + `@types/qrcode` added to deps.
+
+---
 ## ADR-087: "Journeys" = the open member library; the gamified engine → "Quests"
 
 **Status:** Accepted · 2026-06-04 · migration `20260604180000_rename_journeys_engine_to_quests`. Engine rename shipped; the open Journeys library is backlog §Q1.

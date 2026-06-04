@@ -1,0 +1,34 @@
+// The canonical destinations our QR codes encode. Pure string builders — no
+// `qrcode` import here, so this stays trivially unit-testable and safe to use on
+// both the server and (if ever needed) the client.
+//
+// Every code is DYNAMIC by construction: the printed image only ever encodes a
+// stable Frequency URL (a node id, a member handle). What that URL *does* —
+// reward, offer, validity window, retire — is edited in the backend with no
+// reprint. That indirection is the whole point of routing scans through us.
+
+import { SITE_URL } from '@/lib/site'
+
+/** Absolute URL a physical-node QR/NFC encodes — the capture landing page
+ *  (`app/(main)/n/[nodeId]`) that runs the verified earn pipeline. */
+export function nodeUrl(nodeId: string): string {
+  return `${SITE_URL}/n/${nodeId}`
+}
+
+/** Absolute URL a member's personal "connect" code points at — their public
+ *  profile (`app/(main)/people/[handle]`), where a scanner can friend/message. */
+export function connectUrl(handle: string): string {
+  return `${SITE_URL}/people/${handle}`
+}
+
+/** True when `text` is one of our own links (absolute apex URL or a root-relative
+ *  path). The QR endpoint refuses anything else, so it can't be used as an open
+ *  generator for arbitrary third-party content. */
+export function isSiteLink(text: string): boolean {
+  return text.startsWith('/') || text.startsWith(`${SITE_URL}/`)
+}
+
+/** Resolve a same-site `text` (absolute or root-relative) to an absolute URL. */
+export function toAbsoluteSiteUrl(text: string): string {
+  return text.startsWith('/') ? `${SITE_URL}${text}` : text
+}
