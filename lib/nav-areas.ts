@@ -75,8 +75,11 @@ export const NAV_AREAS: readonly NavArea[] = [
   // ── Manage → split by the axis that grants it (telescoped at each floor) ──────
   // Steward — community stewardship (trust host+, scoped to your circle/hub/nexus).
   { key: 'admin-community', href: '/admin',     label: 'Overview',  section: 'Steward', defaultAccess: 'host' },
-  { key: 'crm',             href: '/crm',       label: 'CRM',       section: 'Steward', defaultAccess: 'host' },
-  { key: 'outreach',        href: '/outreach',  label: 'Outreach',  section: 'Steward', defaultAccess: 'host' },
+  { key: 'crm',             href: '/crm',         label: 'CRM',       section: 'Steward', defaultAccess: 'host' },
+  // Profile Creator — owner-scoped network intake (card scan / manual + Vera).
+  // Host+ on the trust ladder, OR Studio staff (team_members axis), per ADR-096.
+  { key: 'connections',     href: '/connections', label: 'Profiles',  section: 'Steward', defaultAccess: 'host', staffAccess: 'analyst' },
+  { key: 'outreach',        href: '/outreach',    label: 'Outreach',  section: 'Steward', defaultAccess: 'host' },
   // Structure — the place tree (trust guide/mentor).
   { key: 'admin-structure', href: '/admin/hubs', label: 'Hubs & Nexuses', section: 'Structure', defaultAccess: 'guide' },
   // Studio — the business cockpit. Rides the STAFF axis (team_members) in Phase 2;
