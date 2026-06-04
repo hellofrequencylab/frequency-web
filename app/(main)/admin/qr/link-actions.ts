@@ -16,6 +16,8 @@ import {
   isValidTargetUrl,
   type DestinationType,
 } from '@/lib/qr/codes'
+import { parseStyle, type QrStyle } from '@/lib/qr/style'
+import type { Json } from '@/lib/database.types'
 
 export interface LinkInput {
   title: string
@@ -28,6 +30,8 @@ export interface LinkInput {
   slug: string | null
   partner_id: string | null
   valid_until: string | null
+  /** Visual design; sanitized by parseStyle before persisting. */
+  style: QrStyle
 }
 
 interface CleanLink {
@@ -37,6 +41,7 @@ interface CleanLink {
   node_id: string | null
   partner_id: string | null
   valid_until: string | null
+  style: Json
 }
 
 function clean(input: LinkInput): CleanLink | string {
@@ -63,6 +68,7 @@ function clean(input: LinkInput): CleanLink | string {
     node_id,
     partner_id: input.partner_id || null,
     valid_until: input.valid_until || null,
+    style: parseStyle(input.style) as unknown as Json,
   }
 }
 

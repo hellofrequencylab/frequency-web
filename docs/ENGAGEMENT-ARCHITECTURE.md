@@ -83,10 +83,16 @@ Shared mechanics:
 - **Member codes.** `/codes` shows a member their **personal connect code** (a QR of
   `/people/<handle>`). Earning codes are scanned with any camera.
 - **Server-mediated.** `qr_codes` / `qr_scans` RLS deny client access (like `nodes`); the
-  resolver + Studio use the service role. The `style` jsonb on `qr_codes` is reserved for the
-  Phase 2 visual editor.
-- **Deferred (seamed):** beautiful styling (Phase 2), per-member referral/action codes (Phase 3),
-  multi-code challenges/campaigns (Phase 4); plus ghost-node geo + signed-payload authoring.
+  resolver + Studio use the service role.
+- **Beautiful styling (Phase 2, ADR-090).** Each dynamic code carries a `style` jsonb
+  (`lib/qr/style.ts`: colors, gradient, module + eye shape, center logo, CTA frame). The
+  **isomorphic** styled renderer `lib/qr/render-styled.ts` turns the QR matrix into a designed
+  SVG, used identically by the live editor preview (client), the Studio list, and `/api/qr?code=`
+  downloads (styled SVG; PNG stays plain — no server rasterizer). All style input is sanitized by
+  `parseStyle` (validated colors, https/data-image logos only, escaped label) before it inlines.
+- **Deferred (seamed):** per-member referral/action codes (Phase 3), multi-code
+  challenges/campaigns (Phase 4); plus ghost-node geo + signed-payload authoring, and
+  server-side styled-PNG rasterization.
 
 ## 2. Verification is a first-class, server-authoritative layer (security)
 
