@@ -2589,6 +2589,51 @@ backfill button. Both are migration-free reads/writes over `member_tags` + `meta
 
 ---
 
+## ADR-096: Member authoring — practices editor + Journeys builder, personal-free / library-paid
+
+**Decision.** Members can **author**, not just consume. Two halves:
+
+- **Practices editor (free).** A member can fully edit a practice they **created**
+  (name, summary, description, full markdown guide, cadence, pillar, category, icon,
+  header image) at `/practices/<id>/edit`. To change a library practice they don't
+  own, the library offers **"Customize"** — `forkPractice()` makes a **private copy**
+  they own (`is_public=false`) and opens the editor on it. Quick-create then routes
+  straight into the editor ("add a basic practice, then modify it"). **Rewards
+  (`reward_zaps`/`reward_note`) are NOT member-editable** — the economy stays
+  admin-governed; that's the "partial flexibility" line.
+
+- **Journeys builder (personal-free / publish-paid).** The Journeys editing suite
+  lets a member assemble a path of practices with **per-item cadence + note**
+  overrides, reorder, and edit the plan's title/summary/cover. Building and using a
+  **personal** journey (private/unlisted) is **free**; the **public library /
+  marketplace is the Crew (paid) surface** — publishing a journey, and adopting or
+  forking someone else's public journey, require Crew. (Closes the loophole where a
+  free member could fork-then-adopt around a paywalled adopt.) Per-item cadence adds
+  one additive column, `journey_plan_items.cadence` (null = the practice's default).
+
+**Why.** "A way to turn the people near you into community" wants members shaping
+the practice content, not just admins. Editing **your own** + **fork-to-customize**
+gives real flexibility while protecting the shared library (you never mutate a
+practice others adopted). Gating on **the library, both sides** (publish + consume)
+is the coherent monetization the owner chose — "paid = the library" — and matches
+the ADR-084 economy (Crew is the paid tier; free in Beta via `BETA_MEMBERS_GET_CREW`).
+Keeping rewards out of the member editor protects economy integrity (ADR-037/084).
+
+**Mechanics.** All writes go through the service-role lib behind app-code authz
+(`created_by`/`author_id` ownership), the repo convention for the untyped
+practices/journey tables. The Crew check reuses the role ladder (`atLeastRole`,
+`lib/core/roles.ts`); the paywall surfaces via the existing CrewGate pattern.
+Per-item cadence is the only schema change (additive column, applied via MCP);
+everything else rides existing tables.
+
+**Consequences.** A markdown textarea (not a WYSIWYG) for practice bodies in v1 —
+the Puck block editor is heavier than a personal practice guide needs; can upgrade
+later. Forked practices are private by default; a "share my practice to the library"
+(publish a member practice) is a follow-on. Backlog **S7** (uniform right rail on
+every interior page) will give these new editor/detail routes the standard shell.
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 

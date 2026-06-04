@@ -355,6 +355,14 @@ inline path (wizard is an optional guided alt); RLS isolation between `journey_p
   - **Guide:** Dispatch→Hub. **Mentor:** Dispatch→Nexus. **Staff:** Dispatch→Global · Feature a post.
   - The composer shows base options for all + a **Dispatch with a scope picker limited to the tiers
     you lead** + leader extras. Ties into comms Phase D (dispatch UI) + the Create Wizard (§Q2). (M–L)
+- [ ] **S7 · Uniform right rail on every interior page** 🔴 *site-wide structural rule (owner, screenshot
+  review).* Any Circle, Event, or interior/detail page MUST carry a right-hand menu/rail — the same
+  two-column shell everywhere (main content + right rail of contextual modules). The Circle page is the
+  reference (Circle events + Members). Audit every interior route (Circles ✅, Events, Channels, Practices,
+  Journeys, Programs, Profile, Hub/Nexus, Messages detail, etc.) and give each a right rail with the
+  relevant context (related items, members/attendees, actions, "see all"). Build a shared
+  `InteriorLayout`/`RightRail` primitive so the structure is uniform and can't drift page-to-page, then
+  migrate routes onto it. (M–L)
 
 ## Accepted (no action)
 - `npm audit`: 4 moderate transitive advisories (postcss in Next's toolchain,
