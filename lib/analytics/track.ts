@@ -7,7 +7,8 @@
 
 import { recordEngagementEvent } from '@/lib/engagement/events'
 import { isTrackedEvent } from './events'
-import { sendGa4Event } from './ga-server'
+import { gaServerEnabled, sendGa4Event } from './ga-server'
+import { hasConsent } from '@/lib/consent/consent'
 
 /** Keep only primitive prop values, cap count + string length, so the ledger never
  *  stores nested junk or unbounded payloads. Exported for the /api/track endpoint. */
@@ -44,6 +45,19 @@ export async function track(
     actorProfileId,
     context: clean,
   }).catch(() => {})
-  // Mirror to GA4 server-side (parity with the client gtag mirror). Fire-and-forget.
-  void sendGa4Event(event, clean, actorProfileId)
+  // Mirror to GA4 server-side (parity with the client gtag mirror). Fire-and-forget,
+  // and gated on the actor's analytics consent (ADR-069): a member who opted out of
+  // analytics doesn't have their account-tied usage sent to Google. Anonymous events
+  // carry no account, so they pass through.
+  void mirrorToGa(event, clean, actorProfileId)
+}
+
+async function mirrorToGa(
+  event: string,
+  props: Record<string, string | number | boolean>,
+  actorProfileId: string | null,
+): Promise<void> {
+  if (!gaServerEnabled()) return
+  if (actorProfileId && !(await hasConsent(actorProfileId, 'analytics'))) return
+  await sendGa4Event(event, props, actorProfileId)
 }
