@@ -20,6 +20,12 @@
 > operator's first wedge — "The Market Read"** shipped under Studio (vertical 11): outbound
 > acquisition, live signal → named pain points → brand-voice drafts, deterministic for now with the
 > live-Claude operator slotting in behind it (PR #96). Plan of record: [MARKETING-AI.md](MARKETING-AI.md).
+>
+> **2026-06-04:** **QR Studio** shipped — vertical 3's authoring layer. The `nodes` engine
+> (capture → ledger → zaps → `practice.verified` / partner redemption) was already built; this
+> adds in-app code authoring (`/admin/qr`, host+), server-side QR image rendering (`lib/qr/`,
+> `qrcode` dep), a same-site-only `/api/qr` download endpoint, and a member personal connect
+> code at `/codes` — no migration. Closes part of vertical 3's 🟡 wiring (ADR-088).
 
 ---
 
