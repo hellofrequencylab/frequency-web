@@ -148,6 +148,12 @@ Surfaces 1–2 are **sync** (interactive, streamed). Surfaces 3–4 are **async*
 existing `notification_queue` + `/api/cron/process-queue`, Batch API) so they're cheap and
 frequency-capped. Surface 6 is the human-amplifier.
 
+**Chat-window presence (2026-06-05).** The chat surface (`vera-lightbox.tsx`) is **slightly
+translucent** (`bg-surface/90` + `backdrop-blur`) so it feels like a layer over the place, not a
+wall; after ~16s of stillness it enters **sleep mode** (fades further, `opacity-65`) and recedes
+while you think — any movement, key, or tap wakes it instantly. Mirrors the onboarding cue's
+recede behaviour so Vera never nags.
+
 ---
 
 ## 5. Memory — what makes her feel like she remembers you

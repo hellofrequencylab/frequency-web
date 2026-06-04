@@ -145,14 +145,27 @@ export function TourProvider({
         <div className="min-w-0 flex-1">
           <p className="text-sm font-bold text-text">{tip.title}</p>
           <p className="mt-1 text-[13px] leading-snug text-muted">{tip.body}</p>
-          {tip.cta && (
-            <Link
-              href={tip.cta.href}
-              onClick={() => close('cta')}
-              className="mt-2.5 inline-flex items-center rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
-            >
-              {tip.cta.label}
-            </Link>
+          {(tip.cta || tip.cta2) && (
+            <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+              {tip.cta && (
+                <Link
+                  href={tip.cta.href}
+                  onClick={() => close('cta')}
+                  className="inline-flex items-center rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                >
+                  {tip.cta.label}
+                </Link>
+              )}
+              {tip.cta2 && (
+                <Link
+                  href={tip.cta2.href}
+                  onClick={() => close('cta')}
+                  className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-sm font-medium text-primary-strong transition-colors hover:bg-primary-bg"
+                >
+                  <Sparkles className="h-3.5 w-3.5" aria-hidden /> {tip.cta2.label}
+                </Link>
+              )}
+            </div>
           )}
         </div>
         <button
