@@ -203,7 +203,7 @@ export function VeraLightbox({
               </span>
               <div className="min-w-0">
                 <p id="vera-lightbox-title" className="text-sm font-bold text-text">Vera</p>
-                <p className="text-xs text-subtle">Your guide. She gets you to your people, then steps back.</p>
+                <p className="text-xs text-subtle">Your companion here. She meets you where you are, then points you toward your people.</p>
               </div>
             </div>
 
