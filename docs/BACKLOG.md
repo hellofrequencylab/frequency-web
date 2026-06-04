@@ -294,6 +294,32 @@ server-side action's job (wizard gating is UX only); the feed composer stays the
 inline path (wizard is an optional guided alt); RLS isolation between `journey_plans`
 (open) and `journey_chains` (gated) — run Supabase advisors after the migration.
 
+## R. UI polish + profile depth (2026-06-04)
+
+### ✅ Vera cue — fixed + redesigned
+- [x] **Bug:** cues for already-done tasks suppressed (the "add a photo" prompt to a
+  member who has one). Tips carry a `satisfiedKey`; `selectTip` filters on the
+  member's completed steps (from `getOnboardingStatus`).
+- [x] **Redesign** (`tour-provider.tsx`): skinnier chat-window width, pop-in animation,
+  **content-anchored** (`data-tour-anchor` on the avatar + main region, viewport-
+  clamped), and **self-receding** — fades to neutral after 5s idle, restored on mouse
+  move/hover. One primary action + always-there dismiss.
+
+### Profile page
+- [ ] **Header (cover) photo** — make the profile banner an uploadable/editable cover
+  image (mirror the avatar upload path + storage bucket). (M)
+- [ ] **Richer profile header** — more personal info (location · joined · bio line) +
+  **subtle** community-engagement stats (circles · practices logged · streak) woven
+  into the header, understated, not a gamified wall. (M)
+
+### Design system
+- [ ] **Unify pill/button radius site-wide.** No shared `Button`/`Badge` primitive
+  today; radii are inline and inconsistent (`rounded-lg` ×346 · `-full` ×223 · `-2xl`
+  ×215 · `-xl` ×151 · `-md` ×88). Decide canonical radii (e.g. interactive buttons =
+  `rounded-lg`; status pills = `rounded-full`), introduce shared `<Button>`/`<Badge>`
+  primitives, then migrate incrementally. Needs the primitive first — bigger than a
+  find-replace. (M)
+
 ## Accepted (no action)
 - `npm audit`: 4 moderate transitive advisories (postcss in Next's toolchain,
   uuid in `@measured/puck`). The only fix downgrades Next to 9.x; not worth it.
