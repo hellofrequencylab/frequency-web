@@ -234,3 +234,119 @@ operative/runner/ghost. Bios are one honest line. Stats sit in the rank's band.
 4. Once approved: I cast the remaining 11 circles the same way, then the bot fleet
    writes the migration series. Want the **full 250-row cast dropped in this doc
    first**, or go **straight to migrations** after you OK the framework?
+
+---
+
+# Part B — Build spec (for the seed migrations)
+
+This is the contract the per-circle seed migrations follow so 12 independently
+written files stay globally consistent (no duplicate UUIDs, no dangling FKs, and
+a rank pyramid whose column totals match §3). **Template to mirror exactly:**
+`supabase/migrations/20260603000003_demo_2_sandiego.sql`.
+
+## B.1 Migration series
+
+| File | Stage |
+| :-- | :-- |
+| `20260605000000_practices_rich_content.sql` | ✅ practices schema + backfill (done) |
+| `20260605000001_demo_v2_teardown.sql` | ✅ remove old/out-of-area demo (done) |
+| `20260605000101_demo_v2_c01_swamis.sql` … `…000112_demo_v2_c12_vista.sql` | one per circle (bots) |
+| `20260605000200_demo_v2_cross_memberships.sql` | cross-circle memberships weave |
+| `20260605000210_demo_v2_engagement.sql` | set-generated reactions/RSVPs/logs/achievements/challenges/gems/streaks |
+| `20260605000300_demo_v2_practices_library.sql` | +18 practices, circle_practices, member_practices |
+
+## B.2 Per-circle allocation (rank quotas + UUID blocks)
+
+`Roster` = primary members. Column totals = the §3 pyramid exactly. Profile/post
+UUIDs use the listed **hex** tail inside the fixed prefix.
+
+| C | Circle (file) | Chan | Roster | Lum/Con/Agt/Op/Run/Ghost | Profile tails `f1…NN` | Post block `f4…0NNN` | Reply block `f4…1NNN` | Events `f5…NN` | Active practice `e1…` |
+| :-- | :-- | :-- | --: | :-- | :-- | :-- | :-- | :-- | :-- |
+| 1 | Swami's Dawn Patrol (c01_swamis) | movement | 22 | 1/1/3/5/7/5 | 01–16 | 0001–0040 | 1001–1040 | 01,0b | 0001 |
+| 2 | Moonlight Sound Bath (c02_moonlight) | holistic-health | 21 | 0/1/2/5/7/6 | 17–2b | 0041–0080 | 1041–1080 | 08,0c | 0006 |
+| 3 | Leucadia Makers (c03_leucadia) | creative | 20 | 0/1/2/4/7/6 | 2c–3f | 0081–00c0 | 1081–10c0 | 02 | 0009 |
+| 4 | 101 Founders Collective (c04_founders) | business-support | 20 | 1/1/3/4/6/5 | 40–53 | 00c1–0100 | 10c1–1100 | 03,0d | 000b |
+| 5 | Cottonwood Creek Mindfulness (c05_cottonwood) | spirituality | 20 | 0/1/2/4/7/6 | 54–67 | 0101–0140 | 1101–1140 | 0a | 0007 |
+| 6 | Encinitas Newcomers & Neighbors (c06_newcomers) | human-relating | 22 | 0/1/3/5/7/6 | 68–7d | 0141–0180 | 1141–1180 | 0e | 0008 |
+| 7 | Cardiff Cold Plunge (c07_cardiff) | holistic-health | 20 | 0/1/2/4/7/6 | 7e–91 | 0181–01c0 | 1181–11c0 | 06,10 | 0004 |
+| 8 | Carlsbad Village Run Club (c08_carlsbad) | movement | 21 | 0/1/3/5/6/6 | 92–a6 | 01c1–0200 | 11c1–1200 | 05 | 0002 |
+| 9 | Cedros Creatives (c09_cedros) | creative | 20 | 0/1/2/4/7/6 | a7–ba | 0201–0240 | 1201–1240 | 07 | 000a |
+| 10 | Oside Sunrise Surf (c10_oside) | movement | 21 | 1/1/3/5/6/5 | bb–cf | 0241–0280 | 1241–1280 | 09 | 0001 |
+| 11 | Coast Keepers (c11_coastkeepers) | activism | 22 | 0/1/3/5/7/6 | d0–e5 | 0281–02c0 | 1281–12c0 | 04 | 0008 |
+| 12 | Vista Hops & Hikes (c12_vista) | movement | 21 | 0/1/2/5/6/7 | e6–fa | 02c1–0300 | 12c1–1300 | 0f | 0003 |
+
+Prefixes: profiles `f1000000-0000-0000-0000-0000000000NN`, circles
+`f2000000-0000-0000-0000-00000000000C` (C = circle #, hex), posts/replies
+`f4000000-0000-0000-0000-0000000NNNNN`, events
+`f5000000-0000-0000-0000-0000000000NN`.
+
+## B.3 Circle rows (id, slug, place, host rank)
+
+| C | id `f2…0C` | name | slug | city · neighborhood | lat,lng | host rank |
+| :-- | :-- | :-- | :-- | :-- | :-- | :-- |
+| 1 | 01 | Swami's Dawn Patrol | swamis-dawn-patrol | Encinitas · Swami's Beach | 33.0369,-117.2920 | 🌟 Luminary |
+| 2 | 02 | Moonlight Beach Sound Bath | moonlight-sound-bath | Encinitas · Moonlight Beach | 33.0470,-117.2950 | ⚡ Conduit |
+| 3 | 03 | Leucadia Makers | leucadia-makers | Encinitas · Leucadia | 33.0608,-117.3000 | ⚡ Conduit |
+| 4 | 04 | 101 Founders Collective | 101-founders-collective | Encinitas · Downtown 101 | 33.0450,-117.2930 | 🌟 Luminary |
+| 5 | 05 | Cottonwood Creek Mindfulness | cottonwood-mindfulness | Encinitas | 33.0530,-117.2930 | ⚡ Conduit |
+| 6 | 06 | Encinitas Newcomers & Neighbors | encinitas-newcomers | Encinitas | 33.0400,-117.2870 | ⚡ Conduit |
+| 7 | 07 | Cardiff Cold Plunge | cardiff-cold-plunge | Cardiff-by-the-Sea | 33.0150,-117.2800 | ⚡ Conduit |
+| 8 | 08 | Carlsbad Village Run Club | carlsbad-village-run | Carlsbad · Village | 33.1581,-117.3506 | ⚡ Conduit |
+| 9 | 09 | Cedros Creatives | cedros-creatives | Solana Beach · Cedros | 32.9912,-117.2713 | ⚡ Conduit |
+| 10 | 0a | Oside Sunrise Surf | oside-sunrise-surf | Oceanside · Pier | 33.1933,-117.3831 | 🌟 Luminary |
+| 11 | 0b | Coast Keepers | coast-keepers | Encinitas · coastal | 33.0440,-117.2960 | ⚡ Conduit |
+| 12 | 0c | Vista Hops & Hikes | vista-hops-hikes | Vista | 33.2000,-117.2425 | ⚡ Conduit |
+
+## B.4 The 16 events (id, circle, title, slug, when, location)
+
+`when` is relative to `now()`. Past events anchor history (members RSVP `going` =
+attendance). Build `starts_at`/`ends_at` like the SD template
+(`(now() ± interval 'N days')::date + time '…'`).
+
+| id `f5…NN` | C | title | slug | starts | location |
+| :-- | :-- | :-- | :-- | :-- | :-- |
+| 01 | 1 | New Year's Day Paddle-Out | swamis-nye-paddle-out | -155d 07:00 | Swami's Beach stairs, Encinitas |
+| 02 | 3 | Leucadia Spring Maker Market | leucadia-spring-maker-market | -92d 10:00 | 101 corridor studio, Leucadia |
+| 03 | 4 | Founders Q1 Demo Night | founders-q1-demo-night | -70d 18:00 | Downtown 101 workspace, Encinitas |
+| 04 | 11 | Earth Day Beach Cleanup | coast-keepers-earth-day | -44d 08:00 | Moonlight Beach, Encinitas |
+| 05 | 8 | Carlsbad Spring Half Relay | carlsbad-spring-half-relay | -36d 07:00 | Carlsbad Village train station |
+| 06 | 7 | 100-Day Plunge Celebration | cardiff-100-day-plunge | -28d 06:30 | Cardiff reef beach access |
+| 07 | 9 | Cedros First-Friday Art Walk | cedros-first-friday | -21d 17:00 | Cedros Design District, Solana Beach |
+| 08 | 2 | Full-Moon Sound Bath (May) | moonlight-may-full-moon | -14d 19:00 | Moonlight Beach fire pits, Encinitas |
+| 09 | 10 | Grom Surf Comp | oside-grom-comp | -10d 07:30 | Oceanside Pier, north side |
+| 10 | 5 | Silent Half-Day Sit | cottonwood-silent-sit | -7d 08:00 | Cottonwood Creek Park, Encinitas |
+| 0b | 1 | Saturday Dawn Session | swamis-saturday-dawn | +3d 06:00 | Swami's Beach stairs, Encinitas |
+| 0c | 2 | New-Moon Sound Bath | moonlight-new-moon | +6d 19:30 | Moonlight Beach fire pits, Encinitas |
+| 0d | 4 | Summer Demo Night | founders-summer-demo-night | +9d 18:00 | Downtown 101 workspace, Encinitas |
+| 0e | 6 | Newcomers Welcome BBQ | newcomers-welcome-bbq | +11d 16:00 | Orpheus Park, Encinitas |
+| 0f | 12 | Trail + Taproom Saturday | vista-trail-taproom | +13d 08:30 | Vista trailhead → local taproom |
+| 10 | 7 | Sunrise Reef Plunge | cardiff-sunrise-reef-plunge | +2d 06:30 | Cardiff reef beach access |
+
+## B.5 Schema rules (copy the column lists; do NOT deviate)
+
+**Wrap the file in `BEGIN; … COMMIT;`.** Resolve the North County region once via
+a temp ctx table cross-joined into the profile insert (mirror the SD template):
+
+```sql
+CREATE TEMP TABLE _ctx ON COMMIT DROP AS
+SELECT COALESCE(
+  (SELECT id FROM nexus_regions WHERE name='North County' ORDER BY depth LIMIT 1),
+  (SELECT id FROM nexus_regions WHERE name='San Diego'    ORDER BY depth LIMIT 1),
+  (SELECT id FROM nexus_regions WHERE depth=0 ORDER BY name LIMIT 1)
+) AS region_id,
+(SELECT id FROM topical_channels WHERE slug='<this circle channel>') AS channel_id;
+```
+
+- **circles** — `INSERT INTO circles (id,name,slug,hub_id,type,member_cap,status,about,latitude,longitude,neighborhood,city,topical_channel_id,image_url,is_demo)`; `hub_id` = `NULL`, `type='in-person'`, `member_cap=50`, `status='active'`, `image_url='https://picsum.photos/seed/'||slug||'/400/400'`, `is_demo=true`. **Do NOT set `member_count`** — the membership trigger maintains it.
+- **profiles** — `INSERT INTO profiles (id,auth_user_id,display_name,handle,community_role,nexus_region_id,bio,avatar_url,current_season_rank,current_season_zaps,lifetime_zaps,lifetime_gems,current_streak,longest_streak,achievement_count,season_challenges_complete,last_seen_at,is_active,is_demo)`. `auth_user_id=NULL`; `is_active=true`; `is_demo=true`. `avatar_url='https://i.pravatar.cc/240?u='||handle` for ~75%, else `NULL`. `last_seen_at = now() - (random minutes)` — leaders recent (mins–hrs), ghosts older (days). `season_challenges_complete=true` **only** for Luminaries (else false). Stats sit inside the rank's §3 band; `current_season_zaps` ≤ `lifetime_zaps`; `longest_streak ≥ current_streak`.
+  - **community_role** (the volunteer title, an enum `member|crew|host|guide|mentor`): exactly **1 host** (the top-ranked person), **2 crew**, **1 guide**, optionally **1 mentor**; everyone else **member**. Rank (`current_season_rank`) is separate gamification — a `member` can still be a high-zap Operative.
+  - **handles** globally unique — prefix-namespace yours so they never collide across circles (e.g. append nothing fancy, just use distinct real-sounding handles; if in doubt suffix a circle initial).
+- **memberships** — `INSERT INTO memberships (profile_id,circle_id,status,volunteer_role) … status='active'::membership_status, volunteer_role = NULLIF(community_role,'member'::community_role)` (join profiles to read role, per template). One row per member → their own circle. **No cross-memberships here** (handled in the weave migration).
+- **posts** — `INSERT INTO posts (id,author_id,scope_id,visibility,body,created_at,is_demo)`; `scope_id`=circle id, `visibility='group'::post_visibility`, `is_demo=true`, `created_at = now() - (random 0–45 days/hours)`. Posts-per-author by rank: Lum 4 · Con 3 · Agt 2 · Op ~1–2 · Run 1 · Ghost: **~75% write ONE short newcomer post, ~25% write none** (silent — they still get a membership). Voice each post to the author's role + the circle's vibe; ≥1 post should reference each of the circle's events (an announcement for upcoming, a recap for past). Use `''` to escape apostrophes.
+- **replies** — same `posts` table with `parent_id` set to one of this circle's top-level post ids; use the reply UUID block. ~8–14 replies per circle, clustered on the liveliest 3–4 posts. `INSERT INTO posts (id,author_id,parent_id,scope_id,visibility,body,created_at,is_demo)`.
+- **events** — `INSERT INTO events (id,host_id,scope_id,scope_type,title,slug,starts_at,ends_at,location,is_cancelled,is_demo)`; `host_id`=this circle's host profile id, `scope_id`=circle id, `scope_type='circle'`, `is_cancelled=false`, `is_demo=true`. Build times per B.4.
+- **circle_practices** — one row: `INSERT INTO circle_practices (circle_id,practice_id,set_by,active) VALUES (<circle>, '<e1…active practice>', <host id>, true)`.
+- Every insert ends with `ON CONFLICT (id) DO NOTHING` (or the natural-key conflict target for memberships/circle_practices), so re-runs are safe.
+
+**Voice:** warm, specific, local, lower-case-casual, light emoji. Match the
+register of the SD template's posts. No corporate tone. Real place names.
