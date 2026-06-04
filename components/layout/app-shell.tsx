@@ -23,6 +23,8 @@ import {
   Gem,
   Monitor,
   ChevronUp,
+  QrCode,
+  HelpCircle,
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { NotificationBell } from '@/components/layout/notification-bell'
@@ -88,6 +90,13 @@ function buildSections(areas: typeof NAV_AREAS[number][]): NavSectionGroup[] {
 // derived entirely from NAV_AREAS (no hardcoded section list). The desktop rail
 // and the mobile drawer render the same set.
 const NAV_SECTIONS = buildSections([...NAV_AREAS])
+
+// The Manage area's axis-grouped sections (IA redesign). These TELESCOPE: an item
+// the viewer can't reach is hidden (not muted), and a group with nothing reachable
+// is skipped entirely (header included) — so a member never sees empty admin
+// headers and a host isn't shown greyed-out janitor tools. Member worlds (Community,
+// Practice, Connect, The Quest) still mute/preview instead, as aspirational surfaces.
+const TELESCOPE_SECTIONS = new Set(['Steward', 'Structure', 'Studio', 'Platform'])
 
 // The effective access for an area = a janitor's per-area override, if any,
 // else the code default. `role` is the viewer's community role (null = visitor).
@@ -393,6 +402,22 @@ function AccountDropdown({
               <BellRing className="w-4 h-4 text-subtle" />
               Notifications
             </Link>
+            <Link
+              href="/codes"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-surface-elevated transition-colors"
+            >
+              <QrCode className="w-4 h-4 text-subtle" />
+              My code
+            </Link>
+            <Link
+              href="/help"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-surface-elevated transition-colors"
+            >
+              <HelpCircle className="w-4 h-4 text-subtle" />
+              Help
+            </Link>
           </div>
 
           {/* Theme */}
@@ -471,20 +496,24 @@ function NavLinkList({
         // The leading label-less group is the home anchor (Feed): set it apart
         // from the destination groups with a hairline below and bolder items.
         const isHomeAnchor = i === 0 && section.label === null
+        // Admin sections telescope: keep only reachable items, and skip the whole
+        // group (header included) when nothing is reachable.
+        const adminSection = TELESCOPE_SECTIONS.has(section.label ?? '')
+        const visibleItems = adminSection
+          ? section.items.filter((it) => meetsAccess(effectiveAccess(it, permissions), role))
+          : section.items
+        if (visibleItems.length === 0) return null
         return (
         <div
           key={section.label ?? `top-${i}`}
           className={`space-y-0.5 ${i > 0 ? 'mt-2' : ''} ${isHomeAnchor ? 'pb-2 mb-1 border-b border-border' : ''}`}
         >
           {section.label && <p className={sectionLabelClass}>{section.label}</p>}
-          {section.items.map((item) => {
+          {visibleItems.map((item) => {
             const { href, label, Icon } = item
-            // Whole menu always shows; mute what the viewer can't reach — EXCEPT the
-            // Manage section, whose entries are operator consoles, not aspirational
-            // member features. There we telescope (hide) so the rail stays tight and
-            // a host isn't shown five greyed-out janitor tools.
+            // Member worlds always show (muting/preview below); admin sections were
+            // pre-filtered to reachable items above.
             const reachable = meetsAccess(effectiveAccess(item, permissions), role)
-            if (!reachable && section.label === 'Manage') return null
             // Preview-able areas (the Quest) stay CLICKABLE but read as a muted
             // "dead" state for below-access viewers; the page gates engagement.
             if (!reachable && item.preview) {
