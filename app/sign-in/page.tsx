@@ -2,19 +2,29 @@ import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 
-async function getCallbackUrl() {
+// A post-login destination is only honoured if it's a same-origin absolute path;
+// the /auth/callback route re-validates before it actually redirects.
+function safeNext(raw: FormDataEntryValue | null): string {
+  const v = typeof raw === 'string' ? raw : ''
+  return v.startsWith('/') && !v.startsWith('//') && !v.startsWith('/\\') ? v : ''
+}
+
+async function getCallbackUrl(next: string) {
   const origin = (await headers()).get('origin')
-  return `${origin}/auth/callback`
+  const url = new URL(`${origin}/auth/callback`)
+  if (next) url.searchParams.set('next', next)
+  return url.toString()
 }
 
 async function signInWithMagicLink(formData: FormData) {
   'use server'
   const email = formData.get('email') as string
+  const next = safeNext(formData.get('next'))
   const supabase = await createClient()
 
   const { error } = await supabase.auth.signInWithOtp({
     email,
-    options: { emailRedirectTo: await getCallbackUrl() },
+    options: { emailRedirectTo: await getCallbackUrl(next) },
   })
 
   if (error) {
@@ -24,14 +34,15 @@ async function signInWithMagicLink(formData: FormData) {
   redirect('/sign-in/confirm')
 }
 
-async function signInWithGoogle() {
+async function signInWithGoogle(formData: FormData) {
   'use server'
+  const next = safeNext(formData.get('next'))
   const supabase = await createClient()
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: await getCallbackUrl(),
+      redirectTo: await getCallbackUrl(next),
       // Always show Google's account chooser instead of silently reusing the
       // browser's active session — lets people pick which account to sign in with.
       queryParams: { prompt: 'select_account' },
@@ -48,9 +59,11 @@ async function signInWithGoogle() {
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>
+  searchParams: Promise<{ error?: string; next?: string }>
 }) {
-  const { error } = await searchParams
+  const { error, next } = await searchParams
+  const nextValue =
+    next && next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/\\') ? next : ''
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-surface px-4">
@@ -73,6 +86,7 @@ export default async function SignInPage({
 
         {/* Magic link */}
         <form action={signInWithMagicLink} className="space-y-4">
+          {nextValue && <input type="hidden" name="next" value={nextValue} />}
           <div>
             <label
               htmlFor="email"
@@ -109,6 +123,7 @@ export default async function SignInPage({
 
         {/* Google OAuth */}
         <form action={signInWithGoogle}>
+          {nextValue && <input type="hidden" name="next" value={nextValue} />}
           <button
             type="submit"
             className="flex w-full items-center justify-center gap-3 rounded-lg border border-border-strong bg-white px-4 py-2 text-sm font-medium text-text shadow-sm hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-400"
