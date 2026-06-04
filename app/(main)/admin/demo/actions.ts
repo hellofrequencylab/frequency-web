@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { atLeastRole } from '@/lib/core/roles'
 import { addDemoMembers as genMembers, addDemoCircle as genCircle } from '@/lib/demo/generate'
+import { deletePlansByAuthors } from '@/lib/journey-plans'
 
 async function requireJanitor() {
   const caller = await getCallerProfile()
@@ -38,6 +39,12 @@ export async function purgeDemoContent() {
   if (!caller || !atLeastRole(caller.community_role, 'janitor')) throw new Error('Unauthorized')
 
   const admin = createAdminClient()
+  // Demo journeys have no is_demo flag and author_id is ON DELETE SET NULL, so
+  // remove plans by their demo author BEFORE the profiles go (items + adoptions
+  // cascade from the plan).
+  const { data: demoProfiles } = await admin.from('profiles').select('id').eq('is_demo', true)
+  const demoIds = (demoProfiles ?? []).map((p) => (p as { id: string }).id)
+  await deletePlansByAuthors(demoIds)
   for (const table of DEMO_TABLES) {
     const { error } = await admin.from(table).delete().eq('is_demo', true)
     if (error) throw new Error(`${table}: ${error.message}`)
