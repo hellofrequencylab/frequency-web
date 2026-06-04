@@ -91,3 +91,16 @@ the old SD `c…` cast and the out-of-area national `d…` metros). Migration se
 - **Counts stay honest** — no inflated `member_count` (the membership trigger keeps
   it true); the "year-old, went viral" feel comes from maturity signals, not numbers.
 - Every v2 migration was validated against a throwaway PG16 cluster before commit.
+
+
+## Claim this Circle (ADR-081, Phase 2)
+
+A signed-in real member viewing a demo circle sees a ⚡ banner ("This is a sample
+circle — make it real?") and a short wizard (`components/circles/claim-circle.tsx`):
+*what would it be about? · which practice to start with? · what to call it?*
+
+`claimCircle` (`app/(main)/circles/[slug]/claim-actions.ts`) converts the circle
+**in place**: `is_demo -> false`, `host_id -> the claimer`, applies their answers,
+sets the active practice, awards the circle start/activate zaps, and logs a
+`circle.claimed` engagement event. The demo neighbours stay (a furnished circle,
+not an empty one) and recede as real members join. Next: the decay cron (P3).
