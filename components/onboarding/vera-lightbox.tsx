@@ -17,6 +17,9 @@ import type { DeckSlide, VeraOpening } from '@/lib/onboarding/vera-welcome'
 // modal: focus-trapped, ESC + backdrop to leave, body scroll locked, reduced-motion
 // friendly. There's always a one-tap escape to /circles — we never trap them on Vera.
 
+// Idle delay before the window settles into sleep mode (fades further).
+const SLEEP_MS = 16000
+
 interface Msg {
   from: 'vera' | 'you'
   text: string
@@ -60,6 +63,9 @@ export function VeraLightbox({
   const [done, setDone] = useState(false)
   const [input, setInput] = useState('')
   const [pending, start] = useTransition()
+  // Sleep mode: after a stretch of no interaction the window settles back, fading
+  // further so it recedes while you think. Any movement, key, or tap wakes it.
+  const [asleep, setAsleep] = useState(false)
 
   const cardRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -90,6 +96,27 @@ export function VeraLightbox({
   useEffect(() => {
     if (phase === 'chat') scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
   }, [messages, proposals, phase])
+
+  // Sleep when idle: settle (fade further) after a stretch of stillness; any
+  // movement, key, or tap wakes it. Mirrors the onboarding cue's recede behaviour.
+  useEffect(() => {
+    if (!open) return
+    let timer = window.setTimeout(() => setAsleep(true), SLEEP_MS)
+    const wake = () => {
+      setAsleep((a) => (a ? false : a))
+      window.clearTimeout(timer)
+      timer = window.setTimeout(() => setAsleep(true), SLEEP_MS)
+    }
+    document.addEventListener('mousemove', wake)
+    document.addEventListener('keydown', wake)
+    document.addEventListener('pointerdown', wake)
+    return () => {
+      window.clearTimeout(timer)
+      document.removeEventListener('mousemove', wake)
+      document.removeEventListener('keydown', wake)
+      document.removeEventListener('pointerdown', wake)
+    }
+  }, [open])
 
   function turn(text: string) {
     const history: VeraMessage[] = messages.map((m) => ({ role: m.from === 'you' ? 'user' : 'assistant', text: m.text }))
@@ -136,7 +163,8 @@ export function VeraLightbox({
         aria-modal="true"
         aria-labelledby="vera-lightbox-title"
         tabIndex={-1}
-        className="relative flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl border border-border bg-surface shadow-2xl outline-none motion-safe:animate-[slideUp_0.3s_ease-out]"
+        onMouseEnter={() => setAsleep(false)}
+        className={`relative flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl border border-border bg-surface/90 shadow-2xl outline-none backdrop-blur-md transition-opacity duration-700 motion-safe:animate-[slideUp_0.3s_ease-out] ${asleep ? 'opacity-65' : 'opacity-100'}`}
       >
         {/* Warm glow header band */}
         <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-primary/10 to-transparent" />
