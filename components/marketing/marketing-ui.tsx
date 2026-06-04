@@ -42,7 +42,7 @@ export function PhotoHero({
         className="absolute inset-0"
         style={{
           background:
-            'linear-gradient(180deg, rgb(20 18 16 / 0.72) 0%, rgb(20 18 16 / 0.52) 45%, rgb(20 18 16 / 0.92) 100%)',
+            'linear-gradient(180deg, rgb(20 18 16 / 0.80) 0%, rgb(20 18 16 / 0.62) 45%, rgb(20 18 16 / 0.95) 100%)',
         }}
       />
       <div className="amber-glow absolute inset-0 pointer-events-none" />
@@ -54,7 +54,7 @@ export function PhotoHero({
         {eyebrow && (
           <p
             className={`font-bold uppercase tracking-[0.25em] text-primary ${
-              isScreen ? 'text-sm sm:text-base mb-6' : 'text-sm mb-5'
+              isScreen ? 'text-sm sm:text-base mb-4' : 'text-sm mb-5'
             }`}
           >
             {eyebrow}
@@ -70,13 +70,13 @@ export function PhotoHero({
         {subtitle && (
           <p
             className={`text-white/80 leading-relaxed mx-auto max-w-2xl ${
-              isScreen ? 'mt-7 text-lg sm:text-xl' : 'mt-6 text-base sm:text-lg'
+              isScreen ? 'mt-5 text-lg sm:text-xl' : 'mt-6 text-base sm:text-lg'
             }`}
           >
             {subtitle}
           </p>
         )}
-        {children && <div className={isScreen ? 'mt-10' : 'mt-9'}>{children}</div>}
+        {children && <div className={isScreen ? 'mt-7' : 'mt-9'}>{children}</div>}
         {footer}
       </div>
       <div className="light-strip absolute inset-x-0 bottom-0 z-10" />
@@ -289,7 +289,7 @@ export function Button({
     lg: 'px-10 py-4 text-lg gap-2',
   } as const
   const variants = {
-    primary: 'bg-primary text-on-primary hover:bg-primary-hover shadow-pop',
+    primary: 'text-emboss bg-primary text-white hover:bg-primary-hover shadow-pop',
     secondary: 'border border-border bg-surface text-text hover:bg-surface-elevated',
     ghost: 'text-primary-strong hover:underline',
   } as const
