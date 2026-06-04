@@ -12,6 +12,7 @@ import { getCurrentSeason } from '@/lib/seasons'
 import { SeasonBanner } from './season-banner'
 import { StatCard } from '@/components/ui/stat-card'
 import { ModuleCard } from '@/components/modules/module-card'
+import { CrewPreviewBanner } from '@/components/crew/crew-preview-banner'
 
 const TASK_TYPE_LABEL: Record<string, string> = {
   attendance:   'Attendance',
@@ -155,6 +156,7 @@ export default async function CrewPage() {
 
   return (
     <div>
+      {!isCrew && <CrewPreviewBanner />}
       {/* ── Header ──────────────────────────────────── */}
       <div className="flex items-end justify-between gap-4 mb-6">
         <div>

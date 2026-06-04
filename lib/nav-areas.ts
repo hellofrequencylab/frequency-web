@@ -28,6 +28,10 @@ export type NavArea = {
   /** Section header — groups the rail and the permission grid. */
   section: string | null
   defaultAccess: NavAccess
+  /** When a viewer is BELOW the required access, still let them click through to
+   *  browse the page in preview (muted), rather than greying it out. The page then
+   *  gates earning/spending behind an upgrade prompt. Used for the Quest. */
+  previewBelowAccess?: boolean
 }
 
 // Order here IS the render order down the rail. Feed is the lone pinned home
@@ -54,9 +58,9 @@ export const NAV_AREAS: readonly NavArea[] = [
 
   // ── The Quest → the gamified progression loop. The Store holds your Vault
   //    (balance + everything you earn by showing up). ───────────────────────────
-  { key: 'crew',      href: '/crew',       label: 'Dashboard', section: 'The Quest', defaultAccess: 'crew'    },
-  { key: 'arcs',      href: '/crew/arcs',  label: 'Arcs',      section: 'The Quest', defaultAccess: 'crew'    },
-  { key: 'store',     href: '/crew/store', label: 'Store',     section: 'The Quest', defaultAccess: 'crew'    },
+  { key: 'crew',      href: '/crew',       label: 'Dashboard', section: 'The Quest', defaultAccess: 'crew', previewBelowAccess: true },
+  { key: 'arcs',      href: '/crew/arcs',  label: 'Arcs',      section: 'The Quest', defaultAccess: 'crew', previewBelowAccess: true },
+  { key: 'store',     href: '/crew/store', label: 'Store',     section: 'The Quest', defaultAccess: 'crew', previewBelowAccess: true },
 
   // ── Manage ──────────────────────────────────────────────────────────────────
   // The admin surface is split into its five categories (the groups in
