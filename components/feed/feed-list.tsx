@@ -24,14 +24,17 @@ export async function FeedList({
   showPublicLayer = true,
   emptyMessage = 'Nothing posted yet. Be the first to share something.',
   viewerRole,
+  nearby = null,
 }: {
   circleIds?: string[]
   myProfileId: string | null
-  sort?: 'recent' | 'relevant'
+  sort?: 'recent' | 'relevant' | 'nearby'
   /** false on circle/channel detail pages. Show only scoped posts, not the global public feed */
   showPublicLayer?: boolean
   emptyMessage?: string
   viewerRole?: string
+  /** The member's location for the 'nearby' lens (location-aware feed, ADR-088). */
+  nearby?: { lat: number; lng: number; radiusM: number } | null
 }) {
   const admin = createAdminClient()
 
@@ -63,7 +66,15 @@ export async function FeedList({
       // returns the author's public fields + reactions safely (so it works for
       // members too, whom the crew+ posts policy would otherwise limit to public).
       const supabase = (await createClient()) as unknown as SupabaseClient
-      const { data } = await supabase.rpc('feed_for_viewer', { _sort: sort, _limit: 40 })
+      // The 'nearby' lens passes the member's coords + radius so the reconciled
+      // feed_for_viewer (geo + demo-aware) returns the closest activity first.
+      const rpcArgs: Record<string, unknown> = { _sort: sort, _limit: 40 }
+      if (sort === 'nearby' && nearby) {
+        rpcArgs._lat = nearby.lat
+        rpcArgs._lng = nearby.lng
+        rpcArgs._radius_m = nearby.radiusM
+      }
+      const { data } = await supabase.rpc('feed_for_viewer', rpcArgs)
       rawPosts = (data as RawPost[] | null) ?? []
     }
   }
