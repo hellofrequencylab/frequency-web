@@ -68,6 +68,9 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
   const HEARD_ABOUT = copy?.heardAbout ?? DEFAULT_HEARD
 
   const [beat, setBeat] = useState(0)
+  // The Door (Phase 2): a conspiratorial cold-open shown before the numbered
+  // beats. "Knock" opens it; the qualifier proper (oath/filter onward) follows.
+  const [doorOpen, setDoorOpen] = useState(false)
   const [previewDone, setPreviewDone] = useState(false)
 
   // Oath
@@ -374,8 +377,28 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
           </span>
         </div>
 
+        {!doorOpen && (
+          <div className="mt-10 w-full animate-[slideUp_0.5s_ease-out] text-center">
+            <p className={eyebrow}>You found the door</p>
+            <h1 className={`mt-3 text-6xl sm:text-7xl ${heading}`}>
+              Most people scroll
+              <br />
+              right <span className="text-primary">past this.</span>
+            </h1>
+            <p className="mx-auto mt-4 max-w-xl text-lg leading-relaxed text-muted">
+              You didn&rsquo;t. That&rsquo;s the first thing I know about you. I keep this place running, and
+              I don&rsquo;t open the door for everyone. Give me a minute, and we&rsquo;ll see if it opens for you.
+            </p>
+            <div className="mt-8 flex flex-col items-center gap-3">
+              <button onClick={() => setDoorOpen(true)} className={btnPrimary}>Knock<ArrowRight /></button>
+            </div>
+          </div>
+        )}
+
+        {doorOpen && (
+        <>
         <div key={beat} className="mt-10 w-full animate-[slideUp_0.5s_ease-out] text-center">
-            {/* ── Beat 0: The Oath ── */}
+            {/* ── Beat 0: The Oath / The Filter ── */}
             {beat === 0 && (
               <div className="mx-auto max-w-5xl">
                 <p className={eyebrow}>{VERA.oath.eyebrow}</p>
@@ -757,6 +780,8 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
             ))}
           </div>
         </div>
+        </>
+        )}
       </div>
     </main>
   )

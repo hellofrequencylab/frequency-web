@@ -70,7 +70,7 @@ export const VERA = {
   oath: {
     eyebrow: 'Before I let you in',
     heading: "This isn't a product. It's a promise.",
-    body: 'A promise that the people near you are worth finding, and that gathering can feel good again. We’re building it in the open, and you’re one of the very first through the door.',
+    body: 'Three things before I open it. Not fine print, a filter. If any of these isn’t you, no hard feelings, the door just stays shut.',
     cta: "I'm in",
   },
   intro: {
