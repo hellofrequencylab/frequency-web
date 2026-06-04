@@ -4,6 +4,7 @@ import { getMyProfileId } from '@/lib/auth'
 import { isCodeLive } from '@/lib/qr/codes'
 import { track } from '@/lib/analytics/track'
 import { recordEngagementEvent } from '@/lib/engagement/events'
+import { CHANNEL_COOKIE, FIRST_TOUCH_MAX_AGE } from '@/lib/attribution/first-touch'
 
 export const dynamic = 'force-dynamic'
 
@@ -57,6 +58,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
   // member is already here, so there's nothing to attribute.
   const creditOwner = !profileId && !!code.owner_profile_id
   const withReferral = (res: NextResponse) => {
+    // Mark the channel for any anonymous scan (ADR-095) — attribution at signup.
+    if (!profileId) {
+      res.cookies.set(CHANNEL_COOKIE, 'qr_scan', { path: '/', maxAge: FIRST_TOUCH_MAX_AGE, sameSite: 'lax' })
+    }
     if (creditOwner && code.owner_profile_id) {
       res.cookies.set('fq_ref', code.owner_profile_id, {
         httpOnly: true,
@@ -86,7 +91,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
       return withReferral(to('/sign-in'))
     }
     if (code.purpose === 'gift_zap') {
-      if (!profileId) return to(`/sign-in?next=/q/${slug}`)
+      if (!profileId) return withReferral(to(`/sign-in?next=/q/${slug}`))
       return to(`/g/${slug}`) // confirm page → POST awards the zap
     }
   }
