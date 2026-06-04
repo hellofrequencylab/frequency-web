@@ -8,6 +8,8 @@ import { StreamTemplate } from '@/components/templates/stream-template'
 import { SectionHeader } from '@/components/ui/section-header'
 import { PracticePrompt } from '@/components/practice/practice-prompt'
 import { FeedWelcome } from '@/components/feed/feed-welcome'
+import { VeraLightbox } from '@/components/onboarding/vera-lightbox'
+import { buildVeraOpening, buildWelcomeSlides } from '@/lib/onboarding/vera-welcome'
 import { getPracticesToLogToday } from '@/lib/practices'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
@@ -15,10 +17,11 @@ type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 export default async function FeedPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sort?: string }>
+  searchParams: Promise<{ sort?: string; welcome?: string }>
 }) {
-  const { sort: sortParam } = await searchParams
+  const { sort: sortParam, welcome } = await searchParams
   const sort: 'recent' | 'relevant' = sortParam === 'recent' ? 'recent' : 'relevant'
+  const showVeraWelcome = welcome === 'vera'
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -30,11 +33,12 @@ export default async function FeedPage({
   let canAnnounce = false
   let firstName: string | null = null
   let streak = 0
+  let veraWelcome: { slides: ReturnType<typeof buildWelcomeSlides>; opening: ReturnType<typeof buildVeraOpening> } | null = null
 
   if (user) {
     const { data: profile } = await admin
       .from('profiles')
-      .select('id, community_role, display_name, current_streak')
+      .select('id, community_role, display_name, current_streak, meta')
       .eq('auth_user_id', user.id)
       .maybeSingle()
 
@@ -43,6 +47,24 @@ export default async function FeedPage({
       myRole = (profile.community_role ?? 'member') as CommunityRole
       firstName = (profile.display_name ?? '').trim().split(/\s+/)[0] || null
       streak = (profile.current_streak as number | null) ?? 0
+
+      // Vera's onboarding lightbox continues from what induction already learned
+      // (profiles.meta.beta), so she never opens cold. Built only when arriving
+      // straight from induction (?welcome=vera).
+      if (showVeraWelcome) {
+        const beta = ((profile.meta as Record<string, unknown> | null)?.beta ?? {}) as {
+          intent?: string | null
+          interests?: string | null
+          location?: { label?: string | null } | null
+        }
+        const ctx = {
+          firstName,
+          intent: beta.intent ?? null,
+          interests: beta.interests ?? null,
+          location: beta.location?.label ?? null,
+        }
+        veraWelcome = { slides: buildWelcomeSlides(ctx), opening: buildVeraOpening(ctx) }
+      }
       canAnnounce = ['host', 'guide', 'mentor', 'janitor'].includes(myRole)
 
       const { data: membership } = await admin
@@ -81,6 +103,7 @@ export default async function FeedPage({
 
   return (
     <div className="max-w-2xl mx-auto w-full">
+      {veraWelcome && <VeraLightbox slides={veraWelcome.slides} opening={veraWelcome.opening} />}
       <StreamTemplate
         eyebrow={today}
         title={greeting}
