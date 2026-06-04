@@ -36,6 +36,7 @@ export function StudioWizard({ channels }: { channels: Channel[] }) {
   // content
   const [sel, setSel] = useState<Set<string>>(new Set(['movement', 'holistic-health', 'creative']))
   const [flavor, setFlavor] = useState('')
+  const [aiPolish, setAiPolish] = useState(true)
 
   const estPeople = circles * membersPerCircle
   const estConnections = Math.round((estPeople * connectednessPct) / 100)
@@ -50,7 +51,7 @@ export function StudioWizard({ channels }: { channels: Channel[] }) {
     connectednessPct,
     channels: [...sel],
     flavorWords: flavor.split(',').map((s) => s.trim()).filter(Boolean),
-    aiPolish: false,
+    aiPolish,
   })
 
   const applyPreset = (p: (typeof PRESETS)[number]) => {
@@ -137,8 +138,15 @@ export function StudioWizard({ channels }: { channels: Channel[] }) {
       {/* 4. Voice */}
       <section className="rounded-2xl border border-border bg-surface p-5">
         <h3 className="mb-1 text-sm font-bold text-text">4 · Voice</h3>
-        <p className="text-sm text-muted">Content is generated from curated templates + your flavor words.
-          <span className="ml-1 rounded-full bg-surface-elevated px-2 py-0.5 text-xs text-subtle">AI polish — coming soon</span></p>
+        <label className="flex cursor-pointer items-start gap-3">
+          <input type="checkbox" checked={aiPolish} onChange={(e) => setAiPolish(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 accent-primary" />
+          <span className="text-sm text-muted">
+            <span className="font-semibold text-text">Demographic-aware (AI)</span> — one quick model call reads the
+            place and channels to draw names, local activities, and journey titles that fit the area; templates expand
+            it into every row. Off uses the built-in pools. Falls back automatically if AI is unavailable.
+          </span>
+        </label>
       </section>
 
       {/* 5. Preview */}
@@ -152,7 +160,7 @@ export function StudioWizard({ channels }: { channels: Channel[] }) {
         </div>
         {preview && (
           <div className="mt-3 space-y-3 text-sm">
-            <p className="text-muted">Would create <b className="text-text">{preview.totals.people}</b> people across <b className="text-text">{preview.totals.circles}</b> circles, <b className="text-text">{preview.totals.posts}</b> posts + <b className="text-text">{preview.totals.replies}</b> replies, <b className="text-text">{preview.totals.events}</b> events, <b className="text-text">{preview.totals.connections}</b> cross-circle connections.</p>
+            <p className="text-muted">Would create <b className="text-text">{preview.totals.people}</b> people across <b className="text-text">{preview.totals.circles}</b> circles, <b className="text-text">{preview.totals.posts}</b> posts + <b className="text-text">{preview.totals.replies}</b> replies, <b className="text-text">{preview.totals.events}</b> events, <b className="text-text">{preview.totals.journeys}</b> journeys, <b className="text-text">{preview.totals.connections}</b> cross-circle connections — plus RSVPs, reactions, practice logs &amp; achievements.</p>
             <div className="flex flex-wrap gap-1.5">
               {preview.circles.map((c, i) => <span key={i} className="rounded-full bg-surface-elevated px-2 py-0.5 text-xs text-subtle">{c.name} · {c.members}</span>)}
             </div>
@@ -183,7 +191,7 @@ export function StudioWizard({ channels }: { channels: Channel[] }) {
             {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />} Seed this area
           </button>
         </div>
-        {result && <p className="mt-3 rounded-lg border border-success-bg bg-success-bg/40 px-3 py-2 text-sm text-success">Seeded {result.circles} circles · {result.members} members · {result.posts} posts · {result.events} events · {result.connections} connections. The ⚡ demo notice now reflects the new totals.</p>}
+        {result && <p className="mt-3 rounded-lg border border-success-bg bg-success-bg/40 px-3 py-2 text-sm text-success">Seeded {result.circles} circles · {result.members} members · {result.posts} posts · {result.events} events · {result.rsvps} RSVPs · {result.reactions} reactions · {result.practiceLogs} practice logs · {result.journeys} journeys · {result.connections} connections. The ⚡ demo notice now reflects the new totals.</p>}
       </section>
 
       {/* Reverse */}

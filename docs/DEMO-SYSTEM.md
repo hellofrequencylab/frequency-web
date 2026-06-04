@@ -82,6 +82,43 @@ by the **Seed Studio** (`/admin/demo/studio`, `lib/demo/engine.ts`) and cleaned
 by the `/admin/demo` purge button + the nightly decay cron. Every row is still
 `is_demo`, badged with the yellow bolt, and counted honestly. See ADR-091/092.
 
+### What a seed generates (the full connection web — ADR-093)
+
+A seed is not just circles + posts. For each area the engine writes the web that
+makes a community read *lived-in*, all batched and all `is_demo`:
+
+| Layer | What's seeded |
+| :-- | :-- |
+| Circles & people | Circles with a host + roster; ranks/tenure drive what each person posts |
+| Conversation | Stage-appropriate posts + replies, with ⚡ **reactions** from circle-mates |
+| Events | A **cadence** — two past + one upcoming — each with going **RSVPs** |
+| Practice loop | A circle practice, member **adoptions**, recent **`practice_logs`**, attendance **streaks** |
+| Journeys | Open **`journey_plans`** (+ items + adoptions) authored by hosts, adopted by a slice of members |
+| Gamification | Zero-reward **achievements** (trophy case) — see the unobtrusive contract below |
+
+### Demographic-aware generation (palette + templates)
+
+The wizard's **Voice** step has a *Demographic-aware (AI)* toggle (default on). When
+on, ONE cheap Haiku call per area (`lib/demo/ai-palette.ts`) returns a **palette** —
+locale-fitting names, the activities that actually happen there, a one-line vibe, and
+journey titles — which the deterministic `buildPlan()` expands into every row. So an
+Encinitas seed reads surf/wellness; a Midwest town reads different. It **fails soft**
+to the built-in template pools whenever AI is off, budgeted out, or errors — seeding
+never depends on it.
+
+### Unobtrusive: zero real-world side effects
+
+Seeding never touches real members or fires automations. Writes go **direct** via the
+admin client (never the app's award/notify helpers); **RSVP reminders are pre-stamped**
+(`reminder_*_sent_at`) so the reminder cron never emails; seeded achievements are
+**zero-reward** so the award trigger is a no-op and the economy can't drift.
+
+> **Journeys cleanup wrinkle:** `journey_plans` carries no `is_demo` flag and its
+> `author_id` is `ON DELETE SET NULL`, so demo plans can't cascade with their author.
+> A shared `deletePlansByAuthors()` (`lib/journey-plans.ts`) removes them by demo
+> author **before** the profiles in every teardown path — per-area purge, global
+> purge, and the nightly decay pass.
+
 
 ## Claim this Circle (ADR-091, Phase 2)
 
