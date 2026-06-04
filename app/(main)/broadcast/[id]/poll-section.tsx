@@ -60,8 +60,8 @@ export function PollSection({
   }
 
   return (
-    <div className="mt-8 rounded-xl border border-signal bg-signal-bg/50 p-5">
-      <p className="text-xs font-black uppercase tracking-[0.12em] text-signal-strong mb-4">
+    <div className="mt-8 rounded-xl border border-broadcast bg-broadcast-bg/50 p-5">
+      <p className="text-xs font-black uppercase tracking-[0.12em] text-broadcast-strong mb-4">
         Poll · {totalVotes} {totalVotes === 1 ? 'vote' : 'votes'}
       </p>
 
@@ -78,21 +78,21 @@ export function PollSection({
               disabled={!isLoggedIn || isPending}
               className={`relative w-full text-left rounded-lg border px-4 py-2.5 transition-colors overflow-hidden ${
                 isMyVote
-                  ? 'border-blue-400 bg-signal-bg/80'
+                  ? 'border-blue-400 bg-broadcast-bg/80'
                   : hasVoted
                   ? 'border-border bg-surface cursor-default'
-                  : 'border-border bg-surface hover:border-signal hover:bg-signal-bg'
+                  : 'border-border bg-surface hover:border-broadcast hover:bg-broadcast-bg'
               } disabled:cursor-not-allowed`}
             >
               {/* Vote bar background */}
               {hasVoted && (
                 <span
-                  className="absolute inset-y-0 left-0 bg-signal-bg transition-all duration-500"
+                  className="absolute inset-y-0 left-0 bg-broadcast-bg transition-all duration-500"
                   style={{ width: `${pct}%` }}
                 />
               )}
               <span className="relative flex items-center justify-between gap-2">
-                <span className={`text-sm font-medium ${isMyVote ? 'text-signal-strong' : 'text-text'}`}>
+                <span className={`text-sm font-medium ${isMyVote ? 'text-broadcast-strong' : 'text-text'}`}>
                   {opt.label}
                   {isMyVote && <span className="ml-1 text-xs">✓</span>}
                 </span>
