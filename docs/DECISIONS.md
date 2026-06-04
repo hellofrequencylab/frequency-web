@@ -2062,8 +2062,13 @@ them from the resolver/actions. Names are dot→underscore-normalized for GA's r
 
 **Consequences:** GA4 now sees the full QR funnel (scan → signup/gift) plus all other server events,
 alongside the internal `qr_scans` + `engagement_events` ledgers. Best-effort + fire-and-forget — never
-blocks a redirect or action. Consent-gating the GA load (the app has a consent ledger, ADR-069) is a
-recommended follow-up; today GA respects `anonymize_ip` + disabled ad signals (ADR-048).
+blocks a redirect or action. GA respects `anonymize_ip` + disabled ad signals (ADR-048).
+
+**Update (2026-06-05): consent-gated (ADR-069).** The server mirror skips a signed-in member who has
+opted OUT of the `analytics` scope (`hasConsent`), and the authenticated layout renders `GaConsentGate`
+which sets gtag's native opt-out (`window['ga-disable-<ID>']`) for them client-side. Anonymous visitors
+carry no account, so the scope doesn't apply and acquisition tracking is unaffected. (Default is
+opt-out / granted, so this only changes behaviour for members who explicitly turned analytics off.)
 
 ---
 ## ADR-092: Crew marketing-funnel codes (≤3, owner + purpose-null)
