@@ -3,7 +3,6 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { Composer } from '@/components/feed/composer'
 import { FeedList } from '@/components/feed/feed-list'
-import { CreateMenu } from '@/components/feed/create-menu'
 import { StreamTemplate } from '@/components/templates/stream-template'
 import { SectionHeader } from '@/components/ui/section-header'
 import { PracticePrompt } from '@/components/practice/practice-prompt'
@@ -108,7 +107,6 @@ export default async function FeedPage({
         eyebrow={today}
         title={greeting}
         description={hasCircle ? 'What your people are up to today.' : "What's happening around you."}
-        action={<CreateMenu role={myRole} />}
       >
 
       {/* First-run nudge toward the activation lever — a member with no circle yet
@@ -125,6 +123,7 @@ export default async function FeedPage({
             visibility={composerVisibility}
             placeholder={primaryCircleId ? 'What’s on your mind? Your circle’s listening.' : 'What’s on your mind?'}
             canAnnounce={canAnnounce}
+            createRole={myRole}
           />
           {!primaryCircleId && (
             <p className="text-xs text-subtle -mt-2 px-1">

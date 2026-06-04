@@ -1,11 +1,18 @@
-import { Sparkles, Flame } from 'lucide-react'
+'use client'
+
+import { useEffect, useState } from 'react'
+import { Sparkles, Flame, Check, ChevronDown } from 'lucide-react'
 import { LogPracticeButton } from './log-practice-button'
+import { STREAK_MILESTONES, streakProgress } from '@/lib/streak'
 import type { Practice } from '@/lib/practices'
 
-// Feed nudge + streak tracker: the member's adopted practices not yet logged
-// today, each with a one-tap Log button, alongside their running daily streak.
-// The single highest-leverage surface for the WAM North Star (drives daily
-// logging) — the streak gives the loop its reason to come back tomorrow.
+const COLLAPSE_KEY = 'fq_streak_collapsed'
+
+// Feed streak tracker + practice reminders (the WAM North-Star surface). The
+// streak is a Duolingo-style progress bar toward award checkpoints; it collapses
+// to a skinny line, but the reminders (the practices to log, or the caught-up
+// note) stay visible either way. Renders nothing when there's no streak AND
+// nothing to log.
 export function PracticePrompt({
   practices,
   streak = 0,
@@ -13,48 +20,117 @@ export function PracticePrompt({
   practices: Practice[]
   streak?: number
 }) {
-  // Nothing to log and no streak to celebrate -> render nothing.
+  const [collapsed, setCollapsed] = useState(false)
+
+  useEffect(() => {
+    // One-time read of the persisted preference on mount. We render the default
+    // (expanded) on the server, then apply the stored choice client-side, so there
+    // is no hydration mismatch.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCollapsed(localStorage.getItem(COLLAPSE_KEY) === '1')
+  }, [])
+
+  function toggle() {
+    setCollapsed((c) => {
+      const next = !c
+      try { localStorage.setItem(COLLAPSE_KEY, next ? '1' : '0') } catch {}
+      return next
+    })
+  }
+
   if (practices.length === 0 && streak <= 0) return null
 
-  const allCaughtUp = practices.length === 0
+  const p = streakProgress(streak)
+  const hasReminders = practices.length > 0
 
   return (
     <div className="mb-6 rounded-xl border border-primary-bg bg-primary-bg/30 p-4">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-primary-strong" />
-          <p className="text-sm font-semibold text-text">
-            {allCaughtUp
-              ? 'You are all caught up today'
-              : practices.length === 1
-                ? "Log today's practice"
-                : "Log today's practices"}
-          </p>
-        </div>
-        {streak > 0 && (
-          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-surface px-2.5 py-1 text-xs font-bold text-primary-strong shadow-sm">
-            <Flame className="h-3.5 w-3.5" />
-            {streak} day{streak === 1 ? '' : 's'}
+      {/* Streak header */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface text-primary-strong shadow-sm">
+            <Flame className="h-4 w-4" />
           </span>
+          <div className="min-w-0">
+            <p className="text-sm font-bold leading-tight text-text">
+              {streak > 0 ? `${streak} day streak` : 'Start your streak'}
+            </p>
+            <p className="text-[11px] leading-tight text-muted">
+              {p.maxed
+                ? 'Every badge earned. Legend.'
+                : p.next
+                  ? `${p.toNext} ${p.toNext === 1 ? 'day' : 'days'} to your ${p.next.day}-day badge`
+                  : 'Log a practice to begin'}
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={toggle}
+          aria-label={collapsed ? 'Expand streak' : 'Collapse streak'}
+          aria-expanded={!collapsed}
+          className="shrink-0 rounded-md p-1 text-subtle transition-colors hover:bg-surface hover:text-text"
+        >
+          <ChevronDown className={`h-4 w-4 transition-transform ${collapsed ? '' : 'rotate-180'}`} />
+        </button>
+      </div>
+
+      {/* Progress bar — always shown (slim); checkpoints only when expanded. */}
+      <div className="mt-2.5">
+        <div className="h-2 w-full overflow-hidden rounded-full bg-surface">
+          <div
+            className="h-full rounded-full bg-primary transition-[width] duration-500"
+            style={{ width: `${p.pct}%` }}
+          />
+        </div>
+
+        {!collapsed && (
+          <div className="mt-2.5 flex items-center justify-between gap-1">
+            {STREAK_MILESTONES.map((m) => {
+              const hit = m.day <= streak
+              const isNext = p.next?.day === m.day
+              return (
+                <div key={m.day} className="flex flex-col items-center gap-1" title={`${m.label} · ${m.day} days`}>
+                  <span
+                    className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold transition-colors ${
+                      hit
+                        ? 'bg-primary text-on-primary'
+                        : isNext
+                          ? 'bg-surface text-primary-strong ring-2 ring-primary'
+                          : 'bg-surface text-subtle'
+                    }`}
+                  >
+                    {hit ? <Check className="h-3 w-3" strokeWidth={3} /> : m.day}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
         )}
       </div>
 
-      {allCaughtUp ? (
-        <p className="text-sm text-muted">
-          {streak > 0
-            ? 'Come back tomorrow to keep your streak alive.'
-            : 'Adopt a practice to start a streak.'}
-        </p>
-      ) : (
-        <ul className="space-y-2">
-          {practices.map((p) => (
-            <li key={p.id} className="flex items-center justify-between gap-3">
-              <span className="min-w-0 truncate text-sm text-text">{p.title}</span>
-              <LogPracticeButton practiceId={p.id} />
-            </li>
-          ))}
-        </ul>
-      )}
+      {/* Reminders — always visible, collapsed or not. */}
+      <div className="mt-3 border-t border-primary-bg pt-3">
+        {hasReminders ? (
+          <ul className="space-y-2">
+            {practices.map((practice) => (
+              <li key={practice.id} className="flex items-center justify-between gap-3">
+                <span className="min-w-0 truncate text-sm text-text">{practice.title}</span>
+                <LogPracticeButton practiceId={practice.id} />
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 shrink-0 text-primary-strong" />
+            <p className="text-sm text-muted">
+              {streak > 0
+                ? 'All caught up. Come back tomorrow to keep your streak alive.'
+                : 'Adopt a practice to start a streak.'}
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
