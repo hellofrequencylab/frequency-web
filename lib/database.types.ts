@@ -4312,6 +4312,60 @@ export type Database = {
           id: string
         }[]
       }
+      mkt_content_performance: {
+        Args: { _days?: number; _limit?: number }
+        Returns: {
+          author: string
+          comments: number
+          created_at: string
+          engagement_score: number
+          excerpt: string
+          post_id: string
+          reactions: number
+        }[]
+      }
+      mkt_geo: {
+        Args: never
+        Returns: {
+          circles: number
+          city: string
+          members: number
+        }[]
+      }
+      mkt_growth: {
+        Args: { _days?: number }
+        Returns: {
+          new_circles: number
+          new_events: number
+          new_members: number
+          week: string
+        }[]
+      }
+      mkt_interest_demand: {
+        Args: never
+        Returns: {
+          circles: number
+          domain: string
+          interest: string
+          interest_slug: string
+          members: number
+          tune_ins: number
+        }[]
+      }
+      mkt_leader_activity: {
+        Args: never
+        Returns: {
+          circles: number
+          last_event: string
+          last_post: string
+          leader: string
+          lifetime_gems: number
+          members: number
+          profile_id: string
+          role: string
+          season_zaps: number
+        }[]
+      }
       my_friendships: {
         Args: never
         Returns: {
