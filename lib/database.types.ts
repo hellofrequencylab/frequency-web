@@ -2072,6 +2072,42 @@ export type Database = {
           },
         ]
       }
+      challenge_qr_codes: {
+        Row: {
+          challenge_id: string
+          created_at: string
+          id: string
+          qr_code_id: string
+        }
+        Insert: {
+          challenge_id: string
+          created_at?: string
+          id?: string
+          qr_code_id: string
+        }
+        Update: {
+          challenge_id?: string
+          created_at?: string
+          id?: string
+          qr_code_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_qr_codes_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "season_challenges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_qr_codes_qr_code_id_fkey"
+            columns: ["qr_code_id"]
+            isOneToOne: false
+            referencedRelation: "qr_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       qr_codes: {
         Row: {
           active: boolean

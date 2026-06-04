@@ -1,26 +1,30 @@
 'use client'
 
 import { useState } from 'react'
-import { MapPin, Link2, BarChart3 } from 'lucide-react'
+import { MapPin, Link2, BarChart3, Trophy } from 'lucide-react'
 import { QrStudio, type StudioNode, type PartnerOption } from './qr-studio'
 import { DynamicLinks, type StudioLink, type NodeOption } from './dynamic-links'
 import { Analytics, type AnalyticsData } from './analytics'
+import { Campaigns, type CampaignCard, type CampaignCodeOption } from './campaigns'
 
-type TabKey = 'nodes' | 'links' | 'analytics'
+type TabKey = 'nodes' | 'links' | 'campaigns' | 'analytics'
 
 const TABS: { key: TabKey; label: string; Icon: typeof MapPin }[] = [
   { key: 'nodes', label: 'Check-in codes', Icon: MapPin },
   { key: 'links', label: 'Dynamic links', Icon: Link2 },
+  { key: 'campaigns', label: 'Campaigns', Icon: Trophy },
   { key: 'analytics', label: 'Analytics', Icon: BarChart3 },
 ]
 
 export function QrStudioTabs({
   nodeProps,
   linkProps,
+  campaignProps,
   analytics,
 }: {
   nodeProps: { initialNodes: StudioNode[]; partners: PartnerOption[] }
   linkProps: { initialLinks: StudioLink[]; nodes: NodeOption[]; partners: PartnerOption[] }
+  campaignProps: { campaigns: CampaignCard[]; codes: CampaignCodeOption[] }
   analytics: AnalyticsData
 }) {
   const [tab, setTab] = useState<TabKey>('nodes')
@@ -55,6 +59,7 @@ export function QrStudioTabs({
           partners={linkProps.partners}
         />
       )}
+      {tab === 'campaigns' && <Campaigns campaigns={campaignProps.campaigns} codes={campaignProps.codes} />}
       {tab === 'analytics' && <Analytics data={analytics} />}
     </div>
   )

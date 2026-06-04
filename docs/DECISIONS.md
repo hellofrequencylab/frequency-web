@@ -2016,6 +2016,32 @@ forming the founding leaderboard — not paywalled out of it.
 crew). The Launch gem-spend lock needs the entitlement/payment input on the capability resolver
 (ADR-037) before it can switch on; until then this is a one-flag policy + a backfill.
 
+## ADR-094: QR campaign challenges reuse the gamification engine (one join)
+
+**Status:** Accepted · 2026-06-05 · migration `20260605030000_qr_campaign_challenges` (applied to prod), `lib/achievements.ts`, `app/q/[slug]/route.ts`, `app/(main)/admin/qr/campaigns.tsx` + `campaign-actions.ts`
+
+**Context:** Phase 4 — QR scavenger hunts / marketing campaigns ("scan a set of codes → earn a
+reward"). The repo already has a mature gamification engine: `season_challenges` (criteria jsonb +
+target + zaps_reward) + `challenge_progress`, advanced by `advanceChallenges` off the
+`engagement_events` ledger via `processGamificationEvent`, displayed on `/crew/challenges`, with
+zap/gem rewards on completion. Building a parallel challenge system would duplicate all of it.
+
+**Decision:** Model a campaign as a `season_challenges` row with `criteria {"type":"qr_scan"}` +
+`target N`, scoped to a code set by **one new join** (`challenge_qr_codes`). The `/q` resolver emits a
+`qr_scan` gamification event **idempotent per (code, member)** — so progress counts DISTINCT codes
+("scan N of these"). `advanceChallenges` gained a `qr_scan` branch that increments only when the
+scanned code is in the challenge's set. Everything else is reused unchanged: progress rows,
+completion, `awardChallengeZaps` + `challenge_complete` gems, and member display on
+`/crew/challenges`. Admin authoring is a new **Campaigns** tab in the QR Studio (create with
+collect-all / collect-N + a code multi-select; delete is guarded to `qr_scan` challenges only so a
+seeded challenge can't be removed).
+
+**Consequences:** "Collect all" and "collect N" are the same mechanism (target = set size vs explicit
+N). New campaigns appear on the existing crew challenges surface automatically (season =
+current). Future: per-campaign time windows (add `valid_until` to `season_challenges`), partner-scoped
+campaigns, and surfacing the hunt's codes/map to members.
+
+---
 ## ADR-093: Server-side GA4 mirror (Measurement Protocol) closes the tracking loop
 
 **Status:** Accepted · 2026-06-05 · `lib/analytics/ga-server.ts`, `lib/analytics/track.ts`, `lib/analytics/events.ts`. No migration.
