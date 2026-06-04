@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Download, Copy, Check, Palette, Users, Zap, UserPlus } from 'lucide-react'
 import { StyleEditor } from '@/app/(main)/admin/qr/style-editor'
+import { trackClient } from '@/components/analytics/track-provider'
 import { updateMyCodeStyle } from './actions'
 import type { QrStyle } from '@/lib/qr/style'
 import type { MemberCodePurpose } from '@/lib/qr/member-codes'
@@ -69,6 +70,7 @@ function CodeCard({ card, extra }: { card: MemberCodeCard; extra: string | null 
     start(async () => {
       const r = await updateMyCodeStyle(card.id, style)
       if (!('error' in r)) {
+        trackClient('qr.code_designed', { kind: card.purpose })
         setSaved(true)
         setTimeout(() => setSaved(false), 1500)
         router.refresh()

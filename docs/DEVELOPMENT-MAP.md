@@ -53,7 +53,13 @@
 >
 > **2026-06-05:** QR **crew marketing codes** (ADR-092). Crew members create up to **3** funnel
 > codes (owner + `purpose IS NULL`) pointing at a circle/event they promote, styled + scan-tracked,
-> managed on `/codes`. No migration. Last remaining of the 2026-06-05 batch: the Google-Analytics tie-in.
+> managed on `/codes`. No migration.
+>
+> **2026-06-05:** QR **Google-Analytics deep tie-in** (ADR-093) — completes the 2026-06-05 batch.
+> Server-side GA4 mirror (Measurement Protocol, `lib/analytics/ga-server.ts`) wired into `track()`,
+> so QR funnel events (`qr.scanned` / `qr.referral_signup` / `qr.gift_zap` / `qr.code_designed`) reach
+> GA4 even when the scan redirects off-site — alongside the existing client `gtag` mirror + internal
+> `qr_scans`. Inert until `NEXT_PUBLIC_GA_MEASUREMENT_ID` + `GA_API_SECRET` are set in prod. No migration.
 
 ---
 
