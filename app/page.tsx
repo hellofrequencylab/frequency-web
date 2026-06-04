@@ -20,6 +20,8 @@ import {
   Faq,
 } from '@/components/marketing/marketing-ui'
 import { Reveal, Parallax, CountUp, ScrollCue } from '@/components/marketing/motion'
+import { JsonLd } from '@/components/json-ld'
+import { faqSchema } from '@/lib/jsonld'
 import { getInitials, relativeTime, eventDateBadge, formatEventDate } from '@/lib/utils'
 import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, BETA_CTA_LABEL, BETA_CTA_HREF, SOCIAL_PROOF_FLOOR, FOUNDING_PLACE } from '@/lib/site'
 import { type CommunityRole, ROLE_RANK, RoleBadge } from '@/lib/community-roles'
@@ -55,6 +57,31 @@ type PostPreviewRow = {
 function hasRole(role: string | null | undefined): role is CommunityRole {
   return !!role && role in ROLE_RANK
 }
+
+// Plain-text mirror of the visible "Is this for you?" FAQ, emitted as FAQPage
+// JSON-LD (AEO: lets search + AI engines surface and cite the answers).
+const HOME_FAQ = [
+  {
+    q: 'Do I have to be outgoing?',
+    a: 'Not at all. Circles are deliberately small, a handful of regulars rather than a crowd, so there is no pressure to perform. You do not have to network or post. The standing time and the small group do the work, and familiarity quietly turns into belonging.',
+  },
+  {
+    q: 'What does it cost?',
+    a: 'The community is free, forever. Browsing, joining a Circle, and showing up never cost anything. Crew membership, which turns on the Quest and helps keep the physical spaces open, is $10 a month and free for the whole beta. There is no card today, and your founder pricing is locked in for life when paid memberships launch.',
+  },
+  {
+    q: 'Is there a catch?',
+    a: 'None. Frequency is leaderful, not leader-dependent: it is built to outlast any one person, with no single figure to follow and no upsell funnel. Memberships fund the physical spaces rather than extract from members.',
+  },
+  {
+    q: 'I am not in North County San Diego.',
+    a: 'That is fine, the community starts anywhere. The first Lab is taking root in North County San Diego, but a Circle only needs a few people and a standing time, so you can start one where you are. We map where people gather so we know which city to seed next.',
+  },
+  {
+    q: 'What if it is not for me?',
+    a: 'Then you leave anytime, no questions and nothing lost. The beta is free, there is no card on file, and nothing locks you in. The only thing you risk by waiting is missing the founding cohort.',
+  },
+]
 
 export default async function RootPage({
   searchParams,
@@ -507,6 +534,7 @@ function Splash({ live }: { live: LiveData }) {
 
       {/* ── Is this for you? (objection handling / short FAQ) ──────────────── */}
       <Section tone="canvas">
+        <JsonLd data={[faqSchema(HOME_FAQ)]} />
         <Reveal>
           <SectionHeading
             eyebrow="Honest answers"
