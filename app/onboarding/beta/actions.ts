@@ -197,14 +197,51 @@ export async function stashPendingInduction(data: Omit<InductionData, 'avatarUrl
 }
 
 /**
+ * Has the signed-in caller already completed onboarding? Used to protect an
+ * existing account from being overwritten by induction answers a signed-out
+ * visitor just typed before signing in with that account's email/Google.
+ */
+async function callerAlreadyOnboarded(): Promise<boolean> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return false
+  const { data } = await supabase
+    .from('profiles')
+    .select('meta')
+    .eq('auth_user_id', user.id)
+    .maybeSingle()
+  return !!(data?.meta as { onboarding_completed?: boolean } | null)?.onboarding_completed
+}
+
+/**
+ * Pre-flight for the deferred /complete page, BEFORE any avatar upload or write.
+ * If the now-signed-in account already onboarded, discard the pending answers so
+ * nothing overwrites their existing profile.
+ */
+export async function pendingInductionGuard(): Promise<{ hasPending: boolean; alreadyOnboarded: boolean }> {
+  const store = await cookies()
+  const hasPending = !!store.get(PENDING_INDUCTION_COOKIE)?.value
+  const alreadyOnboarded = await callerAlreadyOnboarded()
+  if (hasPending && alreadyOnboarded) store.delete(PENDING_INDUCTION_COOKIE)
+  return { hasPending, alreadyOnboarded }
+}
+
+/**
  * Deferred path, step 2 (now authed, at /onboarding/beta/complete): read the
  * parked answers, fold in the uploaded avatar URL, write the profile, and clear
  * the cookie. Returns ok so the client can navigate AFTER the avatar upload.
  */
-export async function finalizePendingInduction(avatarUrl: string | null): Promise<{ ok: boolean; error?: string }> {
+export async function finalizePendingInduction(avatarUrl: string | null): Promise<{ ok: boolean; error?: string; alreadyOnboarded?: boolean }> {
   const store = await cookies()
   const raw = store.get(PENDING_INDUCTION_COOKIE)?.value
   if (!raw) return { ok: false, error: 'No pending induction.' }
+
+  // Never overwrite an account that already completed onboarding (defense in
+  // depth — the /complete page also checks via pendingInductionGuard first).
+  if (await callerAlreadyOnboarded()) {
+    store.delete(PENDING_INDUCTION_COOKIE)
+    return { ok: true, alreadyOnboarded: true }
+  }
 
   let data: InductionData
   try {

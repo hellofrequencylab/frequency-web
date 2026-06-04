@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { finalizePendingInduction } from '../actions'
+import { finalizePendingInduction, pendingInductionGuard } from '../actions'
 
 // Deferred induction, final step (now authed). Uploads the avatar the signed-out
 // flow parked in localStorage, then writes the profile from the stashed answers
@@ -29,6 +29,7 @@ function dataUrlToBlob(dataUrl: string): { blob: Blob; ext: string } | null {
 
 export function BetaCompleteFinalizer() {
   const router = useRouter()
+  const [mode, setMode] = useState<'working' | 'error' | 'exists'>('working')
   const [error, setError] = useState('')
   const ran = useRef(false)
 
@@ -37,6 +38,20 @@ export function BetaCompleteFinalizer() {
     ran.current = true
 
     ;(async () => {
+      // Guard FIRST, before any avatar upload or profile write: if this account
+      // already onboarded, leave it untouched and just welcome them back.
+      const guard = await pendingInductionGuard()
+      if (guard.alreadyOnboarded) {
+        try { localStorage.removeItem(PENDING_AVATAR_KEY) } catch {}
+        setMode('exists')
+        setTimeout(() => router.replace('/feed'), 2400)
+        return
+      }
+      if (!guard.hasPending) {
+        router.replace('/onboarding/beta')
+        return
+      }
+
       let avatarUrl: string | null = null
 
       // Upload the parked avatar, if any (best-effort).
@@ -62,10 +77,14 @@ export function BetaCompleteFinalizer() {
       }
 
       const res = await finalizePendingInduction(avatarUrl)
-      if (res.ok) {
+      if (res.alreadyOnboarded) {
+        setMode('exists')
+        setTimeout(() => router.replace('/feed'), 2400)
+      } else if (res.ok) {
         router.replace('/feed?welcome=vera')
       } else {
         // No stash (e.g. expired / direct nav) — send them back to start the run.
+        setMode('error')
         setError(res.error ?? 'Something went wrong.')
         setTimeout(() => router.replace('/onboarding/beta'), 1600)
       }
@@ -75,9 +94,22 @@ export function BetaCompleteFinalizer() {
   return (
     <main className="relative flex min-h-screen items-center justify-center bg-marketing-canvas px-6">
       <div aria-hidden className="pointer-events-none fixed left-1/2 top-1/2 h-[520px] w-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary opacity-[0.09] blur-[140px]" />
-      <div className="relative z-10 text-center">
+      <div className="relative z-10 max-w-sm text-center">
         <span className="brandmark mx-auto block h-10 aspect-[963/170]" aria-hidden />
-        {error ? (
+        {mode === 'exists' ? (
+          <div className="mt-8">
+            <h1 className="text-2xl font-bold text-text">You already have an account</h1>
+            <p className="mt-2 text-sm leading-relaxed text-muted">
+              We kept your profile exactly as it was, nothing was overwritten. Welcome back. Taking you to your feed.
+            </p>
+            <a
+              href="/feed"
+              className="mt-5 inline-flex items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+            >
+              Go to your feed
+            </a>
+          </div>
+        ) : mode === 'error' ? (
           <p className="mt-6 text-sm text-muted">{error} Taking you back…</p>
         ) : (
           <>
