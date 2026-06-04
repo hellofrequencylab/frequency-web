@@ -2016,6 +2016,29 @@ forming the founding leaderboard — not paywalled out of it.
 crew). The Launch gem-spend lock needs the entitlement/payment input on the capability resolver
 (ADR-037) before it can switch on; until then this is a one-flag policy + a backfill.
 
+## ADR-092: Crew marketing-funnel codes (≤3, owner + purpose-null)
+
+**Status:** Accepted · 2026-06-05 · `lib/qr/marketing.ts`, `app/(main)/codes/marketing-codes.tsx`, `app/(main)/codes/actions.ts`. No migration.
+
+**Context:** Crew members want to run their own outreach funnels — a styled, tracked QR on a
+flyer/post that drives people to a circle or event they're promoting. This is distinct from the
+three personal `purpose` codes (connect/referral/gift) every member gets (ADR-091).
+
+**Decision:** A crew marketing code is a `qr_codes` row with `owner_profile_id = the member` and
+**`purpose IS NULL`** — which cleanly separates it from the per-purpose personal codes (whose
+unique `(owner, purpose)` index doesn't apply) and from admin dynamic links (which have no owner).
+**No migration.** Each points at a circle/event via a root-relative `target_url` validated by
+`isValidMarketingPath` (only `/circles/<slug>` or `/events/<slug>` — on-mission, not arbitrary
+links); the picker (`listMarketingTargets`) offers the member's circles + hosted upcoming events.
+Capped at **3 per member** (counted in `createMarketingCode`), crew-gated (`requireCrew`), with
+full create/edit/delete + the Phase-2 styler, all on `/codes`. Codes encode `/q/<slug>`, so they're
+tracked + retargetable like every managed code.
+
+**Consequences:** Members now own two kinds of code — personal (purpose set) + marketing (purpose
+null); both are owner-scoped and server-mediated. Referral-credit chaining (a marketing code that
+also attributes signups) is a natural future enhancement. Per-code scan analytics show on the card.
+
+---
 ## ADR-091: Per-member codes + referral attribution
 
 **Status:** Accepted · 2026-06-05 · migration `20260605020000_member_qr_codes` (applied to prod), `lib/qr/member-codes.ts`, `lib/qr/referral.ts`, `app/(main)/codes/`, `app/q/[slug]/route.ts`, `app/(main)/g/[slug]/`
