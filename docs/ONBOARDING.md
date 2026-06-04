@@ -68,8 +68,13 @@ meta.tour = {
 
 **Tip registry** — declarative, `lib/onboarding/tips.ts`. Each tip:
 `id`, `trigger` (surface route or app event), `anchor` (DOM target selector or `center`),
-`title`, `body`, optional `cta` (label + href/action), `priority`, `prerequisite`
-(other tip ids / profile conditions), `oncePerUser`.
+`title`, `body`, optional `cta` (label + href/action), optional **`cta2`** (a second action
+link), `priority`, `prerequisite` (other tip ids / profile conditions), `oncePerUser`.
+
+**Richer notes (2026-06-05).** Each note now carries a fuller line of **context** (what the
+surface is *for*, not just a nudge) and a clear **action link** — every note has a primary `cta`,
+and most carry a secondary **"Ask Vera"** (`cta2` → `/feed?welcome=vera&v=chat`) so a member can
+drop into the concierge for a deeper hand straight from the cue.
 
 **Pacing engine** — client `TourProvider`:
 1. On route change / surface enter, compute the highest-priority **eligible** tip (trigger
