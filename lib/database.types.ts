@@ -2698,6 +2698,7 @@ export type Database = {
           comment_count: number
           created_at: string | null
           engagement_score: number
+          featured_at: string | null
           hidden_at: string | null
           hidden_by: string | null
           id: string
@@ -2718,6 +2719,7 @@ export type Database = {
           comment_count?: number
           created_at?: string | null
           engagement_score?: number
+          featured_at?: string | null
           hidden_at?: string | null
           hidden_by?: string | null
           id?: string
@@ -2738,6 +2740,7 @@ export type Database = {
           comment_count?: number
           created_at?: string | null
           engagement_score?: number
+          featured_at?: string | null
           hidden_at?: string | null
           hidden_by?: string | null
           id?: string
@@ -4440,6 +4443,19 @@ export type Database = {
           slug: string
           starts_at: string
           title: string
+        }[]
+      }
+      public_featured_posts: {
+        Args: { _limit?: number }
+        Returns: {
+          author_avatar_url: string
+          author_display_name: string
+          author_handle: string
+          body: string
+          created_at: string
+          featured_at: string
+          id: string
+          media_urls: string[]
         }[]
       }
       public_member_count: { Args: never; Returns: number }

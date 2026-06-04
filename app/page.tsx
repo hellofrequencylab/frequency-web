@@ -86,6 +86,7 @@ export default async function RootPage({
 //   and the Quest closes the feature arc before the CTA.
 function Splash({ live }: { live: LiveData }) {
   const posts = live.posts as PostPreviewRow[]
+  const postsCurated = live.postsCurated
   const memberCount = live.memberCount
   const circleCount = live.circleCount
   const upcomingEvents = live.upcomingEvents
@@ -444,9 +445,12 @@ function Splash({ live }: { live: LiveData }) {
               <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
                 In their own words
               </p>
-              <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-10 text-balance">
+              <h2 className={`font-display uppercase text-text text-3xl sm:text-4xl text-balance ${postsCurated ? 'mb-3' : 'mb-10'}`}>
                 People showing up for each other
               </h2>
+              {postsCurated && (
+                <p className="mb-10 text-sm text-subtle">Hand-picked by Vera</p>
+              )}
             </Reveal>
             <div className="space-y-4">
               {posts.map((post, i) => (

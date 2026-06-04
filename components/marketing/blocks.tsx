@@ -20,6 +20,8 @@ export type LiveData = {
   circleCount: number
   upcomingEvents: LiveEvent[]
   posts: LivePost[]
+  /** True when `posts` are real Vera-featured picks, not the latest-public fallback. */
+  postsCurated: boolean
 }
 
 function hasRole(role: string | null | undefined): role is CommunityRole {
