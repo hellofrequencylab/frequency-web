@@ -36,6 +36,21 @@ Adopt as many practices as you like from the library, and remove any that no lon
 fit. If you host a circle, you can change the circle's practice whenever the focus
 shifts.
 
+## Make it your own
+
+You can shape practices, not just pick them:
+
+- **Create one.** On **Practices**, hit **Create a practice**, give it a name, and
+  you will drop straight into the editor to add the details.
+- **Edit yours.** Any practice you created shows an **Edit** button — change its
+  name, summary, full "how to" guide, cadence, pillar, category, and icon.
+- **Customize one from the library.** See a practice that is close but not quite
+  yours? Hit **Customize** to make your own private copy and edit it freely. The
+  original stays exactly as it was for everyone else.
+
+(Editing covers the content and cadence; the zaps a practice rewards are set by the
+team so the game stays fair.)
+
 
 ## What each practice shows
 
