@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { isCodeLive } from '@/lib/qr/codes'
 import { track } from '@/lib/analytics/track'
+import { recordEngagementEvent } from '@/lib/engagement/events'
 
 export const dynamic = 'force-dynamic'
 
@@ -35,6 +36,20 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
     .then(() => {}, () => {})
   // First-party + GA4 funnel event (covers dynamic links, member + marketing codes).
   void track('qr.scanned', { purpose: code.purpose ?? 'none', destination: code.destination_type }, profileId)
+
+  // Drive QR campaign challenges (scavenger hunts). Idempotent per (code, member),
+  // so progress counts distinct codes; the rules engine advances any challenge whose
+  // set includes this code. Signed-in scans only.
+  if (profileId) {
+    void recordEngagementEvent({
+      idempotencyKey: `qrscan:${code.id}:${profileId}`,
+      source: 'qr',
+      eventType: 'qr_scan',
+      actorProfileId: profileId,
+      context: { qrCodeId: code.id },
+      gamificationEvent: { type: 'qr_scan', profileId, qrCodeId: code.id },
+    }).catch(() => {})
+  }
 
   if (code.destination_type === 'url' && code.target_url) {
     return NextResponse.redirect(new URL(code.target_url, origin))

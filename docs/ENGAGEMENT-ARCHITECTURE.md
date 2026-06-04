@@ -100,8 +100,14 @@ Shared mechanics:
 - **Crew marketing codes (ADR-092).** Crew members own up to 3 funnel codes (`qr_codes` with
   `owner_profile_id` set + `purpose IS NULL`) pointing at a circle/event they promote
   (`isValidMarketingPath`), styled + scan-tracked, managed on `/codes` (`lib/qr/marketing.ts`).
-- **Deferred (seamed):** Google-Analytics tie-in (next) — owner request 2026-06-05; multi-code
-  challenges/campaigns (Phase 4); ghost-node geo + signed-payload authoring; styled-PNG rasterization.
+- **Campaign challenges (Phase 4, ADR-094).** Scavenger hunts reuse the gamification engine: a
+  campaign is a `season_challenges` row (criteria `qr_scan` + target N) scoped to a code set by the
+  `challenge_qr_codes` join; the `/q` resolver emits a `qr_scan` gamification event (idempotent per
+  code+member) and `advanceChallenges` rewards on completion. Authored in the Studio **Campaigns** tab.
+- **Google Analytics (ADR-093).** Server `track()` mirrors to GA4 via the Measurement Protocol;
+  QR funnel events (`qr.scanned`, `qr.referral_signup`, `qr.gift_zap`, `qr.code_designed`) reach GA.
+- **Deferred (seamed):** ghost-node geo + signed-payload authoring; styled-PNG rasterization;
+  per-campaign time windows; referral-credit chaining on crew marketing codes.
 
 ## 2. Verification is a first-class, server-authoritative layer (security)
 

@@ -11,6 +11,7 @@ import { QrStudioTabs } from './qr-studio-tabs'
 import type { StudioNode } from './qr-studio'
 import type { StudioLink, NodeOption } from './dynamic-links'
 import type { AnalyticsData } from './analytics'
+import type { CampaignCard, CampaignCodeOption } from './campaigns'
 
 export const dynamic = 'force-dynamic'
 
@@ -111,6 +112,46 @@ export default async function QrStudioPage() {
     topCodes,
   }
 
+  // ── Campaigns (qr_scan season_challenges + their code sets / progress) ───────
+  const { data: allChallenges } = await db
+    .from('season_challenges')
+    .select('id, name, description, target, zaps_reward, criteria, created_at')
+    .order('created_at', { ascending: false })
+  const campaignRows = (allChallenges ?? []).filter(
+    (c) => (c.criteria as Record<string, unknown> | null)?.type === 'qr_scan',
+  )
+  const campaignIds = campaignRows.map((c) => c.id)
+  const [{ data: campCodes }, { data: campProgress }] = await Promise.all([
+    campaignIds.length
+      ? db.from('challenge_qr_codes').select('challenge_id').in('challenge_id', campaignIds)
+      : Promise.resolve({ data: [] as { challenge_id: string }[] }),
+    campaignIds.length
+      ? db.from('challenge_progress').select('challenge_id, completed_at').in('challenge_id', campaignIds)
+      : Promise.resolve({ data: [] as { challenge_id: string; completed_at: string | null }[] }),
+  ])
+  const codeCount = new Map<string, number>()
+  for (const r of campCodes ?? []) codeCount.set(r.challenge_id, (codeCount.get(r.challenge_id) ?? 0) + 1)
+  const compCount = new Map<string, number>()
+  const progCount = new Map<string, number>()
+  for (const p of campProgress ?? []) {
+    const m = p.completed_at ? compCount : progCount
+    m.set(p.challenge_id, (m.get(p.challenge_id) ?? 0) + 1)
+  }
+  const campaigns: CampaignCard[] = campaignRows.map((c) => ({
+    id: c.id,
+    name: c.name,
+    description: c.description ?? '',
+    target: c.target,
+    rewardZaps: c.zaps_reward,
+    codeCount: codeCount.get(c.id) ?? 0,
+    completions: compCount.get(c.id) ?? 0,
+    inProgress: progCount.get(c.id) ?? 0,
+  }))
+  const campaignCodes: CampaignCodeOption[] = initialLinks.map((l) => ({
+    id: l.id,
+    label: l.title || `/q/${l.slug}`,
+  }))
+
   return (
     <AdminPage
       title="QR Studio"
@@ -122,6 +163,7 @@ export default async function QrStudioPage() {
       <QrStudioTabs
         nodeProps={{ initialNodes, partners: partners ?? [] }}
         linkProps={{ initialLinks, nodes: nodeOptions, partners: partners ?? [] }}
+        campaignProps={{ campaigns, codes: campaignCodes }}
         analytics={analytics}
       />
     </AdminPage>
