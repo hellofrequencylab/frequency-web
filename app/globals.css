@@ -47,7 +47,7 @@
   --color-primary-hover:    #CE8023;
   --color-primary-strong:   #9A5E12;
   --color-primary-bg:       #FBEFD9;
-  --color-text-on-primary:  #2A1B06;
+  --color-text-on-primary:  #FFFFFF;
 
   /* Brand. Signal (teal) */
   --color-signal:           #1E9E89;
@@ -122,7 +122,7 @@
   --color-primary-hover:    #F8C56F;
   --color-primary-strong:   #F2B14E;
   --color-primary-bg:       #30240F;
-  --color-text-on-primary:  #2A1B06;
+  --color-text-on-primary:  #FFFFFF;
 
   /* Teal stays the calibrated secondary (pool-water accent); slightly richer
      tint so it reads clearly teal against the warm dark wood. Amber still leads. */
