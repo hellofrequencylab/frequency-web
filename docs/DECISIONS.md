@@ -2016,6 +2016,31 @@ forming the founding leaderboard — not paywalled out of it.
 crew). The Launch gem-spend lock needs the entitlement/payment input on the capability resolver
 (ADR-037) before it can switch on; until then this is a one-flag policy + a backfill.
 
+## ADR-090: Beautiful codes via an isomorphic styled SVG renderer (no new dep)
+
+**Status:** Accepted · 2026-06-05 · `lib/qr/style.ts`, `lib/qr/render-styled.ts`, `app/(main)/admin/qr/style-editor.tsx`. No migration (reuses `qr_codes.style` jsonb from ADR-089).
+
+**Context:** Phase 2 of the QR platform. The owner wants visually rich codes — brand colors +
+gradients, center logo/avatar, module & eye shapes, a "scan me" frame. The `qrcode` dep only
+renders plain black/white. Options: add a styling library (`qr-code-styling` is browser/canvas-
+oriented, awkward server-side and pulls weight) or render our own SVG over the QR matrix.
+
+**Decision:** Render our own. `QRCode.create()` already exposes the module matrix; a small
+**isomorphic** function (`renderStyledQrSvg`) builds a designed SVG from it — drawing every data
+module in the chosen shape, redrawing the three finder eyes as equivalent concentric shapes
+(scanner-tolerant), optionally a gradient fill, a center logo (bumps ECC to 'H' + carves a quiet
+box), and a CTA card frame. Style is a sanitized `QrStyle` persisted on `qr_codes.style`
+(`parseStyle`: validated hex, https/data-image logos only, escaped label). Because it's
+isomorphic, the **live editor preview (client)**, the Studio list, and `/api/qr?code=` downloads
+emit identical SVG. No new dependency.
+
+**Consequences:** Styling lives only on `qr_codes` (the managed entity); check-in `nodes` +
+member connect codes stay plain for now (a later pass can adopt the same renderer). Styled
+**downloads are SVG** (vector, ideal for print); **PNG stays plain** until a server-side SVG
+rasterizer is added (logged as a follow-up). Phases 3–4 (per-member codes, challenges) inherit
+the styler for free.
+
+---
 ## ADR-089: Dynamic QR links as a first-class `qr_codes` entity (the "Both" model)
 
 **Status:** Accepted · 2026-06-05 · migration `20260605010000_qr_codes_dynamic_links` (applied to prod), `app/q/[slug]/`, `app/(main)/admin/qr/` (Dynamic links + Analytics tabs), `lib/qr/{codes,analytics}.ts`

@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation'
 import { Link2, Plus, Pencil, Download, Copy, Check, ExternalLink } from 'lucide-react'
 import { createLink, updateLink, setLinkActive, type LinkInput } from './link-actions'
 import { Field, Badge, toLocalInput, fromLocalInput } from './form-bits'
+import { StyleEditor } from './style-editor'
+import { DEFAULT_STYLE, type QrStyle } from '@/lib/qr/style'
+import { shortLinkUrl } from '@/lib/qr/links'
 import type { PartnerOption } from './qr-studio'
 
 export interface StudioLink {
@@ -20,9 +23,10 @@ export interface StudioLink {
   valid_until: string | null
   scans: number
   unique: number
+  style: QrStyle
   /** Absolute /q/<slug> short link this code encodes. */
   url: string
-  /** Pre-rendered inline QR SVG (server-side). */
+  /** Pre-rendered inline QR SVG (server-side, styled). */
   svg: string
 }
 
@@ -39,6 +43,7 @@ const BLANK: LinkInput = {
   slug: null,
   partner_id: null,
   valid_until: null,
+  style: DEFAULT_STYLE,
 }
 
 export function DynamicLinks({
@@ -121,7 +126,7 @@ function LinkCard({
   const [pending, start] = useTransition()
   const router = useRouter()
   const downloadName = link.slug
-  const apiBase = `/api/qr?text=${encodeURIComponent(`/q/${link.slug}`)}`
+  const apiBase = `/api/qr?code=${encodeURIComponent(link.id)}`
 
   function toggleActive() {
     start(async () => {
@@ -259,6 +264,7 @@ function LinkForm({
           slug: link.slug,
           partner_id: link.partner_id,
           valid_until: link.valid_until,
+          style: link.style,
         }
       : BLANK,
   )
@@ -363,6 +369,12 @@ function LinkForm({
           </select>
         </Field>
       </div>
+
+      <StyleEditor
+        value={form.style}
+        onChange={(style) => set('style', style)}
+        previewUrl={link?.url ?? shortLinkUrl('preview')}
+      />
 
       {error && <p className="text-xs text-danger">{error}</p>}
 
