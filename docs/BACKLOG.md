@@ -188,18 +188,26 @@ greenfield initiative (G).
 Loose ends + next steps from the onboarding/economy/Journeys sprint. Audit verified
 tsc + eslint + 153/170 tests green and no broken refs after the rollbacks/renames.
 
-### Cleanup (small, do soon)
-- [ ] **Consolidate the two crew-gating components.** Pre-existing `CrewGateButton`
-  ("Crew Access Required" modal; wired on circle/event/crew-task actions) vs the new
-  `CrewGate`/`UpgradeLightbox` ("Unlock the full game"; on the Store). Unify to one
-  (prefer the new strategy messaging) so the upsell copy/UX is consistent. (S)
-- [ ] **Delete orphaned `app/onboarding/beta/welcome.tsx`** (BetaWelcome) — unused since
-  the deferred induction replaced the sign-in gate. (S)
-- [ ] **Decide the standalone `/onboarding/vera` page's fate** — orphaned now that
-  "Ask Vera" opens the feed lightbox (`?welcome=vera&v=chat`). Delete or keep as a
-  no-JS fallback. (S)
-- [ ] **Codify the "Vera always links" doctrine** in AI-VERA.md + audit the Vera
-  surfaces (lightbox/concierge) so every feature mention renders as a linked action. (S)
+### Cleanup — ✅ done 2026-06-04
+- [x] **Consolidated the two crew-gating components** into one `UpgradeLightbox`
+  module (`CrewGate` overlay + `CrewGateButton` inline, one shared "Unlock the full
+  game" lightbox). Deleted `components/crew-gate-button.tsx`.
+- [x] **Deleted orphaned `app/onboarding/beta/welcome.tsx`.**
+- [x] **Resolved `/onboarding/vera`:** kept as a no-JS / deep-link fallback to the
+  concierge (the feed lightbox stays primary). Documented in ADR-086.
+- [x] **Codified the "always reachable" doctrine** in AI-VERA.md (§1 + §3 rule).
+
+### Vera — dialed (ADR-086); ⏳ launcher pending
+- [x] **Voice + depth dial-in.** Rewrote `buildSystemPrompt` to attune-first / guided
+  multi-turn / always-nudge-to-action; warmed the default greeting + lightbox framing;
+  rebalanced the §3 doctrine rules.
+- [ ] ⏳ **Persistent companion launcher** (AI-VERA §4.0) — one docked Vera on every
+  member page that opens her conversational chat, **unifying the floating help launcher**
+  (search → grounded answer → human) into her panel so there's one bubble, not two.
+  Reuse the concierge chat via a shared `<VeraChat>` extracted from the lightbox;
+  decouple from the feed-specific close/redirect. (M)
+- [ ] **Live-loop suggestion chips.** The live Claude loop returns empty `suggestions[]`;
+  have Vera surface 1–3 quick-reply chips per turn to keep guided depth flowing. (S)
 
 ### Specced, awaiting build (Launch-gated; dormant while Beta = Crew)
 - [ ] **Beta Activation** (BETA-ACTIVATION.md): profile-completion card; "Founder's
@@ -225,6 +233,92 @@ tsc + eslint + 153/170 tests green and no broken refs after the rollbacks/rename
 - [ ] Update CHANGELOG.md + DEVELOPMENT-MAP.md to reflect the sprint's directions
   (Beta = Crew, the member economy/Journeys model, member contact card, the nav
   restructure). (S)
+
+## Q. Smart creation + open vitality library (feature sprint, 2026-06-04)
+
+Three interlocking features, assessed via parallel design agents. They chain: the
+**Wizard** builds **Journey plans**, plans are organized by the **4 Pillars** (= the
+`domains` table — Mind/Body/Spirit/Expression, with per-pillar `accent` colors), and
+the graduated feed **Journey board** showcases them. Add an ADR per cluster on build.
+
+### ✅ Shipped — Feed hero (onboarding guide → Journey board)
+- [x] One hero slot in `feed/page.tsx`, one truth source (`lib/onboarding/status.ts`):
+  a persistent **teal (`signal`)** onboarding guide that no longer vanishes at first
+  circle-join — it advances through the steps and only graduates once activation is
+  complete, then becomes the `JourneyBoard` (streak + today's move + resource center).
+  Retired `FeedWelcome` + the redundant sidebar Getting-started checklist.
+- [x] **JourneyBoard pillar-balance** — a calm 4-pillar coverage read from the
+  member's adopted practices. (Active Journey plan + suggested plan land with Q1 P1.)
+
+### ✅ Naming decided (ADR-087) — Journeys = open library; engine → Quests
+The member-facing **"Journeys"** is the open, free, user-built library. The gamified
+tracked engine was renamed **"Quests"** (`journey_chains → quest_chains`, `/crew/quests`,
+nav key `quests`). The `journey_*` table namespace is now free for the open library.
+
+### Q1. Open vitality library — user-built Journey plans (FREE; rides the practice loop)
+Reconciliation (ADR needed): the open library is **curation over the always-free
+practice substrate**; the Crew gate stays only on the tracked/gamified engine
+(`journey_chains`). Corrects ECONOMY-AND-JOURNEYS §5 ("members can't build one" → can't
+build a *tracked* Journey; DIY practice-combo plans are open). Separate
+`journey_plans` tables — do **not** overload the gated engine.
+- [x] **Phase 0** — `practices.domain_id` → the 4 Pillars (migration + backfill);
+  `lib/pillars.ts`; URL-driven pillar **filter** + **badges** on `/practices`; the
+  board's pillar-balance read. ✅ shipped.
+- [ ] **Phase 1** — `journey_plans` + `journey_plan_items` + RLS; `lib/journey-plans.ts`;
+  private plan builder (pick practices → grouped by pillar → reorder → notes). (M)
+- [ ] **Phase 2** — publish + open library browse (`/library`, pillar filter, coverage +
+  adopt-count chips). (M)
+- [ ] **Phase 3** — adopt a plan = bulk-adopt its practices into `member_practices`
+  (reuse `adoptPractice`; NO new run engine; honors "streaks stay free"). (S)
+- [ ] **Phase 4** — fork/remix + attribution (`fork_of`, `forked_count`). (S)
+- [ ] **Phase 5** — host moderation + optional "promote a community plan to a tracked
+  Journey/Quest". (M)
+
+### Q2. Create Wizard — section-aware, Vera-light, network suggestions
+**Wrap, don't replace** the existing `CreateModal` + per-section server actions via a
+typed registry. Vera stays **read-only** (suggests structure/prompts, never authors —
+reuse the propose-and-confirm invariant). Suggestions aggregate existing reads (my
+circles, practices, nearby, friends, Vera facts) — no new queries.
+- [ ] **Phase 0** — `lib/create/{types,registry}.ts` + `CreateWizard` wrapper for two
+  kinds (event, circle), behind a flag; old composers untouched. (M)
+- [ ] **Phase 1** — suggestion rail (zero AI) for event + circle. (S)
+- [ ] **Phase 2** — light Vera lane (`/api/create/vera` wrapping `runVeraClaudeTurn` +
+  read tools `suggest_template` / `related_practices`). (M)
+- [ ] **Phase 3** — roll across post/broadcast/channel/practice; revive the global
+  Create button in the app shell. (M)
+- [ ] **Phase 4** — NEW create paths for `program` + `journey` (new actions + RLS); the
+  Q1 plan builder plugs in here as a wizard kind. (M)
+
+**Risks tracked:** two event-create paths to reconcile; role gating stays the
+server-side action's job (wizard gating is UX only); the feed composer stays the fast
+inline path (wizard is an optional guided alt); RLS isolation between `journey_plans`
+(open) and `journey_chains` (gated) — run Supabase advisors after the migration.
+
+## R. UI polish + profile depth (2026-06-04)
+
+### ✅ Vera cue — fixed + redesigned
+- [x] **Bug:** cues for already-done tasks suppressed (the "add a photo" prompt to a
+  member who has one). Tips carry a `satisfiedKey`; `selectTip` filters on the
+  member's completed steps (from `getOnboardingStatus`).
+- [x] **Redesign** (`tour-provider.tsx`): skinnier chat-window width, pop-in animation,
+  **content-anchored** (`data-tour-anchor` on the avatar + main region, viewport-
+  clamped), and **self-receding** — fades to neutral after 5s idle, restored on mouse
+  move/hover. One primary action + always-there dismiss.
+
+### Profile page
+- [ ] **Header (cover) photo** — make the profile banner an uploadable/editable cover
+  image (mirror the avatar upload path + storage bucket). (M)
+- [ ] **Richer profile header** — more personal info (location · joined · bio line) +
+  **subtle** community-engagement stats (circles · practices logged · streak) woven
+  into the header, understated, not a gamified wall. (M)
+
+### Design system
+- [ ] **Unify pill/button radius site-wide.** No shared `Button`/`Badge` primitive
+  today; radii are inline and inconsistent (`rounded-lg` ×346 · `-full` ×223 · `-2xl`
+  ×215 · `-xl` ×151 · `-md` ×88). Decide canonical radii (e.g. interactive buttons =
+  `rounded-lg`; status pills = `rounded-full`), introduce shared `<Button>`/`<Badge>`
+  primitives, then migrate incrementally. Needs the primitive first — bigger than a
+  find-replace. (M)
 
 ## Accepted (no action)
 - `npm audit`: 4 moderate transitive advisories (postcss in Next's toolchain,

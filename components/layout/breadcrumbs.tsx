@@ -17,7 +17,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   broadcast: 'Broadcasts',
   messages: 'Messages',
   crew: 'Dashboard',
-  journeys: 'Journeys',
+  quests: 'Quests',
   store: 'Store',
   vault: 'Vault',
   practices: 'Practices',
