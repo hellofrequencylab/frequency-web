@@ -247,8 +247,8 @@ the graduated feed **Journey board** showcases them. Add an ADR per cluster on b
   circle-join — it advances through the steps and only graduates once activation is
   complete, then becomes the `JourneyBoard` (streak + today's move + resource center).
   Retired `FeedWelcome` + the redundant sidebar Getting-started checklist.
-- [ ] **Enrich the JourneyBoard** once the library lands: 4-pillar balance read +
-  active Journey plan + a suggested next plan. (S — depends on Q1 Phase 0–1)
+- [x] **JourneyBoard pillar-balance** — a calm 4-pillar coverage read from the
+  member's adopted practices. (Active Journey plan + suggested plan land with Q1 P1.)
 
 ### ✅ Naming decided (ADR-087) — Journeys = open library; engine → Quests
 The member-facing **"Journeys"** is the open, free, user-built library. The gamified
@@ -261,9 +261,9 @@ practice substrate**; the Crew gate stays only on the tracked/gamified engine
 (`journey_chains`). Corrects ECONOMY-AND-JOURNEYS §5 ("members can't build one" → can't
 build a *tracked* Journey; DIY practice-combo plans are open). Separate
 `journey_plans` tables — do **not** overload the gated engine.
-- [ ] **Phase 0** — `practices.domain_id` → the 4 Pillars (additive migration + backfill
-  the 5 seeds); pillar filter + chip on `/practices`; small `lib/pillars.ts` helper.
-  Independently useful; unblocks the board's pillar balance. (S)
+- [x] **Phase 0** — `practices.domain_id` → the 4 Pillars (migration + backfill);
+  `lib/pillars.ts`; URL-driven pillar **filter** + **badges** on `/practices`; the
+  board's pillar-balance read. ✅ shipped.
 - [ ] **Phase 1** — `journey_plans` + `journey_plan_items` + RLS; `lib/journey-plans.ts`;
   private plan builder (pick practices → grouped by pillar → reorder → notes). (M)
 - [ ] **Phase 2** — publish + open library browse (`/library`, pillar filter, coverage +

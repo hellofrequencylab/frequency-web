@@ -6,6 +6,7 @@ import { Flame, Check, ChevronDown, Sparkles, Heart, Compass, Map, Users } from 
 import { LogPracticeButton } from '@/components/practice/log-practice-button'
 import { STREAK_MILESTONES, streakProgress } from '@/lib/streak'
 import type { Practice } from '@/lib/practices'
+import type { PillarCount } from '@/lib/pillars'
 
 // The graduated home surface. Once a member finishes activation, the streak box
 // "levels up" into this: a multi-purpose journey guide + resource center that takes
@@ -35,9 +36,12 @@ const RESOURCES = [
 export function JourneyBoard({
   practices,
   streak = 0,
+  pillarBalance,
 }: {
   practices: Practice[]
   streak?: number
+  /** The member's adopted practices counted per Pillar (all four, zero-filled). */
+  pillarBalance?: PillarCount[]
 }) {
   const [collapsed, setCollapsed] = useState(false)
 
@@ -146,6 +150,29 @@ export function JourneyBoard({
           </div>
         )}
       </div>
+
+      {/* Pillar balance — a calm read of where your practice sits across the four
+          Pillars. Coverage, not a score. */}
+      {!collapsed && pillarBalance && pillarBalance.length > 0 && (
+        <div className="mt-3 border-t border-primary-bg px-4 pt-3">
+          <p className="mb-1.5 text-[11px] font-medium text-subtle">Your pillars</p>
+          <div className="flex gap-1.5">
+            {pillarBalance.map((p) => (
+              <div
+                key={p.slug}
+                className={`flex-1 rounded-lg px-2 py-1.5 text-center ${
+                  p.count > 0 ? 'bg-surface' : 'bg-surface/50'
+                }`}
+              >
+                <p className={`text-sm font-bold tabular-nums ${p.count > 0 ? 'text-text' : 'text-subtle'}`}>
+                  {p.count}
+                </p>
+                <p className="text-[10px] text-subtle">{p.name}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Resource center — a few warm doors back into the place. */}
       {!collapsed && (

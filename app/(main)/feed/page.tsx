@@ -13,6 +13,7 @@ import { VeraLightbox } from '@/components/onboarding/vera-lightbox'
 import { buildVeraOpening, buildWelcomeSlides } from '@/lib/onboarding/vera-welcome'
 import { getPracticesToLogToday } from '@/lib/practices'
 import { getOnboardingStatus } from '@/lib/onboarding/status'
+import { getMemberPillarBalance } from '@/lib/pillars'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
@@ -95,6 +96,11 @@ export default async function FeedPage({
   // set up, then it graduates into the JourneyBoard. One shared status drives both.
   const onboarding = myProfileId ? await getOnboardingStatus(myProfileId) : null
 
+  // Pillar balance for the graduated board — only needed once onboarding is done.
+  const pillarBalance = myProfileId && onboarding?.complete
+    ? await getMemberPillarBalance(myProfileId)
+    : undefined
+
   // Warm, time-aware greeting headline (the feed is "home", so it greets you).
   // Greet in the community's timezone (the beta is North County San Diego) so the
   // server's UTC clock doesn't roll the date + greeting forward late at night.
@@ -125,7 +131,7 @@ export default async function FeedPage({
       {onboarding && !onboarding.complete && <FeedOnboardingGuide status={onboarding} />}
 
       {onboarding?.complete
-        ? <JourneyBoard practices={practicesToLog} streak={streak} />
+        ? <JourneyBoard practices={practicesToLog} streak={streak} pillarBalance={pillarBalance} />
         : <PracticePrompt practices={practicesToLog} streak={streak} />}
 
       {/* Composer */}
