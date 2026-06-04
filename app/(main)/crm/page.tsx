@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { Contact, MessageSquare, Globe, Cake, Sparkles, HeartPulse, Search } from 'lucide-react'
+import { Contact, MessageSquare, Globe, Cake, Sparkles, HeartPulse, Search, Mail, Phone, MapPin } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
@@ -26,6 +26,9 @@ type CrmMember = {
   role: CommunityRole
   bio: string | null
   website: string | null
+  email: string | null
+  phone: string | null
+  city: string | null
   joinedAt: string | null
 }
 
@@ -94,7 +97,7 @@ export default async function CrmPage() {
 
   let query = admin
     .from('profiles')
-    .select('id, display_name, handle, avatar_url, community_role, bio, website, created_at')
+    .select('id, auth_user_id, display_name, handle, avatar_url, community_role, bio, website, phone, city, created_at')
     .eq('is_system', false)
     .neq('id', caller.id as string)
     .order('display_name', { ascending: true })
@@ -105,6 +108,12 @@ export default async function CrmPage() {
   }
   const { data: rows } = await query
 
+  // Emails live in auth.users — resolve them in one admin listing (beta scale).
+  const { data: authList } = await admin.auth.admin.listUsers({ perPage: 1000 })
+  const emailById = new Map<string, string | null>(
+    (authList?.users ?? []).map((u) => [u.id, u.email ?? null]),
+  )
+
   const members: CrmMember[] = (rows ?? []).map((m) => ({
     id: m.id as string,
     displayName: (m.display_name as string) ?? 'Unnamed',
@@ -113,6 +122,9 @@ export default async function CrmPage() {
     role: ((m.community_role as CommunityRole) ?? 'member'),
     bio: (m.bio as string) ?? null,
     website: (m.website as string) ?? null,
+    email: emailById.get(m.auth_user_id as string) ?? null,
+    phone: (m.phone as string) ?? null,
+    city: (m.city as string) ?? null,
     joinedAt: (m.created_at as string) ?? null,
   }))
 
@@ -165,9 +177,31 @@ export default async function CrmPage() {
               {m.bio && <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-muted">{m.bio}</p>}
 
               <dl className="mt-3 space-y-1 text-xs text-subtle">
+                {m.email && (
+                  <div className="flex items-center gap-1.5">
+                    <Mail className="h-3.5 w-3.5 shrink-0" />
+                    <a href={`mailto:${m.email}`} className="truncate text-primary hover:underline">
+                      {m.email}
+                    </a>
+                  </div>
+                )}
+                {m.phone && (
+                  <div className="flex items-center gap-1.5">
+                    <Phone className="h-3.5 w-3.5 shrink-0" />
+                    <a href={`tel:${m.phone}`} className="truncate text-text hover:underline">
+                      {m.phone}
+                    </a>
+                  </div>
+                )}
+                {m.city && (
+                  <div className="flex items-center gap-1.5">
+                    <MapPin className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">{m.city}</span>
+                  </div>
+                )}
                 {m.website && (
                   <div className="flex items-center gap-1.5">
-                    <Globe className="h-3.5 w-3.5" />
+                    <Globe className="h-3.5 w-3.5 shrink-0" />
                     <a
                       href={m.website.startsWith('http') ? m.website : `https://${m.website}`}
                       target="_blank"
