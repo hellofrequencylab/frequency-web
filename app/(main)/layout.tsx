@@ -17,6 +17,7 @@ import { PageViewTracker } from '@/components/analytics/track-provider'
 import { getSearchIndex } from '@/lib/help/content'
 import { TourProvider } from '@/components/onboarding/tour-provider'
 import type { TourState } from '@/lib/onboarding/select'
+import { getOnboardingStatus } from '@/lib/onboarding/status'
 import { BETA_INDUCTION_ACTIVE } from '@/lib/onboarding/beta-script'
 
 // Authenticated app layout. Wraps Feed, Groups, Events, Admin.
@@ -80,6 +81,14 @@ export default async function MainLayout({
     lastShownAt: tourMeta?.lastShownAt ?? null,
   }
 
+  // Cues whose activation task is already done are suppressed (don't tell someone
+  // to add a photo they have). Only pay for the status lookup when a task-cue is
+  // still unseen — otherwise there's nothing to suppress.
+  const TASK_CUES = ['profile_face', 'circles_find', 'practice_adopt']
+  const tourSatisfied: string[] = TASK_CUES.some((id) => !tourState.seen.includes(id))
+    ? (await getOnboardingStatus(profile.id)).steps.filter((s) => s.done).map((s) => s.key)
+    : []
+
   // Right sidebar streams in independently. Doesn't block page render
   const sidebar = (
     <Suspense fallback={<RightSidebarSkeleton />}>
@@ -114,7 +123,7 @@ export default async function MainLayout({
       <PushRegistration />
       <SupportLauncher index={helpIndex} />
       <PageViewTracker />
-      <TourProvider initialState={tourState} />
+      <TourProvider initialState={tourState} satisfied={tourSatisfied} />
     </AppShell>
   )
 }
