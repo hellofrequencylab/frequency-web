@@ -1,6 +1,6 @@
 # Demo cast — the casting bible
 
-**Status:** ⏳ Draft for review (no data written yet). This is the backbone every
+**Status:** ✅ Built + Postgres-validated (migration series `20260605…`). This is the backbone every
 demo-seed migration in the `20260605…` series references, so the social graph
 stays coherent. Operational reference for the demo system itself:
 [`DEMO-SYSTEM.md`](DEMO-SYSTEM.md). Decision record: [`DECISIONS.md`](DECISIONS.md).

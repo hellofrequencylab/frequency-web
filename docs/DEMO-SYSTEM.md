@@ -49,8 +49,11 @@ community). Surfaces gate on it:
 
 ## How demo content reads in the UI
 
-- A small, muted **Beta Demo** pill (`components/ui/demo-badge.tsx`) on every demo
-  member, circle, post, and event.
+- A small **yellow ⚡ bolt** badge (`components/ui/demo-badge.tsx`) on every demo
+  member, circle, post, event, and practice — the at-a-glance tell for Beta testers.
+- A right-sidebar **DemoNotice** card (`components/sidebar/demo-notice.tsx`) explains
+  the ⚡ and shows the *honest* headcount ("250 demo members + N real ones — Help us
+  make this real!"); it self-hides when `demo_mode` is off or the demo is purged.
 - Demo **profiles & circles recede** — reduced opacity + desaturated avatar/image —
   so real member content always reads as primary (`EntityCard` `dimmed`/`badge`
   slots; `PersonCard`/`CircleCard` `isDemo`).
@@ -70,3 +73,21 @@ Two levers, in order of severity:
 2. **Purge** (permanent): `DELETE FROM <table> WHERE is_demo;` across the five
    tables — uniform, no UUID lists, no special-casing. Badges/greying vanish with
    the rows.
+
+
+## v2 cast (the live Beta community) — ADR-080
+
+The demo layer was rebuilt as one bounded, local **Encinitas** community (replacing
+the old SD `c…` cast and the out-of-area national `d…` metros). Migration series
+`supabase/migrations/20260605000001`–`…000300`; casting bible + build spec in
+[DEMO-CAST.md](DEMO-CAST.md).
+
+- **~250 members · 12 circles**, a rank pyramid (3 luminary / 12 conduit / 30 agent
+  / 55 operative / 80 runner / 70 ghost), 16 events (10 past + 6 upcoming), ~300
+  posts + ~144 replies, ~40 cross-memberships.
+- **Set-generated engagement** (deterministic, idempotent): post reactions + synced
+  counters, event RSVPs, achievement unlocks, attendance streaks, member-practice
+  adoptions — all keyed to `is_demo` so they purge with the cast.
+- **Counts stay honest** — no inflated `member_count` (the membership trigger keeps
+  it true); the "year-old, went viral" feel comes from maturity signals, not numbers.
+- Every v2 migration was validated against a throwaway PG16 cluster before commit.
