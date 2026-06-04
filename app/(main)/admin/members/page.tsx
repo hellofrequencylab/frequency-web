@@ -197,7 +197,7 @@ function Empty({ children }: { children: React.ReactNode }) {
 
 function Table({ head, children }: { head: string[]; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
+    <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-border text-left text-xs uppercase tracking-wider text-subtle">

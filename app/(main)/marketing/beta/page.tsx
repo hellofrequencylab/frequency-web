@@ -69,7 +69,7 @@ export default async function BetaPage() {
           <p className="text-sm text-muted">No beta signups yet.</p>
         </div>
       ) : (
-        <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
+        <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-left text-xs uppercase tracking-wider text-subtle">
