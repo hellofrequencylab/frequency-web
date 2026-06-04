@@ -82,6 +82,12 @@
 > `valid_from`/`valid_until` (migration `20260605040000`); the engine only advances a `qr_scan`
 > challenge while within the window, and the Studio **Campaigns** tab authors start/end + shows a
 > Scheduled / Active / Ended status. Extends ADR-094. Backlog remaining: consent-gate GA · styled-PNG.
+>
+> **2026-06-05:** QR backlog #3 + #4 — **consent-gated GA** (server mirror + client `ga-disable` flag
+> respect the `analytics` consent scope, ADR-069/093) and **styled-PNG export** (`/api/qr?format=png`
+> for styled codes rasterizes the design via `@resvg/resvg-wasm`, `lib/qr/raster.ts`, remote logos
+> inlined, plain-PNG fallback; `serverExternalPackages` keeps the wasm out of the bundle). Backlog
+> remaining: apply the styler to check-in nodes (#5).
 
 ---
 

@@ -93,7 +93,8 @@ Shared mechanics:
   sign-in) without hand-typing URLs; a "Custom URL" option remains. The
   **isomorphic** styled renderer `lib/qr/render-styled.ts` turns the QR matrix into a designed
   SVG, used identically by the live editor preview (client), the Studio list, and `/api/qr?code=`
-  downloads (styled SVG; PNG stays plain — no server rasterizer). All style input is sanitized by
+  downloads (styled SVG, and a styled PNG via `@resvg/resvg-wasm` — `lib/qr/raster.ts`, with a
+  plain-PNG fallback). All style input is sanitized by
   `parseStyle` (validated colors, https/data-image logos only, escaped label) before it inlines.
 - **Per-member codes (Phase 3, ADR-091).** Every member owns three editable codes
   (`qr_codes.purpose` = connect | referral | gift_zap), provisioned by `ensureMemberCodes` and
@@ -111,7 +112,7 @@ Shared mechanics:
   code+member) and `advanceChallenges` rewards on completion. Authored in the Studio **Campaigns** tab.
 - **Google Analytics (ADR-093).** Server `track()` mirrors to GA4 via the Measurement Protocol;
   QR funnel events (`qr.scanned`, `qr.referral_signup`, `qr.gift_zap`, `qr.code_designed`) reach GA.
-- **Deferred (seamed):** ghost-node geo + signed-payload authoring; styled-PNG rasterization;
+- **Deferred (seamed):** ghost-node geo + signed-payload authoring;
   per-campaign time windows; referral-credit chaining on crew marketing codes.
 
 ## 2. Verification is a first-class, server-authoritative layer (security)
