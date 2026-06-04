@@ -13,7 +13,9 @@
 import { revalidatePath } from 'next/cache'
 import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { parseStyle, type QrStyle } from '@/lib/qr/style'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
+import type { Json } from '@/lib/database.types'
 
 const TYPES = ['qr', 'nfc'] as const
 const RULES = ['once_per_user', 'repeatable', 'once_global'] as const
@@ -27,6 +29,8 @@ export interface NodeInput {
   valid_until: string | null
   /** Partner id to make this a plaque, or null for a community code. */
   partner_id: string | null
+  /** Visual QR design; sanitized by parseStyle before persisting. */
+  style: QrStyle
 }
 
 function clean(input: NodeInput) {
@@ -42,6 +46,7 @@ function clean(input: NodeInput) {
     capture_rule: input.capture_rule,
     valid_until: input.valid_until ? input.valid_until : null,
     partner_id: input.partner_id ? input.partner_id : null,
+    style: parseStyle(input.style) as unknown as Json,
   }
 }
 
