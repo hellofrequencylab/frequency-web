@@ -83,7 +83,7 @@ export function CreateMenu({ role }: { role: CommunityRole }) {
         onClick={() => setOpen((v) => !v)}
         aria-label="Create"
         aria-expanded={open}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-primary hover:bg-primary-hover text-white text-sm font-semibold px-3 py-1.5 shadow-sm transition-colors"
+        className="inline-flex items-center gap-1.5 rounded-lg bg-primary hover:bg-primary-hover text-on-primary text-sm font-semibold px-3 py-1.5 shadow-sm transition-colors"
       >
         <Plus className="w-4 h-4" strokeWidth={2.5} />
         Create

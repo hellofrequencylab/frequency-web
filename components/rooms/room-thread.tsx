@@ -167,7 +167,7 @@ export function RoomThread({
             <button
               type="submit"
               disabled={!body.trim() || isPending}
-              className="rounded-lg bg-primary p-2.5 text-white hover:bg-primary-hover disabled:opacity-40 transition-colors"
+              className="rounded-lg bg-primary p-2.5 text-on-primary hover:bg-primary-hover disabled:opacity-40 transition-colors"
               aria-label="Send"
             >
               {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}

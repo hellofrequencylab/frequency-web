@@ -59,7 +59,7 @@ export function CrewGateButton({ isCrew, label, buttonClassName, children }: Cre
             <div className="flex flex-col gap-2">
               <Link
                 href="/upgrade"
-                className="flex items-center justify-center gap-2 w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-hover transition-colors"
+                className="flex items-center justify-center gap-2 w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors"
               >
                 <Zap className="w-4 h-4" />
                 Upgrade to Crew

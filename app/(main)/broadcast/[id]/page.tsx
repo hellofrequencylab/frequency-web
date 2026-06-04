@@ -228,7 +228,7 @@ export default async function DispatchDetailPage({ params }: Props) {
                 <span className="text-sm font-black text-primary">{linkedTask.zaps_value} zaps</span>
                 <Link
                   href="/crew"
-                  className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-white hover:bg-primary-hover transition-colors"
+                  className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-on-primary hover:bg-primary-hover transition-colors"
                 >
                   Complete challenge →
                 </Link>

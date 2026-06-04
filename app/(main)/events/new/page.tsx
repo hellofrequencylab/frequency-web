@@ -55,7 +55,7 @@ export default async function NewEventPage() {
 
       <h1 className="text-xl font-semibold text-text mb-6">Create an Event</h1>
 
-      <div className="rounded-xl border border-border bg-white p-5">
+      <div className="rounded-xl border border-border bg-surface p-5">
         <EventForm groups={circles} />
       </div>
     </div>

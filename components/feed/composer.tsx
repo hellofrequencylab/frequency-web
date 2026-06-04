@@ -315,7 +315,7 @@ export function Composer({
         <button
           onClick={submit}
           disabled={(!body.trim() && !imageFile) || isPending}
-          className={`rounded-lg px-4 py-1.5 text-xs font-semibold text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
+          className={`rounded-lg px-4 py-1.5 text-xs font-semibold text-on-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
             isAnnouncement
               ? 'bg-primary hover:bg-primary-hover'
               : 'bg-primary hover:bg-primary-hover'
