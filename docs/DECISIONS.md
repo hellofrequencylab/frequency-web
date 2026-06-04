@@ -2580,10 +2580,12 @@ and all writes are best-effort — attribution never blocks signup.
 resolver are wired so they attribute the moment those flows exist; `event_guest` is
 already set on anonymous event-page visits, but no donations product or guest-RSVP
 flow is built yet. Channel derivation is pure + unit-tested
-(`lib/attribution/channels.test.ts`). A backfill of existing members (inferring a
-source from `referred_by_profile_id` + `meta.beta.*`) and an analytics rollup
-(`source` dimension on the `mkt_*` RPCs / an admin distribution view) are the noted
-follow-ons.
+(`lib/attribution/channels.test.ts`). A **backfill** (`lib/attribution/backfill.ts`)
+infers a source for pre-capture members from `referred_by_profile_id` +
+`meta.beta.{heard_about,sequence}` (idempotent; honest — uninferable members stay
+untagged, not mislabeled `direct`); a **rollup** (`lib/attribution/rollup.ts`) groups
+the `source_*` tags into the channel-mix view on `/admin/intel` with a one-click
+backfill button. Both are migration-free reads/writes over `member_tags` + `meta`.
 
 ---
 

@@ -82,7 +82,7 @@ governed tag, so origin is segmentable forever. One channel taxonomy lives in
 | **Model** | first-touch = the canonical tag (credits true origin); converting/last-touch + utm detail kept in `meta` for multi-touch analysis |
 | **No migration** | rides `member_tags` + `meta` only; best-effort, never blocks signup |
 
-`donor` + `event_guest` are **plumbing only** (channels + resolver wired; flows not built). Backfill of existing members and a `source` rollup on the `mkt_*` RPCs are follow-ons.
+`donor` + `event_guest` are **plumbing only** (channels + resolver wired; flows not built). A **backfill** (`lib/attribution/backfill.ts`) infers a source for pre-capture members from `referred_by_profile_id` + `meta.beta.*`; the **channel-mix rollup** (`lib/attribution/rollup.ts`) renders on `/admin/intel` with a one-click backfill button.
 
 ## Phases
 
