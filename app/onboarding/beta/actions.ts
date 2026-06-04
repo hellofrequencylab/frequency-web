@@ -6,6 +6,7 @@
 // so the oath stamp and the completion stamp don't clobber each other.
 
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { sendWelcomeEmail } from '@/lib/email'
 import { sanitizeProfileInput } from '@/lib/profile-input'
@@ -15,6 +16,25 @@ import { BETA_INDUCTION_VERSION, type OathId } from '@/lib/onboarding/beta-scrip
 import type { Json } from '@/lib/database.types'
 
 type Meta = Record<string, Json>
+
+// Where the deferred (signed-out) flow parks the answers across the auth
+// round-trip. The avatar (too big for a cookie) goes to localStorage on the
+// client under 'fq_pending_avatar' and is uploaded by /onboarding/beta/complete.
+const PENDING_INDUCTION_COOKIE = 'fq_pending_induction'
+
+export interface InductionData {
+  displayName: string
+  handle: string
+  bio: string
+  avatarUrl: string
+  location: string
+  lat: number | null
+  lng: number | null
+  intent: string
+  interests: string
+  heardAbout: string
+  oaths: OathId[]
+}
 
 async function readMeta(supabase: Awaited<ReturnType<typeof createClient>>, authUserId: string): Promise<Meta> {
   const { data } = await supabase
@@ -53,22 +73,12 @@ export async function acceptBetaOath(oaths: OathId[]) {
 }
 
 /**
- * Final step: persist identity + place + intent, stamp onboarding complete,
- * fire the welcome email, and drop the founder into Circles.
+ * The induction write, shared by the authed path (completeBetaInduction) and the
+ * deferred path (finalizePendingInduction). Persists identity + place + intent,
+ * stamps onboarding complete, seeds Vera's memory, and fires the welcome email.
+ * Requires an authenticated user; does NOT redirect (callers decide where to go).
  */
-export async function completeBetaInduction(data: {
-  displayName: string
-  handle: string
-  bio: string
-  avatarUrl: string
-  location: string
-  lat: number | null
-  lng: number | null
-  intent: string
-  interests: string
-  heardAbout: string
-  oaths: OathId[]
-}) {
+async function writeBetaInduction(data: InductionData): Promise<void> {
   const { displayName, handle, bio, avatarUrl } = sanitizeProfileInput(data)
   const intent = data.intent.trim().slice(0, 500)
   const interests = data.interests.trim().slice(0, 200)
@@ -144,13 +154,72 @@ export async function completeBetaInduction(data: {
   if (user.email) {
     sendWelcomeEmail({ to: user.email, displayName }).catch(() => {})
   }
+}
 
+/**
+ * Authed path: a signed-in, not-yet-completed member who lands on the induction.
+ * Writes, then hands off to Vera's onboarding lightbox over the feed.
+ */
+export async function completeBetaInduction(data: InductionData) {
+  await writeBetaInduction(data)
   // Hand off to Vera (ADR-066 Phase D): drop them straight into the feed (the real
-  // product) with Vera's onboarding lightbox over it. She already has their
-  // interests/intent in memory (seeded just above) AND in meta.beta, so the
-  // lightbox continues the thread instead of opening cold. Dark-safe: if the AI
-  // kernel is off, the concierge falls back to its deterministic script. There's
-  // always a one-tap escape to /circles, and the feed first-run banner catches
-  // skippers.
+  // product) with her onboarding lightbox over it. She already has their
+  // interests/intent in memory + meta.beta, so the lightbox continues the thread
+  // instead of opening cold. One-tap escape to /circles always remains.
   redirect('/feed?welcome=vera')
+}
+
+/**
+ * Deferred path, step 1 (signed-out): park the induction answers in a short-lived
+ * cookie so they survive the sign-in round-trip. No auth required. The avatar is
+ * parked separately in localStorage by the client and uploaded at /complete.
+ */
+export async function stashPendingInduction(data: Omit<InductionData, 'avatarUrl'>) {
+  const payload: InductionData = {
+    displayName: (data.displayName ?? '').slice(0, 120),
+    handle: (data.handle ?? '').slice(0, 40),
+    bio: (data.bio ?? '').slice(0, 200),
+    avatarUrl: '',
+    location: (data.location ?? '').slice(0, 160),
+    lat: data.lat ?? null,
+    lng: data.lng ?? null,
+    intent: (data.intent ?? '').slice(0, 500),
+    interests: (data.interests ?? '').slice(0, 200),
+    heardAbout: (data.heardAbout ?? '').slice(0, 120),
+    oaths: Array.isArray(data.oaths) ? data.oaths.slice(0, 8) : [],
+  }
+  ;(await cookies()).set(PENDING_INDUCTION_COOKIE, JSON.stringify(payload), {
+    httpOnly: true,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 60 * 60, // an hour to click the magic link / finish OAuth
+  })
+}
+
+/**
+ * Deferred path, step 2 (now authed, at /onboarding/beta/complete): read the
+ * parked answers, fold in the uploaded avatar URL, write the profile, and clear
+ * the cookie. Returns ok so the client can navigate AFTER the avatar upload.
+ */
+export async function finalizePendingInduction(avatarUrl: string | null): Promise<{ ok: boolean; error?: string }> {
+  const store = await cookies()
+  const raw = store.get(PENDING_INDUCTION_COOKIE)?.value
+  if (!raw) return { ok: false, error: 'No pending induction.' }
+
+  let data: InductionData
+  try {
+    data = JSON.parse(raw) as InductionData
+  } catch {
+    store.delete(PENDING_INDUCTION_COOKIE)
+    return { ok: false, error: 'Could not read your answers.' }
+  }
+
+  try {
+    await writeBetaInduction({ ...data, avatarUrl: avatarUrl ?? '' })
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Something went wrong.' }
+  }
+
+  store.delete(PENDING_INDUCTION_COOKIE)
+  return { ok: true }
 }
