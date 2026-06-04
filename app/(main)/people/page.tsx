@@ -12,6 +12,8 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { PersonCard } from '@/components/cards/person-card'
 import { CircleCard, type CircleCardData } from '@/components/circles/circle-card'
 import { CircleLocationSearch } from '@/components/circles/circle-location-search'
+import { FacetDropdown } from '@/components/ui/facet-dropdown'
+import { DirectorySearch } from '@/components/ui/directory-search'
 import { SectionHeader } from '@/components/ui/section-header'
 import { formatDistance } from '@/lib/geocode'
 import { demoModeEnabled } from '@/lib/platform-flags'
@@ -35,6 +37,8 @@ type Filters = {
   city?: string
   region?: string
   online?: string
+  /** Free-text name/handle search. */
+  q?: string
   /** "lat,lng" set by the geolocation / city-autocomplete search. */
   near?: string
   /** Human label for the chosen place, e.g. "Encinitas, California". */
@@ -58,6 +62,7 @@ export default async function DirectoryPage({
     city: cityFilter,
     region: regionFilter,
     online: onlineFilter,
+    q: qFilter,
     near: nearParam,
     place: placeParam,
   } = await searchParams
@@ -171,6 +176,14 @@ export default async function DirectoryPage({
   if (regionFilter) filtered = filtered.filter((p) => p.nexus_regions?.name === regionFilter)
   if (circleMemberIds) filtered = filtered.filter((p) => circleMemberIds!.has(p.id))
   if (onlineFilter) filtered = filtered.filter((p) => isOnline(p.last_seen_at))
+  if (qFilter?.trim()) {
+    const needle = qFilter.trim().toLowerCase()
+    filtered = filtered.filter(
+      (p) =>
+        (p.display_name ?? '').toLowerCase().includes(needle) ||
+        (p.handle ?? '').toLowerCase().includes(needle),
+    )
+  }
 
   const roles: CommunityRole[] = ['member', 'crew', 'host', 'guide', 'mentor', 'janitor']
 
@@ -181,6 +194,7 @@ export default async function DirectoryPage({
     if (params.city) p.set('city', params.city)
     if (params.region) p.set('region', params.region)
     if (params.online) p.set('online', params.online)
+    if (params.q) p.set('q', params.q)
     if (params.near) p.set('near', params.near)
     if (params.place) p.set('place', params.place)
     const s = p.toString()
@@ -194,6 +208,7 @@ export default async function DirectoryPage({
     city: cityFilter,
     region: regionFilter,
     online: onlineFilter,
+    q: qFilter,
     near: nearParam,
     place: placeParam,
   }
@@ -202,102 +217,41 @@ export default async function DirectoryPage({
   const pillOn = 'bg-primary text-on-primary border-primary'
   const pillOff = 'bg-surface text-muted border-border hover:border-primary'
 
-  // Filters live in the IndexTemplate `toolbar` slot (URL-driven, server-rendered).
+  // Standardized directory toolbar: a primary name search, low-cardinality facets
+  // (Role, Status) as inline pills, and high-cardinality facets (Circle, Region,
+  // City) as compact searchable dropdowns — so the filters never sprawl into walls
+  // of chips. All URL-driven, server-rendered, shareable.
+  const circleOptions = circleList.map((c) => ({ value: c.id, label: c.name }))
+  const regionOptions = (regions ?? []).map((reg: { id: string; name: string }) => ({ value: reg.name, label: reg.name }))
+  const cityOptions = cities.map((c) => ({ value: c, label: c }))
+
   const filters = (
     <div className="flex flex-col gap-3">
-        {/* Smart location search — city autocomplete + geolocation → nearby
-            REAL circles (demo excluded). */}
+        {/* Primary search — find a specific member by name or handle. */}
+        <DirectorySearch placeholder="Search members by name or @handle…" />
+
+        {/* Location search — city autocomplete + geolocation → nearby REAL circles. */}
         <CircleLocationSearch activePlace={placeParam} />
 
-        {/* Role (rank) filter */}
+        {/* Facets: Role + Status as pills (few values); Circle/Region/City as
+            searchable dropdowns (many values). */}
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-xs text-muted font-medium w-12 shrink-0">Role:</span>
-          <Link
-            href={filterHref({ ...base, role: undefined })}
-            className={`${pillBase} ${!roleFilter ? pillOn : pillOff}`}
-          >
-            All
-          </Link>
+          <span className="text-xs text-muted font-medium shrink-0">Role:</span>
+          <Link href={filterHref({ ...base, role: undefined })} className={`${pillBase} ${!roleFilter ? pillOn : pillOff}`}>All</Link>
           {roles.map((r) => (
-            <Link
-              key={r}
-              href={filterHref({ ...base, role: r })}
-              className={`${pillBase} ${roleFilter === r ? pillOn : pillOff}`}
-            >
+            <Link key={r} href={filterHref({ ...base, role: r })} className={`${pillBase} ${roleFilter === r ? pillOn : pillOff}`}>
               {ROLE_LABEL[r]}
             </Link>
           ))}
-        </div>
 
-        {/* Circle filter */}
-        {circleList.length > 0 && (
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-xs text-muted font-medium w-12 shrink-0">Circle:</span>
-            <Link
-              href={filterHref({ ...base, circle: undefined })}
-              className={`${pillBase} ${!circleFilter ? pillOn : pillOff}`}
-            >
-              All
-            </Link>
-            {circleList.map((c) => (
-              <Link
-                key={c.id}
-                href={filterHref({ ...base, circle: c.id })}
-                className={`${pillBase} ${circleFilter === c.id ? pillOn : pillOff}`}
-              >
-                {c.name}
-              </Link>
-            ))}
-          </div>
-        )}
+          <span aria-hidden className="mx-1 h-4 w-px bg-border" />
 
-        {/* City filter */}
-        {cities.length > 0 && (
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-xs text-muted font-medium w-12 shrink-0">City:</span>
-            <Link
-              href={filterHref({ ...base, city: undefined })}
-              className={`${pillBase} ${!cityFilter ? pillOn : pillOff}`}
-            >
-              All
-            </Link>
-            {cities.map((c) => (
-              <Link
-                key={c}
-                href={filterHref({ ...base, city: c })}
-                className={`${pillBase} ${cityFilter === c ? pillOn : pillOff}`}
-              >
-                {c}
-              </Link>
-            ))}
-          </div>
-        )}
+          {circleOptions.length > 0 && <FacetDropdown label="Circle" paramKey="circle" options={circleOptions} />}
+          {regionOptions.length > 0 && <FacetDropdown label="Region" paramKey="region" options={regionOptions} />}
+          {cityOptions.length > 0 && <FacetDropdown label="City" paramKey="city" options={cityOptions} />}
 
-        {/* Region filter */}
-        {regions && regions.length > 0 && (
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-xs text-muted font-medium w-12 shrink-0">Region:</span>
-            <Link
-              href={filterHref({ ...base, region: undefined })}
-              className={`${pillBase} ${!regionFilter ? pillOn : pillOff}`}
-            >
-              All
-            </Link>
-            {regions.map((reg: { id: string; name: string }) => (
-              <Link
-                key={reg.id}
-                href={filterHref({ ...base, region: reg.name })}
-                className={`${pillBase} ${regionFilter === reg.name ? pillOn : pillOff}`}
-              >
-                {reg.name}
-              </Link>
-            ))}
-          </div>
-        )}
+          <span aria-hidden className="mx-1 h-4 w-px bg-border" />
 
-        {/* Online-now toggle */}
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-xs text-muted font-medium w-12 shrink-0">Status:</span>
           <Link
             href={filterHref({ ...base, online: onlineFilter ? undefined : '1' })}
             className={`${pillBase} ${onlineFilter ? pillOn : pillOff}`}

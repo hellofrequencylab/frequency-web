@@ -16,11 +16,13 @@ type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 export default async function FeedPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sort?: string; welcome?: string }>
+  searchParams: Promise<{ sort?: string; welcome?: string; v?: string }>
 }) {
-  const { sort: sortParam, welcome } = await searchParams
+  const { sort: sortParam, welcome, v } = await searchParams
   const sort: 'recent' | 'relevant' = sortParam === 'recent' ? 'recent' : 'relevant'
   const showVeraWelcome = welcome === 'vera'
+  // "Ask Vera" opens straight in chat; the post-induction welcome plays the deck.
+  const veraStartInChat = v === 'chat'
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -102,7 +104,7 @@ export default async function FeedPage({
 
   return (
     <div className="max-w-2xl mx-auto w-full">
-      {veraWelcome && <VeraLightbox slides={veraWelcome.slides} opening={veraWelcome.opening} />}
+      {veraWelcome && <VeraLightbox slides={veraWelcome.slides} opening={veraWelcome.opening} startInChat={veraStartInChat} />}
       <StreamTemplate
         eyebrow={today}
         title={greeting}
