@@ -79,6 +79,7 @@ export const FEATURE_KEYS: FeatureKey[] = [
   // ── Operator (staff / host tooling) ──────────────────────────────────────────
   { key: 'crew', label: 'Crew tasks', area: 'operator', routes: ['/crew'], core: false },
   { key: 'crm', label: 'CRM / contacts', area: 'operator', routes: ['/crm'], core: false },
+  { key: 'profiles', label: 'Profile Creator (network intake)', area: 'operator', routes: ['/connections'], core: false },
   { key: 'marketing', label: 'Marketing console', area: 'operator', routes: ['/marketing'], core: false },
   { key: 'outreach', label: 'Outreach', area: 'operator', routes: ['/outreach'], core: false },
   { key: 'partners', label: 'Partners', area: 'operator', routes: ['/partners'], core: false },

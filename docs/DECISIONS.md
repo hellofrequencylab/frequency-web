@@ -2503,6 +2503,52 @@ a background job remains the path for very large areas (carried from ADR-091).
 
 ---
 
+## ADR-096: Profile Creator — a new owner-scoped intake entity (`network_contacts`)
+
+**Status:** Accepted · `supabase/migrations/20260606000000_network_contacts.sql`, `lib/connections/*`, `app/(main)/connections/*`, `lib/ai/connections-ai.ts`. See [NETWORK-CRM.md](NETWORK-CRM.md).
+
+**Context.** Stewards wanted to capture people they meet — snap a business card or
+poster, harvest the details, cut out a profile photo, draft a connection note + tags
+— with manual entry + Vera assist as the fallback, and a system built for *many
+sources* with *routing/sorting*. Critically: **personal captures must not bleed into
+public data.** Neither existing table fits. `profiles` is real members with PUBLIC
+read (a scanned lead isn't a member; public read = leak). `contacts` is the
+marketing list (consent + campaigns, service-role, no ownership/privacy axis).
+
+**Decision.** A new entity, `network_contacts` (+ `network_contact_notes`,
+`network_contact_tags`), deliberately separate from both. `owner_id` is the privacy
+primitive; `visibility` (`private` → `shared` → `network`) gates promotion; `source`
+(`card_scan`/`poster`/`manual`/`import`) and `status` carry the routing/sorting.
+Photos & original scans live in a **private** Storage bucket (`network-contacts`,
+`public=false`) served only via short-lived signed URLs — never the public
+avatars/posts buckets. RLS: owner CRUD on own rows; only `visibility='network'` rows
+are readable beyond the owner; notes/tags inherit the parent's ownership. The tool
+is gated to stewards (host+) **or** Studio staff (`team_members`), but every record
+stays owner-scoped regardless. AI harvest goes through the existing kernel
+(`getAnthropic`, kill switch, per-feature budget caps, usage ledger) and **degrades
+to plain manual entry** when AI is off or a call fails — the product never depends on
+the model being up (mirrors `lib/studio/winback.ts`).
+
+**Model tiering.** Per the cost doctrine (`lib/ai/models.ts`, AI-STRATEGY), the
+*vision* OCR of a card runs on **Sonnet** (`connection-scan`, cap $3/day) and the
+*text-only* Vera assist on **Haiku** (`connection-assist`, cap $1/day) — not Opus on
+every scan, which would blow the budget governance. The model returns a structured
+payload via a forced tool call (`save_contact`), including a normalized face
+bounding-box; the client crops the photo on a `<canvas>` (no server image lib /
+new dependency). All model output is re-validated by `coerceExtraction()` before it
+touches the form — never trusted raw.
+
+**Consequences.** New tables aren't in `database.types` yet, so the store talks to
+them through the untyped admin handle (repo convention, cf. `lib/studio/contacts.ts`)
+— regenerate types after applying. Promotion *into* public/network surfaces
+(`linked_profile_id` / `linked_contact_id`) is scaffolded in the schema but kept a
+deliberate, owner-initiated act behind its own review — that's where leak risk
+concentrates. A scanned card's base64 is passed to Sonnet via the private-bucket
+download; the temp scan is deleted after extraction (we keep only the cropped
+avatar). Adds a Steward rail item (`/connections`, "Profiles").
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 
