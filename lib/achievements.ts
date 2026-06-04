@@ -462,14 +462,14 @@ async function checkAllChallengesComplete(admin: AdminClient, profileId: string)
 
 async function advanceQuests(admin: AdminClient, event: GamificationEvent) {
   const { data: chains } = await admin
-    .from('arc_chains')
+    .from('journey_chains')
     .select('id')
 
   if (!chains?.length) return
 
   for (const chain of chains) {
     const { data: steps } = await admin
-      .from('arc_steps')
+      .from('journey_steps')
       .select('id, step_order, criteria, target, zaps_reward')
       .eq('chain_id', chain.id)
       .order('step_order')
@@ -477,7 +477,7 @@ async function advanceQuests(admin: AdminClient, event: GamificationEvent) {
     if (!steps?.length) continue
 
     const { data: progress } = await admin
-      .from('arc_progress')
+      .from('journey_progress')
       .select('id, current_step, step_progress, completed_at')
       .eq('profile_id', event.profileId)
       .eq('chain_id', chain.id)
@@ -502,12 +502,12 @@ async function advanceQuests(admin: AdminClient, event: GamificationEvent) {
         // Advance to next step
         if (progress) {
           await admin
-            .from('arc_progress')
+            .from('journey_progress')
             .update({ current_step: nextStep.step_order, step_progress: 0 })
             .eq('id', progress.id)
         } else {
           await admin
-            .from('arc_progress')
+            .from('journey_progress')
             .insert({
               profile_id: event.profileId,
               chain_id: chain.id,
@@ -520,12 +520,12 @@ async function advanceQuests(admin: AdminClient, event: GamificationEvent) {
         const now = new Date().toISOString()
         if (progress) {
           await admin
-            .from('arc_progress')
+            .from('journey_progress')
             .update({ step_progress: newProgress, completed_at: now })
             .eq('id', progress.id)
         } else {
           await admin
-            .from('arc_progress')
+            .from('journey_progress')
             .insert({
               profile_id: event.profileId,
               chain_id: chain.id,
@@ -537,7 +537,7 @@ async function advanceQuests(admin: AdminClient, event: GamificationEvent) {
 
         // Award chain completion zaps
         const { data: chainData } = await admin
-          .from('arc_chains')
+          .from('journey_chains')
           .select('zaps_reward')
           .eq('id', chain.id)
           .maybeSingle()
@@ -585,12 +585,12 @@ async function advanceQuests(admin: AdminClient, event: GamificationEvent) {
       // Increment progress
       if (progress) {
         await admin
-          .from('arc_progress')
+          .from('journey_progress')
           .update({ step_progress: newProgress })
           .eq('id', progress.id)
       } else {
         await admin
-          .from('arc_progress')
+          .from('journey_progress')
           .insert({
             profile_id: event.profileId,
             chain_id: chain.id,

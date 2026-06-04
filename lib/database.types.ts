@@ -226,142 +226,6 @@ export type Database = {
           },
         ]
       }
-      arc_chains: {
-        Row: {
-          created_at: string
-          description: string
-          icon: string
-          id: string
-          name: string
-          season: number | null
-          slug: string
-          sort_order: number
-          zaps_reward: number
-        }
-        Insert: {
-          created_at?: string
-          description: string
-          icon?: string
-          id?: string
-          name: string
-          season?: number | null
-          slug: string
-          sort_order?: number
-          zaps_reward?: number
-        }
-        Update: {
-          created_at?: string
-          description?: string
-          icon?: string
-          id?: string
-          name?: string
-          season?: number | null
-          slug?: string
-          sort_order?: number
-          zaps_reward?: number
-        }
-        Relationships: []
-      }
-      arc_progress: {
-        Row: {
-          chain_id: string
-          completed_at: string | null
-          current_step: number
-          id: string
-          profile_id: string
-          started_at: string
-          step_progress: number
-        }
-        Insert: {
-          chain_id: string
-          completed_at?: string | null
-          current_step?: number
-          id?: string
-          profile_id: string
-          started_at?: string
-          step_progress?: number
-        }
-        Update: {
-          chain_id?: string
-          completed_at?: string | null
-          current_step?: number
-          id?: string
-          profile_id?: string
-          started_at?: string
-          step_progress?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "quest_progress_chain_id_fkey"
-            columns: ["chain_id"]
-            isOneToOne: false
-            referencedRelation: "arc_chains"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "quest_progress_chain_id_fkey"
-            columns: ["chain_id"]
-            isOneToOne: false
-            referencedRelation: "quest_chains"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "quest_progress_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      arc_steps: {
-        Row: {
-          chain_id: string
-          criteria: Json
-          description: string
-          id: string
-          name: string
-          step_order: number
-          target: number
-          zaps_reward: number
-        }
-        Insert: {
-          chain_id: string
-          criteria?: Json
-          description: string
-          id?: string
-          name: string
-          step_order: number
-          target?: number
-          zaps_reward?: number
-        }
-        Update: {
-          chain_id?: string
-          criteria?: Json
-          description?: string
-          id?: string
-          name?: string
-          step_order?: number
-          target?: number
-          zaps_reward?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "quest_steps_chain_id_fkey"
-            columns: ["chain_id"]
-            isOneToOne: false
-            referencedRelation: "arc_chains"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "quest_steps_chain_id_fkey"
-            columns: ["chain_id"]
-            isOneToOne: false
-            referencedRelation: "quest_chains"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       area_permissions: {
         Row: {
           area_key: string
@@ -1815,6 +1679,142 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journey_chains: {
+        Row: {
+          created_at: string
+          description: string
+          icon: string
+          id: string
+          name: string
+          season: number | null
+          slug: string
+          sort_order: number
+          zaps_reward: number
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          icon?: string
+          id?: string
+          name: string
+          season?: number | null
+          slug: string
+          sort_order?: number
+          zaps_reward?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          icon?: string
+          id?: string
+          name?: string
+          season?: number | null
+          slug?: string
+          sort_order?: number
+          zaps_reward?: number
+        }
+        Relationships: []
+      }
+      journey_progress: {
+        Row: {
+          chain_id: string
+          completed_at: string | null
+          current_step: number
+          id: string
+          profile_id: string
+          started_at: string
+          step_progress: number
+        }
+        Insert: {
+          chain_id: string
+          completed_at?: string | null
+          current_step?: number
+          id?: string
+          profile_id: string
+          started_at?: string
+          step_progress?: number
+        }
+        Update: {
+          chain_id?: string
+          completed_at?: string | null
+          current_step?: number
+          id?: string
+          profile_id?: string
+          started_at?: string
+          step_progress?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quest_progress_chain_id_fkey"
+            columns: ["chain_id"]
+            isOneToOne: false
+            referencedRelation: "journey_chains"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quest_progress_chain_id_fkey"
+            columns: ["chain_id"]
+            isOneToOne: false
+            referencedRelation: "quest_chains"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quest_progress_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journey_steps: {
+        Row: {
+          chain_id: string
+          criteria: Json
+          description: string
+          id: string
+          name: string
+          step_order: number
+          target: number
+          zaps_reward: number
+        }
+        Insert: {
+          chain_id: string
+          criteria?: Json
+          description: string
+          id?: string
+          name: string
+          step_order: number
+          target?: number
+          zaps_reward?: number
+        }
+        Update: {
+          chain_id?: string
+          criteria?: Json
+          description?: string
+          id?: string
+          name?: string
+          step_order?: number
+          target?: number
+          zaps_reward?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quest_steps_chain_id_fkey"
+            columns: ["chain_id"]
+            isOneToOne: false
+            referencedRelation: "journey_chains"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quest_steps_chain_id_fkey"
+            columns: ["chain_id"]
+            isOneToOne: false
+            referencedRelation: "quest_chains"
             referencedColumns: ["id"]
           },
         ]
@@ -3896,7 +3896,7 @@ export type Database = {
             foreignKeyName: "quest_progress_chain_id_fkey"
             columns: ["chain_id"]
             isOneToOne: false
-            referencedRelation: "arc_chains"
+            referencedRelation: "journey_chains"
             referencedColumns: ["id"]
           },
           {
@@ -3951,7 +3951,7 @@ export type Database = {
             foreignKeyName: "quest_steps_chain_id_fkey"
             columns: ["chain_id"]
             isOneToOne: false
-            referencedRelation: "arc_chains"
+            referencedRelation: "journey_chains"
             referencedColumns: ["id"]
           },
           {
