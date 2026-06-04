@@ -35,6 +35,8 @@ const SEGMENT_LABELS: Record<string, string> = {
   billing: 'Billing',
   notifications: 'Notifications',
   admin: 'Admin',
+  demo: 'Demo data',
+  studio: 'Seed Studio',
   pages: 'Pages',
   crm: 'CRM',
   outreach: 'Outreach',

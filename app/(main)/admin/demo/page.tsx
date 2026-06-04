@@ -1,7 +1,8 @@
+import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminPage } from '@/components/admin/admin-page'
-import { FlaskConical } from 'lucide-react'
+import { FlaskConical, Sparkles } from 'lucide-react'
 import { DemoControls } from './demo-controls'
 
 // Janitor-only: the operator controls for the Beta demo content layer
@@ -49,8 +50,16 @@ export default async function AdminDemoPage() {
       title="Demo content"
       eyebrow="Platform"
       icon={FlaskConical}
-      description="Seeded Beta content that makes the community look alive. Show or hide it everywhere with one switch, or purge it for good once real content has taken over."
+      description="Seeded Beta content that makes the community look alive. Show or hide it everywhere with one switch, or purge it for good once real content has taken over. To generate a new area, use the Seed Studio."
       width="narrow"
+      actions={
+        <Link
+          href="/admin/demo/studio"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+        >
+          <Sparkles className="h-4 w-4" /> Open Seed Studio
+        </Link>
+      }
     >
       <DemoControls
         enabled={enabled}
