@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Flame, Sparkles, Library, Zap } from 'lucide-react'
+import { Flame, Sparkles, Library, Zap, Pencil, Wand2 } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
+import { forkPracticeAction } from './actions'
 import {
   listPublicPractices,
   getMemberPractices,
@@ -175,6 +176,14 @@ export default async function PracticesPage({
                     <PracticeMeta p={p} />
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
+                    {p.created_by === profileId && (
+                      <Link
+                        href={`/practices/${p.id}/edit`}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated"
+                      >
+                        <Pencil className="h-3.5 w-3.5" /> Edit
+                      </Link>
+                    )}
                     <LogPracticeButton practiceId={p.id} />
                     <AdoptPracticeButton practiceId={p.id} adopted />
                   </div>
@@ -230,7 +239,18 @@ export default async function PracticesPage({
                     )}
                     <PracticeMeta p={p} />
                   </div>
-                  <div className="shrink-0">
+                  <div className="flex shrink-0 items-center gap-2">
+                    {profileId && (
+                      <form action={forkPracticeAction.bind(null, p.id)}>
+                        <button
+                          type="submit"
+                          title="Make your own editable copy"
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated"
+                        >
+                          <Wand2 className="h-3.5 w-3.5" /> Customize
+                        </button>
+                      </form>
+                    )}
                     <AdoptPracticeButton practiceId={p.id} adopted={false} />
                   </div>
                 </li>

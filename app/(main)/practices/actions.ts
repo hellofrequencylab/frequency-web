@@ -4,12 +4,17 @@ import { revalidatePath } from 'next/cache'
 import { getMyProfileId } from '@/lib/auth'
 import { getCircleCapabilities } from '@/lib/core/load-capabilities'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { redirect } from 'next/navigation'
 import {
   logPractice,
   adoptPractice,
   dropMemberPractice,
   setCirclePractice,
   createPractice,
+  getPractice,
+  updatePractice,
+  forkPractice,
+  type PracticeEdit,
 } from '@/lib/practices'
 
 // Log that you did a practice → practice.verified (WAM) + zaps + streak.
@@ -55,6 +60,32 @@ export async function createPracticeAction(
   if (!p) return fail('Could not create practice')
   revalidatePath('/practices')
   return ok({ id: p.id })
+}
+
+// Edit a practice you created. Partial flexibility: members shape content + cadence
+// on their OWN practices (ownership enforced); rewards stay admin-governed.
+export async function updatePracticeAction(id: string, patch: PracticeEdit): Promise<ActionResult> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Not signed in')
+  const existing = await getPractice(id)
+  if (!existing) return fail('Practice not found')
+  if (existing.created_by !== profileId) return fail('You can only edit practices you created')
+  const saved = await updatePractice(id, patch)
+  if (!saved) return fail('Could not save')
+  revalidatePath('/practices')
+  revalidatePath(`/practices/${id}/edit`)
+  return ok()
+}
+
+// Customize a library practice you don't own: fork a PRIVATE copy you own, adopt it
+// into your program, and open the editor on the copy.
+export async function forkPracticeAction(practiceId: string) {
+  const profileId = await getMyProfileId()
+  if (!profileId) return
+  const copy = await forkPractice(profileId, practiceId)
+  if (!copy) return
+  await adoptPractice(profileId, copy.id)
+  redirect(`/practices/${copy.id}/edit`)
 }
 
 // Host sets the circle's current practice (one active per circle). Authz: the
