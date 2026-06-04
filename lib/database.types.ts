@@ -747,6 +747,39 @@ export type Database = {
           },
         ]
       }
+      circle_topics: {
+        Row: {
+          circle_id: string
+          created_at: string
+          topical_channel_id: string
+        }
+        Insert: {
+          circle_id: string
+          created_at?: string
+          topical_channel_id: string
+        }
+        Update: {
+          circle_id?: string
+          created_at?: string
+          topical_channel_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "circle_topics_circle_id_fkey"
+            columns: ["circle_id"]
+            isOneToOne: false
+            referencedRelation: "circles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "circle_topics_topical_channel_id_fkey"
+            columns: ["topical_channel_id"]
+            isOneToOne: false
+            referencedRelation: "topical_channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       circles: {
         Row: {
           about: string | null
@@ -1297,6 +1330,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      domains: {
+        Row: {
+          accent: string | null
+          cover_image: string | null
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          is_active: boolean
+          name: string
+          slug: string
+        }
+        Insert: {
+          accent?: string | null
+          cover_image?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          slug: string
+        }
+        Update: {
+          accent?: string | null
+          cover_image?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          slug?: string
+        }
+        Relationships: []
       }
       email_events: {
         Row: {
@@ -3546,6 +3615,7 @@ export type Database = {
           created_at: string
           description: string | null
           display_order: number
+          domain_id: string | null
           id: string
           is_active: boolean
           name: string
@@ -3557,6 +3627,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           display_order?: number
+          domain_id?: string | null
           id?: string
           is_active?: boolean
           name: string
@@ -3568,12 +3639,21 @@ export type Database = {
           created_at?: string
           description?: string | null
           display_order?: number
+          domain_id?: string | null
           id?: string
           is_active?: boolean
           name?: string
           slug?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "topical_channels_domain_id_fkey"
+            columns: ["domain_id"]
+            isOneToOne: false
+            referencedRelation: "domains"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_achievements: {
         Row: {
