@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
+import { track } from '@/lib/analytics/track'
 import { VeraConcierge } from '@/components/onboarding/vera-concierge'
 
 // Vera-led onboarding (ADR-066 Phase D / ADR-047). The conversational step right
@@ -14,6 +15,10 @@ export default async function VeraOnboardingPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/')
+
+  // Activation-funnel step 2 (ADR-075): reached Vera. Best-effort.
+  const { data: prof } = await supabase.from('profiles').select('id').eq('auth_user_id', user.id).maybeSingle()
+  if (prof?.id) await track('onboarding.vera_opened', {}, prof.id)
 
   return (
     <div className="mx-auto max-w-lg px-4 py-10">

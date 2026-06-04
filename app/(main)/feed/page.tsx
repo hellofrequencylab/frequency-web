@@ -7,6 +7,7 @@ import { CreateMenu } from '@/components/feed/create-menu'
 import { StreamTemplate } from '@/components/templates/stream-template'
 import { SectionHeader } from '@/components/ui/section-header'
 import { PracticePrompt } from '@/components/practice/practice-prompt'
+import { FeedWelcome } from '@/components/feed/feed-welcome'
 import { getPracticesToLogToday } from '@/lib/practices'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
@@ -80,6 +81,10 @@ export default async function FeedPage({
         description={hasCircle ? 'What your people are up to today.' : "What's happening around you."}
         action={<CreateMenu role={myRole} />}
       >
+
+      {/* First-run nudge toward the activation lever — a member with no circle yet
+          (also the fallback for anyone who skipped Vera at onboarding). */}
+      {myProfileId && !hasCircle && <FeedWelcome />}
 
       <PracticePrompt practices={practicesToLog} />
 

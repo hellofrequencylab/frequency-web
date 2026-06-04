@@ -38,12 +38,14 @@ Every key action in the member journey emits a named event. Initial set:
 | Event | Emitted when | Key props |
 |---|---|---|
 | `account.created` | new auth user / profile row | source (oauth/email) |
+| `onboarding.induction_completed` ✅ | beta induction finished | hasAvatar, hasIntent |
+| `onboarding.vera_opened` ✅ | reached the Vera concierge | — |
 | `onboarding.step_viewed` | a tour coachmark shows | step id |
 | `onboarding.step_completed` | a tour step's action done | step id |
-| `profile.completed` | name/handle/avatar set | which fields |
-| `circle.joined` | membership becomes active | circle id, scope |
+| `profile.completed` ✅ | name/handle/avatar set | hasAvatar |
+| `circle.joined` ✅ | membership becomes active | circle id |
 | `event.rsvp` | RSVP created | event id |
-| `practice.adopted` / `practice.logged` | WAM loop | practice id |
+| `practice.adopted` ✅ / `practice.verified` ✅ | WAM loop | practice id |
 | `post.created` | a post is published | scope, type |
 | `invite.sent` / `invite.accepted` | invite lifecycle | channel |
 | `session.active` | meaningful session start | — |
@@ -54,7 +56,9 @@ Every key action in the member journey emits a named event. Initial set:
 
 A dashboard surface in the admin/Studio area, reading first-party aggregates (via SQL
 aggregates / `SECURITY DEFINER` RPCs, not raw scans). Panels:
-- **Activation funnel** — onboarding step-by-step drop-off (where new members stall in the tour).
+- **New-member activation funnel** ✅ — induction → Vera → first circle → adopt → verify practice
+  (`activationFunnel` in `lib/analytics/dashboard.ts`, surfaced on `/admin/engagement`). The ✅ events
+  above are now emitted server-side via `track()`, so this funnel reflects real drop-off (ADR-075).
 - **WAM & retention** — the North Star + cohort retention.
 - **Community health** — circles forming/active, events, posts, invites.
 - **Acquisition** — GA4 headline numbers (traffic, top sources) via the GA Data API widget, or a link out.
