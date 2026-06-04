@@ -2016,6 +2016,24 @@ forming the founding leaderboard — not paywalled out of it.
 crew). The Launch gem-spend lock needs the entitlement/payment input on the capability resolver
 (ADR-037) before it can switch on; until then this is a one-flag policy + a backfill.
 
+## ADR-085: Arcs renamed to Journeys (full DB + route rename)
+
+**Status:** Accepted · 2026-06-04 · migration `20260604170000_rename_arcs_to_journeys`. Shipped.
+
+**Context:** The multi-step seasonal tracks were "Quests" → renamed "Arcs" (ADR-079) → now
+**Journeys**, the product name that reads as a guided coaching program (see
+ECONOMY-AND-JOURNEYS.md). Half-renames (label only) breed confusion, so this is the full rename.
+
+**Decision:** Rename the tables `arc_chains/arc_steps/arc_progress → journey_chains/journey_steps/
+journey_progress` (renaming keeps policies/indexes/FKs attached; no function/RPC referenced them,
+so it's clean), the route `/crew/arcs → /crew/journeys` (with a redirect stub at the old path),
+the nav area key `arcs → journeys`, and all user-facing "Arc(s)" copy → "Journey(s)" (nav,
+breadcrumbs, dashboard, dock, the-quest marketing, admin). Types regenerated.
+
+**Consequences:** Old `/crew/arcs` links 301 to `/crew/journeys`. Any `area_permissions` override
+keyed `arcs` is orphaned (reverts to the `crew` default — the intended baseline). The DB still has
+constraint/index names containing "arc" (cosmetic; functional).
+
 ---
 ### Decisions intentionally NOT duplicated here
 

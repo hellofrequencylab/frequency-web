@@ -25,8 +25,8 @@ endorsements, and not enough to unlock the premium Journeys. That gap is the ups
 | **Zaps drive season ranks** | ❌ (inert) | ✅ |
 | **Endorsements on public profile** (rank badge, titles, journey badges) | ❌ earned, not shown | ✅ |
 | Keep personal **practice streaks** | ✅ always | ✅ |
-| **Join a Journey** | ❌ browse only → upgrade | ✅ |
-| Build a **DIY journey** from practices | ✅ basic | ✅ |
+| Choose/log **individual practices** | ✅ (the loose equivalent) | ✅ |
+| **Journeys** (the tracked, all-in-one flow) | ❌ browse only → upgrade | ✅ |
 
 This is the Launch member experience. **In Beta everyone is Crew (ADR-084)**, so the
 whole thing is unlocked today; the gates below switch on when `BETA_MEMBERS_GET_CREW`
@@ -62,11 +62,12 @@ narrative arc, built on the existing `arc_chains`/`arc_steps` engine.
 - **Seasonal issuance.** Each season ships **4 primary tracks — one per Pillar**
   (Mind · Body · Spirit · Expression) — plus a handful of **bonus micro-journeys**
   (short, point-rackers).
-- **Crew-only to JOIN.** Members can **browse** every journey (see the value, the
-  steps, the coaching) but can't join or progress → upgrade lightbox on "Start".
-- **DIY journeys.** Anyone can assemble a personal journey from multiple practices,
-  but it's intentionally plainer than the curated tracks (no narrative, no seasonal
-  rewards, no badge). The pre-built tracks are the draw.
+- **Crew-only, full stop.** Journeys are tracked, gamified, all-in-one programs — a
+  member can't join *or* build one. They can **browse** every journey (see the value,
+  the steps, the coaching) → upgrade lightbox on "Start". The closest a free member
+  gets is **choosing individual practices** on their own: it approximates a journey but
+  isn't the cohesive, tracked, all-in-one flow, and it's harder to follow. That gap is
+  deliberate — the curated tracked program is the premium thing.
 - **Exclusivity.** You can only see the inside of Journeys you're part of; you can't
   engage with others' journeys.
 - **Streaks stay free.** A member always keeps their own practice streaks and collects
@@ -75,18 +76,22 @@ narrative arc, built on the existing `arc_chains`/`arc_steps` engine.
 Net: Journeys become the clearest reason to pay — seasonal, pillar-aligned coaching
 you can only *do* as Crew.
 
-## 6. Open decisions (need your call)
+## 6. Decisions
 
-1. **Member zap rate.** Harder-by-level means: (a) a flat lower multiplier (e.g. 0.25×),
-   (b) a hard per-season zap cap, or (c) members earn **Gems only**, zero zaps. Which?
-2. **Member rank display.** Show an inert "Ghost" rank, or **no rank** at all on a free
-   member's profile?
-3. **DIY journeys** available to members (basic), or Crew-only too?
-4. **Endorsement set.** Confirm what becomes profile-endorsed (rank badge · titles ·
-   store cosmetics · journey badges) vs merely earned.
-5. **Authoring.** Who builds the seasonal journeys, and where (admin content tool)?
-6. **Rename depth.** Keep `arc_*` tables + `/crew/arcs` route internal, or do the full
-   DB/route rename to `journeys`? (Migration churn vs consistency.)
+**Locked:**
+- **Member zap rate → lower multiplier.** Members earn Zaps at a reduced rate (they
+  climb, slowly). Gems stay easy.
+- **Journeys are Crew-only — no member DIY.** Free members get individual practices,
+  not the tracked all-in-one Journey flow.
+- **Rename depth → full.** `arc_* → journey_*` tables + `/crew/journeys` route +
+  `/crew/arcs` redirect. ✅ Done (ADR-085).
+
+**Still open:**
+- **Member rank display.** Show an inert "Ghost" rank, or **no rank** at all on a free
+  member's public profile?
+- **Endorsement set.** Confirm what becomes profile-endorsed (rank badge · titles ·
+  store cosmetics · journey badges) vs merely earned.
+- **Authoring.** Who builds the seasonal journeys, and where (admin content tool)?
 
 ## 7. Build order (once §6 lands)
 

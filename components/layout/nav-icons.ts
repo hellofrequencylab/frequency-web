@@ -42,7 +42,7 @@ export const AREA_ICONS: Record<string, ElementType> = {
   partners: Store,
   people: Globe,
   crew: Zap,
-  arcs: Map,
+  journeys: Map,
   store: Store,
   vault: Gem,
   'admin-community': LayoutDashboard,

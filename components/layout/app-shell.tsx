@@ -774,7 +774,7 @@ export default function AppShell({
     if (href === '/channels') return pathname === '/channels' || pathname.startsWith('/channels/')
     if (href === '/messages') return pathname === '/messages' || pathname.startsWith('/messages/')
     if (href === '/settings') return pathname === '/settings' || pathname.startsWith('/settings/')
-    // Dashboard (/crew) is the section root; its siblings /crew/arcs and
+    // Dashboard (/crew) is the section root; its siblings /crew/journeys and
     // /crew/store are their own rail items, so match /crew exactly and let those
     // sub-routes light up their own entry via the generic prefix rule below.
     if (href === '/crew')     return pathname === '/crew'

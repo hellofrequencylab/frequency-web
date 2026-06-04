@@ -403,7 +403,7 @@ export default async function CrewPage() {
             <QuickLink href="/crew/achievements" Icon={Award} label="Achievements" sub="Earn badges" color="bg-signal-bg text-signal-strong" />
             <QuickLink href="/crew/streaks" Icon={Flame} label="Streaks" sub="Stay consistent" color="bg-warning-bg text-warning dark:text-primary" />
             <QuickLink href="/crew/challenges" Icon={Target} label="Challenges" sub="Season goals" color="bg-primary-bg text-primary-strong" />
-            <QuickLink href="/crew/arcs" Icon={Map} label="Journeys" sub="Guided tracks" color="bg-success-bg text-signal-strong" />
+            <QuickLink href="/crew/journeys" Icon={Map} label="Journeys" sub="Guided tracks" color="bg-success-bg text-signal-strong" />
             <QuickLink href="/crew/leaderboard" Icon={TrendingUp} label="Leaderboard" sub="Rankings" color="bg-warning-bg text-warning" />
             <QuickLink href="/crew/store" Icon={ShoppingBag} label="Gem Store" sub="Spend gems" color="bg-signal-bg text-signal-strong" />
           </div>
