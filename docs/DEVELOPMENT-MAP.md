@@ -50,6 +50,10 @@
 > (adjacent modules merged into rounded-end run bars), independent eye-**frame**/**pupil** shapes,
 > and expanded to **9 preset themes**. Renderer-only (`lib/qr/render-styled.ts` + `style.ts`), no
 > migration. Next: crew marketing-funnel codes, then the Google-Analytics tie-in.
+>
+> **2026-06-05:** QR **crew marketing codes** (ADR-092). Crew members create up to **3** funnel
+> codes (owner + `purpose IS NULL`) pointing at a circle/event they promote, styled + scan-tracked,
+> managed on `/codes`. No migration. Last remaining of the 2026-06-05 batch: the Google-Analytics tie-in.
 
 ---
 
