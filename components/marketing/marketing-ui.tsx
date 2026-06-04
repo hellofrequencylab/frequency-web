@@ -252,6 +252,38 @@ export function Lead({ children }: { children: React.ReactNode }) {
   return <p className="text-xl text-text/85 leading-relaxed mb-6">{children}</p>
 }
 
+// Numbered how-it-works steps — big display numerals, no imagery, so the
+// "what you actually do" reads at a glance. Used on the home + how-it-works.
+export function Steps({
+  steps,
+  tone = 'surface',
+}: {
+  steps: readonly { title: string; body: React.ReactNode }[]
+  tone?: 'surface' | 'canvas' | 'ink'
+}) {
+  const isInk = tone === 'ink'
+  return (
+    <div className="grid gap-6 sm:grid-cols-3 sm:gap-8">
+      {steps.map((s, i) => (
+        <div key={i} className="relative">
+          <span className="font-display text-5xl sm:text-6xl text-primary leading-none">
+            {String(i + 1).padStart(2, '0')}
+          </span>
+          <h3
+            className={`mt-3 font-display uppercase text-2xl ${isInk ? 'text-on-ink' : 'text-text'}`}
+          >
+            {s.title}
+          </h3>
+          <p className={`mt-2 text-base leading-relaxed ${isInk ? 'text-on-ink-muted' : 'text-muted'}`}>
+            {s.body}
+          </p>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+
 export function Body({ children }: { children: React.ReactNode }) {
   return <p className="text-lg text-muted leading-relaxed mb-6">{children}</p>
 }

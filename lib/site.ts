@@ -18,38 +18,37 @@ export const SITE_DESCRIPTION =
 // `desc` powers the subtitle line in the dropdown panels.
 export type NavLink = { label: string; href: string; desc?: string }
 
-// Discover dropdown — the live-community explore pages.
+// Discover dropdown — the live-community explore pages. This is the SHARED CORE:
+// the same community surfaces a member uses in-app (Circles / Events / Interests),
+// so the public "main menu" and the in-app nav stay in sync. Naming matches the
+// in-app rail ("Interests", not "Topics").
 export const DISCOVER_NAV: NavLink[] = [
   { label: "Discover", href: "/discover", desc: "Everything happening near you" },
   { label: "Circles", href: "/discover/circles", desc: "Small groups around an interest" },
   { label: "Events", href: "/discover/events", desc: "Gatherings you can show up to" },
-  { label: "Topics", href: "/discover/topics", desc: "Browse by what you practice" },
+  { label: "Interests", href: "/discover/topics", desc: "Browse by what you practice" },
 ];
 
-// The mission / site pages — shown as flat tabs beside the Discover dropdown.
-// Visitors get the full set (including the acquisition pages); members get a
-// mission-focused subset, so the nonprofit stays present in the social area
-// without pushing Pricing/Demo at them. Designed to grow — Mission / Impact /
-// Donate slot straight in here as they ship.
+// The mission / splash pages — shown as flat tabs beside the Discover dropdown,
+// to VISITORS only. These are marketing/educational surfaces (how it works, the
+// space, the story, membership); they are deliberately NOT shown in-app, so the
+// feed nav isn't cluttered with splash. Demo was merged into How it works.
 export const SITE_NAV: NavLink[] = [
   { label: "How it works", href: "/how-it-works" },
   { label: "The Lab", href: "/the-lab" },
-  { label: "Demo", href: "/demo" },
   { label: "Pricing", href: "/pricing" },
   { label: "About", href: "/about" },
 ];
 
-export const SITE_NAV_MEMBER: NavLink[] = [
-  { label: "How it works", href: "/how-it-works" },
-  { label: "The Lab", href: "/the-lab" },
-  { label: "About", href: "/about" },
-];
+// Members in-app get NO splash tabs — only the shared community core (the Discover
+// dropdown). Splash stays on the public site; the left rail owns in-app nav. This
+// is what keeps the "main menu" and the "feed menu" in sync, minus splash.
+export const SITE_NAV_MEMBER: NavLink[] = [];
 
 // Flat list for the marketing footer (every public page, no grouping).
 export const MARKETING_NAV: NavLink[] = [
   { label: "How it works", href: "/how-it-works" },
   { label: "The Lab", href: "/the-lab" },
-  { label: "Demo", href: "/demo" },
   { label: "Pricing", href: "/pricing" },
   { label: "Discover", href: "/discover" },
   { label: "About", href: "/about" },

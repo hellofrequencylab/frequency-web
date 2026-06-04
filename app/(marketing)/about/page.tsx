@@ -46,7 +46,7 @@ function LegacyAbout() {
         image="/images/site/moonlight-1.jpg"
         alt="People embracing at sunrise on the bluffs above Moonlight Beach, where Frequency began"
         eyebrow="Our story"
-        title="We&apos;re building the place we wished existed."
+        title="We’re building the place we wished existed."
         subtitle="It started on a beach in 2020 — no guru, no brand, just a thousand strangers who needed each other. This is how it became a blueprint for doing it right."
       >
         <Link

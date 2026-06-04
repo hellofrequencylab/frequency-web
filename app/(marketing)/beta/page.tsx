@@ -122,7 +122,7 @@ export default function BetaPage() {
             View pricing
           </Link>{' '}
           ·{' '}
-          <Link href="/demo" className="font-semibold text-primary-strong hover:underline">
+          <Link href="/how-it-works" className="font-semibold text-primary-strong hover:underline">
             Take the tour
           </Link>
         </p>
