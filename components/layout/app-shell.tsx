@@ -149,12 +149,15 @@ function ProfileCard({
   role,
   realRole,
   profileHref,
+  previewVisitor = false,
 }: {
   profile: Profile
   role: CommunityRole
   /** True DB role (ignores any view-as override) — gates the janitor control. */
   realRole: CommunityRole
   profileHref: string
+  /** Janitor previewing as a logged-out visitor — show a "Visitor" chip. */
+  previewVisitor?: boolean
 }) {
   // Pinned at the bottom of the (non-scrolling) left rail, so it stays put on a
   // long scroll. The quick-actions panel rises when the feed reaches its end
@@ -191,12 +194,18 @@ function ProfileCard({
               {profile.display_name}
             </p>
           </Link>
-          <span
-            className="rank-badge mt-1 inline-block text-[10px] leading-tight"
-            style={roleBadgeStyle(role)}
-          >
-            {ROLE_LABEL[role]}
-          </span>
+          {previewVisitor ? (
+            <span className="mt-1 inline-block rounded-full bg-surface-elevated px-2 py-0.5 text-[10px] font-semibold leading-tight text-muted">
+              Visitor
+            </span>
+          ) : (
+            <span
+              className="rank-badge mt-1 inline-block text-[10px] leading-tight"
+              style={roleBadgeStyle(role)}
+            >
+              {ROLE_LABEL[role]}
+            </span>
+          )}
         </div>
         <button
           type="button"
@@ -219,7 +228,7 @@ function ProfileCard({
         <div className="overflow-hidden">
           <div className="px-2 pb-3 space-y-0.5">
             {/* Janitor-only "view as role" — first item; opens upward via portal. */}
-            <ViewAsControl realRole={realRole} currentRole={role} />
+            <ViewAsControl realRole={realRole} currentRole={role} asVisitor={previewVisitor} />
             <Link
               href={profileHref}
               className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm font-medium text-text hover:bg-surface-elevated transition-colors"
@@ -428,7 +437,8 @@ function NavLinkList({
   sections = NAV_SECTIONS,
 }: {
   isActive: (href: string) => boolean
-  role: CommunityRole
+  /** Gating role; null = visitor (the janitor's "view as visitor" preview). */
+  role: CommunityRole | null
   onNavigate?: () => void
   extraSections?: NavSection[]
   hideAppNav?: boolean
@@ -534,7 +544,7 @@ function MobileLeftDrawer({
 }: {
   open: boolean
   onClose: () => void
-  role: CommunityRole
+  role: CommunityRole | null
   isActive: (href: string) => boolean
   extraSections?: NavSection[]
   hideAppNav?: boolean
@@ -679,6 +689,7 @@ function ProfileBottomBar({
 export default function AppShell({
   profile,
   realRole,
+  previewVisitor = false,
   children,
   sidebar,
   ticker,
@@ -691,6 +702,9 @@ export default function AppShell({
   /** True DB role, ignoring any view-as override. Defaults to the (effective)
    *  profile role, so the janitor control only appears for actual janitors. */
   realRole?: CommunityRole
+  /** Janitor previewing the logged-out visitor experience — gates the nav as a
+   *  visitor and flips the identity chrome to "Visitor". */
+  previewVisitor?: boolean
   children: React.ReactNode
   sidebar?: React.ReactNode
   /** Community news ticker pinned above the page content (streamed via Suspense). */
@@ -705,6 +719,8 @@ export default function AppShell({
   const router = useRouter()
   const role = (profile.community_role ?? 'member') as CommunityRole
   const effectiveRealRole = realRole ?? role
+  // Nav gating role: a visitor preview gates as a logged-out visitor (null).
+  const gateRole: CommunityRole | null = previewVisitor ? null : role
   const profileHref = `/people/${profile.handle}`
   const { theme, setTheme } = useTheme()
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -866,7 +882,7 @@ export default function AppShell({
 
           {/* Community spaces + features + admin rail (the Broadcast bar lives up top) */}
           <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-            <NavLinkList isActive={isActive} role={role} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} />
+            <NavLinkList isActive={isActive} role={gateRole} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} />
           </nav>
 
           {/* Upgrade to Crew CTA. Members only (not janitor) */}
@@ -890,7 +906,7 @@ export default function AppShell({
           {/* Profile card. Public identity anchor.
               Avatar · name · role badge → public profile · member settings.
               Rises to show quick actions when the feed scroll hits the bottom. */}
-          <ProfileCard profile={profile} role={role} realRole={effectiveRealRole} profileHref={profileHref} />
+          <ProfileCard profile={profile} role={role} realRole={effectiveRealRole} profileHref={profileHref} previewVisitor={previewVisitor} />
         </aside>
 
         {/* Center + right column — ONE shared scroll container (no per-column
@@ -936,7 +952,7 @@ export default function AppShell({
       <MobileLeftDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        role={role}
+        role={gateRole}
         isActive={isActive}
         extraSections={extraSections}
         hideAppNav={hideAppNav}

@@ -15,22 +15,41 @@ import { ROLE_HIERARCHY, type CommunityRole } from '@/lib/core/roles'
 
 export const VIEW_AS_COOKIE = 'freq-view-as'
 
+/** A view-as target is any community role, or 'visitor' (the logged-out preview). */
+export type ViewAsTarget = CommunityRole | 'visitor'
+
 function isCommunityRole(v: string | undefined | null): v is CommunityRole {
   return !!v && (ROLE_HIERARCHY as readonly string[]).includes(v)
 }
 
-/** Raw role requested by the view-as cookie (not yet gated on the real role). */
-export async function readViewAsCookie(): Promise<CommunityRole | null> {
+function isViewAsTarget(v: string | undefined | null): v is ViewAsTarget {
+  return v === 'visitor' || isCommunityRole(v)
+}
+
+/** Raw target requested by the view-as cookie (not yet gated on the real role). */
+export async function readViewAsTarget(): Promise<ViewAsTarget | null> {
   const value = (await cookies()).get(VIEW_AS_COOKIE)?.value
-  return isCommunityRole(value) ? value : null
+  return isViewAsTarget(value) ? value : null
 }
 
 /**
  * The effective community role for UI + authorization, given the caller's REAL
  * role. Only a real janitor may impersonate; for everyone else the real role is
- * returned unchanged.
+ * returned unchanged. The 'visitor' preview resolves to the lowest authenticated
+ * role ('member') for SERVER capability resolution — it strips every elevated
+ * power and can never escalate; the visitor-only NAV gating is driven separately
+ * by `viewingAsVisitor`.
  */
 export async function applyViewAs(realRole: CommunityRole): Promise<CommunityRole> {
   if (realRole !== 'janitor') return realRole
-  return (await readViewAsCookie()) ?? realRole
+  const target = await readViewAsTarget()
+  if (!target) return realRole
+  return target === 'visitor' ? 'member' : target
+}
+
+/** Is a real janitor previewing the logged-out visitor experience? Drives the
+ *  visitor NAV gating (everything above visitor access mutes) + the chrome. */
+export async function viewingAsVisitor(realRole: CommunityRole): Promise<boolean> {
+  if (realRole !== 'janitor') return false
+  return (await readViewAsTarget()) === 'visitor'
 }
