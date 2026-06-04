@@ -86,8 +86,11 @@ Shared mechanics:
   resolver + Studio use the service role.
 - **Beautiful styling (Phase 2, ADR-090; editor v2 2026-06-05).** Each dynamic code carries a
   `style` jsonb (`lib/qr/style.ts`: colors, gradient, module shape — square/rounded/dots/**connected**
-  rounded-end runs — independent eye-**frame** + **pupil** shapes, center logo, CTA frame, 9 preset
-  themes). The
+  rounded-end runs — independent eye-**frame** + **pupil** shapes, center logo (square/**circle**
+  crop + optional **color/gradient tint** via an alpha mask, `lib/qr/style.ts`), CTA frame, 9 preset
+  themes). Dynamic links are built from a **curated in-site destination picker** with a value line
+  per path (`lib/qr/destinations.ts`) so operators compose funnels (cold traffic → Discover →
+  sign-in) without hand-typing URLs; a "Custom URL" option remains. The
   **isomorphic** styled renderer `lib/qr/render-styled.ts` turns the QR matrix into a designed
   SVG, used identically by the live editor preview (client), the Studio list, and `/api/qr?code=`
   downloads (styled SVG; PNG stays plain — no server rasterizer). All style input is sanitized by

@@ -136,18 +136,47 @@ export function renderStyledQrSvg(text: string, style: QrStyle, size = 256): str
   parts.push(eyeSvg(ox + N - 7, oy, style.eyeShape, style.pupilShape, eyeFill, style.bg))
   parts.push(eyeSvg(ox, oy + N - 7, style.eyeShape, style.pupilShape, eyeFill, style.bg))
 
-  // Center logo (with a carved quiet area).
+  // Center logo — carved quiet area, square/circle crop, optional color/gradient tint.
   if (style.logo) {
     const lw = N * 0.22
     const cx = ox + N / 2
     const cy = oy + N / 2
     const padBox = lw + 1.2
+    const lx = round(cx - lw / 2)
+    const ly = round(cy - lw / 2)
+    const lwR = round(lw)
+    const circle = style.logoShape === 'circle'
+
+    // Quiet area behind the logo, matching the crop shape.
     parts.push(
-      `<rect x="${round(cx - padBox / 2)}" y="${round(cy - padBox / 2)}" width="${round(padBox)}" height="${round(padBox)}" rx="1" fill="${style.bg}"/>`,
+      circle
+        ? `<circle cx="${round(cx)}" cy="${round(cy)}" r="${round(padBox / 2)}" fill="${style.bg}"/>`
+        : `<rect x="${round(cx - padBox / 2)}" y="${round(cy - padBox / 2)}" width="${round(padBox)}" height="${round(padBox)}" rx="1" fill="${style.bg}"/>`,
     )
+
+    const clipId = 'qrlogoclip'
     parts.push(
-      `<image href="${escapeXml(style.logo)}" x="${round(cx - lw / 2)}" y="${round(cy - lw / 2)}" width="${round(lw)}" height="${round(lw)}" preserveAspectRatio="xMidYMid meet"/>`,
+      `<clipPath id="${clipId}">` +
+        (circle
+          ? `<circle cx="${round(cx)}" cy="${round(cy)}" r="${round(lw / 2)}"/>`
+          : `<rect x="${lx}" y="${ly}" width="${lwR}" height="${lwR}" rx="${round(lw * 0.12)}"/>`) +
+        `</clipPath>`,
     )
+
+    const img = `<image href="${escapeXml(style.logo)}" x="${lx}" y="${ly}" width="${lwR}" height="${lwR}" preserveAspectRatio="xMidYMid ${circle ? 'slice' : 'meet'}"/>`
+
+    if (style.logoTint === 'none') {
+      parts.push(`<g clip-path="url(#${clipId})">${img}</g>`)
+    } else {
+      // Recolor: use the logo's alpha as a mask, fill with the module color or the
+      // (cohesive) module gradient. Great for monochrome / transparent marks.
+      const tintFill = style.logoTint === 'gradient' && style.gradient ? 'url(#qrgrad)' : style.fg
+      const maskId = 'qrlogomask'
+      parts.push(`<mask id="${maskId}" mask-type="alpha">${img}</mask>`)
+      parts.push(
+        `<rect x="${lx}" y="${ly}" width="${lwR}" height="${lwR}" fill="${tintFill}" mask="url(#${maskId})" clip-path="url(#${clipId})"/>`,
+      )
+    }
   }
 
   // CTA label.

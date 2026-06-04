@@ -36,6 +36,14 @@ describe('parseStyle', () => {
     expect(parseStyle({ eyeShape: 'circle', pupilShape: 'square' }).pupilShape).toBe('square')
   })
 
+  it('defaults and validates logo shape + tint', () => {
+    expect(parseStyle({}).logoShape).toBe('square')
+    expect(parseStyle({}).logoTint).toBe('none')
+    expect(parseStyle({ logoShape: 'circle' }).logoShape).toBe('circle')
+    expect(parseStyle({ logoTint: 'gradient' }).logoTint).toBe('gradient')
+    expect(parseStyle({ logoTint: 'rainbow' }).logoTint).toBe('none')
+  })
+
   it('only accepts https or data:image logos', () => {
     expect(isSafeLogoSrc('https://x.com/a.png')).toBe(true)
     expect(isSafeLogoSrc('data:image/png;base64,AAAA')).toBe(true)
@@ -76,6 +84,17 @@ describe('renderStyledQrSvg', () => {
     const svg = renderStyledQrSvg(url, { ...DEFAULT_STYLE, gradient: { from: '#f97316', to: '#db2777', angle: 45 } }, 256)
     expect(svg).toContain('linearGradient')
     expect(svg).toContain('url(#qrgrad)')
+  })
+
+  it('crops the logo to a circle and tints it (mask + clip)', () => {
+    const svg = renderStyledQrSvg(
+      url,
+      { ...DEFAULT_STYLE, logo: 'https://x.com/a.png', logoShape: 'circle', logoTint: 'solid' },
+      300,
+    )
+    expect(svg).toContain('clipPath')
+    expect(svg).toContain('<mask')
+    expect(svg).toContain('<circle')
   })
 
   it('adds an image for a logo and a label for a frame', () => {

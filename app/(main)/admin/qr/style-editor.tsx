@@ -195,6 +195,30 @@ export function StyleEditor({
             )}
           </div>
 
+          {value.logo && (
+            <div className="flex flex-wrap gap-3 pl-1">
+              <Select
+                label="Logo shape"
+                value={value.logoShape}
+                options={[
+                  ['square', 'Square'],
+                  ['circle', 'Circle'],
+                ]}
+                onChange={(v) => set('logoShape', v as QrStyle['logoShape'])}
+              />
+              <Select
+                label="Logo color"
+                value={value.logoTint}
+                options={[
+                  ['none', 'Original'],
+                  ['solid', 'Module color'],
+                  ['gradient', 'Gradient'],
+                ]}
+                onChange={(v) => set('logoTint', v as QrStyle['logoTint'])}
+              />
+            </div>
+          )}
+
           {/* Frame + CTA */}
           <label className="block">
             <span className="block text-subtle mb-1">Frame label (optional — adds a “scan me” card)</span>
