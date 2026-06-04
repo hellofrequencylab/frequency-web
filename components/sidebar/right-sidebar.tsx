@@ -1,11 +1,9 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { Suspense } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getInitials, relativeTime } from '@/lib/utils'
 import { RANK_LABELS, seasonRankStyle, SEASON_RANKS, rankForZaps, type SeasonRank } from '@/lib/season-ranks'
 import { MapPin, Megaphone, Zap } from 'lucide-react'
-import { GettingStartedChecklist } from '@/components/feed/getting-started'
 import { isOnline, ONLINE_MS } from '@/lib/presence'
 import { WidgetCard } from '@/components/modules/module-card'
 import { GameStatsDockClient, type DockData } from '@/components/sidebar/game-stats-dock'
@@ -403,7 +401,7 @@ async function GameStatsDock({ profileId }: { profileId: string }) {
   let arc: DockData['arc'] = null
   try {
     const { data: qp } = await admin
-      .from('journey_progress')
+      .from('quest_progress')
       .select('chain_id, current_step')
       .eq('profile_id', profileId)
       .is('completed_at', null)
@@ -412,8 +410,8 @@ async function GameStatsDock({ profileId }: { profileId: string }) {
       .maybeSingle()
     if (qp) {
       const [{ data: chain }, { data: steps }] = await Promise.all([
-        admin.from('journey_chains').select('name').eq('id', qp.chain_id).maybeSingle(),
-        admin.from('journey_steps').select('step_order, name').eq('chain_id', qp.chain_id).order('step_order'),
+        admin.from('quest_chains').select('name').eq('id', qp.chain_id).maybeSingle(),
+        admin.from('quest_steps').select('step_order, name').eq('chain_id', qp.chain_id).order('step_order'),
       ])
       const total = (steps ?? []).length || 1
       const cur = (steps ?? []).find((s: { step_order: number }) => s.step_order === qp.current_step) as { name?: string } | undefined
@@ -463,10 +461,8 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
       {/* Top of the rail scrolls with the feed. flex-1 pushes the stats dock to
           the bottom so it stays stuck there (like the left profile box). */}
       <div className="flex-1 px-3 py-6 space-y-8">
-        {/* Getting Started. Auto-hides when all items complete */}
-        <Suspense fallback={null}>
-          <GettingStartedChecklist profileId={profileId} />
-        </Suspense>
+        {/* Onboarding now lives in the feed hero (FeedOnboardingGuide), so the rail
+            no longer duplicates the "Getting started" checklist. */}
 
         {/* Recent Dispatches */}
         <RecentDispatchesWidget profileId={profileId} circleIds={circleIds} />

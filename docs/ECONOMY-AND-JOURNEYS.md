@@ -1,8 +1,14 @@
 # Member economy + Journeys (premium) — spec (draft for review)
 
 Status: ⏳ **draft, pre-build.** Extends ADR-084 (Beta = Crew) and the Quest economy
-(zaps/gems/seasons). Decisions in §6 are open. "Arcs" are renamed **Journeys**
-(user-facing done; internal `arc_*` tables/route kept for now).
+(zaps/gems/seasons). Decisions in §6 are open.
+
+> ⚠️ **Terminology updated ([ADR-087](DECISIONS.md)).** What this doc calls the premium,
+> Crew-gated, tracked "Journey" engine is now named **"Quests"** (`quest_chains`,
+> `/crew/quests`). The name **"Journeys"** now means the **open, free, member-built**
+> practice-combo library (backlog §Q1) — *not* gated. So below: read "Journeys (premium)"
+> as **"Quests (premium)"**; the free DIY practice-combo plans are the new open
+> **Journeys**. This doc gets a full terminology pass when §Q1 builds.
 
 ## 1. The principle (lead with the answer)
 

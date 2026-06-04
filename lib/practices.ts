@@ -26,9 +26,11 @@ export interface Practice {
   created_by: string | null
   is_public: boolean
   created_at: string
+  /** The Pillar this practice belongs to (domains.id), or null if uncategorized. */
+  domain_id: string | null
 }
 
-const PRACTICE_COLS = 'id, title, description, created_by, is_public, created_at'
+const PRACTICE_COLS = 'id, title, description, created_by, is_public, created_at, domain_id'
 
 // --- Library + reads ------------------------------------------------------
 
