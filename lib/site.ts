@@ -36,7 +36,6 @@ export const DISCOVER_NAV: NavLink[] = [
 export const SITE_NAV: NavLink[] = [
   { label: "How it works", href: "/how-it-works" },
   { label: "The Lab", href: "/the-lab" },
-  { label: "Pricing", href: "/pricing" },
   { label: "About", href: "/about" },
 ];
 
@@ -49,7 +48,6 @@ export const SITE_NAV_MEMBER: NavLink[] = [];
 export const MARKETING_NAV: NavLink[] = [
   { label: "How it works", href: "/how-it-works" },
   { label: "The Lab", href: "/the-lab" },
-  { label: "Pricing", href: "/pricing" },
   { label: "Discover", href: "/discover" },
   { label: "About", href: "/about" },
 ];
