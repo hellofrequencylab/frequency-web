@@ -78,9 +78,10 @@ Two levers, in order of severity:
 ## Demo content is wizard-generated (ADR-092)
 
 The hand-built 250-cast was **retired**. Demo content is now generated on demand
-by the **Seed Studio** (`/admin/demo/studio`, `lib/demo/engine.ts`) and cleaned
-by the `/admin/demo` purge button + the nightly decay cron. Every row is still
-`is_demo`, badged with the yellow bolt, and counted honestly. See ADR-091/092.
+by the **Seed Studio** and cleaned by the purge controls + the nightly decay cron —
+both live on the one **`/admin/demo`** ("Demo Studio") page (`lib/demo/engine.ts`).
+Every row is still `is_demo`, badged with the yellow bolt, and counted honestly.
+See ADR-091/092.
 
 ### What a seed generates (the full connection web — ADR-093)
 
