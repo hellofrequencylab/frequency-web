@@ -1,12 +1,13 @@
-import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/admin/guard'
-import { AdminPage } from '@/components/admin/admin-page'
-import { FlaskConical, Sparkles } from 'lucide-react'
+import { AdminPage, AdminSection } from '@/components/admin/admin-page'
+import { Sparkles } from 'lucide-react'
 import { DemoControls } from './demo-controls'
+import { StudioWizard } from './studio/studio-wizard'
 
-// Janitor-only: the operator controls for the Beta demo content layer
-// (docs/DEMO-SYSTEM.md) — the global show/hide switch and the permanent purge.
+// Janitor-only: the single home for the Beta demo content layer (docs/DEMO-SYSTEM.md).
+// Two zones on one page: the Seed Studio (generate a believable area on demand) and
+// the management controls (the global show/hide switch, grow, select/delete, purge).
 export default async function AdminDemoPage() {
   await requireAdmin('janitor')
 
@@ -47,27 +48,27 @@ export default async function AdminDemoPage() {
 
   return (
     <AdminPage
-      title="Demo content"
+      title="Demo Studio"
       eyebrow="Platform"
-      icon={FlaskConical}
-      description="Seeded Beta content that makes the community look alive. Show or hide it everywhere with one switch, or purge it for good once real content has taken over. To generate a new area, use the Seed Studio."
+      icon={Sparkles}
+      description="Generate a believable, year-old-feeling community for any area — then show, hide, grow, or purge it. Everything is tagged demo (⚡), previewable before it writes, and reversible."
       width="narrow"
-      actions={
-        <Link
-          href="/admin/demo/studio"
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
-        >
-          <Sparkles className="h-4 w-4" /> Open Seed Studio
-        </Link>
-      }
     >
-      <DemoControls
-        enabled={enabled}
-        counts={counts}
-        total={total}
-        circles={demoCircles}
-        channels={channels}
-      />
+      <AdminSection
+        title="Create an area"
+        description="Spin up circles, people with journeys, conversations, events, practices, and gamification for a new place. Demographic-aware, previewable, reversible by area."
+      >
+        <StudioWizard channels={channels} />
+      </AdminSection>
+
+      <div className="border-t border-border pt-2" />
+
+      <AdminSection
+        title="Manage demo content"
+        description="Show or hide all demo content with one switch, grow specific circles, or purge it for good once real content has taken over."
+      >
+        <DemoControls enabled={enabled} counts={counts} total={total} circles={demoCircles} channels={channels} />
+      </AdminSection>
     </AdminPage>
   )
 }
