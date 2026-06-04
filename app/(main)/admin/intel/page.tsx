@@ -1,8 +1,10 @@
-import { Telescope, Users, CircleDot, CalendarDays, Sparkles } from 'lucide-react'
+import { Telescope, Users, CircleDot, CalendarDays, Sparkles, Compass } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminPage, AdminSection } from '@/components/admin/admin-page'
 import { StatCard } from '@/components/ui/stat-card'
 import { getMarketingIntel } from '@/lib/analytics/marketing-intel'
+import { getAcquisitionRollup } from '@/lib/attribution/rollup'
+import { runAcquisitionBackfill } from './actions'
 import {
   projectGrowth,
   demandGaps,
@@ -72,7 +74,7 @@ function Table({ head, rows }: { head: string[]; rows: (string | number)[][] }) 
 
 export default async function MarketingIntelPage() {
   await requireAdmin('janitor')
-  const intel = await getMarketingIntel(90, 30)
+  const [intel, acq] = await Promise.all([getMarketingIntel(90, 30), getAcquisitionRollup()])
 
   const totals = intel.growth.reduce(
     (a, w) => ({
@@ -154,6 +156,33 @@ export default async function MarketingIntelPage() {
           <StatCard label="New events" value={totals.events} icon={CalendarDays} />
           <StatCard label="Active leaders" value={intel.leaders.length} icon={Sparkles} />
         </div>
+      </AdminSection>
+
+      <AdminSection
+        title="Acquisition sources"
+        description={`How members first reached us (first-touch). ${acq.attributed} of ${acq.totalMembers} attributed — ${Math.round(acq.coverage * 100)}% coverage.`}
+        actions={
+          <form action={runAcquisitionBackfill}>
+            <button
+              type="submit"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated"
+            >
+              <Compass className="h-3.5 w-3.5" /> Backfill from referrals + beta
+            </button>
+          </form>
+        }
+      >
+        {acq.rows.length === 0 ? (
+          <p className="text-sm text-muted">
+            No attributed members yet. New signups are tagged automatically; “Backfill” infers a
+            source for existing members from referrals and their beta answers.
+          </p>
+        ) : (
+          <Table
+            head={['Channel', 'Members', 'New (30d)', 'Share']}
+            rows={acq.rows.map((r) => [r.label, r.members, r.last30, `${Math.round(r.share * 100)}%`])}
+          />
+        )}
       </AdminSection>
 
       <AdminSection
