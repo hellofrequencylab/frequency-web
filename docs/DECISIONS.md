@@ -1845,10 +1845,12 @@ already calls it "the Quest" (the stats dock shows a Quest section linking to `/
    aligning marketing to the product's existing vocabulary. Internal code identifiers
    (`GameStatsDockClient`, `game-stats-dock.tsx`, the "Field game system" comment) are invisible to
    users and left as-is — not a code refactor.
-3. **"Join the Beta" now enters the beta flow.** `BETA_CTA_HREF` carries `?next=/onboarding/beta`, and
-   sign-in plumbs a validated same-origin `next` through the magic-link / OAuth `emailRedirectTo` into
-   `/auth/callback` (which re-validates it). New members land in the cinematic induction instead of the
-   bare feed. Previously `next` was never propagated, so every new account defaulted to `/feed`.
+3. **"Join the Beta" now enters the beta flow.** `BETA_CTA_HREF` carries `?next=/onboarding/beta`; at
+   sign-in the validated same-origin `next` is stashed in a short-lived, httpOnly `fq_post_login` cookie
+   (keeping `emailRedirectTo`/`redirectTo` the bare, **allowlist-safe** `/auth/callback` — so the auth
+   provider's redirect-URL match is never affected). `/auth/callback` reads the cookie, re-validates the
+   path, redirects, and clears it. New members land in the cinematic induction instead of the bare feed.
+   Previously `next` was never propagated, so every new account defaulted to `/feed`.
 
 Also fixed in the same pass: the white-on-white CTA in dark mode (`text-text` → `text-ink` on
 white-over-dark pills — the marketing header, the in-app header, the onboarding step indicator).
@@ -1858,6 +1860,31 @@ on-ramp, and gives non-local visitors a path — while routing every "Join" stra
 The `/the-lab` page stays the deep-dive; the home Lab beat is the trailer (links to it). Verified by
 tsc + lint + 153 tests + a production compile/typecheck (page-data collection needs Supabase env, which
 the Vercel build has). SEO/AEO structured-data pass still pending from ADR-076.
+
+---
+
+## ADR-079: "The Quest" is the game; the multi-step feature is an "Arc" (naming collision resolved)
+
+**Status:** Accepted · 2026-06-04 · canonical vocabulary in [THE-QUEST.md](THE-QUEST.md) +
+[GLOSSARY.md](GLOSSARY.md). Player-facing strings done; the `quest_* → arc_*` schema/route rename is a
+**pending deliberate migration** (checklist in THE-QUEST.md), not done in this pass.
+
+**Context:** ADR-078 renamed the marketing "Game" → "Quest". But the product already used "quest" for a
+different thing — the multi-step seasonal journeys backed by `quest_chains` / `quest_steps` /
+`quest_progress` (surfaced in the stats dock as "Quest", linking `/crew/quests`). With the *game* now
+called "The Quest", that lowercase "quest" became a collision.
+
+**Decision:** The **game as a whole is "The Quest"** (seasonal, 13-week cycle on the natural calendar).
+The **multi-step feature is an "Arc"** (e.g. "The Connector"), with **Steps** inside it. No player-facing
+surface calls an Arc a "quest". Canonical currency/feature terms: **Zaps** (in-person XP → ranks),
+**Gems** (durable spendable), ranks `ghost → runner → operative → agent → conduit → luminary`,
+**Challenges** (community-wide), **Achievements**, **Streaks**, **Domains** (Mind/Body/Spirit/Expression).
+
+**Consequences / what's left:** The internal schema still says `quest_*`; renaming it to `arc_*` is a
+migration that touches generated types, the `/crew/quests` route, symbol names, and analytics keys — so
+it's staged as its own refactor (THE-QUEST.md). **Until that ships, the in-app dock still shows "Quest"
+for what is now an Arc** — the one remaining player-facing instance of the collision. Marketing copy
+(home, help) already uses "The Quest" correctly for the game.
 
 ---
 
