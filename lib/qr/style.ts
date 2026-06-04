@@ -29,6 +29,10 @@ export interface QrStyle {
   eyeColor: string | null
   /** Center logo — an https or data:image URL, or null. */
   logo: string | null
+  /** Logo crop shape. */
+  logoShape: 'square' | 'circle'
+  /** Recolor the logo: none (original), solid (module color), gradient (module gradient). */
+  logoTint: 'none' | 'solid' | 'gradient'
   /** Call-to-action label under a card frame, or null for no frame. */
   frameLabel: string | null
   /** Quiet-zone width in modules. */
@@ -44,6 +48,8 @@ export const DEFAULT_STYLE: QrStyle = {
   pupilShape: 'square',
   eyeColor: null,
   logo: null,
+  logoShape: 'square',
+  logoTint: 'none',
   frameLabel: null,
   margin: 2,
 }
@@ -169,6 +175,9 @@ export function parseStyle(raw: unknown): QrStyle {
   const pupilShape = EYE_SHAPES.includes(r.pupilShape as EyeShape) ? (r.pupilShape as EyeShape) : eyeShape
 
   const logo = typeof r.logo === 'string' && isSafeLogoSrc(r.logo) ? r.logo.trim() : null
+  const logoShape = r.logoShape === 'circle' ? 'circle' : 'square'
+  const logoTint =
+    r.logoTint === 'solid' || r.logoTint === 'gradient' ? r.logoTint : 'none'
 
   const frameLabel =
     typeof r.frameLabel === 'string' && r.frameLabel.trim() ? r.frameLabel.trim().slice(0, 28) : null
@@ -185,6 +194,8 @@ export function parseStyle(raw: unknown): QrStyle {
     pupilShape,
     eyeColor: typeof r.eyeColor === 'string' && HEX.test(r.eyeColor) ? r.eyeColor : null,
     logo,
+    logoShape,
+    logoTint,
     frameLabel,
     margin,
   }
