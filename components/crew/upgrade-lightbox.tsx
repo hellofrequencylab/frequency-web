@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from 'react'
 import Link from 'next/link'
-import { Zap, X } from 'lucide-react'
+import { Zap, X, Lock } from 'lucide-react'
 
 // The upsell lightbox shown when a non-paying member tries to engage with a Quest
 // surface they can browse but not act on. Plus `CrewGate`, a wrapper that mutes
@@ -53,7 +53,8 @@ export function UpgradeLightbox({ open, onClose }: { open: boolean; onClose: () 
 }
 
 /** Wrap an earn/spend action. When `locked`, the children render muted and
- *  non-interactive, and a click opens the upgrade lightbox. */
+ *  non-interactive, and a click opens the upgrade lightbox. Use this to keep a
+ *  block (a store card, a journey) visible-but-previewable. */
 export function CrewGate({ locked, children }: { locked: boolean; children: ReactNode }) {
   const [open, setOpen] = useState(false)
   if (!locked) return <>{children}</>
@@ -68,6 +69,40 @@ export function CrewGate({ locked, children }: { locked: boolean; children: Reac
           className="absolute inset-0 z-10 cursor-pointer rounded-[inherit]"
         />
       </div>
+      <UpgradeLightbox open={open} onClose={() => setOpen(false)} />
+    </>
+  )
+}
+
+/** Inline variant: render the real action for Crew, otherwise a locked button
+ *  that opens the same UpgradeLightbox. Use this when the gated thing IS a single
+ *  action (join an event, complete a task) rather than a previewable block. */
+export function CrewGateButton({
+  isCrew,
+  label,
+  buttonClassName,
+  children,
+}: {
+  isCrew: boolean
+  label: string
+  buttonClassName?: string
+  children?: ReactNode
+}) {
+  const [open, setOpen] = useState(false)
+  if (isCrew) return <>{children}</>
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className={
+          buttonClassName ??
+          'inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors'
+        }
+      >
+        <Lock className="h-3.5 w-3.5" />
+        {label}
+      </button>
       <UpgradeLightbox open={open} onClose={() => setOpen(false)} />
     </>
   )
