@@ -1,11 +1,9 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { Suspense } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getInitials, relativeTime } from '@/lib/utils'
 import { RANK_LABELS, seasonRankStyle, SEASON_RANKS, rankForZaps, type SeasonRank } from '@/lib/season-ranks'
 import { MapPin, Megaphone, Zap } from 'lucide-react'
-import { GettingStartedChecklist } from '@/components/feed/getting-started'
 import { isOnline, ONLINE_MS } from '@/lib/presence'
 import { WidgetCard } from '@/components/modules/module-card'
 import { GameStatsDockClient, type DockData } from '@/components/sidebar/game-stats-dock'
@@ -463,10 +461,8 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
       {/* Top of the rail scrolls with the feed. flex-1 pushes the stats dock to
           the bottom so it stays stuck there (like the left profile box). */}
       <div className="flex-1 px-3 py-6 space-y-8">
-        {/* Getting Started. Auto-hides when all items complete */}
-        <Suspense fallback={null}>
-          <GettingStartedChecklist profileId={profileId} />
-        </Suspense>
+        {/* Onboarding now lives in the feed hero (FeedOnboardingGuide), so the rail
+            no longer duplicates the "Getting started" checklist. */}
 
         {/* Recent Dispatches */}
         <RecentDispatchesWidget profileId={profileId} circleIds={circleIds} />

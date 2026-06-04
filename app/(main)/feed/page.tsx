@@ -7,10 +7,12 @@ import { FeedList } from '@/components/feed/feed-list'
 import { StreamTemplate } from '@/components/templates/stream-template'
 import { SectionHeader } from '@/components/ui/section-header'
 import { PracticePrompt } from '@/components/practice/practice-prompt'
-import { FeedWelcome } from '@/components/feed/feed-welcome'
+import { FeedOnboardingGuide } from '@/components/feed/feed-onboarding-guide'
+import { JourneyBoard } from '@/components/feed/journey-board'
 import { VeraLightbox } from '@/components/onboarding/vera-lightbox'
 import { buildVeraOpening, buildWelcomeSlides } from '@/lib/onboarding/vera-welcome'
 import { getPracticesToLogToday } from '@/lib/practices'
+import { getOnboardingStatus } from '@/lib/onboarding/status'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
@@ -89,6 +91,10 @@ export default async function FeedPage({
   // Adopted practices not yet logged today -> the feed "log today" nudge (WAM).
   const practicesToLog = myProfileId ? await getPracticesToLogToday(myProfileId) : []
 
+  // The feed "hero" slot: a persistent teal onboarding guide until a member is fully
+  // set up, then it graduates into the JourneyBoard. One shared status drives both.
+  const onboarding = myProfileId ? await getOnboardingStatus(myProfileId) : null
+
   // Warm, time-aware greeting headline (the feed is "home", so it greets you).
   // Greet in the community's timezone (the beta is North County San Diego) so the
   // server's UTC clock doesn't roll the date + greeting forward late at night.
@@ -113,11 +119,14 @@ export default async function FeedPage({
         action={<CreateMenu role={myRole} />}
       >
 
-      {/* First-run nudge toward the activation lever — a member with no circle yet
-          (also the fallback for anyone who skipped Vera at onboarding). */}
-      {myProfileId && !hasCircle && <FeedWelcome />}
+      {/* Hero slot. Onboarding incomplete → the persistent teal guide sits up top and
+          the streak box (if any) rides below it. Complete → the guide is gone and the
+          streak box graduates into the JourneyBoard, which takes the top spot. */}
+      {onboarding && !onboarding.complete && <FeedOnboardingGuide status={onboarding} />}
 
-      <PracticePrompt practices={practicesToLog} streak={streak} />
+      {onboarding?.complete
+        ? <JourneyBoard practices={practicesToLog} streak={streak} />
+        : <PracticePrompt practices={practicesToLog} streak={streak} />}
 
       {/* Composer */}
       {composerScopeId && (
