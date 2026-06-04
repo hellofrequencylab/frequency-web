@@ -2141,7 +2141,9 @@ emit identical SVG. No new dependency.
 
 **Consequences:** Styling lives only on `qr_codes` (the managed entity); check-in `nodes` +
 member connect codes stay plain for now (a later pass can adopt the same renderer). Styled
-**downloads are SVG** (vector, ideal for print); **PNG stays plain** until a server-side SVG
+**downloads are SVG** (vector, ideal for print); a **styled PNG** is now also available (backlog #4,
+`lib/qr/raster.ts` via `@resvg/resvg-wasm` — remote logos inlined as data URLs, plain-PNG fallback).
+Historical note: PNG was plain until a server-side SVG
 rasterizer is added (logged as a follow-up). Phases 3–4 (per-member codes, challenges) inherit
 the styler for free.
 

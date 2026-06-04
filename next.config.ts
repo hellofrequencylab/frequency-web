@@ -15,6 +15,9 @@ const securityHeaders = [
 ]
 
 const nextConfig: NextConfig = {
+  // Keep the wasm rasterizer (styled QR PNG export, lib/qr/raster.ts) external so the
+  // bundler doesn't try to bundle its .wasm — it's loaded from node_modules at runtime.
+  serverExternalPackages: ['@resvg/resvg-wasm'],
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }]
   },

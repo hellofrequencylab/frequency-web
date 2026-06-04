@@ -13,6 +13,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { isSiteLink, toAbsoluteSiteUrl, shortLinkUrl } from '@/lib/qr/links'
 import { renderQrPng, renderQrSvg } from '@/lib/qr/render'
 import { renderStyledQrSvg } from '@/lib/qr/render-styled'
+import { renderStyledQrPng } from '@/lib/qr/raster'
 import { parseStyle, type QrStyle } from '@/lib/qr/style'
 
 export const dynamic = 'force-dynamic'
@@ -59,8 +60,14 @@ export async function GET(request: Request) {
   }
 
   if (format === 'png') {
-    // Styled raster isn't supported yet — PNG is the plain code.
-    const png = await renderQrPng(target, size)
+    // Styled codes rasterize their design (gradients/shapes/logo) via resvg; any
+    // failure degrades to the plain code so a download never breaks.
+    let png: Buffer
+    try {
+      png = style ? await renderStyledQrPng(target, style, size) : await renderQrPng(target, size)
+    } catch {
+      png = await renderQrPng(target, size)
+    }
     return new Response(new Uint8Array(png), { headers: { ...headers, 'Content-Type': 'image/png' } })
   }
 
