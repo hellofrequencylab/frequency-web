@@ -22,6 +22,7 @@ import {
   Building2,
   Activity,
   Bot,
+  Map,
 } from 'lucide-react'
 
 // Maps each NAV_AREAS key (lib/nav-areas.ts — the framework-free source of truth)
@@ -41,6 +42,8 @@ export const AREA_ICONS: Record<string, ElementType> = {
   partners: Store,
   people: Globe,
   crew: Zap,
+  arcs: Map,
+  store: Store,
   vault: Gem,
   'admin-community': LayoutDashboard,
   'admin-structure': Building2,

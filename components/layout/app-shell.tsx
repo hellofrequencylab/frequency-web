@@ -27,6 +27,7 @@ import {
 import { getInitials } from '@/lib/utils'
 import { NotificationBell } from '@/components/layout/notification-bell'
 import { MessagesPopover } from '@/components/messages/messages-popover'
+import { Breadcrumbs } from '@/components/layout/breadcrumbs'
 import { ViewAsControl } from '@/components/layout/view-as-control'
 import {
   type CommunityRole,
@@ -77,10 +78,11 @@ function buildSections(areas: typeof NAV_AREAS[number][]): NavSectionGroup[] {
   return sections
 }
 
-// One vertical rail holds every destination: Feed (the home anchor, pinned top),
-// then community spaces, the Broadcasts comms loop (Broadcasts · Messages ·
-// Events), features, and admin — grouped by section. The desktop rail and the
-// mobile drawer render the same set.
+// One vertical rail holds every destination: Feed + Messages (the home anchors,
+// pinned top), then the three pillars — Community, The Quest, Network — and
+// finally Manage (admin), grouped by section. Sections and their order are
+// derived entirely from NAV_AREAS (no hardcoded section list). The desktop rail
+// and the mobile drawer render the same set.
 const NAV_SECTIONS = buildSections([...NAV_AREAS])
 
 // The effective access for an area = a janitor's per-area override, if any,
@@ -733,7 +735,10 @@ export default function AppShell({
     if (href === '/channels') return pathname === '/channels' || pathname.startsWith('/channels/')
     if (href === '/messages') return pathname === '/messages' || pathname.startsWith('/messages/')
     if (href === '/settings') return pathname === '/settings' || pathname.startsWith('/settings/')
-    if (href === '/crew')     return pathname === '/crew' || pathname.startsWith('/crew/')
+    // Dashboard (/crew) is the section root; its siblings /crew/arcs and
+    // /crew/store are their own rail items, so match /crew exactly and let those
+    // sub-routes light up their own entry via the generic prefix rule below.
+    if (href === '/crew')     return pathname === '/crew'
     if (href === '/search')   return pathname === '/search'
     return pathname === href || pathname.startsWith(href + '/')
   }
@@ -903,6 +908,7 @@ export default function AppShell({
             <div className="flex-1 min-w-0 flex flex-col">
               {!hideAppNav && ticker}
               <main className="flex-1 min-w-0 px-4 py-6 sm:px-6">
+                <Breadcrumbs />
                 {children}
               </main>
             </div>
