@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { ArrowRight, Compass, Users, HandHeart, Home } from 'lucide-react'
 import { Render } from '@measured/puck/rsc'
 import {
@@ -11,6 +10,8 @@ import {
   ZigZag,
   Statement,
   BetaCTA,
+  Button,
+  Card,
 } from '@/components/marketing/marketing-ui'
 import { BETA_CTA_LABEL, BETA_CTA_HREF, FOUNDING_PLACE } from '@/lib/site'
 import { config } from '@/lib/page-editor/config'
@@ -49,12 +50,9 @@ function LegacyAbout() {
         title="We’re building the place we wished existed."
         subtitle="It started on a beach in 2020 — no guru, no brand, just a thousand strangers who needed each other. This is how it became a blueprint for doing it right."
       >
-        <Link
-          href={BETA_CTA_HREF}
-          className="inline-flex items-center gap-2 rounded-2xl bg-primary text-on-primary px-8 py-3.5 text-base font-bold hover:bg-primary-hover transition-colors shadow-pop"
-        >
+        <Button href={BETA_CTA_HREF}>
           {BETA_CTA_LABEL} <ArrowRight className="w-5 h-5" aria-hidden />
-        </Link>
+        </Button>
       </PhotoHero>
 
       {/* ── The hunger (intro lead) ────────────────────────────────────────── */}
@@ -311,13 +309,13 @@ function Value({
   body: string
 }) {
   return (
-    <div className="flex flex-col rounded-3xl border border-border bg-surface-elevated p-7 shadow-sm">
+    <Card tone="feature" className="flex flex-col">
       <span className="mb-5 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-bg text-primary-strong">
         <Icon className="h-5 w-5" aria-hidden />
       </span>
       <h3 className="text-lg font-bold text-text mb-2">{title}</h3>
       <p className="text-base text-muted leading-relaxed">{body}</p>
-    </div>
+    </Card>
   )
 }
 

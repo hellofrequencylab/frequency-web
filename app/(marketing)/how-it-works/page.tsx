@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import {
   ArrowRight,
   Compass,
@@ -21,6 +20,8 @@ import {
   Statement,
   Marquee,
   BetaCTA,
+  Button,
+  Card,
 } from '@/components/marketing/marketing-ui'
 import { config } from '@/lib/page-editor/config'
 import { getPublishedData } from '@/lib/page-editor/data'
@@ -65,12 +66,9 @@ function LegacyHowItWorks() {
         }
         subtitle="Most communities are a feed and a hope. Frequency has a structure that actually grows — and it only takes two words to belong."
       >
-        <Link
-          href={BETA_CTA_HREF}
-          className="inline-flex items-center gap-2 rounded-2xl bg-primary text-on-primary px-8 py-3.5 font-bold hover:bg-primary-hover transition-colors shadow-pop"
-        >
+        <Button href={BETA_CTA_HREF}>
           {BETA_CTA_LABEL} <ArrowRight className="w-5 h-5" />
-        </Link>
+        </Button>
       </PhotoHero>
 
       {/* The three steps — how you actually get from curious to belonging */}
@@ -335,7 +333,7 @@ function Step({
   text: string
 }) {
   return (
-    <div className="relative flex flex-col rounded-3xl border border-border bg-surface p-7 shadow-sm">
+    <Card tone="feature" className="relative flex flex-col">
       <div className="flex items-center justify-between mb-5">
         <span className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-primary-bg/50">
           <Icon className="w-5 h-5 text-primary-strong" />
@@ -346,7 +344,7 @@ function Step({
       </div>
       <h3 className="font-display uppercase text-text text-2xl mb-2">{title}</h3>
       <p className="text-sm text-muted leading-relaxed">{text}</p>
-    </div>
+    </Card>
   )
 }
 
@@ -360,13 +358,13 @@ function Layer({
   text: string
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-surface p-6">
+    <Card tone="feature">
       <div className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-primary-bg/50 mb-4">
         <Icon className="w-5 h-5 text-primary-strong" />
       </div>
       <h3 className="font-display uppercase text-text text-xl mb-2">{title}</h3>
       <p className="text-sm text-muted leading-relaxed">{text}</p>
-    </div>
+    </Card>
   )
 }
 
@@ -380,13 +378,13 @@ function Hold({
   text: string
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-surface p-6">
+    <Card tone="feature">
       <div className="flex items-center gap-2.5 mb-3">
         <Icon className="w-5 h-5 text-primary-strong" />
         <h3 className="font-bold text-text text-lg leading-snug">{title}</h3>
       </div>
       <p className="text-sm text-muted leading-relaxed">{text}</p>
-    </div>
+    </Card>
   )
 }
 

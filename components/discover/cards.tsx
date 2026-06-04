@@ -4,6 +4,7 @@ import { ArrowRight, Users, MapPin, CalendarDays } from 'lucide-react'
 import { getInitials, relativeTime } from '@/lib/utils'
 import { eventDateBadge, formatEventDate } from '@/lib/discover'
 import type { PublicCircle, PublicEvent, PublicPost, TopicalChannel } from '@/lib/discover'
+import { Button, Card } from '@/components/marketing/marketing-ui'
 
 // Presentational building blocks shared by the /discover hub and detail pages.
 // All read-only: every interaction control is a link to /sign-in.
@@ -18,23 +19,22 @@ export function ChannelCard({
   circleCount?: number
 }) {
   return (
-    <Link
-      href={`/discover/topics/${channel.slug}`}
-      className="group rounded-2xl border border-border bg-surface p-6 hover:border-border-strong transition-colors flex flex-col"
-    >
-      <h3 className="text-base font-bold text-text mb-2 group-hover:text-primary-strong transition-colors">
-        {channel.name}
-      </h3>
-      {channel.description && (
-        <p className="text-sm text-muted leading-relaxed line-clamp-3 flex-1">
-          {channel.description}
-        </p>
-      )}
-      {typeof circleCount === 'number' && (
-        <p className="text-xs text-subtle mt-4 font-medium">
-          {circleCount} {circleCount === 1 ? 'circle' : 'circles'}
-        </p>
-      )}
+    <Link href={`/discover/topics/${channel.slug}`} className="group block h-full">
+      <Card tone="feature" className="h-full hover:border-border-strong transition-colors flex flex-col">
+        <h3 className="text-base font-bold text-text mb-2 group-hover:text-primary-strong transition-colors">
+          {channel.name}
+        </h3>
+        {channel.description && (
+          <p className="text-sm text-muted leading-relaxed line-clamp-3 flex-1">
+            {channel.description}
+          </p>
+        )}
+        {typeof circleCount === 'number' && (
+          <p className="text-xs text-subtle mt-4 font-medium">
+            {circleCount} {circleCount === 1 ? 'circle' : 'circles'}
+          </p>
+        )}
+      </Card>
     </Link>
   )
 }
@@ -43,10 +43,8 @@ export function ChannelCard({
 
 export function CircleCard({ circle }: { circle: PublicCircle }) {
   return (
-    <Link
-      href={`/discover/circles/${circle.id}`}
-      className="group rounded-2xl border border-border bg-surface p-5 hover:border-border-strong transition-colors flex flex-col"
-    >
+    <Link href={`/discover/circles/${circle.id}`} className="group block h-full">
+      <Card tone="feature" className="h-full p-5 hover:border-border-strong transition-colors flex flex-col">
       <div className="flex items-start justify-between gap-3 mb-2">
         <h3 className="text-base font-bold text-text group-hover:text-primary-strong transition-colors">
           {circle.name}
@@ -73,6 +71,7 @@ export function CircleCard({ circle }: { circle: PublicCircle }) {
         )}
         {circle.channel_name && <span className="ml-auto">{circle.channel_name}</span>}
       </div>
+      </Card>
     </Link>
   )
 }
@@ -82,22 +81,24 @@ export function CircleCard({ circle }: { circle: PublicCircle }) {
 export function EventRow({ event }: { event: PublicEvent }) {
   const badge = eventDateBadge(event.starts_at)
   return (
-    <Link
-      href={`/discover/events/${event.slug}`}
-      className="flex items-center gap-4 rounded-2xl border border-border bg-surface px-5 py-4 hover:border-border-strong hover:shadow-pop transition-all"
-    >
-      <div className="shrink-0 w-12 h-12 rounded-xl bg-primary-bg flex flex-col items-center justify-center">
-        <span className="text-[9px] font-bold text-primary-strong leading-none">{badge.month}</span>
-        <span className="text-base font-bold text-primary-strong leading-tight">{badge.day}</span>
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-text truncate">{event.title}</p>
-        <p className="text-xs text-subtle mt-0.5">
-          {formatEventDate(event.starts_at)}
-          {event.city && <> &middot; {event.city}</>}
-        </p>
-      </div>
-      <ArrowRight className="w-4 h-4 text-primary-strong shrink-0" />
+    <Link href={`/discover/events/${event.slug}`} className="block">
+      <Card
+        tone="feature"
+        className="flex items-center gap-4 px-5 py-4 hover:border-border-strong hover:shadow-pop transition-all"
+      >
+        <div className="shrink-0 w-12 h-12 rounded-xl bg-primary-bg flex flex-col items-center justify-center">
+          <span className="text-[9px] font-bold text-primary-strong leading-none">{badge.month}</span>
+          <span className="text-base font-bold text-primary-strong leading-tight">{badge.day}</span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-text truncate">{event.title}</p>
+          <p className="text-xs text-subtle mt-0.5">
+            {formatEventDate(event.starts_at)}
+            {event.city && <> &middot; {event.city}</>}
+          </p>
+        </div>
+        <ArrowRight className="w-4 h-4 text-primary-strong shrink-0" />
+      </Card>
     </Link>
   )
 }
@@ -160,23 +161,17 @@ export function SignInCta({
   action?: string
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-surface p-8 text-center shadow-sm">
+    <Card tone="feature" className="p-8 text-center">
       <p className="text-lg font-bold text-text mb-2">{title}</p>
       <p className="text-sm text-muted leading-relaxed mb-6 max-w-sm mx-auto">{body}</p>
-      <Link
-        href="/sign-in"
-        className="inline-block rounded-2xl bg-primary text-on-primary px-7 py-3 text-sm font-bold hover:bg-primary-hover transition-colors"
-      >
+      <Button href="/sign-in" size="sm">
         {action}
-      </Link>
-    </div>
+      </Button>
+    </Card>
   )
 }
 
-// ── Section heading + photo hero ──────────────────────────────────────────────
-// Re-exported from the marketing kit so Discover and the marketing pages share
-// ONE heading and ONE hero — no divergent copies. `DiscoverHero` is the shared
-// PhotoHero under its historical name (kept so the Discover pages' imports work).
-export { SectionHeading, PhotoHero as DiscoverHero } from '@/components/marketing/marketing-ui'
-
+// ── Icon re-export ────────────────────────────────────────────────────────────
+// SectionHeading + the photo hero now live solely in the marketing kit; Discover
+// imports PhotoHero / SectionHeading directly from there. No divergent copies.
 export { CalendarDays }
