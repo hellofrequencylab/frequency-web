@@ -46,19 +46,37 @@ export function PhotoHero({
         }}
       />
       <div className="amber-glow absolute inset-0 pointer-events-none" />
-      <div className="relative z-10 max-w-4xl mx-auto px-6 py-24 sm:py-32 text-center">
+      <div
+        className={`relative z-10 mx-auto px-6 text-center ${
+          isScreen ? 'max-w-5xl py-20 sm:py-28' : 'max-w-4xl py-24 sm:py-32'
+        }`}
+      >
         {eyebrow && (
-          <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary mb-5">{eyebrow}</p>
+          <p
+            className={`font-bold uppercase tracking-[0.25em] text-primary ${
+              isScreen ? 'text-sm sm:text-base mb-6' : 'text-sm mb-5'
+            }`}
+          >
+            {eyebrow}
+          </p>
         )}
-        <h1 className="font-display uppercase text-white text-5xl sm:text-6xl lg:text-7xl text-balance leading-[0.95]">
+        <h1
+          className={`font-display uppercase text-white text-balance leading-[0.95] ${
+            isScreen ? 'text-6xl sm:text-7xl lg:text-8xl' : 'text-5xl sm:text-6xl lg:text-7xl'
+          }`}
+        >
           {title}
         </h1>
         {subtitle && (
-          <p className="mt-6 text-lg sm:text-xl text-white/80 leading-relaxed max-w-2xl mx-auto">
+          <p
+            className={`text-white/80 leading-relaxed mx-auto max-w-2xl ${
+              isScreen ? 'mt-7 text-xl sm:text-2xl' : 'mt-6 text-lg sm:text-xl'
+            }`}
+          >
             {subtitle}
           </p>
         )}
-        {children && <div className="mt-9">{children}</div>}
+        {children && <div className={isScreen ? 'mt-10' : 'mt-9'}>{children}</div>}
         {footer}
       </div>
       <div className="light-strip absolute inset-x-0 bottom-0 z-10" />
