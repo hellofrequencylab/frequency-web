@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { createClient } from '@/lib/supabase/server'
 import { getPublicCircles } from '@/lib/discover'
 import { CircleCard } from '@/components/discover/cards'
 import { ZigZag, BetaCTA, PhotoHero, SectionHeading, Button } from '@/components/marketing/marketing-ui'
@@ -21,6 +22,12 @@ export const metadata: Metadata = {
 export const revalidate = 3600
 
 export default async function DiscoverCirclesPage() {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const isAuthed = !!user
+
   const circles = await getPublicCircles(200)
 
   return (
@@ -60,7 +67,7 @@ export default async function DiscoverCirclesPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {circles.map((c) => (
                 <div key={c.id} className="rounded-2xl transition-shadow hover:shadow-pop">
-                  <CircleCard circle={c} />
+                  <CircleCard circle={c} isAuthed={isAuthed} />
                 </div>
               ))}
             </div>
