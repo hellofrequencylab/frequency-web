@@ -68,9 +68,9 @@ export const REEL: ReelSlide[] = [
 /** All voiced copy, in one place. */
 export const VERA = {
   oath: {
-    eyebrow: 'Before I let you in',
+    eyebrow: 'Before you come in',
     heading: "This isn't a product. It's a promise.",
-    body: 'Three things before I open it. Not fine print, a filter. If any of these isn’t you, no hard feelings, the door just stays shut.',
+    body: 'A promise that the people near you are worth finding, and that gathering can feel good again. We’re building it in the open, and you’re one of the very first.',
     cta: "I'm in",
   },
   intro: {
@@ -85,9 +85,9 @@ export const VERA = {
   },
   place: {
     heading: 'Where are you?',
-    body: 'I’ll connect you with the Founders closest to you, and learn what you’re hoping to find.',
+    body: 'We’ll connect you with the Founders closest to you, and learn what you’re hoping to find.',
     intentLabel: 'What are you hoping to find here?',
-    intentPlaceholder: 'Say it plainly. It helps me point you at your people.',
+    intentPlaceholder: 'Say it plainly. It helps us point you at your people.',
   },
   tour: {
     eyebrow: "Here's the place",
@@ -98,7 +98,7 @@ export const VERA = {
   enter: {
     eyebrow: 'Last step',
     heading: 'Hey, Founder!',
-    body: 'Lock it in and everything you just set up is saved. Then I’ll point you to a circle worth joining, and step aside.',
-    cta: 'Step in',
+    body: 'One thing before you explore: let’s find your people. Vera, your guide, already knows what you’re into — she’ll point you to a circle worth joining, then step aside.',
+    cta: 'Meet Vera',
   },
 } as const
