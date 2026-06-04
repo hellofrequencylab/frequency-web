@@ -17,6 +17,7 @@ import {
   Statement,
   ZigZag,
   Marquee,
+  PillarNav,
   BetaCTA,
   Button,
   Card,
@@ -289,6 +290,8 @@ function LegacyTheLab() {
           <MapPin className="w-4 h-4" aria-hidden /> {FOUNDING_PLACE}
         </p>
       </Section>
+
+      <PillarNav current="/the-lab" tone="surface" />
 
       <BetaCTA
         heading="Be part of building the first one."
