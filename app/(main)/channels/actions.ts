@@ -173,6 +173,7 @@ export async function createTopicalChannel(formData: FormData): Promise<void> {
   const name = String(formData.get('name') ?? '').trim()
   const description = String(formData.get('description') ?? '').trim() || null
   const category = String(formData.get('category') ?? '').trim()
+  const domainId = String(formData.get('domainId') ?? '').trim() || null
 
   if (!name) throw new Error('Give the channel a name.')
   if (name.length > 80) throw new Error('Channel names need to be 80 characters or fewer.')
@@ -198,9 +199,22 @@ export async function createTopicalChannel(formData: FormData): Promise<void> {
 
   if (existing) throw new Error('A channel with that name already exists.')
 
+  // Only accept a domain the host actually picked from the live list, so an
+  // assignment can never point at a stale or non-existent Channel.
+  let resolvedDomainId: string | null = null
+  if (domainId) {
+    const { data: domain } = await admin
+      .from('domains')
+      .select('id')
+      .eq('id', domainId)
+      .eq('is_active', true)
+      .maybeSingle()
+    resolvedDomainId = domain?.id ?? null
+  }
+
   const { data: created, error } = await admin
     .from('topical_channels')
-    .insert({ name, slug, category, description, is_active: true })
+    .insert({ name, slug, category, description, domain_id: resolvedDomainId, is_active: true })
     .select('id, slug')
     .single()
 

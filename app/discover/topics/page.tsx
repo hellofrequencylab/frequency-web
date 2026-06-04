@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { getTopicalChannels, getPublicCircles } from '@/lib/discover'
+import { getChannelsWithTopics } from '@/lib/discover'
 import { ChannelCard } from '@/components/discover/cards'
 import { Statement, BetaCTA, PhotoHero, SectionHeading, Button } from '@/components/marketing/marketing-ui'
 import { JsonLd } from '@/components/json-ld'
@@ -21,17 +21,15 @@ export const metadata: Metadata = {
 export const revalidate = 3600
 
 export default async function DiscoverTopicsPage() {
-  const [channels, circles] = await Promise.all([
-    getTopicalChannels(),
-    getPublicCircles(200),
-  ])
+  // Channels = the four Domains (Mind / Body / Spirit / Expression), each with
+  // its Interests/Topics and a live circle count per topic. We group the grid
+  // under the Channel headings instead of one flat list. Only Channels that
+  // actually have topics render a section.
+  const channelGroups = await getChannelsWithTopics()
+  const sections = channelGroups.filter((d) => d.topics.length > 0)
 
-  const countByChannel = new Map<string, number>()
-  for (const c of circles) {
-    if (c.channel_slug) {
-      countByChannel.set(c.channel_slug, (countByChannel.get(c.channel_slug) ?? 0) + 1)
-    }
-  }
+  // Flat list of every topic (for the ItemList schema, unchanged shape).
+  const allTopics = sections.flatMap((d) => d.topics)
 
   return (
     <>
@@ -41,7 +39,7 @@ export default async function DiscoverTopicsPage() {
             { name: 'Discover', path: '/discover' },
             { name: 'Topics', path: '/discover/topics' },
           ]),
-          topicListSchema(channels, 'Topics on Frequency'),
+          topicListSchema(allTopics, 'Topics on Frequency'),
         ]}
       />
 
@@ -60,17 +58,34 @@ export default async function DiscoverTopicsPage() {
           <div className="mb-12 text-center">
             <SectionHeading eyebrow="The interests" title="Topics" />
             <p className="mt-4 text-lg text-muted leading-relaxed max-w-2xl mx-auto">
-              Every topic is a doorway to people practicing it nearby. Choose one to see the
+              Frequency is organized into four Channels. Interests live inside them: every
+              Interest is a doorway to people practicing it nearby. Choose one to see the
               circles gathering around it.
             </p>
           </div>
-          {channels.length === 0 ? (
+          {sections.length === 0 ? (
             <p className="text-center text-muted">No topics yet. Check back soon.</p>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {channels.map((ch) => (
-                <div key={ch.id} className="transition-shadow hover:shadow-pop rounded-2xl">
-                  <ChannelCard channel={ch} circleCount={countByChannel.get(ch.slug) ?? 0} />
+            <div className="space-y-16">
+              {sections.map((channel) => (
+                <div key={channel.id}>
+                  <div className="mb-6">
+                    <h3 className="font-display uppercase text-text text-2xl sm:text-3xl">
+                      {channel.name}
+                    </h3>
+                    {channel.description && (
+                      <p className="mt-2 text-base text-muted leading-relaxed max-w-2xl">
+                        {channel.description}
+                      </p>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {channel.topics.map((ch) => (
+                      <div key={ch.id} className="transition-shadow hover:shadow-pop rounded-2xl">
+                        <ChannelCard channel={ch} circleCount={ch.circleCount} />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>
