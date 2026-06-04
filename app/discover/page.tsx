@@ -145,7 +145,17 @@ export default async function DiscoverHubPage() {
             <SectionHeading eyebrow="Where it's happening" title="Find your area" />
           </div>
           {cityClusters.length > 0 ? (
-            <DiscoverLocator cities={cityClusters} />
+            <DiscoverLocator
+              cities={cityClusters}
+              circles={allCircles.map((c) => ({
+                slug: c.slug,
+                name: c.name,
+                city: c.city,
+                interest: c.channel_name,
+                memberCount: c.member_count,
+              }))}
+              isAuthed={isAuthed}
+            />
           ) : (
             <div className="mx-auto max-w-2xl rounded-2xl border border-border bg-marketing-canvas p-8 text-center">
               <p className="mb-1 text-lg font-semibold text-text">We&apos;re starting in {FOUNDING_PLACE}.</p>
