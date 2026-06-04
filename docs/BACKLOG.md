@@ -325,6 +325,12 @@ inline path (wizard is an optional guided alt); RLS isolation between `journey_p
 
 ## S. Site changes batch (2026-06-05, live screenshot review)
 
+> **Shipped 2026-06-05:** S1 (unified — nav/route/dock; marketing+admin labels still
+> to sweep), S2 ✅, S5 ✅, S3 ✅ token + dispatch card (other broadcast surfaces to
+> sweep). **Onboarding box** (owner follow-up): azure re-skin, minimize-no-dismiss,
+> progress ring + stepper, obscured force-complete, graduates to the tracker — ✅.
+> **Still open:** S4 (demo box), S6 (tiered post options), broadcast-surface + label sweeps.
+
 - [ ] **S1 · Unify Quests + Journeys** 🔴 *decision needed (reverses ADR-087).* The owner's
   model: *"The Quest"* is the game; a **Journey** is a set of practices you progress through —
   Quests and Journeys are the **same unit**. ADR-087 split them (Journeys = open library;
