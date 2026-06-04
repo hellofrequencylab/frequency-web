@@ -97,8 +97,10 @@ Shared mechanics:
   restyled on `/codes`. The `/q` resolver is a route handler with an `action` destination type:
   referral drops `fq_ref` → attributed at onboarding (`profiles.referred_by_profile_id` + referrer
   zaps); gift_zap routes to a confirm page (`/g/[slug]`) that awards the owner a zap.
-- **Deferred (seamed):** crew marketing-funnel codes (≤3, circle/event) + Google-Analytics
-  tie-in + editor v2 (themes/shapes/connected modules) — owner request 2026-06-05; multi-code
+- **Crew marketing codes (ADR-092).** Crew members own up to 3 funnel codes (`qr_codes` with
+  `owner_profile_id` set + `purpose IS NULL`) pointing at a circle/event they promote
+  (`isValidMarketingPath`), styled + scan-tracked, managed on `/codes` (`lib/qr/marketing.ts`).
+- **Deferred (seamed):** Google-Analytics tie-in (next) — owner request 2026-06-05; multi-code
   challenges/campaigns (Phase 4); ghost-node geo + signed-payload authoring; styled-PNG rasterization.
 
 ## 2. Verification is a first-class, server-authoritative layer (security)
