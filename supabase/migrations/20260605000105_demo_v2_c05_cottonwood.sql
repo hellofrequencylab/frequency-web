@@ -129,7 +129,7 @@ FROM _ctx ctx,
  ('f1000000-0000-0000-0000-000000000067','Wren Ashby','wren.justarrived','member','👻 Ghost',
    'Just moved to Encinitas. Heard there was a quiet morning crew by the creek.',
    false,'ghost',15,40,8,0,1,1,4320)
-) AS m(id,display_name,handle,role,rank,bio,avatar,zaps,lzaps,gems,streak,lstreak,achiev,seen_min)
+) AS m(id,display_name,handle,role,ranklabel,bio,avatar,rank,zaps,lzaps,gems,streak,lstreak,achiev,seen_min)
 ON CONFLICT (id) DO NOTHING;
 
 -- =====================================================================
@@ -172,7 +172,7 @@ VALUES ('f2000000-0000-0000-0000-000000000005'::uuid,
         'e1000000-0000-0000-0000-000000000007'::uuid,
         'f1000000-0000-0000-0000-000000000054'::uuid,
         true)
-ON CONFLICT (circle_id, practice_id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- =====================================================================
 -- 5. POSTS — voiced to a quiet meditation/journaling vibe.

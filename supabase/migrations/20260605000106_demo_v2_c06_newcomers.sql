@@ -127,7 +127,7 @@ FROM _ctx ctx,
    100,280,55,2,4,4,true,40,
    'Leucadia, one month in. Showed up sweaty and nervous to my first meetup and left with a group chat.'),
  -- ---- MEMBERS · Ghost ×6 (≈75% post one short intro, ~25% silent) ----
- ('f1000000-0000-0000-0000-000000000078','Wren Calloway','wren.justarrived','member','ghost',
+ ('f1000000-0000-0000-0000-000000000078','Wren Calloway','wren.c.newcomers','member','ghost',
    80,260,48,2,3,3,true,55,
    'Just landed from Portland. Hi, I''m Wren, I make terrible small talk but I''m trying.'),
  ('f1000000-0000-0000-0000-000000000079','Tariq Solberg','tariq.newhere','member','ghost',
@@ -146,7 +146,7 @@ FROM _ctx ctx,
  ('f1000000-0000-0000-0000-00000000007d','Dmitri Falk','dmitri.maybe','member','ghost',
    12,45,8,0,0,1,false,7200,
    'Vista, just moved, mostly watching. Promise I''ll come to a dinner eventually.')
-) AS m(id,display_name,handle,role,rank,szaps,lzaps,gems,cstreak,lstreak,achiev,avatar,bio,seen_min)
+) AS m(id,display_name,handle,role,rank,szaps,lzaps,gems,cstreak,lstreak,achiev,avatar,seen_min,bio)
 ON CONFLICT (id) DO NOTHING;
 
 -- =====================================================================
