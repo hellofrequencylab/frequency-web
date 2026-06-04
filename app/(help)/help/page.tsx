@@ -7,7 +7,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 export const metadata: Metadata = {
   title: 'Help Center',
   description:
-    'Guides and answers for using Frequency: finding Circles, going to gatherings, and how the game works.',
+    'Guides and answers for using Frequency: finding Circles, going to gatherings, and how the Quest works.',
   alternates: { canonical: '/help' },
 }
 
@@ -56,7 +56,7 @@ export default async function HelpHomePage() {
         <EmptyState
           icon={LifeBuoy}
           title="Help articles are coming soon"
-          description="We're writing up guides for finding Circles, showing up, and how the game works. Check back soon."
+          description="We're writing up guides for finding Circles, showing up, and how the Quest works. Check back soon."
         />
       )}
     </div>
