@@ -2700,6 +2700,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           description: string | null
+          domain_id: string | null
           header_image: string | null
           icon: string
           id: string
@@ -2717,6 +2718,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          domain_id?: string | null
           header_image?: string | null
           icon?: string
           id?: string
@@ -2734,6 +2736,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          domain_id?: string | null
           header_image?: string | null
           icon?: string
           id?: string
@@ -2750,6 +2753,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practices_domain_id_fkey"
+            columns: ["domain_id"]
+            isOneToOne: false
+            referencedRelation: "domains"
             referencedColumns: ["id"]
           },
         ]
