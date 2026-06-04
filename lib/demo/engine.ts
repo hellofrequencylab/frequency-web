@@ -21,6 +21,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Palette } from './ai-palette'
 
 // ── Determinism ────────────────────────────────────────────────────────────
 // A seeded RNG so a given spec previews and seeds identically (re-runnable).
@@ -184,12 +185,18 @@ export type CirclePlan = {
   lat: number; lng: number; about: string
   people: PersonPlan[]
   posts: { authorKey: string; body: string; ageMin: number; replies: { authorKey: string; body: string }[] }[]
-  event: { title: string; daysOut: number }
+  /** A cadence of events: a couple past (with attendance) + one upcoming. */
+  events: { title: string; daysOffset: number }[]
+}
+/** An open "Journey" plan (ADR-085): a named bundle of practices, adopted by some. */
+export type JourneyPlanSpec = {
+  slug: string; title: string; summary: string; itemCount: number; authorKey: string; adopterCount: number
 }
 export type AreaPlan = {
   spec: AreaSpec
   circles: CirclePlan[]
   crossLinks: { personKey: string; circleKey: string }[]
+  journeys: JourneyPlanSpec[]
   totals: Record<string, number>
 }
 
@@ -201,21 +208,25 @@ function tenureForRank(r: Rand, rank: Rank): number {
   return int(r, ...map[rank])
 }
 
-export function buildPlan(spec: AreaSpec): AreaPlan {
+export function buildPlan(spec: AreaSpec, palette?: Palette | null): AreaPlan {
   const r = rng(spec.seed ?? `${spec.areaName}:${spec.circles}x${spec.membersPerCircle}:${spec.channels.join(',')}`)
   const nCircles = Math.max(1, Math.min(30, Math.round(spec.circles)))
   const channels = spec.channels.length ? spec.channels : ['movement', 'holistic-health', 'creative']
+  // Demographic-aware pools when the AI palette is available; templates otherwise.
+  const firstPool = palette?.firstNames?.length ? palette.firstNames : FIRST
+  const lastPool = palette?.lastNames?.length ? palette.lastNames : LAST
   const usedHandles = new Set<string>()
-  const flavor = spec.flavorWords.filter(Boolean)
+  const flavor = [...spec.flavorWords.filter(Boolean), ...(palette?.vibe ? [palette.vibe] : [])]
 
   const circles: CirclePlan[] = []
-  const totals = { circles: 0, people: 0, posts: 0, replies: 0, events: 0, connections: 0 }
+  const totals = { circles: 0, people: 0, posts: 0, replies: 0, events: 0, connections: 0, journeys: 0 }
 
   for (let c = 0; c < nCircles; c++) {
     const chSlug = channels[c % channels.length]
     const ch = CH[chSlug] ?? CH.movement
     const place = flavor.length ? pick(r, flavor) : spec.areaName
-    const activity = pick(r, ch.activities)
+    const acts = palette?.activities?.[chSlug]?.length ? palette.activities[chSlug] : ch.activities
+    const activity = pick(r, acts)
     const name = `${place} ${ch.label}`.slice(0, 60)
     const slug = `${name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}-${int(r, 100, 999)}`
     const size = Math.max(3, Math.round(spec.membersPerCircle + (r() - 0.5) * 4))
@@ -226,7 +237,7 @@ export function buildPlan(spec: AreaSpec): AreaPlan {
     const lng = +(spec.centerLng + (r() - 0.5) * degRad).toFixed(6)
 
     const people: PersonPlan[] = ranks.map((rank, i) => {
-      const first = pick(r, FIRST), last = pick(r, LAST)
+      const first = pick(r, firstPool), last = pick(r, lastPool)
       let handle = `${first}.${last}`.toLowerCase()
       while (usedHandles.has(handle)) handle = `${first}.${last}${int(r, 2, 99)}`.toLowerCase()
       usedHandles.add(handle)
@@ -262,13 +273,18 @@ export function buildPlan(spec: AreaSpec): AreaPlan {
       totals.replies += replies.length
     }
 
+    // Event cadence: two past (so there's attended history) + one upcoming.
+    const events = [
+      { title: fill(pick(r, ch.event), { day: pick(r, DAYS), activity }), daysOffset: -int(r, 16, 45) },
+      { title: fill(pick(r, ch.event), { day: pick(r, DAYS), activity }), daysOffset: -int(r, 2, 9) },
+      { title: fill(pick(r, ch.event), { day: pick(r, DAYS), activity }), daysOffset: int(r, 3, 18) },
+    ]
     circles.push({
       key: slug, name, slug, channel: chSlug, lat, lng,
       about: fill('A {activity} circle in {place}. All levels, good company.', { activity, place }),
-      people, posts,
-      event: { title: fill(pick(r, ch.event), { day: pick(r, DAYS), activity }), daysOut: int(r, 2, 18) },
+      people, posts, events,
     })
-    totals.circles++; totals.people += people.length; totals.posts += posts.length; totals.events++
+    totals.circles++; totals.people += people.length; totals.posts += posts.length; totals.events += events.length
   }
 
   // Connections: a slice of people also join a 2nd circle (cross-circle ties).
@@ -288,7 +304,30 @@ export function buildPlan(spec: AreaSpec): AreaPlan {
   }
   totals.connections = crossLinks.length
 
-  return { spec, circles, crossLinks, totals }
+  // Journeys (ADR-085): a few open practice-bundle plans, authored by hosts and
+  // adopted by a slice of members — so the Journeys library reads lived-in.
+  const hosts = circles.flatMap((c) => c.people.filter((p) => p.role === 'host'))
+  const totalPeople = circles.reduce((s, c) => s + c.people.length, 0)
+  const jTitles = palette?.journeyTitles?.length
+    ? palette.journeyTitles
+    : ['Morning Reset', 'Strong Body', 'Calm Mind', 'Creative Spark', 'Steady Week', 'Fresh Start', 'Deep Focus', 'Good Sleep']
+  const nJourneys = Math.min(jTitles.length, Math.max(2, Math.round(nCircles * 0.8)))
+  const journeys: JourneyPlanSpec[] = []
+  for (let j = 0; j < nJourneys; j++) {
+    const title = jTitles[j % jTitles.length]
+    const base = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+    journeys.push({
+      slug: `${base}-${int(r, 100, 999)}`,
+      title,
+      summary: fill('A simple {n}-practice plan to find your {x}.', { n: String(int(r, 3, 4)), x: title.toLowerCase() }),
+      itemCount: int(r, 3, 4),
+      authorKey: hosts.length ? pick(r, hosts).key : (circles[0]?.people[0]?.key ?? ''),
+      adopterCount: Math.max(2, Math.round(totalPeople * 0.12)),
+    })
+  }
+  totals.journeys = journeys.length
+
+  return { spec, circles, crossLinks, journeys, totals }
 }
 
 // A tiny slice for the wizard's preview step (no DB writes).
@@ -322,14 +361,32 @@ async function regionId(d: SupabaseClient): Promise<string | null> {
   return (data as { id: string } | null)?.id ?? null
 }
 
-/** Write the plan via the service-role admin client. Returns counts. */
+const rand = () => Math.random
+
+/** Write the plan via the service-role admin client. Returns counts. Row-only
+ *  engagement (RSVPs, reactions, logs, adoptions, achievements, streaks) is
+ *  batch-inserted. Unobtrusive: RSVP reminders are pre-stamped so the cron never
+ *  emails; achievements seeded are zero-reward so the economy can't drift; nothing
+ *  routes through the app's award/notify helpers, so no automations fire. */
 export async function commitPlan(plan: AreaPlan): Promise<Record<string, number>> {
   const d = db()
+  const rng2 = rand()
   const region = await regionId(d)
-  const done = { circles: 0, members: 0, posts: 0, events: 0, connections: 0 }
-  // Global key -> id maps so cross-circle links resolve after all circles exist.
+  const done = {
+    circles: 0, members: 0, posts: 0, events: 0, connections: 0,
+    rsvps: 0, reactions: 0, practiceLogs: 0, journeys: 0,
+  }
   const profileIdByKey: Record<string, string> = {}
   const circleIdByKey: Record<string, string> = {}
+  const membersByCircle: Record<string, string[]> = {}
+
+  // Existing public practices power circle/member practices + journey items.
+  const { data: pracRows } = await d.from('practices').select('id, domain_id').eq('is_public', true).limit(50)
+  const practices = (pracRows ?? []) as { id: string; domain_id: string | null }[]
+  // Zero-reward achievements only → the award trigger is a no-op, so seeded
+  // trophy cases never bump (and so never drift) the economy.
+  const { data: achRows } = await d.from('achievements').select('id').eq('zaps_reward', 0).order('sort_order').limit(40)
+  const achIds = (achRows ?? []).map((a) => (a as { id: string }).id)
 
   for (const c of plan.circles) {
     const chId = await channelId(d, c.channel)
@@ -343,8 +400,8 @@ export async function commitPlan(plan: AreaPlan): Promise<Record<string, number>
     const circleId = (circ as { id: string }).id
     done.circles++
     circleIdByKey[c.key] = circleId
+    membersByCircle[circleId] = []
 
-    // people + memberships, capture ids by key (global, for cross-links)
     let hostId: string | null = null
     for (const p of c.people) {
       const { data: prof } = await d.from('profiles').insert({
@@ -354,12 +411,13 @@ export async function commitPlan(plan: AreaPlan): Promise<Record<string, number>
         current_season_rank: p.rank, current_season_zaps: p.zaps, lifetime_zaps: p.zaps,
         lifetime_gems: p.gems, current_streak: p.streak, longest_streak: p.streak,
         achievement_count: p.achievements, season_challenges_complete: p.rank === 'luminary',
-        last_seen_at: new Date(Date.now() - Math.floor(Math.random() * 72) * 3600_000).toISOString(),
+        last_seen_at: new Date(Date.now() - Math.floor(rng2() * 72) * 3600_000).toISOString(),
         is_active: true, is_demo: true,
       }).select('id').single()
       if (!prof) continue
       const pid = (prof as { id: string }).id
       profileIdByKey[p.key] = pid
+      membersByCircle[circleId].push(pid)
       if (p.role === 'host') hostId = pid
       await d.from('memberships').insert({
         profile_id: pid, circle_id: circleId, status: 'active',
@@ -367,37 +425,69 @@ export async function commitPlan(plan: AreaPlan): Promise<Record<string, number>
       })
       done.members++
     }
+    const members = membersByCircle[circleId]
 
-    // posts + replies
+    // Circle's active practice.
+    const circlePractice = practices.length ? practices[Math.floor(rng2() * practices.length)] : null
+    if (circlePractice && hostId) {
+      await d.from('circle_practices').insert({ circle_id: circleId, practice_id: circlePractice.id, set_by: hostId, active: true })
+    }
+
+    // Posts + replies, with reactions from circle-mates.
+    const reactionRows: { post_id: string; profile_id: string; reaction_type: string }[] = []
     for (const post of c.posts) {
       const authorId = profileIdByKey[post.authorKey]
       if (!authorId) continue
+      const reactors = members.filter((m) => m !== authorId && rng2() < 0.35)
       const { data: pp } = await d.from('posts').insert({
         author_id: authorId, scope_id: circleId, visibility: 'group', body: post.body,
+        reaction_count: reactors.length, comment_count: post.replies.length, reply_count: post.replies.length,
         created_at: new Date(Date.now() - post.ageMin * 60_000).toISOString(), is_demo: true,
       }).select('id').single()
       done.posts++
       const parentId = (pp as { id: string } | null)?.id
+      if (!parentId) continue
+      for (const m of reactors) reactionRows.push({ post_id: parentId, profile_id: m, reaction_type: rng2() < 0.85 ? 'heart' : 'plus_one' })
       for (const rep of post.replies) {
         const rid = profileIdByKey[rep.authorKey]
-        if (!rid || !parentId) continue
-        await d.from('posts').insert({
-          author_id: rid, parent_id: parentId, scope_id: circleId, visibility: 'group',
-          body: rep.body, is_demo: true,
-        })
+        if (!rid) continue
+        await d.from('posts').insert({ author_id: rid, parent_id: parentId, scope_id: circleId, visibility: 'group', body: rep.body, is_demo: true })
       }
     }
+    if (reactionRows.length) { await d.from('post_reactions').insert(reactionRows); done.reactions += reactionRows.length }
 
-    // an upcoming event hosted by the host
-    if (hostId) {
-      const starts = new Date(Date.now() + c.event.daysOut * 86400_000); starts.setHours(8, 0, 0, 0)
-      await d.from('events').insert({
-        host_id: hostId, scope_id: circleId, scope_type: 'circle', title: c.event.title,
-        slug: `${c.slug}-${c.event.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 30)}`,
+    // Event cadence + RSVPs (attendance). Reminders pre-stamped → never emailed.
+    const nowIso = new Date().toISOString()
+    for (const ev of c.events) {
+      const starts = new Date(Date.now() + ev.daysOffset * 86400_000); starts.setHours(8, 0, 0, 0)
+      const { data: evr } = await d.from('events').insert({
+        host_id: hostId, scope_id: circleId, scope_type: 'circle', title: ev.title,
+        slug: `${c.slug}-${ev.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 24)}-${Math.floor(rng2() * 9000 + 1000)}`,
         starts_at: starts.toISOString(), ends_at: new Date(starts.getTime() + 5_400_000).toISOString(),
         location: plan.spec.areaName, is_cancelled: false, is_demo: true,
-      })
+      }).select('id').single()
       done.events++
+      const evId = (evr as { id: string } | null)?.id
+      if (!evId) continue
+      const rsvpRows = members.filter(() => rng2() < 0.62).map((m) => ({
+        event_id: evId, profile_id: m, status: 'going',
+        reminder_24h_sent_at: nowIso, reminder_2h_sent_at: nowIso,
+      }))
+      if (rsvpRows.length) { await d.from('event_rsvps').insert(rsvpRows); done.rsvps += rsvpRows.length }
+    }
+
+    // Member adoptions of the circle practice + recent logs (back the streaks).
+    if (circlePractice) {
+      const mpRows = members.map((m) => ({ profile_id: m, practice_id: circlePractice.id, active: true }))
+      if (mpRows.length) await d.from('member_practices').insert(mpRows)
+      const logRows: { profile_id: string; practice_id: string; circle_id: string; logged_for: string }[] = []
+      for (const m of members) {
+        const days = Math.floor(rng2() * 8) // 0–7 recent days
+        for (let dn = 0; dn < days; dn++) {
+          logRows.push({ profile_id: m, practice_id: circlePractice.id, circle_id: circleId, logged_for: new Date(Date.now() - dn * 86400_000).toISOString().slice(0, 10) })
+        }
+      }
+      if (logRows.length) { await d.from('practice_logs').insert(logRows); done.practiceLogs += logRows.length }
     }
   }
 
@@ -406,11 +496,43 @@ export async function commitPlan(plan: AreaPlan): Promise<Record<string, number>
     const pid = profileIdByKey[link.personKey]
     const cid = circleIdByKey[link.circleKey]
     if (!pid || !cid) continue
-    const { error } = await d
-      .from('memberships')
-      .insert({ profile_id: pid, circle_id: cid, status: 'active', volunteer_role: null })
+    const { error } = await d.from('memberships').insert({ profile_id: pid, circle_id: cid, status: 'active', volunteer_role: null })
     if (!error) done.connections++
   }
+
+  // Journeys (open plans) + items + adoptions.
+  const allProfileIds = Object.values(profileIdByKey)
+  for (const j of plan.journeys) {
+    const authorId = profileIdByKey[j.authorKey] ?? allProfileIds[0]
+    if (!authorId || !practices.length) continue
+    const adopters = allProfileIds.filter(() => rng2() < j.adopterCount / Math.max(1, allProfileIds.length))
+    const { data: jp } = await d.from('journey_plans').insert({
+      slug: j.slug, title: j.title, summary: j.summary, author_id: authorId, visibility: 'public',
+      published_at: new Date(Date.now() - Math.floor(rng2() * 60) * 86400_000).toISOString(),
+      cover_image: `https://picsum.photos/seed/${j.slug}/800/400`, adopt_count: adopters.length,
+    }).select('id').single()
+    const jid = (jp as { id: string } | null)?.id
+    if (!jid) continue
+    done.journeys++
+    const items = practices.slice(0, j.itemCount).map((pr, i) => ({ plan_id: jid, practice_id: pr.id, domain_id: pr.domain_id, sort_order: i }))
+    if (items.length) await d.from('journey_plan_items').insert(items)
+    const adoptRows = adopters.map((pid) => ({ plan_id: jid, profile_id: pid, active: true }))
+    if (adoptRows.length) await d.from('journey_plan_adoptions').insert(adoptRows)
+  }
+
+  // Trophy cases (zero-reward achievements) + attendance streaks — batched.
+  const uaRows: { profile_id: string; achievement_id: string }[] = []
+  const streakRows: { profile_id: string; streak_type: string; current_count: number; longest_count: number; last_activity_at: string }[] = []
+  for (const c of plan.circles) {
+    for (const p of c.people) {
+      const pid = profileIdByKey[p.key]
+      if (!pid) continue
+      for (let i = 0; i < Math.min(p.achievements, achIds.length); i++) uaRows.push({ profile_id: pid, achievement_id: achIds[i] })
+      if (p.streak > 0) streakRows.push({ profile_id: pid, streak_type: 'attendance', current_count: p.streak, longest_count: p.streak, last_activity_at: new Date().toISOString() })
+    }
+  }
+  if (uaRows.length) await d.from('user_achievements').insert(uaRows)
+  if (streakRows.length) await d.from('streaks').insert(streakRows)
 
   return done
 }

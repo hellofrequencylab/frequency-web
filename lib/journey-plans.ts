@@ -293,6 +293,20 @@ export async function forkPlan(profileId: string, planId: string): Promise<Journ
   return fork
 }
 
+// --- Demo cleanup ---------------------------------------------------------
+
+/** Delete every plan authored by any of these profiles (items + adoptions cascade).
+ *  Demo journeys carry no is_demo flag and author_id is ON DELETE SET NULL, so demo
+ *  plans must be removed by their author BEFORE the profiles go, or they'd orphan.
+ *  Batched; safe to call with an empty list. */
+export async function deletePlansByAuthors(authorIds: string[]): Promise<void> {
+  if (!authorIds.length) return
+  const client = db()
+  for (let i = 0; i < authorIds.length; i += 200) {
+    await client.from('journey_plans').delete().in('author_id', authorIds.slice(i, i + 200))
+  }
+}
+
 // --- Pillar map -----------------------------------------------------------
 
 export interface PlanPillarSlice {
