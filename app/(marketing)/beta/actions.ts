@@ -3,6 +3,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isSuppressed } from '@/lib/suppression'
+import { resolveAcquisition } from '@/lib/attribution/server'
 import { sendBetaConfirmEmail } from '@/lib/email'
 import { buildBetaConfirmUrl } from '@/lib/beta-tokens'
 import { SITE_URL } from '@/lib/site'
@@ -54,11 +55,17 @@ export async function requestBetaAccess(input: {
     return { ok: true }
   }
 
+  // How this lead first reached us (ADR-095) — first-touch wins, so only record it
+  // if we don't already have one for this contact.
+  const existingMeta = (existing?.meta && typeof existing.meta === 'object' ? existing.meta : {}) as Record<string, unknown>
+  const acquisition = existingMeta.acquisition ?? (await resolveAcquisition())
+
   const meta = {
-    ...(existing?.meta && typeof existing.meta === 'object' ? existing.meta : {}),
+    ...existingMeta,
     beta_waitlist: true,
     double_optin: 'pending',
     requested_at: nowIso,
+    acquisition,
   }
 
   try {

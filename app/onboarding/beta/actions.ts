@@ -16,6 +16,7 @@ import { track } from '@/lib/analytics/track'
 import { BETA_INDUCTION_VERSION, BETA_MEMBERS_GET_CREW, type OathId } from '@/lib/onboarding/beta-script'
 import { getSequence } from '@/lib/onboarding/beta-sequences'
 import { assignTag } from '@/lib/traits/tags'
+import { resolveAcquisition, stampAcquisitionTag } from '@/lib/attribution/server'
 import type { Json } from '@/lib/database.types'
 
 /** The audience sequence the member arrived through (cookie set by the induction). */
@@ -119,6 +120,8 @@ async function writeBetaInduction(data: InductionData): Promise<void> {
   const heardAbout = data.heardAbout.trim().slice(0, 120)
   const location = data.location.trim().slice(0, 160)
   const seqSlug = await readBetaSequenceSlug()
+  // How they first reached us (ADR-095) — resolved from the attribution cookies.
+  const acquisition = await resolveAcquisition()
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -137,6 +140,8 @@ async function writeBetaInduction(data: InductionData): Promise<void> {
       meta: {
         ...meta,
         onboarding_completed: true,
+        // First-touch acquisition record (utm / referrer / landing / channel).
+        acquisition: (acquisition as unknown as Json),
         beta: {
           ...beta,
           version: BETA_INDUCTION_VERSION,
@@ -187,6 +192,7 @@ async function writeBetaInduction(data: InductionData): Promise<void> {
     await track('onboarding.induction_completed', { hasAvatar: !!avatarUrl, hasIntent: !!intent }, prof.id)
     await track('profile.completed', { hasAvatar: !!avatarUrl }, prof.id)
     await tagBetaCohort(prof.id, seqSlug)
+    await stampAcquisitionTag(prof.id, acquisition)
   }
 
   if (user.email) {
