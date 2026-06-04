@@ -315,7 +315,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
 
   // ── Styles (warm light throughout) ───────────────────────────────────────────
   const inputInset =
-    'w-full rounded-xl border border-border bg-marketing-canvas px-4 py-3 text-base text-text placeholder:text-subtle transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25'
+    'w-full rounded-xl border border-border bg-marketing-canvas px-4 py-3 text-base text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none focus-visible:shadow-none'
   const fieldLabel = 'mb-1.5 block text-left text-xs font-semibold uppercase tracking-wider text-subtle'
   const backLink = 'text-sm font-medium text-subtle underline-offset-4 transition-colors hover:text-muted hover:underline'
   const btnPrimary =
