@@ -2072,6 +2072,128 @@ export type Database = {
           },
         ]
       }
+      qr_codes: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by: string | null
+          destination_type: string
+          id: string
+          node_id: string | null
+          owner_profile_id: string | null
+          partner_id: string | null
+          scan_count: number
+          slug: string
+          style: Json
+          target_url: string | null
+          title: string
+          updated_at: string
+          valid_from: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          destination_type?: string
+          id?: string
+          node_id?: string | null
+          owner_profile_id?: string | null
+          partner_id?: string | null
+          scan_count?: number
+          slug: string
+          style?: Json
+          target_url?: string | null
+          title: string
+          updated_at?: string
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          destination_type?: string
+          id?: string
+          node_id?: string | null
+          owner_profile_id?: string | null
+          partner_id?: string | null
+          scan_count?: number
+          slug?: string
+          style?: Json
+          target_url?: string | null
+          title?: string
+          updated_at?: string
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qr_codes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_codes_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_codes_owner_profile_id_fkey"
+            columns: ["owner_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_codes_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      qr_scans: {
+        Row: {
+          id: string
+          profile_id: string | null
+          qr_code_id: string
+          scanned_at: string
+        }
+        Insert: {
+          id?: string
+          profile_id?: string | null
+          qr_code_id: string
+          scanned_at?: string
+        }
+        Update: {
+          id?: string
+          profile_id?: string | null
+          qr_code_id?: string
+          scanned_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qr_scans_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_scans_qr_code_id_fkey"
+            columns: ["qr_code_id"]
+            isOneToOne: false
+            referencedRelation: "qr_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_preferences: {
         Row: {
           created_at: string
@@ -4289,6 +4411,10 @@ export type Database = {
       node_within_range: {
         Args: { p_lat: number; p_lng: number; p_node_id: string }
         Returns: boolean
+      }
+      record_qr_scan: {
+        Args: { p_code_id: string; p_profile?: string }
+        Returns: undefined
       }
       populate_geometry_columns:
         | { Args: { tbl_oid: unknown; use_typmod?: boolean }; Returns: number }
