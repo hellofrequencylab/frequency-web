@@ -4,6 +4,8 @@ description: The simple rhythm that makes people feel welcome and want to come b
 audience: host
 duration: 10 min read
 order: 2
+header_image: https://picsum.photos/seed/program-run-a-great-gathering/1200/400
+reward: Hosting a gathering earns the host +50 zaps, and every person who attends earns +25.
 ---
 
 A great gathering is not about being impressive. It is about people leaving feeling
