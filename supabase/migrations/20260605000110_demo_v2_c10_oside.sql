@@ -188,7 +188,7 @@ VALUES ('f2000000-0000-0000-0000-00000000000a'::uuid,
         'e1000000-0000-0000-0000-000000000001'::uuid,
         'f1000000-0000-0000-0000-0000000000bb'::uuid,
         true)
-ON CONFLICT (circle_id, practice_id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- =====================================================================
 -- 5. POSTS — per-rank counts (Lum 4, Con 3, Agt 2, Op 1–2, Run 1, ~75%

@@ -177,7 +177,7 @@ VALUES ('f2000000-0000-0000-0000-000000000003'::uuid,
         'e1000000-0000-0000-0000-000000000009'::uuid,
         'f1000000-0000-0000-0000-00000000002c'::uuid,
         true)
-ON CONFLICT (circle_id, practice_id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- =====================================================================
 -- 5. POSTS — top-level, tails 0081..00c0. Voiced to a maker vibe.

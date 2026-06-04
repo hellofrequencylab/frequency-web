@@ -162,7 +162,7 @@ INSERT INTO circle_practices (circle_id, practice_id, set_by, active)
 VALUES ('f2000000-0000-0000-0000-000000000007'::uuid,
         'e1000000-0000-0000-0000-000000000004'::uuid,
         'f1000000-0000-0000-0000-00000000007e'::uuid, true)
-ON CONFLICT (circle_id, practice_id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- =====================================================================
 -- 5. POSTS — per-rank cadence (Con 3, Agt 2, Op 1–2, Run 1, Ghost ~75%×1).

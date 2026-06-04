@@ -177,7 +177,7 @@ VALUES ('f2000000-0000-0000-0000-000000000004'::uuid,
         'e1000000-0000-0000-0000-00000000000b'::uuid,
         'f1000000-0000-0000-0000-000000000040'::uuid,
         true)
-ON CONFLICT (circle_id, practice_id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- =====================================================================
 -- 5. POSTS (top-level) — per-rank volume (Lum 4 · Con 3 · Agt 2 · Op 1–2 ·

@@ -179,7 +179,7 @@ VALUES ('f2000000-0000-0000-0000-000000000008'::uuid,
         'e1000000-0000-0000-0000-000000000002'::uuid,
         'f1000000-0000-0000-0000-000000000092'::uuid,
         true)
-ON CONFLICT (circle_id, practice_id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- =====================================================================
 -- 5. POSTS (top-level) — block 01c1–0200. Per-rank cadence:
