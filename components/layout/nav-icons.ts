@@ -23,6 +23,7 @@ import {
   Activity,
   Bot,
   Map,
+  QrCode,
 } from 'lucide-react'
 
 // Maps each NAV_AREAS key (lib/nav-areas.ts — the framework-free source of truth)
@@ -41,6 +42,7 @@ export const AREA_ICONS: Record<string, ElementType> = {
   friends: UserPlus,
   partners: Store,
   people: Globe,
+  codes: QrCode,
   crew: Zap,
   quests: Map,
   store: Store,

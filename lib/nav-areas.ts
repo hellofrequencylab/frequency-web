@@ -55,6 +55,7 @@ export const NAV_AREAS: readonly NavArea[] = [
   { key: 'friends',   href: '/friends',   label: 'Friends',   section: 'Network',   defaultAccess: 'member'  },
   { key: 'partners',  href: '/partners',  label: 'Partners',  section: 'Network',   defaultAccess: 'member'  },
   { key: 'people',    href: '/people',    label: 'Directory', section: 'Network',   defaultAccess: 'member'  },
+  { key: 'codes',     href: '/codes',     label: 'My code',   section: 'Network',   defaultAccess: 'member'  },
 
   // ── The Quest → the gamified progression loop. The Store holds your Vault
   //    (balance + everything you earn by showing up). ───────────────────────────

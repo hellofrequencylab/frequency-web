@@ -58,6 +58,25 @@ signed event** to the pipeline. They share nothing else.
 
 All converge on **one event shape**, so downstream code is source-agnostic.
 
+### Authoring the codes (QR Studio)
+
+The scannable codes that produce QR/NFC events are authored in-app at **`/admin/qr`**
+(host+, `app/(main)/admin/qr/`). A "code" is a `nodes` row; the Studio is pure authoring
+on top of the pipeline below (verify → ledger → zaps → `practice.verified` / partner
+redemption is already wired), so it only creates/edits/retires nodes — no new schema.
+
+- **Dynamic by construction.** A printed code only ever encodes a stable URL
+  (`SITE_URL/n/<nodeId>`, built by `lib/qr/links.ts`). What it *does* — reward, capture
+  rule, expiry, partner link, active/retired — is edited in the Studio with **no reprint**.
+- **Image rendering** is server-side via `lib/qr/render.ts` (the `qrcode` lib — SVG inline,
+  PNG buffer; no `sharp`). The Studio previews inline SVG; `/api/qr` (signed-in, same-site
+  links only) serves SVG/PNG downloads for print.
+- **Member codes.** `/codes` shows a member their **personal connect code** — a QR of their
+  public profile (`/people/<handle>`), zero schema. Earning codes are scanned with any camera.
+- **MVP scope:** `qr`/`nfc` types, no `location`/`secret` authoring yet. Ghost-node geo
+  authoring needs a `SECURITY DEFINER` upsert RPC (to build the PostGIS point) and signed
+  payloads need the `/n` claim flow to forward `?s=` — both deferred follow-ups.
+
 ## 2. Verification is a first-class, server-authoritative layer (security)
 
 Nothing grants a reward until the event passes verification **on the server** —
