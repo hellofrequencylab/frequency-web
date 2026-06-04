@@ -23,7 +23,7 @@ const TYPE_LABELS: Record<string, string> = {
 
 const TYPE_COLORS: Record<string, string> = {
   post:      'bg-surface-elevated text-muted dark:bg-surface-elevated dark:text-subtle',
-  poll:      'bg-signal-bg text-signal-strong',
+  poll:      'bg-broadcast-bg text-broadcast-strong',
   challenge: 'bg-warning-bg text-warning dark:bg-warning-bg dark:text-warning',
   article:   'bg-primary-bg text-primary-strong dark:bg-primary-bg dark:text-primary-strong',
 }
