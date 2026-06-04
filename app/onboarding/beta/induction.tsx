@@ -11,7 +11,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getInitials } from '@/lib/utils'
 import { searchPlaces, type PlaceSuggestion } from '@/lib/geocode'
-import { BETA_OATHS as DEFAULT_OATHS, VERA as DEFAULT_VERA, REEL, HEARD_ABOUT as DEFAULT_HEARD, type OathId } from '@/lib/onboarding/beta-script'
+import { BETA_OATHS as DEFAULT_OATHS, VERA as DEFAULT_VERA, REEL, HEARD_ABOUT as DEFAULT_HEARD, type OathId, type VeraCopy } from '@/lib/onboarding/beta-script'
 import { acceptBetaOath, completeBetaInduction, stashPendingInduction } from './actions'
 import { signInWithMagicLink, signInWithGoogle } from '@/app/sign-in/actions'
 
@@ -38,10 +38,14 @@ type Props = {
   deferred?: boolean
   /** Operator copy overrides from /admin/vera (defaults to the beta-script copy). */
   copy?: {
-    vera?: typeof DEFAULT_VERA
+    vera?: VeraCopy
     oaths?: { id: OathId; label: string }[]
     heardAbout?: string[]
   }
+  /** The audience sequence slug (early-adopter / personal / founding-partner).
+   *  Dropped into a cookie so completion can stamp the marketing tag + record it,
+   *  surviving the deferred sign-in round-trip. */
+  sequence?: string
 }
 
 const HANDLE_RE = /^[a-z0-9_]+$/
@@ -61,12 +65,19 @@ function ArrowRight() {
   )
 }
 
-export default function BetaInduction({ userId = '', userEmail = '', initialHandle = '', preview = false, deferred = false, copy }: Props) {
+export default function BetaInduction({ userId = '', userEmail = '', initialHandle = '', preview = false, deferred = false, copy, sequence }: Props) {
   // Operator-tunable copy (defaults to the beta-script copy) — shadows the imports so
   // every existing VERA./BETA_OATHS/HEARD_ABOUT reference picks up the overrides.
   const VERA = copy?.vera ?? DEFAULT_VERA
   const BETA_OATHS = copy?.oaths ?? DEFAULT_OATHS
   const HEARD_ABOUT = copy?.heardAbout ?? DEFAULT_HEARD
+
+  // Remember which audience sequence this is, so completion can tag the cohort —
+  // survives the deferred sign-in round-trip (a 30-day cookie). Preview never tags.
+  useEffect(() => {
+    if (preview || !sequence) return
+    document.cookie = `fq_beta_seq=${encodeURIComponent(sequence)}; path=/; max-age=2592000; samesite=lax`
+  }, [preview, sequence])
 
   const [beat, setBeat] = useState(0)
   const [previewDone, setPreviewDone] = useState(false)
