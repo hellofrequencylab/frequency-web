@@ -129,14 +129,14 @@ function Splash({ live }: { live: LiveData }) {
         minHeight="screen"
         image="/images/site/lab-thermal.jpg"
         alt="The cedar sauna and thermal circuit inside The Lab, glowing in warm amber light"
-        focal="object-[center_40%]"
+        focal="object-center"
         eyebrow="Not home. Not work."
         title={
           <>
             We&apos;re rebuilding the <span className="text-primary">third place.</span>
           </>
         }
-        subtitle="Push the door and the warmth reaches you first: cedar and steam, the cold plunge breathing in the corner, low amber light on dark wood, and a handful of faces that clock the day you don't show. The first one is taking root in North County San Diego. Wherever you are tonight, you can start your circle by morning."
+        subtitle="A real room you can walk into: sauna, cold plunge, warm light, and people who notice when you're gone. It's taking root in North County San Diego. Wherever you are, you can start your circle today."
         footer={
           <>
             <p className="mt-8 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-white/55">
@@ -174,21 +174,15 @@ function Splash({ live }: { live: LiveData }) {
           </>
         }
         imgAspect="portrait"
-        imgPosition="center"
         tone="surface"
       >
         <p>
           Most of a generation reports feeling lonely, not for lack of people, but for lack of{' '}
-          <em>places</em>. The corner café, the bowling league, the church basement, the front
-          stoop, the town square: the gathering grounds where the regulars knew your face all
-          quietly closed their doors, one by one, until there was nowhere left to simply turn up.
+          <em>places</em>. The corner café, the town square, the gathering ground all quietly closed.
         </p>
         <p>
-          We traded them for feeds and ended up surrounded yet unseen, a thousand connections and
-          nobody expecting us on a Tuesday night. Nobody to notice the week we go quiet. You&apos;re
-          not broken, and you&apos;re not too far gone. The
-          third place is what broke. <span className="font-semibold text-text">So we&apos;re
-          building it back, brick and body.</span>
+          We traded them for feeds and ended up surrounded yet unseen. You&apos;re not broken. The
+          third place is. <span className="font-semibold text-text">So we&apos;re building it back.</span>
         </p>
       </ZigZag>
 
@@ -209,21 +203,17 @@ function Splash({ live }: { live: LiveData }) {
           </>
         }
         kicker="Heat, then cold, then quiet, then connection."
-        imgPosition="center"
         tone="surface"
         reverse
       >
         <p>
-          Cedar and dark wood, low amber light, steam curling up the slats while the greenery
-          breathes beside you, every surface tuned to your nervous system. A thermal circuit you
-          sink into until your jaw unclenches, a cold pool that snaps you awake to your own pulse,
-          movement studios, a connection bar, an events floor. Sweat until the day lets go of you,
-          plunge until you gasp, then cool down slow on a warm bench and stay for the faces.
+          Dark wood, warm light, steam and greenery, engineered for your nervous system. Movement
+          studios, a thermal circuit, a cold pool, a connection bar, an events floor. Move, sweat,
+          plunge, cool down, and stay for the people.
         </p>
         <p>
-          You walk out loose-limbed and lit up, shoulders down, breath long, the kind of settled
-          calm that follows you all the way home. The first Lab is taking root in {FOUNDING_PLACE}.
-          The next ones rise wherever enough people keep showing up.
+          The first Lab is taking root in {FOUNDING_PLACE}. The next ones follow the people who show
+          up.
         </p>
         <Link
           href="/the-lab"
@@ -243,22 +233,17 @@ function Splash({ live }: { live: LiveData }) {
             It starts with <span className="text-primary">people.</span>
           </>
         }
-        imgPosition="center"
         tone="canvas"
       >
         <p>
           Before there&apos;s a room, there&apos;s a Circle: a small standing group around something
-          you love, a Saturday run, a supper club, a sauna night, a side project. The same handful of
-          faces, the same time each week, until the day they stop being strangers and start being
-          yours, the ones who wave before you reach the door.
+          you love, a run, a supper, a sauna night, a side project.
         </p>
         <p>
           <span className="font-semibold text-text">Join one near you, or start one tonight,
           anywhere.</span>{' '}
-          Real plans, real faces, off the feed. You get known by name, asked where you&apos;ve been,
-          remembered between gatherings, missed out loud when you skip a week. Circles cluster into
-          neighborhoods and spread city by city, and where enough people gather, the next Lab gets a
-          reason to open its doors.
+          Real plans, real faces, off the feed. Circles cluster into neighborhoods and spread city by
+          city, and where enough people gather, the next Lab gets a reason to open.
         </p>
       </ZigZag>
 
@@ -272,7 +257,7 @@ function Splash({ live }: { live: LiveData }) {
                 Two words and <span className="text-primary">you&apos;re in.</span>
               </>
             }
-            kicker="No application. No audition. No performance. Just a yes."
+            kicker="No application. No audition. No performance."
           />
         </Reveal>
         <Reveal delay={100}>
@@ -280,15 +265,15 @@ function Splash({ live }: { live: LiveData }) {
             steps={[
               {
                 title: 'Pick what you love',
-                body: 'Surfing, sound baths, supper clubs, strength training. Name the thing that’s already yours and you’ll find the people who never stopped doing it. That’s word one.',
+                body: 'Surfing, sound baths, supper clubs, strength training. Choose the interest that’s yours. That’s word one.',
               },
               {
                 title: 'Join a Circle',
-                body: 'A small standing group around it, near you. Drop in on the next gathering and walk into a room that was already saving you a seat. That’s word two, and that’s belonging.',
+                body: 'A small standing group around it, near you. Drop in on the next gathering. That’s word two, and that’s belonging.',
               },
               {
                 title: 'Show up',
-                body: 'Come back, then come back again. Your people learn your name, the Quest rewards the streak, and one ordinary week you realize you’re the one who gets missed.',
+                body: 'Come back. Your people notice, the Quest rewards it, and you’re missed when you’re gone.',
               },
             ]}
           />
@@ -304,7 +289,7 @@ function Splash({ live }: { live: LiveData }) {
             alt="Roughly a thousand people gathered on the sand at Moonlight Beach, arms raised in celebration at sunrise"
             fill
             sizes="100vw"
-            className="object-cover object-[center_35%] scale-110"
+            className="object-cover object-center scale-110"
           />
         </Parallax>
         <div
@@ -330,16 +315,12 @@ function Splash({ live }: { live: LiveData }) {
             <Reveal as="div" delay={100} className="lg:col-span-7 lg:col-start-6">
               <div className="space-y-5 text-lg sm:text-xl text-white/85 leading-relaxed">
                 <p>
-                  We started gathering on the cliffs at Moonlight Beach to sit and breathe at first
-                  light, every single morning. Through winter, through rain, through the cold gray
-                  dawns and the years when the world told everyone to stay home, we kept showing up
-                  for more than 500 mornings straight.
+                  We started gathering on the cliffs at Moonlight Beach to meditate, every single
+                  morning. We kept showing up for more than 500 days straight.
                 </p>
                 <p className="text-white/70">
-                  Over a thousand people came through. No app, no agenda, no fee, just a standing
-                  time and a place to be known. Strangers learned each other&apos;s names, saved each
-                  other&apos;s seats, and some are still close today. It proved the hunger is real,
-                  and that it can be answered.
+                  Over a thousand people came through. No app, no agenda, just a standing time and a
+                  place to be. It proved the hunger is real, and that it can be answered.
                 </p>
               </div>
               <Link
@@ -389,20 +370,17 @@ function Splash({ live }: { live: LiveData }) {
           </>
         }
         kicker="Leaderful, never leader-dependent."
-        imgPosition="bottom"
         tone="surface"
         reverse
       >
         <p>
-          No guru, no franchise, no one to follow home. Leaders rise from the people who simply keep
-          showing up and start saving the seats for the next ones in. Circles fill and split like
-          cells, neighborhoods multiply, and where enough people gather in one place, the next Lab
-          gets a reason to open its doors.
+          No guru, no franchise. Leaders rise from the people who simply keep showing up. Circles fill
+          and split, neighborhoods multiply, and where enough people gather in one place, the next Lab
+          gets a reason to open.
         </p>
         <p>
-          Membership keeps the rooms warm and the lights on, and those who can give more quietly hold
-          the door for those who can&apos;t. Belonging should never depend on what you can afford,
-          so it won&apos;t.
+          Membership keeps the rooms open, and those who can give more quietly hold the door for those
+          who can&apos;t. Belonging shouldn&apos;t depend on what you can afford.
         </p>
       </ZigZag>
 
@@ -422,19 +400,12 @@ function Splash({ live }: { live: LiveData }) {
         }
         tone="surface"
         imgAspect="portrait"
-        imgPosition="top"
       >
         <p>
-          A standing time you don&apos;t have to think about. A handful of faces that light up the
-          second you walk in, that call your name across the room. A circle of settled nervous
-          systems that quietly settles yours, until your shoulders drop, your breath slows, and the
-          whole week slides off your back.
+          A standing time. A handful of faces that light up when you arrive. A room of settled nervous
+          systems that settles yours, too.
         </p>
-        <p>
-          You don&apos;t have to be clever or on or interesting. You don&apos;t have to perform or
-          earn your place at the door. You just have to show up, let yourself be seen, and be glad
-          you came.
-        </p>
+        <p>You don&apos;t have to perform. You just have to show up.</p>
       </ZigZag>
 
       {/* ── It's real, and it's early (honest live proof) ──────────────────── */}
@@ -453,9 +424,7 @@ function Splash({ live }: { live: LiveData }) {
           {hasProof ? (
             <Reveal delay={100}>
               <p className="text-lg leading-relaxed text-on-ink-muted max-w-xl mx-auto mb-12">
-                Real people, real Circles, real gatherings already on the calendar, taking root in{' '}
-                {FOUNDING_PLACE} right now. Not a pitch deck, not a someday. A community with a
-                standing time you can walk into this week.
+                Real people, real Circles, real gatherings, taking root in {FOUNDING_PLACE} right now.
               </p>
               <div className="grid grid-cols-3 gap-6 max-w-xl mx-auto">
                 <Stat value={memberCount} label="Members" tone="ink" />
@@ -466,9 +435,8 @@ function Splash({ live }: { live: LiveData }) {
           ) : (
             <Reveal delay={100}>
               <p className="text-lg leading-relaxed text-on-ink-muted max-w-xl mx-auto">
-                The first Circles are forming in {FOUNDING_PLACE} right now. The founding members are
-                the ones shaping what this becomes, the names everyone after them will know. Come be
-                one of them.
+                The first Circles are forming in {FOUNDING_PLACE}. The founding members are shaping what
+                this becomes. Come be one of them.
               </p>
             </Reveal>
           )}
@@ -539,14 +507,12 @@ function Splash({ live }: { live: LiveData }) {
               </h2>
               <div className="mt-7 max-w-xl space-y-4 text-lg text-white/75 leading-relaxed">
                 <p>
-                  Membership turns on the Quest, the part that pulls you off the screen and back into
-                  the room. Inviting the stranger who turns into a regular, backing the local spot,
-                  showing up on the cold morning you&apos;d rather not: the small brave acts that
-                  actually build a community are the only thing it counts. Not scrolling. Not likes.
-                  The streak that matters is the one you keep in person.
+                  Membership turns on the Quest, the part that pulls you off the screen. Inviting a
+                  stranger, backing a local spot, showing up again: the things that actually build
+                  community are what it rewards. Not scrolling.
                 </p>
                 <p className="font-semibold text-white/90">
-                  You level up by becoming someone your people would feel the absence of.
+                  You level up by becoming someone your community misses.
                 </p>
               </div>
             </Reveal>
@@ -557,7 +523,7 @@ function Splash({ live }: { live: LiveData }) {
                   alt="A small group spinning hula hoops together on the beach beneath a lone palm at golden hour"
                   fill
                   sizes="(min-width: 1024px) 28rem, 100vw"
-                  className="object-cover object-[center_60%]"
+                  className="object-cover object-center"
                 />
               </div>
             </Reveal>
@@ -631,9 +597,8 @@ function Splash({ live }: { live: LiveData }) {
             </h2>
             <p className="text-lg text-muted leading-relaxed mb-6 max-w-xl">
               A community is only as good as the people who start it, so we grow the beta deliberately,
-              a small group at a time, so every new member is actually welcomed in by name rather than
-              dropped into a crowd. The constraint is the care. Add your name and we&apos;ll reach out
-              when the next spots open.
+              a small group at a time, so every new member is actually welcomed in. The constraint is
+              the care. Add your name and we&apos;ll reach out when the next spots open.
             </p>
             <ul className="grid gap-3 sm:grid-cols-2 mb-8">
               <Perk>Free for the whole beta, no card</Perk>
