@@ -4,6 +4,10 @@ import { useEffect, useRef, useState } from 'react'
 import { Search, Loader2, MapPin, X } from 'lucide-react'
 import { searchPlaces, type PlaceSuggestion } from '@/lib/geocode'
 
+// A pre-filled `value` (e.g. the wizard's default area) seeds the input but must
+// NOT trigger a search or pop the dropdown on mount — only what the user actually
+// types should. We skip the debounced search until the first real keystroke.
+
 // Reusable city/town typeahead (Photon / OpenStreetMap via lib/geocode). As you
 // type, populated-place suggestions appear; picking one calls onPick with the
 // label + lat/lng. Same pattern as the circles location search.
@@ -21,8 +25,10 @@ export function LocationAutocomplete({
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState<PlaceSuggestion[]>([])
   const boxRef = useRef<HTMLDivElement>(null)
+  const touched = useRef(false) // true once the user has typed — gates the search
 
   useEffect(() => {
+    if (!touched.current) return // don't auto-search the pre-filled default value
     const term = q.trim()
     const ctrl = new AbortController()
     const t = setTimeout(async () => {
@@ -57,7 +63,10 @@ export function LocationAutocomplete({
       <input
         type="text"
         value={q}
-        onChange={(e) => setQ(e.target.value)}
+        onChange={(e) => {
+          touched.current = true
+          setQ(e.target.value)
+        }}
         onFocus={() => results.length > 0 && setOpen(true)}
         placeholder={placeholder}
         aria-label="Search a location"
