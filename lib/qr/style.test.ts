@@ -27,6 +27,15 @@ describe('parseStyle', () => {
     expect(parseStyle({ gradient: { from: 'nope', to: '#000' } }).gradient).toBeNull()
   })
 
+  it('accepts the connected module shape', () => {
+    expect(parseStyle({ moduleShape: 'connected' }).moduleShape).toBe('connected')
+  })
+
+  it('defaults pupil shape to the eye frame shape, but honors an explicit pupil', () => {
+    expect(parseStyle({ eyeShape: 'circle' }).pupilShape).toBe('circle')
+    expect(parseStyle({ eyeShape: 'circle', pupilShape: 'square' }).pupilShape).toBe('square')
+  })
+
   it('only accepts https or data:image logos', () => {
     expect(isSafeLogoSrc('https://x.com/a.png')).toBe(true)
     expect(isSafeLogoSrc('data:image/png;base64,AAAA')).toBe(true)
@@ -55,6 +64,12 @@ describe('renderStyledQrSvg', () => {
   it('uses circles for dot modules', () => {
     const svg = renderStyledQrSvg(url, { ...DEFAULT_STYLE, moduleShape: 'dots' }, 256)
     expect(svg).toContain('<circle')
+  })
+
+  it('draws rounded-end bars for connected modules', () => {
+    const svg = renderStyledQrSvg(url, { ...DEFAULT_STYLE, moduleShape: 'connected' }, 256)
+    expect(svg).toContain('rx="0.5"') // rounded-cap run bars
+    expect(svg.startsWith('<svg')).toBe(true)
   })
 
   it('emits a gradient def when a gradient is set', () => {

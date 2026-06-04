@@ -14,15 +14,18 @@ const escapeXml = (s: string) =>
 
 const round = (n: number) => Math.round(n * 1000) / 1000
 
-// Corner radii (in module units) for each eye part, per shape.
-const EYE_RADII: Record<EyeShape, [outer: number, mid: number, inner: number]> = {
-  square: [0, 0, 0],
-  rounded: [1.75, 1.1, 0.7],
-  circle: [3.5, 2.5, 1.5],
+// Corner radii (module units) for the eye frame's outer (7×7) + middle (5×5) ring.
+const FRAME_RADII: Record<EyeShape, [outer: number, mid: number]> = {
+  square: [0, 0],
+  rounded: [1.75, 1.1],
+  circle: [3.5, 2.5],
 }
+// Corner radius for the pupil (3×3).
+const PUPIL_RADII: Record<EyeShape, number> = { square: 0, rounded: 0.7, circle: 1.5 }
 
-function eyeSvg(gx: number, gy: number, shape: EyeShape, fill: string, bg: string): string {
-  const [ro, rm, ri] = EYE_RADII[shape]
+function eyeSvg(gx: number, gy: number, frame: EyeShape, pupil: EyeShape, fill: string, bg: string): string {
+  const [ro, rm] = FRAME_RADII[frame]
+  const ri = PUPIL_RADII[pupil]
   return (
     `<rect x="${gx}" y="${gy}" width="7" height="7" rx="${ro}" ry="${ro}" fill="${fill}"/>` +
     `<rect x="${gx + 1}" y="${gy + 1}" width="5" height="5" rx="${rm}" ry="${rm}" fill="${bg}"/>` +
@@ -81,27 +84,57 @@ export function renderStyledQrSvg(text: string, style: QrStyle, size = 256): str
 
   const inEye = (r: number, c: number) =>
     (r < 7 && c < 7) || (r < 7 && c >= N - 7) || (r >= N - 7 && c < 7)
+  const isDark = (r: number, c: number) => !!qr.modules.get(r, c) && !inEye(r, c)
 
-  // Data modules (skip the three eye regions; they're drawn as shapes below).
-  for (let r = 0; r < N; r++) {
+  // Data modules (the three eye regions are drawn as shapes below).
+  if (style.moduleShape === 'connected') {
+    // Merge adjacent modules into rounded-end bars (horizontal + vertical runs),
+    // so the code reads as smooth connected strokes with rounded caps.
+    for (let r = 0; r < N; r++) {
+      let c = 0
+      while (c < N) {
+        if (!isDark(r, c)) { c++; continue }
+        const start = c
+        while (c < N && isDark(r, c)) c++
+        parts.push(
+          `<rect x="${ox + start}" y="${oy + r}" width="${c - start}" height="1" rx="0.5" ry="0.5" fill="${moduleFill}"/>`,
+        )
+      }
+    }
     for (let c = 0; c < N; c++) {
-      if (!qr.modules.get(r, c) || inEye(r, c)) continue
-      const x = ox + c
-      const y = oy + r
-      if (style.moduleShape === 'dots') {
-        parts.push(`<circle cx="${x + 0.5}" cy="${y + 0.5}" r="0.45" fill="${moduleFill}"/>`)
-      } else if (style.moduleShape === 'rounded') {
-        parts.push(`<rect x="${x}" y="${y}" width="1" height="1" rx="0.35" ry="0.35" fill="${moduleFill}"/>`)
-      } else {
-        parts.push(`<rect x="${x}" y="${y}" width="1" height="1" fill="${moduleFill}"/>`)
+      let r = 0
+      while (r < N) {
+        if (!isDark(r, c)) { r++; continue }
+        const start = r
+        while (r < N && isDark(r, c)) r++
+        if (r - start >= 2) {
+          parts.push(
+            `<rect x="${ox + c}" y="${oy + start}" width="1" height="${r - start}" rx="0.5" ry="0.5" fill="${moduleFill}"/>`,
+          )
+        }
+      }
+    }
+  } else {
+    for (let r = 0; r < N; r++) {
+      for (let c = 0; c < N; c++) {
+        if (!isDark(r, c)) continue
+        const x = ox + c
+        const y = oy + r
+        if (style.moduleShape === 'dots') {
+          parts.push(`<circle cx="${x + 0.5}" cy="${y + 0.5}" r="0.45" fill="${moduleFill}"/>`)
+        } else if (style.moduleShape === 'rounded') {
+          parts.push(`<rect x="${x}" y="${y}" width="1" height="1" rx="0.35" ry="0.35" fill="${moduleFill}"/>`)
+        } else {
+          parts.push(`<rect x="${x}" y="${y}" width="1" height="1" fill="${moduleFill}"/>`)
+        }
       }
     }
   }
 
-  // Finder eyes.
-  parts.push(eyeSvg(ox, oy, style.eyeShape, eyeFill, style.bg))
-  parts.push(eyeSvg(ox + N - 7, oy, style.eyeShape, eyeFill, style.bg))
-  parts.push(eyeSvg(ox, oy + N - 7, style.eyeShape, eyeFill, style.bg))
+  // Finder eyes (frame + pupil styled independently).
+  parts.push(eyeSvg(ox, oy, style.eyeShape, style.pupilShape, eyeFill, style.bg))
+  parts.push(eyeSvg(ox + N - 7, oy, style.eyeShape, style.pupilShape, eyeFill, style.bg))
+  parts.push(eyeSvg(ox, oy + N - 7, style.eyeShape, style.pupilShape, eyeFill, style.bg))
 
   // Center logo (with a carved quiet area).
   if (style.logo) {

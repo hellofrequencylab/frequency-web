@@ -45,6 +45,11 @@
 > gift-a-zap confirm flow (`/g/[slug]`) awards the owner. Migration `20260605020000` applied to prod.
 > In flight next (owner request 2026-06-05): editor v2 (more themes, all shapes, connected
 > rounded-end modules), crew marketing-funnel codes (≤3, circle/event), and a Google-Analytics tie-in.
+>
+> **2026-06-05:** QR **editor v2** (extends ADR-090) — added the **connected** module shape
+> (adjacent modules merged into rounded-end run bars), independent eye-**frame**/**pupil** shapes,
+> and expanded to **9 preset themes**. Renderer-only (`lib/qr/render-styled.ts` + `style.ts`), no
+> migration. Next: crew marketing-funnel codes, then the Google-Analytics tie-in.
 
 ---
 
