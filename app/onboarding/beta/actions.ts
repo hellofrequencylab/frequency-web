@@ -8,12 +8,25 @@
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { sendWelcomeEmail } from '@/lib/email'
 import { sanitizeProfileInput } from '@/lib/profile-input'
 import { rememberFacts } from '@/lib/ai/memory'
 import { track } from '@/lib/analytics/track'
-import { BETA_INDUCTION_VERSION, type OathId } from '@/lib/onboarding/beta-script'
+import { BETA_INDUCTION_VERSION, BETA_MEMBERS_GET_CREW, type OathId } from '@/lib/onboarding/beta-script'
 import type { Json } from '@/lib/database.types'
+
+/** During the Beta, grant every new member Crew (full gamification). Only upgrades
+ *  members — leaders (host+) and existing crew are untouched — and they can
+ *  downgrade anytime via /upgrade. Role writes use the admin client (RLS). */
+async function grantBetaCrew(authUserId: string) {
+  if (!BETA_MEMBERS_GET_CREW) return
+  await createAdminClient()
+    .from('profiles')
+    .update({ community_role: 'crew' })
+    .eq('auth_user_id', authUserId)
+    .eq('community_role', 'member')
+}
 
 type Meta = Record<string, Json>
 
@@ -154,6 +167,9 @@ async function writeBetaInduction(data: InductionData): Promise<void> {
   if (user.email) {
     sendWelcomeEmail({ to: user.email, displayName }).catch(() => {})
   }
+
+  // Beta: every new member comes in as Crew (full game), free.
+  await grantBetaCrew(user.id)
 }
 
 /**
@@ -292,6 +308,9 @@ async function mergeBetaInduction(data: InductionData): Promise<void> {
     goals: newIntent ? [newIntent] : [],
     neighborhood: newLocation || null,
   }).catch(() => {})
+
+  // Beta: a returning member who was still on the Member tier comes up to Crew.
+  await grantBetaCrew(user.id)
 }
 
 /**
