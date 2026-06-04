@@ -2,7 +2,8 @@
 
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Link2, Plus, Pencil, Download, Copy, Check, ExternalLink } from 'lucide-react'
+import { Link2, Plus, Pencil, Download, Copy, Check, ExternalLink, Info } from 'lucide-react'
+import { groupedDestinations, isKnownDestination, SITE_DESTINATIONS } from '@/lib/qr/destinations'
 import { createLink, updateLink, setLinkActive, type LinkInput } from './link-actions'
 import { Field, Badge, toLocalInput, fromLocalInput } from './form-bits'
 import { StyleEditor } from './style-editor'
@@ -270,7 +271,17 @@ function LinkForm({
   )
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const [urlMode, setUrlMode] = useState<'preset' | 'custom'>(
+    link && link.destination_type === 'url' && link.target_url && !isKnownDestination(link.target_url)
+      ? 'custom'
+      : 'preset',
+  )
   const router = useRouter()
+
+  const destValue =
+    form.destination_type === 'url' && form.target_url && isKnownDestination(form.target_url)
+      ? SITE_DESTINATIONS.find((d) => d.path === form.target_url)?.value ?? null
+      : null
 
   function set<K extends keyof LinkInput>(key: K, value: LinkInput[K]) {
     setForm((f) => ({ ...f, [key]: value }))
@@ -322,13 +333,32 @@ function LinkForm({
           </select>
         </Field>
         {form.destination_type === 'url' ? (
-          <Field label="Destination URL">
-            <input
-              value={form.target_url ?? ''}
-              onChange={(e) => set('target_url', e.target.value)}
-              placeholder="https://…"
+          <Field label="Destination">
+            <select
+              value={urlMode === 'custom' ? '__custom__' : isKnownDestination(form.target_url ?? '') ? form.target_url ?? '' : ''}
+              onChange={(e) => {
+                const v = e.target.value
+                if (v === '__custom__') {
+                  setUrlMode('custom')
+                  return
+                }
+                setUrlMode('preset')
+                set('target_url', v)
+              }}
               className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
-            />
+            >
+              <option value="">Choose a destination…</option>
+              {groupedDestinations().map((g) => (
+                <optgroup key={g.group} label={g.group}>
+                  {g.items.map((d) => (
+                    <option key={d.path} value={d.path}>
+                      {d.label}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+              <option value="__custom__">Custom URL…</option>
+            </select>
           </Field>
         ) : (
           <Field label="Check-in code">
@@ -369,6 +399,23 @@ function LinkForm({
           </select>
         </Field>
       </div>
+
+      {form.destination_type === 'url' && urlMode === 'custom' && (
+        <Field label="Custom URL">
+          <input
+            value={form.target_url ?? ''}
+            onChange={(e) => set('target_url', e.target.value)}
+            placeholder="https://… or /path"
+            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+          />
+        </Field>
+      )}
+
+      {destValue && (
+        <p className="flex items-start gap-1.5 text-xs text-muted">
+          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary-strong" aria-hidden /> {destValue}
+        </p>
+      )}
 
       <StyleEditor
         value={form.style}

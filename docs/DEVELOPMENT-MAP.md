@@ -67,6 +67,11 @@
 > (idempotent per code+member → distinct-code counting), `advanceChallenges` rewards on completion, and
 > it shows on `/crew/challenges` automatically. Admin authoring = new **Campaigns** tab in the Studio
 > (collect-all / collect-N + code picker). Migration `20260605030000` applied to prod.
+>
+> **2026-06-05:** QR Studio polish — dynamic links now build from a **curated in-site destination
+> picker** (each option shows its funnel value; `lib/qr/destinations.ts`), and the logo editor gains
+> **square/circle crop** + **color/gradient tint** (alpha-mask recolor for monochrome marks). Extends
+> ADR-089/090, no migration.
 
 ---
 
