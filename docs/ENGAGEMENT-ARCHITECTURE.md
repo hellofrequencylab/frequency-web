@@ -90,9 +90,14 @@ Shared mechanics:
   SVG, used identically by the live editor preview (client), the Studio list, and `/api/qr?code=`
   downloads (styled SVG; PNG stays plain — no server rasterizer). All style input is sanitized by
   `parseStyle` (validated colors, https/data-image logos only, escaped label) before it inlines.
-- **Deferred (seamed):** per-member referral/action codes (Phase 3), multi-code
-  challenges/campaigns (Phase 4); plus ghost-node geo + signed-payload authoring, and
-  server-side styled-PNG rasterization.
+- **Per-member codes (Phase 3, ADR-091).** Every member owns three editable codes
+  (`qr_codes.purpose` = connect | referral | gift_zap), provisioned by `ensureMemberCodes` and
+  restyled on `/codes`. The `/q` resolver is a route handler with an `action` destination type:
+  referral drops `fq_ref` → attributed at onboarding (`profiles.referred_by_profile_id` + referrer
+  zaps); gift_zap routes to a confirm page (`/g/[slug]`) that awards the owner a zap.
+- **Deferred (seamed):** crew marketing-funnel codes (≤3, circle/event) + Google-Analytics
+  tie-in + editor v2 (themes/shapes/connected modules) — owner request 2026-06-05; multi-code
+  challenges/campaigns (Phase 4); ghost-node geo + signed-payload authoring; styled-PNG rasterization.
 
 ## 2. Verification is a first-class, server-authoritative layer (security)
 
