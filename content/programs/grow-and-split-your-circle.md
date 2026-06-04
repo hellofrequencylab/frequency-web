@@ -4,6 +4,8 @@ description: How circles stay small and alive by dividing, the way real things g
 audience: host
 duration: 10 min read
 order: 3
+header_image: https://picsum.photos/seed/program-grow-and-split-your-circle/1200/400
+reward: Seeding a new circle earns the +50 circle-start reward again, and mints a brand-new host.
 ---
 
 Circles are meant to stay small. Small is where people are missed when they do not

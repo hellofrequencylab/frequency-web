@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Flame, Sparkles, Library } from 'lucide-react'
+import { Flame, Sparkles, Library, Zap } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import {
   listPublicPractices,
@@ -20,6 +20,31 @@ import { EmptyState } from '@/components/ui/empty-state'
 export const metadata: Metadata = {
   title: 'Practices',
   description: 'Choose what you practice and log it to build your streak.',
+}
+
+// Small meta row under a practice: category chip · cadence · reward note.
+function PracticeMeta({
+  p,
+}: {
+  p: { category: string | null; cadence: string | null; reward_note: string | null }
+}) {
+  if (!p.category && !p.cadence && !p.reward_note) return null
+  return (
+    <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+      {p.category && (
+        <span className="rounded-full bg-surface-elevated px-2 py-0.5 font-medium capitalize text-subtle">
+          {p.category.replace(/-/g, ' ')}
+        </span>
+      )}
+      {p.cadence && <span className="text-subtle">{p.cadence}</span>}
+      {p.reward_note && (
+        <span className="inline-flex items-center gap-1 font-medium text-warning">
+          <Zap className="h-3 w-3 fill-warning" aria-hidden />
+          {p.reward_note}
+        </span>
+      )}
+    </div>
+  )
 }
 
 function PillarFilterChip({ label, href, active }: { label: string; href: string; active: boolean }) {
@@ -142,9 +167,12 @@ export default async function PracticesPage({
                       <p className="text-base font-bold text-text">{p.title}</p>
                       {p.domain_id && byId.has(p.domain_id) && <PillarBadge name={byId.get(p.domain_id)!.name} />}
                     </div>
-                    {p.description && (
-                      <p className="mt-0.5 line-clamp-2 text-sm leading-relaxed text-muted">{p.description}</p>
+                    {(p.summary ?? p.description) && (
+                      <p className="mt-0.5 line-clamp-2 text-sm leading-relaxed text-muted">
+                        {p.summary ?? p.description}
+                      </p>
                     )}
+                    <PracticeMeta p={p} />
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     <LogPracticeButton practiceId={p.id} />
@@ -195,9 +223,12 @@ export default async function PracticesPage({
                       <p className="text-base font-bold text-text">{p.title}</p>
                       {p.domain_id && byId.has(p.domain_id) && <PillarBadge name={byId.get(p.domain_id)!.name} />}
                     </div>
-                    {p.description && (
-                      <p className="mt-0.5 line-clamp-2 text-sm leading-relaxed text-muted">{p.description}</p>
+                    {(p.summary ?? p.description) && (
+                      <p className="mt-0.5 line-clamp-2 text-sm leading-relaxed text-muted">
+                        {p.summary ?? p.description}
+                      </p>
                     )}
+                    <PracticeMeta p={p} />
                   </div>
                   <div className="shrink-0">
                     <AdoptPracticeButton practiceId={p.id} adopted={false} />

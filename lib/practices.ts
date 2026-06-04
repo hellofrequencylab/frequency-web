@@ -26,11 +26,22 @@ export interface Practice {
   created_by: string | null
   is_public: boolean
   created_at: string
+  // Rich content + reward fields (migration 20260605000000_practices_rich_content).
+  category: string | null
+  icon: string | null
+  summary: string | null
+  header_image: string | null
+  body: string | null
+  cadence: string | null
+  reward_zaps: number | null
+  reward_note: string | null
   /** The Pillar this practice belongs to (domains.id), or null if uncategorized. */
   domain_id: string | null
 }
 
-const PRACTICE_COLS = 'id, title, description, created_by, is_public, created_at, domain_id'
+const PRACTICE_COLS =
+  'id, title, description, created_by, is_public, created_at, ' +
+  'category, icon, summary, header_image, body, cadence, reward_zaps, reward_note, domain_id'
 
 // --- Library + reads ------------------------------------------------------
 
@@ -217,9 +228,24 @@ export async function logPractice(input: {
     )
 
   // Verified practice earns zaps + an attendance streak tick (same as a check-in).
+  // A practice may override the default reward via its `reward_zaps` column
+  // (rewards the doing — a cold plunge is worth more than a journal entry).
+  let overrideZaps: number | undefined
+  try {
+    const { data } = await db()
+      .from('practices')
+      .select('reward_zaps')
+      .eq('id', practiceId)
+      .maybeSingle()
+    const rz = (data as { reward_zaps: number | null } | null)?.reward_zaps
+    if (typeof rz === 'number') overrideZaps = rz
+  } catch {
+    // fall back to the default reward
+  }
+
   let zapsAwarded = 0
   try {
-    zapsAwarded = (await awardZapsForAction(profileId, 'practice_logged')).amount
+    zapsAwarded = (await awardZapsForAction(profileId, 'practice_logged', overrideZaps)).amount
   } catch {
     // never let a reward read break the log
   }
