@@ -115,7 +115,7 @@ export default async function QrStudioPage() {
   // ── Campaigns (qr_scan season_challenges + their code sets / progress) ───────
   const { data: allChallenges } = await db
     .from('season_challenges')
-    .select('id, name, description, target, zaps_reward, criteria, created_at')
+    .select('id, name, description, target, zaps_reward, criteria, valid_from, valid_until, created_at')
     .order('created_at', { ascending: false })
   const campaignRows = (allChallenges ?? []).filter(
     (c) => (c.criteria as Record<string, unknown> | null)?.type === 'qr_scan',
@@ -146,6 +146,8 @@ export default async function QrStudioPage() {
     codeCount: codeCount.get(c.id) ?? 0,
     completions: compCount.get(c.id) ?? 0,
     inProgress: progCount.get(c.id) ?? 0,
+    validFrom: c.valid_from,
+    validUntil: c.valid_until,
   }))
   const campaignCodes: CampaignCodeOption[] = initialLinks.map((l) => ({
     id: l.id,

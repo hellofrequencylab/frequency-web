@@ -337,7 +337,7 @@ function isCriteriaMet(
 async function advanceChallenges(admin: AdminClient, event: GamificationEvent) {
   const { data: challenges } = await admin
     .from('season_challenges')
-    .select('id, criteria, target')
+    .select('id, criteria, target, valid_from, valid_until')
 
   if (!challenges?.length) return
 
@@ -349,6 +349,10 @@ async function advanceChallenges(admin: AdminClient, event: GamificationEvent) {
     // (code, member), so progress counts DISTINCT codes — "scan N of these".
     if ((criteria.type as string) === 'qr_scan') {
       if (event.type !== 'qr_scan') continue
+      // Respect the campaign's run window (null bounds = always on).
+      const now = Date.now()
+      if (challenge.valid_from && new Date(challenge.valid_from).getTime() > now) continue
+      if (challenge.valid_until && new Date(challenge.valid_until).getTime() < now) continue
       const { count } = await admin
         .from('challenge_qr_codes')
         .select('*', { count: 'exact', head: true })

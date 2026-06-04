@@ -76,7 +76,12 @@
 > **2026-06-05:** QR polish backlog #1 — **referral-credit chaining**. The `/q` resolver now drops the
 > `fq_ref` cookie for any anonymous scan of an **owner-owned** code (member codes + crew marketing
 > funnels), so a funnel credits its owner on signup (attributed at onboarding). Extends ADR-091, no
-> migration. Backlog remaining: per-campaign time windows · consent-gate GA · styled-PNG export.
+> migration.
+>
+> **2026-06-05:** QR backlog #2 — **campaign time windows**. `season_challenges` gains
+> `valid_from`/`valid_until` (migration `20260605040000`); the engine only advances a `qr_scan`
+> challenge while within the window, and the Studio **Campaigns** tab authors start/end + shows a
+> Scheduled / Active / Ended status. Extends ADR-094. Backlog remaining: consent-gate GA · styled-PNG.
 
 ---
 

@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Trophy, Plus, Trash2, Zap, CheckCircle2 } from 'lucide-react'
 import { createCampaign, deleteCampaign, type CampaignInput } from './campaign-actions'
-import { Field } from './form-bits'
+import { Field, Badge, toLocalInput, fromLocalInput } from './form-bits'
 
 export interface CampaignCard {
   id: string
@@ -15,6 +15,18 @@ export interface CampaignCard {
   codeCount: number
   completions: number
   inProgress: number
+  validFrom: string | null
+  validUntil: string | null
+}
+
+function windowStatus(
+  validFrom: string | null,
+  validUntil: string | null,
+): { label: string; tone: 'neutral' | 'signal' | 'warning' } {
+  const now = Date.now()
+  if (validFrom && new Date(validFrom).getTime() > now) return { label: 'Scheduled', tone: 'signal' }
+  if (validUntil && new Date(validUntil).getTime() < now) return { label: 'Ended', tone: 'warning' }
+  return { label: 'Active', tone: 'neutral' }
 }
 
 export interface CampaignCodeOption {
@@ -88,11 +100,16 @@ function CampaignRow({ campaign }: { campaign: CampaignCard }) {
     })
   }
 
+  const status = windowStatus(campaign.validFrom, campaign.validUntil)
+
   return (
     <div className="rounded-2xl border border-border bg-surface shadow-sm p-4">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <h3 className="text-sm font-bold text-text truncate">{campaign.name}</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-bold text-text truncate">{campaign.name}</h3>
+            <Badge tone={status.tone}>{status.label}</Badge>
+          </div>
           {campaign.description && <p className="text-xs text-muted mt-0.5">{campaign.description}</p>}
         </div>
         <button
@@ -114,6 +131,12 @@ function CampaignRow({ campaign }: { campaign: CampaignCard }) {
           <CheckCircle2 className="w-3 h-3 text-success" /> {campaign.completions} completed
         </span>
         <span>· {campaign.inProgress} in progress</span>
+        {status.label === 'Scheduled' && campaign.validFrom && (
+          <span>· starts {new Date(campaign.validFrom).toLocaleDateString()}</span>
+        )}
+        {campaign.validUntil && (
+          <span>· ends {new Date(campaign.validUntil).toLocaleDateString()}</span>
+        )}
       </div>
     </div>
   )
@@ -135,6 +158,8 @@ function CampaignForm({
     mode: 'collect_all',
     target: 1,
     codeIds: [],
+    validFrom: null,
+    validUntil: null,
   })
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -202,6 +227,22 @@ function CampaignForm({
             />
           </Field>
         )}
+        <Field label="Starts (optional)">
+          <input
+            type="datetime-local"
+            value={toLocalInput(form.validFrom)}
+            onChange={(e) => setForm((f) => ({ ...f, validFrom: fromLocalInput(e.target.value) }))}
+            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+          />
+        </Field>
+        <Field label="Ends (optional)">
+          <input
+            type="datetime-local"
+            value={toLocalInput(form.validUntil)}
+            onChange={(e) => setForm((f) => ({ ...f, validUntil: fromLocalInput(e.target.value) }))}
+            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+          />
+        </Field>
       </div>
 
       <Field label="Description (optional)">
