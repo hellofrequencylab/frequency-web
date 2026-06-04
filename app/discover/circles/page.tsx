@@ -53,8 +53,8 @@ export default async function DiscoverCirclesPage() {
       </PhotoHero>
 
       <section className="bg-surface px-6 py-20 sm:py-24">
-        <div className="max-w-6xl mx-auto">
-          <div className="mb-12 max-w-2xl">
+        <div className="max-w-4xl mx-auto">
+          <div className="mb-9 max-w-prose">
             <SectionHeading eyebrow="Near you" title="Browse the circles" />
             <p className="mt-5 text-lg text-muted leading-relaxed">
               Every circle here is real and forming in North County San Diego. Find one that

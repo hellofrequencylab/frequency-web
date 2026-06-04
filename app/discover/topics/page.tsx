@@ -54,8 +54,8 @@ export default async function DiscoverTopicsPage() {
       </PhotoHero>
 
       <section className="bg-surface px-6 py-20 sm:py-24">
-        <div className="max-w-6xl mx-auto">
-          <div className="mb-12 text-center">
+        <div className="max-w-4xl mx-auto">
+          <div className="mb-9 text-center">
             <SectionHeading eyebrow="The interests" title="Topics" />
             <p className="mt-4 text-lg text-muted leading-relaxed max-w-2xl mx-auto">
               Frequency is organized into four Channels. Interests live inside them: every
