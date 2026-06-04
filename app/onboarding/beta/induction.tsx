@@ -7,6 +7,7 @@
 // city search + reel run for real in preview too.
 
 import { useState, useEffect, useRef } from 'react'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getInitials } from '@/lib/utils'
 import { searchPlaces, type PlaceSuggestion } from '@/lib/geocode'
@@ -760,15 +761,15 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
 
         {/* An unobtrusive way out — never trap anyone in the induction. */}
         <p className="mt-5 shrink-0 text-center text-sm text-subtle">
-          <a href="/" className="font-medium text-muted underline-offset-4 transition-colors hover:text-text hover:underline">
+          <Link href="/" className="font-medium text-muted underline-offset-4 transition-colors hover:text-text hover:underline">
             Home
-          </a>
+          </Link>
           {deferred && (
             <>
               <span className="px-2 text-border-strong" aria-hidden>|</span>
-              <a href="/sign-in" className="font-medium text-muted underline-offset-4 transition-colors hover:text-text hover:underline">
+              <Link href="/sign-in" className="font-medium text-muted underline-offset-4 transition-colors hover:text-text hover:underline">
                 Log into account
-              </a>
+              </Link>
             </>
           )}
         </p>
