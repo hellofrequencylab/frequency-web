@@ -94,11 +94,21 @@ export default async function RootPage({
   } = await supabase.auth.getUser()
 
   // Logged-in users get their feed — except a janitor with `?preview`, who can
-  // preview the public splash (e.g. via the Pages directory "View" link).
+  // preview the public splash (e.g. via the Pages directory "View" link). A
+  // signed-in user who hasn't finished beta onboarding is NOT bounced to /feed
+  // (which would loop them back into the induction); they can browse home freely.
   if (user) {
     const { preview } = await searchParams
     const canPreview = preview !== undefined && (await getJanitor())
-    if (!canPreview) redirect('/feed')
+    if (!canPreview) {
+      const { data: prof } = await supabase
+        .from('profiles')
+        .select('meta')
+        .eq('auth_user_id', user.id)
+        .maybeSingle()
+      const onboarded = !!(prof?.meta as { onboarding_completed?: boolean } | null)?.onboarding_completed
+      if (onboarded) redirect('/feed')
+    }
   }
 
   // The splash is code-locked (see EDITABLE_PAGES note in lib/page-editor/data):
