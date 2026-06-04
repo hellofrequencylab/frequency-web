@@ -2,12 +2,10 @@
 
 import { useState, useTransition, useRef, useEffect, useCallback } from 'react'
 import Image from 'next/image'
-import Link from 'next/link'
 import { Megaphone, ImagePlus, X, PenLine } from 'lucide-react'
 import { createPost } from '@/app/(main)/feed/actions'
 import { createClient } from '@/lib/supabase/client'
 import { getInitials } from '@/lib/utils'
-import { createItemsForRole, type CommunityRole } from './create-actions'
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024 // 5 MB
 
@@ -18,15 +16,11 @@ export function Composer({
   visibility = 'group',
   placeholder = 'Share something with your group…',
   canAnnounce = false,
-  createRole,
 }: {
   scopeId: string
   visibility?: 'public' | 'region' | 'cluster' | 'group'
   placeholder?: string
   canAnnounce?: boolean
-  /** When set (the global feed composer), show the role-gated "structured create"
-   *  launchers (event, circle, room, broadcast, conversation) in the action row. */
-  createRole?: CommunityRole
 }) {
   const [body, setBody] = useState('')
   const [isAnnouncement, setIsAnnouncement] = useState(false)
@@ -326,24 +320,6 @@ export function Composer({
           >
             <ImagePlus className="w-4 h-4" />
           </button>
-
-          {/* Structured creates — launchers to their own forms (feed composer only). */}
-          {createRole && createItemsForRole(createRole).length > 0 && (
-            <>
-              <span aria-hidden className="mx-0.5 h-4 w-px bg-border" />
-              {createItemsForRole(createRole).map(({ href, label, Icon }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  title={label}
-                  aria-label={label}
-                  className="inline-flex items-center rounded-lg p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-primary-strong"
-                >
-                  <Icon className="w-4 h-4" />
-                </Link>
-              ))}
-            </>
-          )}
         </div>
 
         <button
