@@ -526,6 +526,103 @@ export function Marquee({ items }: { items: string[] }) {
   )
 }
 
+// The triptych cross-link. Shows the three brand pillars as a numbered set
+// (1 The Lab · 2 The Community · 3 The Quest) with the current page marked, so
+// visitors feel the arc and can move Lab → Community → Quest. Place near the
+// bottom of each pillar page, above the BetaCTA. Token-only; Server Component.
+const PILLARS = [
+  { n: '1', label: 'The Lab', href: '/the-lab', tag: 'The place' },
+  { n: '2', label: 'The Community', href: '/the-community', tag: 'The people' },
+  { n: '3', label: 'The Quest', href: '/the-quest', tag: 'The path' },
+] as const
+
+export function PillarNav({
+  current,
+  tone = 'canvas',
+}: {
+  current: '/the-lab' | '/the-community' | '/the-quest'
+  tone?: 'surface' | 'canvas' | 'ink'
+}) {
+  const isInk = tone === 'ink'
+  const bg = tone === 'canvas' ? 'bg-marketing-canvas' : isInk ? 'bg-slat' : 'bg-surface'
+  return (
+    <section className={`${bg} px-6 py-16 sm:py-20`}>
+      <div className="max-w-5xl mx-auto">
+        <p
+          className={`text-center text-sm font-bold uppercase tracking-[0.25em] mb-8 ${
+            isInk ? 'text-primary' : 'text-primary-strong'
+          }`}
+        >
+          The triptych
+        </p>
+        <ol className="grid gap-4 sm:grid-cols-3">
+          {PILLARS.map((p) => {
+            const active = p.href === current
+            return (
+              <li key={p.href}>
+                {active ? (
+                  <div
+                    aria-current="page"
+                    className={`block h-full rounded-3xl border px-6 py-6 ${
+                      isInk
+                        ? 'border-primary bg-primary/10'
+                        : 'border-primary bg-primary-bg/50'
+                    }`}
+                  >
+                    <PillarFace n={p.n} label={p.label} tag={p.tag} active isInk={isInk} />
+                  </div>
+                ) : (
+                  <Link
+                    href={p.href}
+                    className={`block h-full rounded-3xl border px-6 py-6 transition-colors ${
+                      isInk
+                        ? 'border-ink-border hover:border-primary'
+                        : 'border-border hover:border-border-strong'
+                    }`}
+                  >
+                    <PillarFace n={p.n} label={p.label} tag={p.tag} isInk={isInk} />
+                  </Link>
+                )}
+              </li>
+            )
+          })}
+        </ol>
+      </div>
+    </section>
+  )
+}
+
+function PillarFace({
+  n,
+  label,
+  tag,
+  active = false,
+  isInk = false,
+}: {
+  n: string
+  label: string
+  tag: string
+  active?: boolean
+  isInk?: boolean
+}) {
+  const accent = isInk ? 'text-primary' : 'text-primary-strong'
+  const head = active ? accent : isInk ? 'text-on-ink' : 'text-text'
+  const sub = isInk ? 'text-on-ink-subtle' : 'text-subtle'
+  return (
+    <div className="flex items-baseline gap-3">
+      <span className={`font-display text-4xl leading-none ${active ? accent : isInk ? 'text-ink-border' : 'text-border-strong'}`}>
+        {n}
+      </span>
+      <div>
+        <p className={`font-display uppercase text-2xl leading-none ${head}`}>{label}</p>
+        <p className={`mt-1.5 text-xs font-bold uppercase tracking-widest ${active ? accent : sub}`}>
+          {active ? 'You are here' : tag}
+        </p>
+      </div>
+    </div>
+  )
+}
+
 export function BetaCTA({
   heading,
   body,

@@ -34,20 +34,27 @@ export const DISCOVER_NAV: NavLink[] = [
 // space, the story, membership); they are deliberately NOT shown in-app, so the
 // feed nav isn't cluttered with splash. Demo was merged into How it works.
 export const SITE_NAV: NavLink[] = [
-  { label: "How it works", href: "/how-it-works" },
   { label: "The Lab", href: "/the-lab" },
+  { label: "The Community", href: "/the-community" },
+  { label: "The Quest", href: "/the-quest" },
   { label: "About", href: "/about" },
 ];
 
 // Members in-app get NO splash tabs — only the shared community core (the Discover
 // dropdown). Splash stays on the public site; the left rail owns in-app nav. This
 // is what keeps the "main menu" and the "feed menu" in sync, minus splash.
-export const SITE_NAV_MEMBER: NavLink[] = [];
+export const SITE_NAV_MEMBER: NavLink[] = [
+  { label: "The Lab", href: "/the-lab" },
+  { label: "The Community", href: "/the-community" },
+  { label: "The Quest", href: "/the-quest" },
+  { label: "About", href: "/about" },
+];
 
 // Flat list for the marketing footer (every public page, no grouping).
 export const MARKETING_NAV: NavLink[] = [
-  { label: "How it works", href: "/how-it-works" },
   { label: "The Lab", href: "/the-lab" },
+  { label: "The Community", href: "/the-community" },
+  { label: "The Quest", href: "/the-quest" },
   { label: "Discover", href: "/discover" },
   { label: "About", href: "/about" },
 ];
