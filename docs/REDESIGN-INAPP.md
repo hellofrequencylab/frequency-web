@@ -65,12 +65,16 @@ The overhaul shipped across **13 PRs (#81–93)**, all merged to `main`:
   breadcrumbs; `/groups` removed.
 - **Phase 2 — Dashboards** 🟡 (#90–92): Crew home on the kit with a **live weekly delta** + drill-downs;
   the 6 Crew sub-pages + operator/Studio/Marketing/CRM dashboards swept (type, de-capped headers, tokens).
-- **Phase 3 — Admin** 🟡 (#93): all 12 admin pages swept (type, de-cap, tokens).
+- **Phase 3 — Admin** ✅ (#93 sweep + structural redesign 2026-06-03, ADR-072/073): all 12 admin pages
+  swept (type, de-cap, tokens), then the **structural admin** landed — a **grouped catalog**
+  (`app/(main)/admin/sections.ts`, five role-gated groups), a shared **`AdminPage`/`AdminSection` shell**
+  (`components/admin/admin-page.tsx`) + shared `requireAdmin` guard (`lib/admin/guard.ts`), a launchpad,
+  and **two-layer nav** (the five admin categories in the rail's Manage section, the active category's
+  pages as sub-tabs).
 
 **Still open** (deeper, deferred): Profile/Programs detail → `DetailTemplate`; build `RoleActions`;
 richer dynamism (since-last-visit deltas, achievement celebration, operator KPI time-axis + drill-downs);
-heavier browse pages (Circles index w/ map, Search, Broadcast); structural admin (shared layout, grouped
-sub-nav). See the review backlog at the bottom.
+heavier browse pages (Circles index w/ map, Search, Broadcast). See the review backlog at the bottom.
 
 ---
 
@@ -90,8 +94,10 @@ sub-nav). See the review backlog at the bottom.
 - **Crew:** live deltas + "since last visit", achievement-unlock celebration, "next-best-action", cross-links, IndexTemplate. (The Vault keeps its name — see Decisions.)
 - **Operator (Studio/Marketing/CRM):** KPI time-axis (deltas/sparklines), bento/anchor hierarchy, drill-downs (campaign→performance, contact→engagement_score), descriptions.
 
-**Phase 3 — Admin**
-- Shared admin page layout + grouped sub-nav; de-box; lift type; cross-links/drill-downs; inline help.
+**Phase 3 — Admin** ✅ *(shipped 2026-06-03, ADR-072/073)*
+- Shared admin page layout (`AdminPage`/`AdminSection`) + grouped catalog (`sections.ts`) + two-layer
+  nav (categories in the rail, the active category's pages as sub-tabs); de-box; lift type;
+  cross-links/drill-downs; inline help.
 
 **Cross-cutting (woven through):** route all role logic through the resolver; add entity **descriptions** + relevant **cross-links** everywhere; beautiful empty states; surface built-but-dark (NearYou proximity sort, engagement_score, achievement celebration).
 
@@ -105,7 +111,7 @@ sub-nav). See the review backlog at the bottom.
 - **Identity:** **Profile → Detail + RoleActions**, lead with the human (bio/"seen·missed") not a metrics wall, tabs (About/Timeline/Activity/Circles), stats → rail; complete the **Settings index** (Billing/Notifications) + breadcrumbs; mount NearYou.
 - **Crew:** IndexTemplate + right rail; **live deltas + celebration + next-best-action + cross-links**; collapse 3 streak cards; "nearly earned". (The Vault keeps its name.)
 - **Operator:** type hierarchy (kill all-caps + `text-[11px]`); **KPI time-axis + deltas**; bento hierarchy; **drill-downs** (campaign perf, engagement_score); descriptions.
-- **Admin:** unified admin page layout; **replace 16× `text-[11px]` headers**; de-box (26× cards); **cross-links/drill-downs**; grouped sub-nav; inline help.
+- **Admin:** ✅ unified admin page layout (`AdminPage` shell); **replace 16× `text-[11px]` headers**; de-box (26× cards); **cross-links/drill-downs**; grouped catalog + two-layer nav (ADR-072/073); inline help.
 
 ## Decisions (locked with the owner)
 - **Hubs / Nexuses → stay structural.** Clean them up only — `DetailTemplate`, breadcrumb, a
