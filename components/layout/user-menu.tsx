@@ -32,7 +32,7 @@ export function AuthButtons({ dark = false }: { dark?: boolean }) {
         href={BETA_CTA_HREF}
         className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors whitespace-nowrap ${
           dark
-            ? 'bg-white text-text hover:bg-surface-elevated'
+            ? 'bg-white text-ink hover:bg-surface-elevated'
             : 'bg-primary text-on-primary hover:bg-primary-hover'
         }`}
       >

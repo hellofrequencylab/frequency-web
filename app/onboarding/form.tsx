@@ -262,7 +262,7 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
                       done
                         ? 'bg-primary text-on-primary'
                         : current
-                        ? 'bg-white text-text'
+                        ? 'bg-white text-ink'
                         : 'border border-white/30'
                     }`}
                   >

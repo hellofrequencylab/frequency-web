@@ -60,7 +60,7 @@ export function MarketingHeader({ overHero = false }: { overHero?: boolean }) {
         className={`rounded-lg px-4 py-2 text-sm font-bold transition-colors whitespace-nowrap ${
           light
             ? 'bg-primary text-on-primary hover:bg-primary-hover'
-            : 'bg-white text-text hover:bg-white/90'
+            : 'bg-white text-ink hover:bg-white/90'
         }`}
       >
         {BETA_CTA_LABEL}
