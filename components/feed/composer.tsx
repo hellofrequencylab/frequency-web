@@ -301,10 +301,10 @@ export function Composer({
               className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-colors ${
                 isAnnouncement ? 'bg-warning-bg text-warning' : 'text-subtle hover:text-muted hover:bg-surface-elevated'
               }`}
-              title="Pinned, highlighted announcement"
+              title="Dispatch: send an announcement to your group"
             >
               <Megaphone className="w-3.5 h-3.5" />
-              Announce
+              Dispatch
             </button>
           )}
 

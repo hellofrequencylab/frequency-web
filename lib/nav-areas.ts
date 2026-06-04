@@ -60,8 +60,10 @@ export const NAV_AREAS: readonly NavArea[] = [
 
   // ── The Quest → the gamified progression loop. The Store holds your Vault
   //    (balance + everything you earn by showing up). ───────────────────────────
+  // "The Quest" is the GAME (the gamified meta-layer: dashboard + store). The
+  // "Journeys" unit (sets of practices) lives in Community — Quests and Journeys
+  // were unified into Journeys (S1). /crew/quests now redirects to /journeys.
   { key: 'crew',      href: '/crew',       label: 'Dashboard', section: 'The Quest', defaultAccess: 'crew', previewBelowAccess: true },
-  { key: 'quests',    href: '/crew/quests',   label: 'Quests',   section: 'The Quest', defaultAccess: 'crew', previewBelowAccess: true },
   { key: 'store',     href: '/crew/store', label: 'Store',     section: 'The Quest', defaultAccess: 'crew', previewBelowAccess: true },
 
   // ── Manage ──────────────────────────────────────────────────────────────────
