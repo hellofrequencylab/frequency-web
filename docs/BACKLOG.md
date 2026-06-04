@@ -234,6 +234,68 @@ tsc + eslint + 153/170 tests green and no broken refs after the rollbacks/rename
   (Beta = Crew, the member economy/Journeys model, member contact card, the nav
   restructure). (S)
 
+## Q. Smart creation + open vitality library (feature sprint, 2026-06-04)
+
+Three interlocking features, assessed via parallel design agents. They chain: the
+**Wizard** builds **Journey plans**, plans are organized by the **4 Pillars** (= the
+`domains` table — Mind/Body/Spirit/Expression, with per-pillar `accent` colors), and
+the graduated feed **Journey board** showcases them. Add an ADR per cluster on build.
+
+### ✅ Shipped — Feed hero (onboarding guide → Journey board)
+- [x] One hero slot in `feed/page.tsx`, one truth source (`lib/onboarding/status.ts`):
+  a persistent **teal (`signal`)** onboarding guide that no longer vanishes at first
+  circle-join — it advances through the steps and only graduates once activation is
+  complete, then becomes the `JourneyBoard` (streak + today's move + resource center).
+  Retired `FeedWelcome` + the redundant sidebar Getting-started checklist.
+- [ ] **Enrich the JourneyBoard** once the library lands: 4-pillar balance read +
+  active Journey plan + a suggested next plan. (S — depends on Q1 Phase 0–1)
+
+### ⚠️ Naming decision — blocks the library's member-facing routes/copy
+"Journey plans" (open, free, user-built) would sit next to "Journeys"
+(`journey_chains`, Crew-gated, gamified). Resolve before building the library UI.
+**Recommendation:** make the open health-paths the member-facing **"Journeys"** and
+rename the gamified engine → **"Quests"** (it already lives in *The Quest* nav).
+Pending owner call.
+
+### Q1. Open vitality library — user-built Journey plans (FREE; rides the practice loop)
+Reconciliation (ADR needed): the open library is **curation over the always-free
+practice substrate**; the Crew gate stays only on the tracked/gamified engine
+(`journey_chains`). Corrects ECONOMY-AND-JOURNEYS §5 ("members can't build one" → can't
+build a *tracked* Journey; DIY practice-combo plans are open). Separate
+`journey_plans` tables — do **not** overload the gated engine.
+- [ ] **Phase 0** — `practices.domain_id` → the 4 Pillars (additive migration + backfill
+  the 5 seeds); pillar filter + chip on `/practices`; small `lib/pillars.ts` helper.
+  Independently useful; unblocks the board's pillar balance. (S)
+- [ ] **Phase 1** — `journey_plans` + `journey_plan_items` + RLS; `lib/journey-plans.ts`;
+  private plan builder (pick practices → grouped by pillar → reorder → notes). (M)
+- [ ] **Phase 2** — publish + open library browse (`/library`, pillar filter, coverage +
+  adopt-count chips). (M)
+- [ ] **Phase 3** — adopt a plan = bulk-adopt its practices into `member_practices`
+  (reuse `adoptPractice`; NO new run engine; honors "streaks stay free"). (S)
+- [ ] **Phase 4** — fork/remix + attribution (`fork_of`, `forked_count`). (S)
+- [ ] **Phase 5** — host moderation + optional "promote a community plan to a tracked
+  Journey/Quest". (M)
+
+### Q2. Create Wizard — section-aware, Vera-light, network suggestions
+**Wrap, don't replace** the existing `CreateModal` + per-section server actions via a
+typed registry. Vera stays **read-only** (suggests structure/prompts, never authors —
+reuse the propose-and-confirm invariant). Suggestions aggregate existing reads (my
+circles, practices, nearby, friends, Vera facts) — no new queries.
+- [ ] **Phase 0** — `lib/create/{types,registry}.ts` + `CreateWizard` wrapper for two
+  kinds (event, circle), behind a flag; old composers untouched. (M)
+- [ ] **Phase 1** — suggestion rail (zero AI) for event + circle. (S)
+- [ ] **Phase 2** — light Vera lane (`/api/create/vera` wrapping `runVeraClaudeTurn` +
+  read tools `suggest_template` / `related_practices`). (M)
+- [ ] **Phase 3** — roll across post/broadcast/channel/practice; revive the global
+  Create button in the app shell. (M)
+- [ ] **Phase 4** — NEW create paths for `program` + `journey` (new actions + RLS); the
+  Q1 plan builder plugs in here as a wizard kind. (M)
+
+**Risks tracked:** two event-create paths to reconcile; role gating stays the
+server-side action's job (wizard gating is UX only); the feed composer stays the fast
+inline path (wizard is an optional guided alt); RLS isolation between `journey_plans`
+(open) and `journey_chains` (gated) — run Supabase advisors after the migration.
+
 ## Accepted (no action)
 - `npm audit`: 4 moderate transitive advisories (postcss in Next's toolchain,
   uuid in `@measured/puck`). The only fix downgrades Next to 9.x; not worth it.
