@@ -323,6 +323,33 @@ inline path (wizard is an optional guided alt); RLS isolation between `journey_p
   primitives, then migrate incrementally. Needs the primitive first — bigger than a
   find-replace. (M)
 
+## S. Site changes batch (2026-06-05, live screenshot review)
+
+- [ ] **S1 · Unify Quests + Journeys** 🔴 *decision needed (reverses ADR-087).* The owner's
+  model: *"The Quest"* is the game; a **Journey** is a set of practices you progress through —
+  Quests and Journeys are the **same unit**. ADR-087 split them (Journeys = open library;
+  Quests = the gamified `quest_chains` engine). Resolution to confirm: make **Journey** the one
+  unit (open + trackable), keep **"The Quest"** as the game/section name, and fold the
+  `quest_chains` engine back into the Journeys concept. *(Naming has flip-flopped quest→arc→
+  journey→quest; confirm before another rename.)* (M)
+- [ ] **S2 · Streak box: half-height when collapsed** — tighten `PracticePrompt` collapsed state. (S)
+- [ ] **S3 · Broadcast color → light blue** — introduce a `broadcast` blue token (complements the
+  site orange) and apply to dispatch/broadcast surfaces (currently the teal `signal`). No hardcoded
+  hex (PRESENTATION.md). (S–M)
+- [ ] **S4 · Evolve the "Beta Demo Content" box** — small links *directly to actions* with the
+  **point attribution shown** (e.g. "Make a friend +X⚡ · Join a circle +Y⚡ · Log a practice +Z⚡").
+  Turns the notice into an activation nudge. (M)
+- [ ] **S5 · Composer "Announce" → "Dispatch"** — relabel + subtitle "Send an announcement to your
+  group." (S)
+- [ ] **S6 · Tiered post options in the composer** — expand the create options by role tier:
+  - **Everyone:** Post (text+media) · Poll · Ask (a question that invites answers, optionally
+    tagged to a Channel) · Practice/Journey share ("showed up") · *(later)* Offer/Request (local
+    marketplace).
+  - **Host (Circle):** Dispatch→Circle · Set Circle Practice · Event→Circle · Pin.
+  - **Guide:** Dispatch→Hub. **Mentor:** Dispatch→Nexus. **Staff:** Dispatch→Global · Feature a post.
+  - The composer shows base options for all + a **Dispatch with a scope picker limited to the tiers
+    you lead** + leader extras. Ties into comms Phase D (dispatch UI) + the Create Wizard (§Q2). (M–L)
+
 ## Accepted (no action)
 - `npm audit`: 4 moderate transitive advisories (postcss in Next's toolchain,
   uuid in `@measured/puck`). The only fix downgrades Next to 9.x; not worth it.
