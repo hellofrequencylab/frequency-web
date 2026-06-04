@@ -13,6 +13,7 @@ import { searchPlaces, type PlaceSuggestion } from '@/lib/geocode'
 import { BETA_OATHS as DEFAULT_OATHS, VERA as DEFAULT_VERA, REEL, HEARD_ABOUT as DEFAULT_HEARD, type OathId } from '@/lib/onboarding/beta-script'
 import { acceptBetaOath, completeBetaInduction, stashPendingInduction } from './actions'
 import { signInWithMagicLink, signInWithGoogle } from '@/app/sign-in/actions'
+import { veraIntentReaction, veraCityNote } from '@/lib/onboarding/vera-react'
 
 // Avatar can't ride the auth-redirect in a cookie, so the deferred (signed-out)
 // flow parks its data URL in localStorage and the /complete page uploads it.
@@ -656,9 +657,20 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                   </div>
                   </div>
 
-                  {/* right: copy + actions under it */}
+                  {/* right: Vera reacts live to what they enter (Phase 3) */}
                   <div className="w-full max-w-xs text-center md:text-left">
-                    <p className="text-lg leading-relaxed text-muted">{VERA.place.body}</p>
+                    {(() => {
+                      const reaction = veraIntentReaction(intent) ?? veraCityNote(location)
+                      if (!reaction) {
+                        return <p className="text-lg leading-relaxed text-muted">{VERA.place.body}</p>
+                      }
+                      return (
+                        <div key={reaction} className="rounded-2xl border border-primary-bg bg-primary/5 p-4 text-left animate-[slideUp_0.35s_ease-out]">
+                          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">Vera</p>
+                          <p className="text-base leading-relaxed text-text">{reaction}</p>
+                        </div>
+                      )
+                    })()}
                     <div className="mt-6 flex flex-col items-center gap-3 md:items-start">
                       <button onClick={() => setBeat(5)} className={btnPrimary}>Continue<ArrowRight /></button>
                       <button onClick={() => setBeat(3)} className={backLink}>Back</button>
