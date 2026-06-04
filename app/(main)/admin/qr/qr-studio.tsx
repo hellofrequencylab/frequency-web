@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { QrCode, Plus, Pencil, Download, Copy, Check, ExternalLink, Zap } from 'lucide-react'
 import { createNode, updateNode, setNodeActive, type NodeInput } from './actions'
 import { Field, Badge, toLocalInput, fromLocalInput } from './form-bits'
+import { StyleEditor } from './style-editor'
+import { DEFAULT_STYLE, type QrStyle } from '@/lib/qr/style'
 
 export interface StudioNode {
   id: string
@@ -16,9 +18,10 @@ export interface StudioNode {
   valid_until: string | null
   partner_id: string | null
   captures: number
+  style: QrStyle
   /** Absolute capture URL this code encodes. */
   url: string
-  /** Pre-rendered inline QR SVG (server-side). */
+  /** Pre-rendered inline QR SVG (server-side, styled). */
   svg: string
 }
 
@@ -40,6 +43,7 @@ const BLANK: NodeInput = {
   capture_rule: 'once_per_user',
   valid_until: null,
   partner_id: null,
+  style: DEFAULT_STYLE,
 }
 
 export function QrStudio({
@@ -120,7 +124,7 @@ function NodeCard({
   const [pending, start] = useTransition()
   const router = useRouter()
   const downloadName = (node.label ?? 'frequency-code').replace(/[^\w.-]+/g, '-').slice(0, 48)
-  const apiBase = `/api/qr?text=${encodeURIComponent(`/n/${node.id}`)}`
+  const apiBase = `/api/qr?node=${encodeURIComponent(node.id)}`
 
   function toggleActive() {
     start(async () => {
@@ -256,6 +260,7 @@ function NodeForm({
           capture_rule: node.capture_rule,
           valid_until: node.valid_until,
           partner_id: node.partner_id,
+          style: node.style,
         }
       : BLANK,
   )
@@ -351,6 +356,12 @@ function NodeForm({
           don&apos;t award a verified practice).
         </p>
       )}
+
+      <StyleEditor
+        value={form.style}
+        onChange={(style) => setForm((f) => ({ ...f, style }))}
+        previewUrl={node?.url ?? 'https://frequencylocal.com/n/preview'}
+      />
 
       {error && <p className="text-xs text-danger">{error}</p>}
 

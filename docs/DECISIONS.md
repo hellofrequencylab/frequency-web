@@ -2139,8 +2139,9 @@ box), and a CTA card frame. Style is a sanitized `QrStyle` persisted on `qr_code
 isomorphic, the **live editor preview (client)**, the Studio list, and `/api/qr?code=` downloads
 emit identical SVG. No new dependency.
 
-**Consequences:** Styling lives only on `qr_codes` (the managed entity); check-in `nodes` +
-member connect codes stay plain for now (a later pass can adopt the same renderer). Styled
+**Consequences:** The same styler now applies across **`qr_codes`** (dynamic links + member +
+marketing) **and `nodes`** (check-in codes, `nodes.style`, backlog #5), and member connect codes
+ship a styled default (avatar logo). Styled
 **downloads are SVG** (vector, ideal for print); a **styled PNG** is now also available (backlog #4,
 `lib/qr/raster.ts` via `@resvg/resvg-wasm` — remote logos inlined as data URLs, plain-PNG fallback).
 Historical note: PNG was plain until a server-side SVG

@@ -88,6 +88,11 @@
 > for styled codes rasterizes the design via `@resvg/resvg-wasm`, `lib/qr/raster.ts`, remote logos
 > inlined, plain-PNG fallback; `serverExternalPackages` keeps the wasm out of the bundle). Backlog
 > remaining: apply the styler to check-in nodes (#5).
+>
+> **2026-06-05:** QR backlog #5 — **styler on check-in codes**. `nodes` gains a `style` jsonb
+> (migration `20260605050000`); the Studio's Check-in tab now has the full design editor + styled
+> preview, and `/api/qr?node=<id>` serves styled SVG/PNG downloads. Member connect codes already
+> ship a styled default (avatar). **Backlog complete** (#1–#5).
 
 ---
 
