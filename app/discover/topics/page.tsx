@@ -1,8 +1,7 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { getTopicalChannels, getPublicCircles } from '@/lib/discover'
-import { ChannelCard, DiscoverHero, SectionHeading } from '@/components/discover/cards'
-import { Statement, BetaCTA } from '@/components/marketing/marketing-ui'
+import { ChannelCard } from '@/components/discover/cards'
+import { Statement, BetaCTA, PhotoHero, SectionHeading, Button } from '@/components/marketing/marketing-ui'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, topicListSchema } from '@/lib/jsonld'
 import { SITE_NAME } from '@/lib/site'
@@ -46,20 +45,15 @@ export default async function DiscoverTopicsPage() {
         ]}
       />
 
-      <DiscoverHero
+      <PhotoHero
         image="/images/site/36d99363-e483-40a0-b173-7e7ee6c1b379.jpg"
         alt="A neighbor spinning a hula hoop on the beach beneath a palm tree in bright daylight"
         eyebrow="Explore by topic"
         title="Find what you practice"
         subtitle="A topic is the shared interest neighbors gather around — movement, spirituality, creative practice. Pick one and find a circle living it near you."
       >
-        <Link
-          href="/discover/circles"
-          className="inline-block rounded-2xl bg-primary text-on-primary px-7 py-3 font-bold hover:bg-primary-hover transition-colors"
-        >
-          Browse circles instead
-        </Link>
-      </DiscoverHero>
+        <Button href="/discover/circles">Browse circles instead</Button>
+      </PhotoHero>
 
       <section className="bg-surface px-6 py-20 sm:py-24">
         <div className="max-w-6xl mx-auto">

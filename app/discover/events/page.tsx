@@ -1,8 +1,7 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { getPublicEvents } from '@/lib/discover'
-import { DiscoverHero, SectionHeading, EventRow } from '@/components/discover/cards'
-import { Statement, BetaCTA } from '@/components/marketing/marketing-ui'
+import { EventRow } from '@/components/discover/cards'
+import { Statement, BetaCTA, PhotoHero, SectionHeading, Button } from '@/components/marketing/marketing-ui'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, eventListSchema } from '@/lib/jsonld'
 import { SITE_NAME, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
@@ -36,20 +35,15 @@ export default async function DiscoverEventsPage() {
         ]}
       />
 
-      <DiscoverHero
+      <PhotoHero
         image="/images/site/63978107-8b40-4ce2-8eaf-01a2f6f35cb9.jpg"
         alt="People on the beach at golden hour, arms raised in celebration by the ocean"
         eyebrow="Coming up"
         title="Show up in person"
         subtitle="Real-world gatherings near you. Public pages show the city only — the exact venue is shared with members who RSVP."
       >
-        <Link
-          href={BETA_CTA_HREF}
-          className="inline-block rounded-2xl bg-primary text-on-primary px-7 py-3 font-bold hover:bg-primary-hover transition-colors shadow-pop"
-        >
-          {BETA_CTA_LABEL}
-        </Link>
-      </DiscoverHero>
+        <Button href={BETA_CTA_HREF}>{BETA_CTA_LABEL}</Button>
+      </PhotoHero>
 
       {events.length === 0 ? (
         // Founding state: no events on the calendar yet near the beta. Frame it as a
@@ -63,12 +57,9 @@ export default async function DiscoverEventsPage() {
               show up. Join the beta and you&rsquo;ll be among the first to know when the first one
               lands.
             </p>
-            <Link
-              href={BETA_CTA_HREF}
-              className="mt-9 inline-block rounded-2xl bg-primary text-on-primary px-7 py-3 font-bold hover:bg-primary-hover transition-colors shadow-pop"
-            >
-              {BETA_CTA_LABEL}
-            </Link>
+            <div className="mt-9">
+              <Button href={BETA_CTA_HREF}>{BETA_CTA_LABEL}</Button>
+            </div>
           </div>
         </section>
       ) : (

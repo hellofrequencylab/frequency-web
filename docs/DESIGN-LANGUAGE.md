@@ -220,6 +220,13 @@ Hero (`PhotoHero wide` + stat line or founding line + CTA) → **every section i
 
 ## 5. Prioritized unification backlog
 
+> **Status (2026-06-04, ADR-076):** the strategic content redesign + the first enforcement pass shipped.
+> ✅ done: `Button` + `Card` added to the kit and rolled across home/splash/discover; `DiscoverHero`
+> deleted (Discover uses `PhotoHero`); the duplicate `SectionHeading` removed; the marketing chrome
+> de-greened; the home hero already uses `PhotoHero`. ⏳ remaining: the `Section` rhythm scale
+> (`size`/`flush` props + stripping bespoke `pad=`) and routing Discover's raw `<section>`s through
+> `Section` — a follow-up pass.
+
 ### P0 — kills the "cobbled-together" feeling (structural dedupe + rhythm)
 - **Merge `DiscoverHero` → `PhotoHero`.** Delete `DiscoverHero` from `components/discover/cards.tsx`; re-export/alias `PhotoHero` (add `wide` prop). Update imports in `app/discover/{page,circles/page,events/page,topics/page}.tsx`.
 - **Merge the two `SectionHeading`s.** Keep `components/marketing/marketing-ui.tsx`; add `tone`/`align`/`size` props; delete the copy in `cards.tsx`; repoint Discover imports.

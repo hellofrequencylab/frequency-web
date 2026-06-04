@@ -1748,6 +1748,42 @@ drop between induction → Vera → first circle → first practice?" was unansw
 Stage A needs. Events are server-authoritative (`clientEmittable: false`), so they can't be spoofed.
 No migration. Profile-completion stays circle-first and consent-gated like every other Vera write.
 
+## ADR-076: Public site — make the multipart model the spine, dedupe splash, sync the menus
+
+**Status:** Accepted · 2026-06-04 · a strategic content/IA redesign of the public marketing site,
+grounded in the mission ([PLATFORM-VISION.md](PLATFORM-VISION.md): "one community, one game, two
+engines") and the marketing kit (`components/marketing/marketing-ui.tsx`). No schema change.
+
+**Context:** The home page read as jumbled. Its "answer" section pitched three pillars — **The Lab /
+The Network / The Model** — where the **game was entirely absent**, "community" was buried as "The
+Network," and "The Model" (the economics) was an opaque label. The multipart model a visitor should
+grasp (community → a game that pulls you offline → physical third places → built together) never landed.
+Separately: bespoke broken-grid/collage layouts placed images in "weird spots"; `/demo` and
+`/how-it-works` both just explained "how it works"; and `SITE_NAV_MEMBER` injected splash tabs (How it
+works / The Lab / About) into the **in-app top bar**, so the marketing "main menu" and the in-app "feed
+menu" were out of sync.
+
+**Decision:**
+- **Model-as-spine.** The home narrative is rebuilt: hook → the ache → **the model: ① The Community ·
+  ② The Game · ③ The Lab** (the game is now first-class and named) → **how you join** (a new `Steps`
+  block: pick an interest → join a Circle → show up) → Moonlight proof → **built together** (the
+  flywheel + pay-it-forward, absorbing the old "Network"/"Model" muddle) → the exhale → live proof →
+  join. The cinematic Moonlight beat and all live data (counts/events/posts) are preserved.
+- **Images earn their place.** The two bespoke collage/broken-grid sections are replaced with the
+  system `ZigZag`, each with one purposeful photo; the dark-band model pillars get the right images
+  (community / in-person action / the Lab storefront).
+- **Dedupe splash.** `/demo` is merged into `/how-it-works` (the interactive product tour + the "a day
+  in Frequency" timeline move over); `/demo` now `permanentRedirect`s (308). Splash headers verified
+  against their jobs.
+- **Sync the menus.** `SITE_NAV_MEMBER = []` — splash is marketing-only and no longer appears in-app;
+  the shared community core (Discover → Circles / Events / **Interests**, renamed from "Topics" to match
+  the in-app rail) is what both menus share. New reusable `Steps` component added to the kit.
+
+**Consequences:** The public site now states the model plainly and matches the in-app vocabulary; the
+marketing nav = community core + splash, the in-app nav = community core + member tools, splash never
+leaks onto the feed. Content/IA only — no route deletions (only the /demo redirect), no data changes.
+SEO/AEO metadata + structured data is the next pass, now that the page structure is settled.
+
 ---
 
 ---
