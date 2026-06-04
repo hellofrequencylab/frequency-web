@@ -183,6 +183,49 @@ greenfield initiative (G).
   paid tier; dues vs donation / deductibility / UBIT; inter-entity bridge
   mechanism; marketplace in-app payment; web's role post-mobile.
 
+## P. Session follow-ups (2026-06-04 build sprint) — onboarding, economy, Journeys
+
+Loose ends + next steps from the onboarding/economy/Journeys sprint. Audit verified
+tsc + eslint + 153/170 tests green and no broken refs after the rollbacks/renames.
+
+### Cleanup (small, do soon)
+- [ ] **Consolidate the two crew-gating components.** Pre-existing `CrewGateButton`
+  ("Crew Access Required" modal; wired on circle/event/crew-task actions) vs the new
+  `CrewGate`/`UpgradeLightbox` ("Unlock the full game"; on the Store). Unify to one
+  (prefer the new strategy messaging) so the upsell copy/UX is consistent. (S)
+- [ ] **Delete orphaned `app/onboarding/beta/welcome.tsx`** (BetaWelcome) — unused since
+  the deferred induction replaced the sign-in gate. (S)
+- [ ] **Decide the standalone `/onboarding/vera` page's fate** — orphaned now that
+  "Ask Vera" opens the feed lightbox (`?welcome=vera&v=chat`). Delete or keep as a
+  no-JS fallback. (S)
+- [ ] **Codify the "Vera always links" doctrine** in AI-VERA.md + audit the Vera
+  surfaces (lightbox/concierge) so every feature mention renders as a linked action. (S)
+
+### Specced, awaiting build (Launch-gated; dormant while Beta = Crew)
+- [ ] **Beta Activation** (BETA-ACTIVATION.md): profile-completion card; "Founder's
+  First Week" event-derived tasks + badge; Vera coach next-best-action. (M)
+- [ ] **Economy gating** (ECONOMY-AND-JOURNEYS.md / ADR-084): member Zaps at a lower
+  multiplier; Journey "Start" gated to Crew; endorsement suppression on free profiles;
+  gem-spend lock for unpaid (needs the entitlement input on the capability resolver,
+  ADR-037) + the `BETA_MEMBERS_GET_CREW` flip. (M-L)
+- [ ] **Seasonal Journeys**: link `journey_chains` to a season + a Pillar (Mind/Body/
+  Spirit/Expression); ship 4 primary tracks + bonus micro-journeys per season; an
+  authoring surface. Open decisions: member rank display (inert Ghost vs none),
+  endorsement set, who authors. (M)
+
+### Known limitations (note, not urgent)
+- Deferred beta sign-in via a magic link opened on a *different device* loses the
+  browser-local stash (cookie + localStorage) → that visitor restarts induction.
+  Same-browser + Google OAuth are seamless. Server-side stash keyed to email would
+  fix it if it matters. (S)
+- CRM resolves member emails via `auth.admin.listUsers` (one call; fine at Beta scale).
+  Switch to a keyed lookup if the roster grows large. (S)
+
+### Docs hygiene
+- [ ] Update CHANGELOG.md + DEVELOPMENT-MAP.md to reflect the sprint's directions
+  (Beta = Crew, the member economy/Journeys model, member contact card, the nav
+  restructure). (S)
+
 ## Accepted (no action)
 - `npm audit`: 4 moderate transitive advisories (postcss in Next's toolchain,
   uuid in `@measured/puck`). The only fix downgrades Next to 9.x; not worth it.
