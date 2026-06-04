@@ -3431,6 +3431,8 @@ export type Database = {
           slug: string
           sort_order: number
           target: number
+          valid_from: string | null
+          valid_until: string | null
           zaps_reward: number
         }
         Insert: {
@@ -3445,6 +3447,8 @@ export type Database = {
           slug: string
           sort_order?: number
           target?: number
+          valid_from?: string | null
+          valid_until?: string | null
           zaps_reward?: number
         }
         Update: {
@@ -3459,6 +3463,8 @@ export type Database = {
           slug?: string
           sort_order?: number
           target?: number
+          valid_from?: string | null
+          valid_until?: string | null
           zaps_reward?: number
         }
         Relationships: []
