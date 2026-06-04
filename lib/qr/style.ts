@@ -5,7 +5,7 @@
 // comes from operator input, and it ends up inlined into an SVG, so colors, URLs,
 // and labels are all validated before they render.
 
-export type ModuleShape = 'square' | 'rounded' | 'dots'
+export type ModuleShape = 'square' | 'rounded' | 'dots' | 'connected'
 export type EyeShape = 'square' | 'rounded' | 'circle'
 
 export interface QrGradient {
@@ -21,7 +21,10 @@ export interface QrStyle {
   bg: string
   gradient: QrGradient | null
   moduleShape: ModuleShape
+  /** Outer finder-eye frame shape. */
   eyeShape: EyeShape
+  /** Inner finder-eye pupil shape (defaults to the frame shape). */
+  pupilShape: EyeShape
   /** Distinct color for the finder eyes, or null to match the modules. */
   eyeColor: string | null
   /** Center logo — an https or data:image URL, or null. */
@@ -38,6 +41,7 @@ export const DEFAULT_STYLE: QrStyle = {
   gradient: null,
   moduleShape: 'square',
   eyeShape: 'square',
+  pupilShape: 'square',
   eyeColor: null,
   logo: null,
   frameLabel: null,
@@ -50,13 +54,13 @@ export interface StylePreset {
   style: QrStyle
 }
 
-// A few tasteful starting points; every field stays editable afterwards.
+// Tasteful starting points; every field stays editable afterwards.
 export const STYLE_PRESETS: StylePreset[] = [
   { key: 'classic', label: 'Classic', style: { ...DEFAULT_STYLE } },
   {
     key: 'midnight',
     label: 'Midnight dots',
-    style: { ...DEFAULT_STYLE, fg: '#0b1220', moduleShape: 'dots', eyeShape: 'circle' },
+    style: { ...DEFAULT_STYLE, fg: '#0b1220', moduleShape: 'dots', eyeShape: 'circle', pupilShape: 'circle' },
   },
   {
     key: 'sunset',
@@ -65,18 +69,70 @@ export const STYLE_PRESETS: StylePreset[] = [
       ...DEFAULT_STYLE,
       moduleShape: 'rounded',
       eyeShape: 'rounded',
+      pupilShape: 'rounded',
       gradient: { from: '#f97316', to: '#db2777', angle: 45 },
     },
   },
   {
     key: 'forest',
     label: 'Forest',
-    style: { ...DEFAULT_STYLE, fg: '#065f46', moduleShape: 'rounded', eyeShape: 'rounded', eyeColor: '#0b3b2e' },
+    style: {
+      ...DEFAULT_STYLE,
+      fg: '#065f46',
+      moduleShape: 'rounded',
+      eyeShape: 'rounded',
+      pupilShape: 'circle',
+      eyeColor: '#0b3b2e',
+    },
+  },
+  {
+    key: 'ink',
+    label: 'Ink flow',
+    style: { ...DEFAULT_STYLE, fg: '#111827', moduleShape: 'connected', eyeShape: 'rounded', pupilShape: 'rounded' },
+  },
+  {
+    key: 'ocean',
+    label: 'Ocean',
+    style: {
+      ...DEFAULT_STYLE,
+      moduleShape: 'connected',
+      eyeShape: 'rounded',
+      pupilShape: 'circle',
+      gradient: { from: '#0ea5e9', to: '#2563eb', angle: 90 },
+    },
+  },
+  {
+    key: 'berry',
+    label: 'Berry',
+    style: {
+      ...DEFAULT_STYLE,
+      moduleShape: 'dots',
+      eyeShape: 'circle',
+      pupilShape: 'circle',
+      gradient: { from: '#db2777', to: '#7c3aed', angle: 135 },
+    },
+  },
+  {
+    key: 'gold',
+    label: 'Gold leaf',
+    style: {
+      ...DEFAULT_STYLE,
+      bg: '#0b0b0c',
+      moduleShape: 'rounded',
+      eyeShape: 'rounded',
+      pupilShape: 'rounded',
+      gradient: { from: '#fde68a', to: '#d97706', angle: 60 },
+    },
+  },
+  {
+    key: 'mono-soft',
+    label: 'Soft mono',
+    style: { ...DEFAULT_STYLE, fg: '#374151', moduleShape: 'connected', eyeShape: 'circle', pupilShape: 'circle' },
   },
 ]
 
 const HEX = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i
-const MODULE_SHAPES: ModuleShape[] = ['square', 'rounded', 'dots']
+const MODULE_SHAPES: ModuleShape[] = ['square', 'rounded', 'dots', 'connected']
 const EYE_SHAPES: EyeShape[] = ['square', 'rounded', 'circle']
 
 function color(value: unknown, fallback: string): string {
@@ -109,6 +165,8 @@ export function parseStyle(raw: unknown): QrStyle {
   const eyeShape = EYE_SHAPES.includes(r.eyeShape as EyeShape)
     ? (r.eyeShape as EyeShape)
     : DEFAULT_STYLE.eyeShape
+  // Pupil defaults to the frame shape, so codes saved before this field keep their look.
+  const pupilShape = EYE_SHAPES.includes(r.pupilShape as EyeShape) ? (r.pupilShape as EyeShape) : eyeShape
 
   const logo = typeof r.logo === 'string' && isSafeLogoSrc(r.logo) ? r.logo.trim() : null
 
@@ -124,6 +182,7 @@ export function parseStyle(raw: unknown): QrStyle {
     gradient,
     moduleShape,
     eyeShape,
+    pupilShape,
     eyeColor: typeof r.eyeColor === 'string' && HEX.test(r.eyeColor) ? r.eyeColor : null,
     logo,
     frameLabel,

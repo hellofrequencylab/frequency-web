@@ -84,8 +84,10 @@ Shared mechanics:
   `/people/<handle>`). Earning codes are scanned with any camera.
 - **Server-mediated.** `qr_codes` / `qr_scans` RLS deny client access (like `nodes`); the
   resolver + Studio use the service role.
-- **Beautiful styling (Phase 2, ADR-090).** Each dynamic code carries a `style` jsonb
-  (`lib/qr/style.ts`: colors, gradient, module + eye shape, center logo, CTA frame). The
+- **Beautiful styling (Phase 2, ADR-090; editor v2 2026-06-05).** Each dynamic code carries a
+  `style` jsonb (`lib/qr/style.ts`: colors, gradient, module shape — square/rounded/dots/**connected**
+  rounded-end runs — independent eye-**frame** + **pupil** shapes, center logo, CTA frame, 9 preset
+  themes). The
   **isomorphic** styled renderer `lib/qr/render-styled.ts` turns the QR matrix into a designed
   SVG, used identically by the live editor preview (client), the Studio list, and `/api/qr?code=`
   downloads (styled SVG; PNG stays plain — no server rasterizer). All style input is sanitized by
