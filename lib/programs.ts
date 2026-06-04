@@ -20,6 +20,11 @@ export interface Program {
   audience: string
   /** Freeform effort hint, e.g. "10 min read" or "A 4-week journey". */
   duration: string | null
+  /** Header image URL (frontmatter `header_image`). */
+  headerImage: string | null
+  /** What the program's real actions earn — rewards attach to the doing, not the
+   *  reading (e.g. "Start a circle +50 zaps, activate +40"). Frontmatter `reward`. */
+  reward: string | null
   order: number
   body: string
 }
@@ -52,6 +57,8 @@ async function readProgram(file: string): Promise<Program> {
     description: data.description ?? '',
     audience: data.audience ?? 'member',
     duration: data.duration ?? null,
+    headerImage: data.header_image ?? null,
+    reward: data.reward ?? null,
     order: Number(data.order ?? '99') || 99,
     body: content,
   }

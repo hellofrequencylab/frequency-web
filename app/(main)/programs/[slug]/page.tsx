@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Zap } from 'lucide-react'
 import { notFound } from 'next/navigation'
 import { getProgram, getCompletedProgramSlugs } from '@/lib/programs'
 import { getMyProfileId } from '@/lib/auth'
@@ -51,6 +51,28 @@ export default async function ProgramPage({ params }: Params) {
         }
       >
         <div className="max-w-2xl">
+          {program.headerImage && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={program.headerImage}
+              alt=""
+              className="mb-6 h-48 w-full rounded-2xl object-cover"
+            />
+          )}
+
+          {program.reward && (
+            <div className="mb-6 flex items-start gap-2 rounded-xl border border-warning/30 bg-warning-bg/40 px-4 py-3">
+              <Zap className="mt-0.5 h-4 w-4 shrink-0 fill-warning text-warning" aria-hidden />
+              <p className="text-sm text-text">
+                <span className="font-semibold text-warning">What you earn: </span>
+                {program.reward}{' '}
+                <span className="text-subtle">
+                  Rewards come from doing the steps, not from reading.
+                </span>
+              </p>
+            </div>
+          )}
+
           <HelpMarkdown>{program.body}</HelpMarkdown>
 
           {profileId && (
