@@ -21,6 +21,9 @@ export interface CampaignInput {
   mode: 'collect_all' | 'collect_n'
   target: number
   codeIds: string[]
+  /** Optional run window (ISO), null = no bound. */
+  validFrom: string | null
+  validUntil: string | null
 }
 
 function slugify(s: string): string {
@@ -57,6 +60,8 @@ export async function createCampaign(input: CampaignInput): Promise<ActionResult
       criteria: { type: 'qr_scan' } as unknown as Json,
       target,
       zaps_reward: reward,
+      valid_from: input.validFrom || null,
+      valid_until: input.validUntil || null,
     })
     .select('id')
     .single()
