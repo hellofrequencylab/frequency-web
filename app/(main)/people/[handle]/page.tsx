@@ -187,7 +187,7 @@ export default async function ProfilePage({
                 </div>
               )}
             </div>
-            <div className="relative flex items-center gap-2 shrink-0 pb-1">
+            <div className="relative flex flex-wrap items-center justify-end gap-2 shrink-0 pb-1">
               {isOwner ? (
                 <Link
                   href="/settings/profile"

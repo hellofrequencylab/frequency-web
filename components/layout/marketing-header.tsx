@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
 import { PrimaryNav } from '@/components/layout/primary-nav'
+import { MarketingMobileMenu } from '@/components/layout/marketing-mobile-menu'
 
 // Public marketing header. No search box (that's for the community app). When
 // `overHero`, it sits transparent over the dark hero and flips to a solid light
@@ -64,6 +65,9 @@ export function MarketingHeader({ overHero = false }: { overHero?: boolean }) {
       >
         {BETA_CTA_LABEL}
       </Link>
+
+      {/* Mobile nav (the desktop PrimaryNav is hidden below md). */}
+      <MarketingMobileMenu light={light} />
     </header>
   )
 }
