@@ -70,7 +70,7 @@ export function PhotoHero({
         {subtitle && (
           <p
             className={`text-white/80 leading-relaxed mx-auto max-w-2xl ${
-              isScreen ? 'mt-7 text-xl sm:text-2xl' : 'mt-6 text-lg sm:text-xl'
+              isScreen ? 'mt-7 text-lg sm:text-xl' : 'mt-6 text-base sm:text-lg'
             }`}
           >
             {subtitle}
