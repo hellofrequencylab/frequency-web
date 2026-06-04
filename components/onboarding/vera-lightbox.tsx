@@ -39,13 +39,17 @@ function proposalLabel(p: ProposedToolCall): string {
 export function VeraLightbox({
   slides,
   opening,
+  startInChat = false,
 }: {
   slides: DeckSlide[]
   opening: VeraOpening
+  /** Skip the inspirational deck and open straight in chat — for "Ask Vera"
+   *  (a returning member asking for help), vs. the post-induction welcome. */
+  startInChat?: boolean
 }) {
   const router = useRouter()
   const [open, setOpen] = useState(true)
-  const [phase, setPhase] = useState<'deck' | 'chat'>('deck')
+  const [phase, setPhase] = useState<'deck' | 'chat'>(startInChat ? 'chat' : 'deck')
   const [slide, setSlide] = useState(0)
 
   // Chat state — seeded with Vera's continuance so her first line already knows them.
