@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
+import { createClient } from '@/lib/supabase/server'
 import {
   getTopicalChannels,
   getPublicCircles,
@@ -72,6 +73,12 @@ export const metadata: Metadata = {
 export const revalidate = 3600
 
 export default async function DiscoverHubPage() {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const isAuthed = !!user
+
   const [channels, circles, events, posts, counts, cityClusters] = await Promise.all([
     getTopicalChannels(),
     getPublicCircles(6),
@@ -189,7 +196,7 @@ export default async function DiscoverHubPage() {
             </div>
             <div className="space-y-3">
               {events.map((e) => (
-                <EventRow key={e.id} event={e} />
+                <EventRow key={e.id} event={e} isAuthed={isAuthed} />
               ))}
             </div>
             <div className="text-center mt-8">
@@ -210,7 +217,7 @@ export default async function DiscoverHubPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {circles.map((c) => (
-                <CircleCard key={c.id} circle={c} />
+                <CircleCard key={c.id} circle={c} isAuthed={isAuthed} />
               ))}
             </div>
             <div className="text-center mt-8">
@@ -251,7 +258,7 @@ export default async function DiscoverHubPage() {
             </div>
             <div className="space-y-3 mb-3">
               {posts.map((p) => (
-                <PostPreview key={p.id} post={p} />
+                <PostPreview key={p.id} post={p} isAuthed={isAuthed} />
               ))}
             </div>
             <InlineBetaCapture

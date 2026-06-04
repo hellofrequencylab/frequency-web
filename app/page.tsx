@@ -23,6 +23,7 @@ import { Reveal, Parallax, CountUp, ScrollCue } from '@/components/marketing/mot
 import { getInitials, relativeTime, eventDateBadge, formatEventDate } from '@/lib/utils'
 import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, BETA_CTA_LABEL, BETA_CTA_HREF, SOCIAL_PROOF_FLOOR, FOUNDING_PLACE } from '@/lib/site'
 import { type CommunityRole, ROLE_RANK, RoleBadge } from '@/lib/community-roles'
+import { communityHref } from '@/lib/community-href'
 import { getJanitor } from '@/lib/page-editor/guard'
 import { getLiveData } from '@/lib/page-editor/live-data'
 import type { LiveData, LiveEvent } from '@/components/marketing/blocks'
@@ -602,38 +603,48 @@ function PostPreviewCard({ post }: { post: PostPreviewRow }) {
   const showRole = hasRole(a?.community_role ?? null)
   const initials = a?.display_name ? getInitials(a.display_name) : '?'
 
+  const identity = (
+    <>
+      {a?.avatar_url ? (
+        <Image
+          src={a.avatar_url}
+          alt={a.display_name}
+          width={40}
+          height={40}
+          className="w-10 h-10 rounded-full object-cover shrink-0"
+        />
+      ) : (
+        <div className="w-10 h-10 rounded-full bg-surface-elevated text-muted text-xs font-semibold flex items-center justify-center shrink-0 select-none">
+          {initials}
+        </div>
+      )}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-base font-semibold text-text truncate">
+            {a?.display_name ?? 'Community member'}
+          </span>
+          {showRole && (
+            <RoleBadge role={a!.community_role as CommunityRole} className="text-[10px] leading-tight" />
+          )}
+        </div>
+        <p className="text-xs text-subtle mt-0.5">
+          {a?.handle && <>@{a.handle} · </>}
+          {relativeTime(post.created_at)}
+        </p>
+      </div>
+    </>
+  )
+
   return (
     <article className="rounded-2xl border border-border bg-surface shadow-sm hover:shadow-md transition-shadow">
       <div className="p-5">
-        <div className="flex items-start gap-3 mb-3">
-          {a?.avatar_url ? (
-            <Image
-              src={a.avatar_url}
-              alt={a.display_name}
-              width={40}
-              height={40}
-              className="w-10 h-10 rounded-full object-cover shrink-0"
-            />
-          ) : (
-            <div className="w-10 h-10 rounded-full bg-surface-elevated text-muted text-xs font-semibold flex items-center justify-center shrink-0 select-none">
-              {initials}
-            </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-base font-semibold text-text truncate">
-                {a?.display_name ?? 'Community member'}
-              </span>
-              {showRole && (
-                <RoleBadge role={a!.community_role as CommunityRole} className="text-[10px] leading-tight" />
-              )}
-            </div>
-            <p className="text-xs text-subtle mt-0.5">
-              {a?.handle && <>@{a.handle} · </>}
-              {relativeTime(post.created_at)}
-            </p>
-          </div>
-        </div>
+        {a?.handle ? (
+          <Link href={communityHref(`/people/${a.handle}`, false)} className="flex items-start gap-3 mb-3 group">
+            {identity}
+          </Link>
+        ) : (
+          <div className="flex items-start gap-3 mb-3">{identity}</div>
+        )}
 
         <p className="text-base text-text leading-relaxed line-clamp-3">{post.body}</p>
 
@@ -671,7 +682,7 @@ function EventRow({ event }: { event: LiveEvent }) {
         </p>
       </div>
       <Link
-        href={BETA_CTA_HREF}
+        href={communityHref(`/events/${event.slug}`, false)}
         className="flex shrink-0 items-center gap-1 text-sm font-semibold text-primary-strong hover:underline"
       >
         Join <ArrowRight className="h-3 w-3" aria-hidden />

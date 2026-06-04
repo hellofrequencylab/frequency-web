@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { createClient } from '@/lib/supabase/server'
 import { getPublicEvents } from '@/lib/discover'
 import { EventRow } from '@/components/discover/cards'
 import { Statement, BetaCTA, PhotoHero, SectionHeading, Button } from '@/components/marketing/marketing-ui'
@@ -21,6 +22,12 @@ export const metadata: Metadata = {
 export const revalidate = 3600
 
 export default async function DiscoverEventsPage() {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const isAuthed = !!user
+
   const events = await getPublicEvents(50)
 
   return (
@@ -72,7 +79,7 @@ export default async function DiscoverEventsPage() {
               <div className="space-y-3">
                 {events.map((e) => (
                   <div key={e.id} className="transition-transform hover:-translate-y-0.5">
-                    <EventRow event={e} />
+                    <EventRow event={e} isAuthed={isAuthed} />
                   </div>
                 ))}
               </div>
