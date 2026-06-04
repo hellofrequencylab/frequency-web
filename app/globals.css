@@ -55,9 +55,10 @@
   --color-signal-bg:        #D6F0EA;
   --color-text-on-signal:   #04231E;
 
-  /* Semantic states */
-  --color-success:          #2E7D32;
-  --color-success-bg:       #E7F1E3;
+  /* Semantic states. Success is a teal (the orange's complement), not a true
+     green, so "done/progress" reads cohesive with the brand signal teal. */
+  --color-success:          #11827A;
+  --color-success-bg:       #D7EFEA;
   --color-warning:          #B07515;
   --color-warning-bg:       #F6ECD8;
   --color-danger:           #BA3B30;
@@ -74,8 +75,8 @@
   --rank-clay:   #C26B45; --rank-clay-deep:   #7C3D22; --rank-clay-bright:   #E9A484;
   --rank-gold:   #D69A3C; --rank-gold-deep:   #875A14; --rank-gold-bright:   #F0C173;
   --rank-olive:  #8A9A5B; --rank-olive-deep:  #4F5A2E; --rank-olive-bright:  #C2CE96;
-  --rank-jade:   #4E9E7E; --rank-jade-deep:   #2A5C48; --rank-jade-bright:   #8FD3BA;
-  --rank-teal:   #3C9C95; --rank-teal-deep:   #205852; --rank-teal-bright:   #7FD2CC;
+  --rank-jade:   #3FA191; --rank-jade-deep:   #245A4E; --rank-jade-bright:   #88D6C5;
+  --rank-teal:   #1F9BA6; --rank-teal-deep:   #0F5C63; --rank-teal-bright:   #74D2DA;
   --rank-slate:  #5B7CA6; --rank-slate-deep:  #324862; --rank-slate-bright:  #9FB6D4;
   --rank-indigo: #7A77C4; --rank-indigo-deep: #444180; --rank-indigo-bright: #B3B0E4;
   --rank-plum:   #9E6B9E; --rank-plum-deep:   #5C3A5C; --rank-plum-bright:   #CFA3CF;
@@ -131,8 +132,8 @@
   --color-signal-bg:        #0F2C24;
   --color-text-on-signal:   #04231E;
 
-  --color-success:          #6FCF73;
-  --color-success-bg:       #1A2A1A;
+  --color-success:          #5FD3BE;
+  --color-success-bg:       #103029;
   --color-warning:          #F2B14E;
   --color-warning-bg:       #2C2310;
   --color-danger:           #F0857A;
