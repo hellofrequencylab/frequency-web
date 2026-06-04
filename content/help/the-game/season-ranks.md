@@ -9,7 +9,7 @@ featureKeys: [ranks]
 status: published
 ---
 
-Ranks are your standing in the current season, earned by showing up — especially in person. They're driven by **zaps** (see [Zaps & gems](/help/the-game/zaps-and-gems)).
+Ranks are your standing in the current season of **The Quest**, earned by showing up — especially in person. They're driven by **zaps** (see [Zaps & gems](/help/the-game/zaps-and-gems)).
 
 ## The ranks
 
