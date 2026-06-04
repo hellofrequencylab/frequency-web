@@ -1979,6 +1979,29 @@ may need a background job (noted for P1b).
 
 ---
 
+## ADR-082: Retire the hand-built 250-cast; the Seed Studio is the demo seeding path
+
+**Decision.** Abandon the one-off 250-person Encinitas demo cast — its seed
+migrations (`20260605000001`-`…000300`) and the `DEMO-CAST.md` casting bible are
+removed. All demo content is now generated on demand by the **Seed Studio**
+wizard (ADR-081) and cleaned by the purge button + nightly decay. The practices
+rich-content schema (`20260605000000`) is kept; the demo practice rows are purged
+with the rest. The live database is swept of all `is_demo` content via the
+`/admin/demo` purge.
+
+**Why.** A static hand-seeded community proved brittle to apply (SQL-editor /
+MCP-approval / economy-guard friction) and is not the product direction. The
+wizard makes any area seedable, previewable, and reversible — so we keep the
+engine, not the one-off cast. Supersedes the *seeding* portion of ADR-080
+(its `is_demo` / `demo_mode` / purge infrastructure still stands).
+
+**Consequences.** Fresh databases no longer ship a prebuilt demo community;
+operators seed areas via the Studio. `is_demo` + purge + decay remain the
+contract. `lib/demo/generate.ts` looks practices up at runtime (no hard-coded
+seed UUIDs) so it survives the purge.
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 

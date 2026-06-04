@@ -25,7 +25,7 @@ const LAST = [
   'Cruz', 'Banner', 'Holm', 'Reed', 'Castellano', 'Voss', 'Ames', 'Bright', 'Calder', 'Dunn',
 ]
 
-// Rank bands, mirroring docs/DEMO-CAST.md §3. Added members skew new (mostly
+// Rank bands (ghost -> luminary economy values). Added members skew new (mostly
 // ghost/runner) — they are joining a year-old community, not founding it.
 const BANDS: Record<string, { z: [number, number]; lz: [number, number]; g: [number, number]; s: [number, number]; a: [number, number] }> = {
   ghost:     { z: [5, 95],     lz: [20, 300],    g: [5, 60],     s: [0, 3],   a: [1, 4] },
@@ -165,16 +165,6 @@ export async function addDemoMembers(circleId: string, count: number): Promise<n
   return n
 }
 
-const CHANNEL_PRACTICE: Record<string, string> = {
-  movement: 'e1000000-0000-0000-0000-000000000002',
-  'holistic-health': 'e1000000-0000-0000-0000-000000000004',
-  spirituality: 'e1000000-0000-0000-0000-000000000007',
-  creative: 'e1000000-0000-0000-0000-000000000009',
-  'business-support': 'e1000000-0000-0000-0000-00000000000b',
-  'human-relating': 'e1000000-0000-0000-0000-000000000008',
-  activism: 'e1000000-0000-0000-0000-000000000008',
-}
-
 /** Spawn a whole new circle with a host, a roster, a practice, and an event. */
 export async function addDemoCircle(input: {
   name: string
@@ -185,7 +175,16 @@ export async function addDemoCircle(input: {
   const d = db()
   const slug = input.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + (rand(900) + 100)
   const { data: ch } = await d.from('topical_channels').select('id').eq('slug', input.channel).maybeSingle()
-  const practiceId = CHANNEL_PRACTICE[input.channel] ?? null
+  // Pick a real practice for this channel at runtime (no hard-coded seed UUIDs):
+  // prefer one in the matching category, else any public one, else none.
+  const { data: pr } = await d
+    .from('practices')
+    .select('id')
+    .eq('is_public', true)
+    .eq('category', input.channel)
+    .limit(1)
+    .maybeSingle()
+  const practiceId = (pr as { id: string } | null)?.id ?? null
 
   const { data: circle } = await d
     .from('circles')
