@@ -437,14 +437,14 @@ function NavLinkList({
   /** Which area sections to render. Defaults to the full rail (NAV_SECTIONS). */
   sections?: NavSectionGroup[]
 }) {
-  // `emphasize` = the home anchor (Feed): a touch bolder and full-strength text
-  // even when inactive, so it reads as the rail's "home" without shouting.
+  // `emphasize` = the home anchor (Feed): always the brand's dark brown and bold,
+  // active or not, so it reads as the rail's permanent "home".
   const itemClass = (active: boolean, emphasize = false) =>
     `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-      active
-        ? 'bg-primary-bg text-primary-strong font-semibold'
-        : emphasize
-          ? 'text-text font-semibold hover:bg-surface-elevated'
+      emphasize
+        ? `font-bold text-[var(--brand-mark)] ${active ? 'bg-primary-bg' : 'hover:bg-surface-elevated'}`
+        : active
+          ? 'bg-primary-bg text-primary-strong font-semibold'
           : 'text-muted font-medium hover:bg-surface-elevated hover:text-text'
     }`
 
@@ -488,7 +488,7 @@ function NavLinkList({
             return (
               <Link key={href} href={href} onClick={onNavigate} className={itemClass(active, isHomeAnchor)}>
                 <Icon
-                  className={`w-[18px] h-[18px] shrink-0 ${active ? 'text-primary-strong' : isHomeAnchor ? 'text-text' : 'text-subtle'}`}
+                  className={`w-[18px] h-[18px] shrink-0 ${isHomeAnchor ? 'text-[var(--brand-mark)]' : active ? 'text-primary-strong' : 'text-subtle'}`}
                   strokeWidth={active || isHomeAnchor ? 2.5 : 2}
                 />
                 {label}

@@ -30,34 +30,33 @@ export type NavArea = {
   defaultAccess: NavAccess
 }
 
-// Order here IS the render order down the rail (Feed + Messages anchors, then
-// the three pillars — Community, The Quest, Network — then Manage).
+// Order here IS the render order down the rail. Feed is the lone pinned home
+// anchor; then the pillars in order — Community, Network, The Quest — then Manage.
 export const NAV_AREAS: readonly NavArea[] = [
-  // ── Top-level anchors → pinned above the section groups ──────────────────────
-  // Feed is "home": the default landing and the day-to-day social loop. Messages
-  // sits right beside it as a second anchor — DMs are personal, not community
-  // content — so both carry section: null and read as the rail's home block.
+  // ── Home anchor → pinned above the section groups ────────────────────────────
+  // Feed is "home": the default landing and the day-to-day social loop. It always
+  // sits at the very top (section: null) and reads in the brand's dark brown.
   { key: 'feed',      href: '/feed',      label: 'Feed',      section: null,        defaultAccess: 'member'  },
-  { key: 'messages',  href: '/messages',  label: 'Messages',  section: null,        defaultAccess: 'member'  },
 
-  // ── Community → the places you belong + the live comms loop ─────────────────
+  // ── Community → the places you belong + the live comms loop + the practice ───
   { key: 'broadcast', href: '/broadcast', label: 'Broadcasts', section: 'Community', defaultAccess: 'visitor' },
   { key: 'circles',   href: '/circles',   label: 'Circles',   section: 'Community', defaultAccess: 'visitor' },
   { key: 'channels',  href: '/channels',  label: 'Channels',  section: 'Community', defaultAccess: 'visitor' },
   { key: 'events',    href: '/events',    label: 'Events',    section: 'Community', defaultAccess: 'member'  },
+  { key: 'practices', href: '/practices', label: 'Practices', section: 'Community', defaultAccess: 'member'  },
+  { key: 'programs',  href: '/programs',  label: 'Programs',  section: 'Community', defaultAccess: 'member'  },
 
-  // ── The Quest → the gamified progression loop ───────────────────────────────
-  { key: 'crew',      href: '/crew',       label: 'Dashboard', section: 'The Quest', defaultAccess: 'crew'    },
-  { key: 'arcs',      href: '/crew/arcs',  label: 'Arcs',      section: 'The Quest', defaultAccess: 'crew'    },
-  { key: 'store',     href: '/crew/store', label: 'Store',     section: 'The Quest', defaultAccess: 'crew'    },
-  { key: 'vault',     href: '/vault',      label: 'Vault',     section: 'The Quest', defaultAccess: 'member'  },
-
-  // ── Network → people, practices, programs, partners ─────────────────────────
-  { key: 'practices', href: '/practices', label: 'Practices', section: 'Network',   defaultAccess: 'member'  },
-  { key: 'programs',  href: '/programs',  label: 'Programs',  section: 'Network',   defaultAccess: 'member'  },
+  // ── Network → your people + DMs + partners (above The Quest) ─────────────────
+  { key: 'messages',  href: '/messages',  label: 'Messages',  section: 'Network',   defaultAccess: 'member'  },
   { key: 'friends',   href: '/friends',   label: 'Friends',   section: 'Network',   defaultAccess: 'member'  },
   { key: 'partners',  href: '/partners',  label: 'Partners',  section: 'Network',   defaultAccess: 'member'  },
   { key: 'people',    href: '/people',    label: 'Directory', section: 'Network',   defaultAccess: 'member'  },
+
+  // ── The Quest → the gamified progression loop. The Store holds your Vault
+  //    (balance + everything you earn by showing up). ───────────────────────────
+  { key: 'crew',      href: '/crew',       label: 'Dashboard', section: 'The Quest', defaultAccess: 'crew'    },
+  { key: 'arcs',      href: '/crew/arcs',  label: 'Arcs',      section: 'The Quest', defaultAccess: 'crew'    },
+  { key: 'store',     href: '/crew/store', label: 'Store',     section: 'The Quest', defaultAccess: 'crew'    },
 
   // ── Manage ──────────────────────────────────────────────────────────────────
   // The admin surface is split into its five categories (the groups in
