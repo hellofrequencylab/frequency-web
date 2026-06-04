@@ -34,52 +34,52 @@ export type NavArea = {
   previewBelowAccess?: boolean
 }
 
-// Order here IS the render order down the rail. Feed is the lone pinned home
-// anchor; then the pillars in order — Community, Network, The Quest — then Manage.
+// Order here IS the render order down the rail (IA redesign, IA-STRATEGY.md ★ /
+// ADR-095). FIVE member "worlds" anchored by Home — Community · Practice · Connect
+// · The Quest — then Manage, split into the 4 axis-grouped sections (Steward /
+// Structure / Studio / Platform), each telescoped at its floor role. Personal
+// utilities (My Code, Help, Settings) live in the account menu, not the rail.
+// Phase 1 = this re-grouping (no schema). Phase 2 = union the staff axis into nav
+// visibility so Studio rides team_members; Phase 3 = persona-gated groups.
 export const NAV_AREAS: readonly NavArea[] = [
   // ── Home anchor → pinned above the section groups ────────────────────────────
-  // Feed is "home": the default landing and the day-to-day social loop. It always
-  // sits at the very top (section: null) and reads in the brand's dark brown.
   { key: 'feed',      href: '/feed',      label: 'Feed',      section: null,        defaultAccess: 'member'  },
 
-  // ── Community → the places you belong + the live comms loop + the practice ───
-  { key: 'broadcast', href: '/broadcast', label: 'Broadcasts', section: 'Community', defaultAccess: 'visitor' },
+  // ── Community → belong & gather. Channels is the primary topical level;
+  //    Interests live within a Channel. ─────────────────────────────────────────
   { key: 'circles',   href: '/circles',   label: 'Circles',   section: 'Community', defaultAccess: 'visitor' },
   { key: 'channels',  href: '/channels',  label: 'Channels',  section: 'Community', defaultAccess: 'visitor' },
   { key: 'events',    href: '/events',    label: 'Events',    section: 'Community', defaultAccess: 'member'  },
-  { key: 'practices', href: '/practices', label: 'Practices', section: 'Community', defaultAccess: 'member'  },
-  { key: 'journeys',  href: '/journeys',  label: 'Journeys',  section: 'Community', defaultAccess: 'member'  },
-  { key: 'programs',  href: '/programs',  label: 'Programs',  section: 'Community', defaultAccess: 'member'  },
 
-  // ── Network → your people + DMs + partners (above The Quest) ─────────────────
-  { key: 'messages',  href: '/messages',  label: 'Messages',  section: 'Network',   defaultAccess: 'member'  },
-  { key: 'friends',   href: '/friends',   label: 'Friends',   section: 'Network',   defaultAccess: 'member'  },
-  { key: 'partners',  href: '/partners',  label: 'Partners',  section: 'Network',   defaultAccess: 'member'  },
-  { key: 'people',    href: '/people',    label: 'Directory', section: 'Network',   defaultAccess: 'member'  },
-  { key: 'codes',     href: '/codes',     label: 'My code',   section: 'Network',   defaultAccess: 'member'  },
+  // ── Practice → grow. The North-Star / WAM engine, its own world. ─────────────
+  { key: 'practices', href: '/practices', label: 'Practices', section: 'Practice',  defaultAccess: 'member'  },
+  { key: 'journeys',  href: '/journeys',  label: 'Journeys',  section: 'Practice',  defaultAccess: 'member'  },
+  { key: 'programs',  href: '/programs',  label: 'Programs',  section: 'Practice',  defaultAccess: 'member'  },
 
-  // ── The Quest → the gamified progression loop. The Store holds your Vault
-  //    (balance + everything you earn by showing up). ───────────────────────────
-  // "The Quest" is the GAME (the gamified meta-layer: dashboard + store). The
-  // "Journeys" unit (sets of practices) lives in Community — Quests and Journeys
-  // were unified into Journeys (S1). /crew/quests now redirects to /journeys.
-  { key: 'crew',      href: '/crew',       label: 'Dashboard', section: 'The Quest', defaultAccess: 'crew', previewBelowAccess: true },
-  { key: 'store',     href: '/crew/store', label: 'Store',     section: 'The Quest', defaultAccess: 'crew', previewBelowAccess: true },
+  // ── Connect → your people ────────────────────────────────────────────────────
+  { key: 'messages',  href: '/messages',  label: 'Messages',  section: 'Connect',   defaultAccess: 'member'  },
+  { key: 'friends',   href: '/friends',   label: 'Friends',   section: 'Connect',   defaultAccess: 'member'  },
+  { key: 'people',    href: '/people',    label: 'Directory', section: 'Connect',   defaultAccess: 'member'  },
 
-  // ── Manage ──────────────────────────────────────────────────────────────────
-  // The admin surface is split into its five categories (the groups in
-  // app/(main)/admin/sections.ts) so each is a primary entry in the rail; the
-  // active category's pages render as a short sub-tab strip (two-layer nav). Each
-  // category deep-links to its landing page and gates at the group's floor role.
-  { key: 'admin-community', href: '/admin',            label: 'Community', section: 'Manage', defaultAccess: 'host'    },
-  { key: 'admin-structure', href: '/admin/hubs',       label: 'Structure', section: 'Manage', defaultAccess: 'guide'   },
-  { key: 'admin-insights',  href: '/admin/engagement', label: 'Insights',  section: 'Manage', defaultAccess: 'janitor' },
-  { key: 'admin-vera',      href: '/admin/vera',       label: 'Vera',      section: 'Manage', defaultAccess: 'janitor' },
-  { key: 'admin-platform',  href: '/admin/members',    label: 'Platform',  section: 'Manage', defaultAccess: 'janitor' },
-  { key: 'crm',       href: '/crm',       label: 'CRM',       section: 'Manage',    defaultAccess: 'host'    },
-  { key: 'marketing', href: '/marketing', label: 'Marketing', section: 'Manage',    defaultAccess: 'admin'   },
-  { key: 'outreach',  href: '/outreach',  label: 'Outreach',  section: 'Manage',    defaultAccess: 'host'    },
-  { key: 'pages',     href: '/pages',     label: 'Pages',     section: 'Manage',    defaultAccess: 'admin'   },
+  // ── The Quest → the game (preview for non-crew → full at crew/paid) ──────────
+  { key: 'crew',      href: '/crew',       label: 'Dashboard',     section: 'The Quest', defaultAccess: 'crew', previewBelowAccess: true },
+  { key: 'store',     href: '/crew/store', label: 'Store & Vault', section: 'The Quest', defaultAccess: 'crew', previewBelowAccess: true },
+
+  // ── Manage → split by the axis that grants it (telescoped at each floor) ──────
+  // Steward — community stewardship (trust host+, scoped to your circle/hub/nexus).
+  { key: 'admin-community', href: '/admin',     label: 'Overview',  section: 'Steward', defaultAccess: 'host' },
+  { key: 'crm',             href: '/crm',       label: 'CRM',       section: 'Steward', defaultAccess: 'host' },
+  { key: 'outreach',        href: '/outreach',  label: 'Outreach',  section: 'Steward', defaultAccess: 'host' },
+  // Structure — the place tree (trust guide/mentor).
+  { key: 'admin-structure', href: '/admin/hubs', label: 'Hubs & Nexuses', section: 'Structure', defaultAccess: 'guide' },
+  // Studio — the business cockpit. Rides the STAFF axis (team_members) in Phase 2;
+  // gated 'admin' for now until nav visibility unions the staff axis.
+  { key: 'marketing',       href: '/marketing', label: 'Marketing', section: 'Studio', defaultAccess: 'admin' },
+  // Platform — operator controls (trust janitor).
+  { key: 'admin-insights',  href: '/admin/engagement', label: 'Insights', section: 'Platform', defaultAccess: 'janitor' },
+  { key: 'admin-vera',      href: '/admin/vera',       label: 'Vera',     section: 'Platform', defaultAccess: 'janitor' },
+  { key: 'admin-platform',  href: '/admin/members',    label: 'Members',  section: 'Platform', defaultAccess: 'janitor' },
+  { key: 'pages',           href: '/pages',            label: 'Pages',    section: 'Platform', defaultAccess: 'janitor' },
 ] as const
 
 /** Quick lookup of an area's baseline access by key. */
