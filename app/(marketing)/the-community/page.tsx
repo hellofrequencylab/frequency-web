@@ -22,6 +22,8 @@ import {
   SectionHeading,
   ZigZag,
   Statement,
+  PullQuote,
+  Stat,
   Marquee,
   PillarNav,
   BetaCTA,
@@ -54,22 +56,22 @@ const CHANNELS = [
   {
     icon: Brain,
     title: 'Mind',
-    body: 'Meditation, breathwork, learning, the quiet practices that settle a nervous system and sharpen a life.',
+    body: 'Meditation, breathwork, learning, the quiet practices that settle a nervous system. The people who text you the morning you skip it, just so you know the seat was there.',
   },
   {
     icon: HeartPulse,
     title: 'Body',
-    body: 'Movement, strength, cold and heat, the run club and the sauna night. The practices you feel the next morning.',
+    body: 'Movement, strength, cold and heat, the run club and the sauna night. The faces you sweat next to week after week, until one day they stop being faces and become your people.',
   },
   {
     icon: Sparkle,
     title: 'Spirit',
-    body: 'Ceremony, sound, human relating, the men’s table and the women’s circle. The work you do shoulder to shoulder.',
+    body: 'Ceremony, sound, human relating, the men’s table and the women’s circle. The work you do shoulder to shoulder, where you put down the version of yourself everyone else gets and are finally just known.',
   },
   {
     icon: Palette,
     title: 'Expression',
-    body: 'Music, art, dance, making things with your hands. The creative practices that need a room and a crowd.',
+    body: 'Music, art, dance, making things with your hands. The room that turns and lights up when you walk in carrying your guitar again, because they saved you the corner by the window.',
   },
 ]
 
@@ -95,7 +97,7 @@ function LegacyTheCommunity() {
             <br className="hidden sm:block" /> You need your people.
           </>
         }
-        subtitle="Most communities are a feed and a hope. Frequency has a structure that actually grows, and it only takes two words to belong."
+        subtitle="The faces that light up when you walk in. A standing time, a handful of regulars, your usual seat already saved. The quiet relief of being known by name, and missed the week you don't come. Frequency gives that a shape, and it only takes two words to belong."
       >
         <Button href={BETA_CTA_HREF}>
           {BETA_CTA_LABEL} <ArrowRight className="w-5 h-5" />
@@ -110,15 +112,24 @@ function LegacyTheCommunity() {
           kicker="It's a few real people, near you, who notice when you're gone."
         />
         <Lead>
-          You already have the apps. What you&apos;re missing is the standing time,
-          the handful of faces, the small group small enough that your absence
-          leaves a hole. That&apos;s not a feature you download. It&apos;s a
-          structure you join.
+          You can have a thousand followers and still drive home alone. What
+          you&apos;re missing isn&apos;t reach. It&apos;s the standing time, the
+          handful of faces, the room small enough that your empty chair gets
+          noticed before the night is over.
         </Lead>
         <Body>
-          Frequency gives community a shape: four channels to find your practice,
-          interests to find your people, and Circles to actually belong. No
-          application, no audition, two words and you&apos;re in the room.
+          Think of the last place you felt that. A team, a band, a house you all
+          lived in, a season that ended. The thing you miss isn&apos;t the
+          activity. It&apos;s being expected. Walking in and having someone glance
+          up, grin, and go back to what they were doing, because you arriving was
+          ordinary, and ordinary is the whole point.
+        </Body>
+        <Body>
+          That kind of belonging never came from a feed, and it won&apos;t come
+          from one more. It comes from a shape: somewhere to show up, the same
+          people to show up for, and enough of a rhythm that being there stops
+          feeling like a plan and starts feeling like home. Frequency is that
+          shape, and joining it takes two words, not an application.
         </Body>
       </Section>
 
@@ -126,6 +137,26 @@ function LegacyTheCommunity() {
         Not a feed. Not a follower count.{' '}
         <span className="text-primary">A few people who notice.</span>
       </Statement>
+
+      {/* The feeling, made concrete — a belonging stat row */}
+      <Section tone="canvas">
+        <SectionHeading
+          eyebrow="The shape of belonging"
+          title="Small on purpose."
+          kicker="Belonging needs a number small enough to hold you."
+        />
+        <p className="text-lg text-muted leading-relaxed mb-9 max-w-prose">
+          A crowd can&apos;t miss you. A Circle can. These are the numbers that
+          turn a room full of strangers into the people who keep a seat warm for
+          you.
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-8">
+          <Stat value="8–12" label="Faces in a Circle" />
+          <Stat value="1" label="Standing time a week" />
+          <Stat value="2" label="Words to belong" />
+          <Stat value="0" label="Applications to fill out" />
+        </div>
+      </Section>
 
       {/* The four channels — the domains a whole life moves through */}
       <Section tone="surface">
@@ -137,7 +168,10 @@ function LegacyTheCommunity() {
         <p className="text-lg text-muted leading-relaxed mb-9">
           Channels are the four domains a real life moves through. They&apos;re the
           map you arrive on: pick the one that&apos;s calling you right now, and the
-          interests and Circles inside it are where you actually land.
+          interests and Circles inside it are where you actually land, among people
+          who lit up the same way you did when they found it. You don&apos;t have to
+          arrive sure of anything. You just have to walk toward the one that feels
+          warm.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {CHANNELS.map((c) => (
@@ -170,19 +204,19 @@ function LegacyTheCommunity() {
             n="01"
             icon={Compass}
             title="Pick what you practice"
-            text="Choose a channel, then an interest inside it: breathwork, strength, supper clubs, sound. It's the thread that ties you to people who care about the same thing."
+            text="Choose a channel, then an interest inside it: breathwork, strength, supper clubs, sound. It's the thread that pulls you toward people who care about the same thing you do."
           />
           <Step
             n="02"
             icon={Users}
             title="Join a Circle"
-            text="Find your people near you. A small standing group built around your interest, with an always-on virtual space and a standing time to meet in person."
+            text="Find your people near you. A small standing group built around your interest, small enough that the regulars learn your name on the first night and notice the week you go missing."
           />
           <Step
             n="03"
             icon={CalendarCheck}
             title="Show up"
-            text="That's the whole secret. Small enough that you're missed when you don't come, so showing up stops feeling like effort and starts feeling like home."
+            text="That's the whole secret. By the third time, they know your name and your order. By the fifth, your empty chair gets a text before you've even decided not to come. Showing up stops being effort and starts being home."
           />
         </div>
       </Section>
@@ -190,26 +224,74 @@ function LegacyTheCommunity() {
       {/* Interests + Circles — the core mechanic, in detail */}
       <ZigZag
         img="/images/site/971634cd-1d52-4b3a-a0ab-5713d395d58a.jpg"
-        alt="A Frequency Circle gathered for breathwork outdoors"
+        alt="A Frequency Circle seated together in meditation at golden hour, faces calm and present"
         eyebrow="Where you belong"
         title="Interests and Circles"
         kicker="Two words are all it takes to find your place."
-        imgAspect="landscape"
+        imgAspect="portrait"
+        imgPosition="top"
         tone="surface"
       >
         <p>
           An <strong className="text-text">interest</strong> is what you practice:
           a topic inside a channel. Surfing, sound baths, strength, human relating.
           It connects you to people everywhere who care about the same things you
-          do.
+          do, the ones who already speak your language, so the first conversation
+          starts halfway in.
         </p>
         <p>
           A <strong className="text-text">Circle</strong> is your people, near you.
-          A small standing group built around an interest, with an always-on
-          virtual space, and a standing time to meet in person. Small enough that
-          you&apos;re missed when you don&apos;t show up.
+          A small standing group built around an interest, with an always-on space
+          to stay close and a standing time to meet in person. Small enough that
+          the regulars learn your name, clock your usual seat, save it when
+          you&apos;re running late, and feel it in the room when you go quiet.
+        </p>
+        <p>
+          That is the difference between an audience and a Circle. An audience can
+          grow forever and never miss a single person. A Circle is sized so it
+          can&apos;t help but notice you.
         </p>
       </ZigZag>
+
+      {/* Sensory beat — the relief of being seen */}
+      <ZigZag
+        img="/images/site/fd40d12c-7667-4d4e-b4c0-3b828170d9b1.jpg"
+        alt="A 'you are beautiful' card propped among people resting on the grass after practice"
+        eyebrow="The feeling"
+        title="The relief of being seen."
+        kicker="Known by name, missed when you're gone."
+        imgAspect="landscape"
+        imgPosition="center"
+        reverse
+        tone="canvas"
+      >
+        <p>
+          There is a particular relief that lands the third or fourth time you walk
+          into the same room. Nobody explains the rules. Somebody just says your
+          name, slides over to make space, and the night carries you. You stop
+          rehearsing the small talk in the car and start belonging.
+        </p>
+        <p>
+          That is the whole register Frequency is built for. Faces that light up
+          when you come in. The regular who notices you skipped last week and asks
+          if you&apos;re alright, and means it. A handful of people for whom your
+          showing up is not optional, because they would feel the gap if it
+          stopped.
+        </p>
+        <p>
+          You spend years being useful to people and impressive to people. This is
+          the rarer thing: being plainly glad-to-see-you to people. No performance
+          required, your absence felt, your name already in someone&apos;s mouth
+          before you reach the door.
+        </p>
+      </ZigZag>
+
+      {/* A voice in the build — a regular, on what showing up turned into */}
+      <PullQuote tone="surface">
+        &ldquo;I came for the cold plunge. I stayed because, six weeks in, a
+        near-stranger texted to ask where I&apos;d been.{' '}
+        <span className="text-primary">That had not happened to me in years.</span>&rdquo;
+      </PullQuote>
 
       {/* The app — an interactive look at what carries the thread day to day */}
       <Section tone="canvas">
@@ -218,6 +300,13 @@ function LegacyTheCommunity() {
           title="Your people, in your pocket."
           kicker="Tap through the four things you'll actually use."
         />
+        <p className="text-lg text-muted leading-relaxed mb-9 max-w-prose">
+          The app is not where the belonging happens. It&apos;s the thread that
+          keeps the warmth alive between meetings, then hands you back to the room.
+          A feed small enough to read every face, the Circle you call home, the
+          standing times to show up for, and a way to say thank you when someone
+          shows up for you. Tap through it.
+        </p>
         <ProductTour />
       </Section>
 
@@ -229,22 +318,23 @@ function LegacyTheCommunity() {
       {/* The growth loop — cells, not franchises */}
       <ZigZag
         img="/images/site/PHOTO-2020-09-09-16-38-27.jpeg"
-        alt="A large Frequency community practicing yoga together on a lawn"
+        alt="A large Frequency community practicing yoga together on a lawn at golden hour"
         eyebrow="How it grows"
         title="It spreads like cells, not franchises."
-        imgAspect="landscape"
-        reverse
+        imgAspect="natural"
         tone="canvas"
       >
         <p>
           Circles are designed to divide. When one fills up, it doesn&apos;t put
           people on a waitlist. It seeds a new Circle, led by someone who was ready
-          to step up.
+          to step up, so nobody is left standing at the edge of a room that&apos;s
+          already full.
         </p>
         <p>
           A handful of neighbouring Circles becomes a neighborhood. Neighborhoods
           become a whole local community. None of it is appointed from above. It
-          grows on its own momentum, the way real things do.
+          grows on its own momentum, the way real things do, and every new seat is
+          one more person who gets to be known.
         </p>
       </ZigZag>
 
@@ -277,10 +367,10 @@ function LegacyTheCommunity() {
       {/* Guru-free — the dark beat */}
       <ZigZag
         img="/images/site/PHOTO-2020-10-17-13-49-14.jpeg"
-        alt="A Frequency music circle gathered on a cliffside at golden hour"
+        alt="A Frequency music circle gathered in a ring on a cliffside above the ocean at golden hour"
         eyebrow="Why it lasts"
         title="Guru-free. By design."
-        imgAspect="landscape"
+        imgAspect="natural"
         reverse
         tone="ink"
       >
@@ -377,22 +467,30 @@ function LegacyTheCommunity() {
       </Section>
 
       {/* Where it's happening now — grounding in the real beta */}
-      <Section tone="canvas">
-        <SectionHeading
-          eyebrow="Where it starts"
-          title="It begins in one real place."
-          kicker={`The founding community is taking shape in ${FOUNDING_PLACE}.`}
-        />
-        <Body>
+      <ZigZag
+        img="/images/site/community-1.jpg"
+        alt="A large Frequency community spread across a neighborhood lawn at golden hour, mats laid out in rows"
+        eyebrow="Where it starts"
+        title="It begins in one real place."
+        kicker={`The founding community is taking shape in ${FOUNDING_PLACE}.`}
+        imgAspect="natural"
+        tone="surface"
+      >
+        <p>
           Every cell starts somewhere. Ours is taking root in {FOUNDING_PLACE}:
-          real Circles, real gatherings, real neighbors who show up for each other.
-          Join the beta and you&apos;re not a number on a waitlist; you&apos;re one
-          of the people this whole thing grows from. And you can start anywhere: a
-          Circle only needs a few people and a standing time.
-        </Body>
-      </Section>
+          real Circles, real gatherings, real neighbors who show up for each other
+          on a Tuesday and notice the Tuesday you don&apos;t.
+        </p>
+        <p>
+          Join the beta and you&apos;re not a number on a waitlist. You&apos;re one
+          of the people this whole thing grows from, an early face the next person
+          walks in and recognizes. And you can start anywhere: a Circle only needs
+          a few people, a standing time, and someone willing to be the first to say
+          see you next week.
+        </p>
+      </ZigZag>
 
-      <PillarNav current="/the-community" tone="surface" />
+      <PillarNav current="/the-community" tone="canvas" />
 
       <BetaCTA
         heading="Find your people."
