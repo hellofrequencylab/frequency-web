@@ -78,6 +78,35 @@ export const TRAIT_REGISTRY: readonly TraitDef[] = [
     systemManaged: false,
   },
 
+  // ── Tags · marketing · beta cohorts ────────────────────────────────────────
+  // Which beta sequence a member arrived through (lib/onboarding/beta-sequences.ts).
+  // Stamped automatically at induction so the founding cohort stays segmentable by
+  // entry path forever — even after the beta flow itself is removed at launch.
+  {
+    key: 'beta_early_adopter',
+    label: 'Beta · Early adopter',
+    description: 'Arrived through the early-adopter sequence — a follower who saw the launch video and claimed a beta spot.',
+    kind: 'tag', category: 'marketing', type: 'boolean',
+    pii: 'none', freshness: 'static', retentionDays: null, owner: 'marketing',
+    systemManaged: true,
+  },
+  {
+    key: 'beta_personal',
+    label: 'Beta · Personal invite',
+    description: "Arrived through Daniel's personal invite sequence — hand-invited into the dream to help shape it.",
+    kind: 'tag', category: 'marketing', type: 'boolean',
+    pii: 'none', freshness: 'static', retentionDays: null, owner: 'marketing',
+    systemManaged: true,
+  },
+  {
+    key: 'beta_founding_partner',
+    label: 'Beta · Founding Partner',
+    description: 'Arrived through the Founding Partner sequence — a collaborator or business in on the ground floor.',
+    kind: 'tag', category: 'marketing', type: 'boolean',
+    pii: 'none', freshness: 'static', retentionDays: null, owner: 'marketing',
+    systemManaged: true,
+  },
+
   // ── Computed · lifecycle (declared now; computed in Phase 2) ───────────────
   {
     key: 'lifecycle_stage',

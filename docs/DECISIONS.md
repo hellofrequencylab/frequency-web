@@ -2496,6 +2496,45 @@ a background job remains the path for very large areas (carried from ADR-091).
 
 ---
 
+## ADR-094: Beta induction sequences — one template, audience-targeted copy, cohort tags
+
+**Decision.** The beta induction (ADR-068) becomes **audience-parameterized** rather
+than one-size-fits-all. A *sequence* (`lib/onboarding/beta-sequences.ts`) bundles a
+public **splash** (`/beta/<slug>`) with the induction's **voiced copy** (Vera's HOT
+register) and a **marketing tag**. Three ship at launch: `early-adopter` (the
+original — followers from Daniel's video), `personal` (Daniel's hand-invites into
+"the dream"), and `founding-partner` (collaborators + businesses, "Founder energy").
+The induction template already accepted a `copy` override, so a sequence just *feeds*
+it — no rewrite. The splash CTA carries the audience via `?seq=`; a 30-day
+`fq_beta_seq` cookie keeps it across the deferred sign-in round-trip; on completion
+`writeBetaInduction` records `meta.beta.sequence` and stamps the cohort's marketing
+tag. A janitor-only **splash-page creator** at `/admin/beta-sequences` lists +
+previews every sequence (copy, the tag, and the shareable link).
+
+**Why.** Same product, very different doorways: a stranger from a video, a personal
+friend, and a prospective business partner each need a different first sentence to
+feel *spoken to*. One induction engine with swappable copy keeps the cinematic flow
+DRY while letting the voice change per audience. Tagging at the door means the
+founding cohort stays **segmentable by entry path forever** — even after the beta
+flow itself is deleted at launch (the tags are durable; the sequences are not).
+
+**Mechanics.** `typeof VERA` is all readonly string *literals*, which rejects any
+different wording, so a widened `VeraCopy` type (same shape, `string` leaves) is the
+contract for sequence/operator copy. Marketing tags are governed: they're declared
+in the trait registry (`lib/traits/registry.ts`) as snake_case keys
+(`beta_early_adopter`, `beta_personal`, `beta_founding_partner`) — `assignTag`
+refuses unregistered keys, so a typo can't create an orphan tag. Tagging is
+best-effort and never blocks onboarding. Operator copy overrides from `/admin/vera`
+still apply to the **default** (early-adopter) sequence — that's what they were
+authored against; the other sequences use their own copy.
+
+**Consequences.** Sequence copy lives in code (reviewed in PRs), not yet a DB-backed
+editable layer — the creator page is read/preview for v1; an editable override
+(vera_config pattern) is the noted follow-on. The whole module is TEMPORARY by
+design and deleted at public launch, leaving only the durable cohort tags behind.
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 

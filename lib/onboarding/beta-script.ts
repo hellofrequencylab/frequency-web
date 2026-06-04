@@ -108,3 +108,11 @@ export const VERA = {
     cta: 'Meet Vera',
   },
 } as const
+
+/** Widened structural type of VERA — the same shape, but every leaf is a plain
+ *  `string` so sequences (beta-sequences.ts) and operator overrides (/admin/vera)
+ *  can supply their own copy. `typeof VERA` alone is all readonly string LITERALS,
+ *  which would reject any different wording. */
+export type VeraCopy = {
+  [K in keyof typeof VERA]: { [F in keyof (typeof VERA)[K]]: string }
+}
