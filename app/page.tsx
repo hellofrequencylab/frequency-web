@@ -9,6 +9,7 @@ import { MarketingFooter } from '@/components/layout/marketing-footer'
 import {
   Marquee,
   BetaCTA,
+  Button,
   Section,
   SectionHeading,
   PhotoHero,
@@ -122,12 +123,9 @@ function Splash({ live }: { live: LiveData }) {
         }
       >
         <div className="flex items-center justify-center">
-          <Link
-            href={BETA_CTA_HREF}
-            className="inline-flex items-center gap-2 rounded-2xl bg-primary text-on-primary px-8 py-3.5 text-base font-bold hover:bg-primary-hover transition-colors shadow-pop"
-          >
+          <Button href={BETA_CTA_HREF}>
             {BETA_CTA_LABEL} <ArrowRight className="w-5 h-5" aria-hidden />
-          </Link>
+          </Button>
         </div>
       </PhotoHero>
 
@@ -518,12 +516,9 @@ function Splash({ live }: { live: LiveData }) {
               <Perk>Shape the Circles from day one</Perk>
               <Perk>First through the doors at The Lab</Perk>
             </ul>
-            <Link
-              href={BETA_CTA_HREF}
-              className="inline-flex items-center gap-2 rounded-2xl bg-primary text-on-primary px-8 py-3.5 text-base font-bold hover:bg-primary-hover transition-colors shadow-pop"
-            >
+            <Button href={BETA_CTA_HREF}>
               {BETA_CTA_LABEL} <ArrowRight className="w-5 h-5" aria-hidden />
-            </Link>
+            </Button>
           </div>
         </Reveal>
       </Section>

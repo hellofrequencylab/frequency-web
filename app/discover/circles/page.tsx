@@ -1,8 +1,7 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { getPublicCircles } from '@/lib/discover'
-import { CircleCard, DiscoverHero, SectionHeading } from '@/components/discover/cards'
-import { ZigZag, BetaCTA } from '@/components/marketing/marketing-ui'
+import { CircleCard } from '@/components/discover/cards'
+import { ZigZag, BetaCTA, PhotoHero, SectionHeading, Button } from '@/components/marketing/marketing-ui'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, circleListSchema } from '@/lib/jsonld'
 import { SITE_NAME, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
@@ -36,20 +35,15 @@ export default async function DiscoverCirclesPage() {
         ]}
       />
 
-      <DiscoverHero
+      <PhotoHero
         image="/images/site/971634cd-1d52-4b3a-a0ab-5713d395d58a.jpg"
         alt="A group gathered outdoors at golden hour, arms thrown open mid-breathwork"
         eyebrow="Find your people"
         title="Circles forming now"
         subtitle="A circle is a small group of up to 50 neighbors who meet in person around something they share — a practice, a place, a love. Browse freely; join a free account to take part."
       >
-        <Link
-          href={BETA_CTA_HREF}
-          className="inline-block rounded-2xl bg-primary text-on-primary px-7 py-3 font-bold hover:bg-primary-hover transition-colors shadow-pop"
-        >
-          {BETA_CTA_LABEL}
-        </Link>
-      </DiscoverHero>
+        <Button href={BETA_CTA_HREF}>{BETA_CTA_LABEL}</Button>
+      </PhotoHero>
 
       <section className="bg-surface px-6 py-20 sm:py-24">
         <div className="max-w-6xl mx-auto">

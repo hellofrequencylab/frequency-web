@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { Render } from '@measured/puck/rsc'
 import {
   ArrowRight,
@@ -19,6 +18,8 @@ import {
   ZigZag,
   Marquee,
   BetaCTA,
+  Button,
+  Card,
 } from '@/components/marketing/marketing-ui'
 import { BETA_CTA_LABEL, BETA_CTA_HREF, FOUNDING_PLACE } from '@/lib/site'
 import { config } from '@/lib/page-editor/config'
@@ -91,12 +92,9 @@ function LegacyTheLab() {
         title="A third space with a front door."
         subtitle="Not home, not work. A real place you can walk into — dark wood, warm light, steam and greenery — engineered to bring your whole system back to baseline. The first one is taking root in North County San Diego."
       >
-        <Link
-          href={BETA_CTA_HREF}
-          className="inline-flex items-center gap-2 rounded-2xl bg-primary text-on-primary px-8 py-3.5 font-bold hover:bg-primary-hover transition-colors shadow-pop"
-        >
+        <Button href={BETA_CTA_HREF}>
           {BETA_CTA_LABEL} <ArrowRight className="w-5 h-5" />
-        </Link>
+        </Button>
       </PhotoHero>
 
       {/* The premise */}
@@ -212,9 +210,10 @@ function LegacyTheLab() {
         />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {INSIDE.map((f) => (
-            <article
+            <Card
               key={f.title}
-              className="rounded-3xl border border-border bg-surface p-6 shadow-sm hover:border-border-strong transition-colors"
+              tone="feature"
+              className="hover:border-border-strong transition-colors"
             >
               <div className="w-11 h-11 rounded-2xl bg-primary-bg flex items-center justify-center mb-4">
                 <f.icon className="w-5 h-5 text-primary-strong" aria-hidden />
@@ -223,7 +222,7 @@ function LegacyTheLab() {
                 {f.title}
               </h3>
               <p className="mt-3 text-base text-muted leading-relaxed">{f.body}</p>
-            </article>
+            </Card>
           ))}
         </div>
       </Section>

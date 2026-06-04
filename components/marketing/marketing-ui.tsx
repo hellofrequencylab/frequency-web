@@ -248,6 +248,63 @@ export function FaqList({ items }: { items: readonly { q: string; a: React.React
   )
 }
 
+// The one marketing button. Retires the ~12 hand-rolled `<Link>` CTAs whose
+// padding/radius/shadow wobbled page to page. `primary` is the amber action;
+// `secondary` is the quiet outline; `ghost` is the inline text link. Renders an
+// <a>/<Link> (every marketing CTA is a navigation).
+export function Button({
+  href,
+  children,
+  variant = 'primary',
+  size = 'md',
+  className = '',
+}: {
+  href: string
+  children: React.ReactNode
+  variant?: 'primary' | 'secondary' | 'ghost'
+  size?: 'sm' | 'md' | 'lg'
+  className?: string
+}) {
+  const sizes = {
+    sm: 'px-5 py-2.5 text-sm gap-1.5',
+    md: 'px-8 py-3.5 text-base gap-2',
+    lg: 'px-10 py-4 text-lg gap-2',
+  } as const
+  const variants = {
+    primary: 'bg-primary text-on-primary hover:bg-primary-hover shadow-pop',
+    secondary: 'border border-border bg-surface text-text hover:bg-surface-elevated',
+    ghost: 'text-primary-strong hover:underline',
+  } as const
+  return (
+    <Link
+      href={href}
+      className={`inline-flex items-center justify-center rounded-2xl font-bold transition-colors ${sizes[size]} ${variants[variant]} ${className}`}
+    >
+      {children}
+    </Link>
+  )
+}
+
+// The one marketing surface card. Soft by default; pass `feature` for a hairline
+// box and `elevated` for the pop shadow. Replaces the 6+ bespoke card shapes that
+// drifted in padding/radius across the splash + discover pages.
+export function Card({
+  children,
+  tone = 'soft',
+  className = '',
+}: {
+  children: React.ReactNode
+  tone?: 'soft' | 'feature' | 'elevated'
+  className?: string
+}) {
+  const tones = {
+    soft: 'bg-surface-elevated/60',
+    feature: 'border border-border bg-surface shadow-sm',
+    elevated: 'border border-border bg-surface shadow-pop',
+  } as const
+  return <div className={`rounded-2xl p-6 ${tones[tone]} ${className}`}>{children}</div>
+}
+
 export function Lead({ children }: { children: React.ReactNode }) {
   return <p className="text-xl text-text/85 leading-relaxed mb-6">{children}</p>
 }
@@ -470,12 +527,9 @@ export function BetaCTA({
       <div className="relative max-w-2xl mx-auto">
         <h2 className="font-display uppercase text-on-ink text-4xl sm:text-5xl mb-6">{heading}</h2>
         {body && <p className="text-xl text-on-ink-muted mb-9 leading-relaxed">{body}</p>}
-        <Link
-          href={BETA_CTA_HREF}
-          className="inline-flex items-center gap-2 rounded-2xl bg-primary text-on-primary px-10 py-4 text-lg font-bold hover:bg-primary-hover transition-colors shadow-pop"
-        >
+        <Button href={BETA_CTA_HREF} size="lg">
           {BETA_CTA_LABEL} <ArrowRight className="w-5 h-5" />
-        </Link>
+        </Button>
       </div>
     </section>
   )

@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import {
   ArrowRight,
   Check,
@@ -22,6 +21,8 @@ import {
   Statement,
   BetaCTA,
   FaqList,
+  Button,
+  Card,
 } from '@/components/marketing/marketing-ui'
 import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
 
@@ -290,11 +291,12 @@ function TierCard({
   future?: boolean
 }) {
   return (
-    <div
-      className={`relative flex flex-col h-full rounded-3xl p-7 sm:p-8 ${
+    <Card
+      tone={featured ? 'elevated' : 'feature'}
+      className={`relative flex flex-col h-full p-7 sm:p-8 ${
         featured
-          ? 'bg-surface border-2 border-primary ring-4 ring-primary-bg shadow-pop-lg lg:-translate-y-3 lg:scale-[1.02]'
-          : 'bg-surface border border-border shadow-sm'
+          ? 'border-2 border-primary ring-4 ring-primary-bg lg:-translate-y-3 lg:scale-[1.02]'
+          : ''
       }`}
     >
       {featured && (
@@ -371,18 +373,15 @@ function TierCard({
       </ul>
 
       {/* CTA */}
-      <Link
+      <Button
         href={cta.href}
-        className={`inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-base font-bold transition-colors ${
-          ctaStyle === 'primary'
-            ? 'bg-primary text-on-primary hover:bg-primary-hover'
-            : 'border border-border-strong text-text hover:bg-surface-elevated'
-        }`}
+        variant={ctaStyle === 'primary' ? 'primary' : 'secondary'}
+        className="w-full"
       >
         {cta.label}
         {ctaStyle === 'primary' && <ArrowRight className="w-4 h-4" />}
-      </Link>
-    </div>
+      </Button>
+    </Card>
   )
 }
 
