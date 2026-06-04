@@ -25,6 +25,7 @@ export type GamificationEvent =
   | { type: 'role_change';    profileId: string; role: string }
   | { type: 'streak_update';  profileId: string; streakType: StreakType; count: number }
   | { type: 'rank_change';    profileId: string; rank: string }
+  | { type: 'qr_scan';        profileId: string; qrCodeId: string }
 
 export interface NewAchievement {
   id: string
@@ -342,7 +343,21 @@ async function advanceChallenges(admin: AdminClient, event: GamificationEvent) {
 
   for (const challenge of challenges) {
     const criteria = challenge.criteria as Record<string, unknown>
-    if (!isChallengeRelevant(criteria, event)) continue
+
+    // QR campaigns: a scan counts only when the scanned code is in this
+    // challenge's set (challenge_qr_codes). The event is emitted once per
+    // (code, member), so progress counts DISTINCT codes — "scan N of these".
+    if ((criteria.type as string) === 'qr_scan') {
+      if (event.type !== 'qr_scan') continue
+      const { count } = await admin
+        .from('challenge_qr_codes')
+        .select('*', { count: 'exact', head: true })
+        .eq('challenge_id', challenge.id)
+        .eq('qr_code_id', event.qrCodeId)
+      if (!count) continue
+    } else if (!isChallengeRelevant(criteria, event)) {
+      continue
+    }
 
     const { data: progress } = await admin
       .from('challenge_progress')

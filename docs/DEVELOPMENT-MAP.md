@@ -60,6 +60,13 @@
 > so QR funnel events (`qr.scanned` / `qr.referral_signup` / `qr.gift_zap` / `qr.code_designed`) reach
 > GA4 even when the scan redirects off-site — alongside the existing client `gtag` mirror + internal
 > `qr_scans`. Inert until `NEXT_PUBLIC_GA_MEASUREMENT_ID` + `GA_API_SECRET` are set in prod. No migration.
+>
+> **2026-06-05:** QR platform **Phase 4 — campaign challenges** (ADR-094). Scavenger hunts on the
+> existing gamification engine: a campaign is a `season_challenges` row (criteria `qr_scan` + target N)
+> scoped to a code set by one join (`challenge_qr_codes`); the `/q` resolver emits a `qr_scan` event
+> (idempotent per code+member → distinct-code counting), `advanceChallenges` rewards on completion, and
+> it shows on `/crew/challenges` automatically. Admin authoring = new **Campaigns** tab in the Studio
+> (collect-all / collect-N + code picker). Migration `20260605030000` applied to prod.
 
 ---
 
