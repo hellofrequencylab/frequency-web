@@ -44,9 +44,15 @@ export async function claimCircle(
   const slug = (circle as { slug: string }).slug
 
   // 1. Convert in place: no longer demo, you're the host, your words apply.
-  const patch: Record<string, unknown> = { is_demo: false, host_id: myId, status: 'active' }
-  if (answers.name?.trim()) patch.name = answers.name.trim()
-  if (answers.about?.trim()) patch.about = answers.about.trim()
+  const patch: { is_demo: boolean; host_id: string; status: 'active'; name?: string; about?: string } = {
+    is_demo: false,
+    host_id: myId,
+    status: 'active',
+  }
+  const newName = answers.name?.trim()
+  const newAbout = answers.about?.trim()
+  if (newName) patch.name = newName
+  if (newAbout) patch.about = newAbout
   const { error: upErr } = await admin.from('circles').update(patch).eq('id', circleId)
   if (upErr) throw new Error(upErr.message)
 
