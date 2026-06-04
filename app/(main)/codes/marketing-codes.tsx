@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Megaphone, Plus, Pencil, Trash2, Download, Copy, Check } from 'lucide-react'
 import { StyleEditor } from '@/app/(main)/admin/qr/style-editor'
+import { trackClient } from '@/components/analytics/track-provider'
 import { createMarketingCode, updateMarketingCode, deleteMarketingCode } from './actions'
 import { DEFAULT_STYLE, type QrStyle } from '@/lib/qr/style'
 import { shortLinkUrl } from '@/lib/qr/links'
@@ -203,6 +204,7 @@ function MarketingForm({
         setError(r.error)
         return
       }
+      trackClient('qr.code_designed', { kind: 'marketing' })
       router.refresh()
       onDone()
     })

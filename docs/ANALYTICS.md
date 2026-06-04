@@ -25,11 +25,16 @@ acquisition-shaped. So we split by job:
 
 One call, both systems. A single `track(event, props)` helper so we never instrument twice and
 the two systems can't drift:
-- **Server side** → insert into `engagement_events` (authoritative, idempotent where it matters).
+- **Server side** → insert into `engagement_events` (authoritative, idempotent where it matters),
+  **and mirror to GA4 via the Measurement Protocol** (`lib/analytics/ga-server.ts`, ADR-093) so
+  server-authoritative events that never touch the browser — QR scans (`/q` redirects off-site),
+  referral attribution at onboarding, gift-a-zap — still reach GA. `actorProfileId` → GA `client_id`
+  + `user_id`.
 - **Client side** → fire the matching **GA4 custom event** via `gtag` (so GA funnels are rich,
   not just pageviews).
 The helper is the *only* sanctioned way to record an analytics event; ad-hoc `gtag()` calls are
-disallowed so coverage stays complete and consistent.
+disallowed so coverage stays complete and consistent. Both mirrors are inert unless the GA env vars
+are set in production.
 
 ## Event taxonomy (canonical)
 
