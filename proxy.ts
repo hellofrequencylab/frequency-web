@@ -1,5 +1,12 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import {
+  FIRST_TOUCH_COOKIE,
+  CHANNEL_COOKIE,
+  FIRST_TOUCH_MAX_AGE,
+  buildFirstTouch,
+  encodeFirstTouch,
+} from '@/lib/attribution/first-touch'
 
 const PROTECTED_PATHS = [
   '/feed',
@@ -58,6 +65,31 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   const { pathname } = request.nextUrl
+
+  // First-touch attribution (ADR-095): record HOW an anonymous visitor first
+  // arrived — campaign, referrer, landing page — once, immutably, so it survives
+  // the sign-in round-trip and is never lost. Best practice is capture-on-arrival.
+  if (!user) {
+    if (!request.cookies.get(FIRST_TOUCH_COOKIE)) {
+      const touch = buildFirstTouch(request.nextUrl.searchParams, pathname, request.headers.get('referer'))
+      supabaseResponse.cookies.set(FIRST_TOUCH_COOKIE, encodeFirstTouch(touch), {
+        path: '/', maxAge: FIRST_TOUCH_MAX_AGE, sameSite: 'lax',
+      })
+    }
+    // High-level channel hint for the person-driven entry routes (the QR resolver
+    // sets its own on /q). Feeds last-touch; first-touch still wins the tag.
+    const channelHint = pathname.startsWith('/join/')
+      ? 'referral'
+      : pathname.startsWith('/events/')
+        ? 'event_guest'
+        : null
+    if (channelHint) {
+      supabaseResponse.cookies.set(CHANNEL_COOKIE, channelHint, {
+        path: '/', maxAge: FIRST_TOUCH_MAX_AGE, sameSite: 'lax',
+      })
+    }
+  }
+
   // Calendar feed downloads (.ics) are intentionally shareable — anyone with
   // the event link should be able to add it to their calendar. Events are
   // already anon-readable via the public_landing_reads RLS policies.

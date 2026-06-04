@@ -2543,6 +2543,50 @@ design and deleted at public launch, leaving only the durable cohort tags behind
 
 ---
 
+## ADR-095: Acquisition attribution — first-touch capture at the edge, governed source tags
+
+**Decision.** Capture **how every visitor first reached us** and persist it on the
+member/lead, following marketing best practice: **capture-on-arrival, first-touch
+primary, never overwrite.** A new `lib/attribution/` module owns one channel
+taxonomy (`donor`, `referral`, `qr_scan`, `event_guest`, `video`, `social`,
+`search`, `email`, `organic`, `direct`). The **edge proxy** (`proxy.ts`) writes an
+immutable `fq_attr` first-touch cookie on an anonymous visitor's first request —
+utm_* params, `gclid`/`fbclid`, referrer, landing path, timestamp — plus an
+`fq_src` channel hint on the person-driven entry routes (`/join`, `/events`; the
+`/q` resolver sets `qr_scan`). At member/lead creation `resolveAcquisition()` folds
+the cookies into one canonical record; the **first-touch channel** becomes the
+governed tag `source_<channel>` (`lib/traits/registry.ts`) and the full record
+(first-touch detail + converting/last-touch channel + signals like the referrer
+profile id and beta sequence) is written to `profiles.meta.acquisition` /
+`contacts.meta.acquisition`.
+
+**Why.** Attribution that's collected at signup-time has already lost the truth —
+the campaign and referrer that brought someone are only knowable on their *first*
+request, and they must survive the whole sign-in round-trip. Capturing at the edge
+into an immutable cookie is the standard fix. **First-touch primary** credits the
+founding cohort's true origin (the choice for this stage); last-touch is still kept
+for multi-touch analysis. Modeling the channel as a governed `source_*` **tag**
+(one boolean per channel, exactly like the `beta_*` cohort tags) makes every origin
+instantly segmentable in `/admin/segments` with zero new query code, while the rich
+utm/referrer detail rides `meta` where free-form JSON belongs.
+
+**No migration.** It rides existing surfaces only — `member_tags` (governed tags),
+`profiles.meta`, `contacts.meta` — so it sidesteps the type-regen / migration-drift
+issue entirely. Tags are validated against the registry (`assignTag` refuses
+unregistered keys), keys are snake_case (`source_qr_scan` mirrors `channelTag()`),
+and all writes are best-effort — attribution never blocks signup.
+
+**Scope.** `donor` and `event_guest` are **plumbing only** for now: the channels +
+resolver are wired so they attribute the moment those flows exist; `event_guest` is
+already set on anonymous event-page visits, but no donations product or guest-RSVP
+flow is built yet. Channel derivation is pure + unit-tested
+(`lib/attribution/channels.test.ts`). A backfill of existing members (inferring a
+source from `referred_by_profile_id` + `meta.beta.*`) and an analytics rollup
+(`source` dimension on the `mkt_*` RPCs / an admin distribution view) are the noted
+follow-ons.
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 
