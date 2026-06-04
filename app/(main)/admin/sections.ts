@@ -145,22 +145,3 @@ export function visibleGroups(role: CommunityRole): AdminGroup[] {
 export function visibleLinks(role: CommunityRole): AdminLink[] {
   return visibleGroups(role).flatMap((g) => g.links)
 }
-
-/** The group LABEL that owns a path (role-agnostic, for display such as the
- *  breadcrumb trail). Longest-href match across the full catalog; null at the
- *  /admin root. */
-export function adminGroupLabelForPath(pathname: string): string | null {
-  let label: string | null = null
-  let bestLen = -1
-  for (const g of ADMIN_GROUPS) {
-    for (const l of g.links) {
-      if (l.href === '/admin') continue // the root isn't a "group" leaf
-      const match = pathname === l.href || pathname.startsWith(`${l.href}/`)
-      if (match && l.href.length > bestLen) {
-        label = g.label
-        bestLen = l.href.length
-      }
-    }
-  }
-  return label
-}
