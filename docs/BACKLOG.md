@@ -374,6 +374,11 @@ inline path (wizard is an optional guided alt); RLS isolation between `journey_p
   (Seed Studio / `lib/demo/*` palette + templates): more human, specific, emotionally textured posts;
   real-feeling names + bios + circle blurbs; varied cadence and warmth. Goal — a newcomer's first scroll
   feels like a real, warm community, not a demo. (M)
+- [ ] **S10 · Vercel preview deploys hang in "Initializing"** *(owner, observed).* A preview deployment
+  sat in **Initializing** for 8m+ and never started building (no build logs). Investigate stuck/never-
+  starting Vercel previews — check the Git integration + build queue, deployment-settings recommendations,
+  and whether concurrent force-pushes orphan in-flight builds. Make preview deploys reliably start (or
+  fail fast with a clear error) so PR previews are trustworthy. (S–M)
 
 ## Accepted (no action)
 - `npm audit`: 4 moderate transitive advisories (postcss in Next's toolchain,
