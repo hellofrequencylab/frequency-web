@@ -10,6 +10,7 @@ import {
   ZigZag,
   Statement,
   PullQuote,
+  Stat,
   BetaCTA,
   Button,
   Card,
@@ -49,7 +50,8 @@ function LegacyAbout() {
         alt="People embracing at sunrise on the bluffs above Moonlight Beach, where Frequency began"
         eyebrow="Our story"
         title="We’re building the place we wished existed."
-        subtitle="It started on a beach in 2020: no guru, no brand, just a thousand strangers who needed each other. This is how it became a blueprint for doing it right."
+        subtitle="It started on a cliff at dawn in 2020: no guru, no brand, just a thousand strangers who turned into each other’s people. This is how that morning became a blueprint for doing it right."
+        focal="object-top"
       >
         <Button href={BETA_CTA_HREF}>
           {BETA_CTA_LABEL} <ArrowRight className="w-5 h-5" aria-hidden />
@@ -66,48 +68,103 @@ function LegacyAbout() {
         <Lead>
           We didn&apos;t set out to start a company. We set out to find each
           other, and discovered that the places built to hold people had
-          quietly disappeared.
+          quietly disappeared while no one was looking.
         </Lead>
         <Body>
           The corner café, the town square, the gathering ground: the third
           spaces that aren&apos;t home and aren&apos;t work, where you&apos;re
-          known by name and missed when you don&apos;t show up. We traded them
-          for feeds and followers, ended up surrounded yet unseen, and felt the
-          loss long before we could explain it. Frequency is our answer to that
-          ache, and it began the only honest way it could: with a handful of
-          people on a cliff at dawn.
+          known by name and missed when you don&apos;t show up. One by one they
+          closed, or went quiet, or got priced out, and we replaced them with
+          feeds and followers. We ended up surrounded yet unseen, scrolling past
+          a thousand faces and recognizing none of them. We felt the loss long
+          before we had a word for it.
+        </Body>
+        <Body>
+          You can have a thousand followers and no one to call when the day goes
+          sideways. That is the gap. It is quiet, it is everywhere, and it is the
+          whole reason we are here. Frequency is our answer to it, and it began
+          the only honest way it could: not in a boardroom or a brand deck, but
+          with a handful of people on a cliff at first light, deciding to keep
+          showing up for each other.
         </Body>
       </Section>
 
       {/* ── 2020 — the beginning ───────────────────────────────────────────── */}
       <ZigZag
         img="/images/site/moonlight-2.jpg"
-        alt="A gathering on the bluffs at Moonlight Beach at sunrise"
+        alt="A woman dancing barefoot on the sand at sunrise as the morning gathering breaks open"
         eyebrow="2020 · Moonlight Beach"
         title="It started on a cliff at dawn."
         imgAspect="portrait"
-        imgPosition="top"
+        imgPosition="center"
         reverse
         tone="canvas"
       >
         <p>
           In a season when everyone felt cut off, a few people in North County
-          San Diego started meeting on the bluffs above Moonlight Beach. Just
-          breath, cold air, and each other: no membership, no marketing, no one
-          in charge.
+          San Diego started meeting on the bluffs above Moonlight Beach. Before
+          the cafés opened, before the inboxes filled, while the sky was still
+          going from grey to gold and the only sound was the surf below. Just
+          breath, cold air off the water, and each other. No membership, no
+          marketing, no one in charge.
         </p>
         <p>
-          Word got out the way real things do: one person bringing another.
-          Within eighteen months, close to a thousand people were showing up to
-          breathe together at sunrise, drawn by nothing but a hunger for
-          something real that none of them could quite name.
+          You would arrive half awake and a little guarded, hands in your
+          sleeves against the chill. Then somewhere between the first cold inhale
+          and the light breaking gold over the Pacific, the guard would drop. A
+          stranger would catch your eye and you&apos;d both just grin. Strangers
+          became a circle. The circle became the reason to set an alarm in the
+          dark.
+        </p>
+        <p>
+          Word got out the way real things do, never advertised, only carried,
+          one person bringing the friend they couldn&apos;t stop telling. Over
+          time close to a thousand people came through, drawn by nothing but a
+          hunger for something real that none of them could quite put a name to.
         </p>
       </ZigZag>
 
-      <Statement tone="surface">
-        It proved the hunger is{' '}
-        <span className="text-primary">enormous</span>.
-      </Statement>
+      {/* ── The ritual (sensory beat) ──────────────────────────────────────── */}
+      <ZigZag
+        img="/images/site/PHOTO-2020-09-09-16-38-27.jpeg"
+        alt="Dozens of people moving through a morning practice together on the grass above the beach"
+        eyebrow="The ritual"
+        title="Every morning, for years."
+        imgAspect="natural"
+        imgPosition="center"
+        tone="surface"
+      >
+        <p>
+          It was not a one-off retreat or a viral weekend. It was a standing
+          time and a standing place, held more than five hundred mornings in a
+          row. Rain, fog, June gloom, hangovers, heartbreak, it did not matter.
+          The mats came out on the wet grass and somebody was always there,
+          steam rising off shoulders in the cold, waiting with the kettle and a
+          spot saved next to them.
+        </p>
+        <p>
+          That is the part the numbers miss. A practice you can count on rewires
+          you. You stop asking whether you feel like going and start ordering
+          your week around the people who will notice the empty mat if you
+          don&apos;t. Showing up stops being a plan you keep and becomes a person
+          you are.
+        </p>
+      </ZigZag>
+
+      {/* ── Proof in numbers ───────────────────────────────────────────────── */}
+      <Section tone="canvas">
+        <SectionHeading
+          eyebrow="The proof"
+          title="The hunger is enormous."
+          kicker="No budget, no brand, no one at the front. People came anyway."
+        />
+        <div className="grid grid-cols-2 gap-8 sm:grid-cols-4 sm:gap-6">
+          <Stat value="500+" label="Mornings in a row" />
+          <Stat value="1,000+" label="People came through" />
+          <Stat value="0" label="Gurus on a stage" />
+          <Stat value="$0" label="Spent on marketing" />
+        </div>
+      </Section>
 
       {/* ── The circle grows ───────────────────────────────────────────────── */}
       <ZigZag
@@ -115,19 +172,25 @@ function LegacyAbout() {
         alt="A music circle gathered on the cliffside above the ocean at golden hour"
         eyebrow="What it felt like"
         title="No stage. No followers. Just a circle."
-        imgAspect="landscape"
+        imgAspect="natural"
+        imgPosition="center"
+        reverse
+        tone="surface"
       >
         <p>
           There was no guru on a stage and no audience in rows. People sat in a
-          circle on the grass, passed instruments around, moved and breathed and
-          actually talked. The point was never to watch someone perform
-          belonging. It was to practice it together.
+          ring on the bluff with the ocean at their backs, passed a guitar and a
+          drum around, sang a little off-key, moved and breathed and actually
+          talked. Whoever needed to be held that morning ended up in the middle.
+          The point was never to watch someone perform belonging. It was to
+          practice it, on each other, until it was real.
         </p>
         <p>
           That shape mattered more than we understood at the time. A leader you
-          follow can leave, burn out, or let you down. A circle holds itself.
-          The thing we&apos;d stumbled into wasn&apos;t a following at all. It
-          was a community that could carry its own weight.
+          follow can leave, burn out, or let you down, and the whole thing goes
+          with them. A circle has no front and no exit. It holds itself. What we
+          had stumbled into wasn&apos;t a following at all. It was a community
+          that could carry its own weight.
         </p>
       </ZigZag>
 
@@ -138,20 +201,25 @@ function LegacyAbout() {
         eyebrow="The hard part"
         title="And then it fell apart."
         imgAspect="landscape"
-        reverse
+        imgPosition="center"
         tone="canvas"
       >
         <p>
           A thousand people, and nowhere to put them. No home, no
           infrastructure, no way to hold what had been built. It ran entirely on
-          a few people&apos;s energy, and energy runs out. When it faded, it
-          faded fast.
+          a few people&apos;s energy, and energy runs out. When it faded it faded
+          fast, the way a fire does once no one is left to feed it. One morning
+          there were fifty of us, and then there were the few, and then the
+          bluff was just a bluff again. The ache of losing it was sharper than
+          the ache that had started it. We had finally found each other, and we
+          watched it slip through our hands for want of a roof and a plan.
         </p>
         <p>
           But it left something behind: a painfully clear picture of exactly
           what to build so that next time, it could last. Not more hype. Not a
-          bigger personality. A real home, a model that doesn&apos;t depend on
-          anyone&apos;s stamina, and a way to stay open to everyone.
+          bigger personality at the front. A real home with a door that locks and
+          opens, a model that doesn&apos;t depend on anyone&apos;s stamina, and a
+          way to stay open to everyone who needs it.
         </p>
       </ZigZag>
 
@@ -203,25 +271,52 @@ function LegacyAbout() {
         <p>
           Frequency exists to rebuild the third space: real physical homes for
           connection, backed by a community designed to last, and kept open to
-          anyone regardless of what they can pay.
+          anyone regardless of what they can pay. A place you walk into tired and
+          walk out of lighter, where the barista knows your order and someone
+          waves you over before you&apos;ve found a seat.
         </p>
         <p>
           We&apos;re not building a following. We&apos;re building
-          infrastructure: the kind of thing you can lean your whole weight on
-          and trust to still be standing next year. A place where showing up is
-          easy, being known is the default, and nobody gets left at the door.
+          infrastructure: the kind of thing you can lean your whole weight on and
+          trust to still be standing next year. A place where showing up is easy,
+          being known is the default, and nobody, ever, gets left at the door.
+        </p>
+      </ZigZag>
+
+      {/* ── A place to be human (sensory beat) ─────────────────────────────── */}
+      <ZigZag
+        img="/images/site/PHOTO-2020-10-07-14-38-02.jpeg"
+        alt="People laughing and lifting a friend into the air, dancing barefoot on the beach at golden hour"
+        eyebrow="What it’s for"
+        title="Somewhere to be fully yourself."
+        imgAspect="landscape"
+        imgPosition="center"
+        reverse
+        tone="surface"
+      >
+        <p>
+          Picture the last time you laughed so hard your face hurt, surrounded by
+          people who were laughing with you, not at a screen. Barefoot in the
+          sand, somebody lifted off their feet, the whole circle whooping. No
+          performance, no posting it, no version of you to maintain. Just being
+          here, loud and unguarded and held.
+        </p>
+        <p>
+          That feeling is not a luxury and it is not rare by nature. We have just
+          run out of places that make it easy. Frequency is built to make it easy
+          again, on an ordinary Tuesday, within walking distance of your door.
         </p>
       </ZigZag>
 
       {/* ── Pull-quote ─────────────────────────────────────────────────────── */}
-      <PullQuote tone="surface" cite="The Frequency founding circle">
+      <PullQuote tone="canvas" cite="The Frequency founding circle">
         &ldquo;We don&apos;t want to be{' '}
         <span className="text-primary">followed</span>. We want to be{' '}
         <span className="text-primary">joined</span>.&rdquo;
       </PullQuote>
 
       {/* ── Timeline ───────────────────────────────────────────────────────── */}
-      <Section tone="canvas">
+      <Section tone="surface">
         <SectionHeading
           eyebrow="The arc"
           title="From a beach to your city."
@@ -259,20 +354,23 @@ function LegacyAbout() {
         eyebrow="What lasts"
         title="Built to outlast any one person."
         imgAspect="landscape"
+        imgPosition="center"
         reverse
-        tone="surface"
+        tone="canvas"
       >
         <p>
           The mistake we never want to repeat is letting it ride on a few
           people&apos;s energy. So everything about Frequency is designed to keep
           standing on its own: the spaces, the model, the way circles form and
-          carry themselves.
+          carry themselves. No single founder it can&apos;t survive, no hero at
+          the front who has to never get tired. The first morning proved the
+          fire. This time we&apos;re building the hearth to keep it in.
         </p>
         <p>
           That&apos;s the whole point of starting again, deliberately, in{' '}
           {FOUNDING_PLACE}. Not to recreate a moment, but to give it the
-          foundations the first one never had, and to keep real connection
-          within reach for everyone, not just the few who can afford it.
+          foundations the first one never had, and to keep real connection within
+          reach for everyone, not just the few who can afford it.
         </p>
       </ZigZag>
 
