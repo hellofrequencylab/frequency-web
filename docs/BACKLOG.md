@@ -188,18 +188,26 @@ greenfield initiative (G).
 Loose ends + next steps from the onboarding/economy/Journeys sprint. Audit verified
 tsc + eslint + 153/170 tests green and no broken refs after the rollbacks/renames.
 
-### Cleanup (small, do soon)
-- [ ] **Consolidate the two crew-gating components.** Pre-existing `CrewGateButton`
-  ("Crew Access Required" modal; wired on circle/event/crew-task actions) vs the new
-  `CrewGate`/`UpgradeLightbox` ("Unlock the full game"; on the Store). Unify to one
-  (prefer the new strategy messaging) so the upsell copy/UX is consistent. (S)
-- [ ] **Delete orphaned `app/onboarding/beta/welcome.tsx`** (BetaWelcome) — unused since
-  the deferred induction replaced the sign-in gate. (S)
-- [ ] **Decide the standalone `/onboarding/vera` page's fate** — orphaned now that
-  "Ask Vera" opens the feed lightbox (`?welcome=vera&v=chat`). Delete or keep as a
-  no-JS fallback. (S)
-- [ ] **Codify the "Vera always links" doctrine** in AI-VERA.md + audit the Vera
-  surfaces (lightbox/concierge) so every feature mention renders as a linked action. (S)
+### Cleanup — ✅ done 2026-06-04
+- [x] **Consolidated the two crew-gating components** into one `UpgradeLightbox`
+  module (`CrewGate` overlay + `CrewGateButton` inline, one shared "Unlock the full
+  game" lightbox). Deleted `components/crew-gate-button.tsx`.
+- [x] **Deleted orphaned `app/onboarding/beta/welcome.tsx`.**
+- [x] **Resolved `/onboarding/vera`:** kept as a no-JS / deep-link fallback to the
+  concierge (the feed lightbox stays primary). Documented in ADR-086.
+- [x] **Codified the "always reachable" doctrine** in AI-VERA.md (§1 + §3 rule).
+
+### Vera — dialed (ADR-086); ⏳ launcher pending
+- [x] **Voice + depth dial-in.** Rewrote `buildSystemPrompt` to attune-first / guided
+  multi-turn / always-nudge-to-action; warmed the default greeting + lightbox framing;
+  rebalanced the §3 doctrine rules.
+- [ ] ⏳ **Persistent companion launcher** (AI-VERA §4.0) — one docked Vera on every
+  member page that opens her conversational chat, **unifying the floating help launcher**
+  (search → grounded answer → human) into her panel so there's one bubble, not two.
+  Reuse the concierge chat via a shared `<VeraChat>` extracted from the lightbox;
+  decouple from the feed-specific close/redirect. (M)
+- [ ] **Live-loop suggestion chips.** The live Claude loop returns empty `suggestions[]`;
+  have Vera surface 1–3 quick-reply chips per turn to keep guided depth flowing. (S)
 
 ### Specced, awaiting build (Launch-gated; dormant while Beta = Crew)
 - [ ] **Beta Activation** (BETA-ACTIVATION.md): profile-completion card; "Founder's

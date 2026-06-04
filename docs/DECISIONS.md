@@ -2016,6 +2016,40 @@ forming the founding leaderboard — not paywalled out of it.
 crew). The Launch gem-spend lock needs the entitlement/payment input on the capability resolver
 (ADR-037) before it can switch on; until then this is a one-flag policy + a backfill.
 
+## ADR-086: Vera dialed as a persistent, attuned companion (presence + depth)
+
+**Status:** Accepted · 2026-06-04. Persona/voice shipped; persistent launcher pending build.
+
+**Context:** Vera was built onboarding-first and routing-biased — the system prompt said *"get
+out of the way fast"* and *"not a follow-up question that farms another turn,"* and the §3
+doctrine forbade *"persistent open-ended chat as a primary surface."* The product owner wants
+Vera to be a **loving, welcoming companion** — present, emotionally attuned, with real
+conversational depth — that always nudges toward action and positive expression.
+
+**Decision:** Rebalance (not discard) the bridge doctrine on three axes:
+1. **Presence → persistent companion.** Vera should be one tap away on every member page via a
+   single docked launcher (AI-VERA §4.0), which also absorbs the floating help launcher's three
+   tiers so there's *one* bubble, not two. *(Persona/voice landed now; the launcher is the next
+   build.)*
+2. **Depth → guided multi-turn.** She stays in a real back-and-forth for a few turns (remembers
+   the session; facts persist via `ai_member_context`) instead of one-shot ejecting. Bounded
+   turn caps stay; the prompt no longer punishes caring follow-ups.
+3. **Job → attune → nudge → teach → bridge.** Every exchange: read the feeling and make the
+   person feel met *first*, then nudge toward one real next step (practice, circle, person,
+   gathering, a kind word), teaching how the place works as needed, and bridging to a human when
+   one can help better. Warmth is honest, never confetti; the dry edge and the no-cruelty serious
+   gear remain.
+
+Also locks the **always-reachable** rule: when Vera names a feature she makes it tappable in the
+same breath (tool proposal / link / named human) — a bare mention is a bug.
+
+**Consequences:** Updated `buildSystemPrompt` (`lib/ai/vera/agent-claude.ts`), the default
+greeting (`config.ts`), the lightbox companion framing, and AI-VERA.md §§1–4. The standalone
+`/onboarding/vera` page is retained as a no-JS / deep-link fallback to the concierge (the feed
+lightbox stays primary). The two parallel crew-gating components were also consolidated into one
+`UpgradeLightbox` (cleanup, not a decision).
+
+---
 ## ADR-085: Arcs renamed to Journeys (full DB + route rename)
 
 **Status:** Accepted · 2026-06-04 · migration `20260604170000_rename_arcs_to_journeys`. Shipped.
