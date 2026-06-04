@@ -161,6 +161,7 @@ abuse, routes gray areas to moderators. Reuses `moderation_actions` / suspension
 |---|---|---|
 | 2026-06-04 | A — DB layer | `profiles` geo columns (`home_lat/lng/label/timezone`, generated `home_geog` + GiST, `feed_radius_m`, `live_*`, `location_mode`); backfill from `meta.beta.location`; `feed_for_viewer` gains a `nearby` sort + `_lat/_lng/_radius_m` params + `distance_m` output — **backward-compatible** (old 2-arg calls unchanged). Migration `20260604185000`. ⏳ Needs apply on a Supabase branch + type regen before prod. |
 | 2026-06-04 | D — dispatch `global` | `dispatches.audience_scope` widened to include `global`; `audience_id` nullable only for `global` (scoped tiers still require a target). Migration `20260604200000`. Staff-only authoring enforced app-side (writes are service-role). ⏳ Needs apply + type regen before prod. |
+| 2026-06-04 | B — Channel open rooms | `rooms.visibility` += `channel`; one open room auto-provisioned per active topical channel (backfill + insert trigger); channel-room messages world-readable, posting service-role (tune-in gated app-side); `creator_id` nullable for system-owned channel rooms; unique room per channel. Migration `20260604210000`. Validated locally (provision / trigger / unique / creator-check all pass). ⏳ Apply + type regen + server-action posting gate before prod. |
 
 ## Open guardrails / risks
 
