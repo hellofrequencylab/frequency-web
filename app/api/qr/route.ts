@@ -10,7 +10,7 @@
 
 import { getMyProfileId } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { isSiteLink, toAbsoluteSiteUrl, shortLinkUrl } from '@/lib/qr/links'
+import { isSiteLink, toAbsoluteSiteUrl, shortLinkUrl, nodeUrl } from '@/lib/qr/links'
 import { renderQrPng, renderQrSvg } from '@/lib/qr/render'
 import { renderStyledQrSvg } from '@/lib/qr/render-styled'
 import { renderStyledQrPng } from '@/lib/qr/raster'
@@ -31,6 +31,7 @@ export async function GET(request: Request) {
   let defaultName = 'frequency-code'
 
   const codeId = url.searchParams.get('code')
+  const nodeId = url.searchParams.get('node')
   if (codeId) {
     const admin = createAdminClient()
     const { data } = await admin.from('qr_codes').select('slug, style').eq('id', codeId).maybeSingle()
@@ -38,6 +39,14 @@ export async function GET(request: Request) {
     target = shortLinkUrl(data.slug)
     style = parseStyle(data.style)
     defaultName = data.slug
+  } else if (nodeId) {
+    // A check-in code (nodes): encodes /n/<id>, styled like a dynamic link.
+    const admin = createAdminClient()
+    const { data } = await admin.from('nodes').select('style').eq('id', nodeId).maybeSingle()
+    if (!data) return new Response('Unknown code.', { status: 404 })
+    target = nodeUrl(nodeId)
+    style = parseStyle(data.style)
+    defaultName = `checkin-${nodeId.slice(0, 8)}`
   } else {
     const text = url.searchParams.get('text')?.trim()
     if (!text) return new Response('Missing `code` or `text`.', { status: 400 })
