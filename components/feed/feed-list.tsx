@@ -172,22 +172,22 @@ export async function FeedList({
   )
 }
 
-// Dispatch banner. Teal signal palette. Reads as "broadcast / official"
+// Dispatch banner. Azure broadcast palette. Reads as "broadcast / official"
 // and stays visually distinct from the green event card and the amber
 // announcement post type further down the feed.
 function DispatchFeedCard({ dispatch: d }: { dispatch: DispatchItem }) {
   return (
     <Link
       href={`/broadcast/${d.id}`}
-      className="group block rounded-2xl border border-signal-bg bg-signal-bg/60 dark:bg-signal-bg/40 shadow-sm px-4 py-3.5 hover:border-signal transition-colors"
+      className="group block rounded-2xl border border-broadcast-bg bg-broadcast-bg/60 dark:bg-broadcast-bg/40 shadow-sm px-4 py-3.5 hover:border-broadcast transition-colors"
     >
       <div className="flex items-start gap-3">
-        <div className="shrink-0 w-7 h-7 rounded-lg bg-signal-bg flex items-center justify-center mt-0.5">
-          <Megaphone className="w-3.5 h-3.5 text-signal-strong" />
+        <div className="shrink-0 w-7 h-7 rounded-lg bg-broadcast-bg flex items-center justify-center mt-0.5">
+          <Megaphone className="w-3.5 h-3.5 text-broadcast-strong" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-0.5">
-            <span className="text-[10px] font-black uppercase tracking-widest text-signal-strong">
+            <span className="text-[10px] font-black uppercase tracking-widest text-broadcast-strong">
               {d.audience_scope} broadcast
             </span>
             {d.linked_task && (
@@ -196,7 +196,7 @@ function DispatchFeedCard({ dispatch: d }: { dispatch: DispatchItem }) {
               </span>
             )}
           </div>
-          <p className="text-sm font-bold text-text group-hover:text-signal-strong transition-colors line-clamp-1">
+          <p className="text-sm font-bold text-text group-hover:text-broadcast-strong transition-colors line-clamp-1">
             {d.title}
           </p>
           {d.excerpt && (
@@ -206,7 +206,7 @@ function DispatchFeedCard({ dispatch: d }: { dispatch: DispatchItem }) {
             <span className="text-[11px] text-subtle">
               {d.author?.display_name} · {relativeTime(d.published_at)}
             </span>
-            <ArrowRight className="w-3 h-3 text-signal-strong group-hover:text-signal transition-colors" />
+            <ArrowRight className="w-3 h-3 text-broadcast-strong group-hover:text-broadcast transition-colors" />
           </div>
         </div>
       </div>

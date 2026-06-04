@@ -44,7 +44,7 @@ export function PracticePrompt({
   const hasReminders = practices.length > 0
 
   return (
-    <div className="mb-6 rounded-xl border border-primary-bg bg-primary-bg/30 p-4">
+    <div className={`mb-6 rounded-xl border border-primary-bg bg-primary-bg/30 ${collapsed ? 'px-4 py-2.5' : 'p-4'}`}>
       {/* Streak header */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2.5">
@@ -109,7 +109,8 @@ export function PracticePrompt({
         )}
       </div>
 
-      {/* Reminders — always visible, collapsed or not. */}
+      {/* Reminders — hidden when collapsed so the box drops to ~half height. */}
+      {!collapsed && (
       <div className="mt-3 border-t border-primary-bg pt-3">
         {hasReminders ? (
           <ul className="space-y-2">
@@ -131,6 +132,7 @@ export function PracticePrompt({
           </div>
         )}
       </div>
+      )}
     </div>
   )
 }

@@ -55,6 +55,14 @@
   --color-signal-bg:        #D6F0EA;
   --color-text-on-signal:   #04231E;
 
+  /* Brand. Broadcast (azure) — the orange's complement. Used for broadcasts /
+     dispatches and the onboarding guide, so "comms + getting set up" reads cool +
+     calm against the warm amber lead. */
+  --color-broadcast:          #2F8FE2;
+  --color-broadcast-strong:   #1B6BB5;
+  --color-broadcast-bg:       #E2EFFB;
+  --color-text-on-broadcast:  #FFFFFF;
+
   /* Semantic states. Success is a teal (the orange's complement), not a true
      green, so "done/progress" reads cohesive with the brand signal teal. */
   --color-success:          #11827A;
@@ -132,6 +140,12 @@
   --color-signal-bg:        #0F2C24;
   --color-text-on-signal:   #04231E;
 
+  /* Broadcast (azure) — brighter tint so it reads clearly against dark wood. */
+  --color-broadcast:          #5BAAEC;
+  --color-broadcast-strong:   #5BAAEC;
+  --color-broadcast-bg:       #11243A;
+  --color-text-on-broadcast:  #FFFFFF;
+
   --color-success:          #5FD3BE;
   --color-success-bg:       #103029;
   --color-warning:          #F2B14E;
@@ -189,6 +203,11 @@
   --color-signal-strong:    var(--color-signal-strong);
   --color-signal-bg:        var(--color-signal-bg);
   --color-on-signal:        var(--color-text-on-signal);
+
+  --color-broadcast:        var(--color-broadcast);
+  --color-broadcast-strong: var(--color-broadcast-strong);
+  --color-broadcast-bg:     var(--color-broadcast-bg);
+  --color-on-broadcast:     var(--color-text-on-broadcast);
 
   --color-success:          var(--color-success);
   --color-success-bg:       var(--color-success-bg);
