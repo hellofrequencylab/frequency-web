@@ -1,16 +1,19 @@
-// QR image download endpoint. Renders a QR for a same-site link as SVG (default)
-// or PNG, used by the admin Studio's "Download" buttons and the member code page.
+// QR image download endpoint. Two modes, both gated to a signed-in caller:
+//   • ?code=<id>  — a managed dynamic code: SVG is rendered with its saved style
+//     (beautiful); PNG is the plain fallback (no server-side rasterizer for styled
+//     SVG yet). Encodes the code's /q/<slug> short link.
+//   • ?text=<link> — any same-site link, plain render (used for check-in nodes +
+//     member connect codes). NOT an open generator (isSiteLink guard).
 //
-// Deliberately NOT an open QR generator: it only encodes our own URLs (isSiteLink)
-// and requires a signed-in caller. The encoded targets (a node landing page, a
-// public profile) are themselves public, so no per-row authorization is needed —
-// the gate is just "a member, encoding a Frequency link".
-//
+//   GET /api/qr?code=<id>&format=svg
 //   GET /api/qr?text=/n/<id>&format=png&size=1024&download=table-tent
 
 import { getMyProfileId } from '@/lib/auth'
-import { isSiteLink, toAbsoluteSiteUrl } from '@/lib/qr/links'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { isSiteLink, toAbsoluteSiteUrl, shortLinkUrl } from '@/lib/qr/links'
 import { renderQrPng, renderQrSvg } from '@/lib/qr/render'
+import { renderStyledQrSvg } from '@/lib/qr/render-styled'
+import { parseStyle, type QrStyle } from '@/lib/qr/style'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,14 +22,28 @@ export async function GET(request: Request) {
   if (!profileId) return new Response('Sign in to generate a code.', { status: 401 })
 
   const url = new URL(request.url)
-  const text = url.searchParams.get('text')?.trim()
-  if (!text) return new Response('Missing `text`.', { status: 400 })
-  if (!isSiteLink(text)) {
-    return new Response('Only Frequency links can be encoded.', { status: 400 })
-  }
-  const target = toAbsoluteSiteUrl(text)
-
   const format = url.searchParams.get('format') === 'png' ? 'png' : 'svg'
+
+  // Resolve the encoded target + (for managed codes) the saved style.
+  let target: string
+  let style: QrStyle | null = null
+  let defaultName = 'frequency-code'
+
+  const codeId = url.searchParams.get('code')
+  if (codeId) {
+    const admin = createAdminClient()
+    const { data } = await admin.from('qr_codes').select('slug, style').eq('id', codeId).maybeSingle()
+    if (!data) return new Response('Unknown code.', { status: 404 })
+    target = shortLinkUrl(data.slug)
+    style = parseStyle(data.style)
+    defaultName = data.slug
+  } else {
+    const text = url.searchParams.get('text')?.trim()
+    if (!text) return new Response('Missing `code` or `text`.', { status: 400 })
+    if (!isSiteLink(text)) return new Response('Only Frequency links can be encoded.', { status: 400 })
+    target = toAbsoluteSiteUrl(text)
+  }
+
   const requested = Number(url.searchParams.get('size'))
   const size = Number.isFinite(requested)
     ? Math.min(Math.max(Math.round(requested), 64), 2048)
@@ -34,17 +51,19 @@ export async function GET(request: Request) {
       ? 1024
       : 512
 
-  const download = url.searchParams.get('download')
-  const headers: Record<string, string> = { 'Cache-Control': 'private, max-age=300' }
-  if (download) {
-    const safe = download.replace(/[^\w.-]+/g, '-').slice(0, 64) || 'frequency-code'
-    headers['Content-Disposition'] = `attachment; filename="${safe}.${format}"`
+  const download = url.searchParams.get('download') ?? defaultName
+  const safe = download.replace(/[^\w.-]+/g, '-').slice(0, 64) || 'frequency-code'
+  const headers: Record<string, string> = {
+    'Cache-Control': 'private, max-age=300',
+    'Content-Disposition': `attachment; filename="${safe}.${format}"`,
   }
 
   if (format === 'png') {
+    // Styled raster isn't supported yet — PNG is the plain code.
     const png = await renderQrPng(target, size)
     return new Response(new Uint8Array(png), { headers: { ...headers, 'Content-Type': 'image/png' } })
   }
-  const svg = await renderQrSvg(target, size)
+
+  const svg = style ? renderStyledQrSvg(target, style, size) : await renderQrSvg(target, size)
   return new Response(svg, { headers: { ...headers, 'Content-Type': 'image/svg+xml; charset=utf-8' } })
 }

@@ -4,6 +4,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { AdminPage } from '@/components/admin/admin-page'
 import { nodeUrl, shortLinkUrl } from '@/lib/qr/links'
 import { renderQrSvg } from '@/lib/qr/render'
+import { renderStyledQrSvg } from '@/lib/qr/render-styled'
+import { parseStyle } from '@/lib/qr/style'
 import { summarizeScans, type ScanRow } from '@/lib/qr/analytics'
 import { QrStudioTabs } from './qr-studio-tabs'
 import type { StudioNode } from './qr-studio'
@@ -30,7 +32,7 @@ export default async function QrStudioPage() {
       db.from('captures').select('node_id').eq('verified', true),
       db
         .from('qr_codes')
-        .select('id, slug, title, destination_type, target_url, node_id, partner_id, active, valid_until, scan_count, created_at')
+        .select('id, slug, title, destination_type, target_url, node_id, partner_id, active, valid_until, scan_count, style, created_at')
         .order('created_at', { ascending: false }),
       db.from('qr_scans').select('qr_code_id, profile_id, scanned_at'),
       db.from('partners').select('id, name').order('name'),
@@ -67,6 +69,7 @@ export default async function QrStudioPage() {
     (links ?? []).map(async (l) => {
       const url = shortLinkUrl(l.slug)
       const stat = summary.perCode.get(l.id)
+      const style = parseStyle(l.style)
       return {
         id: l.id,
         slug: l.slug,
@@ -80,8 +83,9 @@ export default async function QrStudioPage() {
         valid_until: l.valid_until,
         scans: l.scan_count,
         unique: stat?.unique ?? 0,
+        style,
         url,
-        svg: await renderQrSvg(url, 168),
+        svg: renderStyledQrSvg(url, style, 168),
       }
     }),
   )

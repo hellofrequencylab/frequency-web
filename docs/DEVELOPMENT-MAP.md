@@ -32,6 +32,11 @@
 > "Both" model), a scan log (`qr_scans` + `record_qr_scan` RPC), and a Studio analytics tab.
 > Migration `20260605010000` applied to prod. Roadmap: Phase 2 beautiful editor → Phase 3
 > per-member referral/action codes → Phase 4 challenges/campaigns.
+>
+> **2026-06-05:** QR platform **Phase 2 — beautiful editor** (ADR-090). Isomorphic styled SVG
+> renderer (`lib/qr/render-styled.ts`) over the QR matrix — brand colors/gradients, module & eye
+> shapes, center logo, CTA frame — driven by a live-preview editor in the dynamic-links Studio and
+> persisted to `qr_codes.style`. No new dependency, no migration. Next: Phase 3 per-member codes.
 
 ---
 
