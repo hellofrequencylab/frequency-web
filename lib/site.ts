@@ -34,33 +34,40 @@ export const DISCOVER_NAV: NavLink[] = [
 // space, the story, membership); they are deliberately NOT shown in-app, so the
 // feed nav isn't cluttered with splash. Demo was merged into How it works.
 export const SITE_NAV: NavLink[] = [
-  { label: "How it works", href: "/how-it-works" },
   { label: "The Lab", href: "/the-lab" },
+  { label: "The Community", href: "/the-community" },
+  { label: "The Quest", href: "/the-quest" },
   { label: "About", href: "/about" },
 ];
 
 // Members in-app get NO splash tabs — only the shared community core (the Discover
 // dropdown). Splash stays on the public site; the left rail owns in-app nav. This
 // is what keeps the "main menu" and the "feed menu" in sync, minus splash.
-export const SITE_NAV_MEMBER: NavLink[] = [];
+export const SITE_NAV_MEMBER: NavLink[] = [
+  { label: "The Lab", href: "/the-lab" },
+  { label: "The Community", href: "/the-community" },
+  { label: "The Quest", href: "/the-quest" },
+  { label: "About", href: "/about" },
+];
 
 // Flat list for the marketing footer (every public page, no grouping).
 export const MARKETING_NAV: NavLink[] = [
-  { label: "How it works", href: "/how-it-works" },
   { label: "The Lab", href: "/the-lab" },
+  { label: "The Community", href: "/the-community" },
+  { label: "The Quest", href: "/the-quest" },
   { label: "Discover", href: "/discover" },
   { label: "About", href: "/about" },
 ];
 
-// Primary acquisition CTA. The beta is OPEN — clicking "Join the Beta" drops the
-// member into passwordless sign-in carrying `next=/onboarding/beta`, so once the
-// account is created they land directly in the cinematic beta induction instead of
-// the bare feed. (sign-in plumbs `next` into the auth callback, which re-validates
-// it as a same-origin path.) The /beta marketing + waitlist page (BetaForm →
-// requestBetaAccess) is kept intact for the future gated weekly-cohort phase, when
-// AI-driven admission re-introduces the lead capture.
+// Primary acquisition CTA. The beta is OPEN — clicking "Join the Beta" opens the
+// beta induction SEQUENCE directly (/onboarding/beta). Signed-out visitors get the
+// sequence's cinematic welcome with sign-in embedded (app/onboarding/beta/welcome.tsx),
+// not a cold sign-in form; after auth the route renders the full induction. The /beta
+// marketing + waitlist page (BetaForm → requestBetaAccess) is kept intact for the
+// future gated weekly-cohort phase, when AI-driven admission re-introduces the lead
+// capture.
 export const BETA_CTA_LABEL = "Join the Beta";
-export const BETA_CTA_HREF = "/sign-in?next=/onboarding/beta";
+export const BETA_CTA_HREF = "/onboarding/beta";
 
 // Org footer line. Donations / 501(c)(3) framework deferred — no fundraising
 // language on the public site yet (see frequency-site-plan + org-status spec).

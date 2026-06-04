@@ -1,72 +1,4 @@
-import { redirect } from 'next/navigation'
-import { headers, cookies } from 'next/headers'
-import { createClient } from '@/lib/supabase/server'
-
-// A post-login destination is only honoured if it's a same-origin absolute path.
-// We stash it in a short-lived cookie rather than on the callback URL, so the auth
-// provider's redirect-allowlist match is never affected (emailRedirectTo stays the
-// bare, known-good /auth/callback). The callback re-reads and re-validates it.
-function safeNext(raw: FormDataEntryValue | null): string {
-  const v = typeof raw === 'string' ? raw : ''
-  return v.startsWith('/') && !v.startsWith('//') && !v.startsWith('/\\') ? v : ''
-}
-
-const POST_LOGIN_COOKIE = 'fq_post_login'
-
-async function stashNext(next: string) {
-  if (!next) return
-  ;(await cookies()).set(POST_LOGIN_COOKIE, next, {
-    httpOnly: true,
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 60 * 60, // an hour to click the magic link
-  })
-}
-
-async function getCallbackUrl() {
-  const origin = (await headers()).get('origin')
-  return `${origin}/auth/callback`
-}
-
-async function signInWithMagicLink(formData: FormData) {
-  'use server'
-  const email = formData.get('email') as string
-  await stashNext(safeNext(formData.get('next')))
-  const supabase = await createClient()
-
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: { emailRedirectTo: await getCallbackUrl() },
-  })
-
-  if (error) {
-    redirect(`/sign-in?error=${encodeURIComponent(error.message)}`)
-  }
-
-  redirect('/sign-in/confirm')
-}
-
-async function signInWithGoogle(formData: FormData) {
-  'use server'
-  await stashNext(safeNext(formData.get('next')))
-  const supabase = await createClient()
-
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: await getCallbackUrl(),
-      // Always show Google's account chooser instead of silently reusing the
-      // browser's active session — lets people pick which account to sign in with.
-      queryParams: { prompt: 'select_account' },
-    },
-  })
-
-  if (error || !data.url) {
-    redirect(`/sign-in?error=${encodeURIComponent(error?.message ?? 'OAuth failed')}`)
-  }
-
-  redirect(data.url)
-}
+import { signInWithMagicLink, signInWithGoogle } from './actions'
 
 export default async function SignInPage({
   searchParams,
@@ -113,12 +45,12 @@ export default async function SignInPage({
               autoComplete="email"
               required
               placeholder="you@example.com"
-              className="mt-1 block w-full rounded-lg border border-border-strong bg-white px-3 py-2 text-sm placeholder-subtle shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="mt-1 block w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-sm placeholder-subtle shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
           <button
             type="submit"
-            className="w-full rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+            className="w-full rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-sm hover:bg-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
           >
             Send magic link
           </button>
@@ -138,7 +70,7 @@ export default async function SignInPage({
           {nextValue && <input type="hidden" name="next" value={nextValue} />}
           <button
             type="submit"
-            className="flex w-full items-center justify-center gap-3 rounded-lg border border-border-strong bg-white px-4 py-2 text-sm font-medium text-text shadow-sm hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-400"
+            className="flex w-full items-center justify-center gap-3 rounded-lg border border-border-strong bg-surface px-4 py-2 text-sm font-medium text-text shadow-sm hover:bg-surface-elevated focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-400"
           >
             <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
               <path

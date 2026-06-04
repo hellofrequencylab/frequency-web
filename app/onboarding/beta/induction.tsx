@@ -7,11 +7,17 @@
 // city search + reel run for real in preview too.
 
 import { useState, useEffect, useRef } from 'react'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getInitials } from '@/lib/utils'
 import { searchPlaces, type PlaceSuggestion } from '@/lib/geocode'
 import { BETA_OATHS as DEFAULT_OATHS, VERA as DEFAULT_VERA, REEL, HEARD_ABOUT as DEFAULT_HEARD, type OathId } from '@/lib/onboarding/beta-script'
-import { acceptBetaOath, completeBetaInduction } from './actions'
+import { acceptBetaOath, completeBetaInduction, stashPendingInduction } from './actions'
+import { signInWithMagicLink, signInWithGoogle } from '@/app/sign-in/actions'
+
+// Avatar can't ride the auth-redirect in a cookie, so the deferred (signed-out)
+// flow parks its data URL in localStorage and the /complete page uploads it.
+const PENDING_AVATAR_KEY = 'fq_pending_avatar'
 import { FeedRender } from '@/components/onboarding/renders/feed-render'
 import { CirclesRender } from '@/components/onboarding/renders/circles-render'
 import { EventsRender } from '@/components/onboarding/renders/events-render'
@@ -19,13 +25,17 @@ import { EventsRender } from '@/components/onboarding/renders/events-render'
 type HandleStatus = 'idle' | 'checking' | 'available' | 'taken'
 
 type Props = {
-  userId: string
-  userEmail: string
-  initialHandle: string
+  userId?: string
+  userEmail?: string
+  initialHandle?: string
   /** Legacy prop (region list) — no longer used; city is free-search now. */
   regions?: { id: string; name: string }[]
   /** Preview mode: no auth, no server writes — for the public /preview route only. */
   preview?: boolean
+  /** Deferred mode: signed-out visitor runs the whole induction with no login wall;
+   *  answers are stashed and sign-in is collected at the final "step in" beat, after
+   *  which /onboarding/beta/complete writes the profile. */
+  deferred?: boolean
   /** Operator copy overrides from /admin/vera (defaults to the beta-script copy). */
   copy?: {
     vera?: typeof DEFAULT_VERA
@@ -51,7 +61,7 @@ function ArrowRight() {
   )
 }
 
-export default function BetaInduction({ userId, userEmail, initialHandle, preview = false, copy }: Props) {
+export default function BetaInduction({ userId = '', userEmail = '', initialHandle = '', preview = false, deferred = false, copy }: Props) {
   // Operator-tunable copy (defaults to the beta-script copy) — shadows the imports so
   // every existing VERA./BETA_OATHS/HEARD_ABOUT reference picks up the overrides.
   const VERA = copy?.vera ?? DEFAULT_VERA
@@ -95,6 +105,60 @@ export default function BetaInduction({ userId, userEmail, initialHandle, previe
   // Submit
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
+
+  // Deferred (signed-out) final step: collect sign-in, stash answers, then auth.
+  const [email, setEmail] = useState('')
+  const [signingIn, setSigningIn] = useState(false)
+
+  // Park every collected answer where it survives the auth round-trip: the text in
+  // a server cookie, the avatar (too big for a cookie) in localStorage. /complete
+  // reads both after sign-in and writes the profile.
+  async function persistForAuth() {
+    await stashPendingInduction({
+      displayName: displayName.trim(),
+      handle,
+      bio,
+      location,
+      lat: coords?.lat ?? null,
+      lng: coords?.lng ?? null,
+      intent,
+      interests,
+      heardAbout,
+      oaths: BETA_OATHS.filter((o) => oaths[o.id]).map((o) => o.id),
+    })
+    if (avatarFile) {
+      try {
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const r = new FileReader()
+          r.onload = () => resolve(String(r.result))
+          r.onerror = reject
+          r.readAsDataURL(avatarFile)
+        })
+        localStorage.setItem(PENDING_AVATAR_KEY, dataUrl)
+      } catch {
+        // Avatar is best-effort: if it won't fit, they add a photo later.
+      }
+    }
+  }
+
+  async function deferredMagicLink() {
+    if (!email.trim() || signingIn) return
+    setSigningIn(true)
+    await persistForAuth()
+    const fd = new FormData()
+    fd.set('email', email.trim())
+    fd.set('next', '/onboarding/beta/complete')
+    await signInWithMagicLink(fd) // redirects to /sign-in/confirm
+  }
+
+  async function deferredGoogle() {
+    if (signingIn) return
+    setSigningIn(true)
+    await persistForAuth()
+    const fd = new FormData()
+    fd.set('next', '/onboarding/beta/complete')
+    await signInWithGoogle(fd) // redirects to the provider
+  }
 
   // Debounced handle uniqueness check.
   useEffect(() => {
@@ -188,7 +252,8 @@ export default function BetaInduction({ userId, userEmail, initialHandle, previe
   async function passOath() {
     setAccepting(true)
     const accepted = BETA_OATHS.filter((o) => oaths[o.id]).map((o) => o.id)
-    if (!preview) {
+    // No auth yet in preview/deferred — the oath rides along to the final write.
+    if (!preview && !deferred) {
       try {
         await acceptBetaOath(accepted)
       } catch {
@@ -200,7 +265,8 @@ export default function BetaInduction({ userId, userEmail, initialHandle, previe
   }
 
   async function advanceFromIdentity() {
-    if (!preview && avatarFile && !avatarUrl) await uploadAvatar()
+    // Deferred can't upload yet (no auth); the avatar is parked at the final step.
+    if (!preview && !deferred && avatarFile && !avatarUrl) await uploadAvatar()
     setBeat(4)
   }
 
@@ -250,7 +316,7 @@ export default function BetaInduction({ userId, userEmail, initialHandle, previe
 
   // ── Styles (warm light throughout) ───────────────────────────────────────────
   const inputInset =
-    'w-full rounded-xl border border-border bg-marketing-canvas px-4 py-3 text-base text-text placeholder:text-subtle transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25'
+    'w-full rounded-xl border border-border bg-marketing-canvas px-4 py-3 text-base text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none focus-visible:shadow-none'
   const fieldLabel = 'mb-1.5 block text-left text-xs font-semibold uppercase tracking-wider text-subtle'
   const backLink = 'text-sm font-medium text-subtle underline-offset-4 transition-colors hover:text-muted hover:underline'
   const btnPrimary =
@@ -352,7 +418,7 @@ export default function BetaInduction({ userId, userEmail, initialHandle, previe
                 <h1 className={`mt-3 text-6xl sm:text-7xl ${heading}`}>
                   You&rsquo;re not a user.
                   <br />
-                  You&rsquo;re a Founder.
+                  You&rsquo;re a <span className="text-primary">Founder.</span>
                 </h1>
                 <p className="mx-auto mt-4 max-w-2xl text-xl leading-relaxed text-muted">{VERA.intro.body}</p>
                 <div className="mt-8 flex flex-col items-center gap-3">
@@ -581,7 +647,7 @@ export default function BetaInduction({ userId, userEmail, initialHandle, previe
             )}
 
             {/* ── Beat 5: Enter (profile card left, copy right) ── */}
-            {beat === 5 && (
+            {beat === 5 && !deferred && (
               <div className="mx-auto max-w-4xl">
                 <p className={eyebrow}>{VERA.enter.eyebrow}</p>
                 <h1 className={`mt-3 text-5xl sm:text-6xl ${heading}`}>{VERA.enter.heading}</h1>
@@ -613,6 +679,75 @@ export default function BetaInduction({ userId, userEmail, initialHandle, previe
                 </div>
               </div>
             )}
+
+            {/* ── Beat 5 (deferred): the final step IS creating the account ── */}
+            {beat === 5 && deferred && (
+              <div className="mx-auto max-w-4xl">
+                <p className={eyebrow}>{VERA.enter.eyebrow}</p>
+                <h1 className={`mt-3 text-5xl sm:text-6xl ${heading}`}>{VERA.enter.heading}</h1>
+
+                <div className="mt-7 flex flex-col items-center gap-8 md:flex-row md:items-center md:justify-center md:gap-10">
+                  {/* portrait profile card — everything they just built */}
+                  <div className="w-full max-w-72 shrink-0 rounded-3xl border border-border bg-surface p-7 text-center shadow-sm">
+                    <div className="mx-auto w-fit rounded-full ring-4 ring-surface">{renderAvatar()}</div>
+                    <p className="mt-4 text-xl font-semibold text-text">{displayName || <span className="text-subtle">Your name</span>}</p>
+                    <p className="text-sm text-muted">@{handle || 'handle'}</p>
+                    <div className="mt-4 space-y-2 border-t border-border pt-4 text-left text-sm">
+                      <p className="text-text">{location || <span className="italic text-subtle">Add your city</span>}</p>
+                      <p className="text-muted">{bio || <span className="italic text-subtle">Add a one-line bio</span>}</p>
+                      <p className="text-muted">{interests || <span className="italic text-subtle">What you’re into</span>}</p>
+                    </div>
+                  </div>
+
+                  {/* lock it in: sign in to save, then straight to the feed */}
+                  <div className="w-full max-w-xs text-left">
+                    <p className="text-lg leading-relaxed text-muted">
+                      Lock in your spot, Founder. Sign in and everything you just set up is saved.
+                    </p>
+
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') deferredMagicLink() }}
+                      placeholder="you@example.com"
+                      autoComplete="email"
+                      aria-label="Email address"
+                      className={`${inputInset} mt-4`}
+                    />
+                    <button
+                      onClick={deferredMagicLink}
+                      disabled={!email.trim() || signingIn}
+                      className={`${btnPrimary} mt-3 w-full`}
+                    >
+                      {signingIn ? 'One sec…' : 'Step in'}{!signingIn && <ArrowRight />}
+                    </button>
+
+                    <div className="relative my-4">
+                      <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
+                      <div className="relative flex justify-center text-xs uppercase"><span className="bg-marketing-canvas px-2 text-subtle">or</span></div>
+                    </div>
+
+                    <button
+                      onClick={deferredGoogle}
+                      disabled={signingIn}
+                      className="flex w-full items-center justify-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 text-base font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
+                    >
+                      <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
+                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                      </svg>
+                      Continue with Google
+                    </button>
+
+                    <button onClick={() => setBeat(4)} className={`${backLink} mt-4 block`}>Back</button>
+                    <p className="mt-4 text-xs text-subtle">Free during the beta. No card. Leave anytime.</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
         {/* Progress — tight under the content. */}
@@ -623,6 +758,18 @@ export default function BetaInduction({ userId, userEmail, initialHandle, previe
             ))}
           </div>
         </div>
+
+        {/* A quiet way out on every step — never trap anyone, but keep focus on
+            the onboarding (small + low-contrast). */}
+        <p className="mt-6 shrink-0 text-center text-xs text-subtle/70">
+          <Link href="/" className="underline-offset-4 transition-colors hover:text-muted hover:underline">
+            Home
+          </Link>
+          <span className="px-1.5 text-border" aria-hidden>|</span>
+          <Link href="/sign-in" className="underline-offset-4 transition-colors hover:text-muted hover:underline">
+            Log in to account
+          </Link>
+        </p>
       </div>
     </main>
   )

@@ -1888,7 +1888,281 @@ for what is now an Arc** — the one remaining player-facing instance of the col
 
 ---
 
-## ADR-080: Demo content v2 — a year-old, viral, local Encinitas community
+## ADR-080: Content architecture — Channels = 4 Domains over the existing posts substrate; rank for real-world connection
+
+**Status:** Accepted · 2026-06-04 · blueprint in [CONTENT-ARCHITECTURE.md](CONTENT-ARCHITECTURE.md). Foundation shipped (migration `20260604010000`); reach/UI + ranker staged.
+
+**Context:** The vision is "Facebook-level content with a clean way to find what you need." A deep mapping pass found the activity substrate already exists: `posts` (polymorphic `scope_id` + `visibility`) is the unified content table, comments are self-referential posts, and `feed_for_viewer`/`scoped_feed_for_viewer` (SECURITY DEFINER RPCs) are the safe query layer (base `posts` RLS is crew+-only). Wall and Feed are already two lenses over it.
+
+**Decision:**
+- **Channels = the 4 Domains (Mind/Body/Spirit/Expression)** as the top taxonomy layer (`domains` table); the existing `topical_channels` become the **Interests/Topics** underneath (`domain_id`); multi-topic tagging via `circle_topics` (then `event_topics`/`post_topics`). Naming: "Channel" = domain, "Interest/Topic" = topical_channel, the legacy `channels` table (hub/nexus/outpost streams) is a separate internal concept.
+- **Don't rebuild the substrate** — extend the existing RPCs + tagging for Channel reach; keep Wall/Feed/Channel/Circle as queries over `posts`.
+- **The ranker is "an algorithm you get to choose":** explicit Channels are the primary signal; a transparent, tunable score (recency-decay × affinity × locality × in-person bias) ranks within them.
+- **Guardrail:** optimize for **real-world connection, never engagement-time.**
+
+**Consequences:** Foundation is additive + non-breaking (new tables/column, public-read, writes via service_role). Staged next: Channel reach (`get_my_tuned_domain_ids`) + Channel browse pages + IA re-label, `event_topics`/`post_topics`, ranker v1. The 7 seeded interests were backfilled onto the 4 domains (editable data).
+
+---
+
+## ADR-081: Vera onboarding moves into a lightbox over the feed, and continues from induction
+
+**Status:** Accepted · 2026-06-04 · extends ADR-066 (Phase D). Shipped.
+
+**Context:** Post-induction we redirected the new member to a standalone `/onboarding/vera`
+page whose concierge opened cold ("What brought you here? And don't say 'just looking'"). But
+by then induction has already gathered who they are, where they are, and what they came for
+(`profiles.meta.beta`: `intent`, `interests`, `location`, plus `display_name`), and seeded
+Vera's memory. Asking again read as the system not listening, and a separate page pulled the
+Founder out of the product on their first second inside.
+
+**Decision:**
+- After induction (and legacy onboarding), redirect to **`/feed?welcome=vera`** — the real
+  product — and render Vera's onboarding as a **lightbox over the feed**, not a separate page.
+- The lightbox is a short, personalized **deck → chat**: an inspirational continuance slide that
+  reflects the member's own induction words back, one instruction ("Circles are your people.
+  Show up."), then Vera's chat **seeded with a warm opening that picks up the thread** and points
+  at the one next action (a real circle). She never re-asks what we already know.
+- The opening + slides are built by **pure, dark-safe functions** (`lib/onboarding/vera-welcome.ts`),
+  so the continuance works identically whether or not the AI kernel is live; unit-tested.
+- Doctrine preserved (AI-VERA §3): one-tap escape to `/circles`, never trap them on Vera; the
+  feed first-run banner still catches skippers (its "Ask Vera" now opens the lightbox too).
+
+**Consequences:** The standalone `/onboarding/vera` page remains as a direct-nav fallback. The
+lightbox reads `meta.beta` only on `?welcome=vera` (no cost on normal feed loads). Continuance
+quality scales with induction data richness and degrades gracefully (intent → interests → bare
+welcome).
+
+## ADR-082: "Join the Beta" opens the induction immediately — no login wall; sign-in deferred to the final step
+
+**Status:** Accepted · 2026-06-04 · supersedes the signed-out `BetaWelcome` gate. Shipped.
+
+**Context:** Signed-out visitors who clicked "Join the Beta" hit `BetaWelcome` — a "Become a
+Founder" sign-in card — *before* experiencing anything. It read as a login wall on a marketing
+CTA and bled momentum at the exact moment intent is highest.
+
+**Decision:** Signed-out `/onboarding/beta` now renders the **full cinematic induction
+unauthenticated** (`BetaInduction deferred`). They run oath → reel → identity → place with no
+login. Sign-in is collected at the **final "step in" beat** (email magic-link or Google). The
+answers are stashed across the auth round-trip — text in a short-lived httpOnly cookie
+(`fq_pending_induction`), the avatar (too big for a cookie) as a data URL in `localStorage` —
+and written at the new auth-gated `/onboarding/beta/complete`, which uploads the avatar, calls
+the shared `writeBetaInduction` core, clears the stash, and drops them into `/feed?welcome=vera`
+(the Vera lightbox, ADR-081). The proxy already bypasses the whole `/onboarding/beta` prefix.
+
+**Consequences:** No write happens until the member is authenticated (oath/avatar/handle checks
+are deferred or run read-only). `completeBetaInduction` (authed direct path) and
+`finalizePendingInduction` (deferred path) share one write core. **Known limitation:** a magic
+link opened on a *different* device loses the browser-local stash (cookie + localStorage), so
+that visitor restarts induction — acceptable for beta; same-browser and Google OAuth are
+seamless. `BetaWelcome` is now unused (left in place; removed with the rest of the beta induction
+at launch).
+
+## ADR-083: Vera Marketing Intelligence Phase 2 — deterministic grounded forecasts + strategy, no model call
+
+**Status:** Accepted · 2026-06-04 · builds on Phase 1 (`lib/analytics/marketing-intel.ts`). Shipped.
+
+**Context:** Phase 1 shipped the deterministic marketing data spine (the `mkt_*` aggregates
+surfaced on the janitor-only `/admin/intel` page): growth, interest demand, geo, content, and
+leader signal. The page led with raw tables and stopped at the facts. The doctrine in those file
+headers is firm: the findings stay deterministic, and the model only ever narrates them. Phase 2
+needed to turn the facts into a forecast and a prioritized plan without taking a dependency on the
+AI kernel being live.
+
+**Decision:**
+- Add a pure, unit-tested module `lib/analytics/marketing-forecast.ts` operating only on
+  `MarketingIntel`. It exposes `projectGrowth` (least-squares linear trend for the next 4 weeks
+  with an `accelerating`/`steady`/`slowing` momentum label from the recent vs earlier half of the
+  series, guarded against fewer than 2 points), `demandGaps` (ranks interests where demand outruns
+  supply; a channel with demand but zero circles is the highest-priority uncaptured gap),
+  `topMomentumCity`, `staleLeaders` (oldest-to-act leaders to nudge), and `buildStrategy` (a
+  prioritized `now`/`watch`/`hold` list derived solely from those grounded findings).
+- Render a new top "Forecast & strategy" `AdminSection` on `/admin/intel`: projected next-4-week
+  members/circles/events with momentum labels, then the prioritized strategy mapped to the
+  PRESENTATION legend (✅ now / ⏳ watch / ⚠️ hold). Leads with the answer; degrades to plain text.
+- No model call. Everything is deterministic and dark-safe: identical output whether or not the AI
+  kernel is live. House style enforced: no em dashes in any returned copy (covered by a test).
+
+**Consequences:** The forecast quality scales with how much weekly history exists and degrades
+gracefully (the section says so and still emits a strategy from current demand/geo/leader signal
+when the trend is ungrounded). The **Vera-narration layer remains a future enhancement**: it will
+wrap these grounded findings, never replace them. New tests added in
+`lib/analytics/marketing-forecast.test.ts`.
+
+## ADR-084: Beta members get Crew (full gamification) for free; Launch limits the unpaid
+
+**Status:** Accepted · 2026-06-04 · flag `BETA_MEMBERS_GET_CREW` in `lib/onboarding/beta-script.ts`.
+Code shipped; Launch half is spec.
+
+**Context:** Crew is the first paid tier ($10/mo) and the gate for the whole Quest (dashboard,
+arcs, store, gem economy). During the Beta we want everyone *in* the game — racking up zaps/gems,
+forming the founding leaderboard — not paywalled out of it.
+
+**Decision:**
+- **Beta = Crew for free.** Every member who completes induction is granted `crew`
+  (`grantBetaCrew` in `app/onboarding/beta/actions.ts`, gated by `BETA_MEMBERS_GET_CREW`). Only
+  members are upgraded — leaders (host+) and existing crew are untouched; role writes go through
+  the admin client because the `prevent_role_self_escalation` trigger blocks non-`service_role`
+  changes. Existing real members were backfilled to crew.
+- **Downgrade anytime.** The existing `/upgrade` toggle (`toggleCrewRole`) already switches a
+  member ↔ crew (never touching host+), so members can step down whenever they like.
+- **The "Upgrade to Crew" sidebar box** is the re-upgrade pitch — it only shows to `member`
+  (i.e. someone who downgraded), one-time, collapsing to a tab.
+- **Launch transition (spec):** flip `BETA_MEMBERS_GET_CREW` OFF. New members default to Member;
+  any member left **unpaid** keeps their earned gems but loses the Crew surfaces and the ability
+  to **spend** gems (the store/redeem gates on crew + entitlement). The carrot to convert: unlock
+  the game they already have points in. Ties into the freemium/Vault entitlement work (Section K).
+
+**Consequences:** During the Beta the upgrade box is effectively dormant (almost everyone is
+crew). The Launch gem-spend lock needs the entitlement/payment input on the capability resolver
+(ADR-037) before it can switch on; until then this is a one-flag policy + a backfill.
+
+## ADR-087: "Journeys" = the open member library; the gamified engine → "Quests"
+
+**Status:** Accepted · 2026-06-04 · migration `20260604180000_rename_journeys_engine_to_quests`. Engine rename shipped; the open Journeys library is backlog §Q1.
+
+**Context:** A new feature (backlog §Q1) lets members curate practice-combos by Pillar and
+share them into an open, free library — the product owner calls these **"Journeys."** That name
+was taken by the Crew-gated, gamified, seasonal tracked engine (`journey_chains`, `/crew/journeys`,
+in *The Quest* nav). Two "Journey" things would confuse the free/paid line.
+
+**Decision:** The member-facing **"Journeys"** becomes the **open, free, user-built** health-path
+library. The gamified tracked engine reverts to its original name **"Quests"** — it lives in *The
+Quest* nav and is the zaps/badge/season machine, so the name fits. Renamed `journey_chains/steps/
+progress → quest_*` (dropping the stale `quest_*` backward-compat views first), `/crew/journeys →
+/crew/quests` (with redirects from `/crew/journeys` and `/crew/arcs`), nav key `journeys → quests`,
+and all engine-context "Journey(s)" copy → "Quest(s)" (the-quest marketing, admin, dock, crew
+dashboard). The feed's `JourneyBoard` keeps the **Journey** name — it's the personal/open concept.
+
+**Consequences:** The `journey_*` table namespace is now **free** and reserved for the open
+Journeys library (§Q1). This is the engine's third name (quest → arc → journey → quest); it returns
+home. The library remains free (rides the practice loop); only the Quest engine stays Crew-gated
+(ADR-084). `docs/ECONOMY-AND-JOURNEYS.md` is now partly mis-titled — see its header note; a full
+pass lands when §Q1 builds.
+
+---
+## ADR-086: Vera dialed as a persistent, attuned companion (presence + depth)
+
+**Status:** Accepted · 2026-06-04. Persona/voice shipped; persistent launcher pending build.
+
+**Context:** Vera was built onboarding-first and routing-biased — the system prompt said *"get
+out of the way fast"* and *"not a follow-up question that farms another turn,"* and the §3
+doctrine forbade *"persistent open-ended chat as a primary surface."* The product owner wants
+Vera to be a **loving, welcoming companion** — present, emotionally attuned, with real
+conversational depth — that always nudges toward action and positive expression.
+
+**Decision:** Rebalance (not discard) the bridge doctrine on three axes:
+1. **Presence → persistent companion.** Vera should be one tap away on every member page via a
+   single docked launcher (AI-VERA §4.0), which also absorbs the floating help launcher's three
+   tiers so there's *one* bubble, not two. *(Persona/voice landed now; the launcher is the next
+   build.)*
+2. **Depth → guided multi-turn.** She stays in a real back-and-forth for a few turns (remembers
+   the session; facts persist via `ai_member_context`) instead of one-shot ejecting. Bounded
+   turn caps stay; the prompt no longer punishes caring follow-ups.
+3. **Job → attune → nudge → teach → bridge.** Every exchange: read the feeling and make the
+   person feel met *first*, then nudge toward one real next step (practice, circle, person,
+   gathering, a kind word), teaching how the place works as needed, and bridging to a human when
+   one can help better. Warmth is honest, never confetti; the dry edge and the no-cruelty serious
+   gear remain.
+
+Also locks the **always-reachable** rule: when Vera names a feature she makes it tappable in the
+same breath (tool proposal / link / named human) — a bare mention is a bug.
+
+**Consequences:** Updated `buildSystemPrompt` (`lib/ai/vera/agent-claude.ts`), the default
+greeting (`config.ts`), the lightbox companion framing, and AI-VERA.md §§1–4. The standalone
+`/onboarding/vera` page is retained as a no-JS / deep-link fallback to the concierge (the feed
+lightbox stays primary). The two parallel crew-gating components were also consolidated into one
+`UpgradeLightbox` (cleanup, not a decision).
+
+---
+## ADR-085: Arcs renamed to Journeys (full DB + route rename)
+
+**Status:** Accepted · 2026-06-04 · migration `20260604170000_rename_arcs_to_journeys`. Shipped.
+
+**Context:** The multi-step seasonal tracks were "Quests" → renamed "Arcs" (ADR-079) → now
+**Journeys**, the product name that reads as a guided coaching program (see
+ECONOMY-AND-JOURNEYS.md). Half-renames (label only) breed confusion, so this is the full rename.
+
+**Decision:** Rename the tables `arc_chains/arc_steps/arc_progress → journey_chains/journey_steps/
+journey_progress` (renaming keeps policies/indexes/FKs attached; no function/RPC referenced them,
+so it's clean), the route `/crew/arcs → /crew/journeys` (with a redirect stub at the old path),
+the nav area key `arcs → journeys`, and all user-facing "Arc(s)" copy → "Journey(s)" (nav,
+breadcrumbs, dashboard, dock, the-quest marketing, admin). Types regenerated.
+
+**Consequences:** Old `/crew/arcs` links 301 to `/crew/journeys`. Any `area_permissions` override
+keyed `arcs` is orphaned (reverts to the `crew` default — the intended baseline). The DB still has
+constraint/index names containing "arc" (cosmetic; functional).
+
+## ADR-088: Community communication architecture — six surfaces, Channels as feed+room, 1:1 DM with group→rooms, location-first feed
+
+**Status:** Accepted · 2026-06-04 · spec in `COMMS-STRATEGY.md`. Staged build A→E; no code shipped yet.
+
+**Context:** Community communication had grown three overlapping concepts — topical Channels
+(a feed/discovery taxonomy), Rooms (`visibility` public/private/scoped, Discord-ish), and a
+`conversations` table that served **both** 1:1 and group DMs. The product intent is a *local-first,
+always-alive* place: a newcomer should see nearby activity and Circles, the feed should niche from
+global → local as they engage, and messaging should have one obvious 1:1 DM plus a community board
+for everything multi-party. The overlap made "where does X live?" ambiguous and blocked a clean AI
+layer.
+
+**Decision:** Collapse communication into **six non-overlapping surfaces** (Feed, Channels, Circle
+[+Hub/Nexus], Dispatch, Rooms, Direct Messages — see `COMMS-STRATEGY.md` table) with these rulings:
+- **Channel = feed + one open public room.** A topical Channel gets both its content feed and a
+  single always-on public room anyone tuned-in can post to — the answer to "engage even without a
+  related Circle." Circles stay the local/real-world unit; Channels the global/topical unit.
+- **DM is strictly 1:1.** `conversations` becomes 1:1-only; existing group conversations are
+  **migrated to `rooms`** with `visibility='private'` ("private chat room = group message").
+  Public rooms remain Discord-style threads (`room_messages.parent_id` activated).
+- **DM security = hardened, server-readable** (RLS + TLS, **message requests** for strangers,
+  disappearing-message option, block/report UX) — **not** E2E, deliberately, so AI + moderation can
+  extend to messaging later.
+- **Location-first feed.** Member location becomes first-class (promote `profiles.meta.beta.location`
+  to geo columns + PostGIS; member joins the map, not just Circles). `feed_for_viewer` gains
+  distance ranking + a `radius_m` param driven by a **member radius slider**; home location with an
+  optional **live-GPS toggle**.
+- **Dispatch ceiling.** Add `global` to `dispatches.audience_scope` gated to **staff/janitor only**;
+  Circle/Hub/Nexus leaders keep their scoped reach.
+- **Room AI (all four jobs):** catch-me-up summaries, topic menu + semantic search (reuse the
+  gte-small embeddings already running for help search, over `room_messages`), Q&A over history,
+  and intent-driven surfacing of Circles/events/Quest actions — under the existing per-feature AI
+  budget ledger.
+- **Liveness without fatigue:** real-time push only for the personal (DMs, dispatches *to you*,
+  @mentions, your event RSVPs); ambient activity rolls into a "near you" pulse/digest via the
+  durable `notification_queue`. Ship all four liveness signals (presence, typing, near-you-now
+  counter, recent-activity markers).
+- **Open-room moderation = AI pre-screen + human escalation** (reuses `moderation_actions`).
+
+**Consequences:** First build (Phase A) is member geo + nearby-first feed + the join/start
+onboarding. Group-DM→private-room is a one-time, reversible data migration needing a participant/
+message-integrity verification pass. Choosing server-readable DMs trades maximal privacy for an
+extensible AI/moderation surface (revisit if E2E becomes a requirement). `feed_for_viewer` and the
+`dispatches` enum change are additive/backward-compatible.
+
+## ADR-089: Member-visible hierarchy + always-offer "Start a Circle" (supersedes IA-STRATEGY hide-and-join-only)
+
+**Status:** Accepted · 2026-06-04. Supersedes the "Circle + Interest only, hubs/nexuses contextual"
+and "join, don't found" guidance in `IA-STRATEGY.md` (update that doc on build).
+
+**Context:** `IA-STRATEGY.md` deliberately hid Hub/Nexus jargon from members and steered newcomers
+to *join* (not found) Circles, to avoid a map littered with thin/empty Circles. The communication
+strategy (ADR-088) instead wants the full place-tree to feel real and navigable, and wants every
+newcomer offered *both* "join nearby" and "start here" from day one — reinforcing the local,
+go-build-it intent.
+
+**Decision:**
+- **Surface the full hierarchy.** Circle → Hub → Nexus are member-visible, navigable layers (not
+  just backstage context).
+- **Always offer join + start.** New members see "Join a Circle near you" and "Start a Circle here"
+  side by side, regardless of nearby density.
+- **Empty-Circle guardrail.** Mitigate the thin-Circle risk from `IA-STRATEGY.md` by **deferring a
+  Circle's heavier surfaces** — its private room and richer tooling — until it crosses a small
+  activity/size threshold (auto-provision on momentum). Founding stays easy; ghost Circles stay
+  lightweight.
+
+**Consequences:** `IA-STRATEGY.md` must be updated (it currently states the opposite). More
+vocabulary for newcomers to learn (Hub/Nexus); offset by clearer sense of scale. Circle-creation
+volume rises — the momentum-gated room provisioning (ADR-088) is the pressure valve.
+
+## ADR-090: Demo content v2 — a year-old, viral, local Encinitas community
 
 **Decision.** Replace the first-generation demo seed (the old North County SD `c…`
 cast and the five out-of-area national metros `d…`) with one fully-local demo
@@ -1936,7 +2210,7 @@ adoptions) is deterministic + idempotent and cascades away with the cast.
 
 ---
 
-## ADR-081: Demo Seed Studio + the seed -> claim -> decay model
+## ADR-091: Demo Seed Studio + the seed -> claim -> decay model
 
 **Decision.** Evolve demo content from a one-off hand-seeded cast into a
 repeatable **growth engine**. Three pillars: (1) a janitor-only **Seed Studio**
@@ -1979,12 +2253,12 @@ may need a background job (noted for P1b).
 
 ---
 
-## ADR-082: Retire the hand-built 250-cast; the Seed Studio is the demo seeding path
+## ADR-092: Retire the hand-built 250-cast; the Seed Studio is the demo seeding path
 
 **Decision.** Abandon the one-off 250-person Encinitas demo cast — its seed
 migrations (`20260605000001`-`…000300`) and the `DEMO-CAST.md` casting bible are
 removed. All demo content is now generated on demand by the **Seed Studio**
-wizard (ADR-081) and cleaned by the purge button + nightly decay. The practices
+wizard (ADR-091) and cleaned by the purge button + nightly decay. The practices
 rich-content schema (`20260605000000`) is kept; the demo practice rows are purged
 with the rest. The live database is swept of all `is_demo` content via the
 `/admin/demo` purge.
@@ -1992,7 +2266,7 @@ with the rest. The live database is swept of all `is_demo` content via the
 **Why.** A static hand-seeded community proved brittle to apply (SQL-editor /
 MCP-approval / economy-guard friction) and is not the product direction. The
 wizard makes any area seedable, previewable, and reversible — so we keep the
-engine, not the one-off cast. Supersedes the *seeding* portion of ADR-080
+engine, not the one-off cast. Supersedes the *seeding* portion of ADR-090
 (its `is_demo` / `demo_mode` / purge infrastructure still stands).
 
 **Consequences.** Fresh databases no longer ship a prebuilt demo community;

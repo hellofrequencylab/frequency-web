@@ -27,6 +27,7 @@ import {
 import { getInitials } from '@/lib/utils'
 import { NotificationBell } from '@/components/layout/notification-bell'
 import { MessagesPopover } from '@/components/messages/messages-popover'
+import { Breadcrumbs } from '@/components/layout/breadcrumbs'
 import { ViewAsControl } from '@/components/layout/view-as-control'
 import {
   type CommunityRole,
@@ -38,6 +39,7 @@ import type { ProfileIdentity } from '@/lib/types/profile'
 import { PrimaryNav } from '@/components/layout/primary-nav'
 import { BrandMark } from '@/components/layout/brand-mark'
 import { AREA_ICONS } from '@/components/layout/nav-icons'
+import { UpgradeCrew } from '@/components/layout/upgrade-crew'
 import { DockRevealProvider, useDockRevealed, useHoverScrollReveal } from '@/components/sidebar/dock-reveal'
 
 // The sidebar + community bar are built from NAV_AREAS (lib/nav-areas.ts — the
@@ -55,6 +57,8 @@ type MainNavItem = {
   label: string
   Icon: React.ElementType
   defaultAccess: NavAccess
+  /** Below-access viewers may still click through to a muted preview. */
+  preview?: boolean
 }
 
 type NavSectionGroup = { label: string | null; items: MainNavItem[] }
@@ -69,6 +73,7 @@ function buildSections(areas: typeof NAV_AREAS[number][]): NavSectionGroup[] {
       label: area.label,
       Icon: AREA_ICONS[area.key] ?? Globe,
       defaultAccess: area.defaultAccess,
+      preview: area.previewBelowAccess,
     }
     const last = sections[sections.length - 1]
     if (last && last.label === area.section) last.items.push(item)
@@ -77,10 +82,11 @@ function buildSections(areas: typeof NAV_AREAS[number][]): NavSectionGroup[] {
   return sections
 }
 
-// One vertical rail holds every destination: Feed (the home anchor, pinned top),
-// then community spaces, the Broadcasts comms loop (Broadcasts · Messages ·
-// Events), features, and admin — grouped by section. The desktop rail and the
-// mobile drawer render the same set.
+// One vertical rail holds every destination: Feed + Messages (the home anchors,
+// pinned top), then the three pillars — Community, The Quest, Network — and
+// finally Manage (admin), grouped by section. Sections and their order are
+// derived entirely from NAV_AREAS (no hardcoded section list). The desktop rail
+// and the mobile drawer render the same set.
 const NAV_SECTIONS = buildSections([...NAV_AREAS])
 
 // The effective access for an area = a janitor's per-area override, if any,
@@ -147,12 +153,15 @@ function ProfileCard({
   role,
   realRole,
   profileHref,
+  previewVisitor = false,
 }: {
   profile: Profile
   role: CommunityRole
   /** True DB role (ignores any view-as override) — gates the janitor control. */
   realRole: CommunityRole
   profileHref: string
+  /** Janitor previewing as a logged-out visitor — show a "Visitor" chip. */
+  previewVisitor?: boolean
 }) {
   // Pinned at the bottom of the (non-scrolling) left rail, so it stays put on a
   // long scroll. The quick-actions panel rises when the feed reaches its end
@@ -168,7 +177,7 @@ function ProfileCard({
       {/* Compact identity bar — matched in height to the right stats bar.
           Stays on top; the quick actions fill in underneath it. */}
       <div className="flex items-center gap-2.5 px-3 py-3.5">
-        <Link href={profileHref} className="shrink-0">
+        <Link href={profileHref} className="shrink-0" data-tour-anchor="avatar">
           {profile.avatar_url ? (
             <Image
               src={profile.avatar_url}
@@ -189,12 +198,18 @@ function ProfileCard({
               {profile.display_name}
             </p>
           </Link>
-          <span
-            className="rank-badge mt-1 inline-block text-[10px] leading-tight"
-            style={roleBadgeStyle(role)}
-          >
-            {ROLE_LABEL[role]}
-          </span>
+          {previewVisitor ? (
+            <span className="mt-1 inline-block rounded-full bg-surface-elevated px-2 py-0.5 text-[10px] font-semibold leading-tight text-muted">
+              Visitor
+            </span>
+          ) : (
+            <span
+              className="rank-badge mt-1 inline-block text-[10px] leading-tight"
+              style={roleBadgeStyle(role)}
+            >
+              {ROLE_LABEL[role]}
+            </span>
+          )}
         </div>
         <button
           type="button"
@@ -217,7 +232,7 @@ function ProfileCard({
         <div className="overflow-hidden">
           <div className="px-2 pb-3 space-y-0.5">
             {/* Janitor-only "view as role" — first item; opens upward via portal. */}
-            <ViewAsControl realRole={realRole} currentRole={role} />
+            <ViewAsControl realRole={realRole} currentRole={role} asVisitor={previewVisitor} />
             <Link
               href={profileHref}
               className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm font-medium text-text hover:bg-surface-elevated transition-colors"
@@ -426,7 +441,8 @@ function NavLinkList({
   sections = NAV_SECTIONS,
 }: {
   isActive: (href: string) => boolean
-  role: CommunityRole
+  /** Gating role; null = visitor (the janitor's "view as visitor" preview). */
+  role: CommunityRole | null
   onNavigate?: () => void
   extraSections?: NavSection[]
   hideAppNav?: boolean
@@ -435,14 +451,14 @@ function NavLinkList({
   /** Which area sections to render. Defaults to the full rail (NAV_SECTIONS). */
   sections?: NavSectionGroup[]
 }) {
-  // `emphasize` = the home anchor (Feed): a touch bolder and full-strength text
-  // even when inactive, so it reads as the rail's "home" without shouting.
+  // `emphasize` = the home anchor (Feed): always the brand's dark brown and bold,
+  // active or not, so it reads as the rail's permanent "home".
   const itemClass = (active: boolean, emphasize = false) =>
     `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-      active
-        ? 'bg-primary-bg text-primary-strong font-semibold'
-        : emphasize
-          ? 'text-text font-semibold hover:bg-surface-elevated'
+      emphasize
+        ? `font-bold text-[var(--brand-mark)] ${active ? 'bg-primary-bg' : 'hover:bg-surface-elevated'}`
+        : active
+          ? 'bg-primary-bg text-primary-strong font-semibold'
           : 'text-muted font-medium hover:bg-surface-elevated hover:text-text'
     }`
 
@@ -469,6 +485,25 @@ function NavLinkList({
             // a host isn't shown five greyed-out janitor tools.
             const reachable = meetsAccess(effectiveAccess(item, permissions), role)
             if (!reachable && section.label === 'Manage') return null
+            // Preview-able areas (the Quest) stay CLICKABLE but read as a muted
+            // "dead" state for below-access viewers; the page gates engagement.
+            if (!reachable && item.preview) {
+              const active = isActive(href)
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  onClick={onNavigate}
+                  title="Preview — upgrade to Crew to engage"
+                  className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    active ? 'bg-surface-elevated text-muted' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
+                  }`}
+                >
+                  <Icon className="h-[18px] w-[18px] shrink-0 text-subtle" strokeWidth={2} />
+                  {label}
+                </Link>
+              )
+            }
             if (!reachable) {
               return (
                 <div
@@ -486,7 +521,7 @@ function NavLinkList({
             return (
               <Link key={href} href={href} onClick={onNavigate} className={itemClass(active, isHomeAnchor)}>
                 <Icon
-                  className={`w-[18px] h-[18px] shrink-0 ${active ? 'text-primary-strong' : isHomeAnchor ? 'text-text' : 'text-subtle'}`}
+                  className={`w-[18px] h-[18px] shrink-0 ${isHomeAnchor ? 'text-[var(--brand-mark)]' : active ? 'text-primary-strong' : 'text-subtle'}`}
                   strokeWidth={active || isHomeAnchor ? 2.5 : 2}
                 />
                 {label}
@@ -532,7 +567,7 @@ function MobileLeftDrawer({
 }: {
   open: boolean
   onClose: () => void
-  role: CommunityRole
+  role: CommunityRole | null
   isActive: (href: string) => boolean
   extraSections?: NavSection[]
   hideAppNav?: boolean
@@ -677,6 +712,7 @@ function ProfileBottomBar({
 export default function AppShell({
   profile,
   realRole,
+  previewVisitor = false,
   children,
   sidebar,
   ticker,
@@ -689,6 +725,9 @@ export default function AppShell({
   /** True DB role, ignoring any view-as override. Defaults to the (effective)
    *  profile role, so the janitor control only appears for actual janitors. */
   realRole?: CommunityRole
+  /** Janitor previewing the logged-out visitor experience — gates the nav as a
+   *  visitor and flips the identity chrome to "Visitor". */
+  previewVisitor?: boolean
   children: React.ReactNode
   sidebar?: React.ReactNode
   /** Community news ticker pinned above the page content (streamed via Suspense). */
@@ -703,6 +742,8 @@ export default function AppShell({
   const router = useRouter()
   const role = (profile.community_role ?? 'member') as CommunityRole
   const effectiveRealRole = realRole ?? role
+  // Nav gating role: a visitor preview gates as a logged-out visitor (null).
+  const gateRole: CommunityRole | null = previewVisitor ? null : role
   const profileHref = `/people/${profile.handle}`
   const { theme, setTheme } = useTheme()
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -733,7 +774,10 @@ export default function AppShell({
     if (href === '/channels') return pathname === '/channels' || pathname.startsWith('/channels/')
     if (href === '/messages') return pathname === '/messages' || pathname.startsWith('/messages/')
     if (href === '/settings') return pathname === '/settings' || pathname.startsWith('/settings/')
-    if (href === '/crew')     return pathname === '/crew' || pathname.startsWith('/crew/')
+    // Dashboard (/crew) is the section root; its siblings /crew/quests and
+    // /crew/store are their own rail items, so match /crew exactly and let those
+    // sub-routes light up their own entry via the generic prefix rule below.
+    if (href === '/crew')     return pathname === '/crew'
     if (href === '/search')   return pathname === '/search'
     return pathname === href || pathname.startsWith(href + '/')
   }
@@ -861,31 +905,17 @@ export default function AppShell({
 
           {/* Community spaces + features + admin rail (the Broadcast bar lives up top) */}
           <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-            <NavLinkList isActive={isActive} role={role} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} />
+            <NavLinkList isActive={isActive} role={gateRole} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} />
           </nav>
 
-          {/* Upgrade to Crew CTA. Members only (not janitor) */}
-          {!hideAppNav && role === 'member' && (
-            <div className="mx-3 mb-3 rounded-xl border border-border bg-primary-bg p-3.5">
-              <p className="text-xs font-semibold text-primary-strong mb-1">
-                Upgrade to Crew
-              </p>
-              <p className="text-xs text-muted leading-snug mb-3">
-                Get full access to the feed, events, and your group.
-              </p>
-              <a
-                href="/upgrade"
-                className="block text-center rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary hover:bg-primary-hover transition-colors"
-              >
-                Upgrade →
-              </a>
-            </div>
-          )}
+          {/* Upgrade to Crew. Non-paying members only; one-time pitch that
+              collapses to a slim "Upgrade" tab above the profile card. */}
+          {!hideAppNav && role === 'member' && <UpgradeCrew />}
 
           {/* Profile card. Public identity anchor.
               Avatar · name · role badge → public profile · member settings.
               Rises to show quick actions when the feed scroll hits the bottom. */}
-          <ProfileCard profile={profile} role={role} realRole={effectiveRealRole} profileHref={profileHref} />
+          <ProfileCard profile={profile} role={role} realRole={effectiveRealRole} profileHref={profileHref} previewVisitor={previewVisitor} />
         </aside>
 
         {/* Center + right column — ONE shared scroll container (no per-column
@@ -902,7 +932,8 @@ export default function AppShell({
                 scroll. */}
             <div className="flex-1 min-w-0 flex flex-col">
               {!hideAppNav && ticker}
-              <main className="flex-1 min-w-0 px-4 py-6 sm:px-6">
+              <main className="flex-1 min-w-0 px-4 py-6 sm:px-6" data-tour-anchor="content">
+                <Breadcrumbs />
                 {children}
               </main>
             </div>
@@ -930,7 +961,7 @@ export default function AppShell({
       <MobileLeftDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        role={role}
+        role={gateRole}
         isActive={isActive}
         extraSections={extraSections}
         hideAppNav={hideAppNav}

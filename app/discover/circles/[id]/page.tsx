@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { ChevronRight, Users, MapPin } from 'lucide-react'
 import { getPublicCircleById } from '@/lib/discover'
 import { SignInCta } from '@/components/discover/cards'
+import { RippleRings } from '@/components/marketing/vector-art'
 import { SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
@@ -45,7 +46,12 @@ export default async function CirclePage({
   if (!circle) notFound()
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-12">
+    <div className="relative overflow-hidden max-w-3xl mx-auto px-6 py-20 sm:py-24">
+      {/* Ripple rings: a circle widening out, the motif for this surface. */}
+      <RippleRings
+        aria-hidden
+        className="pointer-events-none absolute -top-24 -right-24 w-[30rem] max-w-none text-primary opacity-[0.05]"
+      />
       <JsonLd
         data={breadcrumbSchema([
           { name: 'Discover', path: '/discover' },
@@ -65,8 +71,11 @@ export default async function CirclePage({
 
       {/* Header */}
       <header className="mb-8">
+        <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
+          Find your people
+        </p>
         <div className="flex items-start justify-between gap-3 mb-3">
-          <h1 className="text-3xl sm:text-4xl font-bold text-text">{circle.name}</h1>
+          <h1 className="font-display uppercase text-text text-4xl sm:text-5xl">{circle.name}</h1>
           {circle.status === 'forming' && (
             <span className="shrink-0 mt-2 text-xs px-2 py-1 rounded-md font-medium bg-warning-bg text-warning capitalize">
               forming
@@ -96,15 +105,23 @@ export default async function CirclePage({
       </header>
 
       {/* About */}
-      {circle.about && (
+      {circle.about ? (
         <section className="mb-10">
-          <p className="text-base text-text leading-relaxed whitespace-pre-line">{circle.about}</p>
+          <p className="text-lg text-muted leading-relaxed whitespace-pre-line">{circle.about}</p>
+        </section>
+      ) : (
+        <section className="mb-10">
+          <p className="text-lg text-muted leading-relaxed">
+            A small standing group of neighbors gathering in person around what they share.
+            Up to fifty people, close enough to walk to, small enough that the regulars learn
+            your name and notice the week you go missing.
+          </p>
         </section>
       )}
 
       <SignInCta
         title="Sign in to join this circle"
-        body="Frequency circles are small on purpose: up to 50 neighbors. Sign up free to request to join and see what's happening."
+        body="Circles are small on purpose: up to 50 neighbors, no audition, two words to belong. Sign up free to request to join, see the standing times, and start showing up for the people who will keep a seat warm for you."
         action="Sign in to join"
       />
     </div>

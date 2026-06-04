@@ -10,13 +10,14 @@ import { ROLE_HIERARCHY, type CommunityRole } from '@/lib/core/roles'
 // effective-role resolution in lib/view-as.ts only honours the cookie when the
 // caller's REAL role is janitor, but we re-check here too (defence in depth) so a
 // non-janitor can never even write the cookie.
-export async function setViewAsRole(role: CommunityRole | null): Promise<void> {
+export async function setViewAsRole(role: CommunityRole | 'visitor' | null): Promise<void> {
   const realRole = await getRealCallerRole()
   if (realRole !== 'janitor') return
 
   const jar = await cookies()
   // Clearing (back to self), or a no-op "view as janitor", removes the cookie.
-  if (!role || role === 'janitor' || !ROLE_HIERARCHY.includes(role)) {
+  // 'visitor' is a valid target; any other non-ladder value clears.
+  if (!role || role === 'janitor' || (role !== 'visitor' && !ROLE_HIERARCHY.includes(role))) {
     jar.delete(VIEW_AS_COOKIE)
   } else {
     jar.set(VIEW_AS_COOKIE, role, {

@@ -103,7 +103,7 @@ export default function BetaPage() {
             { n: '02', t: 'We reach out', b: 'When a spot opens near you, we send a personal invite, not a mass blast.' },
             { n: '03', t: 'Show up', b: 'Find your Circle, meet your people, and start being missed when you’re gone.' },
           ].map((s) => (
-            <li key={s.n} className="rounded-3xl border border-border bg-surface p-7 shadow-sm">
+            <li key={s.n} className="rounded-2xl border border-border bg-surface p-7 shadow-sm">
               <span className="font-display text-3xl text-border-strong" aria-hidden>
                 {s.n}
               </span>

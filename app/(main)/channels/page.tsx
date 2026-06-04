@@ -1,5 +1,4 @@
 import Image from 'next/image'
-import Link from 'next/link'
 import {
   Sparkles, Activity, Heart, MessagesSquare, Megaphone, Palette, Briefcase, Radio, Users, Circle as CircleIcon,
 } from 'lucide-react'
@@ -21,6 +20,17 @@ type TopicalChannel = {
   description: string | null
   cover_image: string | null
   display_order: number
+  domain_id: string | null
+}
+
+type Domain = {
+  id: string
+  slug: string
+  name: string
+  description: string | null
+  accent: string | null
+  cover_image: string | null
+  display_order: number
 }
 
 const CATEGORY_ICON: Record<string, LucideIcon> = {
@@ -33,9 +43,10 @@ const CATEGORY_ICON: Record<string, LucideIcon> = {
   'business-support': Briefcase,
 }
 
-// On the shared IndexTemplate + EntityCard (REDESIGN-INAPP Phase 1). Tune-in is
-// the card's floating action; the viewer's gamification stats live in the
-// right-rail dock, so no per-page strip here.
+// Channels = the four Domains (Mind / Body / Spirit / Expression), read from the
+// `domains` table so they stay data-editable. The existing Interests/Topics
+// (topical_channels) sort underneath each Channel. Tune-in remains the per-topic
+// action; the tuned-in vs explore framing is preserved within each Channel.
 export default async function ChannelsPage() {
   const admin = createAdminClient()
   const supabase = await createClient()
@@ -52,11 +63,18 @@ export default async function ChannelsPage() {
     canCreate = role === 'host' || role === 'guide' || role === 'mentor' || role === 'admin' || role === 'janitor'
   }
 
-  const { data: channels } = await admin.from('topical_channels')
-    .select('id, name, slug, category, description, cover_image, display_order')
-    .eq('is_active', true)
-    .order('display_order', { ascending: true })
+  const [{ data: domainsData }, { data: channels }] = await Promise.all([
+    admin.from('domains')
+      .select('id, slug, name, description, accent, cover_image, display_order')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true }),
+    admin.from('topical_channels')
+      .select('id, name, slug, category, description, cover_image, display_order, domain_id')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true }),
+  ])
 
+  const domains = (domainsData ?? []) as Domain[]
   const channelList = (channels ?? []) as TopicalChannel[]
   const channelIds = channelList.map((c) => c.id)
 
@@ -83,124 +101,189 @@ export default async function ChannelsPage() {
     }
   }
 
-  const tunedIn = channelList.filter((c) => myChannelIds.has(c.id))
-  const explore = channelList.filter((c) => !myChannelIds.has(c.id))
-
-  const stats = {
-    interests: channelList.length,
-    tunedIn: Object.values(memberCounts).reduce((s, n) => s + n, 0),
-    circles: Object.values(circleCounts).reduce((s, n) => s + n, 0),
-    categories: new Set(channelList.map((c) => c.category)).size,
+  // Group the Interests under their Channel (Domain). Anything not yet assigned
+  // to a domain falls into an "Unsorted" bucket at the end so it stays visible
+  // until an admin assigns it.
+  const byDomain = new Map<string, TopicalChannel[]>()
+  for (const ch of channelList) {
+    const key = ch.domain_id ?? '__unsorted__'
+    const list = byDomain.get(key) ?? []
+    list.push(ch)
+    byDomain.set(key, list)
   }
 
-  // Right-column data: categories (with counts) + a featured interest (most circles).
-  const categoryCounts = new Map<string, number>()
-  for (const c of channelList) categoryCounts.set(c.category, (categoryCounts.get(c.category) ?? 0) + 1)
-  const categories = [...categoryCounts.entries()]
-    .map(([slug, count]) => ({
-      slug,
-      count,
-      label: slug.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
-    }))
-    .sort((a, b) => b.count - a.count)
+  const sections = domains
+    .map((d) => ({ domain: d, topics: byDomain.get(d.id) ?? [] }))
+    .filter((s) => s.topics.length > 0)
 
-  const featured = [...channelList].sort((a, b) => (circleCounts[b.id] ?? 0) - (circleCounts[a.id] ?? 0))[0] ?? null
-  const FeaturedIcon = featured ? (CATEGORY_ICON[featured.category] ?? Radio) : Radio
+  const unsorted = byDomain.get('__unsorted__') ?? []
+
+  // At-a-glance stats across the whole taxonomy.
+  const stats = {
+    channels: sections.length,
+    interests: channelList.length,
+    tunedIn: myChannelIds.size,
+    circles: Object.values(circleCounts).reduce((s, n) => s + n, 0),
+  }
 
   return (
     <IndexTemplate
-      title="Interests"
-      description="Find your thing. Interests are the global topics anyone can tune into — each carries a seasonal practice that Circles run locally. Pick what lights you up, then go do it with people near you."
-      action={canCreate ? <NewChannelCompose /> : undefined}
+      title="Channels"
+      description="The four Channels — Mind, Body, Spirit, and Expression — are how Frequency is organized. Interests live inside them: global topics anyone can tune into, each carrying a practice that Circles run locally. Pick a Channel, find your Interest, then go do it with people near you."
+      action={canCreate ? <NewChannelCompose domains={domains} /> : undefined}
     >
       <div className="grid grid-cols-1 gap-x-8 gap-y-8 lg:grid-cols-3">
-        {/* Left: the interest cards, two-up (squished left). */}
-        <div className="space-y-8 lg:col-span-2">
-          {tunedIn.length > 0 && (
+        {/* Left: the four Channels, each with its Interests beneath. */}
+        <div className="space-y-10 lg:col-span-2">
+          {sections.map(({ domain, topics }) => (
+            <DomainSection
+              key={domain.id}
+              domain={domain}
+              topics={topics}
+              memberCounts={memberCounts}
+              circleCounts={circleCounts}
+              tunedInIds={myChannelIds}
+              canToggle={!!myProfileId}
+            />
+          ))}
+
+          {unsorted.length > 0 && (
             <section>
-              <SectionHeader title="Tuned in" count={tunedIn.length} />
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {tunedIn.map((ch) => (
-                  <ChannelCard key={ch.id} channel={ch} memberCount={memberCounts[ch.id] ?? 0} circleCount={circleCounts[ch.id] ?? 0} isTunedIn canToggle={!!myProfileId} />
-                ))}
+              <div className="mb-3">
+                <h2 className="text-lg font-bold tracking-tight text-text">Unsorted</h2>
+                <p className="mt-0.5 text-sm text-muted leading-relaxed">
+                  Interests not yet sorted into a Channel.
+                </p>
               </div>
+              <TopicGrid
+                topics={unsorted}
+                memberCounts={memberCounts}
+                circleCounts={circleCounts}
+                tunedInIds={myChannelIds}
+                canToggle={!!myProfileId}
+              />
             </section>
           )}
 
-          <section>
-            <SectionHeader title={tunedIn.length > 0 ? 'Explore more' : 'Explore'} count={explore.length} />
-            {explore.length === 0 ? (
-              <EmptyState icon={Radio} title="You're tuned into everything" description="You're following every interest going. Find a circle practicing one near you." />
-            ) : (
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {explore.map((ch) => (
-                  <ChannelCard key={ch.id} channel={ch} memberCount={memberCounts[ch.id] ?? 0} circleCount={circleCounts[ch.id] ?? 0} isTunedIn={false} canToggle={!!myProfileId} />
-                ))}
-              </div>
-            )}
-          </section>
+          {sections.length === 0 && unsorted.length === 0 && (
+            <EmptyState icon={Radio} title="No Channels yet" description="Interests will appear here once they're set up." />
+          )}
         </div>
 
-        {/* Right: the interior menu — stats · categories · featured. */}
+        {/* Right: the interior menu — stats + the Channels list. */}
         <aside className="space-y-8">
-          {/* At a glance */}
           <section>
             <SectionHeader title="At a glance" />
             <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+              <Stat value={stats.channels} label="Channels" />
               <Stat value={stats.interests} label="Interests" />
               <Stat value={stats.tunedIn} label="Tuned in" />
               <Stat value={stats.circles} label="Circles" />
-              <Stat value={stats.categories} label="Categories" />
             </div>
           </section>
 
-          {/* Categories */}
           <section>
-            <SectionHeader title="Categories" count={categories.length} />
+            <SectionHeader title="Channels" count={sections.length} />
             <div className="space-y-0.5">
-              {categories.map((cat) => {
-                const Icon = CATEGORY_ICON[cat.slug] ?? Radio
-                return (
-                  <div key={cat.slug} className="flex items-center gap-2.5 rounded-lg px-2 py-1.5">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-elevated text-primary-strong">
-                      <Icon className="h-3.5 w-3.5" />
-                    </span>
-                    <span className="flex-1 truncate text-sm font-medium text-text">{cat.label}</span>
-                    <span className="text-xs tabular-nums text-subtle">{cat.count}</span>
-                  </div>
-                )
-              })}
+              {sections.map(({ domain, topics }) => (
+                <a
+                  key={domain.id}
+                  href={`#channel-${domain.slug}`}
+                  className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-surface-elevated transition-colors"
+                >
+                  <span className="flex-1 truncate text-sm font-medium text-text">{domain.name}</span>
+                  <span className="text-xs tabular-nums text-subtle">{topics.length}</span>
+                </a>
+              ))}
             </div>
           </section>
-
-          {/* Featured */}
-          {featured && (
-            <section>
-              <SectionHeader title="Featured" />
-              <Link
-                href={`/channels/${featured.slug}`}
-                className="block rounded-2xl border border-border bg-surface p-4 shadow-sm transition-colors hover:border-primary-bg hover:shadow-md"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary-bg text-primary-strong">
-                    <FeaturedIcon className="h-5 w-5" />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="truncate text-base font-bold text-text">{featured.name}</p>
-                    <p className="text-xs text-subtle">
-                      {circleCounts[featured.id] ?? 0} {(circleCounts[featured.id] ?? 0) === 1 ? 'circle' : 'circles'} · {memberCounts[featured.id] ?? 0} tuned in
-                    </p>
-                  </div>
-                </div>
-                {featured.description && (
-                  <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted">{featured.description}</p>
-                )}
-              </Link>
-            </section>
-          )}
         </aside>
       </div>
     </IndexTemplate>
+  )
+}
+
+// A Channel (Domain) section: its name + description, then its Interests, split
+// into tuned-in vs explore so the framing carries through to each Channel.
+function DomainSection({
+  domain, topics, memberCounts, circleCounts, tunedInIds, canToggle,
+}: {
+  domain: Domain
+  topics: TopicalChannel[]
+  memberCounts: Record<string, number>
+  circleCounts: Record<string, number>
+  tunedInIds: Set<string>
+  canToggle: boolean
+}) {
+  const tunedIn = topics.filter((t) => tunedInIds.has(t.id))
+  const explore = topics.filter((t) => !tunedInIds.has(t.id))
+
+  return (
+    <section id={`channel-${domain.slug}`} className="scroll-mt-6">
+      <div className="mb-4">
+        <h2 className="text-lg font-bold tracking-tight text-text">{domain.name}</h2>
+        {domain.description && (
+          <p className="mt-0.5 text-sm text-muted leading-relaxed">{domain.description}</p>
+        )}
+      </div>
+
+      <div className="space-y-5">
+        {tunedIn.length > 0 && (
+          <div>
+            <SectionHeader title="Tuned in" count={tunedIn.length} />
+            <TopicGrid
+              topics={tunedIn}
+              memberCounts={memberCounts}
+              circleCounts={circleCounts}
+              tunedInIds={tunedInIds}
+              canToggle={canToggle}
+            />
+          </div>
+        )}
+
+        <div>
+          {tunedIn.length > 0 && <SectionHeader title="Explore more" count={explore.length} />}
+          {explore.length === 0 ? (
+            tunedIn.length > 0 ? (
+              <EmptyState icon={Radio} title="You're tuned into everything here" description={`You're following every Interest in ${domain.name}. Find a circle practicing one near you.`} />
+            ) : null
+          ) : (
+            <TopicGrid
+              topics={explore}
+              memberCounts={memberCounts}
+              circleCounts={circleCounts}
+              tunedInIds={tunedInIds}
+              canToggle={canToggle}
+            />
+          )}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function TopicGrid({
+  topics, memberCounts, circleCounts, tunedInIds, canToggle,
+}: {
+  topics: TopicalChannel[]
+  memberCounts: Record<string, number>
+  circleCounts: Record<string, number>
+  tunedInIds: Set<string>
+  canToggle: boolean
+}) {
+  return (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      {topics.map((ch) => (
+        <ChannelCard
+          key={ch.id}
+          channel={ch}
+          memberCount={memberCounts[ch.id] ?? 0}
+          circleCount={circleCounts[ch.id] ?? 0}
+          isTunedIn={tunedInIds.has(ch.id)}
+          canToggle={canToggle}
+        />
+      ))}
+    </div>
   )
 }
 

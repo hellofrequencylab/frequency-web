@@ -20,9 +20,12 @@ import {
   Faq,
 } from '@/components/marketing/marketing-ui'
 import { Reveal, Parallax, CountUp, ScrollCue } from '@/components/marketing/motion'
+import { JsonLd } from '@/components/json-ld'
+import { faqSchema } from '@/lib/jsonld'
 import { getInitials, relativeTime, eventDateBadge, formatEventDate } from '@/lib/utils'
 import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, BETA_CTA_LABEL, BETA_CTA_HREF, SOCIAL_PROOF_FLOOR, FOUNDING_PLACE } from '@/lib/site'
 import { type CommunityRole, ROLE_RANK, RoleBadge } from '@/lib/community-roles'
+import { communityHref } from '@/lib/community-href'
 import { getJanitor } from '@/lib/page-editor/guard'
 import { getLiveData } from '@/lib/page-editor/live-data'
 import type { LiveData, LiveEvent } from '@/components/marketing/blocks'
@@ -55,6 +58,31 @@ function hasRole(role: string | null | undefined): role is CommunityRole {
   return !!role && role in ROLE_RANK
 }
 
+// Plain-text mirror of the visible "Is this for you?" FAQ, emitted as FAQPage
+// JSON-LD (AEO: lets search + AI engines surface and cite the answers).
+const HOME_FAQ = [
+  {
+    q: 'Do I have to be outgoing?',
+    a: 'Not at all. Circles are deliberately small, a handful of regulars rather than a crowd, so there is no pressure to perform. You do not have to network or post. The standing time and the small group do the work, and familiarity quietly turns into belonging.',
+  },
+  {
+    q: 'What does it cost?',
+    a: 'The community is free, forever. Browsing, joining a Circle, and showing up never cost anything. Crew membership, which turns on the Quest and helps keep the physical spaces open, is $10 a month and free for the whole beta. There is no card today, and your founder pricing is locked in for life when paid memberships launch.',
+  },
+  {
+    q: 'Is there a catch?',
+    a: 'None. Frequency is leaderful, not leader-dependent: it is built to outlast any one person, with no single figure to follow and no upsell funnel. Memberships fund the physical spaces rather than extract from members.',
+  },
+  {
+    q: 'I am not in North County San Diego.',
+    a: 'That is fine, the community starts anywhere. The first Lab is taking root in North County San Diego, but a Circle only needs a few people and a standing time, so you can start one where you are. We map where people gather so we know which city to seed next.',
+  },
+  {
+    q: 'What if it is not for me?',
+    a: 'Then you leave anytime, no questions and nothing lost. The beta is free, there is no card on file, and nothing locks you in. The only thing you risk by waiting is missing the founding cohort.',
+  },
+]
+
 export default async function RootPage({
   searchParams,
 }: {
@@ -66,11 +94,21 @@ export default async function RootPage({
   } = await supabase.auth.getUser()
 
   // Logged-in users get their feed — except a janitor with `?preview`, who can
-  // preview the public splash (e.g. via the Pages directory "View" link).
+  // preview the public splash (e.g. via the Pages directory "View" link). A
+  // signed-in user who hasn't finished beta onboarding is NOT bounced to /feed
+  // (which would loop them back into the induction); they can browse home freely.
   if (user) {
     const { preview } = await searchParams
     const canPreview = preview !== undefined && (await getJanitor())
-    if (!canPreview) redirect('/feed')
+    if (!canPreview) {
+      const { data: prof } = await supabase
+        .from('profiles')
+        .select('meta')
+        .eq('auth_user_id', user.id)
+        .maybeSingle()
+      const onboarded = !!(prof?.meta as { onboarding_completed?: boolean } | null)?.onboarding_completed
+      if (onboarded) redirect('/feed')
+    }
   }
 
   // The splash is code-locked (see EDITABLE_PAGES note in lib/page-editor/data):
@@ -86,6 +124,7 @@ export default async function RootPage({
 //   and the Quest closes the feature arc before the CTA.
 function Splash({ live }: { live: LiveData }) {
   const posts = live.posts as PostPreviewRow[]
+  const postsCurated = live.postsCurated
   const memberCount = live.memberCount
   const circleCount = live.circleCount
   const upcomingEvents = live.upcomingEvents
@@ -141,7 +180,7 @@ function Splash({ live }: { live: LiveData }) {
           <>
             The places that held us
             <br />
-            just <span className="text-primary">vanished.</span>
+            are <span className="text-primary">vanishing.</span>
           </>
         }
         imgAspect="portrait"
@@ -201,7 +240,7 @@ function Splash({ live }: { live: LiveData }) {
         eyebrow="Your people, near you"
         title={
           <>
-            It starts with <span className="text-primary">your people.</span>
+            It starts with <span className="text-primary">people.</span>
           </>
         }
         tone="canvas"
@@ -286,12 +325,12 @@ function Splash({ live }: { live: LiveData }) {
             <Reveal as="div" delay={100} className="lg:col-span-7 lg:col-start-6">
               <div className="space-y-5 text-lg sm:text-xl text-white/85 leading-relaxed">
                 <p>
-                  A few of us started gathering on the cliffs every morning to breathe and reconnect.
-                  Within eighteen months, a thousand people were showing up.
+                  We started gathering on the cliffs at Moonlight Beach to meditate, every single
+                  morning. We kept showing up for more than 500 days straight.
                 </p>
                 <p className="text-white/70">
-                  No guru. No brand. No agenda. Just people who needed each other and a place to be. It
-                  proved the hunger is real, and that it can be answered.
+                  Over a thousand people came through. No app, no agenda, just a standing time and a
+                  place to be. It proved the hunger is real, and that it can be answered.
                 </p>
               </div>
               <Link
@@ -305,24 +344,24 @@ function Splash({ live }: { live: LiveData }) {
           <Reveal delay={200} className="mt-16 grid grid-cols-3 gap-6 max-w-2xl">
             <div>
               <p className="font-display text-5xl sm:text-7xl text-white">
-                <CountUp value={1000} />
+                <CountUp value={500} />+
               </p>
               <p className="mt-3 text-xs uppercase tracking-widest font-bold text-white/50">
-                People, at the peak
+                Mornings in a row
               </p>
             </div>
             <div>
               <p className="font-display text-5xl sm:text-7xl text-white">
-                <CountUp value={18} />
+                <CountUp value={1000} />+
               </p>
               <p className="mt-3 text-xs uppercase tracking-widest font-bold text-white/50">
-                Months to get there
+                People came through
               </p>
             </div>
             <div>
-              <p className="font-display text-5xl sm:text-7xl text-primary">0</p>
+              <p className="font-display text-5xl sm:text-7xl text-primary">$0</p>
               <p className="mt-3 text-xs uppercase tracking-widest font-bold text-white/50">
-                Gurus involved
+                To show up
               </p>
             </div>
           </Reveal>
@@ -444,9 +483,12 @@ function Splash({ live }: { live: LiveData }) {
               <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
                 In their own words
               </p>
-              <h2 className="font-display uppercase text-text text-3xl sm:text-4xl mb-10 text-balance">
+              <h2 className={`font-display uppercase text-text text-3xl sm:text-4xl text-balance ${postsCurated ? 'mb-3' : 'mb-10'}`}>
                 People showing up for each other
               </h2>
+              {postsCurated && (
+                <p className="mb-10 text-sm text-subtle">Hand-picked by Vera</p>
+              )}
             </Reveal>
             <div className="space-y-4">
               {posts.map((post, i) => (
@@ -502,6 +544,7 @@ function Splash({ live }: { live: LiveData }) {
 
       {/* ── Is this for you? (objection handling / short FAQ) ──────────────── */}
       <Section tone="canvas">
+        <JsonLd data={[faqSchema(HOME_FAQ)]} />
         <Reveal>
           <SectionHeading
             eyebrow="Honest answers"
@@ -511,31 +554,43 @@ function Splash({ live }: { live: LiveData }) {
         </Reveal>
         <div className="space-y-3">
           <Faq q="Do I have to be outgoing?">
-            No. Circles are small on purpose: a handful of people, not a crowd. You don&apos;t have to
-            perform or network. You just have to show up, and the structure does the rest.
+            Not at all. Circles are deliberately small, a handful of regulars rather than a crowd, so
+            there&apos;s no room to disappear and no pressure to perform. You don&apos;t have to network,
+            post, or be &ldquo;on.&rdquo; The standing time and the small group do the work, and
+            familiarity quietly turns into belonging on its own. A lot of our quietest members say
+            it&apos;s the first place they&apos;ve felt at ease in years.
           </Faq>
           <Faq q="What does it cost?">
-            The community is free, forever. Crew membership, which turns on the Quest, is $10/mo, and
-            free during the beta. No card today; join now and your founder pricing is locked when paid
-            memberships launch.{' '}
+            The community is free, forever. Browsing, joining a Circle, and showing up never cost
+            anything. Crew membership, which turns on the Quest and helps keep the physical spaces open,
+            is $10/mo and free for the whole beta. There&apos;s no card today: join now and your founder
+            pricing is locked in for life when paid memberships launch. Memberships exist to sustain the
+            rooms and hold the door open for people who can&apos;t pay, never to extract from you.{' '}
             <Link href="/pricing" className="font-semibold text-primary-strong hover:underline">
               See the full breakdown
             </Link>
             .
           </Faq>
-          <Faq q="Is there a catch or a guru?">
-            None. Frequency is leaderful, not leader-dependent, built to outlast any one person. No
-            charismatic founder to follow, no upsell funnel. Memberships exist to sustain the physical
-            spaces, not to extract.
+          <Faq q="Is there a catch?">
+            None. Frequency is leaderful, not leader-dependent: it&apos;s built to outlast any one
+            person, with no single figure to follow and no upsell funnel hiding behind the free tier.
+            Leaders rise from the people who simply keep showing up, and when someone moves on, the
+            Circle keeps going. The whole model is designed to sustain real places to gather, which is
+            why memberships fund the rooms rather than line anyone&apos;s pockets.
           </Faq>
           <Faq q="I'm not in North County San Diego.">
-            The first Lab is taking root there now, but the community starts anywhere. Add your name
-            and start a Circle where you are; we&apos;re mapping where people gather so we know which
-            city seeds next. That&apos;s how it spreads: city by city, like cells.
+            That&apos;s fine, the community starts anywhere. The first Lab is taking root in North County
+            San Diego, but a Circle only needs a few people and a standing time, so you can start one
+            where you are tonight. We&apos;re mapping where people gather so we know which city to seed
+            next, and that&apos;s exactly how it spreads: Circle by Circle, neighborhood by neighborhood,
+            city by city, like cells. Add your name and tell us where you are.
           </Faq>
           <Faq q="What if it's not for me?">
-            Leave anytime, no questions. The beta is free, there&apos;s no card on file, and nothing
-            locks you in. The only thing you risk is missing the founding cohort.
+            Then you leave anytime, no questions and nothing lost. The beta is free, there&apos;s no card
+            on file, and nothing locks you in: no contracts, no cancellation maze. Try a gathering or
+            two, and if the room isn&apos;t for you, walk away with our blessing. The only thing you
+            actually risk by waiting is missing the founding cohort and the founder pricing that comes
+            with it.
           </Faq>
         </div>
       </Section>
@@ -586,38 +641,48 @@ function PostPreviewCard({ post }: { post: PostPreviewRow }) {
   const showRole = hasRole(a?.community_role ?? null)
   const initials = a?.display_name ? getInitials(a.display_name) : '?'
 
+  const identity = (
+    <>
+      {a?.avatar_url ? (
+        <Image
+          src={a.avatar_url}
+          alt={a.display_name}
+          width={40}
+          height={40}
+          className="w-10 h-10 rounded-full object-cover shrink-0"
+        />
+      ) : (
+        <div className="w-10 h-10 rounded-full bg-surface-elevated text-muted text-xs font-semibold flex items-center justify-center shrink-0 select-none">
+          {initials}
+        </div>
+      )}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-base font-semibold text-text truncate">
+            {a?.display_name ?? 'Community member'}
+          </span>
+          {showRole && (
+            <RoleBadge role={a!.community_role as CommunityRole} className="text-[10px] leading-tight" />
+          )}
+        </div>
+        <p className="text-xs text-subtle mt-0.5">
+          {a?.handle && <>@{a.handle} · </>}
+          {relativeTime(post.created_at)}
+        </p>
+      </div>
+    </>
+  )
+
   return (
     <article className="rounded-2xl border border-border bg-surface shadow-sm hover:shadow-md transition-shadow">
       <div className="p-5">
-        <div className="flex items-start gap-3 mb-3">
-          {a?.avatar_url ? (
-            <Image
-              src={a.avatar_url}
-              alt={a.display_name}
-              width={40}
-              height={40}
-              className="w-10 h-10 rounded-full object-cover shrink-0"
-            />
-          ) : (
-            <div className="w-10 h-10 rounded-full bg-surface-elevated text-muted text-xs font-semibold flex items-center justify-center shrink-0 select-none">
-              {initials}
-            </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-base font-semibold text-text truncate">
-                {a?.display_name ?? 'Community member'}
-              </span>
-              {showRole && (
-                <RoleBadge role={a!.community_role as CommunityRole} className="text-[10px] leading-tight" />
-              )}
-            </div>
-            <p className="text-xs text-subtle mt-0.5">
-              {a?.handle && <>@{a.handle} · </>}
-              {relativeTime(post.created_at)}
-            </p>
-          </div>
-        </div>
+        {a?.handle ? (
+          <Link href={communityHref(`/people/${a.handle}`, false)} className="flex items-start gap-3 mb-3 group">
+            {identity}
+          </Link>
+        ) : (
+          <div className="flex items-start gap-3 mb-3">{identity}</div>
+        )}
 
         <p className="text-base text-text leading-relaxed line-clamp-3">{post.body}</p>
 
@@ -655,7 +720,7 @@ function EventRow({ event }: { event: LiveEvent }) {
         </p>
       </div>
       <Link
-        href={BETA_CTA_HREF}
+        href={communityHref(`/events/${event.slug}`, false)}
         className="flex shrink-0 items-center gap-1 text-sm font-semibold text-primary-strong hover:underline"
       >
         Join <ArrowRight className="h-3 w-3" aria-hidden />

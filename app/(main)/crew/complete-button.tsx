@@ -3,7 +3,7 @@
 import { useTransition } from 'react'
 import { CheckCircle, Loader2, RotateCcw } from 'lucide-react'
 import { logCompletion } from './actions'
-import { CrewGateButton } from '@/components/crew-gate-button'
+import { CrewGateButton } from '@/components/crew/upgrade-lightbox'
 import { useAchievementCheck } from '@/lib/use-achievement-check'
 
 interface CompleteButtonProps {

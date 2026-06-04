@@ -134,7 +134,7 @@ export default async function HubPage({
                 <Link
                   key={circle.id}
                   href={`/circles/${circle.slug}`}
-                  className="flex items-center gap-3 rounded-xl border border-border bg-white px-4 py-3 hover:border-primary-bg hover:bg-primary-bg/30 transition-colors"
+                  className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 hover:border-primary-bg hover:bg-primary-bg/30 transition-colors"
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">

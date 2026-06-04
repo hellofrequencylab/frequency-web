@@ -25,6 +25,7 @@ export function withinBudget(spentUsd: number, projectedUsd: number, capUsd: num
 // loop halts itself; tuned conservatively until real usage data exists.
 export const FEATURE_DAILY_CAP_USD: Record<string, number> = {
   'help-search': 5,
+  'feature-posts': 2,
 }
 
 export function dailyCapFor(feature: string, fallbackUsd = 1): number {

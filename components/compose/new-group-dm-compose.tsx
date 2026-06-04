@@ -198,7 +198,7 @@ function ResultRow({
         <button
           type="button"
           onClick={onAdd}
-          className="shrink-0 rounded-md bg-primary px-2 py-1 text-[11px] font-semibold text-white hover:bg-primary-hover transition-colors"
+          className="shrink-0 rounded-md bg-primary px-2 py-1 text-[11px] font-semibold text-on-primary hover:bg-primary-hover transition-colors"
         >
           Add
         </button>

@@ -35,11 +35,13 @@ export interface Practice {
   cadence: string | null
   reward_zaps: number | null
   reward_note: string | null
+  /** The Pillar this practice belongs to (domains.id), or null if uncategorized. */
+  domain_id: string | null
 }
 
 const PRACTICE_COLS =
   'id, title, description, created_by, is_public, created_at, ' +
-  'category, icon, summary, header_image, body, cadence, reward_zaps, reward_note'
+  'category, icon, summary, header_image, body, cadence, reward_zaps, reward_note, domain_id'
 
 // --- Library + reads ------------------------------------------------------
 

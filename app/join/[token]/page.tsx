@@ -117,7 +117,7 @@ export default async function JoinPage({ params }: Props) {
                 </p>
                 <Link
                   href="/circles"
-                  className="block w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white text-center hover:bg-primary-hover transition-colors"
+                  className="block w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-on-primary text-center hover:bg-primary-hover transition-colors"
                 >
                   Go to Circles →
                 </Link>
@@ -128,7 +128,7 @@ export default async function JoinPage({ params }: Props) {
               <div className="space-y-3">
                 <Link
                   href={`/sign-in?next=/join/${token}`}
-                  className="block w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white text-center hover:bg-primary-hover transition-colors"
+                  className="block w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-on-primary text-center hover:bg-primary-hover transition-colors"
                 >
                   Sign in to join
                 </Link>

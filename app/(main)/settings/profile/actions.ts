@@ -11,8 +11,14 @@ export async function updateProfile(data: {
   handle: string
   bio: string
   avatarUrl: string
+  phone?: string
+  city?: string
+  website?: string
 }) {
   const { displayName, handle, bio, avatarUrl } = sanitizeProfileInput(data)
+  const phone = (data.phone ?? '').trim().slice(0, 40)
+  const city = (data.city ?? '').trim().slice(0, 120)
+  const website = (data.website ?? '').trim().slice(0, 200)
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -36,6 +42,9 @@ export async function updateProfile(data: {
     display_name: displayName,
     handle,
     bio: bio || null,
+    phone: phone || null,
+    city: city || null,
+    website: website || null,
   }
   if (avatarUrl) update.avatar_url = avatarUrl
 
@@ -52,4 +61,5 @@ export async function updateProfile(data: {
   revalidatePath('/settings/profile')
   revalidatePath('/feed')
   revalidatePath('/people')
+  revalidatePath('/crm') // contact edits reflect in the CRM
 }

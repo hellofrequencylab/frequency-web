@@ -3,7 +3,7 @@ import { AdminPage, AdminSection } from '@/components/admin/admin-page'
 import { getOutcomeReport, type ChallengeOutcome, type QuestOutcome } from '@/lib/analytics/outcomes'
 
 // Janitor-only: program/game outcomes (ENGAGEMENT-MARKETING-ENGINE.md Phase C).
-// Where members complete vs stall in challenges, Arcs, and circles — "what's
+// Where members complete vs stall in challenges, Quests, and circles — "what's
 // working / what isn't." A low completion rate with real starts is the signal.
 export const dynamic = 'force-dynamic'
 
@@ -63,16 +63,16 @@ export default async function OutcomesPage() {
         )}
       </AdminSection>
 
-      {/* Arcs */}
-      <AdminSection title="Arcs">
+      {/* Quests */}
+      <AdminSection title="Quests">
         {quests.length === 0 ? (
-          <p className="text-sm text-muted">No Arc activity yet.</p>
+          <p className="text-sm text-muted">No Quest activity yet.</p>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-border">
             <table className="w-full text-sm">
               <thead className="bg-surface-elevated text-left text-xs text-subtle">
                 <tr>
-                  <th className="px-4 py-2 font-medium">Arc</th>
+                  <th className="px-4 py-2 font-medium">Quest</th>
                   <th className="px-4 py-2 text-right font-medium">Started</th>
                   <th className="px-4 py-2 text-right font-medium">Done</th>
                   <th className="px-4 py-2 text-right font-medium">Rate</th>

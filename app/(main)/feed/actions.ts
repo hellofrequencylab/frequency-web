@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Database } from '@/lib/database.types'
-import { getMyProfileId } from '@/lib/auth'
+import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { processGamificationEvent, recordStreakActivity } from '@/lib/achievements'
 import { awardGems } from '@/lib/gems'
 
@@ -143,16 +143,20 @@ export async function createPost(formData: FormData) {
 }
 
 export async function deletePost(postId: string) {
-  const profileId = await getMyProfileId()
-  if (!profileId) redirect('/sign-in')
+  const caller = await getCallerProfile()
+  if (!caller) redirect('/sign-in')
 
-  // Admin client to bypass RLS; restrict deletion to own posts only.
+  // Admin client to bypass RLS. The author may delete their own post; host+
+  // (and admin tiers) may delete any post for moderation. The menu offers the
+  // same set, so the server must honor it — otherwise a host deleting someone
+  // else's post silently no-ops.
   const admin = createAdminClient()
-  const { error } = await admin
-    .from('posts')
-    .delete()
-    .eq('id', postId)
-    .eq('author_id', profileId)
+  const canModerate = HOST_PLUS.includes(caller.community_role)
+
+  let query = admin.from('posts').delete().eq('id', postId)
+  if (!canModerate) query = query.eq('author_id', caller.id)
+
+  const { error } = await query
 
   if (error) {
     console.error('[deletePost]', error.message)

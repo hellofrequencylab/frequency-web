@@ -47,7 +47,8 @@ export async function completeOnboarding(data: {
     sendWelcomeEmail({ to: user.email, displayName }).catch(() => {})
   }
 
-  // Hand off to Vera, whose one job is getting the new member into a real circle —
-  // then she steps back (AI-VERA §3). She links straight on to /circles.
-  redirect('/onboarding/vera')
+  // Hand off to Vera, whose one job is getting the new member into a real circle,
+  // then she steps back (AI-VERA §3). Drop them into the feed with her onboarding
+  // lightbox over it; she links straight on to /circles.
+  redirect('/feed?welcome=vera')
 }

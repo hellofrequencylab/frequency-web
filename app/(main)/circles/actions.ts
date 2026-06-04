@@ -27,43 +27,46 @@ export async function joinCircle(circleId: string, circleSlug: string) {
 
   if (!circle) return
   if (circle.member_count >= circle.member_cap) return // full
-  if (!circle.hub_id) return // no hub → no nexus capacity to check
 
-  // Check nexus capacity
-  const { data: hub } = await admin
-    .from('hubs')
-    .select('nexus_id')
-    .eq('id', circle.hub_id)
-    .maybeSingle()
-
-  if (hub?.nexus_id) {
-    const { data: nexus } = await admin
-      .from('nexuses')
-      .select('id, member_cap')
-      .eq('id', hub.nexus_id)
+  // Nexus capacity only applies when the circle belongs to a hub → nexus. A
+  // circle with no hub (a standalone / founding circle) has no nexus cap to
+  // enforce, so it falls straight through to the join instead of aborting.
+  if (circle.hub_id) {
+    const { data: hub } = await admin
+      .from('hubs')
+      .select('nexus_id')
+      .eq('id', circle.hub_id)
       .maybeSingle()
 
-    if (nexus) {
-      // Count active memberships across all circles in all hubs in this nexus
-      const { count } = await admin
-        .from('memberships')
-        .select('id', { count: 'exact', head: true })
-        .eq('status', 'active')
-        .in(
-          'circle_id',
-          // Subquery via admin: get circle IDs for this nexus
-          (
-            await admin
-              .from('circles')
-              .select('id')
-              .in(
-                'hub_id',
-                (await admin.from('hubs').select('id').eq('nexus_id', hub.nexus_id)).data?.map((h) => h.id) ?? []
-              )
-          ).data?.map((c) => c.id) ?? []
-        )
+    if (hub?.nexus_id) {
+      const { data: nexus } = await admin
+        .from('nexuses')
+        .select('id, member_cap')
+        .eq('id', hub.nexus_id)
+        .maybeSingle()
 
-      if ((count ?? 0) >= nexus.member_cap) return // nexus at capacity
+      if (nexus) {
+        // Count active memberships across all circles in all hubs in this nexus
+        const { count } = await admin
+          .from('memberships')
+          .select('id', { count: 'exact', head: true })
+          .eq('status', 'active')
+          .in(
+            'circle_id',
+            // Subquery via admin: get circle IDs for this nexus
+            (
+              await admin
+                .from('circles')
+                .select('id')
+                .in(
+                  'hub_id',
+                  (await admin.from('hubs').select('id').eq('nexus_id', hub.nexus_id)).data?.map((h) => h.id) ?? []
+                )
+            ).data?.map((c) => c.id) ?? []
+          )
+
+        if ((count ?? 0) >= nexus.member_cap) return // nexus at capacity
+      }
     }
   }
 

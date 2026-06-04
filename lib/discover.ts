@@ -58,6 +58,26 @@ export type TopicalChannel = {
   description: string | null
   cover_image: string | null
   display_order: number
+  domain_id?: string | null
+}
+
+// A Channel (Domain) — the top taxonomy layer. The four rows (Mind / Body /
+// Spirit / Expression) live in the `domains` table, so they stay editable in
+// data rather than hardcoded here.
+export type Domain = {
+  id: string
+  slug: string
+  name: string
+  description: string | null
+  accent: string | null
+  cover_image: string | null
+  display_order: number
+}
+
+// A Channel with its Interests/Topics nested beneath it, each carrying a live
+// circle count. This is the shape the Channels browse experience renders.
+export type DomainWithTopics = Domain & {
+  topics: Array<TopicalChannel & { circleCount: number }>
 }
 
 // ── Events ────────────────────────────────────────────────────────────────────
@@ -132,6 +152,49 @@ export async function getTopicalChannelBySlug(slug: string): Promise<TopicalChan
     .eq('is_active', true)
     .maybeSingle()
   return (data as TopicalChannel | null) ?? null
+}
+
+// ── Channels (the 4 Domains) with their Interests/Topics ──────────────────────
+// The top browse layer: the four Channels (Mind / Body / Spirit / Expression)
+// from the public-read `domains` table, each with its active topical_channels
+// (Interests) ordered, and a live circle count per Interest.
+//
+// Circle counts reuse the public_circles RPC + channel_slug grouping (same
+// approach the discover topics page and the in-app browse already use), so we
+// never expose anything the anon layer can't already see.
+
+export async function getChannelsWithTopics(): Promise<DomainWithTopics[]> {
+  const supabase = createPublicClient()
+
+  const [domainsRes, topicsRes, circles] = await Promise.all([
+    supabase
+      .from('domains')
+      .select('id, slug, name, description, accent, cover_image, display_order')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true }),
+    supabase
+      .from('topical_channels')
+      .select('id, name, slug, category, description, cover_image, display_order, domain_id')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true }),
+    getPublicCircles(200),
+  ])
+
+  const domains = (domainsRes.data ?? []) as Domain[]
+  const topics = (topicsRes.data ?? []) as TopicalChannel[]
+
+  // Circle count per topic, keyed by slug (mirrors the discover topics page).
+  const countBySlug = new Map<string, number>()
+  for (const c of circles) {
+    if (c.channel_slug) countBySlug.set(c.channel_slug, (countBySlug.get(c.channel_slug) ?? 0) + 1)
+  }
+
+  return domains.map((d) => ({
+    ...d,
+    topics: topics
+      .filter((t) => t.domain_id === d.id)
+      .map((t) => ({ ...t, circleCount: countBySlug.get(t.slug) ?? 0 })),
+  }))
 }
 
 // ── Counts (existing RPCs from 20240204000000) ────────────────────────────────

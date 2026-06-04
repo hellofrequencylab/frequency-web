@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useRef, useEffect, useCallback } from 'react'
 import Image from 'next/image'
-import { Megaphone, ImagePlus, X } from 'lucide-react'
+import { Megaphone, ImagePlus, X, PenLine } from 'lucide-react'
 import { createPost } from '@/app/(main)/feed/actions'
 import { createClient } from '@/lib/supabase/client'
 import { getInitials } from '@/lib/utils'
@@ -202,16 +202,16 @@ export function Composer({
   }, [suggestions.length])
 
   return (
-    <div className="rounded-xl border border-border bg-surface p-4 mb-4 relative">
+    <div className="rounded-xl border border-border bg-surface p-4 mb-4 relative transition-colors focus-within:border-border-strong">
       <textarea
         ref={textareaRef}
         value={body}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
-        placeholder={placeholder}
+        placeholder={isAnnouncement ? 'Share an announcement with your group…' : placeholder}
         rows={3}
         disabled={isPending}
-        className="w-full resize-none bg-transparent text-sm text-text placeholder-subtle outline-none leading-relaxed disabled:opacity-60"
+        className="w-full resize-none bg-transparent text-sm text-text placeholder-subtle outline-none focus-visible:shadow-none leading-relaxed disabled:opacity-60"
       />
 
       {/* Image preview */}
@@ -280,46 +280,52 @@ export function Composer({
         onChange={handleImageSelect}
       />
 
-      <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
-        <div className="flex items-center gap-3">
-          <p className="text-[11px] text-subtle">⌘↵ to post · @ to mention</p>
+      <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-border">
+        <div className="flex flex-wrap items-center gap-1.5">
+          {/* Post type — the inline types, one selected, morphing the box. */}
           <button
             type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isPending}
-            className={`inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold transition-colors ${
-              imageFile
-                ? 'bg-primary-bg text-primary-strong'
-                : 'text-subtle hover:text-muted hover:bg-surface-elevated'
-            } disabled:opacity-40`}
-            title="Attach image"
+            onClick={() => setIsAnnouncement(false)}
+            className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+              !isAnnouncement ? 'bg-primary-bg text-primary-strong' : 'text-subtle hover:text-muted hover:bg-surface-elevated'
+            }`}
+            title="A regular post"
           >
-            <ImagePlus className="w-3.5 h-3.5" />
+            <PenLine className="w-3.5 h-3.5" />
+            Post
           </button>
           {canAnnounce && (
             <button
               type="button"
-              onClick={() => setIsAnnouncement(v => !v)}
-              className={`inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold transition-colors ${
-                isAnnouncement
-                  ? 'bg-warning-bg dark:bg-warning-bg text-warning'
-                  : 'text-subtle hover:text-muted hover:bg-surface-elevated'
+              onClick={() => setIsAnnouncement(true)}
+              className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                isAnnouncement ? 'bg-warning-bg text-warning' : 'text-subtle hover:text-muted hover:bg-surface-elevated'
               }`}
-              title="Toggle announcement (pinned, highlighted)"
+              title="Pinned, highlighted announcement"
             >
-              <Megaphone className="w-3 h-3" />
+              <Megaphone className="w-3.5 h-3.5" />
               Announce
             </button>
           )}
+
+          {/* Attach image */}
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isPending}
+            className={`inline-flex items-center rounded-lg p-1.5 transition-colors ${
+              imageFile ? 'bg-primary-bg text-primary-strong' : 'text-subtle hover:text-muted hover:bg-surface-elevated'
+            } disabled:opacity-40`}
+            title="Attach image"
+          >
+            <ImagePlus className="w-4 h-4" />
+          </button>
         </div>
+
         <button
           onClick={submit}
           disabled={(!body.trim() && !imageFile) || isPending}
-          className={`rounded-lg px-4 py-1.5 text-xs font-semibold text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
-            isAnnouncement
-              ? 'bg-primary hover:bg-primary-hover'
-              : 'bg-primary hover:bg-primary-hover'
-          }`}
+          className="shrink-0 rounded-lg bg-primary px-4 py-1.5 text-xs font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           {isPending ? 'Posting…' : isAnnouncement ? 'Announce' : 'Post'}
         </button>

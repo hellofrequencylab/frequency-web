@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Megaphone, Zap } from 'lucide-react'
+import { Megaphone, Zap, ChevronLeft, ChevronRight } from 'lucide-react'
 
 export type TickerItem = {
   id: string
@@ -40,7 +40,7 @@ export function DispatchTicker({ items }: { items: TickerItem[] }) {
     >
       <Link
         href="/broadcast"
-        className="flex shrink-0 items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-signal-strong transition-colors hover:text-primary-strong"
+        className="flex shrink-0 items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-primary-strong transition-colors hover:text-primary"
       >
         <Megaphone className="h-3.5 w-3.5" />
         Broadcasts
@@ -65,20 +65,28 @@ export function DispatchTicker({ items }: { items: TickerItem[] }) {
         </span>
       </Link>
 
-      {/* Position dots — only when there's more than one to cycle. */}
+      {/* Prev / next arrows — only when there's more than one to cycle. */}
       {items.length > 1 && (
-        <div className="hidden shrink-0 items-center gap-1 md:flex">
-          {items.map((it, i) => (
-            <button
-              key={it.id}
-              type="button"
-              aria-label={`Show dispatch ${i + 1} of ${items.length}`}
-              onClick={() => setIndex(i)}
-              className={`h-1.5 w-1.5 rounded-full transition-colors ${
-                i === index ? 'bg-primary' : 'bg-border-strong hover:bg-subtle'
-              }`}
-            />
-          ))}
+        <div className="hidden shrink-0 items-center gap-0.5 md:flex">
+          <button
+            type="button"
+            aria-label="Previous dispatch"
+            onClick={() => setIndex((i) => (i - 1 + items.length) % items.length)}
+            className="rounded p-0.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-primary-strong"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <span className="min-w-[2.2rem] text-center text-[11px] tabular-nums text-subtle">
+            {index + 1}/{items.length}
+          </span>
+          <button
+            type="button"
+            aria-label="Next dispatch"
+            onClick={() => setIndex((i) => (i + 1) % items.length)}
+            className="rounded p-0.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-primary-strong"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
         </div>
       )}
     </div>
