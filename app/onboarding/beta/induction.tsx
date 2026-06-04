@@ -757,6 +757,16 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
             ))}
           </div>
         </div>
+
+        {/* Already a member — a quiet way past the induction (signed-out only). */}
+        {deferred && (
+          <p className="mt-5 shrink-0 text-center text-sm text-subtle">
+            Already have an account?{' '}
+            <a href="/sign-in" className="font-medium text-muted underline-offset-4 transition-colors hover:text-text hover:underline">
+              Sign in
+            </a>
+          </p>
+        )}
       </div>
     </main>
   )
