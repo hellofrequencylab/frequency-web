@@ -30,32 +30,34 @@ export type NavArea = {
   defaultAccess: NavAccess
 }
 
-// Order here IS the render order down the rail (Feed, then each section).
+// Order here IS the render order down the rail (Feed + Messages anchors, then
+// the three pillars — Community, The Quest, Network — then Manage).
 export const NAV_AREAS: readonly NavArea[] = [
-  // ── Home anchor → pinned to the very top of the rail ─────────────────────────
-  // Feed is "home": the default landing and the day-to-day social loop. It sits
-  // alone above the section groups (section: null) so it reads as the anchor.
+  // ── Top-level anchors → pinned above the section groups ──────────────────────
+  // Feed is "home": the default landing and the day-to-day social loop. Messages
+  // sits right beside it as a second anchor — DMs are personal, not community
+  // content — so both carry section: null and read as the rail's home block.
   { key: 'feed',      href: '/feed',      label: 'Feed',      section: null,        defaultAccess: 'member'  },
+  { key: 'messages',  href: '/messages',  label: 'Messages',  section: null,        defaultAccess: 'member'  },
 
-  // ── Community spaces — the places you belong, right under Feed ──────────────
+  // ── Community → the places you belong + the live comms loop ─────────────────
+  { key: 'broadcast', href: '/broadcast', label: 'Broadcasts', section: 'Community', defaultAccess: 'visitor' },
   { key: 'circles',   href: '/circles',   label: 'Circles',   section: 'Community', defaultAccess: 'visitor' },
-  { key: 'channels',  href: '/channels',  label: 'Interests', section: 'Community', defaultAccess: 'visitor' },
+  { key: 'channels',  href: '/channels',  label: 'Channels',  section: 'Community', defaultAccess: 'visitor' },
+  { key: 'events',    href: '/events',    label: 'Events',    section: 'Community', defaultAccess: 'member'  },
 
-  // ── Broadcasts → the live comms loop (broadcasts · messages · events) ───────
-  { key: 'broadcast', href: '/broadcast', label: 'Broadcasts', section: 'Broadcasts', defaultAccess: 'visitor' },
-  { key: 'messages',  href: '/messages',  label: 'Messages',  section: 'Broadcasts', defaultAccess: 'member'  },
-  { key: 'events',    href: '/events',    label: 'Events',    section: 'Broadcasts', defaultAccess: 'member'  },
+  // ── The Quest → the gamified progression loop ───────────────────────────────
+  { key: 'crew',      href: '/crew',       label: 'Dashboard', section: 'The Quest', defaultAccess: 'crew'    },
+  { key: 'arcs',      href: '/crew/arcs',  label: 'Arcs',      section: 'The Quest', defaultAccess: 'crew'    },
+  { key: 'store',     href: '/crew/store', label: 'Store',     section: 'The Quest', defaultAccess: 'crew'    },
+  { key: 'vault',     href: '/vault',      label: 'Vault',     section: 'The Quest', defaultAccess: 'member'  },
 
-  // ── Features ────────────────────────────────────────────────────────────────
-  { key: 'practices', href: '/practices', label: 'Practices', section: 'Library',   defaultAccess: 'member'  },
-  { key: 'programs',  href: '/programs',  label: 'Programs',  section: 'Library',   defaultAccess: 'member'  },
-
+  // ── Network → people, practices, programs, partners ─────────────────────────
+  { key: 'practices', href: '/practices', label: 'Practices', section: 'Network',   defaultAccess: 'member'  },
+  { key: 'programs',  href: '/programs',  label: 'Programs',  section: 'Network',   defaultAccess: 'member'  },
   { key: 'friends',   href: '/friends',   label: 'Friends',   section: 'Network',   defaultAccess: 'member'  },
   { key: 'partners',  href: '/partners',  label: 'Partners',  section: 'Network',   defaultAccess: 'member'  },
   { key: 'people',    href: '/people',    label: 'Directory', section: 'Network',   defaultAccess: 'member'  },
-
-  { key: 'crew',      href: '/crew',      label: 'Dashboard', section: 'Progress',  defaultAccess: 'crew'    },
-  { key: 'vault',     href: '/vault',     label: 'Vault',     section: 'Progress',  defaultAccess: 'member'  },
 
   // ── Manage ──────────────────────────────────────────────────────────────────
   // The admin surface is split into its five categories (the groups in
