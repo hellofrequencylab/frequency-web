@@ -28,7 +28,7 @@ function encouragement(streak: number): string {
 
 const RESOURCES = [
   { href: '/practices', label: 'Practices', Icon: Heart },
-  { href: '/crew/journeys', label: 'Journeys', Icon: Map },
+  { href: '/crew/quests', label: 'Quests', Icon: Map },
   { href: '/circles', label: 'Circles', Icon: Users },
 ] as const
 

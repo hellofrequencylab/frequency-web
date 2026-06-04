@@ -38,12 +38,12 @@ export const revalidate = 3600
 export const metadata: Metadata = {
   title: 'The Quest',
   description:
-    'Showing up should count. Earn zaps in person and gems on platform, climb the season ranks, and choose a Journey. You level up by becoming someone your community misses.',
+    'Showing up should count. Earn zaps in person and gems on platform, climb the season ranks, and choose a Quest. You level up by becoming someone your community misses.',
   alternates: { canonical: '/the-quest' },
   openGraph: {
     title: 'The Quest · Frequency',
     description:
-      'Real life is the high score. Zaps, gems, season ranks, and Journeys: a path that rewards showing up, not scrolling.',
+      'Real life is the high score. Zaps, gems, season ranks, and Quests: a path that rewards showing up, not scrolling.',
     url: '/the-quest',
   },
 }
@@ -252,11 +252,11 @@ function LegacyTheQuest() {
         <span className="text-primary">your community misses.</span>
       </Statement>
 
-      {/* Journeys — multi-step seasonal journeys */}
+      {/* Quests — multi-step seasonal journeys */}
       <ZigZag
         img="/images/site/PHOTO-2020-10-17-13-49-14.jpeg"
         alt="A Frequency music circle gathered on a cliffside at golden hour"
-        eyebrow="Journeys"
+        eyebrow="Quests"
         title="A journey worth taking."
         kicker="Seasonal paths with a beginning, a middle, and a changed you at the end."
         imgAspect="landscape"
@@ -264,15 +264,15 @@ function LegacyTheQuest() {
         tone="canvas"
       >
         <p>
-          An <strong className="text-text">Journey</strong> is a multi-step seasonal
+          A <strong className="text-text">Quest</strong> is a multi-step seasonal
           journey you choose to walk: a string of real-world steps that add up to
           something. A 30 morning cold-plunge streak. Hosting your first supper
           club. Bringing three friends into a Circle and watching them stay.
         </p>
         <p>
-          Journeys give a season its shape. They turn a vague intention to be more
+          Quests give a season its shape. They turn a vague intention to be more
           present into a path with a next step always lit, and a community walking
-          it beside you. You don&apos;t finish a Journey with more points. You finish
+          it beside you. You don&apos;t finish a Quest with more points. You finish
           it as someone a little more woven in.
         </p>
       </ZigZag>
@@ -310,7 +310,7 @@ function LegacyTheQuest() {
             'Show up',
             'Earn zaps',
             'Climb your rank',
-            'Walk a Journey',
+            'Walk a Quest',
             'Bring someone new',
             'Be missed when you’re gone',
           ]}
@@ -354,7 +354,7 @@ function LegacyTheQuest() {
         <Body>
           Every player starts as a ghost. Join the beta and you start your first
           season alongside the founding members, the people shaping what these
-          ranks and Journeys even mean. Show up once, earn your first zap, and watch
+          ranks and Quests even mean. Show up once, earn your first zap, and watch
           the path light up. You can begin anywhere: all it takes is a Circle and
           a standing time.
         </Body>

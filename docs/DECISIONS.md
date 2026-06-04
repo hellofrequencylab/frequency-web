@@ -2016,6 +2016,30 @@ forming the founding leaderboard — not paywalled out of it.
 crew). The Launch gem-spend lock needs the entitlement/payment input on the capability resolver
 (ADR-037) before it can switch on; until then this is a one-flag policy + a backfill.
 
+## ADR-087: "Journeys" = the open member library; the gamified engine → "Quests"
+
+**Status:** Accepted · 2026-06-04 · migration `20260604180000_rename_journeys_engine_to_quests`. Engine rename shipped; the open Journeys library is backlog §Q1.
+
+**Context:** A new feature (backlog §Q1) lets members curate practice-combos by Pillar and
+share them into an open, free library — the product owner calls these **"Journeys."** That name
+was taken by the Crew-gated, gamified, seasonal tracked engine (`journey_chains`, `/crew/journeys`,
+in *The Quest* nav). Two "Journey" things would confuse the free/paid line.
+
+**Decision:** The member-facing **"Journeys"** becomes the **open, free, user-built** health-path
+library. The gamified tracked engine reverts to its original name **"Quests"** — it lives in *The
+Quest* nav and is the zaps/badge/season machine, so the name fits. Renamed `journey_chains/steps/
+progress → quest_*` (dropping the stale `quest_*` backward-compat views first), `/crew/journeys →
+/crew/quests` (with redirects from `/crew/journeys` and `/crew/arcs`), nav key `journeys → quests`,
+and all engine-context "Journey(s)" copy → "Quest(s)" (the-quest marketing, admin, dock, crew
+dashboard). The feed's `JourneyBoard` keeps the **Journey** name — it's the personal/open concept.
+
+**Consequences:** The `journey_*` table namespace is now **free** and reserved for the open
+Journeys library (§Q1). This is the engine's third name (quest → arc → journey → quest); it returns
+home. The library remains free (rides the practice loop); only the Quest engine stays Crew-gated
+(ADR-084). `docs/ECONOMY-AND-JOURNEYS.md` is now partly mis-titled — see its header note; a full
+pass lands when §Q1 builds.
+
+---
 ## ADR-086: Vera dialed as a persistent, attuned companion (presence + depth)
 
 **Status:** Accepted · 2026-06-04. Persona/voice shipped; persistent launcher pending build.

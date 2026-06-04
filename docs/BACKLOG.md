@@ -250,12 +250,10 @@ the graduated feed **Journey board** showcases them. Add an ADR per cluster on b
 - [ ] **Enrich the JourneyBoard** once the library lands: 4-pillar balance read +
   active Journey plan + a suggested next plan. (S — depends on Q1 Phase 0–1)
 
-### ⚠️ Naming decision — blocks the library's member-facing routes/copy
-"Journey plans" (open, free, user-built) would sit next to "Journeys"
-(`journey_chains`, Crew-gated, gamified). Resolve before building the library UI.
-**Recommendation:** make the open health-paths the member-facing **"Journeys"** and
-rename the gamified engine → **"Quests"** (it already lives in *The Quest* nav).
-Pending owner call.
+### ✅ Naming decided (ADR-087) — Journeys = open library; engine → Quests
+The member-facing **"Journeys"** is the open, free, user-built library. The gamified
+tracked engine was renamed **"Quests"** (`journey_chains → quest_chains`, `/crew/quests`,
+nav key `quests`). The `journey_*` table namespace is now free for the open library.
 
 ### Q1. Open vitality library — user-built Journey plans (FREE; rides the practice loop)
 Reconciliation (ADR needed): the open library is **curation over the always-free

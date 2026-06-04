@@ -401,7 +401,7 @@ async function GameStatsDock({ profileId }: { profileId: string }) {
   let arc: DockData['arc'] = null
   try {
     const { data: qp } = await admin
-      .from('journey_progress')
+      .from('quest_progress')
       .select('chain_id, current_step')
       .eq('profile_id', profileId)
       .is('completed_at', null)
@@ -410,8 +410,8 @@ async function GameStatsDock({ profileId }: { profileId: string }) {
       .maybeSingle()
     if (qp) {
       const [{ data: chain }, { data: steps }] = await Promise.all([
-        admin.from('journey_chains').select('name').eq('id', qp.chain_id).maybeSingle(),
-        admin.from('journey_steps').select('step_order, name').eq('chain_id', qp.chain_id).order('step_order'),
+        admin.from('quest_chains').select('name').eq('id', qp.chain_id).maybeSingle(),
+        admin.from('quest_steps').select('step_order, name').eq('chain_id', qp.chain_id).order('step_order'),
       ])
       const total = (steps ?? []).length || 1
       const cur = (steps ?? []).find((s: { step_order: number }) => s.step_order === qp.current_step) as { name?: string } | undefined
