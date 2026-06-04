@@ -43,13 +43,25 @@ export function ProfileForm({
   initial,
 }: {
   userId: string
-  initial: { displayName: string; handle: string; bio: string; avatarUrl: string }
+  initial: {
+    displayName: string
+    handle: string
+    bio: string
+    avatarUrl: string
+    email: string
+    phone: string
+    city: string
+    website: string
+  }
 }) {
   const [displayName,   setDisplayName]   = useState(initial.displayName)
   const [handle,        setHandle]        = useState(initial.handle)
   const [handleTouched, setHandleTouched] = useState(false)
   const [handleCheck,   setHandleCheck]   = useState<{ handle: string; status: 'available' | 'taken' | 'idle' } | null>(null)
   const [bio,           setBio]           = useState(initial.bio)
+  const [phone,         setPhone]         = useState(initial.phone)
+  const [city,          setCity]          = useState(initial.city)
+  const [website,       setWebsite]       = useState(initial.website)
   const [avatarUrl,     setAvatarUrl]     = useState(initial.avatarUrl)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(initial.avatarUrl || null)
   const [avatarFile,    setAvatarFile]    = useState<File | null>(null)
@@ -176,6 +188,9 @@ export function ProfileForm({
           handle:      handle.trim(),
           bio:         bio.trim(),
           avatarUrl:   finalAvatarUrl,
+          phone:       phone.trim(),
+          city:        city.trim(),
+          website:     website.trim(),
         })
         setSaved(true)
         setAvatarFile(null)
@@ -312,6 +327,74 @@ export function ProfileForm({
         <p className={`mt-1 text-xs text-right tabular-nums ${bio.length >= 260 ? 'text-primary' : 'text-subtle'}`}>
           {bio.length} / 280
         </p>
+      </div>
+
+      {/* ── Personal info / contact ─────────────────── */}
+      <div className="space-y-5 rounded-2xl border border-border bg-surface-elevated/40 p-4">
+        <div>
+          <p className="text-sm font-semibold text-text">Personal info</p>
+          <p className="mt-0.5 text-xs text-muted">
+            Private to you and your community leaders. Used to keep in touch, never shown on your public profile.
+          </p>
+        </div>
+
+        {/* Email — read-only (managed by your sign-in) */}
+        <div>
+          <label className={lbl}>Email</label>
+          <input
+            type="email"
+            value={initial.email}
+            readOnly
+            disabled
+            className={`${input} cursor-not-allowed text-muted`}
+          />
+          <p className="mt-1 text-xs text-subtle">Your sign-in email. Contact support to change it.</p>
+        </div>
+
+        <div>
+          <label htmlFor="phone" className={lbl}>
+            Phone <span className="text-subtle font-normal text-xs">(optional)</span>
+          </label>
+          <input
+            id="phone"
+            type="tel"
+            value={phone}
+            onChange={e => setPhone(e.target.value.slice(0, 40))}
+            placeholder="(555) 123-4567"
+            disabled={isPending}
+            className={input}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="city" className={lbl}>
+            City <span className="text-subtle font-normal text-xs">(optional)</span>
+          </label>
+          <input
+            id="city"
+            type="text"
+            value={city}
+            onChange={e => setCity(e.target.value.slice(0, 120))}
+            placeholder="Encinitas, CA"
+            disabled={isPending}
+            className={input}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="website" className={lbl}>
+            Website <span className="text-subtle font-normal text-xs">(optional)</span>
+          </label>
+          <input
+            id="website"
+            type="url"
+            value={website}
+            onChange={e => setWebsite(e.target.value.slice(0, 200))}
+            placeholder="yoursite.com"
+            disabled={isPending}
+            className={input}
+          />
+        </div>
       </div>
 
       {/* ── Error + Save ────────────────────────────── */}

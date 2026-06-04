@@ -2830,30 +2830,54 @@ export type Database = {
       }
       practices: {
         Row: {
+          body: string | null
+          cadence: string | null
+          category: string | null
           created_at: string
           created_by: string | null
           description: string | null
+          header_image: string | null
+          icon: string
           id: string
           is_demo: boolean
           is_public: boolean
+          reward_note: string | null
+          reward_zaps: number | null
+          summary: string | null
           title: string
         }
         Insert: {
+          body?: string | null
+          cadence?: string | null
+          category?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
+          header_image?: string | null
+          icon?: string
           id?: string
           is_demo?: boolean
           is_public?: boolean
+          reward_note?: string | null
+          reward_zaps?: number | null
+          summary?: string | null
           title: string
         }
         Update: {
+          body?: string | null
+          cadence?: string | null
+          category?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
+          header_image?: string | null
+          icon?: string
           id?: string
           is_demo?: boolean
           is_public?: boolean
+          reward_note?: string | null
+          reward_zaps?: number | null
+          summary?: string | null
           title?: string
         }
         Relationships: [
@@ -2872,6 +2896,7 @@ export type Database = {
           auth_user_id: string | null
           avatar_url: string | null
           bio: string | null
+          city: string | null
           community_role: Database["public"]["Enums"]["community_role"] | null
           created_at: string | null
           current_season_gems: number
@@ -2894,6 +2919,7 @@ export type Database = {
           longest_streak: number
           meta: Json | null
           nexus_region_id: string | null
+          phone: string | null
           profile_border: string | null
           profile_flair: string | null
           profile_theme: string | null
@@ -2910,6 +2936,7 @@ export type Database = {
           auth_user_id?: string | null
           avatar_url?: string | null
           bio?: string | null
+          city?: string | null
           community_role?: Database["public"]["Enums"]["community_role"] | null
           created_at?: string | null
           current_season_gems?: number
@@ -2932,6 +2959,7 @@ export type Database = {
           longest_streak?: number
           meta?: Json | null
           nexus_region_id?: string | null
+          phone?: string | null
           profile_border?: string | null
           profile_flair?: string | null
           profile_theme?: string | null
@@ -2948,6 +2976,7 @@ export type Database = {
           auth_user_id?: string | null
           avatar_url?: string | null
           bio?: string | null
+          city?: string | null
           community_role?: Database["public"]["Enums"]["community_role"] | null
           created_at?: string | null
           current_season_gems?: number
@@ -2970,6 +2999,7 @@ export type Database = {
           longest_streak?: number
           meta?: Json | null
           nexus_region_id?: string | null
+          phone?: string | null
           profile_border?: string | null
           profile_flair?: string | null
           profile_theme?: string | null
