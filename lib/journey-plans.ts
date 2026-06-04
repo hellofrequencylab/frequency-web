@@ -103,6 +103,12 @@ export async function getPlan(
   return { plan, items: (itemRows ?? []) as unknown as JourneyPlanItem[] }
 }
 
+/** The author of a plan (for ownership checks in server actions). */
+export async function planAuthorId(planId: string): Promise<string | null> {
+  const { data } = await db().from('journey_plans').select('author_id').eq('id', planId).maybeSingle()
+  return (data as { author_id: string | null } | null)?.author_id ?? null
+}
+
 // --- Mutations (callers enforce: the author owns the plan) -----------------
 
 export async function createPlan(input: {
