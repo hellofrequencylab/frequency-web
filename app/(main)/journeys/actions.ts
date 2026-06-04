@@ -8,7 +8,10 @@ import {
   addItem,
   removeItem,
   publishPlan,
+  adoptPlan,
+  forkPlan,
   planAuthorId,
+  planMeta,
 } from '@/lib/journey-plans'
 
 // Server actions for the Journeys builder. Writes go through the lib's service-role
@@ -56,4 +59,24 @@ export async function publishPlanAction(formData: FormData) {
   if (!(await assertOwner(planId))) return
   await publishPlan(planId)
   revalidatePath(`/journeys/${String(formData.get('slug') ?? '')}`)
+}
+
+export async function adoptPlanAction(formData: FormData) {
+  const profileId = await getMyProfileId()
+  if (!profileId) return
+  const planId = String(formData.get('planId') ?? '')
+  const meta = await planMeta(planId)
+  // Adoptable when it's a shared plan, or your own.
+  if (!meta || (meta.visibility === 'private' && meta.author_id !== profileId)) return
+  await adoptPlan(profileId, planId)
+  revalidatePath(`/journeys/${String(formData.get('slug') ?? '')}`)
+}
+
+export async function forkPlanAction(formData: FormData) {
+  const profileId = await getMyProfileId()
+  if (!profileId) return
+  const planId = String(formData.get('planId') ?? '')
+  // forkPlan only forks PUBLIC plans (enforced in the lib).
+  const fork = await forkPlan(profileId, planId)
+  if (fork) redirect(`/journeys/${fork.slug}`)
 }

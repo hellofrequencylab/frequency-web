@@ -264,15 +264,18 @@ build a *tracked* Journey; DIY practice-combo plans are open). Separate
 - [x] **Phase 0** — `practices.domain_id` → the 4 Pillars (migration + backfill);
   `lib/pillars.ts`; URL-driven pillar **filter** + **badges** on `/practices`; the
   board's pillar-balance read. ✅ shipped.
-- [ ] **Phase 1** — `journey_plans` + `journey_plan_items` + RLS; `lib/journey-plans.ts`;
-  private plan builder (pick practices → grouped by pillar → reorder → notes). (M)
-- [ ] **Phase 2** — publish + open library browse (`/library`, pillar filter, coverage +
-  adopt-count chips). (M)
-- [ ] **Phase 3** — adopt a plan = bulk-adopt its practices into `member_practices`
-  (reuse `adoptPractice`; NO new run engine; honors "streaks stay free"). (S)
-- [ ] **Phase 4** — fork/remix + attribution (`fork_of`, `forked_count`). (S)
+- [x] **Phase 1** — `journey_plans` + `journey_plan_items` + RLS; `lib/journey-plans.ts`;
+  builder at `/journeys/[slug]` (pick practices grouped by pillar, pillar coverage,
+  add/remove, publish). Nav: Journeys in Community. ✅ shipped.
+- [x] **Phase 2** — publish + open library browse at `/journeys` (your plans + community
+  library; visibility badges). ✅ shipped.
+- [x] **Phase 3** — adopt a plan = bulk-adopt its practices into `member_practices`
+  (reuse `adoptPractice`; no new run engine; honors "streaks stay free"). ✅ shipped.
+- [x] **Phase 4** — fork/remix + attribution (`fork_of`, `forked_count`, `adopt_count`).
+  ✅ shipped.
 - [ ] **Phase 5** — host moderation + optional "promote a community plan to a tracked
-  Journey/Quest". (M)
+  Journey/Quest"; pillar filter + adopt-count chips on the library; reorder-by-drag;
+  cover images; the JourneyBoard "active plan" block. (M)
 
 ### Q2. Create Wizard — section-aware, Vera-light, network suggestions
 **Wrap, don't replace** the existing `CreateModal` + per-section server actions via a
