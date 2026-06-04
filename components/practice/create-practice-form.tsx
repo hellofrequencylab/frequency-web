@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { Plus } from 'lucide-react'
 import { createPracticeAction } from '@/app/(main)/practices/actions'
 import { isError } from '@/lib/action-result'
@@ -8,6 +9,7 @@ import { isError } from '@/lib/action-result'
 // Create a custom practice (added to the public library + adoptable). The backend
 // createPractice already exists; this is its UI. No migration needed.
 export function CreatePracticeForm() {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -57,6 +59,8 @@ export function CreatePracticeForm() {
                 setDescription('')
                 setErr(null)
                 setOpen(false)
+                // Open the editor so they can flesh out cadence, guide, pillar, etc.
+                router.push(`/practices/${r.data.id}/edit`)
               }
             })
           }

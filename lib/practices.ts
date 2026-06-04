@@ -97,6 +97,77 @@ export async function createPractice(input: {
   return (data as Practice | null) ?? null
 }
 
+/** A single practice by id (for the editor + ownership checks). */
+export async function getPractice(id: string): Promise<Practice | null> {
+  const { data } = await db().from('practices').select(PRACTICE_COLS).eq('id', id).maybeSingle()
+  return (data as Practice | null) ?? null
+}
+
+/** The member-editable content fields of a practice. Rewards (reward_zaps /
+ *  reward_note) are intentionally NOT here — the economy stays admin-governed,
+ *  which is the "partial flexibility" line (members shape content + cadence). */
+export interface PracticeEdit {
+  title?: string
+  summary?: string | null
+  description?: string | null
+  body?: string | null
+  cadence?: string | null
+  category?: string | null
+  icon?: string | null
+  header_image?: string | null
+  domain_id?: string | null
+}
+
+const STR = (v: string | null | undefined, max: number): string | null => {
+  const t = (v ?? '').trim()
+  return t ? t.slice(0, max) : null
+}
+
+/** Update a practice's content. Caller enforces ownership (created_by === caller).
+ *  Only the fields present in `patch` are written. */
+export async function updatePractice(id: string, patch: PracticeEdit): Promise<Practice | null> {
+  const update: Record<string, unknown> = {}
+  if (patch.title !== undefined) update.title = STR(patch.title, 80) ?? 'Untitled practice'
+  if (patch.summary !== undefined) update.summary = STR(patch.summary, 140)
+  if (patch.description !== undefined) update.description = STR(patch.description, 280)
+  if (patch.body !== undefined) update.body = STR(patch.body, 8000)
+  if (patch.cadence !== undefined) update.cadence = STR(patch.cadence, 40)
+  if (patch.category !== undefined) update.category = STR(patch.category, 40)
+  if (patch.icon !== undefined) update.icon = STR(patch.icon, 40)
+  if (patch.header_image !== undefined) update.header_image = STR(patch.header_image, 500)
+  if (patch.domain_id !== undefined) update.domain_id = patch.domain_id || null
+  if (Object.keys(update).length === 0) return getPractice(id)
+
+  const { data } = await db().from('practices').update(update).eq('id', id).select(PRACTICE_COLS).maybeSingle()
+  return (data as Practice | null) ?? null
+}
+
+/** Fork a practice into a PRIVATE copy owned by the caller (is_public=false), so a
+ *  member can customize a library practice for their own program without altering
+ *  the shared one. Copies the content fields (not the rewards). */
+export async function forkPractice(profileId: string, practiceId: string): Promise<Practice | null> {
+  const src = await getPractice(practiceId)
+  if (!src) return null
+  const { data } = await db()
+    .from('practices')
+    .insert({
+      title: src.title,
+      description: src.description,
+      summary: src.summary,
+      body: src.body,
+      cadence: src.cadence,
+      category: src.category,
+      icon: src.icon,
+      header_image: src.header_image,
+      domain_id: src.domain_id,
+      created_by: profileId,
+      is_public: false,
+    })
+    .select(PRACTICE_COLS)
+    .maybeSingle()
+  return (data as Practice | null) ?? null
+}
+
 /** Set the circle's current practice (one active per circle). Caller must be host+. */
 export async function setCirclePractice(
   circleId: string,
