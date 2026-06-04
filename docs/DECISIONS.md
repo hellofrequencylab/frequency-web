@@ -1888,6 +1888,54 @@ for what is now an Arc** — the one remaining player-facing instance of the col
 
 ---
 
+## ADR-080: Demo content v2 — a year-old, viral, local Encinitas community
+
+**Decision.** Replace the first-generation demo seed (the old North County SD `c…`
+cast and the five out-of-area national metros `d…`) with one fully-local demo
+community centered on **Encinitas**: ~250 auth-less members across 12 circles,
+modeling a community that is one year old and "went viral" but stayed inside the
+North County border (Oceanside / Vista / San Marcos / Poway / La Mesa / San Diego
+proper). Migration series `20260605000001`–`…000300`. Casting bible + build spec:
+[DEMO-CAST.md](DEMO-CAST.md).
+
+**Why.** The brief wanted a believable, *bounded* local community, not a national
+sprinkle. The story is carried by **maturity signals** (deep streaks, full trophy
+cases, a 10-event history with attendance, dense reply threads, a real rank
+pyramid 3/12/30/55/80/70) rather than inflated headcounts — counts stay **honest**
+(see the DemoNotice below). National metros were out of scope, so teardown retires
+them.
+
+**Practices got a real schema (migration …000000).** `practices` gained
+`header_image, summary, body, category, icon, cadence, reward_zaps, reward_note`.
+`logPractice` applies a practice's `reward_zaps` as the per-log override — so the
+reward attaches to the *doing*, and a cold plunge can be worth more than a journal
+entry. The 16 existing practices were backfilled and 18 new ones added.
+
+**Programs reward the doing, not the reading.** Program frontmatter gained
+`header_image` + `reward`; the detail page renders the image and a "what you earn"
+callout whose copy points at the circle-lifecycle zaps (start +50, activate +40,
+host +50, attend +25, invite +30). Completing a program still records progress
+without awarding points — preserving the North-Star guardrail.
+
+**Controls + the tell.** Reuses the existing `is_demo` contract, the
+`platform_flags.demo_mode` kill switch, and the `/admin/demo` toggle+purge. The
+demo tell is now a small **yellow ⚡ bolt** badge across members/circles/posts/
+events/practices, and a right-sidebar **DemoNotice** card explains it and shows
+the honest *"N demo members + N real ones — Help us make this real!"* count
+(self-hides when demo is off or purged).
+
+**Validation.** Every v2 migration was executed against a throwaway PG16 cluster
+(minimal schema mirroring the real constraints) before commit. This caught a wrong
+`circle_practices` ON CONFLICT target (10 files), two misaligned `VALUES` aliases,
+and a duplicate handle — none of which static review had surfaced.
+
+**Consequences.** All demo content carries `is_demo` and purges in one
+`DELETE … WHERE is_demo`; `demo_mode` hides it in one flip. Set-generated
+engagement (reactions, RSVPs, achievement unlocks, streaks, member-practice
+adoptions) is deterministic + idempotent and cascades away with the cast.
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 
