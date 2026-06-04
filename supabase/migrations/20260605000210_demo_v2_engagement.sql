@@ -54,6 +54,13 @@ ON CONFLICT (event_id, profile_id) DO NOTHING;
 -- 4. Trophy cases — each member unlocks their first `achievement_count`
 --    achievements (lowest sort_order first), so the count on the profile and the
 --    badges on the page agree. Capped by however many achievements exist.
+--    The after_achievement_unlocked trigger would (a) add the achievement's
+--    zaps_reward to profiles.economy — which the lock_economy_columns guard
+--    blocks for non-service-role writers — and (b) double-count against the
+--    zaps we already hand-set. So we suppress user triggers on the table for
+--    this bulk insert; the profile's economy + achievement_count are already
+--    seeded to their designed values.
+ALTER TABLE user_achievements DISABLE TRIGGER USER;
 INSERT INTO user_achievements (profile_id, achievement_id, unlocked_at)
 SELECT p.id, a.id, now() - ((abs(hashtext(p.id::text || a.id::text)) % 180) || ' days')::interval
 FROM profiles p
@@ -62,6 +69,7 @@ CROSS JOIN LATERAL (
 ) a
 WHERE p.is_demo AND p.achievement_count > 0
 ON CONFLICT (profile_id, achievement_id) DO NOTHING;
+ALTER TABLE user_achievements ENABLE TRIGGER USER;
 
 -- 5. Attendance streaks mirror the profile's streak fields (so the streak shown
 --    on the profile is backed by a real streaks row).
