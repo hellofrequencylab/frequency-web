@@ -1,82 +1,146 @@
-import Link from 'next/link'
-import { Compass, Check, Sparkles, ArrowRight } from 'lucide-react'
-import type { OnboardingStatus } from '@/lib/onboarding/status'
+'use client'
 
-// The persistent activation guide that owns the top of the feed until a member is
-// fully set up (join a circle → adopt a practice → log it). Unlike the old
-// "Find your first circle" box, it does NOT vanish the moment you join a circle —
-// it advances through the remaining steps and only graduates (into the JourneyBoard)
-// once every step is done. Teal (`signal`) so it reads as "getting set up", distinct
-// from the warm amber of the home surfaces below it. Lightweight and inviting by
-// design — a short headline, a slim bar, and a compact checklist, not a wall.
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { Compass, Check, Sparkles, ArrowRight, ChevronDown } from 'lucide-react'
+import type { OnboardingStatus } from '@/lib/onboarding/status'
+import { forceOnboardingStep } from '@/app/(main)/feed/onboarding-actions'
+
+// The persistent activation guide at the top of the feed. It can be MINIMIZED to a
+// slim bar but never dismissed — the only ways out are completing the steps or the
+// obscured per-step force-complete (a deliberately low-prominence escape hatch).
+// Azure `broadcast` shades (the cool "getting set up" accent). When every step is
+// done it returns null and the feed page graduates it into the JourneyBoard tracker.
+
+const MIN_KEY = 'fq_onboarding_min'
 
 export function FeedOnboardingGuide({ status }: { status: OnboardingStatus }) {
+  const [minimized, setMinimized] = useState(false)
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMinimized(localStorage.getItem(MIN_KEY) === '1')
+  }, [])
+
+  function toggle() {
+    setMinimized((m) => {
+      const next = !m
+      try { localStorage.setItem(MIN_KEY, next ? '1' : '0') } catch {}
+      return next
+    })
+  }
+
   const current = status.current
-  if (!current) return null // complete — the JourneyBoard takes over
+  if (!current) return null // complete — the JourneyBoard tracker takes over
+
+  // ── Minimized: a slim, un-removable blue bar ──────────────────────────────
+  if (minimized) {
+    return (
+      <button
+        type="button"
+        onClick={toggle}
+        aria-label="Expand getting-started"
+        className="mb-6 flex w-full items-center gap-3 rounded-xl border border-broadcast-bg bg-broadcast-bg/50 px-4 py-2.5 text-left transition-colors hover:bg-broadcast-bg/70 dark:bg-broadcast-bg/30"
+      >
+        <Compass className="h-4 w-4 shrink-0 text-broadcast-strong" />
+        <span className="text-sm font-semibold text-text">Getting set up</span>
+        <span className="text-xs font-bold tabular-nums text-broadcast-strong">{status.pct}%</span>
+        <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-broadcast-bg">
+          <span className="block h-full rounded-full bg-broadcast transition-all" style={{ width: `${status.pct}%` }} />
+        </span>
+        <ChevronDown className="h-4 w-4 shrink-0 -rotate-90 text-broadcast-strong" />
+      </button>
+    )
+  }
+
+  // ── Expanded ──────────────────────────────────────────────────────────────
+  const C = 2 * Math.PI * 16 // ring circumference (r=16)
 
   return (
-    <div className="mb-6 rounded-2xl border border-signal-bg bg-signal-bg/40 p-4 dark:bg-signal-bg/20">
-      {/* Header: the current step's invitation + progress */}
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-signal-bg text-signal-strong">
-            <Compass className="h-5 w-5" />
+    <div className="mb-6 rounded-2xl border border-broadcast-bg bg-broadcast-bg/40 p-4 dark:bg-broadcast-bg/20">
+      {/* Header: progress ring + the current step's invitation + minimize */}
+      <div className="flex items-start gap-3">
+        <div className="relative shrink-0" aria-hidden>
+          <svg width="44" height="44" viewBox="0 0 44 44" className="-rotate-90">
+            <circle cx="22" cy="22" r="16" fill="none" stroke="var(--color-broadcast-bg)" strokeWidth="4" />
+            <circle
+              cx="22" cy="22" r="16" fill="none" stroke="var(--color-broadcast)" strokeWidth="4" strokeLinecap="round"
+              strokeDasharray={C} strokeDashoffset={C * (1 - status.pct / 100)}
+              className="transition-all duration-700"
+            />
+          </svg>
+          <span className="absolute inset-0 flex items-center justify-center text-[11px] font-bold tabular-nums text-broadcast-strong">
+            {status.pct}%
           </span>
-          <div className="min-w-0">
-            <h2 className="text-base font-bold leading-tight text-text">{current.headline}</h2>
-            <p className="mt-0.5 text-sm leading-snug text-muted">{current.blurb}</p>
-          </div>
         </div>
-        <span className="shrink-0 text-xs font-bold tabular-nums text-signal-strong">{status.pct}%</span>
+        <div className="min-w-0 flex-1">
+          <h2 className="text-base font-bold leading-tight text-text">{current.headline}</h2>
+          <p className="mt-0.5 text-sm leading-snug text-muted">{current.blurb}</p>
+        </div>
+        <button
+          type="button"
+          onClick={toggle}
+          aria-label="Minimize"
+          className="shrink-0 rounded-md p-1 text-broadcast-strong/70 transition-colors hover:bg-broadcast-bg/60 hover:text-broadcast-strong"
+        >
+          <ChevronDown className="h-4 w-4" />
+        </button>
       </div>
 
-      {/* Progress bar */}
-      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-signal-bg">
-        <div
-          className="h-full rounded-full bg-signal transition-all duration-500"
-          style={{ width: `${status.pct}%` }}
-        />
+      {/* Segmented stepper — at-a-glance "where am I". */}
+      <div className="mt-3 flex gap-1.5">
+        {status.steps.map((s) => (
+          <span
+            key={s.key}
+            className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${
+              s.done ? 'bg-broadcast' : s.key === current.key ? 'bg-broadcast/40' : 'bg-broadcast-bg'
+            }`}
+          />
+        ))}
       </div>
 
-      {/* Compact step checklist — done steps tick off; the current one is emphasized. */}
+      {/* Step list — done ticks off; the current step is emphasized + actionable. */}
       <div className="mt-3 space-y-0.5">
         {status.steps.map((step) => {
           const isCurrent = step.key === current.key
           return (
-            <Link
-              key={step.key}
-              href={step.href}
-              className={`group flex items-center gap-2.5 rounded-lg px-1.5 py-1.5 transition-colors ${
-                step.done ? 'cursor-default' : 'hover:bg-signal-bg/60'
-              }`}
-              aria-current={isCurrent ? 'step' : undefined}
-            >
+            <div key={step.key} className="group flex items-center gap-2.5 rounded-lg px-1.5 py-1.5">
               <span
                 className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
                   step.done
-                    ? 'bg-success-bg text-success'
+                    ? 'bg-broadcast text-on-broadcast'
                     : isCurrent
-                      ? 'bg-signal text-on-signal'
-                      : 'border border-signal-bg text-subtle'
+                      ? 'bg-broadcast/15 text-broadcast-strong ring-2 ring-broadcast'
+                      : 'border border-broadcast-bg text-subtle'
                 }`}
               >
                 {step.done ? <Check className="h-3 w-3" strokeWidth={3} /> : <span className="h-1.5 w-1.5 rounded-full bg-current" />}
               </span>
-              <span
-                className={`flex-1 text-sm ${
-                  step.done
-                    ? 'text-subtle line-through decoration-success/40'
-                    : isCurrent
-                      ? 'font-semibold text-text'
-                      : 'text-muted'
-                }`}
-              >
-                {step.label}
-              </span>
-              {!step.done && (
-                <ArrowRight className="h-3.5 w-3.5 shrink-0 text-signal-strong opacity-0 transition-opacity group-hover:opacity-100" />
+              {step.done ? (
+                <span className="flex-1 text-sm text-subtle line-through decoration-broadcast/40">{step.label}</span>
+              ) : (
+                <Link
+                  href={step.href}
+                  className={`flex-1 text-sm ${isCurrent ? 'font-semibold text-text' : 'text-muted hover:text-text'}`}
+                >
+                  {step.label}
+                </Link>
               )}
-            </Link>
+              {/* Obscured force-complete — only on the current step, easy to miss. */}
+              {isCurrent && (
+                <form action={forceOnboardingStep}>
+                  <input type="hidden" name="step" value={step.key} />
+                  <button
+                    type="submit"
+                    aria-label="Mark this step complete"
+                    title="Mark complete"
+                    className="rounded p-0.5 text-subtle opacity-0 transition-opacity hover:text-broadcast-strong focus:opacity-60 group-hover:opacity-30"
+                  >
+                    <Check className="h-3.5 w-3.5" />
+                  </button>
+                </form>
+              )}
+            </div>
           )
         })}
       </div>
@@ -85,13 +149,13 @@ export function FeedOnboardingGuide({ status }: { status: OnboardingStatus }) {
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <Link
           href={current.href}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-signal px-4 py-2 text-sm font-semibold text-on-signal transition-colors hover:opacity-90"
+          className="inline-flex items-center gap-1.5 rounded-xl bg-broadcast px-4 py-2 text-sm font-semibold text-on-broadcast transition-colors hover:opacity-90"
         >
           {current.cta} <ArrowRight className="h-3.5 w-3.5" />
         </Link>
         <Link
           href="/feed?welcome=vera&v=chat"
-          className="inline-flex items-center gap-1.5 rounded-xl border border-signal-bg px-4 py-2 text-sm font-medium text-signal-strong transition-colors hover:bg-signal-bg/50"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-broadcast-bg px-4 py-2 text-sm font-medium text-broadcast-strong transition-colors hover:bg-broadcast-bg/50"
         >
           <Sparkles className="h-3.5 w-3.5" /> Ask Vera
         </Link>
