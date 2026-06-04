@@ -701,7 +701,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                   {/* lock it in: sign in to save, then straight to the feed */}
                   <div className="w-full max-w-xs text-left">
                     <p className="text-lg leading-relaxed text-muted">
-                      Lock in your spot, Founder. Sign in and everything you just set up is saved.
+                      Lock it in. Sign in, and everything you just set up is saved.
                     </p>
 
                     <input
