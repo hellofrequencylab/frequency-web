@@ -141,7 +141,7 @@ function Splash({ live }: { live: LiveData }) {
           <>
             The places that held us
             <br />
-            just <span className="text-primary">vanished.</span>
+            are <span className="text-primary">vanishing.</span>
           </>
         }
         imgAspect="portrait"
@@ -201,7 +201,7 @@ function Splash({ live }: { live: LiveData }) {
         eyebrow="Your people, near you"
         title={
           <>
-            It starts with <span className="text-primary">your people.</span>
+            It starts with <span className="text-primary">people.</span>
           </>
         }
         tone="canvas"
@@ -286,12 +286,12 @@ function Splash({ live }: { live: LiveData }) {
             <Reveal as="div" delay={100} className="lg:col-span-7 lg:col-start-6">
               <div className="space-y-5 text-lg sm:text-xl text-white/85 leading-relaxed">
                 <p>
-                  A few of us started gathering on the cliffs every morning to breathe and reconnect.
-                  Within eighteen months, a thousand people were showing up.
+                  We started gathering on the cliffs at Moonlight Beach to meditate, every single
+                  morning. We kept showing up for more than 500 days straight.
                 </p>
                 <p className="text-white/70">
-                  No guru. No brand. No agenda. Just people who needed each other and a place to be. It
-                  proved the hunger is real, and that it can be answered.
+                  Over a thousand people came through. No app, no agenda, just a standing time and a
+                  place to be. It proved the hunger is real, and that it can be answered.
                 </p>
               </div>
               <Link
@@ -305,24 +305,24 @@ function Splash({ live }: { live: LiveData }) {
           <Reveal delay={200} className="mt-16 grid grid-cols-3 gap-6 max-w-2xl">
             <div>
               <p className="font-display text-5xl sm:text-7xl text-white">
-                <CountUp value={1000} />
+                <CountUp value={500} />+
               </p>
               <p className="mt-3 text-xs uppercase tracking-widest font-bold text-white/50">
-                People, at the peak
+                Mornings in a row
               </p>
             </div>
             <div>
               <p className="font-display text-5xl sm:text-7xl text-white">
-                <CountUp value={18} />
+                <CountUp value={1000} />+
               </p>
               <p className="mt-3 text-xs uppercase tracking-widest font-bold text-white/50">
-                Months to get there
+                People came through
               </p>
             </div>
             <div>
-              <p className="font-display text-5xl sm:text-7xl text-primary">0</p>
+              <p className="font-display text-5xl sm:text-7xl text-primary">$0</p>
               <p className="mt-3 text-xs uppercase tracking-widest font-bold text-white/50">
-                Gurus involved
+                To show up
               </p>
             </div>
           </Reveal>
@@ -511,31 +511,43 @@ function Splash({ live }: { live: LiveData }) {
         </Reveal>
         <div className="space-y-3">
           <Faq q="Do I have to be outgoing?">
-            No. Circles are small on purpose: a handful of people, not a crowd. You don&apos;t have to
-            perform or network. You just have to show up, and the structure does the rest.
+            Not at all. Circles are deliberately small, a handful of regulars rather than a crowd, so
+            there&apos;s no room to disappear and no pressure to perform. You don&apos;t have to network,
+            post, or be &ldquo;on.&rdquo; The standing time and the small group do the work, and
+            familiarity quietly turns into belonging on its own. A lot of our quietest members say
+            it&apos;s the first place they&apos;ve felt at ease in years.
           </Faq>
           <Faq q="What does it cost?">
-            The community is free, forever. Crew membership, which turns on the Quest, is $10/mo, and
-            free during the beta. No card today; join now and your founder pricing is locked when paid
-            memberships launch.{' '}
+            The community is free, forever. Browsing, joining a Circle, and showing up never cost
+            anything. Crew membership, which turns on the Quest and helps keep the physical spaces open,
+            is $10/mo and free for the whole beta. There&apos;s no card today: join now and your founder
+            pricing is locked in for life when paid memberships launch. Memberships exist to sustain the
+            rooms and hold the door open for people who can&apos;t pay, never to extract from you.{' '}
             <Link href="/pricing" className="font-semibold text-primary-strong hover:underline">
               See the full breakdown
             </Link>
             .
           </Faq>
-          <Faq q="Is there a catch or a guru?">
-            None. Frequency is leaderful, not leader-dependent, built to outlast any one person. No
-            charismatic founder to follow, no upsell funnel. Memberships exist to sustain the physical
-            spaces, not to extract.
+          <Faq q="Is there a catch?">
+            None. Frequency is leaderful, not leader-dependent: it&apos;s built to outlast any one
+            person, with no single figure to follow and no upsell funnel hiding behind the free tier.
+            Leaders rise from the people who simply keep showing up, and when someone moves on, the
+            Circle keeps going. The whole model is designed to sustain real places to gather, which is
+            why memberships fund the rooms rather than line anyone&apos;s pockets.
           </Faq>
           <Faq q="I'm not in North County San Diego.">
-            The first Lab is taking root there now, but the community starts anywhere. Add your name
-            and start a Circle where you are; we&apos;re mapping where people gather so we know which
-            city seeds next. That&apos;s how it spreads: city by city, like cells.
+            That&apos;s fine, the community starts anywhere. The first Lab is taking root in North County
+            San Diego, but a Circle only needs a few people and a standing time, so you can start one
+            where you are tonight. We&apos;re mapping where people gather so we know which city to seed
+            next, and that&apos;s exactly how it spreads: Circle by Circle, neighborhood by neighborhood,
+            city by city, like cells. Add your name and tell us where you are.
           </Faq>
           <Faq q="What if it's not for me?">
-            Leave anytime, no questions. The beta is free, there&apos;s no card on file, and nothing
-            locks you in. The only thing you risk is missing the founding cohort.
+            Then you leave anytime, no questions and nothing lost. The beta is free, there&apos;s no card
+            on file, and nothing locks you in: no contracts, no cancellation maze. Try a gathering or
+            two, and if the room isn&apos;t for you, walk away with our blessing. The only thing you
+            actually risk by waiting is missing the founding cohort and the founder pricing that comes
+            with it.
           </Faq>
         </div>
       </Section>
