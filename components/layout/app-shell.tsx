@@ -39,6 +39,7 @@ import type { ProfileIdentity } from '@/lib/types/profile'
 import { PrimaryNav } from '@/components/layout/primary-nav'
 import { BrandMark } from '@/components/layout/brand-mark'
 import { AREA_ICONS } from '@/components/layout/nav-icons'
+import { UpgradeCrew } from '@/components/layout/upgrade-crew'
 import { DockRevealProvider, useDockRevealed, useHoverScrollReveal } from '@/components/sidebar/dock-reveal'
 
 // The sidebar + community bar are built from NAV_AREAS (lib/nav-areas.ts — the
@@ -885,23 +886,9 @@ export default function AppShell({
             <NavLinkList isActive={isActive} role={gateRole} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} />
           </nav>
 
-          {/* Upgrade to Crew CTA. Members only (not janitor) */}
-          {!hideAppNav && role === 'member' && (
-            <div className="mx-3 mb-3 rounded-xl border border-border bg-primary-bg p-3.5">
-              <p className="text-xs font-semibold text-primary-strong mb-1">
-                Upgrade to Crew
-              </p>
-              <p className="text-xs text-muted leading-snug mb-3">
-                Get full access to the feed, events, and your group.
-              </p>
-              <a
-                href="/upgrade"
-                className="block text-center rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary hover:bg-primary-hover transition-colors"
-              >
-                Upgrade →
-              </a>
-            </div>
-          )}
+          {/* Upgrade to Crew. Non-paying members only; one-time pitch that
+              collapses to a slim "Upgrade" tab above the profile card. */}
+          {!hideAppNav && role === 'member' && <UpgradeCrew />}
 
           {/* Profile card. Public identity anchor.
               Avatar · name · role badge → public profile · member settings.
