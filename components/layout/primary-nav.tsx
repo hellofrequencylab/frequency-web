@@ -82,7 +82,7 @@ function Dropdown({
         <div
           role="menu"
           aria-label={label}
-          className={`absolute top-full mt-2 w-72 rounded-2xl border border-border bg-surface shadow-pop p-1.5 z-50 ${
+          className={`absolute top-full -mt-px w-72 rounded-b-2xl border border-t-0 border-border bg-surface shadow-pop p-1.5 z-50 ${
             align === 'right' ? 'right-0' : 'left-0'
           }`}
         >
@@ -151,7 +151,7 @@ export function PrimaryNav({
           {item.label}
         </Link>
       ))}
-      {showDiscover && <Dropdown label="Discover" items={DISCOVER_NAV} variant={variant} align="right" />}
+      {showDiscover && <Dropdown label="Discover" items={DISCOVER_NAV} variant={variant} align="left" />}
     </nav>
   )
 }
