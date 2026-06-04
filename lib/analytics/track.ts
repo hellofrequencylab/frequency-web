@@ -1,10 +1,13 @@
 // Server-side first-party tracking (ADR-070, ANALYTICS.md). `track()` is the only
 // sanctioned way to record a product event into the engagement_events ledger — it
 // validates against the taxonomy so coverage stays honest. Best-effort: analytics
-// must never break a user action. GA4 mirroring happens client-side (trackClient).
+// must never break a user action. It ALSO mirrors to GA4 server-side (Measurement
+// Protocol, ADR-093) — the counterpart to the client's gtag mirror in trackClient —
+// so events that never touch the browser (QR scans, referral attribution) still land.
 
 import { recordEngagementEvent } from '@/lib/engagement/events'
 import { isTrackedEvent } from './events'
+import { sendGa4Event } from './ga-server'
 
 /** Keep only primitive prop values, cap count + string length, so the ledger never
  *  stores nested junk or unbounded payloads. Exported for the /api/track endpoint. */
@@ -33,11 +36,14 @@ export async function track(
   actorProfileId: string | null = null,
 ): Promise<void> {
   if (!isTrackedEvent(event)) return
+  const clean = sanitizeProps(props)
   await recordEngagementEvent({
     idempotencyKey: `track:${event}:${actorProfileId ?? 'anon'}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`,
     source: 'web',
     eventType: event,
     actorProfileId,
-    context: sanitizeProps(props),
+    context: clean,
   }).catch(() => {})
+  // Mirror to GA4 server-side (parity with the client gtag mirror). Fire-and-forget.
+  void sendGa4Event(event, clean, actorProfileId)
 }

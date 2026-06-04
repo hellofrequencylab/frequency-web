@@ -8,6 +8,7 @@ import { getMyProfileId } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { recordEngagementEvent } from '@/lib/engagement/events'
 import { awardZaps } from '@/lib/zaps'
+import { track } from '@/lib/analytics/track'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 
 const GIFT_ZAPS = 1
@@ -35,7 +36,10 @@ export async function giftZap(slug: string): Promise<ActionResult<{ awarded: boo
     actorProfileId: me,
     context: { to: code.owner_profile_id },
   })
-  if (recorded) await awardZaps(code.owner_profile_id, GIFT_ZAPS)
+  if (recorded) {
+    await awardZaps(code.owner_profile_id, GIFT_ZAPS)
+    void track('qr.gift_zap', { to: code.owner_profile_id }, me)
+  }
 
   return ok({ awarded: recorded })
 }

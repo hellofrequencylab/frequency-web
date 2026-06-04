@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { isCodeLive } from '@/lib/qr/codes'
+import { track } from '@/lib/analytics/track'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,6 +33,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
   await admin
     .rpc('record_qr_scan', { p_code_id: code.id, p_profile: profileId ?? undefined })
     .then(() => {}, () => {})
+  // First-party + GA4 funnel event (covers dynamic links, member + marketing codes).
+  void track('qr.scanned', { purpose: code.purpose ?? 'none', destination: code.destination_type }, profileId)
 
   if (code.destination_type === 'url' && code.target_url) {
     return NextResponse.redirect(new URL(code.target_url, origin))

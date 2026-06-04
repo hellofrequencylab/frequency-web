@@ -2016,6 +2016,30 @@ forming the founding leaderboard — not paywalled out of it.
 crew). The Launch gem-spend lock needs the entitlement/payment input on the capability resolver
 (ADR-037) before it can switch on; until then this is a one-flag policy + a backfill.
 
+## ADR-093: Server-side GA4 mirror (Measurement Protocol) closes the tracking loop
+
+**Status:** Accepted · 2026-06-05 · `lib/analytics/ga-server.ts`, `lib/analytics/track.ts`, `lib/analytics/events.ts`. No migration.
+
+**Context:** The analytics spine (ADR-070) dual-emits on the **client** — `trackClient` mirrors to
+GA4 via `gtag` and records first-party. But **server-side** `track()` only wrote first-party; the
+GA4 comment even said "mirroring happens client-side." QR funnel events are server-authoritative
+and often never touch the browser (a scan at `/q` redirects off-site; referral attribution runs at
+onboarding; gift-a-zap is a server action), so they were invisible to GA.
+
+**Decision:** Add a server GA4 mirror over the **Measurement Protocol** (`sendGa4Event`) and call it
+from `track()`, so every server event mirrors to GA4 just like the client half — closing the loop
+without a parallel path. Inert unless `NEXT_PUBLIC_GA_MEASUREMENT_ID` **and** `GA_API_SECRET` are set
+**and** `NODE_ENV==='production'` (matches the client tag; dev/preview never hit the property).
+`actorProfileId` becomes the GA `client_id` + `user_id` for grouping/cross-device. Added QR events to
+the taxonomy (`qr.scanned`, `qr.referral_signup`, `qr.gift_zap`, client `qr.code_designed`) and fired
+them from the resolver/actions. Names are dot→underscore-normalized for GA's rules.
+
+**Consequences:** GA4 now sees the full QR funnel (scan → signup/gift) plus all other server events,
+alongside the internal `qr_scans` + `engagement_events` ledgers. Best-effort + fire-and-forget — never
+blocks a redirect or action. Consent-gating the GA load (the app has a consent ledger, ADR-069) is a
+recommended follow-up; today GA respects `anonymize_ip` + disabled ad signals (ADR-048).
+
+---
 ## ADR-092: Crew marketing-funnel codes (≤3, owner + purpose-null)
 
 **Status:** Accepted · 2026-06-05 · `lib/qr/marketing.ts`, `app/(main)/codes/marketing-codes.tsx`, `app/(main)/codes/actions.ts`. No migration.
