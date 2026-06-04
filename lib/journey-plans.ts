@@ -11,6 +11,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { adoptPractice } from '@/lib/practices'
 
 function db(): SupabaseClient {
   return createAdminClient() as unknown as SupabaseClient
@@ -109,6 +110,12 @@ export async function planAuthorId(planId: string): Promise<string | null> {
   return (data as { author_id: string | null } | null)?.author_id ?? null
 }
 
+/** Visibility + author of a plan (for the adopt/fork access checks). */
+export async function planMeta(planId: string): Promise<{ visibility: PlanVisibility; author_id: string | null } | null> {
+  const { data } = await db().from('journey_plans').select('visibility, author_id').eq('id', planId).maybeSingle()
+  return (data as { visibility: PlanVisibility; author_id: string | null } | null) ?? null
+}
+
 // --- Mutations (callers enforce: the author owns the plan) -----------------
 
 export async function createPlan(input: {
@@ -202,6 +209,88 @@ export async function publishPlan(planId: string): Promise<void> {
 
 export async function setPlanVisibility(planId: string, visibility: PlanVisibility): Promise<void> {
   await db().from('journey_plans').update({ visibility, ...touch() }).eq('id', planId)
+}
+
+// --- Adopt / fork (acting on a community journey) --------------------------
+
+/** Is this plan currently adopted by the member? */
+export async function isPlanAdopted(profileId: string, planId: string): Promise<boolean> {
+  const { data } = await db()
+    .from('journey_plan_adoptions')
+    .select('active')
+    .eq('plan_id', planId)
+    .eq('profile_id', profileId)
+    .maybeSingle()
+  return !!(data as { active: boolean } | null)?.active
+}
+
+/** Adopt a community journey: its practices flow into the member's own
+ *  member_practices (the free loop, via adoptPractice), and we record the
+ *  adoption (incrementing adopt_count on first adoption only). */
+export async function adoptPlan(profileId: string, planId: string): Promise<void> {
+  const client = db()
+  const { data: itemRows } = await client.from('journey_plan_items').select('practice_id').eq('plan_id', planId)
+  const practiceIds = ((itemRows as { practice_id: string }[] | null) ?? []).map((r) => r.practice_id)
+  for (const pid of practiceIds) await adoptPractice(profileId, pid)
+
+  const { data: existingRow } = await client
+    .from('journey_plan_adoptions')
+    .select('id, active')
+    .eq('plan_id', planId)
+    .eq('profile_id', profileId)
+    .maybeSingle()
+  const existing = existingRow as { id: string; active: boolean } | null
+
+  if (!existing) {
+    await client.from('journey_plan_adoptions').insert({ plan_id: planId, profile_id: profileId, active: true })
+    const { data: planRow } = await client.from('journey_plans').select('adopt_count').eq('id', planId).maybeSingle()
+    const count = (planRow as { adopt_count: number } | null)?.adopt_count ?? 0
+    await client.from('journey_plans').update({ adopt_count: count + 1 }).eq('id', planId)
+  } else if (!existing.active) {
+    await client.from('journey_plan_adoptions').update({ active: true }).eq('id', existing.id)
+  }
+}
+
+/** Fork (remix) a PUBLIC plan into a new private plan owned by the caller,
+ *  copying its items and recording lineage (fork_of + source forked_count). */
+export async function forkPlan(profileId: string, planId: string): Promise<JourneyPlan | null> {
+  const client = db()
+  const { data: srcRow } = await client.from('journey_plans').select(PLAN_COLS).eq('id', planId).maybeSingle()
+  const src = srcRow as unknown as JourneyPlan | null
+  if (!src || src.visibility !== 'public') return null
+
+  const { data: itemRows } = await client
+    .from('journey_plan_items')
+    .select('practice_id, domain_id, sort_order, note')
+    .eq('plan_id', planId)
+    .order('sort_order', { ascending: true })
+  const items = (itemRows ?? []) as { practice_id: string; domain_id: string | null; sort_order: number; note: string | null }[]
+
+  const { data: forkRow } = await client
+    .from('journey_plans')
+    .insert({
+      slug: slugify(src.title),
+      title: src.title,
+      summary: src.summary,
+      author_id: profileId,
+      visibility: 'private',
+      fork_of: planId,
+    })
+    .select(PLAN_COLS)
+    .maybeSingle()
+  const fork = forkRow as unknown as JourneyPlan | null
+  if (!fork) return null
+
+  if (items.length > 0) {
+    await client
+      .from('journey_plan_items')
+      .insert(items.map((it) => ({ plan_id: fork.id, practice_id: it.practice_id, domain_id: it.domain_id, sort_order: it.sort_order, note: it.note })))
+  }
+  const { data: cntRow } = await client.from('journey_plans').select('forked_count').eq('id', planId).maybeSingle()
+  const forked = (cntRow as { forked_count: number } | null)?.forked_count ?? 0
+  await client.from('journey_plans').update({ forked_count: forked + 1 }).eq('id', planId)
+
+  return fork
 }
 
 // --- Pillar map -----------------------------------------------------------

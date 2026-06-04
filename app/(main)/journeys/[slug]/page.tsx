@@ -1,12 +1,12 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, Plus, X, Map as MapIcon, Globe, Lock, CheckCircle } from 'lucide-react'
+import { ArrowLeft, Plus, X, Map as MapIcon, Globe, Lock, CheckCircle, Heart, GitFork } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
-import { getPlan, planPillarMap } from '@/lib/journey-plans'
+import { getPlan, planPillarMap, isPlanAdopted } from '@/lib/journey-plans'
 import { listPublicPractices } from '@/lib/practices'
 import { getPillars, pillarsById } from '@/lib/pillars'
 import { PillarBadge } from '@/components/practice/pillar-badge'
-import { addItemAction, removeItemAction, publishPlanAction } from '../actions'
+import { addItemAction, removeItemAction, publishPlanAction, adoptPlanAction, forkPlanAction } from '../actions'
 
 export default async function JourneyPlanPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
@@ -22,6 +22,8 @@ export default async function JourneyPlanPage({ params }: { params: Promise<{ sl
   const isAuthor = !!profileId && plan.author_id === profileId
   // Private plans are visible to their author only (the admin read bypasses RLS).
   if (!isAuthor && plan.visibility === 'private') notFound()
+
+  const adopted = !isAuthor && profileId ? await isPlanAdopted(profileId, plan.id) : false
 
   const byId = pillarsById(pillars)
   const coverage = new Map(planPillarMap(items).map((s) => [s.domainId, s.count]))
@@ -125,6 +127,47 @@ export default async function JourneyPlanPage({ params }: { params: Promise<{ sl
           </ol>
         )}
       </section>
+
+      {/* Non-author: adopt the journey or remix it into your own. */}
+      {!isAuthor && (
+        <section className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-muted">
+              {adopted
+                ? 'You’ve adopted this journey — its practices are in your daily loop.'
+                : 'Adopt it to add these practices to your daily loop, or remix it into your own.'}
+            </p>
+            <div className="flex shrink-0 items-center gap-2">
+              {adopted ? (
+                <span className="inline-flex items-center gap-1.5 rounded-xl bg-success-bg px-4 py-2 text-sm font-semibold text-success">
+                  <CheckCircle className="h-4 w-4" /> Adopted
+                </span>
+              ) : (
+                <form action={adoptPlanAction}>
+                  <input type="hidden" name="planId" value={plan.id} />
+                  <input type="hidden" name="slug" value={plan.slug} />
+                  <button
+                    type="submit"
+                    disabled={items.length === 0}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-signal px-4 py-2 text-sm font-semibold text-on-signal transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Heart className="h-4 w-4" /> Adopt
+                  </button>
+                </form>
+              )}
+              <form action={forkPlanAction}>
+                <input type="hidden" name="planId" value={plan.id} />
+                <button
+                  type="submit"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-border px-4 py-2 text-sm font-medium text-text transition-colors hover:border-primary hover:text-primary-strong"
+                >
+                  <GitFork className="h-4 w-4" /> Remix
+                </button>
+              </form>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Author tools: picker + publish */}
       {isAuthor && (
