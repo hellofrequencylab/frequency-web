@@ -26,6 +26,12 @@
 > adds in-app code authoring (`/admin/qr`, host+), server-side QR image rendering (`lib/qr/`,
 > `qrcode` dep), a same-site-only `/api/qr` download endpoint, and a member personal connect
 > code at `/codes` — no migration. Closes part of vertical 3's 🟡 wiring (ADR-088).
+>
+> **2026-06-05:** QR platform **Phase 1 — dynamic links + analytics** (ADR-089). New `qr_codes`
+> entity: retargetable `/q/<slug>` codes that redirect to any URL *or* run an earning node (the
+> "Both" model), a scan log (`qr_scans` + `record_qr_scan` RPC), and a Studio analytics tab.
+> Migration `20260605010000` applied to prod. Roadmap: Phase 2 beautiful editor → Phase 3
+> per-member referral/action codes → Phase 4 challenges/campaigns.
 
 ---
 

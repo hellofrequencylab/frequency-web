@@ -2016,6 +2016,35 @@ forming the founding leaderboard — not paywalled out of it.
 crew). The Launch gem-spend lock needs the entitlement/payment input on the capability resolver
 (ADR-037) before it can switch on; until then this is a one-flag policy + a backfill.
 
+## ADR-089: Dynamic QR links as a first-class `qr_codes` entity (the "Both" model)
+
+**Status:** Accepted · 2026-06-05 · migration `20260605010000_qr_codes_dynamic_links` (applied to prod), `app/q/[slug]/`, `app/(main)/admin/qr/` (Dynamic links + Analytics tabs), `lib/qr/{codes,analytics}.ts`
+
+**Context:** Phase 1 of the QR platform (after ADR-088). The owner wants retargetable
+"dynamic links" + scan analytics, alongside the in-app earning codes — and a code should be
+able to point *either* at an action *or* at any URL ("Both"). The node engine (`nodes`) is
+purpose-built for verified physical capture (secrets, coords, anti-cheat) and shouldn't be
+overloaded with arbitrary external redirects.
+
+**Decision:** Introduce **`qr_codes`** as the managed, retargetable code the Studio edits,
+distinct from `nodes`. A code encodes a stable short link `SITE_URL/q/<slug>`; the resolver
+`app/q/[slug]` logs the scan then redirects to the *current* destination, set by
+`destination_type`: **`url`** (redirect anywhere — marketing links) or **`node`** (forward to
+`/n/<node_id>`, reusing the whole verified earn pipeline). So one entity spans both worlds with
+no reprint. **`qr_scans`** is the append-only analytics log; the `record_qr_scan` SECURITY
+DEFINER RPC appends a scan + bumps a cached `scan_count` atomically. Both tables deny client
+access via RLS (like `nodes`); the resolver + Studio use the service role. A `style` jsonb
+column is reserved now so the Phase 2 visual editor needs no re-migration. Slugs are
+auto-generated from an unambiguous alphabet (`lib/qr/codes.ts`), custom slugs allowed;
+analytics roll-up is pure + unit-tested (`lib/qr/analytics.ts`).
+
+**Consequences:** `/q/<slug>` is the canonical dynamic entry going forward; `/n/<id>` stays for
+the node engine, and a `node`-type dynamic link is the bridge (styled, analytics-tracked,
+retargetable wrapper over an earning node). Migration applied to prod 2026-06-05; types
+regenerated. Phases 2–4 (beautiful editor on `style`, per-member referral/action codes,
+challenges/campaigns) build on this entity.
+
+---
 ## ADR-088: QR Studio authors codes on the existing node engine (no new schema)
 
 **Status:** Accepted · 2026-06-04 · `app/(main)/admin/qr/`, `lib/qr/`, `app/api/qr/`, `app/(main)/codes/`
