@@ -7,6 +7,7 @@ import { cookies } from 'next/headers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { recordEngagementEvent } from '@/lib/engagement/events'
 import { awardZapsForAction } from '@/lib/zaps'
+import { track } from '@/lib/analytics/track'
 
 const REF_COOKIE = 'fq_ref'
 
@@ -43,7 +44,10 @@ export async function applyReferralAttribution(newProfileId: string): Promise<vo
       actorProfileId: ref,
       context: { referred: newProfileId },
     })
-    if (recorded) await awardZapsForAction(ref, 'invite_accepted').catch(() => {})
+    if (recorded) {
+      await awardZapsForAction(ref, 'invite_accepted').catch(() => {})
+      void track('qr.referral_signup', { referrer: ref }, newProfileId)
+    }
   } catch {
     // swallow — attribution is a bonus, never a blocker on signup
   } finally {
