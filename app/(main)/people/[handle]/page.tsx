@@ -161,7 +161,7 @@ export default async function ProfilePage({
   const rewardsEarned = rewards.filter((r) => r.earned).length
 
   return (
-    <div className="max-w-2xl">
+    <div>
       {/* ── Cover image + avatar header (the one hero card) ─────── */}
       <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden mb-6">
         {/* Cover */}
