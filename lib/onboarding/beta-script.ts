@@ -13,11 +13,14 @@ export const BETA_INDUCTION_VERSION = 1
 
 export type OathId = 'unfinished' | 'report' | 'build'
 
-/** The gate. All three must be checked to enter. Single source of truth. */
+/** The gate. All three must be checked to enter. Single source of truth.
+ *  The first two are the practical beta pact; the third is the spirit of it,
+ *  framed as an identity to step into (echoing "You're not a user. You're a
+ *  Founder.") rather than an obligation to "agree to be". */
 export const BETA_OATHS: { id: OathId; label: string }[] = [
   { id: 'unfinished', label: 'I agree to break things' },
   { id: 'report', label: 'I agree to report bugs' },
-  { id: 'build', label: 'I agree to be a Founder' },
+  { id: 'build', label: "I'm here to help build it" },
 ]
 
 /** "How did you hear about us?" — captured on the intake into meta.beta.heard_about. */
