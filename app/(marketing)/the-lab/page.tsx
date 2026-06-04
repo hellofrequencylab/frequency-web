@@ -44,7 +44,7 @@ const INSIDE = [
   {
     icon: Dumbbell,
     title: 'Movement studios',
-    body: 'Breathwork at sunrise, ecstatic dance after dark, strength in between — programmed for your nervous system, not a mirror.',
+    body: 'Breathwork at sunrise, ecstatic dance after dark, strength in between, programmed for your nervous system, not a mirror.',
   },
   {
     icon: Flame,
@@ -59,7 +59,7 @@ const INSIDE = [
   {
     icon: Coffee,
     title: 'The connection bar',
-    body: 'No alcohol agenda — adaptogens, coffee, tea, and the lingering that turns strangers into regulars.',
+    body: 'No alcohol agenda: adaptogens, coffee, tea, and the lingering that turns strangers into regulars.',
   },
   {
     icon: Sparkles,
@@ -90,7 +90,7 @@ function LegacyTheLab() {
         focal="object-center"
         eyebrow="The Lab"
         title="A third space with a front door."
-        subtitle="Not home, not work. A real place you can walk into — dark wood, warm light, steam and greenery — engineered to bring your whole system back to baseline. The first one is taking root in North County San Diego."
+        subtitle="Not home, not work. A real place you can walk into, dark wood, warm light, steam and greenery, engineered to bring your whole system back to baseline. The first one is taking root in North County San Diego."
       >
         <Button href={BETA_CTA_HREF}>
           {BETA_CTA_LABEL} <ArrowRight className="w-5 h-5" />
@@ -107,7 +107,7 @@ function LegacyTheLab() {
         <p className="text-xl text-text/85 leading-relaxed">
           A feed can keep people warm between meetings. It can&apos;t hold a
           sound bath, a cold plunge, or the hour after when nobody wants to
-          leave. The Lab is the room those things happen in — a place built to
+          leave. The Lab is the room those things happen in: a place built to
           be felt, not scrolled.
         </p>
         <p className="mt-5 text-lg text-muted leading-relaxed">
@@ -133,7 +133,7 @@ function LegacyTheLab() {
         <p>
           Step in off the street and the noise drops away. Breathwork at
           sunrise, strength through the day, ecstatic dance once the lights go
-          low. Studios designed around your nervous system — wood underfoot,
+          low. Studios designed around your nervous system: wood underfoot,
           plants in the corners, sound that wraps the room.
         </p>
         <p>
@@ -153,7 +153,7 @@ function LegacyTheLab() {
       >
         <p>
           Sweat it out in the cedar sauna until the mind goes quiet. This is the
-          first half of the loop — the part that opens you up before the cold
+          first half of the loop, the part that opens you up before the cold
           snaps you back.
         </p>
         <p>
@@ -172,7 +172,7 @@ function LegacyTheLab() {
       >
         <p>
           Out of the sauna and straight into the plunge. The contrast is the
-          medicine — it floods you with clarity and leaves you grinning at a
+          medicine: it floods you with clarity and leaves you grinning at a
           stranger across the water.
         </p>
         <p>
@@ -183,7 +183,7 @@ function LegacyTheLab() {
 
       <ZigZag
         img="/images/site/lab-lounge.jpg"
-        alt="The connection bar lounge at The Lab — dark wood, warm light, soft seating"
+        alt="The connection bar lounge at The Lab: dark wood, warm light, soft seating"
         eyebrow="The connection bar"
         title="Where the talking happens."
         imgAspect="portrait"
@@ -192,7 +192,7 @@ function LegacyTheLab() {
       >
         <p>
           Land at the bar with a coffee and somebody you didn&apos;t know an
-          hour ago. No alcohol agenda — adaptogens, tea, real conversation, and
+          hour ago. No alcohol agenda: adaptogens, tea, real conversation, and
           the kind of lingering most places are designed to prevent.
         </p>
         <p>
@@ -237,8 +237,8 @@ function LegacyTheLab() {
         tone="ink"
       >
         <p>
-          The same events you RSVP&apos;d to in the app — sound baths,
-          workshops, sunset socials, the occasional full-blown celebration —
+          The same events you RSVP&apos;d to in the app, sound baths,
+          workshops, sunset socials, the occasional full-blown celebration,
           happening in a room built to hold a crowd that actually knows each
           other.
         </p>
@@ -275,7 +275,7 @@ function LegacyTheLab() {
           kicker="The first room, built by the first members."
         />
         <p className="text-xl text-text/85 leading-relaxed">
-          The first Lab is a prototype — a flagship rooted in one neighborhood,
+          The first Lab is a prototype: a flagship rooted in one neighborhood,
           shaped by the people it serves. By the time a place is ready for a
           Lab, the community is already there: the circles are meeting, the
           rituals are forming, the regulars know each other&apos;s names.

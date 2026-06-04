@@ -1,6 +1,6 @@
 ---
 title: Friends
-description: Send and accept friend requests — and why they matter for messaging.
+description: Send and accept friend requests, and why they matter for messaging.
 category: connecting
 order: 2
 updated: 2026-06-03
@@ -19,6 +19,6 @@ Friends are your direct connections on Frequency. Adding someone is also the key
 
 ## Good to know
 
-- You need to be friends before you can DM someone — this keeps private messages consensual, not a free-for-all.
+- You need to be friends before you can DM someone: this keeps private messages consensual, not a free-for-all.
 - Pending requests sit quietly until they're accepted; there's no pressure either way.
 - Removing a friend is always your call.

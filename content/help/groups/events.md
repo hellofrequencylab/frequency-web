@@ -9,7 +9,7 @@ featureKeys: [events]
 status: published
 ---
 
-Events are the gatherings that make Frequency real — the in-person and online meetups your circles host. This is where showing up actually happens.
+Events are the gatherings that make Frequency real: the in-person and online meetups your circles host. This is where showing up actually happens.
 
 ## RSVPing
 
@@ -19,10 +19,10 @@ Events are the gatherings that make Frequency real — the in-person and online 
 
 ## Recurring events & your calendar
 
-- Many circles run **recurring** gatherings (a weekly sit, a monthly walk) — each occurrence is its own event you can RSVP to.
+- Many circles run **recurring** gatherings (a weekly sit, a monthly walk), and each occurrence is its own event you can RSVP to.
 - You can **add an event to your calendar** (it exports a standard calendar file), so it lands in whatever calendar app you use.
 
 ## Tips
 
-- New to a circle? An event is the easiest way in — say you're coming, then just show up.
+- New to a circle? An event is the easiest way in: say you're coming, then just show up.
 - Hosts run events for their circle, so the gatherings you see follow the circles you've joined.

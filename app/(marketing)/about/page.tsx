@@ -22,7 +22,7 @@ export const revalidate = 3600
 export const metadata: Metadata = {
   title: 'About',
   description:
-    'The story behind Frequency — born on a cliff at Moonlight Beach in 2020. Guru-free, pay-it-forward, a place to be human, built to outlast any one person.',
+    'The story behind Frequency, born on a cliff at Moonlight Beach in 2020. Guru-free, pay-it-forward, a place to be human, built to outlast any one person.',
   alternates: { canonical: '/about' },
   openGraph: {
     title: 'About Frequency',
@@ -48,7 +48,7 @@ function LegacyAbout() {
         alt="People embracing at sunrise on the bluffs above Moonlight Beach, where Frequency began"
         eyebrow="Our story"
         title="We’re building the place we wished existed."
-        subtitle="It started on a beach in 2020 — no guru, no brand, just a thousand strangers who needed each other. This is how it became a blueprint for doing it right."
+        subtitle="It started on a beach in 2020: no guru, no brand, just a thousand strangers who needed each other. This is how it became a blueprint for doing it right."
       >
         <Button href={BETA_CTA_HREF}>
           {BETA_CTA_LABEL} <ArrowRight className="w-5 h-5" aria-hidden />
@@ -64,7 +64,7 @@ function LegacyAbout() {
         />
         <Lead>
           We didn&apos;t set out to start a company. We set out to find each
-          other — and discovered that the places built to hold people had
+          other, and discovered that the places built to hold people had
           quietly disappeared.
         </Lead>
         <Body>
@@ -73,7 +73,7 @@ function LegacyAbout() {
           known by name and missed when you don&apos;t show up. We traded them
           for feeds and followers, ended up surrounded yet unseen, and felt the
           loss long before we could explain it. Frequency is our answer to that
-          ache — and it began the only honest way it could: with a handful of
+          ache, and it began the only honest way it could: with a handful of
           people on a cliff at dawn.
         </Body>
       </Section>
@@ -92,13 +92,13 @@ function LegacyAbout() {
         <p>
           In a season when everyone felt cut off, a few people in North County
           San Diego started meeting on the bluffs above Moonlight Beach. Just
-          breath, cold air, and each other — no membership, no marketing, no one
+          breath, cold air, and each other: no membership, no marketing, no one
           in charge.
         </p>
         <p>
           Word got out the way real things do: one person bringing another.
           Within eighteen months, close to a thousand people were showing up to
-          breathe together at sunrise — drawn by nothing but a hunger for
+          breathe together at sunrise, drawn by nothing but a hunger for
           something real that none of them could quite name.
         </p>
       </ZigZag>
@@ -120,12 +120,12 @@ function LegacyAbout() {
           There was no guru on a stage and no audience in rows. People sat in a
           circle on the grass, passed instruments around, moved and breathed and
           actually talked. The point was never to watch someone perform
-          belonging — it was to practice it together.
+          belonging. It was to practice it together.
         </p>
         <p>
           That shape mattered more than we understood at the time. A leader you
           follow can leave, burn out, or let you down. A circle holds itself.
-          The thing we&apos;d stumbled into wasn&apos;t a following at all — it
+          The thing we&apos;d stumbled into wasn&apos;t a following at all. It
           was a community that could carry its own weight.
         </p>
       </ZigZag>
@@ -143,7 +143,7 @@ function LegacyAbout() {
         <p>
           A thousand people, and nowhere to put them. No home, no
           infrastructure, no way to hold what had been built. It ran entirely on
-          a few people&apos;s energy — and energy runs out. When it faded, it
+          a few people&apos;s energy, and energy runs out. When it faded, it
           faded fast.
         </p>
         <p>
@@ -170,7 +170,7 @@ function LegacyAbout() {
           <Value
             icon={Compass}
             title="Guru-free"
-            body="No charismatic founder to follow, no one to put on a pedestal. The community is the point — not any single voice at the front of the room."
+            body="No charismatic founder to follow, no one to put on a pedestal. The community is the point, not any single voice at the front of the room."
           />
           <Value
             icon={Users}
@@ -185,7 +185,7 @@ function LegacyAbout() {
           <Value
             icon={Home}
             title="A third space"
-            body="Not home, not work — a real place to exhale, reset, and be missed when you don&apos;t show up. Built to be returned to, not scrolled past."
+            body="Not home, not work: a real place to exhale, reset, and be missed when you don&apos;t show up. Built to be returned to, not scrolled past."
           />
         </div>
       </Section>
@@ -206,7 +206,7 @@ function LegacyAbout() {
         </p>
         <p>
           We&apos;re not building a following. We&apos;re building
-          infrastructure — the kind of thing you can lean your whole weight on
+          infrastructure: the kind of thing you can lean your whole weight on
           and trust to still be standing next year. A place where showing up is
           easy, being known is the default, and nobody gets left at the door.
         </p>
@@ -237,12 +237,12 @@ function LegacyAbout() {
           <Milestone
             marker="2020"
             title="A cliff at Moonlight Beach"
-            body="A handful of people start meeting at dawn to breathe and reconnect. No brand, no plan — just a standing time and a place to be."
+            body="A handful of people start meeting at dawn to breathe and reconnect. No brand, no plan, just a standing time and a place to be."
           />
           <Milestone
             marker="2021"
             title="A thousand people, no home"
-            body="Word of mouth carries it to nearly a thousand. It proves the hunger is real — and proves that without a home, even the most beautiful thing can&apos;t hold."
+            body="Word of mouth carries it to nearly a thousand. It proves the hunger is real, and proves that without a home, even the most beautiful thing can&apos;t hold."
           />
           <Milestone
             marker="Today"
@@ -252,7 +252,7 @@ function LegacyAbout() {
           <Milestone
             marker="Next"
             title="Coming to your city"
-            body="It spreads the only way it ever has — person to person, circle to circle, city by city. Add your name and help us choose where it seeds next."
+            body="It spreads the only way it ever has: person to person, circle to circle, city by city. Add your name and help us choose where it seeds next."
             last
           />
         </ol>
@@ -271,13 +271,13 @@ function LegacyAbout() {
         <p>
           The mistake we never want to repeat is letting it ride on a few
           people&apos;s energy. So everything about Frequency is designed to keep
-          standing on its own — the spaces, the model, the way circles form and
+          standing on its own: the spaces, the model, the way circles form and
           carry themselves.
         </p>
         <p>
           That&apos;s the whole point of starting again, deliberately, in{' '}
           {FOUNDING_PLACE}. Not to recreate a moment, but to give it the
-          foundations the first one never had — and to keep real connection
+          foundations the first one never had, and to keep real connection
           within reach for everyone, not just the few who can afford it.
         </p>
       </ZigZag>
@@ -290,7 +290,7 @@ function LegacyAbout() {
       {/* ── Close ──────────────────────────────────────────────────────────── */}
       <BetaCTA
         heading="Be one of the first."
-        body="This time it gets a home. Add your name and help us build it right — a Circle to call yours, and a place to be human, together."
+        body="This time it gets a home. Add your name and help us build it right: a Circle to call yours, and a place to be human, together."
       />
     </>
   )

@@ -9,7 +9,7 @@ featureKeys: [posts]
 status: published
 ---
 
-Posts are how you share with your circle — a thought, a photo, a question, a heads-up. They show up in the [feed](/help/getting-started/your-feed) of the people in that circle.
+Posts are how you share with your circle: a thought, a photo, a question, a heads-up. They show up in the [feed](/help/getting-started/your-feed) of the people in that circle.
 
 ## Posting
 
@@ -18,10 +18,10 @@ Posts are how you share with your circle — a thought, a photo, a question, a h
 
 ## Reacting & commenting
 
-- **React** to show you saw something and appreciated it — quick and low-effort.
+- **React** to show you saw something and appreciated it: quick and low-effort.
 - **Comment** to actually talk. The best circles are the ones where people reply to each other.
 
 ## Tips
 
 - New to a circle? A short intro post is a great first move.
-- Posts are scoped to the circle they're shared in, so you can be yourself with your group without broadcasting to the whole platform. (Hosts can broadcast wider — see [Broadcasts](/help/sharing/broadcasts).)
+- Posts are scoped to the circle they're shared in, so you can be yourself with your group without broadcasting to the whole platform. (Hosts can broadcast wider; see [Broadcasts](/help/sharing/broadcasts).)

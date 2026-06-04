@@ -32,7 +32,7 @@ const STEPS: {
     key: 'feed',
     label: 'Feed',
     icon: MessageCircle,
-    benefit: 'The pulse of your people — small, real, and missed when you go quiet.',
+    benefit: 'The pulse of your people: small, real, and missed when you go quiet.',
   },
   {
     key: 'circles',
@@ -50,7 +50,7 @@ const STEPS: {
     key: 'zaps',
     label: 'Zaps',
     icon: Zap,
-    benefit: 'Gratitude you can give — recognition rises from showing up, not titles.',
+    benefit: 'Gratitude you can give: recognition rises from showing up, not titles.',
   },
 ]
 
@@ -295,7 +295,7 @@ function CirclesPanel() {
           Thursday Men&apos;s Table
         </h3>
         <p className="text-sm text-muted mt-2 leading-relaxed">
-          Small by design. Filling up — a second table seeds soon.
+          Small by design. Filling up: a second table seeds soon.
         </p>
       </div>
     </>

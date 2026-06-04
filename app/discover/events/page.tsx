@@ -9,10 +9,10 @@ import { SITE_NAME, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 export const metadata: Metadata = {
   title: 'Upcoming events',
   description:
-    'Browse upcoming real-world events across the Frequency community — neighbors gathering in person near you.',
+    'Browse upcoming real-world events across the Frequency community: neighbors gathering in person near you.',
   alternates: { canonical: '/discover/events' },
   openGraph: {
-    title: `Upcoming events — ${SITE_NAME}`,
+    title: `Upcoming events · ${SITE_NAME}`,
     description: 'Browse upcoming real-world events across the Frequency community.',
     url: '/discover/events',
   },
@@ -40,7 +40,7 @@ export default async function DiscoverEventsPage() {
         alt="People on the beach at golden hour, arms raised in celebration by the ocean"
         eyebrow="Coming up"
         title="Show up in person"
-        subtitle="Real-world gatherings near you. Public pages show the city only — the exact venue is shared with members who RSVP."
+        subtitle="Real-world gatherings near you. Public pages show the city only; the exact venue is shared with members who RSVP."
       >
         <Button href={BETA_CTA_HREF}>{BETA_CTA_LABEL}</Button>
       </PhotoHero>
@@ -53,7 +53,7 @@ export default async function DiscoverEventsPage() {
             <SectionHeading eyebrow="Founding chapter" title="The first gathering hasn't happened yet" />
             <p className="mt-6 text-lg text-muted leading-relaxed">
               We&rsquo;re just getting started in North County San Diego. The calendar is quiet
-              for now — but that&rsquo;s how every circle begins, with a few neighbors deciding to
+              for now, but that&rsquo;s how every circle begins, with a few neighbors deciding to
               show up. Join the beta and you&rsquo;ll be among the first to know when the first one
               lands.
             </p>
@@ -87,7 +87,7 @@ export default async function DiscoverEventsPage() {
 
       <BetaCTA
         heading="See you there"
-        body="Join the North County San Diego beta — RSVP to gatherings, meet your neighbors, and help shape what we build next."
+        body="Join the North County San Diego beta: RSVP to gatherings, meet your neighbors, and help shape what we build next."
       />
     </>
   )

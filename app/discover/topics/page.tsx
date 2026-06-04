@@ -9,10 +9,10 @@ import { SITE_NAME } from '@/lib/site'
 export const metadata: Metadata = {
   title: 'Topics',
   description:
-    'Explore the topics neighbors gather around on Frequency — Movement, Spirituality, Creative practice, and more.',
+    'Explore the topics neighbors gather around on Frequency: Movement, Spirituality, Creative practice, and more.',
   alternates: { canonical: '/discover/topics' },
   openGraph: {
-    title: `Topics — ${SITE_NAME}`,
+    title: `Topics · ${SITE_NAME}`,
     description: 'Explore the topics neighbors gather around on Frequency.',
     url: '/discover/topics',
   },
@@ -50,7 +50,7 @@ export default async function DiscoverTopicsPage() {
         alt="A neighbor spinning a hula hoop on the beach beneath a palm tree in bright daylight"
         eyebrow="Explore by topic"
         title="Find what you practice"
-        subtitle="A topic is the shared interest neighbors gather around — movement, spirituality, creative practice. Pick one and find a circle living it near you."
+        subtitle="A topic is the shared interest neighbors gather around: movement, spirituality, creative practice. Pick one and find a circle living it near you."
       >
         <Button href="/discover/circles">Browse circles instead</Button>
       </PhotoHero>
@@ -65,7 +65,7 @@ export default async function DiscoverTopicsPage() {
             </p>
           </div>
           {channels.length === 0 ? (
-            <p className="text-center text-muted">No topics yet — check back soon.</p>
+            <p className="text-center text-muted">No topics yet. Check back soon.</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {channels.map((ch) => (

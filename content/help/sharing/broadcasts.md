@@ -9,14 +9,14 @@ featureKeys: [broadcast]
 status: published
 ---
 
-Broadcasts (sometimes called dispatches) are announcements that reach beyond a single circle — the way hosts and leadership share something important with a wider audience.
+Broadcasts (sometimes called dispatches) are announcements that reach beyond a single circle: the way hosts and leadership share something important with a wider audience.
 
 ## What they can be
 
-- **Posts** — a straightforward announcement.
-- **Polls** — gather quick input from the community.
-- **Challenges** — a prompt to rally around.
-- **Articles** — longer reads.
+- **Posts**: a straightforward announcement.
+- **Polls**: gather quick input from the community.
+- **Challenges**: a prompt to rally around.
+- **Articles**: longer reads.
 
 ## Interacting
 
@@ -25,4 +25,4 @@ Broadcasts (sometimes called dispatches) are announcements that reach beyond a s
 
 ## Who can broadcast
 
-Broadcasting is a host-and-above ability — it's meant for the people running circles and stewarding the community, so it stays signal, not noise. Everyone else shares through ordinary [posts](/help/sharing/posts).
+Broadcasting is a host-and-above ability: it's meant for the people running circles and stewarding the community, so it stays signal, not noise. Everyone else shares through ordinary [posts](/help/sharing/posts).

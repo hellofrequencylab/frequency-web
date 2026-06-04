@@ -33,7 +33,7 @@ export const metadata: Metadata = {
   alternates: { canonical: '/' },
   openGraph: {
     title: `${SITE_NAME} · ${SITE_TAGLINE}`,
-    description: `We're rebuilding the third place: a real room you can walk into — sauna, cold plunge, warm light — and the people who notice when you're gone. Find your circle anywhere; the first Lab is taking root in ${FOUNDING_PLACE}. Free during the beta.`,
+    description: `We're rebuilding the third place: a real room you can walk into, sauna, cold plunge, warm light, and the people who notice when you're gone. Find your circle anywhere; the first Lab is taking root in ${FOUNDING_PLACE}. Free during the beta.`,
     url: '/',
   },
 }
@@ -107,7 +107,7 @@ function Splash({ live }: { live: LiveData }) {
             We&apos;re rebuilding the <span className="text-primary">third place.</span>
           </>
         }
-        subtitle="A real room you can walk into — sauna, cold plunge, warm light, and people who notice when you're gone. It's taking root in North County San Diego. Wherever you are, you can start your circle today."
+        subtitle="A real room you can walk into: sauna, cold plunge, warm light, and people who notice when you're gone. It's taking root in North County San Diego. Wherever you are, you can start your circle today."
         footer={
           <>
             <p className="mt-8 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-white/55">
@@ -148,7 +148,7 @@ function Splash({ live }: { live: LiveData }) {
         tone="surface"
       >
         <p>
-          Most of a generation reports feeling lonely — not for lack of people, but for lack of{' '}
+          Most of a generation reports feeling lonely, not for lack of people, but for lack of{' '}
           <em>places</em>. The corner café, the town square, the gathering ground all quietly closed.
         </p>
         <p>
@@ -178,7 +178,7 @@ function Splash({ live }: { live: LiveData }) {
         reverse
       >
         <p>
-          Dark wood, warm light, steam and greenery — engineered for your nervous system. Movement
+          Dark wood, warm light, steam and greenery, engineered for your nervous system. Movement
           studios, a thermal circuit, a cold pool, a connection bar, an events floor. Move, sweat,
           plunge, cool down, and stay for the people.
         </p>
@@ -207,11 +207,11 @@ function Splash({ live }: { live: LiveData }) {
         tone="canvas"
       >
         <p>
-          Before there&apos;s a room, there&apos;s a Circle — a small standing group around something
-          you love: a run, a supper, a sauna night, a side project.
+          Before there&apos;s a room, there&apos;s a Circle: a small standing group around something
+          you love, a run, a supper, a sauna night, a side project.
         </p>
         <p>
-          <span className="font-semibold text-text">Join one near you, or start one tonight —
+          <span className="font-semibold text-text">Join one near you, or start one tonight,
           anywhere.</span>{' '}
           Real plans, real faces, off the feed. Circles cluster into neighborhoods and spread city by
           city, and where enough people gather, the next Lab gets a reason to open.
@@ -236,11 +236,11 @@ function Splash({ live }: { live: LiveData }) {
             steps={[
               {
                 title: 'Pick what you love',
-                body: 'Surfing, sound baths, supper clubs, strength training — choose the interest that’s yours. That’s word one.',
+                body: 'Surfing, sound baths, supper clubs, strength training. Choose the interest that’s yours. That’s word one.',
               },
               {
                 title: 'Join a Circle',
-                body: 'A small standing group around it, near you. Drop in on the next gathering — that’s word two, and that’s belonging.',
+                body: 'A small standing group around it, near you. Drop in on the next gathering. That’s word two, and that’s belonging.',
               },
               {
                 title: 'Show up',
@@ -291,7 +291,7 @@ function Splash({ live }: { live: LiveData }) {
                 </p>
                 <p className="text-white/70">
                   No guru. No brand. No agenda. Just people who needed each other and a place to be. It
-                  proved the hunger is real — and that it can be answered.
+                  proved the hunger is real, and that it can be answered.
                 </p>
               </div>
               <Link
@@ -350,7 +350,7 @@ function Splash({ live }: { live: LiveData }) {
           gets a reason to open.
         </p>
         <p>
-          Membership keeps the rooms open — and those who can give more quietly hold the door for those
+          Membership keeps the rooms open, and those who can give more quietly hold the door for those
           who can&apos;t. Belonging shouldn&apos;t depend on what you can afford.
         </p>
       </ZigZag>
@@ -395,7 +395,7 @@ function Splash({ live }: { live: LiveData }) {
           {hasProof ? (
             <Reveal delay={100}>
               <p className="text-lg leading-relaxed text-on-ink-muted max-w-xl mx-auto mb-12">
-                Real people, real Circles, real gatherings — taking root in {FOUNDING_PLACE} right now.
+                Real people, real Circles, real gatherings, taking root in {FOUNDING_PLACE} right now.
               </p>
               <div className="grid grid-cols-3 gap-6 max-w-xl mx-auto">
                 <Stat value={memberCount} label="Members" tone="ink" />
@@ -407,7 +407,7 @@ function Splash({ live }: { live: LiveData }) {
             <Reveal delay={100}>
               <p className="text-lg leading-relaxed text-on-ink-muted max-w-xl mx-auto">
                 The first Circles are forming in {FOUNDING_PLACE}. The founding members are shaping what
-                this becomes — come be one of them.
+                this becomes. Come be one of them.
               </p>
             </Reveal>
           )}
@@ -475,7 +475,7 @@ function Splash({ live }: { live: LiveData }) {
               </h2>
               <div className="mt-7 max-w-xl space-y-4 text-lg text-white/75 leading-relaxed">
                 <p>
-                  Membership turns on the Quest — the part that pulls you off the screen. Inviting a
+                  Membership turns on the Quest, the part that pulls you off the screen. Inviting a
                   stranger, backing a local spot, showing up again: the things that actually build
                   community are what it rewards. Not scrolling.
                 </p>
@@ -511,11 +511,11 @@ function Splash({ live }: { live: LiveData }) {
         </Reveal>
         <div className="space-y-3">
           <Faq q="Do I have to be outgoing?">
-            No. Circles are small on purpose — a handful of people, not a crowd. You don&apos;t have to
+            No. Circles are small on purpose: a handful of people, not a crowd. You don&apos;t have to
             perform or network. You just have to show up, and the structure does the rest.
           </Faq>
           <Faq q="What does it cost?">
-            The community is free, forever. Crew membership — which turns on the Quest — is $10/mo, and
+            The community is free, forever. Crew membership, which turns on the Quest, is $10/mo, and
             free during the beta. No card today; join now and your founder pricing is locked when paid
             memberships launch.{' '}
             <Link href="/pricing" className="font-semibold text-primary-strong hover:underline">
@@ -524,12 +524,12 @@ function Splash({ live }: { live: LiveData }) {
             .
           </Faq>
           <Faq q="Is there a catch or a guru?">
-            None. Frequency is leaderful, not leader-dependent — built to outlast any one person. No
+            None. Frequency is leaderful, not leader-dependent, built to outlast any one person. No
             charismatic founder to follow, no upsell funnel. Memberships exist to sustain the physical
             spaces, not to extract.
           </Faq>
           <Faq q="I'm not in North County San Diego.">
-            The first Lab is taking root there now — but the community starts anywhere. Add your name
+            The first Lab is taking root there now, but the community starts anywhere. Add your name
             and start a Circle where you are; we&apos;re mapping where people gather so we know which
             city seeds next. That&apos;s how it spreads: city by city, like cells.
           </Faq>
@@ -551,12 +551,12 @@ function Splash({ live }: { live: LiveData }) {
               We open a few spots at a time.
             </h2>
             <p className="text-lg text-muted leading-relaxed mb-6 max-w-xl">
-              A community is only as good as the people who start it — so we grow the beta deliberately,
+              A community is only as good as the people who start it, so we grow the beta deliberately,
               a small group at a time, so every new member is actually welcomed in. The constraint is
               the care. Add your name and we&apos;ll reach out when the next spots open.
             </p>
             <ul className="grid gap-3 sm:grid-cols-2 mb-8">
-              <Perk>Free for the whole beta — no card</Perk>
+              <Perk>Free for the whole beta, no card</Perk>
               <Perk>Founder pricing locked for life</Perk>
               <Perk>Shape the Circles from day one</Perk>
               <Perk>First through the doors at The Lab</Perk>

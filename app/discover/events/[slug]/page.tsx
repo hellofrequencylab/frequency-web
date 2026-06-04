@@ -22,13 +22,13 @@ export async function generateMetadata({
   const where = event.city ? ` in ${event.city}` : ''
   const description =
     event.description ??
-    `${event.title} — a Frequency community event${where}. Sign in to RSVP.`
+    `${event.title}: a Frequency community event${where}. Sign in to RSVP.`
   return {
     title: event.title,
     description,
     alternates: { canonical: `/discover/events/${event.slug}` },
     openGraph: {
-      title: `${event.title} — ${SITE_NAME}`,
+      title: `${event.title} · ${SITE_NAME}`,
       description,
       url: `/discover/events/${event.slug}`,
       type: 'article',

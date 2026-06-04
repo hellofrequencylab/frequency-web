@@ -8,7 +8,7 @@ import { FOUNDING_PLACE } from '@/lib/site'
 export const metadata: Metadata = {
   title: 'Join the Beta',
   description:
-    'Request your spot in the Frequency community Beta. We’re opening it to a small group at a time — free during the beta, no card, founder pricing locked.',
+    'Request your spot in the Frequency community Beta. We’re opening it to a small group at a time, free during the beta, no card, founder pricing locked.',
   alternates: { canonical: '/beta' },
   openGraph: {
     title: 'Join the Frequency Beta',
@@ -20,8 +20,8 @@ export const metadata: Metadata = {
 export const revalidate = 3600
 
 const WHAT_YOU_GET = [
-  { Icon: Users, label: 'A local Circle near you', body: 'A small group of neighbors built around what you practice — small enough to be missed when you don’t show.' },
-  { Icon: CalendarHeart, label: 'Real gatherings, in person', body: 'Standing times to actually show up — on the bluff, at The Lab, around a table.' },
+  { Icon: Users, label: 'A local Circle near you', body: 'A small group of neighbors built around what you practice, small enough to be missed when you don’t show.' },
+  { Icon: CalendarHeart, label: 'Real gatherings, in person', body: 'Standing times to actually show up, on the bluff, at The Lab, around a table.' },
   { Icon: Sparkles, label: 'A say in what it becomes', body: 'Founding members shape the Circles, the rituals, and the room from day one.' },
   { Icon: ShieldCheck, label: 'Founder pricing, locked', body: 'Free for the whole beta, no card. Lock your founder rate for when paid memberships launch.' },
 ]
@@ -83,7 +83,7 @@ export default function BetaPage() {
 
       {/* ── Honest scarcity beat ─────────────────────────────────────────── */}
       <Statement tone="ink">
-        We open a few spots at a time — so you&apos;re actually{' '}
+        We open a few spots at a time, so you&apos;re actually{' '}
         <span className="text-primary">welcomed in</span>.
       </Statement>
 
@@ -100,7 +100,7 @@ export default function BetaPage() {
         <ol className="grid sm:grid-cols-3 gap-5">
           {[
             { n: '01', t: 'Add your name', b: 'Tell us where you are. It takes ten seconds and costs nothing.' },
-            { n: '02', t: 'We reach out', b: 'When a spot opens near you, we send a personal invite — not a mass blast.' },
+            { n: '02', t: 'We reach out', b: 'When a spot opens near you, we send a personal invite, not a mass blast.' },
             { n: '03', t: 'Show up', b: 'Find your Circle, meet your people, and start being missed when you’re gone.' },
           ].map((s) => (
             <li key={s.n} className="rounded-3xl border border-border bg-surface p-7 shadow-sm">
