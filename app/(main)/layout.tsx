@@ -15,6 +15,8 @@ import { PresenceHeartbeat } from '@/components/presence/heartbeat'
 import { PushRegistration } from '@/components/push/registration'
 import { SupportLauncher } from '@/components/support/support-launcher'
 import { PageViewTracker } from '@/components/analytics/track-provider'
+import { GaConsentGate } from '@/components/analytics/ga-consent-gate'
+import { hasConsent } from '@/lib/consent/consent'
 import { getSearchIndex } from '@/lib/help/content'
 import { TourProvider } from '@/components/onboarding/tour-provider'
 import type { TourState } from '@/lib/onboarding/select'
@@ -107,6 +109,10 @@ export default async function MainLayout({
     </Suspense>
   )
 
+  // Analytics consent (ADR-069). A member who opted out has GA suppressed client-side
+  // (GaConsentGate sets gtag's native opt-out flag); the server mirror is gated too.
+  const analyticsConsent = await hasConsent(profile.id, 'analytics')
+
   // Community news ticker — streams in independently, never blocks the shell.
   const ticker = (
     <Suspense fallback={null}>
@@ -125,6 +131,7 @@ export default async function MainLayout({
       permissions={permissions}
       staffRole={staffRole}
     >
+      <GaConsentGate disabled={!analyticsConsent} />
       {children}
       <AchievementToastContainer />
       <ZapToastContainer />
