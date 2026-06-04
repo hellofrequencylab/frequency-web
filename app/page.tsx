@@ -7,7 +7,6 @@ import { createClient } from '@/lib/supabase/server'
 import { MarketingHeader } from '@/components/layout/marketing-header'
 import { MarketingFooter } from '@/components/layout/marketing-footer'
 import {
-  Statement,
   Marquee,
   BetaCTA,
   Section,
@@ -15,10 +14,11 @@ import {
   PhotoHero,
   PullQuote,
   Stat,
+  Steps,
+  ZigZag,
   Faq,
 } from '@/components/marketing/marketing-ui'
 import { Reveal, Parallax, CountUp, ScrollCue } from '@/components/marketing/motion'
-import { SiteImage } from '@/components/marketing/site-image'
 import { getInitials, relativeTime, eventDateBadge, formatEventDate } from '@/lib/utils'
 import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, BETA_CTA_LABEL, BETA_CTA_HREF, SOCIAL_PROOF_FLOOR, FOUNDING_PLACE } from '@/lib/site'
 import { type CommunityRole, ROLE_RANK, RoleBadge } from '@/lib/community-roles'
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
   alternates: { canonical: '/' },
   openGraph: {
     title: `${SITE_NAME} · ${SITE_TAGLINE}`,
-    description: `A third space for a disconnected generation — not home, not work, a place to be human, together. ${SITE_DESCRIPTION} Free during the beta, now taking root in ${FOUNDING_PLACE}.`,
+    description: `A third space, half app and half real place: a free community that pulls you off the screen, a game that rewards showing up, and real rooms to gather in. Free during the beta, now taking root in ${FOUNDING_PLACE}.`,
     url: '/',
   },
 }
@@ -91,9 +91,7 @@ function Splash({ live }: { live: LiveData }) {
     <>
       <MarketingHeader overHero />
 
-      {/* ── BEAT 1 · The ache (recognition) ───────────────────────────────
-          Full-bleed golden-hour gathering, one felt line, one calm CTA.
-          The LCP image is the hero photo (preloaded inside PhotoHero). */}
+      {/* ── Hero · the hook + the model in one breath ──────────────────────── */}
       <PhotoHero
         minHeight="screen"
         image="/images/site/971634cd-1d52-4b3a-a0ab-5713d395d58a.jpg"
@@ -105,7 +103,7 @@ function Splash({ live }: { live: LiveData }) {
             A place to be <span className="text-primary">missed.</span>
           </>
         }
-        subtitle="Not another feed. A third space — half app, half physical — where you're seen in person, missed when you're gone, and welcomed in for who you are, not what you can pay."
+        subtitle="Frequency is a third space — half community app, half real place. Find your people by what you love, get pulled off the screen by a game that rewards showing up, and gather where it takes root: a room you can walk into."
         footer={
           <>
             <p className="mt-8 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-white/55">
@@ -119,7 +117,7 @@ function Splash({ live }: { live: LiveData }) {
                 Already a member? Sign in
               </Link>
             </p>
-            <ScrollCue label="Why we built this" />
+            <ScrollCue label="What it is" />
           </>
         }
       >
@@ -133,65 +131,125 @@ function Splash({ live }: { live: LiveData }) {
         </div>
       </PhotoHero>
 
-      {/* ── BEAT 2 · The diagnosis (it's not you) ──────────────────────────
-          Broken-grid editorial: an oversized statement column that overlaps a
-          tall photo, asymmetric. Relief: the places left, not you. */}
-      <section className="relative bg-surface px-6 py-24 sm:py-32 overflow-hidden">
-        <div className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-12 lg:gap-0">
-          <Reveal className="relative z-10 lg:col-span-7 lg:pr-8">
-            <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-5">
-              It&apos;s not you
-            </p>
-            <h2 className="font-display uppercase text-text text-5xl sm:text-6xl lg:text-7xl leading-[0.95] text-balance">
-              The places that
-              <br />
-              held us just{' '}
-              <span className="text-primary">vanished.</span>
-            </h2>
-            <div className="mt-7 max-w-md space-y-4 text-lg text-muted leading-relaxed">
-              <p>
-                Most of a generation reports feeling lonely. Not for lack of
-                people — for lack of <em>places</em>. The corner café, the town
-                square, the gathering ground all quietly closed.
-              </p>
-              <p>
-                We traded them for feeds and followers and ended up surrounded
-                yet unseen. You&apos;re not broken. The third place is.
-              </p>
-            </div>
-          </Reveal>
-          {/* Overlapping photo, pushed off the grid and given light parallax. */}
-          <Reveal
-            delay={120}
-            className="relative lg:col-span-6 lg:col-start-7 lg:-ml-16 xl:-ml-24"
-          >
-            <Parallax speed={-0.1}>
-              <div className="overflow-hidden rounded-3xl border border-border shadow-pop">
-                <SiteImage
-                  src="/images/site/fd40d12c-7667-4d4e-b4c0-3b828170d9b1.jpg"
-                  alt="A handwritten 'you are beautiful' card tucked into an aloe plant beside people resting on the grass in savasana"
-                  aspect="4/5"
-                  focal="object-center"
-                  sizes="(min-width: 1024px) 32rem, 100vw"
-                />
-              </div>
-            </Parallax>
-          </Reveal>
-        </div>
-      </section>
+      {/* ── The ache · it's not you ────────────────────────────────────────── */}
+      <ZigZag
+        img="/images/site/fd40d12c-7667-4d4e-b4c0-3b828170d9b1.jpg"
+        alt="A handwritten 'you are beautiful' card tucked into an aloe plant beside people resting on the grass"
+        eyebrow="It's not you"
+        title={
+          <>
+            The places that held us
+            <br />
+            just <span className="text-primary">vanished.</span>
+          </>
+        }
+        imgAspect="portrait"
+        tone="surface"
+      >
+        <p>
+          Most of a generation reports feeling lonely — not for lack of people, but for lack of{' '}
+          <em>places</em>. The corner café, the town square, the gathering ground all quietly closed.
+        </p>
+        <p>
+          We traded them for feeds and followers and ended up surrounded yet unseen. You&apos;re not
+          broken. The third place is.
+        </p>
+      </ZigZag>
 
-      {/* ── BEAT 8 (pre-echo) · the wedge, said out loud once ───────────────
-          A quotable line the visitor repeats to a friend. */}
       <PullQuote tone="canvas" cite="The wedge, in one line">
         Seen, not followed.
         <br />
         <span className="text-primary">Missed,</span> not muted.
       </PullQuote>
 
-      {/* ── BEAT 3 · The proof it can come back — MOONLIGHT, the SPINE ──────
-          The emotional center of gravity: full-bleed beach photograph, dark
-          editorial overlay, the 2020 origin as evidence. Light parallax on the
-          backdrop; reduced motion freezes it. */}
+      {/* ── The model · three parts, one community (the legibility beat) ────── */}
+      <section className="relative bg-slat">
+        <div className="light-strip absolute inset-x-0 top-0 z-10" />
+        <Marquee items={['One community', 'One game', 'Real places', 'Built together']} />
+        <div className="max-w-5xl mx-auto px-6 py-24 sm:py-28">
+          <Reveal className="max-w-2xl mx-auto text-center">
+            <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary mb-5">The model</p>
+            <h2 className="font-display uppercase text-white text-5xl sm:text-6xl leading-[0.95] text-balance">
+              Three parts.
+              <br />
+              <span className="text-primary">One community.</span>
+            </h2>
+            <p className="mt-6 text-lg text-white/70 leading-relaxed">
+              Most apps are just a feed. Frequency is three pieces pulling the same direction — off the
+              screen and into a room.
+            </p>
+          </Reveal>
+          <div className="mt-20 space-y-24 sm:space-y-28">
+            <Reveal>
+              <Pillar
+                img="/images/site/community-1.jpg"
+                alt="A small circle of neighbors talking and laughing together on a sunny lawn"
+                index="01"
+                title="The Community"
+                body="Find your people by what you love. Pick an interest, join a small Circle near you, and show up. It's bottom-up and leaderful — Circles cluster into neighborhoods and spread city by city, never appointed from above."
+                href="/how-it-works"
+              />
+            </Reveal>
+            <Reveal>
+              <Pillar
+                img="/images/site/36d99363-e483-40a0-b173-7e7ee6c1b379.jpg"
+                alt="A small group spinning hula hoops together on the beach beneath a lone palm at golden hour"
+                index="02"
+                title="The Game"
+                body="The part that gets you off the screen. Showing up, inviting a stranger, backing a local spot — the things that actually build community — are what the game rewards. Not scrolling. Real life is the high score."
+                href="/how-it-works"
+                reverse
+              />
+            </Reveal>
+            <Reveal>
+              <Pillar
+                img="/images/site/lab-storefront.jpg"
+                alt="The warm-lit storefront of The Lab, Frequency's prototype third space, at dusk"
+                index="03"
+                title="The Lab"
+                body="Where the community gets a body. A real third space with a front door — movement studios, a thermal circuit, a connection bar, an events floor. The room does the work; you just walk in."
+                href="/the-lab"
+              />
+            </Reveal>
+          </div>
+        </div>
+        <div className="light-strip absolute inset-x-0 bottom-0 z-10" />
+      </section>
+
+      {/* ── How you join · two words and you're in ─────────────────────────── */}
+      <Section tone="canvas">
+        <Reveal>
+          <SectionHeading
+            eyebrow="How you join"
+            title={
+              <>
+                Two words and <span className="text-primary">you&apos;re in.</span>
+              </>
+            }
+            kicker="No application. No audition. No performance."
+          />
+        </Reveal>
+        <Reveal delay={100}>
+          <Steps
+            steps={[
+              {
+                title: 'Pick what you love',
+                body: 'Surfing, sound baths, supper clubs, strength training — choose the interest that’s yours. That’s word one.',
+              },
+              {
+                title: 'Join a Circle',
+                body: 'A small standing group around it, near you. Drop in on the next gathering — that’s word two, and that’s belonging.',
+              },
+              {
+                title: 'Show up',
+                body: 'Come back. Your people notice, the game rewards it, and you’re missed when you’re gone.',
+              },
+            ]}
+          />
+        </Reveal>
+      </Section>
+
+      {/* ── Proof · Moonlight Beach, the origin as evidence ────────────────── */}
       <section className="relative bg-slat overflow-hidden">
         <div className="light-strip absolute inset-x-0 top-0 z-20" />
         <Parallax speed={-0.18} className="absolute inset-0">
@@ -226,14 +284,12 @@ function Splash({ live }: { live: LiveData }) {
             <Reveal as="div" delay={100} className="lg:col-span-7 lg:col-start-6">
               <div className="space-y-5 text-lg sm:text-xl text-white/85 leading-relaxed">
                 <p>
-                  A few of us started gathering on the cliffs every morning to
-                  breathe and reconnect. Within eighteen months, a thousand
-                  people were showing up.
+                  A few of us started gathering on the cliffs every morning to breathe and reconnect.
+                  Within eighteen months, a thousand people were showing up.
                 </p>
                 <p className="text-white/70">
-                  No guru. No brand. No agenda. Just people who needed each other
-                  and a place to be. It proved the hunger is real — and that it
-                  can be answered.
+                  No guru. No brand. No agenda. Just people who needed each other and a place to be. It
+                  proved the hunger is real — and that it can be answered.
                 </p>
               </div>
               <Link
@@ -244,7 +300,6 @@ function Splash({ live }: { live: LiveData }) {
               </Link>
             </Reveal>
           </div>
-          {/* The numbers, alive — count up the first time they're seen. */}
           <Reveal delay={200} className="mt-16 grid grid-cols-3 gap-6 max-w-2xl">
             <div>
               <p className="font-display text-5xl sm:text-7xl text-white">
@@ -273,124 +328,56 @@ function Splash({ live }: { live: LiveData }) {
         <div className="light-strip absolute inset-x-0 bottom-0 z-20" />
       </section>
 
-      {/* ── BEAT 4 · The honest hard truth ─────────────────────────────────
-          The vulnerability that earns trust and sets up the build. */}
-      <Statement tone="surface">
-        But a beautiful crowd with no home
-        <br />
-        <span className="text-primary">can&apos;t hold.</span>
-      </Statement>
+      {/* ── Built together · the flywheel + pay-it-forward ─────────────────── */}
+      <ZigZag
+        img="/images/site/PHOTO-2020-09-09-16-38-27.jpeg"
+        alt="Dozens of neighbors practicing yoga together on a sunlit lawn between palm trees"
+        eyebrow="Built together"
+        title={
+          <>
+            It grows on <span className="text-primary">its own.</span>
+          </>
+        }
+        kicker="Leaderful, never leader-dependent."
+        tone="surface"
+        reverse
+      >
+        <p>
+          No guru, no franchise. Leaders rise from the people who simply keep showing up. Circles fill
+          and split, neighborhoods multiply, and where enough people gather in one place, the next Lab
+          gets a reason to open.
+        </p>
+        <p>
+          Membership keeps the rooms open — and those who can give more quietly hold the door for those
+          who can&apos;t. Belonging shouldn&apos;t depend on what you can afford.
+        </p>
+      </ZigZag>
 
-      {/* ── BEAT 5 · The answer, with a shape (The Lab / Network / Model) ───
-          Dark pillar band — the concrete model as the fulfillment of a promise,
-          not a pitch. Marquee + seamed light-strips. */}
-      <section className="relative bg-slat">
-        <div className="light-strip absolute inset-x-0 top-0 z-10" />
-        <Marquee items={['So we built it a home', 'The Lab', 'The Network', 'The Model']} />
-        <div className="max-w-5xl mx-auto px-6 py-24 sm:py-32 space-y-24 sm:space-y-28">
-          <Reveal>
-            <Pillar
-              img="/images/site/lab-storefront.jpg"
-              alt="The warm-lit storefront of The Lab, Frequency's prototype third space, at dusk"
-              index="01"
-              title="The Lab"
-              body="A third space with a front door: movement studios, a thermal circuit, a connection bar, an events floor. Part regulation studio, part social hub, part venue. The environment does the work — you just walk in."
-              href="/the-lab"
-            />
-          </Reveal>
-          <Reveal>
-            <Pillar
-              img="/images/site/36d99363-e483-40a0-b173-7e7ee6c1b379.jpg"
-              alt="A small group spinning hula hoops together on the beach beneath a lone palm at golden hour"
-              index="02"
-              title="The Network"
-              body="Belonging that spreads city by city. Small Circles cluster into neighborhoods, neighborhoods into whole areas — bottom-up, never appointed, growing on its own momentum. Leaderful, not leader-dependent."
-              href="/how-it-works"
-              reverse
-            />
-          </Reveal>
-          <Reveal>
-            <Pillar
-              img="/images/site/lab-pool.jpg"
-              alt="The cold plunge pool in the cedar thermal circuit at The Lab, lit by warm amber light"
-              index="03"
-              title="The Model"
-              body="Built to last and built to include. Memberships sustain the spaces so connection stays within reach. Those who can pay more quietly fund those who can't. Circulation, not exclusion — belonging shouldn't depend on what you can afford."
-              href="/pricing"
-            />
-          </Reveal>
-        </div>
-        <div className="light-strip absolute inset-x-0 bottom-0 z-10" />
-      </section>
-
-      {/* ── BEAT 6 · The relief (what belonging here feels like) ───────────
-          The exhale beat. Faces and rituals, full-bleed, sensory copy. This is
-          where the High-Functioning Lonely converts. */}
-      <section className="relative bg-marketing-canvas px-6 py-24 sm:py-32 overflow-hidden">
-        <div className="mx-auto max-w-6xl">
-          <Reveal className="max-w-2xl">
-            <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-5">
-              The exhale
-            </p>
-            <h2 className="font-display uppercase text-text text-5xl sm:text-6xl lg:text-7xl leading-[0.95] text-balance">
-              What it feels like
-              <br />
-              to be <span className="text-primary">known.</span>
-            </h2>
-            <p className="mt-7 text-lg sm:text-xl text-muted leading-relaxed">
-              A standing time. A handful of faces that light up when you arrive.
-              A room of settled nervous systems that settles yours, too. You
-              don&apos;t have to perform — you just have to show up.
-            </p>
-          </Reveal>
-          {/* Broken-grid photo collage of real rituals. */}
-          <div className="mt-14 grid grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-12 lg:gap-6">
-            <Reveal className="lg:col-span-7 lg:row-span-2">
-              <div className="overflow-hidden rounded-3xl border border-border shadow-md">
-                <SiteImage
-                  src="/images/site/971634cd-1d52-4b3a-a0ab-5713d395d58a.jpg"
-                  alt="A wide circle of people sitting cross-legged on the grass, eyes closed and arms outstretched, in a morning breathwork ritual"
-                  aspect="4/3"
-                  focal="object-center"
-                  sizes="(min-width: 1024px) 40rem, 50vw"
-                />
-              </div>
-            </Reveal>
-            <Reveal delay={100} className="lg:col-span-5">
-              <div className="overflow-hidden rounded-3xl border border-border shadow-md lg:mt-8">
-                <SiteImage
-                  src="/images/site/22a51611-07f6-4c39-8a26-1c996295b6d3.jpg"
-                  alt="People dancing together with arms raised at golden hour, faces lit and joyful"
-                  aspect="4/5"
-                  focal="object-top"
-                  sizes="(min-width: 1024px) 28rem, 50vw"
-                />
-              </div>
-            </Reveal>
-            <Reveal delay={160} className="lg:col-span-5">
-              <div className="overflow-hidden rounded-3xl border border-border shadow-md lg:-mt-4">
-                <SiteImage
-                  src="/images/site/PHOTO-2020-09-09-16-38-27.jpeg"
-                  alt="Dozens of people practicing yoga together on a sunlit lawn between palm trees in a North County San Diego neighborhood"
-                  aspect="3/2"
-                  focal="object-center"
-                  sizes="(min-width: 1024px) 28rem, 50vw"
-                />
-              </div>
-            </Reveal>
-          </div>
-        </div>
-      </section>
-
-      <PullQuote tone="surface" cite="The whole point">
-        We shift you from
-        <br />
-        <span className="text-primary">longing</span> to belonging.
+      <PullQuote tone="canvas" cite="The rule we won't trade">
+        Circulation, <span className="text-primary">not exclusion.</span>
       </PullQuote>
 
-      {/* ── BEAT 7 · It's real, and it's early (honest proof) ──────────────
-          Live, gated counts (founding framing below the floor). Dark band so
-          the proof reads as a deliberate beat. */}
+      {/* ── The exhale · what belonging here feels like ────────────────────── */}
+      <ZigZag
+        img="/images/site/22a51611-07f6-4c39-8a26-1c996295b6d3.jpg"
+        alt="People dancing together with arms raised at golden hour, faces lit and joyful"
+        eyebrow="The exhale"
+        title={
+          <>
+            What it feels like to be <span className="text-primary">known.</span>
+          </>
+        }
+        tone="surface"
+        imgAspect="portrait"
+      >
+        <p>
+          A standing time. A handful of faces that light up when you arrive. A room of settled nervous
+          systems that settles yours, too.
+        </p>
+        <p>You don&apos;t have to perform. You just have to show up.</p>
+      </ZigZag>
+
+      {/* ── It's real, and it's early (honest live proof) ──────────────────── */}
       <section className="relative bg-slat px-6 py-24 sm:py-28 overflow-hidden">
         <div className="light-strip absolute inset-x-0 top-0 z-10" />
         <div className="amber-glow absolute inset-0 pointer-events-none" />
@@ -406,8 +393,7 @@ function Splash({ live }: { live: LiveData }) {
           {hasProof ? (
             <Reveal delay={100}>
               <p className="text-lg leading-relaxed text-on-ink-muted max-w-xl mx-auto mb-12">
-                Real people, real Circles, real gatherings — taking root in{' '}
-                {FOUNDING_PLACE} right now.
+                Real people, real Circles, real gatherings — taking root in {FOUNDING_PLACE} right now.
               </p>
               <div className="grid grid-cols-3 gap-6 max-w-xl mx-auto">
                 <Stat value={memberCount} label="Members" tone="ink" />
@@ -418,8 +404,8 @@ function Splash({ live }: { live: LiveData }) {
           ) : (
             <Reveal delay={100}>
               <p className="text-lg leading-relaxed text-on-ink-muted max-w-xl mx-auto">
-                The first Circles are forming in {FOUNDING_PLACE}. The founding
-                members are shaping what this becomes — come be one of them.
+                The first Circles are forming in {FOUNDING_PLACE}. The founding members are shaping what
+                this becomes — come be one of them.
               </p>
             </Reveal>
           )}
@@ -427,7 +413,7 @@ function Splash({ live }: { live: LiveData }) {
         <div className="light-strip absolute inset-x-0 bottom-0 z-10" />
       </section>
 
-      {/* ── Upcoming events (live) ───────────────────────────────────────── */}
+      {/* ── Upcoming events (live) ─────────────────────────────────────────── */}
       {upcomingEvents.length > 0 && (
         <section className="bg-marketing-canvas px-6 py-20 sm:py-24">
           <div className="max-w-2xl mx-auto">
@@ -448,7 +434,7 @@ function Splash({ live }: { live: LiveData }) {
         </section>
       )}
 
-      {/* ── Member posts (live social proof) ─────────────────────────────── */}
+      {/* ── Member posts (live social proof) ───────────────────────────────── */}
       {posts.length > 0 && (
         <section className="bg-surface px-6 py-20 sm:py-24">
           <div className="max-w-2xl mx-auto">
@@ -471,7 +457,7 @@ function Splash({ live }: { live: LiveData }) {
         </section>
       )}
 
-      {/* ── Is this for you? (objection handling / short FAQ) ────────────── */}
+      {/* ── Is this for you? (objection handling / short FAQ) ──────────────── */}
       <Section tone="canvas">
         <Reveal>
           <SectionHeading
@@ -482,13 +468,12 @@ function Splash({ live }: { live: LiveData }) {
         </Reveal>
         <div className="space-y-3">
           <Faq q="Do I have to be outgoing?">
-            No. Circles are small on purpose — a handful of people, not a crowd.
-            You don&apos;t have to perform or network. You just have to show up,
-            and the structure does the rest.
+            No. Circles are small on purpose — a handful of people, not a crowd. You don&apos;t have to
+            perform or network. You just have to show up, and the structure does the rest.
           </Faq>
           <Faq q="What does it cost?">
-            Crew membership is $10/mo — and completely free during the beta. No
-            card today. Join now and your founder pricing is locked in when paid
+            The community is free, forever. Crew membership — which turns on the game — is $10/mo, and
+            free during the beta. No card today; join now and your founder pricing is locked when paid
             memberships launch.{' '}
             <Link href="/pricing" className="font-semibold text-primary-strong hover:underline">
               See the full breakdown
@@ -496,28 +481,26 @@ function Splash({ live }: { live: LiveData }) {
             .
           </Faq>
           <Faq q="Is there a catch or a guru?">
-            None. Frequency is leaderful, not leader-dependent — built to outlast
-            any one person. No charismatic founder to follow, no upsell funnel.
-            Memberships exist to sustain the physical spaces, not to extract.
+            None. Frequency is leaderful, not leader-dependent — built to outlast any one person. No
+            charismatic founder to follow, no upsell funnel. Memberships exist to sustain the physical
+            spaces, not to extract.
           </Faq>
           <Faq q="I'm not in North County San Diego.">
-            The first space is taking root there now. Add your name anyway —
-            we&apos;re mapping where people are so we know which city seeds next.
-            That&apos;s how it spreads: city by city, like cells.
+            The first space is taking root there now. Add your name anyway — we&apos;re mapping where
+            people are so we know which city seeds next. That&apos;s how it spreads: city by city, like
+            cells.
           </Faq>
           <Faq q="What if it's not for me?">
-            Leave anytime, no questions. The beta is free, there&apos;s no card on
-            file, and nothing locks you in. The only thing you risk is missing the
-            founding cohort.
+            Leave anytime, no questions. The beta is free, there&apos;s no card on file, and nothing
+            locks you in. The only thing you risk is missing the founding cohort.
           </Faq>
         </div>
       </Section>
 
-      {/* ── BEAT 8 · The invitation — true scarcity, one calm path ─────────
-          Founding-cohort framing: the constraint is the care, not a countdown. */}
+      {/* ── The invitation — true scarcity, one calm path ──────────────────── */}
       <Section tone="surface" pad="py-16 sm:py-20">
         <Reveal>
-          <div className="rounded-3xl border border-border bg-marketing-canvas px-7 py-9 sm:px-10 sm:py-11 shadow-sm">
+          <div className="rounded-3xl border border-border bg-marketing-canvas px-7 py-9 sm:px-10 sm:py-11 shadow-pop">
             <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
               Founding cohort
             </p>
@@ -525,10 +508,9 @@ function Splash({ live }: { live: LiveData }) {
               We open a few spots at a time.
             </h2>
             <p className="text-lg text-muted leading-relaxed mb-6 max-w-xl">
-              A community is only as good as the people who start it — so we grow
-              the beta deliberately, a small group at a time, so every new member
-              is actually welcomed in. The constraint is the care. Add your name
-              and we&apos;ll reach out when the next spots open.
+              A community is only as good as the people who start it — so we grow the beta deliberately,
+              a small group at a time, so every new member is actually welcomed in. The constraint is
+              the care. Add your name and we&apos;ll reach out when the next spots open.
             </p>
             <ul className="grid gap-3 sm:grid-cols-2 mb-8">
               <Perk>Free for the whole beta — no card</Perk>
@@ -546,7 +528,7 @@ function Splash({ live }: { live: LiveData }) {
         </Reveal>
       </Section>
 
-      {/* ── Closing CTA ──────────────────────────────────────────────────── */}
+      {/* ── Closing CTA ────────────────────────────────────────────────────── */}
       <BetaCTA
         heading="Come be one of the first."
         body="A Circle to call yours, a standing time, and a place to be human — together. Add your name and we'll reach out when a spot opens."
