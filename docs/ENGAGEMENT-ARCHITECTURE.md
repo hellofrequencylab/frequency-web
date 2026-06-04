@@ -98,8 +98,10 @@ Shared mechanics:
 - **Per-member codes (Phase 3, ADR-091).** Every member owns three editable codes
   (`qr_codes.purpose` = connect | referral | gift_zap), provisioned by `ensureMemberCodes` and
   restyled on `/codes`. The `/q` resolver is a route handler with an `action` destination type:
-  referral drops `fq_ref` → attributed at onboarding (`profiles.referred_by_profile_id` + referrer
-  zaps); gift_zap routes to a confirm page (`/g/[slug]`) that awards the owner a zap.
+  any **owner-owned** code (member connect/referral codes *and* crew marketing funnels) drops the
+  `fq_ref` cookie for an anonymous scanner, so a later signup is **attributed at onboarding**
+  (`profiles.referred_by_profile_id` + referrer zaps) — funnels credit their owner; gift_zap routes
+  to a confirm page (`/g/[slug]`) that awards the owner a zap.
 - **Crew marketing codes (ADR-092).** Crew members own up to 3 funnel codes (`qr_codes` with
   `owner_profile_id` set + `purpose IS NULL`) pointing at a circle/event they promote
   (`isValidMarketingPath`), styled + scan-tracked, managed on `/codes` (`lib/qr/marketing.ts`).

@@ -72,6 +72,11 @@
 > picker** (each option shows its funnel value; `lib/qr/destinations.ts`), and the logo editor gains
 > **square/circle crop** + **color/gradient tint** (alpha-mask recolor for monochrome marks). Extends
 > ADR-089/090, no migration.
+>
+> **2026-06-05:** QR polish backlog #1 — **referral-credit chaining**. The `/q` resolver now drops the
+> `fq_ref` cookie for any anonymous scan of an **owner-owned** code (member codes + crew marketing
+> funnels), so a funnel credits its owner on signup (attributed at onboarding). Extends ADR-091, no
+> migration. Backlog remaining: per-campaign time windows · consent-gate GA · styled-PNG export.
 
 ---
 
