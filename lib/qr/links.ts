@@ -21,6 +21,12 @@ export function connectUrl(handle: string): string {
   return `${SITE_URL}/people/${handle}`
 }
 
+/** Absolute short link a managed dynamic code encodes — the retargetable resolver
+ *  (`app/q/[slug]`) that logs the scan then redirects to the code's destination. */
+export function shortLinkUrl(slug: string): string {
+  return `${SITE_URL}/q/${slug}`
+}
+
 /** True when `text` is one of our own links (absolute apex URL or a root-relative
  *  path). The QR endpoint refuses anything else, so it can't be used as an open
  *  generator for arbitrary third-party content. */
