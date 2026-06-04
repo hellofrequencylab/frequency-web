@@ -33,7 +33,7 @@ export const metadata: Metadata = {
   alternates: { canonical: '/' },
   openGraph: {
     title: `${SITE_NAME} · ${SITE_TAGLINE}`,
-    description: `A third space, half app and half real place: a free community that pulls you off the screen, a game that rewards showing up, and real rooms to gather in. Free during the beta, now taking root in ${FOUNDING_PLACE}.`,
+    description: `We're rebuilding the third place: a real room you can walk into — sauna, cold plunge, warm light — and the people who notice when you're gone. Find your circle anywhere; the first Lab is taking root in ${FOUNDING_PLACE}. Free during the beta.`,
     url: '/',
   },
 }
@@ -81,6 +81,9 @@ export default async function RootPage({
   return <Splash live={live} />
 }
 
+// Splash narrative — Place → People → Path (ADR-078):
+//   the Lab leads as the emblem, community carries the "start anywhere" on-ramp,
+//   and the Quest closes the feature arc before the CTA.
 function Splash({ live }: { live: LiveData }) {
   const posts = live.posts as PostPreviewRow[]
   const memberCount = live.memberCount
@@ -92,19 +95,19 @@ function Splash({ live }: { live: LiveData }) {
     <>
       <MarketingHeader overHero />
 
-      {/* ── Hero · the hook + the model in one breath ──────────────────────── */}
+      {/* ── PLACE · Hero — the Lab is the emblem ───────────────────────────── */}
       <PhotoHero
         minHeight="screen"
-        image="/images/site/971634cd-1d52-4b3a-a0ab-5713d395d58a.jpg"
-        alt="A circle of people sitting together on the grass at golden hour, eyes closed, arms wide, breathing as one"
+        image="/images/site/lab-thermal.jpg"
+        alt="The cedar sauna and thermal circuit inside The Lab, glowing in warm amber light"
         focal="object-center"
-        eyebrow="Connected to everything, close to no one"
+        eyebrow="Not home. Not work."
         title={
           <>
-            A place to be <span className="text-primary">missed.</span>
+            We&apos;re rebuilding the <span className="text-primary">third place.</span>
           </>
         }
-        subtitle="Frequency is a third space — half community app, half real place. Find your people by what you love, get pulled off the screen by a game that rewards showing up, and gather where it takes root: a room you can walk into."
+        subtitle="A real room you can walk into — sauna, cold plunge, warm light, and people who notice when you're gone. It's taking root in North County San Diego. Wherever you are, you can start your circle today."
         footer={
           <>
             <p className="mt-8 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-white/55">
@@ -113,12 +116,12 @@ function Splash({ live }: { live: LiveData }) {
               <span>No card. Founder pricing locked. Leave anytime.</span>
             </p>
             <p className="mt-2 text-sm text-white/40">
-              The first circles are taking root in {FOUNDING_PLACE}.{' '}
+              The first Lab is taking root in {FOUNDING_PLACE}.{' '}
               <Link href="/sign-in" className="underline hover:text-white/70 transition-colors">
                 Already a member? Sign in
               </Link>
             </p>
-            <ScrollCue label="What it is" />
+            <ScrollCue label="Why we're building it" />
           </>
         }
       >
@@ -129,7 +132,7 @@ function Splash({ live }: { live: LiveData }) {
         </div>
       </PhotoHero>
 
-      {/* ── The ache · it's not you ────────────────────────────────────────── */}
+      {/* ── The ache · why it's needed (compressed) ────────────────────────── */}
       <ZigZag
         img="/images/site/fd40d12c-7667-4d4e-b4c0-3b828170d9b1.jpg"
         alt="A handwritten 'you are beautiful' card tucked into an aloe plant beside people resting on the grass"
@@ -149,8 +152,8 @@ function Splash({ live }: { live: LiveData }) {
           <em>places</em>. The corner café, the town square, the gathering ground all quietly closed.
         </p>
         <p>
-          We traded them for feeds and followers and ended up surrounded yet unseen. You&apos;re not
-          broken. The third place is.
+          We traded them for feeds and ended up surrounded yet unseen. You&apos;re not broken. The
+          third place is. <span className="font-semibold text-text">So we&apos;re building it back.</span>
         </p>
       </ZigZag>
 
@@ -160,62 +163,63 @@ function Splash({ live }: { live: LiveData }) {
         <span className="text-primary">Missed,</span> not muted.
       </PullQuote>
 
-      {/* ── The model · three parts, one community (the legibility beat) ────── */}
-      <section className="relative bg-slat">
-        <div className="light-strip absolute inset-x-0 top-0 z-10" />
-        <Marquee items={['One community', 'One game', 'Real places', 'Built together']} />
-        <div className="max-w-5xl mx-auto px-6 py-24 sm:py-28">
-          <Reveal className="max-w-2xl mx-auto text-center">
-            <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary mb-5">The model</p>
-            <h2 className="font-display uppercase text-white text-5xl sm:text-6xl leading-[0.95] text-balance">
-              Three parts.
-              <br />
-              <span className="text-primary">One community.</span>
-            </h2>
-            <p className="mt-6 text-lg text-white/70 leading-relaxed">
-              Most apps are just a feed. Frequency is three pieces pulling the same direction — off the
-              screen and into a room.
-            </p>
-          </Reveal>
-          <div className="mt-20 space-y-24 sm:space-y-28">
-            <Reveal>
-              <Pillar
-                img="/images/site/community-1.jpg"
-                alt="A small circle of neighbors talking and laughing together on a sunny lawn"
-                index="01"
-                title="The Community"
-                body="Find your people by what you love. Pick an interest, join a small Circle near you, and show up. It's bottom-up and leaderful — Circles cluster into neighborhoods and spread city by city, never appointed from above."
-                href="/how-it-works"
-              />
-            </Reveal>
-            <Reveal>
-              <Pillar
-                img="/images/site/36d99363-e483-40a0-b173-7e7ee6c1b379.jpg"
-                alt="A small group spinning hula hoops together on the beach beneath a lone palm at golden hour"
-                index="02"
-                title="The Game"
-                body="The part that gets you off the screen. Showing up, inviting a stranger, backing a local spot — the things that actually build community — are what the game rewards. Not scrolling. Real life is the high score."
-                href="/how-it-works"
-                reverse
-              />
-            </Reveal>
-            <Reveal>
-              <Pillar
-                img="/images/site/lab-storefront.jpg"
-                alt="The warm-lit storefront of The Lab, Frequency's prototype third space, at dusk"
-                index="03"
-                title="The Lab"
-                body="Where the community gets a body. A real third space with a front door — movement studios, a thermal circuit, a connection bar, an events floor. The room does the work; you just walk in."
-                href="/the-lab"
-              />
-            </Reveal>
-          </div>
-        </div>
-        <div className="light-strip absolute inset-x-0 bottom-0 z-10" />
-      </section>
+      {/* ── PLACE · The Lab — the emblem, expanded ─────────────────────────── */}
+      <ZigZag
+        img="/images/site/lab-pool.jpg"
+        alt="The cold plunge pool at The Lab, still water under low amber light"
+        eyebrow="The third place, with a front door"
+        title={
+          <>
+            A room <span className="text-primary">built to be felt.</span>
+          </>
+        }
+        kicker="Heat, then cold, then quiet, then connection."
+        tone="surface"
+        reverse
+      >
+        <p>
+          Dark wood, warm light, steam and greenery — engineered for your nervous system. Movement
+          studios, a thermal circuit, a cold pool, a connection bar, an events floor. Move, sweat,
+          plunge, cool down, and stay for the people.
+        </p>
+        <p>
+          The first Lab is taking root in {FOUNDING_PLACE}. The next ones follow the people who show
+          up.
+        </p>
+        <Link
+          href="/the-lab"
+          className="mt-1 inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide text-primary-strong hover:underline"
+        >
+          Step inside the Lab <ArrowRight className="h-4 w-4" aria-hidden />
+        </Link>
+      </ZigZag>
+
+      {/* ── PEOPLE · Community — your people, start anywhere ────────────────── */}
+      <ZigZag
+        img="/images/site/community-1.jpg"
+        alt="A small circle of neighbors talking and laughing together on a sunny lawn"
+        eyebrow="Your people, near you"
+        title={
+          <>
+            It starts with <span className="text-primary">your people.</span>
+          </>
+        }
+        tone="canvas"
+      >
+        <p>
+          Before there&apos;s a room, there&apos;s a Circle — a small standing group around something
+          you love: a run, a supper, a sauna night, a side project.
+        </p>
+        <p>
+          <span className="font-semibold text-text">Join one near you, or start one tonight —
+          anywhere.</span>{' '}
+          Real plans, real faces, off the feed. Circles cluster into neighborhoods and spread city by
+          city, and where enough people gather, the next Lab gets a reason to open.
+        </p>
+      </ZigZag>
 
       {/* ── How you join · two words and you're in ─────────────────────────── */}
-      <Section tone="canvas">
+      <Section tone="surface">
         <Reveal>
           <SectionHeading
             eyebrow="How you join"
@@ -240,7 +244,7 @@ function Splash({ live }: { live: LiveData }) {
               },
               {
                 title: 'Show up',
-                body: 'Come back. Your people notice, the game rewards it, and you’re missed when you’re gone.',
+                body: 'Come back. Your people notice, the Quest rewards it, and you’re missed when you’re gone.',
               },
             ]}
           />
@@ -455,6 +459,47 @@ function Splash({ live }: { live: LiveData }) {
         </section>
       )}
 
+      {/* ── PATH · The Quest — the last feature, the reason you come back ───── */}
+      <section className="relative bg-slat overflow-hidden">
+        <div className="light-strip absolute inset-x-0 top-0 z-10" />
+        <Marquee items={['One community', 'One Quest', 'Real places', 'Built together']} />
+        <div className="amber-glow absolute inset-0 pointer-events-none" />
+        <div className="relative z-10 mx-auto max-w-5xl px-6 py-24 sm:py-28">
+          <div className="grid items-center gap-12 lg:grid-cols-12">
+            <Reveal className="lg:col-span-7">
+              <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary mb-5">
+                Your Quest
+              </p>
+              <h2 className="font-display uppercase text-white text-5xl sm:text-6xl leading-[0.95] text-balance">
+                Real life is the <span className="text-primary">high score.</span>
+              </h2>
+              <div className="mt-7 max-w-xl space-y-4 text-lg text-white/75 leading-relaxed">
+                <p>
+                  Membership turns on the Quest — the part that pulls you off the screen. Inviting a
+                  stranger, backing a local spot, showing up again: the things that actually build
+                  community are what it rewards. Not scrolling.
+                </p>
+                <p className="font-semibold text-white/90">
+                  You level up by becoming someone your community misses.
+                </p>
+              </div>
+            </Reveal>
+            <Reveal delay={120} className="lg:col-span-5">
+              <div className="relative aspect-[4/5] overflow-hidden rounded-3xl border border-white/10 shadow-pop">
+                <Image
+                  src="/images/site/36d99363-e483-40a0-b173-7e7ee6c1b379.jpg"
+                  alt="A small group spinning hula hoops together on the beach beneath a lone palm at golden hour"
+                  fill
+                  sizes="(min-width: 1024px) 28rem, 100vw"
+                  className="object-cover object-center"
+                />
+              </div>
+            </Reveal>
+          </div>
+        </div>
+        <div className="light-strip absolute inset-x-0 bottom-0 z-10" />
+      </section>
+
       {/* ── Is this for you? (objection handling / short FAQ) ──────────────── */}
       <Section tone="canvas">
         <Reveal>
@@ -470,7 +515,7 @@ function Splash({ live }: { live: LiveData }) {
             perform or network. You just have to show up, and the structure does the rest.
           </Faq>
           <Faq q="What does it cost?">
-            The community is free, forever. Crew membership — which turns on the game — is $10/mo, and
+            The community is free, forever. Crew membership — which turns on the Quest — is $10/mo, and
             free during the beta. No card today; join now and your founder pricing is locked when paid
             memberships launch.{' '}
             <Link href="/pricing" className="font-semibold text-primary-strong hover:underline">
@@ -484,9 +529,9 @@ function Splash({ live }: { live: LiveData }) {
             spaces, not to extract.
           </Faq>
           <Faq q="I'm not in North County San Diego.">
-            The first space is taking root there now. Add your name anyway — we&apos;re mapping where
-            people are so we know which city seeds next. That&apos;s how it spreads: city by city, like
-            cells.
+            The first Lab is taking root there now — but the community starts anywhere. Add your name
+            and start a Circle where you are; we&apos;re mapping where people gather so we know which
+            city seeds next. That&apos;s how it spreads: city by city, like cells.
           </Faq>
           <Faq q="What if it's not for me?">
             Leave anytime, no questions. The beta is free, there&apos;s no card on file, and nothing
@@ -525,8 +570,8 @@ function Splash({ live }: { live: LiveData }) {
 
       {/* ── Closing CTA ────────────────────────────────────────────────────── */}
       <BetaCTA
-        heading="Come be one of the first."
-        body="A Circle to call yours, a standing time, and a place to be human — together. Add your name and we'll reach out when a spot opens."
+        heading="Come build the third place."
+        body="A Circle to call yours, a standing time, and a real room to walk into. Add your name and we'll reach out when a spot opens."
       />
 
       <MarketingFooter />
@@ -535,64 +580,6 @@ function Splash({ live }: { live: LiveData }) {
 }
 
 // ── Building blocks ─────────────────────────────────────────────────────────
-
-// Dark-band pillar: large circular image with a big display heading and a
-// floating light card holding the body, overlapping the circle. Alternates.
-function Pillar({
-  img,
-  alt,
-  title,
-  body,
-  href,
-  index,
-  reverse = false,
-}: {
-  img: string
-  alt: string
-  title: string
-  body: string
-  href?: string
-  index?: string
-  reverse?: boolean
-}) {
-  return (
-    <div
-      className={`flex flex-col items-center sm:items-stretch sm:flex-row ${
-        reverse ? 'sm:flex-row-reverse' : ''
-      }`}
-    >
-      <Image
-        src={img}
-        alt={alt}
-        width={512}
-        height={512}
-        sizes="(min-width: 640px) 32rem, 16rem"
-        className="w-64 h-64 sm:w-[32rem] sm:h-[32rem] rounded-full object-cover border-4 border-white/10 shrink-0"
-      />
-      <div
-        className={`relative z-10 flex flex-col justify-center max-w-md -mt-12 sm:mt-0 ${
-          reverse ? 'sm:-mr-20' : 'sm:-ml-20'
-        }`}
-      >
-        <h3 className="font-display uppercase text-white text-4xl sm:text-5xl mb-5 px-2 text-center sm:text-left">
-          {index && <span className="text-primary mr-3 align-baseline">{index}</span>}
-          {title}
-        </h3>
-        <div className="bg-surface rounded-3xl p-8 shadow-pop">
-          <p className="text-base text-muted leading-relaxed">{body}</p>
-          {href && (
-            <Link
-              href={href}
-              className="mt-5 inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide text-primary-strong hover:underline"
-            >
-              Learn more <ArrowRight className="w-4 h-4" />
-            </Link>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
 
 function PostPreviewCard({ post }: { post: PostPreviewRow }) {
   const a = post.author
