@@ -35,7 +35,7 @@ export default async function OutcomesPage() {
         {challenges.length === 0 ? (
           <p className="text-sm text-muted">No challenge activity yet.</p>
         ) : (
-          <div className="overflow-hidden rounded-xl border border-border">
+          <div className="overflow-x-auto rounded-xl border border-border">
             <table className="w-full text-sm">
               <thead className="bg-surface-elevated text-left text-xs text-subtle">
                 <tr>
@@ -68,7 +68,7 @@ export default async function OutcomesPage() {
         {quests.length === 0 ? (
           <p className="text-sm text-muted">No quest activity yet.</p>
         ) : (
-          <div className="overflow-hidden rounded-xl border border-border">
+          <div className="overflow-x-auto rounded-xl border border-border">
             <table className="w-full text-sm">
               <thead className="bg-surface-elevated text-left text-xs text-subtle">
                 <tr>

@@ -109,7 +109,7 @@ export default async function DiscoverHubPage() {
         subtitle="Explore the circles, events, and topics bringing neighbors together in person. Browse freely — sign up free to join a circle, RSVP to an event, or post."
       >
         {counts.members >= SOCIAL_PROOF_FLOOR ? (
-          <div className="flex items-center justify-center gap-6 text-sm text-white/80">
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-white/80">
             <span><strong className="text-white">{counts.members}</strong> members</span>
             <span className="text-white/30">|</span>
             <span><strong className="text-white">{counts.circles}</strong> circles</span>
