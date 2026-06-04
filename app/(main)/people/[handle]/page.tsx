@@ -6,6 +6,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { startConversation } from '@/app/(main)/messages/actions'
 import { Composer } from '@/components/feed/composer'
 import { ProfileFeed } from '@/components/feed/profile-feed'
+import { ProfilePosts } from '@/components/feed/profile-posts'
+import { ProfileTabs, type ProfileTab } from './profile-tabs'
 import { getInitials } from '@/lib/utils'
 import { FriendButton, type FriendState } from './friend-button'
 import { BlockButton } from './block-button'
@@ -42,10 +44,14 @@ function getNextRank(zaps: number) {
 
 export default async function ProfilePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ handle: string }>
+  searchParams: Promise<{ tab?: string }>
 }) {
   const { handle } = await params
+  const { tab } = await searchParams
+  const activeTab: ProfileTab = tab === 'posts' ? 'posts' : 'activity'
 
   const admin = createAdminClient()
   const { data: profile } = await admin
@@ -292,13 +298,31 @@ export default async function ProfilePage({
         </div>
       )}
 
-      <SectionHeader title={isOwner ? 'Your timeline' : `${firstName}’s timeline`} />
-      <ProfileFeed
-        profileId={profileId}
-        profileHandle={profile.handle as string}
-        myProfileId={myProfileId}
-        viewerRole={myRole}
+      <SectionHeader
+        title={
+          activeTab === 'posts'
+            ? isOwner ? 'Your posts' : `${firstName}’s posts`
+            : isOwner ? 'Your timeline' : `${firstName}’s timeline`
+        }
+        count={activeTab === 'posts' ? postCount : undefined}
       />
+      <ProfileTabs handle={profile.handle as string} active={activeTab} />
+      {activeTab === 'posts' ? (
+        <ProfilePosts
+          profileId={profileId}
+          firstName={firstName}
+          isOwner={isOwner}
+          myProfileId={myProfileId}
+          viewerRole={myRole}
+        />
+      ) : (
+        <ProfileFeed
+          profileId={profileId}
+          profileHandle={profile.handle as string}
+          myProfileId={myProfileId}
+          viewerRole={myRole}
+        />
+      )}
     </div>
   )
 }
