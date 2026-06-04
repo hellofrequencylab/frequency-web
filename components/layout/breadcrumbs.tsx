@@ -64,6 +64,11 @@ export function Breadcrumbs({
 }) {
   const pathname = usePathname()
 
+  // Admin has its own sticky sub-nav (sub-nav.tsx) that already shows the group +
+  // active page, so an auto-derived trail here just duplicates it and crowds the
+  // header. Skip it on /admin unless a page passes an explicit trail.
+  if (!trail && pathname.startsWith('/admin')) return null
+
   const crumbs: Crumb[] =
     trail ??
     pathname
