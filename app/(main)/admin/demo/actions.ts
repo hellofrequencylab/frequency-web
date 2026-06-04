@@ -4,6 +4,12 @@ import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { atLeastRole } from '@/lib/core/roles'
+import { addDemoMembers as genMembers, addDemoCircle as genCircle } from '@/lib/demo/generate'
+
+async function requireJanitor() {
+  const caller = await getCallerProfile()
+  if (!caller || !atLeastRole(caller.community_role, 'janitor')) throw new Error('Unauthorized')
+}
 
 // Demo content lives on five tables (see docs/DEMO-SYSTEM.md). Purge deletes
 // children before parents so FK constraints are satisfied regardless of cascade
@@ -37,5 +43,52 @@ export async function purgeDemoContent() {
     if (error) throw new Error(`${table}: ${error.message}`)
   }
 
+  revalidatePath('/', 'layout')
+}
+
+// --- Grow the network -----------------------------------------------------
+// Add demo content that auto-populates its relative content (memberships, a
+// post, reactions, a streak, achievements, a practice adoption; a new circle
+// also gets a host, a roster, a practice, and an upcoming event). lib/demo/generate.
+
+export async function addMembersToCircle(circleId: string, count: number) {
+  await requireJanitor()
+  const n = await genMembers(circleId, count)
+  revalidatePath('/', 'layout')
+  return n
+}
+
+export async function addCircle(input: { name: string; channel: string; city?: string; size?: number }) {
+  await requireJanitor()
+  if (!input.name?.trim()) throw new Error('A circle needs a name.')
+  const res = await genCircle({ ...input, name: input.name.trim() })
+  revalidatePath('/', 'layout')
+  return res
+}
+
+// --- Select & delete ------------------------------------------------------
+// Granular teardown: remove specific demo circles or members (vs the all-or-
+// nothing purge). Posts/events use a polymorphic scope_id (no FK cascade from
+// circles), so they are deleted explicitly; profile deletes cascade the rest.
+
+export async function deleteDemoCircles(ids: string[]) {
+  await requireJanitor()
+  if (!ids.length) return
+  const admin = createAdminClient()
+  // children first (scope_id is not an FK, so no cascade from circles)
+  await admin.from('posts').delete().eq('is_demo', true).in('scope_id', ids)
+  await admin.from('events').delete().eq('is_demo', true).in('scope_id', ids)
+  const { error } = await admin.from('circles').delete().eq('is_demo', true).in('id', ids)
+  if (error) throw new Error(error.message)
+  revalidatePath('/', 'layout')
+}
+
+export async function deleteDemoMembers(ids: string[]) {
+  await requireJanitor()
+  if (!ids.length) return
+  const admin = createAdminClient()
+  // profile delete cascades memberships, authored posts, reactions, rsvps, etc.
+  const { error } = await admin.from('profiles').delete().eq('is_demo', true).in('id', ids)
+  if (error) throw new Error(error.message)
   revalidatePath('/', 'layout')
 }
