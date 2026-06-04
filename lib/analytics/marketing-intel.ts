@@ -1,6 +1,6 @@
 // Vera Marketing Intelligence · Phase 1 read layer. Reads the deterministic data
-// spine (the mkt_* RPCs) via the admin client — the grounded facts that Phase 2's
-// forecasts + Vera strategy narration and the per-role seed prompts build on.
+// spine (the mkt_* RPCs) via the admin client. These grounded facts feed Phase 2
+// (shipped): the deterministic forecasts + strategy in lib/analytics/marketing-forecast.ts.
 // Server-only; admin-gated at the page. The findings stay deterministic; the model
 // only ever narrates them (same convention as lib/analytics/engagement-read.ts).
 

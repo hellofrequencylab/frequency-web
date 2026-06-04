@@ -1957,6 +1957,37 @@ that visitor restarts induction — acceptable for beta; same-browser and Google
 seamless. `BetaWelcome` is now unused (left in place; removed with the rest of the beta induction
 at launch).
 
+## ADR-083: Vera Marketing Intelligence Phase 2 — deterministic grounded forecasts + strategy, no model call
+
+**Status:** Accepted · 2026-06-04 · builds on Phase 1 (`lib/analytics/marketing-intel.ts`). Shipped.
+
+**Context:** Phase 1 shipped the deterministic marketing data spine (the `mkt_*` aggregates
+surfaced on the janitor-only `/admin/intel` page): growth, interest demand, geo, content, and
+leader signal. The page led with raw tables and stopped at the facts. The doctrine in those file
+headers is firm: the findings stay deterministic, and the model only ever narrates them. Phase 2
+needed to turn the facts into a forecast and a prioritized plan without taking a dependency on the
+AI kernel being live.
+
+**Decision:**
+- Add a pure, unit-tested module `lib/analytics/marketing-forecast.ts` operating only on
+  `MarketingIntel`. It exposes `projectGrowth` (least-squares linear trend for the next 4 weeks
+  with an `accelerating`/`steady`/`slowing` momentum label from the recent vs earlier half of the
+  series, guarded against fewer than 2 points), `demandGaps` (ranks interests where demand outruns
+  supply; a channel with demand but zero circles is the highest-priority uncaptured gap),
+  `topMomentumCity`, `staleLeaders` (oldest-to-act leaders to nudge), and `buildStrategy` (a
+  prioritized `now`/`watch`/`hold` list derived solely from those grounded findings).
+- Render a new top "Forecast & strategy" `AdminSection` on `/admin/intel`: projected next-4-week
+  members/circles/events with momentum labels, then the prioritized strategy mapped to the
+  PRESENTATION legend (✅ now / ⏳ watch / ⚠️ hold). Leads with the answer; degrades to plain text.
+- No model call. Everything is deterministic and dark-safe: identical output whether or not the AI
+  kernel is live. House style enforced: no em dashes in any returned copy (covered by a test).
+
+**Consequences:** The forecast quality scales with how much weekly history exists and degrades
+gracefully (the section says so and still emits a strategy from current demand/geo/leader signal
+when the trend is ungrounded). The **Vera-narration layer remains a future enhancement**: it will
+wrap these grounded findings, never replace them. New tests added in
+`lib/analytics/marketing-forecast.test.ts`.
+
 ---
 ### Decisions intentionally NOT duplicated here
 
