@@ -193,7 +193,7 @@ work landed on main. Applying them as-is would regress live features:
 
 | Migration | Conflict | Reconcile |
 |---|---|---|
-| `member_geo` `feed_for_viewer` | The live function carries **demo-mode logic** (`not is_demo or demo_mode flag`); the migration's replacement **drops it** → demo feed breaks. | Merge: take the geo-aware version, re-add the demo predicate to its `WHERE`. |
+| ~~`member_geo` `feed_for_viewer`~~ ✅ **reconciled** | The live function carried **demo-mode logic** the migration's replacement dropped. | **Done** — `20260605040000_reconcile_feed_for_viewer_geo_demo` merges both (demo predicate + geo params + `distance_m`); backward-compatible, applied + verified. App still needs the type update + to pass `_lat/_lng/_radius_m`. |
 | `channel_open_rooms` RLS | **Rewrites** `rooms`/`room_messages`/`room_members` policies that `messages_rls_convergence` + `room_thread_rls_convergence` just rewrote. | Merge: add the `visibility='channel'` read path *into* the converged policies, don't replace them. |
 | `group_dms_to_private_rooms` | Reversible **data** migration; applying it without app-layer filtering shows group chats **twice** (conversation + room copy). | Pair with app code: filter `migrated_to_room_id IS NULL` in the inbox + remove the group-create path, *then* apply. |
 
@@ -203,11 +203,13 @@ work landed on main. Applying them as-is would regress live features:
   `global` scope exists in the DB; the staff-gated authoring UI is Phase D app work.
 - ✅ **Member geo columns + backfill** — applied as a safe additive subset (`home_lat/lng/label/
   timezone`, generated `home_geog` + GiST index, `feed_radius_m`, `live_*`, `location_mode`;
-  backfilled from `meta.beta.location`). The **`feed_for_viewer` replacement was deliberately
-  deferred** to the feed phase, where it's merged with the demo logic + wired in app together.
-- ⏳ **Not applied:** `channel_open_rooms`, `group_dms_to_private_rooms`, and the geo `feed_for_viewer`
-  — each pairs with its app code per the Conflicts table + Phase B. (Migrations + app land together,
-  not as a dark schema flip.)
+  backfilled from `meta.beta.location`).
+- ✅ **Reconciled `feed_for_viewer`** — `20260605040000` merges the geo-aware version with the live
+  demo-mode logic (keeps `is_demo` + the demo predicate, adds geo params + `distance_m` + a `nearby`
+  sort). Backward-compatible; applied + verified. **Next app step:** update the RPC type + thread the
+  member's `home_lat/lng/feed_radius_m` into the feed (a `nearby` lens).
+- ⏳ **Not applied:** `channel_open_rooms`, `group_dms_to_private_rooms` — each pairs with its app
+  code per the Conflicts table + Phase B. (Migrations + app land together, not a dark schema flip.)
 
 ## Open guardrails / risks
 
