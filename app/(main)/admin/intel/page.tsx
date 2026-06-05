@@ -73,7 +73,7 @@ function Table({ head, rows }: { head: string[]; rows: (string | number)[][] }) 
 }
 
 export default async function MarketingIntelPage() {
-  await requireAdmin('janitor')
+  await requireAdmin('janitor', { staff: 'insights', staffLevel: 'read' })
   const [intel, acq] = await Promise.all([getMarketingIntel(90, 30), getAcquisitionRollup()])
 
   const totals = intel.growth.reduce(
