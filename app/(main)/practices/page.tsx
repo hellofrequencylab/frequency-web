@@ -1,42 +1,50 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Flame, Sparkles, Library, Zap, Pencil, Wand2 } from 'lucide-react'
-import { getMyProfileId } from '@/lib/auth'
-import { createAdminClient } from '@/lib/supabase/admin'
-import { forkPracticeAction } from './actions'
 import {
-  listPublicPractices,
+  Flame, Sparkles, Library, Zap, Pencil, Wand2, Users, Search,
+  ChevronLeft, ChevronRight, EyeOff, X,
+} from 'lucide-react'
+import { getMyProfileId } from '@/lib/auth'
+import {
+  searchLibraryPractices,
+  countPublicPractices,
   listSubcategories,
+  listCanonicalTags,
   getMemberPractices,
   getRecentPracticeLogs,
   type Practice,
-  type PracticeTag,
   type PracticeSort,
 } from '@/lib/practices'
 import { getPillars, pillarsById, type Pillar } from '@/lib/pillars'
+import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
 import { LogPracticeButton } from '@/components/practice/log-practice-button'
 import { AdoptPracticeButton } from '@/components/practice/adopt-practice-button'
 import { CreatePracticeForm } from '@/components/practice/create-practice-form'
 import { PillarBadge } from '@/components/practice/pillar-badge'
+import { PracticeAdminMenu } from '@/components/practice/practice-admin-menu'
+import { EntityCard } from '@/components/cards/entity-card'
 import { IndexTemplate } from '@/components/templates/index-template'
 import { StatStrip } from '@/components/ui/page-header'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
-import { DemoBadge } from '@/components/ui/demo-badge'
 import { demoModeEnabled } from '@/lib/platform-flags'
 import { viewerHidesDemo } from '@/lib/demo-preference'
 
 export const metadata: Metadata = {
   title: 'Practices',
-  description: 'Choose what you practice and log it to build your streak.',
+  description: 'Browse the community practice library — adopt one and log it to build your streak.',
 }
 
-// Small meta row under a practice: category chip · cadence · reward note.
-function PracticeMeta({
-  p,
-}: {
-  p: { category: string | null; cadence: string | null; reward_note: string | null }
-}) {
+const PAGE_SIZE = 24
+const SORTS: { key: PracticeSort; label: string }[] = [
+  { key: 'trending', label: 'Trending' },
+  { key: 'top', label: 'All-time' },
+  { key: 'new', label: 'New' },
+  { key: 'az', label: 'A–Z' },
+]
+
+// --- "Your practices" row (the personal column keeps the readable list) -----
+function PracticeMeta({ p }: { p: { category: string | null; cadence: string | null; reward_note: string | null } }) {
   if (!p.category && !p.cadence && !p.reward_note) return null
   return (
     <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
@@ -56,80 +64,44 @@ function PracticeMeta({
   )
 }
 
-// One library/owned practice, in the shared warm card shell. Not routed through
-// EntityCard because practices have no public detail page yet (only /[id]/edit,
-// owner-only) — so the whole card can't be a single link. The action slot holds
-// the interactive controls (Edit / Log / Adopt / Customize), which the caller
-// passes in. Demo practices are badged + receded, matching the EntityCard look.
-function PracticeRow({
-  p,
-  byId,
-  isDemo = false,
-  subcategory = null,
-  tags = [],
-  actions,
-}: {
-  p: Practice
-  byId: Map<string, Pillar>
-  isDemo?: boolean
-  subcategory?: { slug: string; name: string } | null
-  tags?: PracticeTag[]
-  actions: React.ReactNode
-}) {
+function MineRow({ p, byId, profileId }: { p: Practice; byId: Map<string, Pillar>; profileId: string }) {
   return (
-    <li
-      className={`flex items-center justify-between gap-4 rounded-2xl border border-border bg-surface px-5 py-4 shadow-sm transition-colors hover:border-primary-bg hover:shadow-md ${
-        isDemo ? 'opacity-[0.72]' : ''
-      }`}
-    >
+    <li className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-surface px-5 py-4 shadow-sm transition-colors hover:border-primary-bg hover:shadow-md">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
           <Link href={`/practices/${p.id}`} className="text-base font-bold text-text hover:text-primary-strong hover:underline">
             {p.title}
           </Link>
           {p.domain_id && byId.has(p.domain_id) && <PillarBadge name={byId.get(p.domain_id)!.name} />}
-          {subcategory && (
-            <span className="rounded-full bg-primary-bg px-2 py-0.5 text-xs font-medium text-primary-strong">
-              {subcategory.name}
-            </span>
-          )}
-          {p.is_template && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-warning-bg px-2 py-0.5 text-xs font-semibold text-warning">
-              <Wand2 className="h-3 w-3" /> Template
-            </span>
-          )}
-          {isDemo && <DemoBadge />}
         </div>
         {(p.summary ?? p.description) && (
-          <p className="mt-0.5 line-clamp-2 text-sm leading-relaxed text-muted">
-            {p.summary ?? p.description}
-          </p>
+          <p className="mt-0.5 line-clamp-1 text-sm leading-relaxed text-muted">{p.summary ?? p.description}</p>
         )}
         <PracticeMeta p={p} />
-        {tags.length > 0 && (
-          <div className="mt-1.5 flex flex-wrap gap-1">
-            {tags.map((t) => (
-              <span key={t.slug} className="rounded-full bg-surface-elevated px-2 py-0.5 text-xs text-subtle">
-                #{t.label}
-              </span>
-            ))}
-          </div>
-        )}
       </div>
-      <div className="flex shrink-0 items-center gap-2">{actions}</div>
+      <div className="flex shrink-0 items-center gap-2">
+        {p.created_by === profileId && (
+          <Link
+            href={`/practices/${p.id}/edit`}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated"
+          >
+            <Pencil className="h-3.5 w-3.5" /> Edit
+          </Link>
+        )}
+        <LogPracticeButton practiceId={p.id} />
+        <AdoptPracticeButton practiceId={p.id} adopted />
+      </div>
     </li>
   )
 }
 
-function PillarFilterChip({ label, href, active }: { label: string; href: string; active: boolean }) {
+function Chip({ label, href, active }: { label: string; href: string; active: boolean }) {
   return (
     <Link
       href={href}
       scroll={false}
       className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-        active
-          ? 'bg-primary-bg text-primary-strong'
-          : 'bg-surface-elevated text-muted hover:text-text'
+        active ? 'bg-primary-bg text-primary-strong' : 'bg-surface-elevated text-muted hover:text-text'
       }`}
     >
       {label}
@@ -137,58 +109,57 @@ function PillarFilterChip({ label, href, active }: { label: string; href: string
   )
 }
 
-// Build a shareable library URL from the active filter/sort state (no client JS).
-function libHref({ pillar, sub, sort }: { pillar?: string | null; sub?: string | null; sort?: string }) {
-  const q = new URLSearchParams()
-  if (pillar) q.set('pillar', pillar)
-  if (sub) q.set('sub', sub)
-  if (sort && sort !== 'trending') q.set('sort', sort)
-  const s = q.toString()
-  return s ? `/practices?${s}` : '/practices'
-}
-
 export default async function PracticesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ pillar?: string; sub?: string; sort?: string }>
+  searchParams: Promise<{
+    q?: string; pillar?: string; sub?: string; tag?: string; sort?: string; page?: string; hidden?: string
+  }>
 }) {
-  const { pillar: pillarParam, sub: subParam, sort: sortParam } = await searchParams
-  const sort: PracticeSort = sortParam === 'top' || sortParam === 'new' ? sortParam : 'trending'
+  const sp = await searchParams
+  const sort: PracticeSort =
+    sp.sort === 'top' || sp.sort === 'new' || sp.sort === 'az' ? sp.sort : 'trending'
+  const page = Math.max(1, parseInt(sp.page ?? '1', 10) || 1)
+  const qParam = sp.q?.trim() || ''
 
   const profileId = await getMyProfileId()
-  const [library, mine, recent, pillars, subcategories] = await Promise.all([
-    listPublicPractices(sort),
-    profileId ? getMemberPractices(profileId) : Promise.resolve([]),
-    profileId ? getRecentPracticeLogs(profileId, 60) : Promise.resolve([]),
+  const caps = await getGlobalCapabilities()
+  const isAdmin = caps.has('admin.access')
+  const showHidden = isAdmin && sp.hidden === '1'
+
+  const [pillars, subcategories, tags, mine, recent] = await Promise.all([
     getPillars(),
     listSubcategories(),
+    listCanonicalTags(),
+    profileId ? getMemberPractices(profileId) : Promise.resolve([]),
+    profileId ? getRecentPracticeLogs(profileId, 60) : Promise.resolve([]),
   ])
   const byId = pillarsById(pillars)
   const mineIds = new Set(mine.map((p) => p.id))
 
-  // Honour the header's Demo toggle for the public library: hide seeded demo
-  // practices when global demo_mode is off OR this viewer turned demo off. The
-  // `practices` table carries is_demo, but lib/practices doesn't select it, so we
-  // resolve the demo ids in one cheap admin read and filter/badge the library by
-  // them. (mine/recent are the member's own — never demo — so they're untouched.)
+  // Pillar → sub-category facets (URL-driven, shareable).
+  const activePillar = pillars.find((p) => p.slug === sp.pillar) ?? null
+  const pillarSubs = activePillar ? subcategories.filter((s) => s.domain_id === activePillar.id) : []
+  const activeSub = pillarSubs.find((s) => s.slug === sp.sub) ?? null
+
   const hideDemo = !(await demoModeEnabled()) || (await viewerHidesDemo())
-  const { data: demoRows } = await createAdminClient()
-    .from('practices')
-    .select('id')
-    .eq('is_demo', true)
-  const demoIds = new Set((demoRows ?? []).map((r) => r.id as string))
 
-  // Library filters by Pillar → sub-category (URL-driven, shareable, no client JS).
-  const activePillar = pillars.find((p) => p.slug === pillarParam)?.id ?? null
-  const pillarSubs = activePillar ? subcategories.filter((s) => s.domain_id === activePillar) : []
-  const activeSubSlug = pillarSubs.some((s) => s.slug === subParam) ? subParam : null
-  const unadopted = library
-    .filter((p) => !mineIds.has(p.id))
-    .filter((p) => !activePillar || p.domain_id === activePillar)
-    .filter((p) => !activeSubSlug || p.subcategory?.slug === activeSubSlug)
-    .filter((p) => !hideDemo || !demoIds.has(p.id))
+  const [result, libraryTotal] = await Promise.all([
+    searchLibraryPractices({
+      q: qParam,
+      pillarId: activePillar?.id ?? null,
+      subId: activeSub?.id ?? null,
+      tag: sp.tag ?? null,
+      sort,
+      page,
+      pageSize: PAGE_SIZE,
+      hideDemo,
+      includeHidden: showHidden,
+    }),
+    countPublicPractices({ hideDemo }),
+  ])
 
-  // Last 14 days as a simple activity strip (filled = logged a practice that day).
+  // Activity strip (last 14 days).
   const loggedDays = new Set(recent.map((r) => r.logged_for))
   const today = new Date()
   const last14 = Array.from({ length: 14 }, (_, i) => {
@@ -198,28 +169,86 @@ export default async function PracticesPage({
   })
   const daysLogged = last14.filter((d) => loggedDays.has(d)).length
 
-  // Library count for the stat strip — exclude demo when the viewer hides it so
-  // the number matches what they actually see below.
-  const libraryCount = hideDemo ? library.filter((p) => !demoIds.has(p.id)).length : library.length
+  const base = {
+    q: qParam || undefined,
+    pillar: sp.pillar || undefined,
+    sub: sp.sub || undefined,
+    tag: sp.tag || undefined,
+    sort: sort !== 'trending' ? sort : undefined,
+    hidden: showHidden ? '1' : undefined,
+  }
+  function href(over: Partial<typeof base> & { page?: number }): string {
+    const m = { ...base, ...over }
+    const u = new URLSearchParams()
+    if (m.q) u.set('q', m.q)
+    if (m.pillar) u.set('pillar', m.pillar)
+    if (m.sub) u.set('sub', m.sub)
+    if (m.tag) u.set('tag', m.tag)
+    if (m.sort) u.set('sort', m.sort)
+    if (m.hidden) u.set('hidden', m.hidden)
+    if (over.page && over.page > 1) u.set('page', String(over.page))
+    const s = u.toString()
+    return s ? `/practices?${s}` : '/practices'
+  }
+
+  const from = (page - 1) * PAGE_SIZE
+  const hasFilters = !!(qParam || activePillar || activeSub || sp.tag)
 
   return (
     <IndexTemplate
       title="Practices"
-      description="This is where the points come from. A practice is the thing you actually do — adopt one, then log it every day to earn zaps, climb the ranks, and keep your streak alive."
+      description="This is where the points come from — a growing community library. Adopt or claim a practice, then log it every day to earn zaps, climb the ranks, and keep your streak alive."
+      action={profileId ? <CreatePracticeForm /> : undefined}
+      toolbar={
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          {/* Search (GET form — shareable, no client JS) */}
+          <form action="/practices" method="get" className="relative w-full sm:max-w-xs">
+            {sp.pillar && <input type="hidden" name="pillar" value={sp.pillar} />}
+            {sp.sub && <input type="hidden" name="sub" value={sp.sub} />}
+            {sp.tag && <input type="hidden" name="tag" value={sp.tag} />}
+            {sort !== 'trending' && <input type="hidden" name="sort" value={sort} />}
+            {showHidden && <input type="hidden" name="hidden" value="1" />}
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" />
+            <input
+              name="q"
+              defaultValue={qParam}
+              placeholder="Search practices…"
+              className="w-full rounded-lg border border-border bg-surface py-2 pl-9 pr-3 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
+            />
+          </form>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="mr-1 text-xs font-medium uppercase tracking-wide text-subtle">Sort</span>
+            {SORTS.map((s) => (
+              <Chip key={s.key} label={s.label} href={href({ sort: s.key === 'trending' ? undefined : s.key, page: undefined })} active={sort === s.key} />
+            ))}
+            {isAdmin && (
+              <Link
+                href={href({ hidden: showHidden ? undefined : '1', page: undefined })}
+                className={`ml-1 inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+                  showHidden ? 'bg-danger/10 text-danger' : 'bg-surface-elevated text-muted hover:text-text'
+                }`}
+                title="Admin: include hidden practices"
+              >
+                <EyeOff className="h-3.5 w-3.5" /> {showHidden ? 'Hidden shown' : 'Show hidden'}
+              </Link>
+            )}
+          </div>
+        </div>
+      }
     >
       <StatStrip
         items={[
           { value: mine.length, label: 'Your practices' },
           { value: daysLogged, label: 'Days logged (14d)' },
-          { value: libraryCount, label: 'In the library' },
+          { value: libraryTotal, label: 'In the library' },
         ]}
       />
 
+      {/* Personal column: your activity + your practices (readable width). */}
       <div className="max-w-2xl space-y-8">
         {profileId && (recent.length > 0 || mine.length > 0) && (
           <section>
             <SectionHeader title="Your activity" />
-            {/* Grouped on the canvas (no box) — a widget, not a distinct object. */}
             <div>
               <div className="mb-3 flex items-center justify-between gap-2">
                 <span className="flex items-center gap-1.5 text-sm text-muted">
@@ -234,155 +263,167 @@ export default async function PracticesPage({
                   <div
                     key={d}
                     title={d}
-                    className={`h-7 flex-1 rounded-lg ${
-                      loggedDays.has(d) ? 'bg-primary' : 'border border-border bg-surface'
-                    }`}
+                    className={`h-7 flex-1 rounded-lg ${loggedDays.has(d) ? 'bg-primary' : 'border border-border bg-surface'}`}
                   />
                 ))}
               </div>
-              {recent.length > 0 && (
-                <ul className="mt-4 space-y-1.5 border-t border-border pt-4">
-                  {recent.slice(0, 5).map((r, i) => (
-                    <li key={i} className="flex items-center justify-between text-sm">
-                      <span className="text-text">{r.title ?? 'A practice'}</span>
-                      <span className="tabular-nums text-subtle">{r.logged_for}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
             </div>
           </section>
         )}
 
-        <section>
-          <SectionHeader title="Your practices" count={mine.length} />
-          {mine.length === 0 ? (
-            <EmptyState
-              icon={Sparkles}
-              title="Nothing adopted yet"
-              description="Pick a practice from the library below to start earning zaps and building a streak."
-            />
-          ) : (
+        {profileId && mine.length > 0 && (
+          <section>
+            <SectionHeader title="Your practices" count={mine.length} />
             <ul className="space-y-3">
               {mine.map((p) => (
-                <PracticeRow
-                  key={p.id}
-                  p={p}
-                  byId={byId}
-                  actions={
-                    <>
-                      {p.created_by === profileId && (
-                        <Link
-                          href={`/practices/${p.id}/edit`}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated"
-                        >
-                          <Pencil className="h-3.5 w-3.5" /> Edit
-                        </Link>
-                      )}
-                      <LogPracticeButton practiceId={p.id} />
-                      <AdoptPracticeButton practiceId={p.id} adopted />
-                    </>
-                  }
-                />
+                <MineRow key={p.id} p={p} byId={byId} profileId={profileId} />
               ))}
             </ul>
-          )}
-        </section>
-
-        <section>
-          <SectionHeader title="Practice library" count={libraryCount} />
-
-          {/* Sort + filter the library (Trending/All-time/New · Pillar · sub-category). */}
-          <div className="mb-3 space-y-2">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="mr-1 text-xs font-medium uppercase tracking-wide text-subtle">Sort</span>
-              {(['trending', 'top', 'new'] as const).map((s) => (
-                <PillarFilterChip
-                  key={s}
-                  label={s === 'trending' ? 'Trending' : s === 'top' ? 'All-time' : 'New'}
-                  href={libHref({ pillar: pillarParam, sub: activeSubSlug, sort: s })}
-                  active={sort === s}
-                />
-              ))}
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              <PillarFilterChip label="All Pillars" href={libHref({ sort })} active={!activePillar} />
-              {pillars.map((pl) => (
-                <PillarFilterChip
-                  key={pl.slug}
-                  label={pl.name}
-                  href={libHref({ pillar: pl.slug, sort })}
-                  active={pillarParam === pl.slug}
-                />
-              ))}
-            </div>
-            {pillarSubs.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                <PillarFilterChip label="All" href={libHref({ pillar: pillarParam, sort })} active={!activeSubSlug} />
-                {pillarSubs.map((s) => (
-                  <PillarFilterChip
-                    key={s.slug}
-                    label={s.name}
-                    href={libHref({ pillar: pillarParam, sub: s.slug, sort })}
-                    active={subParam === s.slug}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-
-          {profileId && (
-            <div className="mb-3">
-              <CreatePracticeForm />
-            </div>
-          )}
-          {unadopted.length === 0 ? (
-            <EmptyState
-              icon={Library}
-              title="You've adopted everything"
-              description="Every practice in the library is on your list. Nicely done."
-            />
-          ) : (
-            <ul className="space-y-3">
-              {unadopted.map((p) => (
-                <PracticeRow
-                  key={p.id}
-                  p={p}
-                  byId={byId}
-                  isDemo={demoIds.has(p.id)}
-                  subcategory={p.subcategory}
-                  tags={p.tags}
-                  actions={
-                    <>
-                      {profileId &&
-                        (p.is_template ? (
-                          <Link
-                            href={`/practices/${p.id}`}
-                            title="Claim this template and make it your own"
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-primary-bg bg-primary-bg px-3 py-1.5 text-xs font-semibold text-primary-strong transition-colors hover:opacity-80"
-                          >
-                            <Sparkles className="h-3.5 w-3.5" /> Claim
-                          </Link>
-                        ) : (
-                          <form action={forkPracticeAction.bind(null, p.id)}>
-                            <button
-                              type="submit"
-                              title="Make your own editable copy"
-                              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated"
-                            >
-                              <Wand2 className="h-3.5 w-3.5" /> Customize
-                            </button>
-                          </form>
-                        ))}
-                      <AdoptPracticeButton practiceId={p.id} adopted={false} />
-                    </>
-                  }
-                />
-              ))}
-            </ul>
-          )}
-        </section>
+          </section>
+        )}
       </div>
+
+      {/* The library — full-width, paginated, filterable grid. */}
+      <section className="mt-8">
+        <SectionHeader title="Practice library" count={result.total} />
+
+        {/* Pillar → sub-category + tag facets */}
+        <div className="mb-4 space-y-2">
+          <div className="flex flex-wrap gap-1.5">
+            <Chip label="All Pillars" href={href({ pillar: undefined, sub: undefined, page: undefined })} active={!activePillar} />
+            {pillars.map((pl) => (
+              <Chip key={pl.slug} label={pl.name} href={href({ pillar: pl.slug, sub: undefined, page: undefined })} active={activePillar?.slug === pl.slug} />
+            ))}
+          </div>
+          {pillarSubs.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              <Chip label="All" href={href({ sub: undefined, page: undefined })} active={!activeSub} />
+              {pillarSubs.map((s) => (
+                <Chip key={s.slug} label={s.name} href={href({ sub: s.slug, page: undefined })} active={activeSub?.slug === s.slug} />
+              ))}
+            </div>
+          )}
+          {tags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              <Chip label="All tags" href={href({ tag: undefined, page: undefined })} active={!sp.tag} />
+              {tags.map((t) => (
+                <Chip key={t.slug} label={`#${t.label}`} href={href({ tag: t.slug, page: undefined })} active={sp.tag === t.slug} />
+              ))}
+            </div>
+          )}
+          {hasFilters && (
+            <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-subtle">
+              <span>Filtered:</span>
+              {qParam && (
+                <Link href={href({ q: undefined, page: undefined })} className="inline-flex items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5 hover:text-text">
+                  “{qParam}” <X className="h-3 w-3" />
+                </Link>
+              )}
+              <Link href="/practices" className="font-medium text-primary-strong hover:underline">Clear all</Link>
+            </div>
+          )}
+        </div>
+
+        {result.rows.length === 0 ? (
+          <EmptyState
+            icon={Library}
+            title={hasFilters ? 'No practices match' : 'The library is empty'}
+            description={hasFilters ? 'Try a different search, Pillar, or tag.' : 'Check back soon — practices are on their way.'}
+          />
+        ) : (
+          <>
+            <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {result.rows.map((p) => {
+                const pillarName = p.domain_id ? byId.get(p.domain_id)?.name ?? null : null
+                const context = [pillarName, p.subcategory?.name, p.category?.replace(/-/g, ' ')].filter(Boolean).join(' · ')
+                return (
+                  <li key={p.id}>
+                    <EntityCard
+                      href={`/practices/${p.id}`}
+                      anchor={
+                        p.header_image ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={p.header_image} alt="" className="h-11 w-11 rounded-lg object-cover" />
+                        ) : (
+                          <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
+                            <Sparkles className="h-5 w-5" />
+                          </div>
+                        )
+                      }
+                      title={p.title}
+                      badge={
+                        <span className="flex items-center gap-1">
+                          {p.is_template && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-warning-bg px-2 py-0.5 text-xs font-semibold text-warning">
+                              <Wand2 className="h-3 w-3" /> Template
+                            </span>
+                          )}
+                          {!p.is_public && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-danger/10 px-2 py-0.5 text-xs font-semibold text-danger">
+                              <EyeOff className="h-3 w-3" /> Hidden
+                            </span>
+                          )}
+                        </span>
+                      }
+                      context={context || undefined}
+                      description={p.summary ?? p.description ?? undefined}
+                      meta={
+                        <>
+                          {p.reward_note && (
+                            <span className="inline-flex items-center gap-1 font-medium text-warning">
+                              <Zap className="h-3 w-3 fill-warning" aria-hidden /> {p.reward_note}
+                            </span>
+                          )}
+                          {p.cadence && <span>{p.cadence}</span>}
+                          <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" /> {p.adopters}</span>
+                          <span className="inline-flex items-center gap-1"><Flame className="h-3 w-3" /> {p.logs_total}</span>
+                        </>
+                      }
+                      action={
+                        (profileId || isAdmin) && (
+                          <div className="flex items-center gap-1">
+                            {profileId && <AdoptPracticeButton practiceId={p.id} adopted={mineIds.has(p.id)} />}
+                            {isAdmin && <PracticeAdminMenu practiceId={p.id} isTemplate={p.is_template} isPublic={p.is_public} />}
+                          </div>
+                        )
+                      }
+                    />
+                  </li>
+                )
+              })}
+            </ul>
+
+            {result.pageCount > 1 && (
+              <nav className="mt-6 flex items-center justify-between gap-3 text-sm">
+                <span className="text-subtle">
+                  {(from + 1).toLocaleString()}–{(from + result.rows.length).toLocaleString()} of {result.total.toLocaleString()}
+                </span>
+                <div className="flex items-center gap-2">
+                  {page > 1 ? (
+                    <Link href={href({ page: page - 1 })} className="inline-flex items-center gap-1 rounded-lg border border-border bg-surface px-3 py-1.5 font-semibold text-text hover:bg-surface-elevated">
+                      <ChevronLeft className="h-4 w-4" /> Prev
+                    </Link>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-subtle opacity-50">
+                      <ChevronLeft className="h-4 w-4" /> Prev
+                    </span>
+                  )}
+                  <span className="text-subtle">Page {page} of {result.pageCount}</span>
+                  {page < result.pageCount ? (
+                    <Link href={href({ page: page + 1 })} className="inline-flex items-center gap-1 rounded-lg border border-border bg-surface px-3 py-1.5 font-semibold text-text hover:bg-surface-elevated">
+                      Next <ChevronRight className="h-4 w-4" />
+                    </Link>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-subtle opacity-50">
+                      Next <ChevronRight className="h-4 w-4" />
+                    </span>
+                  )}
+                </div>
+              </nav>
+            )}
+          </>
+        )}
+      </section>
     </IndexTemplate>
   )
 }

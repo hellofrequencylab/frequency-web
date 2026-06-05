@@ -3,6 +3,7 @@ import { redirect, notFound } from 'next/navigation'
 import { getMyProfileId } from '@/lib/auth'
 import { getPractice, listSubcategories, getPracticeTagLabels } from '@/lib/practices'
 import { getPillars } from '@/lib/pillars'
+import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
 import { FocusTemplate } from '@/components/templates'
 import { PracticeEditor } from '@/components/practice/practice-editor'
 
@@ -19,8 +20,8 @@ export default async function EditPracticePage({ params }: { params: Promise<{ i
 
   const practice = await getPractice(id)
   if (!practice) notFound()
-  if (practice.created_by !== profileId) {
-    // Not yours — you can only edit your own. (Customize a copy from the library.)
+  if (practice.created_by !== profileId && !(await getGlobalCapabilities()).has('admin.access')) {
+    // Not yours, and not an admin — you can only edit your own. (Customize a copy.)
     notFound()
   }
 

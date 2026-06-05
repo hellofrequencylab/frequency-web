@@ -67,7 +67,7 @@ export interface Subcategory {
   display_order: number
 }
 
-export type PracticeSort = 'trending' | 'top' | 'new'
+export type PracticeSort = 'trending' | 'top' | 'new' | 'az'
 
 const PRACTICE_COLS =
   'id, title, description, created_by, is_public, is_template, created_at, ' +
@@ -114,6 +114,133 @@ export async function listPublicPractices(sort: PracticeSort = 'trending'): Prom
   })
 }
 
+// --- Scalable library search (server-side filter · sort · paginate) -------
+//
+// Built for a library of thousands: all filtering, sorting, and paging happen in
+// the database against the `practices_ranked` view (count: 'exact' + .range), so
+// a page only ever fetches + enriches one screen of rows. URL-driven from the page.
+
+export interface LibrarySearchOpts {
+  q?: string | null
+  pillarId?: string | null
+  subId?: string | null
+  tag?: string | null // tag slug
+  sort?: PracticeSort
+  page?: number // 1-based
+  pageSize?: number
+  /** Admin: also include non-public (hidden) practices. */
+  includeHidden?: boolean
+  /** Only system-curated templates. */
+  templatesOnly?: boolean
+  /** Hide seeded demo practices (honours the global/viewer demo toggle). */
+  hideDemo?: boolean
+}
+
+export interface LibrarySearchResult {
+  rows: RankedPractice[]
+  total: number
+  page: number
+  pageSize: number
+  pageCount: number
+}
+
+export async function searchLibraryPractices(opts: LibrarySearchOpts = {}): Promise<LibrarySearchResult> {
+  const page = Math.max(1, Math.floor(opts.page ?? 1))
+  const pageSize = Math.min(60, Math.max(1, Math.floor(opts.pageSize ?? 24)))
+  const sort = opts.sort ?? 'trending'
+  const empty: LibrarySearchResult = { rows: [], total: 0, page, pageSize, pageCount: 0 }
+
+  // Tag filter → resolve the practice ids carrying that tag (any source).
+  let tagIds: string[] | null = null
+  if (opts.tag) {
+    const { data: def } = await db()
+      .from('practice_tag_defs')
+      .select('id')
+      .eq('slug', opts.tag)
+      .maybeSingle()
+    const defId = (def as { id: string } | null)?.id
+    if (!defId) return empty
+    const { data: links } = await db().from('practice_tags').select('practice_id').eq('tag_id', defId)
+    tagIds = ((links as { practice_id: string }[] | null) ?? []).map((r) => r.practice_id)
+    if (tagIds.length === 0) return empty
+  }
+
+  let q = db()
+    .from('practices_ranked')
+    .select(`${PRACTICE_COLS}, adopters, logs_30d, logs_total, score`, { count: 'exact' })
+
+  if (!opts.includeHidden) q = q.eq('is_public', true)
+  if (opts.hideDemo) q = q.eq('is_demo', false)
+  if (opts.templatesOnly) q = q.eq('is_template', true)
+  if (opts.pillarId) q = q.eq('domain_id', opts.pillarId)
+  if (opts.subId) q = q.eq('subcategory_id', opts.subId)
+  if (tagIds) q = q.in('id', tagIds)
+  if (opts.q && opts.q.trim()) {
+    // Strip characters that would break the PostgREST or() grammar.
+    const needle = opts.q.trim().replace(/[%,()]/g, ' ').slice(0, 80)
+    if (needle.trim()) {
+      q = q.or(`title.ilike.%${needle}%,summary.ilike.%${needle}%,description.ilike.%${needle}%`)
+    }
+  }
+
+  if (sort === 'new') q = q.order('created_at', { ascending: false })
+  else if (sort === 'top') q = q.order('logs_total', { ascending: false }).order('created_at', { ascending: false })
+  else if (sort === 'az') q = q.order('title', { ascending: true })
+  else q = q.order('score', { ascending: false }).order('created_at', { ascending: false })
+
+  const from = (page - 1) * pageSize
+  const res = await q.range(from, from + pageSize - 1)
+  const base =
+    (res.data as (Practice & {
+      adopters: number; logs_30d: number; logs_total: number; score: number
+    })[] | null) ?? []
+  const total = res.count ?? base.length
+  const pageCount = Math.max(1, Math.ceil(total / pageSize))
+  if (base.length === 0) return { ...empty, total, pageCount }
+
+  const [subById, tagsByPractice] = await Promise.all([
+    subcategoryMap(),
+    tagsForPractices(base.map((p) => p.id)),
+  ])
+  const rows = base.map((p) => {
+    const sc = p.subcategory_id ? subById.get(p.subcategory_id) : null
+    return {
+      ...p,
+      subcategory: sc ? { slug: sc.slug, name: sc.name } : null,
+      tags: tagsByPractice.get(p.id) ?? [],
+    }
+  })
+  return { rows, total, page, pageSize, pageCount }
+}
+
+/** Total public practices (for the stat band). Head-count only, no rows. */
+export async function countPublicPractices(opts: { hideDemo?: boolean } = {}): Promise<number> {
+  let q = db().from('practices_ranked').select('id', { count: 'exact', head: true }).eq('is_public', true)
+  if (opts.hideDemo) q = q.eq('is_demo', false)
+  const { count } = await q
+  return count ?? 0
+}
+
+// --- Admin curation (callers enforce admin.access) ------------------------
+
+/** Toggle a practice's curation flags (admin-only; caller enforces capability). */
+export async function setPracticeFlags(
+  id: string,
+  flags: { is_template?: boolean; is_public?: boolean },
+): Promise<void> {
+  const update: Record<string, unknown> = {}
+  if (flags.is_template !== undefined) update.is_template = flags.is_template
+  if (flags.is_public !== undefined) update.is_public = flags.is_public
+  if (Object.keys(update).length === 0) return
+  await db().from('practices').update(update).eq('id', id)
+}
+
+/** Hard-delete a practice (admin-only; caller enforces capability). FK on-delete
+ *  handles member_practices (cascade) and logs (set null) per the schema. */
+export async function deletePractice(id: string): Promise<void> {
+  await db().from('practices').delete().eq('id', id)
+}
+
 // --- Taxonomy reads -------------------------------------------------------
 
 /** All sub-categories (Focus, Cardio, …) ordered for filters + the editor. */
@@ -146,6 +273,16 @@ async function tagsForPractices(ids: string[]): Promise<Map<string, PracticeTag[
     out.set(r.practice_id, list)
   }
   return out
+}
+
+/** The curated canonical tags, for the library filter row. */
+export async function listCanonicalTags(): Promise<PracticeTag[]> {
+  const { data } = await db()
+    .from('practice_tag_defs')
+    .select('slug, label')
+    .eq('is_canonical', true)
+    .order('label', { ascending: true })
+  return (data as PracticeTag[] | null) ?? []
 }
 
 /** Tag labels currently on a practice (for pre-filling the editor). */
