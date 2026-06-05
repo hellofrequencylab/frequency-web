@@ -8,6 +8,42 @@ export interface ScanRow {
   scanned_at: string
 }
 
+export interface ScanGeoRow {
+  lat: number | null
+  lng: number | null
+  city: string | null
+  country: string | null
+}
+
+export interface ScanLocation {
+  /** Stable key (rounded lng,lat). */
+  key: string
+  city: string
+  country: string | null
+  lat: number
+  lng: number
+  scans: number
+}
+
+/** Cluster scans with coordinates into ~city-granular points for the locator map.
+ *  Rounds to 2 decimals (~1km) so nearby scans group; rows without coords drop. */
+export function summarizeLocations(rows: ScanGeoRow[]): ScanLocation[] {
+  const byKey = new Map<string, ScanLocation>()
+  for (const r of rows) {
+    if (typeof r.lat !== 'number' || typeof r.lng !== 'number') continue
+    const lat = Math.round(r.lat * 100) / 100
+    const lng = Math.round(r.lng * 100) / 100
+    const key = `${lng},${lat}`
+    const e =
+      byKey.get(key) ??
+      { key, city: r.city ?? 'Unknown', country: r.country ?? null, lat, lng, scans: 0 }
+    e.scans++
+    if (e.city === 'Unknown' && r.city) e.city = r.city
+    byKey.set(key, e)
+  }
+  return [...byKey.values()].sort((a, b) => b.scans - a.scans)
+}
+
 export interface CodeScanStat {
   codeId: string
   total: number

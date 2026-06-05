@@ -2202,19 +2202,31 @@ export type Database = {
       }
       qr_scans: {
         Row: {
+          city: string | null
+          country: string | null
           id: string
+          lat: number | null
+          lng: number | null
           profile_id: string | null
           qr_code_id: string
           scanned_at: string
         }
         Insert: {
+          city?: string | null
+          country?: string | null
           id?: string
+          lat?: number | null
+          lng?: number | null
           profile_id?: string | null
           qr_code_id: string
           scanned_at?: string
         }
         Update: {
+          city?: string | null
+          country?: string | null
           id?: string
+          lat?: number | null
+          lng?: number | null
           profile_id?: string | null
           qr_code_id?: string
           scanned_at?: string
@@ -4464,7 +4476,14 @@ export type Database = {
         Returns: boolean
       }
       record_qr_scan: {
-        Args: { p_code_id: string; p_profile?: string }
+        Args: {
+          p_code_id: string
+          p_profile?: string
+          p_country?: string
+          p_city?: string
+          p_lat?: number
+          p_lng?: number
+        }
         Returns: undefined
       }
       populate_geometry_columns:

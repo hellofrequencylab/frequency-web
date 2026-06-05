@@ -1,5 +1,23 @@
 import { describe, it, expect } from 'vitest'
-import { summarizeScans, type ScanRow } from './analytics'
+import { summarizeScans, summarizeLocations, type ScanRow } from './analytics'
+
+describe('summarizeLocations', () => {
+  it('clusters nearby coords, counts, sorts desc, and drops rows without coords', () => {
+    const locs = summarizeLocations([
+      { lat: 33.123, lng: -117.281, city: 'Vista', country: 'US' },
+      { lat: 33.1228, lng: -117.2809, city: 'Vista', country: 'US' }, // ~same cluster
+      { lat: 40.71, lng: -74.0, city: 'New York', country: 'US' },
+      { lat: null, lng: null, city: null, country: null }, // dropped (no coords)
+    ])
+    expect(locs).toHaveLength(2)
+    expect(locs[0]).toMatchObject({ city: 'Vista', scans: 2 }) // biggest first
+    expect(locs[1]).toMatchObject({ city: 'New York', scans: 1 })
+  })
+
+  it('returns empty for no located scans', () => {
+    expect(summarizeLocations([{ lat: null, lng: null, city: null, country: null }])).toEqual([])
+  })
+})
 
 const NOW = new Date('2026-06-05T12:00:00Z')
 
