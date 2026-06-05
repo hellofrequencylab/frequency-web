@@ -32,8 +32,10 @@ export interface BetaSequence {
   marketingTag: string
   /** The public splash page copy. */
   splash: SequenceSplash
-  /** The induction's voiced copy (Vera's HOT register). Reuses the base VERA shape;
-   *  sequences override the audience-specific beats (oath + intro) and reuse the rest. */
+  /** The induction's voiced copy (Vera's HOT register). The early-adopter flow uses
+   *  the base VERA (it IS the default voice); the personal + founding-partner flows
+   *  override every voiced beat (oath · intro · identity · place · tour · enter) so
+   *  each stays in-character end to end. */
   vera: VeraCopy
   oaths: { id: OathId; label: string }[]
   heardAbout: string[]
@@ -86,6 +88,28 @@ const PERSONAL: BetaSequence = {
       body: 'I asked you here because I trust your taste and I want your honesty. What you do in the next few minutes literally shapes the room everyone else walks into. Let’s build it together.',
       cta: 'Let’s go',
     },
+    identity: {
+      heading: 'First — who are you?',
+      body: 'Put your name and your face to it. The people you’ll meet in here should know it’s really you.',
+    },
+    place: {
+      heading: 'Where are you?',
+      body: 'I’ll point you at the people closest to you — and learn what you’re hoping to find, so I can actually help.',
+      intentLabel: 'What are you hoping to find here?',
+      intentPlaceholder: 'Say it plainly — it helps me point you at your people.',
+    },
+    tour: {
+      eyebrow: 'Here’s what you’re shaping',
+      heading: 'Three rooms. One real community.',
+      body: 'Everything else is detail. Get these three and you get what we’re building together.',
+      cta: 'Love it',
+    },
+    enter: {
+      eyebrow: 'Last step',
+      heading: 'Thank you — truly.',
+      body: 'One thing before you dive in: let’s find your people. Vera, your guide, already knows what you’re into — she’ll point you to a circle worth joining, then get out of your way.',
+      cta: 'Meet Vera',
+    },
   },
   oaths: BETA_OATHS,
   heardAbout: ['Daniel invited me', ...HEARD_ABOUT],
@@ -118,6 +142,28 @@ const FOUNDING_PARTNER: BetaSequence = {
       heading: 'You’re not a customer. You’re a Founding Partner.',
       body: 'The people who shape a place in its first days are the ones it’s built around. Bring your community, your craft, your business — and help lay the foundation. We’ll make sure it’s worth your name.',
       cta: 'Let’s go',
+    },
+    identity: {
+      heading: 'First — who are you?',
+      body: 'Your name, your face, and what you bring. This is how the community will know its Founding Partners.',
+    },
+    place: {
+      heading: 'Where are you building?',
+      body: 'We’ll connect you with the partners and people closest to you — and learn what you’re here to build.',
+      intentLabel: 'What are you here to build?',
+      intentPlaceholder: 'Your community, your craft, your business — tell us what you’re bringing.',
+    },
+    tour: {
+      eyebrow: 'The foundation you’re laying',
+      heading: 'Three rooms. One real community.',
+      body: 'This is the structure you’re helping build on. Get these three and you get Frequency.',
+      cta: 'Love it',
+    },
+    enter: {
+      eyebrow: 'Last step',
+      heading: 'Welcome aboard, Partner.',
+      body: 'One thing before you start: let’s find your people. Vera, your guide, already knows what you bring — she’ll point you toward where you can make the biggest mark, then step aside.',
+      cta: 'Meet Vera',
     },
   },
   oaths: [
