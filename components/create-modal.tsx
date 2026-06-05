@@ -61,25 +61,26 @@ export function CreateModal({
       <form
         onSubmit={onSubmit}
         onClick={e => e.stopPropagation()}
-        className="w-full sm:max-w-2xl sm:my-8 rounded-t-2xl sm:rounded-2xl border border-border bg-surface shadow-2xl flex flex-col max-h-[90vh] sm:max-h-[calc(100vh-4rem)]"
+        className="w-full sm:max-w-2xl sm:my-8 rounded-t-2xl sm:rounded-2xl border border-border bg-surface shadow-xl flex flex-col max-h-[90vh] sm:max-h-[calc(100vh-4rem)]"
       >
         {/* Mobile drag indicator */}
-        <div className="sm:hidden flex justify-center pt-2 pb-1">
+        <div className="sm:hidden flex justify-center pt-2.5 pb-1">
           <div className="w-10 h-1 rounded-full bg-border-strong" />
         </div>
 
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
-          <div className="flex items-center gap-2">
-            <div className={`w-8 h-8 rounded-lg ${colors.bg} flex items-center justify-center`}>
-              <Icon className={`w-4 h-4 ${colors.text}`} />
+        {/* Header — a warm sand band so the title reads as a deliberate, on-brand
+            header rather than plain white-on-white. */}
+        <div className="flex items-center justify-between gap-3 px-6 py-4 border-b border-border bg-surface-elevated/50 sm:rounded-t-2xl shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className={`w-9 h-9 shrink-0 rounded-xl ${colors.bg} flex items-center justify-center`}>
+              <Icon className={`w-[18px] h-[18px] ${colors.text}`} />
             </div>
-            <h2 className="text-base font-bold text-text">{title}</h2>
+            <h2 className="text-lg font-bold text-text truncate">{title}</h2>
           </div>
           <button
             type="button"
             onClick={() => !isPending && onClose()}
-            className="rounded-lg p-1.5 text-subtle hover:text-muted hover:bg-surface-elevated transition-colors"
+            className="shrink-0 rounded-lg p-1.5 text-subtle hover:text-muted hover:bg-surface-elevated transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -95,23 +96,23 @@ export function CreateModal({
           {children}
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-border bg-surface/50 dark:bg-canvas/50 sm:rounded-b-2xl shrink-0">
+        {/* Footer — same warm sand band as the header, bookending the form. */}
+        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-border bg-surface-elevated/50 sm:rounded-b-2xl shrink-0">
           <button
             type="button"
             onClick={() => !isPending && onClose()}
             disabled={isPending}
-            className="rounded-lg border border-border px-4 py-2 text-xs font-medium text-muted hover:bg-surface-elevated transition-colors"
+            className="rounded-lg border border-border bg-surface px-4 py-2 text-xs font-medium text-muted hover:bg-surface-elevated transition-colors"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={submitDisabled || isPending}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-5 py-2 text-xs font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-40 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-5 py-2 text-xs font-semibold text-on-primary shadow-sm hover:bg-primary-hover disabled:opacity-40 transition-colors"
           >
             {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-            {isPending ? pendingLabel : submitLabel}
+            <span className="text-emboss">{isPending ? pendingLabel : submitLabel}</span>
           </button>
         </div>
       </form>
@@ -123,5 +124,8 @@ export function CreateModal({
  * Standard form-field styling shared across all create modals.
  * Use `cmInput` for inputs/selects/textareas, `cmLabel` for labels.
  */
-export const cmInput = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-primary focus:ring-2 focus:ring-primary/40 dark:focus:ring-primary/30 disabled:opacity-50 placeholder:text-subtle'
+// Focus reads as a calm, on-brand state — the border firms to the strong sand
+// tone with a soft neutral halo, NOT a loud amber ring. (This class wins over the
+// global amber :focus-visible ring on these fields, by specificity.)
+export const cmInput = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none transition-colors focus:border-border-strong focus:ring-2 focus:ring-border-strong/35 disabled:opacity-50 placeholder:text-subtle'
 export const cmLabel = 'block text-xs font-medium text-muted mb-1'

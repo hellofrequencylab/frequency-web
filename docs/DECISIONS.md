@@ -3477,6 +3477,47 @@ Desktop is unchanged — the left rail and `ProfileCard` still own navigation an
 
 ---
 
+## ADR-121: Opt-in slide-in side rail (mobile) + Vera drafts the new circle
+
+**Status:** Accepted · `components/layout/app-shell.tsx` (`MobileSideRail`, the drawer toggle),
+`components/compose/new-circle-compose.tsx`, `app/(main)/circles/actions.ts` (`suggestCircle`),
+`lib/ai/circle-wizard.ts`. Builds on the mobile bottom-tab nav (ADR-120) and the
+forced-tool AI assist pattern (`lib/ai/practice-wizard.ts`, ADR-116).
+
+**Context.** Two follow-ups from on-device review. (1) The feed felt bare down its sides on a
+phone, and quick-nav meant reaching the bottom tab bar each time. (2) The "Start a circle" modal
+asked for a name + about cold — a blank-page moment right where Vera (Frequency's guide) should be
+helping.
+
+**Decision.**
+- **An opt-in slide-in side rail.** A slim icon rail (the four bottom-tab destinations + Menu) that
+  reveals on a scroll-UP gesture and tucks away on scroll-DOWN — same intent model as the bottom-dock
+  reveal (`dock-reveal.tsx`): near the top or an upward delta shows it, a downward delta hides it. It
+  is an **overlay**, never a layout column, so it causes no reflow and never permanently eats width
+  (the reason a *persistent* left rail was rejected in ADR-120). It's a **per-device preference**
+  (localStorage `freq-rail-nav`, default on) toggled from the Menu drawer; the toggle starts `false`
+  on the server and hydrates after mount, so there's no hydration mismatch. Mobile only; suppressed
+  under `hideAppNav`.
+- **Vera drafts the circle.** A "Suggest" affordance appears in the modal once the practice is known
+  (the channel we're in, or the picked Interest). `suggestCircle()` calls `suggestCircleDraft()`
+  (Haiku, forced `suggest_circle` tool, usage-ledgered) and **falls back to a deterministic draft**
+  when AI is off/over budget — so the affordance always returns an editable name + about. It only
+  **fills the fields**; creating the circle is still the host's explicit submit (propose, don't
+  commit). "Lightweight suggest," not the full conversational concierge — chosen deliberately for
+  this pass.
+
+**Alternatives.** A persistent (always-visible) left rail (rejected — width cost, ADR-120). Embedding
+Vera's live concierge in the create flow (deferred — heavier; the one-shot suggester is the
+shippable first step). A purely deterministic suggester with no AI (rejected — Vera should feel real
+when the kernel is on; the deterministic path is the fallback, not the default).
+
+**Consequences.** The side rail is discoverable, dismissible, and free of reflow; users who dislike it
+turn it off once. The circle modal has a real assist with a guaranteed-useful fallback and no new
+commit path (the server still authorizes `createCircle`). New AI feature key `circle-create` flows
+through the existing usage ledger + daily-cap machinery.
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 
