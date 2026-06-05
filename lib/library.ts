@@ -1,4 +1,4 @@
-// Community Library (ADR-105) — the unified, ranked catalog of community-created
+// Community Library (ADR-109) — the unified, ranked catalog of community-created
 // content (Practices · Programs · Journeys) and the leadership review queue. Reads
 // go through the untyped admin client because the new tables/columns (programs,
 // content_ratings, *.status, community_library RPC) aren't in the generated types

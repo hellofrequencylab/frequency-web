@@ -10,6 +10,7 @@ import { parseStyle, isSafeLogoSrc, type QrStyle } from '@/lib/qr/style'
 import { ensureMemberCodes, type MemberCodePurpose } from '@/lib/qr/member-codes'
 import { listMarketingTargets, MARKETING_CODE_LIMIT } from '@/lib/qr/marketing'
 import { parseVcard } from '@/lib/vcard'
+import { isGoogleWalletConfigured } from '@/lib/wallet/google'
 import { MemberCodes, type MemberCodeCard } from './member-codes'
 import { MarketingCodes, type MarketingCard } from './marketing-codes'
 import { VcardEditor } from './vcard-editor'
@@ -73,7 +74,7 @@ export default async function CodesPage() {
         </p>
       </header>
 
-      <MemberCodes cards={cards} referralCount={referralCount ?? 0} />
+      <MemberCodes cards={cards} referralCount={referralCount ?? 0} walletEnabled={isGoogleWalletConfigured()} />
 
       <VcardEditor config={parseVcard(me.vcard)} handle={me.handle} onSave={updateMyVcard} />
 

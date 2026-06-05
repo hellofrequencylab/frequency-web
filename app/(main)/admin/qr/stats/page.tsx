@@ -17,7 +17,7 @@ export default async function QrStatsPage() {
 
   const [{ data: scans }, { data: codes }, { count: nodeCount }, { data: events }, { data: challenges }] =
     await Promise.all([
-      db.from('qr_scans').select('qr_code_id, profile_id, scanned_at, city, country, lat, lng'),
+      db.from('qr_scans').select('qr_code_id, profile_id, scanned_at, city, country, lat, lng, medium'),
       db.from('qr_codes').select('id, slug, title, purpose, owner_profile_id'),
       db.from('nodes').select('id', { count: 'exact', head: true }),
       db.from('engagement_events').select('event_type').in('event_type', ['qr.referral_signup', 'qr.gift_zap']),
@@ -50,7 +50,13 @@ export default async function QrStatsPage() {
     })
     .sort((a, b) => b.total - a.total)
     .slice(0, 10)
-  const analytics: AnalyticsData = { total: summary.total, unique: summary.unique, daily: summary.daily, topCodes }
+  const analytics: AnalyticsData = {
+    total: summary.total,
+    unique: summary.unique,
+    nfc: summary.byMedium.nfc,
+    daily: summary.daily,
+    topCodes,
+  }
 
   return (
     <AdminPage

@@ -2,8 +2,9 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Download, UserCircle, Pencil, Palette } from 'lucide-react'
+import { Download, UserCircle, Pencil, Palette, Printer } from 'lucide-react'
 import { StyleEditor } from './style-editor'
+import { NfcWriter } from './nfc-writer'
 import { VcardEditor } from '@/app/(main)/codes/vcard-editor'
 import { updateMemberCodeStyle, updateMemberVcard } from './member-actions'
 import type { QrStyle } from '@/lib/qr/style'
@@ -76,6 +77,10 @@ function MemberCard({ code }: { code: MemberProfileCode }) {
             </a>
             <a href={`${api}&format=svg&download=${encodeURIComponent(name)}`} className={DL}>
               <Download className="h-3 w-3" /> SVG
+            </a>
+            <NfcWriter url={code.url} className={DL} />
+            <a href={`/print/qr?code=${encodeURIComponent(code.id)}`} target="_blank" rel="noreferrer" className={DL}>
+              <Printer className="h-3 w-3" /> Print
             </a>
             <button onClick={() => setEditing((v) => !v)} className={DL}>
               <Pencil className="h-3 w-3" /> {editing ? 'Close' : 'Edit'}

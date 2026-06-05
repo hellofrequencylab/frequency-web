@@ -12,7 +12,7 @@ import { ReviewActions } from './review-actions'
 export const dynamic = 'force-dynamic'
 
 // Leadership review queue — a circle Host or any Guide+ approves community
-// submissions (practices, programs, journeys) into the Library (ADR-105).
+// submissions (practices, programs, journeys) into the Library (ADR-109).
 export default async function LibraryReviewPage() {
   const caller = await getCallerProfile()
   if (!caller || !atLeastRole(caller.community_role, 'host')) redirect('/library')
