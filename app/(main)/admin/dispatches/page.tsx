@@ -4,19 +4,23 @@ import { AdminPage, AdminSection } from '@/components/admin/admin-page'
 import { DispatchesClient } from './dispatches-client'
 import { BroadcastCompose } from '@/app/(main)/broadcast/broadcast-compose'
 
-export default async function AdminDispatchesPage() {
+export default async function AdminDispatchesPage({ searchParams }: { searchParams: Promise<{ edit?: string }> }) {
   const { profileId, role } = await requireAdmin('host')
+  const { edit } = await searchParams
   const admin = createAdminClient()
+  const isStaff = role === 'janitor' || role === 'admin'
 
-  // Fetch dispatches authored by this user
-  const { data: dispatches } = await admin
+  // Staff (admin/janitor) see + manage every broadcast (so the "Edit broadcast"
+  // button on any broadcast lands here); everyone else sees only their own.
+  let dispatchQuery = admin
     .from('dispatches')
     .select(`
       id, title, excerpt, dispatch_type, audience_scope, audience_id, status, published_at, scheduled_for, created_at,
       linked_task:crew_tasks!linked_task_id ( id, name )
     `)
-    .eq('author_id', profileId)
     .order('created_at', { ascending: false })
+  if (!isStaff) dispatchQuery = dispatchQuery.eq('author_id', profileId)
+  const { data: dispatches } = await dispatchQuery
 
   // Audience options. Janitor gets everything; others scoped to their org
   let circles: { id: string; name: string }[] = []
@@ -90,6 +94,7 @@ export default async function AdminDispatchesPage() {
           hubs={hubs}
           nexuses={nexuses}
           tasks={tasks ?? []}
+          initialEditId={edit ?? null}
         />
       </AdminSection>
     </AdminPage>
