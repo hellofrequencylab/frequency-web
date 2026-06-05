@@ -3490,15 +3490,12 @@ asked for a name + about cold — a blank-page moment right where Vera (Frequenc
 helping.
 
 **Decision.**
-- **An opt-in slide-in side rail.** It rests as a **slim ICON rail** down the left edge — a real
-  column in the body flex (`md:hidden`), so it gently insets the feed rather than overlaying it.
-  Tapping the rail's chevron **expands it to labels** (`w-14` → `w-40`); **any scroll contracts it
-  back to icons**. The icons are the destinations; the trailing icon opens the full Menu drawer.
-  (Earlier cuts tried scroll-up reveal as an overlay, then scroll-down push-to-labels — both
-  superseded by on-device feedback: the menu should *be* icons and only widen to labels on an
-  explicit tap.) Master on/off is a **per-device preference** (localStorage `freq-rail-nav`, default
-  on) toggled from the Menu drawer; it starts `false` on the server and hydrates after mount, so
-  there's no hydration mismatch. Mobile only; suppressed under `hideAppNav`.
+- **An opt-in slide-in side rail.** Superseded by ADR-122's unified model — the left nav rail and
+  right stats rail now share ONE behavior (`useRailReveal`): **hidden at the top of scroll**, a
+  **super-minimal tab** slides in once scrolled into the feed, **tap opens the full panel**, and
+  **scrolling snaps it back to the tab**. Fixed overlays (not body columns), so they never
+  permanently inset the feed. Per-device pref `freq-rail-nav` (default on), hydrated after mount.
+  Mobile only; suppressed under `hideAppNav`.
 - **Vera drafts the circle.** A "Suggest" affordance appears in the modal once the practice is known
   (the channel we're in, or the picked Interest). `suggestCircle()` calls `suggestCircleDraft()`
   (Haiku, forced `suggest_circle` tool, usage-ledgered) and **falls back to a deterministic draft**
@@ -3532,11 +3529,18 @@ reuses the desktop progress-cockpit (`GameStatsDock`).
 right rail (`GameStatsDock`). On mobile the right rail isn't rendered, so that cockpit was
 unreachable. We wanted a **matching menu on the right** of the left nav rail to host it.
 
-**Decision.**
-- **A slim right-edge tab** (`md:hidden`, a body-flex column like the left rail) that — unlike the
-  left — **only activates on click** (no scroll behavior). Tapping it opens an **overlay panel from
-  the right** (backdrop + X) hosting the stats; overlay (not push) because the cockpit is content-rich
-  and pushing would crush the feed.
+**Decision.** Both edge rails (left nav · right stats) share **one interaction** (`useRailReveal`,
+driven by the feed scroll container):
+- **Hidden at the top of scroll.** Nothing shows until the member scrolls into the feed — then a
+  **super-minimal tab** (`w-6`) slides in to **bracket** the feed on each edge.
+- **Tap the tab → full panel.** Left opens the nav (`w-44`, icons + labels); right opens the stats
+  panel (`w-72`). **Scrolling while full snaps it back to the tab.**
+- **Fixed overlays, not body columns** — so they never permanently inset the feed (the prior paired
+  columns did, which felt tight). The right panel overlays rather than pushes because the cockpit is
+  content-rich and pushing would crush the feed.
+- **A small on/off tick** at the bottom of each full panel turns that rail off entirely; the Menu
+  drawer's two **`RailToggle`s** turn them back on (per-device prefs `freq-rail-nav` /
+  `freq-stats-rail`, default on).
 - **Reuse, don't re-author.** The dock's panel body is factored into a shared **`GameStatsPanel`**
   (today's move · 7-day streak · rank progress · journey arc · the Vault · full-dashboard link), and
   the data assembly into **`loadGameStats(profileId)`** — both consumed by the desktop dock *and* the
@@ -3544,15 +3548,16 @@ unreachable. We wanted a **matching menu on the right** of the left nav rail to 
   pattern: client menu shell, server-rendered stats child), so it **never blocks the shell** and costs
   the same single query the desktop dock already pays.
 
-**Alternatives.** A push-content right panel like the left rail's expand (rejected — the cockpit needs
-~`w-72`; pushing would crush the feed). Re-fetching stats client-side on open (rejected — the layout
-already streams it server-side; reuse `loadGameStats`). Duplicating the stats markup for mobile
-(rejected — `GameStatsPanel` is the single source).
+**Alternatives.** A push-content right panel like the left rail's old expand (rejected — the cockpit
+needs ~`w-72`; pushing would crush the feed). Always-visible paired columns (rejected — they inset the
+feed on both edges; the hidden-at-top / minimal-tab model keeps the feed full-width while reading).
+Re-fetching stats client-side on open (rejected — the layout already streams it; reuse
+`loadGameStats`). Duplicating the stats markup for mobile (rejected — `GameStatsPanel` is the source).
 
-**Consequences.** Mobile members reach their full progress cockpit in one tap, symmetric with the left
-nav rail. The desktop dock is unchanged behaviourally (same `GameStatsPanel` now). One extra slim tab
-insets the feed's right edge on mobile (paired with the left rail) — acceptable for the symmetry; both
-are `md:hidden` so desktop is untouched.
+**Consequences.** While reading (scrolled or at top) the feed is unobstructed; the rails bracket it
+only as the member scrolls, and each opens its full panel in one tap. Either rail can be switched off
+from its tick and back on from the drawer. The desktop dock is unchanged (same `GameStatsPanel`); both
+rails are `md:hidden` so desktop is untouched.
 
 ---
 
