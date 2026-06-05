@@ -16,11 +16,14 @@ import {
   forkPractice,
   claimPractice,
   setPracticeTags,
+  setPracticeFlags,
+  deletePractice,
   type PracticeEdit,
 } from '@/lib/practices'
 import { personalizePractice, type PracticeSuggestion } from '@/lib/ai/practice-wizard'
 import { awardZapsForAction } from '@/lib/zaps'
 import { recordEngagementEvent } from '@/lib/engagement/events'
+import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
 
 // Log that you did a practice → practice.verified (WAM) + zaps + streak.
 export async function logPracticeAction(
@@ -74,7 +77,8 @@ export async function updatePracticeAction(id: string, patch: PracticeEdit): Pro
   if (!profileId) return fail('Not signed in')
   const existing = await getPractice(id)
   if (!existing) return fail('Practice not found')
-  if (existing.created_by !== profileId) return fail('You can only edit practices you created')
+  if (existing.created_by !== profileId && !(await getGlobalCapabilities()).has('admin.access'))
+    return fail('You can only edit practices you created')
   const saved = await updatePractice(id, patch)
   if (!saved) return fail('Could not save')
   revalidatePath('/practices')
@@ -89,7 +93,8 @@ export async function setPracticeTagsAction(id: string, labels: string[]): Promi
   if (!profileId) return fail('Not signed in')
   const existing = await getPractice(id)
   if (!existing) return fail('Practice not found')
-  if (existing.created_by !== profileId) return fail('You can only edit practices you created')
+  if (existing.created_by !== profileId && !(await getGlobalCapabilities()).has('admin.access'))
+    return fail('You can only edit practices you created')
   await setPracticeTags(id, labels, { source: 'author', assignedBy: profileId })
   revalidatePath('/practices')
   revalidatePath(`/practices/${id}/edit`)
@@ -158,6 +163,41 @@ export async function claimPracticeAction(
   }
   revalidatePath('/practices')
   return ok({ id: copy.id })
+}
+
+// --- Admin curation of the library (gated on admin.access; host+) ----------
+
+async function requirePracticeAdmin(): Promise<boolean> {
+  return (await getGlobalCapabilities()).has('admin.access')
+}
+
+function revalidatePractice(id: string) {
+  revalidatePath('/practices')
+  revalidatePath(`/practices/${id}`)
+}
+
+// Promote/demote a practice as a claimable starter template.
+export async function setPracticeTemplateAction(id: string, value: boolean): Promise<ActionResult> {
+  if (!(await requirePracticeAdmin())) return fail('Not allowed')
+  await setPracticeFlags(id, { is_template: value })
+  revalidatePractice(id)
+  return ok()
+}
+
+// Show/hide a practice in the public library (is_public).
+export async function setPracticeVisibilityAction(id: string, value: boolean): Promise<ActionResult> {
+  if (!(await requirePracticeAdmin())) return fail('Not allowed')
+  await setPracticeFlags(id, { is_public: value })
+  revalidatePractice(id)
+  return ok()
+}
+
+// Remove a practice from the library entirely.
+export async function deletePracticeAction(id: string): Promise<ActionResult> {
+  if (!(await requirePracticeAdmin())) return fail('Not allowed')
+  await deletePractice(id)
+  revalidatePath('/practices')
+  return ok()
 }
 
 // Host sets the circle's current practice (one active per circle). Authz: the
