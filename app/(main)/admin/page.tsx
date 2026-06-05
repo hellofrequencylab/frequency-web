@@ -13,7 +13,7 @@ import type { CommunityRole } from '@/lib/core/roles'
 import type { SeasonRank } from '@/lib/season-ranks'
 
 export default async function AdminPageView() {
-  const { profileId, role } = await requireAdmin('host')
+  const { profileId, role, staffRole } = await requireAdmin('host', { staff: 'community' })
   const admin = createAdminClient()
 
   // Overview stat counts — a quick aggregate for all admin roles.
@@ -61,7 +61,7 @@ export default async function AdminPageView() {
       </AdminSection>
 
       <AdminSection title="Jump to" description="Everything you can manage, grouped by area.">
-        <AdminLaunchpad role={role} />
+        <AdminLaunchpad role={role} staffRole={staffRole} />
       </AdminSection>
 
       {role === 'janitor' && <JanitorPanel />}

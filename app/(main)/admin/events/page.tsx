@@ -17,7 +17,7 @@ function formatTime(iso: string) {
 }
 
 export default async function AdminEventsPage() {
-  const { profileId } = await requireAdmin('host')
+  const { profileId } = await requireAdmin('host', { staff: 'community' })
   const admin = createAdminClient()
 
   // Fetch events scoped to circles where user is host
