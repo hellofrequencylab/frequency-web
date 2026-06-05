@@ -1,10 +1,10 @@
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
 import { Flame, CalendarCheck, PenTool, Mic, LogIn, Snowflake } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { getStreaksData } from '../gamification-actions'
 import { STREAK_CONFIG, isStreakActive } from '@/lib/gamification'
 import type { StreakType } from '@/lib/gamification'
+import { IndexTemplate } from '@/components/templates'
 
 const STREAK_ICONS: Record<StreakType, React.ElementType> = {
   attendance: CalendarCheck,
@@ -41,24 +41,10 @@ export default async function StreaksPage() {
   const allTypes: StreakType[] = ['attendance', 'posting', 'hosting']
 
   return (
-    <div>
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/crew"
-            className="text-sm text-subtle hover:text-muted dark:hover:text-subtle transition-colors"
-          >
-            Crew
-          </Link>
-          <span className="text-subtle">/</span>
-          <h1 className="text-2xl font-bold text-text">Streaks</h1>
-        </div>
-        <p className="text-sm text-muted mt-1">
-          Build momentum by showing up consistently. Maintain streaks to earn bonus achievements and freeze tokens.
-        </p>
-      </div>
-
+    <IndexTemplate
+      title="Streaks"
+      description="Build momentum by showing up consistently. Maintain streaks to earn bonus achievements and freeze tokens."
+    >
       {/* Streak cards */}
       <div className="space-y-4">
         {allTypes.map(type => {
@@ -180,6 +166,6 @@ export default async function StreaksPage() {
           </div>
         </div>
       </div>
-    </div>
+    </IndexTemplate>
   )
 }
