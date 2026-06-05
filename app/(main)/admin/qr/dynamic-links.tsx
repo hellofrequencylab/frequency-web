@@ -15,10 +15,15 @@ export interface StudioLink {
   id: string
   slug: string
   title: string
-  destination_type: 'url' | 'node'
+  destination_type: 'url' | 'node' | 'circle' | 'event'
   target_url: string | null
   node_id: string | null
   node_label: string | null
+  circle_id: string | null
+  event_id: string | null
+  switch_at: string | null
+  alt_target_url: string | null
+  dest_label: string | null
   partner_id: string | null
   active: boolean
   valid_until: string | null
@@ -36,11 +41,27 @@ export interface NodeOption {
   label: string
 }
 
+export interface PickOption {
+  id: string
+  label: string
+}
+
+const DEST_BADGE: Record<StudioLink['destination_type'], string> = {
+  url: 'Redirect',
+  node: 'Earns',
+  circle: 'Join',
+  event: 'Check-in',
+}
+
 const BLANK: LinkInput = {
   title: '',
   destination_type: 'url',
   target_url: '',
   node_id: null,
+  circle_id: null,
+  event_id: null,
+  switch_at: null,
+  alt_target_url: '',
   slug: null,
   partner_id: null,
   valid_until: null,
@@ -50,11 +71,15 @@ const BLANK: LinkInput = {
 export function DynamicLinks({
   initialLinks,
   nodes,
+  circles,
+  events,
   partners,
   hideCreate = false,
 }: {
   initialLinks: StudioLink[]
   nodes: NodeOption[]
+  circles: PickOption[]
+  events: PickOption[]
   partners: PartnerOption[]
   /** When the create form lives elsewhere (the dashboard generator), show list only. */
   hideCreate?: boolean
@@ -87,6 +112,8 @@ export function DynamicLinks({
             <div className="p-4">
               <LinkForm
                 nodes={nodes}
+                circles={circles}
+                events={events}
                 partners={partners}
                 onDone={() => setCreating(false)}
                 onCancel={() => setCreating(false)}
@@ -107,6 +134,8 @@ export function DynamicLinks({
             key={link.id}
             link={link}
             nodes={nodes}
+            circles={circles}
+            events={events}
             partners={partners}
             partnerName={link.partner_id ? partnerName.get(link.partner_id) ?? null : null}
           />
@@ -119,11 +148,15 @@ export function DynamicLinks({
 function LinkCard({
   link,
   nodes,
+  circles,
+  events,
   partners,
   partnerName,
 }: {
   link: StudioLink
   nodes: NodeOption[]
+  circles: PickOption[]
+  events: PickOption[]
   partners: PartnerOption[]
   partnerName: string | null
 }) {
@@ -151,7 +184,11 @@ function LinkCard({
   const destination =
     link.destination_type === 'node'
       ? `Check-in: ${link.node_label ?? 'node'}`
-      : link.target_url ?? '—'
+      : link.destination_type === 'circle'
+        ? `Join circle: ${link.dest_label ?? 'circle'}`
+        : link.destination_type === 'event'
+          ? `Check in: ${link.dest_label ?? 'event'}`
+          : link.target_url ?? '—'
 
   return (
     <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
@@ -169,7 +206,7 @@ function LinkCard({
               <h3 className="text-sm font-bold text-text truncate">{link.title}</h3>
               <div className="mt-1 flex flex-wrap items-center gap-1.5">
                 <Badge tone="primary">/q/{link.slug}</Badge>
-                <Badge>{link.destination_type === 'node' ? 'Earns' : 'Redirect'}</Badge>
+                <Badge>{DEST_BADGE[link.destination_type]}</Badge>
                 {partnerName && <Badge tone="signal">{partnerName}</Badge>}
                 {!link.active && <Badge tone="danger">Retired</Badge>}
                 {link.valid_until && (
@@ -237,6 +274,8 @@ function LinkCard({
           <LinkForm
             link={link}
             nodes={nodes}
+            circles={circles}
+            events={events}
             partners={partners}
             onDone={() => setEditing(false)}
             onCancel={() => setEditing(false)}
@@ -250,12 +289,16 @@ function LinkCard({
 export function LinkForm({
   link,
   nodes,
+  circles,
+  events,
   partners,
   onDone,
   onCancel,
 }: {
   link?: StudioLink
   nodes: NodeOption[]
+  circles: PickOption[]
+  events: PickOption[]
   partners: PartnerOption[]
   onDone: () => void
   onCancel: () => void
@@ -267,6 +310,10 @@ export function LinkForm({
           destination_type: link.destination_type,
           target_url: link.target_url ?? '',
           node_id: link.node_id,
+          circle_id: link.circle_id,
+          event_id: link.event_id,
+          switch_at: link.switch_at,
+          alt_target_url: link.alt_target_url ?? '',
           slug: link.slug,
           partner_id: link.partner_id,
           valid_until: link.valid_until,
@@ -330,14 +377,16 @@ export function LinkForm({
         <Field label="Destination type">
           <select
             value={form.destination_type}
-            onChange={(e) => set('destination_type', e.target.value as 'url' | 'node')}
+            onChange={(e) => set('destination_type', e.target.value as LinkInput['destination_type'])}
             className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
           >
             <option value="url">Redirect to a URL</option>
             <option value="node">Run a check-in code (earns)</option>
+            <option value="circle">Join a circle on scan</option>
+            <option value="event">RSVP + check in to an event</option>
           </select>
         </Field>
-        {form.destination_type === 'url' ? (
+        {form.destination_type === 'url' && (
           <Field label="Destination">
             <select
               value={urlMode === 'custom' ? '__custom__' : isKnownDestination(form.target_url ?? '') ? form.target_url ?? '' : ''}
@@ -365,7 +414,8 @@ export function LinkForm({
               <option value="__custom__">Custom URL…</option>
             </select>
           </Field>
-        ) : (
+        )}
+        {form.destination_type === 'node' && (
           <Field label="Check-in code">
             <select
               value={form.node_id ?? ''}
@@ -376,6 +426,38 @@ export function LinkForm({
               {nodes.map((n) => (
                 <option key={n.id} value={n.id}>
                   {n.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+        )}
+        {form.destination_type === 'circle' && (
+          <Field label="Circle">
+            <select
+              value={form.circle_id ?? ''}
+              onChange={(e) => set('circle_id', e.target.value || null)}
+              className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+            >
+              <option value="">Choose a circle…</option>
+              {circles.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+        )}
+        {form.destination_type === 'event' && (
+          <Field label="Event">
+            <select
+              value={form.event_id ?? ''}
+              onChange={(e) => set('event_id', e.target.value || null)}
+              className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+            >
+              <option value="">Choose an event…</option>
+              {events.map((ev) => (
+                <option key={ev.id} value={ev.id}>
+                  {ev.label}
                 </option>
               ))}
             </select>
@@ -414,6 +496,31 @@ export function LinkForm({
             className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
           />
         </Field>
+      )}
+
+      {form.destination_type === 'url' && (
+        <div className="rounded-lg border border-border bg-canvas/50 p-3">
+          <p className="text-xs font-medium text-subtle">Time-aware (optional)</p>
+          <p className="mt-0.5 text-xs text-muted">Switch the same printed code to a new destination at a set time.</p>
+          <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Field label="Switch at">
+              <input
+                type="datetime-local"
+                value={toLocalInput(form.switch_at)}
+                onChange={(e) => set('switch_at', fromLocalInput(e.target.value))}
+                className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+              />
+            </Field>
+            <Field label="…then point to">
+              <input
+                value={form.alt_target_url ?? ''}
+                onChange={(e) => set('alt_target_url', e.target.value)}
+                placeholder="https://… or /path"
+                className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+              />
+            </Field>
+          </div>
+        </div>
       )}
 
       {destValue && (
