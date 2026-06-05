@@ -18,6 +18,7 @@ import {
   BellRing,
   SlidersHorizontal,
   UserPlus,
+  Plus,
   Menu,
   X,
   Gem,
@@ -786,6 +787,9 @@ export default function AppShell({
   const effectiveRealRole = realRole ?? role
   // Nav gating role: a visitor preview gates as a logged-out visitor (null).
   const gateRole: CommunityRole | null = previewVisitor ? null : role
+  // Stewards (host+) and Studio staff get a mobile quick-add for the Profile
+  // Creator — tap to scan a card / add a profile on the go (ADR-096).
+  const canCreateProfile = meetsAccess('host', gateRole) || meetsStaff({ staffAccess: 'analyst' }, staffRole)
   const profileHref = `/people/${profile.handle}`
   const { theme, setTheme } = useTheme()
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -915,6 +919,18 @@ export default function AppShell({
           >
             <Search className="w-5 h-5" />
           </Link>
+
+          {/* Quick add — scan a card / new profile. Mobile; stewards + staff only. */}
+          {canCreateProfile && (
+            <Link
+              href="/connections/new"
+              aria-label="New profile"
+              title="New profile"
+              className="md:hidden flex items-center justify-center w-9 h-9 rounded-full text-primary-strong hover:bg-surface-elevated transition-colors"
+            >
+              <Plus className="w-5 h-5" />
+            </Link>
+          )}
 
           {/* Community actions — friends + messages + notifications, set off by a divider */}
           <div className="flex items-center gap-0.5 sm:ml-1 sm:pl-1.5 sm:border-l sm:border-border">
