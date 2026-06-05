@@ -2987,6 +2987,44 @@ practices rise, and **creator usage rewards** — is a separate design tracked i
 
 ---
 
+## ADR-106: Practice library — taxonomy + ranking foundation (creator-library, Phase 1)
+
+**Status:** Accepted · `supabase/migrations/20260606140000_practice_taxonomy_foundation.sql`, `lib/practices.ts`, `app/(main)/practices/*`, `components/practice/practice-editor.tsx`.
+
+**Context.** The library is moving from a small curated seed toward a **large, open,
+creator-driven** surface: practices organized deeply under the 4 Pillars, tagged by
+people *and* (later) by Vera, with popular practices rising to the top and — eventually —
+creators rewarded for usage. The model had only the 4 flat Pillars (`domains`) and a loose
+`category` text tag; no sub-tier, no practice tagging, no popularity signal.
+
+**Decision (Phase 1 — structure + ranking, no economy change).** Build the foundation in
+four layers under each Pillar, reusing existing patterns rather than inventing:
+- **Sub-categories** — `practice_subcategories` (a curated, extensible tier scoped to a
+  Pillar; e.g. Body → Cardio/Strength/Mobility/…), with `practices.subcategory_id`. Seeded
+  ~5 per Pillar; the existing 21 practices backfilled.
+- **Tags (hybrid)** — `practice_tag_defs` (canonical curated vocabulary + member-proposed
+  folksonomy) joined to practices via `practice_tags`, each attachment carrying a `source`
+  (`author` | `member` | `vera`). Mirrors the member-tags pattern (ADR-068). Authors set
+  their tags in the editor; new labels auto-create non-canonical defs.
+- **Embeddings** — `practices.embedding vector(384)` + HNSW + `match_practices()`, mirroring
+  `room_messages` (ADR-088). Column/infra now; **populated by Vera in Phase 2** (no-op until).
+- **Popularity** — a server-only `practices_ranked` view (distinct adopters + 30-day logs →
+  score, `security_invoker`, granted to `service_role` only). `listPublicPractices(sort)`
+  reads it; library gains **Trending** (default) / **All-time** / **New** sorts plus a
+  Pillar → sub-category filter, all URL-driven (shareable, no client JS).
+
+Authz unchanged: public read on library taxonomy, writes via the service-role admin client
+behind app-code authz (owner for author tags/sub-category).
+
+**Consequences.** Practices are now organized two tiers deep and surfaced by real usage,
+end-to-end with no economy change. The `source` column and the embedding/match function are
+the seams Phase 2 (Vera auto-suggests Pillar/sub-category/tags on create, propose-and-confirm
+per ADR-028; semantic "similar"/dedupe) and Phase 3 (**creator rewards = gems per *new
+distinct adopter* of a public practice — daily-capped, no self-reward, admin-tunable**,
+which needs its own ADR + economy guardrails per ADR-104) slot into without a migration.
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 

@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Loader2 } from 'lucide-react'
-import { updatePracticeAction } from '@/app/(main)/practices/actions'
+import { updatePracticeAction, setPracticeTagsAction } from '@/app/(main)/practices/actions'
 import { isError } from '@/lib/action-result'
 import type { Practice } from '@/lib/practices'
 
@@ -29,9 +29,13 @@ const LABEL = 'block text-xs font-semibold uppercase tracking-wide text-subtle'
 export function PracticeEditor({
   practice,
   pillars,
+  subcategories,
+  initialTags,
 }: {
   practice: Practice
   pillars: { id: string; name: string }[]
+  subcategories: { id: string; domain_id: string; name: string }[]
+  initialTags: string[]
 }) {
   const router = useRouter()
   const [title, setTitle] = useState(practice.title ?? '')
@@ -42,27 +46,40 @@ export function PracticeEditor({
   const [category, setCategory] = useState(practice.category ?? '')
   const [icon, setIcon] = useState(practice.icon ?? '')
   const [domainId, setDomainId] = useState(practice.domain_id ?? '')
+  const [subcategoryId, setSubcategoryId] = useState(practice.subcategory_id ?? '')
+  const [tagsInput, setTagsInput] = useState(initialTags.join(', '))
   const [headerImage, setHeaderImage] = useState(practice.header_image ?? '')
   const [err, setErr] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
   const [pending, start] = useTransition()
 
+  // Sub-categories are scoped to the chosen Pillar; only offer the matching ones,
+  // and drop the selection if it no longer belongs to the selected Pillar.
+  const subOptions = subcategories.filter((s) => !domainId || s.domain_id === domainId)
+  const effectiveSubId = subOptions.some((s) => s.id === subcategoryId) ? subcategoryId : ''
+
   function save() {
     setErr(null)
     setSaved(false)
+    const labels = tagsInput.split(',').map((t) => t.trim()).filter(Boolean)
     start(async () => {
-      const r = await updatePracticeAction(practice.id, {
-        title,
-        summary,
-        description,
-        body,
-        cadence,
-        category,
-        icon,
-        domain_id: domainId || null,
-        header_image: headerImage,
-      })
-      if (isError(r)) setErr(r.error)
+      const [r, rt] = await Promise.all([
+        updatePracticeAction(practice.id, {
+          title,
+          summary,
+          description,
+          body,
+          cadence,
+          category,
+          icon,
+          domain_id: domainId || null,
+          subcategory_id: effectiveSubId || null,
+          header_image: headerImage,
+        }),
+        setPracticeTagsAction(practice.id, labels),
+      ])
+      const e = isError(r) ? r.error : isError(rt) ? rt.error : null
+      if (e) setErr(e)
       else {
         setSaved(true)
         router.refresh()
@@ -97,6 +114,19 @@ export function PracticeEditor({
             </select>
           </div>
           <div>
+            <label className={LABEL} htmlFor="subcategory">Sub-category</label>
+            <select
+              id="subcategory"
+              value={effectiveSubId}
+              onChange={(e) => setSubcategoryId(e.target.value)}
+              disabled={!domainId}
+              className={`mt-1 ${FIELD} disabled:opacity-50`}
+            >
+              <option value="">{domainId ? 'None' : 'Pick a Pillar first'}</option>
+              {subOptions.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          </div>
+          <div>
             <label className={LABEL} htmlFor="category">Category</label>
             <select id="category" value={category} onChange={(e) => setCategory(e.target.value)} className={`mt-1 ${FIELD}`}>
               <option value="">None</option>
@@ -110,6 +140,20 @@ export function PracticeEditor({
               {ICONS.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
+        </div>
+        <div>
+          <label className={LABEL} htmlFor="tags">Tags</label>
+          <input
+            id="tags"
+            value={tagsInput}
+            onChange={(e) => setTagsInput(e.target.value)}
+            maxLength={240}
+            placeholder="morning, quick, outdoor"
+            className={`mt-1 ${FIELD}`}
+          />
+          <p className="mt-1 text-xs text-subtle">
+            Comma-separated. Helps people find this practice; new tags join the library.
+          </p>
         </div>
       </section>
 
