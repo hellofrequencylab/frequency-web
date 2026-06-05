@@ -830,13 +830,13 @@ function MobileTabBar({
 }
 
 // ── Mobile slide-in side rail ─────────────────────────────────────────────────
-// An opt-in left menu that lives, collapsed, as a SUBTLE full-length tab down the
-// left edge. Scrolling DOWN slides the menu open and PUSHES the content to the
-// right (it's a real column in the body flex, not an overlay); scrolling back UP
-// tucks it away to the tab. A "Close" control at the bottom collapses it AND stops
-// it auto-opening during scroll until the member taps the tab again. Toggle (the
-// master on/off) lives in the Menu drawer; remembered per device. Mobile only —
-// `md:hidden`, so on desktop the real left rail takes over and this takes no width.
+// An opt-in left menu that rests as a SLIM ICON rail down the left edge (a real
+// column in the body flex, `md:hidden`, so it gently insets the feed — not an
+// overlay). Tapping the rail's chevron EXPANDS it to show labels; ANY scroll
+// CONTRACTS it back to icons. The icons themselves are the destinations; the
+// trailing icon opens the full Menu drawer. Master on/off lives in the Menu
+// drawer (remembered per device). Desktop uses the real left rail, so this never
+// takes width there.
 
 function MobileSideRail({
   isActive,
@@ -847,9 +847,8 @@ function MobileSideRail({
   onOpenMenu: () => void
   enabled: boolean
 }) {
-  const [open, setOpen] = useState(false)
-  // Member tapped Close → don't auto-open on scroll until they reopen via the tab.
-  const [pinnedClosed, setPinnedClosed] = useState(false)
+  // Resting state is icons; the member expands to labels by tapping the chevron.
+  const [expanded, setExpanded] = useState(false)
 
   useEffect(() => {
     if (!enabled) return
@@ -858,80 +857,62 @@ function MobileSideRail({
     let lastTop = el.scrollTop
     const onScroll = () => {
       const top = el.scrollTop
-      const dy = top - lastTop
-      lastTop = top
-      // Scrolling DOWN opens the menu (unless pinned closed); scrolling UP — or
-      // sitting at the very top — tucks it back to the tab.
-      if (dy > 6) {
-        if (!pinnedClosed) setOpen(true)
-      } else if (dy < -6 || top < 8) {
-        setOpen(false)
+      // Any real scroll always contracts the labels back to icons.
+      if (Math.abs(top - lastTop) > 6) {
+        lastTop = top
+        setExpanded(false)
       }
     }
     el.addEventListener('scroll', onScroll, { passive: true })
     return () => el.removeEventListener('scroll', onScroll)
-  }, [enabled, pinnedClosed])
+  }, [enabled])
 
   if (!enabled) return null
 
   const itemClass = (active: boolean) =>
-    `flex items-center gap-3 rounded-xl px-2.5 py-2 text-sm font-medium transition-colors ${
-      active ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:bg-surface-elevated hover:text-text'
-    }`
+    `flex items-center rounded-xl text-sm font-medium transition-colors ${
+      expanded ? 'gap-3 px-2.5 py-2' : 'justify-center px-0 py-2'
+    } ${active ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:bg-surface-elevated hover:text-text'}`
 
   return (
     <aside
       aria-label="Quick navigation"
       className={`md:hidden relative flex shrink-0 flex-col border-r border-border bg-surface/95 backdrop-blur-sm transition-[width] duration-300 ease-out motion-reduce:transition-none ${
-        open ? 'w-40' : 'w-6'
+        expanded ? 'w-40' : 'w-14'
       }`}
     >
-      {open ? (
-        <>
-          <nav className="flex-1 overflow-y-auto p-2 space-y-0.5">
-            {MOBILE_TABS.map((tab) => {
-              const Icon = AREA_ICONS[tab.key] ?? Globe
-              const active = isActive(tab.href)
-              return (
-                <Link key={tab.key} href={tab.href} className={itemClass(active)}>
-                  <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={active ? 2.5 : 2} />
-                  <span className="truncate">{tab.label}</span>
-                </Link>
-              )
-            })}
-            <button type="button" onClick={onOpenMenu} className={`w-full ${itemClass(false)}`}>
-              <Menu className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
-              <span className="truncate">More</span>
-            </button>
-          </nav>
-          {/* Close — collapse to the tab and stop auto-opening on scroll. Sits above
-              the fixed bottom tab bar so it stays in the thumb zone. */}
-          <div
-            className="shrink-0 border-t border-border p-2"
-            style={{ paddingBottom: 'calc(0.5rem + 4rem + env(safe-area-inset-bottom))' }}
-          >
-            <button
-              type="button"
-              onClick={() => { setOpen(false); setPinnedClosed(true) }}
-              className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-surface-elevated px-2 py-2 text-xs font-medium text-muted hover:text-text transition-colors"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Close
-            </button>
-          </div>
-        </>
-      ) : (
-        // Collapsed: a subtle full-length tab. Tap to open (and clear the pin).
-        <button
-          type="button"
-          onClick={() => { setOpen(true); setPinnedClosed(false) }}
-          aria-label="Open quick navigation"
-          className="flex flex-1 items-center justify-center text-subtle hover:bg-surface-elevated hover:text-text transition-colors"
-          style={{ paddingBottom: 'calc(4rem + env(safe-area-inset-bottom))' }}
-        >
-          <ChevronRight className="h-4 w-4" />
+      {/* Expand / collapse toggle — tap to reveal labels; scroll snaps it back. */}
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        aria-label={expanded ? 'Collapse menu' : 'Expand menu'}
+        aria-expanded={expanded}
+        className={`flex items-center border-b border-border px-2 py-2 text-subtle hover:bg-surface-elevated hover:text-text transition-colors ${
+          expanded ? 'justify-end' : 'justify-center'
+        }`}
+      >
+        {expanded ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+      </button>
+
+      <nav
+        className="flex-1 overflow-y-auto p-1.5 space-y-0.5"
+        style={{ paddingBottom: 'calc(0.375rem + 4rem + env(safe-area-inset-bottom))' }}
+      >
+        {MOBILE_TABS.map((tab) => {
+          const Icon = AREA_ICONS[tab.key] ?? Globe
+          const active = isActive(tab.href)
+          return (
+            <Link key={tab.key} href={tab.href} aria-label={tab.label} title={tab.label} className={itemClass(active)}>
+              <Icon className="h-5 w-5 shrink-0" strokeWidth={active ? 2.5 : 2} />
+              {expanded && <span className="truncate">{tab.label}</span>}
+            </Link>
+          )
+        })}
+        <button type="button" onClick={onOpenMenu} aria-label="Open menu" title="More" className={`w-full ${itemClass(false)}`}>
+          <Menu className="h-5 w-5 shrink-0" strokeWidth={2} />
+          {expanded && <span className="truncate">More</span>}
         </button>
-      )}
+      </nav>
     </aside>
   )
 }
