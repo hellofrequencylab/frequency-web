@@ -13,6 +13,7 @@ import {
 } from '@/lib/attribution/first-touch'
 import { joinCircle } from '@/app/(main)/circles/actions'
 import { checkInEvent } from '@/app/(main)/events/actions'
+import { listActiveVariants, pickVariant } from '@/lib/entry-points/ab'
 
 export const dynamic = 'force-dynamic'
 
@@ -38,6 +39,20 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
 
   if (!code || !isCodeLive(code)) return unavailable
 
+  // A/B (ADR-135): an entry point (url code) can split traffic across destination
+  // variants. Pick one by weight; it overrides the target, is logged on the scan, and
+  // (for an anonymous scanner) rides a fq_var cookie so the eventual signup attributes
+  // its conversion to this variant. No active variants ⇒ the default destination.
+  let abVariantKey: string | null = null
+  let abTarget: string | null = null
+  if (code.destination_type === 'url') {
+    const chosen = pickVariant(await listActiveVariants(code.id))
+    if (chosen) {
+      abVariantKey = chosen.key
+      abTarget = chosen.targetUrl
+    }
+  }
+
   // Best-effort scan log (with coarse IP-geo for the locator map) — never blocks the
   // redirect. The edge sets these; they're absent locally, so geo is just null then.
   const profileId = await getMyProfileId()
@@ -57,6 +72,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
       p_lat: Number.isFinite(lat) ? lat : undefined,
       p_lng: Number.isFinite(lng) ? lng : undefined,
       p_medium: medium,
+      p_variant: abVariantKey ?? undefined,
     })
     .then(() => {}, () => {})
   // First-party + GA4 funnel event (covers dynamic links, member + marketing codes).
@@ -110,14 +126,24 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
         maxAge: 60 * 60 * 24 * 30,
       })
     }
+    // A/B: remember which variant this anonymous scanner saw, so their signup
+    // attributes the conversion (app/onboarding/actions.ts → applyEntryPointConversion).
+    if (!profileId && abVariantKey) {
+      res.cookies.set('fq_var', `${code.id}:${abVariantKey}`, {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 30,
+      })
+    }
     return res
   }
 
-  if (code.destination_type === 'url' && code.target_url) {
-    // Time-aware: after switch_at, a url code resolves to its alternate target.
+  if (code.destination_type === 'url' && (abTarget || code.target_url)) {
+    // A/B variant wins; else time-aware: after switch_at, resolve to the alternate.
     const switched =
       code.switch_at && code.alt_target_url && new Date(code.switch_at).getTime() <= Date.now()
-    const target = switched ? code.alt_target_url! : code.target_url
+    const target = abTarget ?? (switched ? code.alt_target_url! : code.target_url!)
     return withReferral(NextResponse.redirect(new URL(target, origin)))
   }
   if (code.destination_type === 'node' && code.node_id) {

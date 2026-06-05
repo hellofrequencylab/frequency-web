@@ -5,7 +5,7 @@ import type { Database } from '@/lib/database.types'
 import { createClient } from '@/lib/supabase/server'
 import { sendWelcomeEmail } from '@/lib/email'
 import { sanitizeProfileInput } from '@/lib/profile-input'
-import { applyReferralAttribution } from '@/lib/qr/referral'
+import { applyReferralAttribution, applyEntryPointConversion } from '@/lib/qr/referral'
 import { persistAcquisition } from '@/lib/attribution/acquisition'
 
 export async function completeOnboarding(data: {
@@ -69,6 +69,7 @@ export async function completeOnboarding(data: {
   // snapshot first-touch acquisition (campaign / poster / code) onto the profile.
   if (updated?.id) {
     await applyReferralAttribution(updated.id)
+    await applyEntryPointConversion(updated.id).catch(() => {})
     await persistAcquisition(updated.id).catch(() => {})
   }
 
