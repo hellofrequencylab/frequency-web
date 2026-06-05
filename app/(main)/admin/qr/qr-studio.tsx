@@ -6,6 +6,7 @@ import { QrCode, Plus, Pencil, Download, Copy, Check, ExternalLink, Zap } from '
 import { createNode, updateNode, setNodeActive, type NodeInput } from './actions'
 import { Field, Badge, toLocalInput, fromLocalInput } from './form-bits'
 import { StyleEditor } from './style-editor'
+import { NfcWriter } from './nfc-writer'
 import { DEFAULT_STYLE, type QrStyle } from '@/lib/qr/style'
 
 export interface StudioNode {
@@ -212,6 +213,8 @@ function NodeCard({
               {copied ? <Check className="w-3 h-3 text-success" /> : <Copy className="w-3 h-3" />}
               {copied ? 'Copied' : 'Link'}
             </button>
+            {/* Node channel is carried by the node's own type, so write the plain URL. */}
+            <NfcWriter url={node.url} tagMedium="qr" />
             <a
               href={node.url}
               target="_blank"

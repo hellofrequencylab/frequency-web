@@ -39,6 +39,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
   const city = h.get('x-vercel-ip-city')
   const lat = Number(h.get('x-vercel-ip-latitude'))
   const lng = Number(h.get('x-vercel-ip-longitude'))
+  // Channel attribution: a programmed NFC tag encodes `?m=nfc`; a printed QR has no
+  // marker and falls back to 'qr'. Same code, distinct medium in the scan log.
+  const medium = new URL(request.url).searchParams.get('m') === 'nfc' ? 'nfc' : 'qr'
   await admin
     .rpc('record_qr_scan', {
       p_code_id: code.id,
@@ -47,10 +50,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
       p_city: city ? decodeURIComponent(city) : undefined,
       p_lat: Number.isFinite(lat) ? lat : undefined,
       p_lng: Number.isFinite(lng) ? lng : undefined,
+      p_medium: medium,
     })
     .then(() => {}, () => {})
   // First-party + GA4 funnel event (covers dynamic links, member + marketing codes).
-  void track('qr.scanned', { purpose: code.purpose ?? 'none', destination: code.destination_type }, profileId)
+  void track('qr.scanned', { purpose: code.purpose ?? 'none', destination: code.destination_type, medium }, profileId)
 
   // Drive QR campaign challenges (scavenger hunts). Idempotent per (code, member),
   // so progress counts distinct codes; the rules engine advances any challenge whose
