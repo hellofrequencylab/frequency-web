@@ -1,5 +1,5 @@
 // Shared types for the Profile Creator / Network Profiles feature
-// (docs/NETWORK-CRM.md, ADR-097). Framework-free so client components, server
+// (docs/NETWORK-CRM.md, ADR-098). Framework-free so client components, server
 // actions, the store, and the AI module can all share one vocabulary.
 
 export type Visibility = 'private' | 'shared' | 'network'

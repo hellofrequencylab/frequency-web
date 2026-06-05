@@ -43,8 +43,40 @@ export function PracticePrompt({
   const p = streakProgress(streak)
   const hasReminders = practices.length > 0
 
+  // Collapsed → a single skinny line (~1/3 the open height): streak + a slim inline
+  // progress bar + the expand chevron. Reminders/checkpoints only show when open.
+  if (collapsed) {
+    return (
+      <div className="mb-6 rounded-xl border border-primary-bg bg-primary-bg/30 px-3 py-1.5">
+        <div className="flex items-center gap-2.5">
+          <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface text-primary-strong shadow-sm">
+            <Flame className="h-3.5 w-3.5" />
+          </span>
+          <p className="min-w-0 truncate text-xs font-bold text-text">
+            {streak > 0 ? `${streak} day streak` : 'Start your streak'}
+            <span className="ml-1.5 font-normal text-muted">
+              {p.maxed ? '· legend' : p.next ? `· ${p.toNext} to ${p.next.day}-day` : ''}
+            </span>
+          </p>
+          <div className="ml-auto h-1.5 w-16 shrink-0 overflow-hidden rounded-full bg-surface">
+            <div className="h-full rounded-full bg-primary" style={{ width: `${p.pct}%` }} />
+          </div>
+          <button
+            type="button"
+            onClick={toggle}
+            aria-label="Expand streak"
+            aria-expanded={false}
+            className="shrink-0 rounded-md p-1 text-subtle transition-colors hover:bg-surface hover:text-text"
+          >
+            <ChevronDown className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className={`mb-6 rounded-xl border border-primary-bg bg-primary-bg/30 ${collapsed ? 'px-4 py-2.5' : 'p-4'}`}>
+    <div className="mb-6 rounded-xl border border-primary-bg bg-primary-bg/30 p-4">
       {/* Streak header */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2.5">
