@@ -2794,6 +2794,41 @@ approximations are documented in each template's header for reviewers.
 
 ---
 
+## ADR-101: Demo posts reach every viewer's feed (not just demo-circle members)
+
+**Status:** Accepted · `supabase/migrations/20260605050000_feed_demo_visible_to_all.sql`. Amends ADR-064/065 + the feed RPC reach model. See [DEMO-SYSTEM.md](DEMO-SYSTEM.md).
+
+**Context.** A signed-in member reported seeing **no demo content in the home feed**
+even though `demo_mode` was on and 100+ demo profiles / 3 demo circles / 69 demo
+posts existed. Root cause: the Seed Studio writes demo posts as **`group`-visibility**
+posts inside the demo circles, but `feed_for_viewer` / `scoped_feed_for_viewer` only
+surface `group` posts whose `scope_id` is in the viewer's joined circles. A real
+member who hasn't joined a demo circle (the common case — you don't join sample
+circles) therefore matched none of them, so the demo layer never made their feed
+feel "alive" — the exact job it exists to do (DEMO-SYSTEM.md: demo posts surface in
+the home + circle/profile feeds).
+
+**Decision.** Add `or p.is_demo` to the visibility reach-clause in both feed RPCs.
+Demo posts are still gated by the existing `(not is_demo or demo_mode)` predicate, so
+`demo_mode = false` removes them in one flip, and the per-viewer header toggle
+(`fq_hide_demo`, filtered in `FeedList`) still hides them for an opted-out member.
+Net: when `demo_mode` is on, demo posts appear in **every** viewer's feed regardless
+of circle membership, and on a demo circle's wall for any viewer (so the claim flow
+shows a furnished, not empty, circle).
+
+**Alternatives considered.** (a) Seed some `public` demo posts — rejected: the demo
+posts intentionally live in demo circles as group chatter, and a parallel public set
+would double the teardown surface. (b) Auto-join new members to a demo circle —
+rejected: pollutes real membership data and the decay logic. (c) Leave as-is and rely
+on members joining a demo circle — rejected: brand-new members join nothing first,
+which is precisely when the feed most needs to look alive.
+
+**Consequences.** Demo content is now genuinely community-wide filler while the Beta
+runs. No new columns or app code — one SQL migration recreating the two existing feed
+functions. Real `group`/`cluster` reach for non-demo posts is unchanged.
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 
