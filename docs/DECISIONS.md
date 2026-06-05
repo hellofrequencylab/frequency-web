@@ -4153,6 +4153,47 @@ are `md:hidden`, so desktop is untouched. The desktop stats dock and `GameStatsP
 `loadGameStats` reuse (ADR-122) are unchanged.
 
 ---
+
+## ADR-135: Entry-point A/B testing — split one printed QR across destination variants
+
+**Status:** Accepted (Entry Points Phase 3) · `supabase/migrations/20260607020000_entry_point_ab.sql`,
+`lib/entry-points/ab.ts`, the `/q` resolver, `lib/qr/referral.ts` + onboarding,
+`app/(main)/marketing/funnels/variants/**`. Builds on Entry Points (ADR-126), the scan
+resolver + `record_qr_scan`, and referral attribution (`fq_ref`, ADR-099).
+
+**Context.** An entry point is one **printed** QR / slug — you can't change the flyer after
+it's out. The lever you *can* test is the **destination**: send some scanners to lead flow
+A, others to B, and measure which converts. The hard part is attributing a **signup** back
+to the variant a now-anonymous scanner saw, days later.
+
+**Decision.**
+- **Variants live under the code, keyed, weighted.** `entry_point_variants` (per `qr_codes`
+  row): `variant_key`, `label`, `target_url`, `weight`, `active`. The resolver picks one by
+  weight (`pickVariant`, pure + tested) for `url` entry points; **no active variants ⇒ the
+  default destination (control)**, so the feature is opt-in and inert until configured.
+- **Record the served variant on the scan.** `record_qr_scan` gains an additive
+  `p_variant` param → `qr_scans.variant_key`. Per-variant scans come straight from the log.
+- **Carry it to signup via a cookie, mirroring `fq_ref`.** The resolver sets `fq_var =
+  <codeId>:<variantKey>` for anonymous scanners; at onboarding `applyEntryPointConversion`
+  reads it and writes `entry_point_conversions` (one per person per entry point). Conversion
+  rate = conversions / variant scans. Reuses the exact pattern that already attributes
+  referrals — no new attribution machinery.
+- **Safe destinations only.** Variant targets are validated with the same
+  `isValidEntryDestination` guard entry points use (no open redirect).
+- **Admin surface** under `/marketing/funnels/variants/<codeId>`: define variants, toggle,
+  and read scans / signups / rate with a leading-variant marker.
+
+**Alternatives.** A/B the **flyer** (rejected — it's printed; can't vary post-print).
+Per-variant **referred_by** (rejected — `referred_by` is owner-level, can't hold a variant;
+a dedicated conversions table is precise). Client-side split (rejected — the resolver is
+server-side and must redirect + log atomically; cookies set there are reliable).
+
+**Consequences.** Operators can run real destination experiments on a single printed code,
+with true signup-conversion (not just scan) per variant. Value scales with scan volume, so
+it's most useful once entry points are driving traffic. Follow-ups: statistical-significance
+hints, auto-promote the winner, and variant-level breakdown in the funnels analytics.
+
+---
 ### Decisions intentionally NOT duplicated here
 
 Already fully covered by the repo docs (no ADR needed): the RLS / admin-client
