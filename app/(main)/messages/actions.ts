@@ -164,25 +164,27 @@ export async function startGroupConversation(
     throw new Error('You must be friends with every member of a group DM')
   }
 
-  const trimmedName = name?.trim() || null
+  const trimmedName = name?.trim() || 'Group chat'
 
-  const { data: conv, error } = await admin
-    .from('conversations')
-    .insert({ name: trimmedName, created_by: myProfileId })
+  // Phase B (ADR-088): a group chat is now a PRIVATE ROOM, not a group
+  // conversation. `conversations` is 1:1-only; this returns a room id and the
+  // caller routes to /messages/r/<id>.
+  const { data: room, error } = await admin
+    .from('rooms')
+    .insert({ name: trimmedName, visibility: 'private', creator_id: myProfileId })
     .select('id')
     .single()
 
-  if (error || !conv) throw new Error(error?.message ?? 'Failed to create group DM')
+  if (error || !room) throw new Error(error?.message ?? 'Failed to create group chat')
 
-  const rows = [{ conversation_id: conv.id, profile_id: myProfileId }]
+  const memberRows = [{ room_id: room.id as string, profile_id: myProfileId, is_admin: true }]
   for (const id of others) {
-    rows.push({ conversation_id: conv.id, profile_id: id })
+    memberRows.push({ room_id: room.id as string, profile_id: id, is_admin: false })
   }
-
-  await admin.from('conversation_participants').insert(rows)
+  await admin.from('room_members').insert(memberRows)
 
   revalidatePath('/messages')
-  return { id: conv.id }
+  return { id: room.id as string }
 }
 
 export async function renameConversation(conversationId: string, name: string) {

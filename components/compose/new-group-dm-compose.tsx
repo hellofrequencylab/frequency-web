@@ -96,7 +96,7 @@ export function NewGroupDMCompose({
           name || null
         )
         closeModal()
-        router.push(`/messages/${id}`)
+        router.push(`/messages/r/${id}`)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to start conversation.')
       }
