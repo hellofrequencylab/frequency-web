@@ -51,6 +51,9 @@ type Props = {
 const HANDLE_RE = /^[a-z0-9_]+$/
 const RENDERS = { feed: FeedRender, circles: CirclesRender, events: EventsRender }
 const BEAT_COUNT = 6 // 0 oath · 1 intro · 2 reel · 3 identity · 4 place · 5 enter
+// Accessible name for each beat — drives the progress bar's label and the polite
+// live announcement so assistive tech tracks "where am I" through the sequence.
+const BEAT_LABELS = ['The oath', 'Welcome', 'A quick tour', 'Your identity', 'Your place', 'Step in']
 
 // No separator — "Daniel Tyack" → "danieltyack".
 function suggestHandle(name: string): string {
@@ -81,6 +84,18 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
 
   const [beat, setBeat] = useState(0)
   const [previewDone, setPreviewDone] = useState(false)
+  // Move focus to the top of each beat as it mounts so keyboard + screen-reader
+  // users land on the new content rather than being stranded where the old
+  // button was. Skipped on the very first paint (the page already has focus).
+  const stageRef = useRef<HTMLDivElement>(null)
+  const firstPaint = useRef(true)
+  useEffect(() => {
+    if (firstPaint.current) {
+      firstPaint.current = false
+      return
+    }
+    stageRef.current?.focus()
+  }, [beat])
 
   // Oath
   const [oaths, setOaths] = useState<Record<OathId, boolean>>({ unfinished: false, report: false, build: false })
@@ -386,7 +401,14 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
           </span>
         </div>
 
-        <div key={beat} className="mt-10 w-full animate-[slideUp_0.5s_ease-out] text-center">
+        <div
+          key={beat}
+          ref={stageRef}
+          tabIndex={-1}
+          role="group"
+          aria-label={`Step ${beat + 1} of ${BEAT_COUNT}: ${BEAT_LABELS[beat]}`}
+          className="mt-10 w-full animate-[slideUp_0.5s_ease-out] text-center outline-none"
+        >
             {/* ── Beat 0: The Oath ── */}
             {beat === 0 && (
               <div className="mx-auto max-w-5xl">
@@ -494,8 +516,9 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                   {/* left: form card */}
                   <div className="w-full max-w-sm space-y-4 rounded-3xl border border-border bg-surface p-6 shadow-sm">
                     <div>
-                      <label className={fieldLabel}>Display name</label>
+                      <label htmlFor="induction-name" className={fieldLabel}>Display name</label>
                       <input
+                        id="induction-name"
                         type="text"
                         value={displayName}
                         onChange={(e) => {
@@ -509,10 +532,11 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                       />
                     </div>
                     <div>
-                      <label className={fieldLabel}>Handle</label>
+                      <label htmlFor="induction-handle" className={fieldLabel}>Handle</label>
                       <div className="relative">
-                        <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-base text-subtle">@</span>
+                        <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-base text-subtle" aria-hidden>@</span>
                         <input
+                          id="induction-handle"
                           type="text"
                           value={handle}
                           onChange={(e) => {
@@ -520,19 +544,31 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                             setHandle(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))
                           }}
                           placeholder="yourname"
+                          aria-invalid={handleStatus === 'taken'}
+                          aria-describedby="induction-handle-status"
                           className={`${inputInset} pl-9 pr-9`}
                         />
-                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm leading-none">
+                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm leading-none" aria-hidden>
                           {handleStatus === 'checking' && <span className="animate-pulse text-subtle">•••</span>}
                           {handleStatus === 'available' && <span className="text-success">✓</span>}
                           {handleStatus === 'taken' && <span className="text-danger">✗</span>}
                         </span>
                       </div>
-                      {handleStatus === 'taken' && <p className="mt-1.5 text-left text-xs text-danger">That handle is already taken.</p>}
+                      {/* Live status — read by assistive tech as availability resolves. */}
+                      <p id="induction-handle-status" role="status" aria-live="polite" className={handleStatus === 'taken' ? 'mt-1.5 text-left text-xs text-danger' : 'sr-only'}>
+                        {handleStatus === 'checking'
+                          ? 'Checking availability…'
+                          : handleStatus === 'available'
+                          ? 'Handle is available.'
+                          : handleStatus === 'taken'
+                          ? 'That handle is already taken.'
+                          : ''}
+                      </p>
                     </div>
                     <div>
-                      <label className={fieldLabel}>One-line bio <span className="font-normal normal-case text-subtle">· optional</span></label>
+                      <label htmlFor="induction-bio" className={fieldLabel}>One-line bio <span className="font-normal normal-case text-subtle">· optional</span></label>
                       <input
+                        id="induction-bio"
                         type="text"
                         value={bio}
                         onChange={(e) => setBio(e.target.value.slice(0, 140))}
@@ -541,8 +577,9 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                       />
                     </div>
                     <div>
-                      <label className={fieldLabel}>What are you into? <span className="font-normal normal-case text-subtle">· optional</span></label>
+                      <label htmlFor="induction-interests" className={fieldLabel}>What are you into? <span className="font-normal normal-case text-subtle">· optional</span></label>
                       <input
+                        id="induction-interests"
                         type="text"
                         value={interests}
                         onChange={(e) => setInterests(e.target.value.slice(0, 120))}
@@ -582,10 +619,15 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                 <div className="mt-7 flex flex-col items-center gap-8 text-left md:flex-row md:items-center md:justify-center md:gap-10">
                   <div className="w-full max-w-sm space-y-4 rounded-3xl border border-border bg-surface p-6 shadow-sm">
                   <div>
-                    <label className={fieldLabel}>Your city</label>
+                    <label htmlFor="induction-city" className={fieldLabel}>Your city</label>
                     <div className="relative">
                       <input
+                        id="induction-city"
                         type="text"
+                        role="combobox"
+                        aria-expanded={locOpen && locResults.length > 0}
+                        aria-controls="induction-city-list"
+                        aria-autocomplete="list"
                         value={locQuery}
                         onChange={(e) => {
                           setLocQuery(e.target.value)
@@ -599,11 +641,11 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                         className={inputInset}
                         autoComplete="off"
                       />
-                      {location && <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-success">✓</span>}
+                      {location && <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-success" aria-hidden>✓</span>}
                       {locOpen && locResults.length > 0 && (
-                        <ul className="absolute z-20 mt-2 max-h-56 w-full overflow-auto rounded-xl border border-border bg-surface shadow-lg">
+                        <ul id="induction-city-list" role="listbox" aria-label="City suggestions" className="absolute z-20 mt-2 max-h-56 w-full overflow-auto rounded-xl border border-border bg-surface shadow-lg">
                           {locResults.map((r) => (
-                            <li key={`${r.label}-${r.lat}`}>
+                            <li key={`${r.label}-${r.lat}`} role="option" aria-selected={location === r.label}>
                               <button
                                 type="button"
                                 onMouseDown={() => {
@@ -624,8 +666,9 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                   </div>
 
                   <div>
-                    <label className={fieldLabel}>{VERA.place.intentLabel}</label>
+                    <label htmlFor="induction-intent" className={fieldLabel}>{VERA.place.intentLabel}</label>
                     <textarea
+                      id="induction-intent"
                       value={intent}
                       onChange={(e) => setIntent(e.target.value.slice(0, 500))}
                       placeholder={VERA.place.intentPlaceholder}
@@ -635,8 +678,8 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                   </div>
 
                   <div>
-                    <label className={fieldLabel}>How did you hear about us?</label>
-                    <select value={heardAbout} onChange={(e) => setHeardAbout(e.target.value)} className={inputInset}>
+                    <label htmlFor="induction-heard" className={fieldLabel}>How did you hear about us?</label>
+                    <select id="induction-heard" value={heardAbout} onChange={(e) => setHeardAbout(e.target.value)} className={inputInset}>
                       <option value="">Choose one…</option>
                       {HEARD_ABOUT.map((h) => (
                         <option key={h} value={h}>{h}</option>
@@ -763,11 +806,22 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
 
         {/* Progress — tight under the content. */}
         <div className="mt-9 w-full max-w-sm shrink-0">
-          <div className="flex w-full items-center gap-1.5">
+          <div
+            className="flex w-full items-center gap-1.5"
+            role="progressbar"
+            aria-valuemin={1}
+            aria-valuemax={BEAT_COUNT}
+            aria-valuenow={beat + 1}
+            aria-valuetext={`Step ${beat + 1} of ${BEAT_COUNT}: ${BEAT_LABELS[beat]}`}
+          >
             {Array.from({ length: BEAT_COUNT }).map((_, i) => (
-              <span key={i} className={`h-1 flex-1 rounded-full transition-colors duration-700 ${i <= beat ? 'bg-primary' : 'bg-border-strong'}`} />
+              <span key={i} aria-hidden className={`h-1 flex-1 rounded-full transition-colors duration-700 ${i <= beat ? 'bg-primary' : 'bg-border-strong'}`} />
             ))}
           </div>
+          {/* Polite announcement of the current beat for assistive tech. */}
+          <p className="sr-only" aria-live="polite">
+            Step {beat + 1} of {BEAT_COUNT}: {BEAT_LABELS[beat]}
+          </p>
         </div>
 
         {/* A quiet way out on every step — never trap anyone, but keep focus on

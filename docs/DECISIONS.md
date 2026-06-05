@@ -3347,6 +3347,38 @@ it to the repository" with no extra work.
 
 ---
 
+## ADR-117: Profile editor keeps the community rail; guided spotlight onboarding tour
+
+**Status:** Accepted · `lib/layout/page-chrome.ts`, `app/(main)/settings/profile/page.tsx`,
+`lib/onboarding/spotlight.ts`, `components/onboarding/spotlight-tour.tsx`,
+`components/feed/feed-onboarding-guide.tsx`, `app/onboarding/tour-actions.ts`.
+
+**Context.** Two onboarding gaps. (1) `/settings/profile` is the one "me" surface that read as
+a stranded, rail-less Focus form — there was no standard sidebar and no way to jump from editing
+to *viewing* your public profile. (2) The in-site activation system had a persistent checklist
+box (ADR-047) and passive one-at-a-time coachmarks, but no **guided** walkthrough — new members
+had to discover each surface on their own.
+
+**Decision.** (1) `railFor` special-cases `/settings/profile` back to the `'global'` community
+rail (overriding the `/settings` Focus prefix), and the editor header gains a "View profile" link
+to `/people/<handle>`. Editing your identity is a standings-adjacent "me" surface, so the rail
+belongs beside it. (2) A scripted **spotlight tour**: the feed onboarding box launches a guided,
+pausable overlay that dims the page and lights one real surface at a time (feed → composer →
+circles → practices → events → profile) via `data-tour-anchor`, narrated in Vera's voice.
+Progress persists to `profiles.meta.tour.spotlight` (+ localStorage) so it resumes where paused;
+it degrades to a centered card when an anchor isn't on screen (small-viewport drawer nav). The box
+still only graduates when the four activation steps are done.
+
+**Alternatives.** A purpose-built profile-preview rail (rejected: the standard community rail is
+what "standard sidebar" means and is less work to keep consistent). Live-AI Vera narration per stop
+(deferred: scripted copy is deterministic, testable, and works with AI off — Phase 2 can upgrade).
+
+**Consequences.** One route deviates from the "settings = Focus" convention by design; documented
+here so it isn't "fixed" back. The tour reuses the existing anchor + tour-state plumbing, so adding
+a stop is a one-line data edit in `lib/onboarding/spotlight.ts`.
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 

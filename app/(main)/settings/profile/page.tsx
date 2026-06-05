@@ -1,4 +1,6 @@
 import { notFound } from 'next/navigation'
+import Link from 'next/link'
+import { ExternalLink } from 'lucide-react'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import { FocusTemplate } from '@/components/templates'
@@ -30,6 +32,16 @@ export default async function ProfileSettingsPage() {
       title="Edit Profile"
       description="Update your display name, handle, photo, and personal contact info."
       back={{ href: '/settings', label: 'Settings' }}
+      actions={
+        profile.handle ? (
+          <Link
+            href={`/people/${profile.handle}`}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
+          >
+            <ExternalLink className="h-3.5 w-3.5" /> View profile
+          </Link>
+        ) : undefined
+      }
     >
       <ProfileForm
         userId={user.id}
