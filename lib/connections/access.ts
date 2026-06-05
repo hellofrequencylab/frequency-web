@@ -5,13 +5,14 @@
 
 import { getCallerProfile } from '@/lib/auth'
 import { atLeastRole } from '@/lib/core/roles'
-import { getStaffMember } from '@/lib/staff'
+import { getStaffMember, staffCan } from '@/lib/staff'
 
-/** The caller's profile id if they may use Profiles, else null. */
+/** The caller's profile id if they may use Profiles, else null. Community host+ OR
+ *  a staff role with the 'profiles' capability (ADR-127). */
 export async function connectionsOwnerId(): Promise<string | null> {
   const caller = await getCallerProfile()
   if (!caller) return null
   if (atLeastRole(caller.community_role, 'host')) return caller.id
   const staff = await getStaffMember().catch(() => null)
-  return staff ? caller.id : null
+  return staff && staffCan(staff.role, 'profiles', 'read') ? caller.id : null
 }
