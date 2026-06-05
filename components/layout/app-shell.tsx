@@ -54,7 +54,7 @@ import { DemoToggle } from '@/components/layout/demo-toggle'
 import { DockRevealProvider, useDockRevealed, useHoverScrollReveal } from '@/components/sidebar/dock-reveal'
 import { railFor } from '@/lib/layout/page-chrome'
 import { SearchOverlay } from '@/components/search/search-overlay'
-import { PageAdminDock } from '@/components/layout/page-admin-dock'
+import { PageAdminDock, type AdminDockMode } from '@/components/layout/page-admin-dock'
 
 // The sidebar + community bar are built from NAV_AREAS (lib/nav-areas.ts — the
 // single source of truth shared with the permission grid). The whole menu is
@@ -1089,19 +1089,36 @@ export default function AppShell({
   // tick, back on from the drawer toggles).
   const [railNavOn, setRailNavOn] = useState(false)
   const [statsRailOn, setStatsRailOn] = useState(false)
+  // Page admin dock — open state (shared so PUSH mode can pad the content), plus
+  // the persisted mode (overlay/push) + width preferences.
+  const [adminOpen, setAdminOpen] = useState(false)
+  const [adminMode, setAdminMode] = useState<AdminDockMode>('overlay')
+  const [adminWidth, setAdminWidth] = useState(340)
   useEffect(() => {
     // One-time hydration of client-only prefs: server + first client render both see
-    // `false` (no rails) → no hydration mismatch; we sync to the stored values after
+    // the defaults → no hydration mismatch; we sync to the stored values after
     // mount. (This is the legitimate effect→setState case.)
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setRailNavOn(localStorage.getItem('freq-rail-nav') !== '0')
     setStatsRailOn(localStorage.getItem('freq-stats-rail') !== '0')
+    if (localStorage.getItem('freq-admin-mode') === 'push') setAdminMode('push')
+    const w = Number(localStorage.getItem('freq-admin-width'))
+    if (w >= 260 && w <= 560) setAdminWidth(w)
   }, [])
   function setRail(key: 'freq-rail-nav' | 'freq-stats-rail', on: boolean) {
     localStorage.setItem(key, on ? '1' : '0')
     if (key === 'freq-rail-nav') setRailNavOn(on)
     else setStatsRailOn(on)
   }
+  function changeAdminMode(m: AdminDockMode) {
+    localStorage.setItem('freq-admin-mode', m)
+    setAdminMode(m)
+  }
+  function changeAdminWidth(w: number) {
+    localStorage.setItem('freq-admin-width', String(w))
+    setAdminWidth(w)
+  }
+  const canAdmin = !hideAppNav && (meetsAccess('host', gateRole) || staffRole != null)
 
   // Close mobile drawer when the route changes (covers browser back/forward).
   if (lastPath !== pathname) {
@@ -1232,6 +1249,18 @@ export default function AppShell({
               <Users className="w-5 h-5" />
             </Link>
             <NotificationBell initialUnread={unreadCount} />
+            {/* Page admin — mobile opens the admin panel from here (no edge tab on
+                mobile). Operators only. */}
+            {canAdmin && (
+              <button
+                type="button"
+                onClick={() => setAdminOpen(true)}
+                aria-label="Page admin"
+                className="md:hidden flex items-center justify-center w-8 h-8 rounded-full text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+              >
+                <Shield className="w-5 h-5" />
+              </button>
+            )}
           </div>
 
           {/* Account group — set off by its own divider. Quick-capture (mobile,
@@ -1291,7 +1320,11 @@ export default function AppShell({
             move together: the rail scrolls up with the feed, and once the rail
             runs out the feed keeps going (right side just shows the divider);
             scrolling back up brings the rail back. Normal flow, no sticky. */}
-        <div data-feed-scroll className="flex-1 min-w-0 overflow-y-auto pb-[calc(4rem_+_env(safe-area-inset-bottom))] md:pb-0">
+        <div
+          data-feed-scroll
+          style={{ ['--admin-pr' as string]: canAdmin && adminOpen && adminMode === 'push' ? `${adminWidth}px` : '0px' }}
+          className="flex-1 min-w-0 overflow-y-auto pb-[calc(4rem_+_env(safe-area-inset-bottom))] transition-[padding] duration-200 md:pb-0 md:pr-[var(--admin-pr)]"
+        >
           <div className="flex items-stretch min-h-full">
 
             {/* Center column — an ambient dispatch ticker pinned on top, then the
@@ -1324,8 +1357,20 @@ export default function AppShell({
       {/* ── Live search overlay (⌘K or the header search) ─────────────────── */}
       {searchOpen && <SearchOverlay onClose={() => setSearchOpen(false)} />}
 
-      {/* ── Page admin dock — opaque edge tab → per-page admin actions (operators) ── */}
-      {!hideAppNav && <PageAdminDock role={gateRole} staffRole={staffRole} />}
+      {/* ── Page admin dock — light desktop edge tab / mobile header button →
+            per-page admin actions; opens push (content shifts) or overlay. ── */}
+      {canAdmin && (
+        <PageAdminDock
+          role={gateRole}
+          staffRole={staffRole}
+          open={adminOpen}
+          onOpenChange={setAdminOpen}
+          mode={adminMode}
+          onModeChange={changeAdminMode}
+          width={adminWidth}
+          onWidthChange={changeAdminWidth}
+        />
+      )}
 
       {/* ── Mobile edge rails (fixed overlays; bracket the feed on scroll) ─── */}
       {!hideAppNav && (
