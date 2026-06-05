@@ -4133,24 +4133,31 @@ components (`MobileSideRail` / `MobileStatsMenu`) with slightly different chrome
   `border`, `h-[36vh] w-5`). No scroll-reveal, no on/off setting — the selector is gone.
 - **Click opens and stays** until the member clicks (backdrop / a link) or scrolls the feed
   (`[data-feed-scroll]`, >6px) — no longer a one-use menu.
+- **One open at a time.** The open state is **lifted to the shell** (`openMenu: 'left' | 'right'
+  | null`); opening one edge pushes the other closed — never both at once. `EdgeMenu` is a
+  controlled component (the shell owns route-change + scroll closing centrally).
 - **Shared Micro/Full size**, persisted once as `freq-rail-size` (default `micro`):
-  `micro → w-60 max-w-[80vw]`, `full → w-[88vw] max-w-sm`. A segmented **View: Micro|Full**
-  control sits at the bottom of *each* panel; both edges read the same size so they stay
-  symmetric. Left = the core nav (`MOBILE_TABS` + a **More** button into the full drawer),
-  right = `statsPanel` (`GameStatsPanel`).
-- **Small content gutter:** `<main>` padding goes `px-4 sm:px-6` → `px-6` so the always-on tabs
-  never touch content.
+  - **`micro` is a single icon column** (`w-16`) — left = the `MOBILE_TABS` icons + a **More**
+    icon; right = a rewards column (bolts · gems · streak, each → `/crew`). The narrow column
+    has no room for a segmented control, so its bottom is a single **expand** button (`Maximize2`)
+    that switches to full.
+  - **`full` is content-appropriate** — left nav `w-64 max-w-[80vw]` (labels), right stats
+    `w-[88vw] max-w-sm` (`GameStatsPanel`). Its bottom carries the segmented **View: Micro|Full**
+    control; both edges read the same size.
+- **Small content gutter:** `<main>` padding is `px-6` so the always-on tabs never touch content.
 
 **Alternatives.** Keep the scroll-reveal (rejected — the ask was "always visible as tabs").
-Keep the per-rail on/off toggle (rejected — "the menu selector … is unnecessary"). Independent
-per-edge widths (rejected — "same width and styles for both"). A push-content layout (rejected —
-the panels overlay; on a phone pushing crushes the feed, per ADR-122).
+Keep the per-rail on/off toggle (rejected — "the menu selector … is unnecessary"). Allow both
+edges open together (rejected — "both menus cannot be open … one pushes the other closed"). A
+labeled-but-narrow micro (rejected — "the collapsed view is a single icon column"). A push-content
+layout (rejected — the panels overlay; on a phone pushing crushes the feed, per ADR-122).
 
 **Consequences.** Removed: `useRailReveal`, `EdgeTab`, `RailToggle`, the drawer's edge-rail
 preferences section + its `railNavOn` / `statsRailOn` / `onSetRail` props, and the
-`freq-rail-nav` / `freq-stats-rail` prefs (replaced by the single `freq-rail-size`). Both edges
-are `md:hidden`, so desktop is untouched. The desktop stats dock and `GameStatsPanel` /
-`loadGameStats` reuse (ADR-122) are unchanged.
+`freq-rail-nav` / `freq-stats-rail` prefs (replaced by the single `freq-rail-size`). The two edges
+now share one lifted `openMenu` state for mutual exclusion. Both edges are `md:hidden`, so desktop
+is untouched. The desktop stats dock and `GameStatsPanel` / `loadGameStats` reuse (ADR-122) are
+unchanged.
 
 ---
 
