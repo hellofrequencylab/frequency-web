@@ -24,6 +24,7 @@ import { PillarBadge } from '@/components/practice/pillar-badge'
 import { PracticeAdminMenu } from '@/components/practice/practice-admin-menu'
 import { EntityCard } from '@/components/cards/entity-card'
 import { IndexTemplate } from '@/components/templates/index-template'
+import { PageContents } from '@/components/templates/page-contents'
 import { StatStrip } from '@/components/ui/page-header'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -244,10 +245,24 @@ export default async function PracticesPage({
         ]}
       />
 
+      {/* Table of contents — jump between your stuff and the library. Built from
+          whichever sections actually render (new members only see the library). */}
+      <PageContents
+        sections={[
+          ...(profileId && (recent.length > 0 || mine.length > 0)
+            ? [{ id: 'practices-activity', label: 'Your activity' }]
+            : []),
+          ...(profileId && mine.length > 0
+            ? [{ id: 'practices-mine', label: 'Your practices', count: mine.length }]
+            : []),
+          { id: 'practices-library', label: 'Library', count: result.total },
+        ]}
+      />
+
       {/* Personal column: your activity + your practices (readable width). */}
       <div className="max-w-2xl space-y-8">
         {profileId && (recent.length > 0 || mine.length > 0) && (
-          <section>
+          <section id="practices-activity" className="scroll-mt-20">
             <SectionHeader title="Your activity" />
             <div>
               <div className="mb-3 flex items-center justify-between gap-2">
@@ -272,7 +287,7 @@ export default async function PracticesPage({
         )}
 
         {profileId && mine.length > 0 && (
-          <section>
+          <section id="practices-mine" className="scroll-mt-20">
             <SectionHeader title="Your practices" count={mine.length} />
             <ul className="space-y-3">
               {mine.map((p) => (
@@ -284,7 +299,7 @@ export default async function PracticesPage({
       </div>
 
       {/* The library — full-width, paginated, filterable grid. */}
-      <section className="mt-8">
+      <section id="practices-library" className="mt-8 scroll-mt-20">
         <SectionHeader title="Practice library" count={result.total} />
 
         {/* Pillar → sub-category + tag facets */}
