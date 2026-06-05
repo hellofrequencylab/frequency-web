@@ -38,10 +38,10 @@ export function PageHeading({
           {back.label}
         </Link>
       )}
-      {/* On a narrow screen the action stacks BELOW the title block so the title
-          gets the full width and is never crushed into the button; from sm up they
-          sit inline on one balanced row (matches the Detail context band). */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+      {/* Title left, action top-right — one balanced row at every width. The title
+          block is min-w-0 so a long title WRAPS rather than crushing the action,
+          and the action is shrink-0 so it always keeps its place on the right. */}
+      <div className="flex flex-row items-start justify-between gap-3 sm:gap-4">
         <div className="min-w-0">
           {eyebrow && (
             <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-primary-strong">
