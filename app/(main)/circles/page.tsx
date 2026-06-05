@@ -177,24 +177,37 @@ export default async function CirclesPage({
   return (
     <IndexTemplate
       title="Circles"
-      description="This is where it gets real. Find a circle near you, dive into something you love, or start your own — because showing up, week after week, is how strangers become your people."
+      description={
+        <>
+          {/* Mobile leads with a tight one-liner so the stats + actions surface
+              without scrolling past a wall of copy; desktop keeps the full pitch. */}
+          <span className="sm:hidden">Find a circle near you, or start your own.</span>
+          <span className="hidden sm:inline">
+            This is where it gets real. Find a circle near you, dive into something you love, or
+            start your own — because showing up, week after week, is how strangers become your people.
+          </span>
+        </>
+      }
     >
-      {/* Reassurance — the introvert's worry, named and answered up front. */}
-      <p className="mb-6 max-w-2xl text-sm leading-relaxed text-muted">
+      {/* Reassurance — the introvert's worry, named and answered. Secondary copy,
+          so it folds away on mobile to keep the header scannable. */}
+      <p className="mb-6 hidden max-w-2xl text-sm leading-relaxed text-muted sm:block">
         Circles are small on purpose — most are just a handful of people. You don&rsquo;t have to know
         anyone, and you don&rsquo;t have to say much. You just have to show up.
       </p>
 
       <MapZone circles={locatableCircles}>
-        {/* Control bar: network stats (left) · find-near-me + start/manage (right). */}
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-4 rounded-2xl border border-border bg-surface px-5 py-4 shadow-sm">
-          <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
+        {/* Control bar: network stats + find-near-me / start / manage. On mobile it
+            stacks into a tidy card — a 4-up stat strip over a divided action row;
+            from sm up it's the original stats-left · actions-right bar. */}
+        <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-border bg-surface px-4 py-4 shadow-sm sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-x-6 sm:px-5">
+          <div className="grid grid-cols-4 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-x-8 sm:gap-y-3">
             <Stat value={stats.circles} label="Circles" />
             <Stat value={stats.members} label="Members" />
             <Stat value={stats.cities} label="Cities" />
             <Stat value={stats.interests} label="Interests" />
           </div>
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3 border-t border-border pt-4 sm:border-0 sm:pt-0">
             {locatableCircles.length > 0 && <FindNearMeButton />}
             {user && (
               <NewCircleCompose
