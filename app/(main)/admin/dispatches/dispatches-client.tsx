@@ -314,6 +314,7 @@ export function DispatchesClient({
   hubs,
   nexuses,
   tasks,
+  initialEditId = null,
 }: {
   dispatches: DispatchRow[]
   role: CommunityRole
@@ -321,8 +322,12 @@ export function DispatchesClient({
   hubs:    { id: string; name: string }[]
   nexuses: { id: string; name: string }[]
   tasks:   { id: string; name: string }[]
+  /** ?edit=<id> deep-link from the "Edit broadcast" button on the broadcast page. */
+  initialEditId?: string | null
 }) {
-  const [editingId,   setEditingId]   = useState<string | null>(null)
+  const [editingId,   setEditingId]   = useState<string | null>(
+    initialEditId && dispatches.some((d) => d.id === initialEditId) ? initialEditId : null,
+  )
   const [isPending,   startTransition] = useTransition()
   const [actionError, setActionError] = useState<string | null>(null)
 

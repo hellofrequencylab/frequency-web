@@ -103,8 +103,12 @@ function HubForm({
   )
 }
 
-export function HubsClient({ hubs, nexuses, guides }: { hubs: HubRow[]; nexuses: NexusOption[]; guides: GuideOption[] }) {
-  const [editingId,  setEditingId]   = useState<string | null>(null)
+export function HubsClient({ hubs, nexuses, guides, initialEditId = null }: { hubs: HubRow[]; nexuses: NexusOption[]; guides: GuideOption[]; initialEditId?: string | null }) {
+  // Honor a ?edit=<id> deep-link (the "Edit hub" button on the hub page) when that
+  // hub is in this admin's list.
+  const [editingId,  setEditingId]   = useState<string | null>(
+    initialEditId && hubs.some((h) => h.id === initialEditId) ? initialEditId : null,
+  )
   const [isPending,  startTransition] = useTransition()
 
   return (

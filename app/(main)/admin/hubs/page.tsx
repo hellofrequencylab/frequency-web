@@ -6,8 +6,9 @@ import { HubsClient } from './hubs-client'
 import { NewHubCompose } from '@/components/compose/new-hub-compose'
 
 
-export default async function AdminHubsPage() {
+export default async function AdminHubsPage({ searchParams }: { searchParams: Promise<{ edit?: string }> }) {
   await requireAdmin('guide')
+  const { edit } = await searchParams
 
   const admin = createAdminClient()
   const { data: rawHubs } = await admin
@@ -51,7 +52,7 @@ export default async function AdminHubsPage() {
     >
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <HubsClient hubs={hubs} nexuses={nexuses ?? []} guides={guides ?? []} />
+          <HubsClient hubs={hubs} nexuses={nexuses ?? []} guides={guides ?? []} initialEditId={edit ?? null} />
         </div>
         <div className="space-y-4">
           <SidebarCard title="About Hubs">
