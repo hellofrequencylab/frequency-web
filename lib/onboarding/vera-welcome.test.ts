@@ -32,17 +32,27 @@ describe('buildVeraOpening', () => {
 })
 
 describe('buildWelcomeSlides', () => {
-  it('reflects the member intent on the first slide and stays a 2-slide deck', () => {
+  it('opens personalized, then walks the site (incl. a circles slide), every slide illustrated', () => {
     const slides = buildWelcomeSlides({ firstName: 'Mara', intent: 'find a running club', interests: null, location: null })
-    expect(slides).toHaveLength(2)
+    expect(slides.length).toBeGreaterThanOrEqual(5)
+    // First slide reflects who they are + what they came for.
     expect(slides[0].title).toContain('Mara')
     expect(slides[0].body).toContain('find a running club')
-    expect(slides[1].title.toLowerCase()).toContain('circle')
+    // The tour explains circles somewhere in the deck.
+    expect(slides.some((s) => s.title.toLowerCase().includes('circle'))).toBe(true)
+    // Every slide names a vector illustration to render.
+    expect(slides.every((s) => typeof s.art === 'string' && s.art.length > 0)).toBe(true)
   })
 
   it('degrades gracefully with no context', () => {
     const slides = buildWelcomeSlides({ firstName: null, intent: null, interests: null, location: null })
-    expect(slides).toHaveLength(2)
+    expect(slides.length).toBeGreaterThanOrEqual(5)
     expect(slides[0].title.length).toBeGreaterThan(0)
+    expect(slides[0].art).toBe('welcome')
+  })
+
+  it('no longer references the induction oath in the no-context opening', () => {
+    const o = buildVeraOpening({ firstName: null, intent: null, interests: null, location: null })
+    expect(o.message.toLowerCase()).not.toContain('oath')
   })
 })
