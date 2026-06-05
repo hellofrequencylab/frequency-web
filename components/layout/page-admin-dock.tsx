@@ -10,6 +10,7 @@ import {
 import { meetsAccess } from '@/lib/nav-areas'
 import type { CommunityRole } from '@/lib/community-roles'
 import type { StaffRole } from '@/lib/staff'
+import { CircleSettingsModule } from '@/components/admin/modules/circle-settings-module'
 
 // The page admin dock (CAPABILITIES-AND-MOBILE.md — inline admin as a side panel).
 // Operators get per-page admin actions (edit info, layout template, basic styles,
@@ -70,9 +71,11 @@ export function PageAdminDock({
   const isJanitor = meetsAccess('janitor', role)
   if (!can('host')) return null // operators only
 
+  const circleSlug = pathname.match(/^\/circles\/([^/]+)/)?.[1] ?? null
   const edit = sectionEdit(pathname)
   const actions: Action[] = [
-    ...(edit ? [{ kind: 'link' as const, label: 'Edit info', sub: edit.label, href: edit.href, Icon: Pencil }] : []),
+    // On a circle page the in-place CircleSettingsModule replaces the deep-link.
+    ...(edit && !circleSlug ? [{ kind: 'link' as const, label: 'Edit info', sub: edit.label, href: edit.href, Icon: Pencil }] : []),
     { kind: 'soon', label: 'Layout template', sub: 'Soon', Icon: LayoutTemplate },
     { kind: 'soon', label: 'Basic styles', sub: 'Soon', Icon: Palette },
     { kind: 'link', label: 'Group dispatch', sub: 'Broadcast to your people', href: '/admin/dispatches', Icon: Megaphone },
@@ -179,6 +182,12 @@ export function PageAdminDock({
 
             {/* Actions */}
             <div className="flex-1 overflow-y-auto p-1.5">
+              {/* In-place admin module(s) for this scope (Phase 2). */}
+              {circleSlug && (
+                <div className="px-1 pb-2 pt-1">
+                  <CircleSettingsModule />
+                </div>
+              )}
               {actions.map((a) =>
                 a.kind === 'soon' ? (
                   <div key={a.label} aria-disabled className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium text-subtle opacity-60">
