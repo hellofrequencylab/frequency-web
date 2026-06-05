@@ -46,6 +46,11 @@ const FOCUS_PATTERNS: RegExp[] = [
 const SCOPED_PREFIXES = ['/circles/', '/channels/']
 
 export function railFor(pathname: string): Rail {
+  // The profile editor keeps the standard community rail even though it lives under
+  // /settings (otherwise Focus): editing your profile is a "me" surface, so the
+  // identity/standings rail belongs beside it (ADR-116). Overrides the prefix below.
+  if (pathname === '/settings/profile') return 'global'
+
   const isFocus =
     FOCUS_PREFIXES.some((p) => pathname.startsWith(p)) ||
     FOCUS_PATTERNS.some((re) => re.test(pathname))
