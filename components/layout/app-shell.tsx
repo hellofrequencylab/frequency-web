@@ -47,6 +47,7 @@ import { AREA_ICONS } from '@/components/layout/nav-icons'
 import { UpgradeCrew } from '@/components/layout/upgrade-crew'
 import { DemoToggle } from '@/components/layout/demo-toggle'
 import { DockRevealProvider, useDockRevealed, useHoverScrollReveal } from '@/components/sidebar/dock-reveal'
+import { railFor } from '@/lib/layout/page-chrome'
 
 // The sidebar + community bar are built from NAV_AREAS (lib/nav-areas.ts — the
 // single source of truth shared with the permission grid). The whole menu is
@@ -836,31 +837,13 @@ export default function AppShell({
     return pathname === href || pathname.startsWith(href + '/')
   }
 
-  // Scope-aware rail (PAGE-FRAMEWORK §4): the GLOBAL rail shows on global/index
-  // pages. Entity DETAIL pages render their own scope-scoped rail in the page body
-  // (members/events for that circle, etc.), so the global rail is suppressed there
-  // to avoid the double-sidebar trap. A detail route = one path segment past the
-  // section (e.g. /circles/<slug>, /people/<handle>, /channels/<id>), while the
-  // index (/circles) keeps the global rail.
-  // Only sections whose detail page renders its own scoped right column.
-  // Circle + channel detail render their own scope-scoped rail in the page body,
-  // so the global rail is suppressed there. Profiles now use the standard global
-  // rail (the person's own gamification lives in their header), so /people/ is
-  // intentionally NOT in this list.
-  const SCOPED_SECTIONS = ['/circles/', '/channels/']
-  const isEntityDetail = SCOPED_SECTIONS.some(
-    (s) => pathname.startsWith(s) && pathname.slice(s.length).length > 0,
-  )
-
-  // Hide right sidebar only where it would crowd or distract:
-  // /settings (narrow focused forms); /messages/<id> (chat needs full width);
-  // /marketing (a wide workspace with its own tab bar); entity detail pages.
-  const showSidebar =
-    !!sidebar &&
-    !pathname.startsWith('/settings') &&
-    !pathname.startsWith('/marketing') &&
-    !(pathname.startsWith('/messages/') && pathname !== '/messages') &&
-    !isEntityDetail
+  // Scope-aware rail (PAGE-FRAMEWORK §3/§4): which rail (if any) frames the page
+  // is decided by ONE declarative map — lib/layout/page-chrome.ts — not by a list
+  // hand-maintained here. The GLOBAL rail shows on 'global' pages; it is suppressed
+  // for 'scoped' entity-detail pages (they render their own scope rail in-body, no
+  // double-rail trap) and for 'none' Focus pages (compose/edit/settings/operator
+  // workspaces that read best full-width). To reframe a route, edit page-chrome.ts.
+  const showSidebar = !!sidebar && railFor(pathname) === 'global'
 
   function cycleTheme() {
     if (theme === 'system') setTheme('dark')

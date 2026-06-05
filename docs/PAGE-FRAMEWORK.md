@@ -86,9 +86,11 @@ Context header band + context tabs + body + **scope-aware** right rail.
   Index* (a Circle's "Posts" tab = Stream; its "Events" tab = Index). Templates
   **nest** — that's the fractal, and it means you reuse, never rebuild.
 
-> **Focus mode** is not a 4th template — it's the shell hiding the rail
-> (`showSidebar=false`, already implemented) for Messages threads, Settings, and
-> compose flows. Same templates, no rail.
+> **Update (§8, ADR-090):** Focus and Dashboard are now **real templates** too —
+> `FocusTemplate` (the no-rail compose/edit/settings surface, formerly just "the
+> shell hiding the rail") and `DashboardTemplate` (the metric-led operator
+> workspace). All five share one `PageHeading`. See §8 for the full kit + the
+> declarative rail map (`lib/layout/page-chrome.ts`).
 
 ### How templates map to Next.js
 - A **Detail** page = a route-segment **`layout.tsx`** (e.g.
@@ -269,9 +271,71 @@ forces a big-bang rewrite.
 
 ---
 
+## 8. The kit today — five shells + one chrome map (build a page)
+
+> **Update 2026-06-05 (ADR-090):** the template kit is now complete and the
+> shell's rail treatment is **declarative**. "Focus" and "Dashboard" are no longer
+> informal — they're real templates next to Stream / Index / Detail. A page is now
+> *two lines of decision*: pick a template, register a rail.
+
+### 8.1 The five templates — `@/components/templates`
+
+| Template | Import | Use it for | Header / slots |
+|---|---|---|---|
+| **Stream** | `StreamTemplate` | a flow of items: Feed, Broadcast, a circle discussion | `eyebrow·title·description·action·composer` |
+| **Index** | `IndexTemplate` | a collection to browse: Circles, Channels, Events, People, Search | `title·description·action·toolbar` |
+| **Detail** | `DetailTemplate` | one entity: a Circle, Event, Profile, Hub, Program | context band (`badges·actions`) + `tabs` |
+| **Dashboard** | `DashboardTemplate` | a metric-led operator/steward workspace: Marketing, CRM, Crew home | `eyebrow·title·description·actions·stats` + sections |
+| **Focus** | `FocusTemplate` | a centered, no-rail surface: compose/edit forms, Settings, single-conversion + scan-confirm | `eyebrow·title·description·actions·back·width` |
+
+All five share **one header grammar** (`PageHeading`) — same type scale, eyebrow,
+description, action slot — so titles read identically everywhere. Detail keeps a
+richer context band (identity + badges + tab row) but on the same scale. The
+admin equivalent of Dashboard is `<AdminPage>` (a rail-less sibling under
+`/admin/*`'s own two-layer nav).
+
+**Body primitives (compose, never re-declare):** `EntityCard`/`PersonCard` (browse
+cards), `StatCard` (KPI tile with delta/drill-down), `SectionHeader`, `EmptyState`,
+`ModuleCard`/`SidebarCard` (rail/admin panels).
+
+### 8.2 The chrome map — `lib/layout/page-chrome.ts`
+
+Which rail frames a page is **one pure function**, `railFor(pathname)`, returning:
+
+- `'global'` — the community right rail (browse / stream / dashboard default).
+- `'scoped'` — global rail suppressed; the **Detail** page renders its own scope
+  rail in-body (no double-rail trap). Sections: `/circles/*`, `/channels/*`.
+- `'none'` — **Focus**: no rail. Compose/edit (`/events/new`,
+  `/practices/*/edit`, `/connections/*`), settings, message threads, and the
+  operator/steward workspaces (`/marketing`, `/crm`, `/outreach`, `/codes`,
+  `/upgrade`, `/g/*`, `/n/*`).
+
+`app-shell.tsx` shows the global rail iff `railFor(pathname) === 'global'`. **To
+reframe a route, edit `page-chrome.ts` — never the shell.** Locked by
+`page-chrome.test.ts`.
+
+### 8.3 Build a page — the decision tree
+
+1. **What is the content?** → pick the template from the table above.
+2. **Does it read best full-width (a form, a workspace, a single decision)?** →
+   add its route to a Focus list in `page-chrome.ts` and use `FocusTemplate`.
+   Otherwise it keeps the global rail (or is `'scoped'` if it's a circle/channel
+   detail that renders its own rail).
+3. **Fill slots with kit primitives.** No hand-rolled `<h1>` headers, no bespoke
+   cards, no `text-[10/11px]`, no hardcoded hex.
+4. **Don't block the shell.** Server-fetch in the page; push slow/independent
+   queries behind per-section `<Suspense>` (§5).
+
+That's the whole contract. A new feature is a template choice + a chrome line, not
+a new layout.
+
+---
+
 ## Decisions captured
 
-- **One shell, 3 templates (Stream / Index / Detail) + a no-rail Focus mode.**
+- **One shell, FIVE templates (Stream / Index / Detail / Dashboard / Focus)** — all
+  on one `PageHeading` grammar; the rail is a declarative `page-chrome.ts` map, not
+  shell-baked conditionals (ADR-090).
 - **Features are widgets**: self-fetching Server Components, scope-aware,
   gate-aware, returning null when empty, wrapped in a uniform `WidgetCard`.
 - **Assignment is one declarative config**; pages only render `<WidgetSlot>`.

@@ -1,10 +1,14 @@
 // Stream template — the "feed" shell (PAGE-FRAMEWORK §3, Template A).
 //
-// One grammar for chronological/ranked streams (the home Feed, a Circle feed, a
-// profile timeline): a title + description, an optional composer slot at the top,
-// an optional sort/filter control, over the stream body.
+// One grammar for chronological/ranked streams (the home Feed, Broadcast, a
+// Circle's discussion, a profile timeline): a title + description, an optional
+// composer slot at the top, an optional sort/filter control, over the stream body.
+//
+// The header is the shared <PageHeading>, so streams read like every other page.
 //
 // Presentational + server-friendly (no hooks).
+
+import { PageHeading } from './page-heading'
 
 export function StreamTemplate({
   eyebrow,
@@ -29,20 +33,12 @@ export function StreamTemplate({
 }) {
   return (
     <div>
-      <div className="flex items-end justify-between gap-4 mb-6 pb-5 border-b border-border">
-        <div>
-          {eyebrow && (
-            <p className="text-xs font-semibold uppercase tracking-widest text-primary-strong mb-1.5">
-              {eyebrow}
-            </p>
-          )}
-          <h1 className="text-2xl font-bold text-text mb-1">{title}</h1>
-          {description && (
-            <p className="text-sm text-muted leading-relaxed max-w-2xl">{description}</p>
-          )}
-        </div>
-        {(action || sort) && <div className="shrink-0">{action ?? sort}</div>}
-      </div>
+      <PageHeading
+        eyebrow={eyebrow}
+        title={title}
+        description={description}
+        actions={action ?? sort}
+      />
       {composer && <div className="mb-6">{composer}</div>}
       {children}
     </div>

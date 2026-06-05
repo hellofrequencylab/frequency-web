@@ -1,11 +1,16 @@
 // Index template — the "list / discovery" shell (PAGE-FRAMEWORK §3, Template B).
 //
-// One grammar for browse pages (Circles, Interests, Events, Partners, Directory):
+// One grammar for browse pages (Circles, Channels, Events, Partners, Directory):
 // a title + description, an optional header action (create/new), an optional
 // toolbar (filters/search), over the list body. The body and any right rail are
 // the page's own; this is the consistent chrome around them.
 //
+// The header is the shared <PageHeading> — the same title block Stream / Dashboard
+// / Focus use, so every page reads the same.
+//
 // Presentational + server-friendly (no hooks).
+
+import { PageHeading } from './page-heading'
 
 export function IndexTemplate({
   title,
@@ -24,15 +29,7 @@ export function IndexTemplate({
 }) {
   return (
     <div>
-      <div className="flex items-end justify-between gap-4 mb-6 pb-5 border-b border-border">
-        <div>
-          <h1 className="text-2xl font-bold text-text mb-1">{title}</h1>
-          {description && (
-            <p className="text-sm text-muted leading-relaxed max-w-2xl">{description}</p>
-          )}
-        </div>
-        {action && <div className="shrink-0">{action}</div>}
-      </div>
+      <PageHeading title={title} description={description} actions={action} />
       {toolbar && <div className="mb-4">{toolbar}</div>}
       {children}
     </div>
