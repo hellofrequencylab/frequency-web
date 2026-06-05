@@ -77,6 +77,30 @@ these tables mean.
 `get_my_role`, `public_circles`, `public_circle_by_id`, `public_events`,
 `public_event_by_slug`, `public_posts`, `search_handles_public`
 
+**Entry Points & distribution (lead funnels)**
+`qr_codes` (+ entry-point columns `template_id`, `flyer`, `campaign_id`), `qr_scans`
+(+ `variant_key`), `entry_campaigns`, `entry_point_variants`,
+`entry_point_conversions`, `entry_template_settings`, `nurture_sequences`,
+`nurture_steps`, `nurture_enrollments`
+
+> **Entry Points** (ADR-126; full spec `docs/ENTRY-POINTS.md`) is the distribution
+> layer: an entry point is a `qr_codes` row with `template_id` set (`purpose` NULL, so
+> the unique `(owner, purpose)` index doesn't cap them) carrying `flyer` slot content,
+> optionally grouped under an `entry_campaigns` row. Scans log to `qr_scans`
+> (`record_qr_scan` RPC, now with `p_variant`); owner credit on signup rides the
+> `fq_ref` cookie → `profiles.referred_by_profile_id`.
+> **Nurture** (ADR-131): `nurture_sequences` (one per persona) → `nurture_steps`
+> (timed emails) → `nurture_enrollments` (a contact's cursor; cron `/api/cron/nurture`).
+> **A/B** (ADR-136): `entry_point_variants` (weighted destinations) + `qr_scans.variant_key`
+> + `entry_point_conversions` (per-variant signups via the `fq_var` cookie).
+> **Template curation** (ADR-126 Phase 2b): `entry_template_settings` (a missing row ⇒
+> the code-registry template is enabled). These tables are **service-role only** (no
+> client RLS policies), like `contacts` / `qr_codes`.
+
+> **CRM & marketing** tables (`contacts`, `campaigns`, `automations`, `segments`,
+> `member_tags`, `member_traits`, …) are specified in `docs/COMMS-CRM-ARCHITECTURE.md`
+> and `docs/NETWORK-CRM.md` — the source of truth for that domain.
+
 ## The `profiles` table — universal entity record
 
 `profiles` is the single identity row for **every** entity, not just logged-in
