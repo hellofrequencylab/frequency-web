@@ -3396,6 +3396,45 @@ a stop is a one-line data edit in `lib/onboarding/spotlight.ts`.
 
 ---
 
+## ADR-119: Platform staff manage any circle; "Edit circle" button; edit demo circles without claiming
+
+**Status:** Accepted · `lib/core/capabilities.ts`, `app/(main)/circles/[slug]/page.tsx`,
+`app/(main)/admin/circles/{page.tsx,circles-client.tsx}`. Builds on the capability resolver
+(CAPABILITIES-AND-MOBILE.md) and the demo-claim flow (ADR-091). Parallels ADR-118's "admins
+curate any practice."
+
+**Context.** Circle management (`circle.editSettings` and friends) was granted to the host, the
+guide/mentor who leads the parent hub/nexus, and **janitor** — but not **admin**, even though
+admin sits one rung below janitor and shares its operational keys. So admins couldn't edit
+arbitrary circles. Separately, a demo circle only offered the **claim** flow (which flips
+`is_demo=false`, installs the claimer as host, and awards zaps) — there was no way for staff to
+*edit* a demo circle in place, and the circle page's old `?edit=true` "Edit info" link was inert
+(nothing read the param).
+
+**Decision.**
+- **Staff = admin OR janitor lead any circle.** The resolver's circle `leads` predicate uses
+  `isStaff = atLeastRole(role, 'admin')` instead of `isJanitor`, so admin gains the same
+  `editSettings`/`moderate`/`assignTask`/`broadcast` grant janitor already had. Pure-policy, one
+  predicate; the server re-checks it before mutating (capabilities are law, not just UX).
+- **An explicit "Edit circle" button** on the circle page header, shown to staff, deep-links to
+  the full admin editor focused on that circle (`/admin/circles?edit=<id>`, which now auto-opens
+  the row). It renders on demo circles too.
+- **Edit demo without claiming.** Editing via the admin `updateCircle` patches name/about/type/
+  cap/hub/status/host and **leaves `is_demo` untouched**, so staff can fix up a demo circle in
+  place; claiming stays the separate, intentional "make it real" path.
+
+**Alternatives.** Build a bespoke inline edit form on the circle page (rejected — the admin editor
+already exists and is the source of truth; deep-linking reuses it). Extend admin to hub/nexus
+management too (deferred — out of scope; this is the circle request, mirroring ADR-118's
+practice-only scope).
+
+**Consequences.** Admins join janitors as full circle operators; the dead "Edit info" link is
+superseded by a working staff path. A demo circle can be tidied without un-demoing it. The admin
+`updateCircle` still defaults an empty `host_id` to the caller, so reassigning the host on a
+host-less circle is possible — noted, not changed here (the editor pre-fills the existing host).
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 
