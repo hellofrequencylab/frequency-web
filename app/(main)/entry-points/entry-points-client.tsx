@@ -46,9 +46,12 @@ function destinationLabel(groups: DestinationGroup[], value: string): string {
 export function EntryPointsManager({
   cards,
   destinationGroups,
+  templates,
 }: {
   cards: EntryCard[]
   destinationGroups: DestinationGroup[]
+  /** Templates the operator has enabled for crew (defaults to all). */
+  templates?: EntryTemplate[]
 }) {
   const [template, setTemplate] = useState<EntryTemplate | null>(null)
   const [creating, setCreating] = useState(false)
@@ -77,7 +80,7 @@ export function EntryPointsManager({
         {creating && (
           <div className="p-4">
             {!template ? (
-              <TemplatePicker onPick={setTemplate} onCancel={close} />
+              <TemplatePicker templates={templates} onPick={setTemplate} onCancel={close} />
             ) : (
               <EntryForm
                 template={template}
@@ -105,7 +108,8 @@ export function EntryPointsManager({
   )
 }
 
-function TemplatePicker({ onPick, onCancel }: { onPick: (t: EntryTemplate) => void; onCancel: () => void }) {
+function TemplatePicker({ templates, onPick, onCancel }: { templates?: EntryTemplate[]; onPick: (t: EntryTemplate) => void; onCancel: () => void }) {
+  const choices = templates ?? listEntryTemplates()
   return (
     <div>
       <div className="mb-3 flex items-center justify-between">
@@ -115,7 +119,7 @@ function TemplatePicker({ onPick, onCancel }: { onPick: (t: EntryTemplate) => vo
         </button>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
-        {listEntryTemplates().map((t) => (
+        {choices.map((t) => (
           <button
             key={t.id}
             onClick={() => onPick(t)}

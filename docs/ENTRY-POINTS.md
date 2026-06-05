@@ -174,7 +174,7 @@ separate, reviewed step).
 |---|---|---|
 | ✅ Foundation | QR engine · scan resolver · attribution · referral zaps · CRM · personas/lead flows | in repo |
 | ✅ **1 — Crew MVP** | "My Entry Points": template → branded QR + **flyer (vector SVG + PNG)** → create points → signup credit | `qr_codes` · QR render · attribution · zaps |
-| 🟡 **2 — Admin builder** | ✅ Campaign builder (`/marketing/funnels`) + per-campaign scans + in-place entry-point creation. ⏳ Puck landings · assign-to-crew · template curation | `/marketing` · Puck `pages` |
+| 🟡 **2 — Admin builder** | ✅ Campaign builder (`/marketing/funnels`) + per-campaign scans + in-place creation + **assign-to-crew** + **template curation**. ⏳ Puck custom landings | `/marketing` · Puck `pages` |
 | ✅ **3 — Growth** | ✅ Per-persona nurture (`/marketing/nurture`, ADR-131) · ✅ Recruiter leaderboard + tiers (`/crew/leaderboard?scope=entrypoints`, ADR-134) · ✅ A/B testing (ADR-136) · ✅ Segment broadcasts (persona segments seeded; `/marketing/campaigns` targets them) | `automations` · `achievements` |
 
 ### Phase 3 — A/B testing (ADR-136)
@@ -197,7 +197,9 @@ separate, reviewed step).
 - **Campaigns:** `entry_campaigns` CRUD — `lib/entry-points/campaigns.ts` (reads) + `app/(main)/marketing/funnels/actions.ts` (admin-gated create/rename/archive). Each campaign shows its entry-point count + total scans.
 - **Campaign detail** (`/marketing/funnels/<id>`): rename/archive + an in-place builder that **reuses the Phase 1 `EntryForm`/`EntryRow`**, filing new entry points under the campaign (`qr_codes.campaign_id`). No duplicated UI.
 - **Threading:** `EntryPointInput.campaignId` (validated via `campaignExists`) flows through `createEntryPoint`/`updateEntryPoint`; `listEntryPointsByCampaign` powers the detail view.
-- **Still pending (2b):** Puck custom landings, assign-an-entry-point-to-a-crew-member (today the admin owns what they create), and operator template curation.
+- **Assign-to-crew (2b, done):** each entry point in a campaign has an owner control (`reassignEntryPoint`) — an operator can hand it to any active crew-and-above member (`listAssignableMembers`); the new owner gets it in their "My Entry Points" + future recruiter-board scan credit. Historical signup attribution (`referred_by`, set at scan time) is unchanged.
+- **Template curation (2b, done):** operators toggle which registry templates crew may use (a "Crew templates" panel on `/marketing/funnels`). Backed by `entry_template_settings` (migration `20260607030000`; a missing row ⇒ enabled, so new templates are available by default); `crewEntryTemplates()` filters the crew builder's picker. Disabled templates stay available to operators.
+- **Still pending (2b):** Puck custom landings (the only remaining advanced builder piece).
 
 ### Phase 1 — what shipped
 
