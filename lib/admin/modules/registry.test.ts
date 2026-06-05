@@ -8,6 +8,7 @@ import type { Capability, Scope } from '@/lib/core/capabilities'
 const circleScope: Scope = { kind: 'circle', circleId: 'c1', hostId: 'h1' }
 const hubScope: Scope = { kind: 'hub', hubId: 'hub1' }
 const nexusScope: Scope = { kind: 'nexus', nexusId: 'nx1' }
+const eventScope: Scope = { kind: 'event', eventId: 'e1', hostId: 'h1' }
 
 describe('admin module registry', () => {
   it('surfaces circle.settings to a viewer holding circle.editSettings', () => {
@@ -41,6 +42,13 @@ describe('admin module registry', () => {
     expect(modulesFor(nexusScope, manage).map((m) => m.id)).toEqual(['nexus.settings'])
     expect(modulesFor(nexusScope, new Set<Capability>())).toHaveLength(0)
     expect(showsAdminPanel(nexusScope, manage)).toBe(true)
+  })
+
+  it('surfaces event.settings only on an event scope, only with event.editSettings', () => {
+    const caps = new Set<Capability>(['event.editSettings'])
+    expect(modulesFor(eventScope, caps).map((m) => m.id)).toEqual(['event.settings'])
+    expect(modulesFor(eventScope, new Set<Capability>())).toHaveLength(0)
+    expect(modulesFor(circleScope, caps)).toHaveLength(0)
   })
 
   it('returns modules ordered by their `order` field', () => {

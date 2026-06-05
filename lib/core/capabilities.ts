@@ -28,6 +28,8 @@ export type Capability =
   | 'circle.moderate'
   | 'circle.assignTask'
   | 'circle.broadcast'
+  // event
+  | 'event.editSettings'
   // tasks (crew engagement inside a circle)
   | 'task.volunteer'
   | 'task.claim'
@@ -56,6 +58,14 @@ export type Scope =
   | { kind: 'profile'; ownerId: string }
   | { kind: 'hub'; hubId: string; guideId?: string | null; viewerManagesParent?: boolean }
   | { kind: 'nexus'; nexusId: string; mentorId?: string | null }
+  | {
+      kind: 'event'
+      eventId: string
+      hostId: string | null
+      /** True if the viewer manages the event's parent scope (e.g. its circle) —
+       *  computed by the caller (avoids over-granting). */
+      viewerManagesScope?: boolean
+    }
 
 export interface Viewer {
   /** profiles.id, or null when anonymous. */
@@ -131,6 +141,15 @@ export function resolveCapabilities(viewer: Viewer, scope: Scope): Set<Capabilit
     case 'nexus': {
       const leadsNexus = (!!profileId && scope.mentorId === profileId) || isJanitor
       if (leadsNexus) caps.add('nexus.manage')
+      break
+    }
+
+    case 'event': {
+      // The event's host, platform staff, or whoever manages its parent scope
+      // (e.g. the circle the event belongs to — caller-computed) may edit it.
+      const leadsEvent =
+        (!!profileId && scope.hostId === profileId) || isStaff || scope.viewerManagesScope === true
+      if (leadsEvent) caps.add('event.editSettings')
       break
     }
   }
