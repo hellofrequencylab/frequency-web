@@ -2,7 +2,10 @@
 
 import { useState } from 'react'
 import { Zap } from 'lucide-react'
-import { DEMO_HIDE_COOKIE } from '@/lib/demo-preference'
+
+// Inlined (must match DEMO_HIDE_COOKIE in lib/demo-preference.ts). That module
+// imports next/headers (server-only), so a client component can't import from it.
+const DEMO_HIDE_COOKIE = 'fq_hide_demo'
 
 // The header "Beta content" on/off switch (members only). Flips a cookie the
 // server reads to show/hide seeded demo content across the feed + listings.
