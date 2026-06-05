@@ -51,13 +51,30 @@ You can shape practices, not just pick them:
 (Editing covers the content and cadence; the zaps a practice rewards are set by the
 team so the game stays fair.)
 
+## Claim a starter template
+
+Many library practices are **templates** — a proven starting point you can claim and
+make your own. Open one and hit **Claim & make it yours**:
+
+1. Tell **Vera** what you want from it and when you can realistically do it.
+2. Vera shapes a personal version — a name, a cadence that fits your week, and concrete
+   steps for *you*. (No Vera handy? Skip and tweak it yourself.)
+3. Review, edit anything, and claim it. You get your own private copy, it is adopted
+   onto your list, and you earn zaps for claiming your first one.
+
+From there it is yours: edit it anytime, log it daily, and — if you want — share it back
+to the community library for others to find.
 
 ## What each practice shows
 
-Open any practice and you will find more than a title: a short summary of what it
-is, a "how to do it" walk-through, a category (movement, holistic health,
-spirituality, creative, human relating, business support), and a cadence hint
-(daily, weekly, as needed). The library is browsable by what you are drawn to.
+Open any practice and you get its own page: a header image, the full "how to do it"
+write-up and steps, a short summary, its Pillar and sub-category, and a stats band —
+the reward per log, the cadence, how many people are practising it, and how many times
+it has been logged.
+
+Each practice also has a category (movement, holistic health, spirituality, creative,
+human relating, business support) and a cadence hint (daily, weekly, as needed). The
+library is browsable by what you are drawn to.
 
 ## Find your way around the library
 
