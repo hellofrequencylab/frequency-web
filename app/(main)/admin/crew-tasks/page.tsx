@@ -7,7 +7,7 @@ import { NewTaskCompose } from '@/components/compose/new-task-compose'
 
 
 export default async function AdminCrewTasksPage() {
-  await requireAdmin('host')
+  await requireAdmin('host', { staff: 'community' })
 
   const admin = createAdminClient()
 

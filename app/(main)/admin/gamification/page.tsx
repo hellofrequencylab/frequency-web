@@ -23,7 +23,7 @@ type TopEarner = Pick<
 >
 
 export default async function AdminGamificationPage() {
-  const { role } = await requireAdmin('host')
+  const { role } = await requireAdmin('host', { staff: 'community' })
 
   const admin = createAdminClient()
 

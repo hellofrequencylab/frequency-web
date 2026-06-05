@@ -10,7 +10,7 @@ export default async function AdminCirclesPage({
   searchParams: Promise<{ edit?: string }>
 }) {
   const { edit } = await searchParams
-  const { profileId, role } = await requireAdmin('host')
+  const { profileId, role } = await requireAdmin('host', { staff: 'community' })
   const admin = createAdminClient()
 
   // Fetch circles scoped to role

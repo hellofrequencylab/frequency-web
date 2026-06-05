@@ -3753,12 +3753,17 @@ are the distribution layer on top. Operator playbooks live in Notion, linked to 
 **Enforcement (in progress):** the staff-gated surfaces now run on the capability
 model — the **marketing** gates use `staffCan('marketing')` (actions + layout), and
 nav surfacing (`meetsStaff`) + the Profile Creator (`connectionsOwnerId`) use
-`staffCan('profiles')`. **Still to do:** union the staff capability into the
-community-gated `/admin` surfaces (the single `requireAdmin` gate + `ADMIN_GROUPS` +
-sub-nav) so Operations/Support unlock the right admin pages — kept to its own PR
-because it threads `staffRole` through ~10 pages and must stay fail-closed on the
-sensitive ones (Roles · Members · AI · Platform stay community-janitor only).
-Extends ADR-027; layers over `ADMIN_GROUPS.min` + `area_permissions`.
+`staffCan('profiles')`. The `/admin` guard is now an **additive, fail-closed union**
+(`requireAdmin(min, { staff })` also admits a staff role holding that capability domain,
+write), wired for the **Community group** (Overview · Circles · Channels · Events ·
+Broadcasts · Crew tasks · Gamification · Moderation) + nav/launchpad/sub-nav — so
+Operations/Support reach the community admin pages. **Sensitive groups stay
+community-janitor only** (Roles · Members · AI · Platform · Vera have no `staffDomain`).
+**Still to do:** wire the remaining groups (Structure · Insights · QR) and
+**write-action parity** — the per-page CRUD server actions still gate on community
+role/capabilities, so staff currently get read/navigate into the community admin pages;
+full write parity is the next slice. Extends ADR-027; layers over `ADMIN_GROUPS` +
+`area_permissions`.
 
 **Context.** Two axes exist: the **community trust ladder** (member→…→admin→janitor, community
 standing) and a separate **staff/operations** axis (`team_members`: analyst→marketer→admin→owner,
