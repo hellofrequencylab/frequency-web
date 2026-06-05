@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getStaffMember, atLeastStaff } from '@/lib/staff'
+import { getStaffMember, staffCan } from '@/lib/staff'
 
 export interface RuleResult {
   ok: boolean
@@ -17,7 +17,7 @@ export async function createRule(input: {
   body: string
 }): Promise<RuleResult> {
   const staff = await getStaffMember()
-  if (!staff || !atLeastStaff(staff.role, 'marketer')) return { ok: false, error: 'Marketer access required.' }
+  if (!staff || !staffCan(staff.role, 'marketing')) return { ok: false, error: 'Marketer access required.' }
 
   const name = input.name.trim()
   if (!name || !input.triggerEvent) return { ok: false, error: 'Name and trigger are required.' }
@@ -39,7 +39,7 @@ export async function createRule(input: {
 
 export async function toggleRule(id: string, enabled: boolean): Promise<void> {
   const staff = await getStaffMember()
-  if (!staff || !atLeastStaff(staff.role, 'marketer')) return
+  if (!staff || !staffCan(staff.role, 'marketing')) return
 
   const db = createAdminClient() as unknown as SupabaseClient
   await db.from('automation_rules').update({ enabled }).eq('id', id)

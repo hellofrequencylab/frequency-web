@@ -3750,10 +3750,15 @@ are the distribution layer on top. Operator playbooks live in Notion, linked to 
 (`lib/core/staff-roles.ts`, `lib/staff.ts` `requireStaffCap`, `/admin/roles`
 `StaffRoleManager` + `setStaffRole`/`addStaffMember`, migration
 `20260606000100_team_member_roles.sql`, tests `lib/core/staff-roles.test.ts`).
-**Follow-up (enforcement rewire):** point the legacy marketing gates at
-`staffCan('marketing')` and union the staff capability into the community-gated
-`/admin` surfaces (the single `requireAdmin` gate) so Operations/etc. unlock the
-right admin pages. Extends ADR-027; layers over `ADMIN_GROUPS.min` + `area_permissions`.
+**Enforcement (in progress):** the staff-gated surfaces now run on the capability
+model — the **marketing** gates use `staffCan('marketing')` (actions + layout), and
+nav surfacing (`meetsStaff`) + the Profile Creator (`connectionsOwnerId`) use
+`staffCan('profiles')`. **Still to do:** union the staff capability into the
+community-gated `/admin` surfaces (the single `requireAdmin` gate + `ADMIN_GROUPS` +
+sub-nav) so Operations/Support unlock the right admin pages — kept to its own PR
+because it threads `staffRole` through ~10 pages and must stay fail-closed on the
+sensitive ones (Roles · Members · AI · Platform stay community-janitor only).
+Extends ADR-027; layers over `ADMIN_GROUPS.min` + `area_permissions`.
 
 **Context.** Two axes exist: the **community trust ladder** (member→…→admin→janitor, community
 standing) and a separate **staff/operations** axis (`team_members`: analyst→marketer→admin→owner,

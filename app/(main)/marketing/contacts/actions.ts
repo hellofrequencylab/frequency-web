@@ -3,7 +3,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { requireStaff } from '@/lib/staff'
+import { requireStaffCap } from '@/lib/staff'
 import { setPlatformFlag } from '@/lib/platform-flags'
 
 // Change a contact's marketing consent (subscribe / unsubscribe). Marketing
@@ -12,7 +12,7 @@ export async function setContactConsent(
   id: string,
   state: 'subscribed' | 'unsubscribed',
 ): Promise<void> {
-  await requireStaff('marketer')
+  await requireStaffCap('marketing')
   const db = createAdminClient() as unknown as SupabaseClient
   await db
     .from('contacts')
@@ -24,7 +24,7 @@ export async function setContactConsent(
 // Operator switch: send the one-time intro email when a steward scans someone into
 // their personal CRM. Default off; every flip is audited in platform_flag_events.
 export async function setScanInviteEnabled(enabled: boolean): Promise<void> {
-  const me = await requireStaff('marketer')
+  const me = await requireStaffCap('marketing')
   await setPlatformFlag('scan_invite_email_enabled', enabled, { changedBy: me.profileId, source: 'admin' })
   revalidatePath('/marketing/contacts')
 }
