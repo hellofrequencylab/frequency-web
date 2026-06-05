@@ -81,13 +81,19 @@ export async function fetchMessagesSummary(): Promise<MessagesSummary> {
     }))
   }
 
-  // ── DMs (top 5 by recent activity) ─────────────────────────────────
-  const { data: myParts } = await supabase
+  // ── DMs (top 5 by recent activity) — 1:1 only (Phase B) ────────────
+  // Exclude migrated group threads (they live as private rooms now).
+  const { data: myPartsRaw } = await (supabase as unknown as SupabaseClient)
     .from('conversation_participants')
-    .select('conversation_id, last_read_at, conversations!conversation_id(id, name)')
+    .select('conversation_id, last_read_at, conversations!conversation_id(id, name, migrated_to_room_id)')
     .eq('profile_id', myProfileId)
+  const myParts = ((myPartsRaw ?? []) as unknown as Array<{
+    conversation_id: string
+    last_read_at: string | null
+    conversations: { id: string; name: string | null; migrated_to_room_id: string | null } | null
+  }>).filter((p) => !p.conversations?.migrated_to_room_id)
 
-  const convIds = (myParts ?? []).map(p => p.conversation_id as string)
+  const convIds = myParts.map(p => p.conversation_id as string)
   const dmReadMap: Record<string, string | null> = {}
   const convNameMap: Record<string, string | null> = {}
   for (const p of myParts ?? []) {

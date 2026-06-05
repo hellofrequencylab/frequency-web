@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Zap, Check, MessageSquare, CalendarDays, Users, Star, Radio, BarChart3 } from 'lucide-react'
+import { FocusTemplate } from '@/components/templates'
 import { UpgradeToggle } from './upgrade-toggle'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
@@ -32,7 +33,11 @@ export default async function UpgradePage() {
   ]
 
   return (
-    <div className="max-w-lg mx-auto py-4">
+    <FocusTemplate
+      width="narrow"
+      title="Membership"
+      description="Your access to the Frequency community — free during beta."
+    >
       {/* Beta banner */}
       <div className="rounded-2xl bg-primary-bg border border-primary-bg/50 px-5 py-4 mb-8">
         <div className="flex items-center gap-2 mb-1.5">
@@ -104,6 +109,6 @@ export default async function UpgradePage() {
           during the beta period.
         </p>
       </div>
-    </div>
+    </FocusTemplate>
   )
 }

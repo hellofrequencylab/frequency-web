@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import { ArrowRight, Compass, Users, HandHeart, Home } from 'lucide-react'
-import { Render } from '@measured/puck/rsc'
 import {
   PhotoHero,
   Section,
@@ -15,8 +14,6 @@ import {
   Card,
 } from '@/components/marketing/marketing-ui'
 import { BETA_CTA_LABEL, BETA_CTA_HREF, FOUNDING_PLACE } from '@/lib/site'
-import { config } from '@/lib/page-editor/config'
-import { getPublishedData } from '@/lib/page-editor/data'
 
 export const revalidate = 3600
 
@@ -32,15 +29,9 @@ export const metadata: Metadata = {
   },
 }
 
-export default async function AboutPage() {
-  const data = await getPublishedData('about')
-  if (data && Array.isArray(data.content) && data.content.length > 0) {
-    return <Render config={config} data={data} />
-  }
-  return <LegacyAbout />
-}
-
-function LegacyAbout() {
+// Code-locked (like the splash): the coded story is the single source of truth, so
+// no published page-editor draft can shadow it with duplicated/garbled blocks.
+export default function AboutPage() {
   return (
     <>
       {/* ── Hero ───────────────────────────────────────────────────────────── */}

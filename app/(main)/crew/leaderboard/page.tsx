@@ -7,6 +7,8 @@ import { createClient } from '@/lib/supabase/server'
 import { getRankDef, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
 import { getInitials } from '@/lib/utils'
 import { LeaderboardTabs } from './leaderboard-tabs'
+import { IndexTemplate } from '@/components/templates'
+import { EmptyState } from '@/components/ui/empty-state'
 
 interface LeaderboardEntry {
   id: string
@@ -148,37 +150,25 @@ export default async function LeaderboardPage({
   const myRank = entries.findIndex(e => e.id === profile.id)
 
   return (
-    <div>
-      <div className="mb-6">
-        <div className="flex items-center gap-3">
-          <Link href="/crew" className="text-sm text-subtle hover:text-muted dark:hover:text-subtle transition-colors">Crew</Link>
-          <span className="text-subtle">/</span>
-          <h1 className="text-2xl font-bold text-text">Leaderboard</h1>
-        </div>
-        <p className="text-sm text-muted mt-1">
-          Season rankings across your community. Compete with your circle, hub, nexus, or everyone.
-        </p>
-      </div>
-
-      <LeaderboardTabs activeScope={scope} />
-
+    <IndexTemplate
+      title="Leaderboard"
+      description="Season rankings across your community. Compete with your circle, hub, nexus, or everyone."
+      toolbar={<LeaderboardTabs activeScope={scope} />}
+    >
       {myRank >= 0 && (
-        <div className="mb-4 rounded-xl border border-primary-bg/60 dark:border-primary/40 bg-primary-bg/50 dark:bg-primary-bg px-4 py-2.5 flex items-center gap-2">
-          <span className="text-xs font-medium text-primary-strong">
+        <div className="mb-4 rounded-xl bg-primary-bg/50 px-4 py-2.5 flex items-center gap-2">
+          <span className="text-sm font-medium text-primary-strong">
             Your rank: #{myRank + 1} of {entries.length} in {scopeLabel}
           </span>
         </div>
       )}
 
       {entries.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border/60 dark:border-border-strong/60 bg-surface/50 dark:bg-canvas/50 p-10 text-center">
-          <TrendingUp className="w-7 h-7 text-subtle mx-auto mb-2" />
-          <p className="text-sm text-subtle">No data for this scope yet.</p>
-        </div>
+        <EmptyState icon={TrendingUp} title="No data for this scope yet." />
       ) : (
-        <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
+        <div className="rounded-2xl bg-surface-elevated/40 px-2 py-1.5">
           {/* Header */}
-          <div className="grid grid-cols-[2.5rem_1fr_5rem_4rem_4rem_5rem] gap-2 px-4 py-2 border-b border-border text-xs font-semibold uppercase tracking-wider text-subtle">
+          <div className="grid grid-cols-[2.5rem_1fr_5rem_4rem_4rem_5rem] gap-2 px-3 py-2 text-xs font-medium text-subtle">
             <span>#</span>
             <span>Member</span>
             <span className="text-right">{scope === 'gems' ? 'Gems' : 'Zaps'}</span>
@@ -195,7 +185,7 @@ export default async function LeaderboardPage({
             return (
               <div
                 key={entry.id}
-                className={`grid grid-cols-[2.5rem_1fr_5rem_4rem_4rem_5rem] gap-2 px-4 py-2.5 items-center border-b border-border dark:border-border/30 last:border-0 ${
+                className={`grid grid-cols-[2.5rem_1fr_5rem_4rem_4rem_5rem] gap-2 px-3 py-2.5 items-center rounded-lg ${
                   isSelf ? 'bg-primary-bg/60 dark:bg-primary-bg' : ''
                 }`}
               >
@@ -254,6 +244,6 @@ export default async function LeaderboardPage({
           })}
         </div>
       )}
-    </div>
+    </IndexTemplate>
   )
 }

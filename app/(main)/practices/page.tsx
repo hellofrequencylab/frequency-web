@@ -1,13 +1,16 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Flame, Sparkles, Library, Zap } from 'lucide-react'
+import { Flame, Sparkles, Library, Zap, Pencil, Wand2 } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { forkPracticeAction } from './actions'
 import {
   listPublicPractices,
   getMemberPractices,
   getRecentPracticeLogs,
+  type Practice,
 } from '@/lib/practices'
-import { getPillars, pillarsById } from '@/lib/pillars'
+import { getPillars, pillarsById, type Pillar } from '@/lib/pillars'
 import { LogPracticeButton } from '@/components/practice/log-practice-button'
 import { AdoptPracticeButton } from '@/components/practice/adopt-practice-button'
 import { CreatePracticeForm } from '@/components/practice/create-practice-form'
@@ -16,6 +19,9 @@ import { IndexTemplate } from '@/components/templates/index-template'
 import { StatStrip } from '@/components/ui/page-header'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
+import { DemoBadge } from '@/components/ui/demo-badge'
+import { demoModeEnabled } from '@/lib/platform-flags'
+import { viewerHidesDemo } from '@/lib/demo-preference'
 
 export const metadata: Metadata = {
   title: 'Practices',
@@ -44,6 +50,46 @@ function PracticeMeta({
         </span>
       )}
     </div>
+  )
+}
+
+// One library/owned practice, in the shared warm card shell. Not routed through
+// EntityCard because practices have no public detail page yet (only /[id]/edit,
+// owner-only) — so the whole card can't be a single link. The action slot holds
+// the interactive controls (Edit / Log / Adopt / Customize), which the caller
+// passes in. Demo practices are badged + receded, matching the EntityCard look.
+function PracticeRow({
+  p,
+  byId,
+  isDemo = false,
+  actions,
+}: {
+  p: Practice
+  byId: Map<string, Pillar>
+  isDemo?: boolean
+  actions: React.ReactNode
+}) {
+  return (
+    <li
+      className={`flex items-center justify-between gap-4 rounded-2xl border border-border bg-surface px-5 py-4 shadow-sm transition-colors hover:border-primary-bg hover:shadow-md ${
+        isDemo ? 'opacity-[0.72]' : ''
+      }`}
+    >
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-base font-bold text-text">{p.title}</p>
+          {p.domain_id && byId.has(p.domain_id) && <PillarBadge name={byId.get(p.domain_id)!.name} />}
+          {isDemo && <DemoBadge />}
+        </div>
+        {(p.summary ?? p.description) && (
+          <p className="mt-0.5 line-clamp-2 text-sm leading-relaxed text-muted">
+            {p.summary ?? p.description}
+          </p>
+        )}
+        <PracticeMeta p={p} />
+      </div>
+      <div className="flex shrink-0 items-center gap-2">{actions}</div>
+    </li>
   )
 }
 
@@ -78,12 +124,25 @@ export default async function PracticesPage({
   const byId = pillarsById(pillars)
   const mineIds = new Set(mine.map((p) => p.id))
 
+  // Honour the header's Demo toggle for the public library: hide seeded demo
+  // practices when global demo_mode is off OR this viewer turned demo off. The
+  // `practices` table carries is_demo, but lib/practices doesn't select it, so we
+  // resolve the demo ids in one cheap admin read and filter/badge the library by
+  // them. (mine/recent are the member's own — never demo — so they're untouched.)
+  const hideDemo = !(await demoModeEnabled()) || (await viewerHidesDemo())
+  const { data: demoRows } = await createAdminClient()
+    .from('practices')
+    .select('id')
+    .eq('is_demo', true)
+  const demoIds = new Set((demoRows ?? []).map((r) => r.id as string))
+
   // Library filter by Pillar (URL-driven, so it's shareable + needs no client JS).
   const { pillar: pillarParam } = await searchParams
   const activePillar = pillars.find((p) => p.slug === pillarParam)?.id ?? null
   const unadopted = library
     .filter((p) => !mineIds.has(p.id))
     .filter((p) => !activePillar || p.domain_id === activePillar)
+    .filter((p) => !hideDemo || !demoIds.has(p.id))
 
   // Last 14 days as a simple activity strip (filled = logged a practice that day).
   const loggedDays = new Set(recent.map((r) => r.logged_for))
@@ -95,6 +154,10 @@ export default async function PracticesPage({
   })
   const daysLogged = last14.filter((d) => loggedDays.has(d)).length
 
+  // Library count for the stat strip — exclude demo when the viewer hides it so
+  // the number matches what they actually see below.
+  const libraryCount = hideDemo ? library.filter((p) => !demoIds.has(p.id)).length : library.length
+
   return (
     <IndexTemplate
       title="Practices"
@@ -104,7 +167,7 @@ export default async function PracticesPage({
         items={[
           { value: mine.length, label: 'Your practices' },
           { value: daysLogged, label: 'Days logged (14d)' },
-          { value: library.length, label: 'In the library' },
+          { value: libraryCount, label: 'In the library' },
         ]}
       />
 
@@ -158,34 +221,32 @@ export default async function PracticesPage({
           ) : (
             <ul className="space-y-3">
               {mine.map((p) => (
-                <li
+                <PracticeRow
                   key={p.id}
-                  className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-surface px-5 py-4 shadow-sm transition-colors hover:border-primary-bg hover:shadow-md"
-                >
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-base font-bold text-text">{p.title}</p>
-                      {p.domain_id && byId.has(p.domain_id) && <PillarBadge name={byId.get(p.domain_id)!.name} />}
-                    </div>
-                    {(p.summary ?? p.description) && (
-                      <p className="mt-0.5 line-clamp-2 text-sm leading-relaxed text-muted">
-                        {p.summary ?? p.description}
-                      </p>
-                    )}
-                    <PracticeMeta p={p} />
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    <LogPracticeButton practiceId={p.id} />
-                    <AdoptPracticeButton practiceId={p.id} adopted />
-                  </div>
-                </li>
+                  p={p}
+                  byId={byId}
+                  actions={
+                    <>
+                      {p.created_by === profileId && (
+                        <Link
+                          href={`/practices/${p.id}/edit`}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated"
+                        >
+                          <Pencil className="h-3.5 w-3.5" /> Edit
+                        </Link>
+                      )}
+                      <LogPracticeButton practiceId={p.id} />
+                      <AdoptPracticeButton practiceId={p.id} adopted />
+                    </>
+                  }
+                />
               ))}
             </ul>
           )}
         </section>
 
         <section>
-          <SectionHeader title="Practice library" count={library.length} />
+          <SectionHeader title="Practice library" count={libraryCount} />
 
           {/* Filter the library by Pillar (Mind / Body / Spirit / Expression). */}
           <div className="mb-3 flex flex-wrap gap-1.5">
@@ -214,26 +275,28 @@ export default async function PracticesPage({
           ) : (
             <ul className="space-y-3">
               {unadopted.map((p) => (
-                <li
+                <PracticeRow
                   key={p.id}
-                  className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-surface px-5 py-4 shadow-sm transition-colors hover:border-primary-bg hover:shadow-md"
-                >
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-base font-bold text-text">{p.title}</p>
-                      {p.domain_id && byId.has(p.domain_id) && <PillarBadge name={byId.get(p.domain_id)!.name} />}
-                    </div>
-                    {(p.summary ?? p.description) && (
-                      <p className="mt-0.5 line-clamp-2 text-sm leading-relaxed text-muted">
-                        {p.summary ?? p.description}
-                      </p>
-                    )}
-                    <PracticeMeta p={p} />
-                  </div>
-                  <div className="shrink-0">
-                    <AdoptPracticeButton practiceId={p.id} adopted={false} />
-                  </div>
-                </li>
+                  p={p}
+                  byId={byId}
+                  isDemo={demoIds.has(p.id)}
+                  actions={
+                    <>
+                      {profileId && (
+                        <form action={forkPracticeAction.bind(null, p.id)}>
+                          <button
+                            type="submit"
+                            title="Make your own editable copy"
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated"
+                          >
+                            <Wand2 className="h-3.5 w-3.5" /> Customize
+                          </button>
+                        </form>
+                      )}
+                      <AdoptPracticeButton practiceId={p.id} adopted={false} />
+                    </>
+                  }
+                />
               ))}
             </ul>
           )}

@@ -6,9 +6,10 @@ member app and without sacrificing speed.
 
 > Status: **shipped**, then **reworked into a standardized block library**
 > (ADR-055). **Puck** (open-source, self-hosted), constrained to our DAWN design
-> system. The splash (`/`) is **code-locked** out of the editor (ADR-054) — only
-> `/the-lab`, `/how-it-works`, `/about` are editor-editable. §4 + §12 are current;
-> the rest is original spec kept for history.
+> system. The splash (`/`) and `/about` are **code-locked** out of the editor
+> (ADR-054). `/the-lab`, `/the-community`, `/the-quest`, and `/pricing` are
+> editor-editable, each seeded from a faithful standardized-block template
+> ("editor = live"). §4 + §12 are current; the rest is original spec kept for history.
 
 ---
 
@@ -263,12 +264,12 @@ tiles rather than a hardcoded `bg-surface`). The deliberate exceptions keep a
 live blocks, and `Spacer` (spacing only); `Container`/`Columns`/`Divider` carry
 their own tone/width because they're structural wrappers.
 
-### Catalog (23 blocks, 5 categories)
+### Catalog (24 blocks, 5 categories)
 | Category | Blocks |
 |---|---|
 | **Layout** | `Container` (tone band + nested slot), `Columns` (2/3 slots), `Spacer`, `Divider` |
 | **Content** | `Heading` (eyebrow+title+kicker, sizes), `Text` (markdown), `Statement`, `Quote` (pull / testimonial), `Buttons` (group) |
-| **Sections** | `Hero` (image / split / minimal), `FeatureGrid` (icon / image / numbered, 2–4 col), `Showcase` (alternating media+text; replaces `Pillars`), `StatRow`, `Checklist`, `Accordion` (FAQ), `CallToAction` (replaces `BetaCTA`) |
+| **Sections** | `Hero` (image / split / minimal), `FeatureGrid` (icon / image / numbered, 2–4 col), `Showcase` (alternating media+text; replaces `Pillars`), `StatRow`, `Tiers` (pricing/membership cards — featured ribbon, Founder badge, struck price), `Checklist`, `Accordion` (FAQ), `CallToAction` (replaces `BetaCTA`) |
 | **Media** | `Image`, `Gallery`, `MediaText` (replaces `ZigZag`), `Marquee` |
 | **Dynamic** | `LiveStats`, `LiveEvents`, `LivePosts` (live data via Puck `metadata`) |
 

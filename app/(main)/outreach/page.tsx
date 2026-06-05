@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
 import { ROLE_LABEL } from '@/lib/community-roles'
+import { FocusTemplate } from '@/components/templates'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,16 +35,16 @@ export default async function OutreachPage() {
   const scope = scopeFor(role)
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <div className="mb-1 flex items-center gap-2">
-        <Send className="h-5 w-5 text-primary-strong" />
-        <h1 className="text-2xl font-bold text-text">Outreach</h1>
-      </div>
-      <p className="mb-6 text-sm text-muted">
-        Reach the people you steward. As a <strong className="text-text">{ROLE_LABEL[role]}</strong>,
-        you can message your <strong className="text-text">{scope}</strong>.
-      </p>
-
+    <FocusTemplate
+      title="Outreach"
+      description={
+        <>
+          Reach the people you steward. As a{' '}
+          <strong className="text-text">{ROLE_LABEL[role]}</strong>, you can message your{' '}
+          <strong className="text-text">{scope}</strong>.
+        </>
+      }
+    >
       <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
         <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-text">
           <Users className="h-4 w-4 text-primary-strong" />
@@ -71,6 +72,6 @@ export default async function OutreachPage() {
         Member-targeted sending is being wired up — for now use{' '}
         <strong className="text-text">Broadcast</strong> for community-wide messages.
       </p>
-    </div>
+    </FocusTemplate>
   )
 }

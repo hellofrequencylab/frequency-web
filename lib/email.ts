@@ -105,6 +105,86 @@ export async function sendInviteEmail(params: {
   })
 }
 
+// ── Scan intro (Profile Creator → invite a scanned contact) ────────────────────
+// A SINGLE transactional introduction prompted by a real-world meeting. Custom
+// footer (not the member footer) with a working one-click unsubscribe. The join
+// CTA is the steward's referral link, so a later signup credits them (ADR-099).
+
+export async function sendScanIntroEmail(params: {
+  to: string
+  recipientName: string | null
+  inviterName: string
+  joinUrl: string
+  unsubscribeUrl: string
+}) {
+  const { to, recipientName, inviterName, joinUrl, unsubscribeUrl } = params
+  await enqueueEmail({
+    to,
+    subject: `${inviterName} invited you to join The Quest`,
+    headers: {
+      'List-Unsubscribe':      `<${unsubscribeUrl}>`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    },
+    html: scanIntroHtml({ recipientName, inviterName, joinUrl, unsubscribeUrl }),
+    text: scanIntroText({ recipientName, inviterName, joinUrl, unsubscribeUrl }),
+  })
+}
+
+// Footer contact line — the physical mailing address (CAN-SPAM) when configured,
+// else org identity. Set COMPANY_POSTAL_ADDRESS for full compliance.
+function orgContactLine(): string {
+  const addr = process.env.COMPANY_POSTAL_ADDRESS
+  return addr ? escapeHtml(addr) : `Frequency™ · ${BASE_URL.replace(/^https?:\/\//, '')}`
+}
+
+function scanIntroHtml({ recipientName, inviterName, joinUrl, unsubscribeUrl }: {
+  recipientName: string | null; inviterName: string; joinUrl: string; unsubscribeUrl: string
+}): string {
+  const who = escapeHtml(inviterName || 'A friend')
+  const hey = recipientName ? `Hey ${escapeHtml(recipientName)} 👋🏼` : 'Hey 👋🏼'
+  const footer = `A one-time invite from ${who} — we won't add you to any marketing list. Not interested? <a href="${unsubscribeUrl}" style="color:#999;">Unsubscribe</a> and you won't hear from us again.<br>❤️ Frequency™ · ${orgContactLine()}`
+  return emailShell(`
+    <h1 style="${h1Style}">${hey}</h1>
+    <p style="${pStyle}">
+      Your friend <strong>${who}</strong> invited you to join <strong>The Quest</strong>. Hopefully they
+      told you a little about our mission to create and connect community.
+    </p>
+    <p style="${pStyle}">
+      We won't send a bunch of marketing emails — but we're happy to send you Quest reminders on your
+      Journey once you're in.
+    </p>
+    <p style="margin:0 0 28px;">
+      <a href="${joinUrl}" style="${btnStyle}">Join us here →</a>
+    </p>
+    <p style="${pStyle}margin-bottom:8px;">❤️ Frequency™</p>
+    <p style="${pStyle}font-size:13px;color:#888;">
+      Button not working? Paste this into your browser:<br>
+      <a href="${joinUrl}" style="color:#888;">${joinUrl}</a>
+    </p>
+  `, footer)
+}
+
+function scanIntroText({ recipientName, inviterName, joinUrl, unsubscribeUrl }: {
+  recipientName: string | null; inviterName: string; joinUrl: string; unsubscribeUrl: string
+}): string {
+  const who = inviterName || 'A friend'
+  const hey = recipientName ? `Hey ${recipientName} 👋` : 'Hey 👋'
+  const addr = process.env.COMPANY_POSTAL_ADDRESS
+  return `${hey}
+
+Your friend ${who} invited you to join The Quest. Hopefully they told you a little about our mission to create and connect community.
+
+We won't send a bunch of marketing emails — but we're happy to send you Quest reminders on your Journey once you're in.
+
+Join us here: ${joinUrl}
+
+❤️ Frequency™
+
+—
+A one-time invite from ${who}; we won't add you to any marketing list. To opt out so you never hear from us: ${unsubscribeUrl}
+${addr ? addr : `Frequency™ · ${BASE_URL}`}`
+}
+
 // ── Weekly community digest ───────────────────────────────────────────────────
 
 export async function sendWeeklyDigestEmail(params: {
@@ -307,7 +387,16 @@ const btnStyle       = `display:inline-block;background:#4f46e5;color:#fff;font-
 const footerStyle    = `font-size:12px;color:#999;margin-top:28px;text-align:center;line-height:1.6;`
 const dividerStyle   = `border:none;border-top:1px solid #eee;margin:28px 0;`
 
-function emailShell(content: string): string {
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+// `footer` overrides the default member footer — used by non-member transactional
+// mail (e.g. the scan intro) that must NOT claim membership and needs its own
+// unsubscribe line.
+function emailShell(content: string, footer?: string): string {
+  const foot = footer ?? `You're receiving this because you're a member of the Frequency community.<br>
+      <a href="${BASE_URL}/settings/notifications" style="color:#999;">Manage email preferences</a>`
   return `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -318,8 +407,7 @@ function emailShell(content: string): string {
       ${content}
     </div>
     <p style="${footerStyle}">
-      You're receiving this because you're a member of the Frequency community.<br>
-      <a href="${BASE_URL}/settings/notifications" style="color:#999;">Manage email preferences</a>
+      ${foot}
     </p>
   </div>
 </body>

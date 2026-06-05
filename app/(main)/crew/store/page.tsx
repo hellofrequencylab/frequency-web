@@ -1,5 +1,4 @@
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
 import { Gem, Zap, Flame } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -7,6 +6,8 @@ import { getStoreData } from './actions'
 import { StoreGrid } from './store-grid'
 import { CrewPreviewBanner } from '@/components/crew/crew-preview-banner'
 import { CrewGate } from '@/components/crew/upgrade-lightbox'
+import { IndexTemplate } from '@/components/templates'
+import { SectionHeader } from '@/components/ui/section-header'
 
 export default async function StorePage() {
   const supabase = await createClient()
@@ -38,26 +39,19 @@ export default async function StorePage() {
   return (
     <div>
       {!isCrew && <CrewPreviewBanner />}
-      <div className="mb-6">
-        <div className="flex items-center gap-3">
-          <Link href="/crew" className="text-sm text-subtle hover:text-muted dark:hover:text-subtle transition-colors">Crew</Link>
-          <span className="text-subtle">/</span>
-          <h1 className="text-2xl font-bold text-text">Store</h1>
-        </div>
-        <p className="text-sm text-muted mt-1">
-          Your Vault and the Gem Store in one place. Everything you earn by showing up, and what you can spend it on.
-        </p>
-      </div>
-
-      {/* Vault + balance card */}
-      <div className="rounded-2xl border border-success/60 bg-gradient-to-r from-success-bg to-signal-bg shadow-sm p-5 mb-8">
+      <IndexTemplate
+        title="Store"
+        description="Your Vault and the Gem Store in one place. Everything you earn by showing up, and what you can spend it on."
+      >
+      {/* Vault + balance — one calm Vault module on a soft success surface. */}
+      <div className="rounded-2xl bg-success-bg/50 p-5 mb-8">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-success-bg flex items-center justify-center">
               <Gem className="w-6 h-6 text-signal-strong" />
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-signal-strong">Your Vault · Gems to spend</p>
+              <p className="text-xs font-medium text-signal-strong">Your Vault · Gems to spend</p>
               <p className="text-3xl font-bold text-success">{balance.toLocaleString()}</p>
             </div>
           </div>
@@ -68,22 +62,22 @@ export default async function StorePage() {
                 <Zap className="w-4 h-4" strokeWidth={2.5} />
                 <span className="text-xl font-bold tabular-nums text-success">{zaps.toLocaleString()}</span>
               </div>
-              <p className="text-[11px] text-signal mt-0.5">Zaps this season</p>
+              <p className="text-xs text-signal mt-0.5">Zaps this season</p>
             </div>
             <div className="text-center" title="Current streak">
               <div className="flex items-center justify-center gap-1 text-signal-strong">
                 <Flame className="w-4 h-4" strokeWidth={2.5} />
                 <span className="text-xl font-bold tabular-nums text-success">{streak.toLocaleString()}</span>
               </div>
-              <p className="text-[11px] text-signal mt-0.5">Day streak</p>
+              <p className="text-xs text-signal mt-0.5">Day streak</p>
             </div>
           </div>
         </div>
 
         {/* Equipped items */}
         {(equipped.border || equipped.flair || equipped.title) && (
-          <div className="mt-4 pt-3 border-t border-success/50 flex items-center gap-3 flex-wrap">
-            <span className="text-xs font-semibold uppercase tracking-wider text-signal">Equipped:</span>
+          <div className="mt-4 pt-3 border-t border-success/30 flex items-center gap-3 flex-wrap">
+            <span className="text-xs font-medium text-signal">Equipped:</span>
             {equipped.border && (
               <span className="text-xs px-2 py-0.5 rounded-md bg-success-bg text-success">
                 Border: {equipped.border.replace('ring-', '').replace('-500', '')}
@@ -113,16 +107,15 @@ export default async function StorePage() {
 
             return (
               <section key={cat.key}>
-                <div className="mb-3">
-                  <h2 className="text-sm font-semibold text-text">{cat.label}</h2>
-                  <p className="text-xs text-subtle mt-0.5">{cat.desc}</p>
-                </div>
+                <SectionHeader title={cat.label} />
+                <p className="-mt-2 mb-3 text-xs text-subtle">{cat.desc}</p>
                 <StoreGrid items={catItems} balance={balance} />
               </section>
             )
           })}
         </div>
       </CrewGate>
+      </IndexTemplate>
     </div>
   )
 }

@@ -26,6 +26,9 @@ export function withinBudget(spentUsd: number, projectedUsd: number, capUsd: num
 export const FEATURE_DAILY_CAP_USD: Record<string, number> = {
   'help-search': 5,
   'feature-posts': 2,
+  'connection-scan': 3,   // vision OCR of cards/posters (Sonnet) — the costlier surface
+  'connection-assist': 1, // text-only Vera assist on manual entry (Haiku)
+  'room-search': 1,       // semantic search over room history (free embeddings; cap is a safety net)
 }
 
 export function dailyCapFor(feature: string, fallbackUsd = 1): number {

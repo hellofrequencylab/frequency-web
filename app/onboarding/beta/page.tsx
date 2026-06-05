@@ -4,32 +4,43 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getVeraConfig } from '@/lib/ai/vera/config'
-import { VERA, BETA_OATHS, HEARD_ABOUT } from '@/lib/onboarding/beta-script'
+import { VERA, BETA_OATHS } from '@/lib/onboarding/beta-script'
+import { getSequence, DEFAULT_SEQUENCE } from '@/lib/onboarding/beta-sequences'
 import BetaInduction from './induction'
 
-export default async function BetaInductionPage() {
+export default async function BetaInductionPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ seq?: string }>
+}) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Operator copy overrides from /admin/vera (defaults to the beta-script copy).
+  // The audience sequence (early-adopter / personal / founding-partner) drives the
+  // copy. Operator overrides from /admin/vera still apply to the DEFAULT sequence
+  // (that's what they were authored against); audience sequences use their own copy.
+  const { seq: seqSlug } = await searchParams
+  const seq = getSequence(seqSlug)
+  const isDefault = seq.slug === DEFAULT_SEQUENCE
   const ind = (await getVeraConfig()).induction
-  const copy = {
-    // Widened strings cast back to the const shape the component expects.
-    vera: {
-      ...VERA,
-      oath: { ...VERA.oath, heading: ind.oathHeading, body: ind.oathBody },
-      intro: { ...VERA.intro, heading: ind.introHeading, body: ind.introBody },
-    } as typeof VERA,
-    oaths: BETA_OATHS.map((o, i) => ({ id: o.id, label: ind.oathLabels[i] || o.label })),
-    heardAbout: ind.heardAbout.length ? ind.heardAbout : [...HEARD_ABOUT],
-  }
+  const copy = isDefault
+    ? {
+        vera: {
+          ...seq.vera,
+          oath: { ...seq.vera.oath, heading: ind.oathHeading, body: ind.oathBody },
+          intro: { ...seq.vera.intro, heading: ind.introHeading, body: ind.introBody },
+        } as typeof VERA,
+        oaths: BETA_OATHS.map((o, i) => ({ id: o.id, label: ind.oathLabels[i] || o.label })),
+        heardAbout: ind.heardAbout.length ? ind.heardAbout : seq.heardAbout,
+      }
+    : { vera: seq.vera, oaths: seq.oaths, heardAbout: seq.heardAbout }
 
   // Signed-out visitors run the WHOLE cinematic induction with no login wall
   // (ADR-082): "Join the Beta" opens the sequence immediately. Sign-in is
   // collected at the final "step in" beat; the answers are stashed and written at
   // /onboarding/beta/complete after auth.
   if (!user) {
-    return <BetaInduction deferred copy={copy} />
+    return <BetaInduction deferred copy={copy} sequence={seq.slug} />
   }
 
   const { data: profile } = await supabase
@@ -54,6 +65,7 @@ export default async function BetaInductionPage() {
       initialHandle={profile?.handle ?? ''}
       regions={regions ?? []}
       copy={copy}
+      sequence={seq.slug}
     />
   )
 }

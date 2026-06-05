@@ -11,6 +11,8 @@ import { getInitials } from '@/lib/utils'
 import { getCurrentSeason } from '@/lib/seasons'
 import { SeasonBanner } from './season-banner'
 import { StatCard } from '@/components/ui/stat-card'
+import { SectionHeader } from '@/components/ui/section-header'
+import { EmptyState } from '@/components/ui/empty-state'
 import { ModuleCard } from '@/components/modules/module-card'
 import { CrewPreviewBanner } from '@/components/crew/crew-preview-banner'
 
@@ -208,11 +210,9 @@ export default async function CrewPage() {
       </Link>
 
       {/* ── Season Progress (full width, top) ────────── */}
-      <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden mb-6">
-        <div className="px-4 py-2.5 border-b border-border">
-          <h3 className="text-sm font-bold text-text">Season progress</h3>
-        </div>
-        <div className="px-5 py-4">
+      <section className="mb-6">
+        <SectionHeader title="Season progress" />
+        <div className="rounded-2xl bg-surface-elevated/60 px-5 py-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-medium text-text">
               {currentSeasonRank === 'luminary'
@@ -253,7 +253,7 @@ export default async function CrewPage() {
                         : 'bg-border-strong ring-transparent'
                     }`}
                   />
-                  <span className={`text-[9px] font-semibold leading-none ${
+                  <span className={`text-xs font-semibold leading-none ${
                     isCurrent ? r.text : 'text-subtle'
                   }`}>
                     {r.label}
@@ -269,7 +269,7 @@ export default async function CrewPage() {
             </p>
           )}
         </div>
-      </div>
+      </section>
 
       {/* ── Main content: left column (stats + tasks) + right column (quick links + leaderboard) */}
       <div className="flex flex-col lg:flex-row gap-6 items-start">
@@ -293,20 +293,12 @@ export default async function CrewPage() {
 
           {/* Tasks */}
           <section>
-            <h2 className="text-sm font-bold text-text mb-3">
-              Tasks
-              <span className="ml-2 text-xs font-normal text-subtle">
-                {(tasks ?? []).length} available
-              </span>
-            </h2>
+            <SectionHeader title="Tasks" count={(tasks ?? []).length} />
 
             {(tasks ?? []).length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-border/60 dark:border-border-strong/60 bg-surface/50 dark:bg-canvas/50 p-10 text-center">
-                <Star className="w-7 h-7 text-subtle mx-auto mb-2" />
-                <p className="text-sm text-subtle">No tasks available yet.</p>
-              </div>
+              <EmptyState icon={Star} title="No tasks available yet." />
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {(tasks ?? []).map((task) => {
                   const myCompletions = completionsByTask[task.id] ?? []
                   const isDone = myCompletions.length > 0
@@ -316,10 +308,10 @@ export default async function CrewPage() {
                   return (
                     <div
                       key={task.id}
-                      className={`rounded-2xl border px-4 py-3 flex items-start gap-3 shadow-sm transition-colors ${
+                      className={`rounded-2xl px-4 py-3 flex items-start gap-3 transition-colors ${
                         isDone
-                          ? 'border-success bg-success-bg/50 dark:bg-success-bg/30'
-                          : 'border-border bg-surface'
+                          ? 'bg-success-bg/40'
+                          : 'bg-surface-elevated/60'
                       }`}
                     >
                       <div className={`flex items-center justify-center w-8 h-8 rounded-lg shrink-0 ${
@@ -396,17 +388,20 @@ export default async function CrewPage() {
         </div>
 
         {/* Right: quick links + leaderboard */}
-        <div className="lg:w-72 shrink-0 space-y-4">
+        <div className="lg:w-72 shrink-0 space-y-6">
 
           {/* 6 quick links */}
-          <div className="grid grid-cols-2 gap-2">
+          <section>
+            <SectionHeader title="Explore" />
+            <div className="grid grid-cols-2 gap-2">
             <QuickLink href="/crew/achievements" Icon={Award} label="Achievements" sub="Earn badges" color="bg-signal-bg text-signal-strong" />
             <QuickLink href="/crew/streaks" Icon={Flame} label="Streaks" sub="Stay consistent" color="bg-warning-bg text-warning dark:text-primary" />
             <QuickLink href="/crew/challenges" Icon={Target} label="Challenges" sub="Season goals" color="bg-primary-bg text-primary-strong" />
             <QuickLink href="/journeys" Icon={Map} label="Journeys" sub="Sets of practices" color="bg-broadcast-bg text-broadcast-strong" />
             <QuickLink href="/crew/leaderboard" Icon={TrendingUp} label="Leaderboard" sub="Rankings" color="bg-warning-bg text-warning" />
             <QuickLink href="/crew/store" Icon={ShoppingBag} label="Gem Store" sub="Spend gems" color="bg-signal-bg text-signal-strong" />
-          </div>
+            </div>
+          </section>
 
           {/* Leaderboard — borderless module. */}
           {leaderboard.length > 0 && (
@@ -479,9 +474,9 @@ function QuickLink({ href, Icon, label, sub, color }: {
   return (
     <Link
       href={href}
-      className="rounded-2xl border border-border bg-surface shadow-sm p-3 hover:border-primary-bg dark:hover:border-primary transition-colors group"
+      className="rounded-2xl bg-surface-elevated/60 p-3 transition-colors hover:bg-surface-elevated motion-reduce:transition-none"
     >
-      <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2 ${color} transition-colors`}>
+      <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2 ${color}`}>
         <Icon className="w-4 h-4" />
       </div>
       <div className="text-sm font-semibold text-text leading-none">{label}</div>

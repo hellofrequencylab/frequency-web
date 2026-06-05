@@ -1,19 +1,11 @@
 import { getPracticeMetrics, getPracticeRetention } from '@/lib/analytics/practice'
 import { getEmailStats, getStudioCounts } from '@/lib/studio/analytics'
+import { DashboardTemplate } from '@/components/templates'
+import { StatCard } from '@/components/ui/stat-card'
+import { SectionHeader } from '@/components/ui/section-header'
+import { EmptyState } from '@/components/ui/empty-state'
 
 export const dynamic = 'force-dynamic'
-
-function Stat({ label, value, hint }: { label: string; value: string | number; hint?: string }) {
-  return (
-    <div className="rounded-2xl border border-border bg-surface shadow-sm p-4">
-      <p className="text-xs text-muted font-medium">{label}</p>
-      <p className="text-2xl font-bold text-text leading-none mt-1">
-        {typeof value === 'number' ? value.toLocaleString() : value}
-      </p>
-      {hint && <p className="text-xs text-subtle mt-1">{hint}</p>}
-    </div>
-  )
-}
 
 const EMAIL_TYPES = ['sent', 'delivered', 'opened', 'clicked', 'bounced', 'complained'] as const
 
@@ -28,30 +20,28 @@ export default async function AnalyticsPage() {
   const maxWeeks = retention.reduce((m, c) => Math.max(m, c.retention.length), 0)
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-text mb-1">Analytics</h1>
-        <p className="text-sm text-muted">Read-models off the one event backbone + the email log.</p>
-      </div>
-
+    <DashboardTemplate
+      eyebrow="Marketing"
+      title="Analytics"
+      description="Read-models off the one event backbone + the email log."
+    >
       <section>
-        <h2 className="text-sm font-bold text-text mb-2">North Star · Verified practice</h2>
+        <SectionHeader title="North Star · Verified practice" />
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <Stat label="Weekly Active Members" value={practice.wam} />
-          <Stat label="Practices this week" value={practice.verifiedThisWeek} />
-          <Stat label="Activation 7d" value={`${Math.round(practice.activationRate * 100)}%`} hint={`${practice.activated}/${practice.newMembers} new members`} />
-          <Stat label="New members 30d" value={practice.newMembers} />
+          <StatCard label="Weekly Active Members" value={practice.wam.toLocaleString()} />
+          <StatCard label="Practices this week" value={practice.verifiedThisWeek.toLocaleString()} />
+          <StatCard label="Activation 7d" value={`${Math.round(practice.activationRate * 100)}%`} />
+          <StatCard label="New members 30d" value={practice.newMembers.toLocaleString()} />
         </div>
       </section>
 
       <section>
-        <h2 className="text-sm font-bold text-text mb-2">
-          Practice retention · weekly cohorts
-        </h2>
+        <SectionHeader title="Practice retention · weekly cohorts" />
         {retention.length === 0 ? (
-          <p className="text-sm text-muted">
-            No verified practices yet. Cohorts appear once members start logging.
-          </p>
+          <EmptyState
+            title="No verified practices yet"
+            description="Cohorts appear once members start logging."
+          />
         ) : (
           <div className="overflow-x-auto rounded-2xl border border-border bg-surface shadow-sm">
             <table className="w-full text-sm">
@@ -97,19 +87,19 @@ export default async function AnalyticsPage() {
       </section>
 
       <section>
-        <h2 className="text-sm font-bold text-text mb-2">CRM</h2>
+        <SectionHeader title="CRM" />
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <Stat label="Contacts" value={counts.contacts} />
-          <Stat label="Campaigns" value={counts.campaigns} />
-          <Stat label="Suppressed" value={email.suppressed} hint="hard bounce / complaint" />
+          <StatCard label="Contacts" value={counts.contacts.toLocaleString()} />
+          <StatCard label="Campaigns" value={counts.campaigns.toLocaleString()} />
+          <StatCard label="Suppressed" value={email.suppressed.toLocaleString()} />
         </div>
       </section>
 
       <section>
-        <h2 className="text-sm font-bold text-text mb-2">Email · last {email.windowDays} days</h2>
+        <SectionHeader title={`Email · last ${email.windowDays} days`} />
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {EMAIL_TYPES.map((t) => (
-            <Stat key={t} label={t[0].toUpperCase() + t.slice(1)} value={email.byType[t] ?? 0} />
+            <StatCard key={t} label={t[0].toUpperCase() + t.slice(1)} value={(email.byType[t] ?? 0).toLocaleString()} />
           ))}
         </div>
         <p className="text-xs text-subtle mt-2">
@@ -117,6 +107,6 @@ export default async function AnalyticsPage() {
           Open/click/bounce data populates once the Resend webhook is configured.
         </p>
       </section>
-    </div>
+    </DashboardTemplate>
   )
 }

@@ -1,7 +1,9 @@
-// The open "Journeys" library (backlog §Q1, ADR-087): members curate combos of
-// practices — organized by the 4 Pillars — and share/fork them. FREE; it rides the
-// existing free practice loop (adopting a plan just adds its practices to your
-// daily log; see Q1 P3). Distinct from the Crew-gated gamified engine (quest_*).
+// The "Journeys" library (backlog §Q1, ADR-087): members curate combos of
+// practices — organized by the 4 Pillars — with per-item cadence + notes (ADR-096),
+// and share/fork them. Building + using a PERSONAL journey is free (it rides the
+// free practice loop — adopting adds its practices to your daily log); the public
+// LIBRARY/marketplace is the Crew (paid) surface (publish + adopt/fork others'),
+// gated in the actions. Distinct from the gamified engine (quest_*).
 //
 // Server-only. Writes go through the service-role admin client behind app-code
 // authz (callers enforce: author owns the plan). The journey_plan* tables are new;
@@ -42,7 +44,9 @@ export interface JourneyPlanItem {
   domain_id: string | null
   sort_order: number
   note: string | null
-  practice: { id: string; title: string; description: string | null; domain_id: string | null } | null
+  /** Per-journey cadence override (ADR-096). Null = the practice's own cadence. */
+  cadence: string | null
+  practice: { id: string; title: string; description: string | null; domain_id: string | null; cadence: string | null } | null
 }
 
 const PLAN_COLS =
@@ -50,8 +54,8 @@ const PLAN_COLS =
   'cover_image, created_at, updated_at, published_at'
 
 const ITEM_COLS =
-  'id, plan_id, practice_id, domain_id, sort_order, note, ' +
-  'practice:practices(id, title, description, domain_id)'
+  'id, plan_id, practice_id, domain_id, sort_order, note, cadence, ' +
+  'practice:practices(id, title, description, domain_id, cadence)'
 
 /** A url-safe slug from the title + a short random suffix (slugs are unique). */
 function slugify(title: string): string {
@@ -143,6 +147,7 @@ export async function addItem(input: {
   practiceId: string
   domainId?: string | null
   note?: string | null
+  cadence?: string | null
 }): Promise<void> {
   const client = db()
   const { data: last } = await client
@@ -160,11 +165,40 @@ export async function addItem(input: {
       practice_id: input.practiceId,
       domain_id: input.domainId ?? null,
       note: input.note?.trim() || null,
+      cadence: input.cadence?.trim() || null,
       sort_order: nextOrder,
     },
     { onConflict: 'plan_id,practice_id' },
   )
   await client.from('journey_plans').update(touch()).eq('id', input.planId)
+}
+
+/** Update a single item's per-journey controls (note + cadence override). */
+export async function updateItem(
+  planId: string,
+  practiceId: string,
+  patch: { note?: string | null; cadence?: string | null },
+): Promise<void> {
+  const client = db()
+  const update: Record<string, unknown> = {}
+  if (patch.note !== undefined) update.note = patch.note?.trim() || null
+  if (patch.cadence !== undefined) update.cadence = patch.cadence?.trim() || null
+  if (Object.keys(update).length === 0) return
+  await client.from('journey_plan_items').update(update).eq('plan_id', planId).eq('practice_id', practiceId)
+  await client.from('journey_plans').update(touch()).eq('id', planId)
+}
+
+/** Edit a plan's own fields (title / summary / cover). Caller enforces ownership. */
+export async function updatePlan(
+  planId: string,
+  patch: { title?: string; summary?: string | null; coverImage?: string | null },
+): Promise<void> {
+  const update: Record<string, unknown> = {}
+  if (patch.title !== undefined) update.title = patch.title.trim().slice(0, 120) || 'Untitled journey'
+  if (patch.summary !== undefined) update.summary = patch.summary?.trim().slice(0, 280) || null
+  if (patch.coverImage !== undefined) update.cover_image = patch.coverImage?.trim().slice(0, 500) || null
+  if (Object.keys(update).length === 0) return
+  await db().from('journey_plans').update({ ...update, ...touch() }).eq('id', planId)
 }
 
 export async function removeItem(planId: string, practiceId: string): Promise<void> {
@@ -261,10 +295,10 @@ export async function forkPlan(profileId: string, planId: string): Promise<Journ
 
   const { data: itemRows } = await client
     .from('journey_plan_items')
-    .select('practice_id, domain_id, sort_order, note')
+    .select('practice_id, domain_id, sort_order, note, cadence')
     .eq('plan_id', planId)
     .order('sort_order', { ascending: true })
-  const items = (itemRows ?? []) as { practice_id: string; domain_id: string | null; sort_order: number; note: string | null }[]
+  const items = (itemRows ?? []) as { practice_id: string; domain_id: string | null; sort_order: number; note: string | null; cadence: string | null }[]
 
   const { data: forkRow } = await client
     .from('journey_plans')
@@ -284,7 +318,7 @@ export async function forkPlan(profileId: string, planId: string): Promise<Journ
   if (items.length > 0) {
     await client
       .from('journey_plan_items')
-      .insert(items.map((it) => ({ plan_id: fork.id, practice_id: it.practice_id, domain_id: it.domain_id, sort_order: it.sort_order, note: it.note })))
+      .insert(items.map((it) => ({ plan_id: fork.id, practice_id: it.practice_id, domain_id: it.domain_id, sort_order: it.sort_order, note: it.note, cadence: it.cadence })))
   }
   const { data: cntRow } = await client.from('journey_plans').select('forked_count').eq('id', planId).maybeSingle()
   const forked = (cntRow as { forked_count: number } | null)?.forked_count ?? 0
