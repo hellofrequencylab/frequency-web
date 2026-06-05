@@ -1,4 +1,4 @@
--- Entry-point A/B testing (ADR-135, Entry Points Phase 3). Destination variants under
+-- Entry-point A/B testing (ADR-136, Entry Points Phase 3). Destination variants under
 -- ONE entry point (one printed QR / slug): the /q resolver splits scan traffic by
 -- weight, records the served variant per scan, and carries it to signup so conversions
 -- attribute per variant. Additive; the new tables are service-role only.
@@ -17,7 +17,7 @@ create table if not exists public.entry_point_variants (
 );
 create index if not exists entry_point_variants_code_idx on public.entry_point_variants (qr_code_id);
 comment on table public.entry_point_variants is
-  'ADR-135: destination variants for an entry-point A/B test (one printed slug, many targets). Service-role only.';
+  'ADR-136: destination variants for an entry-point A/B test (one printed slug, many targets). Service-role only.';
 
 drop trigger if exists entry_point_variants_set_updated_at on public.entry_point_variants;
 create trigger entry_point_variants_set_updated_at
@@ -41,7 +41,7 @@ create table if not exists public.entry_point_conversions (
 );
 create index if not exists entry_point_conversions_code_idx on public.entry_point_conversions (qr_code_id);
 comment on table public.entry_point_conversions is
-  'ADR-135: per-variant signup conversions for an entry-point A/B test. Service-role only.';
+  'ADR-136: per-variant signup conversions for an entry-point A/B test. Service-role only.';
 
 alter table public.entry_point_conversions enable row level security;
 

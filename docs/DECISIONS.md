@@ -4154,7 +4154,7 @@ are `md:hidden`, so desktop is untouched. The desktop stats dock and `GameStatsP
 
 ---
 
-## ADR-135: Entry-point A/B testing — split one printed QR across destination variants
+## ADR-136: Entry-point A/B testing — split one printed QR across destination variants
 
 **Status:** Accepted (Entry Points Phase 3) · `supabase/migrations/20260607020000_entry_point_ab.sql`,
 `lib/entry-points/ab.ts`, the `/q` resolver, `lib/qr/referral.ts` + onboarding,
