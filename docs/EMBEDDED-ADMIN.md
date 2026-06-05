@@ -195,6 +195,14 @@ group of modules; `/admin/*` retires once empty.
 
 ## 7. Build sequence (additive, each step shippable)
 
+> **Progress:** ✅ the registry/engine (`lib/admin/modules/registry.ts` —
+> `modulesFor`/`showsAdminPanel`, tested) + `AdminModuleCard` + the first in-place
+> module (`circle.settings`, wired into the dock on `/circles/[slug]`) have landed
+> (step 1 partial + step 2). Still open in step 1: the `hub`/`nexus` capability
+> loaders + `loadCapabilitiesForScope`, and the server-composed `@admin` slot — the
+> pilot wires the module into the client dock with an on-open fetch
+> (`getCircleAdminData`, capability-gated server-side) for now.
+
 1. **Engine.** `AdminModule` registry + `modulesFor`/`showsAdminPanel`; `AdminModuleCard`
    over `SidebarCard`; add `hub`/`nexus` loaders + `loadCapabilitiesForScope`; the `@admin`
    slot + `default.tsx`. Swap the dock's fixed `actions` list for `modulesFor(scope, caps)`
