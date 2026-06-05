@@ -1,6 +1,6 @@
 'use client'
 
-// Entry-point A/B manager (ADR-135): define destination variants + read results.
+// Entry-point A/B manager (ADR-136): define destination variants + read results.
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'

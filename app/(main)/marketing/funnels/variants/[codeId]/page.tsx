@@ -1,4 +1,4 @@
-// Entry-point A/B management (ADR-135). Define destination variants for one entry
+// Entry-point A/B management (ADR-136). Define destination variants for one entry
 // point and read per-variant scans / conversions / rate. In /marketing (admin/staff).
 
 import { notFound } from 'next/navigation'
