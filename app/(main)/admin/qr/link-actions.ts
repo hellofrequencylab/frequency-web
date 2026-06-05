@@ -26,6 +26,13 @@ export interface LinkInput {
   target_url: string | null
   /** Required when destination_type==='node'. */
   node_id: string | null
+  /** Required when destination_type==='circle'. */
+  circle_id: string | null
+  /** Required when destination_type==='event'. */
+  event_id: string | null
+  /** Time-aware (url only): after switch_at, resolve to alt_target_url. */
+  switch_at: string | null
+  alt_target_url: string | null
   /** Custom slug, or null/'' to auto-generate (create) / keep (update). */
   slug: string | null
   partner_id: string | null
@@ -39,33 +46,61 @@ interface CleanLink {
   destination_type: DestinationType
   target_url: string | null
   node_id: string | null
+  circle_id: string | null
+  event_id: string | null
+  switch_at: string | null
+  alt_target_url: string | null
   partner_id: string | null
   valid_until: string | null
   style: Json
 }
 
+const DESTS: DestinationType[] = ['url', 'node', 'circle', 'event']
+
 function clean(input: LinkInput): CleanLink | string {
   const title = input.title.trim()
   if (!title) return 'Give the code a title.'
-  if (input.destination_type !== 'url' && input.destination_type !== 'node') {
-    return 'Pick a destination type.'
-  }
+  if (!DESTS.includes(input.destination_type)) return 'Pick a destination type.'
+
   let target_url: string | null = null
   let node_id: string | null = null
+  let circle_id: string | null = null
+  let event_id: string | null = null
+  let switch_at: string | null = null
+  let alt_target_url: string | null = null
+
   if (input.destination_type === 'url') {
     const u = (input.target_url ?? '').trim()
     if (!u) return 'Enter the destination URL.'
     if (!isValidTargetUrl(u)) return 'That doesn’t look like a valid URL.'
     target_url = u
-  } else {
+    // Optional time-aware switch — both fields or neither.
+    const alt = (input.alt_target_url ?? '').trim()
+    if (input.switch_at && alt) {
+      if (!isValidTargetUrl(alt)) return 'The “switch to” URL doesn’t look valid.'
+      switch_at = input.switch_at
+      alt_target_url = alt
+    }
+  } else if (input.destination_type === 'node') {
     if (!input.node_id) return 'Choose the check-in code to point at.'
     node_id = input.node_id
+  } else if (input.destination_type === 'circle') {
+    if (!input.circle_id) return 'Choose the circle to join on scan.'
+    circle_id = input.circle_id
+  } else {
+    if (!input.event_id) return 'Choose the event to check in to.'
+    event_id = input.event_id
   }
+
   return {
     title,
     destination_type: input.destination_type,
     target_url,
     node_id,
+    circle_id,
+    event_id,
+    switch_at,
+    alt_target_url,
     partner_id: input.partner_id || null,
     valid_until: input.valid_until || null,
     style: parseStyle(input.style) as unknown as Json,

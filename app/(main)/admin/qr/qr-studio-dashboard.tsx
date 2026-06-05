@@ -3,7 +3,7 @@
 import { Link2, MapPin, UserCircle, Trophy, BarChart3 } from 'lucide-react'
 import { QrGenerator } from './qr-generator'
 import { QrStudio, type StudioNode, type PartnerOption } from './qr-studio'
-import { DynamicLinks, type StudioLink, type NodeOption } from './dynamic-links'
+import { DynamicLinks, type StudioLink, type NodeOption, type PickOption } from './dynamic-links'
 import { Campaigns, type CampaignCard, type CampaignCodeOption } from './campaigns'
 import { Analytics, type AnalyticsData } from './analytics'
 import { MemberProfileCodes, type MemberProfileCode } from './member-profile-codes'
@@ -18,7 +18,13 @@ export function QrStudioDashboard({
   analytics,
 }: {
   nodeProps: { initialNodes: StudioNode[]; partners: PartnerOption[] }
-  linkProps: { initialLinks: StudioLink[]; nodes: NodeOption[]; partners: PartnerOption[] }
+  linkProps: {
+    initialLinks: StudioLink[]
+    nodes: NodeOption[]
+    circles: PickOption[]
+    events: PickOption[]
+    partners: PartnerOption[]
+  }
   campaignProps: { campaigns: CampaignCard[]; codes: CampaignCodeOption[] }
   memberCodes: MemberProfileCode[]
   analytics: AnalyticsData
@@ -26,13 +32,20 @@ export function QrStudioDashboard({
   return (
     <div className="space-y-8">
       {/* ── Generator (top) ─────────────────────────────────────────────────── */}
-      <QrGenerator partners={linkProps.partners} nodes={linkProps.nodes} />
+      <QrGenerator
+        partners={linkProps.partners}
+        nodes={linkProps.nodes}
+        circles={linkProps.circles}
+        events={linkProps.events}
+      />
 
       {/* ── Categories ──────────────────────────────────────────────────────── */}
       <Category Icon={Link2} title="Dynamic links" count={linkProps.initialLinks.length}>
         <DynamicLinks
           initialLinks={linkProps.initialLinks}
           nodes={linkProps.nodes}
+          circles={linkProps.circles}
+          events={linkProps.events}
           partners={linkProps.partners}
           hideCreate
         />

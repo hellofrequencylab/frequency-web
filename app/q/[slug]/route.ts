@@ -5,6 +5,8 @@ import { isCodeLive } from '@/lib/qr/codes'
 import { track } from '@/lib/analytics/track'
 import { recordEngagementEvent } from '@/lib/engagement/events'
 import { CHANNEL_COOKIE, FIRST_TOUCH_MAX_AGE } from '@/lib/attribution/first-touch'
+import { joinCircle } from '@/app/(main)/circles/actions'
+import { checkInEvent } from '@/app/(main)/events/actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,7 +26,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
 
   const { data: code } = await admin
     .from('qr_codes')
-    .select('id, active, valid_from, valid_until, destination_type, target_url, node_id, purpose, owner_profile_id')
+    .select('id, active, valid_from, valid_until, destination_type, target_url, alt_target_url, switch_at, node_id, circle_id, event_id, purpose, owner_profile_id')
     .eq('slug', slug)
     .maybeSingle()
 
@@ -86,10 +88,54 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
   }
 
   if (code.destination_type === 'url' && code.target_url) {
-    return withReferral(NextResponse.redirect(new URL(code.target_url, origin)))
+    // Time-aware: after switch_at, a url code resolves to its alternate target.
+    const switched =
+      code.switch_at && code.alt_target_url && new Date(code.switch_at).getTime() <= Date.now()
+    const target = switched ? code.alt_target_url! : code.target_url
+    return withReferral(NextResponse.redirect(new URL(target, origin)))
   }
   if (code.destination_type === 'node' && code.node_id) {
     return withReferral(to(`/n/${code.node_id}`))
+  }
+
+  // One-tap circle join: join on scan (signed-in), then land on the circle.
+  if (code.destination_type === 'circle' && code.circle_id) {
+    const { data: circle } = await admin
+      .from('circles')
+      .select('slug')
+      .eq('id', code.circle_id)
+      .maybeSingle()
+    if (!circle) return unavailable
+    if (profileId) await joinCircle(code.circle_id, circle.slug).catch(() => {})
+    return withReferral(to(`/circles/${circle.slug}`))
+  }
+
+  // Event code: RSVP + verified-practice check-in on scan (check-in only succeeds
+  // once the event has started — before then it just RSVPs), then land on the event.
+  if (code.destination_type === 'event' && code.event_id) {
+    const { data: ev } = await admin
+      .from('events')
+      .select('slug')
+      .eq('id', code.event_id)
+      .maybeSingle()
+    if (!ev) return unavailable
+    if (profileId) {
+      // Ensure a 'going' RSVP (idempotent), then run the verified-practice check-in.
+      const { data: existing } = await admin
+        .from('event_rsvps')
+        .select('id')
+        .eq('event_id', code.event_id)
+        .eq('profile_id', profileId)
+        .maybeSingle()
+      if (!existing) {
+        await admin
+          .from('event_rsvps')
+          .insert({ event_id: code.event_id, profile_id: profileId, status: 'going' })
+          .then(() => {}, () => {})
+      }
+      await checkInEvent(code.event_id).catch(() => {})
+    }
+    return withReferral(to(`/events/${ev.slug}`))
   }
 
   if (code.destination_type === 'action' && code.owner_profile_id) {
