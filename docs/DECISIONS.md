@@ -3490,17 +3490,15 @@ asked for a name + about cold — a blank-page moment right where Vera (Frequenc
 helping.
 
 **Decision.**
-- **An opt-in slide-in side rail.** Collapsed, it's a **subtle full-length tab** down the left edge;
-  scrolling **DOWN** slides the menu open and **pushes the content to the right** (it's a real column
-  in the body flex, `md:hidden`, not an overlay), and scrolling **UP** (or sitting at the top) tucks
-  it back to the tab. A **Close** control at the bottom collapses it *and* suppresses auto-open on
-  scroll until the member taps the tab again (`pinnedClosed`). This is the **reverse** of the first
-  cut (which revealed on scroll-up as an overlay) — corrected per on-device feedback that the
-  direction felt backwards and the overlay covered content. It stays `md:hidden`, so on desktop the
-  real left rail owns the width and this costs nothing. Master on/off is a **per-device preference**
-  (localStorage `freq-rail-nav`, default on) toggled from the Menu drawer; it starts `false` on the
-  server and hydrates after mount, so there's no hydration mismatch. Mobile only; suppressed under
-  `hideAppNav`.
+- **An opt-in slide-in side rail.** It rests as a **slim ICON rail** down the left edge — a real
+  column in the body flex (`md:hidden`), so it gently insets the feed rather than overlaying it.
+  Tapping the rail's chevron **expands it to labels** (`w-14` → `w-40`); **any scroll contracts it
+  back to icons**. The icons are the destinations; the trailing icon opens the full Menu drawer.
+  (Earlier cuts tried scroll-up reveal as an overlay, then scroll-down push-to-labels — both
+  superseded by on-device feedback: the menu should *be* icons and only widen to labels on an
+  explicit tap.) Master on/off is a **per-device preference** (localStorage `freq-rail-nav`, default
+  on) toggled from the Menu drawer; it starts `false` on the server and hydrates after mount, so
+  there's no hydration mismatch. Mobile only; suppressed under `hideAppNav`.
 - **Vera drafts the circle.** A "Suggest" affordance appears in the modal once the practice is known
   (the channel we're in, or the picked Interest). `suggestCircle()` calls `suggestCircleDraft()`
   (Haiku, forced `suggest_circle` tool, usage-ledgered) and **falls back to a deterministic draft**
@@ -3514,11 +3512,47 @@ Vera's live concierge in the create flow (deferred — heavier; the one-shot sug
 shippable first step). A purely deterministic suggester with no AI (rejected — Vera should feel real
 when the kernel is on; the deterministic path is the fallback, not the default).
 
-**Consequences.** The side rail is discoverable (the tab is always there) and dismissible (Close, or
-the master toggle); opening it reflows the feed narrower by design — the Close + tab model is the
-escape hatch for when that's unwanted. Users who dislike it entirely turn it off once. The circle modal has a real assist with a guaranteed-useful fallback and no new
+**Consequences.** The side rail is always-present-but-quiet (an icon strip), discoverable (the
+chevron expands it to labels), and reverts to icons on scroll so the feed isn't held narrow while
+reading; the master toggle turns it off entirely. Users who dislike it turn it off once. The circle
+modal has a real assist with a guaranteed-useful fallback and no new
 commit path (the server still authorizes `createCircle`). New AI feature key `circle-create` flows
 through the existing usage ledger + daily-cap machinery.
+
+---
+
+## ADR-122: Mobile right-edge stats menu (the gamification counterpart to the left rail)
+
+**Status:** Accepted · `components/layout/app-shell.tsx` (`MobileStatsMenu`),
+`components/sidebar/game-stats-dock.tsx` (`GameStatsPanel`), `components/sidebar/right-sidebar.tsx`
+(`loadGameStats`, `MobileGameStats`), `app/(main)/layout.tsx`. Mirror of the left rail (ADR-121);
+reuses the desktop progress-cockpit (`GameStatsDock`).
+
+**Context.** On desktop the member's stats / streaks / gamification live in the bottom dock of the
+right rail (`GameStatsDock`). On mobile the right rail isn't rendered, so that cockpit was
+unreachable. We wanted a **matching menu on the right** of the left nav rail to host it.
+
+**Decision.**
+- **A slim right-edge tab** (`md:hidden`, a body-flex column like the left rail) that — unlike the
+  left — **only activates on click** (no scroll behavior). Tapping it opens an **overlay panel from
+  the right** (backdrop + X) hosting the stats; overlay (not push) because the cockpit is content-rich
+  and pushing would crush the feed.
+- **Reuse, don't re-author.** The dock's panel body is factored into a shared **`GameStatsPanel`**
+  (today's move · 7-day streak · rank progress · journey arc · the Vault · full-dashboard link), and
+  the data assembly into **`loadGameStats(profileId)`** — both consumed by the desktop dock *and* the
+  mobile menu. The layout streams `MobileGameStats` into the shell behind `<Suspense>` (the donut
+  pattern: client menu shell, server-rendered stats child), so it **never blocks the shell** and costs
+  the same single query the desktop dock already pays.
+
+**Alternatives.** A push-content right panel like the left rail's expand (rejected — the cockpit needs
+~`w-72`; pushing would crush the feed). Re-fetching stats client-side on open (rejected — the layout
+already streams it server-side; reuse `loadGameStats`). Duplicating the stats markup for mobile
+(rejected — `GameStatsPanel` is the single source).
+
+**Consequences.** Mobile members reach their full progress cockpit in one tap, symmetric with the left
+nav rail. The desktop dock is unchanged behaviourally (same `GameStatsPanel` now). One extra slim tab
+insets the feed's right edge on mobile (paired with the left rail) — acceptable for the symmetry; both
+are `md:hidden` so desktop is untouched.
 
 ---
 
