@@ -17,6 +17,7 @@ import { DirectorySearch } from '@/components/ui/directory-search'
 import { SectionHeader } from '@/components/ui/section-header'
 import { formatDistance } from '@/lib/geocode'
 import { demoModeEnabled } from '@/lib/platform-flags'
+import { viewerHidesDemo } from '@/lib/demo-preference'
 import type { ProfileIdentity } from '@/lib/types/profile'
 
 type Profile = ProfileIdentity & {
@@ -125,8 +126,8 @@ export default async function DirectoryPage({
     .order('display_name', { ascending: true })
 
   if (roleFilter) query = query.eq('community_role', roleFilter as Database['public']['Enums']['community_role'])
-  // Global demo switch: when demo_mode is off, hide seeded demo members.
-  if (!(await demoModeEnabled())) query = query.eq('is_demo', false)
+  // Demo content: hidden when global demo_mode is off OR the member turned beta content off.
+  if (!(await demoModeEnabled()) || (await viewerHidesDemo())) query = query.eq('is_demo', false)
 
   // Fetch the filter vocabularies and the directory in parallel.
   const [{ data: profiles }, { data: regions }, { data: circles }] = await Promise.all([

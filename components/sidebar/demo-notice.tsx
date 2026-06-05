@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Zap } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { demoModeEnabled } from '@/lib/platform-flags'
+import { viewerHidesDemo } from '@/lib/demo-preference'
 import { ZAP_AMOUNTS } from '@/lib/zaps'
 
 // Right-sidebar explainer for Beta testers: what the little ⚡ bolt means, the
@@ -16,7 +17,8 @@ const ACTIONS = [
 ] as const
 
 export async function DemoNotice() {
-  if (!(await demoModeEnabled())) return null
+  // Hidden when demo content is globally off, or the member turned beta content off.
+  if (!(await demoModeEnabled()) || (await viewerHidesDemo())) return null
 
   const admin = createAdminClient()
   const head = { count: 'exact' as const, head: true }

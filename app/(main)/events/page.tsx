@@ -11,6 +11,7 @@ import { EntityCard } from '@/components/cards/entity-card'
 import { DemoBadge } from '@/components/ui/demo-badge'
 import { RsvpButton } from '@/components/events/rsvp-button'
 import { demoModeEnabled } from '@/lib/platform-flags'
+import { viewerHidesDemo } from '@/lib/demo-preference'
 
 type EventRow = {
   id: string
@@ -134,8 +135,8 @@ export default async function EventsPage() {
     .gte('starts_at', now)
     .lte('starts_at', future)
     .order('starts_at', { ascending: true })
-  // Global demo switch: when demo_mode is off, hide seeded demo events.
-  if (!(await demoModeEnabled())) eventsQuery = eventsQuery.eq('is_demo', false)
+  // Demo content: hidden when global demo_mode is off OR the member turned beta content off.
+  if (!(await demoModeEnabled()) || (await viewerHidesDemo())) eventsQuery = eventsQuery.eq('is_demo', false)
   const { data: rawEvents } = await eventsQuery
     .limit(30)
 
