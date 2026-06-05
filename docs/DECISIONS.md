@@ -2957,6 +2957,41 @@ tap attribution (in `captures`) remain open follow-ups.
 
 ---
 
+## ADR-105: Location-aware earning — geofence authoring + device-location claim
+
+**Status:** Accepted · `supabase/migrations/20260605130000_node_geo.sql`,
+`app/(main)/admin/qr/actions.ts`, `app/(main)/admin/qr/qr-studio.tsx` (NodeForm),
+`app/(main)/n/[nodeId]/{actions,claim-button}.tsx`. Surfaces the existing `nodes`
+proximity engine (ADR-088 capture pipeline).
+
+**Context.** `nodes` already had `location` (PostGIS geography) + `proximity_m`, and
+`verifyCapture` already enforced proximity via the `node_within_range` RPC — but
+nothing **authored** a geofence (the Studio form omitted location) and the `/n` claim
+flow never **forwarded** the device's location, so the path was dead. A code couldn't
+require "you must actually be here to earn."
+
+**Decision.** Close both ends, no schema change:
+- **Author.** A "Location-aware" toggle on the check-in NodeForm sets lat/lng + radius
+  (with a "use my current location" helper). PostgREST can't build a geography from
+  lat/lng, so writes go through a new SECURITY DEFINER `set_node_geo(id, lng, lat, m)`
+  RPC; the editor reads coords back via `nodes_geo()` (the geography column can't be
+  selected as lat/lng otherwise). Null lat/lng clears the fence.
+- **Claim.** `ClaimButton` requests `navigator.geolocation` (best-effort: null on
+  denial/timeout) and passes it to `claimNode` → `captureNode({ location })`. A
+  geofenced code with no location returns `location_required`; out of range →
+  `too_far` (both already surfaced in the button). Non-geofenced codes ignore it.
+
+**Alternatives.** Trust an IP-geo lookup (rejected — city-level, trivially wrong/spoofed
+for a "be here" gate); store lat/lng as plain numeric columns (rejected — loses PostGIS
+distance + the existing `node_within_range` RPC). Radius clamped 5–5000 m.
+
+**Consequences.** Operators can make a check-in earn only on-site (event door, plaque,
+shopfront). Verification stays server-authoritative. Device location is used only at
+claim time, never stored. Ghost (invisible GPS) nodes + signed payloads remain the next
+steps on this engine.
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 

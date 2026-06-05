@@ -4493,6 +4493,19 @@ export type Database = {
         Args: { p_lat: number; p_lng: number; p_node_id: string }
         Returns: boolean
       }
+      nodes_geo: {
+        Args: Record<PropertyKey, never>
+        Returns: { id: string; lng: number; lat: number; proximity_m: number }[]
+      }
+      set_node_geo: {
+        Args: {
+          p_node_id: string
+          p_lng: number | null
+          p_lat: number | null
+          p_proximity_m: number | null
+        }
+        Returns: undefined
+      }
       record_qr_scan: {
         Args: {
           p_code_id: string

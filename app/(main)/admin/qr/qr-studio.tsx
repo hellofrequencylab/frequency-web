@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { QrCode, Plus, Pencil, Download, Copy, Check, ExternalLink, Zap, Printer } from 'lucide-react'
+import { QrCode, Plus, Pencil, Download, Copy, Check, ExternalLink, Zap, Printer, MapPin } from 'lucide-react'
 import { createNode, updateNode, setNodeActive, type NodeInput } from './actions'
 import { Field, Badge, toLocalInput, fromLocalInput } from './form-bits'
 import { StyleEditor } from './style-editor'
@@ -18,6 +18,10 @@ export interface StudioNode {
   active: boolean
   valid_until: string | null
   partner_id: string | null
+  /** Geofence for location-aware earning (null = none). */
+  lat: number | null
+  lng: number | null
+  proximityM: number | null
   captures: number
   style: QrStyle
   /** Absolute capture URL this code encodes. */
@@ -44,6 +48,9 @@ const BLANK: NodeInput = {
   capture_rule: 'once_per_user',
   valid_until: null,
   partner_id: null,
+  lat: null,
+  lng: null,
+  proximityM: null,
   style: DEFAULT_STYLE,
 }
 
@@ -170,6 +177,9 @@ function NodeCard({
                 <Badge>{RULE_LABELS[node.capture_rule] ?? node.capture_rule}</Badge>
                 {partnerName && <Badge tone="signal">{partnerName}</Badge>}
                 {!node.active && <Badge tone="danger">Retired</Badge>}
+                {node.lat != null && node.lng != null && (
+                  <Badge tone="signal">📍 {node.proximityM ?? 100}m</Badge>
+                )}
                 {node.valid_until && (
                   <Badge tone="warning">
                     until {new Date(node.valid_until).toLocaleDateString()}
@@ -276,10 +286,37 @@ export function NodeForm({
           capture_rule: node.capture_rule,
           valid_until: node.valid_until,
           partner_id: node.partner_id,
+          lat: node.lat,
+          lng: node.lng,
+          proximityM: node.proximityM,
           style: node.style,
         }
       : BLANK,
   )
+  const [geoOn, setGeoOn] = useState(node?.lat != null && node?.lng != null)
+
+  function useMyLocation() {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) return
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setForm((f) => ({
+          ...f,
+          lat: Number(pos.coords.latitude.toFixed(6)),
+          lng: Number(pos.coords.longitude.toFixed(6)),
+          proximityM: f.proximityM ?? 100,
+        }))
+        setError(null)
+      },
+      () => setError('Could not read your location — enter coordinates manually.'),
+      { enableHighAccuracy: true, timeout: 8000 },
+    )
+  }
+
+  function toggleGeo(on: boolean) {
+    setGeoOn(on)
+    if (!on) setForm((f) => ({ ...f, lat: null, lng: null, proximityM: null }))
+    else setForm((f) => ({ ...f, proximityM: f.proximityM ?? 100 }))
+  }
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
@@ -372,6 +409,57 @@ export function NodeForm({
           don&apos;t award a verified practice).
         </p>
       )}
+
+      {/* Location-aware earning — gate the claim to within a radius of a point. */}
+      <div className="rounded-lg border border-border bg-canvas/50 p-3">
+        <label className="flex items-center gap-2 text-xs font-medium text-subtle">
+          <input type="checkbox" checked={geoOn} onChange={(e) => toggleGeo(e.target.checked)} className="accent-primary" />
+          <MapPin className="h-3.5 w-3.5 text-primary-strong" /> Location-aware (must be here to earn)
+        </label>
+        {geoOn && (
+          <div className="mt-2 space-y-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <Field label="Latitude">
+                <input
+                  type="number"
+                  step="any"
+                  value={form.lat ?? ''}
+                  onChange={(e) => set('lat', e.target.value === '' ? null : Number(e.target.value))}
+                  placeholder="33.0000"
+                  className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+                />
+              </Field>
+              <Field label="Longitude">
+                <input
+                  type="number"
+                  step="any"
+                  value={form.lng ?? ''}
+                  onChange={(e) => set('lng', e.target.value === '' ? null : Number(e.target.value))}
+                  placeholder="-117.0000"
+                  className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+                />
+              </Field>
+              <Field label="Radius (metres)">
+                <input
+                  type="number"
+                  min={5}
+                  max={5000}
+                  value={form.proximityM ?? 100}
+                  onChange={(e) => set('proximityM', Number(e.target.value))}
+                  className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+                />
+              </Field>
+            </div>
+            <button
+              type="button"
+              onClick={useMyLocation}
+              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+            >
+              <MapPin className="h-3 w-3" /> Use my current location
+            </button>
+          </div>
+        )}
+      </div>
 
       <StyleEditor
         value={form.style}

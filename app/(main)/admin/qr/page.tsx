@@ -46,6 +46,11 @@ export default async function QrStudioPage() {
   const captureCounts = new Map<string, number>()
   for (const c of caps ?? []) captureCounts.set(c.node_id, (captureCounts.get(c.node_id) ?? 0) + 1)
 
+  // Geofences (location-aware earning) — coords + radius per node, read via RPC
+  // (the geography column can't be selected as lat/lng through PostgREST).
+  const { data: geoRows } = await db.rpc('nodes_geo')
+  const geoByNode = new Map((geoRows ?? []).map((g) => [g.id, g]))
+
   const initialNodes: StudioNode[] = await Promise.all(
     (nodes ?? []).map(async (n) => {
       const url = nodeUrl(n.id)
@@ -59,6 +64,9 @@ export default async function QrStudioPage() {
         active: n.active,
         valid_until: n.valid_until,
         partner_id: n.partner_id,
+        lat: geoByNode.get(n.id)?.lat ?? null,
+        lng: geoByNode.get(n.id)?.lng ?? null,
+        proximityM: geoByNode.get(n.id)?.proximity_m ?? null,
         captures: captureCounts.get(n.id) ?? 0,
         style,
         url,
