@@ -1,0 +1,49 @@
+'use server'
+
+import { revalidatePath } from 'next/cache'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { getEventCapabilities } from '@/lib/core/load-capabilities'
+
+// In-place "Event settings" admin module (EMBEDDED-ADMIN.md / ADR-133). Read +
+// write both re-resolve event.editSettings server-side (the dock's role gate is UX;
+// this is the authority — the admin client bypasses RLS). Cancel/reinstate stays in
+// the full admin editor; this patches the day-to-day fields only.
+
+export async function getEventAdminData(slug: string) {
+  const admin = createAdminClient()
+  const { data: event } = await admin
+    .from('events')
+    .select('id, slug, title, description, location, starts_at, ends_at')
+    .eq('slug', slug)
+    .maybeSingle()
+  if (!event) return null
+
+  const caps = await getEventCapabilities(event.id)
+  if (!caps.has('event.editSettings')) return null
+
+  return event
+}
+
+export async function updateEventSettings(id: string, slug: string, fd: FormData) {
+  const caps = await getEventCapabilities(id)
+  if (!caps.has('event.editSettings')) throw new Error('Unauthorized')
+
+  const admin = createAdminClient()
+  const startsAt = fd.get('starts_at') as string
+  const endsAt = fd.get('ends_at') as string
+  const { error } = await admin
+    .from('events')
+    .update({
+      title: (fd.get('title') as string).trim(),
+      description: ((fd.get('description') as string) ?? '').trim() || null,
+      location: ((fd.get('location') as string) ?? '').trim() || null,
+      starts_at: startsAt ? new Date(startsAt).toISOString() : undefined,
+      ends_at: endsAt ? new Date(endsAt).toISOString() : null,
+    })
+    .eq('id', id)
+  if (error) throw new Error(error.message)
+
+  revalidatePath(`/events/${slug}`)
+  revalidatePath('/events')
+  revalidatePath('/feed')
+}

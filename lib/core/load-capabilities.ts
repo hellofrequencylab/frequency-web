@@ -143,6 +143,33 @@ export async function getNexusCapabilities(nexusId: string): Promise<Set<Capabil
   })
 }
 
+/** What the caller can do on a specific Event. event.editSettings goes to its
+ *  host, platform staff, or whoever can edit the event's parent circle (delegated
+ *  to getCircleCapabilities — "if you run the circle, you run its events"). */
+export async function getEventCapabilities(eventId: string): Promise<Set<Capability>> {
+  const viewer = await currentViewer()
+  const admin = createAdminClient()
+
+  const { data: ev } = await admin
+    .from('events')
+    .select('host_id, scope_type, scope_id')
+    .eq('id', eventId)
+    .maybeSingle()
+
+  let viewerManagesScope = false
+  if (ev?.scope_type === 'circle' && ev.scope_id) {
+    const circleCaps = await getCircleCapabilities(ev.scope_id)
+    viewerManagesScope = circleCaps.has('circle.editSettings')
+  }
+
+  return resolveCapabilities(viewer, {
+    kind: 'event',
+    eventId,
+    hostId: ev?.host_id ?? null,
+    viewerManagesScope,
+  })
+}
+
 /** What the caller can do on a profile (edit-in-place gating). */
 export async function getProfileCapabilities(ownerId: string): Promise<Set<Capability>> {
   return resolveCapabilities(await currentViewer(), { kind: 'profile', ownerId })
