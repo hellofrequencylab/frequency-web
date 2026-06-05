@@ -11,6 +11,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { CircleCard, type CircleCardData } from '@/components/circles/circle-card'
 import { CirclesToolbar } from '@/components/circles/circles-toolbar'
 import { demoModeEnabled } from '@/lib/platform-flags'
+import { viewerHidesDemo } from '@/lib/demo-preference'
 import type { CircleBase } from '@/lib/types/circle'
 
 type CircleRow = CircleBase & {
@@ -106,8 +107,8 @@ export default async function CirclesPage({
     )
     .neq('status', 'archived')
     .order('name', { ascending: true })
-  // Global demo switch: when demo_mode is off, hide seeded demo circles.
-  if (!(await demoModeEnabled())) circlesQuery = circlesQuery.eq('is_demo', false)
+  // Demo content: hidden when global demo_mode is off OR the member turned beta content off.
+  if (!(await demoModeEnabled()) || (await viewerHidesDemo())) circlesQuery = circlesQuery.eq('is_demo', false)
   const { data: rawCircles } = await circlesQuery
 
   const all = (rawCircles ?? []) as unknown as CircleRow[]
