@@ -13,6 +13,7 @@ import type { StaffRole } from '@/lib/staff'
 import { CircleSettingsModule } from '@/components/admin/modules/circle-settings-module'
 import { HubSettingsModule } from '@/components/admin/modules/hub-settings-module'
 import { NexusSettingsModule } from '@/components/admin/modules/nexus-settings-module'
+import { EventSettingsModule } from '@/components/admin/modules/event-settings-module'
 
 // The page admin dock (CAPABILITIES-AND-MOBILE.md — inline admin as a side panel).
 // Operators get per-page admin actions (edit info, layout template, basic styles,
@@ -76,10 +77,11 @@ export function PageAdminDock({
   const circleSlug = pathname.match(/^\/circles\/([^/]+)/)?.[1] ?? null
   const hubSlug = pathname.match(/^\/hubs\/([^/]+)/)?.[1] ?? null
   const nexusSlug = pathname.match(/^\/nexuses\/([^/]+)/)?.[1] ?? null
+  const eventSlug = pathname.match(/^\/events\/([^/]+)/)?.[1] ?? null
   const edit = sectionEdit(pathname)
   const actions: Action[] = [
-    // On a circle page the in-place CircleSettingsModule replaces the deep-link.
-    ...(edit && !circleSlug ? [{ kind: 'link' as const, label: 'Edit info', sub: edit.label, href: edit.href, Icon: Pencil }] : []),
+    // On a circle/event detail page the in-place module replaces the deep-link.
+    ...(edit && !circleSlug && !eventSlug ? [{ kind: 'link' as const, label: 'Edit info', sub: edit.label, href: edit.href, Icon: Pencil }] : []),
     { kind: 'soon', label: 'Layout template', sub: 'Soon', Icon: LayoutTemplate },
     { kind: 'soon', label: 'Basic styles', sub: 'Soon', Icon: Palette },
     { kind: 'link', label: 'Group dispatch', sub: 'Broadcast to your people', href: '/admin/dispatches', Icon: Megaphone },
@@ -200,6 +202,11 @@ export function PageAdminDock({
               {nexusSlug && (
                 <div className="px-1 pb-2 pt-1">
                   <NexusSettingsModule />
+                </div>
+              )}
+              {eventSlug && (
+                <div className="px-1 pb-2 pt-1">
+                  <EventSettingsModule />
                 </div>
               )}
               {actions.map((a) =>

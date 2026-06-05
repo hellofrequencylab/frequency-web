@@ -197,12 +197,12 @@ group of modules; `/admin/*` retires once empty.
 
 > **Progress:** ✅ the registry/engine (`lib/admin/modules/registry.ts` —
 > `modulesFor`/`showsAdminPanel`, tested), `AdminModuleCard`, and in-place
-> **Circle / Hub / Nexus** settings modules have landed (step 2 + most of step 3),
-> with the `hub`/`nexus` capability loaders added to `load-capabilities.ts`. Still
-> open: the `loadCapabilitiesForScope` dispatcher and the server-composed `@admin`
-> slot — modules currently wire into the client dock with an on-open,
-> capability-gated fetch (`get*AdminData`) rather than server composition. Events
-> still need an `event` scope + capabilities in the resolver (step 3 remainder).
+> **Circle / Hub / Nexus / Event** settings modules have landed (steps 2–3), with
+> `hub`/`nexus`/`event` capability loaders added to `load-capabilities.ts` and an
+> `event` scope + `event.editSettings` added to the resolver. Still open: the
+> `loadCapabilitiesForScope` dispatcher and the server-composed `@admin` slot —
+> modules currently wire into the client dock with an on-open, capability-gated
+> fetch (`get*AdminData`) rather than server composition.
 
 1. **Engine.** `AdminModule` registry + `modulesFor`/`showsAdminPanel`; `AdminModuleCard`
    over `SidebarCard`; add `hub`/`nexus` loaders + `loadCapabilitiesForScope`; the `@admin`
