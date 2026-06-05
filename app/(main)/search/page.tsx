@@ -1,11 +1,12 @@
 import Link from 'next/link'
-import Image from 'next/image'
-import { Search, Users, FileText, CalendarDays } from 'lucide-react'
+import { Search, Users, FileText, CalendarDays, MapPin } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
-import { getInitials } from '@/lib/utils'
 import { IndexTemplate } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
+import { EntityCard } from '@/components/cards/entity-card'
+import { PersonCard } from '@/components/cards/person-card'
+import { DemoBadge } from '@/components/ui/demo-badge'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -15,12 +16,14 @@ type PersonRow = {
   handle: string
   avatar_url: string | null
   community_role: string
+  is_demo: boolean
 }
 
 type PostRow = {
   id: string
   body: string
   created_at: string
+  is_demo: boolean
   author: { display_name: string; handle: string; avatar_url: string | null; community_role: string } | null
 }
 
@@ -31,6 +34,7 @@ type EventRow = {
   starts_at: string
   location: string | null
   is_cancelled: boolean
+  is_demo: boolean
   host: { display_name: string; handle: string } | null
 }
 
@@ -38,6 +42,7 @@ const TABS = ['people', 'posts', 'events'] as const
 type Tab = (typeof TABS)[number]
 
 import { type CommunityRole, ROLE_RANK, RoleBadge } from '@/lib/community-roles'
+import { relativeTime, getInitials } from '@/lib/utils'
 
 function hasRole(role: string | null | undefined): role is CommunityRole {
   return !!role && role in ROLE_RANK
@@ -49,6 +54,18 @@ function formatDate(iso: string) {
     month: 'short',
     day: 'numeric',
   })
+}
+
+function DateBlock({ iso }: { iso: string }) {
+  const d = new Date(iso)
+  return (
+    <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-2xl bg-primary-bg text-primary-strong">
+      <span className="text-xs font-semibold uppercase leading-none tracking-wide">
+        {d.toLocaleDateString('en-US', { month: 'short' })}
+      </span>
+      <span className="text-base font-bold leading-tight">{d.getDate()}</span>
+    </div>
+  )
 }
 
 // ── Page ─────────────────────────────────────────────────────────────────────
@@ -86,7 +103,7 @@ export default async function SearchPage({
     if (tab === 'people') {
       const { data } = await admin
         .from('profiles')
-        .select('id, display_name, handle, avatar_url, community_role')
+        .select('id, display_name, handle, avatar_url, community_role, is_demo')
         .or(`display_name.ilike.%${query}%,handle.ilike.%${query}%`)
         .eq('is_active', true)
         .order('display_name')
@@ -98,7 +115,7 @@ export default async function SearchPage({
       const { data } = await admin
         .from('posts')
         .select(
-          `id, body, created_at,
+          `id, body, created_at, is_demo,
            author:profiles!author_id ( display_name, handle, avatar_url, community_role )`
         )
         .ilike('body', `%${query}%`)
@@ -112,7 +129,7 @@ export default async function SearchPage({
       const { data } = await admin
         .from('events')
         .select(
-          `id, title, slug, starts_at, location, is_cancelled,
+          `id, title, slug, starts_at, location, is_cancelled, is_demo,
            host:profiles!host_id ( display_name, handle )`
         )
         .or(`title.ilike.%${query}%,description.ilike.%${query}%`)
@@ -166,9 +183,9 @@ export default async function SearchPage({
               {t}
               {query.length >= 2 && resultCount[t] > 0 && (
                 <span
-                  className={`text-[11px] px-1.5 py-0.5 rounded-md font-medium ${
+                  className={`text-xs px-1.5 py-0.5 rounded-md font-medium tabular-nums ${
                     isActive
-                      ? 'bg-canvas dark:bg-surface text-white dark:text-text'
+                      ? 'bg-primary-bg text-primary-strong'
                       : 'bg-surface-elevated text-muted'
                   }`}
                 >
@@ -198,45 +215,20 @@ export default async function SearchPage({
           {people.length === 0 ? (
             <EmptyState icon={Search} title={`No people matching "${query}"`} />
           ) : (
-            <div className="space-y-0.5">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {people.map((p) => {
                 const isSelf = p.id === myProfileId
-                const showRole = hasRole(p.community_role)
+                const role = (p.community_role ?? 'member') as CommunityRole
                 return (
-                  <Link
+                  <PersonCard
                     key={p.id}
-                    href={`/people/${p.handle}`}
-                    className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-surface-elevated transition-colors -mx-3"
-                  >
-                    {p.avatar_url ? (
-                      <Image
-                        src={p.avatar_url}
-                        alt={p.display_name}
-                        width={36}
-                        height={36}
-                        className="w-9 h-9 rounded-full object-cover shrink-0"
-                      />
-                    ) : (
-                      <div className="w-9 h-9 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none">
-                        {getInitials(p.display_name)}
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-medium text-text">
-                          {p.display_name}
-                          {isSelf && (
-                            <span className="ml-1 text-xs text-subtle font-normal">(you)</span>
-                          )}
-                        </span>
-                        {showRole && (
-                          <RoleBadge role={p.community_role as CommunityRole} className="text-[11px] leading-tight" />
-                        )}
-                      </div>
-                      <p className="text-xs text-subtle mt-0.5">@{p.handle}</p>
-                    </div>
-                    <span className="text-xs text-subtle shrink-0">→</span>
-                  </Link>
+                    handle={p.handle}
+                    displayName={p.display_name}
+                    avatarUrl={p.avatar_url}
+                    isDemo={p.is_demo}
+                    context={isSelf ? `@${p.handle} · you` : `@${p.handle}`}
+                    meta={hasRole(p.community_role) ? <RoleBadge role={role} className="text-xs leading-tight" /> : undefined}
+                  />
                 )
               })}
             </div>
@@ -250,53 +242,32 @@ export default async function SearchPage({
           {posts.length === 0 ? (
             <EmptyState icon={Search} title={`No posts matching "${query}"`} />
           ) : (
-            <div className="space-y-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {posts.map((post) => {
                 const a = post.author
-                const showAuthorRole = hasRole(a?.community_role ?? null)
+                // No standalone post permalink exists in the app; link to the
+                // author's profile (the original made the author name the link).
                 return (
-                  <div
+                  <EntityCard
                     key={post.id}
-                    className="rounded-2xl border border-border bg-surface shadow-sm px-4 py-3"
-                  >
-                    <div className="flex items-center gap-2.5 mb-2">
-                      {a?.avatar_url ? (
-                        <Image
-                          src={a.avatar_url}
-                          alt={a.display_name}
-                          width={28}
-                          height={28}
-                          className="w-7 h-7 rounded-full object-cover shrink-0"
-                        />
+                    href={a ? `/people/${a.handle}` : '/feed'}
+                    anchor={
+                      a?.avatar_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={a.avatar_url} alt="" className="h-11 w-11 rounded-full object-cover" />
                       ) : (
-                        <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-[11px] font-semibold flex items-center justify-center shrink-0 select-none">
+                        <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-bg text-sm font-semibold text-primary-strong select-none">
                           {a ? getInitials(a.display_name) : '?'}
-                        </div>
-                      )}
-                      <div className="flex items-center gap-1.5 flex-wrap min-w-0 flex-1">
-                        {a && (
-                          <Link
-                            href={`/people/${a.handle}`}
-                            className="text-sm font-medium text-text hover:underline truncate"
-                          >
-                            {a.display_name}
-                          </Link>
-                        )}
-                        {showAuthorRole && (
-                          <RoleBadge role={a!.community_role as CommunityRole} className="text-[11px] leading-tight" />
-                        )}
-                      </div>
-                      <span className="text-xs text-subtle shrink-0">
-                        {new Date(post.created_at).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                        })}
-                      </span>
-                    </div>
-                    <p className="text-sm text-text leading-relaxed line-clamp-4">
-                      {post.body}
-                    </p>
-                  </div>
+                        </span>
+                      )
+                    }
+                    title={a ? a.display_name : 'Unknown author'}
+                    badge={post.is_demo ? <DemoBadge /> : undefined}
+                    dimmed={post.is_demo}
+                    context={a ? `@${a.handle}` : undefined}
+                    description={post.body}
+                    meta={<span>{relativeTime(post.created_at)}</span>}
+                  />
                 )
               })}
             </div>
@@ -310,43 +281,32 @@ export default async function SearchPage({
           {events.length === 0 ? (
             <EmptyState icon={Search} title={`No events matching "${query}"`} />
           ) : (
-            <div className="space-y-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {events.map((event) => (
-                <Link
+                <EntityCard
                   key={event.id}
                   href={`/events/${event.slug}`}
-                  className="flex items-start gap-3 rounded-2xl border border-border bg-surface shadow-sm px-4 py-3 hover:border-primary-bg dark:hover:border-primary transition-colors"
-                >
-                  {/* Date block */}
-                  <div className="shrink-0 w-10 flex flex-col items-center rounded-lg bg-surface-elevated py-1.5 text-center">
-                    <span className="text-[10px] font-semibold text-subtle uppercase leading-none">
-                      {new Date(event.starts_at).toLocaleDateString('en-US', { month: 'short' })}
-                    </span>
-                    <span className="text-lg font-black text-text leading-none mt-0.5">
-                      {new Date(event.starts_at).getDate()}
-                    </span>
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-semibold text-text truncate">
-                        {event.title}
-                      </span>
+                  anchor={<DateBlock iso={event.starts_at} />}
+                  title={event.title}
+                  badge={event.is_demo ? <DemoBadge /> : undefined}
+                  dimmed={event.is_demo}
+                  context={formatDate(event.starts_at)}
+                  meta={
+                    <>
                       {event.is_cancelled && (
-                        <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-danger-bg text-danger font-medium">
+                        <span className="rounded-md bg-danger-bg px-1.5 py-0.5 font-medium text-danger">
                           Cancelled
                         </span>
                       )}
-                    </div>
-                    <div className="flex items-center gap-2 mt-0.5 text-xs text-subtle">
-                      <span>{formatDate(event.starts_at)}</span>
-                      {event.location && <span>· {event.location}</span>}
-                      {event.host && <span>· {event.host.display_name}</span>}
-                    </div>
-                  </div>
-
-                  <span className="text-xs text-subtle shrink-0 pt-1">→</span>
-                </Link>
+                      {event.location && (
+                        <span className="flex items-center gap-0.5">
+                          <MapPin className="h-3 w-3" />{event.location}
+                        </span>
+                      )}
+                      {event.host && <span>{event.host.display_name}</span>}
+                    </>
+                  }
+                />
               ))}
             </div>
           )}
