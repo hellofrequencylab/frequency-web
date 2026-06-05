@@ -114,7 +114,7 @@ function clean(input: LinkInput): CleanLink | string {
 const UNIQUE_VIOLATION = '23505'
 
 export async function createLink(input: LinkInput): Promise<ActionResult<{ id: string; slug: string }>> {
-  const { profileId } = await requireAdmin('host')
+  const { profileId } = await requireAdmin('host', { staff: 'qr' })
   const row = clean(input)
   if (typeof row === 'string') return fail(row)
 
@@ -148,7 +148,7 @@ export async function createLink(input: LinkInput): Promise<ActionResult<{ id: s
 }
 
 export async function updateLink(id: string, input: LinkInput): Promise<ActionResult> {
-  await requireAdmin('host')
+  await requireAdmin('host', { staff: 'qr' })
   const row = clean(input)
   if (typeof row === 'string') return fail(row)
 
@@ -170,7 +170,7 @@ export async function updateLink(id: string, input: LinkInput): Promise<ActionRe
 }
 
 export async function setLinkActive(id: string, active: boolean): Promise<ActionResult> {
-  await requireAdmin('host')
+  await requireAdmin('host', { staff: 'qr' })
   const db = createAdminClient()
   const { error } = await db.from('qr_codes').update({ active }).eq('id', id)
   if (error) return fail('Could not update the code status.')

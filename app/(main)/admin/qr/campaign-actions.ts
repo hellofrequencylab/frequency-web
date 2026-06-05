@@ -31,7 +31,7 @@ function slugify(s: string): string {
 }
 
 export async function createCampaign(input: CampaignInput): Promise<ActionResult<{ id: string }>> {
-  await requireAdmin('host')
+  await requireAdmin('host', { staff: 'qr' })
 
   const title = input.title.trim()
   if (!title) return fail('Give the campaign a name.')
@@ -80,7 +80,7 @@ export async function createCampaign(input: CampaignInput): Promise<ActionResult
 }
 
 export async function updateCampaign(id: string, input: CampaignInput): Promise<ActionResult> {
-  await requireAdmin('host')
+  await requireAdmin('host', { staff: 'qr' })
 
   const title = input.title.trim()
   if (!title) return fail('Give the campaign a name.')
@@ -130,7 +130,7 @@ export async function updateCampaign(id: string, input: CampaignInput): Promise<
 }
 
 export async function deleteCampaign(id: string): Promise<ActionResult> {
-  await requireAdmin('host')
+  await requireAdmin('host', { staff: 'qr' })
   const db = createAdminClient()
 
   // Guard: only delete QR campaigns, never a seeded season challenge.

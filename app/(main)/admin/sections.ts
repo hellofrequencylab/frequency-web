@@ -33,7 +33,7 @@ import {
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
-import { staffCan, type StaffDomain, type StaffRole } from '@/lib/core/staff-roles'
+import { staffCan, type StaffDomain, type StaffRole, type Access } from '@/lib/core/staff-roles'
 
 export interface AdminLink {
   href: string
@@ -46,6 +46,9 @@ export interface AdminLink {
   /** Staff capability domain (ADR-127) that ALSO unlocks this surface — fail-closed:
    *  omit it and the link stays community-role-only (sensitive pages do this). */
   staffDomain?: StaffDomain
+  /** Capability level the staff domain needs (default 'write'). Read-only surfaces
+   *  (Insights) use 'read' so read-only roles (e.g. Analyst) can see them. */
+  staffLevel?: Access
   /** Active only on an exact path match (the Overview root). */
   exact?: boolean
 }
@@ -80,8 +83,8 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     label: 'Structure',
     blurb: 'The place tree under you — hubs and nexuses.',
     links: [
-      { href: '/admin/hubs', label: 'Hubs', desc: 'Clusters of circles in an area.', Icon: Building2, min: 'guide' },
-      { href: '/admin/nexuses', label: 'Nexuses', desc: 'Regions that hold hubs.', Icon: Network, min: 'mentor' },
+      { href: '/admin/hubs', label: 'Hubs', desc: 'Clusters of circles in an area.', Icon: Building2, min: 'guide', staffDomain: 'structure' },
+      { href: '/admin/nexuses', label: 'Nexuses', desc: 'Regions that hold hubs.', Icon: Network, min: 'mentor', staffDomain: 'structure' },
     ],
   },
   {
@@ -89,11 +92,11 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     label: 'Insights',
     blurb: 'Read-only signal on what is working and what is jamming.',
     links: [
-      { href: '/admin/engagement', label: 'Engagement', desc: 'Active members and the activation funnel.', Icon: Activity, min: 'janitor' },
-      { href: '/admin/intel', label: 'Marketing intel', desc: 'Real-time growth, demand, and leader signal.', Icon: Telescope, min: 'janitor' },
-      { href: '/admin/outcomes', label: 'Outcomes', desc: 'Where programs and Journeys stall.', Icon: Target, min: 'janitor' },
-      { href: '/admin/insights', label: 'AI read', desc: 'A narrative of what to do next.', Icon: Sparkles, min: 'janitor' },
-      { href: '/admin/segments', label: 'Segments', desc: 'Saved audiences by tag and trait.', Icon: PieChart, min: 'janitor' },
+      { href: '/admin/engagement', label: 'Engagement', desc: 'Active members and the activation funnel.', Icon: Activity, min: 'janitor', staffDomain: 'insights', staffLevel: 'read' },
+      { href: '/admin/intel', label: 'Marketing intel', desc: 'Real-time growth, demand, and leader signal.', Icon: Telescope, min: 'janitor', staffDomain: 'insights', staffLevel: 'read' },
+      { href: '/admin/outcomes', label: 'Outcomes', desc: 'Where programs and Journeys stall.', Icon: Target, min: 'janitor', staffDomain: 'insights', staffLevel: 'read' },
+      { href: '/admin/insights', label: 'AI read', desc: 'A narrative of what to do next.', Icon: Sparkles, min: 'janitor', staffDomain: 'insights', staffLevel: 'read' },
+      { href: '/admin/segments', label: 'Segments', desc: 'Saved audiences by tag and trait.', Icon: PieChart, min: 'janitor', staffDomain: 'insights', staffLevel: 'read' },
     ],
   },
   {
@@ -121,8 +124,8 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     label: 'QR Studio',
     blurb: 'Generate, design, and track every code — members, links, check-ins, campaigns.',
     links: [
-      { href: '/admin/qr', label: 'QR Studio', desc: 'Generate, design, and manage all QR codes.', Icon: QrCode, min: 'host' },
-      { href: '/admin/qr/stats', label: 'QR stats', desc: 'Scans, locator map, and the full QR dashboard.', Icon: Activity, min: 'host' },
+      { href: '/admin/qr', label: 'QR Studio', desc: 'Generate, design, and manage all QR codes.', Icon: QrCode, min: 'host', staffDomain: 'qr' },
+      { href: '/admin/qr/stats', label: 'QR stats', desc: 'Scans, locator map, and the full QR dashboard.', Icon: Activity, min: 'host', staffDomain: 'qr' },
     ],
   },
 ] as const
@@ -154,7 +157,7 @@ export function visibleGroups(role: CommunityRole, staffRole: StaffRole | null =
   return ADMIN_GROUPS.map((g) => ({
     ...g,
     links: g.links.filter(
-      (l) => atLeastRole(role, l.min) || (!!l.staffDomain && staffCan(staffRole, l.staffDomain, 'write')),
+      (l) => atLeastRole(role, l.min) || (!!l.staffDomain && staffCan(staffRole, l.staffDomain, l.staffLevel ?? 'write')),
     ),
   })).filter((g) => g.links.length > 0)
 }

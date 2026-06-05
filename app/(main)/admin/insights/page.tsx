@@ -14,7 +14,7 @@ const SEVERITY: Record<Severity, { label: string; cls: string; dot: string }> = 
 }
 
 export default async function InsightsPage() {
-  await requireAdmin('janitor')
+  await requireAdmin('janitor', { staff: 'insights', staffLevel: 'read' })
 
   const read = await getEngagementRead()
 

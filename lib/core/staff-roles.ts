@@ -83,3 +83,12 @@ export function staffCan(
 export function isStaffRole(v: string | null | undefined): v is StaffRole {
   return !!v && (STAFF_ROLES as readonly string[]).includes(v)
 }
+
+// The admin-surface domains. A staff role that can READ any of these may enter the
+// /admin floor (then each group/page gates itself precisely).
+const ADMIN_DOMAINS: readonly StaffDomain[] = ['community', 'structure', 'insights', 'qr']
+
+/** True if the staff role can see at least one /admin group (read) — the /admin floor. */
+export function staffSeesAdmin(role: StaffRole | null | undefined): boolean {
+  return ADMIN_DOMAINS.some((d) => staffCan(role, d, 'read'))
+}

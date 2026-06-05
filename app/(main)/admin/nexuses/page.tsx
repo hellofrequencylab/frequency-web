@@ -7,7 +7,7 @@ import { NewNexusCompose } from '@/components/compose/new-nexus-compose'
 
 
 export default async function AdminNexusesPage({ searchParams }: { searchParams: Promise<{ edit?: string }> }) {
-  await requireAdmin('mentor')
+  await requireAdmin('mentor', { staff: 'structure' })
   const { edit } = await searchParams
 
   const admin = createAdminClient()
