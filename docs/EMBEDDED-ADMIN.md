@@ -346,9 +346,13 @@ group of modules; `/admin/*` retires once empty.
 > `event` scope + `event.editSettings` added to the resolver. Still open: the
 > `loadCapabilitiesForScope` dispatcher and the server-composed `@admin` slot —
 > modules currently wire into the client dock with an on-open, capability-gated
-> fetch (`get*AdminData`) rather than server composition. **Next milestone:** the
-> drill-down **settings console** + the 9-category spine (ADR-137, see the
-> target-shape section above).
+> fetch (`get*AdminData`) rather than server composition. ✅ The registry now carries
+> the **9-category `slot` spine + a `surface` field** (`modulesForSurface`), and the
+> **inline tuning layer** has a first pilot: page-level **Edit Mode** (`useEditMode`,
+> `?edit=1`), a discoverable **Edit button** (`EditModeButton`), and `InlineText`
+> click-to-edit wired to the **Circle** title + description (field-level
+> `updateCircleField`, capability-gated). **Next:** the sidebar **drill-down** (ADR-137)
+> and more inline fields/entities.
 
 1. **Engine.** `AdminModule` registry + `modulesFor`/`showsAdminPanel`; `AdminModuleCard`
    over `SidebarCard`; add `hub`/`nexus` loaders + `loadCapabilitiesForScope`; the `@admin`
