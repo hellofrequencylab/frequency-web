@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/server'
 import { TuneInButton, TunedInButton } from './channel-toggle'
 import { NewChannelCompose } from './new-channel-compose'
 import { IndexTemplate } from '@/components/templates/index-template'
+import { PageContents } from '@/components/templates/page-contents'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { EntityCard } from '@/components/cards/entity-card'
@@ -118,6 +119,14 @@ export default async function ChannelsPage() {
 
   const unsorted = byDomain.get('__unsorted__') ?? []
 
+  // Table-of-contents entries — one per Channel (Domain), used by the sticky
+  // in-page nav at the top so members can jump between Channels on a long page.
+  const tocSections = sections.map(({ domain, topics }) => ({
+    id: `channel-${domain.slug}`,
+    label: domain.name,
+    count: topics.length,
+  }))
+
   // At-a-glance stats across the whole taxonomy.
   const stats = {
     channels: sections.length,
@@ -143,6 +152,9 @@ export default async function ChannelsPage() {
       }
       action={canCreate ? <NewChannelCompose domains={domains} /> : undefined}
     >
+      {/* Table of contents — jump between Channels; tracks the active one on scroll. */}
+      <PageContents sections={tocSections} />
+
       <div className="grid grid-cols-1 gap-x-8 gap-y-8 lg:grid-cols-3">
         {/* Left: the four Channels, each with its Interests beneath. */}
         <div className="space-y-10 lg:col-span-2">
@@ -230,7 +242,7 @@ function DomainSection({
   const explore = topics.filter((t) => !tunedInIds.has(t.id))
 
   return (
-    <section id={`channel-${domain.slug}`} className="scroll-mt-6">
+    <section id={`channel-${domain.slug}`} className="scroll-mt-20">
       <div className="mb-4">
         <h2 className="text-lg font-bold tracking-tight text-text">{domain.name}</h2>
         {domain.description && (

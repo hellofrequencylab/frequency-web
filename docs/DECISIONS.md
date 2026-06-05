@@ -3591,6 +3591,36 @@ in-app search; if abused it can move behind the AI/RPC boundary later.
 
 ---
 
+## ADR-124: Reusable in-page Table of Contents (`PageContents`) — a section navigator for long pages
+
+**Status:** Accepted (v1 on Channels) · `components/templates/page-contents.tsx`,
+`app/(main)/channels/page.tsx`. The seed of the "smart menu that sorts a page's
+sections" — to be applied to Circles / practices / other index pages next.
+
+**Context.** Long index pages (Channels has four Channels, each with many Interests) had no quick way
+to jump between sections on mobile — you scrolled past everything. The ask: a reusable "table of
+contents" that sorts a page's sections (Channels, Circles, practices…) and can apply everywhere.
+
+**Decision.**
+- **`PageContents`** — a sticky, horizontally-scrollable bar of the page's sections that **jumps to
+  them and tracks the active one on scroll** (IntersectionObserver scroll-spy, rooted on the
+  `[data-feed-scroll]` container). Purely additive: the page renders normal sections with `id`s, and
+  passes `{ id, label, count }[]`; the component is the navigation layer over them. Sticks under the
+  app header, full-bleed within the page padding, mobile-first (the *bar* scrolls, not the page).
+- **Proven on Channels first** (the four Channels as the TOC), with `scroll-mt-20` on each section so
+  the sticky bar never covers a section heading on jump. Reusable as-is for any sectioned page.
+
+**Alternatives.** Per-page bespoke jump-lists (rejected — that's what existed, desktop-only, in the
+Channels aside; this generalizes it). Filtered sub-routes per section / "pages within" as real routes
+(deferred — anchor + scroll-spy is the lighter first step; can grow into routed drill-down if needed).
+A heavier filter/sort toolbar (deferred — start with navigation; sorting can layer on).
+
+**Consequences.** Channels is navigable in a tap on mobile; the same one-liner adds a TOC to any long
+page. This is the first piece of the broader "section navigator" the product wants applied site-wide;
+generalizing it (Circles, practices) is now a per-page `sections` array, not new UI.
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 
