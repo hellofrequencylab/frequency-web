@@ -1,12 +1,13 @@
 'use client'
 
-import { Link2, MapPin, UserCircle, Trophy, BarChart3 } from 'lucide-react'
+import { Link2, MapPin, UserCircle, Megaphone, Trophy, BarChart3 } from 'lucide-react'
 import { QrGenerator } from './qr-generator'
 import { QrStudio, type StudioNode, type PartnerOption } from './qr-studio'
 import { DynamicLinks, type StudioLink, type NodeOption, type PickOption } from './dynamic-links'
 import { Campaigns, type CampaignCard, type CampaignCodeOption } from './campaigns'
 import { Analytics, type AnalyticsData } from './analytics'
 import { MemberProfileCodes, type MemberProfileCode } from './member-profile-codes'
+import { MarketingCodesAdmin, type MarketingCodeAdmin } from './marketing-codes-admin'
 
 // The QR Studio dashboard: the GENERATOR sits at the top (type selector + all
 // options), and every kind of code is categorized below it. Single scroll, no tabs.
@@ -15,6 +16,7 @@ export function QrStudioDashboard({
   linkProps,
   campaignProps,
   memberCodes,
+  marketingCodes,
   analytics,
 }: {
   nodeProps: { initialNodes: StudioNode[]; partners: PartnerOption[] }
@@ -27,6 +29,7 @@ export function QrStudioDashboard({
   }
   campaignProps: { campaigns: CampaignCard[]; codes: CampaignCodeOption[] }
   memberCodes: MemberProfileCode[]
+  marketingCodes: MarketingCodeAdmin[]
   analytics: AnalyticsData
 }) {
   return (
@@ -57,6 +60,10 @@ export function QrStudioDashboard({
 
       <Category Icon={UserCircle} title="Member profile codes" count={memberCodes.length}>
         <MemberProfileCodes codes={memberCodes} />
+      </Category>
+
+      <Category Icon={Megaphone} title="Marketing codes" count={marketingCodes.length}>
+        <MarketingCodesAdmin codes={marketingCodes} />
       </Category>
 
       <Category Icon={Trophy} title="Campaigns" count={campaignProps.campaigns.length}>
