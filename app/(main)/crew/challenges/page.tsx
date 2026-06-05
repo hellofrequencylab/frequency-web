@@ -31,7 +31,7 @@ export default async function ChallengesPage() {
       description="Complete challenges this season to earn bonus zaps and unlock Luminary rank. Each season runs 13 weeks."
     >
       {/* Progress overview */}
-      <div className="rounded-2xl border border-border bg-surface shadow-sm p-5 mb-8">
+      <div className="rounded-2xl bg-surface-elevated/60 p-5 mb-8">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary-bg flex items-center justify-center">
@@ -79,7 +79,7 @@ export default async function ChallengesPage() {
                 }
               />
 
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {items.map(challenge => {
                   const isComplete = !!challenge.completedAt
                   const progress = Math.min(100, Math.round((challenge.current / challenge.target) * 100))
@@ -87,10 +87,10 @@ export default async function ChallengesPage() {
                   return (
                     <div
                       key={challenge.id}
-                      className={`rounded-2xl border px-4 py-3 transition-all ${
+                      className={`rounded-2xl px-4 py-3 transition-all ${
                         isComplete
-                          ? 'border-success bg-success-bg/50 dark:bg-success-bg/30'
-                          : 'border-border bg-surface'
+                          ? 'bg-success-bg/40'
+                          : 'bg-surface-elevated/60'
                       }`}
                     >
                       <div className="flex items-start gap-3">
