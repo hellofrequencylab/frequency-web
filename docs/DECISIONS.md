@@ -3379,6 +3379,23 @@ a stop is a one-line data edit in `lib/onboarding/spotlight.ts`.
 
 ---
 
+## ADR-118: Practices library as a scalable dashboard — server-side search/sort/paginate + admin curation
+
+**Status:** Accepted · `app/(main)/practices/page.tsx`, `lib/practices.ts` (`searchLibraryPractices`, `countPublicPractices`, `setPracticeFlags`, `deletePractice`), `app/(main)/practices/actions.ts`, `components/practice/practice-admin-menu.tsx`. Builds on the taxonomy/ranking (ADR-111) and templates (ADR-116); reuses the Circles/IndexTemplate browse pattern.
+
+**Context.** The library rendered as one long vertical list: it loaded **every** public practice via `listPublicPractices`, enriched tags/sub-categories for all of them, and filtered in memory. With a community library heading for thousands of entries that does not scale (payload, memory, no paging), and it lacked search and any admin curation.
+
+**Decision.**
+- **Push the work to the database.** New `searchLibraryPractices()` queries the `practices_ranked` view with `count: 'exact'` + `.range()` so a page fetches and enriches **only one screen** (24) of rows. It supports text search (`ilike` over title/summary/description), Pillar / sub-category / tag filters, sort (Trending / All-time / New / A–Z), demo hiding, and an admin "include hidden" flag. `countPublicPractices()` is a head-count for the stat band.
+- **Dashboard layout** (mirrors the Circles page): `IndexTemplate` with a stat band, a toolbar (search + sort + admin toggle), faceted filter rows, and a responsive **EntityCard grid** (image, badges, context, stats) linking to the detail page, with prev/next **pagination**. The personal column (your activity + your practices) stays a readable list; the library is the full-width grid. All state is URL-driven (shareable, no client JS) — page resets on any filter change.
+- **Admin curation**, gated on `admin.access` (host+, the app's existing admin gate) and re-checked in every action: a per-card menu (`PracticeAdminMenu`) to edit-any, toggle template, hide/show (`is_public`), and delete; plus a "Show hidden" toggle. No new capability or column — operates on existing `is_template`/`is_public`.
+
+**Alternatives.** Keep client-side filtering (rejected — does not scale); cursor pagination (deferred — offset `.range()` is fine at this size and gives a total + page numbers); a dedicated capability like `practice.curate` (deferred — `admin.access` already models "admin").
+
+**Consequences.** The library scales to thousands with constant per-request cost, gains search + advanced sort + admin curation, and is code-only (no migration). Offset pagination can drift under heavy churn — acceptable now; revisit with keyset if needed. Admins can edit/hide/delete any practice (editor + `updatePractice`/`setPracticeTags` actions now allow `admin.access`, not just the owner).
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 

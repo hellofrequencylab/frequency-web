@@ -78,8 +78,10 @@ library is browsable by what you are drawn to.
 
 ## Find your way around the library
 
-The library is organized so you can find practices that fit you:
+The library is organized so you can find practices that fit you, even as it grows to
+thousands:
 
+- **Search.** Use the search box to find a practice by name or description.
 - **Pillars and sub-categories.** Everything sits under one of the four Pillars —
   **Mind, Body, Spirit, Expression** — and within a Pillar you can narrow to a
   sub-category (for example Body → Cardio, Strength, Mobility).
