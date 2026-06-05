@@ -4,7 +4,7 @@
 // forever. The induction template already accepts a `copy` override; a sequence
 // just feeds it. TEMPORARY (deleted at launch) like the rest of beta-script.
 //
-// Client-safe (no server imports). The splash-page creator (/admin/beta-sequences)
+// Client-safe (no server imports). The splash-page creator (/pages/sequences)
 // reads/lists these; a DB-backed editable layer can override them later (vera_config
 // pattern) without changing callers.
 
