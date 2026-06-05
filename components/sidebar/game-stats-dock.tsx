@@ -29,7 +29,9 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 export function GameStatsDockClient({ data }: { data: DockData }) {
-  const { zaps, gems, streak, rank, todaysMove, last7, rankProgress, arc, vaultGems } = data
+  // The compact bar shows the summary; the rest of the fields render in the shared
+  // GameStatsPanel inside the expandable region below.
+  const { zaps, gems, streak, rank } = data
   // Mirrors the left profile dock. The bar is sticky-pinned to the bottom of the
   // shared scroll viewport, so at REST it sits at the same height as the left
   // profile dock (not buried at the end of a tall rail). The panel rises on
@@ -77,100 +79,130 @@ export function GameStatsDockClient({ data }: { data: DockData }) {
         }`}
       >
         <div className="overflow-hidden">
-          <div className="max-h-[50vh] overflow-y-auto px-3 pb-4 pt-1 space-y-4">
-
-            {/* Today's move — North-Star action, no box */}
-            {todaysMove.kind === 'done' ? (
-              <p className="flex items-center gap-2 text-sm font-medium text-success">
-                <CheckCircle2 className="w-4 h-4 shrink-0" />
-                Practiced today — streak safe
-              </p>
-            ) : (
-              <Link
-                href="/practices"
-                className="group/move flex items-center gap-2 text-sm font-semibold text-primary-strong hover:text-primary-hover transition-colors"
-              >
-                <Flame className="w-4 h-4 shrink-0" />
-                <span className="flex-1">{todaysMove.kind === 'adopt' ? 'Adopt a practice to start' : 'Log today’s practice'}</span>
-                <ArrowRight className="w-3.5 h-3.5 shrink-0 transition-transform group-hover/move:translate-x-0.5" />
-              </Link>
-            )}
-
-            {/* Streak — subtle 7-day strip */}
-            <div className="flex items-center gap-2">
-              <SectionLabel>Streak</SectionLabel>
-              <div className="flex flex-1 gap-1">
-                {last7.map((on, i) => (
-                  <div key={i} className={`h-1.5 flex-1 rounded-full ${on ? 'bg-primary' : 'bg-surface-elevated'}`} />
-                ))}
-              </div>
-            </div>
-
-            {/* Rank progress */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <SectionLabel>Rank</SectionLabel>
-                <span className="text-[11px] text-subtle">
-                  {rankProgress.nextLabel
-                    ? `${rankProgress.toGo.toLocaleString()} zaps to ${rankProgress.nextLabel}`
-                    : 'Top rank reached'}
-                </span>
-              </div>
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-elevated">
-                <div
-                  className="h-full rounded-full bg-primary"
-                  style={{ width: `${rankProgress.nextLabel ? Math.min(100, Math.max(2, rankProgress.pct)) : 100}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Current arc */}
-            {arc && (
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <SectionLabel>Journey</SectionLabel>
-                  <Link href="/journeys" className="text-[11px] font-semibold text-primary-strong hover:text-primary-hover">View →</Link>
-                </div>
-                <div className="rounded-xl bg-surface-elevated px-3 py-2.5">
-                  <div className="flex items-center gap-1.5">
-                    <Target className="w-3.5 h-3.5 text-signal-strong shrink-0" />
-                    <span className="truncate text-xs font-semibold text-text">{arc.chain}</span>
-                  </div>
-                  <p className="mt-0.5 mb-1.5 truncate text-[11px] text-subtle">{arc.step}</p>
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface">
-                    <div className="h-full rounded-full bg-signal-strong" style={{ width: `${Math.min(100, Math.max(2, arc.pct))}%` }} />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* The Vault — at the very bottom */}
-            <Link
-              href="/crew/store"
-              className="block rounded-xl border border-primary-bg bg-primary-bg/40 px-3 py-3 hover:bg-primary-bg/60 transition-colors"
-            >
-              <div className="flex items-center gap-1.5">
-                <Lock className="w-3.5 h-3.5 text-primary-strong shrink-0" />
-                <span className="text-xs font-bold uppercase tracking-wider text-primary-strong">The Vault</span>
-              </div>
-              <p className="mt-1 flex items-center gap-1 text-sm font-semibold text-text">
-                <Gem className="w-3.5 h-3.5 text-signal" />
-                {vaultGems.toLocaleString()} gems to spend
-              </p>
-              <p className="mt-0.5 text-[11px] text-subtle">Titles, cosmetics &amp; membership credits →</p>
-            </Link>
-
-            {/* Full dashboard */}
-            <Link
-              href="/crew"
-              className="flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-semibold text-primary-strong hover:bg-surface-elevated transition-colors"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              Open full dashboard
-            </Link>
+          <div className="max-h-[50vh] overflow-y-auto px-3 pb-4 pt-1">
+            <GameStatsPanel data={data} />
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+// ── Shared stats panel body ───────────────────────────────────────────────────
+// The actual stats content (today's move · streak · rank · journey · vault ·
+// dashboard), factored out so it can render BOTH inside the desktop dock above and
+// inside the mobile right-side stats menu (app-shell.tsx). `showSummary` prepends a
+// zaps/gems/streak + rank header — the desktop dock already shows that in its bar,
+// so it passes false; the mobile menu passes true.
+
+export function GameStatsPanel({ data, showSummary = false }: { data: DockData; showSummary?: boolean }) {
+  const { zaps, gems, streak, rank, todaysMove, last7, rankProgress, arc, vaultGems } = data
+  return (
+    <div className="space-y-4">
+      {showSummary && (
+        <div className="flex items-center justify-between gap-2 border-b border-border pb-3">
+          <div className="flex items-center gap-3 text-sm font-bold text-text tabular-nums">
+            <span className="inline-flex items-center gap-1"><Zap className="w-4 h-4 text-primary fill-current" />{zaps.toLocaleString()}</span>
+            <span className="inline-flex items-center gap-1"><Gem className="w-4 h-4 text-signal" />{gems.toLocaleString()}</span>
+            <span className="inline-flex items-center gap-1"><Flame className="w-4 h-4 text-primary" />{streak}w</span>
+          </div>
+          {rank && (
+            <span className="rank-badge text-[10px] leading-tight" style={seasonRankStyle(rank)}>
+              {RANK_LABELS[rank] ?? rank}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Today's move — North-Star action, no box */}
+      {todaysMove.kind === 'done' ? (
+        <p className="flex items-center gap-2 text-sm font-medium text-success">
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
+          Practiced today — streak safe
+        </p>
+      ) : (
+        <Link
+          href="/practices"
+          className="group/move flex items-center gap-2 text-sm font-semibold text-primary-strong hover:text-primary-hover transition-colors"
+        >
+          <Flame className="w-4 h-4 shrink-0" />
+          <span className="flex-1">{todaysMove.kind === 'adopt' ? 'Adopt a practice to start' : 'Log today’s practice'}</span>
+          <ArrowRight className="w-3.5 h-3.5 shrink-0 transition-transform group-hover/move:translate-x-0.5" />
+        </Link>
+      )}
+
+      {/* Streak — subtle 7-day strip */}
+      <div className="flex items-center gap-2">
+        <SectionLabel>Streak</SectionLabel>
+        <div className="flex flex-1 gap-1">
+          {last7.map((on, i) => (
+            <div key={i} className={`h-1.5 flex-1 rounded-full ${on ? 'bg-primary' : 'bg-surface-elevated'}`} />
+          ))}
+        </div>
+      </div>
+
+      {/* Rank progress */}
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between">
+          <SectionLabel>Rank</SectionLabel>
+          <span className="text-[11px] text-subtle">
+            {rankProgress.nextLabel
+              ? `${rankProgress.toGo.toLocaleString()} zaps to ${rankProgress.nextLabel}`
+              : 'Top rank reached'}
+          </span>
+        </div>
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-elevated">
+          <div
+            className="h-full rounded-full bg-primary"
+            style={{ width: `${rankProgress.nextLabel ? Math.min(100, Math.max(2, rankProgress.pct)) : 100}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Current arc */}
+      {arc && (
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <SectionLabel>Journey</SectionLabel>
+            <Link href="/journeys" className="text-[11px] font-semibold text-primary-strong hover:text-primary-hover">View →</Link>
+          </div>
+          <div className="rounded-xl bg-surface-elevated px-3 py-2.5">
+            <div className="flex items-center gap-1.5">
+              <Target className="w-3.5 h-3.5 text-signal-strong shrink-0" />
+              <span className="truncate text-xs font-semibold text-text">{arc.chain}</span>
+            </div>
+            <p className="mt-0.5 mb-1.5 truncate text-[11px] text-subtle">{arc.step}</p>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface">
+              <div className="h-full rounded-full bg-signal-strong" style={{ width: `${Math.min(100, Math.max(2, arc.pct))}%` }} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* The Vault — at the very bottom */}
+      <Link
+        href="/crew/store"
+        className="block rounded-xl border border-primary-bg bg-primary-bg/40 px-3 py-3 hover:bg-primary-bg/60 transition-colors"
+      >
+        <div className="flex items-center gap-1.5">
+          <Lock className="w-3.5 h-3.5 text-primary-strong shrink-0" />
+          <span className="text-xs font-bold uppercase tracking-wider text-primary-strong">The Vault</span>
+        </div>
+        <p className="mt-1 flex items-center gap-1 text-sm font-semibold text-text">
+          <Gem className="w-3.5 h-3.5 text-signal" />
+          {vaultGems.toLocaleString()} gems to spend
+        </p>
+        <p className="mt-0.5 text-[11px] text-subtle">Titles, cosmetics &amp; membership credits →</p>
+      </Link>
+
+      {/* Full dashboard */}
+      <Link
+        href="/crew"
+        className="flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-semibold text-primary-strong hover:bg-surface-elevated transition-colors"
+      >
+        <Sparkles className="w-3.5 h-3.5" />
+        Open full dashboard
+      </Link>
     </div>
   )
 }
