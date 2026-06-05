@@ -19,6 +19,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 export const EDITABLE_PAGES = [
   { slug: 'the-lab', title: 'The Lab', path: '/the-lab' },
   { slug: 'the-community', title: 'The Community', path: '/the-community' },
+  { slug: 'the-quest', title: 'The Quest', path: '/the-quest' },
 ] as const
 
 export type EditableSlug = (typeof EDITABLE_PAGES)[number]['slug']
