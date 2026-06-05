@@ -3520,7 +3520,7 @@ through the existing usage ledger + daily-cap machinery.
 
 ## ADR-122: Mobile right-edge stats menu (the gamification counterpart to the left rail)
 
-**Status:** Superseded by ADR-134 (the scroll-reveal / opt-in-toggle interaction). The right-edge
+**Status:** Superseded by ADR-135 (the scroll-reveal / opt-in-toggle interaction). The right-edge
 stats menu and its reuse of `GameStatsPanel` / `loadGameStats` stand; only the *interaction* (the
 scroll-revealed light tab + per-device drawer on/off) changed — both edges now carry an
 always-visible tab that opens on click, with a shared Micro/Full size. · `components/layout/app-shell.tsx` (`MobileStatsMenu`),
@@ -4075,7 +4075,48 @@ Notion on ship.
 
 ---
 
-## ADR-134: Unified mobile edge menus — always-visible tabs, click-to-open, shared Micro/Full size
+## ADR-134: Entry-point recruiter leaderboard + tiers — gamify the crew lead-gen loop
+
+**Status:** Accepted (Entry Points Phase 3) · `lib/entry-points/leaderboard.ts`,
+`app/(main)/crew/leaderboard/` (`entrypoints` scope + tab). Builds on Entry Points
+(ADR-126), the referral attribution column (`profiles.referred_by_profile_id`, ADR-099),
+and the existing `/crew/leaderboard` shell + season-rank pattern.
+
+**Context.** Crew can build entry points (Phase 1) and admins run campaigns (Phase 2), but
+nothing **ranked** crew by the outcome — closing the loop "build → earn → see where you
+stand" that drives the rest of the gamification. We want a recruiter board + recognition
+tiers without a new points system.
+
+**Decision.**
+- **Rank by outcome, owner-level.** A recruiter's score is the **signups they referred**
+  (`profiles.referred_by_profile_id = owner`) — the same owner-level credit the zaps model
+  already uses (`invite_accepted`/`referral_activated`) — with **scans** (sum of their entry
+  points' `scan_count`) and **entry-point count** as tiebreakers (`rankRecruiters`, pure).
+  Signups-not-scans is deliberate: it rewards conversions, not vanity reach. It counts
+  *all* of an owner's referrals (not just a specific code), because `fq_ref` attributes to
+  the owner, not the code — matching how credit already flows.
+- **Tiers from cumulative signups** (`recruiterTier`, pure + tested): Scout → Connector (3)
+  → Recruiter (10) → Ambassador (25) → Luminary (50). Shown as a badge on the board and a
+  "N more to <next>" nudge for the viewer.
+- **Reuse the leaderboard surface.** A new `entrypoints` scope/tab on `/crew/leaderboard`
+  renders its own columns (Points · Scans · Signups · Tier) rather than the season-zaps
+  layout, so it sits where members already look for rankings — no new page.
+- **No new tables / no migration.** Computed at read time from `qr_codes` + `profiles`.
+
+**Alternatives.** A separate persisted "recruiter_score" with its own ledger (rejected —
+referrals already give an accurate owner-level signal; computing at read time avoids a
+sync path). Rank by scans (rejected — rewards printing, not converting). A standalone page
+(rejected — the leaderboard is the natural home).
+
+**Consequences.** Crew see themselves ranked for lead-gen and chase the next tier; the loop
+from Phases 1–2 now has a visible payoff. Tiers are recognition-only today (no rewards
+attached). Per-campaign/per-code conversion attribution and tier-linked zaps/badges are
+follow-ups. Read-time aggregation is fine at current scale; if the owner set grows large,
+denormalise into a materialised count.
+
+---
+
+## ADR-135: Unified mobile edge menus — always-visible tabs, click-to-open, shared Micro/Full size
 
 **Status:** Accepted · `components/layout/app-shell.tsx` (`EdgeMenu`, `RailSize`). Supersedes the
 ADR-122 interaction (and the residue of ADR-121's left rail); reuses the same panel bodies
