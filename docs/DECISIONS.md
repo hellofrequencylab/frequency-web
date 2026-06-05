@@ -4247,6 +4247,54 @@ source of truth; the operator "edit from the dock" guide goes to Notion on ship;
 console + `AdminModuleCard` to the DESIGN.md kit.
 
 ---
+
+## ADR-138: Two admin surfaces split by intent — inline *tuning* vs the management *sidebar*
+
+**Status:** Accepted — build pending · Refines [ADR-137](DECISIONS.md) (single drill-down
+console). Spec: [EMBEDDED-ADMIN.md](EMBEDDED-ADMIN.md) ("The target shape"). The management
+sidebar is the **already-shipped** `PageAdminDock` (ADR-128); the inline layer is new.
+
+**Context.** ADR-137 put the whole settings suite into one drill-down console (the dock).
+Right idea, but cramming *creative tuning* (branding, content, engagement) and *granular
+feature management* (access, moderation, integrations, contact settings) into one list
+flattens two genuinely different jobs. Tuning wants to happen **against the real content,
+on the page**; feature management wants a **structured control panel**. Forcing both into a
+drill-down makes tuning feel indirect and management feel buried. (A separate admin sidebar
+already exists on the site — the `PageAdminDock` — so the panel half is built; the gap is a
+true in-context inline layer.) Still non-negotiable: **never go to `/admin` to edit a page's
+admin features.**
+
+**Decision.** Split on-page admin into **two surfaces, divided by intent**, both toggled by
+one **Edit** button (and both off on "Done editing"):
+- **Inline admin (on the page) — *tune*.** In-context handles + per-region toolbars for
+  **branding, content, engagement**: page info (title/snippet/cover), Layout (what shows +
+  order), Engage (community engagement), the **QR generator**, search & sorting, and **Vera
+  tone**. The page is the canvas — you see changes against the real content.
+- **Management sidebar (the `PageAdminDock`) — *manage*.** A structured **drill-down** (ADR-137
+  navigation) for **granular feature management**: People & access, Place & Time, Comms,
+  Reach (links/campaigns), Safety/moderation, Insights, **Danger**, and **page-scoped global
+  settings** surfaced in context (e.g. contact settings, integrations).
+- **The split is by intent, not entity.** A spine category can have a *tune face* (inline) and
+  a *manage face* (sidebar): Reach = generate a QR (inline) vs. manage campaigns (sidebar);
+  Safety = Vera's voice (inline) vs. moderation rules (sidebar). The registry gains a
+  **`surface: 'inline' | 'sidebar'`** field on `AdminModule` that routes each module; `slot`
+  still names the spine category. Capability gating + per-setting inline save are identical
+  on both.
+
+**Alternatives.** One drill-down console for everything (ADR-137 — refined here: tuning reads
+better in context than buried in a list). Inline-only, no panel (rejected — granular feature
+management needs structure a page canvas can't give). Keep some feature management in `/admin`
+(rejected — the explicit goal is zero trips to `/admin`). A separate Edit toggle per surface
+(rejected — one Edit Mode, two surfaces, is simpler to reason about).
+
+**Consequences.** Net-new vs. ADR-137: a `surface` field on `AdminModule`; the **inline layer**
+(page-level Edit Mode + in-context handles/toolbars mounting the ✏️ modules against real
+content); the sidebar keeps the ADR-137 drill-down for the ⚙️ modules. The shipped dock is the
+sidebar — no new panel. Each spine category is tagged with its primary surface (a couple span
+both). EMBEDDED-ADMIN.md "target shape" updated to the two-surface model. Operator guide → Notion
+on ship.
+
+---
 ### Decisions intentionally NOT duplicated here
 
 Already fully covered by the repo docs (no ADR needed): the RLS / admin-client
