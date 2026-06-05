@@ -25,6 +25,7 @@ const FOCUS_PREFIXES = [
   '/crm', // steward member workspace
   '/outreach', // steward composer
   '/codes', // personal codes / QR hub
+  '/entry-points', // crew "My Entry Points" builder (ADR-126)
   '/upgrade', // single conversion card
   '/g/', // gift-a-zap confirm
   '/n/', // scan-landing claim
