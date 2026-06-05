@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useRef } from 'react'
-import { Palette, Upload, X } from 'lucide-react'
+import { Palette, Upload, X, TriangleAlert } from 'lucide-react'
 import {
   type QrStyle,
   type ModuleShape,
@@ -10,6 +10,7 @@ import {
   DEFAULT_STYLE,
   isSafeLogoSrc,
 } from '@/lib/qr/style'
+import { scannabilityWarnings } from '@/lib/qr/scannability'
 import { renderStyledQrSvg } from '@/lib/qr/render-styled'
 
 // The "make them beautiful" editor: live-previewed controls over a QrStyle.
@@ -26,6 +27,7 @@ export function StyleEditor({
 }) {
   const fileRef = useRef<HTMLInputElement>(null)
   const svg = useMemo(() => renderStyledQrSvg(previewUrl, value, 240), [previewUrl, value])
+  const warnings = useMemo(() => scannabilityWarnings(value), [value])
 
   function set<K extends keyof QrStyle>(key: K, v: QrStyle[K]) {
     onChange({ ...value, [key]: v })
@@ -67,6 +69,18 @@ export function StyleEditor({
               </button>
             ))}
           </div>
+          {warnings.length > 0 && (
+            <div className="mt-2 rounded-lg border border-warning/40 bg-warning-bg/50 p-2">
+              <p className="flex items-center gap-1 text-[11px] font-semibold text-warning">
+                <TriangleAlert className="h-3 w-3" /> Scannability
+              </p>
+              <ul className="mt-1 space-y-1 text-[11px] text-muted">
+                {warnings.map((w, i) => (
+                  <li key={i}>• {w}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
 
         {/* Controls */}

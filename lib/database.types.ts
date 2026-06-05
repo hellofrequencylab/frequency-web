@@ -2011,6 +2011,7 @@ export type Database = {
           id: string
           label: string | null
           location: unknown
+          max_claims: number | null
           owner_profile_id: string | null
           partner_id: string | null
           proximity_m: number | null
@@ -2029,6 +2030,7 @@ export type Database = {
           id?: string
           label?: string | null
           location?: unknown
+          max_claims?: number | null
           owner_profile_id?: string | null
           partner_id?: string | null
           proximity_m?: number | null
@@ -2047,6 +2049,7 @@ export type Database = {
           id?: string
           label?: string | null
           location?: unknown
+          max_claims?: number | null
           owner_profile_id?: string | null
           partner_id?: string | null
           proximity_m?: number | null

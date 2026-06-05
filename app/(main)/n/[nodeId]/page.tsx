@@ -9,10 +9,13 @@ export const dynamic = 'force-dynamic'
 // /n/<nodeId>). Shows the spot + a Claim button that runs the verified pipeline.
 export default async function NodePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ nodeId: string }>
+  searchParams: Promise<{ s?: string }>
 }) {
   const { nodeId } = await params
+  const { s: secret } = await searchParams
   const admin = createAdminClient()
 
   const { data: node } = await admin
@@ -48,7 +51,7 @@ export default async function NodePage({
       </p>
 
       <div className="mt-6 flex justify-center">
-        <ClaimButton nodeId={node.id} />
+        <ClaimButton nodeId={node.id} secret={secret ?? null} />
       </div>
     </div>
   )
