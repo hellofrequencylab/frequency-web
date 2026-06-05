@@ -2953,7 +2953,142 @@ design reference, not a hardcode. No app-logic change — purely amounts + one f
 
 ---
 
-## ADR-105: Community Library — unify Practices, Programs, Journeys (create → approve → catalog → rank)
+## ADR-105: NFC parity — Web NFC writer + per-scan medium attribution
+
+**Status:** Accepted · `supabase/migrations/20260605120000_qr_scan_medium.sql`,
+`app/(main)/admin/qr/nfc-writer.tsx`, `lib/qr/links.ts` (`withMedium`), `app/q/[slug]/route.ts`.
+Extends the QR platform (ADR-089→094) and the physical `nodes` engine.
+
+**Context.** `nodes` already supported `type='nfc'`, and the verify/capture/award
+pipeline is type-agnostic — but there was no way to actually *program* a physical NFC
+tag, and a tag tap on a **dynamic link** (`/q/<slug>`) was indistinguishable from a
+printed-QR scan in `qr_scans`. So "NFC" existed in the engine but not as a usable,
+measurable channel in the Studio. Issue #221 calls for NFC parity.
+
+**Decision.** Two additions, no new entity:
+- **Writer (client, Web NFC).** `NfcWriter` writes a code's URL to a tag via
+  `NDEFReader.write()` (Chrome-for-Android only; degrades to a plain "NFC (Android)"
+  hint everywhere else — the QR still covers those scanners). Surfaced on every code
+  card that already offers a download: dynamic links, member profile codes, marketing
+  codes, and check-in nodes.
+- **Medium attribution.** A written dynamic-link tag encodes `?m=nfc` (helper
+  `withMedium(url, 'nfc')`); the `/q` resolver reads it and forwards `p_medium` to
+  `record_qr_scan`, which stores it on a new, defaulted `qr_scans.medium` column
+  (`'qr' | 'nfc'`, default `'qr'`). Analytics (`summarizeScans`) split totals by
+  medium, surfaced as an **NFC taps** stat. Check-in **nodes** carry their channel via
+  the node's own `type`, so their tags are written with the plain URL (no marker).
+
+**Alternatives.** A separate `nfc_taps` table (rejected — medium is one column on the
+existing scan log); inferring NFC from the User-Agent (rejected — unreliable, and a tag
+URL is the authoritative signal). Native/Expo NFC reader is out of scope here (web only).
+
+**Consequences.** Operators can mint NFC tags for any code from an Android phone, and
+QR-vs-NFC performance is now measurable per code. The default keeps every existing row
+and every non-NFC caller correct. Signed anti-spoof payloads on tags and node-level NFC
+tap attribution (in `captures`) remain open follow-ups.
+
+---
+
+## ADR-106: Location-aware earning — geofence authoring + device-location claim
+
+**Status:** Accepted · `supabase/migrations/20260605130000_node_geo.sql`,
+`app/(main)/admin/qr/actions.ts`, `app/(main)/admin/qr/qr-studio.tsx` (NodeForm),
+`app/(main)/n/[nodeId]/{actions,claim-button}.tsx`. Surfaces the existing `nodes`
+proximity engine (ADR-088 capture pipeline).
+
+**Context.** `nodes` already had `location` (PostGIS geography) + `proximity_m`, and
+`verifyCapture` already enforced proximity via the `node_within_range` RPC — but
+nothing **authored** a geofence (the Studio form omitted location) and the `/n` claim
+flow never **forwarded** the device's location, so the path was dead. A code couldn't
+require "you must actually be here to earn."
+
+**Decision.** Close both ends, no schema change:
+- **Author.** A "Location-aware" toggle on the check-in NodeForm sets lat/lng + radius
+  (with a "use my current location" helper). PostgREST can't build a geography from
+  lat/lng, so writes go through a new SECURITY DEFINER `set_node_geo(id, lng, lat, m)`
+  RPC; the editor reads coords back via `nodes_geo()` (the geography column can't be
+  selected as lat/lng otherwise). Null lat/lng clears the fence.
+- **Claim.** `ClaimButton` requests `navigator.geolocation` (best-effort: null on
+  denial/timeout) and passes it to `claimNode` → `captureNode({ location })`. A
+  geofenced code with no location returns `location_required`; out of range →
+  `too_far` (both already surfaced in the button). Non-geofenced codes ignore it.
+
+**Alternatives.** Trust an IP-geo lookup (rejected — city-level, trivially wrong/spoofed
+for a "be here" gate); store lat/lng as plain numeric columns (rejected — loses PostGIS
+distance + the existing `node_within_range` RPC). Radius clamped 5–5000 m.
+
+**Consequences.** Operators can make a check-in earn only on-site (event door, plaque,
+shopfront). Verification stays server-authoritative. Device location is used only at
+claim time, never stored. Ghost (invisible GPS) nodes + signed payloads remain the next
+steps on this engine.
+
+---
+
+## ADR-107: UTM / source passthrough — per-code source tag + acquisition persisted at signup
+
+**Status:** Accepted · `supabase/migrations/20260605140000_qr_source_passthrough.sql`,
+`lib/attribution/acquisition.ts`, `app/q/[slug]/route.ts`, `app/onboarding/actions.ts`,
+`app/(main)/admin/qr/{link-actions,dynamic-links}.tsx`. Extends first-touch attribution (ADR-095).
+
+**Context.** First-touch capture (ADR-095) already wrote UTM/referrer/landing into the
+`fq_attr` cookie at the edge — but (a) a QR/NFC scan carried no per-code identity, so two
+posters of the same campaign were indistinguishable, and (b) the cookie was never
+**persisted**, so once it expired the acquisition was lost and un-queryable. The ask:
+"a signup traces back to the specific poster."
+
+**Decision.** Two additive columns, no new entity:
+- **`qr_codes.source_tag`** — an operator label per code (e.g. `downtown-poster-a`), set
+  in the dynamic-link form. On an **anonymous** scan the `/q` resolver stamps it into the
+  first-touch cookie (`utm.campaign = source_tag`, `code = slug`) — but only when no
+  prior `fq_attr` exists, preserving ADR-095's *first-touch-wins* rule.
+- **`profiles.acquisition` (jsonb)** — at onboarding, `persistAcquisition` decodes
+  `fq_attr` + the `fq_src` channel hint and snapshots them onto the profile **once**
+  (skips if already set). Best-effort, never blocks signup.
+
+**Alternatives.** A dedicated `acquisitions` table (rejected — one immutable snapshot per
+profile is a column, not a table); stamping every scan regardless of prior touch (rejected
+— breaks first-touch immutability, last-poster would clobber the real entry point).
+
+**Consequences.** Acquisition is now permanently traceable to a campaign / poster / code,
+queryable off `profiles.acquisition` long after the cookie expires. Reporting UI over the
+snapshot (a per-source signup leaderboard) is the natural follow-up. Regenerate DB types
+to formalize the two new columns later.
+
+---
+
+## ADR-108: Google Wallet pass for member codes — env-gated, dependency-free JWT
+
+**Status:** Accepted · `lib/wallet/google.ts`, `app/api/wallet/google/route.ts`,
+`app/(main)/codes/{page,member-codes}.tsx`. Apple Wallet deferred.
+
+**Context.** Issue #221 asks for an Apple/Google Wallet pass for a member's profile code.
+Apple Wallet requires a signed `.pkpass` (a PKCS#7 signature over a zip, needing the WWDR
++ Pass Type ID certificate chain); Google Wallet only needs an **RS256-signed JWT** linking
+to `pay.google.com/gp/v/save/<jwt>`. We have neither set of credentials in this environment.
+
+**Decision.** Ship **Google Wallet**, **config-gated**, and **dependency-free**:
+- Sign the Save-to-Wallet JWT with **`node:crypto`** (`createSign('RSA-SHA256')`) — no new
+  package. The pass is a Generic card whose barcode is the member's connect URL.
+- **Env-gated** on `GOOGLE_WALLET_ISSUER_ID` + `GOOGLE_WALLET_SA_EMAIL` +
+  `GOOGLE_WALLET_SA_PRIVATE_KEY`. `isGoogleWalletConfigured()` drives everything: when any
+  is missing the `/api/wallet/google` route 404s and the "Add to Google Wallet" button is
+  hidden. So it ships **dark** and is enabled by config alone — zero impact until then.
+- The route gates on ownership (only the code's owner, or host+, can mint a pass that
+  carries the owner's identity).
+- **Apple Wallet deferred** — it needs the pkpass cert toolchain; documented as the follow-up.
+
+**Alternatives.** Add `google-wallet`/`jsonwebtoken`/`passkit-generator` deps (rejected —
+`node:crypto` covers RS256; fewer deps); pre-create the WalletClass via the API (rejected —
+the class is embedded inline in the JWT, so no server-to-Google round trip at issue time).
+
+**Consequences.** Members can add their profile code to Google Wallet **once credentials are
+provisioned** — the code is complete but **unverified end-to-end without real Google
+credentials**, which is the explicit trade-off of shipping it gated. Apple Wallet + a
+scan-tracking "pass installed" signal remain open.
+
+---
+
+## ADR-109: Community Library — unify Practices, Programs, Journeys (create → approve → catalog → rank)
 
 **Status:** Accepted (Phase 1) · `supabase/migrations/20260605120000_community_library.sql`, `lib/library.ts`, `app/(main)/library/**`, `lib/nav-areas.ts`. Builds on practices/journeys + ADR-104 (zaps).
 

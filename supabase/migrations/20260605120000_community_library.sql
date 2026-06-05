@@ -1,4 +1,4 @@
--- Community Library (ADR-105) — unify Practices, Programs, and Journeys as
+-- Community Library (ADR-109) — unify Practices, Programs, and Journeys as
 -- community-created content with one lifecycle: anyone creates → leadership (a
 -- circle Host or any Guide+) approves → it enters the shared pool → a best-of
 -- algorithm ranks it. Practices = personal real-world activities; Programs =
@@ -144,4 +144,4 @@ revoke all on function public.community_library(text, text, int) from public, an
 grant execute on function public.community_library(text, text, int) to authenticated, service_role;
 
 comment on table public.programs is
-  'Community-created Programs (outreach toolkits). Member-creatable, approved by a Host/Guide+ into the Library (ADR-105). The file playbooks in content/programs stay separate.';
+  'Community-created Programs (outreach toolkits). Member-creatable, approved by a Host/Guide+ into the Library (ADR-109). The file playbooks in content/programs stay separate.';
