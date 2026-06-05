@@ -50,6 +50,16 @@ describe('flyer composer', () => {
     // The embedded QR contributes <rect> modules.
     expect(svg).toContain('<rect')
   })
+  it('wraps a medium subhead across lines without truncating it', () => {
+    const svg = buildEntryFlyerSvg({
+      layout: 'poster',
+      slots: { headline: 'Event', subhead: 'Friday 7pm at Torrey Pines bluff, bring a layer', footer: 'Scan' },
+      url: 'https://hellofrequency.app/q/abc123',
+    })
+    expect(svg).toContain('layer') // last word survives
+    expect(svg).not.toContain('…') // nothing ellipsized at this length
+  })
+
   it('supports the card layout too', () => {
     const svg = buildEntryFlyerSvg({
       layout: 'card',
