@@ -15,6 +15,7 @@ import { rememberFacts } from '@/lib/ai/memory'
 import { track } from '@/lib/analytics/track'
 import { BETA_INDUCTION_VERSION, BETA_MEMBERS_GET_CREW, type OathId } from '@/lib/onboarding/beta-script'
 import { getSequence } from '@/lib/onboarding/beta-sequences'
+import { personaTag, isPersonaId } from '@/lib/onboarding/personas'
 import { assignTag } from '@/lib/traits/tags'
 import { resolveAcquisition, stampAcquisitionTag } from '@/lib/attribution/server'
 import type { Json } from '@/lib/database.types'
@@ -33,6 +34,27 @@ async function tagBetaCohort(profileId: string, seqSlug: string | null): Promise
   if (!seqSlug) return
   try {
     await assignTag(profileId, getSequence(seqSlug).marketingTag)
+  } catch {
+    /* tagging is best-effort */
+  }
+}
+
+/** The persona the member chose at intake (cookie set by the induction / lead flow). */
+async function readPersonaSlug(): Promise<string | null> {
+  try {
+    const v = (await cookies()).get('fq_persona')?.value ?? null
+    return isPersonaId(v) ? v : null
+  } catch {
+    return null
+  }
+}
+
+/** Stamp the persona's marketing tag on the member (best-effort; never blocks). */
+async function tagPersona(profileId: string, personaSlug: string | null): Promise<void> {
+  const key = personaTag(personaSlug)
+  if (!key) return
+  try {
+    await assignTag(profileId, key)
   } catch {
     /* tagging is best-effort */
   }
@@ -120,6 +142,7 @@ async function writeBetaInduction(data: InductionData): Promise<void> {
   const heardAbout = data.heardAbout.trim().slice(0, 120)
   const location = data.location.trim().slice(0, 160)
   const seqSlug = await readBetaSequenceSlug()
+  const personaSlug = await readPersonaSlug()
   // How they first reached us (ADR-095) — resolved from the attribution cookies.
   const acquisition = await resolveAcquisition()
 
@@ -142,6 +165,9 @@ async function writeBetaInduction(data: InductionData): Promise<void> {
         onboarding_completed: true,
         // First-touch acquisition record (utm / referrer / landing / channel).
         acquisition: (acquisition as unknown as Json),
+        // WHO they said they are at intake (ADR-125) — the spine the site + Vera read
+        // to tailor the experience. Cookie wins; falls back to any prior value.
+        persona: personaSlug ?? ((meta.persona as string | undefined) ?? null),
         beta: {
           ...beta,
           version: BETA_INDUCTION_VERSION,
@@ -192,6 +218,7 @@ async function writeBetaInduction(data: InductionData): Promise<void> {
     await track('onboarding.induction_completed', { hasAvatar: !!avatarUrl, hasIntent: !!intent }, prof.id)
     await track('profile.completed', { hasAvatar: !!avatarUrl }, prof.id)
     await tagBetaCohort(prof.id, seqSlug)
+    await tagPersona(prof.id, personaSlug)
     await stampAcquisitionTag(prof.id, acquisition)
   }
 
@@ -292,6 +319,7 @@ async function mergeBetaInduction(data: InductionData): Promise<void> {
 
   const meta = (profile.meta as Meta) ?? {}
   const beta = (meta.beta as Meta) ?? {}
+  const personaSlug = await readPersonaSlug()
 
   const clean = sanitizeProfileInput(data)
   const newDisplayName = clean.displayName?.trim()
@@ -306,6 +334,8 @@ async function mergeBetaInduction(data: InductionData): Promise<void> {
   const mergedMeta: Meta = {
     ...meta,
     onboarding_completed: true,
+    // New persona choice wins; never blanks an existing one (ADR-125).
+    persona: personaSlug ?? ((meta.persona as string | undefined) ?? null),
     beta: {
       ...beta,
       version: BETA_INDUCTION_VERSION,
@@ -339,6 +369,8 @@ async function mergeBetaInduction(data: InductionData): Promise<void> {
     goals: newIntent ? [newIntent] : [],
     neighborhood: newLocation || null,
   }).catch(() => {})
+
+  await tagPersona(profile.id as string, personaSlug)
 
   // Beta: a returning member who was still on the Member tier comes up to Crew.
   await grantBetaCrew(user.id)

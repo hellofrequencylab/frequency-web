@@ -3621,6 +3621,59 @@ generalizing it (Circles, practices) is now a per-page `sections` array, not new
 
 ---
 
+## ADR-125: Personas + lead flows — the self-identified intake rework
+
+**Status:** Accepted · `lib/onboarding/personas.ts`, `lib/onboarding/lead-flows.ts`,
+`app/(marketing)/start/**`, `app/onboarding/beta/{induction,page,actions}.tsx`,
+`lib/traits/registry.ts` (5 `persona_*` tags). Builds on the beta induction (ADR-068),
+beta sequences, the tag registry/MDP (ADR-068), and acquisition attribution (ADR-095).
+Full spec: [LEAD-FLOWS.md](LEAD-FLOWS.md).
+
+**Context.** Intake had one mechanism doing two jobs: a beta *sequence*
+(`early-adopter` / `personal` / `founding-partner`) was both the marketing splash
+*and* the induction's copy skin, and **which one you got was decided by which link you
+clicked** — we never asked the visitor who they were. That conflated "founding partner"
+businesses, investors, and builders into one lump, and gave us no structured signal to
+route people down different marketing tracks (practitioner tools vs. a partner loyalty
+program vs. the regular visitor pitch).
+
+**Decision.** Split intake into **two layers with persona as the spine.**
+- **Persona** (`lib/onboarding/personas.ts`) — five self-identified types: **Visitor**
+  (default), **Practitioner**, **Partner business**, **Community builder/Volunteer**,
+  **Investor/Lab champion**. Each carries its picker pitch, a persona-true **value reel**
+  (reuses the three product renders with new captions — no new components), a **marketing
+  track** (what we show + a learn-more link), and a **registered marketing tag**.
+- **Lead flow** (`lib/onboarding/lead-flows.ts`, surfaced at `/start/<flow>`) — an
+  **assignable top-of-funnel** you drop behind any entry point (QR, IG bio, partner
+  button). It sets the frame, asks the persona, records the lead (`captureLead` →
+  `contacts.meta.persona`), and routes into the induction carrying `?persona=`. Generalizes
+  sequences: the visitor *tells* us instead of us guessing from the link.
+- **Persona-aware induction.** The fork is captured in the lead flow **and re-confirmed in
+  the induction's Welcome beat** (chosen "both" — strongest signal, no dead ends). Folded
+  into the existing beat, so **beat count stays 6** (no renumber). The persona branches the
+  tour reel and is persisted at completion: top-level **`profiles.meta.persona`** + a
+  `persona_*` tag (mirrors the cohort-tag + `fq_beta_seq` cookie pattern via a new
+  `fq_persona` cookie that survives the deferred sign-in round-trip).
+
+**Alternatives.** A dedicated persona *beat* (rejected — renumbering every `setBeat()` in a
+careful flow is error-prone for no UX gain over folding it into Welcome). A DB-backed,
+operator-assignable lead-flow editor now (deferred — chose **code-first**, type-safe and
+reviewed; a `vera_config`-style DB override layer can come later without changing callers).
+A promoted `persona` **column** on `profiles`/`contacts` (deferred — JSONB `meta` + a
+governed tag match the existing `meta.beta` pattern, zero migration, and the tag already
+gives queryable segmentation; promote to a column if query needs grow). Sending a
+persona-specific nurture email from `captureLead` (deferred — no persona nurture series
+exists yet; recording the lead without mailing avoids mis-sending generic beta copy).
+
+**Consequences.** New public surface `/start/<flow>` (three starter flows: `welcome`,
+`event`, `partner`); bare `/start` redirects to the welcome router. Every member now leaves
+intake with a `meta.persona` + a `persona_*` tag, so marketing can segment by who they said
+they are and the site/Vera can tailor later. Five new system-managed tags are registered in
+the MDP (`assignTag` throws on unknown keys, so registration is mandatory). The beta
+sequences are untouched and still tag cohorts in parallel — persona is an orthogonal axis,
+not a replacement. Operator-facing "how to assign a lead flow" guidance belongs in Notion
+(Training & Strategy), linked back to LEAD-FLOWS.md as source of truth.
+
 ---
 ### Decisions intentionally NOT duplicated here
 
