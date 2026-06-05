@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { relativeTime, eventDateBadge, formatEventDate } from '@/lib/utils'
 import { rankFeedPosts } from '@/lib/feed-rank'
+import { viewerHidesDemo } from '@/lib/demo-preference'
 import { PostCard, type FeedPost, type RawPost } from './post-card'
 
 interface DispatchItem {
@@ -77,6 +78,12 @@ export async function FeedList({
       const { data } = await supabase.rpc('feed_for_viewer', rpcArgs)
       rawPosts = (data as RawPost[] | null) ?? []
     }
+  }
+
+  // Member-level beta-content toggle: drop seeded demo posts for an opted-out
+  // viewer (the global demo_mode already removes them when it's off).
+  if (await viewerHidesDemo()) {
+    rawPosts = rawPosts.filter((p) => !(p as { is_demo?: boolean }).is_demo)
   }
 
   const posts: FeedPost[] = rankFeedPosts(rawPosts, sort).map(

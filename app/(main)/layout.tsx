@@ -17,6 +17,8 @@ import { SupportLauncher } from '@/components/support/support-launcher'
 import { PageViewTracker } from '@/components/analytics/track-provider'
 import { GaConsentGate } from '@/components/analytics/ga-consent-gate'
 import { hasConsent } from '@/lib/consent/consent'
+import { demoModeEnabled } from '@/lib/platform-flags'
+import { viewerHidesDemo } from '@/lib/demo-preference'
 import { getSearchIndex } from '@/lib/help/content'
 import { TourProvider } from '@/components/onboarding/tour-provider'
 import type { TourState } from '@/lib/onboarding/select'
@@ -113,6 +115,10 @@ export default async function MainLayout({
   // (GaConsentGate sets gtag's native opt-out flag); the server mirror is gated too.
   const analyticsConsent = await hasConsent(profile.id, 'analytics')
 
+  // Beta-content toggle: only offered when seeded demo content actually exists
+  // (global demo_mode on); reflects the member's own hide/show cookie.
+  const [demoMode, demoHidden] = await Promise.all([demoModeEnabled(), viewerHidesDemo()])
+
   // Community news ticker — streams in independently, never blocks the shell.
   const ticker = (
     <Suspense fallback={null}>
@@ -130,6 +136,8 @@ export default async function MainLayout({
       unreadCount={unreadCount}
       permissions={permissions}
       staffRole={staffRole}
+      demoMode={demoMode}
+      demoHidden={demoHidden}
     >
       <GaConsentGate disabled={!analyticsConsent} />
       {children}

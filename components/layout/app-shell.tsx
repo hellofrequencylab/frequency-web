@@ -44,6 +44,7 @@ import { PrimaryNav } from '@/components/layout/primary-nav'
 import { BrandMark } from '@/components/layout/brand-mark'
 import { AREA_ICONS } from '@/components/layout/nav-icons'
 import { UpgradeCrew } from '@/components/layout/upgrade-crew'
+import { DemoToggle } from '@/components/layout/demo-toggle'
 import { DockRevealProvider, useDockRevealed, useHoverScrollReveal } from '@/components/sidebar/dock-reveal'
 
 // The sidebar + community bar are built from NAV_AREAS (lib/nav-areas.ts — the
@@ -761,6 +762,8 @@ export default function AppShell({
   hideAppNav = false,
   permissions,
   staffRole = null,
+  demoMode = false,
+  demoHidden = false,
 }: {
   profile: Profile
   /** True DB role, ignoring any view-as override. Defaults to the (effective)
@@ -780,6 +783,10 @@ export default function AppShell({
   permissions?: Record<string, NavAccess>
   /** Viewer's staff role (team_members axis); unlocks Studio. Null under view-as. */
   staffRole?: StaffRole | null
+  /** Global demo_mode is on (seeded beta content exists) → show the Beta toggle. */
+  demoMode?: boolean
+  /** This viewer has hidden beta content for themselves (drives the toggle state). */
+  demoHidden?: boolean
 }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -931,6 +938,9 @@ export default function AppShell({
               <Plus className="w-5 h-5" />
             </Link>
           )}
+
+          {/* Beta-content toggle — members hide/show seeded demo content for themselves */}
+          {demoMode && <DemoToggle initialHidden={demoHidden} />}
 
           {/* Community actions — friends + messages + notifications, set off by a divider */}
           <div className="flex items-center gap-0.5 sm:ml-1 sm:pl-1.5 sm:border-l sm:border-border">
