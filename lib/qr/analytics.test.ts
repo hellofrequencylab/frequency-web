@@ -59,4 +59,19 @@ describe('summarizeScans', () => {
     expect(s.total).toBe(1)
     expect(s.daily.every((d) => d.count === 0)).toBe(true)
   })
+
+  it('splits scans by medium, treating absent/legacy medium as qr', () => {
+    const s = summarizeScans(
+      [
+        { ...scan('a', 'p1', 0), medium: 'nfc' },
+        { ...scan('a', 'p2', 0), medium: 'qr' },
+        { ...scan('a', null, 0), medium: null }, // legacy row → qr
+        scan('a', 'p3', 0), // no medium field → qr
+      ],
+      30,
+      NOW,
+    )
+    expect(s.byMedium).toEqual({ qr: 3, nfc: 1 })
+    expect(s.byMedium.qr + s.byMedium.nfc).toBe(s.total)
+  })
 })

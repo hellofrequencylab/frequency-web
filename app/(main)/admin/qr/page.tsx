@@ -36,15 +36,20 @@ export default async function QrStudioPage() {
       db.from('captures').select('node_id').eq('verified', true),
       db
         .from('qr_codes')
-        .select('id, slug, title, destination_type, target_url, alt_target_url, switch_at, node_id, circle_id, event_id, partner_id, active, valid_until, scan_count, style, purpose, owner_profile_id, created_at')
+        .select('id, slug, title, destination_type, target_url, alt_target_url, switch_at, node_id, circle_id, event_id, partner_id, active, valid_until, scan_count, style, purpose, owner_profile_id, source_tag, created_at')
         .order('created_at', { ascending: false }),
-      db.from('qr_scans').select('qr_code_id, profile_id, scanned_at'),
+      db.from('qr_scans').select('qr_code_id, profile_id, scanned_at, medium'),
       db.from('partners').select('id, name').order('name'),
     ])
 
   // ── Check-in codes (nodes) ──────────────────────────────────────────────────
   const captureCounts = new Map<string, number>()
   for (const c of caps ?? []) captureCounts.set(c.node_id, (captureCounts.get(c.node_id) ?? 0) + 1)
+
+  // Geofences (location-aware earning) — coords + radius per node, read via RPC
+  // (the geography column can't be selected as lat/lng through PostgREST).
+  const { data: geoRows } = await db.rpc('nodes_geo')
+  const geoByNode = new Map((geoRows ?? []).map((g) => [g.id, g]))
 
   const initialNodes: StudioNode[] = await Promise.all(
     (nodes ?? []).map(async (n) => {
@@ -59,6 +64,9 @@ export default async function QrStudioPage() {
         active: n.active,
         valid_until: n.valid_until,
         partner_id: n.partner_id,
+        lat: geoByNode.get(n.id)?.lat ?? null,
+        lng: geoByNode.get(n.id)?.lng ?? null,
+        proximityM: geoByNode.get(n.id)?.proximity_m ?? null,
         captures: captureCounts.get(n.id) ?? 0,
         style,
         url,
@@ -118,6 +126,7 @@ export default async function QrStudioPage() {
         partner_id: l.partner_id,
         active: l.active,
         valid_until: l.valid_until,
+        source_tag: l.source_tag,
         scans: l.scan_count,
         unique: stat?.unique ?? 0,
         style,
@@ -144,6 +153,7 @@ export default async function QrStudioPage() {
   const analytics: AnalyticsData = {
     total: summary.total,
     unique: summary.unique,
+    nfc: summary.byMedium.nfc,
     daily: summary.daily,
     topCodes,
   }

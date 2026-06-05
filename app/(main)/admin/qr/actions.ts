@@ -6,9 +6,10 @@
 // just creating/editing a node. Writes go through the service-role client (nodes
 // RLS denies all client reads/writes by design) and are gated to host+ here.
 //
-// Scope note (MVP): we author qr/nfc codes with no `location`/`secret`. Ghost-node
-// geo authoring and signed payloads are a follow-up (they need a SECURITY DEFINER
-// upsert RPC to build the PostGIS point + the /n claim flow to forward the secret).
+// Location-aware earning (ADR-106): a code can carry a geofence (lat/lng + radius).
+// The PostGIS point is written via the `set_node_geo` RPC (PostgREST can't build a
+// geography from lat/lng), and the `/n` claim flow forwards the device location so
+// verifyCapture enforces proximity. Signed payloads remain a follow-up.
 
 import { revalidatePath } from 'next/cache'
 import { requireAdmin } from '@/lib/admin/guard'
@@ -29,8 +30,27 @@ export interface NodeInput {
   valid_until: string | null
   /** Partner id to make this a plaque, or null for a community code. */
   partner_id: string | null
+  /** Geofence (location-aware earning). Both null = no proximity requirement. */
+  lat: number | null
+  lng: number | null
+  /** Required radius in metres when a geofence is set (default 100). */
+  proximityM: number | null
   /** Visual QR design; sanitized by parseStyle before persisting. */
   style: QrStyle
+}
+
+/** Validate a geofence, or null when none/invalid (which CLEARS the requirement). */
+function cleanGeo(input: NodeInput): { lng: number; lat: number; proximityM: number } | null {
+  if (input.lat == null || input.lng == null) return null
+  const lat = Number(input.lat)
+  const lng = Number(input.lng)
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null
+  const prox =
+    Number.isFinite(input.proximityM) && input.proximityM
+      ? Math.min(Math.max(Math.round(input.proximityM), 5), 5000)
+      : 100
+  return { lng, lat, proximityM: prox }
 }
 
 function clean(input: NodeInput) {
@@ -60,6 +80,16 @@ export async function createNode(input: NodeInput): Promise<ActionResult<{ id: s
   const { data, error } = await db.from('nodes').insert(row).select('id').single()
   if (error || !data) return fail('Could not create the code.')
 
+  const geo = cleanGeo(input)
+  if (geo) {
+    await db.rpc('set_node_geo', {
+      p_node_id: data.id as string,
+      p_lng: geo.lng,
+      p_lat: geo.lat,
+      p_proximity_m: geo.proximityM,
+    })
+  }
+
   revalidatePath('/admin/qr')
   return ok({ id: data.id as string })
 }
@@ -73,6 +103,15 @@ export async function updateNode(id: string, input: NodeInput): Promise<ActionRe
   const db = createAdminClient()
   const { error } = await db.from('nodes').update(row).eq('id', id)
   if (error) return fail('Could not save changes.')
+
+  // Set or clear the geofence (null lat/lng clears the proximity requirement).
+  const geo = cleanGeo(input)
+  await db.rpc('set_node_geo', {
+    p_node_id: id,
+    p_lng: geo?.lng ?? null,
+    p_lat: geo?.lat ?? null,
+    p_proximity_m: geo?.proximityM ?? null,
+  })
 
   revalidatePath('/admin/qr')
   return ok()

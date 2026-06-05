@@ -17,7 +17,7 @@
 -- Idempotent: INSERT ... SELECT guarded by NOT EXISTS on title (there is no unique
 -- constraint on practices.title, so this is the safe re-run guard). header_image is
 -- a deterministic placeholder (matches the rich-content migration) — swap for
--- curated art later. See docs/DECISIONS.md (ADR-105).
+-- curated art later. See docs/DECISIONS.md (ADR-110).
 -- =====================================================================
 
 BEGIN;

@@ -2,11 +2,12 @@
 
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Link2, Plus, Pencil, Download, Copy, Check, ExternalLink, Info } from 'lucide-react'
+import { Link2, Plus, Pencil, Download, Copy, Check, ExternalLink, Info, Printer } from 'lucide-react'
 import { groupedDestinations, isKnownDestination, SITE_DESTINATIONS } from '@/lib/qr/destinations'
 import { createLink, updateLink, setLinkActive, type LinkInput } from './link-actions'
 import { Field, Badge, toLocalInput, fromLocalInput } from './form-bits'
 import { StyleEditor } from './style-editor'
+import { NfcWriter } from './nfc-writer'
 import { DEFAULT_STYLE, type QrStyle } from '@/lib/qr/style'
 import { shortLinkUrl } from '@/lib/qr/links'
 import type { PartnerOption } from './qr-studio'
@@ -27,6 +28,7 @@ export interface StudioLink {
   partner_id: string | null
   active: boolean
   valid_until: string | null
+  source_tag: string | null
   scans: number
   unique: number
   style: QrStyle
@@ -65,6 +67,7 @@ const BLANK: LinkInput = {
   slug: null,
   partner_id: null,
   valid_until: null,
+  source_tag: null,
   style: DEFAULT_STYLE,
 }
 
@@ -250,6 +253,15 @@ function LinkCard({
               {copied ? <Check className="w-3 h-3 text-success" /> : <Copy className="w-3 h-3" />}
               {copied ? 'Copied' : 'Link'}
             </button>
+            <NfcWriter url={link.url} />
+            <a
+              href={`/print/qr?code=${encodeURIComponent(link.id)}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+            >
+              <Printer className="w-3 h-3" /> Print
+            </a>
             <a
               href={link.url}
               target="_blank"
@@ -317,6 +329,7 @@ export function LinkForm({
           slug: link.slug,
           partner_id: link.partner_id,
           valid_until: link.valid_until,
+          source_tag: link.source_tag,
           style: link.style,
         }
       : BLANK,
@@ -484,6 +497,14 @@ export function LinkForm({
               </option>
             ))}
           </select>
+        </Field>
+        <Field label="Source tag (optional)">
+          <input
+            value={form.source_tag ?? ''}
+            onChange={(e) => set('source_tag', e.target.value || null)}
+            placeholder="e.g. downtown-poster-a"
+            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+          />
         </Field>
       </div>
 
