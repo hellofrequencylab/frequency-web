@@ -309,8 +309,9 @@ inline path (wizard is an optional guided alt); RLS isolation between `journey_p
   move/hover. One primary action + always-there dismiss.
 
 ### Profile page
-- [ ] **Header (cover) photo** — make the profile banner an uploadable/editable cover
-  image (mirror the avatar upload path + storage bucket). (M)
+- [x] **Header (cover) photo** — ✅ shipped 2026-06-05 (§T): `profiles.header_image_url`,
+  an uploader in Settings → Profile (cover-crop 3:1 to the avatars bucket), rendered on
+  the profile cover band.
 - [ ] **Richer profile header** — more personal info (location · joined · bio line) +
   **subtle** community-engagement stats (circles · practices logged · streak) woven
   into the header, understated, not a gamified wall. (M)
@@ -391,6 +392,53 @@ inline path (wizard is an optional guided alt); RLS isolation between `journey_p
 - [ ] **Fold Outreach *content* into the admin Overview.** ADR-097 moved the nav entry into the Overview
   launchpad; next, surface the actual outreach tools/queue inside the Overview page so it's not a bare
   link. (S–M)
+
+## T. Session 2026-06-05 (build sprint) — all ✅ merged to main
+
+Everything below shipped this session (tsc + eslint + 241 tests green; migrations
+applied to prod). Listed so the build list reflects reality.
+
+### ✅ Shipped
+- [x] **Marketing pages → editor = live.** Ported **The Quest** + **Pricing** into the
+  Puck block editor; added a standardized **Tiers** block (ADR-100). The Lab + Community
+  + Quest + Pricing are now all editor-editable; Home + About stay code-locked.
+- [x] **Header polish.** Beta→**Demo** toggle moved left of Search (height-matched);
+  mobile: contact-capture as a filled box pinned far-right, Friends+Messages folded into
+  one silhouette icon → Messages; top-of-page stats card → compact ¼-size pill on mobile.
+- [x] **Demo posts reach every viewer's feed** (ADR-101) — demo `group` posts were only
+  shown to members of demo circles; now surface for all when `demo_mode` is on.
+- [x] **Vault Store** — renamed the Quest nav item; the Vault (gems + zaps + streak +
+  items-won + equipped) is pinned top-right of the store page.
+- [x] **Demo Studio dashboard re-layout** — overview stats + global switch on top, Create
+  + Grow in the middle, a single **Danger zone** at the bottom behind one typed-`DELETE`.
+- [x] **CRM pipeline suite** (ADR-102) — `/crm` is now tabbed: a stage **board** (deals,
+  move, KPIs, analytics) + Contacts + deal detail with activities/tasks. → delivers the
+  "pipelines (Kanban)" half of §I's "Richer Studio engine".
+- [x] **Seed Studio: naturally-grown neighborhood** (ADR-103) — a Hub run by a Guide over
+  circles with Hosts (sets `circles.host_id`), members write on each other's walls + the
+  feed, a friendship graph, and Dispatches from Hosts/Guide. `hubs.is_demo` for teardown.
+  → big step on **§S9** (warm, lived-in demo content).
+- [x] **Economy re-strategy** (ADR-104) — Gems = web/on-platform (daily-capped, spendable);
+  Zaps = in-person/outreach (the rank ladder). Rebalanced every `gem_config`/`zap_config`
+  amount to a coherent season; added `circle_start`/`circle_activate`/`program_run` rows.
+- [x] **Fix "Ask Vera"** — the `help_chunks` RAG corpus was empty (no ingestion pipeline
+  existed). Built `reindexHelpChunks()` + an admin **Build index** button (`/admin/ai`) +
+  nightly `embed-help` cron. *(Owner one-time: click Build index in prod to populate.)*
+- [x] **Editable profile header images** — see §R.
+- [x] **Beta sequences admin** — per-sequence **incoming-point** picker (splash vs straight-
+  to-induction) + shareable link + **QR (PNG/SVG)** for each entry point (`/admin/beta-sequences`).
+- [x] **Community Library** (ADR-109) — unify Practices/Programs/Journeys: Programs become a
+  DB type (member-creatable, earns zaps), one **approval lifecycle** (submit → Host/Guide+
+  approve), one **ratings** signal, and a unified ranked **/library** catalog
+  (`3·adoptions + 2·completions + 4·ratings + recency + endorser-rank`) + a **/library/review**
+  queue. → advances **Q1 Phase 5**, **Q2 Phase 4**, and §F programs.
+
+### ⏳ Follow-ups opened this session
+- [ ] **Community Library Phase 2** — wire a "Submit to Library" button onto practice/journey
+  detail pages (the `submitToLibrary` action exists); a program **detail route**; hierarchical
+  per-author approval; tune the ranking weights from real data. (M)
+- [ ] **Member-facing economy surfacing** — a season banner/countdown + show per-action point
+  values in-product (amounts now live in config; §F "Reward amount-edit UI" is the admin side). (S)
 
 ## Accepted (no action)
 - `npm audit`: 4 moderate transitive advisories (postcss in Next's toolchain,
