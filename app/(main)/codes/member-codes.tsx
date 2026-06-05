@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Download, Copy, Check, Palette, Users, Zap, UserPlus } from 'lucide-react'
+import { Download, Copy, Check, Palette, Users, Zap, UserPlus, Wallet } from 'lucide-react'
 import { StyleEditor } from '@/app/(main)/admin/qr/style-editor'
 import { trackClient } from '@/components/analytics/track-provider'
 import { updateMyCodeStyle } from './actions'
@@ -35,9 +35,12 @@ const META: Record<MemberCodePurpose, { blurb: string; Icon: typeof Users }> = {
 export function MemberCodes({
   cards,
   referralCount,
+  walletEnabled = false,
 }: {
   cards: MemberCodeCard[]
   referralCount: number
+  /** Whether Google Wallet passes are configured (env-gated). */
+  walletEnabled?: boolean
 }) {
   return (
     <div className="grid grid-cols-1 gap-4">
@@ -46,13 +49,22 @@ export function MemberCodes({
           key={card.id}
           card={card}
           extra={`${referralCount} joined via your code`}
+          walletEnabled={walletEnabled}
         />
       ))}
     </div>
   )
 }
 
-function CodeCard({ card, extra }: { card: MemberCodeCard; extra: string | null }) {
+function CodeCard({
+  card,
+  extra,
+  walletEnabled,
+}: {
+  card: MemberCodeCard
+  extra: string | null
+  walletEnabled: boolean
+}) {
   const [editing, setEditing] = useState(false)
   const [style, setStyle] = useState<QrStyle>(card.style)
   const [copied, setCopied] = useState(false)
@@ -121,6 +133,14 @@ function CodeCard({ card, extra }: { card: MemberCodeCard; extra: string | null 
           {copied ? <Check className="w-3 h-3 text-success" /> : <Copy className="w-3 h-3" />}
           {copied ? 'Copied' : 'Link'}
         </button>
+        {walletEnabled && card.purpose === 'connect' && (
+          <a
+            href={`/api/wallet/google?code=${encodeURIComponent(card.id)}`}
+            className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+          >
+            <Wallet className="w-3 h-3" /> Wallet
+          </a>
+        )}
         <button
           onClick={() => setEditing((v) => !v)}
           className="ml-auto inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-text hover:bg-surface-elevated transition-colors"

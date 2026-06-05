@@ -162,6 +162,12 @@
 > so a signup is permanently traceable to the poster that brought them — extends the ADR-095 attribution
 > spine.
 
+> **2026-06-05:** QR/NFC — **Google Wallet pass** (ADR-107, issue #221). Members get an "Add to Google
+> Wallet" button for their profile code; `lib/wallet/google.ts` signs the Save-to-Wallet JWT with
+> `node:crypto` (RS256, no new dependency). **Env-gated** (`GOOGLE_WALLET_*`): ships dark — the
+> `/api/wallet/google` route 404s and the button hides until credentials are set. Ownership-gated. Apple
+> Wallet deferred (needs the pkpass cert chain). Unverified end-to-end without real Google credentials.
+
 ---
 
 ## Mission (locked)
