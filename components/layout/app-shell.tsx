@@ -25,6 +25,8 @@ import {
   Gem,
   Monitor,
   ChevronUp,
+  ChevronRight,
+  ChevronLeft,
   QrCode,
   HelpCircle,
   PanelLeft,
@@ -828,12 +830,13 @@ function MobileTabBar({
 }
 
 // ── Mobile slide-in side rail ─────────────────────────────────────────────────
-// An opt-in slim icon rail down the left edge of the feed: it slides IN when you
-// scroll up (intent to navigate / browse) and tucks AWAY when you scroll down (so
-// reading keeps the full width). Mirrors the bottom-tab destinations for quick
-// reach and gives the feed a framed edge instead of bare canvas. Toggle lives in
-// the Menu drawer; remembered per device. Overlay, not a column — it never causes
-// layout shift. Mobile only.
+// An opt-in left menu that lives, collapsed, as a SUBTLE full-length tab down the
+// left edge. Scrolling DOWN slides the menu open and PUSHES the content to the
+// right (it's a real column in the body flex, not an overlay); scrolling back UP
+// tucks it away to the tab. A "Close" control at the bottom collapses it AND stops
+// it auto-opening during scroll until the member taps the tab again. Toggle (the
+// master on/off) lives in the Menu drawer; remembered per device. Mobile only —
+// `md:hidden`, so on desktop the real left rail takes over and this takes no width.
 
 function MobileSideRail({
   isActive,
@@ -844,7 +847,9 @@ function MobileSideRail({
   onOpenMenu: () => void
   enabled: boolean
 }) {
-  const [revealed, setRevealed] = useState(true)
+  const [open, setOpen] = useState(false)
+  // Member tapped Close → don't auto-open on scroll until they reopen via the tab.
+  const [pinnedClosed, setPinnedClosed] = useState(false)
 
   useEffect(() => {
     if (!enabled) return
@@ -855,43 +860,79 @@ function MobileSideRail({
       const top = el.scrollTop
       const dy = top - lastTop
       lastTop = top
-      // Near the top, or a clear upward gesture → reveal. A downward gesture past
-      // a small threshold → hide. (Matches the dock-reveal intent model.)
-      if (top < 80 || dy < -4) setRevealed(true)
-      else if (dy > 4) setRevealed(false)
+      // Scrolling DOWN opens the menu (unless pinned closed); scrolling UP — or
+      // sitting at the very top — tucks it back to the tab.
+      if (dy > 6) {
+        if (!pinnedClosed) setOpen(true)
+      } else if (dy < -6 || top < 8) {
+        setOpen(false)
+      }
     }
     el.addEventListener('scroll', onScroll, { passive: true })
     return () => el.removeEventListener('scroll', onScroll)
-  }, [enabled])
+  }, [enabled, pinnedClosed])
 
   if (!enabled) return null
 
   const itemClass = (active: boolean) =>
-    `flex h-11 w-11 items-center justify-center rounded-xl transition-colors ${
+    `flex items-center gap-3 rounded-xl px-2.5 py-2 text-sm font-medium transition-colors ${
       active ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:bg-surface-elevated hover:text-text'
     }`
 
   return (
-    <nav
+    <aside
       aria-label="Quick navigation"
-      className={`md:hidden fixed left-0 top-14 z-20 flex flex-col items-center gap-1 border-r border-border bg-surface/95 px-1.5 py-2 shadow-lg backdrop-blur-sm transition-transform duration-300 ease-out motion-reduce:transition-none ${
-        revealed ? 'translate-x-0' : '-translate-x-full'
+      className={`md:hidden relative flex shrink-0 flex-col border-r border-border bg-surface/95 backdrop-blur-sm transition-[width] duration-300 ease-out motion-reduce:transition-none ${
+        open ? 'w-40' : 'w-6'
       }`}
-      style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom))' }}
     >
-      {MOBILE_TABS.map((tab) => {
-        const Icon = AREA_ICONS[tab.key] ?? Globe
-        const active = isActive(tab.href)
-        return (
-          <Link key={tab.key} href={tab.href} aria-label={tab.label} className={itemClass(active)}>
-            <Icon className="h-[22px] w-[22px]" strokeWidth={active ? 2.5 : 2} />
-          </Link>
-        )
-      })}
-      <button type="button" onClick={onOpenMenu} aria-label="Open menu" className={itemClass(false)}>
-        <Menu className="h-[22px] w-[22px]" strokeWidth={2} />
-      </button>
-    </nav>
+      {open ? (
+        <>
+          <nav className="flex-1 overflow-y-auto p-2 space-y-0.5">
+            {MOBILE_TABS.map((tab) => {
+              const Icon = AREA_ICONS[tab.key] ?? Globe
+              const active = isActive(tab.href)
+              return (
+                <Link key={tab.key} href={tab.href} className={itemClass(active)}>
+                  <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={active ? 2.5 : 2} />
+                  <span className="truncate">{tab.label}</span>
+                </Link>
+              )
+            })}
+            <button type="button" onClick={onOpenMenu} className={`w-full ${itemClass(false)}`}>
+              <Menu className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+              <span className="truncate">More</span>
+            </button>
+          </nav>
+          {/* Close — collapse to the tab and stop auto-opening on scroll. Sits above
+              the fixed bottom tab bar so it stays in the thumb zone. */}
+          <div
+            className="shrink-0 border-t border-border p-2"
+            style={{ paddingBottom: 'calc(0.5rem + 4rem + env(safe-area-inset-bottom))' }}
+          >
+            <button
+              type="button"
+              onClick={() => { setOpen(false); setPinnedClosed(true) }}
+              className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-surface-elevated px-2 py-2 text-xs font-medium text-muted hover:text-text transition-colors"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Close
+            </button>
+          </div>
+        </>
+      ) : (
+        // Collapsed: a subtle full-length tab. Tap to open (and clear the pin).
+        <button
+          type="button"
+          onClick={() => { setOpen(true); setPinnedClosed(false) }}
+          aria-label="Open quick navigation"
+          className="flex flex-1 items-center justify-center text-subtle hover:bg-surface-elevated hover:text-text transition-colors"
+          style={{ paddingBottom: 'calc(4rem + env(safe-area-inset-bottom))' }}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      )}
+    </aside>
   )
 }
 
@@ -1107,7 +1148,7 @@ export default function AppShell({
                 href="/connections/new"
                 aria-label="New contact"
                 title="New contact"
-                className="md:hidden flex items-center justify-center w-8 h-8 shrink-0 rounded-xl bg-primary text-on-primary shadow-sm hover:bg-primary-hover transition-colors"
+                className="md:hidden flex items-center justify-center w-8 h-8 shrink-0 rounded-full bg-primary text-on-primary shadow-sm hover:bg-primary-hover transition-colors"
               >
                 <Camera className="w-5 h-5" />
               </Link>
@@ -1148,6 +1189,13 @@ export default function AppShell({
           <ProfileCard profile={profile} role={role} realRole={effectiveRealRole} profileHref={profileHref} previewVisitor={previewVisitor} />
         </aside>
 
+        {/* Mobile slide-in side rail — a content-PUSHING column (not an overlay):
+            a subtle full-length tab that opens on scroll-down. Sits in the body
+            flex so opening it narrows the scroll column to its right. md:hidden. */}
+        {!hideAppNav && (
+          <MobileSideRail isActive={isActive} onOpenMenu={() => setDrawerOpen(true)} enabled={railNavOn} />
+        )}
+
         {/* Center + right column — ONE shared scroll container (no per-column
             scroll boxes). The feed and the rail live in the same scroll and
             move together: the rail scrolls up with the feed, and once the rail
@@ -1182,11 +1230,6 @@ export default function AppShell({
         </div>
       </div>
       </DockRevealProvider>
-
-      {/* ── Mobile slide-in side rail (opt-in; reveals on scroll-up) ─────── */}
-      {!hideAppNav && (
-        <MobileSideRail isActive={isActive} onOpenMenu={() => setDrawerOpen(true)} enabled={railNavOn} />
-      )}
 
       {/* ── Mobile bottom tab bar ─────────────────────────── */}
       {/* Feed · Circles · Channels · Events · Menu (opens the full drawer). */}
