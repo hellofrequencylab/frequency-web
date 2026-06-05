@@ -18,6 +18,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 // into the block library ("editor = live"); they'll be added as each port lands.
 export const EDITABLE_PAGES = [
   { slug: 'the-lab', title: 'The Lab', path: '/the-lab' },
+  { slug: 'the-community', title: 'The Community', path: '/the-community' },
 ] as const
 
 export type EditableSlug = (typeof EDITABLE_PAGES)[number]['slug']
