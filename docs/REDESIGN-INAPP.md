@@ -78,6 +78,59 @@ heavier browse pages (Circles index w/ map, Search, Broadcast). See the review b
 
 ---
 
+## Shipped status (2026-06-05) — kit COMPLETED + conformance sweep (ADR-090)
+
+A fresh design-team audit (5 reviewers, one per page cluster) swept **every** interior `(main)`
+page and confirmed the language was right but **half-adopted** — and that the system itself had
+**three gaps** that kept the drift re-accruing. This pass closes them.
+
+### The kit is now complete — five shells, one header, one rail map
+
+| Piece | What landed | Where |
+|---|---|---|
+| **`FocusTemplate`** | the no-rail compose/edit/settings surface, promoted from "shell hides the rail" to a real template | `components/templates/focus-template.tsx` |
+| **`DashboardTemplate`** | the metric-led operator/steward shell (no-rail sibling of `AdminPage`) | `components/templates/dashboard-template.tsx` |
+| **`PageHeading`** | one header grammar shared by Stream/Index/Dashboard/Focus | `components/templates/page-heading.tsx` |
+| **Declarative chrome** | `railFor(pathname) → global \| scoped \| none`; shell reads it; **one line to reframe a route** | `lib/layout/page-chrome.ts` (+ `.test.ts`) |
+| **Barrel + docs** | `@/components/templates` barrel; decision tree in PAGE-FRAMEWORK §8; `AGENTS.md` guardrail | — |
+
+Adopting `FocusTemplate` simultaneously fixed the **wrong-rail bug** on nine compose/operator
+pages (`events/new`, `practices/*/edit`, `upgrade`, `crm`, `outreach`, `codes`, `connections/*`,
+`/g/*`, `/n/*`) — one config change, nine pages.
+
+### Conformance map (the 5-cluster audit, pre-sweep)
+
+| Cluster | ✅ Conforming | 🟡 Partial | 🔴 Non-conforming |
+|---|---|---|---|
+| **Spaces & structure** (15) | circles/[slug], channels, channels/[id], partners, programs, programs/[slug] | circles, journeys, g/[slug], n/[nodeId], pages | hubs/[slug], nexuses/[slug], partners/[slug], journeys/[slug] |
+| **Loop & gamification** (~16) | events, practices, + redirects | events/[slug], practices/[id]/edit, crew | events/new, crew {achievements, challenges, leaderboard, store, streaks}, upgrade |
+| **Social & comms** (13) | feed, people, friends, messages, messages/[id], messages/r/[roomId] | broadcast, connections, connections/[id], connections/new | broadcast/[id], search, people/[handle] |
+| **Operator workspace** (12) | — | all 8 marketing/* + outreach + codes | crm |
+| **Settings & admin** (29) | 9 admin pages read + 14 grep-clean | settings ×5 | admin/ai |
+
+### Adopted in this pass (presentational chrome only — no data/auth changes)
+
+- **Focus** → `FocusTemplate`: settings ×5 (fixes the double-padding bug), events/new, practices/[id]/edit,
+  upgrade, outreach, connections/new.
+- **Dashboard** → `DashboardTemplate` + shared `StatCard`: all 8 marketing/* tabs + crm (retire the local
+  `Kpi`/`Stat` tiles, de-box, de-cap).
+- **Detail** → `DetailTemplate`: hubs/[slug], nexuses/[slug], partners/[slug], journeys/[slug] (header only),
+  broadcast/[id].
+- **Index** → `IndexTemplate`: circles (drop the `PageHeader` gam-crutch), pages, connections, search (+ kill
+  its shadowed local `EmptyState`), crew {achievements (kill local `StatCard`), challenges, leaderboard, store, streaks}.
+- **Admin** straggler → `AdminPage`: admin/ai.
+
+### Tracked next (deeper — not in this chrome pass)
+
+1. **`people/[handle]` → Detail + RoleActions** — lead with the human; stats to the rail; tabs via the template.
+2. **Build `RoleActions`** (resolver-fed header action menu) — replaces ~60 inline role checks; first consumers: circle/event/profile detail headers.
+3. **Broadcast index** → `StreamTemplate` + a real dispatch filter (kill the decorative count-tiles); move its in-body right column to rail widgets.
+4. **Circles index** → migrate `CircleCard` onto `EntityCard`; **Search** → unify result cards (`PersonCard`/`EntityCard`).
+5. **`events/[slug]` scoped rail** (attendees/location/host) — add `/events/` to the scoped set once the rail widgets exist.
+6. **Streaming perf** (PAGE-FRAMEWORK §5): defer blocking await chains behind per-section `<Suspense>` — worst: `marketing/analytics` (4 awaits), `crm` (`listUsers(1000)`), `crew`/`crew/leaderboard`, `events`, `admin/circles`.
+
+---
+
 ## Phased plan (reviewable PRs)
 
 **Phase 0 — Foundation kit** *(this is the backbone; ship first)*
