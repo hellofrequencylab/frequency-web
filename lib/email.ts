@@ -105,6 +105,70 @@ export async function sendInviteEmail(params: {
   })
 }
 
+// ── Scan intro (Profile Creator → invite a scanned contact) ────────────────────
+// A SINGLE transactional introduction prompted by a real-world meeting. Custom
+// footer (not the member footer) with a working one-click unsubscribe. The join
+// CTA is the steward's referral link, so a later signup credits them (ADR-099).
+
+export async function sendScanIntroEmail(params: {
+  to: string
+  recipientName: string | null
+  inviterName: string
+  joinUrl: string
+  unsubscribeUrl: string
+}) {
+  const { to, recipientName, inviterName, joinUrl, unsubscribeUrl } = params
+  await enqueueEmail({
+    to,
+    subject: `${inviterName} added you on Frequency`,
+    headers: {
+      'List-Unsubscribe':      `<${unsubscribeUrl}>`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    },
+    html: scanIntroHtml({ recipientName, inviterName, joinUrl, unsubscribeUrl }),
+    text: scanIntroText({ recipientName, inviterName, joinUrl, unsubscribeUrl }),
+  })
+}
+
+function scanIntroHtml({ recipientName, inviterName, joinUrl, unsubscribeUrl }: {
+  recipientName: string | null; inviterName: string; joinUrl: string; unsubscribeUrl: string
+}): string {
+  const who = escapeHtml(inviterName || 'A Frequency member')
+  const hi = recipientName ? `Hi ${escapeHtml(recipientName)} — ` : ''
+  const addr = process.env.COMPANY_POSTAL_ADDRESS
+  const footer = `You got this one-time note because ${who} met you and saved your details to their Frequency contacts. Not interested? <a href="${unsubscribeUrl}" style="color:#999;">Unsubscribe</a> and we won't email you again.${addr ? `<br>${escapeHtml(addr)}` : ''}`
+  return emailShell(`
+    <h1 style="${h1Style}">${who} added you on Frequency.</h1>
+    <p style="${pStyle}">
+      ${hi}${who} met you and saved your details to their contacts on Frequency — the platform for
+      real-world local community: circles, events, and people near you.
+    </p>
+    <p style="${pStyle}">They thought you'd want in. Join and you'll land right alongside them.</p>
+    <p style="margin:0 0 28px;">
+      <a href="${joinUrl}" style="${btnStyle}">Join ${who} on Frequency →</a>
+    </p>
+    <p style="${pStyle}font-size:13px;color:#888;">
+      Or paste this into your browser:<br>
+      <a href="${joinUrl}" style="color:#888;">${joinUrl}</a>
+    </p>
+  `, footer)
+}
+
+function scanIntroText({ recipientName, inviterName, joinUrl, unsubscribeUrl }: {
+  recipientName: string | null; inviterName: string; joinUrl: string; unsubscribeUrl: string
+}): string {
+  const who = inviterName || 'A Frequency member'
+  const hi = recipientName ? `Hi ${recipientName} — ` : ''
+  return `${who} added you on Frequency.
+
+${hi}${who} met you and saved your details to their contacts on Frequency — the platform for real-world local community.
+
+Join ${who}: ${joinUrl}
+
+You got this one-time note because ${who} added your card. Not interested? Unsubscribe and we won't email you again:
+${unsubscribeUrl}`
+}
+
 // ── Weekly community digest ───────────────────────────────────────────────────
 
 export async function sendWeeklyDigestEmail(params: {
@@ -307,7 +371,16 @@ const btnStyle       = `display:inline-block;background:#4f46e5;color:#fff;font-
 const footerStyle    = `font-size:12px;color:#999;margin-top:28px;text-align:center;line-height:1.6;`
 const dividerStyle   = `border:none;border-top:1px solid #eee;margin:28px 0;`
 
-function emailShell(content: string): string {
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+// `footer` overrides the default member footer — used by non-member transactional
+// mail (e.g. the scan intro) that must NOT claim membership and needs its own
+// unsubscribe line.
+function emailShell(content: string, footer?: string): string {
+  const foot = footer ?? `You're receiving this because you're a member of the Frequency community.<br>
+      <a href="${BASE_URL}/settings/notifications" style="color:#999;">Manage email preferences</a>`
   return `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -318,8 +391,7 @@ function emailShell(content: string): string {
       ${content}
     </div>
     <p style="${footerStyle}">
-      You're receiving this because you're a member of the Frequency community.<br>
-      <a href="${BASE_URL}/settings/notifications" style="color:#999;">Manage email preferences</a>
+      ${foot}
     </p>
   </div>
 </body>

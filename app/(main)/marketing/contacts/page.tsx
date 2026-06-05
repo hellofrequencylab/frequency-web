@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { listContacts, type ContactRow } from '@/lib/studio/contacts'
 import { setContactConsent } from './actions'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { ScanInviteToggle } from './scan-invite-toggle'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,6 +41,13 @@ export default async function ContactsPage({
   const all = await listContacts(1000)
   const contacts = applyFilter(all, filter)
 
+  const { data: flagRow } = await createAdminClient()
+    .from('platform_flags')
+    .select('value')
+    .eq('key', 'scan_invite_email_enabled')
+    .maybeSingle()
+  const scanInviteOn = flagRow?.value ?? false
+
   return (
     <div>
       <h1 className="text-2xl font-bold text-text mb-1">Contacts</h1>
@@ -46,6 +55,10 @@ export default async function ContactsPage({
         The unified CRM record for leads, customers, and members. Email is the join
         key; members auto-link on signup.
       </p>
+
+      <div className="mb-5 max-w-md">
+        <ScanInviteToggle enabled={scanInviteOn} />
+      </div>
 
       {/* Filter tabs */}
       <div className="flex gap-1 border-b border-border mb-5">
