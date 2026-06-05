@@ -100,8 +100,38 @@ per-scan checkbox) the steward sends **one** transactional intro.
 **Posture:** a single, person-initiated introduction (the steward met them), not bulk
 marketing. No marketing email until the lead opts in (`consent_state='subscribed'`).
 
+## Unified person — the "User Stats" page (ADR-130)
+
+One human can exist as up to three rows joined by **lowercased email**: `profiles` (member),
+`contacts` (the CRM hub), and `network_contacts` (0..n private captures). They are now pulled
+together into a single operator view, and the people you have a real connection to are findable.
+
+| Piece | How |
+|---|---|
+| Resolve a person | `lib/crm/person.ts#resolvePerson(contactId)` — gathers the `contacts` anchor + member `profile` + every capture with that email + the trail (`qr_scans`, `engagement_events`) + pipeline (`crm_deals`, `crm_activities`). Groups **by email at read time**, so it works before the backfill. |
+| Auto-group (backfill) | `supabase/migrations/20260606170000_person_identity_stitch.sql` fills `contacts.profile_id`, `network_contacts.linked_contact_id`, `network_contacts.linked_profile_id` by email (idempotent; **written, applied in a separate reviewed step**). |
+| User Stats page | `app/(main)/marketing/contacts/[id]` (DetailTemplate): stats + a **Grouped records** panel + **the path through the system** — one timeline grouped into funnel phases (Arrival → Outreach → In the app → CRM), built by the pure, tested `lib/crm/journey.ts`. The contacts list is searchable (`searchContacts`) and every row links here. |
+| Invite to join | `app/(main)/marketing/contacts/[id]/actions.ts#inviteContactToJoin` — reuses the gated one-time scan-intro (ADR-099). No capturing steward ⇒ no intro to send, by design. |
+
+### Searchable by connection + locality (not blanket exposure)
+
+Members are searchable community-wide as before. A non-member **capture** surfaces in another
+viewer's app-wide search **only** via one rule — `lib/crm/visibility.ts#canViewLead` (unit-tested):
+
+- **`owner`** — the viewer captured them (scanned the card). The unambiguous valid connection.
+- **`network_local`** — a steward set `visibility='network'` **and** the viewer shares the
+  capture's locality (`city`). Locality + a deliberate share = connection.
+- Captures already linked to a member are skipped (found via the member directory, never twice).
+
+Wired surfaces — the header search overlay (`/api/search`) and the `/people` directory ("People
+you've met") — show **owner** leads today (they link to the steward's own `/connections/[id]`).
+`network_local` is modeled and tested but **not broadcast** yet: a non-owner viewer has no lead
+page to land on, and cross-steward exposure rides the same promotion-review gate as below.
+
 ## Not yet (deliberate follow-ups)
 
+- **Cross-steward `network_local` search** — `canViewLead` supports it and it's tested, but it's
+  not surfaced until the promotion review + a viewer-facing lead page exist (leak risk).
 - **Promotion into public/network** (`→ contacts`, link to a member `profile`) — schema hooks exist; the action is gated behind its own review since that's where leak risk concentrates.
 - `shared` (team) visibility — modelled, not yet surfaced.
 - More sources (email/calendar import) — `source` is open for it.

@@ -3858,6 +3858,65 @@ silently. Any other AI surface still using `void recordAiUsage(...)` has the sam
 telemetry-loss bug and should migrate to `after()`.
 
 ---
+## ADR-130: Unified person + the CRM "User Stats" page — group the three identity records, and search by connection + locality
+
+**Status:** Accepted · shipped in `lib/crm/{person,journey,visibility,people-search}.ts`,
+`app/(main)/marketing/contacts/[id]/**`, the contacts list search, `/api/search` +
+`search-overlay`, the `/people` directory, and migration
+`20260606170000_person_identity_stitch.sql` (backfill written; applied in a separate reviewed
+step — the resolver also stitches at read time, so the feature works before it runs). Builds on
+the three-table identity model (NETWORK-CRM.md, ADR-098/099), the engagement ledger (ADR-025),
+and acquisition first-touch (ADR-095). Full spec: [NETWORK-CRM.md](NETWORK-CRM.md) "Unified
+person".
+
+**Context.** A person captured via Card Scan / Profile Entry or seen via a QR scan shows up in
+the CRM (`contacts`, `source='scan_invite'`) but **cannot be found in the app's search** —
+because search reads only `profiles` (members), and a scanned lead has no member profile until
+they sign up. The same human can exist as up to three rows joined by lowercased email: `profiles`
+(member), `contacts` (CRM hub), `network_contacts` (a steward's private capture). Nothing in the
+UI pulled them together, and there was no per-person view of the path they took through the
+system. Operators experienced this as "I see them on the back end but can't find their profiles."
+
+**Decision.**
+- **One unified person, grouped by email.** `lib/crm/person.ts#resolvePerson` gathers the
+  `contacts` anchor + its member `profile` + every `network_contacts` capture with that email +
+  the behavioral trail (`qr_scans`, `engagement_events`) + the CRM pipeline (`crm_deals`,
+  `crm_activities`). Grouping is by email **at read time**, so it works before the backfill.
+- **Auto-stitch the links.** Migration `20260606170000_person_identity_stitch.sql` backfills
+  `contacts.profile_id`, `network_contacts.linked_contact_id`, and
+  `network_contacts.linked_profile_id` by email (idempotent), so the records also self-group in
+  the data, and the locality search can resolve a capture's member.
+- **A "User Stats" page** at `/marketing/contacts/[id]` (DetailTemplate): at-a-glance stats, a
+  **Grouped records** panel (member / CRM / private captures), and **the path through the
+  system** — one chronological timeline grouped into funnel phases (Arrival → Outreach → In the
+  app → CRM), assembled by the pure, unit-tested `lib/crm/journey.ts`. The contacts list is
+  searchable and every row links here.
+- **App-wide search by connection + locality, not blanket exposure.** Members stay searchable
+  community-wide. A non-member capture surfaces in another viewer's search **only** via one rule
+  (`lib/crm/visibility.ts#canViewLead`, unit-tested): `owner` (you captured them — the
+  unambiguous valid connection) or `network_local` (a steward set `visibility='network'` **and**
+  the viewer shares the capture's locality/`city`). This honors "everyone searchable, permissions
+  by locality + valid connection" while keeping private captures private. Wired surfaces
+  (`/api/search` overlay + `/people` directory "People you've met") show **owner** leads now
+  (they link to the steward's own `/connections/[id]`); `network_local` is modeled + tested but
+  **not broadcast** until the cross-steward promotion review (same gate as ADR-098's
+  private→network promotion), since a non-owner viewer has no lead page to land on yet.
+- **Invite to join** reuses the fully-gated one-time scan-intro (ADR-099) — operator switch +
+  per-contact unsubscribe + already-invited guard — never a new ungated email path. A pure
+  signup/beta lead (no capturing steward) has no intro to send, by design.
+
+**Alternatives.** Promote scanned captures into public `profiles` so they appear in the member
+directory (rejected — leaks personal captures; ADR-098 gates that deliberately). A separate
+analytics store for the journey (rejected — projects off the existing ledger per ADR-069). A
+fourth "person" table (rejected — email is already the join key; we stitch, not re-model).
+
+**Consequences.** Operators get one screen per person that groups every record and shows their
+path, the CRM is fully searchable, and stewards can finally search up people they scanned in.
+The visibility rule is auditable in one pure function. Cross-steward network-local search is
+ready behind the existing promotion-review gate. Operator how-to lives in Notion (the Network CRM
+training page), linked back to NETWORK-CRM.md.
+
+---
 ### Decisions intentionally NOT duplicated here
 
 Already fully covered by the repo docs (no ADR needed): the RLS / admin-client
