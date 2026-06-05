@@ -1,11 +1,10 @@
 import Link from 'next/link'
 import { Users, Compass, Sparkles } from 'lucide-react'
-import { rankForZaps, type SeasonRank } from '@/lib/season-ranks'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { NewCircleCompose } from '@/components/compose/new-circle-compose'
 import { MapZone, MapPreview, MapBanner, FindNearMeButton } from '@/components/circles/circles-map'
-import { PageHeader } from '@/components/ui/page-header'
+import { IndexTemplate } from '@/components/templates'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { CircleCard, type CircleCardData } from '@/components/circles/circle-card'
@@ -73,7 +72,6 @@ export default async function CirclesPage({
 
   let myCircleIds: string[] = []
   let isAdmin = false
-  let gam: { zaps: number; gems: number; streak: number; rank: SeasonRank } | null = null
   if (user) {
     const { data: profile } = await admin
       .from('profiles')
@@ -86,8 +84,6 @@ export default async function CirclesPage({
     } | null
     if (p) {
       isAdmin = ['host', 'guide', 'mentor', 'janitor'].includes(p.community_role ?? '')
-      const zaps = p.current_season_zaps ?? 0
-      gam = { zaps, gems: p.lifetime_gems ?? 0, streak: p.current_streak ?? 0, rank: rankForZaps(zaps) }
       const { data: mems } = await admin
         .from('memberships').select('circle_id').eq('profile_id', p.id).eq('status', 'active')
       myCircleIds = (mems ?? []).map((m) => m.circle_id as string)
@@ -179,13 +175,10 @@ export default async function CirclesPage({
   }
 
   return (
-    <div>
-      <PageHeader
-        title="Circles"
-        description="This is where it gets real. Find a circle near you, dive into something you love, or start your own — because showing up, week after week, is how strangers become your people."
-        gam={gam}
-      />
-
+    <IndexTemplate
+      title="Circles"
+      description="This is where it gets real. Find a circle near you, dive into something you love, or start your own — because showing up, week after week, is how strangers become your people."
+    >
       {/* Reassurance — the introvert's worry, named and answered up front. */}
       <p className="mb-6 max-w-2xl text-sm leading-relaxed text-muted">
         Circles are small on purpose — most are just a handful of people. You don&rsquo;t have to know
@@ -327,6 +320,6 @@ export default async function CirclesPage({
           )}
         </div>
       </MapZone>
-    </div>
+    </IndexTemplate>
   )
 }

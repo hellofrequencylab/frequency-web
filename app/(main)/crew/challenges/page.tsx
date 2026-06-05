@@ -1,10 +1,11 @@
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
 import { CheckCircle, Circle, Zap, Target } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { getChallengesData } from '../gamification-actions'
 import { DIFFICULTY_CONFIG } from '@/lib/gamification'
 import type { ChallengeDifficulty } from '@/lib/gamification'
+import { IndexTemplate } from '@/components/templates'
+import { SectionHeader } from '@/components/ui/section-header'
 
 export default async function ChallengesPage() {
   const supabase = await createClient()
@@ -25,25 +26,10 @@ export default async function ChallengesPage() {
   }
 
   return (
-    <div>
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/crew"
-            className="text-sm text-subtle hover:text-muted dark:hover:text-subtle transition-colors"
-          >
-            Crew
-          </Link>
-          <span className="text-subtle">/</span>
-          <h1 className="text-2xl font-bold text-text">Season Challenges</h1>
-        </div>
-        <p className="text-sm text-muted mt-1">
-          Complete challenges this season to earn bonus zaps and unlock Luminary rank.
-          Each season runs 13 weeks.
-        </p>
-      </div>
-
+    <IndexTemplate
+      title="Season Challenges"
+      description="Complete challenges this season to earn bonus zaps and unlock Luminary rank. Each season runs 13 weeks."
+    >
       {/* Progress overview */}
       <div className="rounded-2xl border border-border bg-surface shadow-sm p-5 mb-8">
         <div className="flex items-center justify-between mb-3">
@@ -84,14 +70,14 @@ export default async function ChallengesPage() {
 
           return (
             <section key={difficulty}>
-              <div className="flex items-center gap-2 mb-3">
-                <h2 className="text-sm font-semibold text-text">
-                  {diff.label}
-                </h2>
-                <span className={`text-xs px-1.5 py-0.5 rounded-md font-semibold ${diff.bg} ${diff.color}`}>
-                  {items.filter(c => c.completedAt).length}/{items.length}
-                </span>
-              </div>
+              <SectionHeader
+                title={diff.label}
+                action={
+                  <span className={`text-xs px-1.5 py-0.5 rounded-md font-semibold ${diff.bg} ${diff.color}`}>
+                    {items.filter(c => c.completedAt).length}/{items.length}
+                  </span>
+                }
+              />
 
               <div className="space-y-2">
                 {items.map(challenge => {
@@ -174,6 +160,6 @@ export default async function ChallengesPage() {
           )
         })}
       </div>
-    </div>
+    </IndexTemplate>
   )
 }
