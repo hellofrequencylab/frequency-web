@@ -120,7 +120,7 @@ export async function sendScanIntroEmail(params: {
   const { to, recipientName, inviterName, joinUrl, unsubscribeUrl } = params
   await enqueueEmail({
     to,
-    subject: `${inviterName} added you on Frequency`,
+    subject: `${inviterName} invited you to join The Quest`,
     headers: {
       'List-Unsubscribe':      `<${unsubscribeUrl}>`,
       'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
@@ -130,25 +130,35 @@ export async function sendScanIntroEmail(params: {
   })
 }
 
+// Footer contact line — the physical mailing address (CAN-SPAM) when configured,
+// else org identity. Set COMPANY_POSTAL_ADDRESS for full compliance.
+function orgContactLine(): string {
+  const addr = process.env.COMPANY_POSTAL_ADDRESS
+  return addr ? escapeHtml(addr) : `Frequency™ · ${BASE_URL.replace(/^https?:\/\//, '')}`
+}
+
 function scanIntroHtml({ recipientName, inviterName, joinUrl, unsubscribeUrl }: {
   recipientName: string | null; inviterName: string; joinUrl: string; unsubscribeUrl: string
 }): string {
-  const who = escapeHtml(inviterName || 'A Frequency member')
-  const hi = recipientName ? `Hi ${escapeHtml(recipientName)} — ` : ''
-  const addr = process.env.COMPANY_POSTAL_ADDRESS
-  const footer = `You got this one-time note because ${who} met you and saved your details to their Frequency contacts. Not interested? <a href="${unsubscribeUrl}" style="color:#999;">Unsubscribe</a> and we won't email you again.${addr ? `<br>${escapeHtml(addr)}` : ''}`
+  const who = escapeHtml(inviterName || 'A friend')
+  const hey = recipientName ? `Hey ${escapeHtml(recipientName)} 👋🏼` : 'Hey 👋🏼'
+  const footer = `A one-time invite from ${who} — we won't add you to any marketing list. Not interested? <a href="${unsubscribeUrl}" style="color:#999;">Unsubscribe</a> and you won't hear from us again.<br>❤️ Frequency™ · ${orgContactLine()}`
   return emailShell(`
-    <h1 style="${h1Style}">${who} added you on Frequency.</h1>
+    <h1 style="${h1Style}">${hey}</h1>
     <p style="${pStyle}">
-      ${hi}${who} met you and saved your details to their contacts on Frequency — the platform for
-      real-world local community: circles, events, and people near you.
+      Your friend <strong>${who}</strong> invited you to join <strong>The Quest</strong>. Hopefully they
+      told you a little about our mission to create and connect community.
     </p>
-    <p style="${pStyle}">They thought you'd want in. Join and you'll land right alongside them.</p>
+    <p style="${pStyle}">
+      We won't send a bunch of marketing emails — but we're happy to send you Quest reminders on your
+      Journey once you're in.
+    </p>
     <p style="margin:0 0 28px;">
-      <a href="${joinUrl}" style="${btnStyle}">Join ${who} on Frequency →</a>
+      <a href="${joinUrl}" style="${btnStyle}">Join us here →</a>
     </p>
+    <p style="${pStyle}margin-bottom:8px;">❤️ Frequency™</p>
     <p style="${pStyle}font-size:13px;color:#888;">
-      Or paste this into your browser:<br>
+      Button not working? Paste this into your browser:<br>
       <a href="${joinUrl}" style="color:#888;">${joinUrl}</a>
     </p>
   `, footer)
@@ -157,16 +167,22 @@ function scanIntroHtml({ recipientName, inviterName, joinUrl, unsubscribeUrl }: 
 function scanIntroText({ recipientName, inviterName, joinUrl, unsubscribeUrl }: {
   recipientName: string | null; inviterName: string; joinUrl: string; unsubscribeUrl: string
 }): string {
-  const who = inviterName || 'A Frequency member'
-  const hi = recipientName ? `Hi ${recipientName} — ` : ''
-  return `${who} added you on Frequency.
+  const who = inviterName || 'A friend'
+  const hey = recipientName ? `Hey ${recipientName} 👋` : 'Hey 👋'
+  const addr = process.env.COMPANY_POSTAL_ADDRESS
+  return `${hey}
 
-${hi}${who} met you and saved your details to their contacts on Frequency — the platform for real-world local community.
+Your friend ${who} invited you to join The Quest. Hopefully they told you a little about our mission to create and connect community.
 
-Join ${who}: ${joinUrl}
+We won't send a bunch of marketing emails — but we're happy to send you Quest reminders on your Journey once you're in.
 
-You got this one-time note because ${who} added your card. Not interested? Unsubscribe and we won't email you again:
-${unsubscribeUrl}`
+Join us here: ${joinUrl}
+
+❤️ Frequency™
+
+—
+A one-time invite from ${who}; we won't add you to any marketing list. To opt out so you never hear from us: ${unsubscribeUrl}
+${addr ? addr : `Frequency™ · ${BASE_URL}`}`
 }
 
 // ── Weekly community digest ───────────────────────────────────────────────────
