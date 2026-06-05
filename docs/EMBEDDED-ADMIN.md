@@ -9,7 +9,7 @@
 > layout/style items into **in-place editing**, and **absorbs `/admin/*`** progressively
 > into the page. Tiers stay automatic — *same box format, more boxes*.
 >
-> Decision: [ADR-132](DECISIONS.md). Builds on [ADR-128](DECISIONS.md) (PageAdminDock
+> Decision: [ADR-133](DECISIONS.md). Builds on [ADR-128](DECISIONS.md) (PageAdminDock
 > Phase 1) and [ADR-127](DECISIONS.md) (operations roles). Uses the capability resolver
 > (`lib/core/capabilities.ts`) + the operations-role capability map (`lib/core/staff-roles.ts`,
 > `lib/staff.ts` `staffCan`). Refines [CAPABILITIES-AND-MOBILE.md §2](CAPABILITIES-AND-MOBILE.md)
@@ -213,7 +213,7 @@ group of modules; `/admin/*` retires once empty.
 
 ## 8. Docs & decisions this touches
 
-- **New ADR:** [ADR-132](DECISIONS.md) — Phase 2 decision; reconciled with the
+- **New ADR:** [ADR-133](DECISIONS.md) — Phase 2 decision; reconciled with the
   parallel-shipped Phase 1 (ADR-128) and operations roles (ADR-127).
 - **Refined:** [CAPABILITIES-AND-MOBILE.md §2](CAPABILITIES-AND-MOBILE.md) — the inline-admin
   model is realized by the dock (Phase 1) and made capability-driven + in-place (Phase 2).

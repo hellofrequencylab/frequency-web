@@ -132,7 +132,7 @@ export function SearchOverlay({ onClose }: { onClose: () => void }) {
                 {results.leads.map((l) => (
                   <ResultRow key={l.id} href={l.href ?? '#'} onNavigate={onClose}
                     fallback={l.displayName} title={l.displayName}
-                    subtitle={[l.email, l.city].filter(Boolean).join(' · ') || 'Saved contact'} />
+                    subtitle={[l.email, l.city, l.ownerName ? `shared by ${l.ownerName}` : null].filter(Boolean).join(' · ') || 'Saved contact'} />
                 ))}
               </ResultGroup>
 

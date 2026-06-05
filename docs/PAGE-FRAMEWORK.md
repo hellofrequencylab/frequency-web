@@ -238,7 +238,7 @@ Sources: [RSC streaming performance (SitePoint)](https://www.sitepoint.com/react
 | `/people/[handle]` → Profile | **Detail** | header · tabs · rail: achievements, streaks, circles |
 | `/messages`, `/settings`, compose | Focus | (no rail) |
 | `/crew/*` | Stream/Index | gamification widgets |
-| `/admin/*` | Index/Detail | admin sub-nav (own pattern) — *being absorbed into the per-page **admin dock** (ADR-128, Phase 1) → capability-driven modules + in-place editing (ADR-132 / EMBEDDED-ADMIN.md, Phase 2)* |
+| `/admin/*` | Index/Detail | admin sub-nav (own pattern) — *being absorbed into the per-page **admin dock** (ADR-128, Phase 1) → capability-driven modules + in-place editing (ADR-133 / EMBEDDED-ADMIN.md, Phase 2)* |
 
 Every page lands in a template; every feature lands in a widget. Nothing needs a
 bespoke layout.
