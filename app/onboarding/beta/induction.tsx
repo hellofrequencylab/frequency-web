@@ -11,7 +11,8 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getInitials } from '@/lib/utils'
 import { searchPlaces, type PlaceSuggestion } from '@/lib/geocode'
-import { BETA_OATHS as DEFAULT_OATHS, VERA as DEFAULT_VERA, REEL, HEARD_ABOUT as DEFAULT_HEARD, type OathId, type VeraCopy } from '@/lib/onboarding/beta-script'
+import { BETA_OATHS as DEFAULT_OATHS, VERA as DEFAULT_VERA, HEARD_ABOUT as DEFAULT_HEARD, type OathId, type VeraCopy } from '@/lib/onboarding/beta-script'
+import { getPersona, listPersonas, isPersonaId, DEFAULT_PERSONA, type PersonaId } from '@/lib/onboarding/personas'
 import { acceptBetaOath, completeBetaInduction, stashPendingInduction } from './actions'
 import { signInWithMagicLink, signInWithGoogle } from '@/app/sign-in/actions'
 
@@ -46,6 +47,10 @@ type Props = {
    *  Dropped into a cookie so completion can stamp the marketing tag + record it,
    *  surviving the deferred sign-in round-trip. */
   sequence?: string
+  /** The persona the visitor chose in the lead flow (?persona=). Pre-selects the
+   *  Welcome-beat picker; defaults to Visitor. Carried in a cookie so completion can
+   *  stamp meta.persona + the persona tag, and branches the tour reel. */
+  persona?: PersonaId
 }
 
 const HANDLE_RE = /^[a-z0-9_]+$/
@@ -53,7 +58,7 @@ const RENDERS = { feed: FeedRender, circles: CirclesRender, events: EventsRender
 const BEAT_COUNT = 6 // 0 oath · 1 intro · 2 reel · 3 identity · 4 place · 5 enter
 // Accessible name for each beat — drives the progress bar's label and the polite
 // live announcement so assistive tech tracks "where am I" through the sequence.
-const BEAT_LABELS = ['The oath', 'Welcome', 'A quick tour', 'Your identity', 'Your place', 'Step in']
+const BEAT_LABELS = ['The oath', 'Who you are', 'A quick tour', 'Your identity', 'Your place', 'Step in']
 
 // No separator — "Daniel Tyack" → "danieltyack".
 function suggestHandle(name: string): string {
@@ -68,12 +73,17 @@ function ArrowRight() {
   )
 }
 
-export default function BetaInduction({ userId = '', userEmail = '', initialHandle = '', preview = false, deferred = false, copy, sequence }: Props) {
+export default function BetaInduction({ userId = '', userEmail = '', initialHandle = '', preview = false, deferred = false, copy, sequence, persona: initialPersona }: Props) {
   // Operator-tunable copy (defaults to the beta-script copy) — shadows the imports so
   // every existing VERA./BETA_OATHS/HEARD_ABOUT reference picks up the overrides.
   const VERA = copy?.vera ?? DEFAULT_VERA
   const BETA_OATHS = copy?.oaths ?? DEFAULT_OATHS
   const HEARD_ABOUT = copy?.heardAbout ?? DEFAULT_HEARD
+
+  // Persona (who they said they are, from the lead flow). Pre-selected from the URL;
+  // changeable in the Welcome beat. Drives the tour reel + is stamped at completion.
+  const [persona, setPersona] = useState<PersonaId>(isPersonaId(initialPersona) ? initialPersona : DEFAULT_PERSONA)
+  const reel = getPersona(persona).reel
 
   // Remember which audience sequence this is, so completion can tag the cohort —
   // survives the deferred sign-in round-trip (a 30-day cookie). Preview never tags.
@@ -81,6 +91,13 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
     if (preview || !sequence) return
     document.cookie = `fq_beta_seq=${encodeURIComponent(sequence)}; path=/; max-age=2592000; samesite=lax`
   }, [preview, sequence])
+
+  // Persist the chosen persona across the deferred sign-in round-trip (30-day cookie),
+  // so completion can stamp meta.persona + the persona tag. Preview never writes.
+  useEffect(() => {
+    if (preview) return
+    document.cookie = `fq_persona=${encodeURIComponent(persona)}; path=/; max-age=2592000; samesite=lax`
+  }, [preview, persona])
 
   const [beat, setBeat] = useState(0)
   const [previewDone, setPreviewDone] = useState(false)
@@ -230,11 +247,11 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
 
   // Auto-advance the reel one slide at a time; settle on the last (no loop).
   useEffect(() => {
-    if (beat !== 2 || reelIndex >= REEL.length - 1) return
+    if (beat !== 2 || reelIndex >= reel.length - 1) return
     if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
-    const t = setTimeout(() => setReelIndex((i) => Math.min(i + 1, REEL.length - 1)), 3800)
+    const t = setTimeout(() => setReelIndex((i) => Math.min(i + 1, reel.length - 1)), 3800)
     return () => clearTimeout(t)
-  }, [beat, reelIndex])
+  }, [beat, reelIndex, reel.length])
 
   const formatOk = handle.length >= 3 && HANDLE_RE.test(handle)
   const handleStatus: HandleStatus = !formatOk
@@ -350,8 +367,8 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
   const eyebrow = 'text-sm font-semibold uppercase tracking-[0.25em] text-primary'
   const heading = 'font-display uppercase leading-[1.0] text-[var(--brand-mark)]'
 
-  const slide = REEL[reelIndex]
-  const isLastSlide = reelIndex >= REEL.length - 1
+  const slide = reel[reelIndex]
+  const isLastSlide = reelIndex >= reel.length - 1
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-marketing-canvas">
@@ -454,6 +471,32 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                   You&rsquo;re a <span className="text-primary">Founder.</span>
                 </h1>
                 <p className="mx-auto mt-4 max-w-2xl text-xl leading-relaxed text-muted">{VERA.intro.body}</p>
+
+                {/* Persona fork — first, who are you? Pre-selected if they came in
+                    through a lead flow; changeable here. Branches the tour reel and
+                    is stamped on the member so the site + Vera can tailor later. */}
+                <p className="mt-9 text-sm font-bold uppercase tracking-[0.25em] text-primary-strong">First — who are you?</p>
+                <div className="mx-auto mt-4 grid max-w-2xl gap-3 sm:grid-cols-2">
+                  {listPersonas().map((p) => {
+                    const active = persona === p.id
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => { setPersona(p.id); setReelIndex(0) }}
+                        aria-pressed={active}
+                        className={`flex items-start gap-3 rounded-2xl border px-4 py-4 text-left transition-colors ${active ? 'border-primary bg-primary/10' : 'border-border bg-surface hover:border-primary/40'}`}
+                      >
+                        <span className="text-2xl leading-none" aria-hidden>{p.emoji}</span>
+                        <span>
+                          <span className="block text-base font-bold text-text">{p.label}</span>
+                          <span className="mt-0.5 block text-sm text-muted">{p.pitch}</span>
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+
                 <div className="mt-8 flex flex-col items-center gap-3">
                   <button onClick={() => setBeat(2)} className={btnPrimary}>{VERA.intro.cta}<ArrowRight /></button>
                   <button onClick={() => setBeat(0)} className={backLink}>Back</button>
@@ -470,7 +513,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                 <div className="mt-6 flex flex-col items-center gap-8 md:flex-row md:items-center md:justify-center md:gap-12">
                   {/* desktop mockup, left */}
                   <div className="relative w-full max-w-xl shrink-0" style={{ aspectRatio: '540 / 348' }}>
-                    {REEL.map((s, i) => {
+                    {reel.map((s, i) => {
                       const active = i === reelIndex
                       const C = s.kind === 'render' ? RENDERS[s.render] : null
                       return (
@@ -486,7 +529,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                     <p className="text-3xl font-bold text-text">{slide.title}</p>
                     <p className="mt-2 text-lg leading-relaxed text-muted">{slide.line}</p>
                     <div className="mt-5 flex items-center justify-center gap-2 md:justify-start">
-                      {REEL.map((s, i) => (
+                      {reel.map((s, i) => (
                         <button
                           key={i}
                           aria-label={`Show ${s.title}`}

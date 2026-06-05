@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { HierarchyBreadcrumb } from '@/components/hierarchy/breadcrumb'
 import { StatusBadge } from '@/components/groups/status-badge'
 import { DetailTemplate } from '@/components/templates/detail-template'
+import { StaffEditButton } from '@/components/ui/staff-edit-button'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import type { CircleBase } from '@/lib/types/circle'
@@ -95,6 +96,7 @@ export default async function HubPage({
       <DetailTemplate
         title={hub.name}
         badges={<StatusBadge status={hub.status} />}
+        actions={<StaffEditButton href={`/admin/hubs?edit=${hub.id}`} label="Edit hub" />}
         subtitle={
           <>
             {hub.guide && (

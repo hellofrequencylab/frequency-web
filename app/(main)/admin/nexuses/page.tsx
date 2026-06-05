@@ -6,8 +6,9 @@ import { NexusesClient } from './nexuses-client'
 import { NewNexusCompose } from '@/components/compose/new-nexus-compose'
 
 
-export default async function AdminNexusesPage() {
+export default async function AdminNexusesPage({ searchParams }: { searchParams: Promise<{ edit?: string }> }) {
   await requireAdmin('mentor')
+  const { edit } = await searchParams
 
   const admin = createAdminClient()
   const { data: rawNexuses } = await admin
@@ -49,7 +50,7 @@ export default async function AdminNexusesPage() {
     >
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <NexusesClient nexuses={nexuses} mentors={mentors ?? []} />
+          <NexusesClient nexuses={nexuses} mentors={mentors ?? []} initialEditId={edit ?? null} />
         </div>
         <div className="space-y-4">
           <SidebarCard title="About Nexuses">

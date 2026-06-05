@@ -10,9 +10,9 @@ export function BrandMark({ className = '' }: { className?: string }) {
     <Link
       href="/feed"
       aria-label="Frequency, home feed"
-      className={`brandmark-link group flex items-center pl-1 pr-3 md:px-5 ${className}`}
+      className={`brandmark-link group flex items-center pl-3.5 pr-2 md:px-5 ${className}`}
     >
-      <span className="brandmark h-7 md:h-8 aspect-[963/170]" aria-hidden />
+      <span className="brandmark h-[22px] md:h-8 aspect-[963/170]" aria-hidden />
     </Link>
   )
 }
