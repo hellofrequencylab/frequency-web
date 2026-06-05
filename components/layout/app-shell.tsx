@@ -27,6 +27,8 @@ import {
   ChevronUp,
   ChevronRight,
   ChevronLeft,
+  Maximize2,
+  Flame,
   QrCode,
   Megaphone,
   HelpCircle,
@@ -825,46 +827,38 @@ function MobileTabBar({
 
 export type RailSize = 'micro' | 'full'
 
+// One edge menu (left = nav, right = stats). Controlled by the shell so only one
+// can be open at a time — opening one pushes the other closed. Two body slots:
+// `micro` (a single icon column) and `full` (content-appropriate). The shared
+// Micro/Full size picks which renders; the icon column is narrow (`w-16`), full is
+// sized to its content.
 function EdgeMenu({
   side,
   ariaLabel,
   size,
   onSizeChange,
+  open,
+  onOpen,
+  onClose,
+  micro,
   children,
 }: {
   side: 'left' | 'right'
   ariaLabel: string
   size: RailSize
   onSizeChange: (s: RailSize) => void
+  open: boolean
+  onOpen: () => void
+  onClose: () => void
+  /** The collapsed body — a single icon column. */
+  micro: React.ReactNode
+  /** The expanded body — full, content-appropriate. */
   children: React.ReactNode
 }) {
-  const pathname = usePathname()
-  const [open, setOpen] = useState(false)
-
-  // Close when a link inside navigates (route change).
-  const [lastPath, setLastPath] = useState(pathname)
-  if (lastPath !== pathname) {
-    setLastPath(pathname)
-    if (open) setOpen(false)
-  }
-
-  // Close on scroll.
-  useEffect(() => {
-    if (!open) return
-    const el = document.querySelector('[data-feed-scroll]') as HTMLElement | null
-    if (!el) return
-    let lastTop = el.scrollTop
-    const onScroll = () => {
-      if (Math.abs(el.scrollTop - lastTop) > 6) setOpen(false)
-      lastTop = el.scrollTop
-    }
-    el.addEventListener('scroll', onScroll, { passive: true })
-    return () => el.removeEventListener('scroll', onScroll)
-  }, [open])
-
   const onLeft = side === 'left'
   const Chevron = onLeft ? ChevronRight : ChevronLeft
-  const widthClass = size === 'full' ? 'w-[88vw] max-w-sm' : 'w-60 max-w-[80vw]'
+  const widthClass =
+    size === 'micro' ? 'w-16' : onLeft ? 'w-64 max-w-[80vw]' : 'w-[88vw] max-w-sm'
 
   return (
     <>
@@ -872,7 +866,7 @@ function EdgeMenu({
       {!open && (
         <button
           type="button"
-          onClick={() => setOpen(true)}
+          onClick={onOpen}
           aria-label={ariaLabel}
           className={`md:hidden fixed top-1/2 z-30 flex h-[36vh] w-5 -translate-y-1/2 items-center justify-center border-y border-border bg-surface-elevated text-muted shadow-sm transition-colors hover:text-text ${
             onLeft ? 'left-0 rounded-r-lg border-r' : 'right-0 rounded-l-lg border-l'
@@ -884,7 +878,7 @@ function EdgeMenu({
 
       {open && (
         <>
-          <div onClick={() => setOpen(false)} aria-hidden className="md:hidden fixed inset-0 z-30 bg-black/10" />
+          <div onClick={onClose} aria-hidden className="md:hidden fixed inset-0 z-30 bg-black/10" />
           <aside
             role="dialog"
             aria-label={ariaLabel}
@@ -893,27 +887,40 @@ function EdgeMenu({
             } ${widthClass}`}
             style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom))' }}
           >
-            <div className="flex-1 overflow-y-auto">{children}</div>
+            <div className="flex-1 overflow-y-auto">{size === 'micro' ? micro : children}</div>
 
-            {/* Size selector — Micro / Full (shared per-device). */}
-            <div className="flex shrink-0 items-center gap-2 border-t border-border p-2">
-              <span className="flex-1 pl-1 text-[11px] font-semibold uppercase tracking-wide text-subtle">View</span>
-              <div className="flex items-center rounded-lg bg-surface-elevated p-0.5">
-                {(['micro', 'full'] as const).map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => onSizeChange(s)}
-                    aria-pressed={size === s}
-                    className={`rounded-md px-2.5 py-1 text-[11px] font-semibold capitalize transition-colors ${
-                      size === s ? 'bg-surface text-text shadow-sm' : 'text-subtle hover:text-text'
-                    }`}
-                  >
-                    {s}
-                  </button>
-                ))}
+            {/* Bottom control. In micro it's a single expand button (the column is
+                too narrow for a segmented control); in full it's the Micro/Full
+                picker (shared per-device across both menus). */}
+            {size === 'micro' ? (
+              <button
+                type="button"
+                onClick={() => onSizeChange('full')}
+                aria-label="Expand menu"
+                className="flex shrink-0 items-center justify-center border-t border-border p-2.5 text-subtle transition-colors hover:text-text"
+              >
+                <Maximize2 className="h-4 w-4" />
+              </button>
+            ) : (
+              <div className="flex shrink-0 items-center gap-2 border-t border-border p-2">
+                <span className="flex-1 pl-1 text-[11px] font-semibold uppercase tracking-wide text-subtle">View</span>
+                <div className="flex items-center rounded-lg bg-surface-elevated p-0.5">
+                  {(['micro', 'full'] as const).map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => onSizeChange(s)}
+                      aria-pressed={size === s}
+                      className={`rounded-md px-2.5 py-1 text-[11px] font-semibold capitalize transition-colors ${
+                        size === s ? 'bg-surface text-text shadow-sm' : 'text-subtle hover:text-text'
+                      }`}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </aside>
         </>
       )}
@@ -979,7 +986,9 @@ export default function AppShell({
   const [lastPath, setLastPath] = useState(pathname)
 
   // Mobile edge menus — both share one Micro/Full size preference (per device).
+  // Only one edge can be open at a time; opening one pushes the other closed.
   const [railSize, setRailSize] = useState<RailSize>('micro')
+  const [openMenu, setOpenMenu] = useState<'left' | 'right' | null>(null)
   // Page admin dock — open state (shared so PUSH mode can pad the content), plus
   // the persisted mode (overlay/push) + width preferences.
   const [adminOpen, setAdminOpen] = useState(false)
@@ -1009,11 +1018,26 @@ export default function AppShell({
   }
   const canAdmin = !hideAppNav && (meetsAccess('host', gateRole) || staffRole != null)
 
-  // Close mobile drawer when the route changes (covers browser back/forward).
+  // Close mobile drawer + edge menus when the route changes (covers back/forward).
   if (lastPath !== pathname) {
     setLastPath(pathname)
     if (drawerOpen) setDrawerOpen(false)
+    if (openMenu) setOpenMenu(null)
   }
+
+  // Scrolling the feed closes whichever edge menu is open.
+  useEffect(() => {
+    if (!openMenu) return
+    const el = document.querySelector('[data-feed-scroll]') as HTMLElement | null
+    if (!el) return
+    let lastTop = el.scrollTop
+    const onScroll = () => {
+      if (Math.abs(el.scrollTop - lastTop) > 6) setOpenMenu(null)
+      lastTop = el.scrollTop
+    }
+    el.addEventListener('scroll', onScroll, { passive: true })
+    return () => el.removeEventListener('scroll', onScroll)
+  }, [openMenu])
 
   // ⌘K / Ctrl+K → open the live search overlay
   const [searchOpen, setSearchOpen] = useState(false)
@@ -1264,7 +1288,49 @@ export default function AppShell({
       {/* ── Mobile edge menus — always-visible tabs; left = nav, right = stats.
             Same format/width/styles; one shared Micro/Full size. ── */}
       {!hideAppNav && (
-        <EdgeMenu side="left" ariaLabel="Quick navigation" size={railSize} onSizeChange={changeRailSize}>
+        <EdgeMenu
+          side="left"
+          ariaLabel="Quick navigation"
+          size={railSize}
+          onSizeChange={changeRailSize}
+          open={openMenu === 'left'}
+          onOpen={() => setOpenMenu('left')}
+          onClose={() => setOpenMenu(null)}
+          micro={
+            <nav className="flex flex-col items-center gap-1 p-2">
+              {MOBILE_TABS.map((tab) => {
+                const Icon = AREA_ICONS[tab.key] ?? Globe
+                const active = isActive(tab.href)
+                return (
+                  <Link
+                    key={tab.key}
+                    href={tab.href}
+                    aria-label={tab.label}
+                    title={tab.label}
+                    onClick={() => setOpenMenu(null)}
+                    className={`flex h-11 w-11 items-center justify-center rounded-xl transition-colors ${
+                      active ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:bg-surface-elevated hover:text-text'
+                    }`}
+                  >
+                    <Icon className="h-5 w-5" strokeWidth={active ? 2.5 : 2} />
+                  </Link>
+                )
+              })}
+              <button
+                type="button"
+                aria-label="More"
+                title="More"
+                onClick={() => {
+                  setOpenMenu(null)
+                  setDrawerOpen(true)
+                }}
+                className="flex h-11 w-11 items-center justify-center rounded-xl text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+              >
+                <Menu className="h-5 w-5" strokeWidth={2} />
+              </button>
+            </nav>
+          }
+        >
           <nav className="p-2 space-y-0.5">
             {MOBILE_TABS.map((tab) => {
               const Icon = AREA_ICONS[tab.key] ?? Globe
@@ -1273,6 +1339,7 @@ export default function AppShell({
                 <Link
                   key={tab.key}
                   href={tab.href}
+                  onClick={() => setOpenMenu(null)}
                   className={`flex items-center gap-3 rounded-xl px-2.5 py-2 text-sm font-medium transition-colors ${
                     active ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:bg-surface-elevated hover:text-text'
                   }`}
@@ -1284,7 +1351,10 @@ export default function AppShell({
             })}
             <button
               type="button"
-              onClick={() => setDrawerOpen(true)}
+              onClick={() => {
+                setOpenMenu(null)
+                setDrawerOpen(true)
+              }}
               className="flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
             >
               <Menu className="h-5 w-5 shrink-0" strokeWidth={2} />
@@ -1294,7 +1364,52 @@ export default function AppShell({
         </EdgeMenu>
       )}
       {!hideAppNav && statsPanel && (
-        <EdgeMenu side="right" ariaLabel="Your stats" size={railSize} onSizeChange={changeRailSize}>
+        <EdgeMenu
+          side="right"
+          ariaLabel="Your stats"
+          size={railSize}
+          onSizeChange={changeRailSize}
+          open={openMenu === 'right'}
+          onOpen={() => setOpenMenu('right')}
+          onClose={() => setOpenMenu(null)}
+          micro={
+            <div className="flex flex-col items-center gap-1.5 p-2">
+              <Link
+                href="/crew"
+                aria-label="Bolts this season"
+                title="Bolts this season"
+                onClick={() => setOpenMenu(null)}
+                className="flex flex-col items-center gap-0.5 rounded-xl px-1 py-1.5 text-muted transition-colors hover:bg-surface-elevated"
+              >
+                <Zap className="h-5 w-5 text-primary" strokeWidth={2.5} />
+                <span className="text-[10px] font-bold tabular-nums text-text">
+                  {(profile.current_season_zaps ?? 0).toLocaleString()}
+                </span>
+              </Link>
+              <Link
+                href="/crew"
+                aria-label="Gems"
+                title="Gems"
+                onClick={() => setOpenMenu(null)}
+                className="flex flex-col items-center gap-0.5 rounded-xl px-1 py-1.5 text-muted transition-colors hover:bg-surface-elevated"
+              >
+                <Gem className="h-5 w-5 text-signal" strokeWidth={2.5} />
+                <span className="text-[10px] font-bold tabular-nums text-text">
+                  {(profile.lifetime_gems ?? 0).toLocaleString()}
+                </span>
+              </Link>
+              <Link
+                href="/crew"
+                aria-label="Streak"
+                title="Streak"
+                onClick={() => setOpenMenu(null)}
+                className="flex h-11 w-11 items-center justify-center rounded-xl text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+              >
+                <Flame className="h-5 w-5" strokeWidth={2} />
+              </Link>
+            </div>
+          }
+        >
           <div className="p-3">{statsPanel}</div>
         </EdgeMenu>
       )}
