@@ -6,9 +6,17 @@ import { redirect } from 'next/navigation'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
+import { type StaffRole, type StaffDomain, type Access, staffCan } from '@/lib/core/staff-roles'
 
-export type StaffRole = 'analyst' | 'marketer' | 'admin' | 'owner'
+// The role model + capability matrix live in lib/core/staff-roles.ts (client-safe);
+// this module adds the DB lookup + server gates. Re-export so existing imports
+// (`@/lib/staff`) keep working.
+export type { StaffRole, StaffDomain, Access } from '@/lib/core/staff-roles'
+export { staffCan } from '@/lib/core/staff-roles'
 
+// Back-compat seniority ladder for the LEGACY marketing gates (marketer/admin/owner).
+// The new functional roles (operations/accounting/support) aren't on this ladder —
+// they're gated by capability via `staffCan` / `requireStaffCap`.
 const ORDER: StaffRole[] = ['analyst', 'marketer', 'admin', 'owner']
 
 export function atLeastStaff(role: StaffRole, min: StaffRole): boolean {
@@ -43,5 +51,16 @@ export async function getStaffMember(): Promise<StaffMember | null> {
 export async function requireStaff(min: StaffRole = 'analyst'): Promise<StaffMember> {
   const member = await getStaffMember()
   if (!member || !atLeastStaff(member.role, min)) redirect('/')
+  return member
+}
+
+/**
+ * Capability gate (ADR-127) — redirects unless the caller's staff role grants
+ * `domain` at `level` (default 'write'). The way to gate a business surface by
+ * function rather than the legacy seniority ladder.
+ */
+export async function requireStaffCap(domain: StaffDomain, level: Access = 'write'): Promise<StaffMember> {
+  const member = await getStaffMember()
+  if (!member || !staffCan(member.role, domain, level)) redirect('/')
   return member
 }
