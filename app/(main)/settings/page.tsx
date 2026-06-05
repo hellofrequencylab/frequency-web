@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { Moon, Sun, Monitor, Check, User, Shield, Bell, CreditCard } from 'lucide-react'
+import { FocusTemplate } from '@/components/templates'
 import { SectionHeader } from '@/components/ui/section-header'
 
 type Theme = 'light' | 'dark' | 'system'
@@ -52,12 +53,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-text mb-1">Settings</h1>
-      <p className="text-sm text-muted mb-8">
-        Manage your preferences.
-      </p>
-
+    <FocusTemplate title="Settings" description="Manage your preferences.">
       {/* Account — all of a member's settings reachable from one place. */}
       <section className="mb-8">
         <SectionHeader title="Account" />
@@ -106,7 +102,7 @@ export default function SettingsPage() {
           })}
         </div>
       </section>
-    </div>
+    </FocusTemplate>
   )
 }
 
