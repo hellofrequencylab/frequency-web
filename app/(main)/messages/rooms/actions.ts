@@ -3,12 +3,26 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getCallerProfile, type CommunityRole } from '@/lib/auth'
+import { getCallerProfile, getMyProfileId, type CommunityRole } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { searchRoom, type RoomSearchHit } from '@/lib/ai/room-search'
 
 const CREW_PLUS: CommunityRole[] = ['crew', 'host', 'guide', 'mentor', 'janitor']
 
 type RoomVisibility = 'public' | 'private' | 'circle' | 'hub' | 'nexus' | 'outpost'
+
+// Phase C: search a room's history (semantic when AI is on, else substring). The
+// RPC re-checks the caller can see the room, so an unauthorized roomId returns 0.
+export async function searchRoomAction(
+  roomId: string,
+  query: string,
+): Promise<ActionResult<{ hits: RoomSearchHit[]; mode: 'semantic' | 'text' }>> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Not signed in')
+  if (!roomId) return fail('No room')
+  const res = await searchRoom(roomId, query, profileId)
+  return ok(res)
+}
 
 export async function createRoom(fd: FormData): Promise<ActionResult<{ id: string }>> {
   const caller = await getCallerProfile()
