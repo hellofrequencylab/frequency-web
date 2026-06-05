@@ -3791,21 +3791,23 @@ as a dock.
 **Context.** Admin/edit actions for a page were scattered (the Admin tab, per-page menus). We want
 them **always readily available in one tab on the page itself**, for whoever's allowed.
 
-**Decision.**
-- An **opaque edge tab** (operators only — `meetsAccess('host')` or any staff; never a member) that
-  opens a **panel of admin actions for the current page**: Edit info (deep-links the section editor
-  by route), Group dispatch, Settings/Admin home, and (janitor) Members · Pages · Roles. Layout
-  template + Basic styles are shown as **"Soon"** (Phase 2 — in-place template/theming editing).
-- **Movable + persistent:** a pull-tab (grip) drags the dock vertically and snaps it to either edge;
-  the position is saved site-wide (localStorage `freq-admin-dock`). Closed = opaque tab; open = the
-  panel anchored at that position.
-- **Phase 1 wires the existing editors** (route → `/admin/*`); per-entity precision ("edit THIS
-  circle" inline) and the layout/styles editors are Phase 2, via a page-provided action context +
-  the capability resolver.
+**Decision.** Operators only (`meetsAccess('host')` or any staff; never a member). The panel of
+per-page admin actions is unchanged (Edit info → section editor by route, Group dispatch,
+Settings/Admin home, janitor: Members · Pages · Roles; Layout template + Basic styles are **"Soon"**,
+Phase 2). The **chrome differs by platform** (revised after the first cut cluttered mobile):
+- **Desktop:** a **light, unobtrusive** vertical tab on the right edge (was opaque — corrected).
+  Opening slides a right panel in, in one of two **persisted modes**: **Push** (the shell pads the
+  content over so the whole page stays visible) or **Overlay** (panel floats over). **Width is
+  drag-resizable** (left-edge handle). Mode + width persist site-wide (`freq-admin-mode` /
+  `freq-admin-width`).
+- **Mobile:** **no edge tab** — the panel opens from a **Shield button in the top header** and shows
+  as an overlay sheet (push doesn't apply on a phone).
+- The shell owns open/mode/width (so Push can pad `[data-feed-scroll]` via a `--admin-pr` var at
+  `md+`).
 
-**Alternatives.** Keep admin behind the Admin tab only (rejected — not in-context). A fixed
-(non-movable) dock (rejected — it would cover content somewhere on some page; user-positioned + saved
-solves it). Per-page bespoke admin menus (rejected — one dock, one registry).
+**Alternatives.** The first cut (an always-present **opaque, repositionable** edge tab on every
+viewport — rejected: it cluttered the mobile site; mobile now triggers from the header, desktop tab
+is light). Keep admin behind the Admin tab only (rejected — not in-context).
 
 **Consequences.** Operators get one consistent, repositionable admin surface on every page. Gating
 is by role today; it tightens to the granular capability set (and the ADR-127 operations roles) as
