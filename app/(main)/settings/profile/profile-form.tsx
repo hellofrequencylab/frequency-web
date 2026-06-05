@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/client'
 import { getInitials } from '@/lib/utils'
 import { Check, Loader2 } from 'lucide-react'
 import { updateProfile } from './actions'
+import { HeaderEditor } from './header-editor'
+import { LocationAutocomplete } from '@/components/admin/location-autocomplete'
 
 type HandleStatus = 'idle' | 'checking' | 'available' | 'taken'
 
@@ -27,28 +29,6 @@ function resizeToJpeg(file: File, size = 512): Promise<Blob> {
         'image/jpeg',
         0.92
       )
-    }
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not decode image')) }
-    img.src = url
-  })
-}
-
-// Cover-crop to a wide banner (3:1) for the profile header.
-function resizeToBannerJpeg(file: File, w = 1500, h = 500): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    const url = URL.createObjectURL(file)
-    img.onload = () => {
-      URL.revokeObjectURL(url)
-      const canvas = document.createElement('canvas')
-      canvas.width = w
-      canvas.height = h
-      const ctx = canvas.getContext('2d')!
-      const scale = Math.max(w / img.width, h / img.height)
-      const dw = img.width * scale
-      const dh = img.height * scale
-      ctx.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh)
-      canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('Canvas export failed'))), 'image/jpeg', 0.9)
     }
     img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not decode image')) }
     img.src = url
@@ -84,13 +64,15 @@ export function ProfileForm({
   const [bio,           setBio]           = useState(initial.bio)
   const [phone,         setPhone]         = useState(initial.phone)
   const [city,          setCity]          = useState(initial.city)
+  // City picks also propagate the member's home location (powers "near you").
+  const [home,          setHome]          = useState<{ lat: number; lng: number; label: string } | null>(null)
   const [website,       setWebsite]       = useState(initial.website)
   const [avatarUrl,     setAvatarUrl]     = useState(initial.avatarUrl)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(initial.avatarUrl || null)
   const [avatarFile,    setAvatarFile]    = useState<File | null>(null)
   const [headerUrl,     setHeaderUrl]     = useState(initial.headerImageUrl)
-  const [headerPreview, setHeaderPreview] = useState<string | null>(initial.headerImageUrl || null)
-  const [headerFile,    setHeaderFile]    = useState<File | null>(null)
+  const [headerBlob,    setHeaderBlob]    = useState<Blob | null>(null)
+  const [headerRemoved, setHeaderRemoved] = useState(false)
   const [uploading,     setUploading]     = useState(false)
   const [uploadError,   setUploadError]   = useState('')
   const [saved,         setSaved]         = useState(false)
@@ -98,7 +80,6 @@ export function ProfileForm({
   const [isPending,     startTransition]  = useTransition()
 
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const headerInputRef = useRef<HTMLInputElement>(null)
 
   // Handle status is derived during render — the only thing that genuinely needs
   // an effect is the async uniqueness check, whose result we store tagged with
@@ -155,34 +136,14 @@ export function ProfileForm({
     setAvatarPreview(URL.createObjectURL(file))
   }
 
-  function handleHeaderChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (file.size > 8 * 1024 * 1024) {
-      setUploadError(`Header is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum is 8 MB.`)
-      if (headerInputRef.current) headerInputRef.current.value = ''
-      return
-    }
-    setUploadError('')
-    setHeaderFile(file)
-    setHeaderPreview(URL.createObjectURL(file))
-  }
-
+  // Upload the cropped header blob (already 1500×560 from the editor).
   async function uploadHeader(): Promise<string> {
-    if (!headerFile) return headerUrl
+    if (!headerBlob) return headerUrl
     setUploading(true)
     setUploadError('')
-    let blob: Blob
-    try {
-      blob = await resizeToBannerJpeg(headerFile)
-    } catch {
-      setUploadError('Could not process header image. Try a different file.')
-      setUploading(false)
-      return headerUrl
-    }
     const supabase = createClient()
     const path = `${userId}/header.jpg`
-    const { error } = await supabase.storage.from('avatars').upload(path, blob, { upsert: true, contentType: 'image/jpeg' })
+    const { error } = await supabase.storage.from('avatars').upload(path, headerBlob, { upsert: true, contentType: 'image/jpeg' })
     if (error) {
       setUploadError(`Header upload failed: ${error.message}`)
       setUploading(false)
@@ -248,8 +209,10 @@ export function ProfileForm({
       finalAvatarUrl = await uploadAvatar()
     }
     let finalHeaderUrl = headerUrl
-    if (headerFile) {
+    if (headerBlob) {
       finalHeaderUrl = await uploadHeader()
+    } else if (headerRemoved) {
+      finalHeaderUrl = ''
     }
 
     startTransition(async () => {
@@ -263,10 +226,12 @@ export function ProfileForm({
           phone:          phone.trim(),
           city:           city.trim(),
           website:        website.trim(),
+          home,
         })
         setSaved(true)
         setAvatarFile(null)
-        setHeaderFile(null)
+        setHeaderBlob(null)
+        setHeaderRemoved(false)
         setTimeout(() => setSaved(false), 3000)
       } catch (err) {
         setSaveError(err instanceof Error ? err.message : 'Something went wrong.')
@@ -279,57 +244,16 @@ export function ProfileForm({
   return (
     <form onSubmit={handleSave} className="space-y-6">
 
-      {/* ── Header / cover image ────────────────────── */}
+      {/* ── Header / cover image (upload → drag + zoom to crop) ──────── */}
       <div>
         <label className={lbl}>Header image</label>
-        <div className="overflow-hidden rounded-2xl border border-border">
-          {headerPreview ? (
-            // headerPreview may be a local object-URL (blob:) — plain <img> is correct.
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={headerPreview} alt="Profile header" className="h-28 w-full object-cover sm:h-36" />
-          ) : (
-            <div className="h-28 w-full bg-gradient-to-br from-primary via-signal to-signal-strong sm:h-36" />
-          )}
-        </div>
-        <div className="mt-2 flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => headerInputRef.current?.click()}
-            className="text-sm font-medium text-primary-strong transition-colors hover:text-primary-hover"
-          >
-            {headerPreview ? 'Change header' : 'Upload header'}
-          </button>
-          {headerPreview && headerPreview !== initial.headerImageUrl && (
-            <button
-              type="button"
-              onClick={() => {
-                setHeaderFile(null)
-                setHeaderPreview(initial.headerImageUrl || null)
-                setHeaderUrl(initial.headerImageUrl)
-                if (headerInputRef.current) headerInputRef.current.value = ''
-              }}
-              className="text-sm text-subtle transition-colors hover:text-muted"
-            >
-              Revert
-            </button>
-          )}
-          {headerPreview && (
-            <button
-              type="button"
-              onClick={() => {
-                setHeaderFile(null)
-                setHeaderPreview(null)
-                setHeaderUrl('')
-                if (headerInputRef.current) headerInputRef.current.value = ''
-              }}
-              className="text-sm text-subtle transition-colors hover:text-danger"
-            >
-              Remove
-            </button>
-          )}
-          <span className="ml-auto text-xs text-subtle">Wide image up to 8 MB · cropped to 3:1</span>
-        </div>
-        <input ref={headerInputRef} type="file" accept="image/*" className="hidden" onChange={handleHeaderChange} />
+        <HeaderEditor
+          initialUrl={headerUrl || null}
+          onChange={(blob, removed) => {
+            setHeaderBlob(blob)
+            setHeaderRemoved(removed)
+          }}
+        />
       </div>
 
       {/* ── Avatar ──────────────────────────────────── */}
@@ -493,18 +417,18 @@ export function ProfileForm({
         </div>
 
         <div>
-          <label htmlFor="city" className={lbl}>
+          <label className={lbl}>
             City <span className="text-subtle font-normal text-xs">(optional)</span>
           </label>
-          <input
-            id="city"
-            type="text"
+          <LocationAutocomplete
             value={city}
-            onChange={e => setCity(e.target.value.slice(0, 120))}
-            placeholder="Encinitas, CA"
-            disabled={isPending}
-            className={input}
+            placeholder="Start typing your city…"
+            onPick={(p) => {
+              setCity(p.label.split(',')[0])
+              setHome({ lat: p.lat, lng: p.lng, label: p.label })
+            }}
           />
+          <p className="mt-1 text-xs text-subtle">Pick from the suggestions — it also sets your location so we can surface circles and events near you.</p>
         </div>
 
         <div>
