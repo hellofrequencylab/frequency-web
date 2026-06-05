@@ -30,6 +30,8 @@ export interface FirstTouch {
   /** Ad-click identifiers (Google / Meta) — proof of paid arrival. */
   gclid?: string
   fbclid?: string
+  /** The dynamic-code slug that brought them, when arrival was a /q scan (ADR-107). */
+  code?: string
 }
 
 const UTM_KEYS = ['source', 'medium', 'campaign', 'content', 'term'] as const

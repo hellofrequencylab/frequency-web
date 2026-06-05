@@ -38,3 +38,15 @@ export function isSiteLink(text: string): boolean {
 export function toAbsoluteSiteUrl(text: string): string {
   return text.startsWith('/') ? `${SITE_URL}${text}` : text
 }
+
+/** The scan medium a code's URL is tagged with. 'qr' is the default (a printed
+ *  code) and carries no marker; 'nfc' appends `?m=nfc` so the `/q` resolver can
+ *  attribute the tap. Used when writing a tag — the same code, channel-stamped. */
+export type ScanMedium = 'qr' | 'nfc'
+
+/** Stamp a code URL with its scan medium for attribution. NFC tags encode the
+ *  result so a tap records `medium='nfc'`; QR returns the URL unchanged. */
+export function withMedium(url: string, medium: ScanMedium): string {
+  if (medium !== 'nfc') return url
+  return `${url}${url.includes('?') ? '&' : '?'}m=nfc`
+}
