@@ -22,7 +22,7 @@ export default async function BetaInductionPage({
   // (that's what they were authored against); audience sequences use their own copy.
   const { seq: seqSlug, persona: personaSlug } = await searchParams
   const seq = getSequence(seqSlug)
-  // Who they said they are in the lead flow (ADR-123) — pre-selects the Welcome-beat
+  // Who they said they are in the lead flow (ADR-125) — pre-selects the Welcome-beat
   // picker, branches the tour reel, and is stamped on the member at completion.
   const persona: PersonaId | undefined = isPersonaId(personaSlug) ? personaSlug : undefined
   const isDefault = seq.slug === DEFAULT_SEQUENCE

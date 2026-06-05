@@ -165,7 +165,7 @@ async function writeBetaInduction(data: InductionData): Promise<void> {
         onboarding_completed: true,
         // First-touch acquisition record (utm / referrer / landing / channel).
         acquisition: (acquisition as unknown as Json),
-        // WHO they said they are at intake (ADR-123) — the spine the site + Vera read
+        // WHO they said they are at intake (ADR-125) — the spine the site + Vera read
         // to tailor the experience. Cookie wins; falls back to any prior value.
         persona: personaSlug ?? ((meta.persona as string | undefined) ?? null),
         beta: {
@@ -334,7 +334,7 @@ async function mergeBetaInduction(data: InductionData): Promise<void> {
   const mergedMeta: Meta = {
     ...meta,
     onboarding_completed: true,
-    // New persona choice wins; never blanks an existing one (ADR-123).
+    // New persona choice wins; never blanks an existing one (ADR-125).
     persona: personaSlug ?? ((meta.persona as string | undefined) ?? null),
     beta: {
       ...beta,

@@ -1,4 +1,4 @@
-// Lead flows — the assignable top-of-funnel (ADR-123, docs/LEAD-FLOWS.md).
+// Lead flows — the assignable top-of-funnel (ADR-125, docs/LEAD-FLOWS.md).
 //
 // A lead flow is a named, shareable surface you drop behind ANY entry point — a QR
 // at an event, an Instagram bio link, a partner's website button, a city landing
@@ -10,7 +10,7 @@
 //
 // Code-first for now (type-safe, reviewed in PRs). A DB-backed, operator-assignable
 // layer can override these later without changing callers — the vera_config pattern
-// (ADR-123 picks code-first now, DB layer later). Client-safe (no server imports).
+// (ADR-125 picks code-first now, DB layer later). Client-safe (no server imports).
 
 import { PERSONA_ORDER, type PersonaId } from '@/lib/onboarding/personas'
 

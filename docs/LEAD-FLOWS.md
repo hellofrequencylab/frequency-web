@@ -5,7 +5,7 @@ carry that answer (their **persona**) through everything: it routes their market
 branches the beta induction, and is stamped on the member so the site and Vera can tailor
 the experience forever. **Lead flows** are the assignable surfaces that ask it.
 
-> Source of truth: this doc + the code. Decision + rationale: [ADR-123](DECISIONS.md#adr-123-personas--lead-flows--the-self-identified-intake-rework).
+> Source of truth: this doc + the code. Decision + rationale: [ADR-125](DECISIONS.md#adr-125-personas--lead-flows--the-self-identified-intake-rework).
 > Operator "how to assign a flow / read the segments" guidance lives in Notion (Training & Strategy), linked back here.
 
 ---

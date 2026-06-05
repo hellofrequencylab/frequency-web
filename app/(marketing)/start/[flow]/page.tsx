@@ -4,7 +4,7 @@ import { PhotoHero, Section } from '@/components/marketing/marketing-ui'
 import { LEAD_FLOWS, getLeadFlow } from '@/lib/onboarding/lead-flows'
 import { PersonaChooser } from './persona-chooser'
 
-// An assignable lead flow (ADR-123, docs/LEAD-FLOWS.md): /start/<flow>. Drop the URL
+// An assignable lead flow (ADR-125, docs/LEAD-FLOWS.md): /start/<flow>. Drop the URL
 // behind any entry point (QR, IG bio, partner button). The splash sets the frame;
 // the persona picker (client island) routes the visitor into the induction carrying
 // who they said they were. Authored in lib/onboarding/lead-flows.ts.

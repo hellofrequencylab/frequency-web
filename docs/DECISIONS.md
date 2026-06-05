@@ -3561,7 +3561,67 @@ rails are `md:hidden` so desktop is untouched.
 
 ---
 
-## ADR-123: Personas + lead flows — the self-identified intake rework
+## ADR-123: Live search overlay (type-ahead) replaces the submit-to-reload search
+
+**Status:** Accepted · `components/search/search-overlay.tsx`, `app/api/search/route.ts`,
+`components/layout/app-shell.tsx` (header triggers + ⌘K). The `/search` page stays as the
+"see all" destination.
+
+**Context.** Search meant navigating to `/search` and submitting a form that reloaded the page per
+query — not "active." We wanted results as you type, reachable from anywhere.
+
+**Decision.**
+- **A full-screen overlay** opened from the header search pill/icon and **⌘K**. Typing
+  (debounced 200ms) hits a new **`/api/search`** route that returns a small slice of
+  **people / posts / events** as JSON; results render live, grouped, with a **"See all results"**
+  link to the existing `/search?q=` page. Mobile-first (fills the screen on a phone, centers on
+  desktop); Esc / backdrop / × close it.
+- **Mounted only while open** (`{searchOpen && <SearchOverlay/>}`), so its state resets each open —
+  no reset-in-effect.
+- **`/api/search`** mirrors the `/search` page queries (admin client, `ilike`), auth-gated, caps at
+  6 per type, and strips `(),` from the term so a stray char can't break the PostgREST `or()` filter.
+
+**Alternatives.** Live-search the `/search` page in place (rejected — an overlay is reachable from
+every page, not just after navigating). A new typed search RPC (deferred — reuse the page's existing
+query shape now; revisit if search needs ranking/perf work).
+
+**Consequences.** Search is instant and global. `/search` remains the deep/linkable results view (and
+the overlay's "see all" target), so nothing is lost. New `/api/search` is the first read endpoint for
+in-app search; if abused it can move behind the AI/RPC boundary later.
+
+---
+
+## ADR-124: Reusable in-page Table of Contents (`PageContents`) — a section navigator for long pages
+
+**Status:** Accepted (v1 on Channels) · `components/templates/page-contents.tsx`,
+`app/(main)/channels/page.tsx`. The seed of the "smart menu that sorts a page's
+sections" — to be applied to Circles / practices / other index pages next.
+
+**Context.** Long index pages (Channels has four Channels, each with many Interests) had no quick way
+to jump between sections on mobile — you scrolled past everything. The ask: a reusable "table of
+contents" that sorts a page's sections (Channels, Circles, practices…) and can apply everywhere.
+
+**Decision.**
+- **`PageContents`** — a sticky, horizontally-scrollable bar of the page's sections that **jumps to
+  them and tracks the active one on scroll** (IntersectionObserver scroll-spy, rooted on the
+  `[data-feed-scroll]` container). Purely additive: the page renders normal sections with `id`s, and
+  passes `{ id, label, count }[]`; the component is the navigation layer over them. Sticks under the
+  app header, full-bleed within the page padding, mobile-first (the *bar* scrolls, not the page).
+- **Proven on Channels first** (the four Channels as the TOC), with `scroll-mt-20` on each section so
+  the sticky bar never covers a section heading on jump. Reusable as-is for any sectioned page.
+
+**Alternatives.** Per-page bespoke jump-lists (rejected — that's what existed, desktop-only, in the
+Channels aside; this generalizes it). Filtered sub-routes per section / "pages within" as real routes
+(deferred — anchor + scroll-spy is the lighter first step; can grow into routed drill-down if needed).
+A heavier filter/sort toolbar (deferred — start with navigation; sorting can layer on).
+
+**Consequences.** Channels is navigable in a tap on mobile; the same one-liner adds a TOC to any long
+page. This is the first piece of the broader "section navigator" the product wants applied site-wide;
+generalizing it (Circles, practices) is now a per-page `sections` array, not new UI.
+
+---
+
+## ADR-125: Personas + lead flows — the self-identified intake rework
 
 **Status:** Accepted · `lib/onboarding/personas.ts`, `lib/onboarding/lead-flows.ts`,
 `app/(marketing)/start/**`, `app/onboarding/beta/{induction,page,actions}.tsx`,
