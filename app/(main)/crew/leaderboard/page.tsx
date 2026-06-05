@@ -93,6 +93,7 @@ async function getLeaderboard(
     .from('profiles')
     .select('id, display_name, handle, avatar_url, current_season_zaps, current_season_rank, current_streak, achievement_count, lifetime_gems')
     .eq('is_active', true)
+    .eq('is_system', false) // hide system accounts (e.g. @moderation) from the board
     .order(orderCol, { ascending: false })
     .limit(isGemsScope ? 50 : limit)
 
