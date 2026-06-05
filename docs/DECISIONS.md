@@ -3532,15 +3532,14 @@ unreachable. We wanted a **matching menu on the right** of the left nav rail to 
 **Decision.** Both edge rails (left nav · right stats) share **one interaction** (`useRailReveal`,
 driven by the feed scroll container):
 - **Hidden at the top of scroll.** Nothing shows until the member scrolls into the feed — then a
-  **super-minimal tab** (`w-6`) slides in to **bracket** the feed on each edge.
-- **Tap the tab → full panel.** Left opens the nav (`w-44`, icons + labels); right opens the stats
-  panel (`w-72`). **Scrolling while full snaps it back to the tab.**
-- **Fixed overlays, not body columns** — so they never permanently inset the feed (the prior paired
-  columns did, which felt tight). The right panel overlays rather than pushes because the cockpit is
-  content-rich and pushing would crush the feed.
-- **A small on/off tick** at the bottom of each full panel turns that rail off entirely; the Menu
-  drawer's two **`RailToggle`s** turn them back on (per-device prefs `freq-rail-nav` /
-  `freq-stats-rail`, default on).
+  **tall (`h-[33vh]`), very-light (`opacity-50`) tab** (`EdgeTab`) floats onto each edge. It's an
+  **overlay** that does **not** push the content — it sits over the margin.
+- **Tap the tab → the side menu opens** (left = nav, right = stats panel).
+- **One-use menu:** selecting a link, clicking anywhere on the panel, or tapping the **light
+  backdrop** (`bg-black/10`) closes it; scrolling also closes it.
+- On/off is a **per-device setting in the Menu drawer** (two `RailToggle`s, prefs `freq-rail-nav` /
+  `freq-stats-rail`, default on). *(Open question: the ask was to move this control into "admin"; for
+  now it stays the per-device drawer toggle.)*
 - **Reuse, don't re-author.** The dock's panel body is factored into a shared **`GameStatsPanel`**
   (today's move · 7-day streak · rank progress · journey arc · the Vault · full-dashboard link), and
   the data assembly into **`loadGameStats(profileId)`** — both consumed by the desktop dock *and* the

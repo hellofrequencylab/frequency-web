@@ -31,7 +31,6 @@ import {
   HelpCircle,
   PanelLeft,
   PanelRight,
-  Check,
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { NotificationBell } from '@/components/layout/notification-bell'
@@ -865,12 +864,13 @@ function MobileTabBar({
 // ── Mobile edge rails (left nav · right stats) ────────────────────────────────
 // Both bracket the feed with the SAME behavior, driven by feed scroll:
 //   • at the TOP of scroll → hidden (nothing shows);
-//   • scrolled INTO the feed → a super-minimal tab slides in on the edge;
-//   • tap the tab → it opens to its FULL panel (left = nav, right = stats);
-//   • scrolling while full → it snaps back to the mini tab.
-// Each has a small on/off tick at the bottom of the full panel to turn it off
-// entirely; the Menu drawer turns it back on. Fixed overlays (not body columns),
-// so they never permanently inset the feed. Mobile only — desktop uses the real rails.
+//   • scrolled INTO the feed → a tall (33vh), very-light tab slides onto the edge.
+//     It's an OVERLAY (doesn't push the content) — it just floats over the margin;
+//   • tap the tab → the side menu opens (left = nav, right = stats);
+//   • it's a "one-use" menu: selecting a link OR clicking anywhere (menu or the
+//     backdrop) closes it; scrolling also snaps it shut.
+// On/off is a per-device setting in the Menu drawer. Mobile only — desktop uses the
+// real rails.
 
 function useRailReveal(enabled: boolean) {
   const [scrolledIn, setScrolledIn] = useState(false)
@@ -885,8 +885,8 @@ function useRailReveal(enabled: boolean) {
       const top = el.scrollTop
       const moved = Math.abs(top - lastTop) > 4
       lastTop = top
-      setScrolledIn(top > 80) // hidden at the top; brackets the feed once scrolled in
-      if (moved) setExpanded(false) // any scroll snaps the full panel back to mini
+      setScrolledIn(top > 80) // hidden at the top; the tab floats in once scrolled
+      if (moved) setExpanded(false) // any scroll closes the open menu
     }
     el.addEventListener('scroll', onScroll, { passive: true })
     return () => el.removeEventListener('scroll', onScroll)
@@ -895,19 +895,23 @@ function useRailReveal(enabled: boolean) {
   return { scrolledIn, expanded, setExpanded }
 }
 
-// The small on/off tick at the bottom of a full panel — turns the rail off entirely.
-function RailOffTick({ onDisable }: { onDisable: () => void }) {
+// The tall, very-light edge tab that floats in on scroll (doesn't push content).
+function EdgeTab({ side, show, onOpen }: { side: 'left' | 'right'; show: boolean; onOpen: () => void }) {
+  const Chevron = side === 'left' ? ChevronRight : ChevronLeft
   return (
     <button
       type="button"
-      onClick={onDisable}
-      title="Hide this rail (turn back on from the Menu)"
-      className="shrink-0 flex items-center justify-center gap-1.5 border-t border-border py-2 text-[11px] font-medium text-subtle hover:bg-surface-elevated hover:text-text transition-colors"
+      onClick={onOpen}
+      aria-label="Open menu"
+      className={`md:hidden fixed top-1/2 z-20 flex h-[33vh] w-7 -translate-y-1/2 items-center justify-center border border-border/50 bg-surface/40 text-muted backdrop-blur-sm transition-[transform,opacity] duration-300 ease-out motion-reduce:transition-none ${
+        side === 'left' ? 'left-0 rounded-r-2xl border-l-0' : 'right-0 rounded-l-2xl border-r-0'
+      } ${
+        show
+          ? 'translate-x-0 opacity-50 hover:opacity-100'
+          : `${side === 'left' ? '-translate-x-full' : 'translate-x-full'} opacity-0 pointer-events-none`
+      }`}
     >
-      <span className="flex h-3.5 w-3.5 items-center justify-center rounded-[4px] border border-current">
-        <Check className="h-2.5 w-2.5" />
-      </span>
-      Shown
+      <Chevron className="h-4 w-4" />
     </button>
   )
 }
@@ -916,16 +920,13 @@ function MobileSideRail({
   isActive,
   onOpenMenu,
   enabled,
-  onDisable,
 }: {
   isActive: (href: string) => boolean
   onOpenMenu: () => void
   enabled: boolean
-  onDisable: () => void
 }) {
   const { scrolledIn, expanded, setExpanded } = useRailReveal(enabled)
   if (!enabled) return null
-  const visible = scrolledIn || expanded
 
   const itemClass = (active: boolean) =>
     `flex items-center gap-3 rounded-xl px-2.5 py-2 text-sm font-medium transition-colors ${
@@ -933,15 +934,24 @@ function MobileSideRail({
     }`
 
   return (
-    <aside
-      aria-label="Quick navigation"
-      className={`md:hidden fixed left-0 top-14 z-20 flex flex-col border-r border-border bg-surface/95 backdrop-blur-sm shadow-lg transition-[transform,width] duration-300 ease-out motion-reduce:transition-none ${
-        visible ? 'translate-x-0' : '-translate-x-full'
-      } ${expanded ? 'w-44' : 'w-6'}`}
-      style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom))' }}
-    >
-      {expanded ? (
-        <>
+    <>
+      <EdgeTab side="left" show={scrolledIn && !expanded} onOpen={() => setExpanded(true)} />
+
+      {/* Side menu — opens on tap; one use: any click (a link, the panel, or the
+          light backdrop) closes it. */}
+      <div className={`md:hidden fixed inset-0 z-30 ${expanded ? '' : 'pointer-events-none'}`} aria-hidden={!expanded}>
+        <div
+          onClick={() => setExpanded(false)}
+          className={`absolute inset-0 bg-black/10 transition-opacity duration-200 ${expanded ? 'opacity-100' : 'opacity-0'}`}
+        />
+        <aside
+          aria-label="Quick navigation"
+          onClick={() => setExpanded(false)}
+          className={`absolute left-0 top-14 flex w-56 max-w-[80vw] flex-col bg-surface shadow-xl transition-transform duration-200 ease-out motion-reduce:transition-none ${
+            expanded ? 'translate-x-0' : '-translate-x-full'
+          }`}
+          style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom))' }}
+        >
           <nav className="flex-1 overflow-y-auto p-2 space-y-0.5">
             {MOBILE_TABS.map((tab) => {
               const Icon = AREA_ICONS[tab.key] ?? Globe
@@ -958,75 +968,49 @@ function MobileSideRail({
               <span className="truncate">More</span>
             </button>
           </nav>
-          <RailOffTick onDisable={onDisable} />
-        </>
-      ) : (
-        // Super-minimal tab — tap to open the full nav.
-        <button
-          type="button"
-          onClick={() => setExpanded(true)}
-          aria-label="Open navigation"
-          className="flex flex-1 items-center justify-center text-subtle hover:bg-surface-elevated hover:text-text transition-colors"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </button>
-      )}
-    </aside>
+        </aside>
+      </div>
+    </>
   )
 }
 
 function MobileStatsMenu({
   children,
   enabled,
-  onDisable,
 }: {
   children: React.ReactNode
   enabled: boolean
-  onDisable: () => void
 }) {
   const { scrolledIn, expanded, setExpanded } = useRailReveal(enabled)
   if (!enabled) return null
-  const visible = scrolledIn || expanded
 
   return (
-    <aside
-      aria-label="Your stats"
-      className={`md:hidden fixed right-0 top-14 z-20 flex flex-col border-l border-border bg-surface/95 backdrop-blur-sm shadow-lg transition-[transform,width] duration-300 ease-out motion-reduce:transition-none ${
-        visible ? 'translate-x-0' : 'translate-x-full'
-      } ${expanded ? 'w-72 max-w-[85vw]' : 'w-6'}`}
-      style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom))' }}
-    >
-      {expanded ? (
-        <>
-          <div className="h-12 shrink-0 flex items-center justify-between gap-2 px-3 border-b border-border">
-            <p className="flex items-center gap-2 text-sm font-bold text-text">
-              <Zap className="h-4 w-4 text-primary fill-current" />
-              Your stats
-            </p>
-            <button
-              type="button"
-              onClick={() => setExpanded(false)}
-              aria-label="Collapse stats"
-              className="rounded-lg p-1 text-subtle hover:text-text hover:bg-surface-elevated transition-colors"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
+    <>
+      <EdgeTab side="right" show={scrolledIn && !expanded} onOpen={() => setExpanded(true)} />
+
+      {/* Stats menu — opens on tap; one use: any click (a link, the panel, or the
+          light backdrop) closes it. */}
+      <div className={`md:hidden fixed inset-0 z-30 ${expanded ? '' : 'pointer-events-none'}`} aria-hidden={!expanded}>
+        <div
+          onClick={() => setExpanded(false)}
+          className={`absolute inset-0 bg-black/10 transition-opacity duration-200 ${expanded ? 'opacity-100' : 'opacity-0'}`}
+        />
+        <aside
+          aria-label="Your stats"
+          onClick={() => setExpanded(false)}
+          className={`absolute right-0 top-14 flex w-72 max-w-[85vw] flex-col bg-surface shadow-xl transition-transform duration-200 ease-out motion-reduce:transition-none ${
+            expanded ? 'translate-x-0' : 'translate-x-full'
+          }`}
+          style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom))' }}
+        >
+          <div className="h-12 shrink-0 flex items-center gap-2 px-3 border-b border-border">
+            <Zap className="h-4 w-4 text-primary fill-current" />
+            <p className="text-sm font-bold text-text">Your stats</p>
           </div>
           <div className="flex-1 overflow-y-auto p-3">{children}</div>
-          <RailOffTick onDisable={onDisable} />
-        </>
-      ) : (
-        // Super-minimal tab — tap to open the stats panel.
-        <button
-          type="button"
-          onClick={() => setExpanded(true)}
-          aria-label="Open your stats"
-          className="flex flex-1 items-center justify-center text-subtle hover:bg-surface-elevated hover:text-text transition-colors"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </button>
-      )}
-    </aside>
+        </aside>
+      </div>
+    </>
   )
 }
 
@@ -1330,17 +1314,10 @@ export default function AppShell({
 
       {/* ── Mobile edge rails (fixed overlays; bracket the feed on scroll) ─── */}
       {!hideAppNav && (
-        <MobileSideRail
-          isActive={isActive}
-          onOpenMenu={() => setDrawerOpen(true)}
-          enabled={railNavOn}
-          onDisable={() => setRail('freq-rail-nav', false)}
-        />
+        <MobileSideRail isActive={isActive} onOpenMenu={() => setDrawerOpen(true)} enabled={railNavOn} />
       )}
       {!hideAppNav && statsPanel && (
-        <MobileStatsMenu enabled={statsRailOn} onDisable={() => setRail('freq-stats-rail', false)}>
-          {statsPanel}
-        </MobileStatsMenu>
+        <MobileStatsMenu enabled={statsRailOn}>{statsPanel}</MobileStatsMenu>
       )}
 
       {/* ── Mobile bottom tab bar ─────────────────────────── */}
