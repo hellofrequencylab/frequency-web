@@ -10,6 +10,7 @@ import { LikeButton } from './like-button'
 import { CommentSection } from './comment-section'
 import { PollSection } from './poll-section'
 import { DetailTemplate } from '@/components/templates/detail-template'
+import { StaffEditButton } from '@/components/ui/staff-edit-button'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -158,6 +159,7 @@ export default async function DispatchDetailPage({ params }: Props) {
               </span>
             </>
           }
+          actions={<StaffEditButton href={`/admin/dispatches?edit=${id}`} label="Edit broadcast" />}
           subtitle={
             <div className="flex items-center gap-2 flex-wrap">
               {author?.avatar_url ? (

@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { HierarchyBreadcrumb } from '@/components/hierarchy/breadcrumb'
 import { StatusBadge } from '@/components/groups/status-badge'
 import { DetailTemplate } from '@/components/templates/detail-template'
+import { StaffEditButton } from '@/components/ui/staff-edit-button'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 
@@ -93,6 +94,7 @@ export default async function NexusPage({
       <DetailTemplate
         title={nexus.name}
         badges={<StatusBadge status={nexus.status} />}
+        actions={<StaffEditButton href={`/admin/nexuses?edit=${nexus.id}`} label="Edit nexus" />}
         subtitle={
           <>
             {nexus.mentor && (

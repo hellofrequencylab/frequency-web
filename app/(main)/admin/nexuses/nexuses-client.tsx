@@ -88,8 +88,11 @@ function NexusForm({ initial, mentors, onSave, onCancel, isPending }: {
   )
 }
 
-export function NexusesClient({ nexuses, mentors }: { nexuses: NexusRow[]; mentors: MentorOption[] }) {
-  const [editingId,  setEditingId]   = useState<string | null>(null)
+export function NexusesClient({ nexuses, mentors, initialEditId = null }: { nexuses: NexusRow[]; mentors: MentorOption[]; initialEditId?: string | null }) {
+  // Honor a ?edit=<id> deep-link (the "Edit nexus" button on the nexus page).
+  const [editingId,  setEditingId]   = useState<string | null>(
+    initialEditId && nexuses.some((n) => n.id === initialEditId) ? initialEditId : null,
+  )
   const [isPending,  startTransition] = useTransition()
 
   return (
