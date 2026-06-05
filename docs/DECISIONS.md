@@ -3682,6 +3682,72 @@ not a replacement. Operator-facing "how to assign a lead flow" guidance belongs 
 (Training & Strategy), linked back to LEAD-FLOWS.md as source of truth.
 
 ---
+
+## ADR-126: Embedded per-page admin panel replaces the centralized `/admin` section
+
+**Status:** Accepted — build pending · Full spec: [EMBEDDED-ADMIN.md](EMBEDDED-ADMIN.md).
+Builds on the capability resolver (`lib/core/capabilities.ts`, CAPABILITIES-AND-MOBILE.md)
+and the five-template / declarative-chrome kit (PAGE-FRAMEWORK §8, ADR-090). Refines
+CAPABILITIES-AND-MOBILE.md §2 and PAGE-FRAMEWORK §3/§6; supersedes the deep-link half of
+ADR-119. This is the "inline-admin work (Phase 1)" that `lib/core/capabilities.ts:17-19`
+was written to anticipate.
+
+**Context.** Admin is a place you *go to*: the `/admin/*` route group — ~21 surfaces, a
+two-layer nav (categories in the rail, pages as sub-tabs), one catalog (`sections.ts`),
+gated by `requireAdmin('host')`. Running one circle means leaving the circle for a
+separate section. Meanwhile the policy layer that could put admin *on the page* already
+exists (`resolveCapabilities(viewer, scope)`), with scattered first cuts shipped
+(`StaffEditButton`, `CircleHostMenu`, the `Can` gate). CAPABILITIES-AND-MOBILE §2 had
+argued for inline edit-in-place with "no admin tab" — but in practice that fragments
+admin into many bespoke inline buttons and still keeps a separate Janitor-only section.
+
+**Decision.** Admin becomes a thing you *do where you are*.
+- **A per-page Admin panel for every capable tier.** An always-present **Admin** button
+  (global header, shown only when the viewer holds an admin-grade capability for the
+  page's scope) opens a right **slide-out** whose contents are
+  `modulesFor(scope, resolveCapabilities(viewer, scope))`. **Tiers are filtering, not
+  branching** — same `AdminModuleCard` box format, more boxes (host ~3, janitor ~9).
+- **Panel + light inline.** Quick single-field edits stay inline where the thing lives;
+  the panel is the consolidated home for the full per-tier set. Both gated by the *same*
+  caps, enforced by the *same* server actions.
+- **A declarative `AdminModule` registry** (`lib/admin/modules/`) — each module tagged
+  `{ scopes, requiredCapability, slot, order, Component }`, gated on the resolved
+  **capability** (not a flat `minRole`, so per-scope leadership flows through). Mirrors
+  the `ADMIN_GROUPS` catalog shape; declared once, can't orphan.
+- **Overlay `Sheet` primitive** (`components/ui/sheet.tsx`), hand-rolled on existing tech
+  (no drawer dep installed), with the focus-trap / ESC / scroll-lock the current dialogs
+  lack. Content streams in as **server children of a client drawer** (the donut) via a
+  Next 16 `@admin` parallel-route slot — no other tier's UI reaches the client bundle.
+- **`/admin` is retired.** Platform-only surfaces (Members, Roles, AI, Demo, Vera,
+  analytics, QR) move into a single global **Platform admin** panel from the header.
+- **Capabilities stay law server-side.** The registry's `requiredCapability` is UX
+  metadata; every action re-resolves capabilities before mutating (the `inviteByEmail`
+  pattern). Scattered `janitor()`/`hasRole()` guards converge onto the resolver.
+
+**Alternatives.** Keep edit-strictly-in-place with no panel (rejected — CAPABILITIES-AND-MOBILE
+§2's original stance; fragments admin into bespoke per-field buttons and keeps a separate
+section for the long tail). Deep-link to the central editor (ADR-119; superseded — the
+section it links to is being retired; the panel reuses the same actions in place). Put the
+trigger in `PageHeading.actions` (rejected — would require editing every template; the
+header sits above the template layer and appears once for all five). Add a DB
+`module_key → min_role` permission grid (deferred — capabilities are code-driven today;
+the `area_permissions` override pattern can be copied later if config-driven tiers are
+ever needed). Add a drawer dependency like Radix/vaul (rejected — none installed; the app
+hand-rolls overlays, and SCALE-ARCHITECTURE's "own the components" posture applies).
+
+**Consequences.** Net-new: `Sheet`, `AdminModuleCard`, the `AdminModule` registry,
+`lib/admin/page-admin.ts` (`adminFor`, sibling to `railFor`, locked by `page-admin.test.ts`),
+the `@admin` parallel slot, and `hub`/`nexus` capability loaders + a `loadCapabilitiesForScope`
+dispatcher in `load-capabilities.ts` (the one gap — the resolver handles those scopes, the
+loaders don't exist yet). New `Scope` kinds (`event`, `channel`) get added as those pages
+gain panels. The panel is **orthogonal to `railFor()`** (overlay, `z-50`/`z-40`, portaled) so
+it coexists with global/scoped/none rails — it must NOT be added to the chrome map. Rollout
+is additive and per-surface (framework → Circles pilot → scoped surfaces → Platform panel →
+remove `/admin`). Docs to update on ship: CAPABILITIES-AND-MOBILE §2, PAGE-FRAMEWORK §3/§6,
+DESIGN.md (kit entry), DEVELOPMENT-MAP.md, and a Notion operator page (instructional) linking
+back to EMBEDDED-ADMIN.md as source of truth.
+
+---
 ### Decisions intentionally NOT duplicated here
 
 Already fully covered by the repo docs (no ADR needed): the RLS / admin-client
