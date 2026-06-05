@@ -3863,11 +3863,12 @@ telemetry-loss bug and should migrate to `after()`.
 **Status:** Accepted · shipped in `lib/crm/{person,journey,visibility,people-search}.ts`,
 `app/(main)/marketing/contacts/[id]/**`, the contacts list search, `/api/search` +
 `search-overlay`, the `/people` directory, and migration
-`20260606170000_person_identity_stitch.sql` (backfill written; applied in a separate reviewed
-step — the resolver also stitches at read time, so the feature works before it runs). Builds on
-the three-table identity model (NETWORK-CRM.md, ADR-098/099), the engagement ledger (ADR-025),
-and acquisition first-touch (ADR-095). Full spec: [NETWORK-CRM.md](NETWORK-CRM.md) "Unified
-person".
+`20260606170000_person_identity_stitch.sql` (✅ **applied** to `Frequency Community` 2026-06-05,
+recorded `person_identity_stitch`; idempotent — it backfilled 0 rows on current data since
+scan/signup already set the links, and created the three lookup indexes; the resolver also
+stitches at read time, so the feature works regardless). Builds on the three-table identity model
+(NETWORK-CRM.md, ADR-098/099), the engagement ledger (ADR-025), and acquisition first-touch
+(ADR-095). Full spec: [NETWORK-CRM.md](NETWORK-CRM.md) "Unified person".
 
 **Context.** A person captured via Card Scan / Profile Entry or seen via a QR scan shows up in
 the CRM (`contacts`, `source='scan_invite'`) but **cannot be found in the app's search** —
