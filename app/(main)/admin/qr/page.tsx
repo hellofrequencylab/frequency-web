@@ -14,6 +14,7 @@ import type { StudioLink, NodeOption, PickOption } from './dynamic-links'
 import type { AnalyticsData } from './analytics'
 import type { CampaignCard, CampaignCodeOption } from './campaigns'
 import type { MemberProfileCode } from './member-profile-codes'
+import type { MarketingCodeAdmin } from './marketing-codes-admin'
 
 export const dynamic = 'force-dynamic'
 
@@ -73,6 +74,9 @@ export default async function QrStudioPage() {
   const allCodes = links ?? []
   const adminLinkRows = allCodes.filter((l) => !l.owner_profile_id && !l.purpose)
   const memberConnectRows = allCodes.filter((l) => l.purpose === 'connect')
+  // Crew marketing funnels: owner set, no purpose. Member-created on /codes, but
+  // surfaced here so operators can oversee, restyle, pause, or retire them.
+  const marketingRows = allCodes.filter((l) => l.owner_profile_id && !l.purpose)
 
   const summary = summarizeScans((scans ?? []) as ScanRow[])
   const nodeLabels = new Map((nodes ?? []).map((n) => [n.id, n.label ?? `${n.type} code`]))
@@ -155,14 +159,20 @@ export default async function QrStudioPage() {
   const campaignIds = campaignRows.map((c) => c.id)
   const [{ data: campCodes }, { data: campProgress }] = await Promise.all([
     campaignIds.length
-      ? db.from('challenge_qr_codes').select('challenge_id').in('challenge_id', campaignIds)
-      : Promise.resolve({ data: [] as { challenge_id: string }[] }),
+      ? db.from('challenge_qr_codes').select('challenge_id, qr_code_id').in('challenge_id', campaignIds)
+      : Promise.resolve({ data: [] as { challenge_id: string; qr_code_id: string }[] }),
     campaignIds.length
       ? db.from('challenge_progress').select('challenge_id, completed_at').in('challenge_id', campaignIds)
       : Promise.resolve({ data: [] as { challenge_id: string; completed_at: string | null }[] }),
   ])
   const codeCount = new Map<string, number>()
-  for (const r of campCodes ?? []) codeCount.set(r.challenge_id, (codeCount.get(r.challenge_id) ?? 0) + 1)
+  const codeIdsByChallenge = new Map<string, string[]>()
+  for (const r of campCodes ?? []) {
+    codeCount.set(r.challenge_id, (codeCount.get(r.challenge_id) ?? 0) + 1)
+    const ids = codeIdsByChallenge.get(r.challenge_id) ?? []
+    ids.push(r.qr_code_id)
+    codeIdsByChallenge.set(r.challenge_id, ids)
+  }
   const compCount = new Map<string, number>()
   const progCount = new Map<string, number>()
   for (const p of campProgress ?? []) {
@@ -180,6 +190,7 @@ export default async function QrStudioPage() {
     inProgress: progCount.get(c.id) ?? 0,
     validFrom: c.valid_from,
     validUntil: c.valid_until,
+    codeIds: codeIdsByChallenge.get(c.id) ?? [],
   }))
   const campaignCodes: CampaignCodeOption[] = initialLinks.map((l) => ({
     id: l.id,
@@ -187,7 +198,11 @@ export default async function QrStudioPage() {
   }))
 
   // ── Member profile codes (one auto-generated code per member) ────────────────
-  const ownerIds = [...new Set(memberConnectRows.map((r) => r.owner_profile_id).filter(Boolean))] as string[]
+  const ownerIds = [
+    ...new Set(
+      [...memberConnectRows, ...marketingRows].map((r) => r.owner_profile_id).filter(Boolean),
+    ),
+  ] as string[]
   const { data: owners } = ownerIds.length
     ? await db.from('profiles').select('id, handle, display_name, vcard').in('id', ownerIds)
     : { data: [] as { id: string; handle: string; display_name: string; vcard: unknown }[] }
@@ -208,6 +223,38 @@ export default async function QrStudioPage() {
         svg: renderStyledQrSvg(url, style, 140),
         style,
         vcard: parseVcard(o?.vcard),
+      }
+    })
+
+  // ── Marketing funnel codes (crew-owned, point at a circle/event) ─────────────
+  const circleBySlug = new Map((circleRows ?? []).map((c) => [c.slug, c.name]))
+  const eventBySlug = new Map((eventRows ?? []).map((e) => [e.slug, e.title]))
+  function targetLabel(path: string | null): string {
+    if (!path) return '—'
+    const circle = path.match(/^\/circles\/([\w-]+)$/)
+    if (circle) return circleBySlug.get(circle[1]) ?? path
+    const event = path.match(/^\/events\/([\w-]+)$/)
+    if (event) return eventBySlug.get(event[1]) ?? path
+    return path
+  }
+  const marketingCodes: MarketingCodeAdmin[] = marketingRows
+    .filter((r) => r.owner_profile_id)
+    .map((r) => {
+      const style = parseStyle(r.style)
+      const url = shortLinkUrl(r.slug)
+      const o = ownerMap.get(r.owner_profile_id!)
+      return {
+        id: r.id,
+        title: r.title || `/q/${r.slug}`,
+        slug: r.slug,
+        url,
+        handle: o?.handle ?? '—',
+        displayName: o?.display_name ?? '',
+        targetLabel: targetLabel(r.target_url),
+        scans: r.scan_count,
+        active: r.active,
+        svg: renderStyledQrSvg(url, style, 140),
+        style,
       }
     })
 
@@ -232,6 +279,7 @@ export default async function QrStudioPage() {
         linkProps={{ initialLinks, nodes: nodeOptions, circles: circleOptions, events: eventOptions, partners: partners ?? [] }}
         campaignProps={{ campaigns, codes: campaignCodes }}
         memberCodes={memberCodes}
+        marketingCodes={marketingCodes}
         analytics={analytics}
       />
     </AdminPage>

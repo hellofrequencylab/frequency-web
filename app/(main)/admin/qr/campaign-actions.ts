@@ -79,6 +79,56 @@ export async function createCampaign(input: CampaignInput): Promise<ActionResult
   return ok({ id: challenge.id })
 }
 
+export async function updateCampaign(id: string, input: CampaignInput): Promise<ActionResult> {
+  await requireAdmin('host')
+
+  const title = input.title.trim()
+  if (!title) return fail('Give the campaign a name.')
+  const codeIds = [...new Set(input.codeIds)].filter(Boolean)
+  if (codeIds.length === 0) return fail('Select at least one code for the hunt.')
+  const reward = Number.isFinite(input.rewardZaps) ? Math.max(0, Math.round(input.rewardZaps)) : 0
+  const target =
+    input.mode === 'collect_all'
+      ? codeIds.length
+      : Math.min(Math.max(1, Math.round(input.target || 1)), codeIds.length)
+
+  const db = createAdminClient()
+  // Guard: only edit QR campaigns, never a seeded season challenge.
+  const { data: c } = await db.from('season_challenges').select('criteria').eq('id', id).maybeSingle()
+  if (((c?.criteria as Record<string, unknown> | null)?.type ?? null) !== 'qr_scan') {
+    return fail('Not a QR campaign.')
+  }
+
+  const { error } = await db
+    .from('season_challenges')
+    .update({
+      name: title,
+      description: input.description.trim() || `Scan ${target} of ${codeIds.length} codes`,
+      target,
+      zaps_reward: reward,
+      valid_from: input.validFrom || null,
+      valid_until: input.validUntil || null,
+    })
+    .eq('id', id)
+  if (error) return fail('Could not save the campaign.')
+
+  // Diff the code set (add new, drop removed).
+  const { data: existing } = await db.from('challenge_qr_codes').select('qr_code_id').eq('challenge_id', id)
+  const have = new Set((existing ?? []).map((r) => r.qr_code_id))
+  const want = new Set(codeIds)
+  const toAdd = codeIds.filter((x) => !have.has(x))
+  const toRemove = [...have].filter((x) => !want.has(x))
+  if (toAdd.length) {
+    await db.from('challenge_qr_codes').insert(toAdd.map((qr_code_id) => ({ challenge_id: id, qr_code_id })))
+  }
+  if (toRemove.length) {
+    await db.from('challenge_qr_codes').delete().eq('challenge_id', id).in('qr_code_id', toRemove)
+  }
+
+  revalidatePath('/admin/qr')
+  return ok()
+}
+
 export async function deleteCampaign(id: string): Promise<ActionResult> {
   await requireAdmin('host')
   const db = createAdminClient()
