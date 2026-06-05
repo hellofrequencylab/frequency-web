@@ -61,6 +61,7 @@ export default async function DispatchDetailPage({ params }: Props) {
   // Audience name, likes, comments, poll options. All parallel
   const [audienceRes, likesRes, myLikeRes, commentsRes, pollOptionsRes] = await Promise.all([
     (async () => {
+      if (!dispatch.audience_id) return null // global dispatch — no scoped audience row
       const table: 'circles' | 'hubs' | 'nexuses' =
         dispatch.audience_scope === 'circle' ? 'circles' :
         dispatch.audience_scope === 'hub'    ? 'hubs'    : 'nexuses'

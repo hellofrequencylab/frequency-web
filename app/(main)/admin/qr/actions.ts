@@ -129,14 +129,16 @@ export async function updateNode(id: string, input: NodeInput): Promise<ActionRe
   const { error } = await db.from('nodes').update({ ...row, ...secretPatch }).eq('id', id)
   if (error) return fail('Could not save changes.')
 
-  // Set or clear the geofence (null lat/lng clears the proximity requirement).
+  // Set or clear the geofence (null lat/lng clears the proximity requirement — the
+  // SQL fn branches on `p_lng is null`). gen-types can't see that the function's
+  // params are nullable, so it types them non-null; cast to pass the intended nulls.
   const geo = cleanGeo(input)
   await db.rpc('set_node_geo', {
     p_node_id: id,
     p_lng: geo?.lng ?? null,
     p_lat: geo?.lat ?? null,
     p_proximity_m: geo?.proximityM ?? null,
-  })
+  } as unknown as { p_node_id: string; p_lng: number; p_lat: number; p_proximity_m: number })
 
   revalidatePath('/admin/qr')
   return ok()
