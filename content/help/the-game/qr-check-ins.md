@@ -22,8 +22,9 @@ You'll see Frequency QR codes on posters, plaques, and at events.
 - You'll land on a check-in page. Tap **Claim** to earn your **zaps**.
 - A check-in also counts as a **verified practice** — proof you really showed up.
 
-Each code sets its own rules: some you can claim once, some every time you visit.
-If a code has expired or you've already claimed it, the page will tell you.
+Each code sets its own rules: some you can claim once, some every time you visit,
+and some are limited to the first set number of people. If a code has expired,
+you've already claimed it, or it's reached its limit, the page will tell you.
 
 Some codes are **location-aware** — you can only claim them while you're actually
 there. Your phone may ask to share your location when you tap **Claim**; if you're
