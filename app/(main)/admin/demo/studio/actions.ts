@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { atLeastRole } from '@/lib/core/roles'
@@ -50,7 +51,8 @@ export async function seedArea(spec: AreaSpec) {
 // Bounding box (no PostGIS needed): ~1mi ≈ 0.0145° lat, longitude scaled by cos(lat).
 export async function purgeArea(centerLat: number, centerLng: number, radiusMi: number) {
   await requireJanitor()
-  const d = createAdminClient()
+  // Untyped cast: hubs.is_demo isn't in the generated types yet (cast pattern).
+  const d = createAdminClient() as unknown as SupabaseClient
   const dLat = radiusMi * 0.0145
   const dLng = dLat / Math.max(0.2, Math.cos((centerLat * Math.PI) / 180))
 
@@ -69,8 +71,12 @@ export async function purgeArea(centerLat: number, centerLng: number, radiusMi: 
   await d.from('posts').delete().eq('is_demo', true).in('scope_id', ids)
   await d.from('events').delete().eq('is_demo', true).in('scope_id', ids)
   await d.from('circles').delete().eq('is_demo', true).in('id', ids)
+  // Demo hubs (run by a demo guide who's a member of these circles) — delete after
+  // the circles (circles.hub_id is NO ACTION) and before profiles (guide_id SET NULL).
+  if (profileIds.length) await d.from('hubs').delete().eq('is_demo', true).in('guide_id', profileIds)
   // Demo journeys have no is_demo column; identify them by their demo author and
   // delete BEFORE the profiles (author_id is ON DELETE SET NULL, not cascade).
+  // Friendships, dispatches, and wall posts all cascade from the demo author.
   await deletePlansByAuthors(profileIds)
   if (profileIds.length) await d.from('profiles').delete().eq('is_demo', true).in('id', profileIds)
 
