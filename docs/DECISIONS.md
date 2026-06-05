@@ -2992,6 +2992,38 @@ steps on this engine.
 
 ---
 
+## ADR-106: UTM / source passthrough — per-code source tag + acquisition persisted at signup
+
+**Status:** Accepted · `supabase/migrations/20260605140000_qr_source_passthrough.sql`,
+`lib/attribution/acquisition.ts`, `app/q/[slug]/route.ts`, `app/onboarding/actions.ts`,
+`app/(main)/admin/qr/{link-actions,dynamic-links}.tsx`. Extends first-touch attribution (ADR-095).
+
+**Context.** First-touch capture (ADR-095) already wrote UTM/referrer/landing into the
+`fq_attr` cookie at the edge — but (a) a QR/NFC scan carried no per-code identity, so two
+posters of the same campaign were indistinguishable, and (b) the cookie was never
+**persisted**, so once it expired the acquisition was lost and un-queryable. The ask:
+"a signup traces back to the specific poster."
+
+**Decision.** Two additive columns, no new entity:
+- **`qr_codes.source_tag`** — an operator label per code (e.g. `downtown-poster-a`), set
+  in the dynamic-link form. On an **anonymous** scan the `/q` resolver stamps it into the
+  first-touch cookie (`utm.campaign = source_tag`, `code = slug`) — but only when no
+  prior `fq_attr` exists, preserving ADR-095's *first-touch-wins* rule.
+- **`profiles.acquisition` (jsonb)** — at onboarding, `persistAcquisition` decodes
+  `fq_attr` + the `fq_src` channel hint and snapshots them onto the profile **once**
+  (skips if already set). Best-effort, never blocks signup.
+
+**Alternatives.** A dedicated `acquisitions` table (rejected — one immutable snapshot per
+profile is a column, not a table); stamping every scan regardless of prior touch (rejected
+— breaks first-touch immutability, last-poster would clobber the real entry point).
+
+**Consequences.** Acquisition is now permanently traceable to a campaign / poster / code,
+queryable off `profiles.acquisition` long after the cookie expires. Reporting UI over the
+snapshot (a per-source signup leaderboard) is the natural follow-up. Regenerate DB types
+to formalize the two new columns later.
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 

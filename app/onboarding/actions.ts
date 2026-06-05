@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { sendWelcomeEmail } from '@/lib/email'
 import { sanitizeProfileInput } from '@/lib/profile-input'
 import { applyReferralAttribution } from '@/lib/qr/referral'
+import { persistAcquisition } from '@/lib/attribution/acquisition'
 
 export async function completeOnboarding(data: {
   displayName: string
@@ -45,8 +46,12 @@ export async function completeOnboarding(data: {
     throw new Error(error.message)
   }
 
-  // Credit the referrer if this member arrived via a scanned referral code.
-  if (updated?.id) await applyReferralAttribution(updated.id)
+  // Credit the referrer if this member arrived via a scanned referral code, and
+  // snapshot first-touch acquisition (campaign / poster / code) onto the profile.
+  if (updated?.id) {
+    await applyReferralAttribution(updated.id)
+    await persistAcquisition(updated.id).catch(() => {})
+  }
 
   // Fire welcome email. Non-blocking, never throws
   if (user.email) {

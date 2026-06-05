@@ -36,7 +36,7 @@ export default async function QrStudioPage() {
       db.from('captures').select('node_id').eq('verified', true),
       db
         .from('qr_codes')
-        .select('id, slug, title, destination_type, target_url, alt_target_url, switch_at, node_id, circle_id, event_id, partner_id, active, valid_until, scan_count, style, purpose, owner_profile_id, created_at')
+        .select('id, slug, title, destination_type, target_url, alt_target_url, switch_at, node_id, circle_id, event_id, partner_id, active, valid_until, scan_count, style, purpose, owner_profile_id, source_tag, created_at')
         .order('created_at', { ascending: false }),
       db.from('qr_scans').select('qr_code_id, profile_id, scanned_at, medium'),
       db.from('partners').select('id, name').order('name'),
@@ -126,6 +126,7 @@ export default async function QrStudioPage() {
         partner_id: l.partner_id,
         active: l.active,
         valid_until: l.valid_until,
+        source_tag: l.source_tag,
         scans: l.scan_count,
         unique: stat?.unique ?? 0,
         style,

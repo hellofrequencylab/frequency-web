@@ -4,7 +4,13 @@ import { getMyProfileId } from '@/lib/auth'
 import { isCodeLive } from '@/lib/qr/codes'
 import { track } from '@/lib/analytics/track'
 import { recordEngagementEvent } from '@/lib/engagement/events'
-import { CHANNEL_COOKIE, FIRST_TOUCH_MAX_AGE } from '@/lib/attribution/first-touch'
+import {
+  CHANNEL_COOKIE,
+  FIRST_TOUCH_COOKIE,
+  FIRST_TOUCH_MAX_AGE,
+  encodeFirstTouch,
+  type FirstTouch,
+} from '@/lib/attribution/first-touch'
 import { joinCircle } from '@/app/(main)/circles/actions'
 import { checkInEvent } from '@/app/(main)/events/actions'
 
@@ -26,7 +32,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
 
   const { data: code } = await admin
     .from('qr_codes')
-    .select('id, active, valid_from, valid_until, destination_type, target_url, alt_target_url, switch_at, node_id, circle_id, event_id, purpose, owner_profile_id')
+    .select('id, active, valid_from, valid_until, destination_type, target_url, alt_target_url, switch_at, node_id, circle_id, event_id, purpose, owner_profile_id, source_tag')
     .eq('slug', slug)
     .maybeSingle()
 
@@ -75,10 +81,26 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
   // signup is attributed at onboarding (app/onboarding/actions.ts). A signed-in
   // member is already here, so there's nothing to attribute.
   const creditOwner = !profileId && !!code.owner_profile_id
+  const hasFirstTouch = (request.headers.get('cookie') ?? '').includes(`${FIRST_TOUCH_COOKIE}=`)
   const withReferral = (res: NextResponse) => {
     // Mark the channel for any anonymous scan (ADR-095) — attribution at signup.
     if (!profileId) {
       res.cookies.set(CHANNEL_COOKIE, 'qr_scan', { path: '/', maxAge: FIRST_TOUCH_MAX_AGE, sameSite: 'lax' })
+      // First-touch wins: stamp the code/source only if no prior touch exists, so the
+      // eventual signup traces to THIS poster (ADR-106). Persisted at onboarding.
+      if (!hasFirstTouch) {
+        const touch: FirstTouch = {
+          ts: new Date().toISOString(),
+          landing: `/q/${slug}`.slice(0, 200),
+          code: slug,
+          utm: { source: 'qr_scan', ...(code.source_tag ? { campaign: code.source_tag } : {}) },
+        }
+        res.cookies.set(FIRST_TOUCH_COOKIE, encodeFirstTouch(touch), {
+          path: '/',
+          maxAge: FIRST_TOUCH_MAX_AGE,
+          sameSite: 'lax',
+        })
+      }
     }
     if (creditOwner && code.owner_profile_id) {
       res.cookies.set('fq_ref', code.owner_profile_id, {
