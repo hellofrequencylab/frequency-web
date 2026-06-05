@@ -9,7 +9,7 @@ import { randomBytes } from 'crypto'
 const SLUG_ALPHABET = '23456789abcdefghjkmnpqrstuvwxyz'
 const SLUG_RE = /^[a-z0-9-]{3,48}$/
 
-export type DestinationType = 'url' | 'node'
+export type DestinationType = 'url' | 'node' | 'circle' | 'event'
 
 /** A random, unambiguous slug for the /q/<slug> short link. */
 export function generateSlug(length = 7): string {

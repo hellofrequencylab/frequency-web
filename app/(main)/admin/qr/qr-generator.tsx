@@ -4,11 +4,21 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { MapPin, Link2, QrCode } from 'lucide-react'
 import { NodeForm, type PartnerOption } from './qr-studio'
-import { LinkForm, type NodeOption } from './dynamic-links'
+import { LinkForm, type NodeOption, type PickOption } from './dynamic-links'
 
 // The QR generator that sits at the TOP of the Studio dashboard. Pick a type, lay
 // out all the options + design, create — and it drops into its category below.
-export function QrGenerator({ partners, nodes }: { partners: PartnerOption[]; nodes: NodeOption[] }) {
+export function QrGenerator({
+  partners,
+  nodes,
+  circles,
+  events,
+}: {
+  partners: PartnerOption[]
+  nodes: NodeOption[]
+  circles: PickOption[]
+  events: PickOption[]
+}) {
   const [kind, setKind] = useState<'link' | 'node'>('link')
   const router = useRouter()
   const done = () => router.refresh()
@@ -34,7 +44,7 @@ export function QrGenerator({ partners, nodes }: { partners: PartnerOption[]; no
       </div>
       <div className="p-4">
         {kind === 'link' ? (
-          <LinkForm nodes={nodes} partners={partners} onDone={done} onCancel={done} />
+          <LinkForm nodes={nodes} circles={circles} events={events} partners={partners} onDone={done} onCancel={done} />
         ) : (
           <NodeForm partners={partners} onDone={done} onCancel={done} />
         )}
