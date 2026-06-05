@@ -10,7 +10,7 @@
 // render each module's Component. The catalog + filter are the durable seam.
 
 import type { LucideIcon } from 'lucide-react'
-import { Settings } from 'lucide-react'
+import { Settings, Building2, Network } from 'lucide-react'
 import type { Capability, Scope } from '@/lib/core/capabilities'
 
 /** The Scope union's discriminant — where a module can attach. */
@@ -50,6 +50,26 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     Icon: Settings,
     scopes: ['circle'],
     requiredCapability: 'circle.editSettings',
+    slot: 'settings',
+    order: 10,
+  },
+  {
+    id: 'hub.settings',
+    label: 'Hub settings',
+    desc: 'Name and status — edited in place.',
+    Icon: Building2,
+    scopes: ['hub'],
+    requiredCapability: 'hub.manage',
+    slot: 'settings',
+    order: 10,
+  },
+  {
+    id: 'nexus.settings',
+    label: 'Nexus settings',
+    desc: 'Name, capacity, and status — edited in place.',
+    Icon: Network,
+    scopes: ['nexus'],
+    requiredCapability: 'nexus.manage',
     slot: 'settings',
     order: 10,
   },

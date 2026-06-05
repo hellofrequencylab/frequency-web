@@ -6,6 +6,8 @@ import type { Capability, Scope } from '@/lib/core/capabilities'
 // not a per-role branch. These lock that contract.
 
 const circleScope: Scope = { kind: 'circle', circleId: 'c1', hostId: 'h1' }
+const hubScope: Scope = { kind: 'hub', hubId: 'hub1' }
+const nexusScope: Scope = { kind: 'nexus', nexusId: 'nx1' }
 
 describe('admin module registry', () => {
   it('surfaces circle.settings to a viewer holding circle.editSettings', () => {
@@ -24,6 +26,21 @@ describe('admin module registry', () => {
     const caps = new Set<Capability>(['circle.editSettings'])
     expect(modulesFor({ kind: 'global' }, caps)).toHaveLength(0)
     expect(modulesFor({ kind: 'profile', ownerId: 'p1' }, caps)).toHaveLength(0)
+  })
+
+  it('surfaces hub.settings only on a hub scope, only with hub.manage', () => {
+    const manage = new Set<Capability>(['hub.manage'])
+    expect(modulesFor(hubScope, manage).map((m) => m.id)).toEqual(['hub.settings'])
+    expect(modulesFor(hubScope, new Set<Capability>())).toHaveLength(0)
+    // hub.manage must not leak the circle module, and circle caps must not leak hub.
+    expect(modulesFor(circleScope, manage)).toHaveLength(0)
+  })
+
+  it('surfaces nexus.settings only on a nexus scope, only with nexus.manage', () => {
+    const manage = new Set<Capability>(['nexus.manage'])
+    expect(modulesFor(nexusScope, manage).map((m) => m.id)).toEqual(['nexus.settings'])
+    expect(modulesFor(nexusScope, new Set<Capability>())).toHaveLength(0)
+    expect(showsAdminPanel(nexusScope, manage)).toBe(true)
   })
 
   it('returns modules ordered by their `order` field', () => {

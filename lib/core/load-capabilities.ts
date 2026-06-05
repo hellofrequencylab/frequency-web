@@ -90,6 +90,59 @@ export async function getCircleCapabilities(
   })
 }
 
+/** What the caller can do on a specific Hub. hub.manage goes to its guide, a
+ *  mentor who leads the parent nexus, or a janitor (resolver). */
+export async function getHubCapabilities(
+  hubId: string,
+  opts?: { viewerManagesParent?: boolean },
+): Promise<Set<Capability>> {
+  const viewer = await currentViewer()
+  const admin = createAdminClient()
+
+  const { data: hub } = await admin
+    .from('hubs')
+    .select('guide_id, nexus_id')
+    .eq('id', hubId)
+    .maybeSingle()
+
+  // A mentor who leads the parent nexus manages this hub too.
+  let viewerManagesParent = opts?.viewerManagesParent ?? false
+  if (!viewerManagesParent && viewer.profileId && viewer.role === 'mentor' && hub?.nexus_id) {
+    const { data: nexus } = await admin
+      .from('nexuses')
+      .select('mentor_id')
+      .eq('id', hub.nexus_id)
+      .maybeSingle()
+    if (nexus?.mentor_id === viewer.profileId) viewerManagesParent = true
+  }
+
+  return resolveCapabilities(viewer, {
+    kind: 'hub',
+    hubId,
+    guideId: hub?.guide_id ?? null,
+    viewerManagesParent,
+  })
+}
+
+/** What the caller can do on a specific Nexus. nexus.manage goes to its mentor or
+ *  a janitor (resolver). */
+export async function getNexusCapabilities(nexusId: string): Promise<Set<Capability>> {
+  const viewer = await currentViewer()
+  const admin = createAdminClient()
+
+  const { data: nexus } = await admin
+    .from('nexuses')
+    .select('mentor_id')
+    .eq('id', nexusId)
+    .maybeSingle()
+
+  return resolveCapabilities(viewer, {
+    kind: 'nexus',
+    nexusId,
+    mentorId: nexus?.mentor_id ?? null,
+  })
+}
+
 /** What the caller can do on a profile (edit-in-place gating). */
 export async function getProfileCapabilities(ownerId: string): Promise<Set<Capability>> {
   return resolveCapabilities(await currentViewer(), { kind: 'profile', ownerId })
