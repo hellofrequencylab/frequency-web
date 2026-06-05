@@ -12,9 +12,13 @@ import { createAdminClient } from '@/lib/supabase/admin'
 // Keeping them out is the guard: every editor route, the Pages directory, and
 // publish/draft/unpublish gate on `isEditableSlug`, so the coded page is the single
 // source of truth.
+// Only pages with a faithful editor template (so the editor matches what's live)
+// belong here. `how-it-works` was a retired server redirect (→ /the-community), so
+// editing it did nothing — removed. `the-community` + `the-quest` are being ported
+// into the block library ("editor = live"); they'll be added as each port lands.
 export const EDITABLE_PAGES = [
   { slug: 'the-lab', title: 'The Lab', path: '/the-lab' },
-  { slug: 'how-it-works', title: 'How it works', path: '/how-it-works' },
+  { slug: 'the-community', title: 'The Community', path: '/the-community' },
 ] as const
 
 export type EditableSlug = (typeof EDITABLE_PAGES)[number]['slug']
