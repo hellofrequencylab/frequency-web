@@ -1,12 +1,13 @@
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Zap, TrendingUp, Award, Flame, Gem } from 'lucide-react'
+import { Zap, TrendingUp, Award, Flame, Gem, QrCode, UserPlus, Filter } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { getRankDef, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
 import { getInitials } from '@/lib/utils'
 import { LeaderboardTabs } from './leaderboard-tabs'
+import { listEntryPointLeaderboard, signupsToNextTier } from '@/lib/entry-points/leaderboard'
 import { IndexTemplate } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
 
@@ -144,6 +145,82 @@ export default async function LeaderboardPage({
 
   const params = await searchParams
   const scope = params.scope ?? 'circle'
+
+  // Entry-point recruiter board (ADR-134): different metrics (scans + signups + tier),
+  // so it renders its own table rather than the season-zaps layout.
+  if (scope === 'entrypoints') {
+    const rows = await listEntryPointLeaderboard(50)
+    const myIdx = rows.findIndex((r) => r.id === profile.id)
+    const me = myIdx >= 0 ? rows[myIdx] : null
+    const nextTier = me ? signupsToNextTier(me.signups) : null
+
+    return (
+      <IndexTemplate
+        title="Leaderboard"
+        description="Season rankings across your community. Compete with your circle, hub, nexus, or everyone."
+        toolbar={<LeaderboardTabs activeScope={scope} />}
+      >
+        {me && (
+          <div className="mb-4 rounded-xl bg-primary-bg/50 px-4 py-2.5 text-sm font-medium text-primary-strong">
+            #{myIdx + 1} of {rows.length} · {me.tier.emoji} {me.tier.label} · {me.signups} signup{me.signups === 1 ? '' : 's'} from {me.scans} scan{me.scans === 1 ? '' : 's'}
+            {nextTier && <span className="text-muted font-normal"> · {nextTier.remaining} more to {nextTier.next.label}</span>}
+          </div>
+        )}
+
+        {rows.length === 0 ? (
+          <EmptyState icon={Filter} title="No entry points yet." description="Crew who build entry points and drive signups show up here." />
+        ) : (
+          <div className="rounded-2xl bg-surface-elevated/40 px-2 py-1.5">
+            <div className="grid grid-cols-[2.5rem_1fr_4.5rem_4rem_4.5rem_6.5rem] gap-2 px-3 py-2 text-xs font-medium text-subtle">
+              <span>#</span>
+              <span>Member</span>
+              <span className="text-right">Points</span>
+              <span className="text-right">Scans</span>
+              <span className="text-right">Signups</span>
+              <span className="text-right">Tier</span>
+            </div>
+
+            {rows.map((entry, i) => {
+              const isSelf = entry.id === profile.id
+              const medalColor = i < 3 ? 'text-primary' : 'text-subtle'
+              return (
+                <div
+                  key={entry.id}
+                  className={`grid grid-cols-[2.5rem_1fr_4.5rem_4rem_4.5rem_6.5rem] gap-2 px-3 py-2.5 items-center rounded-lg ${isSelf ? 'bg-primary-bg/60 dark:bg-primary-bg' : ''}`}
+                >
+                  <span className={`text-sm font-bold tabular-nums ${medalColor}`}>{i + 1}</span>
+                  <Link href={`/people/${entry.handle}`} className="flex items-center gap-2 min-w-0">
+                    {entry.avatarUrl ? (
+                      <Image src={entry.avatarUrl} alt={entry.displayName} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0" />
+                    ) : (
+                      <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-xs font-bold flex items-center justify-center shrink-0">
+                        {getInitials(entry.displayName)}
+                      </div>
+                    )}
+                    <span className={`text-sm truncate ${isSelf ? 'font-semibold text-primary-strong' : 'text-text'}`}>
+                      {entry.displayName}
+                      {isSelf && <span className="text-xs font-normal text-primary-strong ml-1">(you)</span>}
+                    </span>
+                  </Link>
+                  <span className="text-sm text-text text-right tabular-nums">{entry.entryPoints}</span>
+                  <span className="text-sm text-text text-right tabular-nums flex items-center justify-end gap-0.5">
+                    <QrCode className="w-3 h-3 text-subtle" />{entry.scans.toLocaleString()}
+                  </span>
+                  <span className="text-sm font-semibold text-text text-right tabular-nums flex items-center justify-end gap-0.5">
+                    <UserPlus className="w-3 h-3 text-primary" />{entry.signups.toLocaleString()}
+                  </span>
+                  <span className="text-xs font-bold leading-tight text-right" title={`${entry.tier.label} tier`}>
+                    {entry.tier.emoji} {entry.tier.label}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </IndexTemplate>
+    )
+  }
+
   const limit = scope === 'global' ? 50 : scope === 'nexus' ? 30 : scope === 'hub' ? 20 : 10
 
   const { entries, scopeLabel } = await getLeaderboard(admin, scope, profile.id, limit)
