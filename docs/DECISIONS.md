@@ -2634,6 +2634,49 @@ every interior page) will give these new editor/detail routes the standard shell
 
 ---
 
+## ADR-097: Left-nav IA refresh — two member worlds (Community + The Quest) + Steward/Platform
+
+**Decision.** Collapse the member rail from five groups (Community · Practice ·
+Connect · The Quest) into **two worlds**, and fold the four axis-grouped admin
+sections into **two** (Steward + Platform). Driven by an owner screenshot review;
+edits `lib/nav-areas.ts` (the single source of truth shared with the permission grid).
+
+- **Community** (belong & gather): **Broadcast** (the local-happenings board, leads
+  the group) · Channels · Circles · Events · Messages · Directory.
+- **The Quest** (the game + practice, one integrated world): **Dashboard** ·
+  Practices · Journeys · **Programs** · **Store**. Crew-gated items (Dashboard,
+  Store) preview for non-crew → full at crew.
+- **Steward** (host+ / staff axis): Overview · CRM · Marketing · Hubs & Nexuses.
+- **Platform** (janitor): Insights · Vera · Members · Pages.
+- **Friends** moves out of the rail to a **top-right header icon** (it already lived
+  in the account dropdown). **Outreach** drops as a standalone rail item and is
+  surfaced inside the admin **Overview** launchpad. Steward + Platform telescope
+  (hidden unless reachable); the two member worlds mute/preview as before.
+
+**Naming decisions (owner-delegated).** **Programs** belongs in **The Quest** (it's
+the same family as Journeys/Practices — leader-run curricula + a shared library, not
+a separate "Practice" world). The Quest spend surface is **"Store"** (the in-game
+economy + Vault); the future real-money merch e-commerce gets the distinct name
+**"Shop"** — reserving the cleaner word for the surface that takes real money avoids
+confusing play-currency with cash. ("Outfitters" was floated as on-theme flavor;
+"Store" wins on clarity.)
+
+**Why.** The five-group rail over-fragmented a small set of destinations; "Practice"
+and "Connect" each held 2–3 items that read better merged. Practice IS the Quest
+(the WAM loop feeds the game), so one world removes a false boundary. Folding
+Structure/Studio into Steward matches how a steward actually works (community +
+business in one place); operator-only tools stay isolated under Platform. This
+supersedes the 5-world nav notes in ADR-089/ADR-095.
+
+**Consequences.** Deeper follow-ons are logged, not done here: Broadcast as a true
+local-happenings **dashboard** (the route exists; its content is the next step), the
+real-money **Shop** e-commerce build, and fully weaving Outreach **content** into the
+Overview page (only the nav entry moved). `nav-icons.ts` already had every key. No
+schema change; per-area permission overrides for the dropped `friends`/`outreach`
+keys simply no longer apply.
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 

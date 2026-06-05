@@ -380,6 +380,16 @@ inline path (wizard is an optional guided alt); RLS isolation between `journey_p
   and whether concurrent force-pushes orphan in-flight builds. Make preview deploys reliably start (or
   fail fast with a clear error) so PR previews are trustworthy. (S–M)
 
+### IA refresh follow-ons (ADR-097 — nav restructure shipped; these are the deeper builds)
+- [ ] **Broadcast = a real local-happenings dashboard.** The rail now leads Community with **Broadcast**,
+  but `/broadcast` should become a true dashboard of everything happening locally (events, dispatches,
+  new circles, milestones) — not just a broadcast list. Build the aggregated view. (M)
+- [ ] **Frequency Shop (real-money merch e-commerce).** Distinct from the Quest **Store** (play economy +
+  Vault). New surface for physical/merch sales — payments, catalog, fulfillment. Greenfield. (G)
+- [ ] **Fold Outreach *content* into the admin Overview.** ADR-097 moved the nav entry into the Overview
+  launchpad; next, surface the actual outreach tools/queue inside the Overview page so it's not a bare
+  link. (S–M)
+
 ## Accepted (no action)
 - `npm audit`: 4 moderate transitive advisories (postcss in Next's toolchain,
   uuid in `@measured/puck`). The only fix downgrades Next to 9.x; not worth it.
