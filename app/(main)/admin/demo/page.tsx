@@ -2,12 +2,16 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminPage, AdminSection } from '@/components/admin/admin-page'
 import { Sparkles } from 'lucide-react'
-import { DemoControls } from './demo-controls'
+import { DemoOverview } from './demo-overview'
+import { GrowNetwork } from './grow-network'
+import { DangerZone } from './danger-zone'
 import { StudioWizard } from './studio/studio-wizard'
 
 // Janitor-only: the single home for the Beta demo content layer (docs/DEMO-SYSTEM.md).
-// Two zones on one page: the Seed Studio (generate a believable area on demand) and
-// the management controls (the global show/hide switch, grow, select/delete, purge).
+// Laid out as a dashboard: an at-a-glance Overview (counts + the global switch) on
+// top, the everyday non-destructive tools (Create an area, Grow the network) in the
+// middle, and a single Danger zone at the bottom where every delete/purge lives,
+// gated behind one typed-DELETE confirm.
 export default async function AdminDemoPage() {
   await requireAdmin('janitor')
 
@@ -51,8 +55,11 @@ export default async function AdminDemoPage() {
       title="Demo Studio"
       icon={Sparkles}
       description="Generate a believable community for any area, then manage or purge it — all tagged demo (⚡), previewable, and reversible."
-      width="narrow"
+      width="default"
     >
+      {/* Overview — at-a-glance state + the one global show/hide switch */}
+      <DemoOverview enabled={enabled} counts={counts} total={total} />
+
       <AdminSection
         title="Create an area"
         description="Spin up circles, people with journeys, conversations, events, practices, and gamification for a new place. Demographic-aware, previewable, reversible by area."
@@ -60,13 +67,23 @@ export default async function AdminDemoPage() {
         <StudioWizard channels={channels} />
       </AdminSection>
 
-      <div className="border-t border-border pt-2" />
+      <AdminSection
+        title="Grow the network"
+        description="Top up a circle or spin up a new one — each arrives fully populated. Non-destructive."
+      >
+        <GrowNetwork circles={demoCircles} channels={channels} />
+      </AdminSection>
 
       <AdminSection
-        title="Manage demo content"
-        description="Show or hide all demo content with one switch, grow specific circles, or purge it for good once real content has taken over."
+        title="Danger zone"
+        description="Every delete & purge lives here, behind a single DELETE confirm. None of it can be undone."
       >
-        <DemoControls enabled={enabled} counts={counts} total={total} circles={demoCircles} channels={channels} />
+        <DangerZone
+          total={total}
+          counts={counts}
+          circles={demoCircles}
+          defaultLocation={{ name: 'Encinitas', lat: 33.0369, lng: -117.292 }}
+        />
       </AdminSection>
     </AdminPage>
   )
