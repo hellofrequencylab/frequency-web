@@ -1,11 +1,12 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { Plus, ScanText, Lock, Globe, Mail, Building2, MapPin, Search } from 'lucide-react'
+import { Plus, ScanText, Lock, Globe, MapPin, Search } from 'lucide-react'
 import { connectionsOwnerId } from '@/lib/connections/access'
 import { listContacts } from '@/lib/connections/store'
 import { getInitials } from '@/lib/utils'
 import { IndexTemplate } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
+import { EntityCard } from '@/components/cards/entity-card'
 import type { ContactStatus, NetworkContactListItem } from '@/lib/connections/types'
 
 export const dynamic = 'force-dynamic'
@@ -112,60 +113,44 @@ export default async function ConnectionsPage({
         <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {rows.map((c) => (
             <li key={c.id}>
-              <Link
+              <EntityCard
                 href={`/connections/${c.id}`}
-                className="flex h-full flex-col rounded-2xl border border-border bg-surface p-4 shadow-sm transition-colors hover:border-border-strong"
-              >
-                <div className="flex items-start gap-3">
-                  {c.avatarUrl ? (
+                anchor={
+                  c.avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={c.avatarUrl} alt="" className="h-11 w-11 shrink-0 rounded-full object-cover" />
+                    <img src={c.avatarUrl} alt="" className="h-11 w-11 rounded-full object-cover" />
                   ) : (
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-sm font-semibold text-muted">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-elevated text-sm font-semibold text-muted">
                       {getInitials(c.displayName ?? '?')}
                     </span>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className="flex items-center gap-1.5 truncate text-sm font-semibold text-text">
-                      {c.displayName ?? 'Unnamed'}
-                      {c.visibility === 'network'
-                        ? <Globe className="h-3 w-3 shrink-0 text-subtle" />
-                        : <Lock className="h-3 w-3 shrink-0 text-subtle" />}
-                    </p>
-                    {(c.title || c.company) && (
-                      <p className="truncate text-xs text-muted">
-                        {[c.title, c.company].filter(Boolean).join(' · ')}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <dl className="mt-3 space-y-1 text-xs text-subtle">
-                  {c.email && (
-                    <div className="flex items-center gap-1.5"><Mail className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{c.email}</span></div>
-                  )}
-                  {c.company && !c.title && (
-                    <div className="flex items-center gap-1.5"><Building2 className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{c.company}</span></div>
-                  )}
-                  {c.city && (
-                    <div className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{c.city}</span></div>
-                  )}
-                </dl>
-
-                {c.tags.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-1">
-                    {c.tags.slice(0, 4).map((t) => (
-                      <span key={t} className="rounded-md bg-primary-bg px-1.5 py-0.5 text-[11px] font-medium text-primary-strong">{t}</span>
+                  )
+                }
+                title={c.displayName ?? 'Unnamed'}
+                badge={
+                  c.visibility === 'network'
+                    ? <Globe className="h-3 w-3 shrink-0 text-subtle" aria-label="Shared to your network" />
+                    : <Lock className="h-3 w-3 shrink-0 text-subtle" aria-label="Private to you" />
+                }
+                context={
+                  [c.title, c.company].filter(Boolean).join(' · ')
+                  || c.city
+                  || c.email
+                  || undefined
+                }
+                meta={
+                  <>
+                    {c.tags.slice(0, 3).map((t) => (
+                      <span key={t} className="rounded-full bg-primary-bg px-2 py-0.5 font-medium text-primary-strong">{t}</span>
                     ))}
-                    {c.tags.length > 4 && <span className="text-[11px] text-subtle">+{c.tags.length - 4}</span>}
-                  </div>
-                )}
-
-                <div className="mt-3 flex items-center gap-2 pt-2 text-[11px] text-subtle">
-                  <span className="rounded-md bg-surface-elevated px-1.5 py-0.5 font-medium">{SOURCE_LABEL[c.source] ?? c.source}</span>
-                  {c.status !== 'new' && <span className="capitalize">{c.status}</span>}
-                </div>
-              </Link>
+                    {c.tags.length > 3 && <span>+{c.tags.length - 3}</span>}
+                    {c.city && (c.title || c.company) && (
+                      <span className="flex items-center gap-0.5"><MapPin className="h-3 w-3" />{c.city}</span>
+                    )}
+                    <span>{SOURCE_LABEL[c.source] ?? c.source}</span>
+                    {c.status !== 'new' && <span className="capitalize">{c.status}</span>}
+                  </>
+                }
+              />
             </li>
           ))}
         </ul>

@@ -126,27 +126,27 @@ export default async function NexusPage({
           {hubs.length === 0 ? (
             <EmptyState title="No hubs yet." />
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-1">
               {hubs.map((hub) => {
                 const hubTotal = hub.circles.reduce((s, c) => s + (c.member_count ?? 0), 0)
                 return (
                   <Link
                     key={hub.id}
                     href={`/hubs/${hub.slug}`}
-                    className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 hover:border-primary-bg hover:bg-primary-bg/30 transition-colors"
+                    className="group flex items-center gap-3 rounded-xl px-4 py-3 transition-colors hover:bg-surface-elevated/60 motion-reduce:transition-none"
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-text">{hub.name}</span>
+                        <span className="text-sm font-semibold text-text">{hub.name}</span>
                         <StatusBadge status={hub.status} />
                       </div>
                       <div className="flex items-center gap-2 mt-0.5 text-xs text-subtle">
                         {hub.guide && <span>Guide: {hub.guide.display_name}</span>}
                         <span>·</span>
-                        <span>{hub.circles.length} circles · {hubTotal} members</span>
+                        <span className="tabular-nums">{hub.circles.length} circles · {hubTotal} members</span>
                       </div>
                     </div>
-                    <span className="text-xs text-subtle">→</span>
+                    <span className="text-subtle transition-colors group-hover:text-text">→</span>
                   </Link>
                 )
               })}

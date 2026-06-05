@@ -1,8 +1,9 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
-import { Map, Plus, ArrowRight, Users, Lock, Globe } from 'lucide-react'
+import Image from 'next/image'
+import { Map, Plus, Users, Lock, Globe } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import { getMyPlans, listPublicPlans, type JourneyPlan } from '@/lib/journey-plans'
+import { EntityCard } from '@/components/cards/entity-card'
 import { IndexTemplate } from '@/components/templates/index-template'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -13,33 +14,46 @@ export const metadata: Metadata = {
   description: 'Build a journey from the practices you love and share it with the community.',
 }
 
-function PlanRow({ plan, mine }: { plan: JourneyPlan; mine: boolean }) {
+// A journey, in the shared card shell. The whole card links to the journey; the
+// visibility pill (own plans) sits by the title, the adopt count (library plans)
+// in the footer.
+function PlanCard({ plan, mine }: { plan: JourneyPlan; mine: boolean }) {
   return (
-    <li>
-      <Link
-        href={`/journeys/${plan.slug}`}
-        className="group flex items-center justify-between gap-4 rounded-2xl border border-border bg-surface px-5 py-4 shadow-sm transition-colors hover:border-primary-bg hover:shadow-md"
-      >
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <p className="text-base font-bold text-text">{plan.title}</p>
-            {mine && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5 text-[11px] font-medium text-muted">
-                {plan.visibility === 'public' ? <Globe className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
-                {plan.visibility === 'public' ? 'Public' : plan.visibility === 'unlisted' ? 'Unlisted' : 'Private'}
-              </span>
-            )}
+    <EntityCard
+      href={`/journeys/${plan.slug}`}
+      anchor={
+        plan.cover_image ? (
+          <Image
+            src={plan.cover_image}
+            alt={plan.title}
+            width={44}
+            height={44}
+            className="h-11 w-11 rounded-2xl object-cover"
+          />
+        ) : (
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-bg text-primary-strong">
+            <Map className="h-5 w-5" />
           </div>
-          {plan.summary && <p className="mt-0.5 line-clamp-1 text-sm text-muted">{plan.summary}</p>}
-          {!mine && plan.adopt_count > 0 && (
-            <p className="mt-0.5 flex items-center gap-1 text-xs text-subtle">
-              <Users className="h-3 w-3" /> {plan.adopt_count} {plan.adopt_count === 1 ? 'person' : 'people'}
-            </p>
-          )}
-        </div>
-        <ArrowRight className="h-4 w-4 shrink-0 text-subtle transition-colors group-hover:text-primary-strong" />
-      </Link>
-    </li>
+        )
+      }
+      title={plan.title}
+      badge={
+        mine ? (
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5 text-xs font-medium text-muted">
+            {plan.visibility === 'public' ? <Globe className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
+            {plan.visibility === 'public' ? 'Public' : plan.visibility === 'unlisted' ? 'Unlisted' : 'Private'}
+          </span>
+        ) : undefined
+      }
+      description={plan.summary ?? undefined}
+      meta={
+        !mine && plan.adopt_count > 0 ? (
+          <span className="flex items-center gap-1">
+            <Users className="h-3 w-3" /> {plan.adopt_count} {plan.adopt_count === 1 ? 'person' : 'people'}
+          </span>
+        ) : undefined
+      }
+    />
   )
 }
 
@@ -92,11 +106,11 @@ export default async function JourneysPage() {
           {mine.length === 0 ? (
             <EmptyState icon={Map} title="No journeys yet" description="Name one above, then add the practices that belong on the path." />
           ) : (
-            <ul className="space-y-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {mine.map((p) => (
-                <PlanRow key={p.id} plan={p} mine />
+                <PlanCard key={p.id} plan={p} mine />
               ))}
-            </ul>
+            </div>
           )}
         </section>
 
@@ -105,11 +119,11 @@ export default async function JourneysPage() {
           {community.length === 0 ? (
             <EmptyState icon={Users} title="The library is just getting started" description="Build a journey and publish it to be the first to share one." />
           ) : (
-            <ul className="space-y-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {community.map((p) => (
-                <PlanRow key={p.id} plan={p} mine={false} />
+                <PlanCard key={p.id} plan={p} mine={false} />
               ))}
-            </ul>
+            </div>
           )}
         </section>
       </div>

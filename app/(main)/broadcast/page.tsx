@@ -8,7 +8,7 @@ import { BroadcastCompose } from './broadcast-compose'
 import { ContextActions } from '@/components/context-actions'
 import { EmptyState } from '@/components/ui/empty-state'
 import { EntityCard } from '@/components/cards/entity-card'
-import { StatCard } from '@/components/ui/stat-card'
+import { SectionHeader } from '@/components/ui/section-header'
 import { ModuleCard } from '@/components/modules/module-card'
 
 // /broadcast is the Community Dashboard — the counterpart to the Quest Dashboard
@@ -193,32 +193,26 @@ export default async function BroadcastPage() {
         </Link>
       ) : null}
 
-      {/* ── Stat cards ───────────────────────────────────────── */}
-      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatCard
-          label="Broadcasts"
-          value={dispatches.length}
-          icon={Megaphone}
-          delta={broadcastsThisWeek > 0 ? { label: `+${broadcastsThisWeek} this week`, trend: 'up' } : undefined}
-        />
-        <StatCard label="Upcoming events" value={eventsCountRes.count ?? upcomingEvents.length} icon={CalendarDays} href="/events" />
-        <StatCard
-          label="Circles"
-          value={(circlesCountRes.count ?? 0).toLocaleString()}
-          icon={CircleDot}
-          href="/circles"
-          delta={newCirclesCount > 0 ? { label: `+${newCirclesCount} new`, trend: 'up' } : undefined}
-        />
-        <StatCard label="Members" value={(membersRes.count ?? 0).toLocaleString()} icon={Users} href="/people" />
-      </div>
+      {/* ── At-a-glance line ─────────────────────────────────── */}
+      {/* One calm summary instead of a wall of stat tiles — the hero above and
+          the quick-links sidebar already carry navigation, so these are just
+          context. */}
+      <p className="mb-6 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
+        <span><strong className="font-semibold text-text tabular-nums">{dispatches.length}</strong> recent broadcasts</span>
+        {broadcastsThisWeek > 0 && <span className="text-subtle">({broadcastsThisWeek} this week)</span>}
+        <span aria-hidden className="text-subtle">·</span>
+        <span><strong className="font-semibold text-text tabular-nums">{(eventsCountRes.count ?? upcomingEvents.length).toLocaleString()}</strong> upcoming events</span>
+        <span aria-hidden className="text-subtle">·</span>
+        <span><strong className="font-semibold text-text tabular-nums">{(circlesCountRes.count ?? 0).toLocaleString()}</strong> circles</span>
+        {newCirclesCount > 0 && <span className="text-subtle">({newCirclesCount} new)</span>}
+        <span aria-hidden className="text-subtle">·</span>
+        <span><strong className="font-semibold text-text tabular-nums">{(membersRes.count ?? 0).toLocaleString()}</strong> members</span>
+      </p>
 
       {/* ── Main: broadcasts (left) + happenings (right) ─────── */}
       <div className="flex flex-col items-start gap-6 lg:flex-row">
         <div className="min-w-0 flex-1">
-          <h2 className="mb-3 text-sm font-bold text-text">
-            Latest broadcasts
-            {dispatches.length > 0 && <span className="ml-2 text-xs font-normal text-subtle">{dispatches.length}</span>}
-          </h2>
+          <SectionHeader title="Latest broadcasts" count={dispatches.length > 0 ? dispatches.length : undefined} />
           {dispatches.length === 0 ? (
             <EmptyState
               icon={Megaphone}

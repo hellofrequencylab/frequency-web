@@ -71,22 +71,24 @@ export default async function PartnerPage({
           {partner.offers.length === 0 ? (
             <EmptyState icon={Ticket} title="No offers right now" description="Check back soon." />
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {partner.offers.map((o) => (
                 <div
                   key={o.id}
-                  className="rounded-2xl border border-border bg-surface shadow-sm p-4"
+                  className="flex gap-3 rounded-2xl bg-surface-elevated/60 p-4"
                 >
-                  <div className="flex items-center gap-2">
-                    <Ticket className="w-4 h-4 text-primary-strong shrink-0" />
-                    <h3 className="text-sm font-semibold text-text">{o.title}</h3>
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
+                    <Ticket className="h-4 w-4" />
                   </div>
-                  {o.memberTerms && (
-                    <p className="mt-1 text-xs font-medium text-primary-strong">{o.memberTerms}</p>
-                  )}
-                  {o.description && (
-                    <p className="mt-1 text-xs text-muted">{o.description}</p>
-                  )}
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-sm font-semibold text-text">{o.title}</h3>
+                    {o.memberTerms && (
+                      <p className="mt-0.5 text-xs font-medium text-primary-strong">{o.memberTerms}</p>
+                    )}
+                    {o.description && (
+                      <p className="mt-1 text-sm leading-relaxed text-muted">{o.description}</p>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
