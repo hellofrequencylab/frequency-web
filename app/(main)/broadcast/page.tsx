@@ -85,7 +85,11 @@ export default async function BroadcastPage() {
       .order('published_at', { ascending: false })
       .limit(40)
 
-  const promises: ReturnType<typeof baseQuery>[] = [baseQuery().eq('author_id', profile.id)]
+  const promises: ReturnType<typeof baseQuery>[] = [
+    baseQuery().eq('author_id', profile.id),
+    // Global (staff/janitor) dispatches reach everyone (Phase D).
+    baseQuery().eq('audience_scope', 'global'),
+  ]
   if (circleIds.length > 0) promises.push(baseQuery().eq('audience_scope', 'circle').in('audience_id', circleIds))
   if (hubIds.length > 0) promises.push(baseQuery().eq('audience_scope', 'hub').in('audience_id', hubIds))
   if (nexusIds.length > 0) promises.push(baseQuery().eq('audience_scope', 'nexus').in('audience_id', nexusIds))
@@ -151,7 +155,9 @@ export default async function BroadcastPage() {
             Everything happening around you — announcements, what’s coming up, and what’s new to join.
           </p>
         </div>
-        {canCompose && <BroadcastCompose circles={namedCircles} hubs={namedHubs} nexuses={namedNexuses} />}
+        {(canCompose || role === 'janitor') && (
+          <BroadcastCompose circles={namedCircles} hubs={namedHubs} nexuses={namedNexuses} canGlobal={role === 'janitor'} />
+        )}
       </div>
 
       {/* ── Highlight hero: the latest broadcast, else the next event ── */}
