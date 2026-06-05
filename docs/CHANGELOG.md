@@ -10,6 +10,17 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ## [Unreleased]
 
+### Added
+
+- **User Stats for contacts**: open anyone in Marketing → Contacts to see one grouped
+  record — their member profile, CRM details and every card-scan capture together — plus
+  the **path they took through the system**: how they arrived, the intro you sent, the QR
+  codes they scanned, when they became a member, and your notes and deals. The contacts list
+  is now searchable, and you can invite a scanned lead to join from their page.
+- **Find people you've met**: search (the header search and the Directory) now surfaces the
+  people *you* scanned in, even before they have an account — so a contact you saved is no
+  longer lost until they sign up.
+
 ### Changed
 
 - **Getting Started** now guides new members to their first practice (the heart of
