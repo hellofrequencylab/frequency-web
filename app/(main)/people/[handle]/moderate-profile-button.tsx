@@ -42,14 +42,14 @@ export function ModerateProfileButton({
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Display name"
-        className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-text focus:border-primary focus:outline-none"
+        className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-text focus:border-border-strong focus:outline-none"
       />
       <textarea
         value={bio}
         onChange={(e) => setBio(e.target.value)}
         placeholder="Bio"
         rows={3}
-        className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-text focus:border-primary focus:outline-none resize-y"
+        className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-text focus:border-border-strong focus:outline-none resize-y"
       />
       {error && <p className="text-xs text-danger">{error}</p>}
       <div className="flex items-center gap-2">

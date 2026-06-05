@@ -37,7 +37,7 @@ function resizeToJpeg(file: File, size = 512): Promise<Blob> {
 
 const HANDLE_RE = /^[a-z0-9_]+$/
 
-const input = 'w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-sm text-text placeholder-subtle focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50'
+const input = 'w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30 disabled:opacity-50'
 const lbl   = 'block text-sm font-medium text-text mb-1'
 
 export function ProfileForm({

@@ -111,7 +111,7 @@ export function DiscoverLocator({
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search circles, topics, or cities"
             aria-label="Search circles, topics, or cities"
-            className="w-full rounded-2xl border border-border bg-surface py-2.5 pl-9 pr-3 text-sm text-text placeholder:text-subtle shadow-sm focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className="w-full rounded-2xl border border-border bg-surface py-2.5 pl-9 pr-3 text-sm text-text placeholder:text-subtle shadow-sm focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/30"
           />
         </div>
 

@@ -40,7 +40,7 @@ export function ConversationRenameButton({
           placeholder="Group name (or blank to clear)"
           autoFocus
           disabled={isPending}
-          className="text-xs rounded border border-border bg-surface px-2 py-0.5 outline-none focus:border-primary focus:ring-1 focus:ring-primary/40 max-w-[200px]"
+          className="text-xs rounded border border-border bg-surface px-2 py-0.5 outline-none focus:border-border-strong focus:ring-1 focus:ring-border-strong/30 max-w-[200px]"
         />
         <button onClick={save} disabled={isPending} className="p-0.5 text-success hover:bg-success-bg dark:hover:bg-success-bg/30 rounded">
           {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}

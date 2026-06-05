@@ -214,7 +214,7 @@ export default async function PracticesPage({
               name="q"
               defaultValue={qParam}
               placeholder="Search practices…"
-              className="w-full rounded-lg border border-border bg-surface py-2 pl-9 pr-3 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
+              className="w-full rounded-lg border border-border bg-surface py-2 pl-9 pr-3 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
             />
           </form>
           <div className="flex flex-wrap items-center gap-1.5">

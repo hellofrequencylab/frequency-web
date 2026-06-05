@@ -81,7 +81,7 @@ export default async function ContactsPage({
             name="q"
             defaultValue={q}
             placeholder="Search contacts by name or email…"
-            className="w-full rounded-xl border border-border bg-surface py-2 pl-9 pr-3 text-sm text-text outline-none placeholder:text-subtle focus:border-primary"
+            className="w-full rounded-xl border border-border bg-surface py-2 pl-9 pr-3 text-sm text-text outline-none placeholder:text-subtle focus:border-border-strong"
           />
         </div>
         <button type="submit" className="rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-on-primary hover:bg-primary-strong transition-colors">
