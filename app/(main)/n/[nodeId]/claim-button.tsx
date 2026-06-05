@@ -17,6 +17,20 @@ const REASON_LABEL: Record<string, string> = {
   bad_signature: "Couldn't verify this code.",
 }
 
+// Best-effort device location for proximity-gated codes. Resolves null on denial,
+// timeout, or no support — the server then decides (a non-geofenced code is fine;
+// a geofenced one returns `location_required`, surfaced below).
+function getCoords(): Promise<{ lat: number; lng: number } | null> {
+  if (typeof navigator === 'undefined' || !navigator.geolocation) return Promise.resolve(null)
+  return new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => resolve(null),
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 },
+    )
+  })
+}
+
 export function ClaimButton({ nodeId }: { nodeId: string }) {
   const [result, setResult] = useState<ClaimResult | null>(null)
   const [pending, start] = useTransition()
@@ -56,7 +70,8 @@ export function ClaimButton({ nodeId }: { nodeId: string }) {
       disabled={pending}
       onClick={() =>
         start(async () => {
-          const res = await claimNode(nodeId)
+          const coords = await getCoords()
+          const res = await claimNode(nodeId, coords)
           setResult(res)
           if (res.ok && res.zapsAwarded) {
             showZapToast({ amount: res.zapsAwarded, label: 'Claimed' })

@@ -26,6 +26,7 @@ import {
   Map,
   Route,
   QrCode,
+  Library,
 } from 'lucide-react'
 
 // Maps each NAV_AREAS key (lib/nav-areas.ts — the framework-free source of truth)
@@ -40,6 +41,7 @@ export const AREA_ICONS: Record<string, ElementType> = {
   practices: Sparkles,
   journeys: Route,
   programs: BookOpen,
+  library: Library,
   broadcast: Megaphone,
   messages: MessageSquare,
   friends: UserPlus,

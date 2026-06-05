@@ -13,11 +13,21 @@ export interface ClaimResult {
   offerTitle?: string | null
 }
 
-export async function claimNode(nodeId: string): Promise<ClaimResult> {
+export async function claimNode(
+  nodeId: string,
+  coords?: { lat: number; lng: number } | null,
+): Promise<ClaimResult> {
   const profileId = await getMyProfileId()
   if (!profileId) return { ok: false, reason: 'not_signed_in' }
 
-  const result = await captureNode({ nodeId, actorProfileId: profileId })
+  // Forward the device location (when the browser shared it) so location-aware
+  // codes can verify proximity. Codes without a geofence ignore it.
+  const location =
+    coords && Number.isFinite(coords.lat) && Number.isFinite(coords.lng)
+      ? { lng: coords.lng, lat: coords.lat }
+      : null
+
+  const result = await captureNode({ nodeId, actorProfileId: profileId, location })
   return {
     ok: result.ok,
     reason: result.reason,

@@ -6,6 +6,8 @@ export interface ScanRow {
   qr_code_id: string
   profile_id: string | null
   scanned_at: string
+  /** How the scan arrived. Absent on legacy rows → treated as 'qr'. */
+  medium?: string | null
 }
 
 export interface ScanGeoRow {
@@ -54,6 +56,9 @@ export interface CodeScanStat {
 export interface ScanSummary {
   total: number
   unique: number
+  /** Scans split by arrival channel. `qr` covers printed codes (and legacy rows);
+   *  `nfc` is tapped tags. They sum to `total`. */
+  byMedium: { qr: number; nfc: number }
   /** Scans in the trailing `days` window, oldest → newest, one bucket per day. */
   daily: { date: string; count: number }[]
   perCode: Map<string, CodeScanStat>
@@ -67,6 +72,7 @@ function dayKey(d: Date): string {
 export function summarizeScans(scans: ScanRow[], days = 30, now = new Date()): ScanSummary {
   const perCode = new Map<string, { total: number; profiles: Set<string> }>()
   const uniqueProfiles = new Set<string>()
+  const byMedium = { qr: 0, nfc: 0 }
 
   // Seed the daily buckets so quiet days render as zero, not gaps.
   const buckets = new Map<string, number>()
@@ -85,6 +91,9 @@ export function summarizeScans(scans: ScanRow[], days = 30, now = new Date()): S
     }
     perCode.set(s.qr_code_id, entry)
 
+    if (s.medium === 'nfc') byMedium.nfc++
+    else byMedium.qr++
+
     const key = dayKey(new Date(s.scanned_at))
     if (buckets.has(key)) buckets.set(key, (buckets.get(key) ?? 0) + 1)
   }
@@ -92,6 +101,7 @@ export function summarizeScans(scans: ScanRow[], days = 30, now = new Date()): S
   return {
     total: scans.length,
     unique: uniqueProfiles.size,
+    byMedium,
     daily: [...buckets.entries()].map(([date, count]) => ({ date, count })),
     perCode: new Map(
       [...perCode.entries()].map(([codeId, v]) => [

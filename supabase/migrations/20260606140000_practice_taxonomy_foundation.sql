@@ -4,7 +4,7 @@
 -- The library is becoming a large, open, creator-driven surface. This migration
 -- lays the structural foundation so practices can be organized deeply and surfaced
 -- by popularity — WITHOUT any economy change (creator rewards are a later phase,
--- see ADR-106 "Future").
+-- see ADR-111 "Future").
 --
 -- Four layers under each Pillar (domains: Mind/Body/Spirit/Expression):
 --   1. Sub-category   — a curated, extensible tier scoped to a Pillar (one primary
