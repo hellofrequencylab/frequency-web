@@ -1,4 +1,5 @@
 import { cache } from 'react'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 // Global "show demo content" switch — the single source of truth for whether
@@ -22,3 +23,91 @@ export const demoModeEnabled = cache(async (): Promise<boolean> => {
     return true
   }
 })
+
+// The AI master switch (platform_flags.ai_enabled) — the operator kill switch that
+// gates EVERY AI surface (Vera, winback, help search, the Profile Creator harvest).
+// Defaults to FALSE on any read failure — fail closed for spend safety, matching
+// lib/ai/usage.ts aiAvailable(). Read it to render operator state; the live gate is
+// still aiAvailable() (this flag AND the env key).
+export const aiEnabledFlag = cache(async (): Promise<boolean> => {
+  try {
+    const admin = createAdminClient()
+    const { data } = await admin
+      .from('platform_flags')
+      .select('value')
+      .eq('key', 'ai_enabled')
+      .maybeSingle()
+    return data?.value ?? false
+  } catch {
+    return false
+  }
+})
+
+export interface FlagEvent {
+  id: string
+  flagKey: string
+  value: boolean
+  previous: boolean | null
+  changedBy: string | null
+  source: string
+  createdAt: string | null
+}
+
+/** Set a boolean platform flag AND append an audit event (who/when/old→new).
+ *  Service-role; call only from operator-gated paths. The flag write is
+ *  authoritative; the audit insert is best-effort and never blocks the toggle. */
+export async function setPlatformFlag(
+  key: string,
+  value: boolean,
+  opts: { changedBy?: string | null; source?: 'admin' | 'setup' | 'system' } = {},
+): Promise<void> {
+  const admin = createAdminClient()
+  const { data: prev } = await admin
+    .from('platform_flags')
+    .select('value')
+    .eq('key', key)
+    .maybeSingle()
+  const previous = (prev?.value ?? null) as boolean | null
+
+  const { error } = await admin
+    .from('platform_flags')
+    .upsert({ key, value, updated_at: new Date().toISOString() })
+  if (error) throw new Error(error.message)
+
+  try {
+    const db = admin as unknown as SupabaseClient
+    await db.from('platform_flag_events').insert({
+      flag_key: key,
+      value,
+      previous,
+      changed_by: opts.changedBy ?? null,
+      source: opts.source ?? 'admin',
+    })
+  } catch {
+    /* the audit ledger is best-effort; a failed log must not undo the toggle */
+  }
+}
+
+/** Recent toggle history for a flag (newest first). Operator-only. */
+export async function listFlagEvents(key: string, limit = 20): Promise<FlagEvent[]> {
+  try {
+    const db = createAdminClient() as unknown as SupabaseClient
+    const { data } = await db
+      .from('platform_flag_events')
+      .select('id, flag_key, value, previous, changed_by, source, created_at')
+      .eq('flag_key', key)
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    return ((data ?? []) as Record<string, unknown>[]).map((r) => ({
+      id: String(r.id),
+      flagKey: String(r.flag_key),
+      value: Boolean(r.value),
+      previous: r.previous == null ? null : Boolean(r.previous),
+      changedBy: (r.changed_by as string) ?? null,
+      source: String(r.source ?? 'admin'),
+      createdAt: (r.created_at as string) ?? null,
+    }))
+  } catch {
+    return []
+  }
+}

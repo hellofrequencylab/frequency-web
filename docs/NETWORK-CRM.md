@@ -1,6 +1,6 @@
 # Profile Creator — Network Profiles
 
-> **Status:** ✅ Built · ✅ migration applied to prod (`Frequency Community`, 2026-06-04) · ⚠️ `platform_flags.ai_enabled` is currently **off** (harvest degrades to manual until flipped) · ⏳ full type regen deferred to merge-time (store uses the untyped admin handle) · gated to stewards (host+) / Studio staff.
+> **Status:** ✅ Built · ✅ migration applied to prod (`Frequency Community`) · ✅ AI harvest live (`platform_flags.ai_enabled = true`; toggle at `/admin/ai` — see [AI-CONTROLS.md](AI-CONTROLS.md)) · ✅ mobile quick-add (`+` → `/connections/new`, stewards/staff) · ⏳ full type regen deferred to merge-time (store uses the untyped admin handle) · gated to stewards (host+) / Studio staff.
 > Source of truth: `supabase/migrations/20260606000000_network_contacts.sql`, `lib/connections/*`, `lib/ai/connections-ai.ts`, `app/(main)/connections/*`. Decision: [ADR-096](DECISIONS.md).
 
 The Profile Creator lets a steward capture the people they meet — snap a business
@@ -78,7 +78,7 @@ Both AI paths **degrade to plain manual entry** when AI is off, over budget, or 
 
 1. ✅ **Migration applied** (`20260606000000_network_contacts.sql`) to the `Frequency Community` project — 3 tables, RLS (owner-scoped), and the private `network-contacts` bucket. Verified: RLS on all 3, 6 table policies + 4 storage policies, bucket `public=false`. Security advisors: no new issues (only the project-wide `auth_allow_anonymous_sign_ins` WARN that every `auth.uid()` policy carries).
 2. **Regenerate `lib/database.types.ts`** — *deferred to integration/merge-time* to avoid pulling other in-flight branches' prod schema into this feature branch. The store works today via the untyped admin handle (repo convention).
-3. **Enable the AI harvest:** set `ANTHROPIC_API_KEY` (present in deployed env) **and** flip `platform_flags.ai_enabled = true` (operator switch — affects *all* AI). Currently **off**, so the scanner/Vera-assist degrade to plain manual entry.
+3. ✅ **AI harvest enabled** — `platform_flags.ai_enabled = true` (flipped + logged in `platform_flag_events`). Janitors can toggle it from **Admin → Platform → AI controls** (`/admin/ai`); the env still also needs `ANTHROPIC_API_KEY`. See [AI-CONTROLS.md](AI-CONTROLS.md).
 
 > **Rollback** (additive, clean): `drop table public.network_contact_tags, public.network_contact_notes, public.network_contacts cascade;` then `delete from storage.buckets where id='network-contacts';` and drop the four `network-contacts: owner *` policies on `storage.objects`.
 
