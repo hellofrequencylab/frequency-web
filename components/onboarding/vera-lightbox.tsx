@@ -8,6 +8,7 @@ import { conciergeTurn, confirmProposal } from '@/app/onboarding/vera-actions'
 import type { ProposedToolCall } from '@/lib/ai/vera/concierge'
 import type { VeraMessage } from '@/lib/ai/vera/agent-claude'
 import type { DeckSlide, VeraOpening } from '@/lib/onboarding/vera-welcome'
+import { WelcomeArt } from '@/components/onboarding/welcome-art'
 
 // Vera's onboarding lightbox (ADR-066 Phase D). It opens OVER the feed the moment
 // a Founder lands from induction (?welcome=vera). Two beats: a short, personalized
@@ -180,14 +181,15 @@ export function VeraLightbox({
 
         {phase === 'deck' ? (
           /* ── Beat 1: the personalized deck ───────────────────────────────── */
-          <div key={slide} className="relative flex flex-1 flex-col px-7 pb-7 pt-10 text-center motion-safe:animate-[slideUp_0.3s_ease-out]">
+          <div key={slide} className="relative flex flex-1 flex-col overflow-y-auto px-7 pb-7 pt-8 text-center motion-safe:animate-[slideUp_0.3s_ease-out]">
+            <WelcomeArt art={current.art} className="mx-auto mb-5 h-28 sm:h-32" />
             <span className="mx-auto inline-flex items-center gap-1.5 rounded-full bg-primary-bg px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary-strong">
               <Sparkles className="h-3.5 w-3.5" /> {current.eyebrow}
             </span>
-            <h2 id="vera-lightbox-title" className="mt-5 text-balance text-3xl font-bold leading-tight text-text sm:text-4xl">
+            <h2 id="vera-lightbox-title" className="mt-4 text-balance text-2xl font-bold leading-tight text-text sm:text-3xl">
               {current.title}
             </h2>
-            <p className="mx-auto mt-4 max-w-md text-pretty text-base leading-relaxed text-muted">{current.body}</p>
+            <p className="mx-auto mt-3 max-w-md text-pretty text-[15px] leading-relaxed text-muted sm:text-base">{current.body}</p>
 
             {/* progress dots */}
             <div className="mt-7 flex items-center justify-center gap-2">
