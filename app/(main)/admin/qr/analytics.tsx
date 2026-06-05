@@ -1,10 +1,12 @@
 'use client'
 
-import { ScanLine, Users, TrendingUp } from 'lucide-react'
+import { ScanLine, Users, TrendingUp, Nfc } from 'lucide-react'
 
 export interface AnalyticsData {
   total: number
   unique: number
+  /** Tapped-tag scans (the rest are printed-QR / direct). */
+  nfc: number
   daily: { date: string; count: number }[]
   topCodes: { id: string; title: string; slug: string; total: number; unique: number }[]
 }
@@ -15,9 +17,10 @@ export function Analytics({ data }: { data: AnalyticsData }) {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat icon={ScanLine} label="Total scans" value={data.total} />
         <Stat icon={Users} label="Unique members" value={data.unique} />
+        <Stat icon={Nfc} label="NFC taps" value={data.nfc} />
         <Stat icon={TrendingUp} label="Last 30 days" value={windowTotal} />
       </div>
 

@@ -7,6 +7,7 @@ import { groupedDestinations, isKnownDestination, SITE_DESTINATIONS } from '@/li
 import { createLink, updateLink, setLinkActive, type LinkInput } from './link-actions'
 import { Field, Badge, toLocalInput, fromLocalInput } from './form-bits'
 import { StyleEditor } from './style-editor'
+import { NfcWriter } from './nfc-writer'
 import { DEFAULT_STYLE, type QrStyle } from '@/lib/qr/style'
 import { shortLinkUrl } from '@/lib/qr/links'
 import type { PartnerOption } from './qr-studio'
@@ -250,6 +251,7 @@ function LinkCard({
               {copied ? <Check className="w-3 h-3 text-success" /> : <Copy className="w-3 h-3" />}
               {copied ? 'Copied' : 'Link'}
             </button>
+            <NfcWriter url={link.url} />
             <a
               href={link.url}
               target="_blank"

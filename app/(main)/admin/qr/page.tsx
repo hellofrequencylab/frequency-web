@@ -38,7 +38,7 @@ export default async function QrStudioPage() {
         .from('qr_codes')
         .select('id, slug, title, destination_type, target_url, alt_target_url, switch_at, node_id, circle_id, event_id, partner_id, active, valid_until, scan_count, style, purpose, owner_profile_id, created_at')
         .order('created_at', { ascending: false }),
-      db.from('qr_scans').select('qr_code_id, profile_id, scanned_at'),
+      db.from('qr_scans').select('qr_code_id, profile_id, scanned_at, medium'),
       db.from('partners').select('id, name').order('name'),
     ])
 
@@ -144,6 +144,7 @@ export default async function QrStudioPage() {
   const analytics: AnalyticsData = {
     total: summary.total,
     unique: summary.unique,
+    nfc: summary.byMedium.nfc,
     daily: summary.daily,
     topCodes,
   }

@@ -72,7 +72,14 @@ Studio with two kinds of code plus an analytics view:
    `qr_scans` + cached `scan_count`) then redirects to the *current* destination — so one
    printed code is retargeted with **no reprint**, the core of the "Both" model.
 3. **Analytics** — scan totals, unique members (distinct signed-in `profile_id`), a 30-day
-   series, and per-code performance, rolled up by the pure `lib/qr/analytics.ts`.
+   series, per-code performance, and a **QR-vs-NFC medium split**, rolled up by the pure
+   `lib/qr/analytics.ts`.
+
+**NFC parity (ADR-103).** Any code can be written to a physical NFC tag from the Studio via
+the Web NFC writer (`NDEFReader`, Chrome-Android). A dynamic-link tag encodes `?m=nfc`
+(`withMedium`); the resolver forwards it to `record_qr_scan`, persisting `qr_scans.medium`
+(`'qr' | 'nfc'`, default `'qr'`) so a tag tap is attributed apart from a printed-QR scan.
+Check-in nodes carry their channel via the node's own `type`, so their tags use the plain URL.
 
 Shared mechanics:
 - **Dynamic by construction.** The image only ever encodes a stable Frequency URL

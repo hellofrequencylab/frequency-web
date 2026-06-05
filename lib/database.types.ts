@@ -2219,6 +2219,7 @@ export type Database = {
           id: string
           lat: number | null
           lng: number | null
+          medium: string
           profile_id: string | null
           qr_code_id: string
           scanned_at: string
@@ -2229,6 +2230,7 @@ export type Database = {
           id?: string
           lat?: number | null
           lng?: number | null
+          medium?: string
           profile_id?: string | null
           qr_code_id: string
           scanned_at?: string
@@ -2239,6 +2241,7 @@ export type Database = {
           id?: string
           lat?: number | null
           lng?: number | null
+          medium?: string
           profile_id?: string | null
           qr_code_id?: string
           scanned_at?: string
@@ -4498,6 +4501,7 @@ export type Database = {
           p_city?: string
           p_lat?: number
           p_lng?: number
+          p_medium?: string
         }
         Returns: undefined
       }

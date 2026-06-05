@@ -2883,6 +2883,42 @@ obvious next iterations. Regenerate DB types to drop the untyped casts later.
 
 ---
 
+## ADR-103: NFC parity — Web NFC writer + per-scan medium attribution
+
+**Status:** Accepted · `supabase/migrations/20260605120000_qr_scan_medium.sql`,
+`app/(main)/admin/qr/nfc-writer.tsx`, `lib/qr/links.ts` (`withMedium`), `app/q/[slug]/route.ts`.
+Extends the QR platform (ADR-089→094) and the physical `nodes` engine.
+
+**Context.** `nodes` already supported `type='nfc'`, and the verify/capture/award
+pipeline is type-agnostic — but there was no way to actually *program* a physical NFC
+tag, and a tag tap on a **dynamic link** (`/q/<slug>`) was indistinguishable from a
+printed-QR scan in `qr_scans`. So "NFC" existed in the engine but not as a usable,
+measurable channel in the Studio. Issue #221 calls for NFC parity.
+
+**Decision.** Two additions, no new entity:
+- **Writer (client, Web NFC).** `NfcWriter` writes a code's URL to a tag via
+  `NDEFReader.write()` (Chrome-for-Android only; degrades to a plain "NFC (Android)"
+  hint everywhere else — the QR still covers those scanners). Surfaced on every code
+  card that already offers a download: dynamic links, member profile codes, marketing
+  codes, and check-in nodes.
+- **Medium attribution.** A written dynamic-link tag encodes `?m=nfc` (helper
+  `withMedium(url, 'nfc')`); the `/q` resolver reads it and forwards `p_medium` to
+  `record_qr_scan`, which stores it on a new, defaulted `qr_scans.medium` column
+  (`'qr' | 'nfc'`, default `'qr'`). Analytics (`summarizeScans`) split totals by
+  medium, surfaced as an **NFC taps** stat. Check-in **nodes** carry their channel via
+  the node's own `type`, so their tags are written with the plain URL (no marker).
+
+**Alternatives.** A separate `nfc_taps` table (rejected — medium is one column on the
+existing scan log); inferring NFC from the User-Agent (rejected — unreliable, and a tag
+URL is the authoritative signal). Native/Expo NFC reader is out of scope here (web only).
+
+**Consequences.** Operators can mint NFC tags for any code from an Android phone, and
+QR-vs-NFC performance is now measurable per code. The default keeps every existing row
+and every non-NFC caller correct. Signed anti-spoof payloads on tags and node-level NFC
+tap attribution (in `captures`) remain open follow-ups.
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 

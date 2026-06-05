@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { UserCircle, Pencil, Trash2, Download, Palette, EyeOff, Eye } from 'lucide-react'
 import { StyleEditor } from './style-editor'
+import { NfcWriter } from './nfc-writer'
 import { updateMarketingCodeAdmin, setMarketingActive, deleteMarketingCodeAdmin } from './marketing-actions'
 import type { QrStyle } from '@/lib/qr/style'
 
@@ -106,6 +107,7 @@ function MarketingCard({ code }: { code: MarketingCodeAdmin }) {
             <a href={`${api}&format=svg&download=${encodeURIComponent(code.slug)}`} className={DL}>
               <Download className="h-3 w-3" /> SVG
             </a>
+            <NfcWriter url={code.url} className={DL} />
             <button onClick={() => setEditing((v) => !v)} className={DL}>
               <Pencil className="h-3 w-3" /> {editing ? 'Close' : 'Edit'}
             </button>
