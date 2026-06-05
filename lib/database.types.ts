@@ -2982,6 +2982,7 @@ export type Database = {
           meta: Json | null
           nexus_region_id: string | null
           referred_by_profile_id: string | null
+          vcard: Json
           phone: string | null
           profile_border: string | null
           profile_flair: string | null
@@ -3023,6 +3024,7 @@ export type Database = {
           meta?: Json | null
           nexus_region_id?: string | null
           referred_by_profile_id?: string | null
+          vcard?: Json
           phone?: string | null
           profile_border?: string | null
           profile_flair?: string | null
@@ -3064,6 +3066,7 @@ export type Database = {
           meta?: Json | null
           nexus_region_id?: string | null
           referred_by_profile_id?: string | null
+          vcard?: Json
           phone?: string | null
           profile_border?: string | null
           profile_flair?: string | null
