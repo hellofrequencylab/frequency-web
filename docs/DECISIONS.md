@@ -4013,6 +4013,95 @@ Exposure scales with deliberate owner shares + locality, and every read is gated
 viewer-facing "request intro" action is wanted later, it slots onto the shared view.
 
 ---
+
+## ADR-133: Page admin dock Phase 2 — capability-driven modules + in-place editing
+
+**Status:** Accepted — build pending · Full spec: [EMBEDDED-ADMIN.md](EMBEDDED-ADMIN.md).
+Builds on **ADR-128** (`PageAdminDock`, Phase 1) and **ADR-127** (operations roles); uses
+`lib/core/capabilities.ts` (resolver) + `lib/core/staff-roles.ts` / `lib/staff.ts`
+(`staffCan`). Refines CAPABILITIES-AND-MOBILE.md §2 and PAGE-FRAMEWORK §3/§6.
+
+**Context.** ADR-128 shipped the right *chrome* — an edge-tab/header slide-out, push/overlay,
+resizable, persisted — but its panel is a **fixed action list branched on role** that
+**deep-links into `/admin/*`**; in-place layout/style editing is "Soon"; gating is by role,
+not the granular capability set. ADR-128 explicitly named Phase 2 as "tighten to the granular
+capability set (and ADR-127 operations roles)… true in-place editing." (This design was also
+produced independently as a planning spec; when the dock shipped in parallel the two were
+reconciled into this Phase-2 ADR rather than a competing one.)
+
+**Decision.** Build the dock's *content engine* — no new chrome.
+- **Replace the fixed action list with a declarative `AdminModule` registry** filtered by
+  `resolveCapabilities(viewer, scope)` (+ `staffCan` for operations roles). Tiers emerge from
+  filtering — **same box format, more boxes** — removing the dock's `isJanitor ? […]` /
+  `can('host')` branching. (`modulesFor` / `showsAdminPanel`.)
+- **In-place editing:** each module renders as an `AdminModuleCard` (a thin wrapper over
+  `SidebarCard`) that edits on the page (optimistic; the server action re-checks the *same*
+  capability), converting today's `Edit info → /admin/circles` deep-links and the "Soon"
+  layout/style items into in-place editors.
+- **Server-composed content:** the client dock takes **server children** (the donut) via a
+  Next 16 `@admin` parallel-route slot, so no other tier's UI ships to the client bundle.
+- **Absorb `/admin/*` progressively:** as a surface gets a module its dock link becomes the
+  module; residual platform surfaces (Members/Roles/AI/Vera/analytics) collapse into a
+  `global`-scope **Platform** module group, then `/admin` retires.
+- **Close the capability-loader gap:** add `hub`/`nexus` loaders + `loadCapabilitiesForScope`
+  in `load-capabilities.ts`; add `event`/`channel` `Scope` kinds as those pages gain modules.
+- **Enforcement unchanged:** capabilities are law server-side; the registry's
+  `requiredCapability` is UX metadata named identically to the action's re-check (meets
+  ADR-127's "write-action parity" slice).
+
+**Alternatives.** Build a separate `Sheet` primitive (rejected — the dock already *is* the
+slide-out; reuse it). Keep the fixed action list + role branching (rejected — doesn't scale per
+tier/scope; ADR-128 already committed to capability tightening). A DB `module_key → min_role`
+grid (deferred — capabilities are code-driven; the `area_permissions` override pattern is
+available later). Ship as a competing ADR-126 / standalone "embedded admin panel" (superseded —
+reconciled into this Phase-2 ADR after the dock shipped in parallel).
+
+**Consequences.** Net-new: the `AdminModule` registry (`lib/admin/modules/`), `AdminModuleCard`,
+the `@admin` slot, and `hub`/`nexus` loaders + dispatcher. The dock's `sectionEdit(pathname)`
+prefix map generalizes into the scope/registry model. The dock's chrome (push/overlay/resize/
+persist) is untouched. Rollout is additive and per-surface (engine → Circles pilot → scoped
+surfaces → Platform group → retire `/admin`). EMBEDDED-ADMIN.md is the source of truth;
+CAPABILITIES-AND-MOBILE §2 + PAGE-FRAMEWORK §3/§6 are refined; the operator guide goes to
+Notion on ship.
+=======
+## ADR-132: Cross-steward `network_local` discovery — turn on the gated tier with a read-only shared view
+
+**Status:** Accepted · shipped in `lib/crm/people-search.ts` (`searchVisibleLeads(..., {
+includeNetwork })`), `lib/connections/store.ts` (`getSharedContact`),
+`app/(main)/connections/shared/[id]/page.tsx`, and the steward-gated wiring in `/api/search` +
+`/people` (via `connectionsOwnerId()`). Completes the follow-up ADR-130 deferred. Full spec:
+[NETWORK-CRM.md](NETWORK-CRM.md) "Searchable by connection + locality".
+
+**Context.** ADR-130 modelled and tested the `network_local` tier of `canViewLead` — a capture a
+steward shares to the network becoming findable by a *local* steward — but did not broadcast it:
+a non-owner viewer had no page to land on, and cross-steward exposure of a non-consented personal
+capture is exactly the leak risk the Profile Creator gates (ADR-098). The owner-share control
+(`visibility='network'`, the Network/Private toggle) already exists, so the tier was one safe
+surface away.
+
+**Decision.** Turn the tier on, narrowly. A `network_local` capture surfaces only when **all**
+hold: the **viewer is a steward** (host+) or staff (`connectionsOwnerId()` gates the lead search —
+regular members never search leads); the owner **deliberately shared** it (`visibility='network'`);
+and the viewer is in the **same locality** (`city`). The surface is a **read-only shared view**
+(`/connections/shared/[id]`) exposing **business-card fields only** — name, title, company, city,
+website, socials, and *who shared it* — so the next step is to **ask that steward for an intro**.
+Email, phone, notes, tags and the photo stay owner-private. The page **re-checks all three gates
+server-side** (steward, `visibility='network'`, locality) — the search filter is never trusted as
+the authorization boundary. A capture linked to a member is skipped (found as a member instead).
+
+**Alternatives.** Show contact details / notes on the shared view (rejected — over-exposes a
+non-consented capture; the intro belongs to the owner). Surface network leads to all members
+(rejected — "network" means *stewards*, per the RLS intent). Auto-promote to a public profile
+(rejected — ADR-098's hard gate). Skip the dedicated page and deep-link into the owner's CRM
+(rejected — that's owner-private).
+
+**Consequences.** Local stewards can discover and get introduced to people other stewards have
+met, without any private capture data leaking and without touching the public member directory.
+Exposure scales with deliberate owner shares + locality, and every read is gated three ways. If a
+viewer-facing "request intro" action is wanted later, it slots onto the shared view.
+>>>>>>> origin/main
+
+---
 ### Decisions intentionally NOT duplicated here
 
 Already fully covered by the repo docs (no ADR needed): the RLS / admin-client

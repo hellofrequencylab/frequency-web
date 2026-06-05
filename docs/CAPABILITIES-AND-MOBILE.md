@@ -45,6 +45,16 @@ relationship + the presence of open tasks, computed server-side.
 
 ## 2. Inline admin & contextual actions (regular users never see an admin tab)
 
+> **Realized by ADR-128 (the `PageAdminDock`, Phase 1) and extended by ADR-133 /
+> [EMBEDDED-ADMIN.md](EMBEDDED-ADMIN.md) (Phase 2) — see [DECISIONS.md](DECISIONS.md).**
+> The principle below — *actions live where the thing lives* — holds and now ships as
+> the **page admin dock**: an edge-tab (desktop) / header-Shield (mobile) slide-out
+> giving operators per-page admin actions on the page itself, in push or overlay mode.
+> Phase 1 deep-links into `/admin/*` and gates by role; **Phase 2** makes the panel
+> **capability-driven** (modules per tier via the resolver + ADR-127 operations roles),
+> brings **in-place editing**, and **absorbs `/admin/*`** progressively. Members still
+> see no admin chrome; the §3 server-authority invariant is unchanged.
+
 **Principle: actions live where the thing lives.** The Admin tab is reserved for
 the **Janitor**'s deep, cross-entity work (bulk operations, the moderation queue,
 system config) — not for the everyday acts of running one circle.
