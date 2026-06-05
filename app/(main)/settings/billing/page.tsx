@@ -1,23 +1,19 @@
-import Link from 'next/link'
-import { CreditCard, ArrowLeft } from 'lucide-react'
+import { CreditCard } from 'lucide-react'
+import { FocusTemplate } from '@/components/templates'
+import { EmptyState } from '@/components/ui/empty-state'
 
 export default function BillingPage() {
   return (
-    <div className="px-6 py-8 max-w-2xl mx-auto">
-      <Link href="/settings" className="inline-flex items-center gap-1.5 text-sm text-subtle hover:text-text mb-4">
-        <ArrowLeft className="w-4 h-4" /> Settings
-      </Link>
-      <h1 className="text-2xl font-bold text-text mb-1">Billing &amp; Plans</h1>
-      <p className="text-sm text-muted mb-8">
-        Manage your subscription and payment methods.
-      </p>
-      <div className="rounded-xl border border-dashed border-border p-12 text-center">
-        <CreditCard className="w-8 h-8 text-subtle/60 mx-auto mb-3" />
-        <p className="text-sm font-medium text-text mb-1">Coming soon</p>
-        <p className="text-sm text-muted">
-          Billing management is being set up. Check back soon.
-        </p>
-      </div>
-    </div>
+    <FocusTemplate
+      title="Billing & Plans"
+      description="Manage your subscription and payment methods."
+      back={{ href: '/settings', label: 'Settings' }}
+    >
+      <EmptyState
+        icon={CreditCard}
+        title="Coming soon"
+        description="Billing management is being set up. Check back soon."
+      />
+    </FocusTemplate>
   )
 }

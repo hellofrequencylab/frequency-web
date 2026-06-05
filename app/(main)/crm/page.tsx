@@ -1,11 +1,13 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { Contact, MessageSquare, Globe, Cake, Sparkles, HeartPulse, Search, Mail, Phone, MapPin } from 'lucide-react'
+import { MessageSquare, Globe, Cake, Sparkles, HeartPulse, Search, Mail, Phone, MapPin } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
 import { RoleBadge } from '@/lib/community-roles'
 import { getInitials } from '@/lib/utils'
+import { DashboardTemplate } from '@/components/templates'
+import { EmptyState } from '@/components/ui/empty-state'
 
 export const dynamic = 'force-dynamic'
 
@@ -129,24 +131,23 @@ export default async function CrmPage() {
   }))
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <div className="mb-1 flex items-center gap-2">
-        <Contact className="h-5 w-5 text-primary-strong" />
-        <h1 className="text-2xl font-bold text-text">CRM</h1>
-      </div>
-      <p className="mb-6 text-sm text-muted">
-        The people in <strong className="text-text">{scopeLabel(role)}</strong> — get to know them and
-        reach out. No sensitive data: only what members choose to share.
-      </p>
-
+    <DashboardTemplate
+      eyebrow="Members"
+      title="CRM"
+      description={
+        <>
+          The people in <strong className="text-text">{scopeLabel(role)}</strong> — get to know them and
+          reach out. No sensitive data: only what members choose to share.
+        </>
+      }
+      width="wide"
+    >
       {members.length === 0 ? (
-        <div className="rounded-2xl border border-border bg-surface p-8 text-center">
-          <Search className="mx-auto h-6 w-6 text-subtle" />
-          <p className="mt-3 text-sm font-medium text-text">No members in your scope yet</p>
-          <p className="mt-1 text-sm text-muted">
-            As people join {scopeLabel(role)}, their cards will appear here.
-          </p>
-        </div>
+        <EmptyState
+          icon={Search}
+          title="No members in your scope yet"
+          description={`As people join ${scopeLabel(role)}, their cards will appear here.`}
+        />
       ) : (
         <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {members.map((m) => (
@@ -249,6 +250,6 @@ export default async function CrmPage() {
           ))}
         </ul>
       )}
-    </div>
+    </DashboardTemplate>
   )
 }

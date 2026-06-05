@@ -2149,6 +2149,20 @@ rasterizer is added (logged as a follow-up). Phases 3–4 (per-member codes, cha
 the styler for free.
 
 ---
+## ADR-090: Page-template kit completed — five shells, one `PageHeading`, declarative rail chrome
+
+**Status:** Accepted · 2026-06-05 · `components/templates/` (`page-heading`, `focus-template`, `dashboard-template`, `index.ts` barrel + refactored `index`/`stream`), `lib/layout/page-chrome.ts` (+ `.test.ts`), `components/layout/app-shell.tsx`
+
+**Context:** The page framework (this doc) defined three templates (Stream / Index / Detail) and an informal "Focus mode," but a design-team audit of every interior `(main)` page found it **half-adopted**: ~40 of ~75 pages hand-rolled their header, "Focus" was a hardcoded `pathname` list inside `app-shell.tsx` (so ~9 compose/edit/operator pages wrongly carried the global rail and crowded their content), and operator workspaces (Marketing/CRM/Crew) re-implemented stat tiles with no shared shell. The drift kept re-accruing because the system had gaps, not because the language was wrong.
+
+**Decision:** Finish the kit so a page is *two lines of decision — pick a template, register a rail*:
+- Promote **Focus** and **Dashboard** to real templates alongside Stream/Index/Detail; route all five through one `PageHeading` grammar (same type scale, eyebrow, description, action slot). `DashboardTemplate` is the no-rail operator sibling of `<AdminPage>`.
+- Make the rail **declarative**: `lib/layout/page-chrome.ts` exports `railFor(pathname) → 'global' | 'scoped' | 'none'`; the shell shows the global rail iff `=== 'global'`. The old `SCOPED_SECTIONS` + `showSidebar` conditionals are gone. Reframing a route is a one-line edit there (locked by `page-chrome.test.ts`), never a shell edit.
+- Export everything from a `@/components/templates` barrel; codify the decision tree in PAGE-FRAMEWORK §8 and the guardrail in `AGENTS.md`.
+
+**Consequences:** Adopting `FocusTemplate` simultaneously fixed the wrong-rail bug on `/events/new`, `/practices/*/edit`, `/upgrade`, `/crm`, `/outreach`, `/codes`, `/connections/*`, `/g/*`, `/n/*` (one config, nine pages). Interior pages now become *assembly, not authoring*; remaining work is mechanical adoption tracked in [REDESIGN-INAPP.md](REDESIGN-INAPP.md). No data-fetching or capability gating changed — this is presentational chrome + a rail map only.
+
+---
 ## ADR-089: Dynamic QR links as a first-class `qr_codes` entity (the "Both" model)
 
 **Status:** Accepted · 2026-06-05 · migration `20260605010000_qr_codes_dynamic_links` (applied to prod), `app/q/[slug]/`, `app/(main)/admin/qr/` (Dynamic links + Analytics tabs), `lib/qr/{codes,analytics}.ts`

@@ -1,5 +1,8 @@
 import { listBetaSignups, summarizeBeta, pendingEmailCount, type BetaStatus } from '@/lib/studio/beta'
 import { admitBetaSignup, resendBetaConfirm, drainQueueNow } from './actions'
+import { DashboardTemplate } from '@/components/templates'
+import { StatCard } from '@/components/ui/stat-card'
+import { EmptyState } from '@/components/ui/empty-state'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,15 +32,13 @@ export default async function BetaPage() {
   const stats = summarizeBeta(signups)
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-text mb-1">Beta waitlist</h1>
-      <p className="text-sm text-muted leading-relaxed max-w-2xl mb-6">
-        People who asked to join the community Beta. Admit confirmed signups in
-        batches to send them their invite to create an account.
-      </p>
-
+    <DashboardTemplate
+      eyebrow="Marketing"
+      title="Beta waitlist"
+      description="People who asked to join the community Beta. Admit confirmed signups in batches to send them their invite to create an account."
+    >
       {queued > 0 && (
-        <div className="mb-6 flex items-center justify-between gap-4 rounded-2xl border border-warning bg-warning-bg/50 px-4 py-3">
+        <div className="flex items-center justify-between gap-4 rounded-2xl border border-warning bg-warning-bg/50 px-4 py-3">
           <p className="text-sm text-text">
             <span className="font-semibold">{queued} email{queued === 1 ? '' : 's'} waiting to send.</span>{' '}
             <span className="text-muted">
@@ -57,17 +58,15 @@ export default async function BetaPage() {
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-        <Stat label="Total" value={stats.total} />
-        <Stat label="Pending confirm" value={stats.pending} tone="warning" />
-        <Stat label="Ready to admit" value={stats.confirmed} tone="success" />
-        <Stat label="Invited" value={stats.invited} tone="signal" />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <StatCard label="Total" value={stats.total.toLocaleString()} />
+        <StatCard label="Pending confirm" value={stats.pending.toLocaleString()} />
+        <StatCard label="Ready to admit" value={stats.confirmed.toLocaleString()} />
+        <StatCard label="Invited" value={stats.invited.toLocaleString()} />
       </div>
 
       {signups.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border bg-surface/60 px-4 py-10 text-center">
-          <p className="text-sm text-muted">No beta signups yet.</p>
-        </div>
+        <EmptyState title="No beta signups yet." />
       ) : (
         <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-x-auto">
           <table className="w-full text-sm">
@@ -123,25 +122,6 @@ export default async function BetaPage() {
           </table>
         </div>
       )}
-    </div>
-  )
-}
-
-function Stat({
-  label,
-  value,
-  tone,
-}: {
-  label: string
-  value: number
-  tone?: 'warning' | 'success' | 'signal'
-}) {
-  const accent =
-    tone === 'warning' ? 'text-warning' : tone === 'success' ? 'text-success' : tone === 'signal' ? 'text-signal-strong' : 'text-text'
-  return (
-    <div className="rounded-2xl border border-border bg-surface px-4 py-3.5">
-      <p className={`text-2xl font-bold ${accent}`}>{value.toLocaleString()}</p>
-      <p className="text-xs uppercase tracking-wider text-subtle mt-1 font-semibold">{label}</p>
-    </div>
+    </DashboardTemplate>
   )
 }
