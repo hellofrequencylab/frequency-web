@@ -44,7 +44,7 @@ export default async function SignInPage({
               autoComplete="email"
               required
               placeholder="you@example.com"
-              className="mt-1 block w-full rounded-lg border border-border-strong bg-surface px-3 py-2.5 text-sm text-text placeholder-subtle shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="mt-1 block w-full rounded-lg border border-border-strong bg-surface px-3 py-2.5 text-sm text-text placeholder-subtle shadow-sm focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30"
             />
           </div>
           <button

@@ -125,7 +125,7 @@ export function SupportLauncher({ index }: { index: HelpSearchEntry[] }) {
                 }}
                 placeholder="Search help, or ask a question…"
                 aria-label="Search help or ask Vera"
-                className="w-full rounded-lg border border-border bg-surface-elevated py-2 pl-9 pr-3 text-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)]"
+                className="w-full rounded-lg border border-border bg-surface-elevated py-2 pl-9 pr-3 text-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-[var(--color-border-strong)]"
               />
             </form>
 

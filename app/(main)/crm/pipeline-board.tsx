@@ -64,7 +64,7 @@ export function PipelineBoard({ stages, deals }: { stages: CrmStage[]; deals: Cr
 
   const byStage = (id: string) => deals.filter((d) => d.stage_id === id)
   const stageValue = (id: string) => byStage(id).reduce((s, d) => s + (d.value || 0), 0)
-  const field = 'rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-text focus:border-primary focus:outline-none'
+  const field = 'rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-text focus:border-border-strong focus:outline-none'
 
   return (
     <div className="space-y-4">

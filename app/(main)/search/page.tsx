@@ -155,7 +155,7 @@ export default async function SearchPage({
               placeholder="Search people, posts, events…"
               autoFocus
               autoComplete="off"
-              className="w-full rounded-xl border border-border bg-surface pl-9 pr-4 py-2.5 text-sm text-text placeholder:text-subtle focus:border-primary dark:focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40 dark:focus:ring-primary/30"
+              className="w-full rounded-xl border border-border bg-surface pl-9 pr-4 py-2.5 text-sm text-text placeholder:text-subtle focus:border-border-strong dark:focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/30 dark:focus:ring-border-strong/30"
             />
             {/* Preserve tab across searches */}
             <input type="hidden" name="tab" value={tab} />

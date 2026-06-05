@@ -67,7 +67,7 @@ export function InlineBetaCapture({
           autoComplete="given-name"
           aria-label="First name (optional)"
           placeholder="First name"
-          className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-base text-text placeholder:text-subtle outline-none transition-colors focus:border-primary sm:w-1/3"
+          className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-base text-text placeholder:text-subtle outline-none transition-colors focus:border-border-strong sm:w-1/3"
         />
         <input
           type="email"
@@ -77,7 +77,7 @@ export function InlineBetaCapture({
           autoComplete="email"
           aria-label="Email"
           placeholder="you@email.com"
-          className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-base text-text placeholder:text-subtle outline-none transition-colors focus:border-primary"
+          className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-base text-text placeholder:text-subtle outline-none transition-colors focus:border-border-strong"
         />
         <button
           type="submit"

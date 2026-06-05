@@ -44,7 +44,7 @@ export function ClaimCircle({
   }
 
   const field =
-    'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:border-primary focus:outline-none'
+    'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:border-border-strong focus:outline-none'
 
   return (
     <>

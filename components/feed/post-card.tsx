@@ -6,21 +6,7 @@ import { PostReplies } from './post-replies'
 import { ContextActions } from '@/components/context-actions'
 import { DemoBadge } from '@/components/ui/demo-badge'
 import { getInitials, relativeTime } from '@/lib/utils'
-
-function renderBodyWithMentions(body: string): React.ReactNode[] {
-  const parts = body.split(/(@[a-zA-Z0-9_]+)/g)
-  return parts.map((part, i) => {
-    if (/^@[a-zA-Z0-9_]+$/.test(part)) {
-      const handle = part.slice(1)
-      return (
-        <Link key={i} href={`/people/${handle}`} className="text-primary-strong hover:underline font-medium">
-          {part}
-        </Link>
-      )
-    }
-    return part
-  })
-}
+import { PostBody } from './post-body'
 
 import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
 
@@ -207,9 +193,7 @@ export function PostCard({
 
           {/* Body */}
           {post.body && (
-            <p className="text-sm text-text dark:text-subtle/60 leading-relaxed whitespace-pre-wrap mb-3">
-              {renderBodyWithMentions(post.body)}
-            </p>
+            <PostBody body={post.body} className="mb-3 text-sm leading-relaxed text-text dark:text-subtle/60" />
           )}
 
           {/* Post image */}

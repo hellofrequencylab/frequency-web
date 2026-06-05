@@ -33,7 +33,7 @@ export function HostInviteEmail({ circleId }: { circleId: string }) {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="Invite by email"
-        className="rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs text-text placeholder:text-subtle focus:border-primary focus:outline-none"
+        className="rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
       />
       <button
         onClick={submit}

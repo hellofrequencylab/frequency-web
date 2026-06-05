@@ -87,7 +87,7 @@ export default async function ConnectionsPage({
                 name="q"
                 defaultValue={q}
                 placeholder="Search…"
-                className="w-44 rounded-lg border border-border-strong bg-surface py-1.5 pl-8 pr-2 text-sm text-text placeholder-subtle focus:border-primary focus:outline-none"
+                className="w-44 rounded-lg border border-border-strong bg-surface py-1.5 pl-8 pr-2 text-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none"
               />
             </form>
           </div>
