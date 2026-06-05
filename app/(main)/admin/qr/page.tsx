@@ -24,7 +24,7 @@ export const dynamic = 'force-dynamic'
 //   • Analytics      — scan totals + per-code performance from `qr_scans`
 // All QR images are rendered server-side here and handed down as SVG strings.
 export default async function QrStudioPage() {
-  await requireAdmin('host')
+  await requireAdmin('host', { staff: 'qr' })
   const db = createAdminClient()
 
   const [{ data: nodes }, { data: caps }, { data: links }, { data: scans }, { data: partners }] =

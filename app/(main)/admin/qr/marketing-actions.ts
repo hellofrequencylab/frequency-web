@@ -29,7 +29,7 @@ export async function updateMarketingCodeAdmin(
   id: string,
   input: { title: string; style: QrStyle },
 ): Promise<ActionResult> {
-  await requireAdmin('host')
+  await requireAdmin('host', { staff: 'qr' })
   const title = input.title.trim()
   if (!title) return fail('Give the code a name.')
 
@@ -47,7 +47,7 @@ export async function updateMarketingCodeAdmin(
 }
 
 export async function setMarketingActive(id: string, active: boolean): Promise<ActionResult> {
-  await requireAdmin('host')
+  await requireAdmin('host', { staff: 'qr' })
   const db = createAdminClient()
   if (!(await assertMarketing(db, id))) return fail('Not a member marketing code.')
 
@@ -59,7 +59,7 @@ export async function setMarketingActive(id: string, active: boolean): Promise<A
 }
 
 export async function deleteMarketingCodeAdmin(id: string): Promise<ActionResult> {
-  await requireAdmin('host')
+  await requireAdmin('host', { staff: 'qr' })
   const db = createAdminClient()
   if (!(await assertMarketing(db, id))) return fail('Not a member marketing code.')
 

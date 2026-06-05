@@ -19,7 +19,7 @@ function RateCell({ rate, started }: { rate: number | null; started: number }) {
 }
 
 export default async function OutcomesPage() {
-  await requireAdmin('janitor')
+  await requireAdmin('janitor', { staff: 'insights', staffLevel: 'read' })
 
   const { challenges, quests, circles, circleStatus } = await getOutcomeReport()
 

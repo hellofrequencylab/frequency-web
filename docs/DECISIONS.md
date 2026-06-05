@@ -3763,10 +3763,16 @@ community-janitor only** (Roles · Members · AI · Platform · Vera have no `st
 `admin/actions.ts` (circle/channel/event/dispatch/crew-task create·update·archive·
 delete + verification approve/reject) now authorize via `authorizeAction(caller,
 'host', 'community')` — community host+ OR staff community-write. The **sensitive
-mutations stay community-only** (assignRole, deactivateMember, member/account actions,
-and structure create/update — `guide`/`mentor`). **Still to do:** wire the remaining
-*read/nav* groups (Structure · Insights · QR) and their actions. Extends ADR-027;
-layers over `ADMIN_GROUPS` + `area_permissions`.
+mutations stay community-only** (assignRole, deactivateMember, member/account actions).
+**Structure · Insights · QR shipped:** Structure (hubs/nexuses — pages + `createHub`/
+`updateHub`/`createNexus`/`updateNexus`) and QR (pages + all `qr/*` actions) union the
+`'structure'`/`'qr'` capability (write); **Insights** (engagement/intel/outcomes/AI-read/
+segments) unions `'insights'` at **read** level (so Analyst can view, not mutate). The
+`/admin` floor is now `requireAdminFloor()` (community host+ OR any staff that can read
+an admin group). **Sensitive groups remain community-janitor only** (Roles · Members ·
+AI · Demo · Vera have no `staffDomain`). The capability model is now the authoritative
+gate across the admin surfaces. Extends ADR-027; layers over `ADMIN_GROUPS` +
+`area_permissions`.
 
 **Context.** Two axes exist: the **community trust ladder** (member→…→admin→janitor, community
 standing) and a separate **staff/operations** axis (`team_members`: analyst→marketer→admin→owner,

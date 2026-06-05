@@ -88,7 +88,7 @@ function clean(input: NodeInput) {
 
 /** Create a new code (node). Returns the new id so the UI can show its QR. */
 export async function createNode(input: NodeInput): Promise<ActionResult<{ id: string }>> {
-  await requireAdmin('host')
+  await requireAdmin('host', { staff: 'qr' })
   const row = clean(input)
   if (!row) return fail('Give the code a label and valid settings.')
 
@@ -113,7 +113,7 @@ export async function createNode(input: NodeInput): Promise<ActionResult<{ id: s
 
 /** Edit an existing code's reward, rule, expiry, or partner link. */
 export async function updateNode(id: string, input: NodeInput): Promise<ActionResult> {
-  await requireAdmin('host')
+  await requireAdmin('host', { staff: 'qr' })
   const row = clean(input)
   if (!row) return fail('Give the code a label and valid settings.')
 
@@ -147,7 +147,7 @@ export async function updateNode(id: string, input: NodeInput): Promise<ActionRe
 /** Retire / re-activate a code without deleting its capture history. An inactive
  *  node 404s the scan landing page, so a printed code goes dark instantly. */
 export async function setNodeActive(id: string, active: boolean): Promise<ActionResult> {
-  await requireAdmin('host')
+  await requireAdmin('host', { staff: 'qr' })
   const db = createAdminClient()
   const { error } = await db.from('nodes').update({ active }).eq('id', id)
   if (error) return fail('Could not update the code status.')

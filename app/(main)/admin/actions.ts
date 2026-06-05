@@ -375,8 +375,7 @@ export async function archiveChannel(id: string) {
 // ── Hubs ──────────────────────────────────────────────────────────────────────
 
 export async function createHub(fd: FormData) {
-  const caller = await getCallerProfile()
-  if (!caller || !hasRole(caller.community_role, 'guide')) throw new Error('Unauthorized')
+  const caller = await authorizeAction(await getCallerProfile(), 'guide', 'structure')
 
   const name     = (fd.get('name') as string).trim()
   const nexus_id = (fd.get('nexus_id') as string) || null
@@ -394,8 +393,7 @@ export async function createHub(fd: FormData) {
 }
 
 export async function updateHub(id: string, fd: FormData) {
-  const caller = await getCallerProfile()
-  if (!caller || !hasRole(caller.community_role, 'guide')) throw new Error('Unauthorized')
+  const caller = await authorizeAction(await getCallerProfile(), 'guide', 'structure')
   const admin = createAdminClient()
   const { error } = await admin.from('hubs').update({
     name:     (fd.get('name') as string).trim(),
@@ -410,8 +408,7 @@ export async function updateHub(id: string, fd: FormData) {
 // ── Nexuses ───────────────────────────────────────────────────────────────────
 
 export async function createNexus(fd: FormData) {
-  const caller = await getCallerProfile()
-  if (!caller || !hasRole(caller.community_role, 'mentor')) throw new Error('Unauthorized')
+  const caller = await authorizeAction(await getCallerProfile(), 'mentor', 'structure')
 
   const name       = (fd.get('name') as string).trim()
   const cap        = parseInt(fd.get('member_cap') as string) || 100
@@ -431,8 +428,7 @@ export async function createNexus(fd: FormData) {
 }
 
 export async function updateNexus(id: string, fd: FormData) {
-  const caller = await getCallerProfile()
-  if (!caller || !hasRole(caller.community_role, 'mentor')) throw new Error('Unauthorized')
+  const caller = await authorizeAction(await getCallerProfile(), 'mentor', 'structure')
   const admin = createAdminClient()
   const { error } = await admin.from('nexuses').update({
     name:       (fd.get('name') as string).trim(),

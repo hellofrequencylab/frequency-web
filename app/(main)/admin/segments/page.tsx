@@ -8,7 +8,7 @@ import { listSegmentsDetailed, describeSegment } from '@/lib/traits/segments'
 export const dynamic = 'force-dynamic'
 
 export default async function SegmentsPage() {
-  await requireAdmin('janitor')
+  await requireAdmin('janitor', { staff: 'insights', staffLevel: 'read' })
 
   const segments = await listSegmentsDetailed()
 

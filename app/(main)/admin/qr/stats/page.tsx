@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic'
 // function of the QR system: scan volume + funnel, where scans happen (locator map),
 // the live code inventory, top locations, and top codes.
 export default async function QrStatsPage() {
-  await requireAdmin('host')
+  await requireAdmin('host', { staff: 'qr' })
   const db = createAdminClient()
 
   const [{ data: scans }, { data: codes }, { count: nodeCount }, { data: events }, { data: challenges }, { data: acq }] =
