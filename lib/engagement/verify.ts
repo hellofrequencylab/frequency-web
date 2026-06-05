@@ -27,6 +27,7 @@ export type VerifyReason =
   | 'already_captured'
   | 'location_required'
   | 'too_far'
+  | 'capacity_reached'
 
 export interface VerifyResult {
   ok: boolean
@@ -43,7 +44,7 @@ export async function verifyCapture(attempt: CaptureAttempt): Promise<VerifyResu
 
   const { data: node } = await db
     .from('nodes')
-    .select('active, secret, capture_rule, proximity_m, location, valid_from, valid_until')
+    .select('active, secret, capture_rule, proximity_m, location, valid_from, valid_until, max_claims')
     .eq('id', attempt.nodeId)
     .maybeSingle()
 
@@ -69,6 +70,16 @@ export async function verifyCapture(attempt: CaptureAttempt): Promise<VerifyResu
     if (node.capture_rule === 'once_per_user') q = q.eq('actor_profile_id', attempt.actorProfileId)
     const { count } = await q
     if ((count ?? 0) > 0) return { ok: false, reason: 'already_captured' }
+  }
+
+  // Scarcity cap: a "first N win" code stops earning once N verified claims exist.
+  if (node.max_claims != null && node.max_claims > 0) {
+    const { count } = await db
+      .from('captures')
+      .select('id', { count: 'exact', head: true })
+      .eq('node_id', attempt.nodeId)
+      .eq('verified', true)
+    if ((count ?? 0) >= node.max_claims) return { ok: false, reason: 'capacity_reached' }
   }
 
   // Proximity: delegate the geo math to PostGIS via the SECURITY DEFINER RPC.

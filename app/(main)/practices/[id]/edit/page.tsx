@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { redirect, notFound } from 'next/navigation'
 import { getMyProfileId } from '@/lib/auth'
-import { getPractice } from '@/lib/practices'
+import { getPractice, listSubcategories, getPracticeTagLabels } from '@/lib/practices'
 import { getPillars } from '@/lib/pillars'
 import { FocusTemplate } from '@/components/templates'
 import { PracticeEditor } from '@/components/practice/practice-editor'
@@ -24,7 +24,11 @@ export default async function EditPracticePage({ params }: { params: Promise<{ i
     notFound()
   }
 
-  const pillars = await getPillars()
+  const [pillars, subcategories, tags] = await Promise.all([
+    getPillars(),
+    listSubcategories(),
+    getPracticeTagLabels(id),
+  ])
 
   return (
     <FocusTemplate
@@ -32,7 +36,12 @@ export default async function EditPracticePage({ params }: { params: Promise<{ i
       description="Shape your practice — its cadence, guide, and how it shows up across the app."
       back={{ href: '/practices', label: 'Practices' }}
     >
-      <PracticeEditor practice={practice} pillars={pillars.map((p) => ({ id: p.id, name: p.name }))} />
+      <PracticeEditor
+        practice={practice}
+        pillars={pillars.map((p) => ({ id: p.id, name: p.name }))}
+        subcategories={subcategories.map((s) => ({ id: s.id, domain_id: s.domain_id, name: s.name }))}
+        initialTags={tags}
+      />
     </FocusTemplate>
   )
 }

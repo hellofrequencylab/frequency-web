@@ -42,9 +42,9 @@ export async function GET(request: Request) {
   } else if (nodeId) {
     // A check-in code (nodes): encodes /n/<id>, styled like a dynamic link.
     const admin = createAdminClient()
-    const { data } = await admin.from('nodes').select('style').eq('id', nodeId).maybeSingle()
+    const { data } = await admin.from('nodes').select('style, secret').eq('id', nodeId).maybeSingle()
     if (!data) return new Response('Unknown code.', { status: 404 })
-    target = nodeUrl(nodeId)
+    target = nodeUrl(nodeId, data.secret)
     style = parseStyle(data.style)
     defaultName = `checkin-${nodeId.slice(0, 8)}`
   } else {

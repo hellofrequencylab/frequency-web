@@ -6,9 +6,12 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { forkPracticeAction } from './actions'
 import {
   listPublicPractices,
+  listSubcategories,
   getMemberPractices,
   getRecentPracticeLogs,
   type Practice,
+  type PracticeTag,
+  type PracticeSort,
 } from '@/lib/practices'
 import { getPillars, pillarsById, type Pillar } from '@/lib/pillars'
 import { LogPracticeButton } from '@/components/practice/log-practice-button'
@@ -62,11 +65,15 @@ function PracticeRow({
   p,
   byId,
   isDemo = false,
+  subcategory = null,
+  tags = [],
   actions,
 }: {
   p: Practice
   byId: Map<string, Pillar>
   isDemo?: boolean
+  subcategory?: { slug: string; name: string } | null
+  tags?: PracticeTag[]
   actions: React.ReactNode
 }) {
   return (
@@ -79,6 +86,11 @@ function PracticeRow({
         <div className="flex flex-wrap items-center gap-2">
           <p className="text-base font-bold text-text">{p.title}</p>
           {p.domain_id && byId.has(p.domain_id) && <PillarBadge name={byId.get(p.domain_id)!.name} />}
+          {subcategory && (
+            <span className="rounded-full bg-primary-bg px-2 py-0.5 text-xs font-medium text-primary-strong">
+              {subcategory.name}
+            </span>
+          )}
           {isDemo && <DemoBadge />}
         </div>
         {(p.summary ?? p.description) && (
@@ -87,6 +99,15 @@ function PracticeRow({
           </p>
         )}
         <PracticeMeta p={p} />
+        {tags.length > 0 && (
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            {tags.map((t) => (
+              <span key={t.slug} className="rounded-full bg-surface-elevated px-2 py-0.5 text-xs text-subtle">
+                #{t.label}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
       <div className="flex shrink-0 items-center gap-2">{actions}</div>
     </li>
@@ -109,17 +130,31 @@ function PillarFilterChip({ label, href, active }: { label: string; href: string
   )
 }
 
+// Build a shareable library URL from the active filter/sort state (no client JS).
+function libHref({ pillar, sub, sort }: { pillar?: string | null; sub?: string | null; sort?: string }) {
+  const q = new URLSearchParams()
+  if (pillar) q.set('pillar', pillar)
+  if (sub) q.set('sub', sub)
+  if (sort && sort !== 'trending') q.set('sort', sort)
+  const s = q.toString()
+  return s ? `/practices?${s}` : '/practices'
+}
+
 export default async function PracticesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ pillar?: string }>
+  searchParams: Promise<{ pillar?: string; sub?: string; sort?: string }>
 }) {
+  const { pillar: pillarParam, sub: subParam, sort: sortParam } = await searchParams
+  const sort: PracticeSort = sortParam === 'top' || sortParam === 'new' ? sortParam : 'trending'
+
   const profileId = await getMyProfileId()
-  const [library, mine, recent, pillars] = await Promise.all([
-    listPublicPractices(),
+  const [library, mine, recent, pillars, subcategories] = await Promise.all([
+    listPublicPractices(sort),
     profileId ? getMemberPractices(profileId) : Promise.resolve([]),
     profileId ? getRecentPracticeLogs(profileId, 60) : Promise.resolve([]),
     getPillars(),
+    listSubcategories(),
   ])
   const byId = pillarsById(pillars)
   const mineIds = new Set(mine.map((p) => p.id))
@@ -136,12 +171,14 @@ export default async function PracticesPage({
     .eq('is_demo', true)
   const demoIds = new Set((demoRows ?? []).map((r) => r.id as string))
 
-  // Library filter by Pillar (URL-driven, so it's shareable + needs no client JS).
-  const { pillar: pillarParam } = await searchParams
+  // Library filters by Pillar → sub-category (URL-driven, shareable, no client JS).
   const activePillar = pillars.find((p) => p.slug === pillarParam)?.id ?? null
+  const pillarSubs = activePillar ? subcategories.filter((s) => s.domain_id === activePillar) : []
+  const activeSubSlug = pillarSubs.some((s) => s.slug === subParam) ? subParam : null
   const unadopted = library
     .filter((p) => !mineIds.has(p.id))
     .filter((p) => !activePillar || p.domain_id === activePillar)
+    .filter((p) => !activeSubSlug || p.subcategory?.slug === activeSubSlug)
     .filter((p) => !hideDemo || !demoIds.has(p.id))
 
   // Last 14 days as a simple activity strip (filled = logged a practice that day).
@@ -248,17 +285,43 @@ export default async function PracticesPage({
         <section>
           <SectionHeader title="Practice library" count={libraryCount} />
 
-          {/* Filter the library by Pillar (Mind / Body / Spirit / Expression). */}
-          <div className="mb-3 flex flex-wrap gap-1.5">
-            <PillarFilterChip label="All" href="/practices" active={!activePillar} />
-            {pillars.map((pl) => (
-              <PillarFilterChip
-                key={pl.slug}
-                label={pl.name}
-                href={`/practices?pillar=${pl.slug}`}
-                active={pillarParam === pl.slug}
-              />
-            ))}
+          {/* Sort + filter the library (Trending/All-time/New · Pillar · sub-category). */}
+          <div className="mb-3 space-y-2">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="mr-1 text-xs font-medium uppercase tracking-wide text-subtle">Sort</span>
+              {(['trending', 'top', 'new'] as const).map((s) => (
+                <PillarFilterChip
+                  key={s}
+                  label={s === 'trending' ? 'Trending' : s === 'top' ? 'All-time' : 'New'}
+                  href={libHref({ pillar: pillarParam, sub: activeSubSlug, sort: s })}
+                  active={sort === s}
+                />
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              <PillarFilterChip label="All Pillars" href={libHref({ sort })} active={!activePillar} />
+              {pillars.map((pl) => (
+                <PillarFilterChip
+                  key={pl.slug}
+                  label={pl.name}
+                  href={libHref({ pillar: pl.slug, sort })}
+                  active={pillarParam === pl.slug}
+                />
+              ))}
+            </div>
+            {pillarSubs.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                <PillarFilterChip label="All" href={libHref({ pillar: pillarParam, sort })} active={!activeSubSlug} />
+                {pillarSubs.map((s) => (
+                  <PillarFilterChip
+                    key={s.slug}
+                    label={s.name}
+                    href={libHref({ pillar: pillarParam, sub: s.slug, sort })}
+                    active={subParam === s.slug}
+                  />
+                ))}
+              </div>
+            )}
           </div>
 
           {profileId && (
@@ -280,6 +343,8 @@ export default async function PracticesPage({
                   p={p}
                   byId={byId}
                   isDemo={demoIds.has(p.id)}
+                  subcategory={p.subcategory}
+                  tags={p.tags}
                   actions={
                     <>
                       {profileId && (

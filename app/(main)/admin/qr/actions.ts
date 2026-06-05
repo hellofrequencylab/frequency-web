@@ -11,6 +11,7 @@
 // geography from lat/lng), and the `/n` claim flow forwards the device location so
 // verifyCapture enforces proximity. Signed payloads remain a follow-up.
 
+import { randomBytes } from 'node:crypto'
 import { revalidatePath } from 'next/cache'
 import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -35,8 +36,18 @@ export interface NodeInput {
   lng: number | null
   /** Required radius in metres when a geofence is set (default 100). */
   proximityM: number | null
+  /** Total verified-claim cap ("first N win"); null = unlimited. */
+  maxClaims: number | null
+  /** Require a signed payload — the code carries a server-issued secret (`?s=`)
+   *  that verifyCapture must match, so a forged /n/<id> URL can't claim. */
+  requireSignature: boolean
   /** Visual QR design; sanitized by parseStyle before persisting. */
   style: QrStyle
+}
+
+/** A URL-safe, unguessable signing token for a node payload. */
+function newSecret(): string {
+  return randomBytes(18).toString('base64url')
 }
 
 /** Validate a geofence, or null when none/invalid (which CLEARS the requirement). */
@@ -59,6 +70,10 @@ function clean(input: NodeInput) {
   const label = input.label.trim()
   if (!label) return null
   const zaps = Number.isFinite(input.zaps_value) ? Math.max(0, Math.round(input.zaps_value)) : 0
+  const maxClaims =
+    input.maxClaims != null && Number.isFinite(input.maxClaims) && input.maxClaims > 0
+      ? Math.round(input.maxClaims)
+      : null
   return {
     type: input.type,
     label,
@@ -66,6 +81,7 @@ function clean(input: NodeInput) {
     capture_rule: input.capture_rule,
     valid_until: input.valid_until ? input.valid_until : null,
     partner_id: input.partner_id ? input.partner_id : null,
+    max_claims: maxClaims,
     style: parseStyle(input.style) as unknown as Json,
   }
 }
@@ -77,7 +93,8 @@ export async function createNode(input: NodeInput): Promise<ActionResult<{ id: s
   if (!row) return fail('Give the code a label and valid settings.')
 
   const db = createAdminClient()
-  const { data, error } = await db.from('nodes').insert(row).select('id').single()
+  const insertRow = input.requireSignature ? { ...row, secret: newSecret() } : row
+  const { data, error } = await db.from('nodes').insert(insertRow).select('id').single()
   if (error || !data) return fail('Could not create the code.')
 
   const geo = cleanGeo(input)
@@ -101,7 +118,15 @@ export async function updateNode(id: string, input: NodeInput): Promise<ActionRe
   if (!row) return fail('Give the code a label and valid settings.')
 
   const db = createAdminClient()
-  const { error } = await db.from('nodes').update(row).eq('id', id)
+  // Signed payload: mint a secret when first required, keep it while it stays on,
+  // clear it when turned off. (Re-minting each save would invalidate printed codes.)
+  const { data: existing } = await db.from('nodes').select('secret').eq('id', id).maybeSingle()
+  const secretPatch: { secret?: string | null } = input.requireSignature
+    ? existing?.secret
+      ? {}
+      : { secret: newSecret() }
+    : { secret: null }
+  const { error } = await db.from('nodes').update({ ...row, ...secretPatch }).eq('id', id)
   if (error) return fail('Could not save changes.')
 
   // Set or clear the geofence (null lat/lng clears the proximity requirement).

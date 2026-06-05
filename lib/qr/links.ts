@@ -10,9 +10,12 @@
 import { SITE_URL } from '@/lib/site'
 
 /** Absolute URL a physical-node QR/NFC encodes — the capture landing page
- *  (`app/(main)/n/[nodeId]`) that runs the verified earn pipeline. */
-export function nodeUrl(nodeId: string): string {
-  return `${SITE_URL}/n/${nodeId}`
+ *  (`app/(main)/n/[nodeId]`) that runs the verified earn pipeline. When the node
+ *  requires a signed payload, the secret rides along as `?s=` so a forged URL
+ *  (from just the node id) can't claim it — verifyCapture checks the match. */
+export function nodeUrl(nodeId: string, secret?: string | null): string {
+  const base = `${SITE_URL}/n/${nodeId}`
+  return secret ? `${base}?s=${encodeURIComponent(secret)}` : base
 }
 
 /** Absolute URL a member's personal "connect" code points at — their public

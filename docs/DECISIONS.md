@@ -3126,6 +3126,184 @@ untyped-client casts. Ranking weights live in the RPC (tunable).
 
 ---
 
+## ADR-110: Practice library expansion — balance the four Pillars; seed as system content
+
+**Status:** Accepted · `supabase/migrations/20260606130000_practices_library_expansion.sql`. See [getting-started/practices.md](../content/help/getting-started/practices.md) (member-facing).
+
+**Context.** The starter library shipped 5 core practices (`20240228000000_practices.sql`,
+enriched in `20260605000000_practices_rich_content.sql`). But those 5 only covered two of
+the four Pillars (Body ×2, Spirit ×3) and three of the six categories — **Mind and
+Expression had no core practice**, and the **human-relating** category was empty. A member
+landing on the library saw a lopsided picture of what a practice can be.
+
+**Decision.** Add **16 system-owned, public, rich-content practices** (created_by null,
+is_public true) so every Pillar and category is represented: Mind +7 (Deep work block, Read
+ten pages, Digital sunset, Plan tomorrow tonight, Appreciate someone, Call a loved one,
+Listen fully), Expression +4 (Make music, One photo a day, Voice journal, Dance one song),
+Body +3 (Daily walk, Strength session, Time in nature), Spirit +2 (Phone-free meal, Evening
+reflection). Each carries the full content shape (summary + "How to do it" / "Why it works"
+body + cadence + per-log reward) and is linked to its Pillar (`domain_id`). Pillar is
+assigned **by meaning**, not by category — category and Pillar need not align (cf. Breathwork,
+a `holistic-health` practice on the **Spirit** Pillar).
+
+**Consequences.** Library grows 5 → 21 core practices; Pillar filters and the Expression /
+Mind / human-relating surfaces are no longer empty. **No schema or app-logic change** — the
+migration is pure data, idempotent (`INSERT … SELECT` guarded by `NOT EXISTS` on title, the
+safe re-run guard since `practices.title` has no unique constraint). Rewards stay
+admin-governed via the per-practice `reward_zaps` override (ADR-104); heavier asks (deep
+work, strength, real outreach) get a touch more, like surf/cold already do.
+
+**Future (not in this ADR).** A larger, creator-driven library — deep **sub-categories +
+tags** (applied by members and auto-suggested by Vera), **popularity-based ranking** so used
+practices rise, and **creator usage rewards** — is a separate design tracked in
+[ROADMAP.md](ROADMAP.md); this ADR only covers the content seed that balances the Pillars.
+
+---
+
+## ADR-111: Practice library — taxonomy + ranking foundation (creator-library, Phase 1)
+
+**Status:** Accepted · `supabase/migrations/20260606140000_practice_taxonomy_foundation.sql`, `lib/practices.ts`, `app/(main)/practices/*`, `components/practice/practice-editor.tsx`.
+
+**Context.** The library is moving from a small curated seed toward a **large, open,
+creator-driven** surface: practices organized deeply under the 4 Pillars, tagged by
+people *and* (later) by Vera, with popular practices rising to the top and — eventually —
+creators rewarded for usage. The model had only the 4 flat Pillars (`domains`) and a loose
+`category` text tag; no sub-tier, no practice tagging, no popularity signal.
+
+**Decision (Phase 1 — structure + ranking, no economy change).** Build the foundation in
+four layers under each Pillar, reusing existing patterns rather than inventing:
+- **Sub-categories** — `practice_subcategories` (a curated, extensible tier scoped to a
+  Pillar; e.g. Body → Cardio/Strength/Mobility/…), with `practices.subcategory_id`. Seeded
+  ~5 per Pillar; the existing 21 practices backfilled.
+- **Tags (hybrid)** — `practice_tag_defs` (canonical curated vocabulary + member-proposed
+  folksonomy) joined to practices via `practice_tags`, each attachment carrying a `source`
+  (`author` | `member` | `vera`). Mirrors the member-tags pattern (ADR-068). Authors set
+  their tags in the editor; new labels auto-create non-canonical defs.
+- **Embeddings** — `practices.embedding vector(384)` + HNSW + `match_practices()`, mirroring
+  `room_messages` (ADR-088). Column/infra now; **populated by Vera in Phase 2** (no-op until).
+- **Popularity** — a server-only `practices_ranked` view (distinct adopters + 30-day logs →
+  score, `security_invoker`, granted to `service_role` only). `listPublicPractices(sort)`
+  reads it; library gains **Trending** (default) / **All-time** / **New** sorts plus a
+  Pillar → sub-category filter, all URL-driven (shareable, no client JS).
+
+Authz unchanged: public read on library taxonomy, writes via the service-role admin client
+behind app-code authz (owner for author tags/sub-category).
+
+**Relationship to ADR-109 (Community Library).** Complementary, not a replacement. ADR-109
+gives the *cross-type* catalog at `/library` (practices + programs + journeys), the approval
+lifecycle (`status`), ratings, and a UNION ranking RPC. This ADR adds what that catalog does
+not have — **sub-categories, tags, and embeddings** — and a **practices-specific** browse on
+`/practices`. The two ranking signals are intentionally different: the `community_library`
+RPC scores cross-type *adopt/complete/rating + recency*, while `practices_ranked` scores
+*repeated doing* (30-day logs), which is the truer signal for a daily practice. They coexist
+(`/practices` vs `/library`); folding sub-categories/tags into the catalog filters, and
+unifying the two scores, is a deliberate follow-up — not done here.
+
+**Consequences.** Practices are now organized two tiers deep and surfaced by real usage,
+end-to-end with no economy change. The `source` column and the embedding/match function are
+the seams Phase 2 (Vera auto-suggests Pillar/sub-category/tags on create, propose-and-confirm
+per ADR-028; semantic "similar"/dedupe) and Phase 3 (**creator rewards = gems per *new
+distinct adopter* of a public practice — daily-capped, no self-reward, admin-tunable**,
+which needs its own ADR + economy guardrails per ADR-104) slot into without a migration.
+
+---
+
+## ADR-112: Scarcity / capacity codes — a total-claim cap on check-in nodes
+
+**Status:** Accepted · `supabase/migrations/20260605150000_node_max_claims.sql`,
+`lib/engagement/verify.ts`, `app/(main)/admin/qr/{actions,qr-studio}.tsx`. Extends the capture pipeline.
+
+**Context.** `capture_rule` covered once-per-user / once-global / repeatable, but not
+"first **N** win" — the natural mechanic for a launch drop or an event prize where only
+the first N claimers earn.
+
+**Decision.** Add a nullable `nodes.max_claims`. When set, `verifyCapture` counts verified
+captures and rejects with a new `capacity_reached` reason once the cap is hit (surfaced on
+the claim button). Authored on the NodeForm ("Limit total claims"); the card shows an
+`N/max claimed` badge. Null = unlimited (today's behavior), so every existing code is
+unaffected.
+
+**Alternatives.** A separate counter table (rejected — `count(captures)` is authoritative
+and already indexed); a per-day cap (deferred — a different, future rule).
+
+**Consequences.** Operators can run scarce, first-come drops. The cap is checked on the
+verify path so it's race-safe enough for prizes (a tiny over-claim window under extreme
+concurrency is acceptable for this use; a hard guarantee would need a transaction/lock).
+
+---
+
+## ADR-113: Scannability guardrails — advisory design warnings in the editor
+
+**Status:** Accepted · `lib/qr/scannability.ts` (+ test), `app/(main)/admin/qr/style-editor.tsx`.
+
+**Context.** The beautiful-code editor (ADR-090) lets operators pick colors, gradients,
+and a logo — which means they can also design a code that **won't scan** (low contrast,
+light-on-dark, no quiet zone) and only discover it after printing a batch.
+
+**Decision.** A pure, isomorphic `scannabilityWarnings(style)` flags the real-world
+killers — WCAG contrast < 4 (using the worst gradient stop), inverted light-on-dark,
+quiet-zone margin < 2, and a logo atop weak contrast. Surfaced as an **advisory** amber
+banner in the editor; it never blocks saving.
+
+**Alternatives.** Hard-block bad designs (rejected — too paternalistic; edge cases scan
+fine); actually decode a rendered preview (rejected — heavy, and the heuristics catch the
+common failures cheaply).
+
+**Consequences.** Fewer dead printed codes. Pure + unit-tested; reusable anywhere a style
+is edited.
+
+---
+
+## ADR-114: Acquisition analytics — roll up first-touch snapshots on the stats page
+
+**Status:** Accepted · `lib/qr/acquisition.ts` (+ test), `app/(main)/admin/qr/stats/page.tsx`.
+Cashes in the data captured by ADR-105 (medium) + ADR-107 (`source_tag` / `profiles.acquisition`).
+
+**Context.** We started persisting `qr_scans.medium` and `profiles.acquisition`, but nothing
+turned them into a decision — there was no screen answering "which poster/channel actually
+brings signups?"
+
+**Decision.** A pure `summarizeAcquisition(rows)` tallies attributed signups by channel, by
+source/campaign (campaign preferred over source), and by code slug. The stats page adds an
+**Acquisition** section: channel + source rankings, a QR-vs-NFC split, and a per-code
+**scan → signup conversion** table (signups ÷ scans by slug).
+
+**Alternatives.** A materialized view / rollup table (rejected — volumes are small; an
+in-memory tally over `acquisition is not null` is fine and stays consistent).
+
+**Consequences.** Operators can see which physical placements convert, not just which get
+scanned. Time-windowing + CSV export are the obvious next iterations.
+
+---
+
+## ADR-115: Signed anti-spoof payloads — end-to-end through the /n claim
+
+**Status:** Accepted · `lib/qr/links.ts` (`nodeUrl` secret), `lib/engagement/verify.ts` (already checked),
+`app/(main)/admin/qr/actions.ts`, `app/(main)/n/[nodeId]/{page,claim-button,actions}.tsx`,
+`app/api/qr/route.ts`, `app/print/qr/page.tsx`. Completes ADR-088's `secret` field.
+
+**Context.** `nodes.secret` and the `verifyCapture` signature check existed, but nothing
+**authored** a secret or **carried** it — so a `/n/<id>` URL guessed/forged from just a
+node id (or a leaked id) could claim, which undermines location-aware earning (ADR-106).
+
+**Decision.** A "Require a signed code" toggle mints a random `secret` (`node:crypto`
+`randomBytes`) on the node; `nodeUrl(id, secret)` then encodes `/n/<id>?s=<secret>` into the
+QR image, print sheet, NFC tag, and copy/open links. The `/n` page reads `?s=` and forwards
+it through `claimNode → captureNode`; `verifyCapture` rejects a mismatch with `bad_signature`.
+The secret is minted once and kept (re-minting would invalidate printed codes); clearing the
+toggle nulls it.
+
+**Alternatives.** Rotating HMAC-over-time (rejected for static print/NFC — the physical tag
+can't rotate; a static per-node secret is the right tool and already makes the URL
+unguessable). True replay defense needs dynamic NFC and is out of scope.
+
+**Consequences.** A forged or guessed node URL can't claim; combined with proximity
+(ADR-106) and capture rules, location/earn codes are meaningfully harder to farm. A leaked
+*image* of the real code still works — that's the inherent limit of static codes, mitigated
+by once-per-user + geofence + caps.
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 
