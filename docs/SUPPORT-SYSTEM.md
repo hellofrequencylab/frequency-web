@@ -103,6 +103,11 @@ swap is free). The same model embeds **both** the index and the query (consisten
   heading → embed → **upsert by `content_hash`** (only re-embed changed chunks; idempotent).
 - `pnpm help:index` runs **in CI on merge to main** → search is always fresh. (Can move to an
   enqueued `notification_queue` job later.)
+- ⚠️ **Runtime bundling:** the indexer reads `content/help/**` from disk **at runtime** (nightly
+  `embed-help` cron + admin "Build index"). Next's tracer can't follow those dynamic `fs` reads, so
+  `content/help/**/*` is pinned into the serverless bundle via `outputFileTracingIncludes` in
+  `next.config.ts`. Without it the read returns `[]`, the index builds **empty**, and Ask Vera can
+  only deflect. The reindex now **throws on zero articles** so this fails loud, not silent (ADR-129).
 
 ### Retrieval + answer
 - `lib/ai/help-rag.ts` (**testable core, no I/O** — same split as `lib/studio/winback.ts`):

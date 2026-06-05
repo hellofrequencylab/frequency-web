@@ -1,5 +1,5 @@
 // Who may FIND a non-member person ("lead") in app-wide search — the
-// locality + valid-connection permission model (ADR-127, docs/NETWORK-CRM.md).
+// locality + valid-connection permission model (ADR-130, docs/NETWORK-CRM.md).
 //
 // Members (profiles) are searchable community-wide as they are today. A person who
 // is only a private capture (network_contacts, no member profile yet) is NOT

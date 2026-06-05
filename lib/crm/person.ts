@@ -1,5 +1,5 @@
 // The unified "person" — one human gathered from the three identity records that
-// describe them, joined by lowercased email (ADR-127, docs/NETWORK-CRM.md):
+// describe them, joined by lowercased email (ADR-130, docs/NETWORK-CRM.md):
 //   • contacts         — the CRM hub (lead → member)              [the anchor]
 //   • profiles         — the member, if they have a login          [0..1]
 //   • network_contacts — stewards' private captures (card scans)   [0..n]

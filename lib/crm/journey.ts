@@ -1,5 +1,5 @@
 // Build "the path a person took through the system" — one chronological, grouped
-// timeline assembled from every record that describes them (ADR-127). Pure: it
+// timeline assembled from every record that describes them (ADR-130). Pure: it
 // takes already-fetched slices and returns a sorted, phase-grouped event list, so
 // the assembly logic is unit-tested and the page just renders.
 //
