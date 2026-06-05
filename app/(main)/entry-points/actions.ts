@@ -19,6 +19,7 @@ import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { getEntryTemplate, isEntryTemplateId } from '@/lib/entry-points/templates'
 import { isValidEntryDestination } from '@/lib/entry-points/destinations'
 import { countMyEntryPoints } from '@/lib/entry-points/store'
+import { campaignExists } from '@/lib/entry-points/campaigns'
 import type { Json } from '@/lib/database.types'
 
 // Reward setting up an entry point for the first few only — enough to encourage
@@ -34,6 +35,8 @@ export interface EntryPointInput {
   headline: string
   subhead: string
   footer: string
+  /** Optional campaign to file this entry point under (admin builder, Phase 2). */
+  campaignId?: string
 }
 
 interface CleanEntry {
@@ -80,6 +83,9 @@ export async function createEntryPoint(input: EntryPointInput): Promise<ActionRe
 
   const db = createAdminClient() as unknown as SupabaseClient
 
+  // Optional campaign (admin builder) — only set it if it really exists.
+  const campaignId = input.campaignId && (await campaignExists(input.campaignId)) ? input.campaignId : null
+
   // Count BEFORE inserting — drives the reward cap + the idempotency key.
   const prior = await countMyEntryPoints(crew.id)
 
@@ -95,6 +101,7 @@ export async function createEntryPoint(input: EntryPointInput): Promise<ActionRe
       template_id: row.template_id,
       flyer: row.flyer,
       style: row.style,
+      campaign_id: campaignId,
     })
     .select('id')
     .single()
@@ -117,6 +124,7 @@ export async function createEntryPoint(input: EntryPointInput): Promise<ActionRe
   }
 
   revalidatePath('/entry-points')
+  revalidatePath('/marketing/funnels')
   return ok({ id: (data as { id: string }).id })
 }
 
@@ -135,13 +143,21 @@ export async function updateEntryPoint(id: string, input: EntryPointInput): Prom
   const db = createAdminClient() as unknown as SupabaseClient
   if (!(await ownEntryPoint(db, id, crew.id))) return fail('That isn’t your entry point.')
 
+  const campaignId = input.campaignId && (await campaignExists(input.campaignId)) ? input.campaignId : undefined
   const { error } = await db
     .from('qr_codes')
-    .update({ title: row.title, target_url: row.target_url, template_id: row.template_id, flyer: row.flyer })
+    .update({
+      title: row.title,
+      target_url: row.target_url,
+      template_id: row.template_id,
+      flyer: row.flyer,
+      ...(campaignId ? { campaign_id: campaignId } : {}),
+    })
     .eq('id', id)
   if (error) return fail('Could not save changes.')
 
   revalidatePath('/entry-points')
+  revalidatePath('/marketing/funnels')
   return ok()
 }
 
@@ -156,5 +172,6 @@ export async function deleteEntryPoint(id: string): Promise<ActionResult> {
   if (error) return fail('Could not delete the entry point.')
 
   revalidatePath('/entry-points')
+  revalidatePath('/marketing/funnels')
   return ok()
 }
