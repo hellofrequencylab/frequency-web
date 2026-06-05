@@ -3759,11 +3759,14 @@ write), wired for the **Community group** (Overview · Circles · Channels · Ev
 Broadcasts · Crew tasks · Gamification · Moderation) + nav/launchpad/sub-nav — so
 Operations/Support reach the community admin pages. **Sensitive groups stay
 community-janitor only** (Roles · Members · AI · Platform · Vera have no `staffDomain`).
-**Still to do:** wire the remaining groups (Structure · Insights · QR) and
-**write-action parity** — the per-page CRUD server actions still gate on community
-role/capabilities, so staff currently get read/navigate into the community admin pages;
-full write parity is the next slice. Extends ADR-027; layers over `ADMIN_GROUPS` +
-`area_permissions`.
+**Write-action parity (community) shipped:** the community-surface mutations in
+`admin/actions.ts` (circle/channel/event/dispatch/crew-task create·update·archive·
+delete + verification approve/reject) now authorize via `authorizeAction(caller,
+'host', 'community')` — community host+ OR staff community-write. The **sensitive
+mutations stay community-only** (assignRole, deactivateMember, member/account actions,
+and structure create/update — `guide`/`mentor`). **Still to do:** wire the remaining
+*read/nav* groups (Structure · Insights · QR) and their actions. Extends ADR-027;
+layers over `ADMIN_GROUPS` + `area_permissions`.
 
 **Context.** Two axes exist: the **community trust ladder** (member→…→admin→janitor, community
 standing) and a separate **staff/operations** axis (`team_members`: analyst→marketer→admin→owner,

@@ -44,3 +44,25 @@ export async function requireAdmin(
   if (!okCommunity && !okStaff) notFound()
   return { profileId: profile.id, role: profile.community_role, staffRole }
 }
+
+/**
+ * Authorize a server ACTION (mutation): returns the (non-null) caller if the
+ * community ladder grants `min` OR (ADR-127) the caller's staff role holds
+ * `staffDomain` (write); throws 'Unauthorized' otherwise. The action-level twin of
+ * `requireAdmin`, for the `getCallerProfile()` + `hasRole` pattern in server actions.
+ * Omit `staffDomain` to keep an action community-role only (sensitive mutations).
+ */
+export async function authorizeAction<T extends { community_role: CommunityRole }>(
+  caller: T | null,
+  min: CommunityRole,
+  staffDomain?: StaffDomain,
+): Promise<T> {
+  if (caller) {
+    if (atLeastRole(caller.community_role, min)) return caller
+    if (staffDomain) {
+      const staff = await getStaffMember().catch(() => null)
+      if (staffCan(staff?.role ?? null, staffDomain, 'write')) return caller
+    }
+  }
+  throw new Error('Unauthorized')
+}
