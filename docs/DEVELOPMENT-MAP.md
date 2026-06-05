@@ -93,6 +93,14 @@
 > (migration `20260605050000`); the Studio's Check-in tab now has the full design editor + styled
 > preview, and `/api/qr?node=<id>` serves styled SVG/PNG downloads. Member connect codes already
 > ship a styled default (avatar). **Backlog complete** (#1–#5).
+>
+> **2026-06-05:** QR Studio **IA + dashboard redesign**. Moved to its **own host+ menu spot under
+> Platform** (`/admin/qr`, a dedicated `qr` admin group + `admin-qr` rail entry). The dashboard is now
+> a single scroll: a **generator at the top** (type selector → Dynamic link / Check-in, all options +
+> design inline) with **categorized code lists below** (Dynamic links · Check-in · Member profile
+> codes · Campaigns · Analytics). Member codes **consolidated to ONE** auto-generated profile code per
+> member (it doubles as the referral code via owner-credit chaining); editable + download all formats
+> on `/codes`. No migration.
 
 ---
 

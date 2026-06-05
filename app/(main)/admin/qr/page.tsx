@@ -6,11 +6,12 @@ import { nodeUrl, shortLinkUrl } from '@/lib/qr/links'
 import { renderStyledQrSvg } from '@/lib/qr/render-styled'
 import { parseStyle } from '@/lib/qr/style'
 import { summarizeScans, type ScanRow } from '@/lib/qr/analytics'
-import { QrStudioTabs } from './qr-studio-tabs'
+import { QrStudioDashboard } from './qr-studio-dashboard'
 import type { StudioNode } from './qr-studio'
 import type { StudioLink, NodeOption } from './dynamic-links'
 import type { AnalyticsData } from './analytics'
 import type { CampaignCard, CampaignCodeOption } from './campaigns'
+import type { MemberProfileCode } from './member-profile-codes'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,7 +33,7 @@ export default async function QrStudioPage() {
       db.from('captures').select('node_id').eq('verified', true),
       db
         .from('qr_codes')
-        .select('id, slug, title, destination_type, target_url, node_id, partner_id, active, valid_until, scan_count, style, created_at')
+        .select('id, slug, title, destination_type, target_url, node_id, partner_id, active, valid_until, scan_count, style, purpose, owner_profile_id, created_at')
         .order('created_at', { ascending: false }),
       db.from('qr_scans').select('qr_code_id, profile_id, scanned_at'),
       db.from('partners').select('id, name').order('name'),
@@ -63,12 +64,19 @@ export default async function QrStudioPage() {
     }),
   )
 
-  // ── Dynamic links (qr_codes) + per-code scan stats ──────────────────────────
+  // ── Split qr_codes by kind ──────────────────────────────────────────────────
+  // Dynamic links = operator codes (no owner, no purpose). Member profile codes =
+  // purpose 'connect' (one per member). Marketing funnels (owner + purpose null)
+  // are member-managed on /codes, so they're not surfaced here.
+  const allCodes = links ?? []
+  const adminLinkRows = allCodes.filter((l) => !l.owner_profile_id && !l.purpose)
+  const memberConnectRows = allCodes.filter((l) => l.purpose === 'connect')
+
   const summary = summarizeScans((scans ?? []) as ScanRow[])
   const nodeLabels = new Map((nodes ?? []).map((n) => [n.id, n.label ?? `${n.type} code`]))
 
   const initialLinks: StudioLink[] = await Promise.all(
-    (links ?? []).map(async (l) => {
+    adminLinkRows.map(async (l) => {
       const url = shortLinkUrl(l.slug)
       const stat = summary.perCode.get(l.id)
       const style = parseStyle(l.style)
@@ -155,18 +163,39 @@ export default async function QrStudioPage() {
     label: l.title || `/q/${l.slug}`,
   }))
 
+  // ── Member profile codes (one auto-generated code per member) ────────────────
+  const ownerIds = [...new Set(memberConnectRows.map((r) => r.owner_profile_id).filter(Boolean))] as string[]
+  const { data: owners } = ownerIds.length
+    ? await db.from('profiles').select('id, handle, display_name').in('id', ownerIds)
+    : { data: [] as { id: string; handle: string; display_name: string }[] }
+  const ownerMap = new Map((owners ?? []).map((o) => [o.id, o]))
+  const memberCodes: MemberProfileCode[] = memberConnectRows.map((r) => {
+    const style = parseStyle(r.style)
+    const url = shortLinkUrl(r.slug)
+    const o = r.owner_profile_id ? ownerMap.get(r.owner_profile_id) : null
+    return {
+      id: r.id,
+      handle: o?.handle ?? '—',
+      displayName: o?.display_name ?? '',
+      url,
+      scans: r.scan_count,
+      svg: renderStyledQrSvg(url, style, 140),
+    }
+  })
+
   return (
     <AdminPage
       title="QR Studio"
       icon={QrCode}
-      eyebrow="Community"
+      eyebrow="Platform"
       width="wide"
-      description="Create and manage every code members scan — check-in codes that earn, retargetable dynamic links, and the scans they drive. Codes are dynamic; edit or retire them without reprinting."
+      description="Generate, design, and track every code — member profile codes, dynamic links, check-in codes, and campaigns. Codes are dynamic; edit or retire them without reprinting."
     >
-      <QrStudioTabs
+      <QrStudioDashboard
         nodeProps={{ initialNodes, partners: partners ?? [] }}
         linkProps={{ initialLinks, nodes: nodeOptions, partners: partners ?? [] }}
         campaignProps={{ campaigns, codes: campaignCodes }}
+        memberCodes={memberCodes}
         analytics={analytics}
       />
     </AdminPage>

@@ -51,45 +51,50 @@ export function DynamicLinks({
   initialLinks,
   nodes,
   partners,
+  hideCreate = false,
 }: {
   initialLinks: StudioLink[]
   nodes: NodeOption[]
   partners: PartnerOption[]
+  /** When the create form lives elsewhere (the dashboard generator), show list only. */
+  hideCreate?: boolean
 }) {
   const [creating, setCreating] = useState(false)
   const partnerName = useMemo(() => new Map(partners.map((p) => [p.id, p.name])), [partners])
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-border bg-surface shadow-sm">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-          <div>
-            <h2 className="text-sm font-bold text-text">New dynamic link</h2>
-            <p className="text-xs text-muted mt-0.5">
-              A short <code className="text-text">/q/…</code> code you can retarget anytime — point it at any
-              URL or an existing check-in code.
-            </p>
+      {!hideCreate && (
+        <div className="rounded-2xl border border-border bg-surface shadow-sm">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+            <div>
+              <h2 className="text-sm font-bold text-text">New dynamic link</h2>
+              <p className="text-xs text-muted mt-0.5">
+                A short <code className="text-text">/q/…</code> code you can retarget anytime — point it at any
+                URL or an existing check-in code.
+              </p>
+            </div>
+            {!creating && (
+              <button
+                onClick={() => setCreating(true)}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-primary text-on-primary px-3 py-1.5 text-xs font-semibold hover:bg-primary-hover transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" /> New link
+              </button>
+            )}
           </div>
-          {!creating && (
-            <button
-              onClick={() => setCreating(true)}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary text-on-primary px-3 py-1.5 text-xs font-semibold hover:bg-primary-hover transition-colors"
-            >
-              <Plus className="w-3.5 h-3.5" /> New link
-            </button>
+          {creating && (
+            <div className="p-4">
+              <LinkForm
+                nodes={nodes}
+                partners={partners}
+                onDone={() => setCreating(false)}
+                onCancel={() => setCreating(false)}
+              />
+            </div>
           )}
         </div>
-        {creating && (
-          <div className="p-4">
-            <LinkForm
-              nodes={nodes}
-              partners={partners}
-              onDone={() => setCreating(false)}
-              onCancel={() => setCreating(false)}
-            />
-          </div>
-        )}
-      </div>
+      )}
 
       <div className="space-y-3">
         {initialLinks.length === 0 && (
@@ -242,7 +247,7 @@ function LinkCard({
   )
 }
 
-function LinkForm({
+export function LinkForm({
   link,
   nodes,
   partners,
