@@ -109,7 +109,7 @@ together into a single operator view, and the people you have a real connection 
 | Piece | How |
 |---|---|
 | Resolve a person | `lib/crm/person.ts#resolvePerson(contactId)` — gathers the `contacts` anchor + member `profile` + every capture with that email + the trail (`qr_scans`, `engagement_events`) + pipeline (`crm_deals`, `crm_activities`). Groups **by email at read time**, so it works before the backfill. |
-| Auto-group (backfill) | `supabase/migrations/20260606170000_person_identity_stitch.sql` fills `contacts.profile_id`, `network_contacts.linked_contact_id`, `network_contacts.linked_profile_id` by email (idempotent; **written, applied in a separate reviewed step**). |
+| Auto-group (backfill) | `supabase/migrations/20260606170000_person_identity_stitch.sql` fills `contacts.profile_id`, `network_contacts.linked_contact_id`, `network_contacts.linked_profile_id` by email (idempotent; **✅ applied to `Frequency Community` 2026-06-05**, recorded `person_identity_stitch`). |
 | User Stats page | `app/(main)/marketing/contacts/[id]` (DetailTemplate): stats + a **Grouped records** panel + **the path through the system** — one timeline grouped into funnel phases (Arrival → Outreach → In the app → CRM), built by the pure, tested `lib/crm/journey.ts`. The contacts list is searchable (`searchContacts`) and every row links here. |
 | Invite to join | `app/(main)/marketing/contacts/[id]/actions.ts#inviteContactToJoin` — reuses the gated one-time scan-intro (ADR-099). No capturing steward ⇒ no intro to send, by design. |
 
@@ -127,6 +127,17 @@ Wired surfaces — the header search overlay (`/api/search`) and the `/people` d
 you've met") — show **owner** leads today (they link to the steward's own `/connections/[id]`).
 `network_local` is modeled and tested but **not broadcast** yet: a non-owner viewer has no lead
 page to land on, and cross-steward exposure rides the same promotion-review gate as below.
+
+### Operations
+
+- ✅ **Migration applied** — `person_identity_stitch` (recorded version `20260605205151`) to
+  `Frequency Community` on 2026-06-05. The idempotent backfill changed **0 rows** on current data
+  (the scan and signup flows already set these links), and created the three lookup indexes
+  (`network_contacts_linked_contact_idx`, `…_linked_profile_idx`, `…_network_city_idx`). Re-running
+  is safe. Security advisors: **no new issues** (only the pre-existing project-wide warnings, e.g.
+  `auth_allow_anonymous_sign_ins`).
+- **Types:** no regen needed — additive indexes + a data backfill, no new columns. The crm/network
+  tables still go through the untyped admin handle (repo convention).
 
 ## Not yet (deliberate follow-ups)
 
