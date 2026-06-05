@@ -25,12 +25,16 @@ If a code has expired or you've already claimed it, the page will tell you.
 
 ## Your personal code
 
-Open **My code** (in the Network section of the menu) to see your own QR.
+Open **My code** (from your account menu) to see your own QR — you have **one**
+personal code, and it does double duty.
 
-- It points to your profile, so anyone who scans it can send you a friend request
-  or a message.
-- Tap **Download** to save it as an image — handy for a phone wallpaper, a name
-  tag, or a slide when you're hosting.
+- **Connect:** it points to your profile, so anyone who scans it can send you a
+  friend request or a message.
+- **Invite:** anyone who scans it and then joins Frequency is **credited to you** —
+  it's your referral code too.
+- **Make it yours:** tap **Customize** to restyle it (colors, shape, logo), and
+  **Download** to save it as a PNG or SVG — handy for a wallpaper, a name tag, or a
+  slide when you're hosting.
 
 ## Partner codes
 
