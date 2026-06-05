@@ -3,6 +3,7 @@
 // degrades to a deflect (links + "talk to a human") when AI is off/over-budget,
 // retrieval is weak, or the model call fails. Server-only.
 
+import { after } from 'next/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { helpHref } from '@/lib/help/content'
@@ -80,15 +81,21 @@ export async function answerHelpQuestion(question: string, profileId?: string | 
   if (!q) return { answer: null, citations: [], confidence: 0, deflected: true }
 
   const result = await resolveHelpAnswer(q, profileId)
-  void logHelpQuery({
-    question: q,
-    confidence: result.confidence,
-    answered: result.answer !== null,
-    deflected: result.deflected,
-    topCategory: result.citations[0]?.category ?? null,
-    topSlug: result.citations[0]?.slug ?? null,
-    profileId,
-  })
+  // Log after the response is sent (next/server `after`), not as a floating
+  // promise: in serverless a bare `void` insert is not guaranteed to run before
+  // the function suspends, so queries went unrecorded (the demand-side signal was
+  // silently lost). `after` keeps it off the response path AND guarantees it runs.
+  after(() =>
+    logHelpQuery({
+      question: q,
+      confidence: result.confidence,
+      answered: result.answer !== null,
+      deflected: result.deflected,
+      topCategory: result.citations[0]?.category ?? null,
+      topSlug: result.citations[0]?.slug ?? null,
+      profileId,
+    }),
+  )
   return result
 }
 
@@ -119,7 +126,7 @@ async function resolveHelpAnswer(q: string, profileId?: string | null): Promise<
     const { system, messages } = buildHelpMessages(q, chunks)
     const res = await completeText({ system, messages, tier: 'haiku', maxTokens: 400, cacheSystem: true })
     if (!res.text) return deflect(chunks, top)
-    void recordAiUsage({ feature: FEATURE, model: res.tier, usage: res.usage, costUsd: res.costUsd, profileId })
+    after(() => recordAiUsage({ feature: FEATURE, model: res.tier, usage: res.usage, costUsd: res.costUsd, profileId }))
     return { answer: res.text, citations: toCitations(chunks), confidence: top, deflected: false }
   } catch {
     return deflect(chunks, top)
