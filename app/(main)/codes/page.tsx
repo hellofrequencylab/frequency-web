@@ -13,6 +13,7 @@ import { parseVcard } from '@/lib/vcard'
 import { MemberCodes, type MemberCodeCard } from './member-codes'
 import { MarketingCodes, type MarketingCard } from './marketing-codes'
 import { VcardEditor } from './vcard-editor'
+import { updateMyVcard } from './actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -74,7 +75,7 @@ export default async function CodesPage() {
 
       <MemberCodes cards={cards} referralCount={referralCount ?? 0} />
 
-      <VcardEditor config={parseVcard(me.vcard)} handle={me.handle} />
+      <VcardEditor config={parseVcard(me.vcard)} handle={me.handle} onSave={updateMyVcard} />
 
       {isCrew && <CrewMarketing profileId={profileId} />}
 
