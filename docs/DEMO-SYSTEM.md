@@ -45,7 +45,13 @@ community). Surfaces gate on it:
 
 - Directory / circles / events list queries add `.eq('is_demo', false)` when off.
 - Feed RPCs (`feed_for_viewer`, `scoped_feed_for_viewer`) gate in SQL:
-  `not is_demo OR demo_mode` (migration `…000007_feed_rpcs_demo_mode.sql`).
+  `not is_demo OR demo_mode` (migration `…000007_feed_rpcs_demo_mode.sql`), and
+  demo posts **pass the membership reach-check** (`… OR is_demo`, migration
+  `…050000_feed_demo_visible_to_all.sql`) so they surface in EVERY viewer's home
+  feed — not just members of the demo circle. Seeded demo posts are all
+  `group`-visibility inside the demo circles, so without this a brand-new member
+  who'd joined nothing saw an empty feed. The per-viewer header toggle
+  (`fq_hide_demo`, applied in `FeedList`) still hides them for an opted-out member.
 
 ## How demo content reads in the UI
 
