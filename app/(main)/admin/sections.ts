@@ -33,6 +33,7 @@ import {
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
+import { staffCan, type StaffDomain, type StaffRole } from '@/lib/core/staff-roles'
 
 export interface AdminLink {
   href: string
@@ -42,6 +43,9 @@ export interface AdminLink {
   Icon: LucideIcon
   /** Lowest role that may use this surface. */
   min: CommunityRole
+  /** Staff capability domain (ADR-127) that ALSO unlocks this surface — fail-closed:
+   *  omit it and the link stays community-role-only (sensitive pages do this). */
+  staffDomain?: StaffDomain
   /** Active only on an exact path match (the Overview root). */
   exact?: boolean
 }
@@ -60,15 +64,15 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     label: 'Community',
     blurb: 'The spaces and people you steward day to day.',
     links: [
-      { href: '/admin', label: 'Overview', desc: 'Your dashboard at a glance.', Icon: LayoutDashboard, min: 'host', exact: true },
-      { href: '/admin/circles', label: 'Circles', desc: 'Create, edit, and archive circles.', Icon: CircleDot, min: 'host' },
-      { href: '/admin/channels', label: 'Channels', desc: 'Interest and event channels.', Icon: Radio, min: 'host' },
-      { href: '/admin/events', label: 'Events', desc: 'Gatherings across your circles.', Icon: CalendarDays, min: 'host' },
-      { href: '/admin/dispatches', label: 'Broadcasts', desc: 'Posts and polls to your people.', Icon: Megaphone, min: 'host' },
+      { href: '/admin', label: 'Overview', desc: 'Your dashboard at a glance.', Icon: LayoutDashboard, min: 'host', staffDomain: 'community', exact: true },
+      { href: '/admin/circles', label: 'Circles', desc: 'Create, edit, and archive circles.', Icon: CircleDot, min: 'host', staffDomain: 'community' },
+      { href: '/admin/channels', label: 'Channels', desc: 'Interest and event channels.', Icon: Radio, min: 'host', staffDomain: 'community' },
+      { href: '/admin/events', label: 'Events', desc: 'Gatherings across your circles.', Icon: CalendarDays, min: 'host', staffDomain: 'community' },
+      { href: '/admin/dispatches', label: 'Broadcasts', desc: 'Posts and polls to your people.', Icon: Megaphone, min: 'host', staffDomain: 'community' },
       { href: '/outreach', label: 'Outreach', desc: 'Reach out to locals and prospects.', Icon: Send, min: 'host' },
-      { href: '/admin/crew-tasks', label: 'Crew tasks', desc: 'Define and verify member tasks.', Icon: ClipboardList, min: 'host' },
-      { href: '/admin/gamification', label: 'Gamification', desc: 'Achievements, seasons, rewards.', Icon: Trophy, min: 'host' },
-      { href: '/admin/moderation', label: 'Moderation', desc: 'Review and resolve reports.', Icon: ShieldAlert, min: 'host' },
+      { href: '/admin/crew-tasks', label: 'Crew tasks', desc: 'Define and verify member tasks.', Icon: ClipboardList, min: 'host', staffDomain: 'community' },
+      { href: '/admin/gamification', label: 'Gamification', desc: 'Achievements, seasons, rewards.', Icon: Trophy, min: 'host', staffDomain: 'community' },
+      { href: '/admin/moderation', label: 'Moderation', desc: 'Review and resolve reports.', Icon: ShieldAlert, min: 'host', staffDomain: 'community' },
     ],
   },
   {
@@ -127,8 +131,8 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
  *  resolves to Community, `/admin/hubs` to Structure, etc.). Used to drive the
  *  per-category sub-tabs (layer 2) from the current URL. Falls back to the first
  *  visible group. */
-export function groupForPath(pathname: string, role: CommunityRole): AdminGroup {
-  const groups = visibleGroups(role)
+export function groupForPath(pathname: string, role: CommunityRole, staffRole: StaffRole | null = null): AdminGroup {
+  const groups = visibleGroups(role, staffRole)
   let best: AdminGroup | null = null
   let bestLen = -1
   for (const g of groups) {
@@ -143,15 +147,19 @@ export function groupForPath(pathname: string, role: CommunityRole): AdminGroup 
   return best ?? groups[0]
 }
 
-/** The groups (with only the links) a given role may see. Empty groups drop out. */
-export function visibleGroups(role: CommunityRole): AdminGroup[] {
+/** The groups (with only the links) a given role may see. Empty groups drop out.
+ *  A link shows if the community ladder grants it OR (ADR-127) the caller's staff
+ *  role holds the link's `staffDomain` (write). */
+export function visibleGroups(role: CommunityRole, staffRole: StaffRole | null = null): AdminGroup[] {
   return ADMIN_GROUPS.map((g) => ({
     ...g,
-    links: g.links.filter((l) => atLeastRole(role, l.min)),
+    links: g.links.filter(
+      (l) => atLeastRole(role, l.min) || (!!l.staffDomain && staffCan(staffRole, l.staffDomain, 'write')),
+    ),
   })).filter((g) => g.links.length > 0)
 }
 
 /** Flat list of links a role may see — handy for breadcrumb/title lookups. */
-export function visibleLinks(role: CommunityRole): AdminLink[] {
-  return visibleGroups(role).flatMap((g) => g.links)
+export function visibleLinks(role: CommunityRole, staffRole: StaffRole | null = null): AdminLink[] {
+  return visibleGroups(role, staffRole).flatMap((g) => g.links)
 }

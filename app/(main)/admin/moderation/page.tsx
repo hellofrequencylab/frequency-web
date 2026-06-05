@@ -6,7 +6,7 @@ import { ModerationQueue } from './moderation-queue'
 
 
 export default async function ModerationPage() {
-  await requireAdmin('host')
+  await requireAdmin('host', { staff: 'community' })
 
   const admin = createAdminClient()
 
