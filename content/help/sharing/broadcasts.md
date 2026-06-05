@@ -34,3 +34,5 @@ join**. It's the community counterpart to your Quest dashboard.
 ## Who can broadcast
 
 Broadcasting is a host-and-above ability: it's meant for the people running circles and stewarding the community, so it stays signal, not noise. Everyone else shares through ordinary [posts](/help/sharing/posts).
+
+You can only broadcast to a circle, hub, or region you lead. A **Global** ("Everyone") broadcast — one that reaches every member site-wide — is reserved for the staff/operations team, to keep it rare and meaningful.
