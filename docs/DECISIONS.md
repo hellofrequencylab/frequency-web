@@ -2843,6 +2843,46 @@ functions. Real `group`/`cluster` reach for non-demo posts is unchanged.
 
 ---
 
+## ADR-102: CRM pipeline suite — a generic sales pipeline over the unified contact book
+
+**Status:** Accepted · `supabase/migrations/20260605060000_crm_pipeline.sql`, `lib/crm/pipeline.ts`, `app/(main)/crm/**`. Extends the Studio CRM (ADR-027) + the unified `contacts` record.
+
+**Context.** `/crm` was a read-only member roster scoped by steward role; there was no
+way to track opportunities (prospective members, partners/sponsors, upgrades) through
+stages. The owner asked to expand it into a full CRM suite with a sales pipeline,
+**unified** across members + leads + scanned network contacts, with a **generic**
+(configurable-stage) pipeline plus deal records, activities/tasks, and analytics.
+
+**Decision.** Three additive, **service-role-only** tables (no RLS policies — accessed
+behind the host+ CRM guards, like `contacts`/`team_members`):
+- `crm_stages` — reorderable stages with a `kind` (`open`/`won`/`lost`); seeded
+  Lead → Contacted → Qualified → Proposal → Won → Lost.
+- `crm_deals` — an opportunity: `title`, `value`/`currency`, `stage_id`, `status`
+  (mirrors the stage kind), `expected_close_date`, `owner_id`, `created_by`, and the
+  unified contact links — `contact_id` (→ `contacts`) and/or `profile_id` (→ member),
+  with a denormalized `contact_name` so a card always renders even without a linked row.
+- `crm_activities` — notes/calls/emails/meetings + due-dated **tasks**
+  (`due_at` + `completed_at`) on a deal.
+
+UI = the `/crm` route turned into a tabbed suite (`CrmTabs`): **Pipeline** (KPI row +
+a horizontally-scrolling stage board; deals move via ◀/▶ or the stage select) and
+**Contacts** (the prior roster, now a launch point for `createDealForProfile`). Deal
+detail (`/crm/deals/[id]`) edits fields, moves stages (incl. quick Won/Lost), and runs
+the activity/task timeline. The `crm_*` tables aren't in the generated DB types yet, so
+reads/writes go through the untyped-client cast (the lib/studio + lib/page-editor pattern).
+
+**Alternatives.** Bolt the pipeline onto the Marketing/Studio console, or onto the
+Steward roster only — rejected for the **unified** ask (one pipeline over members +
+leads + network contacts). Generic stages chosen over a fixed membership/partner
+pipeline so one board holds any deal type.
+
+**Consequences.** A genuinely functional v1 CRM suite (board + deal records +
+activities/tasks + analytics), gated to host+ like the prior roster. Visibility is a
+shared org pipeline for now; per-owner/role scoping and stage editing in-app are the
+obvious next iterations. Regenerate DB types to drop the untyped casts later.
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 
