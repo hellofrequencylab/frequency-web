@@ -2,9 +2,17 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Compass, Check, Sparkles, ArrowRight, ChevronDown } from 'lucide-react'
+import { Compass, Check, Sparkles, ArrowRight, ChevronDown, Route } from 'lucide-react'
 import type { OnboardingStatus } from '@/lib/onboarding/status'
 import { forceOnboardingStep } from '@/app/(main)/feed/onboarding-actions'
+import { SpotlightTour } from '@/components/onboarding/spotlight-tour'
+import { SPOTLIGHT_STOPS } from '@/lib/onboarding/spotlight'
+
+// Where the spotlight tour parks its progress so "Take the tour" knows whether to
+// offer a fresh walk or a Resume, and which stop to pick back up from. Mirrors the
+// durable copy in profiles.meta.tour.spotlight (set server-side).
+const TOUR_KEY = 'fq_spotlight_tour'
+type TourLocal = { status: 'completed' | 'paused' | 'skipped'; atStop: number }
 
 // The persistent activation guide at the top of the feed. It can be MINIMIZED to a
 // slim bar but never dismissed — the only ways out are completing the steps or the
@@ -16,10 +24,16 @@ const MIN_KEY = 'fq_onboarding_min'
 
 export function FeedOnboardingGuide({ status }: { status: OnboardingStatus }) {
   const [minimized, setMinimized] = useState(false)
+  const [tourOpen, setTourOpen] = useState(false)
+  const [tour, setTour] = useState<TourLocal | null>(null)
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMinimized(localStorage.getItem(MIN_KEY) === '1')
+    try {
+      const raw = localStorage.getItem(TOUR_KEY)
+      if (raw) setTour(JSON.parse(raw) as TourLocal)
+    } catch {}
   }, [])
 
   function toggle() {
@@ -30,26 +44,47 @@ export function FeedOnboardingGuide({ status }: { status: OnboardingStatus }) {
     })
   }
 
+  function persistTour(next: TourLocal) {
+    setTour(next)
+    try { localStorage.setItem(TOUR_KEY, JSON.stringify(next)) } catch {}
+  }
+
+  function onTourExit(completed: boolean) {
+    setTourOpen(false)
+    persistTour({ status: completed ? 'completed' : 'paused', atStop: completed ? SPOTLIGHT_STOPS.length - 1 : (tour?.atStop ?? 0) })
+  }
+
+  // Resume from where they paused; a completed tour starts fresh if replayed.
+  const resumeStop = tour?.status === 'paused' ? tour.atStop : 0
+  const tourLabel = tour?.status === 'paused' ? 'Resume tour' : tour?.status === 'completed' ? 'Replay tour' : 'Take the tour'
+
   const current = status.current
   if (!current) return null // complete — the JourneyBoard tracker takes over
+
+  const tourEl = tourOpen ? (
+    <SpotlightTour stops={SPOTLIGHT_STOPS} startStop={resumeStop} onExit={onTourExit} />
+  ) : null
 
   // ── Minimized: a slim, un-removable blue bar ──────────────────────────────
   if (minimized) {
     return (
-      <button
-        type="button"
-        onClick={toggle}
-        aria-label="Expand getting-started"
-        className="mb-6 flex w-full items-center gap-3 rounded-xl border border-broadcast-bg bg-broadcast-bg/50 px-4 py-2.5 text-left transition-colors hover:bg-broadcast-bg/70 dark:bg-broadcast-bg/30"
-      >
-        <Compass className="h-4 w-4 shrink-0 text-broadcast-strong" />
-        <span className="text-sm font-semibold text-text">Getting set up</span>
-        <span className="text-xs font-bold tabular-nums text-broadcast-strong">{status.pct}%</span>
-        <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-broadcast-bg">
-          <span className="block h-full rounded-full bg-broadcast transition-all" style={{ width: `${status.pct}%` }} />
-        </span>
-        <ChevronDown className="h-4 w-4 shrink-0 -rotate-90 text-broadcast-strong" />
-      </button>
+      <>
+        {tourEl}
+        <button
+          type="button"
+          onClick={toggle}
+          aria-label="Expand getting-started"
+          className="mb-6 flex w-full items-center gap-3 rounded-xl border border-broadcast-bg bg-broadcast-bg/50 px-4 py-2.5 text-left transition-colors hover:bg-broadcast-bg/70 dark:bg-broadcast-bg/30"
+        >
+          <Compass className="h-4 w-4 shrink-0 text-broadcast-strong" />
+          <span className="text-sm font-semibold text-text">Getting set up</span>
+          <span className="text-xs font-bold tabular-nums text-broadcast-strong">{status.pct}%</span>
+          <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-broadcast-bg">
+            <span className="block h-full rounded-full bg-broadcast transition-all" style={{ width: `${status.pct}%` }} />
+          </span>
+          <ChevronDown className="h-4 w-4 shrink-0 -rotate-90 text-broadcast-strong" />
+        </button>
+      </>
     )
   }
 
@@ -57,6 +92,8 @@ export function FeedOnboardingGuide({ status }: { status: OnboardingStatus }) {
   const C = 2 * Math.PI * 16 // ring circumference (r=16)
 
   return (
+    <>
+    {tourEl}
     <div className="mb-6 rounded-2xl border border-broadcast-bg bg-broadcast-bg/40 p-4 dark:bg-broadcast-bg/20">
       {/* Header: progress ring + the current step's invitation + minimize */}
       <div className="flex items-start gap-3">
@@ -145,21 +182,29 @@ export function FeedOnboardingGuide({ status }: { status: OnboardingStatus }) {
         })}
       </div>
 
-      {/* CTAs — the current step's action + a warm Vera offer. */}
+      {/* CTAs — Vera's guided tour leads, then the current step's action + Ask Vera. */}
       <div className="mt-3 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setTourOpen(true)}
+          className="inline-flex items-center gap-1.5 rounded-xl bg-broadcast px-4 py-2 text-sm font-semibold text-on-broadcast transition-colors hover:opacity-90"
+        >
+          <Route className="h-3.5 w-3.5" /> {tourLabel}
+        </button>
         <Link
           href={current.href}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-broadcast px-4 py-2 text-sm font-semibold text-on-broadcast transition-colors hover:opacity-90"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-broadcast-bg px-4 py-2 text-sm font-medium text-broadcast-strong transition-colors hover:bg-broadcast-bg/50"
         >
           {current.cta} <ArrowRight className="h-3.5 w-3.5" />
         </Link>
         <Link
           href="/feed?welcome=vera&v=chat"
-          className="inline-flex items-center gap-1.5 rounded-xl border border-broadcast-bg px-4 py-2 text-sm font-medium text-broadcast-strong transition-colors hover:bg-broadcast-bg/50"
+          className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium text-broadcast-strong transition-colors hover:bg-broadcast-bg/50"
         >
           <Sparkles className="h-3.5 w-3.5" /> Ask Vera
         </Link>
       </div>
     </div>
+    </>
   )
 }
