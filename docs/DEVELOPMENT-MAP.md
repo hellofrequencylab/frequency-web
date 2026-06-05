@@ -180,6 +180,20 @@
 > • **Signed anti-spoof payloads** (ADR-115) — a "Require a signed code" toggle mints a `secret`; the code
 >   URL carries `?s=` everywhere (QR/print/NFC), `/n` forwards it, `verifyCapture` rejects a mismatch — so
 >   a forged `/n/<id>` can't claim. Pairs with location-aware earning.
+>
+> **2026-06-05:** **Entry Points & Campaigns** — the lead-funnel system (full spec `docs/ENTRY-POINTS.md`).
+> Built on the QR/attribution/zaps rails above. Shipped across phases:
+> • **Phase 1 — crew builder** (ADR-126, migration `20260606000000`): `/entry-points` — template → branded
+>   QR + print-ready flyer (**vector SVG + high-res PNG**, bundled Liberation Sans) → capped create zaps +
+>   owner credit on signup. `qr_codes.template_id/flyer/campaign_id`, `entry_campaigns`.
+> • **Phase 2 — admin builder** (ADR-126): `/marketing/funnels` campaign builder; **2b** added
+>   **assign-to-crew** + **template curation** (`entry_template_settings`). Remaining: Puck custom landings.
+> • **Phase 3 — growth:** per-persona **nurture** drips (ADR-131, `nurture_*`, cron `/api/cron/nurture`);
+>   **recruiter leaderboard + tiers** (ADR-134, `/crew/leaderboard?scope=entrypoints`); **segment broadcasts**
+>   (persona segments seeded); **A/B testing** destinations with per-variant conversion (ADR-136,
+>   `entry_point_variants` / `entry_point_conversions` / `qr_scans.variant_key`).
+> Migrations `20260606000000`–`20260607030000` applied to prod + version-reconciled. Operator how-to in
+> Notion (Training & Strategy → "Entry Points & Campaigns (lead funnels)").
 
 ---
 
