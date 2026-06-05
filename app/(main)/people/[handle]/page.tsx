@@ -184,7 +184,7 @@ export default async function ProfilePage({
       {/* ── Cover image + avatar header (the one hero card) ─────── */}
       <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden mb-6">
         {/* Cover — the member's header image when set, else the default gradient. */}
-        <div className="relative h-32 sm:h-40 bg-gradient-to-br from-primary via-signal to-signal-strong">
+        <div className="relative h-44 sm:h-56 bg-gradient-to-br from-primary via-signal to-signal-strong">
           {headerImageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={headerImageUrl} alt="" className={`absolute inset-0 h-full w-full object-cover ${isDemo ? 'grayscale-[0.5]' : ''}`} />
