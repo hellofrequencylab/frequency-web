@@ -271,6 +271,7 @@ async function LeaderboardWidget() {
     .from('profiles')
     .select('id, display_name, handle, avatar_url, current_season_zaps, current_season_rank')
     .eq('is_active', true)
+    .eq('is_system', false) // hide system accounts (e.g. @moderation) from the board
     .order('current_season_zaps', { ascending: false })
     .limit(5)
 
