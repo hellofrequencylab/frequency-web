@@ -252,6 +252,56 @@ export async function getContact(ownerId: string, id: string): Promise<ContactDe
   return { contact, notes, tags, avatarUrl }
 }
 
+// ── Network-shared discovery (non-owner read) ────────────────────────────────
+
+export interface SharedContactView {
+  id: string
+  ownerId: string
+  ownerName: string | null
+  ownerHandle: string | null
+  visibility: Visibility
+  city: string | null
+  linkedProfileId: string | null
+  displayName: string | null
+  title: string | null
+  company: string | null
+  website: string | null
+  socials: ContactSocials
+}
+
+/** Read a capture the owner promoted to `visibility='network'`, for a NON-owner
+ *  steward's read-only discovery view. Returns only network-visible rows (so a
+ *  private capture can never leak here) and only the business-card fields — email,
+ *  phone, notes and tags stay owner-private. The caller still re-checks locality
+ *  via canViewLead. Service-role; no owner filter by design. */
+export async function getSharedContact(id: string): Promise<SharedContactView | null> {
+  const { data } = await db()
+    .from('network_contacts')
+    .select(
+      'id, owner_id, visibility, city, linked_profile_id, display_name, title, company, website, socials, owner:profiles!owner_id ( display_name, handle )',
+    )
+    .eq('id', id)
+    .eq('visibility', 'network')
+    .maybeSingle()
+  if (!data) return null
+  const r = data as Record<string, unknown>
+  const owner = (r.owner as { display_name?: string; handle?: string } | null) ?? null
+  return {
+    id: String(r.id),
+    ownerId: String(r.owner_id),
+    ownerName: owner?.display_name ?? null,
+    ownerHandle: owner?.handle ?? null,
+    visibility: (r.visibility as Visibility) ?? 'network',
+    city: (r.city as string) ?? null,
+    linkedProfileId: (r.linked_profile_id as string) ?? null,
+    displayName: (r.display_name as string) ?? null,
+    title: (r.title as string) ?? null,
+    company: (r.company as string) ?? null,
+    website: (r.website as string) ?? null,
+    socials: (r.socials as ContactSocials) ?? {},
+  }
+}
+
 // ── Notes ────────────────────────────────────────────────────────────────────
 
 export async function addNote(

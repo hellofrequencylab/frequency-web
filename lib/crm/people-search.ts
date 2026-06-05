@@ -3,6 +3,11 @@
 // (when a steward shares to the network) locality-matched captures — gated by the
 // single rule in ./visibility (ADR-130). Service-role read; the viewer scope is
 // enforced in code via canViewLead, never by exposing the table.
+//
+// `includeNetwork` is the cross-steward tier: only stewards (host+) / staff pass it
+// (captures are "readable by signed-in stewards" — docs/NETWORK-CRM.md), and even
+// then a network capture only surfaces to a viewer in the same locality. Email is
+// withheld from network hits — discovery routes through the capturing steward.
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -16,31 +21,50 @@ export type LeadHit = {
   /** network_contacts id. */
   id: string
   displayName: string
+  /** Only populated for the viewer's OWN captures — withheld for network hits. */
   email: string | null
   city: string | null
+  /** The capturing steward, for network-local hits (so the viewer can ask for an intro). */
   ownerName: string | null
   reason: LeadReason
-  /** Where the viewer can open this lead, or null if no viewer-accessible page exists yet. */
+  /** Where the viewer opens this lead. */
   href: string | null
 }
 
+export type SearchLeadsOptions = {
+  /** Include network-shared captures from OTHER stewards (locality-gated). Stewards/staff only. */
+  includeNetwork?: boolean
+  limit?: number
+}
+
 /** Captures the viewer may find for `q`. Owner captures link to the steward's own
- *  CRM (/connections/[id]); network-local captures are returned (reason set) but
- *  carry no href until a viewer-facing lead page exists. */
-export async function searchVisibleLeads(viewerProfileId: string, q: string, limit = 8): Promise<LeadHit[]> {
+ *  CRM (/connections/[id]); network-local captures link to the read-only shared
+ *  view (/connections/shared/[id]). */
+export async function searchVisibleLeads(
+  viewerProfileId: string,
+  q: string,
+  { includeNetwork = false, limit = 8 }: SearchLeadsOptions = {},
+): Promise<LeadHit[]> {
   const needle = q.replace(/[(),%]/g, ' ').trim()
   if (needle.length < 2 || !viewerProfileId) return []
 
-  // The viewer's locality, for the network-local rule.
-  const { data: me } = await db().from('profiles').select('city').eq('id', viewerProfileId).maybeSingle()
-  const viewerCity = ((me as { city?: string } | null)?.city as string) ?? null
+  // The viewer's locality, for the network-local rule (only needed when scanning the network).
+  let viewerCity: string | null = null
+  if (includeNetwork) {
+    const { data: me } = await db().from('profiles').select('city').eq('id', viewerProfileId).maybeSingle()
+    viewerCity = ((me as { city?: string } | null)?.city as string) ?? null
+  }
 
-  // Only fetch rows that COULD pass the rule: the viewer's own, or network-shared.
-  // (Private captures owned by others can never surface — enforced again below.)
-  const { data } = await db()
+  // Only fetch rows that COULD pass the rule: the viewer's own, plus (when allowed)
+  // network-shared rows. Private captures owned by others are never fetched, and the
+  // canViewLead check below is the authoritative backstop.
+  let query = db()
     .from('network_contacts')
     .select('id, owner_id, visibility, city, display_name, email, linked_profile_id, created_at')
-    .or(`owner_id.eq.${viewerProfileId},visibility.eq.network`)
+  query = includeNetwork
+    ? query.or(`owner_id.eq.${viewerProfileId},visibility.eq.network`)
+    : query.eq('owner_id', viewerProfileId)
+  const { data } = await query
     .or(`display_name.ilike.%${needle}%,email.ilike.%${needle}%`)
     .order('created_at', { ascending: false })
     .limit(limit * 3)
@@ -61,16 +85,18 @@ export async function searchVisibleLeads(viewerProfileId: string, q: string, lim
       },
     )
     if (!decision.visible) continue
-    if (decision.reason !== 'owner') networkOwnerIds.add(ownerId)
+    const isOwner = decision.reason === 'owner'
+    if (!isOwner) networkOwnerIds.add(ownerId)
     hits.push({
       id: String(r.id),
       ownerId,
       displayName: (r.display_name as string) ?? 'Unnamed contact',
-      email: (r.email as string) ?? null,
+      // Withhold a network contact's email from a non-owner — intro goes via the steward.
+      email: isOwner ? ((r.email as string) ?? null) : null,
       city: (r.city as string) ?? null,
       ownerName: null,
       reason: decision.reason,
-      href: decision.reason === 'owner' ? `/connections/${String(r.id)}` : null,
+      href: isOwner ? `/connections/${String(r.id)}` : `/connections/shared/${String(r.id)}`,
     })
     if (hits.length >= limit) break
   }

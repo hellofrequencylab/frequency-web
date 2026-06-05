@@ -20,6 +20,10 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 - **Find people you've met**: search (the header search and the Directory) now surfaces the
   people *you* scanned in, even before they have an account — so a contact you saved is no
   longer lost until they sign up.
+- **Discover people stewards near you have met**: when a steward shares a contact to the
+  network, other stewards **in the same city** can now find them in search and open a simple
+  card — name, role, and who saved them — so you can ask for an introduction. Private details
+  (email, phone, notes) stay with the steward who saved them.
 
 ### Changed
 
