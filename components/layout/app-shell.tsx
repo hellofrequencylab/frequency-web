@@ -26,6 +26,8 @@ import {
   ChevronUp,
   QrCode,
   HelpCircle,
+  ScanText,
+  ContactRound,
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { NotificationBell } from '@/components/layout/notification-bell'
@@ -1006,6 +1008,25 @@ export default function AppShell({
                 (Feed + sections); the right rail sits beside this in the shared
                 scroll. */}
             <div className="flex-1 min-w-0 flex flex-col">
+              {/* Capture bar — mobile, stewards + staff. Snap someone's card into
+                  your personal contacts, or jump to your list. Sits at the top of
+                  the content, above the broadcast ticker (ADR-098). */}
+              {canCreateProfile && !hideAppNav && (
+                <div className="md:hidden grid grid-cols-2 gap-2 px-4 pt-3">
+                  <Link
+                    href="/connections/new"
+                    className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                  >
+                    <ScanText className="h-4 w-4" /> New contact
+                  </Link>
+                  <Link
+                    href="/connections"
+                    className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-border-strong bg-surface px-3 py-2.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+                  >
+                    <ContactRound className="h-4 w-4" /> Contacts
+                  </Link>
+                </div>
+              )}
               {!hideAppNav && ticker}
               <main className="flex-1 min-w-0 px-4 py-6 sm:px-6" data-tour-anchor="content">
                 <Breadcrumbs />
