@@ -141,16 +141,19 @@ interface FormState {
   footer: string
 }
 
-function EntryForm({
+export function EntryForm({
   template,
   card,
   destinationGroups,
+  campaignId,
   onBack,
   onDone,
 }: {
   template: EntryTemplate
   card?: EntryCard
   destinationGroups: DestinationGroup[]
+  /** File the new entry point under this campaign (admin builder). */
+  campaignId?: string
   onBack?: () => void
   onDone: () => void
 }) {
@@ -190,7 +193,7 @@ function EntryForm({
   }
 
   function submit() {
-    const input: EntryPointInput = { templateId: template.id, ...form }
+    const input: EntryPointInput = { templateId: template.id, ...form, ...(campaignId ? { campaignId } : {}) }
     start(async () => {
       const r = card ? await updateEntryPoint(card.id, input) : await createEntryPoint(input)
       if ('error' in r) {
@@ -270,7 +273,7 @@ function EntryForm({
   )
 }
 
-function EntryRow({ card, destinationGroups }: { card: EntryCard; destinationGroups: DestinationGroup[] }) {
+export function EntryRow({ card, destinationGroups }: { card: EntryCard; destinationGroups: DestinationGroup[] }) {
   const [editing, setEditing] = useState(false)
   const [copied, setCopied] = useState(false)
   const [pending, start] = useTransition()
