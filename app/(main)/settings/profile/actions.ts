@@ -15,6 +15,8 @@ export async function updateProfile(data: {
   phone?: string
   city?: string
   website?: string
+  /** A picked city also sets the member's home location (powers "near you"). */
+  home?: { lat: number; lng: number; label: string } | null
 }) {
   const { displayName, handle, bio, avatarUrl } = sanitizeProfileInput(data)
   const phone = (data.phone ?? '').trim().slice(0, 40)
@@ -48,9 +50,15 @@ export async function updateProfile(data: {
     website: website || null,
   }
   if (avatarUrl) update.avatar_url = avatarUrl
-  // header_image_url isn't in the generated types yet (new column) — set via cast.
+  // header_image_url + home_* aren't in the generated types yet — set via cast.
   if (data.headerImageUrl !== undefined) {
     (update as Record<string, unknown>).header_image_url = data.headerImageUrl.trim() || null
+  }
+  if (data.home && Number.isFinite(data.home.lat) && Number.isFinite(data.home.lng)) {
+    const u = update as Record<string, unknown>
+    u.home_lat = data.home.lat
+    u.home_lng = data.home.lng
+    u.home_label = data.home.label.slice(0, 160)
   }
 
   const { error } = await supabase

@@ -1,6 +1,7 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import type { Database } from '@/lib/database.types'
 import { createClient } from '@/lib/supabase/server'
 import { sendWelcomeEmail } from '@/lib/email'
 import { sanitizeProfileInput } from '@/lib/profile-input'
@@ -21,19 +22,37 @@ export async function completeOnboarding(data: {
 
   if (!user) throw new Error('Unauthorized')
 
+  // Don't clobber a member who's already been through onboarding. On a SECOND pass
+  // we only fill blanks (never overwrite existing display name/handle/bio/avatar/
+  // region) and MERGE meta (so beta/tour state survives). First pass sets it all.
+  const { data: cur } = await supabase
+    .from('profiles')
+    .select('display_name, handle, bio, avatar_url, nexus_region_id, meta')
+    .eq('auth_user_id', user.id)
+    .maybeSingle()
+  const curMeta = ((cur?.meta as Record<string, unknown> | null) ?? {})
+  const onboarded = curMeta.onboarding_completed === true
+
+  const update: Database['public']['Tables']['profiles']['Update'] = {
+    meta: { ...curMeta, onboarding_completed: true },
+  }
+  if (!onboarded) {
+    update.display_name = displayName
+    update.handle = handle
+    update.bio = bio || null
+    update.avatar_url = avatarUrl || null
+    update.nexus_region_id = data.regionId
+  } else {
+    // Repeat pass — fill only what's empty; leave the handle/identity untouched.
+    if (!cur?.display_name?.trim()) update.display_name = displayName
+    if (!cur?.bio) update.bio = bio || null
+    if (!cur?.avatar_url) update.avatar_url = avatarUrl || null
+    if (!cur?.nexus_region_id) update.nexus_region_id = data.regionId
+  }
+
   const { data: updated, error } = await supabase
     .from('profiles')
-    .update({
-      display_name: displayName,
-      handle,
-      bio: bio || null,
-      avatar_url: avatarUrl || null,
-      nexus_region_id: data.regionId,
-      // Stamp onboarding complete so returning users bypass this flow.
-      // Using jsonb_set would merge; overwriting is fine here since meta
-      // starts as '{}' for all auto-created profiles.
-      meta: { onboarding_completed: true },
-    })
+    .update(update)
     .eq('auth_user_id', user.id)
     .select('id')
     .maybeSingle()
