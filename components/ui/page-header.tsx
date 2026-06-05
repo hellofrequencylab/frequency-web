@@ -45,20 +45,43 @@ export function PageHeader({
       </div>
 
       {gam && (
-        <Link
-          href="/crew"
-          className="flex shrink-0 items-center gap-5 self-start rounded-2xl border border-border bg-surface px-5 py-4 shadow-sm transition-all hover:border-primary-bg hover:shadow-md"
-        >
-          <div className="flex flex-col items-center">
-            <span className="rank-badge text-xs font-bold leading-tight" style={seasonRankStyle(gam.rank)}>
+        <>
+          {/* Mobile: a compact single-row pill — roughly a quarter of the full
+              card's footprint, so it doesn't dominate a narrow screen. */}
+          <Link
+            href="/crew"
+            className="inline-flex items-center gap-2.5 self-start rounded-full border border-border bg-surface px-3 py-1.5 shadow-sm transition-colors hover:border-primary-bg sm:hidden"
+          >
+            <span className="rank-badge text-[10px] font-bold leading-none" style={seasonRankStyle(gam.rank)}>
               {RANK_LABELS[gam.rank]}
             </span>
-            <span className="mt-1.5 text-xs text-subtle">Rank</span>
-          </div>
-          <GamStat icon={Zap} value={gam.zaps.toLocaleString()} label="Zaps" fill />
-          <GamStat icon={Gem} value={gam.gems.toLocaleString()} label="Gems" />
-          <GamStat icon={Flame} value={`${gam.streak}w`} label="Streak" />
-        </Link>
+            <span className="inline-flex items-center gap-1 text-xs font-bold tabular-nums text-text">
+              <Zap className="h-3.5 w-3.5 fill-current text-primary" />{gam.zaps.toLocaleString()}
+            </span>
+            <span className="inline-flex items-center gap-1 text-xs font-bold tabular-nums text-text">
+              <Gem className="h-3.5 w-3.5 text-primary" />{gam.gems.toLocaleString()}
+            </span>
+            <span className="inline-flex items-center gap-1 text-xs font-bold tabular-nums text-text">
+              <Flame className="h-3.5 w-3.5 text-primary" />{gam.streak}w
+            </span>
+          </Link>
+
+          {/* Desktop+ : the full stat card. */}
+          <Link
+            href="/crew"
+            className="hidden shrink-0 items-center gap-5 self-start rounded-2xl border border-border bg-surface px-5 py-4 shadow-sm transition-all hover:border-primary-bg hover:shadow-md sm:flex"
+          >
+            <div className="flex flex-col items-center">
+              <span className="rank-badge text-xs font-bold leading-tight" style={seasonRankStyle(gam.rank)}>
+                {RANK_LABELS[gam.rank]}
+              </span>
+              <span className="mt-1.5 text-xs text-subtle">Rank</span>
+            </div>
+            <GamStat icon={Zap} value={gam.zaps.toLocaleString()} label="Zaps" fill />
+            <GamStat icon={Gem} value={gam.gems.toLocaleString()} label="Gems" />
+            <GamStat icon={Flame} value={`${gam.streak}w`} label="Streak" />
+          </Link>
+        </>
       )}
     </header>
   )
