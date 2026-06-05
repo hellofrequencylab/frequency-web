@@ -10,6 +10,7 @@ describe('railFor — the single source of truth for page chrome', () => {
       '/events',
       '/people',
       '/people/ada', // profiles intentionally use the global rail
+      '/settings/profile', // the profile editor keeps the rail (ADR-116), unlike other /settings
       '/friends',
       '/messages', // the inbox keeps the rail
       '/connections', // the index keeps the rail
@@ -36,7 +37,7 @@ describe('railFor — the single source of truth for page chrome', () => {
   it('uses Focus (no rail) for compose / edit / settings / operator surfaces', () => {
     for (const p of [
       '/settings',
-      '/settings/profile',
+      '/settings/account', // other settings stay Focus
       '/marketing',
       '/marketing/analytics',
       '/crm',
