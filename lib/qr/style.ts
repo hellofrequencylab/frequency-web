@@ -60,12 +60,15 @@ export interface StylePreset {
   style: QrStyle
 }
 
-// Tasteful starting points; every field stays editable afterwards.
+// A curated, tasteful set of starting points — one per distinct look (mono, dots,
+// gradient, connected, dark). Every field stays editable afterwards. NOTE: the
+// member-code defaults (lib/qr/member-codes.ts) reference `sunset`/`forest`/
+// `midnight` by key, so keep those keys stable.
 export const STYLE_PRESETS: StylePreset[] = [
   { key: 'classic', label: 'Classic', style: { ...DEFAULT_STYLE } },
   {
     key: 'midnight',
-    label: 'Midnight dots',
+    label: 'Midnight',
     style: { ...DEFAULT_STYLE, fg: '#0b1220', moduleShape: 'dots', eyeShape: 'circle', pupilShape: 'circle' },
   },
   {
@@ -92,11 +95,6 @@ export const STYLE_PRESETS: StylePreset[] = [
     },
   },
   {
-    key: 'ink',
-    label: 'Ink flow',
-    style: { ...DEFAULT_STYLE, fg: '#111827', moduleShape: 'connected', eyeShape: 'rounded', pupilShape: 'rounded' },
-  },
-  {
     key: 'ocean',
     label: 'Ocean',
     style: {
@@ -108,19 +106,8 @@ export const STYLE_PRESETS: StylePreset[] = [
     },
   },
   {
-    key: 'berry',
-    label: 'Berry',
-    style: {
-      ...DEFAULT_STYLE,
-      moduleShape: 'dots',
-      eyeShape: 'circle',
-      pupilShape: 'circle',
-      gradient: { from: '#db2777', to: '#7c3aed', angle: 135 },
-    },
-  },
-  {
     key: 'gold',
-    label: 'Gold leaf',
+    label: 'Gold',
     style: {
       ...DEFAULT_STYLE,
       bg: '#0b0b0c',
@@ -129,11 +116,6 @@ export const STYLE_PRESETS: StylePreset[] = [
       pupilShape: 'rounded',
       gradient: { from: '#fde68a', to: '#d97706', angle: 60 },
     },
-  },
-  {
-    key: 'mono-soft',
-    label: 'Soft mono',
-    style: { ...DEFAULT_STYLE, fg: '#374151', moduleShape: 'connected', eyeShape: 'circle', pupilShape: 'circle' },
   },
 ]
 
