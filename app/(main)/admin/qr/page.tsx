@@ -9,7 +9,7 @@ import { parseStyle } from '@/lib/qr/style'
 import { summarizeScans, type ScanRow } from '@/lib/qr/analytics'
 import { QrStudioDashboard } from './qr-studio-dashboard'
 import type { StudioNode } from './qr-studio'
-import type { StudioLink, NodeOption } from './dynamic-links'
+import type { StudioLink, NodeOption, PickOption } from './dynamic-links'
 import type { AnalyticsData } from './analytics'
 import type { CampaignCard, CampaignCodeOption } from './campaigns'
 import type { MemberProfileCode } from './member-profile-codes'
@@ -34,7 +34,7 @@ export default async function QrStudioPage() {
       db.from('captures').select('node_id').eq('verified', true),
       db
         .from('qr_codes')
-        .select('id, slug, title, destination_type, target_url, node_id, partner_id, active, valid_until, scan_count, style, purpose, owner_profile_id, created_at')
+        .select('id, slug, title, destination_type, target_url, alt_target_url, switch_at, node_id, circle_id, event_id, partner_id, active, valid_until, scan_count, style, purpose, owner_profile_id, created_at')
         .order('created_at', { ascending: false }),
       db.from('qr_scans').select('qr_code_id, profile_id, scanned_at'),
       db.from('partners').select('id, name').order('name'),
@@ -76,19 +76,40 @@ export default async function QrStudioPage() {
   const summary = summarizeScans((scans ?? []) as ScanRow[])
   const nodeLabels = new Map((nodes ?? []).map((n) => [n.id, n.label ?? `${n.type} code`]))
 
+  // Circles + events for the circle-join / event check-in destination pickers.
+  const [{ data: circleRows }, { data: eventRows }] = await Promise.all([
+    db.from('circles').select('id, name, slug').order('name'),
+    db.from('events').select('id, title, slug, starts_at').order('starts_at', { ascending: false }).limit(100),
+  ])
+  const circleName = new Map((circleRows ?? []).map((c) => [c.id, c.name]))
+  const eventName = new Map((eventRows ?? []).map((e) => [e.id, e.title]))
+  const circleOptions: PickOption[] = (circleRows ?? []).map((c) => ({ id: c.id, label: c.name }))
+  const eventOptions: PickOption[] = (eventRows ?? []).map((e) => ({ id: e.id, label: e.title }))
+
   const initialLinks: StudioLink[] = await Promise.all(
     adminLinkRows.map(async (l) => {
       const url = shortLinkUrl(l.slug)
       const stat = summary.perCode.get(l.id)
       const style = parseStyle(l.style)
+      const dest = l.destination_type as StudioLink['destination_type']
       return {
         id: l.id,
         slug: l.slug,
         title: l.title,
-        destination_type: l.destination_type as 'url' | 'node',
+        destination_type: dest,
         target_url: l.target_url,
         node_id: l.node_id,
         node_label: l.node_id ? nodeLabels.get(l.node_id) ?? null : null,
+        circle_id: l.circle_id,
+        event_id: l.event_id,
+        switch_at: l.switch_at,
+        alt_target_url: l.alt_target_url,
+        dest_label:
+          dest === 'circle'
+            ? circleName.get(l.circle_id ?? '') ?? null
+            : dest === 'event'
+              ? eventName.get(l.event_id ?? '') ?? null
+              : null,
         partner_id: l.partner_id,
         active: l.active,
         valid_until: l.valid_until,
@@ -202,7 +223,7 @@ export default async function QrStudioPage() {
     >
       <QrStudioDashboard
         nodeProps={{ initialNodes, partners: partners ?? [] }}
-        linkProps={{ initialLinks, nodes: nodeOptions, partners: partners ?? [] }}
+        linkProps={{ initialLinks, nodes: nodeOptions, circles: circleOptions, events: eventOptions, partners: partners ?? [] }}
         campaignProps={{ campaigns, codes: campaignCodes }}
         memberCodes={memberCodes}
         analytics={analytics}

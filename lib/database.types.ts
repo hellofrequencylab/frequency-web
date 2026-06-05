@@ -2122,6 +2122,10 @@ export type Database = {
           owner_profile_id: string | null
           partner_id: string | null
           purpose: string | null
+          alt_target_url: string | null
+          circle_id: string | null
+          event_id: string | null
+          switch_at: string | null
           scan_count: number
           slug: string
           style: Json
@@ -2141,6 +2145,10 @@ export type Database = {
           owner_profile_id?: string | null
           partner_id?: string | null
           purpose?: string | null
+          alt_target_url?: string | null
+          circle_id?: string | null
+          event_id?: string | null
+          switch_at?: string | null
           scan_count?: number
           slug: string
           style?: Json
@@ -2160,6 +2168,10 @@ export type Database = {
           owner_profile_id?: string | null
           partner_id?: string | null
           purpose?: string | null
+          alt_target_url?: string | null
+          circle_id?: string | null
+          event_id?: string | null
+          switch_at?: string | null
           scan_count?: number
           slug?: string
           style?: Json

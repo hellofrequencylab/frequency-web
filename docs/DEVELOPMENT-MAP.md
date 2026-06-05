@@ -108,6 +108,13 @@
 > system: scan volume + funnel (referral signups, gifts), a **maplibre locator map** of where codes are
 > scanned, the live code inventory (links / check-in / member / marketing / campaigns), top locations,
 > and top codes. No precise GPS — city-level only.
+>
+> **2026-06-05:** QR **action destinations + time-aware** (the "3 wins", issue #221, migration
+> `20260605070000`). A dynamic link can now **join a circle** (`destination_type:'circle'`) or **RSVP +
+> verified-practice check-in to an event** (`'event'`) on scan — the `/q` resolver reuses `joinCircle`
+> / `checkInEvent`; and a `url` code can **switch destination at a set time** (`switch_at` +
+> `alt_target_url`). Authored in the dynamic-link form (Circle / Event pickers + time-switch).
+> Applied to prod. Roadmap of further functions tracked in issue #221 (next: editable vCard + permissions).
 
 ---
 
