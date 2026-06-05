@@ -14,12 +14,14 @@ import { createAdminClient } from '@/lib/supabase/admin'
 // source of truth.
 // Only pages with a faithful editor template (so the editor matches what's live)
 // belong here. `how-it-works` was a retired server redirect (→ /the-community), so
-// editing it did nothing — removed. `the-community` + `the-quest` are being ported
-// into the block library ("editor = live"); they'll be added as each port lands.
+// editing it did nothing — removed. The Lab, The Community, The Quest, and Pricing
+// have all been ported into the block library ("editor = live"). Pricing relies on
+// the standardized `Tiers` block (added with this port) for its membership cards.
 export const EDITABLE_PAGES = [
   { slug: 'the-lab', title: 'The Lab', path: '/the-lab' },
   { slug: 'the-community', title: 'The Community', path: '/the-community' },
   { slug: 'the-quest', title: 'The Quest', path: '/the-quest' },
+  { slug: 'pricing', title: 'Pricing', path: '/pricing' },
 ] as const
 
 export type EditableSlug = (typeof EDITABLE_PAGES)[number]['slug']

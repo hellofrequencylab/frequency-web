@@ -13,6 +13,7 @@ import {
   Award,
   ShieldCheck,
 } from 'lucide-react'
+import { Render } from '@measured/puck/rsc'
 import {
   PhotoHero,
   Section,
@@ -24,6 +25,8 @@ import {
   Button,
   Card,
 } from '@/components/marketing/marketing-ui'
+import { config } from '@/lib/page-editor/config'
+import { getPublishedData } from '@/lib/page-editor/data'
 import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
 
 export const revalidate = 3600
@@ -41,7 +44,15 @@ export const metadata: Metadata = {
   },
 }
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  const data = await getPublishedData('pricing')
+  if (data && Array.isArray(data.content) && data.content.length > 0) {
+    return <Render config={config} data={data} />
+  }
+  return <LegacyPricing />
+}
+
+function LegacyPricing() {
   return (
     <>
       <PhotoHero
