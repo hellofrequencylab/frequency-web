@@ -84,11 +84,18 @@ function PracticeRow({
     >
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
-          <p className="text-base font-bold text-text">{p.title}</p>
+          <Link href={`/practices/${p.id}`} className="text-base font-bold text-text hover:text-primary-strong hover:underline">
+            {p.title}
+          </Link>
           {p.domain_id && byId.has(p.domain_id) && <PillarBadge name={byId.get(p.domain_id)!.name} />}
           {subcategory && (
             <span className="rounded-full bg-primary-bg px-2 py-0.5 text-xs font-medium text-primary-strong">
               {subcategory.name}
+            </span>
+          )}
+          {p.is_template && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-warning-bg px-2 py-0.5 text-xs font-semibold text-warning">
+              <Wand2 className="h-3 w-3" /> Template
             </span>
           )}
           {isDemo && <DemoBadge />}
@@ -347,17 +354,26 @@ export default async function PracticesPage({
                   tags={p.tags}
                   actions={
                     <>
-                      {profileId && (
-                        <form action={forkPracticeAction.bind(null, p.id)}>
-                          <button
-                            type="submit"
-                            title="Make your own editable copy"
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated"
+                      {profileId &&
+                        (p.is_template ? (
+                          <Link
+                            href={`/practices/${p.id}`}
+                            title="Claim this template and make it your own"
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-primary-bg bg-primary-bg px-3 py-1.5 text-xs font-semibold text-primary-strong transition-colors hover:opacity-80"
                           >
-                            <Wand2 className="h-3.5 w-3.5" /> Customize
-                          </button>
-                        </form>
-                      )}
+                            <Sparkles className="h-3.5 w-3.5" /> Claim
+                          </Link>
+                        ) : (
+                          <form action={forkPracticeAction.bind(null, p.id)}>
+                            <button
+                              type="submit"
+                              title="Make your own editable copy"
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated"
+                            >
+                              <Wand2 className="h-3.5 w-3.5" /> Customize
+                            </button>
+                          </form>
+                        ))}
                       <AdoptPracticeButton practiceId={p.id} adopted={false} />
                     </>
                   }
