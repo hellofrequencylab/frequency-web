@@ -124,9 +124,22 @@ viewer's app-wide search **only** via one rule — `lib/crm/visibility.ts#canVie
 - Captures already linked to a member are skipped (found via the member directory, never twice).
 
 Wired surfaces — the header search overlay (`/api/search`) and the `/people` directory ("People
-you've met") — show **owner** leads today (they link to the steward's own `/connections/[id]`).
-`network_local` is modeled and tested but **not broadcast** yet: a non-owner viewer has no lead
-page to land on, and cross-steward exposure rides the same promotion-review gate as below.
+you've met"). **Owner** hits link to the steward's own `/connections/[id]`; **`network_local`**
+hits link to a read-only shared view (`/connections/shared/[id]`).
+
+**Cross-steward tier (ADR-132) — now live, narrowly gated.** A `network_local` capture surfaces
+only when *all* hold:
+- the **viewer is a steward** (host+) or staff — leads aren't searched for regular members
+  (`connectionsOwnerId()` gates `searchVisibleLeads(..., { includeNetwork: true })`);
+- the owner **deliberately shared** the capture (`visibility='network'`, the Network/Private
+  toggle on the connection); and
+- the viewer is in the **same locality** (`city`).
+
+What's exposed is **business-card only** — name, title, company, city, website, socials, and *who
+shared it*. Email, phone, notes, tags and the photo stay owner-private, so the intro routes through
+the capturing steward. The shared page re-checks all three gates server-side (it never trusts the
+search filter): steward (`connectionsOwnerId`), `visibility='network'` (`getSharedContact`), and
+locality (`canViewLead`). A capture that's become a member is skipped (you find them as a member).
 
 ### Operations
 
@@ -141,8 +154,6 @@ page to land on, and cross-steward exposure rides the same promotion-review gate
 
 ## Not yet (deliberate follow-ups)
 
-- **Cross-steward `network_local` search** — `canViewLead` supports it and it's tested, but it's
-  not surfaced until the promotion review + a viewer-facing lead page exist (leak risk).
 - **Promotion into public/network** (`→ contacts`, link to a member `profile`) — schema hooks exist; the action is gated behind its own review since that's where leak risk concentrates.
 - `shared` (team) visibility — modelled, not yet surfaced.
 - More sources (email/calendar import) — `source` is open for it.

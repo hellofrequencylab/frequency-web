@@ -20,6 +20,7 @@ import { demoModeEnabled } from '@/lib/platform-flags'
 import { viewerHidesDemo } from '@/lib/demo-preference'
 import type { ProfileIdentity } from '@/lib/types/profile'
 import { searchVisibleLeads, type LeadHit } from '@/lib/crm/people-search'
+import { connectionsOwnerId } from '@/lib/connections/access'
 import { getInitials } from '@/lib/utils'
 
 type Profile = ProfileIdentity & {
@@ -112,20 +113,21 @@ export default async function DirectoryPage({
     }
   }
 
-  // Get viewer's identity for the Invite Member modal + locality-scoped lead search.
+  // Get viewer's display name for the Invite Member modal.
   const { data: viewer } = await admin
     .from('profiles')
-    .select('id, display_name')
+    .select('display_name')
     .eq('auth_user_id', user.id)
     .maybeSingle()
   const viewerName = (viewer?.display_name as string | undefined) ?? 'A friend'
-  const viewerId = (viewer?.id as string | undefined) ?? null
 
-  // Non-member people the viewer is entitled to find (their own captures) — so a
-  // steward can search up someone they scanned in, who has no member profile yet.
+  // Non-member people the viewer is entitled to find: their own captures, plus
+  // (as a steward) network-shared captures from stewards in their own locality.
+  // Only stewards/staff have or can see these, so gate on connectionsOwnerId().
+  const stewardId = await connectionsOwnerId()
   let metLeads: LeadHit[] = []
-  if (qFilter?.trim() && viewerId) {
-    metLeads = (await searchVisibleLeads(viewerId, qFilter.trim(), 12)).filter((l) => l.href)
+  if (qFilter?.trim() && stewardId) {
+    metLeads = await searchVisibleLeads(stewardId, qFilter.trim(), { includeNetwork: true, limit: 12 })
   }
 
   let query = admin
@@ -334,7 +336,9 @@ export default async function DirectoryPage({
                     <span className="shrink-0 rounded-md bg-surface-elevated px-1.5 py-0.5 text-[10px] font-medium text-muted">Lead</span>
                   </span>
                   <span className="mt-0.5 block truncate text-xs text-subtle">
-                    {[l.email, l.city].filter(Boolean).join(' · ') || 'Saved contact'}
+                    {[l.email, l.city, l.ownerName ? `shared by ${l.ownerName}` : null]
+                      .filter(Boolean)
+                      .join(' · ') || 'Saved contact'}
                   </span>
                 </span>
               </Link>

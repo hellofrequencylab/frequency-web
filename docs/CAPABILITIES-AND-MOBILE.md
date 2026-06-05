@@ -45,7 +45,7 @@ relationship + the presence of open tasks, computed server-side.
 
 ## 2. Inline admin & contextual actions (regular users never see an admin tab)
 
-> **Realized by ADR-128 (the `PageAdminDock`, Phase 1) and extended by ADR-132 /
+> **Realized by ADR-128 (the `PageAdminDock`, Phase 1) and extended by ADR-133 /
 > [EMBEDDED-ADMIN.md](EMBEDDED-ADMIN.md) (Phase 2) — see [DECISIONS.md](DECISIONS.md).**
 > The principle below — *actions live where the thing lives* — holds and now ships as
 > the **page admin dock**: an edge-tab (desktop) / header-Shield (mobile) slide-out
