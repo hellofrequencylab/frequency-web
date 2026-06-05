@@ -159,7 +159,7 @@ export function StudioWizard({ channels }: { channels: Channel[] }) {
         </div>
         {preview && (
           <div className="mt-3 space-y-3 text-sm">
-            <p className="text-muted">Would create <b className="text-text">{preview.totals.people}</b> people across <b className="text-text">{preview.totals.circles}</b> circles, <b className="text-text">{preview.totals.posts}</b> posts + <b className="text-text">{preview.totals.replies}</b> replies, <b className="text-text">{preview.totals.events}</b> events, <b className="text-text">{preview.totals.journeys}</b> journeys, <b className="text-text">{preview.totals.connections}</b> cross-circle connections — plus RSVPs, reactions, practice logs &amp; achievements.</p>
+            <p className="text-muted">A <b className="text-text">{preview.hub.name}</b> hub led by Guide <b className="text-text">{preview.hub.guide}</b>, over <b className="text-text">{preview.totals.circles}</b> circles with their hosts — <b className="text-text">{preview.totals.people}</b> people, <b className="text-text">{preview.totals.posts}</b> circle posts + <b className="text-text">{preview.totals.replies}</b> replies, <b className="text-text">{preview.totals.walls}</b> wall/feed posts, <b className="text-text">{preview.totals.friendships}</b> friendships, <b className="text-text">{preview.totals.events}</b> events, <b className="text-text">{preview.totals.dispatches}</b> dispatches, <b className="text-text">{preview.totals.journeys}</b> journeys, <b className="text-text">{preview.totals.connections}</b> cross-circle links — plus RSVPs, reactions, practice logs &amp; achievements.</p>
             <div className="flex flex-wrap gap-1.5">
               {preview.circles.map((c, i) => <span key={i} className="rounded-full bg-surface-elevated px-2 py-0.5 text-xs text-subtle">{c.name} · {c.members}</span>)}
             </div>
@@ -172,6 +172,19 @@ export function StudioWizard({ channels }: { channels: Channel[] }) {
                 <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-subtle">Sample thread</p>
                 <p className="text-text"><b>{preview.sampleThread.author}</b>: {preview.sampleThread.body}</p>
                 {preview.sampleThread.replies.map((r, i) => <p key={i} className="ml-3 text-muted">↳ <b className="text-text">{r.author}</b>: {r.body}</p>)}
+              </div>
+            )}
+            {preview.sampleDispatch && (
+              <div className="rounded-xl border border-border bg-canvas p-3">
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-subtle">Sample dispatch</p>
+                <p className="text-text"><b>{preview.sampleDispatch.title}</b></p>
+                <p className="text-muted">{preview.sampleDispatch.body}</p>
+              </div>
+            )}
+            {preview.sampleWall && (
+              <div className="rounded-xl border border-border bg-canvas p-3">
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-subtle">Sample wall post</p>
+                <p className="text-muted">{preview.sampleWall.body}</p>
               </div>
             )}
           </div>
@@ -190,7 +203,7 @@ export function StudioWizard({ channels }: { channels: Channel[] }) {
             {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />} Seed this area
           </button>
         </div>
-        {result && <p className="mt-3 rounded-lg border border-success-bg bg-success-bg/40 px-3 py-2 text-sm text-success">Seeded {result.circles} circles · {result.members} members · {result.posts} posts · {result.events} events · {result.rsvps} RSVPs · {result.reactions} reactions · {result.practiceLogs} practice logs · {result.journeys} journeys · {result.connections} connections. The ⚡ demo notice now reflects the new totals.</p>}
+        {result && <p className="mt-3 rounded-lg border border-success-bg bg-success-bg/40 px-3 py-2 text-sm text-success">Seeded {result.guides} guide + {result.hubs} hub · {result.circles} circles · {result.members} members · {result.posts} circle posts · {result.walls} wall/feed posts · {result.friendships} friendships · {result.dispatches} dispatches · {result.events} events · {result.rsvps} RSVPs · {result.reactions} reactions · {result.practiceLogs} practice logs · {result.journeys} journeys · {result.connections} cross-circle links. The ⚡ demo notice now reflects the new totals.</p>}
       </section>
     </div>
   )
