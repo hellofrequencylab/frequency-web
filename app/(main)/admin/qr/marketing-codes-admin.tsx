@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { UserCircle, Pencil, Trash2, Download, Palette, EyeOff, Eye } from 'lucide-react'
+import { UserCircle, Pencil, Trash2, Download, Palette, EyeOff, Eye, Printer } from 'lucide-react'
 import { StyleEditor } from './style-editor'
 import { NfcWriter } from './nfc-writer'
 import { updateMarketingCodeAdmin, setMarketingActive, deleteMarketingCodeAdmin } from './marketing-actions'
@@ -108,6 +108,9 @@ function MarketingCard({ code }: { code: MarketingCodeAdmin }) {
               <Download className="h-3 w-3" /> SVG
             </a>
             <NfcWriter url={code.url} className={DL} />
+            <a href={`/print/qr?code=${encodeURIComponent(code.id)}`} target="_blank" rel="noreferrer" className={DL}>
+              <Printer className="h-3 w-3" /> Print
+            </a>
             <button onClick={() => setEditing((v) => !v)} className={DL}>
               <Pencil className="h-3 w-3" /> {editing ? 'Close' : 'Edit'}
             </button>

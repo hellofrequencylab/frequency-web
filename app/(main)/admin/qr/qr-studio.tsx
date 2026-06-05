@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { QrCode, Plus, Pencil, Download, Copy, Check, ExternalLink, Zap } from 'lucide-react'
+import { QrCode, Plus, Pencil, Download, Copy, Check, ExternalLink, Zap, Printer } from 'lucide-react'
 import { createNode, updateNode, setNodeActive, type NodeInput } from './actions'
 import { Field, Badge, toLocalInput, fromLocalInput } from './form-bits'
 import { StyleEditor } from './style-editor'
@@ -215,6 +215,14 @@ function NodeCard({
             </button>
             {/* Node channel is carried by the node's own type, so write the plain URL. */}
             <NfcWriter url={node.url} tagMedium="qr" />
+            <a
+              href={`/print/qr?node=${encodeURIComponent(node.id)}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+            >
+              <Printer className="w-3 h-3" /> Print
+            </a>
             <a
               href={node.url}
               target="_blank"

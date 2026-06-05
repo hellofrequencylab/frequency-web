@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Link2, Plus, Pencil, Download, Copy, Check, ExternalLink, Info } from 'lucide-react'
+import { Link2, Plus, Pencil, Download, Copy, Check, ExternalLink, Info, Printer } from 'lucide-react'
 import { groupedDestinations, isKnownDestination, SITE_DESTINATIONS } from '@/lib/qr/destinations'
 import { createLink, updateLink, setLinkActive, type LinkInput } from './link-actions'
 import { Field, Badge, toLocalInput, fromLocalInput } from './form-bits'
@@ -252,6 +252,14 @@ function LinkCard({
               {copied ? 'Copied' : 'Link'}
             </button>
             <NfcWriter url={link.url} />
+            <a
+              href={`/print/qr?code=${encodeURIComponent(link.id)}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+            >
+              <Printer className="w-3 h-3" /> Print
+            </a>
             <a
               href={link.url}
               target="_blank"
