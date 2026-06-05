@@ -3682,7 +3682,6 @@ not a replacement. Operator-facing "how to assign a lead flow" guidance belongs 
 
 ---
 
-<<<<<<< Updated upstream
 ## ADR-126: Entry Points & Campaigns — the distribution layer
 
 **Status:** Accepted (design; Phase 1 to follow) · planned in `lib/entry-points/**`,
@@ -3744,8 +3743,8 @@ in a separate reviewed step. Personas/lead flows are the routing layer underneat
 are the distribution layer on top. Operator playbooks live in Notion, linked to ENTRY-POINTS.md.
 
 ---
-=======
-## ADR-125: Site-admin roles — a functional "operations" axis (Owner · Admin · Operations · Marketing · Accounting · Support · Analyst)
+
+## ADR-127: Site-admin roles — a functional "operations" axis (Owner · Admin · Operations · Marketing · Accounting · Support · Analyst)
 
 **Status:** Accepted (approved; implementation pending) · extends the staff axis
 (`lib/staff.ts` `team_members`, ADR-027). Layers over `app/(main)/admin/sections.ts`
@@ -3781,9 +3780,9 @@ the exact thing ADR-027 separated).
 
 **Consequences.** A clean operations org model. Implementation = a migration adding the role enum
 values + a role→capability map + the `/admin/roles` UI; gating already flows through
-`meetsAccess`/`meetsStaff` + the resolver. Built after the page admin dock (ADR-126).
+`meetsAccess`/`meetsStaff` + the resolver. Built after the page admin dock (ADR-128).
 
-## ADR-126: Page admin dock (`PageAdminDock`) — inline admin as a movable edge tab (Phase 1)
+## ADR-128: Page admin dock (`PageAdminDock`) — inline admin as a movable edge tab (Phase 1)
 
 **Status:** Accepted (Phase 1) · `components/layout/page-admin-dock.tsx`,
 `components/layout/app-shell.tsx`. Realizes the inline-admin model (CAPABILITIES-AND-MOBILE.md §2)
@@ -3809,9 +3808,10 @@ them **always readily available in one tab on the page itself**, for whoever's a
 solves it). Per-page bespoke admin menus (rejected — one dock, one registry).
 
 **Consequences.** Operators get one consistent, repositionable admin surface on every page. Gating
-is by role today; it tightens to the granular capability set (and the ADR-125 operations roles) as
+is by role today; it tightens to the granular capability set (and the ADR-127 operations roles) as
 those land. Phase 2 brings true in-place layout/style editing.
->>>>>>> Stashed changes
+
+---
 ### Decisions intentionally NOT duplicated here
 
 Already fully covered by the repo docs (no ADR needed): the RLS / admin-client
