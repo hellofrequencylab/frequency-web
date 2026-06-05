@@ -11,6 +11,8 @@ import { meetsAccess } from '@/lib/nav-areas'
 import type { CommunityRole } from '@/lib/community-roles'
 import type { StaffRole } from '@/lib/staff'
 import { CircleSettingsModule } from '@/components/admin/modules/circle-settings-module'
+import { HubSettingsModule } from '@/components/admin/modules/hub-settings-module'
+import { NexusSettingsModule } from '@/components/admin/modules/nexus-settings-module'
 
 // The page admin dock (CAPABILITIES-AND-MOBILE.md — inline admin as a side panel).
 // Operators get per-page admin actions (edit info, layout template, basic styles,
@@ -72,6 +74,8 @@ export function PageAdminDock({
   if (!can('host')) return null // operators only
 
   const circleSlug = pathname.match(/^\/circles\/([^/]+)/)?.[1] ?? null
+  const hubSlug = pathname.match(/^\/hubs\/([^/]+)/)?.[1] ?? null
+  const nexusSlug = pathname.match(/^\/nexuses\/([^/]+)/)?.[1] ?? null
   const edit = sectionEdit(pathname)
   const actions: Action[] = [
     // On a circle page the in-place CircleSettingsModule replaces the deep-link.
@@ -186,6 +190,16 @@ export function PageAdminDock({
               {circleSlug && (
                 <div className="px-1 pb-2 pt-1">
                   <CircleSettingsModule />
+                </div>
+              )}
+              {hubSlug && (
+                <div className="px-1 pb-2 pt-1">
+                  <HubSettingsModule />
+                </div>
+              )}
+              {nexusSlug && (
+                <div className="px-1 pb-2 pt-1">
+                  <NexusSettingsModule />
                 </div>
               )}
               {actions.map((a) =>
