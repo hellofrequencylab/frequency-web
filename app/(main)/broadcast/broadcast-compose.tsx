@@ -10,27 +10,32 @@ const TYPE_LABELS: Record<DispatchType, string> = {
   post: 'Post', poll: 'Poll', challenge: 'Challenge', article: 'Article',
 }
 
+type Scope = 'circle' | 'hub' | 'nexus' | 'global'
+
 export function BroadcastCompose({
   circles,
   hubs,
   nexuses,
+  canGlobal = false,
 }: {
   circles: { id: string; name: string }[]
   hubs:    { id: string; name: string }[]
   nexuses: { id: string; name: string }[]
+  /** Staff/janitor may broadcast to Everyone (Phase D). */
+  canGlobal?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const [type, setType] = useState<DispatchType>('post')
-  const [scope, setScope] = useState<'circle' | 'hub' | 'nexus'>(
-    nexuses.length > 0 ? 'nexus' : hubs.length > 0 ? 'hub' : 'circle'
+  const [scope, setScope] = useState<Scope>(
+    nexuses.length > 0 ? 'nexus' : hubs.length > 0 ? 'hub' : circles.length > 0 ? 'circle' : 'global'
   )
   const [audId, setAudId] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
-  const audienceOptions = scope === 'circle' ? circles : scope === 'hub' ? hubs : nexuses
+  const audienceOptions = scope === 'circle' ? circles : scope === 'hub' ? hubs : scope === 'nexus' ? nexuses : []
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -73,7 +78,7 @@ export function BroadcastCompose({
         titleIconColor="indigo"
         submitLabel="Publish now"
         pendingLabel="Publishing…"
-        submitDisabled={!title.trim() || !body.trim() || !audId}
+        submitDisabled={!title.trim() || !body.trim() || (scope !== 'global' && !audId)}
         isPending={isPending}
         error={error}
       >
@@ -130,28 +135,35 @@ export function BroadcastCompose({
             <label className={cmLabel}>Send to</label>
             <select
               value={scope}
-              onChange={e => { setScope(e.target.value as 'circle' | 'hub' | 'nexus'); setAudId('') }}
+              onChange={e => { setScope(e.target.value as Scope); setAudId('') }}
               disabled={isPending}
               className={cmInput}
             >
               {circles.length > 0 && <option value="circle">Circle</option>}
               {hubs.length > 0 && <option value="hub">Hub</option>}
               {nexuses.length > 0 && <option value="nexus">Nexus</option>}
+              {canGlobal && <option value="global">Everyone (Global)</option>}
             </select>
           </div>
-          <div>
-            <label className={cmLabel}>Which {scope}</label>
-            <select
-              value={audId}
-              onChange={e => setAudId(e.target.value)}
-              required
-              disabled={isPending}
-              className={cmInput}
-            >
-              <option value="">- Select -</option>
-              {audienceOptions.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-            </select>
-          </div>
+          {scope !== 'global' ? (
+            <div>
+              <label className={cmLabel}>Which {scope}</label>
+              <select
+                value={audId}
+                onChange={e => setAudId(e.target.value)}
+                required
+                disabled={isPending}
+                className={cmInput}
+              >
+                <option value="">- Select -</option>
+                {audienceOptions.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+              </select>
+            </div>
+          ) : (
+            <div className="flex items-end">
+              <p className="text-xs text-subtle">Reaches every member, site-wide.</p>
+            </div>
+          )}
         </div>
       </CreateModal>
     </>

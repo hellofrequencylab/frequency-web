@@ -1,5 +1,6 @@
 'use server'
 
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
@@ -30,7 +31,12 @@ export async function createAndPublishDispatch(fd: FormData) {
   const audience_scope = fd.get('audience_scope') as string
   const audience_id    = (fd.get('audience_id') as string)?.trim()
 
-  if (!title || !body || !audience_scope || !audience_id) throw new Error('Missing required fields')
+  const isGlobal = audience_scope === 'global'
+  // Global reaches every member — staff/janitor only (Phase D, ADR-088).
+  if (isGlobal && !hasRole(caller.community_role, 'janitor')) {
+    throw new Error('Only staff can broadcast globally.')
+  }
+  if (!title || !body || !audience_scope || (!isGlobal && !audience_id)) throw new Error('Missing required fields')
 
   const excerpt = makeExcerpt(body)
   const admin   = createAdminClient()
@@ -65,7 +71,9 @@ export async function createAndPublishDispatch(fd: FormData) {
     if (!led) throw new Error('You can only broadcast to a circle, hub, or region you lead.')
   }
 
-  const { data: dispatch, error } = await admin
+  // audience_id is nullable for global in the DB (dispatch_global_tier migration)
+  // but not yet in the generated types — cast to the untyped client (repo convention).
+  const { data: dispatch, error } = await (admin as unknown as SupabaseClient)
     .from('dispatches')
     .insert({
       title,
@@ -73,7 +81,7 @@ export async function createAndPublishDispatch(fd: FormData) {
       excerpt,
       dispatch_type,
       audience_scope,
-      audience_id,
+      audience_id:  isGlobal ? null : audience_id,
       author_id:    caller.id,
       status:       'published',
       published_at: new Date().toISOString(),
@@ -99,7 +107,10 @@ export async function createAndPublishDispatch(fd: FormData) {
       const dispatchUrl = `${appUrl}/broadcast/${dispatch.id}`
 
       let profileIds: string[] = []
-      if (audience_scope === 'circle') {
+      if (isGlobal) {
+        const { data } = await admin.from('profiles').select('id').eq('is_active', true).eq('is_demo', false)
+        profileIds = (data ?? []).map((p) => p.id)
+      } else if (audience_scope === 'circle') {
         const { data } = await admin.from('memberships').select('profile_id').eq('circle_id', audience_id).eq('status', 'active')
         profileIds = (data ?? []).map((m) => m.profile_id)
       } else if (audience_scope === 'hub') {
