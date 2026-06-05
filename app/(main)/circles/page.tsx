@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { NewCircleCompose } from '@/components/compose/new-circle-compose'
 import { MapZone, MapPreview, MapBanner, FindNearMeButton } from '@/components/circles/circles-map'
 import { IndexTemplate } from '@/components/templates'
+import { PageContents } from '@/components/templates/page-contents'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { CircleCard, type CircleCardData } from '@/components/circles/circle-card'
@@ -24,7 +25,7 @@ type CircleRow = CircleBase & {
   image_url: string | null
   is_demo: boolean
   topical_channel_id: string | null
-  channel: { name: string } | null
+  channel: { name: string; domain_id: string | null } | null
   hub: {
     id: string
     name: string
@@ -62,9 +63,9 @@ function Stat({ value, label }: { value: number; label: string }) {
 export default async function CirclesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ type?: string; interest?: string; sort?: string; q?: string }>
+  searchParams: Promise<{ type?: string; interest?: string; sort?: string; q?: string; channel?: string }>
 }) {
-  const { type, interest, sort = 'nearest', q } = await searchParams
+  const { type, interest, sort = 'nearest', q, channel } = await searchParams
   const admin = createAdminClient()
   const supabase = await createClient()
 
@@ -95,7 +96,7 @@ export default async function CirclesPage({
     .select(
       `id, name, slug, about, type, member_count, member_cap, status, created_at,
        latitude, longitude, neighborhood, image_url, is_demo, topical_channel_id,
-       channel:topical_channels!topical_channel_id ( name ),
+       channel:topical_channels!topical_channel_id ( name, domain_id ),
        hub:hubs!hub_id (
          id, name, slug,
          nexus:nexuses!nexus_id ( id, name, slug, outpost:outposts!outpost_id ( name ) )
@@ -113,9 +114,23 @@ export default async function CirclesPage({
     .from('topical_channels').select('id, name, category').order('name')
   const interests = (interestRows ?? []) as { id: string; name: string; category: string }[]
 
+  // Channels (Domains) drive the table-of-contents filter: group circles by the
+  // Channel their practice belongs to, so tapping one drills into that Channel.
+  const { data: domainRows } = await admin
+    .from('domains').select('id, slug, name, display_order').eq('is_active', true)
+    .order('display_order', { ascending: true })
+  const domains = (domainRows ?? []) as { id: string; slug: string; name: string; display_order: number }[]
+  const domainCount = new Map<string, number>()
+  for (const c of all) {
+    const d = c.channel?.domain_id
+    if (d) domainCount.set(d, (domainCount.get(d) ?? 0) + 1)
+  }
+  const selectedDomain = channel ? domains.find((d) => d.slug === channel) ?? null : null
+
   // ── Facets ──────────────────────────────────────────────────────────────
   const qLower = (q ?? '').trim().toLowerCase()
   let filtered = all.filter((c) => {
+    if (selectedDomain && c.channel?.domain_id !== selectedDomain.id) return false
     if (type === 'in-person' && c.type !== 'in-person') return false
     if (type === 'online' && c.type !== 'online') return false
     if (interest && c.topical_channel_id !== interest) return false
@@ -135,7 +150,7 @@ export default async function CirclesPage({
   const myCircles = filtered.filter((c) => myCircleIds.includes(c.id))
   const discover = filtered.filter((c) => !myCircleIds.includes(c.id))
   const combined = [...myCircles, ...discover] // members first, then discover
-  const filtering = !!(type || interest || qLower)
+  const filtering = !!(type || interest || qLower || channel)
 
   // Near-you data (in-person, located) from the unfiltered set
   const locatableCircles = all
@@ -174,6 +189,20 @@ export default async function CirclesPage({
     interests: interestChips.length,
   }
 
+  // Table-of-contents filter: All + each Channel (with a circle count). Tapping a
+  // Channel drills into just its circles via ?channel=<slug>.
+  const channelLinks = [
+    { href: '/circles', label: 'All', count: all.length, active: !channel },
+    ...domains
+      .filter((d) => (domainCount.get(d.id) ?? 0) > 0)
+      .map((d) => ({
+        href: `/circles?channel=${d.slug}`,
+        label: d.name,
+        count: domainCount.get(d.id) ?? 0,
+        active: channel === d.slug,
+      })),
+  ]
+
   return (
     <IndexTemplate
       title="Circles"
@@ -189,6 +218,9 @@ export default async function CirclesPage({
         </>
       }
     >
+      {/* Table of contents — filter circles by Channel (drill into each one). */}
+      <PageContents links={channelLinks} />
+
       {/* Reassurance — the introvert's worry, named and answered. Secondary copy,
           so it folds away on mobile to keep the header scannable. */}
       <p className="mb-6 hidden max-w-2xl text-sm leading-relaxed text-muted sm:block">
