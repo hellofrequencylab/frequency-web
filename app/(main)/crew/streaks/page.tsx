@@ -60,7 +60,7 @@ export default async function StreaksPage() {
           return (
             <div
               key={type}
-              className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden"
+              className="rounded-2xl bg-surface-elevated/60"
             >
               <div className="p-5">
                 <div className="flex items-start gap-4">
@@ -124,7 +124,7 @@ export default async function StreaksPage() {
                         <div key={m} className="flex flex-col items-center gap-1 flex-1">
                           <div className={`w-full h-1.5 rounded-full ${
                             reached
-                              ? 'bg-gradient-to-r from-amber-400 to-primary'
+                              ? 'bg-primary'
                               : 'bg-surface-elevated'
                           }`} />
                           <span className={`text-xs font-semibold ${
@@ -153,7 +153,7 @@ export default async function StreaksPage() {
       </div>
 
       {/* Streak freeze explanation */}
-      <div className="mt-8 rounded-2xl border border-signal-bg bg-signal-bg/50 p-4">
+      <div className="mt-8 rounded-2xl bg-signal-bg/40 p-4">
         <div className="flex items-start gap-3">
           <Snowflake className="w-5 h-5 text-signal-strong shrink-0 mt-0.5" />
           <div>
