@@ -14,6 +14,7 @@ import {
   getPractice,
   updatePractice,
   forkPractice,
+  setPracticeTags,
   type PracticeEdit,
 } from '@/lib/practices'
 
@@ -72,6 +73,20 @@ export async function updatePracticeAction(id: string, patch: PracticeEdit): Pro
   if (existing.created_by !== profileId) return fail('You can only edit practices you created')
   const saved = await updatePractice(id, patch)
   if (!saved) return fail('Could not save')
+  revalidatePath('/practices')
+  revalidatePath(`/practices/${id}/edit`)
+  return ok()
+}
+
+// Set the author tags on a practice you created (hybrid model: new labels become
+// folksonomy tags). Ownership enforced; Vera/other-member tags are left untouched.
+export async function setPracticeTagsAction(id: string, labels: string[]): Promise<ActionResult> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Not signed in')
+  const existing = await getPractice(id)
+  if (!existing) return fail('Practice not found')
+  if (existing.created_by !== profileId) return fail('You can only edit practices you created')
+  await setPracticeTags(id, labels, { source: 'author', assignedBy: profileId })
   revalidatePath('/practices')
   revalidatePath(`/practices/${id}/edit`)
   return ok()

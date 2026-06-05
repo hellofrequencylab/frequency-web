@@ -22,6 +22,10 @@ export interface StudioNode {
   lat: number | null
   lng: number | null
   proximityM: number | null
+  /** Total verified-claim cap ("first N win"); null = unlimited. */
+  maxClaims: number | null
+  /** Whether the code requires a signed payload (carries a secret). */
+  requireSignature: boolean
   captures: number
   style: QrStyle
   /** Absolute capture URL this code encodes. */
@@ -51,6 +55,8 @@ const BLANK: NodeInput = {
   lat: null,
   lng: null,
   proximityM: null,
+  maxClaims: null,
+  requireSignature: false,
   style: DEFAULT_STYLE,
 }
 
@@ -180,6 +186,12 @@ function NodeCard({
                 {node.lat != null && node.lng != null && (
                   <Badge tone="signal">📍 {node.proximityM ?? 100}m</Badge>
                 )}
+                {node.maxClaims != null && (
+                  <Badge tone={node.captures >= node.maxClaims ? 'danger' : 'warning'}>
+                    {node.captures}/{node.maxClaims} claimed
+                  </Badge>
+                )}
+                {node.requireSignature && <Badge tone="signal">🔒 Signed</Badge>}
                 {node.valid_until && (
                   <Badge tone="warning">
                     until {new Date(node.valid_until).toLocaleDateString()}
@@ -295,6 +307,8 @@ export function NodeForm({
           lat: node.lat,
           lng: node.lng,
           proximityM: node.proximityM,
+          maxClaims: node.maxClaims,
+          requireSignature: node.requireSignature,
           style: node.style,
         }
       : BLANK,
@@ -408,6 +422,16 @@ export function NodeForm({
             ))}
           </select>
         </Field>
+        <Field label="Limit total claims (optional)">
+          <input
+            type="number"
+            min={1}
+            value={form.maxClaims ?? ''}
+            onChange={(e) => set('maxClaims', e.target.value === '' ? null : Number(e.target.value))}
+            placeholder="Unlimited — e.g. 50 for first-50-win"
+            className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
+          />
+        </Field>
       </div>
 
       {form.partner_id && (
@@ -467,6 +491,17 @@ export function NodeForm({
           </div>
         )}
       </div>
+
+      {/* Signed payload — the code carries a secret so a forged /n/<id> can't claim. */}
+      <label className="flex items-center gap-2 rounded-lg border border-border bg-canvas/50 p-3 text-xs font-medium text-subtle">
+        <input
+          type="checkbox"
+          checked={form.requireSignature}
+          onChange={(e) => set('requireSignature', e.target.checked)}
+          className="accent-primary"
+        />
+        Require a signed code (anti-spoof) — only the printed/written code can claim
+      </label>
 
       {!hideEditor && (
         <StyleEditor

@@ -36,9 +36,9 @@ export default async function QrPrintPage({
     title = data.title || `/q/${data.slug}`
     style = parseStyle(data.style)
   } else if (node) {
-    const { data } = await db.from('nodes').select('label, type, style').eq('id', node).maybeSingle()
+    const { data } = await db.from('nodes').select('label, type, style, secret').eq('id', node).maybeSingle()
     if (!data) notFound()
-    url = nodeUrl(node)
+    url = nodeUrl(node, data.secret)
     title = data.label || 'Check-in code'
     style = parseStyle(data.style)
   } else {
