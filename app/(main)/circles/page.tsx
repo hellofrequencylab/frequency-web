@@ -243,19 +243,20 @@ export default async function CirclesPage({
           <MapBanner />
         </div>
 
-        {/* Masonry: circles fill the grid; the map is a 2x2 block top-right and
-            the nav sits in the right column under it. grid-auto-flow:dense lets
-            the circles flow into the gaps (and under the nav). */}
-        <div className="grid grid-cols-2 gap-x-6 gap-y-8 [grid-auto-flow:row_dense] lg:grid-cols-4 lg:auto-rows-[21rem]">
-          {/* Map — top-right, half width × one row */}
+        {/* Masonry: boxed circle cards fill the grid; the map is a 2-wide block
+            top-right and the nav sits in the right column under it.
+            grid-auto-flow:dense lets the cards flow into the gaps (and under the
+            nav). Rows size to content so the boxed cards sit flush. */}
+        <div className="grid auto-rows-min grid-cols-1 gap-6 [grid-auto-flow:row_dense] sm:grid-cols-2 lg:grid-cols-4">
+          {/* Map — top-right, 2 columns × one tall cell */}
           {locatableCircles.length > 0 && (
-            <div className="col-span-2 lg:col-start-3 lg:row-start-1">
+            <div className="h-72 sm:col-span-2 lg:col-start-3 lg:row-start-1">
               <MapPreview />
             </div>
           )}
 
           {/* Navigation — right column, directly under the map */}
-          <div className="col-span-2 space-y-6 lg:col-span-1 lg:col-start-4 lg:row-start-2 lg:row-span-2">
+          <div className="space-y-6 sm:col-span-2 lg:col-span-1 lg:col-start-4 lg:row-start-2 lg:row-span-2">
             {interestChips.length > 0 && (
               <div>
                 <SectionHeader title="Browse by interest" />
@@ -305,7 +306,7 @@ export default async function CirclesPage({
 
           {/* Circles — yours first, then discover; they fill every other cell */}
           {combined.length === 0 ? (
-            <div className="col-span-2 lg:col-span-3 lg:row-start-1">
+            <div className="sm:col-span-2 lg:col-span-3 lg:row-start-1">
               <EmptyState
                 icon={Users}
                 title={filtering ? 'No circles match these filters' : 'No circles yet'}
