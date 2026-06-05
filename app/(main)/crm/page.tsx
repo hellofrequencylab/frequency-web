@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { MessageSquare, Globe, Cake, Sparkles, HeartPulse, Search, Mail, Phone, MapPin } from 'lucide-react'
+import { MessageSquare, Globe, Search, Mail, Phone, MapPin, Calendar } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
@@ -8,6 +8,9 @@ import { RoleBadge } from '@/lib/community-roles'
 import { getInitials } from '@/lib/utils'
 import { DashboardTemplate } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
+import { DemoBadge } from '@/components/ui/demo-badge'
+import { demoModeEnabled } from '@/lib/platform-flags'
+import { viewerHidesDemo } from '@/lib/demo-preference'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,6 +35,7 @@ type CrmMember = {
   phone: string | null
   city: string | null
   joinedAt: string | null
+  isDemo: boolean
 }
 
 // Resolve the circle ids this steward oversees (host/guide/mentor). Admin and
@@ -81,6 +85,11 @@ export default async function CrmPage() {
   // CRM is a steward tool — hosts and up.
   if (!caller || !atLeastRole(role, 'host')) redirect('/feed')
 
+  // Honour the header's Demo toggle: hide seeded demo members when the global
+  // demo_mode is off OR this viewer has turned demo content off for themselves
+  // (same rule as /people). When shown, demo members are badged + dimmed below.
+  const hideDemo = !(await demoModeEnabled()) || (await viewerHidesDemo())
+
   // Resolve which profiles this steward can see.
   let profileIds: string[] | null = null // null = whole community (admin/janitor)
   if (role !== 'admin' && role !== 'janitor') {
@@ -99,11 +108,12 @@ export default async function CrmPage() {
 
   let query = admin
     .from('profiles')
-    .select('id, auth_user_id, display_name, handle, avatar_url, community_role, bio, website, phone, city, created_at')
+    .select('id, auth_user_id, display_name, handle, avatar_url, community_role, bio, website, phone, city, created_at, is_demo')
     .eq('is_system', false)
     .neq('id', caller.id as string)
     .order('display_name', { ascending: true })
     .limit(300)
+  if (hideDemo) query = query.eq('is_demo', false)
   if (profileIds !== null) {
     // Steward scope: restrict to the resolved member ids (empty → no rows).
     query = query.in('id', profileIds.length ? profileIds : ['00000000-0000-0000-0000-000000000000'])
@@ -128,6 +138,7 @@ export default async function CrmPage() {
     phone: (m.phone as string) ?? null,
     city: (m.city as string) ?? null,
     joinedAt: (m.created_at as string) ?? null,
+    isDemo: Boolean(m.is_demo),
   }))
 
   return (
@@ -149,90 +160,89 @@ export default async function CrmPage() {
           description={`As people join ${scopeLabel(role)}, their cards will appear here.`}
         />
       ) : (
-        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {members.map((m) => (
-            <li key={m.id} className="flex flex-col rounded-2xl border border-border bg-surface p-4 shadow-sm">
+            <li
+              key={m.id}
+              className={`group flex h-full flex-col rounded-2xl border border-border bg-surface p-5 shadow-sm transition-colors hover:border-primary-bg hover:shadow-md motion-reduce:transition-none ${
+                m.isDemo ? 'opacity-[0.72]' : ''
+              }`}
+            >
               <div className="flex items-start gap-3">
-                {m.avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={m.avatarUrl} alt="" className="h-11 w-11 shrink-0 rounded-full object-cover" />
-                ) : (
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-sm font-semibold text-muted">
-                    {getInitials(m.displayName)}
-                  </span>
-                )}
+                <Link href={`/people/${m.handle}`} className={`shrink-0 ${m.isDemo ? 'grayscale-[0.5]' : ''}`}>
+                  {m.avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={m.avatarUrl} alt="" className="h-11 w-11 rounded-full object-cover" />
+                  ) : (
+                    <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-bg text-sm font-semibold text-primary-strong select-none">
+                      {getInitials(m.displayName)}
+                    </span>
+                  )}
+                </Link>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <Link
                       href={`/people/${m.handle}`}
-                      className="truncate text-sm font-semibold text-text hover:underline"
+                      className="truncate text-base font-bold leading-tight text-text hover:underline"
                     >
                       {m.displayName}
                     </Link>
-                    <RoleBadge role={m.role} />
+                    {m.role !== 'member' && <RoleBadge role={m.role} />}
+                    {m.isDemo && <DemoBadge />}
                   </div>
-                  {m.handle && <p className="truncate text-xs text-subtle">@{m.handle}</p>}
+                  {m.handle && <p className="mt-0.5 truncate text-xs text-subtle">@{m.handle}</p>}
                 </div>
               </div>
 
-              {m.bio && <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-muted">{m.bio}</p>}
+              {m.bio && <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-muted">{m.bio}</p>}
 
-              <dl className="mt-3 space-y-1 text-xs text-subtle">
-                {m.email && (
-                  <div className="flex items-center gap-1.5">
-                    <Mail className="h-3.5 w-3.5 shrink-0" />
-                    <a href={`mailto:${m.email}`} className="truncate text-primary hover:underline">
-                      {m.email}
-                    </a>
-                  </div>
-                )}
-                {m.phone && (
-                  <div className="flex items-center gap-1.5">
-                    <Phone className="h-3.5 w-3.5 shrink-0" />
-                    <a href={`tel:${m.phone}`} className="truncate text-text hover:underline">
-                      {m.phone}
-                    </a>
-                  </div>
-                )}
-                {m.city && (
-                  <div className="flex items-center gap-1.5">
-                    <MapPin className="h-3.5 w-3.5 shrink-0" />
-                    <span className="truncate">{m.city}</span>
-                  </div>
-                )}
-                {m.website && (
-                  <div className="flex items-center gap-1.5">
-                    <Globe className="h-3.5 w-3.5 shrink-0" />
-                    <a
-                      href={m.website.startsWith('http') ? m.website : `https://${m.website}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="truncate text-primary hover:underline"
-                    >
-                      {m.website.replace(/^https?:\/\//, '')}
-                    </a>
-                  </div>
-                )}
-                {m.joinedAt && (
-                  <div className="flex items-center gap-1.5">
-                    <Cake className="h-3.5 w-3.5" />
-                    Joined {new Date(m.joinedAt).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
-                  </div>
-                )}
-              </dl>
+              {(m.email || m.phone || m.city || m.website || m.joinedAt) && (
+                <dl className="mt-3 space-y-1 text-xs text-subtle">
+                  {m.email && (
+                    <div className="flex items-center gap-1.5">
+                      <Mail className="h-3.5 w-3.5 shrink-0" />
+                      <a href={`mailto:${m.email}`} className="truncate text-primary hover:underline">
+                        {m.email}
+                      </a>
+                    </div>
+                  )}
+                  {m.phone && (
+                    <div className="flex items-center gap-1.5">
+                      <Phone className="h-3.5 w-3.5 shrink-0" />
+                      <a href={`tel:${m.phone}`} className="truncate text-text hover:underline">
+                        {m.phone}
+                      </a>
+                    </div>
+                  )}
+                  {m.city && (
+                    <div className="flex items-center gap-1.5">
+                      <MapPin className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">{m.city}</span>
+                    </div>
+                  )}
+                  {m.website && (
+                    <div className="flex items-center gap-1.5">
+                      <Globe className="h-3.5 w-3.5 shrink-0" />
+                      <a
+                        href={m.website.startsWith('http') ? m.website : `https://${m.website}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="truncate text-primary hover:underline"
+                      >
+                        {m.website.replace(/^https?:\/\//, '')}
+                      </a>
+                    </div>
+                  )}
+                  {m.joinedAt && (
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="h-3.5 w-3.5 shrink-0" />
+                      Joined {new Date(m.joinedAt).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
+                    </div>
+                  )}
+                </dl>
+              )}
 
-              {/* Opt-in data channels — coming soon. Shows the shape of what
-                  members will be able to share with their leaders. */}
-              <div className="mt-3 rounded-lg border border-dashed border-border bg-marketing-canvas/50 px-3 py-2">
-                <p className="text-sm font-bold text-text">Opt-in channels — soon</p>
-                <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-subtle">
-                  <span className="inline-flex items-center gap-1"><Cake className="h-3 w-3" /> Birthday</span>
-                  <span className="inline-flex items-center gap-1"><Sparkles className="h-3 w-3" /> Astro / HD</span>
-                  <span className="inline-flex items-center gap-1"><HeartPulse className="h-3 w-3" /> Wellbeing</span>
-                </div>
-              </div>
-
-              <div className="mt-3 flex items-center gap-2">
+              <div className="mt-auto flex items-center gap-2 pt-4">
                 <Link
                   href="/messages"
                   className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
