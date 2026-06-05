@@ -173,9 +173,26 @@ separate, reviewed step).
 | Phase | Ships | Reuses |
 |---|---|---|
 | ✅ Foundation | QR engine · scan resolver · attribution · referral zaps · CRM · personas/lead flows | in repo |
-| ⏳ **1 — Crew MVP** | "My Entry Points": template → branded QR + **flyer SVG/PNG** → create points → signup credit | `qr_codes` · QR render · attribution · zaps |
-| ⏳ 2 — Admin builder | Campaign builder + template library + per-campaign analytics + assign-to-crew + Puck landings | `/marketing` · Puck `pages` |
+| ✅ **1 — Crew MVP** | "My Entry Points": template → branded QR + **flyer (vector SVG + PNG)** → create points → signup credit | `qr_codes` · QR render · attribution · zaps |
+| 🟡 **2 — Admin builder** | ✅ Campaign builder (`/marketing/funnels`) + per-campaign scans + in-place entry-point creation. ⏳ Puck landings · assign-to-crew · template curation | `/marketing` · Puck `pages` |
 | ⏳ 3 — Growth | A/B · per-persona nurture automations · leaderboards/tiers · segments | `automations` · `achievements` |
+
+### Phase 2 — what shipped
+
+- **Surface:** `/marketing/funnels` (a **Funnels** tab in the marketing workspace; admin/staff-gated by the existing `/marketing` layout). Distinct from `/marketing/campaigns` (email broadcasts).
+- **Campaigns:** `entry_campaigns` CRUD — `lib/entry-points/campaigns.ts` (reads) + `app/(main)/marketing/funnels/actions.ts` (admin-gated create/rename/archive). Each campaign shows its entry-point count + total scans.
+- **Campaign detail** (`/marketing/funnels/<id>`): rename/archive + an in-place builder that **reuses the Phase 1 `EntryForm`/`EntryRow`**, filing new entry points under the campaign (`qr_codes.campaign_id`). No duplicated UI.
+- **Threading:** `EntryPointInput.campaignId` (validated via `campaignExists`) flows through `createEntryPoint`/`updateEntryPoint`; `listEntryPointsByCampaign` powers the detail view.
+- **Still pending (2b):** Puck custom landings, assign-an-entry-point-to-a-crew-member (today the admin owns what they create), and operator template curation.
+
+### Phase 1 — what shipped
+
+- **Surface:** `/entry-points` (crew-gated, Focus/Dashboard) + an "Entry points" item in the account menu (crew+). Non-crew see a Crew upsell.
+- **Build flow:** `lib/entry-points/templates.ts` (5 goal-typed templates) → pick one → fill name / destination / headline / subhead / CTA → **live flyer preview** → publish.
+- **Outputs:** a `/q/<slug>` short link, a branded **QR** (PNG + SVG via `/api/qr`), and a **flyer** in **vector SVG + high-res PNG** (`/api/entry-points/<slug>/flyer[?format=png]`, owner-gated). Flyer composer: `lib/entry-points/flyer.ts` (+ `brand.ts` palette); PNG rasterized via `flyer-raster.ts` with bundled **Liberation Sans** (Arial-metric, OFL; `public/fonts/`).
+- **Destinations:** `lib/entry-points/destinations.ts` — persona lead flows (`/start/<flow>`), the member's own circles/events, or curated public pages; validated to a known safe path (no open redirect).
+- **Data:** entry points are owner-owned `qr_codes` with `template_id` set (`purpose` NULL ⇒ many per owner) + a `flyer` jsonb; migration `20260606000000_entry_points.sql` (additive; **written, not applied**) also adds the `entry_campaigns` table (Phase 2) and the `entry_point_created` / `referral_activated` zap config.
+- **Points:** `entry_point_created` (20 zaps, **capped to the first 5** per member, exactly-once via the engagement ledger) on create; the existing `invite_accepted` (40) credits the owner on a converted signup — **free**, because the `/q` resolver already drops `fq_ref` for any owner-owned code.
 
 ---
 
@@ -183,5 +200,6 @@ separate, reviewed step).
 
 - Dedicated per-persona track destinations (today lead flows point at pillar pages).
 - Operator-assignable template editor (DB layer over the code registry).
-- Flyer caching + a small gallery of preset layouts (start with 2–3).
+- A user-editable QR style on entry points (today the template's preset is used; restyle is deferred).
+- Flyer caching + more preset layouts (today: `poster` + `card`).
 - A/B testing + nurture automations (Phase 3).

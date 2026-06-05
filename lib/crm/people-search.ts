@@ -1,7 +1,7 @@
 // App-wide people search, lead side. Members are searched as today (profiles); this
 // adds the non-member people a viewer is ENTITLED to find — their own captures, and
 // (when a steward shares to the network) locality-matched captures — gated by the
-// single rule in ./visibility (ADR-127). Service-role read; the viewer scope is
+// single rule in ./visibility (ADR-130). Service-role read; the viewer scope is
 // enforced in code via canViewLead, never by exposing the table.
 
 import type { SupabaseClient } from '@supabase/supabase-js'

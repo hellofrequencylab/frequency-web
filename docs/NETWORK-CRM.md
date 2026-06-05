@@ -100,7 +100,7 @@ per-scan checkbox) the steward sends **one** transactional intro.
 **Posture:** a single, person-initiated introduction (the steward met them), not bulk
 marketing. No marketing email until the lead opts in (`consent_state='subscribed'`).
 
-## Unified person — the "User Stats" page (ADR-127)
+## Unified person — the "User Stats" page (ADR-130)
 
 One human can exist as up to three rows joined by **lowercased email**: `profiles` (member),
 `contacts` (the CRM hub), and `network_contacts` (0..n private captures). They are now pulled

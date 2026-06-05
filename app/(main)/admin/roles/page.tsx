@@ -9,6 +9,9 @@ import { getAreaPermissions } from '@/lib/permissions'
 import { NAV_AREA_DEFAULTS } from '@/lib/nav-areas'
 import { RoleManager, type RoleMember } from './role-manager'
 import { PermissionGrid } from './permission-grid'
+import { StaffRoleManager, type StaffMemberRow } from './staff-role-manager'
+import { isStaffRole } from '@/lib/core/staff-roles'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,6 +28,27 @@ export default async function AdminRolesPage() {
     .limit(300)
 
   const permissions = await getAreaPermissions()
+
+  // Current team / operations members (ADR-127). team_members is untyped in the
+  // generated types, so query through an untyped handle.
+  const db = admin as unknown as SupabaseClient
+  const { data: teamRows } = await db
+    .from('team_members')
+    .select('role, profile:profiles!profile_id ( id, display_name, handle, avatar_url )')
+    .order('created_at', { ascending: true })
+
+  const teamMembers: StaffMemberRow[] = ((teamRows ?? []) as unknown as Array<{
+    role: string
+    profile: { id: string; display_name: string | null; handle: string | null; avatar_url: string | null } | null
+  }>)
+    .filter((r) => r.profile && isStaffRole(r.role))
+    .map((r) => ({
+      profileId: r.profile!.id,
+      displayName: r.profile!.display_name ?? 'Unnamed',
+      handle: r.profile!.handle ?? '',
+      avatarUrl: r.profile!.avatar_url ?? null,
+      role: r.role as StaffMemberRow['role'],
+    }))
 
   const members: RoleMember[] = (rows ?? []).map((m) => ({
     id: m.id as string,
@@ -67,6 +91,8 @@ export default async function AdminRolesPage() {
       </div>
 
       <RoleManager members={members} />
+
+      <StaffRoleManager members={teamMembers} />
 
       <PermissionGrid initial={permissions} defaults={NAV_AREA_DEFAULTS} />
     </AdminPage>

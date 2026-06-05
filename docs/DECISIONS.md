@@ -3743,7 +3743,122 @@ in a separate reviewed step. Personas/lead flows are the routing layer underneat
 are the distribution layer on top. Operator playbooks live in Notion, linked to ENTRY-POINTS.md.
 
 ---
-## ADR-127: Unified person + the CRM "User Stats" page — group the three identity records, and search by connection + locality
+
+## ADR-127: Site-admin roles — a functional "operations" axis (Owner · Admin · Operations · Marketing · Accounting · Support · Analyst)
+
+**Status:** Accepted · **model + capability matrix + assignment UI shipped**
+(`lib/core/staff-roles.ts`, `lib/staff.ts` `requireStaffCap`, `/admin/roles`
+`StaffRoleManager` + `setStaffRole`/`addStaffMember`, migration
+`20260606000100_team_member_roles.sql`, tests `lib/core/staff-roles.test.ts`).
+**Follow-up (enforcement rewire):** point the legacy marketing gates at
+`staffCan('marketing')` and union the staff capability into the community-gated
+`/admin` surfaces (the single `requireAdmin` gate) so Operations/etc. unlock the
+right admin pages. Extends ADR-027; layers over `ADMIN_GROUPS.min` + `area_permissions`.
+
+**Context.** Two axes exist: the **community trust ladder** (member→…→admin→janitor, community
+standing) and a separate **staff/operations** axis (`team_members`: analyst→marketer→admin→owner,
+ADR-027). The staff axis is a strict ladder, which is wrong for **functional departments** —
+Operations and Accounting aren't "more/less than" each other.
+
+**Decision.** Keep the two axes. Reshape the staff axis into **two spanning levels + four
+department roles + one read-only**:
+
+| Role | Scope |
+|---|---|
+| Owner | Everything incl. billing ownership, transfer/close org, grant roles |
+| Admin | All operations + assigns roles below Owner (not ownership-only) |
+| Operations | Circles · channels · events · hubs/nexuses · broadcasts · moderation · members roster · QR. No finance/roles |
+| Marketing | Marketing · CRM · outreach · segments · intel; insights read |
+| Accounting | Billing · subscriptions · payouts · reports; members read-only |
+| Support | Moderation · member assist · help-gaps; insights read |
+| Analyst | Read-only across insights/analytics/CRM |
+
+Permissions stay **data-driven** (role→capability map over `ADMIN_GROUPS` + `area_permissions` +
+the resolver), not hardcoded per page. **Janitor stays** the top community super-steward; a person
+may hold both a community role and an operations role. Migration is incremental: `analyst→Analyst`,
+`marketer→Marketing`, `admin→Admin`, `owner→Owner`; **add** Operations, Accounting, Support.
+
+**Alternatives.** Extend the single strict ladder (rejected — departments aren't ranks). Put ops
+roles on the community ladder (rejected — conflates community standing with business operations,
+the exact thing ADR-027 separated).
+
+**Consequences.** A clean operations org model. Implementation = a migration adding the role enum
+values + a role→capability map + the `/admin/roles` UI; gating already flows through
+`meetsAccess`/`meetsStaff` + the resolver. Built after the page admin dock (ADR-128).
+
+## ADR-128: Page admin dock (`PageAdminDock`) — inline admin as a movable edge tab (Phase 1)
+
+**Status:** Accepted (Phase 1) · `components/layout/page-admin-dock.tsx`,
+`components/layout/app-shell.tsx`. Realizes the inline-admin model (CAPABILITIES-AND-MOBILE.md §2)
+as a dock.
+
+**Context.** Admin/edit actions for a page were scattered (the Admin tab, per-page menus). We want
+them **always readily available in one tab on the page itself**, for whoever's allowed.
+
+**Decision.** Operators only (`meetsAccess('host')` or any staff; never a member). The panel of
+per-page admin actions is unchanged (Edit info → section editor by route, Group dispatch,
+Settings/Admin home, janitor: Members · Pages · Roles; Layout template + Basic styles are **"Soon"**,
+Phase 2). The **chrome differs by platform** (revised after the first cut cluttered mobile):
+- **Desktop:** a **light, unobtrusive** vertical tab on the right edge (was opaque — corrected).
+  Opening slides a right panel in, in one of two **persisted modes**: **Push** (the shell pads the
+  content over so the whole page stays visible) or **Overlay** (panel floats over). **Width is
+  drag-resizable** (left-edge handle). Mode + width persist site-wide (`freq-admin-mode` /
+  `freq-admin-width`).
+- **Mobile:** **no edge tab** — the panel opens from a **Shield button in the top header** and shows
+  as an overlay sheet (push doesn't apply on a phone).
+- The shell owns open/mode/width (so Push can pad `[data-feed-scroll]` via a `--admin-pr` var at
+  `md+`).
+
+**Alternatives.** The first cut (an always-present **opaque, repositionable** edge tab on every
+viewport — rejected: it cluttered the mobile site; mobile now triggers from the header, desktop tab
+is light). Keep admin behind the Admin tab only (rejected — not in-context).
+
+**Consequences.** Operators get one consistent, repositionable admin surface on every page. Gating
+is by role today; it tightens to the granular capability set (and the ADR-127 operations roles) as
+those land. Phase 2 brings true in-place layout/style editing.
+
+---
+
+## ADR-129: Bundle `content/help/**` into the serverless runtime so "Ask Vera" can build its index
+
+**Status:** Accepted · `next.config.ts` (`outputFileTracingIncludes`), `lib/ai/help-index.ts`
+(fail-loud on empty), `lib/ai/help-rag.ts` (`after()` telemetry). Builds on the RAG support
+tier (ADR-067, SUPPORT-SYSTEM.md).
+
+**Context.** "Ask Vera" retrieves from `help_chunks`, an embedding index built by
+`reindexHelpChunks()` (nightly `embed-help` cron + admin "Build index" button). In production the
+button "did nothing": `help_chunks` was empty, so every question deflected. Root cause: the help
+center is plain Markdown read from disk at **runtime** (`lib/help/content.ts` → `fs.readdir` of
+`content/help/**`). Next's file tracer can't follow those dynamic reads, so the Markdown was absent
+from the serverless function bundle; `getAllCategories()` swallows the fs error and returns `[]`,
+and `reindexHelpChunks()` then reported a happy "0 embedded" while the index stayed empty. The help
+*pages* were unaffected — they're statically generated at build time, where the files exist. (The
+`(main)` layout's support-launcher search index reads the same files at runtime, so it was empty
+too — but its empty state reads as a normal "no matches," which is why only Vera was reported.)
+Separately, `logHelpQuery`/`recordAiUsage` ran as floating `void` promises, which serverless does
+not guarantee to finish — so query/usage telemetry was silently lost (0 rows despite live use).
+
+**Decision.**
+- **Trace the content in.** `outputFileTracingIncludes` bundles `./content/help/**/*` into the
+  reindex routes (`/api/cron/embed-help`, `/admin/ai`) and all routes (`/**`, for the layout
+  search index). The content is tiny, so the trace cost is negligible.
+- **Fail loud.** `reindexHelpChunks()` throws when it finds zero published articles instead of
+  "succeeding" with an empty build — the cron logs an error and the admin button surfaces it,
+  rather than hiding a broken index behind a green result.
+- **Persist telemetry with `after()`.** Replace the `void`-ed `logHelpQuery`/`recordAiUsage` with
+  `after(() => …)` (next/server) — off the response path, but guaranteed to run.
+
+**Alternatives.** Import the Markdown as modules / precompute a JSON index at build time (rejected
+for now — larger change; file tracing is the minimal, idiomatic fix and keeps the fs-based content
+layer). Await the telemetry inline (rejected — adds latency to every answer).
+
+**Consequences.** After deploy, the nightly cron (or one click of admin "Build index") populates
+`help_chunks` and Ask Vera answers; a future content-load regression fails visibly instead of
+silently. Any other AI surface still using `void recordAiUsage(...)` has the same latent
+telemetry-loss bug and should migrate to `after()`.
+
+---
+## ADR-130: Unified person + the CRM "User Stats" page — group the three identity records, and search by connection + locality
 
 **Status:** Accepted · shipped in `lib/crm/{person,journey,visibility,people-search}.ts`,
 `app/(main)/marketing/contacts/[id]/**`, the contacts list search, `/api/search` +

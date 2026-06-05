@@ -1,4 +1,4 @@
--- Person identity stitch (ADR-127, docs/NETWORK-CRM.md "Unified person").
+-- Person identity stitch (ADR-130, docs/NETWORK-CRM.md "Unified person").
 --
 -- One human can show up as up to THREE records, all joined by lowercased email:
 --   • profiles         — the member (login + public profile)            [members only]

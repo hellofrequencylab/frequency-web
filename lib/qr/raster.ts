@@ -45,6 +45,25 @@ async function inlineLogo(src: string): Promise<string | null> {
   }
 }
 
+/**
+ * Rasterize an arbitrary SVG string to a PNG buffer at `width` px. Shared by the QR
+ * renderer (shapes, no fonts needed) and the flyer renderer (passes `fontBuffers` so
+ * its text renders — resvg-wasm ships with no fonts). One wasm init for the process.
+ */
+export async function rasterizeSvg(
+  svg: string,
+  opts: { width: number; fontBuffers?: Uint8Array[]; defaultFontFamily?: string },
+): Promise<Buffer> {
+  await ensureWasm()
+  const r = new Resvg(svg, {
+    fitTo: { mode: 'width', value: opts.width },
+    ...(opts.fontBuffers && opts.fontBuffers.length
+      ? { font: { fontBuffers: opts.fontBuffers, defaultFontFamily: opts.defaultFontFamily ?? 'Liberation Sans', loadSystemFonts: false } }
+      : {}),
+  })
+  return Buffer.from(r.render().asPng())
+}
+
 /** Render a QR for `text` with `style` as a PNG buffer (gradients, shapes, logo). */
 export async function renderStyledQrPng(text: string, style: QrStyle, size = 1024): Promise<Buffer> {
   let effective = style
@@ -52,7 +71,5 @@ export async function renderStyledQrPng(text: string, style: QrStyle, size = 102
     effective = { ...style, logo: await inlineLogo(style.logo) }
   }
   const svg = renderStyledQrSvg(text, effective, size)
-  await ensureWasm()
-  const r = new Resvg(svg, { fitTo: { mode: 'width', value: size } })
-  return Buffer.from(r.render().asPng())
+  return rasterizeSvg(svg, { width: size })
 }
