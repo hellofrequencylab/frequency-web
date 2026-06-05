@@ -16,6 +16,7 @@ export interface ClaimResult {
 export async function claimNode(
   nodeId: string,
   coords?: { lat: number; lng: number } | null,
+  secret?: string | null,
 ): Promise<ClaimResult> {
   const profileId = await getMyProfileId()
   if (!profileId) return { ok: false, reason: 'not_signed_in' }
@@ -27,7 +28,12 @@ export async function claimNode(
       ? { lng: coords.lng, lat: coords.lat }
       : null
 
-  const result = await captureNode({ nodeId, actorProfileId: profileId, location })
+  const result = await captureNode({
+    nodeId,
+    actorProfileId: profileId,
+    location,
+    presentedSecret: secret ?? null,
+  })
   return {
     ok: result.ok,
     reason: result.reason,
