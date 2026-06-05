@@ -1,4 +1,4 @@
-// Entry-point A/B testing (ADR-135, Phase 3). Destination variants under one entry
+// Entry-point A/B testing (ADR-136, Phase 3). Destination variants under one entry
 // point: the /q resolver splits scan traffic by weight (pickVariant), records the
 // served variant per scan, and a fq_var cookie carries it to signup so conversions
 // attribute per variant (recordEntryPointConversion). pickVariant is pure + tested;

@@ -175,9 +175,9 @@ separate, reviewed step).
 | ✅ Foundation | QR engine · scan resolver · attribution · referral zaps · CRM · personas/lead flows | in repo |
 | ✅ **1 — Crew MVP** | "My Entry Points": template → branded QR + **flyer (vector SVG + PNG)** → create points → signup credit | `qr_codes` · QR render · attribution · zaps |
 | 🟡 **2 — Admin builder** | ✅ Campaign builder (`/marketing/funnels`) + per-campaign scans + in-place entry-point creation. ⏳ Puck landings · assign-to-crew · template curation | `/marketing` · Puck `pages` |
-| ✅ **3 — Growth** | ✅ Per-persona nurture (`/marketing/nurture`, ADR-131) · ✅ Recruiter leaderboard + tiers (`/crew/leaderboard?scope=entrypoints`, ADR-134) · ✅ A/B testing (ADR-135) · ✅ Segment broadcasts (persona segments seeded; `/marketing/campaigns` targets them) | `automations` · `achievements` |
+| ✅ **3 — Growth** | ✅ Per-persona nurture (`/marketing/nurture`, ADR-131) · ✅ Recruiter leaderboard + tiers (`/crew/leaderboard?scope=entrypoints`, ADR-134) · ✅ A/B testing (ADR-136) · ✅ Segment broadcasts (persona segments seeded; `/marketing/campaigns` targets them) | `automations` · `achievements` |
 
-### Phase 3 — A/B testing (ADR-135)
+### Phase 3 — A/B testing (ADR-136)
 
 - **Destination variants under one printed QR:** `entry_point_variants` (key · label · target · weight · active) per entry point. The `/q` resolver splits scans by weight (`pickVariant`, pure + unit-tested); **no active variants ⇒ the default destination (control)**.
 - **True conversion attribution:** the served variant is logged on the scan (`record_qr_scan` → `qr_scans.variant_key`) and carried to signup via a `fq_var` cookie (parallel to `fq_ref`) → `entry_point_conversions` (one per person per entry point). Per-variant **rate = conversions / scans**.
