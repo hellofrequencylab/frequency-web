@@ -3520,7 +3520,10 @@ through the existing usage ledger + daily-cap machinery.
 
 ## ADR-122: Mobile right-edge stats menu (the gamification counterpart to the left rail)
 
-**Status:** Accepted · `components/layout/app-shell.tsx` (`MobileStatsMenu`),
+**Status:** Superseded by ADR-134 (the scroll-reveal / opt-in-toggle interaction). The right-edge
+stats menu and its reuse of `GameStatsPanel` / `loadGameStats` stand; only the *interaction* (the
+scroll-revealed light tab + per-device drawer on/off) changed — both edges now carry an
+always-visible tab that opens on click, with a shared Micro/Full size. · `components/layout/app-shell.tsx` (`MobileStatsMenu`),
 `components/sidebar/game-stats-dock.tsx` (`GameStatsPanel`), `components/sidebar/right-sidebar.tsx`
 (`loadGameStats`, `MobileGameStats`), `app/(main)/layout.tsx`. Mirror of the left rail (ADR-121);
 reuses the desktop progress-cockpit (`GameStatsDock`).
@@ -4069,6 +4072,44 @@ persist) is untouched. Rollout is additive and per-surface (engine → Circles p
 surfaces → Platform group → retire `/admin`). EMBEDDED-ADMIN.md is the source of truth;
 CAPABILITIES-AND-MOBILE §2 + PAGE-FRAMEWORK §3/§6 are refined; the operator guide goes to
 Notion on ship.
+
+---
+
+## ADR-134: Unified mobile edge menus — always-visible tabs, click-to-open, shared Micro/Full size
+
+**Status:** Accepted · `components/layout/app-shell.tsx` (`EdgeMenu`, `RailSize`). Supersedes the
+ADR-122 interaction (and the residue of ADR-121's left rail); reuses the same panel bodies
+(MOBILE_TABS nav · `GameStatsPanel` via `statsPanel`).
+
+**Context.** ADR-121/122 gave the two mobile edges a **scroll-revealed**, very-light tab that
+appeared only after scrolling, plus a **per-device on/off toggle** in the Menu drawer
+(`freq-rail-nav` / `freq-stats-rail`). In practice the reveal felt hidden and the on/off control
+was clutter — the edges should just *be there*. The two edges had also drifted into separate
+components (`MobileSideRail` / `MobileStatsMenu`) with slightly different chrome.
+
+**Decision.** Collapse both edges into **one `EdgeMenu` component** (`side="left" | "right"`):
+- **Always-visible tab**, tight to the edge and slightly darker (`bg-surface-elevated`,
+  `border`, `h-[36vh] w-5`). No scroll-reveal, no on/off setting — the selector is gone.
+- **Click opens and stays** until the member clicks (backdrop / a link) or scrolls the feed
+  (`[data-feed-scroll]`, >6px) — no longer a one-use menu.
+- **Shared Micro/Full size**, persisted once as `freq-rail-size` (default `micro`):
+  `micro → w-60 max-w-[80vw]`, `full → w-[88vw] max-w-sm`. A segmented **View: Micro|Full**
+  control sits at the bottom of *each* panel; both edges read the same size so they stay
+  symmetric. Left = the core nav (`MOBILE_TABS` + a **More** button into the full drawer),
+  right = `statsPanel` (`GameStatsPanel`).
+- **Small content gutter:** `<main>` padding goes `px-4 sm:px-6` → `px-6` so the always-on tabs
+  never touch content.
+
+**Alternatives.** Keep the scroll-reveal (rejected — the ask was "always visible as tabs").
+Keep the per-rail on/off toggle (rejected — "the menu selector … is unnecessary"). Independent
+per-edge widths (rejected — "same width and styles for both"). A push-content layout (rejected —
+the panels overlay; on a phone pushing crushes the feed, per ADR-122).
+
+**Consequences.** Removed: `useRailReveal`, `EdgeTab`, `RailToggle`, the drawer's edge-rail
+preferences section + its `railNavOn` / `statsRailOn` / `onSetRail` props, and the
+`freq-rail-nav` / `freq-stats-rail` prefs (replaced by the single `freq-rail-size`). Both edges
+are `md:hidden`, so desktop is untouched. The desktop stats dock and `GameStatsPanel` /
+`loadGameStats` reuse (ADR-122) are unchanged.
 
 ---
 ### Decisions intentionally NOT duplicated here
