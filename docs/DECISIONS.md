@@ -3746,10 +3746,14 @@ are the distribution layer on top. Operator playbooks live in Notion, linked to 
 
 ## ADR-127: Site-admin roles — a functional "operations" axis (Owner · Admin · Operations · Marketing · Accounting · Support · Analyst)
 
-**Status:** Accepted (approved; implementation pending) · extends the staff axis
-(`lib/staff.ts` `team_members`, ADR-027). Layers over `app/(main)/admin/sections.ts`
-(`ADMIN_GROUPS.min`), `lib/nav-areas.ts` (`area_permissions`), and the capability
-resolver (CAPABILITIES-AND-MOBILE.md).
+**Status:** Accepted · **model + capability matrix + assignment UI shipped**
+(`lib/core/staff-roles.ts`, `lib/staff.ts` `requireStaffCap`, `/admin/roles`
+`StaffRoleManager` + `setStaffRole`/`addStaffMember`, migration
+`20260606000100_team_member_roles.sql`, tests `lib/core/staff-roles.test.ts`).
+**Follow-up (enforcement rewire):** point the legacy marketing gates at
+`staffCan('marketing')` and union the staff capability into the community-gated
+`/admin` surfaces (the single `requireAdmin` gate) so Operations/etc. unlock the
+right admin pages. Extends ADR-027; layers over `ADMIN_GROUPS.min` + `area_permissions`.
 
 **Context.** Two axes exist: the **community trust ladder** (member→…→admin→janitor, community
 standing) and a separate **staff/operations** axis (`team_members`: analyst→marketer→admin→owner,
