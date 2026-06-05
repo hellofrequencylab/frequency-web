@@ -1,9 +1,8 @@
 // Entry-point flyer download (ADR-126). Returns the print-ready flyer as a vector
-// SVG — the "download a vector file for your art" deliverable. Gated to the code's
-// owner. The QR itself is also downloadable (PNG + SVG) via /api/qr; a PNG export of
-// the whole flyer needs a bundled font for the rasterizer and is a follow-up.
+// SVG (the "download a vector file for your art" deliverable) or a high-res PNG
+// (?format=png, rasterized with bundled Liberation Sans). Gated to the code's owner.
 //
-//   GET /api/entry-points/<slug>/flyer
+//   GET /api/entry-points/<slug>/flyer[?format=png][&size=1080]
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { getMyProfileId } from '@/lib/auth'
@@ -11,14 +10,17 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { parseStyle } from '@/lib/qr/style'
 import { shortLinkUrl } from '@/lib/qr/links'
 import { buildEntryFlyerSvg, type FlyerSlots } from '@/lib/entry-points/flyer'
+import { renderFlyerPng } from '@/lib/entry-points/flyer-raster'
 import { getEntryTemplate } from '@/lib/entry-points/templates'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(_req: Request, { params }: { params: Promise<{ slug: string }> }) {
+export async function GET(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   const me = await getMyProfileId()
   if (!me) return new Response('Sign in first.', { status: 401 })
   const { slug } = await params
+  const url = new URL(req.url)
+  const format = url.searchParams.get('format') === 'png' ? 'png' : 'svg'
 
   const db = createAdminClient() as unknown as SupabaseClient
   const { data } = await db
@@ -42,21 +44,36 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
     footer: str(raw.footer, template.slots.footer),
   }
 
-  const url = shortLinkUrl(code.slug)
+  const link = shortLinkUrl(code.slug)
   const svg = buildEntryFlyerSvg({
     layout: template.flyerLayout,
     slots,
     qrStyle: parseStyle(code.style),
-    url,
-    shortLabel: url.replace(/^https?:\/\//, ''),
+    url: link,
+    shortLabel: link.replace(/^https?:\/\//, ''),
+    // Render at print resolution for PNG; the SVG is resolution-independent.
+    size: format === 'png' ? 1080 : undefined,
   })
 
   const safe = code.slug.replace(/[^\w.-]+/g, '-').slice(0, 64) || 'flyer'
+  const disposition = (ext: string) => `attachment; filename="frequency-flyer-${safe}.${ext}"`
+
+  if (format === 'png') {
+    const png = await renderFlyerPng(svg, 1080)
+    return new Response(new Uint8Array(png), {
+      headers: {
+        'Content-Type': 'image/png',
+        'Cache-Control': 'private, max-age=300',
+        'Content-Disposition': disposition('png'),
+      },
+    })
+  }
+
   return new Response(svg, {
     headers: {
       'Content-Type': 'image/svg+xml; charset=utf-8',
       'Cache-Control': 'private, max-age=300',
-      'Content-Disposition': `attachment; filename="frequency-flyer-${safe}.svg"`,
+      'Content-Disposition': disposition('svg'),
     },
   })
 }

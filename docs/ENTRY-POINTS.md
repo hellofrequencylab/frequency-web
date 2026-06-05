@@ -173,7 +173,7 @@ separate, reviewed step).
 | Phase | Ships | Reuses |
 |---|---|---|
 | ✅ Foundation | QR engine · scan resolver · attribution · referral zaps · CRM · personas/lead flows | in repo |
-| ✅ **1 — Crew MVP** | "My Entry Points": template → branded QR + **flyer (vector SVG)** → create points → signup credit | `qr_codes` · QR render · attribution · zaps |
+| ✅ **1 — Crew MVP** | "My Entry Points": template → branded QR + **flyer (vector SVG + PNG)** → create points → signup credit | `qr_codes` · QR render · attribution · zaps |
 | 🟡 **2 — Admin builder** | ✅ Campaign builder (`/marketing/funnels`) + per-campaign scans + in-place entry-point creation. ⏳ Puck landings · assign-to-crew · template curation | `/marketing` · Puck `pages` |
 | ⏳ 3 — Growth | A/B · per-persona nurture automations · leaderboards/tiers · segments | `automations` · `achievements` |
 
@@ -189,7 +189,7 @@ separate, reviewed step).
 
 - **Surface:** `/entry-points` (crew-gated, Focus/Dashboard) + an "Entry points" item in the account menu (crew+). Non-crew see a Crew upsell.
 - **Build flow:** `lib/entry-points/templates.ts` (5 goal-typed templates) → pick one → fill name / destination / headline / subhead / CTA → **live flyer preview** → publish.
-- **Outputs:** a `/q/<slug>` short link, a branded **QR** (PNG + SVG via `/api/qr`), and a **vector flyer** (`/api/entry-points/<slug>/flyer`, owner-gated). Flyer composer: `lib/entry-points/flyer.ts` (+ `brand.ts` palette).
+- **Outputs:** a `/q/<slug>` short link, a branded **QR** (PNG + SVG via `/api/qr`), and a **flyer** in **vector SVG + high-res PNG** (`/api/entry-points/<slug>/flyer[?format=png]`, owner-gated). Flyer composer: `lib/entry-points/flyer.ts` (+ `brand.ts` palette); PNG rasterized via `flyer-raster.ts` with bundled **Liberation Sans** (Arial-metric, OFL; `public/fonts/`).
 - **Destinations:** `lib/entry-points/destinations.ts` — persona lead flows (`/start/<flow>`), the member's own circles/events, or curated public pages; validated to a known safe path (no open redirect).
 - **Data:** entry points are owner-owned `qr_codes` with `template_id` set (`purpose` NULL ⇒ many per owner) + a `flyer` jsonb; migration `20260606000000_entry_points.sql` (additive; **written, not applied**) also adds the `entry_campaigns` table (Phase 2) and the `entry_point_created` / `referral_activated` zap config.
 - **Points:** `entry_point_created` (20 zaps, **capped to the first 5** per member, exactly-once via the engagement ledger) on create; the existing `invite_accepted` (40) credits the owner on a converted signup — **free**, because the `/q` resolver already drops `fq_ref` for any owner-owned code.
@@ -198,7 +198,6 @@ separate, reviewed step).
 
 ## Open / deferred
 
-- **Flyer PNG export** — the flyer downloads as vector SVG today; a PNG export needs a font bundled into the resvg rasterizer (its text won't render otherwise). The QR itself already exports PNG.
 - Dedicated per-persona track destinations (today lead flows point at pillar pages).
 - Operator-assignable template editor (DB layer over the code registry).
 - A user-editable QR style on entry points (today the template's preset is used; restyle is deferred).
