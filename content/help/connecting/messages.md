@@ -13,13 +13,13 @@ Frequency has a few ways to talk directly, beyond posting in your feed.
 
 ## Direct messages
 
-- **1:1 and group threads** with people you're connected to.
-- You need to be [friends](/help/connecting/friends) with someone before starting a DM, so add them first.
+- **DMs are 1:1** — one person, one thread. You need to be [friends](/help/connecting/friends) with someone before starting a DM, so add them first.
 
-## Rooms
+## Rooms (group chats)
 
-- **Rooms** are group chat spaces for ongoing conversation, distinct from one-off DMs.
-- Crew members and up can create rooms; anyone added can take part.
+- A **group chat is a private room**: start one and add the people you want.
+- **Rooms** are ongoing group spaces, distinct from one-off DMs. Crew members and up can also create open/shared rooms.
+- **Channel rooms** — every [Channel](/help/groups/channels) has one open room. Anyone can read it; tune into the channel to post. You'll see the rooms you're tuned into in your Messages, and an **Open room** button on each Channel.
 
 ## Tips
 
