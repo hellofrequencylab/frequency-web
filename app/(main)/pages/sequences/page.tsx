@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowRight, Tag, CheckCircle2, AlertTriangle } from 'lucide-react'
+import { ArrowRight, ArrowLeft, Tag, CheckCircle2, AlertTriangle } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminPage, AdminSection } from '@/components/admin/admin-page'
 import { listSequences } from '@/lib/onboarding/beta-sequences'
@@ -40,10 +40,18 @@ export default async function BetaSequencesPage() {
 
   return (
     <AdminPage
-      title="Beta sequences"
-      eyebrow="Vera"
+      title="Onboarding sequences"
+      eyebrow="Pages"
       description="Audience-targeted splash pages that feed the founder induction. Pick an entry point, then share its link or QR — everyone who joins through it runs that voiced flow and gets its marketing tag."
       width="default"
+      actions={
+        <Link
+          href="/pages"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" /> All pages
+        </Link>
+      }
     >
       <AdminSection
         title={`${cards.length} sequences`}

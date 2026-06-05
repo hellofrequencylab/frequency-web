@@ -7,7 +7,7 @@ import { BETA_SEQUENCES, getSequence } from '@/lib/onboarding/beta-sequences'
 // partner) gets a shareable URL (/beta/<slug>) whose copy + CTA carry the audience
 // into the induction (?seq=), which then runs that sequence's voiced flow and tags
 // the cohort. Authored in lib/onboarding/beta-sequences.ts (the splash-page creator
-// at /admin/beta-sequences lists + previews these).
+// at /pages/sequences lists + previews these).
 
 export const revalidate = 3600
 
