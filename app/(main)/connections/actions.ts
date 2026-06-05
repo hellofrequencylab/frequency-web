@@ -34,26 +34,32 @@ async function assertOwnPath(path: string): Promise<string> {
 
 // ── AI harvest ───────────────────────────────────────────────────────────────
 
-/** Scan a card/poster the client already uploaded to the private bucket. The temp
- *  scan is deleted after extraction (we keep only the cropped avatar). */
-export async function scanCard(path: string): Promise<ExtractResult> {
+/** Scan one or more images of the same contact (e.g. front + back of a card, plus
+ *  other photos) that the client already uploaded to the private bucket. The temp
+ *  scans are deleted after extraction (we keep only the cropped avatar). */
+export async function scanCard(paths: string[]): Promise<ExtractResult> {
   const ownerId = await requireOwner()
-  await assertOwnPath(path)
+  const clean = (paths ?? []).slice(0, 6)
+  for (const p of clean) await assertOwnPath(p)
+  if (!clean.length) return { ok: false, reason: 'no_read' }
+
+  const cleanup = () => { for (const p of clean) void store.removeObject(p) }
 
   if (!(await aiAvailable()) || (await featureOverBudget('connection-scan'))) {
-    void store.removeObject(path)
+    cleanup()
     return { ok: false, reason: 'ai_unavailable' }
   }
 
-  const img = await store.downloadImageBase64(path)
-  if (!img) return { ok: false, reason: 'no_read' }
+  // Download in order so the model's photo.imageIndex matches the client's list.
+  const images: { base64: string; mediaType: 'image/jpeg' | 'image/png' | 'image/webp' }[] = []
+  for (const p of clean) {
+    const img = await store.downloadImageBase64(p)
+    if (img) images.push(img)
+  }
+  if (!images.length) { cleanup(); return { ok: false, reason: 'no_read' } }
 
-  const extraction = await scanCardImage({
-    imageBase64: img.base64,
-    mediaType: img.mediaType,
-    profileId: ownerId,
-  })
-  void store.removeObject(path) // best-effort cleanup of the temp scan
+  const extraction = await scanCardImage({ images, profileId: ownerId })
+  cleanup() // best-effort delete of the temp scans
 
   if (!extraction) return { ok: false, reason: 'no_result' }
   return { ok: true, extraction }
