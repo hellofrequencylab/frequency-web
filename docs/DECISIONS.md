@@ -2953,6 +2953,40 @@ design reference, not a hardcode. No app-logic change — purely amounts + one f
 
 ---
 
+## ADR-105: Practice library expansion — balance the four Pillars; seed as system content
+
+**Status:** Accepted · `supabase/migrations/20260606130000_practices_library_expansion.sql`. See [getting-started/practices.md](../content/help/getting-started/practices.md) (member-facing).
+
+**Context.** The starter library shipped 5 core practices (`20240228000000_practices.sql`,
+enriched in `20260605000000_practices_rich_content.sql`). But those 5 only covered two of
+the four Pillars (Body ×2, Spirit ×3) and three of the six categories — **Mind and
+Expression had no core practice**, and the **human-relating** category was empty. A member
+landing on the library saw a lopsided picture of what a practice can be.
+
+**Decision.** Add **16 system-owned, public, rich-content practices** (created_by null,
+is_public true) so every Pillar and category is represented: Mind +7 (Deep work block, Read
+ten pages, Digital sunset, Plan tomorrow tonight, Appreciate someone, Call a loved one,
+Listen fully), Expression +4 (Make music, One photo a day, Voice journal, Dance one song),
+Body +3 (Daily walk, Strength session, Time in nature), Spirit +2 (Phone-free meal, Evening
+reflection). Each carries the full content shape (summary + "How to do it" / "Why it works"
+body + cadence + per-log reward) and is linked to its Pillar (`domain_id`). Pillar is
+assigned **by meaning**, not by category — category and Pillar need not align (cf. Breathwork,
+a `holistic-health` practice on the **Spirit** Pillar).
+
+**Consequences.** Library grows 5 → 21 core practices; Pillar filters and the Expression /
+Mind / human-relating surfaces are no longer empty. **No schema or app-logic change** — the
+migration is pure data, idempotent (`INSERT … SELECT` guarded by `NOT EXISTS` on title, the
+safe re-run guard since `practices.title` has no unique constraint). Rewards stay
+admin-governed via the per-practice `reward_zaps` override (ADR-104); heavier asks (deep
+work, strength, real outreach) get a touch more, like surf/cold already do.
+
+**Future (not in this ADR).** A larger, creator-driven library — deep **sub-categories +
+tags** (applied by members and auto-suggested by Vera), **popularity-based ranking** so used
+practices rise, and **creator usage rewards** — is a separate design tracked in
+[ROADMAP.md](ROADMAP.md); this ADR only covers the content seed that balances the Pillars.
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 
