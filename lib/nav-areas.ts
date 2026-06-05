@@ -41,47 +41,39 @@ export type NavArea = {
   staffAccess?: StaffRole
 }
 
-// Order here IS the render order down the rail (IA redesign, IA-STRATEGY.md ★ /
-// ADR-095). FIVE member "worlds" anchored by Home — Community · Practice · Connect
-// · The Quest — then Manage, split into the 4 axis-grouped sections (Steward /
-// Structure / Studio / Platform), each telescoped at its floor role. Personal
-// utilities (My Code, Help, Settings) live in the account menu, not the rail.
-// Phase 1 = this re-grouping (no schema). Phase 2 = union the staff axis into nav
-// visibility so Studio rides team_members; Phase 3 = persona-gated groups.
+// Order here IS the render order down the rail (IA refresh — screenshot review,
+// supersedes the 5-world split in ADR-095's nav notes). THREE worlds anchored by
+// Feed — Community · The Quest — then Manage, split into Steward (community
+// stewardship, host+) and Platform (operator, janitor), each telescoped at its
+// floor. Friends moved to a top-right header icon; personal utilities (My Code,
+// Help, Settings) live in the account menu; Outreach folds into the admin Overview.
 export const NAV_AREAS: readonly NavArea[] = [
   // ── Home anchor → pinned above the section groups ────────────────────────────
   { key: 'feed',      href: '/feed',      label: 'Feed',      section: null,        defaultAccess: 'member'  },
 
-  // ── Community → belong & gather. Channels is the primary topical level;
-  //    Interests live within a Channel. ─────────────────────────────────────────
-  { key: 'circles',   href: '/circles',   label: 'Circles',   section: 'Community', defaultAccess: 'visitor' },
+  // ── Community → belong & gather. Broadcast leads as the local-happenings board. ─
+  { key: 'broadcast', href: '/broadcast', label: 'Broadcast', section: 'Community', defaultAccess: 'member'  },
   { key: 'channels',  href: '/channels',  label: 'Channels',  section: 'Community', defaultAccess: 'visitor' },
+  { key: 'circles',   href: '/circles',   label: 'Circles',   section: 'Community', defaultAccess: 'visitor' },
   { key: 'events',    href: '/events',    label: 'Events',    section: 'Community', defaultAccess: 'member'  },
+  { key: 'messages',  href: '/messages',  label: 'Messages',  section: 'Community', defaultAccess: 'member'  },
+  { key: 'people',    href: '/people',    label: 'Directory', section: 'Community', defaultAccess: 'member'  },
 
-  // ── Practice → grow. The North-Star / WAM engine, its own world. ─────────────
-  { key: 'practices', href: '/practices', label: 'Practices', section: 'Practice',  defaultAccess: 'member'  },
-  { key: 'journeys',  href: '/journeys',  label: 'Journeys',  section: 'Practice',  defaultAccess: 'member'  },
-  { key: 'programs',  href: '/programs',  label: 'Programs',  section: 'Practice',  defaultAccess: 'member'  },
-
-  // ── Connect → your people ────────────────────────────────────────────────────
-  { key: 'messages',  href: '/messages',  label: 'Messages',  section: 'Connect',   defaultAccess: 'member'  },
-  { key: 'friends',   href: '/friends',   label: 'Friends',   section: 'Connect',   defaultAccess: 'member'  },
-  { key: 'people',    href: '/people',    label: 'Directory', section: 'Connect',   defaultAccess: 'member'  },
-
-  // ── The Quest → the game (preview for non-crew → full at crew/paid) ──────────
-  { key: 'crew',      href: '/crew',       label: 'Dashboard',     section: 'The Quest', defaultAccess: 'crew', previewBelowAccess: true },
-  { key: 'store',     href: '/crew/store', label: 'Store & Vault', section: 'The Quest', defaultAccess: 'crew', previewBelowAccess: true },
+  // ── The Quest → the game + practice. One integrated world: the Dashboard, the
+  //    North-Star practice loop (Practices/Journeys/Programs), and the Store.
+  //    Crew-gated items preview for non-crew → full at crew/paid. ────────────────
+  { key: 'crew',      href: '/crew',       label: 'Dashboard', section: 'The Quest', defaultAccess: 'crew', previewBelowAccess: true },
+  { key: 'practices', href: '/practices',  label: 'Practices', section: 'The Quest', defaultAccess: 'member'  },
+  { key: 'journeys',  href: '/journeys',   label: 'Journeys',  section: 'The Quest', defaultAccess: 'member'  },
+  { key: 'programs',  href: '/programs',   label: 'Programs',  section: 'The Quest', defaultAccess: 'member'  },
+  { key: 'store',     href: '/crew/store', label: 'Store',     section: 'The Quest', defaultAccess: 'crew', previewBelowAccess: true },
 
   // ── Manage → split by the axis that grants it (telescoped at each floor) ──────
-  // Steward — community stewardship (trust host+, scoped to your circle/hub/nexus).
-  { key: 'admin-community', href: '/admin',     label: 'Overview',  section: 'Steward', defaultAccess: 'host' },
-  { key: 'crm',             href: '/crm',       label: 'CRM',       section: 'Steward', defaultAccess: 'host' },
-  { key: 'outreach',        href: '/outreach',  label: 'Outreach',  section: 'Steward', defaultAccess: 'host' },
-  // Structure — the place tree (trust guide/mentor).
-  { key: 'admin-structure', href: '/admin/hubs', label: 'Hubs & Nexuses', section: 'Structure', defaultAccess: 'guide' },
-  // Studio — the business cockpit. Rides the STAFF axis (team_members) in Phase 2;
-  // gated 'admin' for now until nav visibility unions the staff axis.
-  { key: 'marketing',       href: '/marketing', label: 'Marketing', section: 'Studio', defaultAccess: 'admin', staffAccess: 'analyst' },
+  // Steward — community stewardship + the business cockpit (trust host+ / staff axis).
+  { key: 'admin-community', href: '/admin',      label: 'Overview',        section: 'Steward', defaultAccess: 'host' },
+  { key: 'crm',             href: '/crm',        label: 'CRM',             section: 'Steward', defaultAccess: 'host' },
+  { key: 'marketing',       href: '/marketing',  label: 'Marketing',       section: 'Steward', defaultAccess: 'admin', staffAccess: 'analyst' },
+  { key: 'admin-structure', href: '/admin/hubs', label: 'Hubs & Nexuses',  section: 'Steward', defaultAccess: 'guide' },
   // Platform — operator controls (trust janitor).
   { key: 'admin-insights',  href: '/admin/engagement', label: 'Insights', section: 'Platform', defaultAccess: 'janitor' },
   { key: 'admin-vera',      href: '/admin/vera',       label: 'Vera',     section: 'Platform', defaultAccess: 'janitor' },
