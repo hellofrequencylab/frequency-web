@@ -3682,6 +3682,68 @@ not a replacement. Operator-facing "how to assign a lead flow" guidance belongs 
 (Training & Strategy), linked back to LEAD-FLOWS.md as source of truth.
 
 ---
+
+## ADR-126: Entry Points & Campaigns — the distribution layer
+
+**Status:** Accepted (design; Phase 1 to follow) · planned in `lib/entry-points/**`,
+`app/(main)/codes` → "My Entry Points", `app/(main)/marketing/campaigns/**`, an extension of
+`qr_codes` + a new `entry_campaigns` table. Builds on personas + lead flows (ADR-125), the QR
+engine (`lib/qr/**`), attribution (ADR-095), and the zaps ledger. Full spec:
+[ENTRY-POINTS.md](ENTRY-POINTS.md).
+
+**Context.** We want a "lead page / funnel" system — the best of Leadpages / ClickFunnels /
+Linktree-Beacons / Mailchimp, kept *simple* — that integrates with our membership, points, and
+QR. The headline finding: **~60% already exists.** We ship a branded QR engine that emits
+**vector SVG + PNG** (`renderStyledQrSvg` / `renderStyledQrPng` / `/api/qr`), a scan resolver
+(`/q/[slug]`), first-touch attribution, owner-credit on signup (`applyReferralAttribution` →
+`invite_accepted` zaps), an idempotent points ledger, a CRM, a Puck visual editor, and the new
+personas/lead-flows. What's missing is a **template + flyer layer** and **two surfaces** (a
+dead-simple crew builder; an advanced admin campaign builder). Today's crew "marketing codes"
+are a narrow special case (owner `qr_codes`, ≤3, circles/events only).
+
+**Decision.** Unify crew marketing codes, the personal connect/referral code, and the `/start`
+lead flows under one concept — the **Entry Point** (a door: short link + branded QR + flyer +
+destination + owner + campaign + analytics + points credit) — grouped by **Campaigns**, built
+from **Templates**.
+- **Name:** crew-facing **"Entry Points"**; admin grouping **"Campaigns"** (the existing
+  `campaigns` table is email broadcasts, so the new table is `entry_campaigns`).
+- **Destinations: both, the template decides** — an entry point points at a *place* (circle /
+  event / profile / url) *or* a **persona lead flow** (`/start/<flow>`, ADR-125) that captures
+  + routes. Crew get power without a blank canvas.
+- **Two surfaces, one engine:** a ruthlessly simple crew portal (evolves `/codes`:
+  template → 3–4 slots → link + QR + **flyer SVG/PNG** in under a minute) and an advanced admin
+  builder in `/marketing/campaigns` (Puck landings, template curation, bulk generation, A/B,
+  automations). The crew tool never exposes a layout editor.
+- **Flyer = on-brand SVG** composing brand frame + slots + the styled QR; outputs vector **SVG**
+  + high-res **PNG**; design-token-driven so it's beautiful by default.
+- **Points (simple, anti-farm):** a small **first-N-capped** `entry_point_created` zap grant,
+  the existing 40-zap `invite_accepted` credit when an entry point drives a signup, and a
+  `referral_activated` bonus when that signup *activates* (first practice). All through
+  `recordEngagementEvent` (exactly-once). A crew leaderboard by signups driven.
+- **Reuse-first data model:** extend `qr_codes` (add `campaign_id`, `template_id`, broaden
+  `destination_type` + `lead_flow_slug`/`persona`, lift the crew cap for `purpose='entry_point'`);
+  new `entry_campaigns`; a **code-first template registry** (`lib/onboarding/lead-flows.ts`
+  pattern) with a DB-override layer later. Build order: **spec + ADR (this), then Phase 1** (crew
+  MVP), then admin builder, then growth.
+
+**Alternatives.** A net-new entry-point table instead of extending `qr_codes` (rejected — the
+QR engine, scan resolver, and referral credit are all keyed on `qr_codes`; extending reuses the
+whole pipeline). A third-party builder (Leadpages/ClickFunnels) embedded (rejected — no points/
+persona/QR integration, off-brand, recurring cost). A drag-and-drop editor for crew (rejected —
+the explicit ask is *simple*; templates + slots beat a blank canvas; the canvas lives in admin
+via Puck). Convert-only points (rejected per product — we want a reward for *participating*, so
+create-credit is included but capped to stay anti-farm). Dollar monetization à la Beacons
+(out of scope — points are our native currency).
+
+**Consequences.** Crew can make a branded flyer with a working QR + tracked link in under a
+minute, and earn zaps for it; every signup it drives credits them automatically (the `fq_ref`
+pipeline already does this). Operators get a real campaign builder reusing `/marketing` + Puck.
+New surface area is small: a template registry, a flyer-composition layer, the two builder UIs,
+a `qr_codes` extension migration, and an `entry_campaigns` table — migrations written but applied
+in a separate reviewed step. Personas/lead flows are the routing layer underneath; Entry Points
+are the distribution layer on top. Operator playbooks live in Notion, linked to ENTRY-POINTS.md.
+
+---
 ### Decisions intentionally NOT duplicated here
 
 Already fully covered by the repo docs (no ADR needed): the RLS / admin-client
