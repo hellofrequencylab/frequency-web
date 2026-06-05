@@ -3,13 +3,13 @@
 import { revalidatePath } from 'next/cache'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getStaffMember, atLeastStaff } from '@/lib/staff'
+import { getStaffMember, staffCan } from '@/lib/staff'
 import { proposeWinbacks, executeAction } from '@/lib/studio/agent'
 import { proposeContentDrafts } from '@/lib/marketing/content'
 
 async function gate(): Promise<{ profileId: string } | null> {
   const staff = await getStaffMember()
-  if (!staff || !atLeastStaff(staff.role, 'marketer')) return null
+  if (!staff || !staffCan(staff.role, 'marketing')) return null
   return { profileId: staff.profileId }
 }
 

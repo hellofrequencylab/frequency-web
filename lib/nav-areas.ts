@@ -8,9 +8,9 @@
 // merged on top of these defaults at request time (see lib/permissions.ts).
 
 import { ROLE_HIERARCHY, type CommunityRole } from '@/lib/core/roles'
-// Type-only — lib/staff is server-only (admin client); this import is erased at
-// build, so nav-areas stays client-safe.
-import type { StaffRole } from '@/lib/staff'
+// The staff model is client-safe (lib/core/staff-roles), so nav-areas can use the
+// capability check directly. (lib/staff is the server-only wrapper.)
+import { staffCan, type StaffRole, type StaffDomain } from '@/lib/core/staff-roles'
 
 // Access levels, lowest → highest. 'visitor' = everyone (even logged-out); the
 // rest map onto the community-role ladder.
@@ -35,10 +35,10 @@ export type NavArea = {
    *  browse the page in preview (muted), rather than greying it out. The page then
    *  gates earning/spending behind an upgrade prompt. Used for the Quest. */
   previewBelowAccess?: boolean
-  /** Minimum STAFF role (team_members axis) that also unlocks this item, regardless
-   *  of the trust-ladder `defaultAccess`. Used by the Studio group so the business
-   *  cockpit rides the staff axis (ADR-027), not the community role. */
-  staffAccess?: StaffRole
+  /** STAFF capability domain (team_members axis, ADR-127) that also unlocks this
+   *  item — regardless of the trust-ladder `defaultAccess`. The business cockpit
+   *  rides the staff axis (ADR-027), gated by capability not community role. */
+  staffDomain?: StaffDomain
 }
 
 // Order here IS the render order down the rail (IA refresh — screenshot review,
@@ -75,8 +75,8 @@ export const NAV_AREAS: readonly NavArea[] = [
   { key: 'crm',             href: '/crm',         label: 'CRM',            section: 'Steward', defaultAccess: 'host' },
   // Profile Creator — owner-scoped network intake (card scan / manual + Vera).
   // Host+ on the trust ladder, OR Studio staff (team_members axis), per ADR-098.
-  { key: 'connections',     href: '/connections', label: 'Profiles',       section: 'Steward', defaultAccess: 'host', staffAccess: 'analyst' },
-  { key: 'marketing',       href: '/marketing',   label: 'Marketing',      section: 'Steward', defaultAccess: 'admin', staffAccess: 'analyst' },
+  { key: 'connections',     href: '/connections', label: 'Profiles',       section: 'Steward', defaultAccess: 'host', staffDomain: 'profiles' },
+  { key: 'marketing',       href: '/marketing',   label: 'Marketing',      section: 'Steward', defaultAccess: 'admin', staffDomain: 'marketing' },
   { key: 'admin-structure', href: '/admin/hubs',  label: 'Hubs & Nexuses', section: 'Steward', defaultAccess: 'guide' },
   // Platform — operator controls (trust janitor).
   { key: 'admin-insights',  href: '/admin/engagement', label: 'Insights', section: 'Platform', defaultAccess: 'janitor' },
@@ -102,14 +102,10 @@ export function meetsAccess(access: NavAccess, role: CommunityRole | null): bool
   return ROLE_HIERARCHY.indexOf(role) >= ROLE_HIERARCHY.indexOf(access)
 }
 
-// Staff axis (team_members) — local pure rank check so nav-areas stays client-safe
-// (the server-only lib/staff isn't imported at runtime).
-const STAFF_ORDER: readonly StaffRole[] = ['analyst', 'marketer', 'admin', 'owner']
-
 /** Does the viewer's STAFF role (null = not staff) unlock this area via its
- *  `staffAccess` floor? Unioned with `meetsAccess` so an item shows if EITHER the
- *  trust ladder OR the staff axis grants it. */
-export function meetsStaff(area: { staffAccess?: StaffRole }, staffRole: StaffRole | null): boolean {
-  if (!area.staffAccess || staffRole == null) return false
-  return STAFF_ORDER.indexOf(staffRole) >= STAFF_ORDER.indexOf(area.staffAccess)
+ *  `staffDomain` capability? Unioned with `meetsAccess` so an item shows if EITHER
+ *  the trust ladder OR the staff axis grants it (read is enough to surface nav). */
+export function meetsStaff(area: { staffDomain?: StaffDomain }, staffRole: StaffRole | null): boolean {
+  if (!area.staffDomain || staffRole == null) return false
+  return staffCan(staffRole, area.staffDomain, 'read')
 }

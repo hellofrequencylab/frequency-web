@@ -52,6 +52,17 @@ export interface ReindexResult {
 export async function reindexHelpChunks(): Promise<ReindexResult> {
   const admin = createAdminClient() as unknown as SupabaseClient
   const articles = (await getAllArticles()).filter((a) => a.status === 'published')
+  // Fail loud rather than silently building an empty index. getAllCategories()
+  // swallows fs errors and returns [] — so if the content/help Markdown isn't
+  // bundled into the serverless function at runtime (Next file tracing), we'd
+  // otherwise report a happy "0 embedded" while "Ask Vera" stays broken. The repo
+  // always ships published help, so zero here means the content didn't load.
+  if (articles.length === 0) {
+    throw new Error(
+      'reindexHelpChunks: no published help articles found — content/help is not readable at runtime. ' +
+        'Check next.config outputFileTracingIncludes for content/help/**.',
+    )
+  }
   const desired = articles.flatMap(chunkArticle)
 
   const { data: existingRows } = await admin

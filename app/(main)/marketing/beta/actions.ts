@@ -3,7 +3,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { requireStaff } from '@/lib/staff'
+import { requireStaffCap } from '@/lib/staff'
 import { sendBetaInviteEmail, sendBetaConfirmEmail } from '@/lib/email'
 import { buildBetaConfirmUrl } from '@/lib/beta-tokens'
 import { processQueue } from '@/lib/queue/outbox'
@@ -13,14 +13,14 @@ import { SITE_URL } from '@/lib/site'
 // Manually drain the outbox (send all queued emails/pushes now). Useful when the
 // Vercel cron isn't running (e.g. CRON_SECRET unset). Same logic as the cron.
 export async function drainQueueNow(): Promise<void> {
-  await requireStaff('marketer')
+  await requireStaffCap('marketing')
   await processQueue(queueHandlers, 100)
   revalidatePath('/marketing/beta')
 }
 
 // Admit a confirmed beta signup: mark invited + email them the "you're in" link.
 export async function admitBetaSignup(id: string): Promise<void> {
-  await requireStaff('marketer')
+  await requireStaffCap('marketing')
   const db = createAdminClient() as unknown as SupabaseClient
 
   const { data: c } = await db
@@ -52,7 +52,7 @@ export async function admitBetaSignup(id: string): Promise<void> {
 
 // Re-queue the double opt-in confirm email for a pending signup.
 export async function resendBetaConfirm(id: string): Promise<void> {
-  await requireStaff('marketer')
+  await requireStaffCap('marketing')
   const db = createAdminClient() as unknown as SupabaseClient
 
   const { data: c } = await db.from('contacts').select('email').eq('id', id).maybeSingle()

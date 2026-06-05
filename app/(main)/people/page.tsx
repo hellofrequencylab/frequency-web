@@ -19,6 +19,8 @@ import { formatDistance } from '@/lib/geocode'
 import { demoModeEnabled } from '@/lib/platform-flags'
 import { viewerHidesDemo } from '@/lib/demo-preference'
 import type { ProfileIdentity } from '@/lib/types/profile'
+import { searchVisibleLeads, type LeadHit } from '@/lib/crm/people-search'
+import { getInitials } from '@/lib/utils'
 
 type Profile = ProfileIdentity & {
   id: string
@@ -110,13 +112,21 @@ export default async function DirectoryPage({
     }
   }
 
-  // Get viewer's display name for the Invite Member modal
+  // Get viewer's identity for the Invite Member modal + locality-scoped lead search.
   const { data: viewer } = await admin
     .from('profiles')
-    .select('display_name')
+    .select('id, display_name')
     .eq('auth_user_id', user.id)
     .maybeSingle()
   const viewerName = (viewer?.display_name as string | undefined) ?? 'A friend'
+  const viewerId = (viewer?.id as string | undefined) ?? null
+
+  // Non-member people the viewer is entitled to find (their own captures) — so a
+  // steward can search up someone they scanned in, who has no member profile yet.
+  let metLeads: LeadHit[] = []
+  if (qFilter?.trim() && viewerId) {
+    metLeads = (await searchVisibleLeads(viewerId, qFilter.trim(), 12)).filter((l) => l.href)
+  }
 
   let query = admin
     .from('profiles')
@@ -299,6 +309,37 @@ export default async function DirectoryPage({
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* People you've met — non-member contacts you captured that match the search.
+          The member directory only indexes profiles, so these would otherwise be
+          unfindable until they join. */}
+      {metLeads.length > 0 && (
+        <div className="mb-8">
+          <SectionHeader title="People you’ve met" count={metLeads.length} />
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {metLeads.map((l) => (
+              <Link
+                key={l.id}
+                href={l.href ?? '#'}
+                className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3 transition-colors hover:bg-surface-elevated"
+              >
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-bg text-sm font-semibold text-primary-strong select-none">
+                  {getInitials(l.displayName)}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center gap-1.5">
+                    <span className="truncate text-sm font-semibold text-text">{l.displayName}</span>
+                    <span className="shrink-0 rounded-md bg-surface-elevated px-1.5 py-0.5 text-[10px] font-medium text-muted">Lead</span>
+                  </span>
+                  <span className="mt-0.5 block truncate text-xs text-subtle">
+                    {[l.email, l.city].filter(Boolean).join(' · ') || 'Saved contact'}
+                  </span>
+                </span>
+              </Link>
+            ))}
+          </div>
         </div>
       )}
 

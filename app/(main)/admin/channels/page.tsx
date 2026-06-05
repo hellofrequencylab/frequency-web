@@ -13,7 +13,7 @@ const TYPE_COLOR: Record<string, string> = {
 }
 
 export default async function AdminChannelsPage() {
-  const { profileId } = await requireAdmin('host')
+  const { profileId } = await requireAdmin('host', { staff: 'community' })
   const admin = createAdminClient()
 
   // Derive scope options for the New Channel modal from the admin's primary circle
