@@ -21,7 +21,10 @@ export interface MemberCodeCard {
 }
 
 const META: Record<MemberCodePurpose, { blurb: string; Icon: typeof Users }> = {
-  connect: { blurb: 'Others scan to land on your profile and connect with you.', Icon: UserPlus },
+  connect: {
+    blurb: 'Your one personal code. Others scan it to land on your profile and connect — and anyone who joins Frequency after scanning is credited to you.',
+    Icon: UserPlus,
+  },
   referral: {
     blurb: 'Your outreach code. People who scan and join are credited to you — you both earn zaps.',
     Icon: Users,
@@ -37,12 +40,12 @@ export function MemberCodes({
   referralCount: number
 }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 gap-4">
       {cards.map((card) => (
         <CodeCard
           key={card.id}
           card={card}
-          extra={card.purpose === 'referral' ? `${referralCount} joined via your code` : null}
+          extra={`${referralCount} joined via your code`}
         />
       ))}
     </div>

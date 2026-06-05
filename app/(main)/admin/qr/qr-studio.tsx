@@ -49,9 +49,12 @@ const BLANK: NodeInput = {
 export function QrStudio({
   initialNodes,
   partners,
+  hideCreate = false,
 }: {
   initialNodes: StudioNode[]
   partners: PartnerOption[]
+  /** When the create form lives elsewhere (the dashboard generator), show list only. */
+  hideCreate?: boolean
 }) {
   const [creating, setCreating] = useState(false)
   const partnerName = useMemo(
@@ -62,33 +65,35 @@ export function QrStudio({
   return (
     <div className="space-y-6">
       {/* Create */}
-      <div className="rounded-2xl border border-border bg-surface shadow-sm">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-          <div>
-            <h2 className="text-sm font-bold text-text">New code</h2>
-            <p className="text-xs text-muted mt-0.5">
-              A scannable code that earns zaps and a verified practice on check-in.
-            </p>
+      {!hideCreate && (
+        <div className="rounded-2xl border border-border bg-surface shadow-sm">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+            <div>
+              <h2 className="text-sm font-bold text-text">New code</h2>
+              <p className="text-xs text-muted mt-0.5">
+                A scannable code that earns zaps and a verified practice on check-in.
+              </p>
+            </div>
+            {!creating && (
+              <button
+                onClick={() => setCreating(true)}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-primary text-on-primary px-3 py-1.5 text-xs font-semibold hover:bg-primary-hover transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" /> New code
+              </button>
+            )}
           </div>
-          {!creating && (
-            <button
-              onClick={() => setCreating(true)}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary text-on-primary px-3 py-1.5 text-xs font-semibold hover:bg-primary-hover transition-colors"
-            >
-              <Plus className="w-3.5 h-3.5" /> New code
-            </button>
+          {creating && (
+            <div className="p-4">
+              <NodeForm
+                partners={partners}
+                onDone={() => setCreating(false)}
+                onCancel={() => setCreating(false)}
+              />
+            </div>
           )}
         </div>
-        {creating && (
-          <div className="p-4">
-            <NodeForm
-              partners={partners}
-              onDone={() => setCreating(false)}
-              onCancel={() => setCreating(false)}
-            />
-          </div>
-        )}
-      </div>
+      )}
 
       {/* List */}
       <div className="space-y-3">
@@ -240,7 +245,7 @@ function NodeCard({
   )
 }
 
-function NodeForm({
+export function NodeForm({
   node,
   partners,
   onDone,

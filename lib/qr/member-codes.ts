@@ -1,9 +1,8 @@
-// Per-member code provisioning. Each member owns up to three persistent qr_codes,
-// keyed by `purpose` (a unique index makes this idempotent):
-//   • connect  — destination_type 'url'  → their public profile
-//   • referral — destination_type 'action' (credits the owner on a new signup)
-//   • gift_zap — destination_type 'action' (a scanner gives the owner a zap)
-// Server-only (qr_codes is service-role).
+// Per-member code provisioning. Each member owns ONE persistent profile code (the
+// `connect` purpose) — destination_type 'url' → their public profile. Because any
+// owner-owned code now credits its owner when a scanner signs up, this single code
+// IS the referral code too. (The earlier referral / gift_zap codes are retired; any
+// already minted keep working but aren't re-provisioned.) Server-only.
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { generateSlug } from './codes'
@@ -21,14 +20,15 @@ export interface MemberCodeRow {
   scan_count: number
 }
 
-const PURPOSES: MemberCodePurpose[] = ['connect', 'referral', 'gift_zap']
+// Only the profile code is provisioned now (one per member).
+const PURPOSES: MemberCodePurpose[] = ['connect']
 
 function preset(key: string): QrStyle {
   return STYLE_PRESETS.find((p) => p.key === key)?.style ?? DEFAULT_STYLE
 }
 
 const SPEC: Record<MemberCodePurpose, { title: string; destination_type: string; style: QrStyle }> = {
-  connect: { title: 'Connect with me', destination_type: 'url', style: preset('sunset') },
+  connect: { title: 'My profile code', destination_type: 'url', style: preset('sunset') },
   referral: { title: 'Invite to Frequency', destination_type: 'action', style: preset('forest') },
   gift_zap: { title: 'Gift me a zap', destination_type: 'action', style: preset('midnight') },
 }
