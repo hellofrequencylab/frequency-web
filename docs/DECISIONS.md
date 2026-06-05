@@ -3088,6 +3088,44 @@ scan-tracking "pass installed" signal remain open.
 
 ---
 
+## ADR-109: Community Library — unify Practices, Programs, Journeys (create → approve → catalog → rank)
+
+**Status:** Accepted (Phase 1) · `supabase/migrations/20260605120000_community_library.sql`, `lib/library.ts`, `app/(main)/library/**`, `lib/nav-areas.ts`. Builds on practices/journeys + ADR-104 (zaps).
+
+**Context.** The three content types were disconnected: practices (a personal real-world
+activity), programs (file-based operator playbooks), and journeys (ordered practice
+bundles). The owner wanted them tied together — **anyone** can create any of them, a
+leader **approves** it into a **community pool**, and a **best-of algorithm** surfaces
+the strongest. Practices + Programs both earn **Zaps** (real-world).
+
+**Decision (Phase 1).**
+- **Programs become a DB type** (`programs` + `program_adoptions`), member-creatable;
+  the 4 markdown playbooks stay as official guides. Adopting a program earns Zaps
+  (`program_run` = 30) — real-world outreach.
+- **One approval lifecycle.** Added `status`/`reviewed_by`/`reviewed_at` to practices,
+  journeys, and programs. Personal creation stays private/usable; **submitting to the
+  Library** sets `pending`; a **circle Host or any Guide+** approves (flips the item
+  public so existing browse filters surface it) or rejects. Existing public rows are
+  grandfathered `approved`.
+- **One ratings signal** (`content_ratings`, a generic love over `content_type/id`).
+- **Unified ranked catalog** at **`/library`** via the `community_library` RPC — a UNION
+  of the three approved types scored by **3·adoptions + 2·completions + 4·ratings +
+  recency + endorser-rank**, filterable by type/pillar. A Host/Guide+ **review queue**
+  lives at `/library/review`.
+
+**Alternatives.** A single polymorphic `content` table (rejected — practices/journeys
+already have their own item/adoption tables; columns + a UNION RPC reuse them with far
+less migration risk). Hierarchical per-author approval (deferred — host+ queue ships the
+loop; refine later).
+
+**Consequences.** A complete create→approve→catalog→rank loop ships for Programs;
+practices + journeys participate in the catalog, ranking, ratings, and review now, with
+a one-line `submitToLibrary` action ready to wire a "submit my private one" button onto
+their detail pages (Phase 2). New tables/columns aren't in the generated DB types yet →
+untyped-client casts. Ranking weights live in the RPC (tunable).
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 
