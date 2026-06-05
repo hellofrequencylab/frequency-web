@@ -36,8 +36,9 @@ describe('resolveCapabilities · circle', () => {
     expect(can(caps, 'circle.post')).toBe(true)
   })
 
-  it('a janitor manages any circle', () => {
+  it('platform staff (admin + janitor) manage any circle', () => {
     expect(can(resolveCapabilities({ profileId: 'jx', role: 'janitor' }, base), 'circle.editSettings')).toBe(true)
+    expect(can(resolveCapabilities({ profileId: 'ax', role: 'admin' }, base), 'circle.editSettings')).toBe(true)
   })
 
   it('an active member can post but not manage', () => {

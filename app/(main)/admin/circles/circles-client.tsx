@@ -136,12 +136,19 @@ export function CirclesClient({
   circles,
   hubs,
   hosts,
+  initialEditId = null,
 }: {
   circles: CircleRow[]
   hubs:    HubOption[]
   hosts:   HostOption[]
+  /** Deep-link target (`?edit=<id>`) — opens that circle's editor on load, e.g.
+   *  from the "Edit circle" button on the circle page. */
+  initialEditId?: string | null
 }) {
-  const [editingId,  setEditingId]  = useState<string | null>(null)
+  // Only honor the deep-link when the circle is actually in this admin's list.
+  const [editingId,  setEditingId]  = useState<string | null>(
+    initialEditId && circles.some((c) => c.id === initialEditId) ? initialEditId : null,
+  )
   const [isPending,  startTransition] = useTransition()
 
   function handleUpdate(id: string, fd: FormData) {
