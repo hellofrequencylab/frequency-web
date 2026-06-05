@@ -4063,43 +4063,6 @@ persist) is untouched. Rollout is additive and per-surface (engine → Circles p
 surfaces → Platform group → retire `/admin`). EMBEDDED-ADMIN.md is the source of truth;
 CAPABILITIES-AND-MOBILE §2 + PAGE-FRAMEWORK §3/§6 are refined; the operator guide goes to
 Notion on ship.
-=======
-## ADR-132: Cross-steward `network_local` discovery — turn on the gated tier with a read-only shared view
-
-**Status:** Accepted · shipped in `lib/crm/people-search.ts` (`searchVisibleLeads(..., {
-includeNetwork })`), `lib/connections/store.ts` (`getSharedContact`),
-`app/(main)/connections/shared/[id]/page.tsx`, and the steward-gated wiring in `/api/search` +
-`/people` (via `connectionsOwnerId()`). Completes the follow-up ADR-130 deferred. Full spec:
-[NETWORK-CRM.md](NETWORK-CRM.md) "Searchable by connection + locality".
-
-**Context.** ADR-130 modelled and tested the `network_local` tier of `canViewLead` — a capture a
-steward shares to the network becoming findable by a *local* steward — but did not broadcast it:
-a non-owner viewer had no page to land on, and cross-steward exposure of a non-consented personal
-capture is exactly the leak risk the Profile Creator gates (ADR-098). The owner-share control
-(`visibility='network'`, the Network/Private toggle) already exists, so the tier was one safe
-surface away.
-
-**Decision.** Turn the tier on, narrowly. A `network_local` capture surfaces only when **all**
-hold: the **viewer is a steward** (host+) or staff (`connectionsOwnerId()` gates the lead search —
-regular members never search leads); the owner **deliberately shared** it (`visibility='network'`);
-and the viewer is in the **same locality** (`city`). The surface is a **read-only shared view**
-(`/connections/shared/[id]`) exposing **business-card fields only** — name, title, company, city,
-website, socials, and *who shared it* — so the next step is to **ask that steward for an intro**.
-Email, phone, notes, tags and the photo stay owner-private. The page **re-checks all three gates
-server-side** (steward, `visibility='network'`, locality) — the search filter is never trusted as
-the authorization boundary. A capture linked to a member is skipped (found as a member instead).
-
-**Alternatives.** Show contact details / notes on the shared view (rejected — over-exposes a
-non-consented capture; the intro belongs to the owner). Surface network leads to all members
-(rejected — "network" means *stewards*, per the RLS intent). Auto-promote to a public profile
-(rejected — ADR-098's hard gate). Skip the dedicated page and deep-link into the owner's CRM
-(rejected — that's owner-private).
-
-**Consequences.** Local stewards can discover and get introduced to people other stewards have
-met, without any private capture data leaking and without touching the public member directory.
-Exposure scales with deliberate owner shares + locality, and every read is gated three ways. If a
-viewer-facing "request intro" action is wanted later, it slots onto the shared view.
->>>>>>> origin/main
 
 ---
 ### Decisions intentionally NOT duplicated here
