@@ -917,6 +917,74 @@ function MobileSideRail({
   )
 }
 
+// ── Mobile right stats menu ───────────────────────────────────────────────────
+// The mirror of the left rail, on the RIGHT edge: a slim full-length tab that —
+// unlike the left — only ACTIVATES ON CLICK (no scroll behavior). It opens a panel
+// hosting the member's stats / streaks / gamification (the same progress cockpit as
+// the desktop dock, passed in as `children` and streamed from the layout). Mobile
+// only; on desktop the real right rail owns this.
+
+function MobileStatsMenu({ children }: { children: React.ReactNode }) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <>
+      {/* Slim right-edge tab — matches the left rail's resting look; click to open. */}
+      <aside aria-label="Your stats" className="md:hidden relative flex w-11 shrink-0 flex-col border-l border-border bg-surface/95 backdrop-blur-sm">
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-label="Open your stats"
+          aria-expanded={open}
+          className="flex flex-1 flex-col items-center gap-2 pt-3 text-muted hover:bg-surface-elevated hover:text-text transition-colors"
+          style={{ paddingBottom: 'calc(4rem + env(safe-area-inset-bottom))' }}
+        >
+          <ChevronLeft className="h-4 w-4" />
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-bg">
+            <Zap className="h-[18px] w-[18px] text-primary fill-current" />
+          </span>
+        </button>
+      </aside>
+
+      {/* Overlay panel — slides in from the right; backdrop tap or X closes. */}
+      <div
+        className={`md:hidden fixed inset-0 z-50 ${open ? 'pointer-events-auto' : 'pointer-events-none'}`}
+        aria-hidden={!open}
+      >
+        <div
+          onClick={() => setOpen(false)}
+          className={`absolute inset-0 bg-black/40 transition-opacity duration-200 ${open ? 'opacity-100' : 'opacity-0'}`}
+        />
+        <aside
+          role="dialog"
+          aria-label="Your stats"
+          className={`absolute inset-y-0 right-0 w-72 max-w-[85vw] bg-surface shadow-2xl flex flex-col transform transition-transform duration-200 ease-out ${
+            open ? 'translate-x-0' : 'translate-x-full'
+          }`}
+        >
+          <div className="h-14 shrink-0 flex items-center justify-between px-4 border-b border-border">
+            <p className="flex items-center gap-2 text-sm font-bold text-text">
+              <Zap className="h-4 w-4 text-primary fill-current" />
+              Your stats
+            </p>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              aria-label="Close stats"
+              className="rounded-lg p-1.5 text-subtle hover:text-text hover:bg-surface-elevated transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+            {children}
+          </div>
+        </aside>
+      </div>
+    </>
+  )
+}
+
 // ── App shell ─────────────────────────────────────────────────────────────────
 
 export default function AppShell({
@@ -925,6 +993,7 @@ export default function AppShell({
   previewVisitor = false,
   children,
   sidebar,
+  statsPanel,
   ticker,
   unreadCount = 0,
   extraSections,
@@ -943,6 +1012,9 @@ export default function AppShell({
   previewVisitor?: boolean
   children: React.ReactNode
   sidebar?: React.ReactNode
+  /** Member stats / streaks / gamification body — hosted by the mobile right-edge
+   *  stats menu (the desktop dock shows the same content in the right rail). */
+  statsPanel?: React.ReactNode
   /** Community news ticker pinned above the page content (streamed via Suspense). */
   ticker?: React.ReactNode
   unreadCount?: number
@@ -1170,9 +1242,8 @@ export default function AppShell({
           <ProfileCard profile={profile} role={role} realRole={effectiveRealRole} profileHref={profileHref} previewVisitor={previewVisitor} />
         </aside>
 
-        {/* Mobile slide-in side rail — a content-PUSHING column (not an overlay):
-            a subtle full-length tab that opens on scroll-down. Sits in the body
-            flex so opening it narrows the scroll column to its right. md:hidden. */}
+        {/* Mobile left rail — a slim icon column (md:hidden) that insets the feed;
+            tap the chevron to expand to labels, any scroll contracts it to icons. */}
         {!hideAppNav && (
           <MobileSideRail isActive={isActive} onOpenMenu={() => setDrawerOpen(true)} enabled={railNavOn} />
         )}
@@ -1209,6 +1280,10 @@ export default function AppShell({
             )}
           </div>
         </div>
+
+        {/* Mobile right stats menu — the slim right-edge counterpart to the left
+            rail; click opens a panel of stats / streaks / gamification. md:hidden. */}
+        {!hideAppNav && statsPanel && <MobileStatsMenu>{statsPanel}</MobileStatsMenu>}
       </div>
       </DockRevealProvider>
 

@@ -6,7 +6,7 @@ import { RANK_LABELS, seasonRankStyle, SEASON_RANKS, rankForZaps, type SeasonRan
 import { MapPin, Megaphone, Zap } from 'lucide-react'
 import { isOnline, ONLINE_MS } from '@/lib/presence'
 import { WidgetCard } from '@/components/modules/module-card'
-import { GameStatsDockClient, type DockData } from '@/components/sidebar/game-stats-dock'
+import { GameStatsDockClient, GameStatsPanel, type DockData } from '@/components/sidebar/game-stats-dock'
 import { getPracticesToLogToday, getRecentPracticeLogs, getMemberPractices } from '@/lib/practices'
 import { getRecentDispatchesForProfile } from '@/lib/dispatches'
 import { DemoNotice } from '@/components/sidebar/demo-notice'
@@ -345,6 +345,19 @@ async function LeaderboardWidget() {
 // failing degrades to an empty/teaser state rather than breaking the rail.
 
 async function GameStatsDock({ profileId }: { profileId: string }) {
+  return <GameStatsDockClient data={await loadGameStats(profileId)} />
+}
+
+// Mobile counterpart — the same stats body (with a zaps/gems/streak summary
+// header) for the right-side stats menu in the app shell. Streamed via Suspense
+// from the layout so it never blocks the shell.
+export async function MobileGameStats({ profileId }: { profileId: string }) {
+  return <GameStatsPanel data={await loadGameStats(profileId)} showSummary />
+}
+
+// Assemble the player's "progress cockpit" — best-effort; any one source failing
+// degrades to an empty/teaser state. Shared by the desktop dock + the mobile menu.
+export async function loadGameStats(profileId: string): Promise<DockData> {
   const admin = createAdminClient()
 
   const [
@@ -428,7 +441,7 @@ async function GameStatsDock({ profileId }: { profileId: string }) {
     arc = null
   }
 
-  const data: DockData = {
+  return {
     zaps,
     gems,
     streak,
@@ -439,8 +452,6 @@ async function GameStatsDock({ profileId }: { profileId: string }) {
     arc,
     vaultGems: gems,
   }
-
-  return <GameStatsDockClient data={data} />
 }
 
 // ── Right sidebar ─────────────────────────────────────────────────────────────
