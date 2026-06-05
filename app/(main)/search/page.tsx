@@ -4,6 +4,8 @@ import { Search, Users, FileText, CalendarDays } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { getInitials } from '@/lib/utils'
+import { IndexTemplate } from '@/components/templates'
+import { EmptyState } from '@/components/ui/empty-state'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -124,26 +126,26 @@ export default async function SearchPage({
   const resultCount = { people: people.length, posts: posts.length, events: events.length }
 
   return (
-    <div>
-      <h1 className="text-xl font-semibold text-text mb-4">Search</h1>
-
-      {/* ── Search form ──────────────────────────────────────── */}
-      <form method="GET" action="/search" className="mb-6">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-subtle pointer-events-none" />
-          <input
-            name="q"
-            defaultValue={query}
-            placeholder="Search people, posts, events…"
-            autoFocus
-            autoComplete="off"
-            className="w-full rounded-xl border border-border bg-surface pl-9 pr-4 py-2.5 text-sm text-text placeholder:text-subtle focus:border-primary dark:focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40 dark:focus:ring-primary/30"
-          />
-          {/* Preserve tab across searches */}
-          <input type="hidden" name="tab" value={tab} />
-        </div>
-      </form>
-
+    <IndexTemplate
+      title="Search"
+      toolbar={
+        <form method="GET" action="/search">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-subtle pointer-events-none" />
+            <input
+              name="q"
+              defaultValue={query}
+              placeholder="Search people, posts, events…"
+              autoFocus
+              autoComplete="off"
+              className="w-full rounded-xl border border-border bg-surface pl-9 pr-4 py-2.5 text-sm text-text placeholder:text-subtle focus:border-primary dark:focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40 dark:focus:ring-primary/30"
+            />
+            {/* Preserve tab across searches */}
+            <input type="hidden" name="tab" value={tab} />
+          </div>
+        </form>
+      }
+    >
       {/* ── Tabs ─────────────────────────────────────────────── */}
       <div className="flex gap-1 mb-6 border-b border-border">
         {TABS.map((t) => {
@@ -156,7 +158,7 @@ export default async function SearchPage({
               href={`/search?q=${encodeURIComponent(query)}&tab=${t}`}
               className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors capitalize ${
                 isActive
-                  ? 'border-gray-900 text-text'
+                  ? 'border-primary text-text'
                   : 'border-transparent text-subtle hover:text-text'
               }`}
             >
@@ -194,7 +196,7 @@ export default async function SearchPage({
       {tab === 'people' && query.length >= 2 && (
         <div>
           {people.length === 0 ? (
-            <EmptyState label={`No people matching "${query}"`} />
+            <EmptyState icon={Search} title={`No people matching "${query}"`} />
           ) : (
             <div className="space-y-0.5">
               {people.map((p) => {
@@ -246,7 +248,7 @@ export default async function SearchPage({
       {tab === 'posts' && query.length >= 2 && (
         <div>
           {posts.length === 0 ? (
-            <EmptyState label={`No posts matching "${query}"`} />
+            <EmptyState icon={Search} title={`No posts matching "${query}"`} />
           ) : (
             <div className="space-y-3">
               {posts.map((post) => {
@@ -306,7 +308,7 @@ export default async function SearchPage({
       {tab === 'events' && query.length >= 2 && (
         <div>
           {events.length === 0 ? (
-            <EmptyState label={`No events matching "${query}"`} />
+            <EmptyState icon={Search} title={`No events matching "${query}"`} />
           ) : (
             <div className="space-y-2">
               {events.map((event) => (
@@ -350,17 +352,6 @@ export default async function SearchPage({
           )}
         </div>
       )}
-    </div>
-  )
-}
-
-// ── Empty state ───────────────────────────────────────────────────────────────
-
-function EmptyState({ label }: { label: string }) {
-  return (
-    <div className="py-16 text-center">
-      <Search className="w-8 h-8 text-subtle/60 mx-auto mb-3" />
-      <p className="text-sm text-subtle">{label}</p>
-    </div>
+    </IndexTemplate>
   )
 }

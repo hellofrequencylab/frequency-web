@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import {
-  ArrowLeft, Plus, X, Map as MapIcon, Globe, Lock, CheckCircle, Heart, GitFork,
+  ArrowLeft, Plus, X, Globe, Lock, CheckCircle, Heart, GitFork,
   ChevronUp, ChevronDown, Clock, Pencil, Sparkles,
 } from 'lucide-react'
 import { getCallerProfile } from '@/lib/auth'
@@ -10,6 +10,7 @@ import { getPlan, planPillarMap, isPlanAdopted, type JourneyPlanItem } from '@/l
 import { listPublicPractices } from '@/lib/practices'
 import { getPillars, pillarsById, type Pillar } from '@/lib/pillars'
 import { PillarBadge } from '@/components/practice/pillar-badge'
+import { DetailTemplate } from '@/components/templates/detail-template'
 import {
   addItemAction, removeItemAction, updateItemAction, moveItemAction,
   updatePlanAction, setVisibilityAction, publishPlanAction, adoptPlanAction, forkPlanAction,
@@ -61,43 +62,39 @@ export default async function JourneyPlanPage({ params }: { params: Promise<{ sl
         <ArrowLeft className="h-4 w-4" /> Journeys
       </Link>
 
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-start gap-3">
-          <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary-bg text-primary-strong">
-            <MapIcon className="h-6 w-6" />
+      {/* Identity header (DetailTemplate): title + visibility badge, summary
+          subtitle, pillar coverage as the first body row. The author edit form
+          below is left exactly as-is. */}
+      <DetailTemplate
+        title={plan.title}
+        badges={
+          <span className="inline-flex items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5 text-xs font-medium text-muted">
+            {plan.visibility === 'public' ? <Globe className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
+            {plan.visibility === 'public' ? 'Public' : plan.visibility === 'unlisted' ? 'Unlisted' : 'Private'}
           </span>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold text-text">{plan.title}</h1>
-              <span className="inline-flex items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5 text-[11px] font-medium text-muted">
-                {plan.visibility === 'public' ? <Globe className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
-                {plan.visibility === 'public' ? 'Public' : plan.visibility === 'unlisted' ? 'Unlisted' : 'Private'}
+        }
+        subtitle={plan.summary ?? undefined}
+      >
+        {/* Pillar coverage */}
+        <div className="mb-6 flex flex-wrap gap-1.5">
+          {pillars.map((pl) => {
+            const n = coverage.get(pl.id) ?? 0
+            return (
+              <span
+                key={pl.slug}
+                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
+                  n > 0 ? 'bg-primary-bg text-primary-strong' : 'bg-surface-elevated text-subtle'
+                }`}
+              >
+                {pl.name} {n}
               </span>
-            </div>
-            {plan.summary && <p className="mt-1 text-sm text-muted">{plan.summary}</p>}
-            {/* Pillar coverage */}
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {pillars.map((pl) => {
-                const n = coverage.get(pl.id) ?? 0
-                return (
-                  <span
-                    key={pl.slug}
-                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                      n > 0 ? 'bg-primary-bg text-primary-strong' : 'bg-surface-elevated text-subtle'
-                    }`}
-                  >
-                    {pl.name} {n}
-                  </span>
-                )
-              })}
-            </div>
-          </div>
+            )
+          })}
         </div>
 
         {/* Author: edit plan details (native disclosure, no client JS). */}
         {isAuthor && (
-          <details className="mt-3 rounded-2xl border border-border bg-surface">
+          <details className="mb-6 rounded-2xl border border-border bg-surface">
             <summary className="flex cursor-pointer items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-muted">
               <Pencil className="h-3.5 w-3.5" /> Edit details
             </summary>
@@ -113,7 +110,6 @@ export default async function JourneyPlanPage({ params }: { params: Promise<{ sl
             </form>
           </details>
         )}
-      </div>
 
       {/* The path (current items) */}
       <section className="mb-8">
@@ -348,6 +344,7 @@ export default async function JourneyPlanPage({ params }: { params: Promise<{ sl
           </section>
         </>
       )}
+      </DetailTemplate>
     </div>
   )
 }

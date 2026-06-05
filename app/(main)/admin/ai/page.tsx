@@ -5,6 +5,7 @@ import { aiEnabledFlag, listFlagEvents } from '@/lib/platform-flags'
 import { aiEnabled as envAiReady } from '@/lib/ai/client'
 import { FEATURE_DAILY_CAP_USD, dailyCapFor } from '@/lib/ai/budget'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { AdminPage } from '@/components/admin/admin-page'
 import { AiToggle } from './toggle'
 
 export const dynamic = 'force-dynamic'
@@ -45,16 +46,12 @@ export default async function AiControlsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <div className="mb-1 flex items-center gap-2">
-        <Power className="h-5 w-5 text-primary-strong" />
-        <h1 className="text-2xl font-bold text-text">AI controls</h1>
-      </div>
-      <p className="mb-6 text-sm text-muted">
-        The master switch for every AI surface — Vera, win-back drafts, help search, and the Profile
-        Creator harvest. Flipping it off makes all of them fall back to their deterministic, non-AI behaviour.
-      </p>
-
+    <AdminPage
+      title="AI controls"
+      icon={Power}
+      eyebrow="Platform"
+      description="The master switch for every AI surface — Vera, win-back drafts, help search, and the Profile Creator harvest. Flipping it off makes all of them fall back to their deterministic, non-AI behaviour."
+    >
       {/* Master switch */}
       <section className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
         <div className="flex items-center justify-between gap-4">
@@ -79,7 +76,7 @@ export default async function AiControlsPage() {
       </section>
 
       {/* Today's spend vs caps */}
-      <section className="mt-5 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+      <section className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
         <p className="mb-3 text-sm font-semibold text-text">
           Today’s usage <span className="font-normal text-subtle">· {fmtUsd(totalSpend)} so far</span>
         </p>
@@ -114,7 +111,7 @@ export default async function AiControlsPage() {
       </section>
 
       {/* Audit log */}
-      <section className="mt-5 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+      <section className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
         <div className="mb-3 flex items-center gap-1.5">
           <History className="h-4 w-4 text-subtle" />
           <p className="text-sm font-semibold text-text">Switch history</p>
@@ -142,6 +139,6 @@ export default async function AiControlsPage() {
           </ul>
         )}
       </section>
-    </div>
+    </AdminPage>
   )
 }

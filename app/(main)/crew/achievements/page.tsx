@@ -1,5 +1,4 @@
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
 import {
   Award, Lock, Trophy, Zap, Flame, Star, Users, Link as LinkIcon,
   Calendar, Mic, Edit, BookOpen, Volume2, MessageCircle, PenTool,
@@ -9,6 +8,8 @@ import { createClient } from '@/lib/supabase/server'
 import { getAchievementsData } from '../gamification-actions'
 import { TIER_CONFIG, CATEGORY_CONFIG } from '@/lib/gamification'
 import type { AchievementCategory, AchievementTier } from '@/lib/gamification'
+import { IndexTemplate } from '@/components/templates'
+import { StatCard } from '@/components/ui/stat-card'
 
 const ICON_MAP: Record<string, React.ElementType> = {
   award: Award,
@@ -57,27 +58,13 @@ export default async function AchievementsPage() {
   const earnedPct = stats.total > 0 ? Math.round((stats.earned / stats.total) * 100) : 0
 
   return (
-    <div>
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/crew"
-            className="text-sm text-subtle hover:text-muted dark:hover:text-subtle transition-colors"
-          >
-            Crew
-          </Link>
-          <span className="text-subtle">/</span>
-          <h1 className="text-2xl font-bold text-text">Achievements</h1>
-        </div>
-        <p className="text-sm text-muted mt-1">
-          Earn badges by engaging with your community. Some are secret. Keep exploring to find them all.
-        </p>
-      </div>
-
+    <IndexTemplate
+      title="Achievements"
+      description="Earn badges by engaging with your community. Some are secret. Keep exploring to find them all."
+    >
       {/* Progress overview */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-        <StatCard label="Earned" value={`${stats.earned}/${stats.total}`} sub={`${earnedPct}%`} />
+        <StatCard label={`Earned · ${earnedPct}%`} value={`${stats.earned}/${stats.total}`} />
         <StatCard label="Lifetime Zaps" value={stats.lifetimeZaps.toLocaleString()} />
         <StatCard label="Current Streak" value={`${stats.currentStreak}w`} />
         <StatCard label="Longest Streak" value={`${stats.longestStreak}w`} />
@@ -182,18 +169,6 @@ export default async function AchievementsPage() {
           )
         })}
       </div>
-    </div>
-  )
-}
-
-function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
-  return (
-    <div className="rounded-2xl border border-border bg-surface shadow-sm p-3">
-      <div className="text-xl font-bold text-text leading-none">
-        {value}
-        {sub && <span className="text-xs font-normal text-subtle ml-1">{sub}</span>}
-      </div>
-      <div className="text-xs text-muted mt-1">{label}</div>
-    </div>
+    </IndexTemplate>
   )
 }

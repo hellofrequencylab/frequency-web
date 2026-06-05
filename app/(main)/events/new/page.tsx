@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { FocusTemplate } from '@/components/templates'
 import { EventForm } from './event-form'
 
 export default async function NewEventPage() {
@@ -45,19 +45,10 @@ export default async function NewEventPage() {
   }
 
   return (
-    <div>
-      <Link
-        href="/events"
-        className="inline-flex items-center gap-1 text-xs text-subtle hover:text-muted mb-5 transition-colors"
-      >
-        ← Events
-      </Link>
-
-      <h1 className="text-xl font-semibold text-text mb-6">Create an Event</h1>
-
+    <FocusTemplate title="Create an Event" back={{ href: '/events', label: 'Events' }}>
       <div className="rounded-xl border border-border bg-surface p-5">
         <EventForm groups={circles} />
       </div>
-    </div>
+    </FocusTemplate>
   )
 }
