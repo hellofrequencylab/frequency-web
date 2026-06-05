@@ -61,6 +61,8 @@ export async function getRecentDispatchesForProfile(
   const base = () => admin.from('dispatches').select(select).eq('status', 'published').is('hidden_at', null)
   const promises: Promise<{ data: Row[] | null }>[] = [
     base().eq('author_id', profileId).order('published_at', { ascending: false }).limit(limit) as unknown as Promise<{ data: Row[] | null }>,
+    // Global (staff/janitor) dispatches reach everyone (Phase D).
+    base().eq('audience_scope', 'global').order('published_at', { ascending: false }).limit(limit) as unknown as Promise<{ data: Row[] | null }>,
   ]
   if (circleIds.length > 0)
     promises.push(base().eq('audience_scope', 'circle').in('audience_id', circleIds)

@@ -167,7 +167,7 @@ abuse, routes gray areas to moderators. Reuses `moderation_actions` / suspension
 | **A** 🥇 ⏳ | Member geo + nearby-first feed + join/start onboarding | Unlocks the core promise · **DB layer shipped** (`20260604185000_member_geo_and_local_feed`) |
 | **B** ✅ | Messaging restructure (DM→1:1, group→private rooms, Channel open rooms) | Shipped (ADR-088); migrations applied |
 | **C** | Room AI layer — **lean: semantic search first** (R7); catch-up/Q&A/surfacing later | ◑ **search shipped** — `match_room_messages` + cron embed backfill + in-room search; channel rooms now render + are searchable |
-| **D** | Dispatch `global` tier + liveness signals + smart digest | Polish "always alive" |
+| **D** | Dispatch `global` tier + liveness signals + smart digest | ◑ **global tier shipped** — staff/janitor "Everyone" broadcast (authoring + reach: feed, ticker, right-rail, Community dashboard); liveness + digest next |
 | **E** | Full hierarchy navigation + AI moderation hardening | Scale + governance |
 
 ## Schema touch-points
