@@ -9,6 +9,7 @@ import { DispatchBody } from './dispatch-body'
 import { LikeButton } from './like-button'
 import { CommentSection } from './comment-section'
 import { PollSection } from './poll-section'
+import { DetailTemplate } from '@/components/templates/detail-template'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -142,62 +143,52 @@ export default async function DispatchDetailPage({ params }: Props) {
         Back to Broadcast
       </Link>
 
-      {/* ── DISPATCH HEADER ─────────────────────────────────── */}
+      {/* ── DISPATCH HEADER (DetailTemplate) ────────────────── */}
       <article>
-        {/* Eyebrow */}
-        <div className="flex items-center gap-3 mb-4 flex-wrap">
-          <div className="flex items-center gap-1.5">
-            <Megaphone className="w-4 h-4 text-primary-strong" />
-            <span className="text-xs font-black uppercase tracking-[0.15em] text-primary-strong">
-              {dispatch.audience_scope} broadcast
-            </span>
-          </div>
-          {audience && (
+        <DetailTemplate
+          title={dispatch.title}
+          badges={
             <>
-              <span className="text-subtle/60">·</span>
-              {audienceHref ? (
-                <Link href={audienceHref} className="text-xs font-semibold text-muted hover:text-primary-strong transition-colors">
-                  {audience.name}
-                </Link>
-              ) : (
-                <span className="text-xs font-semibold text-muted">{audience.name}</span>
-              )}
+              <span className="inline-flex items-center gap-1.5 rounded-md bg-primary-bg px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-primary-strong">
+                <Megaphone className="w-3.5 h-3.5" />
+                {dispatch.audience_scope} broadcast
+              </span>
+              <span className={`text-xs px-2 py-0.5 rounded-md font-semibold ${TYPE_COLORS[dispType]}`}>
+                {TYPE_LABELS[dispType] ?? dispType}
+              </span>
             </>
-          )}
-          <span className={`text-[11px] px-2 py-0.5 rounded-md font-semibold ${TYPE_COLORS[dispType]}`}>
-            {TYPE_LABELS[dispType] ?? dispType}
-          </span>
-        </div>
-
-        {/* Title */}
-        <h1 className="text-4xl font-black leading-[1.1] text-text mb-5">
-          {dispatch.title}
-        </h1>
-
-        {/* Rule */}
-        <div className="flex items-center gap-3 mb-5">
-          <div className="h-[3px] w-12 bg-primary rounded-full" />
-          <div className="h-[3px] flex-1 bg-surface-elevated rounded-full" />
-        </div>
-
-        {/* Author + date */}
-        <div className="flex items-center gap-3 mb-8">
-          {author?.avatar_url ? (
-            <Image src={author.avatar_url} alt={author.display_name} width={32} height={32} className="w-8 h-8 rounded-full object-cover" />
-          ) : (
-            <div className="w-8 h-8 rounded-full bg-primary-bg flex items-center justify-center text-xs font-bold text-primary-strong">
-              {getInitials(author?.display_name ?? '?')}
+          }
+          subtitle={
+            <div className="flex items-center gap-2 flex-wrap">
+              {author?.avatar_url ? (
+                <Image src={author.avatar_url} alt={author.display_name} width={20} height={20} className="w-5 h-5 rounded-full object-cover" />
+              ) : (
+                <span className="w-5 h-5 rounded-full bg-primary-bg flex items-center justify-center text-[10px] font-bold text-primary-strong">
+                  {getInitials(author?.display_name ?? '?')}
+                </span>
+              )}
+              <span className="font-medium text-text">{author?.display_name}</span>
+              <span className="text-subtle/60">·</span>
+              <span>
+                {pubDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                {' · '}
+                {relativeTime(dispatch.published_at ?? dispatch.created_at)}
+              </span>
+              {audience && (
+                <>
+                  <span className="text-subtle/60">·</span>
+                  {audienceHref ? (
+                    <Link href={audienceHref} className="font-medium text-muted hover:text-primary-strong transition-colors">
+                      {audience.name}
+                    </Link>
+                  ) : (
+                    <span className="font-medium text-muted">{audience.name}</span>
+                  )}
+                </>
+              )}
             </div>
-          )}
-          <div>
-            <p className="text-xs font-semibold text-text">{author?.display_name}</p>
-            <p className="text-[11px] text-subtle">
-              {pubDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-              {' · '}
-              {relativeTime(dispatch.published_at ?? dispatch.created_at)}
-            </p>
-          </div>
-        </div>
+          }
+        >
 
         {/* Body */}
         <DispatchBody body={dispatch.body} />
@@ -255,6 +246,7 @@ export default async function DispatchDetailPage({ params }: Props) {
             myProfileId={myProfileId}
           />
         </div>
+        </DetailTemplate>
       </article>
     </div>
   )
