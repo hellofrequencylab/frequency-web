@@ -2,8 +2,8 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Trophy, Plus, Trash2, Zap, CheckCircle2 } from 'lucide-react'
-import { createCampaign, deleteCampaign, type CampaignInput } from './campaign-actions'
+import { Trophy, Plus, Trash2, Zap, CheckCircle2, Pencil } from 'lucide-react'
+import { createCampaign, updateCampaign, deleteCampaign, type CampaignInput } from './campaign-actions'
 import { Field, Badge, toLocalInput, fromLocalInput } from './form-bits'
 
 export interface CampaignCard {
@@ -17,6 +17,8 @@ export interface CampaignCard {
   inProgress: number
   validFrom: string | null
   validUntil: string | null
+  /** The qr_code ids in the hunt (for editing). */
+  codeIds: string[]
 }
 
 function windowStatus(
@@ -81,15 +83,16 @@ export function Campaigns({
           <p className="text-sm text-muted py-6 text-center">No campaigns yet.</p>
         )}
         {campaigns.map((c) => (
-          <CampaignRow key={c.id} campaign={c} />
+          <CampaignRow key={c.id} campaign={c} codes={codes} />
         ))}
       </div>
     </div>
   )
 }
 
-function CampaignRow({ campaign }: { campaign: CampaignCard }) {
+function CampaignRow({ campaign, codes }: { campaign: CampaignCard; codes: CampaignCodeOption[] }) {
   const [pending, start] = useTransition()
+  const [editing, setEditing] = useState(false)
   const router = useRouter()
 
   function remove() {
@@ -112,13 +115,21 @@ function CampaignRow({ campaign }: { campaign: CampaignCard }) {
           </div>
           {campaign.description && <p className="text-xs text-muted mt-0.5">{campaign.description}</p>}
         </div>
-        <button
-          onClick={remove}
-          disabled={pending}
-          className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-danger transition-colors shrink-0 disabled:opacity-60"
-        >
-          <Trash2 className="w-3 h-3" /> Delete
-        </button>
+        <div className="flex shrink-0 items-center gap-1">
+          <button
+            onClick={() => setEditing((v) => !v)}
+            className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+          >
+            <Pencil className="w-3 h-3" /> {editing ? 'Close' : 'Edit'}
+          </button>
+          <button
+            onClick={remove}
+            disabled={pending}
+            className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-danger transition-colors disabled:opacity-60"
+          >
+            <Trash2 className="w-3 h-3" /> Delete
+          </button>
+        </div>
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
         <span>
@@ -138,29 +149,55 @@ function CampaignRow({ campaign }: { campaign: CampaignCard }) {
           <span>· ends {new Date(campaign.validUntil).toLocaleDateString()}</span>
         )}
       </div>
+
+      {editing && (
+        <div className="mt-3 border-t border-border pt-3">
+          <CampaignForm
+            codes={codes}
+            campaign={campaign}
+            onDone={() => setEditing(false)}
+            onCancel={() => setEditing(false)}
+          />
+        </div>
+      )}
     </div>
   )
 }
 
 function CampaignForm({
   codes,
+  campaign,
   onDone,
   onCancel,
 }: {
   codes: CampaignCodeOption[]
+  campaign?: CampaignCard
   onDone: () => void
   onCancel: () => void
 }) {
-  const [form, setForm] = useState<CampaignInput>({
-    title: '',
-    description: '',
-    rewardZaps: 100,
-    mode: 'collect_all',
-    target: 1,
-    codeIds: [],
-    validFrom: null,
-    validUntil: null,
-  })
+  const [form, setForm] = useState<CampaignInput>(
+    campaign
+      ? {
+          title: campaign.name,
+          description: campaign.description,
+          rewardZaps: campaign.rewardZaps,
+          mode: campaign.target >= campaign.codeIds.length ? 'collect_all' : 'collect_n',
+          target: campaign.target,
+          codeIds: campaign.codeIds,
+          validFrom: campaign.validFrom,
+          validUntil: campaign.validUntil,
+        }
+      : {
+          title: '',
+          description: '',
+          rewardZaps: 100,
+          mode: 'collect_all',
+          target: 1,
+          codeIds: [],
+          validFrom: null,
+          validUntil: null,
+        },
+  )
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
@@ -175,7 +212,7 @@ function CampaignForm({
 
   function submit() {
     start(async () => {
-      const r = await createCampaign(form)
+      const r = campaign ? await updateCampaign(campaign.id, form) : await createCampaign(form)
       if ('error' in r) {
         setError(r.error)
         return
@@ -282,7 +319,13 @@ function CampaignForm({
           className="inline-flex items-center gap-1.5 rounded-lg bg-primary text-on-primary px-3 py-1.5 text-xs font-semibold hover:bg-primary-hover transition-colors disabled:opacity-60"
         >
           <Trophy className="w-3.5 h-3.5" />
-          {pending ? 'Creating…' : 'Create campaign'}
+          {pending
+            ? campaign
+              ? 'Saving…'
+              : 'Creating…'
+            : campaign
+              ? 'Save campaign'
+              : 'Create campaign'}
         </button>
         <button
           onClick={onCancel}

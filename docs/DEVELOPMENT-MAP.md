@@ -127,6 +127,14 @@
 > (`member-actions.ts`; reuses `StyleEditor` + `VcardEditor`, which was parametrized by an `onSave`
 > action so it serves both self-edit on `/codes` and admin edit). No migration.
 
+> **2026-06-05:** QR Studio — **admin editing of campaigns + marketing codes** (closes the
+> editability audit). Campaigns gained in-place editing (`updateCampaign` in `campaign-actions.ts`;
+> the dashboard pre-fills name/goal/window/code-set and diffs `challenge_qr_codes`). Crew **marketing
+> funnel codes** — previously member-only on `/codes` — now appear as their own host+ category in the
+> Studio (`marketing-actions.ts` + `marketing-codes-admin.tsx`): operators can restyle, rename, **pause**
+> (`active` toggle), or retire any member's code, with owner/target/scan context. Every code kind in the
+> Studio is now editable in the admin section. No migration.
+
 ---
 
 ## Mission (locked)
