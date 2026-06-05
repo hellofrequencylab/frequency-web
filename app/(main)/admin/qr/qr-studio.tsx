@@ -271,11 +271,17 @@ export function NodeForm({
   partners,
   onDone,
   onCancel,
+  externalStyle,
+  hideEditor = false,
 }: {
   node?: StudioNode
   partners: PartnerOption[]
   onDone: () => void
   onCancel: () => void
+  /** When the design editor lives outside the form (Studio rail), the parent owns
+   *  the style and passes it in; the form then hides its own editor. */
+  externalStyle?: QrStyle
+  hideEditor?: boolean
 }) {
   const [form, setForm] = useState<NodeInput>(
     node
@@ -328,7 +334,8 @@ export function NodeForm({
 
   function submit() {
     start(async () => {
-      const result = node ? await updateNode(node.id, form) : await createNode(form)
+      const payload = externalStyle ? { ...form, style: externalStyle } : form
+      const result = node ? await updateNode(node.id, payload) : await createNode(payload)
       if ('error' in result) {
         setError(result.error)
         return
@@ -461,11 +468,13 @@ export function NodeForm({
         )}
       </div>
 
-      <StyleEditor
-        value={form.style}
-        onChange={(style) => setForm((f) => ({ ...f, style }))}
-        previewUrl={node?.url ?? 'https://frequencylocal.com/n/preview'}
-      />
+      {!hideEditor && (
+        <StyleEditor
+          value={form.style}
+          onChange={(style) => setForm((f) => ({ ...f, style }))}
+          previewUrl={node?.url ?? 'https://frequencylocal.com/n/preview'}
+        />
+      )}
 
       {error && <p className="text-xs text-danger">{error}</p>}
 

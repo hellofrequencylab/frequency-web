@@ -306,6 +306,8 @@ export function LinkForm({
   partners,
   onDone,
   onCancel,
+  externalStyle,
+  hideEditor = false,
 }: {
   link?: StudioLink
   nodes: NodeOption[]
@@ -314,6 +316,10 @@ export function LinkForm({
   partners: PartnerOption[]
   onDone: () => void
   onCancel: () => void
+  /** When the design editor lives outside the form (Studio rail), the parent owns
+   *  the style and passes it in; the form then hides its own editor. */
+  externalStyle?: QrStyle
+  hideEditor?: boolean
 }) {
   const [form, setForm] = useState<LinkInput>(
     link
@@ -355,7 +361,8 @@ export function LinkForm({
 
   function submit() {
     start(async () => {
-      const result = link ? await updateLink(link.id, form) : await createLink(form)
+      const payload = externalStyle ? { ...form, style: externalStyle } : form
+      const result = link ? await updateLink(link.id, payload) : await createLink(payload)
       if ('error' in result) {
         setError(result.error)
         return
@@ -550,11 +557,13 @@ export function LinkForm({
         </p>
       )}
 
-      <StyleEditor
-        value={form.style}
-        onChange={(style) => set('style', style)}
-        previewUrl={link?.url ?? shortLinkUrl('preview')}
-      />
+      {!hideEditor && (
+        <StyleEditor
+          value={form.style}
+          onChange={(style) => set('style', style)}
+          previewUrl={link?.url ?? shortLinkUrl('preview')}
+        />
+      )}
 
       {error && <p className="text-xs text-danger">{error}</p>}
 
