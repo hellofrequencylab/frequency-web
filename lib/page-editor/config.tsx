@@ -38,7 +38,7 @@ export const config: Config = {
     },
     sections: {
       title: 'Sections',
-      components: ['Hero', 'FeatureGrid', 'Showcase', 'StatRow', 'Checklist', 'Accordion', 'CallToAction'],
+      components: ['Hero', 'FeatureGrid', 'Showcase', 'StatRow', 'Tiers', 'Checklist', 'Accordion', 'CallToAction'],
     },
     media: {
       title: 'Media',

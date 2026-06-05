@@ -4,7 +4,7 @@
 // through <Band>. See components/page-editor/blocks/kit.tsx for the contract.
 
 import Link from 'next/link'
-import { Check, Users, MapPin, CalendarDays, Sparkles, Heart, MessageCircle, Compass, Flame, Star, Shield, Coffee, Music, Sun, Leaf, Handshake, Zap } from 'lucide-react'
+import { Check, Award, Users, MapPin, CalendarDays, Sparkles, Heart, MessageCircle, Compass, Flame, Star, Shield, Coffee, Music, Sun, Leaf, Handshake, Zap } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { ComponentConfig } from '@measured/puck'
 
@@ -12,6 +12,7 @@ import {
   Band,
   Eyebrow,
   DisplayHeading,
+  Kicker,
   blockFields,
   blockLayoutDefaults,
   accentize,
@@ -343,6 +344,135 @@ export function ShowcaseBlock({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// 6. Tiers  (pricing / membership cards)
+// ─────────────────────────────────────────────────────────────────────────────
+
+type TierItem = {
+  name?: string
+  /** The big display price, e.g. "Free", "$10", "$25+". */
+  price?: string
+  /** Optional struck-through original price shown before `price` (beta-free look). */
+  strikePrice?: string
+  /** Small unit beside the price, e.g. "/mo", "forever", "during beta". */
+  cadence?: string
+  /** Small line under the price, e.g. "$10/mo when paid memberships launch". */
+  priceNote?: string
+  tagline?: string
+  /** Featured tier: lifts, rings, and shows a "Most popular" ribbon. */
+  highlight?: 'featured' | 'normal'
+  /** Small badge by the name, e.g. a Founder marker. */
+  badge?: 'none' | 'founder'
+  features?: { text?: string }[]
+  ctaLabel?: string
+  ctaHref?: string
+  ctaStyle?: 'primary' | 'secondary'
+}
+
+export function TiersBlock({
+  eyebrow,
+  title,
+  kicker,
+  items,
+  footnote,
+  ink,
+}: {
+  eyebrow?: string
+  title?: React.ReactNode
+  kicker?: string
+  items?: TierItem[]
+  footnote?: string
+  ink?: boolean
+}) {
+  return (
+    <div>
+      {(eyebrow || title || kicker) && (
+        <div className="text-center mb-12">
+          {eyebrow && <Eyebrow ink={ink}>{eyebrow}</Eyebrow>}
+          {title && <DisplayHeading ink={ink}>{title}</DisplayHeading>}
+          {kicker && <Kicker ink={ink}>{kicker}</Kicker>}
+        </div>
+      )}
+      <div className="grid gap-6 lg:grid-cols-3 lg:gap-5 items-start">
+        {(items || []).map((tier, i) => {
+          const featured = tier.highlight === 'featured'
+          const cardTone = featured
+            ? 'bg-surface-elevated border-2 border-primary ring-4 ring-primary-bg lg:-translate-y-3 lg:scale-[1.02] shadow-pop'
+            : 'bg-surface border border-border shadow-sm'
+          return (
+            <article key={i} className={`relative flex flex-col h-full rounded-2xl p-7 sm:p-8 ${cardTone}`}>
+              {featured && (
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 rounded-full bg-primary text-on-primary px-4 py-1 text-xs font-black uppercase tracking-widest shadow-md">
+                  <Star className="w-3.5 h-3.5 fill-current" aria-hidden /> Most popular
+                </span>
+              )}
+
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="font-display uppercase text-text text-2xl">{tier.name}</h3>
+                {tier.badge === 'founder' && (
+                  <span className="inline-flex items-center gap-1 rounded-md bg-signal-bg px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-signal-strong">
+                    <Award className="w-3 h-3" aria-hidden /> Founder
+                  </span>
+                )}
+              </div>
+
+              {tier.tagline && (
+                <p className="text-sm text-muted leading-relaxed mb-5 min-h-[2.5rem]">{tier.tagline}</p>
+              )}
+
+              {/* Price block */}
+              <div className="mb-6">
+                <div className="flex items-baseline gap-2 flex-wrap">
+                  {tier.strikePrice && (
+                    <span className="text-2xl font-black text-subtle line-through">{tier.strikePrice}</span>
+                  )}
+                  <span className="font-display uppercase text-text text-4xl leading-none">{tier.price}</span>
+                  {tier.cadence && (
+                    <span className="text-base text-muted">{tier.cadence}</span>
+                  )}
+                </div>
+                {tier.priceNote && <p className="mt-1.5 text-xs text-subtle">{tier.priceNote}</p>}
+              </div>
+
+              {/* Features */}
+              <ul className="space-y-3 mb-8 flex-1">
+                {(tier.features || []).map((f, fi) => (
+                  <li key={fi} className="flex items-start gap-3">
+                    <span className={`shrink-0 w-6 h-6 mt-0.5 rounded-lg flex items-center justify-center ${featured ? 'bg-primary-bg/60' : 'bg-success-bg/30'}`}>
+                      <Check className={`w-3.5 h-3.5 ${featured ? 'text-primary-strong' : 'text-success'}`} aria-hidden />
+                    </span>
+                    <span className="text-sm text-text leading-snug">{f.text}</span>
+                  </li>
+                ))}
+              </ul>
+
+              {/* CTA */}
+              {tier.ctaLabel && (
+                <Link
+                  href={tier.ctaHref || '#'}
+                  className={`inline-flex w-full items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-base font-bold transition-colors ${
+                    tier.ctaStyle === 'primary'
+                      ? 'bg-primary text-on-primary hover:bg-primary-hover shadow-pop'
+                      : 'border border-border-strong text-text hover:bg-surface-elevated'
+                  }`}
+                >
+                  {tier.ctaLabel}
+                  {tier.ctaStyle === 'primary' && <ArrowRight className="w-4 h-4" aria-hidden />}
+                </Link>
+              )}
+            </article>
+          )
+        })}
+      </div>
+      {footnote && (
+        <p className={`mt-8 text-center text-sm leading-relaxed max-w-xl mx-auto ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>
+          {footnote}
+        </p>
+      )}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // ComponentConfig exports — the full Puck editor palette for Collections
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -659,6 +789,106 @@ export const collectionsComponents: Record<string, ComponentConfig> = {
       <div className={visClass(layout as LayoutValue)}>
         <ShowcaseBlock marqueeItems={marqueeItems} items={items} />
       </div>
+    ),
+  },
+
+  // ── Tiers ────────────────────────────────────────────────────────────────────
+  Tiers: {
+    label: 'Tiers (pricing cards)',
+    fields: {
+      eyebrow: { type: 'text', label: 'Eyebrow (optional)' },
+      title: { type: 'text', label: 'Heading (optional)' },
+      titleAccent: { type: 'text', label: 'Accent word (optional)' },
+      kicker: { type: 'text', label: 'Italic kicker (optional)' },
+      items: {
+        type: 'array',
+        label: 'Tiers',
+        arrayFields: {
+          name: { type: 'text', label: 'Name' },
+          price: { type: 'text', label: 'Price (e.g. Free, $10, $25+)' },
+          strikePrice: { type: 'text', label: 'Struck price (optional, e.g. $10)' },
+          cadence: { type: 'text', label: 'Cadence (e.g. /mo, forever, during beta)' },
+          priceNote: { type: 'text', label: 'Note under price (optional)' },
+          tagline: { type: 'text', label: 'Tagline' },
+          highlight: {
+            type: 'radio',
+            label: 'Highlight',
+            options: [
+              { label: 'Normal', value: 'normal' },
+              { label: 'Featured (Most popular)', value: 'featured' },
+            ],
+          },
+          badge: {
+            type: 'radio',
+            label: 'Badge',
+            options: [
+              { label: 'None', value: 'none' },
+              { label: 'Founder', value: 'founder' },
+            ],
+          },
+          features: {
+            type: 'array',
+            label: 'Features',
+            arrayFields: { text: { type: 'text', label: 'Feature' } },
+            getItemSummary: (item: { text?: string }) => item.text || 'Feature',
+          },
+          ctaLabel: { type: 'text', label: 'Button label' },
+          ctaHref: { type: 'text', label: 'Button link' },
+          ctaStyle: {
+            type: 'radio',
+            label: 'Button style',
+            options: [
+              { label: 'Primary', value: 'primary' },
+              { label: 'Secondary', value: 'secondary' },
+            ],
+          },
+        },
+        getItemSummary: (item: TierItem) => item.name || 'Tier',
+      },
+      footnote: { type: 'textarea', label: 'Footnote (optional)' },
+      ...blockFields(),
+    },
+    defaultProps: {
+      eyebrow: 'Choose how you belong',
+      title: 'One community. Three ways in.',
+      titleAccent: '',
+      kicker: 'Start free. Upgrade when you’re ready.',
+      items: [
+        {
+          name: 'Member', price: 'Free', strikePrice: '', cadence: 'forever', priceNote: '',
+          tagline: 'For the curious. Come see what’s here.', highlight: 'normal', badge: 'none',
+          features: [{ text: 'Browse circles, events, and topics near you' }, { text: 'Attend open gatherings' }],
+          ctaLabel: 'Start free', ctaHref: '/sign-in', ctaStyle: 'secondary',
+        },
+        {
+          name: 'Crew', price: 'Free', strikePrice: '$10', cadence: 'during beta',
+          priceNote: '$10/mo when paid memberships launch',
+          tagline: 'Full access. The whole room is yours.', highlight: 'featured', badge: 'founder',
+          features: [{ text: 'Full community feed access' }, { text: 'Join and participate in circles' }, { text: 'Create and RSVP to events' }],
+          ctaLabel: 'Join the Beta', ctaHref: '/beta', ctaStyle: 'primary',
+        },
+        {
+          name: 'Pay it forward', price: '$25+', strikePrice: '', cadence: '/mo',
+          priceNote: 'When paid memberships launch',
+          tagline: 'Hold the door for a neighbor.', highlight: 'normal', badge: 'none',
+          features: [{ text: 'Everything in Crew, full access' }, { text: 'Fund a membership for someone who can’t pay yet' }],
+          ctaLabel: 'Join the Beta', ctaHref: '/beta', ctaStyle: 'secondary',
+        },
+      ],
+      footnote: '',
+      ...blockLayoutDefaults,
+    },
+    render: ({ eyebrow, title, titleAccent, kicker, items, footnote, tone, width, align, layout }) => (
+      <Band tone={tone} width={width} align={align} layout={layout as LayoutValue}>
+        <TiersBlock
+          eyebrow={eyebrow || undefined}
+          title={accentize(title, titleAccent) || undefined}
+          kicker={kicker || undefined}
+          items={items}
+          footnote={footnote || undefined}
+          ink={isInk(tone)}
+        />
+      </Band>
     ),
   },
 }
