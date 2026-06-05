@@ -66,7 +66,7 @@ export const NAV_AREAS: readonly NavArea[] = [
   { key: 'practices', href: '/practices',  label: 'Practices', section: 'The Quest', defaultAccess: 'member'  },
   { key: 'journeys',  href: '/journeys',   label: 'Journeys',  section: 'The Quest', defaultAccess: 'member'  },
   { key: 'programs',  href: '/programs',   label: 'Programs',  section: 'The Quest', defaultAccess: 'member'  },
-  { key: 'store',     href: '/crew/store', label: 'Store',     section: 'The Quest', defaultAccess: 'crew', previewBelowAccess: true },
+  { key: 'store',     href: '/crew/store', label: 'Vault Store', section: 'The Quest', defaultAccess: 'crew', previewBelowAccess: true },
 
   // ── Manage → split by the axis that grants it (telescoped at each floor) ──────
   // Steward — community stewardship + the business cockpit (trust host+ / staff axis).

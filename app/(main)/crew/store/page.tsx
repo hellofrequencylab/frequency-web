@@ -1,12 +1,11 @@
 import { notFound } from 'next/navigation'
-import { Gem, Zap, Flame } from 'lucide-react'
+import { Gem, Zap, Flame, Trophy } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getStoreData } from './actions'
 import { StoreGrid } from './store-grid'
 import { CrewPreviewBanner } from '@/components/crew/crew-preview-banner'
 import { CrewGate } from '@/components/crew/upgrade-lightbox'
-import { IndexTemplate } from '@/components/templates'
 import { SectionHeader } from '@/components/ui/section-header'
 
 export default async function StorePage() {
@@ -15,6 +14,8 @@ export default async function StorePage() {
   if (!user) notFound()
 
   const { items, balance, equipped } = await getStoreData()
+  // Winnings collected — owned store items (cosmetics, titles, badges).
+  const ownedCount = items.filter((i) => (i as { owned?: boolean }).owned).length
 
   // The Store now holds the Vault: everything you earn by showing up, alongside
   // your spendable Gem balance.
@@ -39,62 +40,78 @@ export default async function StorePage() {
   return (
     <div>
       {!isCrew && <CrewPreviewBanner />}
-      <IndexTemplate
-        title="Store"
-        description="Your Vault and the Gem Store in one place. Everything you earn by showing up, and what you can spend it on."
-      >
-      {/* Vault + balance — one calm Vault module on a soft success surface. */}
-      <div className="rounded-2xl bg-success-bg/50 p-5 mb-8">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-success-bg flex items-center justify-center">
-              <Gem className="w-6 h-6 text-signal-strong" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-signal-strong">Your Vault · Gems to spend</p>
-              <p className="text-3xl font-bold text-success">{balance.toLocaleString()}</p>
-            </div>
-          </div>
-          {/* Everything else you've earned by showing up. */}
-          <div className="flex items-center gap-5">
-            <div className="text-center" title="Zaps this season">
-              <div className="flex items-center justify-center gap-1 text-signal-strong">
-                <Zap className="w-4 h-4" strokeWidth={2.5} />
-                <span className="text-xl font-bold tabular-nums text-success">{zaps.toLocaleString()}</span>
-              </div>
-              <p className="text-xs text-signal mt-0.5">Zaps this season</p>
-            </div>
-            <div className="text-center" title="Current streak">
-              <div className="flex items-center justify-center gap-1 text-signal-strong">
-                <Flame className="w-4 h-4" strokeWidth={2.5} />
-                <span className="text-xl font-bold tabular-nums text-success">{streak.toLocaleString()}</span>
-              </div>
-              <p className="text-xs text-signal mt-0.5">Day streak</p>
-            </div>
-          </div>
+
+      {/* Header: title left, the Vault (with all its winnings) pinned top-right.
+          Mirrors the shared PageHeading grammar, with the Vault as a right rail. */}
+      <div className="mb-8 flex flex-col gap-6 border-b border-border pb-5 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0 max-w-xl">
+          <h1 className="mb-1 text-2xl font-bold text-text">Vault Store</h1>
+          <p className="max-w-2xl text-sm leading-relaxed text-muted">
+            Your Vault and the Gem Store in one place. Everything you earn by showing up, and what you can spend it on.
+          </p>
         </div>
 
-        {/* Equipped items */}
-        {(equipped.border || equipped.flair || equipped.title) && (
-          <div className="mt-4 pt-3 border-t border-success/30 flex items-center gap-3 flex-wrap">
-            <span className="text-xs font-medium text-signal">Equipped:</span>
-            {equipped.border && (
-              <span className="text-xs px-2 py-0.5 rounded-md bg-success-bg text-success">
-                Border: {equipped.border.replace('ring-', '').replace('-500', '')}
-              </span>
-            )}
-            {equipped.flair && (
-              <span className="text-xs px-2 py-0.5 rounded-md bg-success-bg text-success">
-                Flair: {equipped.flair}
-              </span>
-            )}
-            {equipped.title && (
-              <span className="text-xs px-2 py-0.5 rounded-md bg-success-bg text-success">
-                Title: {equipped.title}
-              </span>
-            )}
+        {/* The Vault — top-right, holding all your winnings. */}
+        <aside className="w-full shrink-0 rounded-2xl border border-success/60 bg-gradient-to-br from-success-bg to-signal-bg shadow-sm p-5 lg:w-80">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-success-bg flex items-center justify-center shrink-0">
+              <Gem className="w-6 h-6 text-signal-strong" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wider text-signal-strong">Your Vault · Gems to spend</p>
+              <p className="text-3xl font-bold text-success leading-tight">{balance.toLocaleString()}</p>
+            </div>
           </div>
-        )}
+
+          {/* The winnings: what you've earned by showing up. */}
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            <div className="rounded-xl bg-success-bg/50 px-2 py-2 text-center" title="Zaps this season">
+              <div className="flex items-center justify-center gap-1 text-signal-strong">
+                <Zap className="w-3.5 h-3.5" strokeWidth={2.5} />
+                <span className="text-base font-bold tabular-nums text-success">{zaps.toLocaleString()}</span>
+              </div>
+              <p className="text-[10px] text-signal mt-0.5">Zaps</p>
+            </div>
+            <div className="rounded-xl bg-success-bg/50 px-2 py-2 text-center" title="Current streak">
+              <div className="flex items-center justify-center gap-1 text-signal-strong">
+                <Flame className="w-3.5 h-3.5" strokeWidth={2.5} />
+                <span className="text-base font-bold tabular-nums text-success">{streak.toLocaleString()}</span>
+              </div>
+              <p className="text-[10px] text-signal mt-0.5">Streak</p>
+            </div>
+            <div className="rounded-xl bg-success-bg/50 px-2 py-2 text-center" title="Items won">
+              <div className="flex items-center justify-center gap-1 text-signal-strong">
+                <Trophy className="w-3.5 h-3.5" strokeWidth={2.5} />
+                <span className="text-base font-bold tabular-nums text-success">{ownedCount.toLocaleString()}</span>
+              </div>
+              <p className="text-[10px] text-signal mt-0.5">Won</p>
+            </div>
+          </div>
+
+          {/* Equipped winnings */}
+          {(equipped.border || equipped.flair || equipped.title) && (
+            <div className="mt-4 pt-3 border-t border-success/40">
+              <span className="text-xs font-semibold uppercase tracking-wider text-signal">Equipped</span>
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                {equipped.border && (
+                  <span className="text-xs px-2 py-0.5 rounded-md bg-success-bg text-success">
+                    Border: {equipped.border.replace('ring-', '').replace('-500', '')}
+                  </span>
+                )}
+                {equipped.flair && (
+                  <span className="text-xs px-2 py-0.5 rounded-md bg-success-bg text-success">
+                    Flair: {equipped.flair}
+                  </span>
+                )}
+                {equipped.title && (
+                  <span className="text-xs px-2 py-0.5 rounded-md bg-success-bg text-success">
+                    Title: {equipped.title}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+        </aside>
       </div>
 
       {/* Store categories. Members can browse everything but can't spend —
@@ -115,7 +132,6 @@ export default async function StorePage() {
           })}
         </div>
       </CrewGate>
-      </IndexTemplate>
     </div>
   )
 }
