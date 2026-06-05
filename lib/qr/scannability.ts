@@ -1,4 +1,4 @@
-// Scannability guardrails (ADR-110). A pure, isomorphic heuristic over a QrStyle
+// Scannability guardrails (ADR-113). A pure, isomorphic heuristic over a QrStyle
 // that flags design choices likely to make a printed/rendered code fail to scan —
 // surfaced as warnings in the editor BEFORE anyone prints a batch. Advisory only;
 // it never blocks saving. The big real-world killers are low contrast, an inverted

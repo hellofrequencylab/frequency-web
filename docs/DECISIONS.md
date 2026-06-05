@@ -3088,7 +3088,127 @@ scan-tracking "pass installed" signal remain open.
 
 ---
 
-## ADR-109: Scarcity / capacity codes — a total-claim cap on check-in nodes
+## ADR-109: Community Library — unify Practices, Programs, Journeys (create → approve → catalog → rank)
+
+**Status:** Accepted (Phase 1) · `supabase/migrations/20260605120000_community_library.sql`, `lib/library.ts`, `app/(main)/library/**`, `lib/nav-areas.ts`. Builds on practices/journeys + ADR-104 (zaps).
+
+**Context.** The three content types were disconnected: practices (a personal real-world
+activity), programs (file-based operator playbooks), and journeys (ordered practice
+bundles). The owner wanted them tied together — **anyone** can create any of them, a
+leader **approves** it into a **community pool**, and a **best-of algorithm** surfaces
+the strongest. Practices + Programs both earn **Zaps** (real-world).
+
+**Decision (Phase 1).**
+- **Programs become a DB type** (`programs` + `program_adoptions`), member-creatable;
+  the 4 markdown playbooks stay as official guides. Adopting a program earns Zaps
+  (`program_run` = 30) — real-world outreach.
+- **One approval lifecycle.** Added `status`/`reviewed_by`/`reviewed_at` to practices,
+  journeys, and programs. Personal creation stays private/usable; **submitting to the
+  Library** sets `pending`; a **circle Host or any Guide+** approves (flips the item
+  public so existing browse filters surface it) or rejects. Existing public rows are
+  grandfathered `approved`.
+- **One ratings signal** (`content_ratings`, a generic love over `content_type/id`).
+- **Unified ranked catalog** at **`/library`** via the `community_library` RPC — a UNION
+  of the three approved types scored by **3·adoptions + 2·completions + 4·ratings +
+  recency + endorser-rank**, filterable by type/pillar. A Host/Guide+ **review queue**
+  lives at `/library/review`.
+
+**Alternatives.** A single polymorphic `content` table (rejected — practices/journeys
+already have their own item/adoption tables; columns + a UNION RPC reuse them with far
+less migration risk). Hierarchical per-author approval (deferred — host+ queue ships the
+loop; refine later).
+
+**Consequences.** A complete create→approve→catalog→rank loop ships for Programs;
+practices + journeys participate in the catalog, ranking, ratings, and review now, with
+a one-line `submitToLibrary` action ready to wire a "submit my private one" button onto
+their detail pages (Phase 2). New tables/columns aren't in the generated DB types yet →
+untyped-client casts. Ranking weights live in the RPC (tunable).
+
+---
+
+## ADR-110: Practice library expansion — balance the four Pillars; seed as system content
+
+**Status:** Accepted · `supabase/migrations/20260606130000_practices_library_expansion.sql`. See [getting-started/practices.md](../content/help/getting-started/practices.md) (member-facing).
+
+**Context.** The starter library shipped 5 core practices (`20240228000000_practices.sql`,
+enriched in `20260605000000_practices_rich_content.sql`). But those 5 only covered two of
+the four Pillars (Body ×2, Spirit ×3) and three of the six categories — **Mind and
+Expression had no core practice**, and the **human-relating** category was empty. A member
+landing on the library saw a lopsided picture of what a practice can be.
+
+**Decision.** Add **16 system-owned, public, rich-content practices** (created_by null,
+is_public true) so every Pillar and category is represented: Mind +7 (Deep work block, Read
+ten pages, Digital sunset, Plan tomorrow tonight, Appreciate someone, Call a loved one,
+Listen fully), Expression +4 (Make music, One photo a day, Voice journal, Dance one song),
+Body +3 (Daily walk, Strength session, Time in nature), Spirit +2 (Phone-free meal, Evening
+reflection). Each carries the full content shape (summary + "How to do it" / "Why it works"
+body + cadence + per-log reward) and is linked to its Pillar (`domain_id`). Pillar is
+assigned **by meaning**, not by category — category and Pillar need not align (cf. Breathwork,
+a `holistic-health` practice on the **Spirit** Pillar).
+
+**Consequences.** Library grows 5 → 21 core practices; Pillar filters and the Expression /
+Mind / human-relating surfaces are no longer empty. **No schema or app-logic change** — the
+migration is pure data, idempotent (`INSERT … SELECT` guarded by `NOT EXISTS` on title, the
+safe re-run guard since `practices.title` has no unique constraint). Rewards stay
+admin-governed via the per-practice `reward_zaps` override (ADR-104); heavier asks (deep
+work, strength, real outreach) get a touch more, like surf/cold already do.
+
+**Future (not in this ADR).** A larger, creator-driven library — deep **sub-categories +
+tags** (applied by members and auto-suggested by Vera), **popularity-based ranking** so used
+practices rise, and **creator usage rewards** — is a separate design tracked in
+[ROADMAP.md](ROADMAP.md); this ADR only covers the content seed that balances the Pillars.
+
+---
+
+## ADR-111: Practice library — taxonomy + ranking foundation (creator-library, Phase 1)
+
+**Status:** Accepted · `supabase/migrations/20260606140000_practice_taxonomy_foundation.sql`, `lib/practices.ts`, `app/(main)/practices/*`, `components/practice/practice-editor.tsx`.
+
+**Context.** The library is moving from a small curated seed toward a **large, open,
+creator-driven** surface: practices organized deeply under the 4 Pillars, tagged by
+people *and* (later) by Vera, with popular practices rising to the top and — eventually —
+creators rewarded for usage. The model had only the 4 flat Pillars (`domains`) and a loose
+`category` text tag; no sub-tier, no practice tagging, no popularity signal.
+
+**Decision (Phase 1 — structure + ranking, no economy change).** Build the foundation in
+four layers under each Pillar, reusing existing patterns rather than inventing:
+- **Sub-categories** — `practice_subcategories` (a curated, extensible tier scoped to a
+  Pillar; e.g. Body → Cardio/Strength/Mobility/…), with `practices.subcategory_id`. Seeded
+  ~5 per Pillar; the existing 21 practices backfilled.
+- **Tags (hybrid)** — `practice_tag_defs` (canonical curated vocabulary + member-proposed
+  folksonomy) joined to practices via `practice_tags`, each attachment carrying a `source`
+  (`author` | `member` | `vera`). Mirrors the member-tags pattern (ADR-068). Authors set
+  their tags in the editor; new labels auto-create non-canonical defs.
+- **Embeddings** — `practices.embedding vector(384)` + HNSW + `match_practices()`, mirroring
+  `room_messages` (ADR-088). Column/infra now; **populated by Vera in Phase 2** (no-op until).
+- **Popularity** — a server-only `practices_ranked` view (distinct adopters + 30-day logs →
+  score, `security_invoker`, granted to `service_role` only). `listPublicPractices(sort)`
+  reads it; library gains **Trending** (default) / **All-time** / **New** sorts plus a
+  Pillar → sub-category filter, all URL-driven (shareable, no client JS).
+
+Authz unchanged: public read on library taxonomy, writes via the service-role admin client
+behind app-code authz (owner for author tags/sub-category).
+
+**Relationship to ADR-109 (Community Library).** Complementary, not a replacement. ADR-109
+gives the *cross-type* catalog at `/library` (practices + programs + journeys), the approval
+lifecycle (`status`), ratings, and a UNION ranking RPC. This ADR adds what that catalog does
+not have — **sub-categories, tags, and embeddings** — and a **practices-specific** browse on
+`/practices`. The two ranking signals are intentionally different: the `community_library`
+RPC scores cross-type *adopt/complete/rating + recency*, while `practices_ranked` scores
+*repeated doing* (30-day logs), which is the truer signal for a daily practice. They coexist
+(`/practices` vs `/library`); folding sub-categories/tags into the catalog filters, and
+unifying the two scores, is a deliberate follow-up — not done here.
+
+**Consequences.** Practices are now organized two tiers deep and surfaced by real usage,
+end-to-end with no economy change. The `source` column and the embedding/match function are
+the seams Phase 2 (Vera auto-suggests Pillar/sub-category/tags on create, propose-and-confirm
+per ADR-028; semantic "similar"/dedupe) and Phase 3 (**creator rewards = gems per *new
+distinct adopter* of a public practice — daily-capped, no self-reward, admin-tunable**,
+which needs its own ADR + economy guardrails per ADR-104) slot into without a migration.
+
+---
+
+## ADR-112: Scarcity / capacity codes — a total-claim cap on check-in nodes
 
 **Status:** Accepted · `supabase/migrations/20260605150000_node_max_claims.sql`,
 `lib/engagement/verify.ts`, `app/(main)/admin/qr/{actions,qr-studio}.tsx`. Extends the capture pipeline.
@@ -3112,7 +3232,7 @@ concurrency is acceptable for this use; a hard guarantee would need a transactio
 
 ---
 
-## ADR-110: Scannability guardrails — advisory design warnings in the editor
+## ADR-113: Scannability guardrails — advisory design warnings in the editor
 
 **Status:** Accepted · `lib/qr/scannability.ts` (+ test), `app/(main)/admin/qr/style-editor.tsx`.
 
@@ -3134,7 +3254,7 @@ is edited.
 
 ---
 
-## ADR-111: Acquisition analytics — roll up first-touch snapshots on the stats page
+## ADR-114: Acquisition analytics — roll up first-touch snapshots on the stats page
 
 **Status:** Accepted · `lib/qr/acquisition.ts` (+ test), `app/(main)/admin/qr/stats/page.tsx`.
 Cashes in the data captured by ADR-104 (medium) + ADR-107 (`source_tag` / `profiles.acquisition`).
@@ -3156,7 +3276,7 @@ scanned. Time-windowing + CSV export are the obvious next iterations.
 
 ---
 
-## ADR-112: Signed anti-spoof payloads — end-to-end through the /n claim
+## ADR-115: Signed anti-spoof payloads — end-to-end through the /n claim
 
 **Status:** Accepted · `lib/qr/links.ts` (`nodeUrl` secret), `lib/engagement/verify.ts` (already checked),
 `app/(main)/admin/qr/actions.ts`, `app/(main)/n/[nodeId]/{page,claim-button,actions}.tsx`,

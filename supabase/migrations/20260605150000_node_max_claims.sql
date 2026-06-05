@@ -4,4 +4,4 @@
 
 alter table public.nodes add column if not exists max_claims integer;
 
-comment on column public.nodes.max_claims is 'Total verified-claim cap ("first N win"); null = unlimited. Enforced in verifyCapture (ADR-109).';
+comment on column public.nodes.max_claims is 'Total verified-claim cap ("first N win"); null = unlimited. Enforced in verifyCapture (ADR-112).';

@@ -1,4 +1,4 @@
-// Acquisition analytics (ADR-111) — roll up the first-touch snapshots persisted on
+// Acquisition analytics (ADR-114) — roll up the first-touch snapshots persisted on
 // profiles.acquisition (ADR-107) into "how did signups arrive": by channel, by
 // campaign/source, and by the specific code/poster. Pure + DB-free so the stats
 // page stays a thin loader and this unit-tests cleanly.

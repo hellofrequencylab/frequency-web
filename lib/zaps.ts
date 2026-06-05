@@ -33,6 +33,7 @@ export const ZAP_AMOUNTS = {
   outreach_task: 20,
   practice_logged: 12,
   node_capture: 10,
+  program_run: 30,
 } as const
 
 export type ZapAction = keyof typeof ZAP_AMOUNTS
