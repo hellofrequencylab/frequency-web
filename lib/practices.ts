@@ -25,6 +25,8 @@ export interface Practice {
   description: string | null
   created_by: string | null
   is_public: boolean
+  /** A system-curated starter practice a member can claim + personalize (ADR-116). */
+  is_template: boolean
   created_at: string
   // Rich content + reward fields (migration 20260605000000_practices_rich_content).
   category: string | null
@@ -68,7 +70,7 @@ export interface Subcategory {
 export type PracticeSort = 'trending' | 'top' | 'new'
 
 const PRACTICE_COLS =
-  'id, title, description, created_by, is_public, created_at, ' +
+  'id, title, description, created_by, is_public, is_template, created_at, ' +
   'category, icon, summary, header_image, body, cadence, reward_zaps, reward_note, domain_id, subcategory_id'
 
 // --- Library + reads ------------------------------------------------------
@@ -172,6 +174,43 @@ export async function getMemberPractices(profileId: string): Promise<Practice[]>
     .order('created_at', { ascending: false })
   const rows = (data as { practice: Practice | null }[] | null) ?? []
   return rows.map((r) => r.practice).filter((p): p is Practice => !!p)
+}
+
+/** A single practice with its popularity stats + display taxonomy, for the detail
+ *  page. Reads the server-only ranking view (admin client bypasses RLS). */
+export async function getRankedPractice(id: string): Promise<RankedPractice | null> {
+  const { data } = await db()
+    .from('practices_ranked')
+    .select(`${PRACTICE_COLS}, adopters, logs_30d, logs_total, score`)
+    .eq('id', id)
+    .maybeSingle()
+  const p = data as
+    | (Practice & { adopters: number; logs_30d: number; logs_total: number; score: number })
+    | null
+  if (!p) return null
+  const [subById, tagsByPractice] = await Promise.all([subcategoryMap(), tagsForPractices([p.id])])
+  const sc = p.subcategory_id ? subById.get(p.subcategory_id) : null
+  return {
+    ...p,
+    subcategory: sc ? { slug: sc.slug, name: sc.name } : null,
+    tags: tagsByPractice.get(p.id) ?? [],
+  }
+}
+
+/** Whether a member has adopted a practice + already logged it today (detail CTAs). */
+export async function getPracticeMemberState(
+  profileId: string,
+  practiceId: string,
+): Promise<{ adopted: boolean; loggedToday: boolean }> {
+  const today = new Date().toISOString().slice(0, 10)
+  const client = db()
+  const [adopt, log] = await Promise.all([
+    client.from('member_practices').select('id').eq('profile_id', profileId)
+      .eq('practice_id', practiceId).eq('active', true).maybeSingle(),
+    client.from('practice_logs').select('id').eq('profile_id', profileId)
+      .eq('practice_id', practiceId).eq('logged_for', today).maybeSingle(),
+  ])
+  return { adopted: !!adopt.data, loggedToday: !!log.data }
 }
 
 // --- Mutations (callers enforce authz: host for circle, self for personal) -
@@ -319,6 +358,27 @@ export async function forkPractice(profileId: string, practiceId: string): Promi
     .select(PRACTICE_COLS)
     .maybeSingle()
   return (data as Practice | null) ?? null
+}
+
+/** Claim a template: fork a private, owned copy, personalize it with the member's
+ *  (Vera-assisted) title / cadence / summary / body, and adopt it. Returns the new
+ *  practice. The claim reward is awarded by the action layer (lib/zaps). The copy is
+ *  never a template (forkPractice leaves is_template at its default false). */
+export async function claimPractice(
+  profileId: string,
+  templateId: string,
+  fields: { title?: string; summary?: string | null; body?: string | null; cadence?: string | null },
+): Promise<Practice | null> {
+  const copy = await forkPractice(profileId, templateId)
+  if (!copy) return null
+  const patch: PracticeEdit = {}
+  if (fields.title !== undefined) patch.title = fields.title
+  if (fields.summary !== undefined) patch.summary = fields.summary
+  if (fields.body !== undefined) patch.body = fields.body
+  if (fields.cadence !== undefined) patch.cadence = fields.cadence
+  const updated = Object.keys(patch).length ? await updatePractice(copy.id, patch) : copy
+  await adoptPractice(profileId, (updated ?? copy).id)
+  return updated ?? copy
 }
 
 /** Set the circle's current practice (one active per circle). Caller must be host+. */
