@@ -447,7 +447,7 @@ export function ZigZag({
   const wrapMax = imgAspect === 'portrait' || imgAspect === 'square' ? 'max-w-sm mx-auto' : ''
   return (
     <section className={`${bg} px-6 ${pad ?? 'py-20 sm:py-24'} ${vis}`}>
-      <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-8 md:gap-10 items-center">
+      <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-10 md:gap-16 items-center">
         <div
           className={`w-full ${wrapMax} rounded-2xl overflow-hidden border ${
             isInk ? 'border-ink-border shadow-pop' : 'border-border shadow-md'

@@ -4,17 +4,17 @@ import { createAdminClient } from '@/lib/supabase/admin'
 
 // `pages` is untyped in the generated DB types -> cast (same as lib/studio/*).
 
-// The splash (`/`, slug `home`) is deliberately NOT here. It is a bespoke,
-// motion-forward coded experience (live counts, parallax, broken-grid) the
-// generic Puck block set can't reproduce — and being in this list is exactly
-// what let a published draft *shadow* the coded design (the trap we hit on the
-// other pages). Keeping `home` out of the editable set is the guard: every
-// editor route, the Pages directory, and publish/draft/unpublish all gate on
-// `isEditableSlug`, so the coded splash is the single source of truth for `/`.
+// The splash (`/`, slug `home`) AND `about` are deliberately NOT here. They are
+// bespoke coded experiences (the splash's live counts/parallax; the About story's
+// crafted rhythm) that the generic Puck block set can't reproduce — and being in
+// this list is exactly what let a published draft *shadow* the coded design (the
+// trap we hit: About rendered a duplicated, garbled draft over the clean code).
+// Keeping them out is the guard: every editor route, the Pages directory, and
+// publish/draft/unpublish gate on `isEditableSlug`, so the coded page is the single
+// source of truth.
 export const EDITABLE_PAGES = [
   { slug: 'the-lab', title: 'The Lab', path: '/the-lab' },
   { slug: 'how-it-works', title: 'How it works', path: '/how-it-works' },
-  { slug: 'about', title: 'About', path: '/about' },
 ] as const
 
 export type EditableSlug = (typeof EDITABLE_PAGES)[number]['slug']
