@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ChevronRight } from 'lucide-react'
 import type { CommunityRole } from '@/lib/core/roles'
+import type { StaffRole } from '@/lib/core/staff-roles'
 import { groupForPath } from './sections'
 
 // Admin sub-nav (layer 2). The left rail carries the five admin categories; here
@@ -15,9 +16,9 @@ import { groupForPath } from './sections'
 // The row also carries the wayfinding breadcrumb (Admin › Group) as a prefix, so
 // there's no separate stacked breadcrumb above it (it's suppressed site-side on
 // /admin) — the active tab supplies the current page, completing the trail.
-export function AdminSubNav({ role }: { role: CommunityRole }) {
+export function AdminSubNav({ role, staffRole = null }: { role: CommunityRole; staffRole?: StaffRole | null }) {
   const pathname = usePathname()
-  const group = groupForPath(pathname, role)
+  const group = groupForPath(pathname, role, staffRole)
 
   return (
     <div className="sticky top-0 z-20 border-b border-border bg-surface/95 backdrop-blur-sm">
