@@ -601,6 +601,9 @@ function MobileLeftDrawer({
   open,
   onClose,
   role,
+  identityRole,
+  profile,
+  profileHref,
   isActive,
   extraSections,
   hideAppNav = false,
@@ -610,6 +613,10 @@ function MobileLeftDrawer({
   open: boolean
   onClose: () => void
   role: CommunityRole | null
+  /** The viewer's actual community role — drives the identity badge (not gated). */
+  identityRole: CommunityRole
+  profile: Profile
+  profileHref: string
   isActive: (href: string) => boolean
   extraSections?: NavSection[]
   hideAppNav?: boolean
@@ -637,17 +644,73 @@ function MobileLeftDrawer({
         }`}
       />
 
-      {/* Panel. Narrowed to roughly the logo's footprint; close button lives at the bottom for thumb reach */}
+      {/* Panel. The full menu now lives here (the bottom tab bar holds the primary
+          destinations); it leads with the viewer's identity + rewards, then the
+          full nav, and a thumb-reach close at the bottom. */}
       <aside
         role="dialog"
         aria-label="Navigation"
-        className={`absolute inset-y-0 left-0 w-52 max-w-[75vw] bg-surface shadow-2xl flex flex-col transform transition-transform duration-200 ease-out ${
+        className={`absolute inset-y-0 left-0 w-64 max-w-[82vw] bg-surface shadow-2xl flex flex-col transform transition-transform duration-200 ease-out ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         <div className="h-14 shrink-0 flex items-center px-4 border-b border-border">
           <Link href="/feed" onClick={onClose} className="flex items-center">
             <Image src="/frequency-logo.png" alt="Frequency" width={963} height={170} className="h-7 w-auto dark:invert" />
+          </Link>
+        </div>
+
+        {/* Identity + rewards — the bits that used to sit in the bottom bar. Tap the
+            card for your profile, the pill for your Dashboard. */}
+        <div className="shrink-0 border-b border-border px-3 py-3">
+          <Link
+            href={profileHref}
+            onClick={onClose}
+            className="flex items-center gap-2.5 rounded-lg p-1 -m-1 hover:bg-surface-elevated transition-colors"
+          >
+            {profile.avatar_url ? (
+              <Image
+                src={profile.avatar_url}
+                alt={profile.display_name}
+                width={40}
+                height={40}
+                className="h-10 w-10 rounded-full object-cover shrink-0"
+              />
+            ) : (
+              <div className="h-10 w-10 rounded-full bg-primary text-on-primary text-sm font-bold flex items-center justify-center select-none shrink-0">
+                {getInitials(profile.display_name)}
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-text truncate leading-tight">
+                {profile.display_name}
+              </p>
+              <span
+                className="rank-badge mt-0.5 inline-block text-[10px] leading-tight"
+                style={roleBadgeStyle(identityRole)}
+              >
+                {ROLE_LABEL[identityRole]}
+              </span>
+            </div>
+          </Link>
+          <Link
+            href="/crew"
+            onClick={onClose}
+            aria-label="Open rewards dashboard"
+            className="mt-2.5 flex items-center justify-center gap-5 rounded-lg bg-surface-elevated py-2 hover:bg-border-strong transition-colors"
+          >
+            <span className="flex items-center gap-1.5" title="Bolts (this season)">
+              <Zap className="w-4 h-4 text-primary" strokeWidth={2.5} />
+              <span className="text-sm font-bold text-text tabular-nums">
+                {(profile.current_season_zaps ?? 0).toLocaleString()}
+              </span>
+            </span>
+            <span className="flex items-center gap-1.5" title="Gems">
+              <Gem className="w-4 h-4 text-signal" strokeWidth={2.5} />
+              <span className="text-sm font-bold text-text tabular-nums">
+                {(profile.lifetime_gems ?? 0).toLocaleString()}
+              </span>
+            </span>
           </Link>
         </div>
 
@@ -671,18 +734,38 @@ function MobileLeftDrawer({
   )
 }
 
-// ── Mobile profile bottom bar ────────────────────────────────────────────────
-// Left tap → /settings · Right tap → /crew (gamified dashboard).
+// ── Mobile bottom tab bar ─────────────────────────────────────────────────────
+// The primary destinations, thumb-reachable along the bottom (the most native
+// mobile pattern). The last tab — Menu — opens the full drawer (identity, rewards,
+// and the long-tail nav). Keeps full content width: nothing is permanently eaten
+// from the side of an already-narrow phone screen.
 
-function ProfileBottomBar({
-  profile,
-  role,
+// The four core community destinations that earn a fixed tab. Everything else
+// (The Quest, Manage, settings…) lives one tap away under Menu. Icons come from
+// AREA_ICONS so the tab bar stays in lockstep with the rail/drawer.
+const MOBILE_TABS: { key: string; href: string; label: string }[] = [
+  { key: 'feed', href: '/feed', label: 'Feed' },
+  { key: 'circles', href: '/circles', label: 'Circles' },
+  { key: 'channels', href: '/channels', label: 'Channels' },
+  { key: 'events', href: '/events', label: 'Events' },
+]
+
+function MobileTabBar({
+  isActive,
+  onOpenMenu,
+  menuOpen,
+  hideAppNav = false,
 }: {
-  profile: Profile
-  role: CommunityRole
+  isActive: (href: string) => boolean
+  onOpenMenu: () => void
+  menuOpen: boolean
+  /** Stripped shells (e.g. Studio) hide the app destinations; only Menu remains. */
+  hideAppNav?: boolean
 }) {
-  const seasonZaps = profile.current_season_zaps ?? 0
-  const lifetimeGems = profile.lifetime_gems ?? 0
+  const tabClass = (active: boolean) =>
+    `flex flex-1 flex-col items-center justify-center gap-1 text-[10px] font-medium transition-colors ${
+      active ? 'text-primary-strong' : 'text-muted hover:text-text'
+    }`
 
   return (
     <nav
@@ -692,60 +775,26 @@ function ProfileBottomBar({
         paddingBottom: 'env(safe-area-inset-bottom)',
       }}
     >
-      {/* Profile. Tap to open settings */}
-      <Link
-        href="/settings"
-        aria-label="Open settings"
-        className="flex flex-1 min-w-0 items-center gap-2.5 px-3 hover:bg-surface-elevated/50 transition-colors"
+      {!hideAppNav && MOBILE_TABS.map((tab) => {
+        const Icon = AREA_ICONS[tab.key] ?? Globe
+        const active = isActive(tab.href)
+        return (
+          <Link key={tab.key} href={tab.href} aria-label={tab.label} className={tabClass(active)}>
+            <Icon className="h-[22px] w-[22px]" strokeWidth={active ? 2.5 : 2} />
+            <span className="leading-none">{tab.label}</span>
+          </Link>
+        )
+      })}
+      <button
+        type="button"
+        onClick={onOpenMenu}
+        aria-label="Open menu"
+        aria-expanded={menuOpen}
+        className={tabClass(menuOpen)}
       >
-        {profile.avatar_url ? (
-          <Image
-            src={profile.avatar_url}
-            alt={profile.display_name}
-            width={36}
-            height={36}
-            className="w-9 h-9 rounded-full object-cover shrink-0"
-          />
-        ) : (
-          <div className="w-9 h-9 rounded-full bg-primary text-on-primary text-xs font-bold flex items-center justify-center select-none shrink-0">
-            {getInitials(profile.display_name)}
-          </div>
-        )}
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-semibold text-text truncate leading-tight">
-            {profile.display_name}
-          </p>
-          <span
-            className="rank-badge mt-0.5 text-[9px] leading-tight"
-            style={roleBadgeStyle(role)}
-          >
-            {ROLE_LABEL[role]}
-          </span>
-        </div>
-      </Link>
-
-      {/* Divider */}
-      <div className="w-px bg-border-strong my-3" aria-hidden="true" />
-
-      {/* Rewards. Tap to open gamified dashboard */}
-      <Link
-        href="/crew"
-        aria-label="Open rewards dashboard"
-        className="flex items-center gap-3 px-4 hover:bg-surface-elevated/50 transition-colors"
-      >
-        <div className="flex items-center gap-1" title="Bolts (this season)">
-          <Zap className="w-4 h-4 text-primary" strokeWidth={2.5} />
-          <span className="text-sm font-bold text-text tabular-nums">
-            {seasonZaps.toLocaleString()}
-          </span>
-        </div>
-        <div className="flex items-center gap-1" title="Gems">
-          <Gem className="w-4 h-4 text-signal" strokeWidth={2.5} />
-          <span className="text-sm font-bold text-text tabular-nums">
-            {lifetimeGems.toLocaleString()}
-          </span>
-        </div>
-      </Link>
+        <Menu className="h-[22px] w-[22px]" strokeWidth={menuOpen ? 2.5 : 2} />
+        <span className="leading-none">Menu</span>
+      </button>
     </nav>
   )
 }
@@ -861,17 +910,8 @@ export default function AppShell({
       {/* ── Top bar ───────────────────────────────────────── */}
       <header className="h-14 shrink-0 flex items-stretch bg-surface/90 backdrop-blur-sm border-b border-border z-30">
 
-        {/* Hamburger. Mobile only */}
-        <button
-          onClick={() => setDrawerOpen(true)}
-          aria-label="Open navigation"
-          aria-expanded={drawerOpen}
-          className="md:hidden flex items-center justify-center px-2.5 text-muted hover:text-text transition-colors"
-        >
-          <Menu className="w-6 h-6" />
-        </button>
-
-        {/* Engraved, interactive wordmark. Full-width header, no vertical divider */}
+        {/* Engraved, interactive wordmark. Leads the bar — on mobile the menu now
+            lives in the bottom tab bar, so the wordmark anchors the top-left. */}
         <BrandMark />
 
         {/* Full-site browse nav (Discover + About dropdowns) beside the logo —
@@ -888,7 +928,7 @@ export default function AppShell({
         {/* Right cluster: search · [messages · notifications] · account.
             Three groups, each set off by a hairline so the icons read as one
             tidy block of community actions and the account stays distinct. */}
-        <div className="flex flex-1 items-center justify-end gap-0.5 px-1.5 md:gap-2 md:px-4">
+        <div className="flex flex-1 items-center justify-end gap-1 px-2.5 md:gap-2 md:px-4">
 
           {/* Demo-content toggle — sits to the LEFT of Search (desktop). Members
               hide/show seeded demo content for themselves; sized to match Search. */}
@@ -1027,15 +1067,18 @@ export default function AppShell({
       </div>
       </DockRevealProvider>
 
-      {/* ── Mobile bottom bar ─────────────────────────────── */}
-      {/* Profile (→ /settings) · Bolts + Gems (→ /crew) */}
-      <ProfileBottomBar profile={profile} role={role} />
+      {/* ── Mobile bottom tab bar ─────────────────────────── */}
+      {/* Feed · Circles · Channels · Events · Menu (opens the full drawer). */}
+      <MobileTabBar isActive={isActive} onOpenMenu={() => setDrawerOpen(true)} menuOpen={drawerOpen} hideAppNav={hideAppNav} />
 
-      {/* ── Mobile left drawer ────────────────────────────── */}
+      {/* ── Mobile left drawer (the full menu) ────────────── */}
       <MobileLeftDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         role={gateRole}
+        identityRole={role}
+        profile={profile}
+        profileHref={profileHref}
         isActive={isActive}
         extraSections={extraSections}
         hideAppNav={hideAppNav}
