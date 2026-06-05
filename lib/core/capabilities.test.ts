@@ -65,3 +65,24 @@ describe('resolveCapabilities · circle', () => {
     expect(can(none, 'task.volunteer')).toBe(false)
   })
 })
+
+describe('resolveCapabilities · event', () => {
+  const base: Scope = { kind: 'event', eventId: 'e1', hostId: 'host1' }
+
+  it('the event host can edit', () => {
+    expect(can(resolveCapabilities({ profileId: 'host1', role: 'member' }, base), 'event.editSettings')).toBe(true)
+  })
+
+  it('platform staff (admin + janitor) can edit any event', () => {
+    expect(can(resolveCapabilities({ profileId: 'ax', role: 'admin' }, base), 'event.editSettings')).toBe(true)
+    expect(can(resolveCapabilities({ profileId: 'jx', role: 'janitor' }, base), 'event.editSettings')).toBe(true)
+  })
+
+  it('whoever manages the parent scope can edit (caller-computed)', () => {
+    expect(can(resolveCapabilities({ profileId: 'g', role: 'guide' }, { ...base, viewerManagesScope: true }), 'event.editSettings')).toBe(true)
+  })
+
+  it('an unrelated member cannot edit', () => {
+    expect(can(resolveCapabilities({ profileId: 'x', role: 'member' }, base), 'event.editSettings')).toBe(false)
+  })
+})
