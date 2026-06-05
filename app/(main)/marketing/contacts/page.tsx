@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { listContacts, type ContactRow } from '@/lib/studio/contacts'
+import { Search } from 'lucide-react'
+import { searchContacts, type ContactCore } from '@/lib/crm/person'
 import { setContactConsent } from './actions'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ScanInviteToggle } from './scan-invite-toggle'
@@ -23,7 +24,7 @@ const FILTERS = [
 
 type FilterKey = (typeof FILTERS)[number]['key']
 
-function applyFilter(rows: ContactRow[], filter: FilterKey): ContactRow[] {
+function applyFilter(rows: ContactCore[], filter: FilterKey): ContactCore[] {
   switch (filter) {
     case 'subscribed': return rows.filter((c) => c.consentState === 'subscribed')
     case 'beta': return rows.filter((c) => c.source === 'beta_waitlist')
@@ -32,15 +33,24 @@ function applyFilter(rows: ContactRow[], filter: FilterKey): ContactRow[] {
   }
 }
 
+function hrefFor(filter: FilterKey, q: string): string {
+  const p = new URLSearchParams()
+  if (filter !== 'all') p.set('filter', filter)
+  if (q) p.set('q', q)
+  const s = p.toString()
+  return s ? `/marketing/contacts?${s}` : '/marketing/contacts'
+}
+
 export default async function ContactsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ filter?: string }>
+  searchParams: Promise<{ filter?: string; q?: string }>
 }) {
-  const { filter: rawFilter } = await searchParams
+  const { filter: rawFilter, q: rawQ } = await searchParams
   const filter: FilterKey = (FILTERS.find((f) => f.key === rawFilter)?.key ?? 'all') as FilterKey
+  const q = (rawQ ?? '').trim()
 
-  const all = await listContacts(1000)
+  const all = await searchContacts(q, 1000)
   const contacts = applyFilter(all, filter)
 
   const { data: flagRow } = await createAdminClient()
@@ -54,23 +64,45 @@ export default async function ContactsPage({
     <DashboardTemplate
       eyebrow="Marketing"
       title="Contacts"
-      description="The unified CRM record for leads, customers, and members. Email is the join key; members auto-link on signup."
+      description="The unified CRM record for leads, customers, and members. Email is the join key; members auto-link on signup. Click anyone to see their User Stats — every record about them, grouped, and the path they took through the system."
       width="wide"
     >
       <div className="max-w-md">
         <ScanInviteToggle enabled={scanInviteOn} />
       </div>
 
+      {/* Search — find a scanned/QR person by name or email across the whole CRM. */}
+      <form method="get" className="flex items-center gap-2">
+        {filter !== 'all' && <input type="hidden" name="filter" value={filter} />}
+        <div className="relative flex-1 max-w-md">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" />
+          <input
+            type="search"
+            name="q"
+            defaultValue={q}
+            placeholder="Search contacts by name or email…"
+            className="w-full rounded-xl border border-border bg-surface py-2 pl-9 pr-3 text-sm text-text outline-none placeholder:text-subtle focus:border-primary"
+          />
+        </div>
+        <button type="submit" className="rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-on-primary hover:bg-primary-strong transition-colors">
+          Search
+        </button>
+        {q && (
+          <Link href={hrefFor(filter, '')} className="text-sm font-medium text-muted hover:text-text">
+            Clear
+          </Link>
+        )}
+      </form>
+
       {/* Filter tabs */}
       <div className="flex gap-1 border-b border-border">
         {FILTERS.map((f) => {
           const active = filter === f.key
           const count = applyFilter(all, f.key).length
-          const href = f.key === 'all' ? '/marketing/contacts' : `/marketing/contacts?filter=${f.key}`
           return (
             <Link
               key={f.key}
-              href={href}
+              href={hrefFor(f.key, q)}
               className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
                 active ? 'border-primary text-primary-strong' : 'border-transparent text-muted hover:text-text'
               }`}
@@ -83,8 +115,8 @@ export default async function ContactsPage({
 
       {contacts.length === 0 ? (
         <EmptyState
-          title="No contacts in this view."
-          description="Try a different filter, or contacts will appear here as they arrive."
+          title={q ? `No contacts match “${q}”.` : 'No contacts in this view.'}
+          description={q ? 'Try a different spelling, or clear the search.' : 'Try a different filter, or contacts will appear here as they arrive.'}
         />
       ) : (
         <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-x-auto">
@@ -101,14 +133,14 @@ export default async function ContactsPage({
             </thead>
             <tbody>
               {contacts.map((c) => (
-                <tr key={c.id} className="border-b border-border/60 last:border-0">
-                  <td className="px-4 py-2.5 text-text">{c.email}</td>
-                  <td className="px-4 py-2.5 text-muted">{c.displayName ?? '-'}</td>
-                  <td className="px-4 py-2.5 text-muted">
-                    {c.profileId ? (
-                      <Link href="/admin/members" className="text-primary-strong hover:underline">Yes</Link>
-                    ) : 'No'}
+                <tr key={c.id} className="border-b border-border/60 last:border-0 hover:bg-surface-elevated/40 transition-colors">
+                  <td className="px-4 py-2.5">
+                    <Link href={`/marketing/contacts/${c.id}`} className="font-medium text-primary-strong hover:underline">
+                      {c.email}
+                    </Link>
                   </td>
+                  <td className="px-4 py-2.5 text-muted">{c.displayName ?? '-'}</td>
+                  <td className="px-4 py-2.5 text-muted">{c.profileId ? 'Yes' : 'No'}</td>
                   <td className="px-4 py-2.5 text-muted">{c.source ?? '-'}</td>
                   <td className="px-4 py-2.5">
                     <span className={`text-xs px-1.5 py-0.5 rounded-md font-medium ${CONSENT_STYLE[c.consentState] ?? CONSENT_STYLE.unknown}`}>
