@@ -129,7 +129,18 @@ export default async function ChannelsPage() {
   return (
     <IndexTemplate
       title="Channels"
-      description="The four Channels — Mind, Body, Spirit, and Expression — are how Frequency is organized. Interests live inside them: global topics anyone can tune into, each carrying a practice that Circles run locally. Pick a Channel, find your Interest, then go do it with people near you."
+      description={
+        <>
+          {/* Mobile leads with a tight line so the Channels surface without scrolling
+              past a wall of copy; desktop keeps the full explainer. */}
+          <span className="sm:hidden">Four Channels — Mind, Body, Spirit, Expression — and the Interests inside them.</span>
+          <span className="hidden sm:inline">
+            The four Channels — Mind, Body, Spirit, and Expression — are how Frequency is organized.
+            Interests live inside them: global topics anyone can tune into, each carrying a practice
+            that Circles run locally. Pick a Channel, find your Interest, then go do it with people near you.
+          </span>
+        </>
+      }
       action={canCreate ? <NewChannelCompose domains={domains} /> : undefined}
     >
       <div className="grid grid-cols-1 gap-x-8 gap-y-8 lg:grid-cols-3">
