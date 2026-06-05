@@ -907,6 +907,10 @@ export default function AppShell({
             tidy block of community actions and the account stays distinct. */}
         <div className="flex flex-1 items-center justify-end gap-1.5 px-3 md:gap-2 md:px-4">
 
+          {/* Demo-content toggle — sits to the LEFT of Search (desktop). Members
+              hide/show seeded demo content for themselves; sized to match Search. */}
+          {demoMode && <DemoToggle initialHidden={demoHidden} />}
+
           {/* Search pill. Desktop */}
           <Link
             href="/search"
@@ -928,31 +932,29 @@ export default function AppShell({
             <Search className="w-5 h-5" />
           </Link>
 
-          {/* Quick capture — snap a card straight into your contacts. Mobile; stewards + staff. */}
-          {canCreateProfile && (
-            <Link
-              href="/connections/new"
-              aria-label="New contact"
-              title="New contact"
-              className="md:hidden flex items-center justify-center w-9 h-9 rounded-full text-primary-strong hover:bg-surface-elevated transition-colors"
-            >
-              <Camera className="w-5 h-5" />
-            </Link>
-          )}
-
-          {/* Beta-content toggle — members hide/show seeded demo content for themselves */}
-          {demoMode && <DemoToggle initialHidden={demoHidden} />}
-
-          {/* Community actions — friends + messages + notifications, set off by a divider */}
+          {/* Community actions. Desktop: friends + messages + notifications.
+              Mobile: friends + messages fold into ONE silhouette icon → Messages. */}
           <div className="flex items-center gap-0.5 sm:ml-1 sm:pl-1.5 sm:border-l sm:border-border">
+            {/* Friends — desktop only (mobile merges it into the combined icon) */}
             <Link
               href="/friends"
               aria-label="Friends"
-              className="flex items-center justify-center w-9 h-9 rounded-full text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+              className="hidden sm:flex items-center justify-center w-9 h-9 rounded-full text-muted hover:text-text hover:bg-surface-elevated transition-colors"
             >
               <Users className="w-5 h-5" />
             </Link>
-            <MessagesPopover />
+            {/* Messages — desktop popover */}
+            <div className="hidden sm:block">
+              <MessagesPopover />
+            </div>
+            {/* Mobile: friends + messages combined into one silhouette icon → Messages */}
+            <Link
+              href="/messages"
+              aria-label="Friends & messages"
+              className="sm:hidden flex items-center justify-center w-9 h-9 rounded-full text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+            >
+              <Users className="w-5 h-5" />
+            </Link>
             <NotificationBell initialUnread={unreadCount} />
           </div>
 
@@ -967,6 +969,19 @@ export default function AppShell({
               cycleTheme={cycleTheme}
             />
           </div>
+
+          {/* Quick capture — snap a card straight into your contacts. Mobile only,
+              pinned far-right as a filled primary box with a white camera. Stewards + staff. */}
+          {canCreateProfile && (
+            <Link
+              href="/connections/new"
+              aria-label="New contact"
+              title="New contact"
+              className="md:hidden flex items-center justify-center w-9 h-9 rounded-xl bg-primary text-on-primary shadow-sm hover:bg-primary-hover transition-colors ml-0.5"
+            >
+              <Camera className="w-5 h-5" />
+            </Link>
+          )}
         </div>
       </header>
 
