@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/cron/embed-help",
+      "schedule": "20 3 * * *"
+    },
+    {
       "path": "/api/cron/publish-scheduled",
       "schedule": "*/5 * * * *"
     },
