@@ -3490,14 +3490,17 @@ asked for a name + about cold — a blank-page moment right where Vera (Frequenc
 helping.
 
 **Decision.**
-- **An opt-in slide-in side rail.** A slim icon rail (the four bottom-tab destinations + Menu) that
-  reveals on a scroll-UP gesture and tucks away on scroll-DOWN — same intent model as the bottom-dock
-  reveal (`dock-reveal.tsx`): near the top or an upward delta shows it, a downward delta hides it. It
-  is an **overlay**, never a layout column, so it causes no reflow and never permanently eats width
-  (the reason a *persistent* left rail was rejected in ADR-120). It's a **per-device preference**
-  (localStorage `freq-rail-nav`, default on) toggled from the Menu drawer; the toggle starts `false`
-  on the server and hydrates after mount, so there's no hydration mismatch. Mobile only; suppressed
-  under `hideAppNav`.
+- **An opt-in slide-in side rail.** Collapsed, it's a **subtle full-length tab** down the left edge;
+  scrolling **DOWN** slides the menu open and **pushes the content to the right** (it's a real column
+  in the body flex, `md:hidden`, not an overlay), and scrolling **UP** (or sitting at the top) tucks
+  it back to the tab. A **Close** control at the bottom collapses it *and* suppresses auto-open on
+  scroll until the member taps the tab again (`pinnedClosed`). This is the **reverse** of the first
+  cut (which revealed on scroll-up as an overlay) — corrected per on-device feedback that the
+  direction felt backwards and the overlay covered content. It stays `md:hidden`, so on desktop the
+  real left rail owns the width and this costs nothing. Master on/off is a **per-device preference**
+  (localStorage `freq-rail-nav`, default on) toggled from the Menu drawer; it starts `false` on the
+  server and hydrates after mount, so there's no hydration mismatch. Mobile only; suppressed under
+  `hideAppNav`.
 - **Vera drafts the circle.** A "Suggest" affordance appears in the modal once the practice is known
   (the channel we're in, or the picked Interest). `suggestCircle()` calls `suggestCircleDraft()`
   (Haiku, forced `suggest_circle` tool, usage-ledgered) and **falls back to a deterministic draft**
@@ -3511,8 +3514,9 @@ Vera's live concierge in the create flow (deferred — heavier; the one-shot sug
 shippable first step). A purely deterministic suggester with no AI (rejected — Vera should feel real
 when the kernel is on; the deterministic path is the fallback, not the default).
 
-**Consequences.** The side rail is discoverable, dismissible, and free of reflow; users who dislike it
-turn it off once. The circle modal has a real assist with a guaranteed-useful fallback and no new
+**Consequences.** The side rail is discoverable (the tab is always there) and dismissible (Close, or
+the master toggle); opening it reflows the feed narrower by design — the Close + tab model is the
+escape hatch for when that's unwanted. Users who dislike it entirely turn it off once. The circle modal has a real assist with a guaranteed-useful fallback and no new
 commit path (the server still authorizes `createCircle`). New AI feature key `circle-create` flows
 through the existing usage ledger + daily-cap machinery.
 
