@@ -866,7 +866,7 @@ export default function AppShell({
           onClick={() => setDrawerOpen(true)}
           aria-label="Open navigation"
           aria-expanded={drawerOpen}
-          className="md:hidden flex items-center justify-center px-4 text-muted hover:text-text transition-colors"
+          className="md:hidden flex items-center justify-center px-2.5 text-muted hover:text-text transition-colors"
         >
           <Menu className="w-6 h-6" />
         </button>
@@ -888,7 +888,7 @@ export default function AppShell({
         {/* Right cluster: search · [messages · notifications] · account.
             Three groups, each set off by a hairline so the icons read as one
             tidy block of community actions and the account stays distinct. */}
-        <div className="flex flex-1 items-center justify-end gap-1.5 px-3 md:gap-2 md:px-4">
+        <div className="flex flex-1 items-center justify-end gap-0.5 px-1.5 md:gap-2 md:px-4">
 
           {/* Demo-content toggle — sits to the LEFT of Search (desktop). Members
               hide/show seeded demo content for themselves; sized to match Search. */}
@@ -910,7 +910,7 @@ export default function AppShell({
           <Link
             href="/search"
             aria-label="Search"
-            className="sm:hidden flex items-center justify-center w-9 h-9 rounded-full text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+            className="sm:hidden flex items-center justify-center w-8 h-8 rounded-full text-muted hover:text-text hover:bg-surface-elevated transition-colors"
           >
             <Search className="w-5 h-5" />
           </Link>
@@ -934,7 +934,7 @@ export default function AppShell({
             <Link
               href="/messages"
               aria-label="Friends & messages"
-              className="sm:hidden flex items-center justify-center w-9 h-9 rounded-full text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+              className="sm:hidden flex items-center justify-center w-8 h-8 rounded-full text-muted hover:text-text hover:bg-surface-elevated transition-colors"
             >
               <Users className="w-5 h-5" />
             </Link>
@@ -942,7 +942,7 @@ export default function AppShell({
           </div>
 
           {/* Account — distinct, with its own divider */}
-          <div className="flex items-center ml-1 pl-1.5 border-l border-border">
+          <div className="flex items-center ml-0.5 pl-1 border-l border-border md:ml-1 md:pl-1.5">
             <AccountDropdown
               profile={profile}
               profileHref={profileHref}
@@ -960,7 +960,7 @@ export default function AppShell({
               href="/connections/new"
               aria-label="New contact"
               title="New contact"
-              className="md:hidden flex items-center justify-center w-9 h-9 rounded-xl bg-primary text-on-primary shadow-sm hover:bg-primary-hover transition-colors ml-0.5"
+              className="md:hidden flex items-center justify-center w-8 h-8 shrink-0 rounded-xl bg-primary text-on-primary shadow-sm hover:bg-primary-hover transition-colors ml-0.5"
             >
               <Camera className="w-5 h-5" />
             </Link>
