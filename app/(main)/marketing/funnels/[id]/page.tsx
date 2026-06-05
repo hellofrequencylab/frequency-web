@@ -10,7 +10,7 @@ import { listMarketingTargets } from '@/lib/qr/marketing'
 import { shortLinkUrl } from '@/lib/qr/links'
 import { renderStyledQrSvg } from '@/lib/qr/render-styled'
 import { getCampaign } from '@/lib/entry-points/campaigns'
-import { listEntryPointsByCampaign } from '@/lib/entry-points/store'
+import { listEntryPointsByCampaignWithOwner, listAssignableMembers } from '@/lib/entry-points/store'
 import { entryDestinationGroups } from '@/lib/entry-points/destinations'
 import type { EntryCard } from '@/app/(main)/entry-points/entry-points-client'
 import { CampaignDetail } from './detail-client'
@@ -23,9 +23,10 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
   if (!campaign) notFound()
 
   const me = await getCallerProfile()
-  const [targets, eps] = await Promise.all([
+  const [targets, eps, members] = await Promise.all([
     me ? listMarketingTargets(me.id) : Promise.resolve([]),
-    listEntryPointsByCampaign(id),
+    listEntryPointsByCampaignWithOwner(id),
+    listAssignableMembers(),
   ])
 
   const cards: EntryCard[] = eps.map((e) => ({
@@ -39,6 +40,9 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
     scans: e.scans,
     qrSvg: renderStyledQrSvg(shortLinkUrl(e.slug), e.style, 200),
   }))
+  // codeId → its owner, for the assign-to-crew control.
+  const owners: Record<string, { ownerId: string | null; ownerName: string | null }> = {}
+  for (const e of eps) owners[e.id] = { ownerId: e.ownerId, ownerName: e.ownerName }
 
   return (
     <DashboardTemplate
@@ -53,6 +57,8 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
       <CampaignDetail
         campaign={{ id: campaign.id, name: campaign.name, status: campaign.status }}
         cards={cards}
+        owners={owners}
+        members={members}
         destinationGroups={entryDestinationGroups(targets)}
       />
     </DashboardTemplate>

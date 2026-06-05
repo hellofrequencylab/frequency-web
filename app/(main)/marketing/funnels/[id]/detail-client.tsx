@@ -7,7 +7,7 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Plus, Pencil, Archive, ArrowLeft, FlaskConical } from 'lucide-react'
+import { Plus, Pencil, Archive, ArrowLeft, FlaskConical, User } from 'lucide-react'
 import { listEntryTemplates, type EntryTemplate } from '@/lib/entry-points/templates'
 import type { DestinationGroup } from '@/lib/entry-points/destinations'
 import {
@@ -15,16 +15,26 @@ import {
   EntryRow,
   type EntryCard,
 } from '@/app/(main)/entry-points/entry-points-client'
-import { updateCampaign, archiveCampaign } from '../actions'
+import { updateCampaign, archiveCampaign, reassignEntryPoint } from '../actions'
 import type { CampaignStatus } from '@/lib/entry-points/campaigns'
+
+export interface AssignableMember {
+  id: string
+  name: string
+  role: string
+}
 
 export function CampaignDetail({
   campaign,
   cards,
+  owners,
+  members,
   destinationGroups,
 }: {
   campaign: { id: string; name: string; status: CampaignStatus }
   cards: EntryCard[]
+  owners: Record<string, { ownerId: string | null; ownerName: string | null }>
+  members: AssignableMember[]
   destinationGroups: DestinationGroup[]
 }) {
   const router = useRouter()
@@ -148,15 +158,83 @@ export function CampaignDetail({
         {cards.map((card) => (
           <div key={card.id} className="space-y-1">
             <EntryRow card={card} destinationGroups={destinationGroups} />
-            <Link
-              href={`/marketing/funnels/variants/${card.id}`}
-              className="ml-1 inline-flex items-center gap-1 text-[11px] font-semibold text-muted transition-colors hover:text-text"
-            >
-              <FlaskConical className="h-3 w-3" /> A/B test
-            </Link>
+            <div className="ml-1 flex flex-wrap items-center gap-3">
+              <Link
+                href={`/marketing/funnels/variants/${card.id}`}
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-muted transition-colors hover:text-text"
+              >
+                <FlaskConical className="h-3 w-3" /> A/B test
+              </Link>
+              <OwnerControl
+                codeId={card.id}
+                campaignId={campaign.id}
+                owner={owners[card.id]}
+                members={members}
+              />
+            </div>
           </div>
         ))}
       </section>
     </div>
+  )
+}
+
+// Per-entry-point owner display + reassign-to-crew picker (ADR-126 Phase 2b).
+function OwnerControl({
+  codeId,
+  campaignId,
+  owner,
+  members,
+}: {
+  codeId: string
+  campaignId: string
+  owner?: { ownerId: string | null; ownerName: string | null }
+  members: AssignableMember[]
+}) {
+  const router = useRouter()
+  const [open, setOpen] = useState(false)
+  const [pending, start] = useTransition()
+  const currentName = owner?.ownerName ?? 'Unassigned'
+
+  function reassign(id: string) {
+    if (!id || id === owner?.ownerId) { setOpen(false); return }
+    start(async () => {
+      await reassignEntryPoint(campaignId, codeId, id)
+      setOpen(false)
+      router.refresh()
+    })
+  }
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        disabled={pending}
+        className="inline-flex items-center gap-1 text-[11px] font-semibold text-muted transition-colors hover:text-text disabled:opacity-60"
+        title="Reassign owner"
+      >
+        <User className="h-3 w-3" /> {currentName}
+      </button>
+    )
+  }
+  return (
+    <span className="inline-flex items-center gap-1">
+      <User className="h-3 w-3 text-subtle" />
+      <select
+        autoFocus
+        defaultValue={owner?.ownerId ?? ''}
+        onChange={(e) => reassign(e.target.value)}
+        disabled={pending}
+        className="rounded-md border border-border bg-canvas px-1.5 py-0.5 text-[11px] text-text"
+      >
+        <option value="" disabled>Assign to…</option>
+        {members.map((m) => (
+          <option key={m.id} value={m.id}>
+            {m.name}{m.role !== 'crew' ? ` · ${m.role}` : ''}
+          </option>
+        ))}
+      </select>
+      <button onClick={() => setOpen(false)} className="text-[11px] text-muted hover:text-text">×</button>
+    </span>
   )
 }

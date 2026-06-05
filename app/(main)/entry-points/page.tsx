@@ -16,6 +16,7 @@ import { shortLinkUrl } from '@/lib/qr/links'
 import { renderStyledQrSvg } from '@/lib/qr/render-styled'
 import { listMyEntryPoints } from '@/lib/entry-points/store'
 import { entryDestinationGroups } from '@/lib/entry-points/destinations'
+import { crewEntryTemplates } from '@/lib/entry-points/template-settings'
 import { EntryPointsManager, type EntryCard } from './entry-points-client'
 
 export const dynamic = 'force-dynamic'
@@ -46,9 +47,10 @@ export default async function EntryPointsPage() {
     )
   }
 
-  const [entries, targets] = await Promise.all([
+  const [entries, targets, templates] = await Promise.all([
     listMyEntryPoints(me.id),
     listMarketingTargets(me.id),
+    crewEntryTemplates(),
   ])
 
   // Signups credited to this member (owner-credit on signup, ADR-091/126).
@@ -88,7 +90,7 @@ export default async function EntryPointsPage() {
         </>
       }
     >
-      <EntryPointsManager cards={cards} destinationGroups={destinationGroups} />
+      <EntryPointsManager cards={cards} destinationGroups={destinationGroups} templates={templates} />
     </DashboardTemplate>
   )
 }
