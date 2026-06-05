@@ -1,6 +1,6 @@
 'use server'
 
-// Admin actions for entry-point A/B variants (ADR-135). Gated to admin/staff like the
+// Admin actions for entry-point A/B variants (ADR-136). Gated to admin/staff like the
 // rest of /marketing. Variant targets are validated as known-safe internal entry
 // destinations (no open redirect — same guard entry points use). Untyped admin handle.
 
