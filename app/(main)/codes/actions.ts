@@ -10,8 +10,25 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { parseStyle, type QrStyle } from '@/lib/qr/style'
 import { generateSlug } from '@/lib/qr/codes'
 import { MARKETING_CODE_LIMIT, isValidMarketingPath } from '@/lib/qr/marketing'
+import { parseVcard, type VcardConfig } from '@/lib/vcard'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 import type { Json } from '@/lib/database.types'
+
+/** Save a member's contact-card (vCard) config — what their profile code shares. */
+export async function updateMyVcard(config: VcardConfig): Promise<ActionResult> {
+  const me = await getMyProfileId()
+  if (!me) return fail('Sign in first.')
+
+  const db = createAdminClient()
+  const { error } = await db
+    .from('profiles')
+    .update({ vcard: parseVcard(config) as unknown as Json })
+    .eq('id', me)
+  if (error) return fail('Could not save your contact card.')
+
+  revalidatePath('/codes')
+  return ok()
+}
 
 export interface MarketingInput {
   title: string

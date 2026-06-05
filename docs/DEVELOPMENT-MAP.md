@@ -115,6 +115,12 @@
 > / `checkInEvent`; and a `url` code can **switch destination at a set time** (`switch_at` +
 > `alt_target_url`). Authored in the dynamic-link form (Circle / Event pickers + time-switch).
 > Applied to prod. Roadmap of further functions tracked in issue #221 (next: editable vCard + permissions).
+>
+> **2026-06-05:** QR **editable contact card / vCard with permissions** (issue #221, migration
+> `20260605080000`: `profiles.vcard` jsonb). Members toggle "Save contact" on their profile code and
+> pick exactly which fields it shares (photo + opt-in email/phone/org/title/website); the public
+> `/people/<handle>/vcard` endpoint serves a `.vcf` of only those fields, surfaced as a **Save contact**
+> button on the profile + a `/codes` editor. `lib/vcard.ts` (parse + build) is pure + tested.
 
 ---
 

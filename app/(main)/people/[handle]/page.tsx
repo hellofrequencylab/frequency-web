@@ -12,7 +12,8 @@ import { getInitials } from '@/lib/utils'
 import { FriendButton, type FriendState } from './friend-button'
 import { BlockButton } from './block-button'
 import { hasBlocked } from '@/lib/blocking'
-import { MessageSquare, CalendarDays, Zap, Gem, Users, MapPin, Settings, Trophy, Star, Flame } from 'lucide-react'
+import { MessageSquare, CalendarDays, Zap, Gem, Users, MapPin, Settings, Trophy, Star, Flame, Contact } from 'lucide-react'
+import { parseVcard } from '@/lib/vcard'
 import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
 import { getProfileCapabilities } from '@/lib/core/load-capabilities'
 import { ModerateProfileButton } from './moderate-profile-button'
@@ -68,6 +69,7 @@ export default async function ProfilePage({
       current_streak,
       lifetime_gems,
       is_demo,
+      vcard,
       nexus_regions!nexus_region_id ( name )
     `)
     .eq('handle', handle)
@@ -75,6 +77,8 @@ export default async function ProfilePage({
     .maybeSingle()
 
   if (!profile) notFound()
+
+  const vcardEnabled = parseVcard(profile.vcard).enabled
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -205,6 +209,15 @@ export default async function ProfilePage({
               ) : user ? (
                 <>
                   {!isBlocked && <FriendButton targetProfileId={profileId} state={friendState} />}
+                  {vcardEnabled && (
+                    <a
+                      href={`/people/${profile.handle}/vcard`}
+                      className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+                    >
+                      <Contact className="w-3.5 h-3.5" />
+                      Save contact
+                    </a>
+                  )}
                   {!isBlocked && friendState.kind === 'accepted' && (
                     <form action={startConversation.bind(null, profileId)}>
                       <button

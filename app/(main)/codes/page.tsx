@@ -9,8 +9,10 @@ import { renderStyledQrSvg } from '@/lib/qr/render-styled'
 import { parseStyle, isSafeLogoSrc, type QrStyle } from '@/lib/qr/style'
 import { ensureMemberCodes, type MemberCodePurpose } from '@/lib/qr/member-codes'
 import { listMarketingTargets, MARKETING_CODE_LIMIT } from '@/lib/qr/marketing'
+import { parseVcard } from '@/lib/vcard'
 import { MemberCodes, type MemberCodeCard } from './member-codes'
 import { MarketingCodes, type MarketingCard } from './marketing-codes'
+import { VcardEditor } from './vcard-editor'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,7 +25,7 @@ export default async function CodesPage() {
   const supabase = await createClient()
   const { data: me } = await supabase
     .from('profiles')
-    .select('handle, display_name, avatar_url')
+    .select('handle, display_name, avatar_url, vcard')
     .eq('id', profileId)
     .maybeSingle()
   if (!me?.handle) notFound()
@@ -71,6 +73,8 @@ export default async function CodesPage() {
       </header>
 
       <MemberCodes cards={cards} referralCount={referralCount ?? 0} />
+
+      <VcardEditor config={parseVcard(me.vcard)} handle={me.handle} />
 
       {isCrew && <CrewMarketing profileId={profileId} />}
 
