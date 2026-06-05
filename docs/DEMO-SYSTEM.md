@@ -89,19 +89,28 @@ both live on the one **`/admin/demo`** ("Demo Studio") page (`lib/demo/engine.ts
 Every row is still `is_demo`, badged with the yellow bolt, and counted honestly.
 See ADR-091/092.
 
-### What a seed generates (the full connection web — ADR-093)
+### What a seed generates (the full connection web — ADR-093, extended ADR-103)
 
-A seed is not just circles + posts. For each area the engine writes the web that
-makes a community read *lived-in*, all batched and all `is_demo`:
+A seed isn't circles + posts — it's a neighborhood that reads as if it **grew
+naturally**. For each area the engine writes the whole web, all batched and all
+`is_demo` (except dispatches/friendships, which cascade from their demo author):
 
 | Layer | What's seeded |
 | :-- | :-- |
+| **Hierarchy** | A **Hub** (neighborhood) run by a **Guide** (`community_role='guide'`), over several **Circles** each with a **Host** stamped on `circles.host_id` |
 | Circles & people | Circles with a host + roster; ranks/tenure drive what each person posts |
-| Conversation | Stage-appropriate posts + replies, with ⚡ **reactions** from circle-mates |
-| Events | A **cadence** — two past + one upcoming — each with going **RSVPs** |
+| Circle conversation | Stage-appropriate posts + replies, with ⚡ **reactions** from circle-mates |
+| **Walls & feed** | Members write on each other's **walls** (public posts scoped to a profile) + **public feed** posts — the cross-circle community chatter |
+| **Friendships** | An accepted **friendship graph**: within-circle ties, cross-circle bridges, and the Guide knowing every Host |
+| Events | A **cadence** — two past + one upcoming — with descriptions + going **RSVPs** |
+| **Dispatches** | Published **broadcasts** from Hosts (circle scope, incl. event promos) and the Guide (hub scope) |
 | Practice loop | A circle practice, member **adoptions**, recent **`practice_logs`**, attendance **streaks** |
 | Journeys | Open **`journey_plans`** (+ items + adoptions) authored by hosts, adopted by a slice of members |
 | Gamification | Zero-reward **achievements** (trophy case) — see the unobtrusive contract below |
+
+**Teardown:** `hubs` carry `is_demo` (deleted after their circles — `circles.hub_id`
+is `NO ACTION`); dispatches, friendships, and wall posts all `ON DELETE CASCADE`
+from the demo author, so purging the demo profiles sweeps them automatically.
 
 ### Demographic-aware generation (palette + templates)
 
