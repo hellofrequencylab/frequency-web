@@ -3,13 +3,21 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Contact, Download, Check } from 'lucide-react'
-import { updateMyVcard } from './actions'
 import type { VcardConfig } from '@/lib/vcard'
+import type { ActionResult } from '@/lib/action-result'
 
-// Member-controlled contact card. Toggle "Save contact" on, fill only the fields
-// you want shared (permissions = presence + the enable switch), save, and your
-// profile code offers a .vcf. Nothing you don't fill in reaches the card.
-export function VcardEditor({ config, handle }: { config: VcardConfig; handle: string }) {
+// Contact card editor. Reused for self-edit (/codes) and admin edit (QR Studio) via
+// the `onSave` action. Toggle "Save contact" on, fill only the fields to share
+// (permissions = presence + the enable switch); nothing else reaches the .vcf.
+export function VcardEditor({
+  config,
+  handle,
+  onSave,
+}: {
+  config: VcardConfig
+  handle: string
+  onSave: (config: VcardConfig) => Promise<ActionResult>
+}) {
   const [form, setForm] = useState<VcardConfig>(config)
   const [pending, start] = useTransition()
   const [saved, setSaved] = useState(false)
@@ -21,7 +29,7 @@ export function VcardEditor({ config, handle }: { config: VcardConfig; handle: s
   }
   function save() {
     start(async () => {
-      const r = await updateMyVcard(form)
+      const r = await onSave(form)
       if (!('error' in r)) {
         setSaved(true)
         setTimeout(() => setSaved(false), 1500)

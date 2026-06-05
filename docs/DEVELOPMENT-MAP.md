@@ -121,6 +121,11 @@
 > pick exactly which fields it shares (photo + opt-in email/phone/org/title/website); the public
 > `/people/<handle>/vcard` endpoint serves a `.vcf` of only those fields, surfaced as a **Save contact**
 > button on the profile + a `/codes` editor. `lib/vcard.ts` (parse + build) is pure + tested.
+>
+> **2026-06-05:** QR Studio — **admin editing of member profile codes**. In the Member profile codes
+> category, host+ operators can now restyle a member's code AND edit their contact card on their behalf
+> (`member-actions.ts`; reuses `StyleEditor` + `VcardEditor`, which was parametrized by an `onSave`
+> action so it serves both self-edit on `/codes` and admin edit). No migration.
 
 ---
 
