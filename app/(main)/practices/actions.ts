@@ -14,9 +14,13 @@ import {
   getPractice,
   updatePractice,
   forkPractice,
+  claimPractice,
   setPracticeTags,
   type PracticeEdit,
 } from '@/lib/practices'
+import { personalizePractice, type PracticeSuggestion } from '@/lib/ai/practice-wizard'
+import { awardZapsForAction } from '@/lib/zaps'
+import { recordEngagementEvent } from '@/lib/engagement/events'
 
 // Log that you did a practice → practice.verified (WAM) + zaps + streak.
 export async function logPracticeAction(
@@ -101,6 +105,59 @@ export async function forkPracticeAction(practiceId: string) {
   if (!copy) return
   await adoptPractice(profileId, copy.id)
   redirect(`/practices/${copy.id}/edit`)
+}
+
+// Vera assist for the claim wizard: personalize a template to the member's goal +
+// schedule. Returns null when AI is off or the call fails (the wizard falls back to
+// the template's own content), so claiming never depends on the model being up.
+export async function suggestPracticeAction(
+  templateId: string,
+  goal: string,
+  schedule: string,
+): Promise<ActionResult<{ suggestion: PracticeSuggestion | null }>> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Not signed in')
+  const template = await getPractice(templateId)
+  if (!template) return fail('Practice not found')
+  const suggestion = await personalizePractice({
+    template: {
+      title: template.title,
+      summary: template.summary,
+      body: template.body,
+      cadence: template.cadence,
+    },
+    goal,
+    schedule,
+    profileId,
+  })
+  return ok({ suggestion })
+}
+
+// Claim a template → your own private, adopted copy with the personalized content.
+// First claim rewards zaps (member-keyed idempotency, so it fires once — no farming).
+export async function claimPracticeAction(
+  templateId: string,
+  fields: { title: string; summary?: string | null; body?: string | null; cadence?: string | null },
+): Promise<ActionResult<{ id: string }>> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Not signed in')
+  if (!fields.title?.trim()) return fail('Give your practice a name')
+  const copy = await claimPractice(profileId, templateId, fields)
+  if (!copy) return fail('Could not claim this practice')
+  try {
+    const { recorded } = await recordEngagementEvent({
+      idempotencyKey: `practice_claimed:${profileId}`,
+      source: 'web',
+      eventType: 'practice.claimed',
+      actorProfileId: profileId,
+      context: { practiceId: copy.id, templateId },
+    })
+    if (recorded) await awardZapsForAction(profileId, 'practice_claim')
+  } catch {
+    // a reward failure must never block the claim
+  }
+  revalidatePath('/practices')
+  return ok({ id: copy.id })
 }
 
 // Host sets the circle's current practice (one active per circle). Authz: the
