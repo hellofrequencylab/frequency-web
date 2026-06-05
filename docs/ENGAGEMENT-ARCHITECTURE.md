@@ -75,7 +75,7 @@ Studio with two kinds of code plus an analytics view:
    series, per-code performance, and a **QR-vs-NFC medium split**, rolled up by the pure
    `lib/qr/analytics.ts`.
 
-**NFC parity (ADR-103).** Any code can be written to a physical NFC tag from the Studio via
+**NFC parity (ADR-104).** Any code can be written to a physical NFC tag from the Studio via
 the Web NFC writer (`NDEFReader`, Chrome-Android). A dynamic-link tag encodes `?m=nfc`
 (`withMedium`); the resolver forwards it to `record_qr_scan`, persisting `qr_scans.medium`
 (`'qr' | 'nfc'`, default `'qr'`) so a tag tap is attributed apart from a printed-QR scan.

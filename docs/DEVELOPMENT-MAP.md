@@ -135,7 +135,7 @@
 > (`active` toggle), or retire any member's code, with owner/target/scan context. Every code kind in the
 > Studio is now editable in the admin section. No migration.
 
-> **2026-06-05:** QR/NFC platform — **NFC parity** (ADR-103, migration `20260605120000`, issue #221).
+> **2026-06-05:** QR/NFC platform — **NFC parity** (ADR-104, migration `20260605120000`, issue #221).
 > A **Web NFC writer** (`nfc-writer.tsx`, `NDEFReader`) lets operators program a physical tag with any
 > code's URL straight from an Android phone (graceful "NFC (Android)" hint elsewhere) — on every code
 > card: dynamic links, member, marketing, and check-in nodes. **Medium attribution**: a written
