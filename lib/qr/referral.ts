@@ -8,8 +8,28 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { recordEngagementEvent } from '@/lib/engagement/events'
 import { awardZapsForAction } from '@/lib/zaps'
 import { track } from '@/lib/analytics/track'
+import { recordEntryPointConversion } from '@/lib/entry-points/ab'
 
 const REF_COOKIE = 'fq_ref'
+const VAR_COOKIE = 'fq_var'
+
+/** Attribute an A/B entry-point conversion (ADR-135) from the fq_var cookie set by the
+ *  /q resolver (`<codeId>:<variantKey>`). Best-effort; always clears the cookie. */
+export async function applyEntryPointConversion(newProfileId: string): Promise<void> {
+  const jar = await cookies()
+  const raw = jar.get(VAR_COOKIE)?.value
+  if (!raw) return
+  try {
+    const sep = raw.indexOf(':')
+    const codeId = sep > 0 ? raw.slice(0, sep) : ''
+    const variantKey = sep > 0 ? raw.slice(sep + 1) : ''
+    if (codeId && variantKey) await recordEntryPointConversion(codeId, variantKey, newProfileId)
+  } catch {
+    // attribution is a bonus, never a blocker on signup
+  } finally {
+    jar.delete(VAR_COOKIE)
+  }
+}
 
 /** Attribute `newProfileId` to the referrer in the fq_ref cookie (if any) and
  *  reward the referrer once. Best-effort: never throws, always clears the cookie. */
