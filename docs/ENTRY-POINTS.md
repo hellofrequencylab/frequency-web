@@ -174,8 +174,16 @@ separate, reviewed step).
 |---|---|---|
 | ✅ Foundation | QR engine · scan resolver · attribution · referral zaps · CRM · personas/lead flows | in repo |
 | ✅ **1 — Crew MVP** | "My Entry Points": template → branded QR + **flyer (vector SVG)** → create points → signup credit | `qr_codes` · QR render · attribution · zaps |
-| ⏳ 2 — Admin builder | Campaign builder + template library + per-campaign analytics + assign-to-crew + Puck landings | `/marketing` · Puck `pages` |
+| 🟡 **2 — Admin builder** | ✅ Campaign builder (`/marketing/funnels`) + per-campaign scans + in-place entry-point creation. ⏳ Puck landings · assign-to-crew · template curation | `/marketing` · Puck `pages` |
 | ⏳ 3 — Growth | A/B · per-persona nurture automations · leaderboards/tiers · segments | `automations` · `achievements` |
+
+### Phase 2 — what shipped
+
+- **Surface:** `/marketing/funnels` (a **Funnels** tab in the marketing workspace; admin/staff-gated by the existing `/marketing` layout). Distinct from `/marketing/campaigns` (email broadcasts).
+- **Campaigns:** `entry_campaigns` CRUD — `lib/entry-points/campaigns.ts` (reads) + `app/(main)/marketing/funnels/actions.ts` (admin-gated create/rename/archive). Each campaign shows its entry-point count + total scans.
+- **Campaign detail** (`/marketing/funnels/<id>`): rename/archive + an in-place builder that **reuses the Phase 1 `EntryForm`/`EntryRow`**, filing new entry points under the campaign (`qr_codes.campaign_id`). No duplicated UI.
+- **Threading:** `EntryPointInput.campaignId` (validated via `campaignExists`) flows through `createEntryPoint`/`updateEntryPoint`; `listEntryPointsByCampaign` powers the detail view.
+- **Still pending (2b):** Puck custom landings, assign-an-entry-point-to-a-crew-member (today the admin owns what they create), and operator template curation.
 
 ### Phase 1 — what shipped
 
