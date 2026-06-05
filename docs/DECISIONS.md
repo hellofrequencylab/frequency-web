@@ -2761,6 +2761,39 @@ flow degrades to CRM-sync only. `emailShell` gained an optional custom footer. S
 
 ---
 
+## ADR-100: Marketing pages → editor = live; `Tiers` block unblocks Pricing
+
+**Status:** Accepted · `lib/page-editor/templates/{the-community,the-quest,pricing}.ts`, `components/page-editor/blocks/collections.tsx` (`Tiers`), `lib/page-editor/{config,data}.tsx`, `app/(marketing)/{the-community,the-quest,pricing}/page.tsx`. Extends ADR-054 / ADR-055. See [PAGE-EDITOR-SPEC.md](PAGE-EDITOR-SPEC.md) §12.
+
+**Context.** The public marketing pages were bespoke-coded; the Pages editor only
+listed a subset, so "what's in the editor" drifted from "what's live." The owner
+asked for **editor = live**: every marketing content page editable from the block
+library, with its styling faithfully preserved. The splash (`/`) and `/about` stay
+code-locked (ADR-054) — their live counts / crafted rhythm aren't block-expressible.
+
+**Decision.** Port each remaining public content page (The Community, The Quest,
+Pricing) into a faithful **standardized-block template** seeded by the editor, and
+add each slug to `EDITABLE_PAGES`. Each page route renders `getPublishedData(slug)`
+through `@measured/puck/rsc` `Render` when a published doc exists, else falls back to
+the coded `Legacy<Page>`. Pricing's priced membership cards had **no** block
+equivalent, so rather than approximate them (losing prices/badges) or code-lock the
+page, we added a standardized **`Tiers`** block: per-tier price + struck price +
+cadence + note, a `Featured` highlight (lift/ring + "Most popular" ribbon), an
+optional Founder badge, a feature checklist, and a CTA — built from tokens and
+threaded through the universal `<Band>` adjust controls like every other block.
+Bespoke sections with no 1:1 block (PillarNav nav-chrome, ProductTour, timelines,
+the "free during beta" banner) are omitted or approximated with FeatureGrid /
+Statement, and all selectable icons map to the curated 16-icon set.
+
+**Consequences.** All four public content pages (The Lab, The Community, The Quest,
+Pricing) are now editor-editable; only the splash and About remain code-locked. The
+block catalog grows to 24 (`Tiers` in **Sections**). Templates are code defaults —
+nothing is written to the DB until a janitor Publishes, so opening the editor always
+shows the page rebuilt from standard sections. Faithful-but-not-pixel-identical
+approximations are documented in each template's header for reviewers.
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 
