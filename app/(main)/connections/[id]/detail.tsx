@@ -118,12 +118,12 @@ export function Detail({ initial }: { initial: ContactDetail }) {
         </div>
       </div>
 
-      {/* Details — read or edit */}
+      {/* Details — read or edit. A calm, divided panel rather than three heavy
+          boxes: one soft surface, section labels, hairline dividers between. */}
       {editing ? (
         <EditForm contact={contact} onSaved={() => { setEditing(false); refresh() }} />
       ) : (
-        <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
-          <p className="mb-3 text-sm font-semibold text-text">Details</p>
+        <Section title="Details">
           <dl className="space-y-2 text-sm">
             {contact.email && <Row icon={Mail}><a href={`mailto:${contact.email}`} className="text-primary-strong hover:underline">{contact.email}</a></Row>}
             {contact.phone && <Row icon={Phone}><a href={`tel:${contact.phone}`} className="text-text hover:underline">{contact.phone}</a></Row>}
@@ -137,15 +137,14 @@ export function Detail({ initial }: { initial: ContactDetail }) {
                 <p className="text-sm text-subtle">No contact details yet. Use Edit to add some.</p>
               )}
           </dl>
-        </div>
+        </Section>
       )}
 
       {/* Tags */}
-      <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
-        <p className="mb-3 text-sm font-semibold text-text">Tags</p>
+      <Section title="Tags">
         <div className="flex flex-wrap items-center gap-1.5">
           {tags.map((t) => (
-            <span key={t.id} className="inline-flex items-center gap-1 rounded-md bg-primary-bg px-2 py-0.5 text-xs font-medium text-primary-strong">
+            <span key={t.id} className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-2 py-0.5 text-xs font-medium text-primary-strong">
               {t.source === 'ai' && <Sparkles className="h-3 w-3" />}
               {t.tag}
               <button type="button" disabled={pending} onClick={() => start(async () => { await removeTag(contact.id, t.id); router.refresh() })} aria-label={`Remove ${t.tag}`}>
@@ -158,14 +157,13 @@ export function Detail({ initial }: { initial: ContactDetail }) {
             onChange={(e) => setTagDraft(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); onAddTag(tagDraft) } }}
             placeholder={tags.length ? 'Add…' : 'Add a tag…'}
-            className="min-w-[7rem] flex-1 rounded-md border border-transparent bg-surface-elevated px-2 py-1 text-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none"
+            className="min-w-[7rem] flex-1 rounded-lg border border-transparent bg-surface-elevated px-2 py-1 text-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none"
           />
         </div>
-      </div>
+      </Section>
 
       {/* Notes */}
-      <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
-        <p className="mb-3 text-sm font-semibold text-text">Notes</p>
+      <Section title="Notes">
         <div className="flex gap-2">
           <textarea
             value={noteDraft}
@@ -187,8 +185,8 @@ export function Detail({ initial }: { initial: ContactDetail }) {
         <ul className="mt-4 space-y-3">
           {notes.length === 0 && <li className="text-sm text-subtle">No notes yet.</li>}
           {notes.map((n) => (
-            <li key={n.id} className="group rounded-lg border border-border bg-surface-elevated/40 p-3">
-              <div className="mb-1 flex items-center gap-2 text-[11px] text-subtle">
+            <li key={n.id} className="group rounded-xl bg-surface-elevated/50 p-3">
+              <div className="mb-1 flex items-center gap-2 text-xs text-subtle">
                 {n.kind === 'connection' && <span className="rounded bg-primary-bg px-1.5 py-0.5 font-medium text-primary-strong">Connection</span>}
                 {n.kind === 'ai' && <span className="inline-flex items-center gap-1 rounded bg-surface-elevated px-1.5 py-0.5 font-medium text-muted"><Sparkles className="h-3 w-3" /> Vera</span>}
                 <span>{fmtDate(n.createdAt)}</span>
@@ -206,8 +204,19 @@ export function Detail({ initial }: { initial: ContactDetail }) {
             </li>
           ))}
         </ul>
-      </div>
+      </Section>
     </div>
+  )
+}
+
+// A calm titled section — soft surface, light label, no heavy shadow. Replaces
+// the three identical bordered+shadowed boxes the detail used to stack.
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="rounded-2xl border border-border/70 bg-surface/60 p-5">
+      <h2 className="mb-3 text-sm font-semibold tracking-tight text-text">{title}</h2>
+      {children}
+    </section>
   )
 }
 
@@ -274,8 +283,8 @@ function EditForm({ contact, onSaved }: { contact: ContactDetail['contact']; onS
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
-      <p className="mb-3 text-sm font-semibold text-text">Edit details</p>
+    <section className="rounded-2xl border border-border/70 bg-surface/60 p-5">
+      <h2 className="mb-3 text-sm font-semibold tracking-tight text-text">Edit details</h2>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Field label="Name" full><input className={input} value={f.displayName} onChange={(e) => set('displayName', e.target.value)} /></Field>
         <Field label="Title"><input className={input} value={f.title} onChange={(e) => set('title', e.target.value)} /></Field>
@@ -297,7 +306,7 @@ function EditForm({ contact, onSaved }: { contact: ContactDetail['contact']; onS
         {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
         {saving ? 'Saving…' : 'Save'}
       </button>
-    </div>
+    </section>
   )
 }
 
