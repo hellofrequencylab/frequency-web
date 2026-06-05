@@ -25,8 +25,8 @@ import { ModuleCard } from '@/components/modules/module-card'
 import { getInitials, isoDaysAgo } from '@/lib/utils'
 import { ProfileFlair } from '@/components/profile-flair'
 import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
-import { atLeastRole } from '@/lib/core/roles'
 import { ClaimCircle } from '@/components/circles/claim-circle'
+import { StaffEditButton } from '@/components/ui/staff-edit-button'
 
 type CircleDetail = {
   id: string
@@ -157,9 +157,6 @@ export default async function CirclePage({
   let isMember = false
   let isHost = false
   let isCrew = false
-  // Platform staff (admin/janitor) get a direct "Edit circle" path to the full
-  // admin editor — they manage any circle, demo ones included, without claiming.
-  let isStaff = false
 
   if (user) {
     const { data: myProfile } = await admin
@@ -173,7 +170,6 @@ export default async function CirclePage({
       isHost = circle.host?.id === myProfileId
       const role = (myProfile as { community_role: string }).community_role ?? ''
       isCrew = ['crew', 'host', 'guide', 'mentor', 'admin', 'janitor'].includes(role)
-      isStaff = atLeastRole(role as CommunityRole, 'admin')
     }
   }
 
@@ -281,14 +277,7 @@ export default async function CirclePage({
         }
         actions={
           <>
-            {isStaff && (
-              <Link
-                href={`/admin/circles?edit=${circle.id}`}
-                className="shrink-0 inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-text transition-colors hover:border-primary hover:text-primary-strong"
-              >
-                <Pencil className="h-4 w-4" /> Edit circle
-              </Link>
-            )}
+            <StaffEditButton href={`/admin/circles?edit=${circle.id}`} label="Edit circle" />
 
             {canManage && <CircleHostMenu circleId={circle.id} />}
 

@@ -39,19 +39,20 @@ export function DetailTemplate({
 }) {
   return (
     <div>
-      {/* Context header band */}
+      {/* Context header band. On mobile the actions stack BELOW the identity so the
+          title is never crushed into a truncation; from sm up they sit inline right. */}
       <header className="border-b border-border pb-4 mb-4">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-2xl font-bold text-text truncate">{title}</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-text break-words">{title}</h1>
               {badges}
             </div>
             {subtitle && (
               <div className="mt-1 text-sm text-muted">{subtitle}</div>
             )}
           </div>
-          {actions && <div className="flex items-center gap-2 shrink-0">{actions}</div>}
+          {actions && <div className="flex items-center gap-2 flex-wrap sm:shrink-0">{actions}</div>}
         </div>
 
         {/* Context tabs */}
