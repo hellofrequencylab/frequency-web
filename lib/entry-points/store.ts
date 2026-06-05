@@ -81,6 +81,18 @@ export async function countMyEntryPoints(ownerId: string): Promise<number> {
   return count ?? 0
 }
 
+/** Every entry point in a campaign (any owner) — the admin campaign view. */
+export async function listEntryPointsByCampaign(campaignId: string): Promise<EntryPoint[]> {
+  const db = createAdminClient() as unknown as SupabaseClient
+  const { data } = await db
+    .from('qr_codes')
+    .select(COLS)
+    .eq('campaign_id', campaignId)
+    .not('template_id', 'is', null)
+    .order('created_at', { ascending: false })
+  return ((data as EntryRow[] | null) ?? []).map(toEntryPoint)
+}
+
 /** One entry point by id, only if `ownerId` owns it. */
 export async function getMyEntryPoint(id: string, ownerId: string): Promise<EntryPoint | null> {
   const db = createAdminClient() as unknown as SupabaseClient
