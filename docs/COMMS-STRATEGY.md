@@ -165,9 +165,9 @@ abuse, routes gray areas to moderators. Reuses `moderation_actions` / suspension
 |---|---|---|
 | **0** 🛠️ | **Reconcile the two conflicting migrations** (see Conflicts below) + apply Phase A cleanly | The geo `feed_for_viewer` and channel-room RLS were authored before the demo-mode + messages-RLS-convergence work and **regress them as-is** — merge before apply |
 | **A** 🥇 ⏳ | Member geo + nearby-first feed + join/start onboarding | Unlocks the core promise · **DB layer shipped** (`20260604185000_member_geo_and_local_feed`) |
-| **B** | Messaging restructure (DM→1:1, group→private rooms, Channel open rooms) | Cleans the spine before AI |
-| **C** | Room AI layer (catch-up, search, Q&A, surfacing) | Depends on B |
-| **D** | Dispatch `global` tier + liveness signals + smart digest | Polish "always alive" |
+| **B** ✅ | Messaging restructure (DM→1:1, group→private rooms, Channel open rooms) | Shipped (ADR-088); migrations applied |
+| **C** | Room AI layer — **lean: semantic search first** (R7); catch-up/Q&A/surfacing later | ◑ **search shipped** — `match_room_messages` + cron embed backfill + in-room search; channel rooms now render + are searchable |
+| **D** | Dispatch `global` tier + liveness signals + smart digest | ◑ **global tier + active-now presence shipped** — staff "Everyone" broadcast; presence dots now on the directory, right-rail, AND DM inbox (shared `PresenceDot`/`isOnline`). Remaining: typing indicators · "near you now" geo counter · the smart digest |
 | **E** | Full hierarchy navigation + AI moderation hardening | Scale + governance |
 
 ## Schema touch-points
