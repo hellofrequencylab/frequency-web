@@ -120,6 +120,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     blurb: 'Generate, design, and track every code — members, links, check-ins, campaigns.',
     links: [
       { href: '/admin/qr', label: 'QR Studio', desc: 'Generate, design, and manage all QR codes.', Icon: QrCode, min: 'host' },
+      { href: '/admin/qr/stats', label: 'QR stats', desc: 'Scans, locator map, and the full QR dashboard.', Icon: Activity, min: 'host' },
     ],
   },
 ] as const

@@ -1,4 +1,5 @@
-import { QrCode } from 'lucide-react'
+import Link from 'next/link'
+import { QrCode, ChartNoAxesColumn } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { AdminPage } from '@/components/admin/admin-page'
@@ -190,6 +191,14 @@ export default async function QrStudioPage() {
       eyebrow="Platform"
       width="wide"
       description="Generate, design, and track every code — member profile codes, dynamic links, check-in codes, and campaigns. Codes are dynamic; edit or retire them without reprinting."
+      actions={
+        <Link
+          href="/admin/qr/stats"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+        >
+          <ChartNoAxesColumn className="h-3.5 w-3.5" /> View stats
+        </Link>
+      }
     >
       <QrStudioDashboard
         nodeProps={{ initialNodes, partners: partners ?? [] }}
