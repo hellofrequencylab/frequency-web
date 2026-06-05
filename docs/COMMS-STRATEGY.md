@@ -165,9 +165,9 @@ abuse, routes gray areas to moderators. Reuses `moderation_actions` / suspension
 |---|---|---|
 | **0** 🛠️ | **Reconcile the two conflicting migrations** (see Conflicts below) + apply Phase A cleanly | The geo `feed_for_viewer` and channel-room RLS were authored before the demo-mode + messages-RLS-convergence work and **regress them as-is** — merge before apply |
 | **A** 🥇 ⏳ | Member geo + nearby-first feed + join/start onboarding | Unlocks the core promise · **DB layer shipped** (`20260604185000_member_geo_and_local_feed`) |
-| **B** | Messaging restructure (DM→1:1, group→private rooms, Channel open rooms) | Cleans the spine before AI |
-| **C** | Room AI layer (catch-up, search, Q&A, surfacing) | Depends on B |
-| **D** | Dispatch `global` tier + liveness signals + smart digest | Polish "always alive" |
+| **B** ✅ | Messaging restructure (DM→1:1, group→private rooms, Channel open rooms) | Shipped (ADR-088); migrations applied |
+| **C** | Room AI layer — **lean: semantic search first** (R7); catch-up/Q&A/surfacing later | ◑ **search shipped** — `match_room_messages` + cron embed backfill + in-room search; channel rooms now render + are searchable |
+| **D** | Dispatch `global` tier + liveness signals + smart digest | ◑ **global tier + active-now presence shipped** — staff "Everyone" broadcast; presence dots now on the directory, right-rail, AND DM inbox (shared `PresenceDot`/`isOnline`). Remaining: typing indicators · "near you now" geo counter · the smart digest |
 | **E** | Full hierarchy navigation + AI moderation hardening | Scale + governance |
 
 ## Schema touch-points
@@ -208,8 +208,18 @@ work landed on main. Applying them as-is would regress live features:
   demo-mode logic (keeps `is_demo` + the demo predicate, adds geo params + `distance_m` + a `nearby`
   sort). Backward-compatible; applied + verified. **Next app step:** update the RPC type + thread the
   member's `home_lat/lng/feed_radius_m` into the feed (a `nearby` lens).
-- ⏳ **Not applied:** `channel_open_rooms`, `group_dms_to_private_rooms` — each pairs with its app
-  code per the Conflicts table + Phase B. (Migrations + app land together, not a dark schema flip.)
+- ✅ **`channel_open_rooms`** — APPLIED (verified: 8 active channels → 8 channel rooms; trigger +
+  unique index live). The RLS DROP/CREATE was verified against the live policies first — they exactly
+  matched the pre-channel versions, so the migration faithfully reproduces them + adds the
+  `visibility='channel'` read path (no reconcile/regression). Posting is gated app-side to tuned-in
+  members.
+- ✅ **`group_dms_to_private_rooms`** — APPLIED (0 group conversations existed → data no-op; the
+  `conversation_room_migration` mapping + `conversations.migrated_to_room_id` column are in place for
+  the future). Paired with the app layer below.
+- ✅ **Phase B app layer** — DMs are 1:1-only (inbox + popover filter `migrated_to_room_id IS NULL`);
+  the group-create path now creates a **private room**; channel open rooms surface in `/messages` (for
+  tuned-in channels) + a "Open room" link on the channel page; `sendRoomMessage` requires tune-in for
+  channel rooms. Follow-up: the hard 1:1 `conversations` constraint (after a verification window).
 
 ## Open guardrails / risks
 

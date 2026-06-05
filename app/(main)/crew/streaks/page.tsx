@@ -1,10 +1,10 @@
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
 import { Flame, CalendarCheck, PenTool, Mic, LogIn, Snowflake } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { getStreaksData } from '../gamification-actions'
 import { STREAK_CONFIG, isStreakActive } from '@/lib/gamification'
 import type { StreakType } from '@/lib/gamification'
+import { IndexTemplate } from '@/components/templates'
 
 const STREAK_ICONS: Record<StreakType, React.ElementType> = {
   attendance: CalendarCheck,
@@ -41,24 +41,10 @@ export default async function StreaksPage() {
   const allTypes: StreakType[] = ['attendance', 'posting', 'hosting']
 
   return (
-    <div>
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/crew"
-            className="text-sm text-subtle hover:text-muted dark:hover:text-subtle transition-colors"
-          >
-            Crew
-          </Link>
-          <span className="text-subtle">/</span>
-          <h1 className="text-2xl font-bold text-text">Streaks</h1>
-        </div>
-        <p className="text-sm text-muted mt-1">
-          Build momentum by showing up consistently. Maintain streaks to earn bonus achievements and freeze tokens.
-        </p>
-      </div>
-
+    <IndexTemplate
+      title="Streaks"
+      description="Build momentum by showing up consistently. Maintain streaks to earn bonus achievements and freeze tokens."
+    >
       {/* Streak cards */}
       <div className="space-y-4">
         {allTypes.map(type => {
@@ -74,7 +60,7 @@ export default async function StreaksPage() {
           return (
             <div
               key={type}
-              className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden"
+              className="rounded-2xl bg-surface-elevated/60"
             >
               <div className="p-5">
                 <div className="flex items-start gap-4">
@@ -138,7 +124,7 @@ export default async function StreaksPage() {
                         <div key={m} className="flex flex-col items-center gap-1 flex-1">
                           <div className={`w-full h-1.5 rounded-full ${
                             reached
-                              ? 'bg-gradient-to-r from-amber-400 to-primary'
+                              ? 'bg-primary'
                               : 'bg-surface-elevated'
                           }`} />
                           <span className={`text-xs font-semibold ${
@@ -167,7 +153,7 @@ export default async function StreaksPage() {
       </div>
 
       {/* Streak freeze explanation */}
-      <div className="mt-8 rounded-2xl border border-signal-bg bg-signal-bg/50 p-4">
+      <div className="mt-8 rounded-2xl bg-signal-bg/40 p-4">
         <div className="flex items-start gap-3">
           <Snowflake className="w-5 h-5 text-signal-strong shrink-0 mt-0.5" />
           <div>
@@ -180,6 +166,6 @@ export default async function StreaksPage() {
           </div>
         </div>
       </div>
-    </div>
+    </IndexTemplate>
   )
 }

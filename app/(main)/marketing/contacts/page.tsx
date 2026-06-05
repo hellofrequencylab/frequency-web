@@ -1,6 +1,10 @@
 import Link from 'next/link'
 import { listContacts, type ContactRow } from '@/lib/studio/contacts'
 import { setContactConsent } from './actions'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { ScanInviteToggle } from './scan-invite-toggle'
+import { DashboardTemplate } from '@/components/templates'
+import { EmptyState } from '@/components/ui/empty-state'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,16 +43,26 @@ export default async function ContactsPage({
   const all = await listContacts(1000)
   const contacts = applyFilter(all, filter)
 
+  const { data: flagRow } = await createAdminClient()
+    .from('platform_flags')
+    .select('value')
+    .eq('key', 'scan_invite_email_enabled')
+    .maybeSingle()
+  const scanInviteOn = flagRow?.value ?? false
+
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-text mb-1">Contacts</h1>
-      <p className="text-sm text-muted leading-relaxed max-w-2xl mb-5">
-        The unified CRM record for leads, customers, and members. Email is the join
-        key; members auto-link on signup.
-      </p>
+    <DashboardTemplate
+      eyebrow="Marketing"
+      title="Contacts"
+      description="The unified CRM record for leads, customers, and members. Email is the join key; members auto-link on signup."
+      width="wide"
+    >
+      <div className="max-w-md">
+        <ScanInviteToggle enabled={scanInviteOn} />
+      </div>
 
       {/* Filter tabs */}
-      <div className="flex gap-1 border-b border-border mb-5">
+      <div className="flex gap-1 border-b border-border">
         {FILTERS.map((f) => {
           const active = filter === f.key
           const count = applyFilter(all, f.key).length
@@ -68,9 +82,10 @@ export default async function ContactsPage({
       </div>
 
       {contacts.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border bg-surface/60 px-4 py-10 text-center">
-          <p className="text-sm text-muted">No contacts in this view.</p>
-        </div>
+        <EmptyState
+          title="No contacts in this view."
+          description="Try a different filter, or contacts will appear here as they arrive."
+        />
       ) : (
         <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-x-auto">
           <table className="w-full text-sm">
@@ -123,6 +138,6 @@ export default async function ContactsPage({
           </table>
         </div>
       )}
-    </div>
+    </DashboardTemplate>
   )
 }

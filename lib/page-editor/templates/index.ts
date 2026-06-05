@@ -1,6 +1,9 @@
 import type { Data } from '@measured/puck'
 import { config } from '@/lib/page-editor/config'
 import { data as theLab } from './the-lab'
+import { data as theCommunity } from './the-community'
+import { data as theQuest } from './the-quest'
+import { data as pricing } from './pricing'
 import { data as howItWorks } from './how-it-works'
 import { data as about } from './about'
 
@@ -12,6 +15,9 @@ import { data as about } from './about'
 
 const TEMPLATES: Record<string, Data> = {
   'the-lab': theLab,
+  'the-community': theCommunity,
+  'the-quest': theQuest,
+  pricing,
   'how-it-works': howItWorks,
   about,
 }

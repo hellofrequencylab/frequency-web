@@ -28,6 +28,9 @@ import {
   Users,
   Shield,
   QrCode,
+  Power,
+  Rocket,
+  Send,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
@@ -63,6 +66,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
       { href: '/admin/channels', label: 'Channels', desc: 'Interest and event channels.', Icon: Radio, min: 'host' },
       { href: '/admin/events', label: 'Events', desc: 'Gatherings across your circles.', Icon: CalendarDays, min: 'host' },
       { href: '/admin/dispatches', label: 'Broadcasts', desc: 'Posts and polls to your people.', Icon: Megaphone, min: 'host' },
+      { href: '/outreach', label: 'Outreach', desc: 'Reach out to locals and prospects.', Icon: Send, min: 'host' },
       { href: '/admin/crew-tasks', label: 'Crew tasks', desc: 'Define and verify member tasks.', Icon: ClipboardList, min: 'host' },
       { href: '/admin/gamification', label: 'Gamification', desc: 'Achievements, seasons, rewards.', Icon: Trophy, min: 'host' },
       { href: '/admin/qr', label: 'QR Studio', desc: 'Create and manage scannable check-in codes.', Icon: QrCode, min: 'host' },
@@ -96,6 +100,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     blurb: 'Tune the AI guide and see what she could not answer.',
     links: [
       { href: '/admin/vera', label: 'Vera config', desc: 'Voice, responses, and induction copy.', Icon: Bot, min: 'janitor' },
+      { href: '/admin/beta-sequences', label: 'Beta sequences', desc: 'Audience-targeted induction splash pages + cohort tags.', Icon: Rocket, min: 'janitor' },
       { href: '/admin/help-gaps', label: 'Help gaps', desc: 'Questions Vera deflected — the to-write list.', Icon: HelpCircle, min: 'janitor' },
     ],
   },
@@ -106,6 +111,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     links: [
       { href: '/admin/members', label: 'Members', desc: 'Roster, subscribers, and accounts.', Icon: Users, min: 'janitor' },
       { href: '/admin/roles', label: 'Roles', desc: 'Assign roles and the permission grid.', Icon: Shield, min: 'janitor' },
+      { href: '/admin/ai', label: 'AI controls', desc: 'Turn AI on or off platform-wide; usage and audit.', Icon: Power, min: 'janitor' },
       { href: '/admin/demo', label: 'Demo Studio', desc: 'Generate, manage, and purge seeded demo content.', Icon: Sparkles, min: 'janitor' },
     ],
   },

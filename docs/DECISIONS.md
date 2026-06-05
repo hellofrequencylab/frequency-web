@@ -2149,6 +2149,20 @@ rasterizer is added (logged as a follow-up). Phases 3–4 (per-member codes, cha
 the styler for free.
 
 ---
+## ADR-090: Page-template kit completed — five shells, one `PageHeading`, declarative rail chrome
+
+**Status:** Accepted · 2026-06-05 · `components/templates/` (`page-heading`, `focus-template`, `dashboard-template`, `index.ts` barrel + refactored `index`/`stream`), `lib/layout/page-chrome.ts` (+ `.test.ts`), `components/layout/app-shell.tsx`
+
+**Context:** The page framework (this doc) defined three templates (Stream / Index / Detail) and an informal "Focus mode," but a design-team audit of every interior `(main)` page found it **half-adopted**: ~40 of ~75 pages hand-rolled their header, "Focus" was a hardcoded `pathname` list inside `app-shell.tsx` (so ~9 compose/edit/operator pages wrongly carried the global rail and crowded their content), and operator workspaces (Marketing/CRM/Crew) re-implemented stat tiles with no shared shell. The drift kept re-accruing because the system had gaps, not because the language was wrong.
+
+**Decision:** Finish the kit so a page is *two lines of decision — pick a template, register a rail*:
+- Promote **Focus** and **Dashboard** to real templates alongside Stream/Index/Detail; route all five through one `PageHeading` grammar (same type scale, eyebrow, description, action slot). `DashboardTemplate` is the no-rail operator sibling of `<AdminPage>`.
+- Make the rail **declarative**: `lib/layout/page-chrome.ts` exports `railFor(pathname) → 'global' | 'scoped' | 'none'`; the shell shows the global rail iff `=== 'global'`. The old `SCOPED_SECTIONS` + `showSidebar` conditionals are gone. Reframing a route is a one-line edit there (locked by `page-chrome.test.ts`), never a shell edit.
+- Export everything from a `@/components/templates` barrel; codify the decision tree in PAGE-FRAMEWORK §8 and the guardrail in `AGENTS.md`.
+
+**Consequences:** Adopting `FocusTemplate` simultaneously fixed the wrong-rail bug on `/events/new`, `/practices/*/edit`, `/upgrade`, `/crm`, `/outreach`, `/codes`, `/connections/*`, `/g/*`, `/n/*` (one config, nine pages). Interior pages now become *assembly, not authoring*; remaining work is mechanical adoption tracked in [REDESIGN-INAPP.md](REDESIGN-INAPP.md). No data-fetching or capability gating changed — this is presentational chrome + a rail map only.
+
+---
 ## ADR-089: Dynamic QR links as a first-class `qr_codes` entity (the "Both" model)
 
 **Status:** Accepted · 2026-06-05 · migration `20260605010000_qr_codes_dynamic_links` (applied to prod), `app/q/[slug]/`, `app/(main)/admin/qr/` (Dynamic links + Analytics tabs), `lib/qr/{codes,analytics}.ts`
@@ -2501,6 +2515,296 @@ journey writes go through the untyped admin handle (repo convention,
 `lib/journey-plans.ts`). Large "thriving" seeds still make hundreds of sequential
 inserts (the ID-capturing loops); the heavy engagement rows are batch-inserted, but
 a background job remains the path for very large areas (carried from ADR-091).
+
+---
+
+## ADR-094: Beta induction sequences — one template, audience-targeted copy, cohort tags
+
+**Decision.** The beta induction (ADR-068) becomes **audience-parameterized** rather
+than one-size-fits-all. A *sequence* (`lib/onboarding/beta-sequences.ts`) bundles a
+public **splash** (`/beta/<slug>`) with the induction's **voiced copy** (Vera's HOT
+register) and a **marketing tag**. Three ship at launch: `early-adopter` (the
+original — followers from Daniel's video), `personal` (Daniel's hand-invites into
+"the dream"), and `founding-partner` (collaborators + businesses, "Founder energy").
+The induction template already accepted a `copy` override, so a sequence just *feeds*
+it — no rewrite. The splash CTA carries the audience via `?seq=`; a 30-day
+`fq_beta_seq` cookie keeps it across the deferred sign-in round-trip; on completion
+`writeBetaInduction` records `meta.beta.sequence` and stamps the cohort's marketing
+tag. A janitor-only **splash-page creator** at `/admin/beta-sequences` lists +
+previews every sequence (copy, the tag, and the shareable link).
+
+**Why.** Same product, very different doorways: a stranger from a video, a personal
+friend, and a prospective business partner each need a different first sentence to
+feel *spoken to*. One induction engine with swappable copy keeps the cinematic flow
+DRY while letting the voice change per audience. Tagging at the door means the
+founding cohort stays **segmentable by entry path forever** — even after the beta
+flow itself is deleted at launch (the tags are durable; the sequences are not).
+
+**Mechanics.** `typeof VERA` is all readonly string *literals*, which rejects any
+different wording, so a widened `VeraCopy` type (same shape, `string` leaves) is the
+contract for sequence/operator copy. Marketing tags are governed: they're declared
+in the trait registry (`lib/traits/registry.ts`) as snake_case keys
+(`beta_early_adopter`, `beta_personal`, `beta_founding_partner`) — `assignTag`
+refuses unregistered keys, so a typo can't create an orphan tag. Tagging is
+best-effort and never blocks onboarding. Operator copy overrides from `/admin/vera`
+still apply to the **default** (early-adopter) sequence — that's what they were
+authored against; the other sequences use their own copy.
+
+**Consequences.** Sequence copy lives in code (reviewed in PRs), not yet a DB-backed
+editable layer — the creator page is read/preview for v1; an editable override
+(vera_config pattern) is the noted follow-on. The whole module is TEMPORARY by
+design and deleted at public launch, leaving only the durable cohort tags behind.
+
+---
+
+## ADR-095: Acquisition attribution — first-touch capture at the edge, governed source tags
+
+**Decision.** Capture **how every visitor first reached us** and persist it on the
+member/lead, following marketing best practice: **capture-on-arrival, first-touch
+primary, never overwrite.** A new `lib/attribution/` module owns one channel
+taxonomy (`donor`, `referral`, `qr_scan`, `event_guest`, `video`, `social`,
+`search`, `email`, `organic`, `direct`). The **edge proxy** (`proxy.ts`) writes an
+immutable `fq_attr` first-touch cookie on an anonymous visitor's first request —
+utm_* params, `gclid`/`fbclid`, referrer, landing path, timestamp — plus an
+`fq_src` channel hint on the person-driven entry routes (`/join`, `/events`; the
+`/q` resolver sets `qr_scan`). At member/lead creation `resolveAcquisition()` folds
+the cookies into one canonical record; the **first-touch channel** becomes the
+governed tag `source_<channel>` (`lib/traits/registry.ts`) and the full record
+(first-touch detail + converting/last-touch channel + signals like the referrer
+profile id and beta sequence) is written to `profiles.meta.acquisition` /
+`contacts.meta.acquisition`.
+
+**Why.** Attribution that's collected at signup-time has already lost the truth —
+the campaign and referrer that brought someone are only knowable on their *first*
+request, and they must survive the whole sign-in round-trip. Capturing at the edge
+into an immutable cookie is the standard fix. **First-touch primary** credits the
+founding cohort's true origin (the choice for this stage); last-touch is still kept
+for multi-touch analysis. Modeling the channel as a governed `source_*` **tag**
+(one boolean per channel, exactly like the `beta_*` cohort tags) makes every origin
+instantly segmentable in `/admin/segments` with zero new query code, while the rich
+utm/referrer detail rides `meta` where free-form JSON belongs.
+
+**No migration.** It rides existing surfaces only — `member_tags` (governed tags),
+`profiles.meta`, `contacts.meta` — so it sidesteps the type-regen / migration-drift
+issue entirely. Tags are validated against the registry (`assignTag` refuses
+unregistered keys), keys are snake_case (`source_qr_scan` mirrors `channelTag()`),
+and all writes are best-effort — attribution never blocks signup.
+
+**Scope.** `donor` and `event_guest` are **plumbing only** for now: the channels +
+resolver are wired so they attribute the moment those flows exist; `event_guest` is
+already set on anonymous event-page visits, but no donations product or guest-RSVP
+flow is built yet. Channel derivation is pure + unit-tested
+(`lib/attribution/channels.test.ts`). A **backfill** (`lib/attribution/backfill.ts`)
+infers a source for pre-capture members from `referred_by_profile_id` +
+`meta.beta.{heard_about,sequence}` (idempotent; honest — uninferable members stay
+untagged, not mislabeled `direct`); a **rollup** (`lib/attribution/rollup.ts`) groups
+the `source_*` tags into the channel-mix view on `/admin/intel` with a one-click
+backfill button. Both are migration-free reads/writes over `member_tags` + `meta`.
+
+---
+
+## ADR-096: Member authoring — practices editor + Journeys builder, personal-free / library-paid
+
+**Decision.** Members can **author**, not just consume. Two halves:
+
+- **Practices editor (free).** A member can fully edit a practice they **created**
+  (name, summary, description, full markdown guide, cadence, pillar, category, icon,
+  header image) at `/practices/<id>/edit`. To change a library practice they don't
+  own, the library offers **"Customize"** — `forkPractice()` makes a **private copy**
+  they own (`is_public=false`) and opens the editor on it. Quick-create then routes
+  straight into the editor ("add a basic practice, then modify it"). **Rewards
+  (`reward_zaps`/`reward_note`) are NOT member-editable** — the economy stays
+  admin-governed; that's the "partial flexibility" line.
+
+- **Journeys builder (personal-free / publish-paid).** The Journeys editing suite
+  lets a member assemble a path of practices with **per-item cadence + note**
+  overrides, reorder, and edit the plan's title/summary/cover. Building and using a
+  **personal** journey (private/unlisted) is **free**; the **public library /
+  marketplace is the Crew (paid) surface** — publishing a journey, and adopting or
+  forking someone else's public journey, require Crew. (Closes the loophole where a
+  free member could fork-then-adopt around a paywalled adopt.) Per-item cadence adds
+  one additive column, `journey_plan_items.cadence` (null = the practice's default).
+
+**Why.** "A way to turn the people near you into community" wants members shaping
+the practice content, not just admins. Editing **your own** + **fork-to-customize**
+gives real flexibility while protecting the shared library (you never mutate a
+practice others adopted). Gating on **the library, both sides** (publish + consume)
+is the coherent monetization the owner chose — "paid = the library" — and matches
+the ADR-084 economy (Crew is the paid tier; free in Beta via `BETA_MEMBERS_GET_CREW`).
+Keeping rewards out of the member editor protects economy integrity (ADR-037/084).
+
+**Mechanics.** All writes go through the service-role lib behind app-code authz
+(`created_by`/`author_id` ownership), the repo convention for the untyped
+practices/journey tables. The Crew check reuses the role ladder (`atLeastRole`,
+`lib/core/roles.ts`); the paywall surfaces via the existing CrewGate pattern.
+Per-item cadence is the only schema change (additive column, applied via MCP);
+everything else rides existing tables.
+
+**Consequences.** A markdown textarea (not a WYSIWYG) for practice bodies in v1 —
+the Puck block editor is heavier than a personal practice guide needs; can upgrade
+later. Forked practices are private by default; a "share my practice to the library"
+(publish a member practice) is a follow-on. Backlog **S7** (uniform right rail on
+every interior page) will give these new editor/detail routes the standard shell.
+
+---
+
+## ADR-098: Profile Creator — a new owner-scoped intake entity (`network_contacts`)
+
+**Status:** Accepted · `supabase/migrations/20260606000000_network_contacts.sql`, `lib/connections/*`, `app/(main)/connections/*`, `lib/ai/connections-ai.ts`. See [NETWORK-CRM.md](NETWORK-CRM.md). AI kill-switch operator surface (addendum): `supabase/migrations/20260606010000_platform_flag_events.sql`, `app/(main)/admin/ai/*`, [AI-CONTROLS.md](AI-CONTROLS.md).
+
+**Context.** Stewards wanted to capture people they meet — snap a business card or
+poster, harvest the details, cut out a profile photo, draft a connection note + tags
+— with manual entry + Vera assist as the fallback, and a system built for *many
+sources* with *routing/sorting*. Critically: **personal captures must not bleed into
+public data.** Neither existing table fits. `profiles` is real members with PUBLIC
+read (a scanned lead isn't a member; public read = leak). `contacts` is the
+marketing list (consent + campaigns, service-role, no ownership/privacy axis).
+
+**Decision.** A new entity, `network_contacts` (+ `network_contact_notes`,
+`network_contact_tags`), deliberately separate from both. `owner_id` is the privacy
+primitive; `visibility` (`private` → `shared` → `network`) gates promotion; `source`
+(`card_scan`/`poster`/`manual`/`import`) and `status` carry the routing/sorting.
+Photos & original scans live in a **private** Storage bucket (`network-contacts`,
+`public=false`) served only via short-lived signed URLs — never the public
+avatars/posts buckets. RLS: owner CRUD on own rows; only `visibility='network'` rows
+are readable beyond the owner; notes/tags inherit the parent's ownership. The tool
+is gated to stewards (host+) **or** Studio staff (`team_members`), but every record
+stays owner-scoped regardless. AI harvest goes through the existing kernel
+(`getAnthropic`, kill switch, per-feature budget caps, usage ledger) and **degrades
+to plain manual entry** when AI is off or a call fails — the product never depends on
+the model being up (mirrors `lib/studio/winback.ts`).
+
+**Model tiering.** Per the cost doctrine (`lib/ai/models.ts`, AI-STRATEGY), the
+*vision* OCR of a card runs on **Sonnet** (`connection-scan`, cap $3/day) and the
+*text-only* Vera assist on **Haiku** (`connection-assist`, cap $1/day) — not Opus on
+every scan, which would blow the budget governance. The model returns a structured
+payload via a forced tool call (`save_contact`), including a normalized face
+bounding-box; the client crops the photo on a `<canvas>` (no server image lib /
+new dependency). All model output is re-validated by `coerceExtraction()` before it
+touches the form — never trusted raw.
+
+**AI kill-switch addendum.** The platform-wide AI switch (`platform_flags.ai_enabled`)
+becomes operable from the Janitor menu (`/admin/ai`) instead of SQL-only, with a new
+append-only `platform_flag_events` audit table (who/when/old→new). The page also
+surfaces per-feature daily spend from `ai_usage`. A mobile `+` quick-add (stewards/
+staff) jumps straight to `/connections/new`.
+
+**Consequences.** New tables aren't in `database.types` yet, so the store talks to
+them through the untyped admin handle (repo convention, cf. `lib/studio/contacts.ts`)
+— regenerate types after applying. Promotion *into* public/network surfaces
+(`linked_profile_id` / `linked_contact_id`) is scaffolded in the schema but kept a
+deliberate, owner-initiated act behind its own review — that's where leak risk
+concentrates. A scanned card's base64 is passed to Sonnet via the private-bucket
+download; the temp scan is deleted after extraction (we keep only the cropped
+avatar). Adds a Steward rail item (`/connections`, "Profiles").
+
+---
+
+## ADR-097: Left-nav IA refresh — two member worlds (Community + The Quest) + Steward/Platform
+
+**Decision.** Collapse the member rail from five groups (Community · Practice ·
+Connect · The Quest) into **two worlds**, and fold the four axis-grouped admin
+sections into **two** (Steward + Platform). Driven by an owner screenshot review;
+edits `lib/nav-areas.ts` (the single source of truth shared with the permission grid).
+
+- **Community** (belong & gather): **Broadcast** (the local-happenings board, leads
+  the group) · Channels · Circles · Events · Messages · Directory.
+- **The Quest** (the game + practice, one integrated world): **Dashboard** ·
+  Practices · Journeys · **Programs** · **Store**. Crew-gated items (Dashboard,
+  Store) preview for non-crew → full at crew.
+- **Steward** (host+ / staff axis): Overview · CRM · Marketing · Hubs & Nexuses.
+- **Platform** (janitor): Insights · Vera · Members · Pages.
+- **Friends** moves out of the rail to a **top-right header icon** (it already lived
+  in the account dropdown). **Outreach** drops as a standalone rail item and is
+  surfaced inside the admin **Overview** launchpad. Steward + Platform telescope
+  (hidden unless reachable); the two member worlds mute/preview as before.
+
+**Naming decisions (owner-delegated).** **Programs** belongs in **The Quest** (it's
+the same family as Journeys/Practices — leader-run curricula + a shared library, not
+a separate "Practice" world). The Quest spend surface is **"Store"** (the in-game
+economy + Vault); the future real-money merch e-commerce gets the distinct name
+**"Shop"** — reserving the cleaner word for the surface that takes real money avoids
+confusing play-currency with cash. ("Outfitters" was floated as on-theme flavor;
+"Store" wins on clarity.)
+
+**Why.** The five-group rail over-fragmented a small set of destinations; "Practice"
+and "Connect" each held 2–3 items that read better merged. Practice IS the Quest
+(the WAM loop feeds the game), so one world removes a false boundary. Folding
+Structure/Studio into Steward matches how a steward actually works (community +
+business in one place); operator-only tools stay isolated under Platform. This
+supersedes the 5-world nav notes in ADR-089/ADR-095.
+
+**Consequences.** Deeper follow-ons are logged, not done here: Broadcast as a true
+local-happenings **dashboard** (the route exists; its content is the next step), the
+real-money **Shop** e-commerce build, and fully weaving Outreach **content** into the
+Overview page (only the nav entry moved). `nav-icons.ts` already had every key. No
+schema change; per-area permission overrides for the dropped `friends`/`outreach`
+keys simply no longer apply.
+
+---
+
+## ADR-099: Scan-to-invite — shared-CRM lead, one-time intro email, referral credit
+
+**Status:** Accepted · `supabase/migrations/20260606020000_scan_invite.sql`, `lib/connections/{crm-sync,invite,lead-unsub}.ts`, `lib/email.ts` (`sendScanIntroEmail`), `app/u/scan/route.ts`. Extends ADR-098. See [NETWORK-CRM.md](NETWORK-CRM.md).
+
+**Context.** A scanned personal contact (`network_contacts`) should join the shared
+Studio CRM, get a single intro/invite, and credit the steward when the person joins
+— **without** an unlawful blast to people who never opted in.
+
+**Decision.** On save (email present), upsert the lead into `contacts` with
+`source='scan_invite'`, `consent_state='unknown'` — added but **never
+auto-subscribed** (no marketing until they opt in). Link it via
+`network_contacts.linked_contact_id`. Optionally (a per-scan checkbox) send **one**
+transactional intro from the steward, gated behind the operator flag
+`scan_invite_email_enabled` (**default off**). The email's join CTA is the steward's
+own **referral** QR link (`/q/<slug>`, ADR-091): an anonymous click drops `fq_ref`,
+and signup runs the existing `applyReferralAttribution` → `awardZapsForAction(ref,
+'invite_accepted')`. So **points-on-join is automatic with zero new economy code.**
+
+**Legal posture.** The intro is a single, person-initiated introduction (the steward
+met them) — not bulk marketing. It carries a working one-click unsubscribe
+(`/u/scan`, HMAC over `contacts.id` → `consent_state='unsubscribed'`, RFC 8058
+headers), a non-member footer (doesn't claim membership), and an optional
+`COMPANY_POSTAL_ADDRESS` for CAN-SPAM. `invited_at` guards against re-sends;
+suppressed/unsubscribed addresses are never re-mailed.
+
+**Consequences.** Live sending needs `RESEND_API_KEY` + the operator flag on
+(toggle on Marketing → Contacts, audited in `platform_flag_events`); otherwise the
+flow degrades to CRM-sync only. `emailShell` gained an optional custom footer. Set
+`COMPANY_POSTAL_ADDRESS` for full CAN-SPAM compliance on the intro.
+
+---
+
+## ADR-100: Marketing pages → editor = live; `Tiers` block unblocks Pricing
+
+**Status:** Accepted · `lib/page-editor/templates/{the-community,the-quest,pricing}.ts`, `components/page-editor/blocks/collections.tsx` (`Tiers`), `lib/page-editor/{config,data}.tsx`, `app/(marketing)/{the-community,the-quest,pricing}/page.tsx`. Extends ADR-054 / ADR-055. See [PAGE-EDITOR-SPEC.md](PAGE-EDITOR-SPEC.md) §12.
+
+**Context.** The public marketing pages were bespoke-coded; the Pages editor only
+listed a subset, so "what's in the editor" drifted from "what's live." The owner
+asked for **editor = live**: every marketing content page editable from the block
+library, with its styling faithfully preserved. The splash (`/`) and `/about` stay
+code-locked (ADR-054) — their live counts / crafted rhythm aren't block-expressible.
+
+**Decision.** Port each remaining public content page (The Community, The Quest,
+Pricing) into a faithful **standardized-block template** seeded by the editor, and
+add each slug to `EDITABLE_PAGES`. Each page route renders `getPublishedData(slug)`
+through `@measured/puck/rsc` `Render` when a published doc exists, else falls back to
+the coded `Legacy<Page>`. Pricing's priced membership cards had **no** block
+equivalent, so rather than approximate them (losing prices/badges) or code-lock the
+page, we added a standardized **`Tiers`** block: per-tier price + struck price +
+cadence + note, a `Featured` highlight (lift/ring + "Most popular" ribbon), an
+optional Founder badge, a feature checklist, and a CTA — built from tokens and
+threaded through the universal `<Band>` adjust controls like every other block.
+Bespoke sections with no 1:1 block (PillarNav nav-chrome, ProductTour, timelines,
+the "free during beta" banner) are omitted or approximated with FeatureGrid /
+Statement, and all selectable icons map to the curated 16-icon set.
+
+**Consequences.** All four public content pages (The Lab, The Community, The Quest,
+Pricing) are now editor-editable; only the splash and About remain code-locked. The
+block catalog grows to 24 (`Tiers` in **Sections**). Templates are code defaults —
+nothing is written to the DB until a janitor Publishes, so opening the editor always
+shows the page rebuilt from standard sections. Faithful-but-not-pixel-identical
+approximations are documented in each template's header for reviewers.
 
 ---
 

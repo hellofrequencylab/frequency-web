@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { ExternalLink, Pencil } from 'lucide-react'
 import { getJanitor } from '@/lib/page-editor/guard'
 import { EDITABLE_PAGES, listPages } from '@/lib/page-editor/data'
+import { IndexTemplate } from '@/components/templates'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,14 +22,10 @@ export default async function PagesDirectory() {
   const pages = await listPages()
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-text mb-1">Pages</h1>
-      <p className="text-sm text-muted leading-relaxed max-w-2xl mb-6">
-        Visually edit the public marketing pages — drag sections, edit text, swap
-        images. Changes go live when you hit Publish. The member app isn&apos;t
-        affected.
-      </p>
-
+    <IndexTemplate
+      title="Pages"
+      description="Visually edit the public marketing pages — drag sections, edit text, swap images. Changes go live when you hit Publish. The member app isn't affected."
+    >
       <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-x-auto max-w-3xl">
         <table className="w-full text-sm">
           <thead>
@@ -78,6 +75,6 @@ export default async function PagesDirectory() {
           </tbody>
         </table>
       </div>
-    </div>
+    </IndexTemplate>
   )
 }

@@ -18,6 +18,8 @@ import {
   BellRing,
   SlidersHorizontal,
   UserPlus,
+  Camera,
+  Users,
   Menu,
   X,
   Gem,
@@ -43,7 +45,9 @@ import { PrimaryNav } from '@/components/layout/primary-nav'
 import { BrandMark } from '@/components/layout/brand-mark'
 import { AREA_ICONS } from '@/components/layout/nav-icons'
 import { UpgradeCrew } from '@/components/layout/upgrade-crew'
+import { DemoToggle } from '@/components/layout/demo-toggle'
 import { DockRevealProvider, useDockRevealed, useHoverScrollReveal } from '@/components/sidebar/dock-reveal'
+import { railFor } from '@/lib/layout/page-chrome'
 
 // The sidebar + community bar are built from NAV_AREAS (lib/nav-areas.ts — the
 // single source of truth shared with the permission grid). The whole menu is
@@ -88,19 +92,18 @@ function buildSections(areas: typeof NAV_AREAS[number][]): NavSectionGroup[] {
   return sections
 }
 
-// One vertical rail holds every destination: Feed + Messages (the home anchors,
-// pinned top), then the three pillars — Community, The Quest, Network — and
-// finally Manage (admin), grouped by section. Sections and their order are
-// derived entirely from NAV_AREAS (no hardcoded section list). The desktop rail
-// and the mobile drawer render the same set.
+// One vertical rail holds every destination: Feed (home anchor, pinned top), then
+// the two worlds — Community and The Quest — and finally Manage (Steward + Platform),
+// grouped by section. Sections and their order are derived entirely from NAV_AREAS
+// (no hardcoded section list). The desktop rail and mobile drawer render the same set.
 const NAV_SECTIONS = buildSections([...NAV_AREAS])
 
-// The Manage area's axis-grouped sections (IA redesign). These TELESCOPE: an item
-// the viewer can't reach is hidden (not muted), and a group with nothing reachable
-// is skipped entirely (header included) — so a member never sees empty admin
-// headers and a host isn't shown greyed-out janitor tools. Member worlds (Community,
-// Practice, Connect, The Quest) still mute/preview instead, as aspirational surfaces.
-const TELESCOPE_SECTIONS = new Set(['Steward', 'Structure', 'Studio', 'Platform'])
+// The Manage sections TELESCOPE: an item the viewer can't reach is hidden (not
+// muted), and a group with nothing reachable is skipped entirely (header included)
+// — so a member never sees empty admin headers and a host isn't shown greyed-out
+// janitor tools. Member worlds (Community, The Quest) still mute/preview instead,
+// as aspirational surfaces.
+const TELESCOPE_SECTIONS = new Set(['Steward', 'Platform'])
 
 // The effective access for an area = a janitor's per-area override, if any,
 // else the code default. `role` is the viewer's community role (null = visitor).
@@ -761,6 +764,8 @@ export default function AppShell({
   hideAppNav = false,
   permissions,
   staffRole = null,
+  demoMode = false,
+  demoHidden = false,
 }: {
   profile: Profile
   /** True DB role, ignoring any view-as override. Defaults to the (effective)
@@ -780,6 +785,10 @@ export default function AppShell({
   permissions?: Record<string, NavAccess>
   /** Viewer's staff role (team_members axis); unlocks Studio. Null under view-as. */
   staffRole?: StaffRole | null
+  /** Global demo_mode is on (seeded beta content exists) → show the Beta toggle. */
+  demoMode?: boolean
+  /** This viewer has hidden beta content for themselves (drives the toggle state). */
+  demoHidden?: boolean
 }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -787,6 +796,9 @@ export default function AppShell({
   const effectiveRealRole = realRole ?? role
   // Nav gating role: a visitor preview gates as a logged-out visitor (null).
   const gateRole: CommunityRole | null = previewVisitor ? null : role
+  // Stewards (host+) and Studio staff get a mobile quick-add for the Profile
+  // Creator — tap to scan a card / add a profile on the go (ADR-096).
+  const canCreateProfile = meetsAccess('host', gateRole) || meetsStaff({ staffAccess: 'analyst' }, staffRole)
   const profileHref = `/people/${profile.handle}`
   const { theme, setTheme } = useTheme()
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -825,31 +837,13 @@ export default function AppShell({
     return pathname === href || pathname.startsWith(href + '/')
   }
 
-  // Scope-aware rail (PAGE-FRAMEWORK §4): the GLOBAL rail shows on global/index
-  // pages. Entity DETAIL pages render their own scope-scoped rail in the page body
-  // (members/events for that circle, etc.), so the global rail is suppressed there
-  // to avoid the double-sidebar trap. A detail route = one path segment past the
-  // section (e.g. /circles/<slug>, /people/<handle>, /channels/<id>), while the
-  // index (/circles) keeps the global rail.
-  // Only sections whose detail page renders its own scoped right column.
-  // Circle + channel detail render their own scope-scoped rail in the page body,
-  // so the global rail is suppressed there. Profiles now use the standard global
-  // rail (the person's own gamification lives in their header), so /people/ is
-  // intentionally NOT in this list.
-  const SCOPED_SECTIONS = ['/circles/', '/channels/']
-  const isEntityDetail = SCOPED_SECTIONS.some(
-    (s) => pathname.startsWith(s) && pathname.slice(s.length).length > 0,
-  )
-
-  // Hide right sidebar only where it would crowd or distract:
-  // /settings (narrow focused forms); /messages/<id> (chat needs full width);
-  // /marketing (a wide workspace with its own tab bar); entity detail pages.
-  const showSidebar =
-    !!sidebar &&
-    !pathname.startsWith('/settings') &&
-    !pathname.startsWith('/marketing') &&
-    !(pathname.startsWith('/messages/') && pathname !== '/messages') &&
-    !isEntityDetail
+  // Scope-aware rail (PAGE-FRAMEWORK §3/§4): which rail (if any) frames the page
+  // is decided by ONE declarative map — lib/layout/page-chrome.ts — not by a list
+  // hand-maintained here. The GLOBAL rail shows on 'global' pages; it is suppressed
+  // for 'scoped' entity-detail pages (they render their own scope rail in-body, no
+  // double-rail trap) and for 'none' Focus pages (compose/edit/settings/operator
+  // workspaces that read best full-width). To reframe a route, edit page-chrome.ts.
+  const showSidebar = !!sidebar && railFor(pathname) === 'global'
 
   function cycleTheme() {
     if (theme === 'system') setTheme('dark')
@@ -896,6 +890,10 @@ export default function AppShell({
             tidy block of community actions and the account stays distinct. */}
         <div className="flex flex-1 items-center justify-end gap-1.5 px-3 md:gap-2 md:px-4">
 
+          {/* Demo-content toggle — sits to the LEFT of Search (desktop). Members
+              hide/show seeded demo content for themselves; sized to match Search. */}
+          {demoMode && <DemoToggle initialHidden={demoHidden} />}
+
           {/* Search pill. Desktop */}
           <Link
             href="/search"
@@ -917,9 +915,29 @@ export default function AppShell({
             <Search className="w-5 h-5" />
           </Link>
 
-          {/* Community actions — messages + notifications, set off by a divider */}
+          {/* Community actions. Desktop: friends + messages + notifications.
+              Mobile: friends + messages fold into ONE silhouette icon → Messages. */}
           <div className="flex items-center gap-0.5 sm:ml-1 sm:pl-1.5 sm:border-l sm:border-border">
-            <MessagesPopover />
+            {/* Friends — desktop only (mobile merges it into the combined icon) */}
+            <Link
+              href="/friends"
+              aria-label="Friends"
+              className="hidden sm:flex items-center justify-center w-9 h-9 rounded-full text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+            >
+              <Users className="w-5 h-5" />
+            </Link>
+            {/* Messages — desktop popover */}
+            <div className="hidden sm:block">
+              <MessagesPopover />
+            </div>
+            {/* Mobile: friends + messages combined into one silhouette icon → Messages */}
+            <Link
+              href="/messages"
+              aria-label="Friends & messages"
+              className="sm:hidden flex items-center justify-center w-9 h-9 rounded-full text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+            >
+              <Users className="w-5 h-5" />
+            </Link>
             <NotificationBell initialUnread={unreadCount} />
           </div>
 
@@ -934,6 +952,19 @@ export default function AppShell({
               cycleTheme={cycleTheme}
             />
           </div>
+
+          {/* Quick capture — snap a card straight into your contacts. Mobile only,
+              pinned far-right as a filled primary box with a white camera. Stewards + staff. */}
+          {canCreateProfile && (
+            <Link
+              href="/connections/new"
+              aria-label="New contact"
+              title="New contact"
+              className="md:hidden flex items-center justify-center w-9 h-9 rounded-xl bg-primary text-on-primary shadow-sm hover:bg-primary-hover transition-colors ml-0.5"
+            >
+              <Camera className="w-5 h-5" />
+            </Link>
+          )}
         </div>
       </header>
 

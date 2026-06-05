@@ -28,3 +28,22 @@ Every artifact (doc, report, PR, email draft, in-product UI) is presentation-rea
 whatever surface it lands in. Polished is the default, not a finishing step. Full spec:
 [`docs/PRESENTATION.md`](docs/PRESENTATION.md). Lead with the answer, prefer scannable
 tables, use the ✅/⏳/⚠️/🔴 status legend, never hardcode hex in UI.
+
+# Page framework — every interior page composes the kit (never hand-roll a layout)
+
+One shell, five templates, one chrome map. Full spec:
+[`docs/PAGE-FRAMEWORK.md`](docs/PAGE-FRAMEWORK.md) §3 + §8.
+
+- **Pick a template** from `@/components/templates` by *what the content is*, and fill its
+  slots — never re-declare a header, card, or grid:
+  **Stream** (a flow of items) · **Index** (a collection to browse) · **Detail** (one
+  entity: context band + tabs) · **Dashboard** (metric-led operator workspace) ·
+  **Focus** (a centered, no-rail compose/edit/settings surface).
+- **Register the rail** in one place — `lib/layout/page-chrome.ts` (`'global'` /
+  `'scoped'` / `'none'`). The shell reads it; pages never toggle the rail themselves.
+  Adding a Focus page = one line here, not an edit to `app-shell.tsx`.
+- **Compose, don't author:** headers come from `PageHeading`, stats from `StatCard`,
+  browse cards from `EntityCard`/`PersonCard`, sections from `SectionHeader`, empties from
+  `EmptyState`. No `text-[10/11px]` content type; semantic tokens only.
+- **Speed is structural:** Server Components by default; never block the shell on slow
+  awaits — push them behind per-section `<Suspense>` (PAGE-FRAMEWORK §5).

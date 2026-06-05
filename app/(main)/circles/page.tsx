@@ -1,16 +1,16 @@
 import Link from 'next/link'
 import { Users, Compass, Sparkles } from 'lucide-react'
-import { rankForZaps, type SeasonRank } from '@/lib/season-ranks'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { NewCircleCompose } from '@/components/compose/new-circle-compose'
 import { MapZone, MapPreview, MapBanner, FindNearMeButton } from '@/components/circles/circles-map'
-import { PageHeader } from '@/components/ui/page-header'
+import { IndexTemplate } from '@/components/templates'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { CircleCard, type CircleCardData } from '@/components/circles/circle-card'
 import { CirclesToolbar } from '@/components/circles/circles-toolbar'
 import { demoModeEnabled } from '@/lib/platform-flags'
+import { viewerHidesDemo } from '@/lib/demo-preference'
 import type { CircleBase } from '@/lib/types/circle'
 
 type CircleRow = CircleBase & {
@@ -72,7 +72,6 @@ export default async function CirclesPage({
 
   let myCircleIds: string[] = []
   let isAdmin = false
-  let gam: { zaps: number; gems: number; streak: number; rank: SeasonRank } | null = null
   if (user) {
     const { data: profile } = await admin
       .from('profiles')
@@ -85,8 +84,6 @@ export default async function CirclesPage({
     } | null
     if (p) {
       isAdmin = ['host', 'guide', 'mentor', 'janitor'].includes(p.community_role ?? '')
-      const zaps = p.current_season_zaps ?? 0
-      gam = { zaps, gems: p.lifetime_gems ?? 0, streak: p.current_streak ?? 0, rank: rankForZaps(zaps) }
       const { data: mems } = await admin
         .from('memberships').select('circle_id').eq('profile_id', p.id).eq('status', 'active')
       myCircleIds = (mems ?? []).map((m) => m.circle_id as string)
@@ -106,8 +103,8 @@ export default async function CirclesPage({
     )
     .neq('status', 'archived')
     .order('name', { ascending: true })
-  // Global demo switch: when demo_mode is off, hide seeded demo circles.
-  if (!(await demoModeEnabled())) circlesQuery = circlesQuery.eq('is_demo', false)
+  // Demo content: hidden when global demo_mode is off OR the member turned beta content off.
+  if (!(await demoModeEnabled()) || (await viewerHidesDemo())) circlesQuery = circlesQuery.eq('is_demo', false)
   const { data: rawCircles } = await circlesQuery
 
   const all = (rawCircles ?? []) as unknown as CircleRow[]
@@ -178,13 +175,10 @@ export default async function CirclesPage({
   }
 
   return (
-    <div>
-      <PageHeader
-        title="Circles"
-        description="This is where it gets real. Find a circle near you, dive into something you love, or start your own — because showing up, week after week, is how strangers become your people."
-        gam={gam}
-      />
-
+    <IndexTemplate
+      title="Circles"
+      description="This is where it gets real. Find a circle near you, dive into something you love, or start your own — because showing up, week after week, is how strangers become your people."
+    >
       {/* Reassurance — the introvert's worry, named and answered up front. */}
       <p className="mb-6 max-w-2xl text-sm leading-relaxed text-muted">
         Circles are small on purpose — most are just a handful of people. You don&rsquo;t have to know
@@ -249,19 +243,20 @@ export default async function CirclesPage({
           <MapBanner />
         </div>
 
-        {/* Masonry: circles fill the grid; the map is a 2x2 block top-right and
-            the nav sits in the right column under it. grid-auto-flow:dense lets
-            the circles flow into the gaps (and under the nav). */}
-        <div className="grid grid-cols-2 gap-x-6 gap-y-8 [grid-auto-flow:row_dense] lg:grid-cols-4 lg:auto-rows-[21rem]">
-          {/* Map — top-right, half width × one row */}
+        {/* Masonry: boxed circle cards fill the grid; the map is a 2-wide block
+            top-right and the nav sits in the right column under it.
+            grid-auto-flow:dense lets the cards flow into the gaps (and under the
+            nav). Rows size to content so the boxed cards sit flush. */}
+        <div className="grid auto-rows-min grid-cols-1 gap-6 [grid-auto-flow:row_dense] sm:grid-cols-2 lg:grid-cols-4">
+          {/* Map — top-right, 2 columns × one tall cell */}
           {locatableCircles.length > 0 && (
-            <div className="col-span-2 lg:col-start-3 lg:row-start-1">
+            <div className="h-72 sm:col-span-2 lg:col-start-3 lg:row-start-1">
               <MapPreview />
             </div>
           )}
 
           {/* Navigation — right column, directly under the map */}
-          <div className="col-span-2 space-y-6 lg:col-span-1 lg:col-start-4 lg:row-start-2 lg:row-span-2">
+          <div className="space-y-6 sm:col-span-2 lg:col-span-1 lg:col-start-4 lg:row-start-2 lg:row-span-2">
             {interestChips.length > 0 && (
               <div>
                 <SectionHeader title="Browse by interest" />
@@ -311,7 +306,7 @@ export default async function CirclesPage({
 
           {/* Circles — yours first, then discover; they fill every other cell */}
           {combined.length === 0 ? (
-            <div className="col-span-2 lg:col-span-3 lg:row-start-1">
+            <div className="sm:col-span-2 lg:col-span-3 lg:row-start-1">
               <EmptyState
                 icon={Users}
                 title={filtering ? 'No circles match these filters' : 'No circles yet'}
@@ -326,6 +321,6 @@ export default async function CirclesPage({
           )}
         </div>
       </MapZone>
-    </div>
+    </IndexTemplate>
   )
 }

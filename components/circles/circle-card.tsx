@@ -2,6 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Users, MapPin, Globe } from 'lucide-react'
 import { joinCircle } from '@/app/(main)/circles/actions'
+import { EntityCard } from '@/components/cards/entity-card'
 import { DemoBadge } from '@/components/ui/demo-badge'
 
 export type CircleCardData = {
@@ -20,79 +21,80 @@ export type CircleCardData = {
   isDemo?: boolean
 }
 
-// Circle card: a large circular cover image with the basics underneath (name,
-// place, a line of description, member count, join/open). Borderless — it sits
-// on the canvas, separated by whitespace, not a boxed card.
+// Circle card — renders through the shared EntityCard so circles read identically
+// to every other entity grid. Avatar → anchor, name → title, place line + member
+// count → context, about → description, mode pill → meta, join/open → action.
 export function CircleCard({ circle, isMember }: { circle: CircleCardData; isMember: boolean }) {
   const full = circle.member_count >= circle.member_cap
+  const memberLabel = `${circle.member_count} ${circle.member_count === 1 ? 'member' : 'members'}`
+  const place = circle.context ?? (circle.type === 'in-person' ? 'In person' : 'Online')
 
   return (
-    <div className={`flex flex-col items-center px-1 text-center ${circle.isDemo ? 'opacity-[0.78]' : ''}`}>
-      <Link href={`/circles/${circle.slug}`} className="group/img shrink-0">
-        {circle.imageUrl ? (
+    <EntityCard
+      href={`/circles/${circle.slug}`}
+      dimmed={circle.isDemo}
+      badge={circle.isDemo ? <DemoBadge /> : undefined}
+      anchor={
+        circle.imageUrl ? (
           <Image
             src={circle.imageUrl}
             alt={circle.name}
-            width={144}
-            height={144}
-            className={`h-28 w-28 sm:h-36 sm:w-36 rounded-full object-cover shadow-sm ring-1 ring-border/60 transition-transform duration-200 group-hover/img:scale-[1.03] ${
-              circle.isDemo ? 'grayscale-[0.5]' : ''
-            }`}
+            width={44}
+            height={44}
+            className="h-11 w-11 rounded-full object-cover"
           />
         ) : (
-          <div className="flex h-28 w-28 sm:h-36 sm:w-36 items-center justify-center rounded-full bg-primary-bg text-primary-strong transition-transform duration-200 group-hover/img:scale-[1.03]">
-            <Users className="h-14 w-14" />
+          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-bg text-primary-strong">
+            <Users className="h-5 w-5" />
           </div>
-        )}
-      </Link>
-
-      <div className="mt-3 flex items-center gap-1.5">
-        <Link
-          href={`/circles/${circle.slug}`}
-          className="text-base font-semibold leading-tight text-text transition-colors hover:text-primary-strong"
-        >
-          {circle.name}
-        </Link>
-        {circle.isDemo && <DemoBadge />}
-      </div>
-
-      <div className="mt-1 flex items-center justify-center gap-1.5 text-xs text-subtle">
-        {circle.type === 'in-person' ? <MapPin className="h-3 w-3 shrink-0" /> : <Globe className="h-3 w-3 shrink-0" />}
-        <span className="truncate">{circle.context ?? (circle.type === 'in-person' ? 'In person' : 'Online')}</span>
-      </div>
-
-      {circle.about && <p className="mt-1.5 line-clamp-2 max-w-xs text-sm text-muted">{circle.about}</p>}
-
-      <p className="mt-1.5 text-xs text-subtle">
-        {circle.member_count} {circle.member_count === 1 ? 'member' : 'members'}
-      </p>
-
-      <div className="mt-2.5">
-        {isMember ? (
+        )
+      }
+      title={circle.name}
+      context={
+        <span className="inline-flex items-center gap-1.5">
+          {circle.type === 'in-person' ? (
+            <MapPin className="h-3 w-3 shrink-0" />
+          ) : (
+            <Globe className="h-3 w-3 shrink-0" />
+          )}
+          {place}
+        </span>
+      }
+      description={circle.about ?? undefined}
+      meta={
+        <>
+          <span className="flex items-center gap-1">
+            <Users className="h-3 w-3" />
+            {memberLabel}
+          </span>
+          <span className="rounded-full bg-surface-elevated px-2 py-0.5 font-medium capitalize text-subtle">
+            {circle.type === 'in-person' ? 'In person' : 'Online'}
+          </span>
+        </>
+      }
+      action={
+        isMember ? (
           <Link
             href={`/circles/${circle.slug}`}
-            className="inline-flex rounded-lg bg-primary-bg px-3 py-1.5 text-sm font-semibold text-primary-strong transition-colors hover:bg-primary-bg/70"
+            className="inline-flex rounded-lg bg-primary-bg px-3 py-1.5 text-xs font-semibold text-primary-strong transition-colors hover:bg-primary-bg/70"
           >
-            Open circle →
+            Open
           </Link>
         ) : !full ? (
           <form action={joinCircle.bind(null, circle.id, circle.slug)}>
             <button
               type="submit"
-              className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+              className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover"
             >
-              Join circle
+              Join
             </button>
           </form>
         ) : (
-          <Link
-            href={`/circles/${circle.slug}`}
-            className="inline-flex rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:text-text"
-          >
-            Full · View
-          </Link>
-        )}
-      </div>
-    </div>
+          <span className="inline-flex rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted">
+            Full
+          </span>
+        )
+      }
+    />
   )
 }
