@@ -7,7 +7,7 @@ import { NewHubCompose } from '@/components/compose/new-hub-compose'
 
 
 export default async function AdminHubsPage({ searchParams }: { searchParams: Promise<{ edit?: string }> }) {
-  await requireAdmin('guide')
+  await requireAdmin('guide', { staff: 'structure' })
   const { edit } = await searchParams
 
   const admin = createAdminClient()

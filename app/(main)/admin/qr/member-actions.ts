@@ -14,7 +14,7 @@ import type { Json } from '@/lib/database.types'
 
 /** Restyle a member's profile code. */
 export async function updateMemberCodeStyle(codeId: string, style: QrStyle): Promise<ActionResult> {
-  await requireAdmin('host')
+  await requireAdmin('host', { staff: 'qr' })
   const db = createAdminClient()
   const { data: code } = await db.from('qr_codes').select('purpose').eq('id', codeId).maybeSingle()
   if (!code || code.purpose !== 'connect') return fail('Not a member profile code.')
@@ -29,7 +29,7 @@ export async function updateMemberCodeStyle(codeId: string, style: QrStyle): Pro
 
 /** Edit a member's contact card (vCard). */
 export async function updateMemberVcard(profileId: string, config: VcardConfig): Promise<ActionResult> {
-  await requireAdmin('host')
+  await requireAdmin('host', { staff: 'qr' })
   const db = createAdminClient()
   const { error } = await db
     .from('profiles')

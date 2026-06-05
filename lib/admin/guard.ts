@@ -15,7 +15,7 @@ import { notFound } from 'next/navigation'
 import { getCallerProfile } from '@/lib/auth'
 import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
 import { getStaffMember } from '@/lib/staff'
-import { staffCan, type StaffDomain, type StaffRole } from '@/lib/core/staff-roles'
+import { staffCan, staffSeesAdmin, type StaffDomain, type StaffRole, type Access } from '@/lib/core/staff-roles'
 
 export interface AdminContext {
   profileId: string
@@ -33,15 +33,26 @@ export interface AdminContext {
  */
 export async function requireAdmin(
   min: CommunityRole = 'host',
-  opts?: { staff?: StaffDomain },
+  opts?: { staff?: StaffDomain; staffLevel?: Access },
 ): Promise<AdminContext> {
   const profile = await getCallerProfile()
   if (!profile) notFound()
   const staff = await getStaffMember().catch(() => null)
   const staffRole = staff?.role ?? null
   const okCommunity = atLeastRole(profile.community_role, min)
-  const okStaff = opts?.staff ? staffCan(staffRole, opts.staff, 'write') : false
+  const okStaff = opts?.staff ? staffCan(staffRole, opts.staff, opts.staffLevel ?? 'write') : false
   if (!okCommunity && !okStaff) notFound()
+  return { profileId: profile.id, role: profile.community_role, staffRole }
+}
+
+/** The /admin entry floor: community host+ OR any staff role that can see at least
+ *  one admin group. Each group/page still gates itself precisely below this. */
+export async function requireAdminFloor(): Promise<AdminContext> {
+  const profile = await getCallerProfile()
+  if (!profile) notFound()
+  const staff = await getStaffMember().catch(() => null)
+  const staffRole = staff?.role ?? null
+  if (!atLeastRole(profile.community_role, 'host') && !staffSeesAdmin(staffRole)) notFound()
   return { profileId: profile.id, role: profile.community_role, staffRole }
 }
 

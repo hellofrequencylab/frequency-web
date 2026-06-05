@@ -10,7 +10,7 @@ import { getEngagementDashboard, type FunnelStep } from '@/lib/analytics/dashboa
 export const dynamic = 'force-dynamic'
 
 export default async function EngagementDashboardPage() {
-  await requireAdmin('janitor')
+  await requireAdmin('janitor', { staff: 'insights', staffLevel: 'read' })
 
   const d = await getEngagementDashboard(30)
   const pct = (n: number) => `${Math.round(n * 100)}%`

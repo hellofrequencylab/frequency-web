@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { Users, Layers, Building2, Plus, CalendarDays, Megaphone, Zap, Activity, TrendingUp } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getPracticeMetrics } from '@/lib/analytics/practice'
-import { requireAdmin } from '@/lib/admin/guard'
+import { requireAdminFloor } from '@/lib/admin/guard'
 import { AdminPage, AdminSection } from '@/components/admin/admin-page'
 import { AdminLaunchpad } from '@/components/admin/admin-launchpad'
 import { StatCard } from '@/components/ui/stat-card'
@@ -13,7 +13,7 @@ import type { CommunityRole } from '@/lib/core/roles'
 import type { SeasonRank } from '@/lib/season-ranks'
 
 export default async function AdminPageView() {
-  const { profileId, role, staffRole } = await requireAdmin('host', { staff: 'community' })
+  const { profileId, role, staffRole } = await requireAdminFloor()
   const admin = createAdminClient()
 
   // Overview stat counts — a quick aggregate for all admin roles.
