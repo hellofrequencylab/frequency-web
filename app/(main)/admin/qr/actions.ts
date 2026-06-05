@@ -6,7 +6,7 @@
 // just creating/editing a node. Writes go through the service-role client (nodes
 // RLS denies all client reads/writes by design) and are gated to host+ here.
 //
-// Location-aware earning (ADR-105): a code can carry a geofence (lat/lng + radius).
+// Location-aware earning (ADR-106): a code can carry a geofence (lat/lng + radius).
 // The PostGIS point is written via the `set_node_geo` RPC (PostgREST can't build a
 // geography from lat/lng), and the `/n` claim flow forwards the device location so
 // verifyCapture enforces proximity. Signed payloads remain a follow-up.

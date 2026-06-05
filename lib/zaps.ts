@@ -21,15 +21,18 @@ type ProfileRow = Database['public']['Tables']['profiles']['Row']
 // numbers come from the `zap_config` table (awardZapsForAction); these are only
 // used if a config row is missing, so a grant never breaks. Attendance is awarded
 // at verified check-in (ROADMAP P2.13), NOT at RSVP (RSVP is a web action = gems).
+// Fallback base zap amounts (mirror the live zap_config rows — see the
+// 20260605100000_economy_rebalance migration / ADR-104). Only used if a config
+// row is missing, so a grant never breaks.
 export const ZAP_AMOUNTS = {
-  event_host: 50,
-  event_attend: 25,
-  practice_logged: 15,
-  node_capture: 10,
-  invite_accepted: 30,
-  outreach_task: 20,
-  circle_start: 50,
+  circle_start: 100,
+  event_host: 60,
   circle_activate: 40,
+  invite_accepted: 40,
+  event_attend: 25,
+  outreach_task: 20,
+  practice_logged: 12,
+  node_capture: 10,
 } as const
 
 export type ZapAction = keyof typeof ZAP_AMOUNTS

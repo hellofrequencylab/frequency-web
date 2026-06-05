@@ -10,5 +10,5 @@
 alter table public.qr_codes  add column if not exists source_tag  text;
 alter table public.profiles  add column if not exists acquisition jsonb;
 
-comment on column public.qr_codes.source_tag is 'Operator campaign/source label stamped into first-touch on scan (ADR-106).';
-comment on column public.profiles.acquisition is 'First-touch acquisition snapshot captured at signup (utm/source/code/channel). ADR-106.';
+comment on column public.qr_codes.source_tag is 'Operator campaign/source label stamped into first-touch on scan (ADR-107).';
+comment on column public.profiles.acquisition is 'First-touch acquisition snapshot captured at signup (utm/source/code/channel). ADR-107.';

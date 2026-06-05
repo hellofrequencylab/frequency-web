@@ -2921,7 +2921,39 @@ achievements) are preserved. Regenerate DB types to drop the `hubs.is_demo` cast
 
 ---
 
-## ADR-104: NFC parity — Web NFC writer + per-scan medium attribution
+## ADR-104: Economy re-strategy — Gems for web, Zaps for in-person/outreach; rebalanced amounts
+
+**Status:** Accepted · `supabase/migrations/20260605100000_economy_rebalance.sql`, `lib/zaps.ts` (fallbacks), `lib/engagement/currency.ts` (routing, unchanged). See [ECONOMY-AND-JOURNEYS.md](ECONOMY-AND-JOURNEYS.md) §3.
+
+**Context.** Two currencies exist with the right *routing* already (`currencyForSource`:
+web→gems, in-person/outreach→zaps), but the per-action amounts hadn't been thought
+through as a season-level system, and a couple of zap actions (`circle_start`,
+`circle_activate`) had no tunable config row (code-fallback only).
+
+**Decision.** Keep the split, and rebalance amounts so the two currencies play
+distinct roles:
+- **Zaps = the rank/status currency** (drives `current_season_zaps` → season rank).
+  Real-world presence + outreach, biggest rewards off-screen:
+  found a circle 100 · host an event 60 · activate a circle / an invite joins 40 ·
+  show up (verified check-in) 25 · outreach task 20 · log a practice 12 · node 10.
+- **Gems = the spendable currency** (Vault), web/on-platform care, **daily-capped** so
+  it can't be farmed: Arc 30 · challenge 15 · welcome 8 · RSVP/join 5 · post 3 (≤3/day)
+  · reply 2 (≤5/day) · login 2 (1/day) · react 1 (≤5/day); achievements grant zaps,
+  season-convert handled by `reset_season()`.
+
+Tuned against the `lib/season-ranks.ts` ladder (Operative 300 · Agent 750 · Conduit
+1500 · Luminary 3000) for a ~13-week reference season: casual → Operative, regular →
+Agent, leader → Conduit/Luminary. Amounts live in `gem_config`/`zap_config` (tunable);
+`ZAP_AMOUNTS` in `lib/zaps.ts` mirrors the zaps as the missing-row fallback.
+
+**Consequences.** Season progression now reflects real-world contribution, gems are a
+slow spendable stash, and every action is a tunable config row (incl. the two new zap
+rows). Season length is admin-controlled (`reset_season`), so the ~13-week figure is a
+design reference, not a hardcode. No app-logic change — purely amounts + one fallback.
+
+---
+
+## ADR-105: NFC parity — Web NFC writer + per-scan medium attribution
 
 **Status:** Accepted · `supabase/migrations/20260605120000_qr_scan_medium.sql`,
 `app/(main)/admin/qr/nfc-writer.tsx`, `lib/qr/links.ts` (`withMedium`), `app/q/[slug]/route.ts`.
@@ -2957,7 +2989,7 @@ tap attribution (in `captures`) remain open follow-ups.
 
 ---
 
-## ADR-105: Location-aware earning — geofence authoring + device-location claim
+## ADR-106: Location-aware earning — geofence authoring + device-location claim
 
 **Status:** Accepted · `supabase/migrations/20260605130000_node_geo.sql`,
 `app/(main)/admin/qr/actions.ts`, `app/(main)/admin/qr/qr-studio.tsx` (NodeForm),
@@ -2992,7 +3024,7 @@ steps on this engine.
 
 ---
 
-## ADR-106: UTM / source passthrough — per-code source tag + acquisition persisted at signup
+## ADR-107: UTM / source passthrough — per-code source tag + acquisition persisted at signup
 
 **Status:** Accepted · `supabase/migrations/20260605140000_qr_source_passthrough.sql`,
 `lib/attribution/acquisition.ts`, `app/q/[slug]/route.ts`, `app/onboarding/actions.ts`,
@@ -3024,7 +3056,7 @@ to formalize the two new columns later.
 
 ---
 
-## ADR-107: Google Wallet pass for member codes — env-gated, dependency-free JWT
+## ADR-108: Google Wallet pass for member codes — env-gated, dependency-free JWT
 
 **Status:** Accepted · `lib/wallet/google.ts`, `app/api/wallet/google/route.ts`,
 `app/(main)/codes/{page,member-codes}.tsx`. Apple Wallet deferred.
