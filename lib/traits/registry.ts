@@ -107,6 +107,53 @@ export const TRAIT_REGISTRY: readonly TraitDef[] = [
     systemManaged: true,
   },
 
+  // ── Tags · marketing · persona (ADR-123) ───────────────────────────────────
+  // WHO the member said they were at intake (lib/onboarding/personas.ts) — the
+  // self-identified fork that routes the lead-flow marketing track and branches the
+  // induction. Stamped at induction from the fq_persona cookie; the rich answer also
+  // rides profiles.meta.persona. One boolean tag per persona so each is segmentable
+  // forever (send practitioners the host tools, partners the loyalty program, …).
+  {
+    key: 'persona_visitor',
+    label: 'Persona · Visitor',
+    description: 'Identified as a visitor / regular member at intake — here to find their people and belong.',
+    kind: 'tag', category: 'marketing', type: 'boolean',
+    pii: 'none', freshness: 'static', retentionDays: null, owner: 'marketing',
+    systemManaged: true,
+  },
+  {
+    key: 'persona_practitioner',
+    label: 'Persona · Practitioner',
+    description: 'Identified as a practitioner with something to offer — hosts/builds programs, sells on the marketplace.',
+    kind: 'tag', category: 'marketing', type: 'boolean',
+    pii: 'none', freshness: 'static', retentionDays: null, owner: 'marketing',
+    systemManaged: true,
+  },
+  {
+    key: 'persona_partner',
+    label: 'Persona · Partner business',
+    description: 'Identified as a local business — the loyalty-rewards + gamified-foot-traffic track.',
+    kind: 'tag', category: 'marketing', type: 'boolean',
+    pii: 'none', freshness: 'static', retentionDays: null, owner: 'marketing',
+    systemManaged: true,
+  },
+  {
+    key: 'persona_builder',
+    label: 'Persona · Community builder',
+    description: 'Identified as someone who wants to help build + grow the community — the crew / host / guide path.',
+    kind: 'tag', category: 'marketing', type: 'boolean',
+    pii: 'none', freshness: 'static', retentionDays: null, owner: 'marketing',
+    systemManaged: true,
+  },
+  {
+    key: 'persona_investor',
+    label: 'Persona · Lab champion',
+    description: 'Identified as an investor / champion who wants a Frequency Lab in their town — the partner/invest conversation.',
+    kind: 'tag', category: 'marketing', type: 'boolean',
+    pii: 'none', freshness: 'static', retentionDays: null, owner: 'marketing',
+    systemManaged: true,
+  },
+
   // ── Tags · marketing · acquisition source (ADR-095) ─────────────────────────
   // The FIRST channel a member arrived through (first-touch), stamped once at
   // signup from lib/attribution. One boolean tag per channel so cohorts are
