@@ -13,6 +13,7 @@ import { getStaffMember } from '@/lib/staff'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { isEntryTemplateId } from '@/lib/entry-points/templates'
+import { isAssignableMember } from '@/lib/entry-points/store'
 import type { CampaignStatus } from '@/lib/entry-points/campaigns'
 
 async function requireMarketer(): Promise<{ id: string } | string> {
@@ -78,4 +79,30 @@ export async function updateCampaign(
 
 export async function archiveCampaign(id: string): Promise<ActionResult> {
   return updateCampaign(id, { status: 'archived' })
+}
+
+/**
+ * Reassign an entry point to a crew member (ADR-126 Phase 2b). The new owner gets the
+ * entry point in their "My Entry Points" + future scan credit on the recruiter board;
+ * historical signup attribution (referred_by, set at scan time) is unchanged.
+ */
+export async function reassignEntryPoint(
+  campaignId: string,
+  codeId: string,
+  newOwnerId: string,
+): Promise<ActionResult> {
+  const who = await requireMarketer()
+  if (typeof who === 'string') return fail(who)
+  if (!(await isAssignableMember(newOwnerId))) return fail('Pick an active crew member.')
+
+  const { error } = await db()
+    .from('qr_codes')
+    .update({ owner_profile_id: newOwnerId })
+    .eq('id', codeId)
+    .not('template_id', 'is', null) // only entry points
+  if (error) return fail('Could not reassign the entry point.')
+
+  revalidatePath(`/marketing/funnels/${campaignId}`)
+  revalidatePath('/entry-points')
+  return ok()
 }
