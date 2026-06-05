@@ -3435,6 +3435,48 @@ host-less circle is possible — noted, not changed here (the editor pre-fills t
 
 ---
 
+## ADR-120: Mobile navigation is a bottom tab bar (not a header hamburger); shared header balances on mobile
+
+**Status:** Accepted · `components/layout/app-shell.tsx` (`MobileTabBar`, `MobileLeftDrawer`),
+`components/templates/page-heading.tsx`, `components/layout/brand-mark.tsx`. Builds on the
+five-template / one-header framework (PAGE-FRAMEWORK §8) and the single-rail nav model
+(`lib/nav-areas.ts`).
+
+**Context.** On mobile the only way to reach a section was the top-left **hamburger → full-screen
+overlay drawer**; the bottom bar was spent on profile + rewards (not navigation). Switching
+sections therefore cost two taps and a reach to the top corner. Separately the shared `PageHeading`
+laid the title and its header action on one `items-end justify-between` row at a fixed `text-2xl`,
+so on a narrow screen a long title was crushed against the action button, and the header chrome
+(wordmark, right-cluster icons) sat flush to the screen edges — content read as "falling off."
+
+**Decision.**
+- **Primary nav → a bottom tab bar.** `MobileTabBar` pins the four core community destinations
+  (Feed · Circles · Channels · Events) in the thumb zone, plus a **Menu** tab that opens the drawer
+  for the long tail. The most native mobile pattern, and it **keeps full content width** — nothing
+  is permanently carved off the side of a narrow screen (the explicit reason we rejected a
+  persistent left mini-rail). Icons come from `AREA_ICONS` so the tab bar stays in lockstep with
+  the desktop rail and the drawer.
+- **The header hamburger is removed;** the bottom Menu tab owns drawer-open. This declutters the
+  top bar and lets the wordmark anchor the top-left.
+- **The drawer carries identity + rewards** (the avatar/role card → profile, the bolts/gems pill →
+  Dashboard) that used to live in the bottom bar, above the full nav list.
+- **`PageHeading` balances on mobile:** the action **stacks below** the title block under `sm`
+  (`flex-col … sm:flex-row sm:items-end sm:justify-between`), the title is responsive
+  (`text-xl sm:text-2xl`) and `text-balance`, matching the Detail context band. Edge breathing room
+  added to the wordmark (`pl-3.5`) and the header right-cluster (`px-2.5`).
+
+**Alternatives.** A persistent slim left icon-rail that folds out on tap (what was first floated —
+rejected: it permanently eats ~48px of an already-narrow viewport, working against the "feels
+cramped / falling off the edge" complaint). Keep the hamburger and only polish the drawer (rejected
+— leaves section-switching a two-tap top-corner reach).
+
+**Consequences.** Section-switching is one thumb tap; the top bar is lighter; titles never crush on
+mobile. Settings/Billing/Help stay reachable via the top-right account menu (unchanged, still shown
+on mobile). `hideAppNav` shells (e.g. Studio) drop the four destination tabs and keep only Menu.
+Desktop is unchanged — the left rail and `ProfileCard` still own navigation and identity there.
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 
