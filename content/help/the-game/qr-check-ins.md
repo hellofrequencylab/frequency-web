@@ -25,6 +25,10 @@ You'll see Frequency QR codes on posters, plaques, and at events.
 Each code sets its own rules: some you can claim once, some every time you visit.
 If a code has expired or you've already claimed it, the page will tell you.
 
+Some codes are **location-aware** — you can only claim them while you're actually
+there. Your phone may ask to share your location when you tap **Claim**; if you're
+too far away (or don't share it), the page lets you know.
+
 ## Your personal code
 
 Open **My code** (from your account menu) to see your own QR — you have **one**

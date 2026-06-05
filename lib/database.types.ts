@@ -2128,6 +2128,7 @@ export type Database = {
           switch_at: string | null
           scan_count: number
           slug: string
+          source_tag: string | null
           style: Json
           target_url: string | null
           title: string
@@ -2151,6 +2152,7 @@ export type Database = {
           switch_at?: string | null
           scan_count?: number
           slug: string
+          source_tag?: string | null
           style?: Json
           target_url?: string | null
           title: string
@@ -2174,6 +2176,7 @@ export type Database = {
           switch_at?: string | null
           scan_count?: number
           slug?: string
+          source_tag?: string | null
           style?: Json
           target_url?: string | null
           title?: string
@@ -2983,6 +2986,7 @@ export type Database = {
           lifetime_zaps: number
           longest_streak: number
           meta: Json | null
+          acquisition: Json | null
           nexus_region_id: string | null
           referred_by_profile_id: string | null
           vcard: Json
@@ -3025,6 +3029,7 @@ export type Database = {
           lifetime_zaps?: number
           longest_streak?: number
           meta?: Json | null
+          acquisition?: Json | null
           nexus_region_id?: string | null
           referred_by_profile_id?: string | null
           vcard?: Json
@@ -3067,6 +3072,7 @@ export type Database = {
           lifetime_zaps?: number
           longest_streak?: number
           meta?: Json | null
+          acquisition?: Json | null
           nexus_region_id?: string | null
           referred_by_profile_id?: string | null
           vcard?: Json

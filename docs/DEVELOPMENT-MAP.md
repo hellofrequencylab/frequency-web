@@ -155,6 +155,13 @@
 > geofenced code only earns on-site (`location_required` / `too_far` already surfaced). Device location is
 > used at claim time only, never stored.
 
+> **2026-06-05:** QR/NFC — **UTM / source passthrough** (ADR-106, migration `20260605140000`, issue #221).
+> Each dynamic code gains an operator **`source_tag`**; an anonymous `/q` scan stamps it into the
+> first-touch cookie (first-touch wins). New **`profiles.acquisition`** jsonb snapshots first-touch
+> (utm/source/campaign/code/channel/landing) **once** at onboarding (`persistAcquisition`, best-effort),
+> so a signup is permanently traceable to the poster that brought them — extends the ADR-095 attribution
+> spine.
+
 ---
 
 ## Mission (locked)
