@@ -78,6 +78,121 @@ export const TRAIT_REGISTRY: readonly TraitDef[] = [
     systemManaged: false,
   },
 
+  // ── Tags · marketing · beta cohorts ────────────────────────────────────────
+  // Which beta sequence a member arrived through (lib/onboarding/beta-sequences.ts).
+  // Stamped automatically at induction so the founding cohort stays segmentable by
+  // entry path forever — even after the beta flow itself is removed at launch.
+  {
+    key: 'beta_early_adopter',
+    label: 'Beta · Early adopter',
+    description: 'Arrived through the early-adopter sequence — a follower who saw the launch video and claimed a beta spot.',
+    kind: 'tag', category: 'marketing', type: 'boolean',
+    pii: 'none', freshness: 'static', retentionDays: null, owner: 'marketing',
+    systemManaged: true,
+  },
+  {
+    key: 'beta_personal',
+    label: 'Beta · Personal invite',
+    description: "Arrived through Daniel's personal invite sequence — hand-invited into the dream to help shape it.",
+    kind: 'tag', category: 'marketing', type: 'boolean',
+    pii: 'none', freshness: 'static', retentionDays: null, owner: 'marketing',
+    systemManaged: true,
+  },
+  {
+    key: 'beta_founding_partner',
+    label: 'Beta · Founding Partner',
+    description: 'Arrived through the Founding Partner sequence — a collaborator or business in on the ground floor.',
+    kind: 'tag', category: 'marketing', type: 'boolean',
+    pii: 'none', freshness: 'static', retentionDays: null, owner: 'marketing',
+    systemManaged: true,
+  },
+
+  // ── Tags · marketing · acquisition source (ADR-095) ─────────────────────────
+  // The FIRST channel a member arrived through (first-touch), stamped once at
+  // signup from lib/attribution. One boolean tag per channel so cohorts are
+  // segmentable by origin forever; the rich utm/referrer/landing detail rides
+  // profiles.meta.acquisition. Keys mirror channelTag() in lib/attribution/channels.ts.
+  {
+    key: 'source_donor',
+    label: 'Source · Donor',
+    description: 'First arrived as a donor / sponsor / partner (gave money or a partnership).',
+    kind: 'tag', category: 'marketing', type: 'boolean',
+    pii: 'none', freshness: 'static', retentionDays: null, owner: 'marketing',
+    systemManaged: true,
+  },
+  {
+    key: 'source_referral',
+    label: 'Source · Referral',
+    description: 'First arrived because a person sent them — an invite link or a member’s referral/QR code.',
+    kind: 'tag', category: 'marketing', type: 'boolean',
+    pii: 'none', freshness: 'static', retentionDays: null, owner: 'marketing',
+    systemManaged: true,
+  },
+  {
+    key: 'source_qr_scan',
+    label: 'Source · QR scan',
+    description: 'First arrived by scanning a QR code (marketing or personal).',
+    kind: 'tag', category: 'marketing', type: 'boolean',
+    pii: 'none', freshness: 'static', retentionDays: null, owner: 'marketing',
+    systemManaged: true,
+  },
+  {
+    key: 'source_event_guest',
+    label: 'Source · Event guest',
+    description: 'First arrived from an event page / guest touchpoint.',
+    kind: 'tag', category: 'marketing', type: 'boolean',
+    pii: 'none', freshness: 'static', retentionDays: null, owner: 'marketing',
+    systemManaged: true,
+  },
+  {
+    key: 'source_video',
+    label: 'Source · Video',
+    description: 'First arrived from a video on-ramp (e.g. YouTube).',
+    kind: 'tag', category: 'marketing', type: 'boolean',
+    pii: 'none', freshness: 'static', retentionDays: null, owner: 'marketing',
+    systemManaged: true,
+  },
+  {
+    key: 'source_social',
+    label: 'Source · Social',
+    description: 'First arrived from a social platform (IG, TikTok, X, Facebook, LinkedIn, Reddit…).',
+    kind: 'tag', category: 'marketing', type: 'boolean',
+    pii: 'none', freshness: 'static', retentionDays: null, owner: 'marketing',
+    systemManaged: true,
+  },
+  {
+    key: 'source_search',
+    label: 'Source · Search',
+    description: 'First arrived from a search engine (organic search).',
+    kind: 'tag', category: 'marketing', type: 'boolean',
+    pii: 'none', freshness: 'static', retentionDays: null, owner: 'marketing',
+    systemManaged: true,
+  },
+  {
+    key: 'source_email',
+    label: 'Source · Email',
+    description: 'First arrived from an email or newsletter link.',
+    kind: 'tag', category: 'marketing', type: 'boolean',
+    pii: 'none', freshness: 'static', retentionDays: null, owner: 'marketing',
+    systemManaged: true,
+  },
+  {
+    key: 'source_organic',
+    label: 'Source · Organic',
+    description: 'First arrived via an external site referrer that isn’t search or social.',
+    kind: 'tag', category: 'marketing', type: 'boolean',
+    pii: 'none', freshness: 'static', retentionDays: null, owner: 'marketing',
+    systemManaged: true,
+  },
+  {
+    key: 'source_direct',
+    label: 'Source · Direct',
+    description: 'First arrived directly — typed the URL or no referrer / campaign.',
+    kind: 'tag', category: 'marketing', type: 'boolean',
+    pii: 'none', freshness: 'static', retentionDays: null, owner: 'marketing',
+    systemManaged: true,
+  },
+
   // ── Computed · lifecycle (declared now; computed in Phase 2) ───────────────
   {
     key: 'lifecycle_stage',

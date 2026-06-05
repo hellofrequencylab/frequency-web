@@ -77,7 +77,7 @@ export const NAV_AREAS: readonly NavArea[] = [
   { key: 'admin-community', href: '/admin',     label: 'Overview',  section: 'Steward', defaultAccess: 'host' },
   { key: 'crm',             href: '/crm',         label: 'CRM',       section: 'Steward', defaultAccess: 'host' },
   // Profile Creator — owner-scoped network intake (card scan / manual + Vera).
-  // Host+ on the trust ladder, OR Studio staff (team_members axis), per ADR-096.
+  // Host+ on the trust ladder, OR Studio staff (team_members axis), per ADR-097.
   { key: 'connections',     href: '/connections', label: 'Profiles',  section: 'Steward', defaultAccess: 'host', staffAccess: 'analyst' },
   { key: 'outreach',        href: '/outreach',    label: 'Outreach',  section: 'Steward', defaultAccess: 'host' },
   // Structure — the place tree (trust guide/mentor).
