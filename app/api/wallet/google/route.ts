@@ -1,4 +1,4 @@
-// "Add to Google Wallet" for a member's profile (connect) code (ADR-107).
+// "Add to Google Wallet" for a member's profile (connect) code (ADR-108).
 // GET /api/wallet/google?code=<qr_code id> → redirects to the Google save link.
 // Gated: 404 when Wallet isn't configured (env-gated, see lib/wallet/google.ts).
 // The caller must own the code (or be host+), since a pass carries their identity.

@@ -135,7 +135,7 @@
 > (`active` toggle), or retire any member's code, with owner/target/scan context. Every code kind in the
 > Studio is now editable in the admin section. No migration.
 
-> **2026-06-05:** QR/NFC platform — **NFC parity** (ADR-104, migration `20260605120000`, issue #221).
+> **2026-06-05:** QR/NFC platform — **NFC parity** (ADR-105, migration `20260605120000`, issue #221).
 > A **Web NFC writer** (`nfc-writer.tsx`, `NDEFReader`) lets operators program a physical tag with any
 > code's URL straight from an Android phone (graceful "NFC (Android)" hint elsewhere) — on every code
 > card: dynamic links, member, marketing, and check-in nodes. **Medium attribution**: a written
@@ -148,21 +148,21 @@
 > **sticker sheet** with cut guides, and a wall **poster** — via `?code=`/`?node=` + `?layout=`. A
 > **Print** link sits by the downloads on every code card. No migration.
 
-> **2026-06-05:** QR/NFC — **location-aware earning** (ADR-105, migration `20260605130000`, issue #221).
+> **2026-06-05:** QR/NFC — **location-aware earning** (ADR-106, migration `20260605130000`, issue #221).
 > Surfaces the existing `nodes` proximity engine: a "Location-aware" toggle on the check-in form sets a
 > geofence (lat/lng + radius, with "use my location"), written via a new `set_node_geo` RPC and read back
 > via `nodes_geo()`. The `/n` claim flow now forwards `navigator.geolocation` to `captureNode`, so a
 > geofenced code only earns on-site (`location_required` / `too_far` already surfaced). Device location is
 > used at claim time only, never stored.
 
-> **2026-06-05:** QR/NFC — **UTM / source passthrough** (ADR-106, migration `20260605140000`, issue #221).
+> **2026-06-05:** QR/NFC — **UTM / source passthrough** (ADR-107, migration `20260605140000`, issue #221).
 > Each dynamic code gains an operator **`source_tag`**; an anonymous `/q` scan stamps it into the
 > first-touch cookie (first-touch wins). New **`profiles.acquisition`** jsonb snapshots first-touch
 > (utm/source/campaign/code/channel/landing) **once** at onboarding (`persistAcquisition`, best-effort),
 > so a signup is permanently traceable to the poster that brought them — extends the ADR-095 attribution
 > spine.
 
-> **2026-06-05:** QR/NFC — **Google Wallet pass** (ADR-107, issue #221). Members get an "Add to Google
+> **2026-06-05:** QR/NFC — **Google Wallet pass** (ADR-108, issue #221). Members get an "Add to Google
 > Wallet" button for their profile code; `lib/wallet/google.ts` signs the Save-to-Wallet JWT with
 > `node:crypto` (RS256, no new dependency). **Env-gated** (`GOOGLE_WALLET_*`): ships dark — the
 > `/api/wallet/google` route 404s and the button hides until credentials are set. Ownership-gated. Apple

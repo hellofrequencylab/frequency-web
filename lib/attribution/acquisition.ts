@@ -1,4 +1,4 @@
-// Persist first-touch acquisition onto the profile at signup (ADR-106). The edge
+// Persist first-touch acquisition onto the profile at signup (ADR-107). The edge
 // captured it into the `fq_attr` cookie (and a `fq_src` channel hint); here we
 // snapshot it onto `profiles.acquisition` once — first write wins — so a signup is
 // permanently traceable to the campaign / poster / code that brought them, long

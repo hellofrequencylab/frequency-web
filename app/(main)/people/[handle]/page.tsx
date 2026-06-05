@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { startConversation } from '@/app/(main)/messages/actions'
 import { Composer } from '@/components/feed/composer'
@@ -77,6 +78,14 @@ export default async function ProfilePage({
     .maybeSingle()
 
   if (!profile) notFound()
+
+  // header_image_url isn't in the generated types yet (new column) — read via cast.
+  const { data: hdrRow } = await (admin as unknown as SupabaseClient)
+    .from('profiles')
+    .select('header_image_url')
+    .eq('id', profile.id)
+    .maybeSingle()
+  const headerImageUrl = (hdrRow as { header_image_url?: string | null } | null)?.header_image_url ?? null
 
   const vcardEnabled = parseVcard(profile.vcard).enabled
 
@@ -174,9 +183,14 @@ export default async function ProfilePage({
     <div>
       {/* ── Cover image + avatar header (the one hero card) ─────── */}
       <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden mb-6">
-        {/* Cover */}
+        {/* Cover — the member's header image when set, else the default gradient. */}
         <div className="relative h-32 sm:h-40 bg-gradient-to-br from-primary via-signal to-signal-strong">
-          <div className="absolute inset-0 bg-[url('/images/hero.jpg')] bg-cover bg-center opacity-30 mix-blend-overlay" />
+          {headerImageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={headerImageUrl} alt="" className={`absolute inset-0 h-full w-full object-cover ${isDemo ? 'grayscale-[0.5]' : ''}`} />
+          ) : (
+            <div className="absolute inset-0 bg-[url('/images/hero.jpg')] bg-cover bg-center opacity-30 mix-blend-overlay" />
+          )}
         </div>
 
         {/* Avatar overlapping the cover */}

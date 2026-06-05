@@ -30,7 +30,7 @@ export interface FirstTouch {
   /** Ad-click identifiers (Google / Meta) — proof of paid arrival. */
   gclid?: string
   fbclid?: string
-  /** The dynamic-code slug that brought them, when arrival was a /q scan (ADR-106). */
+  /** The dynamic-code slug that brought them, when arrival was a /q scan (ADR-107). */
   code?: string
 }
 

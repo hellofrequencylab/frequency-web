@@ -87,7 +87,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
     if (!profileId) {
       res.cookies.set(CHANNEL_COOKIE, 'qr_scan', { path: '/', maxAge: FIRST_TOUCH_MAX_AGE, sameSite: 'lax' })
       // First-touch wins: stamp the code/source only if no prior touch exists, so the
-      // eventual signup traces to THIS poster (ADR-106). Persisted at onboarding.
+      // eventual signup traces to THIS poster (ADR-107). Persisted at onboarding.
       if (!hasFirstTouch) {
         const touch: FirstTouch = {
           ts: new Date().toISOString(),

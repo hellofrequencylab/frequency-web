@@ -1,4 +1,4 @@
-// Google Wallet "Add to Wallet" pass for a member's profile code (ADR-107).
+// Google Wallet "Add to Wallet" pass for a member's profile code (ADR-108).
 // Dependency-free: we sign the Save-to-Wallet JWT (RS256) with node:crypto, so no
 // new package. The pass is a Generic card carrying the member's connect QR.
 //

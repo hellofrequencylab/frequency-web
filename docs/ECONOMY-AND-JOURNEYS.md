@@ -41,11 +41,29 @@ how each gate reads: browse freely, muted, click → upgrade lightbox.
 
 ## 3. Two currencies, reconciled
 
-- **Gems = the web/engagement currency.** Easy to earn (post, comment, react, invite).
-  Spendable in the Store — by Crew. For a Member they pile up, inert.
-- **Zaps = the showing-up currency** that drives **season ranks**. Harder to earn, and
-  for a Member **harder still** (a lower rate / level cap, §6). Member zaps accumulate
-  but stay **inert** — no rank progression, no profile endorsement.
+- **Gems = the web / on-platform currency.** Earned by keeping the community warm
+  between gatherings (post, comment, react, welcome, RSVP). Daily-capped so they
+  can't be farmed; spendable in the Vault — by Crew. For a Member they pile up, inert.
+- **Zaps = the showing-up currency** that drives **season ranks** — *the weight of
+  being there*. Earned by **in-person + outreach** acts, the biggest rewards living
+  off the screen. Harder to earn, and for a Member **harder still** (a lower rate /
+  level cap, §6); Member zaps accumulate but stay **inert**.
+
+**Reward ladder** (live in `gem_config` / `zap_config`; ADR-104 / the
+`…_economy_rebalance` migration). Tuned so a ~13-week season lands a **casual member
+at Operative (300+)**, a **regular at Agent (750+)**, and a **real leader at
+Conduit→Luminary (1500–3000)**:
+
+| ⚡ Zaps — in-person + outreach | | 💎 Gems — web / on-platform (capped) | |
+| :-- | --: | :-- | --: |
+| Found a real circle | 100 | Finish an Arc | 30 |
+| Host an in-person event | 60 | Complete a season challenge | 15 |
+| Activate / claim a circle | 40 | Welcome a newcomer | 8 |
+| An invite you sent joins | 40 | RSVP to an event | 5 |
+| Show up (verified check-in) | 25 | Join a circle | 5 |
+| Outreach task (flyer/QR) | 20 | Post (≤3/day) | 3 |
+| Log a real-world practice | 12 | Reply (≤5/day) | 2 |
+| Capture a ghost node | 10 | Daily login (1/day) · React (≤5/day) | 2 · 1 |
 
 So a free member *feels* the game (counters climbing, streaks alive) without getting
 its status payoff. Paying flips the points from dead to live.
