@@ -3257,7 +3257,7 @@ is edited.
 ## ADR-114: Acquisition analytics — roll up first-touch snapshots on the stats page
 
 **Status:** Accepted · `lib/qr/acquisition.ts` (+ test), `app/(main)/admin/qr/stats/page.tsx`.
-Cashes in the data captured by ADR-104 (medium) + ADR-107 (`source_tag` / `profiles.acquisition`).
+Cashes in the data captured by ADR-105 (medium) + ADR-107 (`source_tag` / `profiles.acquisition`).
 
 **Context.** We started persisting `qr_scans.medium` and `profiles.acquisition`, but nothing
 turned them into a decision — there was no screen answering "which poster/channel actually
