@@ -29,7 +29,6 @@ import {
   Shield,
   QrCode,
   Power,
-  Rocket,
   Send,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -99,7 +98,6 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     blurb: 'Tune the AI guide and see what she could not answer.',
     links: [
       { href: '/admin/vera', label: 'Vera config', desc: 'Voice, responses, and induction copy.', Icon: Bot, min: 'janitor' },
-      { href: '/admin/beta-sequences', label: 'Beta sequences', desc: 'Audience-targeted induction splash pages + cohort tags.', Icon: Rocket, min: 'janitor' },
       { href: '/admin/help-gaps', label: 'Help gaps', desc: 'Questions Vera deflected — the to-write list.', Icon: HelpCircle, min: 'janitor' },
     ],
   },
