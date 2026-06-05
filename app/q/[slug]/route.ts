@@ -30,10 +30,22 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
 
   if (!code || !isCodeLive(code)) return unavailable
 
-  // Best-effort scan log — never blocks the redirect.
+  // Best-effort scan log (with coarse IP-geo for the locator map) — never blocks the
+  // redirect. The edge sets these; they're absent locally, so geo is just null then.
   const profileId = await getMyProfileId()
+  const h = request.headers
+  const city = h.get('x-vercel-ip-city')
+  const lat = Number(h.get('x-vercel-ip-latitude'))
+  const lng = Number(h.get('x-vercel-ip-longitude'))
   await admin
-    .rpc('record_qr_scan', { p_code_id: code.id, p_profile: profileId ?? undefined })
+    .rpc('record_qr_scan', {
+      p_code_id: code.id,
+      p_profile: profileId ?? undefined,
+      p_country: h.get('x-vercel-ip-country') ?? undefined,
+      p_city: city ? decodeURIComponent(city) : undefined,
+      p_lat: Number.isFinite(lat) ? lat : undefined,
+      p_lng: Number.isFinite(lng) ? lng : undefined,
+    })
     .then(() => {}, () => {})
   // First-party + GA4 funnel event (covers dynamic links, member + marketing codes).
   void track('qr.scanned', { purpose: code.purpose ?? 'none', destination: code.destination_type }, profileId)
