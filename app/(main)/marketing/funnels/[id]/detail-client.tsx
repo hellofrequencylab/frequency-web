@@ -5,8 +5,9 @@
 // campaign), and the Phase 1 EntryRow for each entry point.
 
 import { useState, useTransition } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Plus, Pencil, Archive, ArrowLeft } from 'lucide-react'
+import { Plus, Pencil, Archive, ArrowLeft, FlaskConical } from 'lucide-react'
 import { listEntryTemplates, type EntryTemplate } from '@/lib/entry-points/templates'
 import type { DestinationGroup } from '@/lib/entry-points/destinations'
 import {
@@ -145,7 +146,15 @@ export function CampaignDetail({
           </p>
         )}
         {cards.map((card) => (
-          <EntryRow key={card.id} card={card} destinationGroups={destinationGroups} />
+          <div key={card.id} className="space-y-1">
+            <EntryRow card={card} destinationGroups={destinationGroups} />
+            <Link
+              href={`/marketing/funnels/variants/${card.id}`}
+              className="ml-1 inline-flex items-center gap-1 text-[11px] font-semibold text-muted transition-colors hover:text-text"
+            >
+              <FlaskConical className="h-3 w-3" /> A/B test
+            </Link>
+          </div>
         ))}
       </section>
     </div>
