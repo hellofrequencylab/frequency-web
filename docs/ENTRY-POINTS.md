@@ -175,7 +175,13 @@ separate, reviewed step).
 | ✅ Foundation | QR engine · scan resolver · attribution · referral zaps · CRM · personas/lead flows | in repo |
 | ✅ **1 — Crew MVP** | "My Entry Points": template → branded QR + **flyer (vector SVG + PNG)** → create points → signup credit | `qr_codes` · QR render · attribution · zaps |
 | 🟡 **2 — Admin builder** | ✅ Campaign builder (`/marketing/funnels`) + per-campaign scans + in-place entry-point creation. ⏳ Puck landings · assign-to-crew · template curation | `/marketing` · Puck `pages` |
-| ⏳ 3 — Growth | A/B · per-persona nurture automations · leaderboards/tiers · segments | `automations` · `achievements` |
+| 🟡 **3 — Growth** | ✅ Per-persona nurture sequences (`/marketing/nurture`, ADR-131). ⏳ A/B · leaderboards/tiers · segment broadcasts | `automations` · `achievements` |
+
+### Phase 3 — what shipped (so far)
+
+- **Per-persona nurture** (ADR-131): a **Nurture** tab in `/marketing` where operators build, per persona, an ordered list of timed email steps. When a lead is captured with that persona (`captureLead`), they're **enrolled** (`lib/nurture/enroll.ts`, idempotent, fire-safe); a 15-min cron (`/api/cron/nurture` → `lib/nurture/runner.ts`) sends each due step through the durable email outbox — **consent-gated** (unsubscribe / lifecycle opt-out cancels) with a contact-level unsubscribe on every send.
+- **Data:** `nurture_sequences` / `nurture_steps` / `nurture_enrollments` (migration `20260607000000`, additive, service-role only). Pure scheduling logic in `lib/nurture/schedule.ts` (unit-tested).
+- **Still pending (3b):** in-app/push step channels (email-only today), A/B variant steps, backfilling existing contacts, segment-targeted broadcasts, and entry-point leaderboards/tiers.
 
 ### Phase 2 — what shipped
 
@@ -202,4 +208,4 @@ separate, reviewed step).
 - Operator-assignable template editor (DB layer over the code registry).
 - A user-editable QR style on entry points (today the template's preset is used; restyle is deferred).
 - Flyer caching + more preset layouts (today: `poster` + `card`).
-- A/B testing + nurture automations (Phase 3).
+- A/B testing, leaderboards/tiers, segment broadcasts (Phase 3b — nurture shipped, see ADR-131).

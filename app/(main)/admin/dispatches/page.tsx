@@ -5,7 +5,7 @@ import { DispatchesClient } from './dispatches-client'
 import { BroadcastCompose } from '@/app/(main)/broadcast/broadcast-compose'
 
 export default async function AdminDispatchesPage({ searchParams }: { searchParams: Promise<{ edit?: string }> }) {
-  const { profileId, role } = await requireAdmin('host')
+  const { profileId, role } = await requireAdmin('host', { staff: 'community' })
   const { edit } = await searchParams
   const admin = createAdminClient()
   const isStaff = role === 'janitor' || role === 'admin'
