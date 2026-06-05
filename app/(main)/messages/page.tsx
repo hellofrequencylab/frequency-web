@@ -4,6 +4,9 @@ import { redirect } from 'next/navigation'
 import { MessageSquare, Hash, Lock, Users } from 'lucide-react'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { isOnline } from '@/lib/presence'
+import { PresenceDot } from '@/components/presence/presence-dot'
 import { getInitials, relativeTime } from '@/lib/utils'
 import { NewRoomCompose } from '@/components/compose/new-room-compose'
 import { CrewLeadQuickAction } from '@/components/messages/crew-lead-quick-action'
@@ -82,6 +85,19 @@ export default async function MessagesPage({
   // Public profile fields for everyone I share a DM / room with (caller-scoped).
   const { data: peerRows } = await (supabase as unknown as SupabaseClient).rpc('message_peer_profiles')
   const peerMap = new Map(((peerRows ?? []) as Profile[]).map(p => [p.id, p]))
+
+  // Liveness (Phase D): who among my DM peers is active now. last_seen_at is a
+  // public field; read via the admin client so presence shows regardless of region.
+  const peerIds = [...peerMap.keys()]
+  let onlineIds = new Set<string>()
+  if (peerIds.length > 0) {
+    const { data: seen } = await createAdminClient()
+      .from('profiles').select('id, last_seen_at').in('id', peerIds)
+    onlineIds = new Set(
+      ((seen ?? []) as { id: string; last_seen_at: string | null }[])
+        .filter(s => isOnline(s.last_seen_at)).map(s => s.id),
+    )
+  }
 
   // ── Rooms ─────────────────────────────────────────────────────────
   const { data: myMemberships } = await supabase
@@ -294,7 +310,7 @@ export default async function MessagesPage({
               {activeItems.map(it =>
                 it.kind === 'room'
                   ? <RoomRowItem key={`r-${it.id}`} room={it.room} />
-                  : <DMRowItem key={`d-${it.id}`} conv={it.conv} myProfileId={myProfileId} />
+                  : <DMRowItem key={`d-${it.id}`} conv={it.conv} myProfileId={myProfileId} onlineIds={onlineIds} />
               )}
             </div>
           </section>
@@ -324,7 +340,7 @@ export default async function MessagesPage({
               {filteredItems.map(it =>
                 it.kind === 'room'
                   ? <RoomRowItem key={`r-${it.id}`} room={it.room} />
-                  : <DMRowItem key={`d-${it.id}`} conv={it.conv} myProfileId={myProfileId} />
+                  : <DMRowItem key={`d-${it.id}`} conv={it.conv} myProfileId={myProfileId} onlineIds={onlineIds} />
               )}
             </div>
           )}
@@ -419,9 +435,10 @@ function RoomRowItem({ room }: { room: RoomRow }) {
   )
 }
 
-function DMRowItem({ conv, myProfileId }: { conv: ConversationRow; myProfileId: string }) {
+function DMRowItem({ conv, myProfileId, onlineIds }: { conv: ConversationRow; myProfileId: string; onlineIds: Set<string> }) {
   const hasUnread = conv.unreadCount > 0
   const isGroup = conv.participants.length > 1
+  const peerOnline = !isGroup && !!conv.participants[0] && onlineIds.has(conv.participants[0].id)
   const display = conv.name || (isGroup
     ? conv.participants.slice(0, 3).map(p => p.display_name.split(' ')[0]).join(', ') +
       (conv.participants.length > 3 ? ` +${conv.participants.length - 3}` : '')
@@ -436,7 +453,7 @@ function DMRowItem({ conv, myProfileId }: { conv: ConversationRow; myProfileId: 
           : 'hover:bg-surface-elevated'
       }`}
     >
-      <div className="shrink-0">
+      <div className="shrink-0 relative">
         {isGroup ? (
           <GroupAvatars participants={conv.participants} />
         ) : conv.participants[0]?.avatar_url ? (
@@ -446,6 +463,7 @@ function DMRowItem({ conv, myProfileId }: { conv: ConversationRow; myProfileId: 
             {conv.participants[0] ? getInitials(conv.participants[0].display_name) : '?'}
           </div>
         )}
+        <PresenceDot online={peerOnline} />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">

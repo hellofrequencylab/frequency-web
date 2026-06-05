@@ -21,6 +21,10 @@ Frequency has a few ways to talk directly, beyond posting in your feed.
 - **Rooms** are ongoing group spaces, distinct from one-off DMs. Crew members and up can also create open/shared rooms.
 - **Channel rooms** — every [Channel](/help/groups/channels) has one open room. Anyone can read it; tune into the channel to post. You'll see the rooms you're tuned into in your Messages, and an **Open room** button on each Channel.
 
+## Who's around
+
+A small **green dot** on someone's avatar means they're active right now — so you can see who's around to chat at a glance, in your messages and across the directory.
+
 ## Search a room
 
 Open any room and tap **Search** in the header to find past messages — it searches by *meaning*, not just exact words, so "the hike on Saturday" surfaces the right thread even if it was worded differently.
