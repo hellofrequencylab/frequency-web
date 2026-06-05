@@ -37,7 +37,8 @@ export interface FlyerInput {
 const escapeXml = (s: string) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
-/** Greedy word-wrap to at most `maxLines` lines of ~`maxChars` each (trailing … ). */
+/** Greedy word-wrap to at most `maxLines` lines of ~`maxChars` each. Each kept line is
+ *  filled greedily; only if the text still overflows the last line is it ellipsized. */
 function wrap(text: string, maxChars: number, maxLines: number): string[] {
   const words = text.trim().split(/\s+/).filter(Boolean)
   const lines: string[] = []
@@ -47,18 +48,16 @@ function wrap(text: string, maxChars: number, maxLines: number): string[] {
     if (next.length > maxChars && line) {
       lines.push(line)
       line = w
-      if (lines.length === maxLines - 1) break
     } else {
       line = next
     }
   }
-  if (line && lines.length < maxLines) lines.push(line)
-  // If words remain past the cap, ellipsize the last line.
-  const used = lines.join(' ').split(/\s+/).filter(Boolean).length
-  if (used < words.length && lines.length) {
-    lines[lines.length - 1] = lines[lines.length - 1].replace(/\s*$/, '') + '…'
-  }
-  return lines
+  if (line) lines.push(line)
+  if (lines.length <= maxLines) return lines
+  // Overflow: keep the first maxLines greedy lines, ellipsize the last kept one.
+  const kept = lines.slice(0, maxLines)
+  kept[maxLines - 1] = kept[maxLines - 1].replace(/[.,;:\s]*$/, '') + '…'
+  return kept
 }
 
 interface LayoutSpec {

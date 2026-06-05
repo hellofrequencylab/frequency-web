@@ -316,7 +316,10 @@ export function EntryRow({ card, destinationGroups }: { card: EntryCard; destina
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <a href={`/api/entry-points/${encodeURIComponent(card.slug)}/flyer`} className={action}>
-              <Download className="h-3 w-3" /> Flyer (SVG)
+              <Download className="h-3 w-3" /> Flyer SVG
+            </a>
+            <a href={`/api/entry-points/${encodeURIComponent(card.slug)}/flyer?format=png`} className={action}>
+              <Download className="h-3 w-3" /> Flyer PNG
             </a>
             <a href={`${qrApi}&format=png&download=${encodeURIComponent(card.slug)}`} className={action}>
               <Download className="h-3 w-3" /> QR PNG
