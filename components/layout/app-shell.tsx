@@ -53,6 +53,7 @@ import { DemoToggle } from '@/components/layout/demo-toggle'
 import { DockRevealProvider, useDockRevealed, useHoverScrollReveal } from '@/components/sidebar/dock-reveal'
 import { railFor } from '@/lib/layout/page-chrome'
 import { SearchOverlay } from '@/components/search/search-overlay'
+import { PageAdminDock } from '@/components/layout/page-admin-dock'
 
 // The sidebar + community bar are built from NAV_AREAS (lib/nav-areas.ts — the
 // single source of truth shared with the permission grid). The whole menu is
@@ -1311,6 +1312,9 @@ export default function AppShell({
 
       {/* ── Live search overlay (⌘K or the header search) ─────────────────── */}
       {searchOpen && <SearchOverlay onClose={() => setSearchOpen(false)} />}
+
+      {/* ── Page admin dock — opaque edge tab → per-page admin actions (operators) ── */}
+      {!hideAppNav && <PageAdminDock role={gateRole} staffRole={staffRole} />}
 
       {/* ── Mobile edge rails (fixed overlays; bracket the feed on scroll) ─── */}
       {!hideAppNav && (

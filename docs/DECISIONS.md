@@ -3743,6 +3743,75 @@ in a separate reviewed step. Personas/lead flows are the routing layer underneat
 are the distribution layer on top. Operator playbooks live in Notion, linked to ENTRY-POINTS.md.
 
 ---
+
+## ADR-127: Site-admin roles — a functional "operations" axis (Owner · Admin · Operations · Marketing · Accounting · Support · Analyst)
+
+**Status:** Accepted (approved; implementation pending) · extends the staff axis
+(`lib/staff.ts` `team_members`, ADR-027). Layers over `app/(main)/admin/sections.ts`
+(`ADMIN_GROUPS.min`), `lib/nav-areas.ts` (`area_permissions`), and the capability
+resolver (CAPABILITIES-AND-MOBILE.md).
+
+**Context.** Two axes exist: the **community trust ladder** (member→…→admin→janitor, community
+standing) and a separate **staff/operations** axis (`team_members`: analyst→marketer→admin→owner,
+ADR-027). The staff axis is a strict ladder, which is wrong for **functional departments** —
+Operations and Accounting aren't "more/less than" each other.
+
+**Decision.** Keep the two axes. Reshape the staff axis into **two spanning levels + four
+department roles + one read-only**:
+
+| Role | Scope |
+|---|---|
+| Owner | Everything incl. billing ownership, transfer/close org, grant roles |
+| Admin | All operations + assigns roles below Owner (not ownership-only) |
+| Operations | Circles · channels · events · hubs/nexuses · broadcasts · moderation · members roster · QR. No finance/roles |
+| Marketing | Marketing · CRM · outreach · segments · intel; insights read |
+| Accounting | Billing · subscriptions · payouts · reports; members read-only |
+| Support | Moderation · member assist · help-gaps; insights read |
+| Analyst | Read-only across insights/analytics/CRM |
+
+Permissions stay **data-driven** (role→capability map over `ADMIN_GROUPS` + `area_permissions` +
+the resolver), not hardcoded per page. **Janitor stays** the top community super-steward; a person
+may hold both a community role and an operations role. Migration is incremental: `analyst→Analyst`,
+`marketer→Marketing`, `admin→Admin`, `owner→Owner`; **add** Operations, Accounting, Support.
+
+**Alternatives.** Extend the single strict ladder (rejected — departments aren't ranks). Put ops
+roles on the community ladder (rejected — conflates community standing with business operations,
+the exact thing ADR-027 separated).
+
+**Consequences.** A clean operations org model. Implementation = a migration adding the role enum
+values + a role→capability map + the `/admin/roles` UI; gating already flows through
+`meetsAccess`/`meetsStaff` + the resolver. Built after the page admin dock (ADR-128).
+
+## ADR-128: Page admin dock (`PageAdminDock`) — inline admin as a movable edge tab (Phase 1)
+
+**Status:** Accepted (Phase 1) · `components/layout/page-admin-dock.tsx`,
+`components/layout/app-shell.tsx`. Realizes the inline-admin model (CAPABILITIES-AND-MOBILE.md §2)
+as a dock.
+
+**Context.** Admin/edit actions for a page were scattered (the Admin tab, per-page menus). We want
+them **always readily available in one tab on the page itself**, for whoever's allowed.
+
+**Decision.**
+- An **opaque edge tab** (operators only — `meetsAccess('host')` or any staff; never a member) that
+  opens a **panel of admin actions for the current page**: Edit info (deep-links the section editor
+  by route), Group dispatch, Settings/Admin home, and (janitor) Members · Pages · Roles. Layout
+  template + Basic styles are shown as **"Soon"** (Phase 2 — in-place template/theming editing).
+- **Movable + persistent:** a pull-tab (grip) drags the dock vertically and snaps it to either edge;
+  the position is saved site-wide (localStorage `freq-admin-dock`). Closed = opaque tab; open = the
+  panel anchored at that position.
+- **Phase 1 wires the existing editors** (route → `/admin/*`); per-entity precision ("edit THIS
+  circle" inline) and the layout/styles editors are Phase 2, via a page-provided action context +
+  the capability resolver.
+
+**Alternatives.** Keep admin behind the Admin tab only (rejected — not in-context). A fixed
+(non-movable) dock (rejected — it would cover content somewhere on some page; user-positioned + saved
+solves it). Per-page bespoke admin menus (rejected — one dock, one registry).
+
+**Consequences.** Operators get one consistent, repositionable admin surface on every page. Gating
+is by role today; it tightens to the granular capability set (and the ADR-127 operations roles) as
+those land. Phase 2 brings true in-place layout/style editing.
+
+---
 ### Decisions intentionally NOT duplicated here
 
 Already fully covered by the repo docs (no ADR needed): the RLS / admin-client
