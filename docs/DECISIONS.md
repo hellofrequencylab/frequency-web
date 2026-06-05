@@ -4071,6 +4071,47 @@ CAPABILITIES-AND-MOBILE §2 + PAGE-FRAMEWORK §3/§6 are refined; the operator g
 Notion on ship.
 
 ---
+
+## ADR-134: Entry-point recruiter leaderboard + tiers — gamify the crew lead-gen loop
+
+**Status:** Accepted (Entry Points Phase 3) · `lib/entry-points/leaderboard.ts`,
+`app/(main)/crew/leaderboard/` (`entrypoints` scope + tab). Builds on Entry Points
+(ADR-126), the referral attribution column (`profiles.referred_by_profile_id`, ADR-099),
+and the existing `/crew/leaderboard` shell + season-rank pattern.
+
+**Context.** Crew can build entry points (Phase 1) and admins run campaigns (Phase 2), but
+nothing **ranked** crew by the outcome — closing the loop "build → earn → see where you
+stand" that drives the rest of the gamification. We want a recruiter board + recognition
+tiers without a new points system.
+
+**Decision.**
+- **Rank by outcome, owner-level.** A recruiter's score is the **signups they referred**
+  (`profiles.referred_by_profile_id = owner`) — the same owner-level credit the zaps model
+  already uses (`invite_accepted`/`referral_activated`) — with **scans** (sum of their entry
+  points' `scan_count`) and **entry-point count** as tiebreakers (`rankRecruiters`, pure).
+  Signups-not-scans is deliberate: it rewards conversions, not vanity reach. It counts
+  *all* of an owner's referrals (not just a specific code), because `fq_ref` attributes to
+  the owner, not the code — matching how credit already flows.
+- **Tiers from cumulative signups** (`recruiterTier`, pure + tested): Scout → Connector (3)
+  → Recruiter (10) → Ambassador (25) → Luminary (50). Shown as a badge on the board and a
+  "N more to <next>" nudge for the viewer.
+- **Reuse the leaderboard surface.** A new `entrypoints` scope/tab on `/crew/leaderboard`
+  renders its own columns (Points · Scans · Signups · Tier) rather than the season-zaps
+  layout, so it sits where members already look for rankings — no new page.
+- **No new tables / no migration.** Computed at read time from `qr_codes` + `profiles`.
+
+**Alternatives.** A separate persisted "recruiter_score" with its own ledger (rejected —
+referrals already give an accurate owner-level signal; computing at read time avoids a
+sync path). Rank by scans (rejected — rewards printing, not converting). A standalone page
+(rejected — the leaderboard is the natural home).
+
+**Consequences.** Crew see themselves ranked for lead-gen and chase the next tier; the loop
+from Phases 1–2 now has a visible payoff. Tiers are recognition-only today (no rewards
+attached). Per-campaign/per-code conversion attribution and tier-linked zaps/badges are
+follow-ups. Read-time aggregation is fine at current scale; if the owner set grows large,
+denormalise into a materialised count.
+
+---
 ### Decisions intentionally NOT duplicated here
 
 Already fully covered by the repo docs (no ADR needed): the RLS / admin-client
