@@ -3561,6 +3561,36 @@ rails are `md:hidden` so desktop is untouched.
 
 ---
 
+## ADR-123: Live search overlay (type-ahead) replaces the submit-to-reload search
+
+**Status:** Accepted · `components/search/search-overlay.tsx`, `app/api/search/route.ts`,
+`components/layout/app-shell.tsx` (header triggers + ⌘K). The `/search` page stays as the
+"see all" destination.
+
+**Context.** Search meant navigating to `/search` and submitting a form that reloaded the page per
+query — not "active." We wanted results as you type, reachable from anywhere.
+
+**Decision.**
+- **A full-screen overlay** opened from the header search pill/icon and **⌘K**. Typing
+  (debounced 200ms) hits a new **`/api/search`** route that returns a small slice of
+  **people / posts / events** as JSON; results render live, grouped, with a **"See all results"**
+  link to the existing `/search?q=` page. Mobile-first (fills the screen on a phone, centers on
+  desktop); Esc / backdrop / × close it.
+- **Mounted only while open** (`{searchOpen && <SearchOverlay/>}`), so its state resets each open —
+  no reset-in-effect.
+- **`/api/search`** mirrors the `/search` page queries (admin client, `ilike`), auth-gated, caps at
+  6 per type, and strips `(),` from the term so a stray char can't break the PostgREST `or()` filter.
+
+**Alternatives.** Live-search the `/search` page in place (rejected — an overlay is reachable from
+every page, not just after navigating). A new typed search RPC (deferred — reuse the page's existing
+query shape now; revisit if search needs ranking/perf work).
+
+**Consequences.** Search is instant and global. `/search` remains the deep/linkable results view (and
+the overlay's "see all" target), so nothing is lost. New `/api/search` is the first read endpoint for
+in-app search; if abused it can move behind the AI/RPC boundary later.
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 
