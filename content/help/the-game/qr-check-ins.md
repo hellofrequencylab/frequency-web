@@ -35,6 +35,10 @@ personal code, and it does double duty.
 - **Make it yours:** tap **Customize** to restyle it (colors, shape, logo), and
   **Download** to save it as a PNG or SVG — handy for a wallpaper, a name tag, or a
   slide when you're hosting.
+- **Contact card:** turn on **Contact card** to let people tap **Save contact** when
+  they scan you — it saves a vCard to their phone. You choose exactly what it
+  shares (your photo, and optionally an email, phone, title, or website); nothing
+  you don't fill in is included.
 
 ## Partner codes
 
