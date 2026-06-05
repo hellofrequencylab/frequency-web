@@ -87,7 +87,14 @@ export function coerceExtraction(raw: unknown): ExtractedContact {
     socials: coerceSocials(r.socials),
     tags: dedupeTags(r.tags),
     connectionNote: str(r.connectionNote ?? r.note, 600),
-    photo: { found: box !== null || photoRaw.found === true, box },
+    photo: {
+      found: box !== null || photoRaw.found === true,
+      box,
+      imageIndex:
+        typeof photoRaw.imageIndex === 'number' && photoRaw.imageIndex >= 0
+          ? Math.floor(photoRaw.imageIndex)
+          : 0,
+    },
   }
 }
 

@@ -60,6 +60,7 @@ const EXTRACTION_TOOL: Anthropic.Tool = {
         description: 'A portrait/headshot of the person on the source, if any.',
         properties: {
           found: { type: 'boolean' },
+          imageIndex: { type: 'number', description: 'Which image (0-based, in the order given) the portrait is in.' },
           box: {
             type: 'object',
             description: 'Normalized bounding box (each value 0..1): x,y = top-left; w,h = width,height.',
@@ -80,10 +81,11 @@ const EXTRACTION_TOOL: Anthropic.Tool = {
 const SCAN_SYSTEM = `You are Vera, Frequency's assistant. A community steward photographed a business card, flyer, or poster and wants it turned into a CRM profile.
 
 Read every detail you can and call the save_contact tool. Rules:
+- You may be given several images of the SAME contact — e.g. the front and back of a business card, plus other photos. Treat them as one person and merge every detail you can read across all of them.
 - Only record what is actually present — never invent a name, email, company, or any other detail.
 - tags: 3–6 short lowercase descriptors (interests, industry, or how the steward might collaborate).
 - connectionNote: one or two warm, human sentences the steward can use to remember who this is — no fluff, no fabricated backstory.
-- photo: if a portrait/headshot of a person appears, set found=true and box to the normalized bounding box (x,y top-left, w,h size — each 0..1) tightly around the face/portrait. If there is no person's photo, set found=false.`
+- photo: if a portrait/headshot of the person appears in ANY image, set found=true, imageIndex to which image it is in (0-based, in the order given), and box to the normalized bounding box (x,y top-left, w,h size — each 0..1) tightly around the face/portrait. If no image shows the person's photo, set found=false.`
 
 const ASSIST_SYSTEM = `You are Vera, Frequency's assistant. A community steward is jotting a quick note about someone they just met, and wants it tidied into a CRM profile.
 
@@ -132,21 +134,33 @@ async function runExtraction(opts: {
   }
 }
 
-/** Vision harvest: a card/poster photo → a structured profile (Sonnet). */
+/** Vision harvest: one or more photos of the same contact (e.g. front + back of a
+ *  card) → a single structured profile (Sonnet). */
 export async function scanCardImage(input: {
-  imageBase64: string
-  mediaType: ImageMediaType
+  images: { base64: string; mediaType: ImageMediaType }[]
   profileId?: string | null
 }): Promise<ExtractedContact | null> {
+  const imgs = input.images.slice(0, 6)
+  if (!imgs.length) return null
+  const content: Anthropic.MessageParam['content'] = [
+    ...imgs.map((im) => ({
+      type: 'image' as const,
+      source: { type: 'base64' as const, media_type: im.mediaType, data: im.base64 },
+    })),
+    {
+      type: 'text' as const,
+      text:
+        imgs.length > 1
+          ? `These ${imgs.length} images are different views of the SAME person/contact — e.g. the front and back of a business card, plus other photos. Combine everything you can read across all of them into ONE profile. Call save_contact.`
+          : 'Harvest this person’s details into a profile. Call save_contact.',
+    },
+  ]
   return runExtraction({
     tier: 'sonnet',
     feature: 'connection-scan',
     system: SCAN_SYSTEM,
     profileId: input.profileId,
-    content: [
-      { type: 'image', source: { type: 'base64', media_type: input.mediaType, data: input.imageBase64 } },
-      { type: 'text', text: 'Harvest this person’s details into a profile. Call save_contact.' },
-    ],
+    content,
   })
 }
 

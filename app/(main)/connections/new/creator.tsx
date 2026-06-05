@@ -103,6 +103,9 @@ export function Creator({ userId }: { userId: string }) {
   const [source, setSource] = useState<ContactSource>('manual')
   const [extraction, setExtraction] = useState<unknown>(undefined)
 
+  const [scanFiles, setScanFiles] = useState<File[]>([])
+  const [scanThumbs, setScanThumbs] = useState<string[]>([])
+
   const [avatarPath, setAvatarPath] = useState<string | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
 
@@ -127,13 +130,39 @@ export function Creator({ userId }: { userId: string }) {
     return path
   }
 
-  async function handleScan(file: File) {
+  function addScanFiles(list: FileList | null) {
+    const incoming = list ? Array.from(list) : []
+    if (incoming.length) {
+      setScanFiles((prev) => [...prev, ...incoming].slice(0, 6))
+      setScanThumbs((prev) => [...prev, ...incoming.map((f) => URL.createObjectURL(f))].slice(0, 6))
+      setMsg(null)
+    }
+    if (cameraRef.current) cameraRef.current.value = ''
+    if (galleryRef.current) galleryRef.current.value = ''
+  }
+
+  function removeScanFile(i: number) {
+    setScanThumbs((prev) => {
+      const url = prev[i]
+      if (url) URL.revokeObjectURL(url)
+      return prev.filter((_, idx) => idx !== i)
+    })
+    setScanFiles((prev) => prev.filter((_, idx) => idx !== i))
+  }
+
+  async function runScan() {
+    if (!scanFiles.length || scanning) return
     setScanning(true)
     setMsg(null)
     try {
-      const ocr = await resizeForOcr(file)
-      const path = await uploadBlob(ocr)
-      const res = await scanCard(path)
+      // Upload a resized copy of each image; order preserved so the model's
+      // photo.imageIndex lines up with the list (front, back, …).
+      const paths: string[] = []
+      for (const f of scanFiles) {
+        const ocr = await resizeForOcr(f)
+        paths.push(await uploadBlob(ocr))
+      }
+      const res = await scanCard(paths)
       if (!res.ok) {
         setSource('card_scan')
         setTab('manual')
@@ -142,19 +171,23 @@ export function Creator({ userId }: { userId: string }) {
           text:
             res.reason === 'ai_unavailable'
               ? 'Vera’s scanner is off right now — fill in the details by hand below.'
-              : 'Couldn’t read that image. Try a sharper photo, or fill it in below.',
+              : 'Couldn’t read those images. Try sharper photos, or fill it in below.',
         })
         return
       }
       setForm((p) => mergeExtraction(p, res.extraction))
       setExtraction(res.extraction)
       setSource('card_scan')
-      // Cut a profile photo out using the detected face box (or a center crop).
+      // Cut a profile photo out of whichever image holds the portrait.
       try {
-        const cropped = await cropFromBox(file, res.extraction.photo.found ? res.extraction.photo.box : null)
-        const ap = await uploadBlob(cropped)
-        setAvatarPath(ap)
-        setAvatarPreview(URL.createObjectURL(cropped))
+        const photo = res.extraction.photo
+        const idx = photo.found && photo.imageIndex < scanFiles.length ? photo.imageIndex : -1
+        if (idx >= 0) {
+          const cropped = await cropFromBox(scanFiles[idx], photo.box)
+          const ap = await uploadBlob(cropped)
+          setAvatarPath(ap)
+          setAvatarPreview(URL.createObjectURL(cropped))
+        }
       } catch {
         /* photo is optional — proceed without it */
       }
@@ -164,8 +197,6 @@ export function Creator({ userId }: { userId: string }) {
       setMsg({ kind: 'err', text: err instanceof Error ? err.message : 'Something went wrong.' })
     } finally {
       setScanning(false)
-      if (cameraRef.current) cameraRef.current.value = ''
-      if (galleryRef.current) galleryRef.current.value = ''
     }
   }
 
@@ -262,57 +293,72 @@ export function Creator({ userId }: { userId: string }) {
       {msg && <p className={`rounded-lg border px-3 py-2 text-sm ${banner}`}>{msg.text}</p>}
 
       {tab === 'scan' ? (
-        <div className="rounded-2xl border border-dashed border-border-strong bg-surface p-8 text-center">
-          {scanning ? (
-            <div className="flex flex-col items-center gap-2 py-4 text-muted">
-              <Loader2 className="h-6 w-6 animate-spin text-primary-strong" />
-              <p className="text-sm">Reading the card…</p>
+        <div className="space-y-3">
+          <div className="rounded-2xl border border-dashed border-border-strong bg-surface p-6 text-center">
+            <ScanText className="mx-auto h-8 w-8 text-primary-strong" />
+            <p className="mt-3 text-sm font-medium text-text">Snap a card, poster, or a few photos</p>
+            <p className="mt-1 text-xs text-subtle">
+              Add both sides of a card and any extra shots — Vera reads them all together, drafts a
+              note and tags, and cuts out a profile photo.
+            </p>
+            <div className="mt-4 flex flex-wrap justify-center gap-2">
+              <button
+                type="button"
+                onClick={() => cameraRef.current?.click()}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+              >
+                <Camera className="h-4 w-4" /> Take a photo
+              </button>
+              <button
+                type="button"
+                onClick={() => galleryRef.current?.click()}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-border-strong px-4 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
+              >
+                <Upload className="h-4 w-4" /> Upload images
+              </button>
             </div>
-          ) : (
-            <>
-              <ScanText className="mx-auto h-8 w-8 text-primary-strong" />
-              <p className="mt-3 text-sm font-medium text-text">Snap a business card or poster</p>
-              <p className="mt-1 text-xs text-subtle">
-                Vera reads the details, drafts a connection note and tags, and cuts out a profile photo.
-              </p>
-              <div className="mt-4 flex flex-wrap justify-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => cameraRef.current?.click()}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
-                >
-                  <Camera className="h-4 w-4" /> Take a photo
-                </button>
-                <button
-                  type="button"
-                  onClick={() => galleryRef.current?.click()}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-border-strong px-4 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
-                >
-                  <Upload className="h-4 w-4" /> Upload an image
-                </button>
-              </div>
-              <p className="mt-4 text-xs text-subtle">Prefer to type it?{' '}
-                <button type="button" className="font-medium text-primary-strong hover:underline" onClick={() => setTab('manual')}>
-                  Enter manually
-                </button>
-              </p>
-            </>
+          </div>
+
+          {scanFiles.length > 0 && (
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+              {scanThumbs.map((src, i) => (
+                <div key={src} className="relative aspect-square overflow-hidden rounded-lg border border-border bg-surface-elevated">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={src} alt={`Image ${i + 1}`} className="h-full w-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => removeScanFile(i)}
+                    aria-label={`Remove image ${i + 1}`}
+                    className="absolute right-1 top-1 rounded-full bg-black/55 p-0.5 text-white transition-colors hover:bg-black/70"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
           )}
-          <input
-            ref={cameraRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            className="hidden"
-            onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleScan(f) }}
-          />
-          <input
-            ref={galleryRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleScan(f) }}
-          />
+
+          <div className="flex items-center justify-between gap-3">
+            <button type="button" className="text-xs font-medium text-primary-strong hover:underline" onClick={() => setTab('manual')}>
+              Enter manually
+            </button>
+            <button
+              type="button"
+              onClick={runScan}
+              disabled={scanning || scanFiles.length === 0}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+            >
+              {scanning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              {scanning
+                ? 'Reading…'
+                : scanFiles.length === 0
+                  ? 'Scan'
+                  : `Scan ${scanFiles.length} image${scanFiles.length === 1 ? '' : 's'}`}
+            </button>
+          </div>
+
+          <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => addScanFiles(e.target.files)} />
+          <input ref={galleryRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => addScanFiles(e.target.files)} />
         </div>
       ) : (
         <div className="space-y-5">
