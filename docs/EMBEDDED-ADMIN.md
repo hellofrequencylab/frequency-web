@@ -16,6 +16,129 @@
 > and [PAGE-FRAMEWORK.md §3/§6](PAGE-FRAMEWORK.md).
 >
 > **Status:** ✅ Phase 1 shipped (the dock) · ⏳ Phase 2 build pending (this doc).
+>
+> **Update — [ADR-137](DECISIONS.md):** the in-place modules are organized into a
+> drill-down **settings console** with a universal **9-category spine** (next section).
+> On-page **Edit Mode** becomes the way *all* entity admin happens — `/admin/*` entity
+> surfaces go away entirely.
+
+---
+
+## The target shape — Edit Mode & the 9-category settings console
+
+> Decision: [ADR-137](DECISIONS.md). The end state: **no entity admin lives in
+> `/admin/*`** — every page has an **Edit Mode** that opens a settings console covering
+> the *whole* surface, organized by one consistent spine.
+
+**The move.** An **Edit** toggle on any page the viewer can administer does two things at
+once: (1) the page enters **edit mode** — inline click-to-edit handles light up on the
+obvious things (title, cover, snippet); and (2) the **settings console** (the dock)
+slides out with the *entire* suite for that page — not a flat list, but a **drill-down**
+grouped by a fixed category spine. You never leave the page: "Manage → go to admin"
+becomes "Edit → console, right here."
+
+### The spine — settings as *questions* (one taxonomy, every page)
+
+The trick that makes one format fit every page: every setting answers one of a fixed,
+ordered set of questions. That question-set is the **spine** — universal and memorable;
+a page only shows the categories that apply.
+
+| # | Category | The question | Holds | `slot` |
+|---|---|---|---|---|
+| 1 | **Basics** | *What is it?* | name/title, snippet (about), type, status, cover image, parent links (channel/hub) | `basics` |
+| 2 | **Place & Time** | *Where & when?* | city/neighborhood, map pin (lat/long), timezone, online/in-person; events add schedule + recurrence | `place` |
+| 3 | **People** | *Who's in it?* | host/owner, members, roles & access, capacity, invites, who-can-post/join | `people` |
+| 4 | **Layout** | *What shows on the page?* | which modules/widgets appear + order, pinned items, tabs, about sections — the page-builder (the dock's "Soon" Layout/Styles) | `layout` |
+| 5 | **Engage** | *What do they do & earn?* | practices, achievements, challenges, rewards/zaps, crew tasks, leaderboard | `engage` |
+| 6 | **Reach** | *How do people find it?* | QR code(s), invite/share links, campaigns + UTM, dynamic links | `reach` |
+| 7 | **Comms** | *How do you reach them?* | broadcasts/announcements, notification rules | `comms` |
+| 8 | **Safety** | *How do you keep it healthy?* | moderation queue, blocks, content rules, Vera/AI behavior here | `safety` |
+| 9 | **Insights** | *How's it doing?* | read-only stats for this entity (a view, not an edit) | `insights` |
+| — | **Danger** | *End it?* | archive, delete, transfer ownership — always pinned last | `danger` |
+
+This refines the registry's `AdminSlot` union into the spine above: `AdminModule.slot`
+becomes the **category**, and the console renders `modulesFor(scope, caps)` grouped by it.
+
+### One spine, every page (coverage matrix)
+
+Each page lights up a subset — same order, same look (● shown · ○ n/a):
+
+| Page | Basics | Place&Time | People | Layout | Engage | Reach | Comms | Safety | Insights | Danger |
+|---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
+| **Circle** | ● | ● | ● | ● | ● | ● | ● | ● | ● | ● |
+| **Event** | ● | ● | ● | ○ | ● | ● | ● | ○ | ● | ● |
+| **Channel** | ● | ○ | ● | ● | ○ | ● | ● | ● | ● | ● |
+| **Hub / Nexus** | ● | ● | ● | ○ | ○ | ● | ● | ○ | ● | ● |
+| **Profile** | ● | ● | ○ | ● | ● | ● | ○ | ○ | ● | ● |
+| **Feed / Broadcast** | ○ | ○ | ○ | ● | ○ | ○ | ● | ● | ● | ○ |
+| **Platform (home/global)** | ○ | ○ | ● | ● | ● | ● | ● | ● | ● | ● |
+
+The **Platform** row is how `/admin`'s leftovers (Members, Roles, AI, Vera) come home —
+they're the **global scope's** console, opened from the home page's Edit button.
+
+### Worked example — a Circle's full suite
+
+`✓` = column already exists on the `circles` table · `＋` = new:
+
+| Category | Circle settings |
+|---|---|
+| **Basics** | ✓ Name · ✓ Snippet (`about`) · ✓ Type · ✓ Status · ✓ Cover (`image_url`) · ✓ Linked channel (`topical_channel_id`) / hub |
+| **Place & Time** | ✓ City · ✓ Neighborhood · ✓ Map pin (`latitude`/`longitude`) · ✓ Timezone · ＋ default meeting spot |
+| **People** | ✓ Host · ✓ Capacity (`member_cap`) · members list · roles · ＋ invite links · ＋ who-can-post |
+| **Layout** | ＋ which rail modules show · ＋ pinned post · ＋ tab order · ＋ featured practice |
+| **Engage** | ＋ this circle's achievements/challenges · ＋ crew tasks · ＋ leaderboard on/off · ✓ practice |
+| **Reach** | ＋ circle check-in QR · ＋ invite QR · ＋ campaign/UTM · ＋ dynamic link |
+| **Comms** | ＋ broadcast to circle · ＋ announcement · ＋ notification defaults |
+| **Safety** | ＋ reports in this circle · ＋ blocklist · ＋ Vera tone |
+| **Insights** | ＋ members/active/retention · ＋ scan + RSVP stats (read-only) |
+| **Danger** | ＋ archive · ＋ transfer host · ＋ delete |
+
+Today's shipped `circle.settings` module is only the top of **Basics** — the rest of this
+table is the headroom the console unlocks.
+
+### The console format — a drill-down
+
+A narrow panel can't show the whole suite at once, so the console is **iOS-Settings-style
+drill-down** (scales to any suite size, stays compact):
+
+```
+EDIT MODE — console home ─────────────────╮      DRILL INTO "Place & Time" ───────────╮
+┌─ Encinitas Morning Ride · Editing   ✕ ┐ │      ┌─ ‹ Place & Time            ✕ ┐      │
+│ [ 🔍 Search settings…             ]   │ │      │ ┌ City ───────────────────┐  │      │
+│ ◉ Status: Active           ▾ (quick) │ │      │ │ [ Encinitas ]           │  │      │
+│ ───────────────────────────────────  │ │      │ └─────────────────────────┘  │      │
+│ ◔ Basics           Name, snippet…  › │ │      │ ┌ Map pin ────────────────┐  │      │
+│ 📍 Place & Time    Encinitas · PT   › │ ┼────► │ │ [ 33.04, -117.29 ]      │  │      │
+│ 👥 People          Host, 12 members › │ │      │ └─────────────────────────┘  │      │
+│ ▦ Layout           6 modules        › │ │      │ ┌ Timezone ───────────────┐  │      │
+│ 🎯 Engage          3 challenges     › │ │      │ │ [ America/Los_Angeles ▾]│  │      │
+│ 📣 Reach           QR · 2 links     › │ │      │ │           [ Save ] Cancel│  │      │
+│ 🛡 Safety           0 open reports   › │ │      │ └─────────────────────────┘  │      │
+│ 📊 Insights        (view)           › │ │      └───────────────────────────────┘      │
+│ ⚠ Danger           Archive, delete  › │ │        back ‹ returns to console home        │
+└───────────────────────────────────────┘ │
+```
+
+- **Console home** = the category list (icon · name · live summary · ›), plus a couple of
+  **quick toggles** (status) flippable without drilling.
+- **Tap a category** → its screen of `AdminModuleCard`s, each with inline save. **Back** ‹
+  returns home. **Search** jumps to any setting.
+- **Inline + panel:** edit mode also adds click-to-edit handles on the page for the
+  obvious fields; the console holds the full set (the "panel + light inline" decision).
+- **"Done editing"** exits edit mode everywhere at once.
+
+### How it grows what's shipped (a delta, not a rewrite)
+
+Already done: the `AdminModule` registry + `modulesFor`, `AdminModuleCard`, the dock
+shell, and four scopes (circle/hub/nexus/event) resolving capabilities. New work:
+
+1. **Expand `AdminSlot`** to the spine (rename `settings→basics`, `content→layout`,
+   `moderation→safety`; add `place`/`engage`/`reach`/`comms`).
+2. **Drill-down console** — a home list (categories + live summaries + quick toggles), a
+   category screen, back + search — on top of today's flat dock.
+3. **Write the missing modules** per category (the `＋` rows), reusing `AdminModuleCard` +
+   capability-gated actions.
+4. **The `@admin` server slot** so each category screen is server-composed (RSC donut).
 
 ---
 
@@ -202,7 +325,9 @@ group of modules; `/admin/*` retires once empty.
 > `event` scope + `event.editSettings` added to the resolver. Still open: the
 > `loadCapabilitiesForScope` dispatcher and the server-composed `@admin` slot —
 > modules currently wire into the client dock with an on-open, capability-gated
-> fetch (`get*AdminData`) rather than server composition.
+> fetch (`get*AdminData`) rather than server composition. **Next milestone:** the
+> drill-down **settings console** + the 9-category spine (ADR-137, see the
+> target-shape section above).
 
 1. **Engine.** `AdminModule` registry + `modulesFor`/`showsAdminPanel`; `AdminModuleCard`
    over `SidebarCard`; add `hub`/`nexus` loaders + `loadCapabilitiesForScope`; the `@admin`
@@ -217,6 +342,12 @@ group of modules; `/admin/*` retires once empty.
    the dock visibility to capabilities + `staffCan`.
 5. **Retire `/admin`.** Remove the route group once every link is a module. Land the "Soon"
    Layout/Basic-styles in-place editors. Update docs (§8); operator guide → Notion.
+6. **Console + spine (ADR-137).** Expand `AdminSlot` to the 9-category spine; build the
+   **drill-down console** (home list with live summaries + quick toggles → category screen →
+   back + search) over the dock; add page-level **Edit Mode** + inline click-to-edit handles.
+7. **Full suite.** Fill the missing modules per category (Place / Layout / Engage / Reach /
+   Comms / Safety / Insights) per the Circle worked example; the **global Platform console**
+   subsumes Members / Roles / AI / Vera, completing step 5.
 
 ---
 
@@ -224,6 +355,8 @@ group of modules; `/admin/*` retires once empty.
 
 - **New ADR:** [ADR-133](DECISIONS.md) — Phase 2 decision; reconciled with the
   parallel-shipped Phase 1 (ADR-128) and operations roles (ADR-127).
+- **New ADR:** [ADR-137](DECISIONS.md) — the settings console: on-page Edit Mode, the
+  9-category spine, and drill-down navigation (the target shape above).
 - **Refined:** [CAPABILITIES-AND-MOBILE.md §2](CAPABILITIES-AND-MOBILE.md) — the inline-admin
   model is realized by the dock (Phase 1) and made capability-driven + in-place (Phase 2).
 - **Refined:** [PAGE-FRAMEWORK.md §3/§6](PAGE-FRAMEWORK.md) — `headerActions` "admin gear" =

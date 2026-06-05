@@ -4194,6 +4194,59 @@ it's most useful once entry points are driving traffic. Follow-ups: statistical-
 hints, auto-promote the winner, and variant-level breakdown in the funnels analytics.
 
 ---
+
+## ADR-137: The settings console — on-page Edit Mode, a 9-category spine, drill-down navigation
+
+**Status:** Accepted — build pending · Full spec: [EMBEDDED-ADMIN.md](EMBEDDED-ADMIN.md)
+("The target shape"). Extends **ADR-133** (Phase-2 in-place modules) and **ADR-128**
+(`PageAdminDock`); the end state of **ADR-127**'s `/admin` absorption. Realizes
+CAPABILITIES-AND-MOBILE §2 ("admin where the thing lives").
+
+**Context.** Phase 2 put per-entity admin into the dock as a **flat list** of in-place
+modules (Circle/Hub/Nexus/Event settings shipped). But the real goal is bigger: an operator
+should **never go to `/admin`** for entity work — they should hit **Edit** on the page and
+get the *whole* surface (title, snippet, location, gamification, QR, layout, moderation, …)
+in one place. A flat list doesn't scale to a full suite in a narrow panel, and without a
+shared structure each page's admin would drift into a bespoke layout — the exact thing the
+page framework forbids.
+
+**Decision.** Make on-page **Edit Mode** the single way entity admin happens, structured by
+one universal taxonomy.
+- **Edit Mode.** An Edit toggle on any administrable page (a) puts the page into edit mode
+  with inline click-to-edit handles on obvious fields (title, cover, snippet) and (b) opens
+  the **settings console** (the dock) with the full suite. "Done editing" exits everywhere.
+- **A 9-category spine — settings as *questions*.** Every setting answers one of a fixed,
+  ordered set: **Basics** (what is it?) · **Place & Time** (where/when?) · **People** (who?) ·
+  **Layout** (what shows on the page?) · **Engage** (gamification) · **Reach** (QR/links/
+  campaigns) · **Comms** (broadcast/notify) · **Safety** (moderation/AI) · **Insights**
+  (read-only stats) · **Danger** (archive/delete/transfer, pinned last). One spine on every
+  page; a page shows only the categories that apply (coverage matrix in the spec). This
+  refines the registry's `AdminSlot` union — `AdminModule.slot` *is* the category.
+- **Drill-down navigation** (chosen over accordion / top-tabs). Console home = the category
+  list (icon · name · live summary · ›) + a few quick toggles; tap → that category's
+  `AdminModuleCard` screen; back ‹ returns; search jumps to any setting. The iOS-Settings
+  model — scales to any suite size, stays compact in a narrow panel.
+- **`/admin` fully retired for entities.** Platform leftovers (Members/Roles/AI/Vera) become
+  the **global scope's** console, opened from the home page's Edit button — same shell, same
+  spine.
+
+**Alternatives.** Accordion (rejected — one long scroll once every category is populated) or
+top tabs (rejected — crowd past ~5 in a narrow panel). A bespoke admin layout per page type
+(rejected — drift; the spine is the consistency guarantee). Keep the flat module list
+(rejected — doesn't scale to the full suite). Keep some entity admin in `/admin` (rejected —
+the explicit goal is zero trips to `/admin` for entity work).
+
+**Consequences.** Net-new vs. Phase 2: expand `AdminSlot` to the spine (rename
+`settings→basics`, `content→layout`, `moderation→safety`; add `place`/`engage`/`reach`/
+`comms`); a drill-down console shell (home list + category screen + back + search) over the
+dock; page-level Edit Mode + inline handles; and the missing modules per category (many new
+fields/actions — e.g. the circle already has `image_url`/`city`/`lat`/`long`/`timezone`/
+`topical_channel_id` unexposed today). Capabilities stay law (each module's action re-checks).
+Enables the page-builder ("Layout") the dock marked "Soon". Docs: EMBEDDED-ADMIN.md is the
+source of truth; the operator "edit from the dock" guide goes to Notion on ship; add the
+console + `AdminModuleCard` to the DESIGN.md kit.
+
+---
 ### Decisions intentionally NOT duplicated here
 
 Already fully covered by the repo docs (no ADR needed): the RLS / admin-client
