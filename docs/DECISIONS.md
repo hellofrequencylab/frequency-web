@@ -2729,6 +2729,38 @@ keys simply no longer apply.
 
 ---
 
+## ADR-099: Scan-to-invite — shared-CRM lead, one-time intro email, referral credit
+
+**Status:** Accepted · `supabase/migrations/20260606020000_scan_invite.sql`, `lib/connections/{crm-sync,invite,lead-unsub}.ts`, `lib/email.ts` (`sendScanIntroEmail`), `app/u/scan/route.ts`. Extends ADR-098. See [NETWORK-CRM.md](NETWORK-CRM.md).
+
+**Context.** A scanned personal contact (`network_contacts`) should join the shared
+Studio CRM, get a single intro/invite, and credit the steward when the person joins
+— **without** an unlawful blast to people who never opted in.
+
+**Decision.** On save (email present), upsert the lead into `contacts` with
+`source='scan_invite'`, `consent_state='unknown'` — added but **never
+auto-subscribed** (no marketing until they opt in). Link it via
+`network_contacts.linked_contact_id`. Optionally (a per-scan checkbox) send **one**
+transactional intro from the steward, gated behind the operator flag
+`scan_invite_email_enabled` (**default off**). The email's join CTA is the steward's
+own **referral** QR link (`/q/<slug>`, ADR-091): an anonymous click drops `fq_ref`,
+and signup runs the existing `applyReferralAttribution` → `awardZapsForAction(ref,
+'invite_accepted')`. So **points-on-join is automatic with zero new economy code.**
+
+**Legal posture.** The intro is a single, person-initiated introduction (the steward
+met them) — not bulk marketing. It carries a working one-click unsubscribe
+(`/u/scan`, HMAC over `contacts.id` → `consent_state='unsubscribed'`, RFC 8058
+headers), a non-member footer (doesn't claim membership), and an optional
+`COMPANY_POSTAL_ADDRESS` for CAN-SPAM. `invited_at` guards against re-sends;
+suppressed/unsubscribed addresses are never re-mailed.
+
+**Consequences.** Live sending needs `RESEND_API_KEY` + the operator flag on
+(toggle on Marketing → Contacts, audited in `platform_flag_events`); otherwise the
+flow degrades to CRM-sync only. `emailShell` gained an optional custom footer. Set
+`COMPANY_POSTAL_ADDRESS` for full CAN-SPAM compliance on the intro.
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 
