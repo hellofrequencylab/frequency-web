@@ -4,7 +4,12 @@ import { AdminPage, AdminSection } from '@/components/admin/admin-page'
 import { CirclesClient } from './circles-client'
 import { NewCircleCompose } from '@/components/compose/new-circle-compose'
 
-export default async function AdminCirclesPage() {
+export default async function AdminCirclesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ edit?: string }>
+}) {
+  const { edit } = await searchParams
   const { profileId, role } = await requireAdmin('host')
   const admin = createAdminClient()
 
@@ -103,7 +108,7 @@ export default async function AdminCirclesPage() {
       width="wide"
     >
       <AdminSection>
-        <CirclesClient circles={circles} hubs={hubs} hosts={hostProfiles ?? []} />
+        <CirclesClient circles={circles} hubs={hubs} hosts={hostProfiles ?? []} initialEditId={edit ?? null} />
       </AdminSection>
     </AdminPage>
   )

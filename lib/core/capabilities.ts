@@ -72,6 +72,10 @@ export function resolveCapabilities(viewer: Viewer, scope: Scope): Set<Capabilit
   const caps = new Set<Capability>()
   const { profileId, role } = viewer
   const isJanitor = role === 'janitor'
+  // Platform staff = admin or janitor. Admin sits just below janitor on the ladder
+  // and shares its operational keys (it lacks only the most sensitive ones), so it
+  // manages any circle alongside janitor.
+  const isStaff = atLeastRole(role, 'admin')
 
   switch (scope.kind) {
     case 'global': {
@@ -92,10 +96,10 @@ export function resolveCapabilities(viewer: Viewer, scope: Scope): Set<Capabilit
       caps.add('circle.view')
 
       const isHost = !!profileId && scope.hostId === profileId
-      // Leadership over THIS circle: its host, a janitor, or the guide/mentor
-      // who manages its parent hub/nexus (caller-computed to avoid granting
-      // every guide rights on every circle).
-      const leads = isHost || isJanitor || scope.viewerManagesParent === true
+      // Leadership over THIS circle: its host, platform staff (admin/janitor), or
+      // the guide/mentor who manages its parent hub/nexus (caller-computed to avoid
+      // granting every guide rights on every circle).
+      const leads = isHost || isStaff || scope.viewerManagesParent === true
       const activeMember = scope.membership?.status === 'active' || leads
 
       if (activeMember) caps.add('circle.post')
