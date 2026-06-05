@@ -12,6 +12,7 @@ import {
   Users,
   Circle as CircleIcon,
   MapPin,
+  Hash,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -109,6 +110,15 @@ export default async function ChannelPage({
     }
   }
 
+  // The channel's open room (Phase B) — one per channel, read-open; tuned-in members post.
+  const { data: channelRoom } = await admin
+    .from('rooms')
+    .select('id')
+    .eq('visibility', 'channel')
+    .eq('scope_id', channel.id)
+    .maybeSingle()
+  const channelRoomId = (channelRoom as { id: string } | null)?.id ?? null
+
   const [{ count: memberCount }, { data: rawCircles }] = await Promise.all([
     admin
       .from('topical_channel_memberships')
@@ -173,6 +183,14 @@ export default async function ChannelPage({
         actions={
           myProfileId ? (
             <>
+              {channelRoomId && (
+                <Link
+                  href={`/messages/r/${channelRoomId}`}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
+                >
+                  <Hash className="h-4 w-4" /> Open room
+                </Link>
+              )}
               <NewCircleCompose
                 topicalChannelId={channel.id}
                 topicalChannelName={channel.name}
