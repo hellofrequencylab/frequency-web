@@ -6,12 +6,13 @@ import { createClient } from '@/lib/supabase/server'
 import { getVeraConfig } from '@/lib/ai/vera/config'
 import { VERA, BETA_OATHS } from '@/lib/onboarding/beta-script'
 import { getSequence, DEFAULT_SEQUENCE } from '@/lib/onboarding/beta-sequences'
+import { isPersonaId, type PersonaId } from '@/lib/onboarding/personas'
 import BetaInduction from './induction'
 
 export default async function BetaInductionPage({
   searchParams,
 }: {
-  searchParams: Promise<{ seq?: string }>
+  searchParams: Promise<{ seq?: string; persona?: string }>
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -19,8 +20,11 @@ export default async function BetaInductionPage({
   // The audience sequence (early-adopter / personal / founding-partner) drives the
   // copy. Operator overrides from /admin/vera still apply to the DEFAULT sequence
   // (that's what they were authored against); audience sequences use their own copy.
-  const { seq: seqSlug } = await searchParams
+  const { seq: seqSlug, persona: personaSlug } = await searchParams
   const seq = getSequence(seqSlug)
+  // Who they said they are in the lead flow (ADR-123) — pre-selects the Welcome-beat
+  // picker, branches the tour reel, and is stamped on the member at completion.
+  const persona: PersonaId | undefined = isPersonaId(personaSlug) ? personaSlug : undefined
   const isDefault = seq.slug === DEFAULT_SEQUENCE
   const ind = (await getVeraConfig()).induction
   const copy = isDefault
@@ -40,7 +44,7 @@ export default async function BetaInductionPage({
   // collected at the final "step in" beat; the answers are stashed and written at
   // /onboarding/beta/complete after auth.
   if (!user) {
-    return <BetaInduction deferred copy={copy} sequence={seq.slug} />
+    return <BetaInduction deferred copy={copy} sequence={seq.slug} persona={persona} />
   }
 
   const { data: profile } = await supabase
@@ -66,6 +70,7 @@ export default async function BetaInductionPage({
       regions={regions ?? []}
       copy={copy}
       sequence={seq.slug}
+      persona={persona}
     />
   )
 }
