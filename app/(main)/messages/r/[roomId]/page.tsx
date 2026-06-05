@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getInitials } from '@/lib/utils'
 import { joinRoom, leaveRoom } from '../../rooms/actions'
 import { RoomThread } from '@/components/rooms/room-thread'
+import { RoomSearch } from '@/components/rooms/room-search'
 import { InviteToRoomButton } from '@/components/rooms/invite-to-room-button'
 import { MemberRowActions } from '@/components/rooms/member-row-actions'
 
@@ -50,7 +51,7 @@ export default async function RoomPage({
     id: string
     name: string
     description: string | null
-    visibility: 'public' | 'private' | 'circle' | 'hub' | 'nexus' | 'outpost'
+    visibility: 'public' | 'private' | 'circle' | 'hub' | 'nexus' | 'outpost' | 'channel'
     member_count: number
     created_at: string
   }
@@ -65,6 +66,10 @@ export default async function RoomPage({
 
   const isMember = !!membership
   const isAdmin = !!membership?.is_admin
+  // Channel open rooms (Phase B) are read-open to anyone; posting is gated by
+  // tune-in (server-side). So "can read the thread" = a member OR a channel room.
+  const isChannel = r.visibility === 'channel'
+  const canRead = isMember || isChannel
 
   // Defense in depth (RLS already hides private rooms from non-members)
   if (r.visibility === 'private' && !isMember) {
@@ -92,18 +97,27 @@ export default async function RoomPage({
   // join panel instead, so we skip the read entirely for them.
   type RoomMessageRow = { id: string; room_id: string; author_id: string; body: string; created_at: string }
   let messages: (RoomMessageRow & { author: MemberProfile | null })[] = []
-  if (isMember) {
+  if (canRead) {
     const { data: rawMessages } = await supabase
       .from('room_messages')
       .select('id, room_id, author_id, body, created_at')
       .eq('room_id', roomId)
       .order('created_at', { ascending: true })
       .limit(100)
+    const rawMsgs = (rawMessages ?? []) as RoomMessageRow[]
 
-    messages = ((rawMessages ?? []) as RoomMessageRow[]).map(m => ({
-      ...m,
-      author: memberProfileMap.get(m.author_id) ?? null,
-    }))
+    // Channel rooms have no member roster, so resolve message authors directly
+    // (public fields) rather than from the room-member map.
+    if (isChannel && rawMsgs.length > 0) {
+      const authorIds = [...new Set(rawMsgs.map(m => m.author_id))]
+      const { data: authorRows } = await (supabase as unknown as SupabaseClient)
+        .from('profiles')
+        .select('id, display_name, handle, avatar_url')
+        .in('id', authorIds)
+      for (const a of (authorRows ?? []) as MemberProfile[]) memberProfileMap.set(a.id, a)
+    }
+
+    messages = rawMsgs.map(m => ({ ...m, author: memberProfileMap.get(m.author_id) ?? null }))
   }
 
   return (
@@ -140,35 +154,39 @@ export default async function RoomPage({
           </div>
         </div>
 
-        {isMember ? (
-          <form action={leaveRoom.bind(null, roomId)}>
-            <button
-              type="submit"
-              className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted hover:bg-surface-elevated transition-colors"
-            >
-              <LogOut className="w-3 h-3" /> Leave
-            </button>
-          </form>
-        ) : (
-          <form action={joinRoom.bind(null, roomId)}>
-            <button
-              type="submit"
-              className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary hover:bg-primary-hover transition-colors"
-            >
-              <LogIn className="w-3 h-3" /> Join
-            </button>
-          </form>
-        )}
+        <div className="flex items-center gap-2 shrink-0">
+          {canRead && <RoomSearch roomId={roomId} />}
+          {/* Channel rooms aren't "joined" — you tune into the Channel. */}
+          {!isChannel && (isMember ? (
+            <form action={leaveRoom.bind(null, roomId)}>
+              <button
+                type="submit"
+                className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted hover:bg-surface-elevated transition-colors"
+              >
+                <LogOut className="w-3 h-3" /> Leave
+              </button>
+            </form>
+          ) : (
+            <form action={joinRoom.bind(null, roomId)}>
+              <button
+                type="submit"
+                className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary hover:bg-primary-hover transition-colors"
+              >
+                <LogIn className="w-3 h-3" /> Join
+              </button>
+            </form>
+          ))}
+        </div>
       </header>
 
       {/* Body. Three pane (messages + members on the right) */}
       <div className="flex-1 min-h-0 flex">
-        {isMember ? (
+        {canRead ? (
           <RoomThread
             roomId={roomId}
             initialMessages={messages}
             myProfileId={myProfileId}
-            canPost={isMember}
+            canPost={canRead}
           />
         ) : (
           // Non-member previewing a public room: messages are members-only, so
