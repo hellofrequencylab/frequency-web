@@ -55,6 +55,7 @@ export const AREA_ICONS: Record<string, ElementType> = {
   'admin-insights': Activity,
   'admin-vera': Bot,
   'admin-platform': Shield,
+  'admin-qr': QrCode,
   crm: Contact,
   connections: ContactRound,
   marketing: Briefcase,

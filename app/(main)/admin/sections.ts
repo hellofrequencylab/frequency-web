@@ -69,7 +69,6 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
       { href: '/outreach', label: 'Outreach', desc: 'Reach out to locals and prospects.', Icon: Send, min: 'host' },
       { href: '/admin/crew-tasks', label: 'Crew tasks', desc: 'Define and verify member tasks.', Icon: ClipboardList, min: 'host' },
       { href: '/admin/gamification', label: 'Gamification', desc: 'Achievements, seasons, rewards.', Icon: Trophy, min: 'host' },
-      { href: '/admin/qr', label: 'QR Studio', desc: 'Create and manage scannable check-in codes.', Icon: QrCode, min: 'host' },
       { href: '/admin/moderation', label: 'Moderation', desc: 'Review and resolve reports.', Icon: ShieldAlert, min: 'host' },
     ],
   },
@@ -113,6 +112,14 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
       { href: '/admin/roles', label: 'Roles', desc: 'Assign roles and the permission grid.', Icon: Shield, min: 'janitor' },
       { href: '/admin/ai', label: 'AI controls', desc: 'Turn AI on or off platform-wide; usage and audit.', Icon: Power, min: 'janitor' },
       { href: '/admin/demo', label: 'Demo Studio', desc: 'Generate, manage, and purge seeded demo content.', Icon: Sparkles, min: 'janitor' },
+    ],
+  },
+  {
+    key: 'qr',
+    label: 'QR Studio',
+    blurb: 'Generate, design, and track every code — members, links, check-ins, campaigns.',
+    links: [
+      { href: '/admin/qr', label: 'QR Studio', desc: 'Generate, design, and manage all QR codes.', Icon: QrCode, min: 'host' },
     ],
   },
 ] as const
