@@ -106,3 +106,19 @@ export async function reassignEntryPoint(
   revalidatePath('/entry-points')
   return ok()
 }
+
+/** Enable/disable an entry-point template for crew (ADR-126 Phase 2b governance). */
+export async function setTemplateEnabled(templateId: string, enabled: boolean): Promise<ActionResult> {
+  const who = await requireMarketer()
+  if (typeof who === 'string') return fail(who)
+  if (!isEntryTemplateId(templateId)) return fail('Unknown template.')
+
+  const { error } = await db()
+    .from('entry_template_settings')
+    .upsert({ template_id: templateId, enabled, updated_at: new Date().toISOString() }, { onConflict: 'template_id' })
+  if (error) return fail('Could not update the template.')
+
+  revalidatePath('/marketing/funnels')
+  revalidatePath('/entry-points')
+  return ok()
+}

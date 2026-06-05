@@ -6,12 +6,14 @@ import { DashboardTemplate } from '@/components/templates/dashboard-template'
 import { StatCard } from '@/components/ui/stat-card'
 import { Megaphone, QrCode } from 'lucide-react'
 import { listCampaigns } from '@/lib/entry-points/campaigns'
+import { listTemplateGovernance } from '@/lib/entry-points/template-settings'
 import { FunnelsManager } from './funnels-client'
+import { TemplateGovernance } from './template-governance'
 
 export const dynamic = 'force-dynamic'
 
 export default async function FunnelsPage() {
-  const campaigns = await listCampaigns()
+  const [campaigns, templateGov] = await Promise.all([listCampaigns(), listTemplateGovernance()])
   const totalEntries = campaigns.reduce((s, c) => s + c.entryCount, 0)
   const totalScans = campaigns.reduce((s, c) => s + c.scans, 0)
 
@@ -29,6 +31,11 @@ export default async function FunnelsPage() {
       }
     >
       <FunnelsManager campaigns={campaigns} />
+      <div className="mt-6">
+        <TemplateGovernance
+          templates={templateGov.map((t) => ({ id: t.id, label: t.label, emoji: t.emoji, blurb: t.blurb, enabled: t.enabled }))}
+        />
+      </div>
     </DashboardTemplate>
   )
 }
