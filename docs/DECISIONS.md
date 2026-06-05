@@ -3532,15 +3532,14 @@ unreachable. We wanted a **matching menu on the right** of the left nav rail to 
 **Decision.** Both edge rails (left nav · right stats) share **one interaction** (`useRailReveal`,
 driven by the feed scroll container):
 - **Hidden at the top of scroll.** Nothing shows until the member scrolls into the feed — then a
-  **super-minimal tab** (`w-6`) slides in to **bracket** the feed on each edge.
-- **Tap the tab → full panel.** Left opens the nav (`w-44`, icons + labels); right opens the stats
-  panel (`w-72`). **Scrolling while full snaps it back to the tab.**
-- **Fixed overlays, not body columns** — so they never permanently inset the feed (the prior paired
-  columns did, which felt tight). The right panel overlays rather than pushes because the cockpit is
-  content-rich and pushing would crush the feed.
-- **A small on/off tick** at the bottom of each full panel turns that rail off entirely; the Menu
-  drawer's two **`RailToggle`s** turn them back on (per-device prefs `freq-rail-nav` /
-  `freq-stats-rail`, default on).
+  **tall (`h-[33vh]`), very-light (`opacity-50`) tab** (`EdgeTab`) floats onto each edge. It's an
+  **overlay** that does **not** push the content — it sits over the margin.
+- **Tap the tab → the side menu opens** (left = nav, right = stats panel).
+- **One-use menu:** selecting a link, clicking anywhere on the panel, or tapping the **light
+  backdrop** (`bg-black/10`) closes it; scrolling also closes it.
+- On/off is a **per-device setting in the Menu drawer** (two `RailToggle`s, prefs `freq-rail-nav` /
+  `freq-stats-rail`, default on). *(Open question: the ask was to move this control into "admin"; for
+  now it stays the per-device drawer toggle.)*
 - **Reuse, don't re-author.** The dock's panel body is factored into a shared **`GameStatsPanel`**
   (today's move · 7-day streak · rank progress · journey arc · the Vault · full-dashboard link), and
   the data assembly into **`loadGameStats(profileId)`** — both consumed by the desktop dock *and* the
@@ -3683,69 +3682,347 @@ not a replacement. Operator-facing "how to assign a lead flow" guidance belongs 
 
 ---
 
-## ADR-126: Embedded per-page admin panel replaces the centralized `/admin` section
+## ADR-126: Entry Points & Campaigns — the distribution layer
+
+**Status:** Accepted (design; Phase 1 to follow) · planned in `lib/entry-points/**`,
+`app/(main)/codes` → "My Entry Points", `app/(main)/marketing/campaigns/**`, an extension of
+`qr_codes` + a new `entry_campaigns` table. Builds on personas + lead flows (ADR-125), the QR
+engine (`lib/qr/**`), attribution (ADR-095), and the zaps ledger. Full spec:
+[ENTRY-POINTS.md](ENTRY-POINTS.md).
+
+**Context.** We want a "lead page / funnel" system — the best of Leadpages / ClickFunnels /
+Linktree-Beacons / Mailchimp, kept *simple* — that integrates with our membership, points, and
+QR. The headline finding: **~60% already exists.** We ship a branded QR engine that emits
+**vector SVG + PNG** (`renderStyledQrSvg` / `renderStyledQrPng` / `/api/qr`), a scan resolver
+(`/q/[slug]`), first-touch attribution, owner-credit on signup (`applyReferralAttribution` →
+`invite_accepted` zaps), an idempotent points ledger, a CRM, a Puck visual editor, and the new
+personas/lead-flows. What's missing is a **template + flyer layer** and **two surfaces** (a
+dead-simple crew builder; an advanced admin campaign builder). Today's crew "marketing codes"
+are a narrow special case (owner `qr_codes`, ≤3, circles/events only).
+
+**Decision.** Unify crew marketing codes, the personal connect/referral code, and the `/start`
+lead flows under one concept — the **Entry Point** (a door: short link + branded QR + flyer +
+destination + owner + campaign + analytics + points credit) — grouped by **Campaigns**, built
+from **Templates**.
+- **Name:** crew-facing **"Entry Points"**; admin grouping **"Campaigns"** (the existing
+  `campaigns` table is email broadcasts, so the new table is `entry_campaigns`).
+- **Destinations: both, the template decides** — an entry point points at a *place* (circle /
+  event / profile / url) *or* a **persona lead flow** (`/start/<flow>`, ADR-125) that captures
+  + routes. Crew get power without a blank canvas.
+- **Two surfaces, one engine:** a ruthlessly simple crew portal (evolves `/codes`:
+  template → 3–4 slots → link + QR + **flyer SVG/PNG** in under a minute) and an advanced admin
+  builder in `/marketing/campaigns` (Puck landings, template curation, bulk generation, A/B,
+  automations). The crew tool never exposes a layout editor.
+- **Flyer = on-brand SVG** composing brand frame + slots + the styled QR; outputs vector **SVG**
+  + high-res **PNG**; design-token-driven so it's beautiful by default.
+- **Points (simple, anti-farm):** a small **first-N-capped** `entry_point_created` zap grant,
+  the existing 40-zap `invite_accepted` credit when an entry point drives a signup, and a
+  `referral_activated` bonus when that signup *activates* (first practice). All through
+  `recordEngagementEvent` (exactly-once). A crew leaderboard by signups driven.
+- **Reuse-first data model:** extend `qr_codes` (add `campaign_id`, `template_id`, broaden
+  `destination_type` + `lead_flow_slug`/`persona`, lift the crew cap for `purpose='entry_point'`);
+  new `entry_campaigns`; a **code-first template registry** (`lib/onboarding/lead-flows.ts`
+  pattern) with a DB-override layer later. Build order: **spec + ADR (this), then Phase 1** (crew
+  MVP), then admin builder, then growth.
+
+**Alternatives.** A net-new entry-point table instead of extending `qr_codes` (rejected — the
+QR engine, scan resolver, and referral credit are all keyed on `qr_codes`; extending reuses the
+whole pipeline). A third-party builder (Leadpages/ClickFunnels) embedded (rejected — no points/
+persona/QR integration, off-brand, recurring cost). A drag-and-drop editor for crew (rejected —
+the explicit ask is *simple*; templates + slots beat a blank canvas; the canvas lives in admin
+via Puck). Convert-only points (rejected per product — we want a reward for *participating*, so
+create-credit is included but capped to stay anti-farm). Dollar monetization à la Beacons
+(out of scope — points are our native currency).
+
+**Consequences.** Crew can make a branded flyer with a working QR + tracked link in under a
+minute, and earn zaps for it; every signup it drives credits them automatically (the `fq_ref`
+pipeline already does this). Operators get a real campaign builder reusing `/marketing` + Puck.
+New surface area is small: a template registry, a flyer-composition layer, the two builder UIs,
+a `qr_codes` extension migration, and an `entry_campaigns` table — migrations written but applied
+in a separate reviewed step. Personas/lead flows are the routing layer underneath; Entry Points
+are the distribution layer on top. Operator playbooks live in Notion, linked to ENTRY-POINTS.md.
+
+---
+
+## ADR-127: Site-admin roles — a functional "operations" axis (Owner · Admin · Operations · Marketing · Accounting · Support · Analyst)
+
+**Status:** Accepted · **model + capability matrix + assignment UI shipped**
+(`lib/core/staff-roles.ts`, `lib/staff.ts` `requireStaffCap`, `/admin/roles`
+`StaffRoleManager` + `setStaffRole`/`addStaffMember`, migration
+`20260606000100_team_member_roles.sql`, tests `lib/core/staff-roles.test.ts`).
+**Enforcement (in progress):** the staff-gated surfaces now run on the capability
+model — the **marketing** gates use `staffCan('marketing')` (actions + layout), and
+nav surfacing (`meetsStaff`) + the Profile Creator (`connectionsOwnerId`) use
+`staffCan('profiles')`. The `/admin` guard is now an **additive, fail-closed union**
+(`requireAdmin(min, { staff })` also admits a staff role holding that capability domain,
+write), wired for the **Community group** (Overview · Circles · Channels · Events ·
+Broadcasts · Crew tasks · Gamification · Moderation) + nav/launchpad/sub-nav — so
+Operations/Support reach the community admin pages. **Sensitive groups stay
+community-janitor only** (Roles · Members · AI · Platform · Vera have no `staffDomain`).
+**Still to do:** wire the remaining groups (Structure · Insights · QR) and
+**write-action parity** — the per-page CRUD server actions still gate on community
+role/capabilities, so staff currently get read/navigate into the community admin pages;
+full write parity is the next slice. Extends ADR-027; layers over `ADMIN_GROUPS` +
+`area_permissions`.
+
+**Context.** Two axes exist: the **community trust ladder** (member→…→admin→janitor, community
+standing) and a separate **staff/operations** axis (`team_members`: analyst→marketer→admin→owner,
+ADR-027). The staff axis is a strict ladder, which is wrong for **functional departments** —
+Operations and Accounting aren't "more/less than" each other.
+
+**Decision.** Keep the two axes. Reshape the staff axis into **two spanning levels + four
+department roles + one read-only**:
+
+| Role | Scope |
+|---|---|
+| Owner | Everything incl. billing ownership, transfer/close org, grant roles |
+| Admin | All operations + assigns roles below Owner (not ownership-only) |
+| Operations | Circles · channels · events · hubs/nexuses · broadcasts · moderation · members roster · QR. No finance/roles |
+| Marketing | Marketing · CRM · outreach · segments · intel; insights read |
+| Accounting | Billing · subscriptions · payouts · reports; members read-only |
+| Support | Moderation · member assist · help-gaps; insights read |
+| Analyst | Read-only across insights/analytics/CRM |
+
+Permissions stay **data-driven** (role→capability map over `ADMIN_GROUPS` + `area_permissions` +
+the resolver), not hardcoded per page. **Janitor stays** the top community super-steward; a person
+may hold both a community role and an operations role. Migration is incremental: `analyst→Analyst`,
+`marketer→Marketing`, `admin→Admin`, `owner→Owner`; **add** Operations, Accounting, Support.
+
+**Alternatives.** Extend the single strict ladder (rejected — departments aren't ranks). Put ops
+roles on the community ladder (rejected — conflates community standing with business operations,
+the exact thing ADR-027 separated).
+
+**Consequences.** A clean operations org model. Implementation = a migration adding the role enum
+values + a role→capability map + the `/admin/roles` UI; gating already flows through
+`meetsAccess`/`meetsStaff` + the resolver. Built after the page admin dock (ADR-128).
+
+## ADR-128: Page admin dock (`PageAdminDock`) — inline admin as a movable edge tab (Phase 1)
+
+**Status:** Accepted (Phase 1) · `components/layout/page-admin-dock.tsx`,
+`components/layout/app-shell.tsx`. Realizes the inline-admin model (CAPABILITIES-AND-MOBILE.md §2)
+as a dock.
+
+**Context.** Admin/edit actions for a page were scattered (the Admin tab, per-page menus). We want
+them **always readily available in one tab on the page itself**, for whoever's allowed.
+
+**Decision.** Operators only (`meetsAccess('host')` or any staff; never a member). The panel of
+per-page admin actions is unchanged (Edit info → section editor by route, Group dispatch,
+Settings/Admin home, janitor: Members · Pages · Roles; Layout template + Basic styles are **"Soon"**,
+Phase 2). The **chrome differs by platform** (revised after the first cut cluttered mobile):
+- **Desktop:** a **light, unobtrusive** vertical tab on the right edge (was opaque — corrected).
+  Opening slides a right panel in, in one of two **persisted modes**: **Push** (the shell pads the
+  content over so the whole page stays visible) or **Overlay** (panel floats over). **Width is
+  drag-resizable** (left-edge handle). Mode + width persist site-wide (`freq-admin-mode` /
+  `freq-admin-width`).
+- **Mobile:** **no edge tab** — the panel opens from a **Shield button in the top header** and shows
+  as an overlay sheet (push doesn't apply on a phone).
+- The shell owns open/mode/width (so Push can pad `[data-feed-scroll]` via a `--admin-pr` var at
+  `md+`).
+
+**Alternatives.** The first cut (an always-present **opaque, repositionable** edge tab on every
+viewport — rejected: it cluttered the mobile site; mobile now triggers from the header, desktop tab
+is light). Keep admin behind the Admin tab only (rejected — not in-context).
+
+**Consequences.** Operators get one consistent, repositionable admin surface on every page. Gating
+is by role today; it tightens to the granular capability set (and the ADR-127 operations roles) as
+those land. Phase 2 brings true in-place layout/style editing.
+
+---
+
+## ADR-129: Bundle `content/help/**` into the serverless runtime so "Ask Vera" can build its index
+
+**Status:** Accepted · `next.config.ts` (`outputFileTracingIncludes`), `lib/ai/help-index.ts`
+(fail-loud on empty), `lib/ai/help-rag.ts` (`after()` telemetry). Builds on the RAG support
+tier (ADR-067, SUPPORT-SYSTEM.md).
+
+**Context.** "Ask Vera" retrieves from `help_chunks`, an embedding index built by
+`reindexHelpChunks()` (nightly `embed-help` cron + admin "Build index" button). In production the
+button "did nothing": `help_chunks` was empty, so every question deflected. Root cause: the help
+center is plain Markdown read from disk at **runtime** (`lib/help/content.ts` → `fs.readdir` of
+`content/help/**`). Next's file tracer can't follow those dynamic reads, so the Markdown was absent
+from the serverless function bundle; `getAllCategories()` swallows the fs error and returns `[]`,
+and `reindexHelpChunks()` then reported a happy "0 embedded" while the index stayed empty. The help
+*pages* were unaffected — they're statically generated at build time, where the files exist. (The
+`(main)` layout's support-launcher search index reads the same files at runtime, so it was empty
+too — but its empty state reads as a normal "no matches," which is why only Vera was reported.)
+Separately, `logHelpQuery`/`recordAiUsage` ran as floating `void` promises, which serverless does
+not guarantee to finish — so query/usage telemetry was silently lost (0 rows despite live use).
+
+**Decision.**
+- **Trace the content in.** `outputFileTracingIncludes` bundles `./content/help/**/*` into the
+  reindex routes (`/api/cron/embed-help`, `/admin/ai`) and all routes (`/**`, for the layout
+  search index). The content is tiny, so the trace cost is negligible.
+- **Fail loud.** `reindexHelpChunks()` throws when it finds zero published articles instead of
+  "succeeding" with an empty build — the cron logs an error and the admin button surfaces it,
+  rather than hiding a broken index behind a green result.
+- **Persist telemetry with `after()`.** Replace the `void`-ed `logHelpQuery`/`recordAiUsage` with
+  `after(() => …)` (next/server) — off the response path, but guaranteed to run.
+
+**Alternatives.** Import the Markdown as modules / precompute a JSON index at build time (rejected
+for now — larger change; file tracing is the minimal, idiomatic fix and keeps the fs-based content
+layer). Await the telemetry inline (rejected — adds latency to every answer).
+
+**Consequences.** After deploy, the nightly cron (or one click of admin "Build index") populates
+`help_chunks` and Ask Vera answers; a future content-load regression fails visibly instead of
+silently. Any other AI surface still using `void recordAiUsage(...)` has the same latent
+telemetry-loss bug and should migrate to `after()`.
+
+---
+## ADR-130: Unified person + the CRM "User Stats" page — group the three identity records, and search by connection + locality
+
+**Status:** Accepted · shipped in `lib/crm/{person,journey,visibility,people-search}.ts`,
+`app/(main)/marketing/contacts/[id]/**`, the contacts list search, `/api/search` +
+`search-overlay`, the `/people` directory, and migration
+`20260606170000_person_identity_stitch.sql` (✅ **applied** to `Frequency Community` 2026-06-05,
+recorded `person_identity_stitch`; idempotent — it backfilled 0 rows on current data since
+scan/signup already set the links, and created the three lookup indexes; the resolver also
+stitches at read time, so the feature works regardless). Builds on the three-table identity model
+(NETWORK-CRM.md, ADR-098/099), the engagement ledger (ADR-025), and acquisition first-touch
+(ADR-095). Full spec: [NETWORK-CRM.md](NETWORK-CRM.md) "Unified person".
+
+**Context.** A person captured via Card Scan / Profile Entry or seen via a QR scan shows up in
+the CRM (`contacts`, `source='scan_invite'`) but **cannot be found in the app's search** —
+because search reads only `profiles` (members), and a scanned lead has no member profile until
+they sign up. The same human can exist as up to three rows joined by lowercased email: `profiles`
+(member), `contacts` (CRM hub), `network_contacts` (a steward's private capture). Nothing in the
+UI pulled them together, and there was no per-person view of the path they took through the
+system. Operators experienced this as "I see them on the back end but can't find their profiles."
+
+**Decision.**
+- **One unified person, grouped by email.** `lib/crm/person.ts#resolvePerson` gathers the
+  `contacts` anchor + its member `profile` + every `network_contacts` capture with that email +
+  the behavioral trail (`qr_scans`, `engagement_events`) + the CRM pipeline (`crm_deals`,
+  `crm_activities`). Grouping is by email **at read time**, so it works before the backfill.
+- **Auto-stitch the links.** Migration `20260606170000_person_identity_stitch.sql` backfills
+  `contacts.profile_id`, `network_contacts.linked_contact_id`, and
+  `network_contacts.linked_profile_id` by email (idempotent), so the records also self-group in
+  the data, and the locality search can resolve a capture's member.
+- **A "User Stats" page** at `/marketing/contacts/[id]` (DetailTemplate): at-a-glance stats, a
+  **Grouped records** panel (member / CRM / private captures), and **the path through the
+  system** — one chronological timeline grouped into funnel phases (Arrival → Outreach → In the
+  app → CRM), assembled by the pure, unit-tested `lib/crm/journey.ts`. The contacts list is
+  searchable and every row links here.
+- **App-wide search by connection + locality, not blanket exposure.** Members stay searchable
+  community-wide. A non-member capture surfaces in another viewer's search **only** via one rule
+  (`lib/crm/visibility.ts#canViewLead`, unit-tested): `owner` (you captured them — the
+  unambiguous valid connection) or `network_local` (a steward set `visibility='network'` **and**
+  the viewer shares the capture's locality/`city`). This honors "everyone searchable, permissions
+  by locality + valid connection" while keeping private captures private. Wired surfaces
+  (`/api/search` overlay + `/people` directory "People you've met") show **owner** leads now
+  (they link to the steward's own `/connections/[id]`); `network_local` is modeled + tested but
+  **not broadcast** until the cross-steward promotion review (same gate as ADR-098's
+  private→network promotion), since a non-owner viewer has no lead page to land on yet.
+- **Invite to join** reuses the fully-gated one-time scan-intro (ADR-099) — operator switch +
+  per-contact unsubscribe + already-invited guard — never a new ungated email path. A pure
+  signup/beta lead (no capturing steward) has no intro to send, by design.
+
+**Alternatives.** Promote scanned captures into public `profiles` so they appear in the member
+directory (rejected — leaks personal captures; ADR-098 gates that deliberately). A separate
+analytics store for the journey (rejected — projects off the existing ledger per ADR-069). A
+fourth "person" table (rejected — email is already the join key; we stitch, not re-model).
+
+**Consequences.** Operators get one screen per person that groups every record and shows their
+path, the CRM is fully searchable, and stewards can finally search up people they scanned in.
+The visibility rule is auditable in one pure function. Cross-steward network-local search is
+ready behind the existing promotion-review gate. Operator how-to lives in Notion (the Network CRM
+training page), linked back to NETWORK-CRM.md.
+
+---
+
+## ADR-131: Per-persona nurture sequences — turning captured leads into activated members
+
+**Status:** Accepted (Entry Points Phase 3) · `supabase/migrations/20260607000000_nurture_sequences.sql`,
+`lib/nurture/*`, `app/(main)/marketing/nurture/*`, `/api/cron/nurture`. Builds on personas/lead flows
+(ADR-125), Entry Points (ADR-126), the email outbox + consent gates, and the contact-level lead
+unsubscribe (`lib/connections/lead-unsub.ts`).
+
+**Context.** Phases 1–2 made it easy to *capture* leads (entry points → lead flows → `contacts` with a
+`persona`), but `captureLead` literally noted "no persona nurture series exists yet," so a captured
+lead got **nothing**. The existing automations engine (ADR-025) is event-triggered and single-shot —
+it can't express "wait 2 days, then send step 2." We need a timed, multi-step, per-persona drip that
+reuses the durable email outbox and consent model rather than a new sender.
+
+**Decision.**
+- **Model:** one `nurture_sequences` row per persona (unique), an ordered `nurture_steps` list
+  (`delay_hours` relative to the prior step), and `nurture_enrollments` tracking a contact's cursor
+  (`next_step_order`, `next_run_at`, `status`). All service-role only, like `contacts`/`automation_rules`.
+- **Enroll on capture (push, not pull):** `captureLead` calls a fire-safe `enrollInNurture` — idempotent
+  via `unique (sequence_id, contact_id)`, a no-op when the persona has no enabled sequence. Chosen over
+  segment-resolve-at-send so a lead starts the moment they raise their hand.
+- **Drain on a cron:** `/api/cron/nurture` (every 15 min, `CRON_SECRET`) runs `runDueNurture()` — for each
+  due active enrollment it sends the next enabled step (skipping a since-disabled step instead of
+  stalling), then reschedules or completes. **Consent is enforced per send:** `contacts.consent_state =
+  'unsubscribed'` or a member's lifecycle opt-out **cancels** the enrollment; every email carries a
+  contact-level unsubscribe (`buildLeadUnsubUrl`) + RFC-8058 headers, and goes through `enqueueEmail`
+  (never inline).
+- **Operator surface:** a **Nurture** tab in `/marketing` (admin/staff) — create a persona's sequence
+  (seeded with a starter welcome step from the persona's own copy), edit/enable/reorder steps, and see
+  active/completed enrollment counts.
+- **Pure core:** step selection + scheduling (`lib/nurture/schedule.ts`) are pure and unit-tested; the
+  store/runner/actions do the I/O.
+
+**Alternatives.** Extend `automation_rules` with delays + conditions (rejected — conflates the
+event-bus engine with a scheduler; a dedicated enrollment table is clearer and testable). Resolve a
+persona **segment** at send time and mail the whole list (rejected for first send — push-on-capture is
+simpler and starts immediately; segment-driven *broadcasts* remain a separate Phase-3 lever). Send
+inline at capture (rejected — bypasses the retrying outbox and the timed cadence).
+
+**Consequences.** Captured personas now get a warm, consent-safe drip with no per-send code. The
+enrollment table also gives per-persona funnel visibility (in-sequence vs completed). Follow-ups:
+in-app/push step channels (the schema is email-only today), A/B variant steps, backfilling existing
+contacts into a sequence, and segment-targeted broadcast sends.
+
+---
+
+## ADR-132: Page admin dock Phase 2 — capability-driven modules + in-place editing
 
 **Status:** Accepted — build pending · Full spec: [EMBEDDED-ADMIN.md](EMBEDDED-ADMIN.md).
-Builds on the capability resolver (`lib/core/capabilities.ts`, CAPABILITIES-AND-MOBILE.md)
-and the five-template / declarative-chrome kit (PAGE-FRAMEWORK §8, ADR-090). Refines
-CAPABILITIES-AND-MOBILE.md §2 and PAGE-FRAMEWORK §3/§6; supersedes the deep-link half of
-ADR-119. This is the "inline-admin work (Phase 1)" that `lib/core/capabilities.ts:17-19`
-was written to anticipate.
+Builds on **ADR-128** (`PageAdminDock`, Phase 1) and **ADR-127** (operations roles); uses
+`lib/core/capabilities.ts` (resolver) + `lib/core/staff-roles.ts` / `lib/staff.ts`
+(`staffCan`). Refines CAPABILITIES-AND-MOBILE.md §2 and PAGE-FRAMEWORK §3/§6.
 
-**Context.** Admin is a place you *go to*: the `/admin/*` route group — ~21 surfaces, a
-two-layer nav (categories in the rail, pages as sub-tabs), one catalog (`sections.ts`),
-gated by `requireAdmin('host')`. Running one circle means leaving the circle for a
-separate section. Meanwhile the policy layer that could put admin *on the page* already
-exists (`resolveCapabilities(viewer, scope)`), with scattered first cuts shipped
-(`StaffEditButton`, `CircleHostMenu`, the `Can` gate). CAPABILITIES-AND-MOBILE §2 had
-argued for inline edit-in-place with "no admin tab" — but in practice that fragments
-admin into many bespoke inline buttons and still keeps a separate Janitor-only section.
+**Context.** ADR-128 shipped the right *chrome* — an edge-tab/header slide-out, push/overlay,
+resizable, persisted — but its panel is a **fixed action list branched on role** that
+**deep-links into `/admin/*`**; in-place layout/style editing is "Soon"; gating is by role,
+not the granular capability set. ADR-128 explicitly named Phase 2 as "tighten to the granular
+capability set (and ADR-127 operations roles)… true in-place editing." (This design was also
+produced independently as a planning spec; when the dock shipped in parallel the two were
+reconciled into this Phase-2 ADR rather than a competing one.)
 
-**Decision.** Admin becomes a thing you *do where you are*.
-- **A per-page Admin panel for every capable tier.** An always-present **Admin** button
-  (global header, shown only when the viewer holds an admin-grade capability for the
-  page's scope) opens a right **slide-out** whose contents are
-  `modulesFor(scope, resolveCapabilities(viewer, scope))`. **Tiers are filtering, not
-  branching** — same `AdminModuleCard` box format, more boxes (host ~3, janitor ~9).
-- **Panel + light inline.** Quick single-field edits stay inline where the thing lives;
-  the panel is the consolidated home for the full per-tier set. Both gated by the *same*
-  caps, enforced by the *same* server actions.
-- **A declarative `AdminModule` registry** (`lib/admin/modules/`) — each module tagged
-  `{ scopes, requiredCapability, slot, order, Component }`, gated on the resolved
-  **capability** (not a flat `minRole`, so per-scope leadership flows through). Mirrors
-  the `ADMIN_GROUPS` catalog shape; declared once, can't orphan.
-- **Overlay `Sheet` primitive** (`components/ui/sheet.tsx`), hand-rolled on existing tech
-  (no drawer dep installed), with the focus-trap / ESC / scroll-lock the current dialogs
-  lack. Content streams in as **server children of a client drawer** (the donut) via a
-  Next 16 `@admin` parallel-route slot — no other tier's UI reaches the client bundle.
-- **`/admin` is retired.** Platform-only surfaces (Members, Roles, AI, Demo, Vera,
-  analytics, QR) move into a single global **Platform admin** panel from the header.
-- **Capabilities stay law server-side.** The registry's `requiredCapability` is UX
-  metadata; every action re-resolves capabilities before mutating (the `inviteByEmail`
-  pattern). Scattered `janitor()`/`hasRole()` guards converge onto the resolver.
+**Decision.** Build the dock's *content engine* — no new chrome.
+- **Replace the fixed action list with a declarative `AdminModule` registry** filtered by
+  `resolveCapabilities(viewer, scope)` (+ `staffCan` for operations roles). Tiers emerge from
+  filtering — **same box format, more boxes** — removing the dock's `isJanitor ? […]` /
+  `can('host')` branching. (`modulesFor` / `showsAdminPanel`.)
+- **In-place editing:** each module renders as an `AdminModuleCard` (a thin wrapper over
+  `SidebarCard`) that edits on the page (optimistic; the server action re-checks the *same*
+  capability), converting today's `Edit info → /admin/circles` deep-links and the "Soon"
+  layout/style items into in-place editors.
+- **Server-composed content:** the client dock takes **server children** (the donut) via a
+  Next 16 `@admin` parallel-route slot, so no other tier's UI ships to the client bundle.
+- **Absorb `/admin/*` progressively:** as a surface gets a module its dock link becomes the
+  module; residual platform surfaces (Members/Roles/AI/Vera/analytics) collapse into a
+  `global`-scope **Platform** module group, then `/admin` retires.
+- **Close the capability-loader gap:** add `hub`/`nexus` loaders + `loadCapabilitiesForScope`
+  in `load-capabilities.ts`; add `event`/`channel` `Scope` kinds as those pages gain modules.
+- **Enforcement unchanged:** capabilities are law server-side; the registry's
+  `requiredCapability` is UX metadata named identically to the action's re-check (meets
+  ADR-127's "write-action parity" slice).
 
-**Alternatives.** Keep edit-strictly-in-place with no panel (rejected — CAPABILITIES-AND-MOBILE
-§2's original stance; fragments admin into bespoke per-field buttons and keeps a separate
-section for the long tail). Deep-link to the central editor (ADR-119; superseded — the
-section it links to is being retired; the panel reuses the same actions in place). Put the
-trigger in `PageHeading.actions` (rejected — would require editing every template; the
-header sits above the template layer and appears once for all five). Add a DB
-`module_key → min_role` permission grid (deferred — capabilities are code-driven today;
-the `area_permissions` override pattern can be copied later if config-driven tiers are
-ever needed). Add a drawer dependency like Radix/vaul (rejected — none installed; the app
-hand-rolls overlays, and SCALE-ARCHITECTURE's "own the components" posture applies).
+**Alternatives.** Build a separate `Sheet` primitive (rejected — the dock already *is* the
+slide-out; reuse it). Keep the fixed action list + role branching (rejected — doesn't scale per
+tier/scope; ADR-128 already committed to capability tightening). A DB `module_key → min_role`
+grid (deferred — capabilities are code-driven; the `area_permissions` override pattern is
+available later). Ship as a competing ADR-126 / standalone "embedded admin panel" (superseded —
+reconciled into this Phase-2 ADR after the dock shipped in parallel).
 
-**Consequences.** Net-new: `Sheet`, `AdminModuleCard`, the `AdminModule` registry,
-`lib/admin/page-admin.ts` (`adminFor`, sibling to `railFor`, locked by `page-admin.test.ts`),
-the `@admin` parallel slot, and `hub`/`nexus` capability loaders + a `loadCapabilitiesForScope`
-dispatcher in `load-capabilities.ts` (the one gap — the resolver handles those scopes, the
-loaders don't exist yet). New `Scope` kinds (`event`, `channel`) get added as those pages
-gain panels. The panel is **orthogonal to `railFor()`** (overlay, `z-50`/`z-40`, portaled) so
-it coexists with global/scoped/none rails — it must NOT be added to the chrome map. Rollout
-is additive and per-surface (framework → Circles pilot → scoped surfaces → Platform panel →
-remove `/admin`). Docs to update on ship: CAPABILITIES-AND-MOBILE §2, PAGE-FRAMEWORK §3/§6,
-DESIGN.md (kit entry), DEVELOPMENT-MAP.md, and a Notion operator page (instructional) linking
-back to EMBEDDED-ADMIN.md as source of truth.
+**Consequences.** Net-new: the `AdminModule` registry (`lib/admin/modules/`), `AdminModuleCard`,
+the `@admin` slot, and `hub`/`nexus` loaders + dispatcher. The dock's `sectionEdit(pathname)`
+prefix map generalizes into the scope/registry model. The dock's chrome (push/overlay/resize/
+persist) is untouched. Rollout is additive and per-surface (engine → Circles pilot → scoped
+surfaces → Platform group → retire `/admin`). EMBEDDED-ADMIN.md is the source of truth;
+CAPABILITIES-AND-MOBILE §2 + PAGE-FRAMEWORK §3/§6 are refined; the operator guide goes to
+Notion on ship.
 
 ---
 ### Decisions intentionally NOT duplicated here

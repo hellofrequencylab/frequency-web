@@ -1,13 +1,14 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getStaffMember } from '@/lib/staff'
+import { getStaffMember, staffCan } from '@/lib/staff'
 import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
 import { MarketingSubNav } from './sub-nav'
 
 // The Marketing workspace lives INSIDE the normal app frame (full left nav + top
 // bar), with a horizontal tab bar for its tools — the same pattern as Admin.
-// Access: community admin/janitor, OR a Studio staff member (team_members axis).
+// Access: community admin/janitor, OR a staff role with the 'marketing' capability
+// (Marketing / Admin / Owner write · Analyst read) — ADR-127.
 export default async function MarketingLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -23,7 +24,7 @@ export default async function MarketingLayout({ children }: { children: React.Re
   const role = ((profile?.community_role as CommunityRole) ?? 'member')
   if (!atLeastRole(role, 'admin')) {
     const staff = await getStaffMember().catch(() => null)
-    if (!staff) notFound()
+    if (!staff || !staffCan(staff.role, 'marketing', 'read')) notFound()
   }
 
   return (

@@ -45,14 +45,15 @@ relationship + the presence of open tasks, computed server-side.
 
 ## 2. Inline admin & contextual actions (regular users never see an admin tab)
 
-> **Refined by [ADR-126](DECISIONS.md#adr-126-embedded-per-page-admin-panel-replaces-the-centralized-admin-section)
-> / [EMBEDDED-ADMIN.md](EMBEDDED-ADMIN.md).** The principle below — *actions live
-> where the thing lives* — holds. What changed: instead of admin being scattered
-> inline + a separate Janitor-only section, **every capable tier** gets a per-page
-> **Admin panel** (a right slide-out opened *on the page it governs*), plus light
-> inline edit-in-place for quick edits. Members still see no admin chrome; the
-> centralized `/admin/*` section is retired. The §3 server-authority invariant is
-> unchanged.
+> **Realized by ADR-128 (the `PageAdminDock`, Phase 1) and extended by ADR-132 /
+> [EMBEDDED-ADMIN.md](EMBEDDED-ADMIN.md) (Phase 2) — see [DECISIONS.md](DECISIONS.md).**
+> The principle below — *actions live where the thing lives* — holds and now ships as
+> the **page admin dock**: an edge-tab (desktop) / header-Shield (mobile) slide-out
+> giving operators per-page admin actions on the page itself, in push or overlay mode.
+> Phase 1 deep-links into `/admin/*` and gates by role; **Phase 2** makes the panel
+> **capability-driven** (modules per tier via the resolver + ADR-127 operations roles),
+> brings **in-place editing**, and **absorbs `/admin/*`** progressively. Members still
+> see no admin chrome; the §3 server-authority invariant is unchanged.
 
 **Principle: actions live where the thing lives.** The Admin tab is reserved for
 the **Janitor**'s deep, cross-entity work (bulk operations, the moderation queue,

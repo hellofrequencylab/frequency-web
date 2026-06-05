@@ -18,6 +18,19 @@ const nextConfig: NextConfig = {
   // Keep the wasm rasterizer (styled QR PNG export, lib/qr/raster.ts) external so the
   // bundler doesn't try to bundle its .wasm — it's loaded from node_modules at runtime.
   serverExternalPackages: ['@resvg/resvg-wasm'],
+  // The help center is plain Markdown under content/help/**, read from disk at
+  // RUNTIME by (a) the "Ask Vera" reindex — nightly cron + admin "Build index" —
+  // and (b) the support launcher's search index in the (main) layout. Next's
+  // tracer can't follow those dynamic fs reads, so without an explicit include the
+  // files are absent from the serverless bundle: every read returns [], the
+  // help_chunks index builds empty, and "Ask Vera" can only ever deflect. The
+  // content is tiny, so bundle it into the routes that need it. (Help *pages* are
+  // unaffected — they're statically generated at build time.) See docs/SUPPORT-SYSTEM.md.
+  outputFileTracingIncludes: {
+    '/api/cron/embed-help': ['./content/help/**/*'],
+    '/admin/ai': ['./content/help/**/*'],
+    '/**': ['./content/help/**/*'],
+  },
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }]
   },

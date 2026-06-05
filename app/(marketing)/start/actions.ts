@@ -13,6 +13,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { isSuppressed } from '@/lib/suppression'
 import { resolveAcquisition } from '@/lib/attribution/server'
 import { isPersonaId, type PersonaId } from '@/lib/onboarding/personas'
+import { enrollInNurture } from '@/lib/nurture/enroll'
 
 export type LeadResult = { ok: true } | { ok: false; error: string }
 
@@ -67,6 +68,7 @@ export async function captureLead(input: {
     acquisition,
   }
 
+  let contactId: string | null = existing?.id ?? null
   try {
     if (existing?.id) {
       await admin
@@ -80,19 +82,28 @@ export async function captureLead(input: {
         })
         .eq('id', existing.id)
     } else {
-      await admin.from('contacts').insert({
-        email,
-        display_name: name,
-        consent_state: 'unknown',
-        source,
-        meta,
-        last_seen_at: nowIso,
-      })
+      const { data: inserted } = await admin
+        .from('contacts')
+        .insert({
+          email,
+          display_name: name,
+          consent_state: 'unknown',
+          source,
+          meta,
+          last_seen_at: nowIso,
+        })
+        .select('id')
+        .maybeSingle()
+      contactId = (inserted as { id: string } | null)?.id ?? null
     }
   } catch (err) {
     console.error('[lead] failed to upsert contact:', err)
     return { ok: false, error: 'Something went wrong. Please try again.' }
   }
+
+  // Enroll the lead in their persona's nurture sequence (ADR-131). Fire-safe — a
+  // missing/disabled sequence is a no-op, and it never throws into capture.
+  if (contactId) await enrollInNurture({ contactId, email, persona })
 
   return { ok: true }
 }
