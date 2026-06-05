@@ -31,7 +31,7 @@ export default async function QrStudioPage() {
     await Promise.all([
       db
         .from('nodes')
-        .select('id, type, label, zaps_value, capture_rule, active, valid_until, partner_id, style, created_at')
+        .select('id, type, label, zaps_value, capture_rule, active, valid_until, partner_id, style, max_claims, secret, created_at')
         .order('created_at', { ascending: false }),
       db.from('captures').select('node_id').eq('verified', true),
       db
@@ -53,7 +53,7 @@ export default async function QrStudioPage() {
 
   const initialNodes: StudioNode[] = await Promise.all(
     (nodes ?? []).map(async (n) => {
-      const url = nodeUrl(n.id)
+      const url = nodeUrl(n.id, n.secret)
       const style = parseStyle(n.style)
       return {
         id: n.id,
@@ -67,6 +67,8 @@ export default async function QrStudioPage() {
         lat: geoByNode.get(n.id)?.lat ?? null,
         lng: geoByNode.get(n.id)?.lng ?? null,
         proximityM: geoByNode.get(n.id)?.proximity_m ?? null,
+        maxClaims: n.max_claims,
+        requireSignature: Boolean(n.secret),
         captures: captureCounts.get(n.id) ?? 0,
         style,
         url,

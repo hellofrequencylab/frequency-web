@@ -10,6 +10,7 @@ const REASON_LABEL: Record<string, string> = {
   already_captured: "You've already claimed this one.",
   too_far: "You're not close enough to claim this.",
   location_required: 'Location needed to claim this.',
+  capacity_reached: 'All claimed — this one reached its limit.',
   expired: "This one's no longer active.",
   not_yet_valid: 'This one isn’t active yet.',
   inactive: 'This spot is inactive.',
@@ -31,7 +32,7 @@ function getCoords(): Promise<{ lat: number; lng: number } | null> {
   })
 }
 
-export function ClaimButton({ nodeId }: { nodeId: string }) {
+export function ClaimButton({ nodeId, secret }: { nodeId: string; secret?: string | null }) {
   const [result, setResult] = useState<ClaimResult | null>(null)
   const [pending, start] = useTransition()
 
@@ -71,7 +72,7 @@ export function ClaimButton({ nodeId }: { nodeId: string }) {
       onClick={() =>
         start(async () => {
           const coords = await getCoords()
-          const res = await claimNode(nodeId, coords)
+          const res = await claimNode(nodeId, coords, secret ?? null)
           setResult(res)
           if (res.ok && res.zapsAwarded) {
             showZapToast({ amount: res.zapsAwarded, label: 'Claimed' })

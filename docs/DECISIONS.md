@@ -3088,6 +3088,102 @@ scan-tracking "pass installed" signal remain open.
 
 ---
 
+## ADR-109: Scarcity / capacity codes — a total-claim cap on check-in nodes
+
+**Status:** Accepted · `supabase/migrations/20260605150000_node_max_claims.sql`,
+`lib/engagement/verify.ts`, `app/(main)/admin/qr/{actions,qr-studio}.tsx`. Extends the capture pipeline.
+
+**Context.** `capture_rule` covered once-per-user / once-global / repeatable, but not
+"first **N** win" — the natural mechanic for a launch drop or an event prize where only
+the first N claimers earn.
+
+**Decision.** Add a nullable `nodes.max_claims`. When set, `verifyCapture` counts verified
+captures and rejects with a new `capacity_reached` reason once the cap is hit (surfaced on
+the claim button). Authored on the NodeForm ("Limit total claims"); the card shows an
+`N/max claimed` badge. Null = unlimited (today's behavior), so every existing code is
+unaffected.
+
+**Alternatives.** A separate counter table (rejected — `count(captures)` is authoritative
+and already indexed); a per-day cap (deferred — a different, future rule).
+
+**Consequences.** Operators can run scarce, first-come drops. The cap is checked on the
+verify path so it's race-safe enough for prizes (a tiny over-claim window under extreme
+concurrency is acceptable for this use; a hard guarantee would need a transaction/lock).
+
+---
+
+## ADR-110: Scannability guardrails — advisory design warnings in the editor
+
+**Status:** Accepted · `lib/qr/scannability.ts` (+ test), `app/(main)/admin/qr/style-editor.tsx`.
+
+**Context.** The beautiful-code editor (ADR-090) lets operators pick colors, gradients,
+and a logo — which means they can also design a code that **won't scan** (low contrast,
+light-on-dark, no quiet zone) and only discover it after printing a batch.
+
+**Decision.** A pure, isomorphic `scannabilityWarnings(style)` flags the real-world
+killers — WCAG contrast < 4 (using the worst gradient stop), inverted light-on-dark,
+quiet-zone margin < 2, and a logo atop weak contrast. Surfaced as an **advisory** amber
+banner in the editor; it never blocks saving.
+
+**Alternatives.** Hard-block bad designs (rejected — too paternalistic; edge cases scan
+fine); actually decode a rendered preview (rejected — heavy, and the heuristics catch the
+common failures cheaply).
+
+**Consequences.** Fewer dead printed codes. Pure + unit-tested; reusable anywhere a style
+is edited.
+
+---
+
+## ADR-111: Acquisition analytics — roll up first-touch snapshots on the stats page
+
+**Status:** Accepted · `lib/qr/acquisition.ts` (+ test), `app/(main)/admin/qr/stats/page.tsx`.
+Cashes in the data captured by ADR-104 (medium) + ADR-107 (`source_tag` / `profiles.acquisition`).
+
+**Context.** We started persisting `qr_scans.medium` and `profiles.acquisition`, but nothing
+turned them into a decision — there was no screen answering "which poster/channel actually
+brings signups?"
+
+**Decision.** A pure `summarizeAcquisition(rows)` tallies attributed signups by channel, by
+source/campaign (campaign preferred over source), and by code slug. The stats page adds an
+**Acquisition** section: channel + source rankings, a QR-vs-NFC split, and a per-code
+**scan → signup conversion** table (signups ÷ scans by slug).
+
+**Alternatives.** A materialized view / rollup table (rejected — volumes are small; an
+in-memory tally over `acquisition is not null` is fine and stays consistent).
+
+**Consequences.** Operators can see which physical placements convert, not just which get
+scanned. Time-windowing + CSV export are the obvious next iterations.
+
+---
+
+## ADR-112: Signed anti-spoof payloads — end-to-end through the /n claim
+
+**Status:** Accepted · `lib/qr/links.ts` (`nodeUrl` secret), `lib/engagement/verify.ts` (already checked),
+`app/(main)/admin/qr/actions.ts`, `app/(main)/n/[nodeId]/{page,claim-button,actions}.tsx`,
+`app/api/qr/route.ts`, `app/print/qr/page.tsx`. Completes ADR-088's `secret` field.
+
+**Context.** `nodes.secret` and the `verifyCapture` signature check existed, but nothing
+**authored** a secret or **carried** it — so a `/n/<id>` URL guessed/forged from just a
+node id (or a leaked id) could claim, which undermines location-aware earning (ADR-106).
+
+**Decision.** A "Require a signed code" toggle mints a random `secret` (`node:crypto`
+`randomBytes`) on the node; `nodeUrl(id, secret)` then encodes `/n/<id>?s=<secret>` into the
+QR image, print sheet, NFC tag, and copy/open links. The `/n` page reads `?s=` and forwards
+it through `claimNode → captureNode`; `verifyCapture` rejects a mismatch with `bad_signature`.
+The secret is minted once and kept (re-minting would invalidate printed codes); clearing the
+toggle nulls it.
+
+**Alternatives.** Rotating HMAC-over-time (rejected for static print/NFC — the physical tag
+can't rotate; a static per-node secret is the right tool and already makes the URL
+unguessable). True replay defense needs dynamic NFC and is out of scope.
+
+**Consequences.** A forged or guessed node URL can't claim; combined with proximity
+(ADR-106) and capture rules, location/earn codes are meaningfully harder to farm. A leaked
+*image* of the real code still works — that's the inherent limit of static codes, mitigated
+by once-per-user + geofence + caps.
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 
