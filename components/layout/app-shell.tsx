@@ -44,7 +44,7 @@ import {
   roleBadgeStyle,
 } from '@/lib/community-roles'
 import { NAV_AREAS, meetsAccess, meetsStaff, type NavAccess } from '@/lib/nav-areas'
-import type { StaffRole } from '@/lib/staff'
+import type { StaffRole, StaffDomain } from '@/lib/staff'
 import type { ProfileIdentity } from '@/lib/types/profile'
 import { PrimaryNav } from '@/components/layout/primary-nav'
 import { BrandMark } from '@/components/layout/brand-mark'
@@ -73,8 +73,8 @@ type MainNavItem = {
   defaultAccess: NavAccess
   /** Below-access viewers may still click through to a muted preview. */
   preview?: boolean
-  /** Min staff role (team_members) that also unlocks this item. */
-  staffAccess?: StaffRole
+  /** Staff capability domain (team_members) that also unlocks this item. */
+  staffDomain?: StaffDomain
 }
 
 type NavSectionGroup = { label: string | null; items: MainNavItem[] }
@@ -90,7 +90,7 @@ function buildSections(areas: typeof NAV_AREAS[number][]): NavSectionGroup[] {
       Icon: AREA_ICONS[area.key] ?? Globe,
       defaultAccess: area.defaultAccess,
       preview: area.previewBelowAccess,
-      staffAccess: area.staffAccess,
+      staffDomain: area.staffDomain,
     }
     const last = sections[sections.length - 1]
     if (last && last.label === area.section) last.items.push(item)
@@ -1077,7 +1077,7 @@ export default function AppShell({
   const gateRole: CommunityRole | null = previewVisitor ? null : role
   // Stewards (host+) and Studio staff get a mobile quick-add for the Profile
   // Creator — tap to scan a card / add a profile on the go (ADR-096).
-  const canCreateProfile = meetsAccess('host', gateRole) || meetsStaff({ staffAccess: 'analyst' }, staffRole)
+  const canCreateProfile = meetsAccess('host', gateRole) || meetsStaff({ staffDomain: 'profiles' }, staffRole)
   const profileHref = `/people/${profile.handle}`
   const { theme, setTheme } = useTheme()
   const [drawerOpen, setDrawerOpen] = useState(false)
