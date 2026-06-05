@@ -381,9 +381,11 @@ inline path (wizard is an optional guided alt); RLS isolation between `journey_p
   fail fast with a clear error) so PR previews are trustworthy. (S–M)
 
 ### IA refresh follow-ons (ADR-097 — nav restructure shipped; these are the deeper builds)
-- [ ] **Broadcast = a real local-happenings dashboard.** The rail now leads Community with **Broadcast**,
-  but `/broadcast` should become a true dashboard of everything happening locally (events, dispatches,
-  new circles, milestones) — not just a broadcast list. Build the aggregated view. (M)
+- [x] **Broadcast = a real local-happenings dashboard.** ✅ `/broadcast` is now the Community Dashboard
+  (counterpart to the Quest Dashboard): highlight hero (latest broadcast / next event), stat cards
+  (broadcasts · upcoming events · circles · members), a broadcasts feed, and right-rail modules
+  (Happening soon · New circles) + quick links. *Next:* fold in geo "near you" ranking once the Phase A
+  feed lens lands; surface milestones.
 - [ ] **Frequency Shop (real-money merch e-commerce).** Distinct from the Quest **Store** (play economy +
   Vault). New surface for physical/merch sales — payments, catalog, fulfillment. Greenfield. (G)
 - [ ] **Fold Outreach *content* into the admin Overview.** ADR-097 moved the nav entry into the Overview
