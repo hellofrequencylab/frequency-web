@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import AppShell from '@/components/layout/app-shell'
-import RightSidebar from '@/components/sidebar/right-sidebar'
+import RightSidebar, { MobileGameStats } from '@/components/sidebar/right-sidebar'
 import { DispatchTickerSlot } from '@/components/layout/dispatch-ticker-slot'
 import type { CommunityRole } from '@/components/sidebar/right-sidebar'
 import { getUnreadCount } from '@/app/(main)/notifications/actions'
@@ -111,6 +111,15 @@ export default async function MainLayout({
     </Suspense>
   )
 
+  // Mobile stats menu body (zaps · streak · rank · journey · vault) — the same
+  // progress cockpit as the desktop dock, streamed independently so it never
+  // blocks the shell. The shell hosts it behind a right-edge, click-to-open menu.
+  const statsPanel = (
+    <Suspense fallback={null}>
+      <MobileGameStats profileId={profile.id} />
+    </Suspense>
+  )
+
   // Analytics consent (ADR-069). A member who opted out has GA suppressed client-side
   // (GaConsentGate sets gtag's native opt-out flag); the server mirror is gated too.
   const analyticsConsent = await hasConsent(profile.id, 'analytics')
@@ -132,6 +141,7 @@ export default async function MainLayout({
       realRole={realRole}
       previewVisitor={previewVisitor}
       sidebar={sidebar}
+      statsPanel={statsPanel}
       ticker={ticker}
       unreadCount={unreadCount}
       permissions={permissions}

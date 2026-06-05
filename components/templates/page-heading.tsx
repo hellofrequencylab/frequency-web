@@ -28,7 +28,7 @@ export function PageHeading({
   divider?: boolean
 }) {
   return (
-    <div className={`mb-6 ${divider ? 'border-b border-border pb-5' : ''}`}>
+    <div className={`mb-5 sm:mb-6 ${divider ? 'border-b border-border pb-4 sm:pb-5' : ''}`}>
       {back && (
         <Link
           href={back.href}
@@ -38,14 +38,17 @@ export function PageHeading({
           {back.label}
         </Link>
       )}
-      <div className="flex items-end justify-between gap-4">
+      {/* Title left, action top-right — one balanced row at every width. The title
+          block is min-w-0 so a long title WRAPS rather than crushing the action,
+          and the action is shrink-0 so it always keeps its place on the right. */}
+      <div className="flex flex-row items-start justify-between gap-3 sm:gap-4">
         <div className="min-w-0">
           {eyebrow && (
             <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-primary-strong">
               {eyebrow}
             </p>
           )}
-          <h1 className="mb-1 text-2xl font-bold text-text">{title}</h1>
+          <h1 className="mb-1 text-balance text-xl font-bold text-text sm:text-2xl">{title}</h1>
           {description && (
             <p className="max-w-2xl text-sm leading-relaxed text-muted">{description}</p>
           )}

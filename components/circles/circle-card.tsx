@@ -34,18 +34,18 @@ export function CircleCard({ circle, isMember }: { circle: CircleCardData; isMem
       href={`/circles/${circle.slug}`}
       dimmed={circle.isDemo}
       badge={circle.isDemo ? <DemoBadge /> : undefined}
-      anchor={
+      cover={
         circle.imageUrl ? (
           <Image
             src={circle.imageUrl}
             alt={circle.name}
-            width={44}
-            height={44}
-            className="h-11 w-11 rounded-full object-cover"
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 380px"
+            className="object-cover"
           />
         ) : (
-          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-bg text-primary-strong">
-            <Users className="h-5 w-5" />
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary-bg via-surface-elevated to-signal-bg text-primary-strong">
+            <Users className="h-9 w-9" />
           </div>
         )
       }
@@ -76,7 +76,7 @@ export function CircleCard({ circle, isMember }: { circle: CircleCardData; isMem
         isMember ? (
           <Link
             href={`/circles/${circle.slug}`}
-            className="inline-flex rounded-lg bg-primary-bg px-3 py-1.5 text-xs font-semibold text-primary-strong transition-colors hover:bg-primary-bg/70"
+            className="inline-flex rounded-lg bg-surface px-3 py-1.5 text-xs font-semibold text-primary-strong shadow-sm ring-1 ring-border transition-colors hover:bg-surface-elevated"
           >
             Open
           </Link>
@@ -84,13 +84,13 @@ export function CircleCard({ circle, isMember }: { circle: CircleCardData; isMem
           <form action={joinCircle.bind(null, circle.id, circle.slug)}>
             <button
               type="submit"
-              className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+              className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
             >
               Join
             </button>
           </form>
         ) : (
-          <span className="inline-flex rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted">
+          <span className="inline-flex rounded-lg bg-surface px-3 py-1.5 text-xs font-medium text-muted shadow-sm ring-1 ring-border">
             Full
           </span>
         )

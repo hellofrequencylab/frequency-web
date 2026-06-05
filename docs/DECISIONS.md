@@ -3435,7 +3435,316 @@ host-less circle is possible — noted, not changed here (the editor pre-fills t
 
 ---
 
-## ADR-120: Bundle `content/help/**` into the serverless runtime so "Ask Vera" can build its index
+## ADR-120: Mobile navigation is a bottom tab bar (not a header hamburger); shared header balances on mobile
+
+**Status:** Accepted · `components/layout/app-shell.tsx` (`MobileTabBar`, `MobileLeftDrawer`),
+`components/templates/page-heading.tsx`, `components/layout/brand-mark.tsx`. Builds on the
+five-template / one-header framework (PAGE-FRAMEWORK §8) and the single-rail nav model
+(`lib/nav-areas.ts`).
+
+**Context.** On mobile the only way to reach a section was the top-left **hamburger → full-screen
+overlay drawer**; the bottom bar was spent on profile + rewards (not navigation). Switching
+sections therefore cost two taps and a reach to the top corner. Separately the shared `PageHeading`
+laid the title and its header action on one `items-end justify-between` row at a fixed `text-2xl`,
+so on a narrow screen a long title was crushed against the action button, and the header chrome
+(wordmark, right-cluster icons) sat flush to the screen edges — content read as "falling off."
+
+**Decision.**
+- **Primary nav → a bottom tab bar.** `MobileTabBar` pins the four core community destinations
+  (Feed · Circles · Channels · Events) in the thumb zone, plus a **Menu** tab that opens the drawer
+  for the long tail. The most native mobile pattern, and it **keeps full content width** — nothing
+  is permanently carved off the side of a narrow screen (the explicit reason we rejected a
+  persistent left mini-rail). Icons come from `AREA_ICONS` so the tab bar stays in lockstep with
+  the desktop rail and the drawer.
+- **The header hamburger is removed;** the bottom Menu tab owns drawer-open. This declutters the
+  top bar and lets the wordmark anchor the top-left.
+- **The drawer carries identity + rewards** (the avatar/role card → profile, the bolts/gems pill →
+  Dashboard) that used to live in the bottom bar, above the full nav list.
+- **`PageHeading` balances on mobile:** the action **stacks below** the title block under `sm`
+  (`flex-col … sm:flex-row sm:items-end sm:justify-between`), the title is responsive
+  (`text-xl sm:text-2xl`) and `text-balance`, matching the Detail context band. Edge breathing room
+  added to the wordmark (`pl-3.5`) and the header right-cluster (`px-2.5`).
+
+**Alternatives.** A persistent slim left icon-rail that folds out on tap (what was first floated —
+rejected: it permanently eats ~48px of an already-narrow viewport, working against the "feels
+cramped / falling off the edge" complaint). Keep the hamburger and only polish the drawer (rejected
+— leaves section-switching a two-tap top-corner reach).
+
+**Consequences.** Section-switching is one thumb tap; the top bar is lighter; titles never crush on
+mobile. Settings/Billing/Help stay reachable via the top-right account menu (unchanged, still shown
+on mobile). `hideAppNav` shells (e.g. Studio) drop the four destination tabs and keep only Menu.
+Desktop is unchanged — the left rail and `ProfileCard` still own navigation and identity there.
+
+---
+
+## ADR-121: Opt-in slide-in side rail (mobile) + Vera drafts the new circle
+
+**Status:** Accepted · `components/layout/app-shell.tsx` (`MobileSideRail`, the drawer toggle),
+`components/compose/new-circle-compose.tsx`, `app/(main)/circles/actions.ts` (`suggestCircle`),
+`lib/ai/circle-wizard.ts`. Builds on the mobile bottom-tab nav (ADR-120) and the
+forced-tool AI assist pattern (`lib/ai/practice-wizard.ts`, ADR-116).
+
+**Context.** Two follow-ups from on-device review. (1) The feed felt bare down its sides on a
+phone, and quick-nav meant reaching the bottom tab bar each time. (2) The "Start a circle" modal
+asked for a name + about cold — a blank-page moment right where Vera (Frequency's guide) should be
+helping.
+
+**Decision.**
+- **An opt-in slide-in side rail.** Superseded by ADR-122's unified model — the left nav rail and
+  right stats rail now share ONE behavior (`useRailReveal`): **hidden at the top of scroll**, a
+  **super-minimal tab** slides in once scrolled into the feed, **tap opens the full panel**, and
+  **scrolling snaps it back to the tab**. Fixed overlays (not body columns), so they never
+  permanently inset the feed. Per-device pref `freq-rail-nav` (default on), hydrated after mount.
+  Mobile only; suppressed under `hideAppNav`.
+- **Vera drafts the circle.** A "Suggest" affordance appears in the modal once the practice is known
+  (the channel we're in, or the picked Interest). `suggestCircle()` calls `suggestCircleDraft()`
+  (Haiku, forced `suggest_circle` tool, usage-ledgered) and **falls back to a deterministic draft**
+  when AI is off/over budget — so the affordance always returns an editable name + about. It only
+  **fills the fields**; creating the circle is still the host's explicit submit (propose, don't
+  commit). "Lightweight suggest," not the full conversational concierge — chosen deliberately for
+  this pass.
+
+**Alternatives.** A persistent (always-visible) left rail (rejected — width cost, ADR-120). Embedding
+Vera's live concierge in the create flow (deferred — heavier; the one-shot suggester is the
+shippable first step). A purely deterministic suggester with no AI (rejected — Vera should feel real
+when the kernel is on; the deterministic path is the fallback, not the default).
+
+**Consequences.** The side rail is always-present-but-quiet (an icon strip), discoverable (the
+chevron expands it to labels), and reverts to icons on scroll so the feed isn't held narrow while
+reading; the master toggle turns it off entirely. Users who dislike it turn it off once. The circle
+modal has a real assist with a guaranteed-useful fallback and no new
+commit path (the server still authorizes `createCircle`). New AI feature key `circle-create` flows
+through the existing usage ledger + daily-cap machinery.
+
+---
+
+## ADR-122: Mobile right-edge stats menu (the gamification counterpart to the left rail)
+
+**Status:** Accepted · `components/layout/app-shell.tsx` (`MobileStatsMenu`),
+`components/sidebar/game-stats-dock.tsx` (`GameStatsPanel`), `components/sidebar/right-sidebar.tsx`
+(`loadGameStats`, `MobileGameStats`), `app/(main)/layout.tsx`. Mirror of the left rail (ADR-121);
+reuses the desktop progress-cockpit (`GameStatsDock`).
+
+**Context.** On desktop the member's stats / streaks / gamification live in the bottom dock of the
+right rail (`GameStatsDock`). On mobile the right rail isn't rendered, so that cockpit was
+unreachable. We wanted a **matching menu on the right** of the left nav rail to host it.
+
+**Decision.** Both edge rails (left nav · right stats) share **one interaction** (`useRailReveal`,
+driven by the feed scroll container):
+- **Hidden at the top of scroll.** Nothing shows until the member scrolls into the feed — then a
+  **tall (`h-[33vh]`), very-light (`opacity-50`) tab** (`EdgeTab`) floats onto each edge. It's an
+  **overlay** that does **not** push the content — it sits over the margin.
+- **Tap the tab → the side menu opens** (left = nav, right = stats panel).
+- **One-use menu:** selecting a link, clicking anywhere on the panel, or tapping the **light
+  backdrop** (`bg-black/10`) closes it; scrolling also closes it.
+- On/off is a **per-device setting in the Menu drawer** (two `RailToggle`s, prefs `freq-rail-nav` /
+  `freq-stats-rail`, default on). *(Open question: the ask was to move this control into "admin"; for
+  now it stays the per-device drawer toggle.)*
+- **Reuse, don't re-author.** The dock's panel body is factored into a shared **`GameStatsPanel`**
+  (today's move · 7-day streak · rank progress · journey arc · the Vault · full-dashboard link), and
+  the data assembly into **`loadGameStats(profileId)`** — both consumed by the desktop dock *and* the
+  mobile menu. The layout streams `MobileGameStats` into the shell behind `<Suspense>` (the donut
+  pattern: client menu shell, server-rendered stats child), so it **never blocks the shell** and costs
+  the same single query the desktop dock already pays.
+
+**Alternatives.** A push-content right panel like the left rail's old expand (rejected — the cockpit
+needs ~`w-72`; pushing would crush the feed). Always-visible paired columns (rejected — they inset the
+feed on both edges; the hidden-at-top / minimal-tab model keeps the feed full-width while reading).
+Re-fetching stats client-side on open (rejected — the layout already streams it; reuse
+`loadGameStats`). Duplicating the stats markup for mobile (rejected — `GameStatsPanel` is the source).
+
+**Consequences.** While reading (scrolled or at top) the feed is unobstructed; the rails bracket it
+only as the member scrolls, and each opens its full panel in one tap. Either rail can be switched off
+from its tick and back on from the drawer. The desktop dock is unchanged (same `GameStatsPanel`); both
+rails are `md:hidden` so desktop is untouched.
+
+---
+
+## ADR-123: Live search overlay (type-ahead) replaces the submit-to-reload search
+
+**Status:** Accepted · `components/search/search-overlay.tsx`, `app/api/search/route.ts`,
+`components/layout/app-shell.tsx` (header triggers + ⌘K). The `/search` page stays as the
+"see all" destination.
+
+**Context.** Search meant navigating to `/search` and submitting a form that reloaded the page per
+query — not "active." We wanted results as you type, reachable from anywhere.
+
+**Decision.**
+- **A full-screen overlay** opened from the header search pill/icon and **⌘K**. Typing
+  (debounced 200ms) hits a new **`/api/search`** route that returns a small slice of
+  **people / posts / events** as JSON; results render live, grouped, with a **"See all results"**
+  link to the existing `/search?q=` page. Mobile-first (fills the screen on a phone, centers on
+  desktop); Esc / backdrop / × close it.
+- **Mounted only while open** (`{searchOpen && <SearchOverlay/>}`), so its state resets each open —
+  no reset-in-effect.
+- **`/api/search`** mirrors the `/search` page queries (admin client, `ilike`), auth-gated, caps at
+  6 per type, and strips `(),` from the term so a stray char can't break the PostgREST `or()` filter.
+
+**Alternatives.** Live-search the `/search` page in place (rejected — an overlay is reachable from
+every page, not just after navigating). A new typed search RPC (deferred — reuse the page's existing
+query shape now; revisit if search needs ranking/perf work).
+
+**Consequences.** Search is instant and global. `/search` remains the deep/linkable results view (and
+the overlay's "see all" target), so nothing is lost. New `/api/search` is the first read endpoint for
+in-app search; if abused it can move behind the AI/RPC boundary later.
+
+---
+
+## ADR-124: Reusable in-page Table of Contents (`PageContents`) — a section navigator for long pages
+
+**Status:** Accepted · `components/templates/page-contents.tsx`, applied on
+`channels`, `practices`, `events` (scroll-spy) and `circles` (filter/drill-down).
+The "smart menu that sorts a page's sections."
+
+**Update — two modes.** `PageContents` now takes EITHER `sections` (scroll-spy: jump to on-page
+sections, track the active one) OR `links` (filter/drill-down: chips are links that set a URL param,
+so tapping one shows just that category's items — the "pages within"). Same sticky chip chrome both
+ways. **Circles** uses the filter mode — `?channel=<slug>` chips (All · Mind · Body · Spirit ·
+Expression, with circle counts) drill the grid into one Channel; **Practices/Events** use scroll-spy.
+This realizes the "table of contents with pages within" across both sectioned and grid pages.
+
+**Context.** Long index pages (Channels has four Channels, each with many Interests) had no quick way
+to jump between sections on mobile — you scrolled past everything. The ask: a reusable "table of
+contents" that sorts a page's sections (Channels, Circles, practices…) and can apply everywhere.
+
+**Decision.**
+- **`PageContents`** — a sticky, horizontally-scrollable bar of the page's sections that **jumps to
+  them and tracks the active one on scroll** (IntersectionObserver scroll-spy, rooted on the
+  `[data-feed-scroll]` container). Purely additive: the page renders normal sections with `id`s, and
+  passes `{ id, label, count }[]`; the component is the navigation layer over them. Sticks under the
+  app header, full-bleed within the page padding, mobile-first (the *bar* scrolls, not the page).
+- **Proven on Channels first** (the four Channels as the TOC), with `scroll-mt-20` on each section so
+  the sticky bar never covers a section heading on jump. Reusable as-is for any sectioned page.
+
+**Alternatives.** Per-page bespoke jump-lists (rejected — that's what existed, desktop-only, in the
+Channels aside; this generalizes it). Filtered sub-routes per section / "pages within" as real routes
+(deferred — anchor + scroll-spy is the lighter first step; can grow into routed drill-down if needed).
+A heavier filter/sort toolbar (deferred — start with navigation; sorting can layer on).
+
+**Consequences.** Channels is navigable in a tap on mobile; the same one-liner adds a TOC to any long
+page. This is the first piece of the broader "section navigator" the product wants applied site-wide;
+generalizing it (Circles, practices) is now a per-page `sections` array, not new UI.
+
+---
+
+## ADR-125: Personas + lead flows — the self-identified intake rework
+
+**Status:** Accepted · `lib/onboarding/personas.ts`, `lib/onboarding/lead-flows.ts`,
+`app/(marketing)/start/**`, `app/onboarding/beta/{induction,page,actions}.tsx`,
+`lib/traits/registry.ts` (5 `persona_*` tags). Builds on the beta induction (ADR-068),
+beta sequences, the tag registry/MDP (ADR-068), and acquisition attribution (ADR-095).
+Full spec: [LEAD-FLOWS.md](LEAD-FLOWS.md).
+
+**Context.** Intake had one mechanism doing two jobs: a beta *sequence*
+(`early-adopter` / `personal` / `founding-partner`) was both the marketing splash
+*and* the induction's copy skin, and **which one you got was decided by which link you
+clicked** — we never asked the visitor who they were. That conflated "founding partner"
+businesses, investors, and builders into one lump, and gave us no structured signal to
+route people down different marketing tracks (practitioner tools vs. a partner loyalty
+program vs. the regular visitor pitch).
+
+**Decision.** Split intake into **two layers with persona as the spine.**
+- **Persona** (`lib/onboarding/personas.ts`) — five self-identified types: **Visitor**
+  (default), **Practitioner**, **Partner business**, **Community builder/Volunteer**,
+  **Investor/Lab champion**. Each carries its picker pitch, a persona-true **value reel**
+  (reuses the three product renders with new captions — no new components), a **marketing
+  track** (what we show + a learn-more link), and a **registered marketing tag**.
+- **Lead flow** (`lib/onboarding/lead-flows.ts`, surfaced at `/start/<flow>`) — an
+  **assignable top-of-funnel** you drop behind any entry point (QR, IG bio, partner
+  button). It sets the frame, asks the persona, records the lead (`captureLead` →
+  `contacts.meta.persona`), and routes into the induction carrying `?persona=`. Generalizes
+  sequences: the visitor *tells* us instead of us guessing from the link.
+- **Persona-aware induction.** The fork is captured in the lead flow **and re-confirmed in
+  the induction's Welcome beat** (chosen "both" — strongest signal, no dead ends). Folded
+  into the existing beat, so **beat count stays 6** (no renumber). The persona branches the
+  tour reel and is persisted at completion: top-level **`profiles.meta.persona`** + a
+  `persona_*` tag (mirrors the cohort-tag + `fq_beta_seq` cookie pattern via a new
+  `fq_persona` cookie that survives the deferred sign-in round-trip).
+
+**Alternatives.** A dedicated persona *beat* (rejected — renumbering every `setBeat()` in a
+careful flow is error-prone for no UX gain over folding it into Welcome). A DB-backed,
+operator-assignable lead-flow editor now (deferred — chose **code-first**, type-safe and
+reviewed; a `vera_config`-style DB override layer can come later without changing callers).
+A promoted `persona` **column** on `profiles`/`contacts` (deferred — JSONB `meta` + a
+governed tag match the existing `meta.beta` pattern, zero migration, and the tag already
+gives queryable segmentation; promote to a column if query needs grow). Sending a
+persona-specific nurture email from `captureLead` (deferred — no persona nurture series
+exists yet; recording the lead without mailing avoids mis-sending generic beta copy).
+
+**Consequences.** New public surface `/start/<flow>` (three starter flows: `welcome`,
+`event`, `partner`); bare `/start` redirects to the welcome router. Every member now leaves
+intake with a `meta.persona` + a `persona_*` tag, so marketing can segment by who they said
+they are and the site/Vera can tailor later. Five new system-managed tags are registered in
+the MDP (`assignTag` throws on unknown keys, so registration is mandatory). The beta
+sequences are untouched and still tag cohorts in parallel — persona is an orthogonal axis,
+not a replacement. Operator-facing "how to assign a lead flow" guidance belongs in Notion
+(Training & Strategy), linked back to LEAD-FLOWS.md as source of truth.
+
+---
+
+## ADR-126: Entry Points & Campaigns — the distribution layer
+
+**Status:** Accepted (design; Phase 1 to follow) · planned in `lib/entry-points/**`,
+`app/(main)/codes` → "My Entry Points", `app/(main)/marketing/campaigns/**`, an extension of
+`qr_codes` + a new `entry_campaigns` table. Builds on personas + lead flows (ADR-125), the QR
+engine (`lib/qr/**`), attribution (ADR-095), and the zaps ledger. Full spec:
+[ENTRY-POINTS.md](ENTRY-POINTS.md).
+
+**Context.** We want a "lead page / funnel" system — the best of Leadpages / ClickFunnels /
+Linktree-Beacons / Mailchimp, kept *simple* — that integrates with our membership, points, and
+QR. The headline finding: **~60% already exists.** We ship a branded QR engine that emits
+**vector SVG + PNG** (`renderStyledQrSvg` / `renderStyledQrPng` / `/api/qr`), a scan resolver
+(`/q/[slug]`), first-touch attribution, owner-credit on signup (`applyReferralAttribution` →
+`invite_accepted` zaps), an idempotent points ledger, a CRM, a Puck visual editor, and the new
+personas/lead-flows. What's missing is a **template + flyer layer** and **two surfaces** (a
+dead-simple crew builder; an advanced admin campaign builder). Today's crew "marketing codes"
+are a narrow special case (owner `qr_codes`, ≤3, circles/events only).
+
+**Decision.** Unify crew marketing codes, the personal connect/referral code, and the `/start`
+lead flows under one concept — the **Entry Point** (a door: short link + branded QR + flyer +
+destination + owner + campaign + analytics + points credit) — grouped by **Campaigns**, built
+from **Templates**.
+- **Name:** crew-facing **"Entry Points"**; admin grouping **"Campaigns"** (the existing
+  `campaigns` table is email broadcasts, so the new table is `entry_campaigns`).
+- **Destinations: both, the template decides** — an entry point points at a *place* (circle /
+  event / profile / url) *or* a **persona lead flow** (`/start/<flow>`, ADR-125) that captures
+  + routes. Crew get power without a blank canvas.
+- **Two surfaces, one engine:** a ruthlessly simple crew portal (evolves `/codes`:
+  template → 3–4 slots → link + QR + **flyer SVG/PNG** in under a minute) and an advanced admin
+  builder in `/marketing/campaigns` (Puck landings, template curation, bulk generation, A/B,
+  automations). The crew tool never exposes a layout editor.
+- **Flyer = on-brand SVG** composing brand frame + slots + the styled QR; outputs vector **SVG**
+  + high-res **PNG**; design-token-driven so it's beautiful by default.
+- **Points (simple, anti-farm):** a small **first-N-capped** `entry_point_created` zap grant,
+  the existing 40-zap `invite_accepted` credit when an entry point drives a signup, and a
+  `referral_activated` bonus when that signup *activates* (first practice). All through
+  `recordEngagementEvent` (exactly-once). A crew leaderboard by signups driven.
+- **Reuse-first data model:** extend `qr_codes` (add `campaign_id`, `template_id`, broaden
+  `destination_type` + `lead_flow_slug`/`persona`, lift the crew cap for `purpose='entry_point'`);
+  new `entry_campaigns`; a **code-first template registry** (`lib/onboarding/lead-flows.ts`
+  pattern) with a DB-override layer later. Build order: **spec + ADR (this), then Phase 1** (crew
+  MVP), then admin builder, then growth.
+
+**Alternatives.** A net-new entry-point table instead of extending `qr_codes` (rejected — the
+QR engine, scan resolver, and referral credit are all keyed on `qr_codes`; extending reuses the
+whole pipeline). A third-party builder (Leadpages/ClickFunnels) embedded (rejected — no points/
+persona/QR integration, off-brand, recurring cost). A drag-and-drop editor for crew (rejected —
+the explicit ask is *simple*; templates + slots beat a blank canvas; the canvas lives in admin
+via Puck). Convert-only points (rejected per product — we want a reward for *participating*, so
+create-credit is included but capped to stay anti-farm). Dollar monetization à la Beacons
+(out of scope — points are our native currency).
+
+**Consequences.** Crew can make a branded flyer with a working QR + tracked link in under a
+minute, and earn zaps for it; every signup it drives credits them automatically (the `fq_ref`
+pipeline already does this). Operators get a real campaign builder reusing `/marketing` + Puck.
+New surface area is small: a template registry, a flyer-composition layer, the two builder UIs,
+a `qr_codes` extension migration, and an `entry_campaigns` table — migrations written but applied
+in a separate reviewed step. Personas/lead flows are the routing layer underneath; Entry Points
+are the distribution layer on top. Operator playbooks live in Notion, linked to ENTRY-POINTS.md.
+
+---
+
+## ADR-127: Bundle `content/help/**` into the serverless runtime so "Ask Vera" can build its index
 
 **Status:** Accepted · `next.config.ts` (`outputFileTracingIncludes`), `lib/ai/help-index.ts`
 (fail-loud on empty), `lib/ai/help-rag.ts` (`after()` telemetry). Builds on the RAG support
@@ -3472,8 +3781,6 @@ layer). Await the telemetry inline (rejected — adds latency to every answer).
 `help_chunks` and Ask Vera answers; a future content-load regression fails visibly instead of
 silently. Any other AI surface still using `void recordAiUsage(...)` has the same latent
 telemetry-loss bug and should migrate to `after()`.
-
----
 
 ---
 ### Decisions intentionally NOT duplicated here
