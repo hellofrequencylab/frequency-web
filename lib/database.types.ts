@@ -2128,6 +2128,7 @@ export type Database = {
           switch_at: string | null
           scan_count: number
           slug: string
+          source_tag: string | null
           style: Json
           target_url: string | null
           title: string
@@ -2151,6 +2152,7 @@ export type Database = {
           switch_at?: string | null
           scan_count?: number
           slug: string
+          source_tag?: string | null
           style?: Json
           target_url?: string | null
           title: string
@@ -2174,6 +2176,7 @@ export type Database = {
           switch_at?: string | null
           scan_count?: number
           slug?: string
+          source_tag?: string | null
           style?: Json
           target_url?: string | null
           title?: string
@@ -2219,6 +2222,7 @@ export type Database = {
           id: string
           lat: number | null
           lng: number | null
+          medium: string
           profile_id: string | null
           qr_code_id: string
           scanned_at: string
@@ -2229,6 +2233,7 @@ export type Database = {
           id?: string
           lat?: number | null
           lng?: number | null
+          medium?: string
           profile_id?: string | null
           qr_code_id: string
           scanned_at?: string
@@ -2239,6 +2244,7 @@ export type Database = {
           id?: string
           lat?: number | null
           lng?: number | null
+          medium?: string
           profile_id?: string | null
           qr_code_id?: string
           scanned_at?: string
@@ -2980,6 +2986,7 @@ export type Database = {
           lifetime_zaps: number
           longest_streak: number
           meta: Json | null
+          acquisition: Json | null
           nexus_region_id: string | null
           referred_by_profile_id: string | null
           vcard: Json
@@ -3022,6 +3029,7 @@ export type Database = {
           lifetime_zaps?: number
           longest_streak?: number
           meta?: Json | null
+          acquisition?: Json | null
           nexus_region_id?: string | null
           referred_by_profile_id?: string | null
           vcard?: Json
@@ -3064,6 +3072,7 @@ export type Database = {
           lifetime_zaps?: number
           longest_streak?: number
           meta?: Json | null
+          acquisition?: Json | null
           nexus_region_id?: string | null
           referred_by_profile_id?: string | null
           vcard?: Json
@@ -4490,6 +4499,19 @@ export type Database = {
         Args: { p_lat: number; p_lng: number; p_node_id: string }
         Returns: boolean
       }
+      nodes_geo: {
+        Args: Record<PropertyKey, never>
+        Returns: { id: string; lng: number; lat: number; proximity_m: number }[]
+      }
+      set_node_geo: {
+        Args: {
+          p_node_id: string
+          p_lng: number | null
+          p_lat: number | null
+          p_proximity_m: number | null
+        }
+        Returns: undefined
+      }
       record_qr_scan: {
         Args: {
           p_code_id: string
@@ -4498,6 +4520,7 @@ export type Database = {
           p_city?: string
           p_lat?: number
           p_lng?: number
+          p_medium?: string
         }
         Returns: undefined
       }

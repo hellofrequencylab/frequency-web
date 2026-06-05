@@ -37,6 +37,8 @@ export interface LinkInput {
   slug: string | null
   partner_id: string | null
   valid_until: string | null
+  /** Campaign/source label stamped into first-touch on scan (UTM passthrough). */
+  source_tag: string | null
   /** Visual design; sanitized by parseStyle before persisting. */
   style: QrStyle
 }
@@ -52,6 +54,7 @@ interface CleanLink {
   alt_target_url: string | null
   partner_id: string | null
   valid_until: string | null
+  source_tag: string | null
   style: Json
 }
 
@@ -103,6 +106,7 @@ function clean(input: LinkInput): CleanLink | string {
     alt_target_url,
     partner_id: input.partner_id || null,
     valid_until: input.valid_until || null,
+    source_tag: input.source_tag?.trim() ? input.source_tag.trim().slice(0, 60) : null,
     style: parseStyle(input.style) as unknown as Json,
   }
 }
