@@ -3593,9 +3593,16 @@ in-app search; if abused it can move behind the AI/RPC boundary later.
 
 ## ADR-124: Reusable in-page Table of Contents (`PageContents`) — a section navigator for long pages
 
-**Status:** Accepted (v1 on Channels) · `components/templates/page-contents.tsx`,
-`app/(main)/channels/page.tsx`. The seed of the "smart menu that sorts a page's
-sections" — to be applied to Circles / practices / other index pages next.
+**Status:** Accepted · `components/templates/page-contents.tsx`, applied on
+`channels`, `practices`, `events` (scroll-spy) and `circles` (filter/drill-down).
+The "smart menu that sorts a page's sections."
+
+**Update — two modes.** `PageContents` now takes EITHER `sections` (scroll-spy: jump to on-page
+sections, track the active one) OR `links` (filter/drill-down: chips are links that set a URL param,
+so tapping one shows just that category's items — the "pages within"). Same sticky chip chrome both
+ways. **Circles** uses the filter mode — `?channel=<slug>` chips (All · Mind · Body · Spirit ·
+Expression, with circle counts) drill the grid into one Channel; **Practices/Events** use scroll-spy.
+This realizes the "table of contents with pages within" across both sectioned and grid pages.
 
 **Context.** Long index pages (Channels has four Channels, each with many Interests) had no quick way
 to jump between sections on mobile — you scrolled past everything. The ask: a reusable "table of
