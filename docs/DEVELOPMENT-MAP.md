@@ -101,6 +101,13 @@
 > codes · Campaigns · Analytics). Member codes **consolidated to ONE** auto-generated profile code per
 > member (it doubles as the referral code via owner-credit chaining); editable + download all formats
 > on `/codes`. No migration.
+>
+> **2026-06-05:** QR **stats dashboard + scan locator map** (`/admin/qr/stats`, host+). Scans now
+> capture coarse **IP-geo** (migration `20260605060000`: `qr_scans` city/country/lat/lng + extended
+> `record_qr_scan`; the `/q` resolver reads the edge geo headers). The dashboard tracks the whole
+> system: scan volume + funnel (referral signups, gifts), a **maplibre locator map** of where codes are
+> scanned, the live code inventory (links / check-in / member / marketing / campaigns), top locations,
+> and top codes. No precise GPS — city-level only.
 
 ---
 
