@@ -15,7 +15,7 @@ import { isError } from '@/lib/action-result'
 type Fallback = { title: string; cadence: string; why: string; steps: string[] }
 
 const FIELD =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none'
+  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
 const LABEL = 'block text-xs font-semibold uppercase tracking-wide text-subtle'
 
 export function ClaimPractice({ templateId, fallback }: { templateId: string; fallback: Fallback }) {

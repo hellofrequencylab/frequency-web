@@ -68,7 +68,7 @@ export function MemberAdmin({
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="Search by name, handle, or email..."
-            className="w-full pl-9 pr-3 py-2 rounded-lg border border-border bg-surface text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/40"
+            className="w-full pl-9 pr-3 py-2 rounded-lg border border-border bg-surface text-sm focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30"
           />
         </div>
         <select

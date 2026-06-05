@@ -7,6 +7,7 @@ import { Loader2, Send } from 'lucide-react'
 import { createReply, fetchReplies } from '@/app/(main)/feed/actions'
 import { getInitials, relativeTime } from '@/lib/utils'
 import { ProfileFlair } from '@/components/profile-flair'
+import { PostBody } from './post-body'
 
 type ReplyAuthor = {
   id: string
@@ -117,7 +118,7 @@ export function PostReplies({
                     )}
                     <span className="text-[11px] text-subtle">{relativeTime(r.created_at)}</span>
                   </div>
-                  <p className="text-xs text-text leading-relaxed whitespace-pre-wrap mt-0.5">{r.body}</p>
+                  <PostBody body={r.body} className="mt-0.5 text-xs leading-relaxed text-text" />
                 </div>
               </div>
             ))
@@ -135,7 +136,7 @@ export function PostReplies({
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSubmit(e)
                 }}
-                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs text-text placeholder-subtle focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/40 dark:focus:ring-primary/30 resize-none disabled:opacity-50"
+                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs text-text placeholder-subtle focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30 dark:focus:ring-border-strong/30 resize-none disabled:opacity-50"
               />
             </div>
             <button

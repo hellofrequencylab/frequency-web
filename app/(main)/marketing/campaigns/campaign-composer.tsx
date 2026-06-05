@@ -31,7 +31,7 @@ export function CampaignComposer({ options }: { options: { key: string; label: s
       <select
         value={segment}
         onChange={(e) => setSegment(e.target.value)}
-        className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:border-primary focus:outline-none"
+        className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:border-border-strong focus:outline-none"
       >
         {options.map((s) => (
           <option key={s.key} value={s.key}>{s.label}</option>
@@ -43,7 +43,7 @@ export function CampaignComposer({ options }: { options: { key: string; label: s
         value={subject}
         onChange={(e) => setSubject(e.target.value)}
         placeholder="Subject"
-        className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
+        className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
       />
 
       <textarea
@@ -51,7 +51,7 @@ export function CampaignComposer({ options }: { options: { key: string; label: s
         onChange={(e) => setBody(e.target.value)}
         placeholder="Write your message. Blank lines become paragraphs."
         rows={8}
-        className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none resize-y"
+        className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none resize-y"
       />
 
       <div className="flex items-center gap-3">

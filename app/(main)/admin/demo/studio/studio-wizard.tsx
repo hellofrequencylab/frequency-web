@@ -68,7 +68,7 @@ export function StudioWizard({ channels }: { channels: Channel[] }) {
     })
   }
 
-  const field = 'rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-text focus:border-primary focus:outline-none'
+  const field = 'rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-text focus:border-border-strong focus:outline-none'
   const activePreset = PRESETS.find((p) => p.circles === circles && p.members === membersPerCircle && p.conn === connectednessPct)
 
   return (

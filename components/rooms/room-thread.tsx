@@ -161,7 +161,7 @@ export function RoomThread({
               placeholder="Message…"
               rows={1}
               disabled={isPending}
-              className="flex-1 resize-none rounded-lg border border-border bg-surface px-3 py-2 text-sm placeholder-subtle outline-none focus:border-primary focus:ring-2 focus:ring-primary/40 dark:focus:ring-primary/30 leading-relaxed max-h-32"
+              className="flex-1 resize-none rounded-lg border border-border bg-surface px-3 py-2 text-sm placeholder-subtle outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 dark:focus:ring-border-strong/30 leading-relaxed max-h-32"
               style={{ minHeight: '2.5rem' }}
             />
             <button

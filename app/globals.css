@@ -274,10 +274,17 @@ h1, h2, h3, h4, h5, h6 {
   letter-spacing: -0.01em;
 }
 
-/* Global focus ring. Load-bearing accessibility default.                   */
-:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+/* Global focus ring. Load-bearing accessibility default. Brand amber lights up
+   actionable chrome (buttons, links, tabbable controls); text fields get a
+   calmer, neutral ring so typing never glows orange. Keyboard users still get a
+   clearly visible indicator either way (WCAG 2.4.7). */
+:where(button, a, select, [tabindex]):focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-focus-ring) 45%, transparent);
+}
+:where(input, textarea):focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-border-strong) 60%, transparent);
 }
 
 /* ── Rank badge primitive. Drives off three CSS vars set inline.

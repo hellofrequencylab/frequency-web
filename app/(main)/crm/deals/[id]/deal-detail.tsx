@@ -68,7 +68,7 @@ export function DealDetail({
     close !== (deal.expected_close_date ?? '') ||
     source !== (deal.source ?? '')
 
-  const field = 'rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-text focus:border-primary focus:outline-none'
+  const field = 'rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-text focus:border-border-strong focus:outline-none'
   const statusTone =
     deal.status === 'won'
       ? 'bg-success-bg text-success'

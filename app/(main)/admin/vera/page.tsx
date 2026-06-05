@@ -22,7 +22,7 @@ async function getFeatured(): Promise<FeaturedRow[]> {
 // no deploy needed (AI-VERA.md). Writes vera_config; read live by the loop + induction.
 export const dynamic = 'force-dynamic'
 
-const FIELD = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:border-primary focus:outline-none'
+const FIELD = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:border-border-strong focus:outline-none'
 const LABEL = 'block text-xs font-semibold uppercase tracking-wide text-subtle'
 
 export default async function VeraAdminPage() {

@@ -126,7 +126,7 @@ export function AwardDialog({
                         value={memberSearch}
                         onChange={e => setMemberSearch(e.target.value)}
                         placeholder="Search members..."
-                        className="w-full rounded-lg border border-border bg-surface pl-9 pr-3 py-2 text-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="w-full rounded-lg border border-border bg-surface pl-9 pr-3 py-2 text-sm text-text placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-border-strong/30"
                       />
                     </div>
                     {memberSearch && (
@@ -159,7 +159,7 @@ export function AwardDialog({
                     const a = achievements.find(x => x.id === e.target.value)
                     setSelectedAchievement(a ?? null)
                   }}
-                  className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-border-strong/30"
                 >
                   <option value="">Select an achievement...</option>
                   {achievements.map(a => (

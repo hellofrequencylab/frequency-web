@@ -60,7 +60,7 @@ export function CirclesToolbar({ interests }: { interests: Interest[] }) {
           <select
             value={sort}
             onChange={(e) => update({ sort: e.target.value })}
-            className="rounded-lg border border-border bg-surface px-2.5 py-2 text-sm font-medium text-muted focus:border-primary focus:outline-none"
+            className="rounded-lg border border-border bg-surface px-2.5 py-2 text-sm font-medium text-muted focus:border-border-strong focus:outline-none"
             aria-label="Sort circles"
           >
             {SORTS.map((s) => (
