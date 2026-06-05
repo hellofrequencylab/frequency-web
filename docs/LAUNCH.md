@@ -50,6 +50,16 @@ registered at GoDaddy; point it at Vercel.
 | `UNSUBSCRIBE_SECRET` | signed one-click unsubscribe tokens | email compliance |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | web push | push notifications |
 | `ANTHROPIC_API_KEY` | Studio AI operator (win-back drafting) | **optional** — without it the proposer uses a deterministic template; the agent stays copilot-gated either way |
+| `COMPANY_POSTAL_ADDRESS` | physical mailing address in the scan-intro email footer (CAN-SPAM) | **🔴 not set yet** — required before turning on scan-intro friend invites (see urgent note below). One line, e.g. `Frequency™, PO Box 123, Encinitas, CA 92024` |
+
+> 🔴 **URGENT — before enabling scan-intro friend invites** *(deferred ~a few months; owner-only)*
+>
+> The "invite a scanned contact to **The Quest**" email is **gated OFF by default** — scanning files people into the CRM but emails no one yet. Before flipping it on:
+> 1. **Set `COMPANY_POSTAL_ADDRESS`** (row above) — the invite footer needs a real postal address for CAN-SPAM. Until set, the footer falls back to org identity only.
+> 2. **Turn on** Marketing → Contacts → **"Scan-intro emails"** (`platform_flags.scan_invite_email_enabled`; audited in `platform_flag_events`). Needs `RESEND_API_KEY` (already set).
+> 3. **Send a test to your own inbox first**, then go live.
+>
+> Model + rationale: [NETWORK-CRM.md](NETWORK-CRM.md), ADR-099. (One-time, member-initiated, one-click unsubscribe, no marketing list, points only on real signup.)
 
 ## 4. Email deliverability — verify the domain in Resend (before sending volume)
 
