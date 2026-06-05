@@ -11,6 +11,20 @@ import { sendInviteEmail } from '@/lib/email'
 import { SITE_URL } from '@/lib/site'
 import { getCircleCapabilities } from '@/lib/core/load-capabilities'
 import { track } from '@/lib/analytics/track'
+import { suggestCircleDraft, fallbackCircleSuggestion, type CircleSuggestion } from '@/lib/ai/circle-wizard'
+
+// Vera's start-a-circle assist: suggest a name + about from the chosen Interest.
+// Live (Haiku) when AI is on; a deterministic draft otherwise — so the modal's
+// "Suggest" affordance always returns something the host can edit before creating.
+export async function suggestCircle(
+  interest: string,
+  type: 'in-person' | 'online',
+): Promise<CircleSuggestion> {
+  const safeType: 'in-person' | 'online' = type === 'online' ? 'online' : 'in-person'
+  const profileId = await getMyProfileId()
+  const ai = await suggestCircleDraft({ interest, type: safeType, profileId })
+  return ai ?? fallbackCircleSuggestion(interest, safeType)
+}
 
 export async function joinCircle(circleId: string, circleSlug: string) {
   const myProfileId = await getMyProfileId()

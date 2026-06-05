@@ -27,6 +27,7 @@ import {
   ChevronUp,
   QrCode,
   HelpCircle,
+  PanelLeft,
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { NotificationBell } from '@/components/layout/notification-bell'
@@ -609,6 +610,8 @@ function MobileLeftDrawer({
   hideAppNav = false,
   permissions,
   staffRole = null,
+  railNavOn,
+  onToggleRailNav,
 }: {
   open: boolean
   onClose: () => void
@@ -622,6 +625,9 @@ function MobileLeftDrawer({
   hideAppNav?: boolean
   permissions?: Record<string, NavAccess>
   staffRole?: StaffRole | null
+  /** Slide-in side rail preference (mobile) + its toggle. */
+  railNavOn: boolean
+  onToggleRailNav: () => void
 }) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -714,6 +720,28 @@ function MobileLeftDrawer({
           </Link>
         </div>
 
+        {/* Side-rail preference — the opt-in slide-in quick-nav (reveals on scroll-up). */}
+        <div className="shrink-0 border-b border-border px-3 py-2">
+          <button
+            type="button"
+            role="switch"
+            aria-checked={railNavOn}
+            onClick={onToggleRailNav}
+            className="flex w-full items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-sm font-medium text-text hover:bg-surface-elevated transition-colors"
+          >
+            <span className="flex items-center gap-2.5">
+              <PanelLeft className="h-4 w-4 text-muted shrink-0" />
+              Side nav rail
+            </span>
+            <span
+              aria-hidden
+              className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${railNavOn ? 'bg-primary' : 'bg-border-strong'}`}
+            >
+              <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-surface shadow-sm transition-transform ${railNavOn ? 'translate-x-4' : 'translate-x-0.5'}`} />
+            </span>
+          </button>
+        </div>
+
         <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
           <NavLinkList isActive={isActive} role={role} onNavigate={onClose} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} staffRole={staffRole} sections={NAV_SECTIONS} />
         </nav>
@@ -799,6 +827,74 @@ function MobileTabBar({
   )
 }
 
+// ── Mobile slide-in side rail ─────────────────────────────────────────────────
+// An opt-in slim icon rail down the left edge of the feed: it slides IN when you
+// scroll up (intent to navigate / browse) and tucks AWAY when you scroll down (so
+// reading keeps the full width). Mirrors the bottom-tab destinations for quick
+// reach and gives the feed a framed edge instead of bare canvas. Toggle lives in
+// the Menu drawer; remembered per device. Overlay, not a column — it never causes
+// layout shift. Mobile only.
+
+function MobileSideRail({
+  isActive,
+  onOpenMenu,
+  enabled,
+}: {
+  isActive: (href: string) => boolean
+  onOpenMenu: () => void
+  enabled: boolean
+}) {
+  const [revealed, setRevealed] = useState(true)
+
+  useEffect(() => {
+    if (!enabled) return
+    const el = document.querySelector('[data-feed-scroll]') as HTMLElement | null
+    if (!el) return
+    let lastTop = el.scrollTop
+    const onScroll = () => {
+      const top = el.scrollTop
+      const dy = top - lastTop
+      lastTop = top
+      // Near the top, or a clear upward gesture → reveal. A downward gesture past
+      // a small threshold → hide. (Matches the dock-reveal intent model.)
+      if (top < 80 || dy < -4) setRevealed(true)
+      else if (dy > 4) setRevealed(false)
+    }
+    el.addEventListener('scroll', onScroll, { passive: true })
+    return () => el.removeEventListener('scroll', onScroll)
+  }, [enabled])
+
+  if (!enabled) return null
+
+  const itemClass = (active: boolean) =>
+    `flex h-11 w-11 items-center justify-center rounded-xl transition-colors ${
+      active ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:bg-surface-elevated hover:text-text'
+    }`
+
+  return (
+    <nav
+      aria-label="Quick navigation"
+      className={`md:hidden fixed left-0 top-14 z-20 flex flex-col items-center gap-1 border-r border-border bg-surface/95 px-1.5 py-2 shadow-lg backdrop-blur-sm transition-transform duration-300 ease-out motion-reduce:transition-none ${
+        revealed ? 'translate-x-0' : '-translate-x-full'
+      }`}
+      style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom))' }}
+    >
+      {MOBILE_TABS.map((tab) => {
+        const Icon = AREA_ICONS[tab.key] ?? Globe
+        const active = isActive(tab.href)
+        return (
+          <Link key={tab.key} href={tab.href} aria-label={tab.label} className={itemClass(active)}>
+            <Icon className="h-[22px] w-[22px]" strokeWidth={active ? 2.5 : 2} />
+          </Link>
+        )
+      })}
+      <button type="button" onClick={onOpenMenu} aria-label="Open menu" className={itemClass(false)}>
+        <Menu className="h-[22px] w-[22px]" strokeWidth={2} />
+      </button>
+    </nav>
+  )
+}
+
 // ── App shell ─────────────────────────────────────────────────────────────────
 
 export default function AppShell({
@@ -852,6 +948,25 @@ export default function AppShell({
   const { theme, setTheme } = useTheme()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [lastPath, setLastPath] = useState(pathname)
+
+  // Opt-in mobile slide-in side rail (reveals on scroll-up). Remembered per device;
+  // starts hidden on the server so there's no hydration flash, then hydrates from
+  // localStorage (default ON — it's a requested affordance).
+  const [railNavOn, setRailNavOn] = useState(false)
+  useEffect(() => {
+    // One-time hydration of a client-only preference: server + first client render
+    // both see `false` (no rail), so there's no hydration mismatch; we sync to the
+    // stored value right after mount. (This is the legitimate effect→setState case.)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setRailNavOn(localStorage.getItem('freq-rail-nav') !== '0')
+  }, [])
+  function toggleRailNav() {
+    setRailNavOn((v) => {
+      const next = !v
+      localStorage.setItem('freq-rail-nav', next ? '1' : '0')
+      return next
+    })
+  }
 
   // Close mobile drawer when the route changes (covers browser back/forward).
   if (lastPath !== pathname) {
@@ -1068,6 +1183,11 @@ export default function AppShell({
       </div>
       </DockRevealProvider>
 
+      {/* ── Mobile slide-in side rail (opt-in; reveals on scroll-up) ─────── */}
+      {!hideAppNav && (
+        <MobileSideRail isActive={isActive} onOpenMenu={() => setDrawerOpen(true)} enabled={railNavOn} />
+      )}
+
       {/* ── Mobile bottom tab bar ─────────────────────────── */}
       {/* Feed · Circles · Channels · Events · Menu (opens the full drawer). */}
       <MobileTabBar isActive={isActive} onOpenMenu={() => setDrawerOpen(true)} menuOpen={drawerOpen} hideAppNav={hideAppNav} />
@@ -1085,6 +1205,8 @@ export default function AppShell({
         hideAppNav={hideAppNav}
         permissions={permissions}
         staffRole={staffRole}
+        railNavOn={railNavOn}
+        onToggleRailNav={toggleRailNav}
       />
 
     </div>
