@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getStaffMember, atLeastStaff } from '@/lib/staff'
+import { getStaffMember, staffCan } from '@/lib/staff'
 import { resolveSegment, campaignEmail, type SegmentKey } from '@/lib/studio/campaigns'
 import { enqueueEmail, listUnsubscribeHeaders } from '@/lib/email'
 import { shouldSend } from '@/lib/notification-preferences'
@@ -24,7 +24,7 @@ export async function sendCampaign(input: {
   segment: SegmentKey
 }): Promise<SendCampaignResult> {
   const staff = await getStaffMember()
-  if (!staff || !atLeastStaff(staff.role, 'marketer')) {
+  if (!staff || !staffCan(staff.role, 'marketing')) {
     return { ok: false, error: 'Marketer access required.' }
   }
 
