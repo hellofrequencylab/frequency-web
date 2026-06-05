@@ -51,3 +51,43 @@ export async function recordTourEvent(tipId: string, kind: TourEventKind) {
     context: { tipId },
   }).catch(() => {})
 }
+
+// Persist where the member is in the guided spotlight tour, so it survives a
+// reload / second device: 'completed' (walked the whole thing), 'paused' (stepped
+// out partway — the guide offers Resume), or 'skipped'. Stored in
+// profiles.meta.tour.spotlight; analytics event mirrors the kind.
+type SpotlightState = 'completed' | 'paused' | 'skipped'
+
+export async function setSpotlightTourState(state: SpotlightState, atStop = 0) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id, meta')
+    .eq('auth_user_id', user.id)
+    .maybeSingle()
+  if (!profile) return
+
+  const meta = (profile.meta as Meta | null) ?? {}
+  const tour = (meta.tour as Record<string, Json> | undefined) ?? {}
+
+  await supabase
+    .from('profiles')
+    .update({
+      meta: {
+        ...meta,
+        tour: { ...tour, spotlight: { status: state, atStop, at: new Date().toISOString() } },
+      },
+    })
+    .eq('id', profile.id)
+
+  void recordEngagementEvent({
+    idempotencyKey: `tour-spotlight:${profile.id}:${state}:${atStop}`,
+    source: 'web',
+    eventType: `onboarding_tour_${state}`,
+    actorProfileId: profile.id,
+    context: { atStop },
+  }).catch(() => {})
+}

@@ -560,7 +560,7 @@ function NavLinkList({
             }
             const active = isActive(href)
             return (
-              <Link key={href} href={href} onClick={onNavigate} className={itemClass(active, isHomeAnchor)}>
+              <Link key={href} href={href} onClick={onNavigate} data-tour-anchor={`nav-${item.key}`} className={itemClass(active, isHomeAnchor)}>
                 <Icon
                   className={`w-[18px] h-[18px] shrink-0 ${isHomeAnchor ? 'text-[var(--brand-mark)]' : active ? 'text-primary-strong' : 'text-subtle'}`}
                   strokeWidth={active || isHomeAnchor ? 2.5 : 2}

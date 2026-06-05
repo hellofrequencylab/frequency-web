@@ -29,6 +29,18 @@ const HANDLE_RE = /^[a-z0-9_]+$/
 export default function OnboardingForm({ userId, userEmail, initialHandle, regions }: Props) {
   const [step, setStep] = useState(1)
 
+  // Move focus to the top of each step as it mounts so keyboard + screen-reader
+  // users land on the new content. Skipped on first paint (autoFocus owns it).
+  const stageRef = useRef<HTMLDivElement>(null)
+  const firstPaint = useRef(true)
+  useEffect(() => {
+    if (firstPaint.current) {
+      firstPaint.current = false
+      return
+    }
+    stageRef.current?.focus()
+  }, [step])
+
   // Step 1
   const [displayName, setDisplayName] = useState('')
   const [handle, setHandle] = useState('')
@@ -192,17 +204,25 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
   function renderProgress() {
     return (
       <div className="mb-9">
-        <div className="flex items-center gap-1.5">
+        <div
+          className="flex items-center gap-1.5"
+          role="progressbar"
+          aria-valuemin={1}
+          aria-valuemax={4}
+          aria-valuenow={step}
+          aria-valuetext={`Step ${step} of 4: ${STEP_LABELS[step - 1]}`}
+        >
           {[1, 2, 3, 4].map((s) => (
             <span
               key={s}
+              aria-hidden
               className={`h-1.5 flex-1 rounded-full transition-colors duration-500 ${
                 s <= step ? 'bg-primary' : 'bg-border-strong'
               }`}
             />
           ))}
         </div>
-        <p className="mt-3 text-xs font-medium text-subtle">
+        <p className="mt-3 text-xs font-medium text-subtle" aria-live="polite">
           Step {step} of 4 · <span className="text-muted">{STEP_LABELS[step - 1]}</span>
         </p>
       </div>
@@ -288,7 +308,14 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
           {renderProgress()}
 
           {/* Keyed by step so each one eases in. */}
-          <div key={step} className="animate-[slideUp_0.35s_ease-out]">
+          <div
+            key={step}
+            ref={stageRef}
+            tabIndex={-1}
+            role="group"
+            aria-label={`Step ${step} of 4: ${STEP_LABELS[step - 1]}`}
+            className="animate-[slideUp_0.35s_ease-out] outline-none"
+          >
             {/* ── Step 1: Name + Handle ── */}
             {step === 1 && (
               <div className="space-y-6">
@@ -335,22 +362,37 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
                           setHandle(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))
                         }}
                         placeholder="jane_smith"
+                        aria-invalid={handleStatus === 'taken' || (!!handle && !HANDLE_RE.test(handle))}
+                        aria-describedby="handle-status"
                         className={`${inputBase} pl-8 pr-9`}
                       />
-                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm leading-none">
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm leading-none" aria-hidden>
                         {handleStatus === 'checking' && <span className="animate-pulse text-subtle">•••</span>}
                         {handleStatus === 'available' && <span className="text-success">✓</span>}
                         {handleStatus === 'taken' && <span className="text-danger">✗</span>}
                       </span>
                     </div>
-                    {handleStatus === 'taken' && (
-                      <p className="mt-1.5 text-xs text-danger">That handle is already taken.</p>
-                    )}
-                    {handle && !HANDLE_RE.test(handle) && (
-                      <p className="mt-1.5 text-xs text-danger">
-                        Only lowercase letters, numbers, and underscores.
-                      </p>
-                    )}
+                    {/* Live status — announces availability + format errors as they resolve. */}
+                    <p
+                      id="handle-status"
+                      role="status"
+                      aria-live="polite"
+                      className={
+                        handleStatus === 'taken' || (handle && !HANDLE_RE.test(handle))
+                          ? 'mt-1.5 text-xs text-danger'
+                          : 'sr-only'
+                      }
+                    >
+                      {handle && !HANDLE_RE.test(handle)
+                        ? 'Only lowercase letters, numbers, and underscores.'
+                        : handleStatus === 'taken'
+                        ? 'That handle is already taken.'
+                        : handleStatus === 'checking'
+                        ? 'Checking availability…'
+                        : handleStatus === 'available'
+                        ? 'Handle is available.'
+                        : ''}
+                    </p>
                   </div>
                 </div>
 
