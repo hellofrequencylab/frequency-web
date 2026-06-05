@@ -14,9 +14,17 @@ import { recordEngagementEvent } from '@/lib/engagement/events'
 import { awardZapsForAction } from '@/lib/zaps'
 import { processGamificationEvent } from '@/lib/achievements'
 import { atLeastRole } from '@/lib/core/roles'
+import { authorizeAction } from '@/lib/admin/guard'
 
 // Role-ladder comparison — single source in lib/core/roles.
 const hasRole = atLeastRole
+
+// Community-surface mutations accept community host+ OR a staff role with the
+// 'community' capability (ADR-127). Sensitive mutations (member/role management)
+// deliberately keep the plain community-role gate below.
+async function requireCommunityOps() {
+  return authorizeAction(await getCallerProfile(), 'host', 'community')
+}
 
 // ── Member management ─────────────────────────────────────────────────────────
 
@@ -132,11 +140,11 @@ export async function createCircle(fd: FormData) {
 
   const topical_channel_id = (fd.get('topical_channel_id') as string) || null
 
-  // Admin-managed circles still need host+. Bottom-up circles created from
-  // a topical channel (the "I want to start a local crew practicing X" path)
-  // are open to any signed-in member.
-  if (!topical_channel_id && !hasRole(caller.community_role, 'host')) {
-    throw new Error('Unauthorized')
+  // Admin-managed circles need community host+ OR a staff role with community ops
+  // (ADR-127). Bottom-up circles created from a topical channel (the "I want to
+  // start a local crew practicing X" path) stay open to any signed-in member.
+  if (!topical_channel_id) {
+    await authorizeAction(caller, 'host', 'community')
   }
 
   const name    = (fd.get('name') as string).trim()
@@ -204,8 +212,7 @@ export async function createCircle(fd: FormData) {
 }
 
 export async function updateCircle(id: string, fd: FormData) {
-  const caller = await getCallerProfile()
-  if (!caller || !hasRole(caller.community_role, 'host')) throw new Error('Unauthorized')
+  const caller = await requireCommunityOps()
   const admin = createAdminClient()
   const { error } = await admin.from('circles').update({
     name:       (fd.get('name') as string).trim(),
@@ -222,8 +229,7 @@ export async function updateCircle(id: string, fd: FormData) {
 }
 
 export async function archiveCircle(id: string) {
-  const caller = await getCallerProfile()
-  if (!caller || !hasRole(caller.community_role, 'host')) throw new Error('Unauthorized')
+  await requireCommunityOps()
   const admin = createAdminClient()
   const { error } = await admin.from('circles').update({ status: 'archived' }).eq('id', id)
   if (error) throw new Error(error.message)
@@ -234,8 +240,7 @@ export async function archiveCircle(id: string) {
 // ── Invite links ─────────────────────────────────────────────────────────────
 
 export async function createInviteLink(circleId: string): Promise<{ token: string }> {
-  const caller = await getCallerProfile()
-  if (!caller || !hasRole(caller.community_role, 'host')) throw new Error('Unauthorized')
+  const caller = await requireCommunityOps()
 
   const token = randomBytes(12).toString('base64url')
   const admin = createAdminClient()
@@ -259,8 +264,7 @@ export async function createInviteLink(circleId: string): Promise<{ token: strin
 }
 
 export async function revokeInviteLink(id: string) {
-  const caller = await getCallerProfile()
-  if (!caller || !hasRole(caller.community_role, 'host')) throw new Error('Unauthorized')
+  await requireCommunityOps()
 
   const admin = createAdminClient()
   const { error } = await admin
@@ -360,8 +364,7 @@ export async function joinViaInviteLink(token: string): Promise<{ circleId: stri
 // ── Channels ──────────────────────────────────────────────────────────────────
 
 export async function archiveChannel(id: string) {
-  const caller = await getCallerProfile()
-  if (!caller || !hasRole(caller.community_role, 'host')) throw new Error('Unauthorized')
+  await requireCommunityOps()
   const admin = createAdminClient()
   const { error } = await admin.from('channels').update({ is_public: false }).eq('id', id)
   if (error) throw new Error(error.message)
@@ -444,8 +447,7 @@ export async function updateNexus(id: string, fd: FormData) {
 // ── Crew tasks ────────────────────────────────────────────────────────────────
 
 export async function createCrewTask(fd: FormData) {
-  const caller = await getCallerProfile()
-  if (!caller || !hasRole(caller.community_role, 'host')) throw new Error('Unauthorized')
+  await requireCommunityOps()
   const admin = createAdminClient()
   const { error } = await admin.from('crew_tasks').insert({
     name:                  (fd.get('name') as string).trim(),
@@ -460,8 +462,7 @@ export async function createCrewTask(fd: FormData) {
 }
 
 export async function updateCrewTask(id: string, fd: FormData) {
-  const caller = await getCallerProfile()
-  if (!caller || !hasRole(caller.community_role, 'host')) throw new Error('Unauthorized')
+  await requireCommunityOps()
   const admin = createAdminClient()
   const { error } = await admin.from('crew_tasks').update({
     name:                  (fd.get('name') as string).trim(),
@@ -476,8 +477,7 @@ export async function updateCrewTask(id: string, fd: FormData) {
 }
 
 export async function deleteCrewTask(id: string) {
-  const caller = await getCallerProfile()
-  if (!caller || !hasRole(caller.community_role, 'host')) throw new Error('Unauthorized')
+  await requireCommunityOps()
   const admin = createAdminClient()
   const { error } = await admin.from('crew_tasks').delete().eq('id', id)
   if (error) throw new Error(error.message)
@@ -503,8 +503,7 @@ function makeExcerpt(body: string, maxLen = 200): string {
 }
 
 export async function createDispatch(fd: FormData): Promise<{ id: string }> {
-  const caller = await getCallerProfile()
-  if (!caller || !hasRole(caller.community_role, 'host')) throw new Error('Unauthorized')
+  const caller = await requireCommunityOps()
 
   const title          = (fd.get('title') as string).trim()
   const body           = (fd.get('body') as string).trim()
@@ -544,8 +543,7 @@ export async function createDispatch(fd: FormData): Promise<{ id: string }> {
 }
 
 export async function updateDispatch(id: string, fd: FormData) {
-  const caller = await getCallerProfile()
-  if (!caller || !hasRole(caller.community_role, 'host')) throw new Error('Unauthorized')
+  await requireCommunityOps()
 
   const body           = (fd.get('body') as string).trim()
   const excerpt        = makeExcerpt(body)
@@ -587,8 +585,7 @@ export async function updateDispatch(id: string, fd: FormData) {
 }
 
 export async function publishDispatch(id: string) {
-  const caller = await getCallerProfile()
-  if (!caller || !hasRole(caller.community_role, 'host')) throw new Error('Unauthorized')
+  await requireCommunityOps()
 
   const admin = createAdminClient()
   const { error } = await admin.from('dispatches').update({
@@ -682,8 +679,7 @@ export async function publishDispatch(id: string) {
 }
 
 export async function unpublishDispatch(id: string) {
-  const caller = await getCallerProfile()
-  if (!caller || !hasRole(caller.community_role, 'host')) throw new Error('Unauthorized')
+  await requireCommunityOps()
 
   const admin = createAdminClient()
   const { error } = await admin
@@ -699,8 +695,7 @@ export async function unpublishDispatch(id: string) {
 }
 
 export async function deleteDispatch(id: string) {
-  const caller = await getCallerProfile()
-  if (!caller || !hasRole(caller.community_role, 'host')) throw new Error('Unauthorized')
+  await requireCommunityOps()
 
   const admin = createAdminClient()
   const { error } = await admin.from('dispatches').delete().eq('id', id)
@@ -714,8 +709,7 @@ export async function deleteDispatch(id: string) {
 // ── Events ────────────────────────────────────────────────────────────────────
 
 export async function toggleCancelEvent(id: string, cancel: boolean) {
-  const caller = await getCallerProfile()
-  if (!caller || !hasRole(caller.community_role, 'host')) throw new Error('Unauthorized')
+  await requireCommunityOps()
   const admin = createAdminClient()
   const { error } = await admin.from('events').update({ is_cancelled: cancel }).eq('id', id)
   if (error) throw new Error(error.message)
@@ -725,8 +719,7 @@ export async function toggleCancelEvent(id: string, cancel: boolean) {
 }
 
 export async function updateEventDetails(id: string, fd: FormData) {
-  const caller = await getCallerProfile()
-  if (!caller || !hasRole(caller.community_role, 'host')) throw new Error('Unauthorized')
+  await requireCommunityOps()
   const admin = createAdminClient()
   const startsAt = fd.get('starts_at') as string
   const endsAt   = fd.get('ends_at') as string
@@ -773,8 +766,7 @@ export async function assignLuminary(profileId: string) {
 // ── Crew task verification ────────────────────────────────────────────────────
 
 export async function approveVerification(completionId: string) {
-  const caller = await getCallerProfile()
-  if (!caller || !hasRole(caller.community_role, 'host')) throw new Error('Unauthorized')
+  const caller = await requireCommunityOps()
   const admin = createAdminClient()
   const { error } = await admin
     .from('crew_completions')
@@ -786,8 +778,7 @@ export async function approveVerification(completionId: string) {
 }
 
 export async function rejectVerification(completionId: string) {
-  const caller = await getCallerProfile()
-  if (!caller || !hasRole(caller.community_role, 'host')) throw new Error('Unauthorized')
+  await requireCommunityOps()
   const admin = createAdminClient()
   const { error } = await admin
     .from('crew_completions')
