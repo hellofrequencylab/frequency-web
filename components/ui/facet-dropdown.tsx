@@ -104,7 +104,7 @@ export function FacetDropdown({
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder={`Search ${label.toLowerCase()}…`}
-                className="w-full rounded-lg border border-border bg-surface-elevated py-1.5 pl-8 pr-2 text-xs text-text placeholder:text-subtle focus:border-primary focus:outline-none"
+                className="w-full rounded-lg border border-border bg-surface-elevated py-1.5 pl-8 pr-2 text-xs text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
               />
             </div>
           )}

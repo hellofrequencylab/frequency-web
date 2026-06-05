@@ -38,7 +38,7 @@ export function GrowNetwork({ circles, channels }: { circles: DemoCircle[]; chan
   }
 
   const field =
-    'rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-text focus:border-primary focus:outline-none'
+    'rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-text focus:border-border-strong focus:outline-none'
 
   return (
     <div className="space-y-3">

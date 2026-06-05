@@ -50,7 +50,7 @@ export function EditableIdentity({
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Display name"
-          className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-2xl font-bold text-text focus:border-primary focus:outline-none"
+          className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-2xl font-bold text-text focus:border-border-strong focus:outline-none"
           autoFocus
         />
         <p className="text-sm text-muted">@{handle}</p>
@@ -60,7 +60,7 @@ export function EditableIdentity({
           onChange={(e) => setBioVal(e.target.value)}
           placeholder="Add a short bio…"
           rows={3}
-          className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text leading-relaxed focus:border-primary focus:outline-none resize-y"
+          className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text leading-relaxed focus:border-border-strong focus:outline-none resize-y"
         />
         {error && <p className="text-xs text-danger">{error}</p>}
         <div className="flex items-center gap-2">

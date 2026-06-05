@@ -9,7 +9,7 @@ import type { ExtractedContact, ContactSource, Visibility } from '@/lib/connecti
 import { scanCard, veraAssist, createProfile } from '../actions'
 
 const BUCKET = 'network-contacts'
-const input = 'w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-sm text-text placeholder-subtle focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50'
+const input = 'w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30 disabled:opacity-50'
 const lbl = 'block text-xs font-medium text-muted mb-1'
 
 type FormState = {

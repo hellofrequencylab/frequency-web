@@ -132,7 +132,7 @@ export function CommentSection({
             placeholder="Add a comment… (⌘↵ to post)"
             rows={2}
             disabled={isPending}
-            className="flex-1 rounded-xl border border-border bg-surface px-3 py-2 text-sm text-text placeholder-subtle focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40 dark:focus:ring-primary/30 resize-none disabled:opacity-50"
+            className="flex-1 rounded-xl border border-border bg-surface px-3 py-2 text-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/30 dark:focus:ring-border-strong/30 resize-none disabled:opacity-50"
           />
           <button
             type="submit"

@@ -116,7 +116,7 @@ export function ReportDialog({ targetType, targetId, open, onClose }: ReportDial
               onChange={(e) => setDetails(e.target.value)}
               placeholder="Additional details (optional)"
               rows={3}
-              className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text dark:text-subtle/60 placeholder:text-subtle dark:placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40 dark:focus:ring-primary/30 resize-none mb-4"
+              className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text dark:text-subtle/60 placeholder:text-subtle dark:placeholder:text-muted focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/30 dark:focus:ring-border-strong/30 resize-none mb-4"
             />
 
             {/* Error message */}

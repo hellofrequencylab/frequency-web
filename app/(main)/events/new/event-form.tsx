@@ -65,7 +65,7 @@ export function EventForm({ groups }: { groups: Group[] }) {
           placeholder="e.g. Wednesday Morning Ride"
           required
           disabled={isPending}
-          className="w-full rounded-lg border border-border px-3 py-2 text-sm text-text placeholder-subtle outline-none focus:border-primary focus:ring-2 focus:ring-primary/40 disabled:opacity-60"
+          className="w-full rounded-lg border border-border px-3 py-2 text-sm text-text placeholder-subtle outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-60"
         />
       </div>
 
@@ -82,7 +82,7 @@ export function EventForm({ groups }: { groups: Group[] }) {
             onChange={(e) => setScopeId(e.target.value)}
             required
             disabled={isPending}
-            className="w-full rounded-lg border border-border px-3 py-2 text-sm text-text outline-none focus:border-primary focus:ring-2 focus:ring-primary/40 disabled:opacity-60"
+            className="w-full rounded-lg border border-border px-3 py-2 text-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-60"
           >
             {groups.map((g) => (
               <option key={g.id} value={g.id}>
@@ -104,7 +104,7 @@ export function EventForm({ groups }: { groups: Group[] }) {
           onChange={(e) => setStartsAt(e.target.value)}
           required
           disabled={isPending}
-          className="w-full rounded-lg border border-border px-3 py-2 text-sm text-text outline-none focus:border-primary focus:ring-2 focus:ring-primary/40 disabled:opacity-60"
+          className="w-full rounded-lg border border-border px-3 py-2 text-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-60"
         />
       </div>
 
@@ -118,7 +118,7 @@ export function EventForm({ groups }: { groups: Group[] }) {
           value={endsAt}
           onChange={(e) => setEndsAt(e.target.value)}
           disabled={isPending}
-          className="w-full rounded-lg border border-border px-3 py-2 text-sm text-text outline-none focus:border-primary focus:ring-2 focus:ring-primary/40 disabled:opacity-60"
+          className="w-full rounded-lg border border-border px-3 py-2 text-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-60"
         />
       </div>
 
@@ -160,7 +160,7 @@ export function EventForm({ groups }: { groups: Group[] }) {
               value={recurrenceUntil}
               onChange={(e) => setRecurrenceUntil(e.target.value)}
               disabled={isPending}
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 disabled:opacity-60"
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-60"
             />
             <p className="text-[11px] text-gray-500 mt-1.5">
               The first 60 days of occurrences will be created immediately. A daily job rolls the window forward.
@@ -180,7 +180,7 @@ export function EventForm({ groups }: { groups: Group[] }) {
           onChange={(e) => setLocation(e.target.value)}
           placeholder="e.g. Balboa Park, San Diego"
           disabled={isPending}
-          className="w-full rounded-lg border border-border px-3 py-2 text-sm text-text placeholder-subtle outline-none focus:border-primary focus:ring-2 focus:ring-primary/40 disabled:opacity-60"
+          className="w-full rounded-lg border border-border px-3 py-2 text-sm text-text placeholder-subtle outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-60"
         />
       </div>
 
@@ -195,7 +195,7 @@ export function EventForm({ groups }: { groups: Group[] }) {
           placeholder="Details, what to bring, meetup point…"
           rows={4}
           disabled={isPending}
-          className="w-full resize-none rounded-lg border border-border px-3 py-2 text-sm text-text placeholder-subtle outline-none focus:border-primary focus:ring-2 focus:ring-primary/40 leading-relaxed disabled:opacity-60"
+          className="w-full resize-none rounded-lg border border-border px-3 py-2 text-sm text-text placeholder-subtle outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 leading-relaxed disabled:opacity-60"
         />
       </div>
 
