@@ -3435,6 +3435,46 @@ host-less circle is possible — noted, not changed here (the editor pre-fills t
 
 ---
 
+## ADR-120: Bundle `content/help/**` into the serverless runtime so "Ask Vera" can build its index
+
+**Status:** Accepted · `next.config.ts` (`outputFileTracingIncludes`), `lib/ai/help-index.ts`
+(fail-loud on empty), `lib/ai/help-rag.ts` (`after()` telemetry). Builds on the RAG support
+tier (ADR-067, SUPPORT-SYSTEM.md).
+
+**Context.** "Ask Vera" retrieves from `help_chunks`, an embedding index built by
+`reindexHelpChunks()` (nightly `embed-help` cron + admin "Build index" button). In production the
+button "did nothing": `help_chunks` was empty, so every question deflected. Root cause: the help
+center is plain Markdown read from disk at **runtime** (`lib/help/content.ts` → `fs.readdir` of
+`content/help/**`). Next's file tracer can't follow those dynamic reads, so the Markdown was absent
+from the serverless function bundle; `getAllCategories()` swallows the fs error and returns `[]`,
+and `reindexHelpChunks()` then reported a happy "0 embedded" while the index stayed empty. The help
+*pages* were unaffected — they're statically generated at build time, where the files exist. (The
+`(main)` layout's support-launcher search index reads the same files at runtime, so it was empty
+too — but its empty state reads as a normal "no matches," which is why only Vera was reported.)
+Separately, `logHelpQuery`/`recordAiUsage` ran as floating `void` promises, which serverless does
+not guarantee to finish — so query/usage telemetry was silently lost (0 rows despite live use).
+
+**Decision.**
+- **Trace the content in.** `outputFileTracingIncludes` bundles `./content/help/**/*` into the
+  reindex routes (`/api/cron/embed-help`, `/admin/ai`) and all routes (`/**`, for the layout
+  search index). The content is tiny, so the trace cost is negligible.
+- **Fail loud.** `reindexHelpChunks()` throws when it finds zero published articles instead of
+  "succeeding" with an empty build — the cron logs an error and the admin button surfaces it,
+  rather than hiding a broken index behind a green result.
+- **Persist telemetry with `after()`.** Replace the `void`-ed `logHelpQuery`/`recordAiUsage` with
+  `after(() => …)` (next/server) — off the response path, but guaranteed to run.
+
+**Alternatives.** Import the Markdown as modules / precompute a JSON index at build time (rejected
+for now — larger change; file tracing is the minimal, idiomatic fix and keeps the fs-based content
+layer). Await the telemetry inline (rejected — adds latency to every answer).
+
+**Consequences.** After deploy, the nightly cron (or one click of admin "Build index") populates
+`help_chunks` and Ask Vera answers; a future content-load regression fails visibly instead of
+silently. Any other AI surface still using `void recordAiUsage(...)` has the same latent
+telemetry-loss bug and should migrate to `after()`.
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 
