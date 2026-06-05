@@ -6,6 +6,7 @@ import { AdminPage } from '@/components/admin/admin-page'
 import { nodeUrl, shortLinkUrl } from '@/lib/qr/links'
 import { renderStyledQrSvg } from '@/lib/qr/render-styled'
 import { parseStyle } from '@/lib/qr/style'
+import { parseVcard } from '@/lib/vcard'
 import { summarizeScans, type ScanRow } from '@/lib/qr/analytics'
 import { QrStudioDashboard } from './qr-studio-dashboard'
 import type { StudioNode } from './qr-studio'
@@ -188,22 +189,27 @@ export default async function QrStudioPage() {
   // ── Member profile codes (one auto-generated code per member) ────────────────
   const ownerIds = [...new Set(memberConnectRows.map((r) => r.owner_profile_id).filter(Boolean))] as string[]
   const { data: owners } = ownerIds.length
-    ? await db.from('profiles').select('id, handle, display_name').in('id', ownerIds)
-    : { data: [] as { id: string; handle: string; display_name: string }[] }
+    ? await db.from('profiles').select('id, handle, display_name, vcard').in('id', ownerIds)
+    : { data: [] as { id: string; handle: string; display_name: string; vcard: unknown }[] }
   const ownerMap = new Map((owners ?? []).map((o) => [o.id, o]))
-  const memberCodes: MemberProfileCode[] = memberConnectRows.map((r) => {
-    const style = parseStyle(r.style)
-    const url = shortLinkUrl(r.slug)
-    const o = r.owner_profile_id ? ownerMap.get(r.owner_profile_id) : null
-    return {
-      id: r.id,
-      handle: o?.handle ?? '—',
-      displayName: o?.display_name ?? '',
-      url,
-      scans: r.scan_count,
-      svg: renderStyledQrSvg(url, style, 140),
-    }
-  })
+  const memberCodes: MemberProfileCode[] = memberConnectRows
+    .filter((r) => r.owner_profile_id)
+    .map((r) => {
+      const style = parseStyle(r.style)
+      const url = shortLinkUrl(r.slug)
+      const o = ownerMap.get(r.owner_profile_id!)
+      return {
+        id: r.id,
+        profileId: r.owner_profile_id!,
+        handle: o?.handle ?? '—',
+        displayName: o?.display_name ?? '',
+        url,
+        scans: r.scan_count,
+        svg: renderStyledQrSvg(url, style, 140),
+        style,
+        vcard: parseVcard(o?.vcard),
+      }
+    })
 
   return (
     <AdminPage
