@@ -143,6 +143,18 @@
 > and it lands on a new defaulted `qr_scans.medium` column (`'qr' | 'nfc'`). Analytics now split scans by
 > channel with an **NFC taps** stat. Nodes carry their channel via their own `type`. No member-facing change.
 
+> **2026-06-05:** QR/NFC — **per-code print sheets**. New host+ `/print/qr` route (outside the app
+> shell) renders any code's styled QR print-ready in three layouts — foldable **table tent**, a 3×3
+> **sticker sheet** with cut guides, and a wall **poster** — via `?code=`/`?node=` + `?layout=`. A
+> **Print** link sits by the downloads on every code card. No migration.
+
+> **2026-06-05:** QR/NFC — **location-aware earning** (ADR-105, migration `20260605130000`, issue #221).
+> Surfaces the existing `nodes` proximity engine: a "Location-aware" toggle on the check-in form sets a
+> geofence (lat/lng + radius, with "use my location"), written via a new `set_node_geo` RPC and read back
+> via `nodes_geo()`. The `/n` claim flow now forwards `navigator.geolocation` to `captureNode`, so a
+> geofenced code only earns on-site (`location_required` / `too_far` already surfaced). Device location is
+> used at claim time only, never stored.
+
 ---
 
 ## Mission (locked)
