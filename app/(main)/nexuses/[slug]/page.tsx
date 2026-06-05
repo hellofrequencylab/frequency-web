@@ -4,6 +4,9 @@ import { Users } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { HierarchyBreadcrumb } from '@/components/hierarchy/breadcrumb'
 import { StatusBadge } from '@/components/groups/status-badge'
+import { DetailTemplate } from '@/components/templates/detail-template'
+import { SectionHeader } from '@/components/ui/section-header'
+import { EmptyState } from '@/components/ui/empty-state'
 
 type NexusDetail = {
   id: string
@@ -86,74 +89,71 @@ export default async function NexusPage({
 
       <HierarchyBreadcrumb crumbs={crumbs} className="mb-4" />
 
-      {/* ── Header ─────────────────────────────────── */}
-      <div className="mb-6">
-        <div className="flex items-center gap-2">
-          <h1 className="text-xl font-semibold text-text">{nexus.name}</h1>
-          <StatusBadge status={nexus.status} />
-        </div>
-
-        {nexus.mentor && (
-          <p className="mt-1 text-xs text-muted">
-            Mentor:{' '}
-            <Link
-              href={`/people/${nexus.mentor.handle}`}
-              className="text-primary-strong hover:underline"
-            >
-              {nexus.mentor.display_name}
-            </Link>
-          </p>
-        )}
-
-        <div className="flex items-center gap-1.5 mt-2 text-sm text-muted">
-          <Users className="w-4 h-4" />
-          <span>
-            {totalMembers} / {nexus.member_cap} members · {hubs.length} hubs
-          </span>
-        </div>
-
-        {/* Nexus capacity bar */}
-        <div className="mt-2 h-1.5 max-w-xs rounded-full bg-surface-elevated overflow-hidden">
-          <div
-            className="h-full rounded-full bg-primary transition-all"
-            style={{ width: `${Math.min(100, Math.round((totalMembers / nexus.member_cap) * 100))}%` }}
-          />
-        </div>
-      </div>
-
-      {/* ── Hubs ───────────────────────────────────── */}
-      <section>
-        <h2 className="text-sm font-semibold text-text mb-3">Hubs</h2>
-        {hubs.length === 0 ? (
-          <p className="text-sm text-subtle">No hubs yet.</p>
-        ) : (
-          <div className="space-y-2">
-            {hubs.map((hub) => {
-              const hubTotal = hub.circles.reduce((s, c) => s + (c.member_count ?? 0), 0)
-              return (
+      {/* ── Header (DetailTemplate) ─────────────────── */}
+      <DetailTemplate
+        title={nexus.name}
+        badges={<StatusBadge status={nexus.status} />}
+        subtitle={
+          <>
+            {nexus.mentor && (
+              <span>
+                Mentor:{' '}
                 <Link
-                  key={hub.id}
-                  href={`/hubs/${hub.slug}`}
-                  className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 hover:border-primary-bg hover:bg-primary-bg/30 transition-colors"
+                  href={`/people/${nexus.mentor.handle}`}
+                  className="text-primary-strong hover:underline"
                 >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-text">{hub.name}</span>
-                      <StatusBadge status={hub.status} />
-                    </div>
-                    <div className="flex items-center gap-2 mt-0.5 text-xs text-subtle">
-                      {hub.guide && <span>Guide: {hub.guide.display_name}</span>}
-                      <span>·</span>
-                      <span>{hub.circles.length} circles · {hubTotal} members</span>
-                    </div>
-                  </div>
-                  <span className="text-xs text-subtle">→</span>
+                  {nexus.mentor.display_name}
                 </Link>
-              )
-            })}
-          </div>
-        )}
-      </section>
+              </span>
+            )}
+            <span className="mt-1 flex items-center gap-1.5">
+              <Users className="w-4 h-4" />
+              {totalMembers} / {nexus.member_cap} members · {hubs.length} hubs
+            </span>
+            {/* Nexus capacity bar */}
+            <div className="mt-2 h-1.5 max-w-xs rounded-full bg-surface-elevated overflow-hidden">
+              <div
+                className="h-full rounded-full bg-primary transition-all"
+                style={{ width: `${Math.min(100, Math.round((totalMembers / nexus.member_cap) * 100))}%` }}
+              />
+            </div>
+          </>
+        }
+      >
+        {/* ── Hubs ───────────────────────────────────── */}
+        <section>
+          <SectionHeader title="Hubs" count={hubs.length} />
+          {hubs.length === 0 ? (
+            <EmptyState title="No hubs yet." />
+          ) : (
+            <div className="space-y-2">
+              {hubs.map((hub) => {
+                const hubTotal = hub.circles.reduce((s, c) => s + (c.member_count ?? 0), 0)
+                return (
+                  <Link
+                    key={hub.id}
+                    href={`/hubs/${hub.slug}`}
+                    className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 hover:border-primary-bg hover:bg-primary-bg/30 transition-colors"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-text">{hub.name}</span>
+                        <StatusBadge status={hub.status} />
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5 text-xs text-subtle">
+                        {hub.guide && <span>Guide: {hub.guide.display_name}</span>}
+                        <span>·</span>
+                        <span>{hub.circles.length} circles · {hubTotal} members</span>
+                      </div>
+                    </div>
+                    <span className="text-xs text-subtle">→</span>
+                  </Link>
+                )
+              })}
+            </div>
+          )}
+        </section>
+      </DetailTemplate>
     </div>
   )
 }
