@@ -6,7 +6,6 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import { getInitials, relativeTime } from '@/lib/utils'
 import { NewRoomCompose } from '@/components/compose/new-room-compose'
-import { NewGroupDMCompose } from '@/components/compose/new-group-dm-compose'
 import { CrewLeadQuickAction } from '@/components/messages/crew-lead-quick-action'
 import { IndexTemplate } from '@/components/templates/index-template'
 import { SectionHeader } from '@/components/ui/section-header'
@@ -31,7 +30,7 @@ type RoomRow = {
   id: string
   name: string
   description: string | null
-  visibility: 'public' | 'private' | 'circle' | 'hub' | 'nexus' | 'outpost'
+  visibility: 'public' | 'private' | 'circle' | 'hub' | 'nexus' | 'outpost' | 'channel'
   member_count: number
   last_message_at: string | null
   isMember: boolean
@@ -115,11 +114,38 @@ export default async function MessagesPage({
     .filter(r => !joinedRoomIds.includes(r.id))
     .map(r => ({ ...r, isMember: false }))
 
-  // ── DMs ───────────────────────────────────────────────────────────
-  const { data: myParts } = await supabase
-    .from('conversation_participants')
-    .select('conversation_id, last_read_at, conversations!conversation_id(id, name, created_at)')
+  // Channel open rooms for the channels I'm tuned into (Phase B). Read-open to
+  // anyone; posting requires tune-in. Untyped client (scope_id / topical_channel_*
+  // not in generated types).
+  const { data: myTuned } = await (supabase as unknown as SupabaseClient)
+    .from('topical_channel_memberships')
+    .select('topical_channel_id')
     .eq('profile_id', myProfileId)
+  const tunedChannelIds = ((myTuned ?? []) as { topical_channel_id: string }[]).map(c => c.topical_channel_id)
+  const { data: channelRoomsData } = tunedChannelIds.length > 0
+    ? await (supabase as unknown as SupabaseClient)
+        .from('rooms')
+        .select('id, name, description, visibility, member_count, last_message_at')
+        .eq('visibility', 'channel')
+        .in('scope_id', tunedChannelIds)
+        .order('last_message_at', { ascending: false, nullsFirst: false })
+    : { data: [] }
+  const channelRooms: RoomRow[] = ((channelRoomsData ?? []) as unknown as Omit<RoomRow, 'isMember'>[])
+    .map(r => ({ ...r, isMember: false }))
+
+  // ── DMs (1:1 only — Phase B) ──────────────────────────────────────
+  // Migrated group threads now live as private rooms; filter them out so they
+  // don't double-show (conversation copy + room copy). `migrated_to_room_id`
+  // isn't in the generated types yet, so read through the untyped client.
+  const { data: myPartsRaw } = await (supabase as unknown as SupabaseClient)
+    .from('conversation_participants')
+    .select('conversation_id, last_read_at, conversations!conversation_id(id, name, created_at, migrated_to_room_id)')
+    .eq('profile_id', myProfileId)
+  const myParts = ((myPartsRaw ?? []) as unknown as Array<{
+    conversation_id: string
+    last_read_at: string | null
+    conversations: { id: string; name: string | null; created_at: string; migrated_to_room_id: string | null } | null
+  }>).filter((p) => !p.conversations?.migrated_to_room_id)
 
   const convIds = (myParts ?? []).map(p => p.conversation_id as string)
   const myLastReadMap: Record<string, string | null> = {}
@@ -251,11 +277,10 @@ export default async function MessagesPage({
           )}
         </span>
       }
-      description="Every conversation in one place. Direct messages, group threads, and rooms with the wider community."
+      description="Every conversation in one place. Direct messages, and rooms — your private group chats and the open community channels."
       action={
         <div className="flex flex-wrap items-center justify-end gap-2">
           <CrewLeadQuickAction />
-          <NewGroupDMCompose />
           {canCreateRoom && <NewRoomCompose />}
         </div>
       }
@@ -304,6 +329,35 @@ export default async function MessagesPage({
             </div>
           )}
         </section>
+
+        {/* Channels — the open room for each channel you're tuned into */}
+        {filter !== 'dms' && channelRooms.length > 0 && (
+          <section>
+            <SectionHeader title="Channels" count={channelRooms.length} />
+            <div className="space-y-1">
+              {channelRooms.map(room => (
+                <Link
+                  key={room.id}
+                  href={`/messages/r/${room.id}`}
+                  className="flex items-center gap-3 rounded-lg px-3 py-3 transition-colors hover:bg-surface-elevated"
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-signal-bg text-signal-strong">
+                    <Hash className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="truncate text-sm font-semibold text-text">{room.name}</span>
+                      {room.last_message_at && (
+                        <span className="shrink-0 text-xs text-subtle">{relativeTime(room.last_message_at)}</span>
+                      )}
+                    </div>
+                    <p className="truncate text-xs text-subtle">Open channel room · anyone tuned in can post</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Discover — public rooms to join (hidden when filtered to DMs) */}
         {filter !== 'dms' && discoverRooms.length > 0 && (
