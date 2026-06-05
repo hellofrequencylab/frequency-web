@@ -311,7 +311,7 @@ inline path (wizard is an optional guided alt); RLS isolation between `journey_p
 ### Profile page
 - [x] **Header (cover) photo** — ✅ shipped 2026-06-05 (§T): `profiles.header_image_url`,
   an uploader in Settings → Profile (cover-crop 3:1 to the avatars bucket), rendered on
-  the profile cover band.
+  the profile cover band. *(Wave 2 (§U): drag-to-reposition + zoom crop, taller banner.)*
 - [ ] **Richer profile header** — more personal info (location · joined · bio line) +
   **subtle** community-engagement stats (circles · practices logged · streak) woven
   into the header, understated, not a gamified wall. (M)
@@ -426,7 +426,8 @@ applied to prod). Listed so the build list reflects reality.
   nightly `embed-help` cron. *(Owner one-time: click Build index in prod to populate.)*
 - [x] **Editable profile header images** — see §R.
 - [x] **Beta sequences admin** — per-sequence **incoming-point** picker (splash vs straight-
-  to-induction) + shareable link + **QR (PNG/SVG)** for each entry point (`/admin/beta-sequences`).
+  to-induction) + shareable link + **QR (PNG/SVG)** for each entry point. *(Moved to
+  `/pages/sequences` in wave 2 — see §U.)*
 - [x] **Community Library** (ADR-109) — unify Practices/Programs/Journeys: Programs become a
   DB type (member-creatable, earns zaps), one **approval lifecycle** (submit → Host/Guide+
   approve), one **ratings** signal, and a unified ranked **/library** catalog
@@ -439,6 +440,52 @@ applied to prod). Listed so the build list reflects reality.
   per-author approval; tune the ranking weights from real data. (M)
 - [ ] **Member-facing economy surfacing** — a season banner/countdown + show per-action point
   values in-product (amounts now live in config; §F "Reward amount-edit UI" is the admin side). (S)
+
+## U. Session 2026-06-05 (wave 2) — profile, QR Studio, onboarding tour, Pages — ✅ merged
+
+Second wave shipped this session (tsc + eslint + **253** tests green throughout; PRs
+#237–#243, merged to main). Listed so the build list reflects reality.
+
+### ✅ Shipped
+- [x] **Profile header crop/zoom + autocomplete city** (#237) — the Settings → Profile
+  cover uploader gained drag-to-reposition + zoom crop (WYSIWYG canvas export) on a
+  slightly taller banner; the City field is now a `LocationAutocomplete` that also sets
+  the member's home geo (powers "near you"). Extends §R cover photo.
+- [x] **Onboarding won't overwrite on re-run** (#237) — `completeOnboarding` gates on
+  `meta.onboarding_completed`; a second pass only fills blanks + merges meta (the beta
+  induction already merged safely).
+- [x] **QR Studio: design editor up top** (#238) — the generator is now a two-column studio
+  (sticky editor rail + settings); curated the preset list to six; the design persists
+  across code-type switches. Cleanly merged with the parallel signed-code / scannability /
+  max-claims work (ADR-115).
+- [x] **Vera-guided spotlight tour** (ADR-117, #240) — a guided, pausable overlay launched
+  from the feed onboarding box that dims the page and lights one real surface at a time
+  (feed → composer → circles → practices → events → profile), narrated, resumes where it
+  was paused. → advances §F progressive onboarding (the guided deterministic tour) and the
+  Vera concierge fallback.
+- [x] **Onboarding accessibility pass** (#240) — both flows (beta induction + steady-state
+  form): focus moves to each step on advance, `progressbar`/`combobox` semantics, every
+  label associated with its input, announced handle-availability live region.
+- [x] **Profile editor keeps the community rail + View profile** (ADR-117, #240) —
+  `/settings/profile` now carries the standard rail and links to the public profile. → a
+  first concrete step on **S7** (uniform interior right rail).
+- [x] **Season Challenges → dashboard** (#240) — rebuilt on `DashboardTemplate`: a KPI band
+  (a shade darker than the canvas) with season progress + four `StatCard`s, then difficulty
+  sections as bordered two-up cards. Replaces the washed-out flat list.
+- [x] **Taller feed composer** (#240).
+- [x] **Narrated, illustrated Vera welcome deck** (#242) — the post-induction lightbox is now
+  a guided walkthrough (one site element per slide, each with a vector illustration),
+  reframed for Founders who just completed the **Beta agreement** (dropped the "made it
+  through the oath" line). New `components/onboarding/welcome-art.tsx`. → advances §F
+  onboarding + Vera voice.
+- [x] **Onboarding sequences moved into Pages** (#243) — the audience splash sequences moved
+  from Admin → Vera to **`/pages/sequences`**, surfaced on the `/pages` directory. Supersedes
+  the §T "Beta sequences admin" location below.
+
+### Still open (unchanged by this wave)
+- **S7** uniform right rail (only `/settings/profile` done so far) · **S8** neutral input
+  focus · **§R** richer profile header stats · **§F / §T** member-facing economy surfacing
+  (season banner + per-action point values).
 
 ## Accepted (no action)
 - `npm audit`: 4 moderate transitive advisories (postcss in Next's toolchain,
