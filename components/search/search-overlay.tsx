@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Search, X, Users, FileText, CalendarDays, Loader2, ArrowRight } from 'lucide-react'
+import { Search, X, Users, FileText, CalendarDays, Loader2, ArrowRight, ScanLine } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 
 // Live, full-screen search overlay. Opens from the header search affordance (and
@@ -20,9 +20,11 @@ type Post = {
   author: { display_name: string; handle: string; avatar_url: string | null } | null
 }
 type EventHit = { id: string; title: string; slug: string; starts_at: string; location: string | null; is_cancelled: boolean; is_demo: boolean }
-type Results = { people: Person[]; posts: Post[]; events: EventHit[] }
+// A non-member person the viewer is entitled to find (someone they captured).
+type Lead = { id: string; displayName: string; email: string | null; city: string | null; ownerName: string | null; href: string | null }
+type Results = { people: Person[]; posts: Post[]; events: EventHit[]; leads: Lead[] }
 
-const EMPTY: Results = { people: [], posts: [], events: [] }
+const EMPTY: Results = { people: [], posts: [], events: [], leads: [] }
 
 export function SearchOverlay({ onClose }: { onClose: () => void }) {
   const [q, setQ] = useState('')
@@ -59,7 +61,7 @@ export function SearchOverlay({ onClose }: { onClose: () => void }) {
       try {
         const res = await fetch(`/api/search?q=${encodeURIComponent(trimmed)}`)
         const json = (await res.json()) as Results
-        setResults({ people: json.people ?? [], posts: json.posts ?? [], events: json.events ?? [] })
+        setResults({ people: json.people ?? [], posts: json.posts ?? [], events: json.events ?? [], leads: json.leads ?? [] })
       } catch {
         setResults(EMPTY)
       } finally {
@@ -75,7 +77,7 @@ export function SearchOverlay({ onClose }: { onClose: () => void }) {
   }
 
   const trimmed = q.trim()
-  const total = results.people.length + results.posts.length + results.events.length
+  const total = results.people.length + results.posts.length + results.events.length + results.leads.length
   const hasQuery = trimmed.length >= 2
 
   return (
@@ -123,6 +125,14 @@ export function SearchOverlay({ onClose }: { onClose: () => void }) {
                   <ResultRow key={p.id} href={`/people/${p.handle}`} onNavigate={onClose}
                     avatar={p.avatar_url} fallback={p.display_name}
                     title={p.display_name} subtitle={`@${p.handle}`} dimmed={p.is_demo} />
+                ))}
+              </ResultGroup>
+
+              <ResultGroup label="People you’ve met" icon={ScanLine} count={results.leads.length}>
+                {results.leads.map((l) => (
+                  <ResultRow key={l.id} href={l.href ?? '#'} onNavigate={onClose}
+                    fallback={l.displayName} title={l.displayName}
+                    subtitle={[l.email, l.city].filter(Boolean).join(' · ') || 'Saved contact'} />
                 ))}
               </ResultGroup>
 
