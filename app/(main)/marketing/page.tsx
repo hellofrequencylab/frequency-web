@@ -11,6 +11,9 @@ import {
 } from 'lucide-react'
 import { getPracticeMetrics } from '@/lib/analytics/practice'
 import { getStudioCounts } from '@/lib/studio/analytics'
+import { DashboardTemplate } from '@/components/templates'
+import { StatCard } from '@/components/ui/stat-card'
+import { SectionHeader } from '@/components/ui/section-header'
 
 export const dynamic = 'force-dynamic'
 
@@ -64,17 +67,6 @@ const MODULES: Module[] = [
   },
 ]
 
-function Kpi({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="rounded-2xl border border-border bg-surface shadow-sm p-4">
-      <p className="text-xs text-muted font-medium">{label}</p>
-      <p className="mt-1 text-2xl font-bold leading-none text-text">
-        {typeof value === 'number' ? value.toLocaleString() : value}
-      </p>
-    </div>
-  )
-}
-
 export default async function MarketingOverview() {
   // Live KPIs at a glance — reuses the same read-models as /marketing/analytics.
   // Defensive: the dashboard should never error on a data hiccup.
@@ -84,32 +76,29 @@ export default async function MarketingOverview() {
   ])
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-text mb-1">Marketing</h1>
-      <p className="text-sm text-muted leading-relaxed max-w-2xl mb-6">
-        Your marketing workspace. Contacts, campaigns, automations, analytics, and the AI
-        operator live here. Everything sends through the one spine and reads from the
-        one event backbone.
-      </p>
-
+    <DashboardTemplate
+      eyebrow="Marketing"
+      title="Marketing"
+      description="Your marketing workspace. Contacts, campaigns, automations, analytics, and the AI operator live here. Everything sends through the one spine and reads from the one event backbone."
+    >
       {practice && (
-        <section className="mb-8 max-w-2xl">
-          <div className="mb-2 flex items-center justify-between">
-            <h2 className="text-sm font-bold text-text">
-              At a glance
-            </h2>
-            <Link
-              href="/marketing/analytics"
-              className="inline-flex items-center gap-1 text-xs font-medium text-primary-strong hover:underline"
-            >
-              Full analytics <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
+        <section className="max-w-2xl">
+          <SectionHeader
+            title="At a glance"
+            action={
+              <Link
+                href="/marketing/analytics"
+                className="inline-flex items-center gap-1 text-xs font-medium text-primary-strong hover:underline"
+              >
+                Full analytics <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            }
+          />
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Kpi label="Weekly Active Members" value={practice.wam} />
-            <Kpi label="Activation 7d" value={`${Math.round(practice.activationRate * 100)}%`} />
-            <Kpi label="New members 30d" value={practice.newMembers} />
-            <Kpi label="Contacts" value={counts?.contacts ?? 0} />
+            <StatCard label="Weekly Active Members" value={practice.wam.toLocaleString()} />
+            <StatCard label="Activation 7d" value={`${Math.round(practice.activationRate * 100)}%`} />
+            <StatCard label="New members 30d" value={practice.newMembers.toLocaleString()} />
+            <StatCard label="Contacts" value={(counts?.contacts ?? 0).toLocaleString()} />
           </div>
         </section>
       )}
@@ -129,6 +118,6 @@ export default async function MarketingOverview() {
           </Link>
         ))}
       </div>
-    </div>
+    </DashboardTemplate>
   )
 }

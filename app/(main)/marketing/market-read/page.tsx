@@ -1,5 +1,6 @@
-import { Radar, Users, UserPlus, UserX, Activity, Sparkles } from 'lucide-react'
+import { Users, UserPlus, UserX, Activity, Sparkles } from 'lucide-react'
 import { getMarketRead, type ContentIdea, type PainPoint } from '@/lib/marketing/market-read'
+import { DashboardTemplate } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
 import { SectionHeader } from '@/components/ui/section-header'
 
@@ -14,21 +15,13 @@ export default async function MarketReadPage() {
   const engDelta = signal.engagementThisWeek - signal.engagementPriorWeek
 
   return (
-    <div>
-      <div className="mb-6">
-        <div className="flex items-center gap-2 mb-1">
-          <Radar className="w-5 h-5 text-primary-strong" />
-          <h1 className="text-2xl font-bold text-text">Market read</h1>
-        </div>
-        <p className="text-sm text-muted leading-relaxed max-w-2xl">
-          The operator listens to live signal, names what the market is aching for, and drafts
-          outbound content that speaks to it — a magical connection, not an advertisement. Drafts
-          are proposals: nothing reaches the public until you approve it.
-        </p>
-      </div>
-
+    <DashboardTemplate
+      eyebrow="Marketing"
+      title="Market read"
+      description="The operator listens to live signal, names what the market is aching for, and drafts outbound content that speaks to it — a magical connection, not an advertisement. Drafts are proposals: nothing reaches the public until you approve it."
+    >
       {/* ── Listen: live in-app signal ─────────────────────── */}
-      <div className="mb-8">
+      <section>
         <SectionHeader title="Live signal" />
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           <StatCard label="Members" value={signal.totalMembers.toLocaleString()} icon={Users} />
@@ -48,17 +41,19 @@ export default async function MarketReadPage() {
         <p className="mt-3 text-xs text-subtle">
           Prototype: in-app behavior is live. GA acquisition + external social listening slot in here next.
         </p>
-      </div>
+      </section>
 
       {/* ── Read the ache + drafted content ────────────────── */}
-      <SectionHeader title="What the market is aching for" count={painPoints.length} />
-      <div className="space-y-6">
-        {painPoints.map((p) => (
-          <PainPointCard key={p.id} pain={p} />
-        ))}
-      </div>
+      <section>
+        <SectionHeader title="What the market is aching for" count={painPoints.length} />
+        <div className="space-y-6">
+          {painPoints.map((p) => (
+            <PainPointCard key={p.id} pain={p} />
+          ))}
+        </div>
+      </section>
 
-      <div className="mt-8 rounded-2xl bg-surface-elevated/60 p-4">
+      <div className="rounded-2xl bg-surface-elevated/60 p-4">
         <p className="flex items-center gap-2 text-sm font-semibold text-text">
           <Sparkles className="w-4 h-4 text-primary-strong" />
           How this grows
@@ -71,7 +66,7 @@ export default async function MarketReadPage() {
           is never exposed in outbound.
         </p>
       </div>
-    </div>
+    </DashboardTemplate>
   )
 }
 

@@ -1,6 +1,9 @@
 import { Check, X, Sparkles, PenLine } from 'lucide-react'
 import { listActions } from '@/lib/studio/agent'
 import { generateProposals, generateContentDrafts, approveAction, dismissAction } from './actions'
+import { DashboardTemplate } from '@/components/templates'
+import { SectionHeader } from '@/components/ui/section-header'
+import { EmptyState } from '@/components/ui/empty-state'
 
 export const dynamic = 'force-dynamic'
 
@@ -8,16 +11,12 @@ export default async function AgentPage() {
   const [proposed, executed] = await Promise.all([listActions('proposed'), listActions('executed')])
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-text mb-1">Agent Console</h1>
-      <p className="text-sm text-muted leading-relaxed max-w-2xl mb-4">
-        The operator proposes actions; you approve. Every approved action runs through
-        the spine (consent + suppression + unsubscribe), so the agent can never bypass
-        the guardrails. The proposer is deterministic for now; a live Claude operator
-        slots in here later.
-      </p>
-
-      <div className="flex flex-wrap gap-2 mb-8">
+    <DashboardTemplate
+      eyebrow="Marketing"
+      title="Agent Console"
+      description="The operator proposes actions; you approve. Every approved action runs through the spine (consent + suppression + unsubscribe), so the agent can never bypass the guardrails. The proposer is deterministic for now; a live Claude operator slots in here later."
+    >
+      <div className="flex flex-wrap gap-2">
         <form action={generateProposals}>
           <button
             type="submit"
@@ -38,13 +37,15 @@ export default async function AgentPage() {
         </form>
       </div>
 
-      <h2 className="text-sm font-bold text-text mb-2">
-        Action queue ({proposed.length})
-      </h2>
-      {proposed.length === 0 ? (
-        <p className="text-sm text-muted mb-8">No proposals. Generate some above.</p>
-      ) : (
-        <div className="space-y-2 mb-8 max-w-2xl">
+      <section>
+        <SectionHeader title="Action queue" count={proposed.length} />
+        {proposed.length === 0 ? (
+          <EmptyState
+            title="No proposals."
+            description="Generate winbacks or content drafts above to fill the queue."
+          />
+        ) : (
+          <div className="space-y-2 max-w-2xl">
           {proposed.map((a) => {
             const isDraft = a.kind === 'content_draft'
             return (
@@ -81,21 +82,24 @@ export default async function AgentPage() {
             </div>
             )
           })}
-        </div>
-      )}
+          </div>
+        )}
+      </section>
 
-      <h2 className="text-sm font-bold text-text mb-2">Recently executed</h2>
-      {executed.length === 0 ? (
-        <p className="text-sm text-muted">Nothing executed yet.</p>
-      ) : (
-        <div className="rounded-2xl border border-border bg-surface shadow-sm divide-y divide-border/60 max-w-2xl">
-          {executed.slice(0, 20).map((a) => (
-            <div key={a.id} className="px-4 py-2.5 text-sm text-muted">
-              {String(a.payload.subject ?? a.kind)} → {String(a.payload.email ?? '')}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+      <section>
+        <SectionHeader title="Recently executed" />
+        {executed.length === 0 ? (
+          <EmptyState title="Nothing executed yet." />
+        ) : (
+          <div className="rounded-2xl border border-border bg-surface shadow-sm divide-y divide-border/60 max-w-2xl">
+            {executed.slice(0, 20).map((a) => (
+              <div key={a.id} className="px-4 py-2.5 text-sm text-muted">
+                {String(a.payload.subject ?? a.kind)} → {String(a.payload.email ?? '')}
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+    </DashboardTemplate>
   )
 }
