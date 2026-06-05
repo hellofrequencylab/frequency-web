@@ -3024,6 +3024,38 @@ to formalize the two new columns later.
 
 ---
 
+## ADR-107: Google Wallet pass for member codes — env-gated, dependency-free JWT
+
+**Status:** Accepted · `lib/wallet/google.ts`, `app/api/wallet/google/route.ts`,
+`app/(main)/codes/{page,member-codes}.tsx`. Apple Wallet deferred.
+
+**Context.** Issue #221 asks for an Apple/Google Wallet pass for a member's profile code.
+Apple Wallet requires a signed `.pkpass` (a PKCS#7 signature over a zip, needing the WWDR
++ Pass Type ID certificate chain); Google Wallet only needs an **RS256-signed JWT** linking
+to `pay.google.com/gp/v/save/<jwt>`. We have neither set of credentials in this environment.
+
+**Decision.** Ship **Google Wallet**, **config-gated**, and **dependency-free**:
+- Sign the Save-to-Wallet JWT with **`node:crypto`** (`createSign('RSA-SHA256')`) — no new
+  package. The pass is a Generic card whose barcode is the member's connect URL.
+- **Env-gated** on `GOOGLE_WALLET_ISSUER_ID` + `GOOGLE_WALLET_SA_EMAIL` +
+  `GOOGLE_WALLET_SA_PRIVATE_KEY`. `isGoogleWalletConfigured()` drives everything: when any
+  is missing the `/api/wallet/google` route 404s and the "Add to Google Wallet" button is
+  hidden. So it ships **dark** and is enabled by config alone — zero impact until then.
+- The route gates on ownership (only the code's owner, or host+, can mint a pass that
+  carries the owner's identity).
+- **Apple Wallet deferred** — it needs the pkpass cert toolchain; documented as the follow-up.
+
+**Alternatives.** Add `google-wallet`/`jsonwebtoken`/`passkit-generator` deps (rejected —
+`node:crypto` covers RS256; fewer deps); pre-create the WalletClass via the API (rejected —
+the class is embedded inline in the JWT, so no server-to-Google round trip at issue time).
+
+**Consequences.** Members can add their profile code to Google Wallet **once credentials are
+provisioned** — the code is complete but **unverified end-to-end without real Google
+credentials**, which is the explicit trade-off of shipping it gated. Apple Wallet + a
+scan-tracking "pass installed" signal remain open.
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 
