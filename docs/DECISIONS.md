@@ -3304,7 +3304,50 @@ by once-per-user + geofence + caps.
 
 ---
 
-## ADR-116: Profile editor keeps the community rail; guided spotlight onboarding tour
+## ADR-116: Claimable practice templates — a Vera-guided "make it yours" wizard
+
+**Status:** Accepted · `supabase/migrations/20260606150000_practice_templates.sql`, `lib/practices.ts` (`claimPractice`, `getRankedPractice`), `lib/ai/practice-wizard.ts`, `app/(main)/practices/[id]/page.tsx`, `components/practice/claim-practice.tsx`, `app/(main)/practices/actions.ts`, `lib/zaps.ts`. Applies the demo-circle claim (ADR-091) to practices; builds on the practice taxonomy (ADR-111) + Community Library (ADR-109) + AI core (ADR-041).
+
+**Context.** The library was a flat list of system practices with no member-facing
+page — the rich write-ups + steps only showed in the owner-only editor, and the only
+way to "make one yours" was a silent `forkPractice` ("Customize"). The owner's vision:
+people get *excited* to claim a practice and earn points — gamified healthy living —
+and Vera helps them shape it. We already had every primitive: a claim wizard pattern
+(`claimCircle`), a Claude-backed AI layer with cost guardrails (`lib/ai`), and fork +
+ranking + tags on practices.
+
+**Decision.**
+- **`is_template` flag.** Every system-owned, non-demo, public practice is a *template*.
+  The 5 core + 16 expansion + 2 new starters (Hydrate first, Single-task hour) are
+  templates; member-created and demo practices are not. Every practice also gets a
+  **topical header image** (keyword-based placeholder, plain `<img>` — no next/image
+  host coupling; swap for curated/licensed art before GA).
+- **A detail page** (`/practices/[id]`, Detail template) is the home for the picture,
+  the full markdown write-up (steps + why), a **stat band** (reward · cadence · who's
+  practising · times logged), tags, and the claim/adopt/log/edit CTAs. Cards link to it.
+- **The claim wizard** (mirrors `ClaimCircle`): goal + realistic schedule → **Vera
+  personalizes** the title/cadence/steps to the member (Haiku, forced-tool structured
+  output, propose-and-confirm per ADR-028; degrades to the template's own content when
+  AI is off — claiming never depends on the model) → review/edit → `claimPractice`
+  forks a private, owned, adopted copy with the personalized content.
+- **Gamification.** First claim awards `practice_claim` zaps (member-keyed idempotency
+  → fires once, no farming); the ongoing loop is logging (existing practice reward +
+  streak). New action lives in `ZAP_AMOUNTS` fallback only (no `zap_config` row needed).
+
+**Alternatives.** "Generate from scratch" Vera (deferred — personalizing a template is
+cheaper, more grounded, and harder to get wrong) and a bespoke claim mechanic (rejected —
+`forkPractice` + `updatePractice` + `adoptPractice` compose the whole flow).
+
+**Consequences.** A template becomes something you claim, personalize, and start earning
+on in one wizard. Vera is now wired into practices via the embedding/assist seams ADR-111
+anticipated. Pure-additive: one nullable flag, no economy config change, no schema break.
+Image URLs are topical placeholders, not curated art. The claim produces a normal private
+practice, so the existing edit + Community-Library submit (ADR-109) paths "share or post
+it to the repository" with no extra work.
+
+---
+
+## ADR-117: Profile editor keeps the community rail; guided spotlight onboarding tour
 
 **Status:** Accepted · `lib/layout/page-chrome.ts`, `app/(main)/settings/profile/page.tsx`,
 `lib/onboarding/spotlight.ts`, `components/onboarding/spotlight-tour.tsx`,
