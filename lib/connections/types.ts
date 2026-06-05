@@ -36,7 +36,7 @@ export interface ExtractedContact {
   socials: ContactSocials
   tags: string[]
   connectionNote: string
-  photo: { found: boolean; box: FaceBox | null }
+  photo: { found: boolean; box: FaceBox | null; imageIndex: number }
 }
 
 /** A stored network contact (the CRM record). */
