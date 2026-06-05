@@ -3753,12 +3753,17 @@ are the distribution layer on top. Operator playbooks live in Notion, linked to 
 **Enforcement (in progress):** the staff-gated surfaces now run on the capability
 model — the **marketing** gates use `staffCan('marketing')` (actions + layout), and
 nav surfacing (`meetsStaff`) + the Profile Creator (`connectionsOwnerId`) use
-`staffCan('profiles')`. **Still to do:** union the staff capability into the
-community-gated `/admin` surfaces (the single `requireAdmin` gate + `ADMIN_GROUPS` +
-sub-nav) so Operations/Support unlock the right admin pages — kept to its own PR
-because it threads `staffRole` through ~10 pages and must stay fail-closed on the
-sensitive ones (Roles · Members · AI · Platform stay community-janitor only).
-Extends ADR-027; layers over `ADMIN_GROUPS.min` + `area_permissions`.
+`staffCan('profiles')`. The `/admin` guard is now an **additive, fail-closed union**
+(`requireAdmin(min, { staff })` also admits a staff role holding that capability domain,
+write), wired for the **Community group** (Overview · Circles · Channels · Events ·
+Broadcasts · Crew tasks · Gamification · Moderation) + nav/launchpad/sub-nav — so
+Operations/Support reach the community admin pages. **Sensitive groups stay
+community-janitor only** (Roles · Members · AI · Platform · Vera have no `staffDomain`).
+**Still to do:** wire the remaining groups (Structure · Insights · QR) and
+**write-action parity** — the per-page CRUD server actions still gate on community
+role/capabilities, so staff currently get read/navigate into the community admin pages;
+full write parity is the next slice. Extends ADR-027; layers over `ADMIN_GROUPS` +
+`area_permissions`.
 
 **Context.** Two axes exist: the **community trust ladder** (member→…→admin→janitor, community
 standing) and a separate **staff/operations** axis (`team_members`: analyst→marketer→admin→owner,
@@ -3923,7 +3928,52 @@ ready behind the existing promotion-review gate. Operator how-to lives in Notion
 training page), linked back to NETWORK-CRM.md.
 
 ---
-## ADR-131: Cross-steward `network_local` discovery — turn on the gated tier with a read-only shared view
+
+## ADR-131: Per-persona nurture sequences — turning captured leads into activated members
+
+**Status:** Accepted (Entry Points Phase 3) · `supabase/migrations/20260607000000_nurture_sequences.sql`,
+`lib/nurture/*`, `app/(main)/marketing/nurture/*`, `/api/cron/nurture`. Builds on personas/lead flows
+(ADR-125), Entry Points (ADR-126), the email outbox + consent gates, and the contact-level lead
+unsubscribe (`lib/connections/lead-unsub.ts`).
+
+**Context.** Phases 1–2 made it easy to *capture* leads (entry points → lead flows → `contacts` with a
+`persona`), but `captureLead` literally noted "no persona nurture series exists yet," so a captured
+lead got **nothing**. The existing automations engine (ADR-025) is event-triggered and single-shot —
+it can't express "wait 2 days, then send step 2." We need a timed, multi-step, per-persona drip that
+reuses the durable email outbox and consent model rather than a new sender.
+
+**Decision.**
+- **Model:** one `nurture_sequences` row per persona (unique), an ordered `nurture_steps` list
+  (`delay_hours` relative to the prior step), and `nurture_enrollments` tracking a contact's cursor
+  (`next_step_order`, `next_run_at`, `status`). All service-role only, like `contacts`/`automation_rules`.
+- **Enroll on capture (push, not pull):** `captureLead` calls a fire-safe `enrollInNurture` — idempotent
+  via `unique (sequence_id, contact_id)`, a no-op when the persona has no enabled sequence. Chosen over
+  segment-resolve-at-send so a lead starts the moment they raise their hand.
+- **Drain on a cron:** `/api/cron/nurture` (every 15 min, `CRON_SECRET`) runs `runDueNurture()` — for each
+  due active enrollment it sends the next enabled step (skipping a since-disabled step instead of
+  stalling), then reschedules or completes. **Consent is enforced per send:** `contacts.consent_state =
+  'unsubscribed'` or a member's lifecycle opt-out **cancels** the enrollment; every email carries a
+  contact-level unsubscribe (`buildLeadUnsubUrl`) + RFC-8058 headers, and goes through `enqueueEmail`
+  (never inline).
+- **Operator surface:** a **Nurture** tab in `/marketing` (admin/staff) — create a persona's sequence
+  (seeded with a starter welcome step from the persona's own copy), edit/enable/reorder steps, and see
+  active/completed enrollment counts.
+- **Pure core:** step selection + scheduling (`lib/nurture/schedule.ts`) are pure and unit-tested; the
+  store/runner/actions do the I/O.
+
+**Alternatives.** Extend `automation_rules` with delays + conditions (rejected — conflates the
+event-bus engine with a scheduler; a dedicated enrollment table is clearer and testable). Resolve a
+persona **segment** at send time and mail the whole list (rejected for first send — push-on-capture is
+simpler and starts immediately; segment-driven *broadcasts* remain a separate Phase-3 lever). Send
+inline at capture (rejected — bypasses the retrying outbox and the timed cadence).
+
+**Consequences.** Captured personas now get a warm, consent-safe drip with no per-send code. The
+enrollment table also gives per-persona funnel visibility (in-sequence vs completed). Follow-ups:
+in-app/push step channels (the schema is email-only today), A/B variant steps, backfilling existing
+contacts into a sequence, and segment-targeted broadcast sends.
+
+---
+## ADR-132: Cross-steward `network_local` discovery — turn on the gated tier with a read-only shared view
 
 **Status:** Accepted · shipped in `lib/crm/people-search.ts` (`searchVisibleLeads(..., {
 includeNetwork })`), `lib/connections/store.ts` (`getSharedContact`),

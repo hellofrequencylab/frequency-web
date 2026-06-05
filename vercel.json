@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/cron/nurture",
+      "schedule": "*/15 * * * *"
+    },
+    {
       "path": "/api/cron/embed-help",
       "schedule": "20 3 * * *"
     },

@@ -127,7 +127,7 @@ Wired surfaces — the header search overlay (`/api/search`) and the `/people` d
 you've met"). **Owner** hits link to the steward's own `/connections/[id]`; **`network_local`**
 hits link to a read-only shared view (`/connections/shared/[id]`).
 
-**Cross-steward tier (ADR-131) — now live, narrowly gated.** A `network_local` capture surfaces
+**Cross-steward tier (ADR-132) — now live, narrowly gated.** A `network_local` capture surfaces
 only when *all* hold:
 - the **viewer is a steward** (host+) or staff — leads aren't searched for regular members
   (`connectionsOwnerId()` gates `searchVisibleLeads(..., { includeNetwork: true })`);

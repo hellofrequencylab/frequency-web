@@ -12,6 +12,7 @@ import {
   Radar,
   Sparkles,
   Filter,
+  Mail,
 } from 'lucide-react'
 
 interface NavItem {
@@ -29,6 +30,7 @@ const TABS: NavItem[] = [
   { href: '/marketing/beta',        label: 'Beta waitlist', Icon: Rocket },
   { href: '/marketing/campaigns',   label: 'Campaigns',    Icon: Megaphone },
   { href: '/marketing/funnels',     label: 'Funnels',      Icon: Filter },
+  { href: '/marketing/nurture',     label: 'Nurture',      Icon: Mail },
   { href: '/marketing/automations', label: 'Automations',  Icon: Workflow },
   { href: '/marketing/analytics',   label: 'Analytics',    Icon: BarChart3 },
   { href: '/marketing/market-read', label: 'Market read',  Icon: Radar },

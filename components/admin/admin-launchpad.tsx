@@ -2,14 +2,15 @@ import Link from 'next/link'
 import { ArrowUpRight } from 'lucide-react'
 import { visibleGroups } from '@/app/(main)/admin/sections'
 import type { CommunityRole } from '@/lib/core/roles'
+import type { StaffRole } from '@/lib/core/staff-roles'
 
 // The Overview launchpad: every admin surface the viewer can reach, grouped by
 // the same sections that drive the nav. This is the "every feature has a home"
 // guarantee made visible — a host sees a couple of groups, a janitor sees all of
 // them, and nothing is hidden in a route with no link.
 
-export function AdminLaunchpad({ role }: { role: CommunityRole }) {
-  const groups = visibleGroups(role).map((g) => ({
+export function AdminLaunchpad({ role, staffRole = null }: { role: CommunityRole; staffRole?: StaffRole | null }) {
+  const groups = visibleGroups(role, staffRole).map((g) => ({
     ...g,
     // The Overview card grid is for *navigating* — drop the self-link to /admin.
     links: g.links.filter((l) => !l.exact),
