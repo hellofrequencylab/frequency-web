@@ -33,6 +33,28 @@ function resizeToJpeg(file: File, size = 512): Promise<Blob> {
   })
 }
 
+// Cover-crop to a wide banner (3:1) for the profile header.
+function resizeToBannerJpeg(file: File, w = 1500, h = 500): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      const canvas = document.createElement('canvas')
+      canvas.width = w
+      canvas.height = h
+      const ctx = canvas.getContext('2d')!
+      const scale = Math.max(w / img.width, h / img.height)
+      const dw = img.width * scale
+      const dh = img.height * scale
+      ctx.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh)
+      canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('Canvas export failed'))), 'image/jpeg', 0.9)
+    }
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not decode image')) }
+    img.src = url
+  })
+}
+
 const HANDLE_RE = /^[a-z0-9_]+$/
 
 const input = 'w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-sm text-text placeholder-subtle focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50'
@@ -48,6 +70,7 @@ export function ProfileForm({
     handle: string
     bio: string
     avatarUrl: string
+    headerImageUrl: string
     email: string
     phone: string
     city: string
@@ -65,6 +88,9 @@ export function ProfileForm({
   const [avatarUrl,     setAvatarUrl]     = useState(initial.avatarUrl)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(initial.avatarUrl || null)
   const [avatarFile,    setAvatarFile]    = useState<File | null>(null)
+  const [headerUrl,     setHeaderUrl]     = useState(initial.headerImageUrl)
+  const [headerPreview, setHeaderPreview] = useState<string | null>(initial.headerImageUrl || null)
+  const [headerFile,    setHeaderFile]    = useState<File | null>(null)
   const [uploading,     setUploading]     = useState(false)
   const [uploadError,   setUploadError]   = useState('')
   const [saved,         setSaved]         = useState(false)
@@ -72,6 +98,7 @@ export function ProfileForm({
   const [isPending,     startTransition]  = useTransition()
 
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const headerInputRef = useRef<HTMLInputElement>(null)
 
   // Handle status is derived during render — the only thing that genuinely needs
   // an effect is the async uniqueness check, whose result we store tagged with
@@ -128,6 +155,46 @@ export function ProfileForm({
     setAvatarPreview(URL.createObjectURL(file))
   }
 
+  function handleHeaderChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 8 * 1024 * 1024) {
+      setUploadError(`Header is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum is 8 MB.`)
+      if (headerInputRef.current) headerInputRef.current.value = ''
+      return
+    }
+    setUploadError('')
+    setHeaderFile(file)
+    setHeaderPreview(URL.createObjectURL(file))
+  }
+
+  async function uploadHeader(): Promise<string> {
+    if (!headerFile) return headerUrl
+    setUploading(true)
+    setUploadError('')
+    let blob: Blob
+    try {
+      blob = await resizeToBannerJpeg(headerFile)
+    } catch {
+      setUploadError('Could not process header image. Try a different file.')
+      setUploading(false)
+      return headerUrl
+    }
+    const supabase = createClient()
+    const path = `${userId}/header.jpg`
+    const { error } = await supabase.storage.from('avatars').upload(path, blob, { upsert: true, contentType: 'image/jpeg' })
+    if (error) {
+      setUploadError(`Header upload failed: ${error.message}`)
+      setUploading(false)
+      return headerUrl
+    }
+    const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path)
+    const busted = `${publicUrl}?t=${Date.now()}`
+    setHeaderUrl(busted)
+    setUploading(false)
+    return busted
+  }
+
   async function uploadAvatar(): Promise<string> {
     if (!avatarFile) return avatarUrl
     setUploading(true)
@@ -180,20 +247,26 @@ export function ProfileForm({
     if (avatarFile) {
       finalAvatarUrl = await uploadAvatar()
     }
+    let finalHeaderUrl = headerUrl
+    if (headerFile) {
+      finalHeaderUrl = await uploadHeader()
+    }
 
     startTransition(async () => {
       try {
         await updateProfile({
-          displayName: displayName.trim(),
-          handle:      handle.trim(),
-          bio:         bio.trim(),
-          avatarUrl:   finalAvatarUrl,
-          phone:       phone.trim(),
-          city:        city.trim(),
-          website:     website.trim(),
+          displayName:    displayName.trim(),
+          handle:         handle.trim(),
+          bio:            bio.trim(),
+          avatarUrl:      finalAvatarUrl,
+          headerImageUrl: finalHeaderUrl,
+          phone:          phone.trim(),
+          city:           city.trim(),
+          website:        website.trim(),
         })
         setSaved(true)
         setAvatarFile(null)
+        setHeaderFile(null)
         setTimeout(() => setSaved(false), 3000)
       } catch (err) {
         setSaveError(err instanceof Error ? err.message : 'Something went wrong.')
@@ -205,6 +278,59 @@ export function ProfileForm({
 
   return (
     <form onSubmit={handleSave} className="space-y-6">
+
+      {/* ── Header / cover image ────────────────────── */}
+      <div>
+        <label className={lbl}>Header image</label>
+        <div className="overflow-hidden rounded-2xl border border-border">
+          {headerPreview ? (
+            // headerPreview may be a local object-URL (blob:) — plain <img> is correct.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={headerPreview} alt="Profile header" className="h-28 w-full object-cover sm:h-36" />
+          ) : (
+            <div className="h-28 w-full bg-gradient-to-br from-primary via-signal to-signal-strong sm:h-36" />
+          )}
+        </div>
+        <div className="mt-2 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => headerInputRef.current?.click()}
+            className="text-sm font-medium text-primary-strong transition-colors hover:text-primary-hover"
+          >
+            {headerPreview ? 'Change header' : 'Upload header'}
+          </button>
+          {headerPreview && headerPreview !== initial.headerImageUrl && (
+            <button
+              type="button"
+              onClick={() => {
+                setHeaderFile(null)
+                setHeaderPreview(initial.headerImageUrl || null)
+                setHeaderUrl(initial.headerImageUrl)
+                if (headerInputRef.current) headerInputRef.current.value = ''
+              }}
+              className="text-sm text-subtle transition-colors hover:text-muted"
+            >
+              Revert
+            </button>
+          )}
+          {headerPreview && (
+            <button
+              type="button"
+              onClick={() => {
+                setHeaderFile(null)
+                setHeaderPreview(null)
+                setHeaderUrl('')
+                if (headerInputRef.current) headerInputRef.current.value = ''
+              }}
+              className="text-sm text-subtle transition-colors hover:text-danger"
+            >
+              Remove
+            </button>
+          )}
+          <span className="ml-auto text-xs text-subtle">Wide image up to 8 MB · cropped to 3:1</span>
+        </div>
+        <input ref={headerInputRef} type="file" accept="image/*" className="hidden" onChange={handleHeaderChange} />
+      </div>
 
       {/* ── Avatar ──────────────────────────────────── */}
       <div>

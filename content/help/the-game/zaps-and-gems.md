@@ -3,7 +3,7 @@ title: Zaps and gems explained
 description: The two currencies, how you earn them, and what they are for.
 category: the-game
 order: 1
-updated: 2026-05-31
+updated: 2026-06-05
 audience: member
 featureKeys: [gamification, zaps, gems]
 status: published
@@ -20,13 +20,24 @@ are your seasonal score, and as you earn them you climb the season ranks:
 
 - ghost, then runner, then operative, then agent, then conduit, then luminary.
 
+Roughly what things are worth — the biggest rewards live off the screen:
+
+- Found a real circle — **100**
+- Host an in-person event — **60**
+- Someone you invited joins, or you activate a circle — **40**
+- Show up (a verified event check-in) — **25**
+- Log a real-world practice — **12**
+
 Zaps reset each season, so every season is a fresh climb.
 
 ## Gems: the on-platform currency
 
-You earn **gems** for engagement on the platform itself: posting, commenting,
-reacting, and showing up day to day. Gems are the currency you **spend**. Use them
-in the store for digital badges and to trade for physical merch.
+You earn **gems** for keeping the community warm between gatherings — welcoming
+newcomers, posting, replying, reacting, and showing up day to day. They're small
+and **capped per day** so they can't be farmed, and they're the currency you
+**spend** in the Vault on titles, cosmetics, and membership credits. For example:
+welcome a newcomer (**8**), RSVP or join a circle (**5**), a post (**3**), a reply
+(**2**), and your daily login (**2**).
 
 ## How they connect
 
