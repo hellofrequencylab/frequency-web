@@ -80,6 +80,17 @@ export async function getMyProfileId(): Promise<string | null> {
 }
 
 /**
+ * True when the caller is platform staff — admin or janitor, the top two roles.
+ * Drives the site-wide staff affordances (e.g. the "Edit" button on any entity),
+ * which let staff manage content they don't personally own. Cheap (shares the
+ * cached profile lookup).
+ */
+export async function isPlatformStaff(): Promise<boolean> {
+  const role = (await resolveCaller())?.community_role
+  return role === 'admin' || role === 'janitor'
+}
+
+/**
  * The caller's profile id, or redirect. Use in actions/pages that must not
  * proceed for anonymous or un-onboarded users.
  * - no session  -> /sign-in

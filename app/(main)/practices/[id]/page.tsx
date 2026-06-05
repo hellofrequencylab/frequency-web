@@ -11,6 +11,7 @@ import { LogPracticeButton } from '@/components/practice/log-practice-button'
 import { AdoptPracticeButton } from '@/components/practice/adopt-practice-button'
 import { PillarBadge } from '@/components/practice/pillar-badge'
 import { ClaimPractice } from '@/components/practice/claim-practice'
+import { StaffEditButton } from '@/components/ui/staff-edit-button'
 import { forkPracticeAction } from '../actions'
 
 export const dynamic = 'force-dynamic'
@@ -153,6 +154,9 @@ export default async function PracticeDetailPage({ params }: Params) {
             </form>
           </>
         )}
+
+        {/* Staff (admin/janitor) can edit any practice they don't own. */}
+        {!isOwner && <StaffEditButton href={`/practices/${practice.id}/edit`} label="Edit practice" />}
       </div>
 
       {practice.body && <HelpMarkdown>{practice.body}</HelpMarkdown>}
