@@ -26,38 +26,48 @@
 
 ## The target shape — Edit Mode & the 9-category settings console
 
-> Decision: [ADR-137](DECISIONS.md). The end state: **no entity admin lives in
-> `/admin/*`** — every page has an **Edit Mode** that opens a settings console covering
-> the *whole* surface, organized by one consistent spine.
+> Decision: [ADR-137](DECISIONS.md), refined into a **two-surface split** by
+> [ADR-138](DECISIONS.md). The end state: **no entity admin lives in `/admin/*`** —
+> every page is administered in place, through two complementary surfaces divided by
+> *intent*.
 
-**The move.** An **Edit** toggle on any page the viewer can administer does two things at
-once: (1) the page enters **edit mode** — inline click-to-edit handles light up on the
-obvious things (title, cover, snippet); and (2) the **settings console** (the dock)
-slides out with the *entire* suite for that page — not a flat list, but a **drill-down**
-grouped by a fixed category spine. You never leave the page: "Manage → go to admin"
-becomes "Edit → console, right here."
+**Two surfaces, one Edit Mode.** Hitting **Edit** on a page you can administer turns on
+two things that divide the work by intent:
 
-### The spine — settings as *questions* (one taxonomy, every page)
+| Surface | Purpose | Feel | Holds |
+|---|---|---|---|
+| **Inline admin** *(on the page)* | **Tune** — branding, content, engagement | direct, WYSIWYG, in context | page info (title / snippet / cover), Layout (what shows + order), Engage (community engagement), QR generator, search & sorting, Vera tone |
+| **Management sidebar** *(the `PageAdminDock`)* | **Manage** — granular features | structured control panel, drill-down | People & access, Place & Time, Comms, Reach (links/campaigns), Safety, Insights, **page-scoped global settings** (contact, integrations), Danger |
 
-The trick that makes one format fit every page: every setting answers one of a fixed,
-ordered set of questions. That question-set is the **spine** — universal and memorable;
-a page only shows the categories that apply.
+The mental model: **inline = the creative director** — make it look, read, and engage
+well by touching the page itself; **management sidebar = the operator** — configure the
+machinery. Neither ever sends you to `/admin`. The **sidebar is the dock that already
+ships** (`components/layout/page-admin-dock.tsx`); the **inline layer is new**.
 
-| # | Category | The question | Holds | `slot` |
+### The spine — settings as *questions*, sorted across the two surfaces
+
+Every setting answers one of a fixed, ordered set of questions — the **spine** (universal
+and memorable; a page shows only the categories that apply). Each category has a primary
+**surface** (✏️ inline = tune · ⚙️ sidebar = manage); a few span both.
+
+| # | Category | The question | Surface | Holds |
 |---|---|---|---|---|
-| 1 | **Basics** | *What is it?* | name/title, snippet (about), type, status, cover image, parent links (channel/hub) | `basics` |
-| 2 | **Place & Time** | *Where & when?* | city/neighborhood, map pin (lat/long), timezone, online/in-person; events add schedule + recurrence | `place` |
-| 3 | **People** | *Who's in it?* | host/owner, members, roles & access, capacity, invites, who-can-post/join | `people` |
-| 4 | **Layout** | *What shows on the page?* | which modules/widgets appear + order, pinned items, tabs, about sections — the page-builder (the dock's "Soon" Layout/Styles) | `layout` |
-| 5 | **Engage** | *What do they do & earn?* | practices, achievements, challenges, rewards/zaps, crew tasks, leaderboard | `engage` |
-| 6 | **Reach** | *How do people find it?* | QR code(s), invite/share links, campaigns + UTM, dynamic links | `reach` |
-| 7 | **Comms** | *How do you reach them?* | broadcasts/announcements, notification rules | `comms` |
-| 8 | **Safety** | *How do you keep it healthy?* | moderation queue, blocks, content rules, Vera/AI behavior here | `safety` |
-| 9 | **Insights** | *How's it doing?* | read-only stats for this entity (a view, not an edit) | `insights` |
-| — | **Danger** | *End it?* | archive, delete, transfer ownership — always pinned last | `danger` |
+| 1 | **Basics** | *What is it?* | ✏️ inline | title, snippet (`about`), cover, type, status, parent links |
+| 2 | **Place & Time** | *Where & when?* | ⚙️ sidebar | city/neighborhood, map pin, timezone, online/in-person; event schedule |
+| 3 | **People** | *Who's in it?* | ⚙️ sidebar | host/owner, members, roles & access, capacity, invites |
+| 4 | **Layout** | *What shows on the page?* | ✏️ inline | which modules/widgets + order, pinned, tabs, **search & sorting** |
+| 5 | **Engage** | *What do they do & earn?* | ✏️ inline | community engagement, achievements, challenges, rewards, leaderboard |
+| 6 | **Reach** | *How do people find it?* | ✏️ QR gen · ⚙️ links | **QR generator** (inline) · invite/share links, campaigns + UTM (sidebar) |
+| 7 | **Comms** | *How do you reach them?* | ⚙️ sidebar | broadcasts/announcements, notification rules |
+| 8 | **Safety** | *How do you keep it healthy?* | ✏️ Vera tone · ⚙️ rules | **Vera interactions/tone** (inline) · moderation queue, blocks, AI rules (sidebar) |
+| 9 | **Insights** | *How's it doing?* | ⚙️ sidebar | read-only stats for this entity |
+| — | **Danger** | *End it?* | ⚙️ sidebar | archive, delete, transfer ownership — pinned last |
 
-This refines the registry's `AdminSlot` union into the spine above: `AdminModule.slot`
-becomes the **category**, and the console renders `modulesFor(scope, caps)` grouped by it.
+The split is by **intent, not by entity**: a category can have a *tune face* (inline) and
+a *manage face* (sidebar) — Reach (generate a QR vs. manage campaigns), Safety (Vera's
+voice vs. moderation config). This still maps onto the registry's `AdminModule.slot`
+(the category) — plus a new **`surface: 'inline' | 'sidebar'`** field that routes the
+module to the right place.
 
 ### One spine, every page (coverage matrix)
 
@@ -96,10 +106,11 @@ they're the **global scope's** console, opened from the home page's Edit button.
 Today's shipped `circle.settings` module is only the top of **Basics** — the rest of this
 table is the headroom the console unlocks.
 
-### The console format — a drill-down
+### The two surfaces in practice
 
-A narrow panel can't show the whole suite at once, so the console is **iOS-Settings-style
-drill-down** (scales to any suite size, stays compact):
+**Management sidebar (the dock)** — the ⚙️ categories. A narrow panel can't show the whole
+suite at once, so it's an **iOS-Settings-style drill-down** (scales to any suite size, stays
+compact):
 
 ```
 EDIT MODE — console home ─────────────────╮      DRILL INTO "Place & Time" ───────────╮
@@ -119,26 +130,36 @@ EDIT MODE — console home ─────────────────�
 └───────────────────────────────────────┘ │
 ```
 
-- **Console home** = the category list (icon · name · live summary · ›), plus a couple of
+- **Sidebar home** = the ⚙️ category list (icon · name · live summary · ›) + a couple of
   **quick toggles** (status) flippable without drilling.
 - **Tap a category** → its screen of `AdminModuleCard`s, each with inline save. **Back** ‹
   returns home. **Search** jumps to any setting.
-- **Inline + panel:** edit mode also adds click-to-edit handles on the page for the
-  obvious fields; the console holds the full set (the "panel + light inline" decision).
-- **"Done editing"** exits edit mode everywhere at once.
+
+**Inline admin (on the page)** — the ✏️ categories. Edit Mode lights up **in-context
+handles**: click the title / snippet / cover to edit; a thin **toolbar** on each editable
+region (a Layout block, an engagement widget, the QR badge) opens that region's tuner. The
+page *is* the canvas — you tune branding, content, and engagement against the real content.
+The QR generator, search & sorting, and Vera-tone tuners live here.
+
+**One toggle, two surfaces.** The **Edit** button turns both on together; **"Done editing"**
+turns both off. Capability gating and per-setting inline save are identical on both.
 
 ### How it grows what's shipped (a delta, not a rewrite)
 
-Already done: the `AdminModule` registry + `modulesFor`, `AdminModuleCard`, the dock
-shell, and four scopes (circle/hub/nexus/event) resolving capabilities. New work:
+Already done: the `AdminModule` registry + `modulesFor`, `AdminModuleCard`, the dock shell
+(**= the management sidebar**), and four scopes (circle/hub/nexus/event) resolving
+capabilities. New work:
 
-1. **Expand `AdminSlot`** to the spine (rename `settings→basics`, `content→layout`,
-   `moderation→safety`; add `place`/`engage`/`reach`/`comms`).
-2. **Drill-down console** — a home list (categories + live summaries + quick toggles), a
-   category screen, back + search — on top of today's flat dock.
-3. **Write the missing modules** per category (the `＋` rows), reusing `AdminModuleCard` +
-   capability-gated actions.
-4. **The `@admin` server slot** so each category screen is server-composed (RSC donut).
+1. **Add a `surface` field** (`'inline' | 'sidebar'`) to `AdminModule`, and expand `AdminSlot`
+   to the spine (rename `settings→basics`, `content→layout`, `moderation→safety`; add
+   `place`/`engage`/`reach`/`comms`).
+2. **Sidebar drill-down** — a home list (⚙️ categories + summaries + quick toggles) → category
+   screen → back + search — on top of today's flat dock.
+3. **Inline layer** — page-level Edit Mode + in-context handles/toolbars that mount the ✏️
+   modules against the real content (title/cover/snippet, Layout blocks, QR, search-sort, Vera).
+4. **Write the missing modules** per category (the `＋` rows), reusing `AdminModuleCard` +
+   capability-gated actions, each tagged with its `surface`.
+5. **The `@admin` server slot** so each sidebar category screen is server-composed (RSC donut).
 
 ---
 
