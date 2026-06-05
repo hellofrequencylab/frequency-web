@@ -35,38 +35,38 @@ export async function DemoNotice() {
   if (demoCount === 0) return null // nothing to explain — likely already purged
 
   return (
-    <section className="rounded-xl border border-warning/30 bg-warning-bg/40 px-3 py-3">
-      <div className="mb-1.5 flex items-center gap-1.5">
-        <Zap className="h-3.5 w-3.5 fill-warning text-warning" aria-hidden />
-        <h3 className="text-xs font-bold uppercase tracking-wide text-warning">Beta demo content</h3>
+    <section className="overflow-hidden rounded-2xl border border-warning/40 bg-gradient-to-b from-warning-bg/80 to-warning-bg/30 shadow-sm">
+      {/* Bold header band — a big bolt + a punchy line, so it reads as an ad, not a footnote. */}
+      <div className="flex items-center gap-2.5 border-b border-warning/20 bg-warning-bg/60 px-3.5 py-3">
+        <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-warning text-on-primary shadow-sm">
+          <Zap className="h-5 w-5 fill-current" aria-hidden />
+        </span>
+        <div className="min-w-0">
+          <h3 className="text-[13px] font-extrabold uppercase tracking-wide text-warning">Help build it</h3>
+          <p className="text-[11px] font-semibold leading-tight text-text">
+            {demoCount.toLocaleString()} demo {demoCount === 1 ? 'member' : 'members'} · {realCount} real
+          </p>
+        </div>
       </div>
 
-      <p className="text-[13px] leading-snug text-subtle">
-        Anything marked with a{' '}
-        <Zap className="inline h-3 w-3 fill-warning align-[-1px] text-warning" aria-hidden /> bolt is
-        sample content we seeded so the community feels alive while we grow. It recedes as real
-        members join.
-      </p>
-
-      <p className="mt-2 text-[13px] font-semibold text-text">
-        {demoCount.toLocaleString()} demo {demoCount === 1 ? 'member' : 'members'} + {realCount}{' '}
-        real {realCount === 1 ? 'one' : 'ones'}
-      </p>
-
-      {/* Make it real — direct actions with their ⚡ reward. */}
-      <div className="mt-2.5 border-t border-warning/20 pt-2">
-        <p className="mb-1 px-1.5 text-[11px] font-bold uppercase tracking-wide text-warning">
-          Help make it real — earn ⚡
+      <div className="px-3.5 py-3">
+        <p className="text-[13px] leading-snug text-subtle">
+          Anything with a{' '}
+          <Zap className="inline h-3 w-3 fill-warning align-[-1px] text-warning" aria-hidden /> bolt is
+          sample content keeping the place alive while we grow — it recedes as real members join.
+          <span className="font-semibold text-text"> Do something real and earn ⚡.</span>
         </p>
-        <ul>
+
+        {/* Make it real — direct actions with their ⚡ reward, as tappable buttons. */}
+        <ul className="mt-2.5 space-y-1">
           {ACTIONS.map((a) => (
             <li key={a.href}>
               <Link
                 href={a.href}
-                className="group flex items-center justify-between gap-2 rounded-lg px-1.5 py-1 transition-colors hover:bg-warning-bg/70"
+                className="group flex items-center justify-between gap-2 rounded-lg border border-warning/25 bg-surface/60 px-2.5 py-1.5 transition-colors hover:border-warning/50 hover:bg-warning-bg/70"
               >
-                <span className="text-[13px] text-text transition-colors group-hover:text-warning">{a.label}</span>
-                <span className="inline-flex shrink-0 items-center gap-0.5 text-[11px] font-bold text-warning tabular-nums">
+                <span className="text-[13px] font-medium text-text transition-colors group-hover:text-warning">{a.label}</span>
+                <span className="inline-flex shrink-0 items-center gap-0.5 text-xs font-extrabold text-warning tabular-nums">
                   +{a.zaps}
                   <Zap className="h-3 w-3 fill-warning" aria-hidden />
                 </span>

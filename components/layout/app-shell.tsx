@@ -89,19 +89,18 @@ function buildSections(areas: typeof NAV_AREAS[number][]): NavSectionGroup[] {
   return sections
 }
 
-// One vertical rail holds every destination: Feed + Messages (the home anchors,
-// pinned top), then the three pillars — Community, The Quest, Network — and
-// finally Manage (admin), grouped by section. Sections and their order are
-// derived entirely from NAV_AREAS (no hardcoded section list). The desktop rail
-// and the mobile drawer render the same set.
+// One vertical rail holds every destination: Feed (home anchor, pinned top), then
+// the two worlds — Community and The Quest — and finally Manage (Steward + Platform),
+// grouped by section. Sections and their order are derived entirely from NAV_AREAS
+// (no hardcoded section list). The desktop rail and mobile drawer render the same set.
 const NAV_SECTIONS = buildSections([...NAV_AREAS])
 
-// The Manage area's axis-grouped sections (IA redesign). These TELESCOPE: an item
-// the viewer can't reach is hidden (not muted), and a group with nothing reachable
-// is skipped entirely (header included) — so a member never sees empty admin
-// headers and a host isn't shown greyed-out janitor tools. Member worlds (Community,
-// Practice, Connect, The Quest) still mute/preview instead, as aspirational surfaces.
-const TELESCOPE_SECTIONS = new Set(['Steward', 'Structure', 'Studio', 'Platform'])
+// The Manage sections TELESCOPE: an item the viewer can't reach is hidden (not
+// muted), and a group with nothing reachable is skipped entirely (header included)
+// — so a member never sees empty admin headers and a host isn't shown greyed-out
+// janitor tools. Member worlds (Community, The Quest) still mute/preview instead,
+// as aspirational surfaces.
+const TELESCOPE_SECTIONS = new Set(['Steward', 'Platform'])
 
 // The effective access for an area = a janitor's per-area override, if any,
 // else the code default. `role` is the viewer's community role (null = visitor).
@@ -933,8 +932,15 @@ export default function AppShell({
             </Link>
           )}
 
-          {/* Community actions — messages + notifications, set off by a divider */}
+          {/* Community actions — friends + messages + notifications, set off by a divider */}
           <div className="flex items-center gap-0.5 sm:ml-1 sm:pl-1.5 sm:border-l sm:border-border">
+            <Link
+              href="/friends"
+              aria-label="Friends"
+              className="flex items-center justify-center w-9 h-9 rounded-full text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+            >
+              <UserPlus className="w-5 h-5" />
+            </Link>
             <MessagesPopover />
             <NotificationBell initialUnread={unreadCount} />
           </div>
