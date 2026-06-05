@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { EventCompose } from './event-compose'
 import { IndexTemplate } from '@/components/templates/index-template'
+import { PageContents } from '@/components/templates/page-contents'
 import { StatStrip } from '@/components/ui/page-header'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -210,9 +211,19 @@ export default async function EventsPage() {
         />
       </div>
 
+      {/* Table of contents — only meaningful once there's more than one section. */}
+      <PageContents
+        sections={[
+          ...(goingEvents.length > 0
+            ? [{ id: 'events-going', label: "You're going", count: goingEvents.length }]
+            : []),
+          { id: 'events-upcoming', label: goingEvents.length > 0 ? 'Coming up' : 'Upcoming', count: events.length },
+        ]}
+      />
+
       <div className="space-y-8">
         {goingEvents.length > 0 && (
-          <section>
+          <section id="events-going" className="scroll-mt-20">
             <SectionHeader title="You're going" count={goingEvents.length} />
             <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
               {goingEvents.map((event) => (
@@ -230,7 +241,7 @@ export default async function EventsPage() {
           </section>
         )}
 
-        <section>
+        <section id="events-upcoming" className="scroll-mt-20">
           <SectionHeader title={goingEvents.length > 0 ? 'Coming up' : 'Upcoming events'} count={events.length} />
           {events.length === 0 ? (
             <EmptyState
