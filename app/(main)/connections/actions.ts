@@ -7,6 +7,8 @@ import { aiAvailable, featureOverBudget } from '@/lib/ai/usage'
 import { scanCardImage, assistFromText } from '@/lib/ai/connections-ai'
 import { dedupeTags, normalizeTag } from '@/lib/connections/normalize'
 import * as store from '@/lib/connections/store'
+import { syncScanToCrm } from '@/lib/connections/crm-sync'
+import { maybeSendScanIntro } from '@/lib/connections/invite'
 import type {
   ExtractedContact,
   ContactSocials,
@@ -93,6 +95,8 @@ export interface CreateProfileInput {
   avatarPath?: string | null
   visibility?: Visibility
   extraction?: unknown
+  /** Send the one-time intro/invite email to this contact (if they have an email). */
+  sendInvite?: boolean
 }
 
 export async function createProfile(input: CreateProfileInput): Promise<{ id: string } | { error: string }> {
@@ -121,8 +125,31 @@ export async function createProfile(input: CreateProfileInput): Promise<{ id: st
   const note = (input.connectionNote ?? '').trim()
   if (note) await store.addNote(ownerId, id, note, 'connection', ownerId)
 
+  // Bridge into the shared CRM as an unknown/unsubscribed lead, then (optionally)
+  // send the single intro/invite email. Both no-op without an email address.
+  const email = (input.email ?? '').trim()
+  if (email) {
+    const contactId = await syncScanToCrm({ ownerId, networkContactId: id, email, displayName: input.displayName })
+    if (input.sendInvite) {
+      await maybeSendScanIntro({ ownerId, networkContactId: id, email, recipientName: input.displayName, contactId })
+    }
+  }
+
   revalidatePath('/connections')
   return { id }
+}
+
+/** Manually (re)trigger the one-time intro for a saved contact — from the detail
+ *  page. Syncs to the shared CRM first, then sends if all gates pass. */
+export async function inviteContact(id: string): Promise<{ sent: boolean; reason?: string }> {
+  const ownerId = await requireOwner()
+  const detail = await store.getContact(ownerId, id)
+  const email = detail?.contact.email?.trim()
+  if (!detail || !email) return { sent: false, reason: 'no_email' }
+  const contactId = await syncScanToCrm({ ownerId, networkContactId: id, email, displayName: detail.contact.displayName })
+  const res = await maybeSendScanIntro({ ownerId, networkContactId: id, email, recipientName: detail.contact.displayName, contactId })
+  revalidatePath(`/connections/${id}`)
+  return res.sent ? { sent: true } : { sent: false, reason: res.reason }
 }
 
 export interface UpdateProfileInput {

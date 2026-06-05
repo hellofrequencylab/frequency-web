@@ -82,6 +82,24 @@ Both AI paths **degrade to plain manual entry** when AI is off, over budget, or 
 
 > **Rollback** (additive, clean): `drop table public.network_contact_tags, public.network_contact_notes, public.network_contacts cascade;` then `delete from storage.buckets where id='network-contacts';` and drop the four `network-contacts: owner *` policies on `storage.objects`.
 
+## Scan → shared CRM → invite → credit (ADR-099)
+
+When a scanned contact has an email, on save it **also** lands in the shared Studio
+CRM (`contacts`) as `source='scan_invite'`, `consent_state='unknown'` — added but
+**never auto-subscribed** — and is linked via `linked_contact_id`. Optionally (a
+per-scan checkbox) the steward sends **one** transactional intro.
+
+| Piece | How |
+|---|---|
+| Shared-CRM lead | `lib/connections/crm-sync.ts` — upsert by `lower(email)`, never downgrades an existing member/subscriber |
+| One-time intro | `lib/connections/invite.ts` → `sendScanIntroEmail` (`lib/email.ts`). Gated by `scan_invite_email_enabled` (**default off**) + the per-scan checkbox + `invited_at` guard |
+| Points on join | The intro's CTA is the steward's **referral** link (`/q/<slug>`, ADR-091). Signup → `applyReferralAttribution` → `invite_accepted` zaps. Automatic |
+| Legal unsubscribe | `/u/scan` (`lib/connections/lead-unsub.ts`, HMAC over `contacts.id`) → `consent_state='unsubscribed'`, RFC 8058 one-click. Non-member footer; set `COMPANY_POSTAL_ADDRESS` for CAN-SPAM |
+| Operator switch | Marketing → Contacts toggle (`setScanInviteEnabled`, staff) → `platform_flags`, audited in `platform_flag_events`. Needs `RESEND_API_KEY` |
+
+**Posture:** a single, person-initiated introduction (the steward met them), not bulk
+marketing. No marketing email until the lead opts in (`consent_state='subscribed'`).
+
 ## Not yet (deliberate follow-ups)
 
 - **Promotion into public/network** (`→ contacts`, link to a member `profile`) — schema hooks exist; the action is gated behind its own review since that's where leak risk concentrates.

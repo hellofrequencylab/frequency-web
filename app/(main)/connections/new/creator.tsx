@@ -1,8 +1,8 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ScanText, Pencil, Camera, Upload, Sparkles, Loader2, Check, X, User } from 'lucide-react'
+import { ScanText, Pencil, Camera, Upload, Sparkles, Loader2, Check, X, User, ChevronDown, Mail } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { squareCropRect, dedupeTags, normalizeTag } from '@/lib/connections/normalize'
 import type { ExtractedContact, ContactSource, Visibility } from '@/lib/connections/types'
@@ -111,6 +111,8 @@ export function Creator({ userId }: { userId: string }) {
 
   const [assistText, setAssistText] = useState('')
   const [tagDraft, setTagDraft] = useState('')
+  const [assistOpen, setAssistOpen] = useState(true)
+  const [sendInvite, setSendInvite] = useState(true)
 
   const [scanning, setScanning] = useState(false)
   const [assisting, setAssisting] = useState(false)
@@ -122,6 +124,22 @@ export function Creator({ userId }: { userId: string }) {
   const photoRef = useRef<HTMLInputElement>(null)
 
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setForm((p) => ({ ...p, [k]: v }))
+
+  // Remember whether the Vera assist panel is open (per-device preference).
+  useEffect(() => {
+    if (typeof window !== 'undefined' && localStorage.getItem('freq-vera-assist-open') === '0') {
+      // Persisted UI preference read after mount (avoids a hydration mismatch).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setAssistOpen(false)
+    }
+  }, [])
+  function toggleAssist() {
+    setAssistOpen((v) => {
+      const next = !v
+      try { localStorage.setItem('freq-vera-assist-open', next ? '1' : '0') } catch {}
+      return next
+    })
+  }
 
   async function uploadBlob(blob: Blob): Promise<string> {
     const path = `${userId}/${crypto.randomUUID()}.jpg`
@@ -265,6 +283,7 @@ export function Creator({ userId }: { userId: string }) {
       avatarPath,
       visibility: form.visibility,
       extraction,
+      sendInvite: sendInvite && !!form.email.trim(),
     })
     setSaving(false)
     if ('error' in res) {
@@ -362,28 +381,38 @@ export function Creator({ userId }: { userId: string }) {
         </div>
       ) : (
         <div className="space-y-5">
-          {/* Vera assist */}
+          {/* Vera assist — collapsible, remembered per device */}
           <div className="rounded-2xl border border-border bg-surface-elevated/40 p-4">
-            <div className="mb-2 flex items-center gap-1.5">
-              <Sparkles className="h-4 w-4 text-primary-strong" />
-              <p className="text-sm font-semibold text-text">Vera assist</p>
-            </div>
-            <textarea
-              value={assistText}
-              onChange={(e) => setAssistText(e.target.value)}
-              rows={2}
-              placeholder="e.g. Met Sarah Kim at the Encinitas market — runs a sound-bath studio, wants to co-host a session. sarah@studio.com"
-              className={`${input} resize-none`}
-            />
             <button
               type="button"
-              onClick={handleAssist}
-              disabled={assisting || !assistText.trim()}
-              className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+              onClick={toggleAssist}
+              aria-expanded={assistOpen}
+              className="flex w-full items-center gap-1.5 text-left"
             >
-              {assisting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-              {assisting ? 'Thinking…' : 'Fill it in with Vera'}
+              <Sparkles className="h-4 w-4 text-primary-strong" />
+              <span className="text-sm font-semibold text-text">Vera assist</span>
+              <ChevronDown className={`ml-auto h-4 w-4 text-subtle transition-transform ${assistOpen ? '' : '-rotate-90'}`} />
             </button>
+            {assistOpen && (
+              <div className="mt-2">
+                <textarea
+                  value={assistText}
+                  onChange={(e) => setAssistText(e.target.value)}
+                  rows={2}
+                  placeholder="e.g. Met Sarah Kim at the Encinitas market — runs a sound-bath studio, wants to co-host a session. sarah@studio.com"
+                  className={`${input} resize-none`}
+                />
+                <button
+                  type="button"
+                  onClick={handleAssist}
+                  disabled={assisting || !assistText.trim()}
+                  className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+                >
+                  {assisting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  {assisting ? 'Thinking…' : 'Fill it in with Vera'}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Photo */}
@@ -476,6 +505,22 @@ export function Creator({ userId }: { userId: string }) {
               <option value="network">Network — visible to stewards</option>
             </select>
           </Field>
+
+          {/* One-time intro invite — shown only when there's an email */}
+          {form.email.trim() && (
+            <label className="flex items-start gap-2.5 rounded-xl border border-border bg-surface-elevated/40 p-3 text-sm">
+              <input
+                type="checkbox"
+                checked={sendInvite}
+                onChange={(e) => setSendInvite(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
+              />
+              <span className="text-muted">
+                <span className="inline-flex items-center gap-1 font-medium text-text"><Mail className="h-3.5 w-3.5" /> Send a one-time intro</span>{' '}
+                — email {form.displayName.trim() || 'them'} a personal invite from you, with a join link that credits you if they sign up. One email only; they can unsubscribe anytime.
+              </span>
+            </label>
+          )}
 
           <button
             type="button"
