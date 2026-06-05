@@ -105,14 +105,35 @@ export async function sendRoomMessage(roomId: string, body: string) {
 
   const admin = createAdminClient()
 
-  // Must be a room member to post
-  const { data: membership } = await admin
-    .from('room_members')
-    .select('room_id')
-    .eq('room_id', roomId)
-    .eq('profile_id', caller.id)
+  // Posting gate (Phase B): a CHANNEL open room is readable by anyone but only
+  // tuned-in members may post; every other room requires membership.
+  const { data: room } = await admin
+    .from('rooms')
+    .select('visibility, scope_id')
+    .eq('id', roomId)
     .maybeSingle()
-  if (!membership) throw new Error('You must join the room before posting')
+  if (!room) throw new Error('Room not found')
+
+  if ((room as { visibility: string }).visibility === 'channel') {
+    const scopeId = (room as { scope_id: string | null }).scope_id
+    const { data: tuned } = scopeId
+      ? await admin
+          .from('topical_channel_memberships')
+          .select('profile_id')
+          .eq('topical_channel_id', scopeId)
+          .eq('profile_id', caller.id)
+          .maybeSingle()
+      : { data: null }
+    if (!tuned) throw new Error('Tune into this channel to post.')
+  } else {
+    const { data: membership } = await admin
+      .from('room_members')
+      .select('room_id')
+      .eq('room_id', roomId)
+      .eq('profile_id', caller.id)
+      .maybeSingle()
+    if (!membership) throw new Error('You must join the room before posting')
+  }
 
   const { error } = await admin.from('room_messages').insert({
     room_id: roomId,
