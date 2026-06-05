@@ -270,6 +270,7 @@ async function LeaderboardWidget() {
   const { data: profiles } = await admin
     .from('profiles')
     .select('id, display_name, handle, avatar_url, current_season_zaps, current_season_rank')
+    .eq('is_active', true)
     .order('current_season_zaps', { ascending: false })
     .limit(5)
 
