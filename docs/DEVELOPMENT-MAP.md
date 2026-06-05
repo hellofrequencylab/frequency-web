@@ -169,15 +169,15 @@
 > Wallet deferred (needs the pkpass cert chain). Unverified end-to-end without real Google credentials.
 
 > **2026-06-05:** QR/NFC round 2 (issue #221) — four more functions:
-> • **Scarcity codes** (ADR-109, migration `20260605150000`) — nullable `nodes.max_claims`; `verifyCapture`
+> • **Scarcity codes** (ADR-112, migration `20260605150000`) — nullable `nodes.max_claims`; `verifyCapture`
 >   rejects with `capacity_reached` once N verified claims exist ("first N win"). Authored on the NodeForm
 >   + an `N/max claimed` badge.
-> • **Scannability guardrails** (ADR-110) — pure `scannabilityWarnings(style)` flags low contrast /
+> • **Scannability guardrails** (ADR-113) — pure `scannabilityWarnings(style)` flags low contrast /
 >   inverted / small quiet-zone / risky-logo as an advisory banner in the editor before printing.
-> • **Acquisition analytics** (ADR-111) — `summarizeAcquisition` rolls up `profiles.acquisition` into an
+> • **Acquisition analytics** (ADR-114) — `summarizeAcquisition` rolls up `profiles.acquisition` into an
 >   **Acquisition** section on the stats page: channel + source rankings, QR-vs-NFC split, per-code
 >   scan→signup conversion. Cashes in the ADR-104/107 data.
-> • **Signed anti-spoof payloads** (ADR-112) — a "Require a signed code" toggle mints a `secret`; the code
+> • **Signed anti-spoof payloads** (ADR-115) — a "Require a signed code" toggle mints a `secret`; the code
 >   URL carries `?s=` everywhere (QR/print/NFC), `/n` forwards it, `verifyCapture` rejects a mismatch — so
 >   a forged `/n/<id>` can't claim. Pairs with location-aware earning.
 
