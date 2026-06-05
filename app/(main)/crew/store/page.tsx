@@ -43,15 +43,15 @@ export default async function StorePage() {
         title="Store"
         description="Your Vault and the Gem Store in one place. Everything you earn by showing up, and what you can spend it on."
       >
-      {/* Vault + balance card */}
-      <div className="rounded-2xl border border-success/60 bg-gradient-to-r from-success-bg to-signal-bg shadow-sm p-5 mb-8">
+      {/* Vault + balance — one calm Vault module on a soft success surface. */}
+      <div className="rounded-2xl bg-success-bg/50 p-5 mb-8">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-success-bg flex items-center justify-center">
               <Gem className="w-6 h-6 text-signal-strong" />
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-signal-strong">Your Vault · Gems to spend</p>
+              <p className="text-xs font-medium text-signal-strong">Your Vault · Gems to spend</p>
               <p className="text-3xl font-bold text-success">{balance.toLocaleString()}</p>
             </div>
           </div>
@@ -76,8 +76,8 @@ export default async function StorePage() {
 
         {/* Equipped items */}
         {(equipped.border || equipped.flair || equipped.title) && (
-          <div className="mt-4 pt-3 border-t border-success/50 flex items-center gap-3 flex-wrap">
-            <span className="text-xs font-semibold uppercase tracking-wider text-signal">Equipped:</span>
+          <div className="mt-4 pt-3 border-t border-success/30 flex items-center gap-3 flex-wrap">
+            <span className="text-xs font-medium text-signal">Equipped:</span>
             {equipped.border && (
               <span className="text-xs px-2 py-0.5 rounded-md bg-success-bg text-success">
                 Border: {equipped.border.replace('ring-', '').replace('-500', '')}

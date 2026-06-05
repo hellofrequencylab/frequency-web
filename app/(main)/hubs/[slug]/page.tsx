@@ -121,7 +121,7 @@ export default async function HubPage({
           {circles.length === 0 ? (
             <EmptyState title="No circles yet." />
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-1">
               {circles.map((circle) => {
                 const pct = Math.min(100, Math.round((circle.member_count / circle.member_cap) * 100))
                 const full = circle.member_count >= circle.member_cap
@@ -130,11 +130,11 @@ export default async function HubPage({
                   <Link
                     key={circle.id}
                     href={`/circles/${circle.slug}`}
-                    className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 hover:border-primary-bg hover:bg-primary-bg/30 transition-colors"
+                    className="group flex items-center gap-3 rounded-xl px-4 py-3 transition-colors hover:bg-surface-elevated/60 motion-reduce:transition-none"
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-medium text-text">{circle.name}</span>
+                        <span className="text-sm font-semibold text-text">{circle.name}</span>
                         <StatusBadge status={circle.status} />
                         <span className="text-xs px-1.5 py-0.5 rounded-md bg-surface-elevated text-muted font-medium">
                           {circle.type}
@@ -146,7 +146,7 @@ export default async function HubPage({
                         </p>
                       )}
                       <div className="mt-1.5 flex items-center gap-2">
-                        <span className="text-xs text-subtle">
+                        <span className="text-xs text-subtle tabular-nums">
                           {circle.member_count} / {circle.member_cap}
                         </span>
                         <div className="h-1 w-20 rounded-full bg-surface-elevated overflow-hidden">
@@ -157,7 +157,7 @@ export default async function HubPage({
                         </div>
                       </div>
                     </div>
-                    <span className="text-xs text-subtle">→</span>
+                    <span className="text-subtle transition-colors group-hover:text-text">→</span>
                   </Link>
                 )
               })}

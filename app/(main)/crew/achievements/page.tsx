@@ -10,6 +10,7 @@ import { TIER_CONFIG, CATEGORY_CONFIG } from '@/lib/gamification'
 import type { AchievementCategory, AchievementTier } from '@/lib/gamification'
 import { IndexTemplate } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
+import { SectionHeader } from '@/components/ui/section-header'
 
 const ICON_MAP: Record<string, React.ElementType> = {
   award: Award,
@@ -94,14 +95,14 @@ export default async function AchievementsPage() {
 
           return (
             <section key={category}>
-              <div className="flex items-center gap-2 mb-3">
-                <h2 className="text-sm font-semibold text-text">
-                  {catConfig.label}
-                </h2>
-                <span className="text-xs px-1.5 py-0.5 rounded-md bg-surface-elevated text-subtle font-medium">
-                  {earned}/{items.length}
-                </span>
-              </div>
+              <SectionHeader
+                title={catConfig.label}
+                action={
+                  <span className="text-xs font-medium tabular-nums text-subtle">
+                    {earned}/{items.length}
+                  </span>
+                }
+              />
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {items.map(a => {
@@ -111,10 +112,10 @@ export default async function AchievementsPage() {
                   return (
                     <div
                       key={a.id}
-                      className={`rounded-2xl border px-4 py-3 transition-all ${
+                      className={`rounded-2xl px-4 py-3 transition-all ${
                         a.earned
-                          ? `${tier.border} ${tier.bg} shadow-sm ${tier.glow ? `shadow-md ${tier.glow}` : ''}`
-                          : 'border-border bg-surface opacity-60'
+                          ? `${tier.bg} ${tier.glow ? `shadow-sm ${tier.glow}` : ''}`
+                          : 'bg-surface-elevated/60 opacity-70'
                       }`}
                     >
                       <div className="flex items-start gap-3">
