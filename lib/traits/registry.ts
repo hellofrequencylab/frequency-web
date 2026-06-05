@@ -107,7 +107,7 @@ export const TRAIT_REGISTRY: readonly TraitDef[] = [
     systemManaged: true,
   },
 
-  // ── Tags · marketing · persona (ADR-123) ───────────────────────────────────
+  // ── Tags · marketing · persona (ADR-125) ───────────────────────────────────
   // WHO the member said they were at intake (lib/onboarding/personas.ts) — the
   // self-identified fork that routes the lead-flow marketing track and branches the
   // induction. Stamped at induction from the fq_persona cookie; the rich answer also

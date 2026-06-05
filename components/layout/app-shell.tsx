@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
 import {
   Globe,
@@ -53,6 +53,7 @@ import { UpgradeCrew } from '@/components/layout/upgrade-crew'
 import { DemoToggle } from '@/components/layout/demo-toggle'
 import { DockRevealProvider, useDockRevealed, useHoverScrollReveal } from '@/components/sidebar/dock-reveal'
 import { railFor } from '@/lib/layout/page-chrome'
+import { SearchOverlay } from '@/components/search/search-overlay'
 
 // The sidebar + community bar are built from NAV_AREAS (lib/nav-areas.ts — the
 // single source of truth shared with the permission grid). The whole menu is
@@ -1074,7 +1075,6 @@ export default function AppShell({
   demoHidden?: boolean
 }) {
   const pathname = usePathname()
-  const router = useRouter()
   const role = (profile.community_role ?? 'member') as CommunityRole
   const effectiveRealRole = realRole ?? role
   // Nav gating role: a visitor preview gates as a logged-out visitor (null).
@@ -1113,17 +1113,18 @@ export default function AppShell({
     if (drawerOpen) setDrawerOpen(false)
   }
 
-  // ⌘K / Ctrl+K → search
+  // ⌘K / Ctrl+K → open the live search overlay
+  const [searchOpen, setSearchOpen] = useState(false)
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault()
-        router.push('/search')
+        setSearchOpen(true)
       }
     }
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
-  }, [router])
+  }, [])
 
   function isActive(href: string) {
     if (href === '/marketing') return pathname === '/marketing'
@@ -1188,9 +1189,10 @@ export default function AppShell({
               hide/show seeded demo content for themselves; sized to match Search. */}
           {demoMode && <DemoToggle initialHidden={demoHidden} />}
 
-          {/* Search pill. Desktop */}
-          <Link
-            href="/search"
+          {/* Search pill — opens the live overlay. Desktop */}
+          <button
+            type="button"
+            onClick={() => setSearchOpen(true)}
             className="hidden sm:flex items-center gap-2 rounded-full border border-border bg-surface-elevated/70 pl-3 pr-2 py-1.5 text-sm text-muted hover:text-text hover:border-border-strong hover:bg-surface-elevated transition-colors"
           >
             <Search className="w-4 h-4" />
@@ -1198,16 +1200,17 @@ export default function AppShell({
             <kbd className="text-[10px] leading-none rounded px-1.5 py-1 border border-border bg-surface text-subtle">
               ⌘K
             </kbd>
-          </Link>
+          </button>
 
-          {/* Search icon. Mobile */}
-          <Link
-            href="/search"
+          {/* Search icon — opens the live overlay. Mobile */}
+          <button
+            type="button"
+            onClick={() => setSearchOpen(true)}
             aria-label="Search"
             className="sm:hidden flex items-center justify-center w-8 h-8 rounded-full text-muted hover:text-text hover:bg-surface-elevated transition-colors"
           >
             <Search className="w-5 h-5" />
-          </Link>
+          </button>
 
           {/* Community actions. Desktop: friends + messages + notifications.
               Mobile: friends + messages fold into ONE silhouette icon → Messages. */}
@@ -1321,6 +1324,9 @@ export default function AppShell({
         </div>
       </div>
       </DockRevealProvider>
+
+      {/* ── Live search overlay (⌘K or the header search) ─────────────────── */}
+      {searchOpen && <SearchOverlay onClose={() => setSearchOpen(false)} />}
 
       {/* ── Mobile edge rails (fixed overlays; bracket the feed on scroll) ─── */}
       {!hideAppNav && (

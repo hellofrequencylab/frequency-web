@@ -1,4 +1,4 @@
-// Personas — WHO is arriving, self-identified (ADR-123, docs/LEAD-FLOWS.md).
+// Personas — WHO is arriving, self-identified (ADR-125, docs/LEAD-FLOWS.md).
 //
 // The spine of the intake rework. A persona is the one answer we ask for up front
 // ("who are you?") and then carry everywhere: it routes the lead-flow marketing
@@ -20,7 +20,7 @@ export const DEFAULT_PERSONA: PersonaId = 'visitor'
 
 /** The marketing track a persona is routed to — what we *show* them and where
  *  "Learn more" points (an existing pillar page for now; dedicated track pages
- *  are future work, see ADR-123). */
+ *  are future work, see ADR-125). */
 export interface PersonaTrack {
   /** One-line promise on the lead-flow card + the induction payoff. */
   headline: string

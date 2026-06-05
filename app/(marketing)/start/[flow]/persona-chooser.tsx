@@ -1,6 +1,6 @@
 'use client'
 
-// The persona picker for a lead flow (ADR-123). The visitor tells us who they are;
+// The persona picker for a lead flow (ADR-125). The visitor tells us who they are;
 // we route them into the beta induction carrying that persona (?persona=), and —
 // for capture-style flows — record the lead first so the signal survives a bounce.
 // Client island under the server splash (page.tsx); the cards resolve from the

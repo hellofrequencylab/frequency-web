@@ -1,12 +1,12 @@
 'use server'
 
-// Lead-flow capture (ADR-123, docs/LEAD-FLOWS.md). Records WHO a visitor said they
+// Lead-flow capture (ADR-125, docs/LEAD-FLOWS.md). Records WHO a visitor said they
 // were — their persona — as a `contacts` lead the moment they pick, so we have the
 // marketing signal even if they bounce before signing up. Email is optional: a
 // route-only lead flow (captureEmail:false) just carries the persona into the
 // induction via the URL, and there's nothing to write here. Mirrors the contacts
 // upsert in (marketing)/beta/actions.ts but does NOT send an email (no persona
-// nurture series exists yet — see ADR-123 follow-ups), so we never mis-mail.
+// nurture series exists yet — see ADR-125 follow-ups), so we never mis-mail.
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
