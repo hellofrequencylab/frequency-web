@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { atLeastRole } from '@/lib/core/roles'
@@ -12,10 +13,12 @@ async function requireJanitor() {
   if (!caller || !atLeastRole(caller.community_role, 'janitor')) throw new Error('Unauthorized')
 }
 
-// Demo content lives on five tables (see docs/DEMO-SYSTEM.md). Purge deletes
+// Demo content lives across these tables (see docs/DEMO-SYSTEM.md). Purge deletes
 // children before parents so FK constraints are satisfied regardless of cascade
-// behaviour; dependent rows (reactions, memberships, RSVPs) cascade from these.
-const DEMO_TABLES = ['posts', 'events', 'practices', 'circles', 'profiles'] as const
+// behaviour; dependent rows (reactions, memberships, RSVPs, friendships, dispatches,
+// wall posts) cascade from these. `hubs` come AFTER `circles` (circles.hub_id is
+// NO ACTION) and BEFORE `profiles` (hubs.guide_id is SET NULL, not cascade).
+const DEMO_TABLES = ['posts', 'events', 'practices', 'circles', 'hubs', 'profiles'] as const
 
 // Flip the global demo switch. Reversible — hides/shows all is_demo content at
 // once via the gating in lib/platform-flags.ts + the feed RPCs.
@@ -38,7 +41,8 @@ export async function purgeDemoContent() {
   const caller = await getCallerProfile()
   if (!caller || !atLeastRole(caller.community_role, 'janitor')) throw new Error('Unauthorized')
 
-  const admin = createAdminClient()
+  // Untyped cast: hubs.is_demo isn't in the generated types yet (cast pattern).
+  const admin = createAdminClient() as unknown as SupabaseClient
   // Demo journeys have no is_demo flag and author_id is ON DELETE SET NULL, so
   // remove plans by their demo author BEFORE the profiles go (items + adoptions
   // cascade from the plan).

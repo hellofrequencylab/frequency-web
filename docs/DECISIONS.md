@@ -2883,6 +2883,44 @@ obvious next iterations. Regenerate DB types to drop the untyped casts later.
 
 ---
 
+## ADR-103: Seed Studio generates a naturally-grown neighborhood (hub/guide, walls, friendships, dispatches)
+
+**Status:** Accepted · `lib/demo/engine.ts`, `lib/demo/decay.ts`, `app/(main)/admin/demo/**`, `supabase/migrations/20260605090000_hubs_is_demo.sql`. Extends ADR-091/092/093.
+
+**Context.** The Seed Studio produced circles + in-circle conversation + events +
+practices + journeys, but the result read as isolated circles, not a *community*.
+It set no `circles.host_id`, had no Hub/Guide layer, no cross-circle wall/feed
+chatter, no friendship graph, and no Dispatches — so the seeded area didn't look
+like it had grown naturally.
+
+**Decision.** Rebuild the generation engine to write the full social web, on-brand
+with Frequency's voice ("show up", "your people", "be missed"):
+- **Hierarchy:** one **Hub** (neighborhood) run by a **Guide** (`community_role='guide'`),
+  over the circles, each with its **Host** now stamped on `circles.host_id`. The
+  Guide is a member of the first circle and knows every Host.
+- **Walls & feed:** members write on each other's **walls** (public posts scoped to a
+  profile) and post to the **public feed** — the cross-circle chatter.
+- **Friendships:** an accepted friendship graph (within-circle, cross-circle bridges,
+  Guide↔Hosts), canonical-ordered to satisfy the `user_a_id < user_b_id` constraint.
+- **Dispatches:** published broadcasts from Hosts (circle scope, incl. event promos)
+  and the Guide (hub scope).
+- Richer, deterministic content corpus + event descriptions.
+
+**Teardown.** `dispatches`, `friendships`, and wall posts are all `ON DELETE CASCADE`
+from the demo author, so purging the demo profiles sweeps them. `hubs` had no
+`is_demo` and `guide_id` is `SET NULL` (not cascade), so a purged guide would orphan
+its hub — fixed by adding **`hubs.is_demo`** and deleting demo hubs *after* their
+circles (`circles.hub_id` is `NO ACTION`) and *before* profiles, in both purge paths;
+the nightly decay also sweeps orphaned demo hubs. The new column isn't in the
+generated DB types yet, so the purge code uses the untyped-client cast.
+
+**Consequences.** A seeded area now reads as a lived-in neighborhood with leadership,
+relationships, and broadcasts — not a set of disconnected circles. Determinism and
+the unobtrusive contract (no automations, pre-stamped reminders, zero-reward
+achievements) are preserved. Regenerate DB types to drop the `hubs.is_demo` cast later.
+
+---
+
 ---
 ### Decisions intentionally NOT duplicated here
 

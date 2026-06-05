@@ -16,6 +16,7 @@
 // Reused by the nightly cron (app/api/cron/demo-decay) and an admin dry-run.
 // Deletes only; idempotent; converges. dryRun reports without writing.
 
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { deletePlansByAuthors } from '@/lib/journey-plans'
 import { isoDaysAgo } from '@/lib/utils'
@@ -112,6 +113,17 @@ export async function runDecay({ dryRun }: { dryRun: boolean }): Promise<DecayRe
         report.prunedCircles++
       }
     }
+  }
+
+  // Clean up demo hubs whose circles have all decayed away (orphaned hub —
+  // hubs.is_demo isn't in the generated types yet, so go through an untyped cast).
+  if (!dryRun) {
+    const du = d as unknown as SupabaseClient
+    const { data: hubCircles } = await du.from('circles').select('hub_id').not('hub_id', 'is', null)
+    const liveHubIds = new Set((hubCircles ?? []).map((c: { hub_id: string }) => c.hub_id))
+    const { data: demoHubs } = await du.from('hubs').select('id').eq('is_demo', true)
+    const orphanHubs = ((demoHubs ?? []) as { id: string }[]).map((h) => h.id).filter((id) => !liveHubIds.has(id))
+    if (orphanHubs.length) await du.from('hubs').delete().in('id', orphanHubs)
   }
 
   // ── (B) Neighbour decay on real circles carrying demo members ───────────
