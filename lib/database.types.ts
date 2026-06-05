@@ -470,6 +470,42 @@ export type Database = {
           },
         ]
       }
+      challenge_qr_codes: {
+        Row: {
+          challenge_id: string
+          created_at: string
+          id: string
+          qr_code_id: string
+        }
+        Insert: {
+          challenge_id: string
+          created_at?: string
+          id?: string
+          qr_code_id: string
+        }
+        Update: {
+          challenge_id?: string
+          created_at?: string
+          id?: string
+          qr_code_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_qr_codes_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "season_challenges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_qr_codes_qr_code_id_fkey"
+            columns: ["qr_code_id"]
+            isOneToOne: false
+            referencedRelation: "qr_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       channel_memberships: {
         Row: {
           channel_id: string
@@ -600,6 +636,13 @@ export type Database = {
             columns: ["practice_id"]
             isOneToOne: false
             referencedRelation: "practices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "circle_practices_practice_id_fkey"
+            columns: ["practice_id"]
+            isOneToOne: false
+            referencedRelation: "practices_ranked"
             referencedColumns: ["id"]
           },
           {
@@ -826,6 +869,38 @@ export type Database = {
           },
         ]
       }
+      content_ratings: {
+        Row: {
+          content_id: string
+          content_type: string
+          created_at: string
+          id: string
+          profile_id: string
+        }
+        Insert: {
+          content_id: string
+          content_type: string
+          created_at?: string
+          id?: string
+          profile_id: string
+        }
+        Update: {
+          content_id?: string
+          content_type?: string
+          created_at?: string
+          id?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_ratings_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversation_participants: {
         Row: {
           conversation_id: string
@@ -862,23 +937,59 @@ export type Database = {
           },
         ]
       }
+      conversation_room_migration: {
+        Row: {
+          conversation_id: string
+          migrated_at: string
+          room_id: string
+        }
+        Insert: {
+          conversation_id: string
+          migrated_at?: string
+          room_id: string
+        }
+        Update: {
+          conversation_id?: string
+          migrated_at?: string
+          room_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_room_migration_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: true
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_room_migration_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversations: {
         Row: {
           created_at: string
           created_by: string | null
           id: string
+          migrated_to_room_id: string | null
           name: string | null
         }
         Insert: {
           created_at?: string
           created_by?: string | null
           id?: string
+          migrated_to_room_id?: string | null
           name?: string | null
         }
         Update: {
           created_at?: string
           created_by?: string | null
           id?: string
+          migrated_to_room_id?: string | null
           name?: string | null
         }
         Relationships: [
@@ -887,6 +998,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_migrated_to_room_id_fkey"
+            columns: ["migrated_to_room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
             referencedColumns: ["id"]
           },
         ]
@@ -967,6 +1085,184 @@ export type Database = {
           requires_verification?: boolean | null
           task_type?: string
           zaps_value?: number | null
+        }
+        Relationships: []
+      }
+      crm_activities: {
+        Row: {
+          body: string
+          completed_at: string | null
+          contact_id: string | null
+          created_at: string
+          created_by: string | null
+          deal_id: string | null
+          due_at: string | null
+          id: string
+          kind: string
+        }
+        Insert: {
+          body?: string
+          completed_at?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deal_id?: string | null
+          due_at?: string | null
+          id?: string
+          kind?: string
+        }
+        Update: {
+          body?: string
+          completed_at?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deal_id?: string | null
+          due_at?: string | null
+          id?: string
+          kind?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_activities_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_activities_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_activities_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "crm_deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_deals: {
+        Row: {
+          closed_at: string | null
+          contact_id: string | null
+          contact_name: string | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          expected_close_date: string | null
+          id: string
+          owner_id: string | null
+          profile_id: string | null
+          sort_order: number
+          source: string | null
+          stage_id: string | null
+          status: string
+          title: string
+          updated_at: string
+          value: number
+        }
+        Insert: {
+          closed_at?: string | null
+          contact_id?: string | null
+          contact_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          expected_close_date?: string | null
+          id?: string
+          owner_id?: string | null
+          profile_id?: string | null
+          sort_order?: number
+          source?: string | null
+          stage_id?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          value?: number
+        }
+        Update: {
+          closed_at?: string | null
+          contact_id?: string | null
+          contact_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          expected_close_date?: string | null
+          id?: string
+          owner_id?: string | null
+          profile_id?: string | null
+          sort_order?: number
+          source?: string | null
+          stage_id?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_deals_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_deals_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_deals_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_deals_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_deals_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "crm_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_stages: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind?: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          name?: string
+          sort_order?: number
         }
         Relationships: []
       }
@@ -1118,7 +1414,7 @@ export type Database = {
       }
       dispatches: {
         Row: {
-          audience_id: string
+          audience_id: string | null
           audience_scope: string
           author_id: string
           body: string
@@ -1136,7 +1432,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          audience_id: string
+          audience_id?: string | null
           audience_scope: string
           author_id: string
           body: string
@@ -1154,7 +1450,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          audience_id?: string
+          audience_id?: string | null
           audience_scope?: string
           author_id?: string
           body?: string
@@ -1311,6 +1607,47 @@ export type Database = {
           {
             foreignKeyName: "engagement_events_actor_profile_id_fkey"
             columns: ["actor_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entry_campaigns: {
+        Row: {
+          created_at: string
+          goal: string | null
+          id: string
+          name: string
+          owner_profile_id: string | null
+          status: string
+          template_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          goal?: string | null
+          id?: string
+          name: string
+          owner_profile_id?: string | null
+          status?: string
+          template_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          goal?: string | null
+          id?: string
+          name?: string
+          owner_profile_id?: string | null
+          status?: string
+          template_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entry_campaigns_owner_profile_id_fkey"
+            columns: ["owner_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1592,6 +1929,7 @@ export type Database = {
           created_at: string | null
           guide_id: string | null
           id: string
+          is_demo: boolean
           name: string
           nexus_id: string | null
           slug: string
@@ -1601,6 +1939,7 @@ export type Database = {
           created_at?: string | null
           guide_id?: string | null
           id?: string
+          is_demo?: boolean
           name: string
           nexus_id?: string | null
           slug: string
@@ -1610,6 +1949,7 @@ export type Database = {
           created_at?: string | null
           guide_id?: string | null
           id?: string
+          is_demo?: boolean
           name?: string
           nexus_id?: string | null
           slug?: string
@@ -1683,6 +2023,183 @@ export type Database = {
           },
         ]
       }
+      journey_plan_adoptions: {
+        Row: {
+          active: boolean
+          adopted_at: string
+          id: string
+          plan_id: string
+          profile_id: string
+        }
+        Insert: {
+          active?: boolean
+          adopted_at?: string
+          id?: string
+          plan_id: string
+          profile_id: string
+        }
+        Update: {
+          active?: boolean
+          adopted_at?: string
+          id?: string
+          plan_id?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey_plan_adoptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "journey_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_plan_adoptions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journey_plan_items: {
+        Row: {
+          cadence: string | null
+          domain_id: string | null
+          id: string
+          note: string | null
+          plan_id: string
+          practice_id: string
+          sort_order: number
+        }
+        Insert: {
+          cadence?: string | null
+          domain_id?: string | null
+          id?: string
+          note?: string | null
+          plan_id: string
+          practice_id: string
+          sort_order?: number
+        }
+        Update: {
+          cadence?: string | null
+          domain_id?: string | null
+          id?: string
+          note?: string | null
+          plan_id?: string
+          practice_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey_plan_items_domain_id_fkey"
+            columns: ["domain_id"]
+            isOneToOne: false
+            referencedRelation: "domains"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_plan_items_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "journey_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_plan_items_practice_id_fkey"
+            columns: ["practice_id"]
+            isOneToOne: false
+            referencedRelation: "practices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_plan_items_practice_id_fkey"
+            columns: ["practice_id"]
+            isOneToOne: false
+            referencedRelation: "practices_ranked"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journey_plans: {
+        Row: {
+          adopt_count: number
+          author_id: string | null
+          cover_image: string | null
+          created_at: string
+          fork_of: string | null
+          forked_count: number
+          id: string
+          published_at: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          slug: string
+          status: string
+          summary: string | null
+          title: string
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          adopt_count?: number
+          author_id?: string | null
+          cover_image?: string | null
+          created_at?: string
+          fork_of?: string | null
+          forked_count?: number
+          id?: string
+          published_at?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          slug: string
+          status?: string
+          summary?: string | null
+          title: string
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          adopt_count?: number
+          author_id?: string | null
+          cover_image?: string | null
+          created_at?: string
+          fork_of?: string | null
+          forked_count?: number
+          id?: string
+          published_at?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          slug?: string
+          status?: string
+          summary?: string | null
+          title?: string
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey_plans_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_plans_fork_of_fkey"
+            columns: ["fork_of"]
+            isOneToOne: false
+            referencedRelation: "journey_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_plans_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       member_practices: {
         Row: {
           active: boolean
@@ -1711,6 +2228,13 @@ export type Database = {
             columns: ["practice_id"]
             isOneToOne: false
             referencedRelation: "practices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_practices_practice_id_fkey"
+            columns: ["practice_id"]
+            isOneToOne: false
+            referencedRelation: "practices_ranked"
             referencedColumns: ["id"]
           },
           {
@@ -1904,6 +2428,171 @@ export type Database = {
           },
         ]
       }
+      network_contact_notes: {
+        Row: {
+          author_id: string | null
+          body: string
+          contact_id: string
+          created_at: string
+          id: string
+          kind: string
+        }
+        Insert: {
+          author_id?: string | null
+          body: string
+          contact_id: string
+          created_at?: string
+          id?: string
+          kind?: string
+        }
+        Update: {
+          author_id?: string | null
+          body?: string
+          contact_id?: string
+          created_at?: string
+          id?: string
+          kind?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "network_contact_notes_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "network_contact_notes_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "network_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      network_contact_tags: {
+        Row: {
+          contact_id: string
+          created_at: string
+          id: string
+          source: string
+          tag: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string
+          id?: string
+          source?: string
+          tag: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string
+          id?: string
+          source?: string
+          tag?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "network_contact_tags_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "network_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      network_contacts: {
+        Row: {
+          avatar_path: string | null
+          city: string | null
+          company: string | null
+          created_at: string
+          display_name: string | null
+          email: string | null
+          extraction: Json
+          id: string
+          invited_at: string | null
+          linked_contact_id: string | null
+          linked_profile_id: string | null
+          owner_id: string
+          phone: string | null
+          socials: Json
+          source: string
+          status: string
+          title: string | null
+          updated_at: string
+          visibility: string
+          website: string | null
+        }
+        Insert: {
+          avatar_path?: string | null
+          city?: string | null
+          company?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          extraction?: Json
+          id?: string
+          invited_at?: string | null
+          linked_contact_id?: string | null
+          linked_profile_id?: string | null
+          owner_id: string
+          phone?: string | null
+          socials?: Json
+          source?: string
+          status?: string
+          title?: string | null
+          updated_at?: string
+          visibility?: string
+          website?: string | null
+        }
+        Update: {
+          avatar_path?: string | null
+          city?: string | null
+          company?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          extraction?: Json
+          id?: string
+          invited_at?: string | null
+          linked_contact_id?: string | null
+          linked_profile_id?: string | null
+          owner_id?: string
+          phone?: string | null
+          socials?: Json
+          source?: string
+          status?: string
+          title?: string | null
+          updated_at?: string
+          visibility?: string
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "network_contacts_linked_contact_id_fkey"
+            columns: ["linked_contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "network_contacts_linked_profile_id_fkey"
+            columns: ["linked_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "network_contacts_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       nexus_regions: {
         Row: {
           created_at: string | null
@@ -2078,197 +2767,6 @@ export type Database = {
           },
         ]
       }
-      challenge_qr_codes: {
-        Row: {
-          challenge_id: string
-          created_at: string
-          id: string
-          qr_code_id: string
-        }
-        Insert: {
-          challenge_id: string
-          created_at?: string
-          id?: string
-          qr_code_id: string
-        }
-        Update: {
-          challenge_id?: string
-          created_at?: string
-          id?: string
-          qr_code_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "challenge_qr_codes_challenge_id_fkey"
-            columns: ["challenge_id"]
-            isOneToOne: false
-            referencedRelation: "season_challenges"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "challenge_qr_codes_qr_code_id_fkey"
-            columns: ["qr_code_id"]
-            isOneToOne: false
-            referencedRelation: "qr_codes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      qr_codes: {
-        Row: {
-          active: boolean
-          created_at: string
-          created_by: string | null
-          destination_type: string
-          id: string
-          node_id: string | null
-          owner_profile_id: string | null
-          partner_id: string | null
-          purpose: string | null
-          alt_target_url: string | null
-          circle_id: string | null
-          event_id: string | null
-          switch_at: string | null
-          scan_count: number
-          slug: string
-          source_tag: string | null
-          style: Json
-          target_url: string | null
-          title: string
-          updated_at: string
-          valid_from: string | null
-          valid_until: string | null
-        }
-        Insert: {
-          active?: boolean
-          created_at?: string
-          created_by?: string | null
-          destination_type?: string
-          id?: string
-          node_id?: string | null
-          owner_profile_id?: string | null
-          partner_id?: string | null
-          purpose?: string | null
-          alt_target_url?: string | null
-          circle_id?: string | null
-          event_id?: string | null
-          switch_at?: string | null
-          scan_count?: number
-          slug: string
-          source_tag?: string | null
-          style?: Json
-          target_url?: string | null
-          title: string
-          updated_at?: string
-          valid_from?: string | null
-          valid_until?: string | null
-        }
-        Update: {
-          active?: boolean
-          created_at?: string
-          created_by?: string | null
-          destination_type?: string
-          id?: string
-          node_id?: string | null
-          owner_profile_id?: string | null
-          partner_id?: string | null
-          purpose?: string | null
-          alt_target_url?: string | null
-          circle_id?: string | null
-          event_id?: string | null
-          switch_at?: string | null
-          scan_count?: number
-          slug?: string
-          source_tag?: string | null
-          style?: Json
-          target_url?: string | null
-          title?: string
-          updated_at?: string
-          valid_from?: string | null
-          valid_until?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "qr_codes_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "qr_codes_node_id_fkey"
-            columns: ["node_id"]
-            isOneToOne: false
-            referencedRelation: "nodes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "qr_codes_owner_profile_id_fkey"
-            columns: ["owner_profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "qr_codes_partner_id_fkey"
-            columns: ["partner_id"]
-            isOneToOne: false
-            referencedRelation: "partners"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      qr_scans: {
-        Row: {
-          city: string | null
-          country: string | null
-          id: string
-          lat: number | null
-          lng: number | null
-          medium: string
-          profile_id: string | null
-          qr_code_id: string
-          scanned_at: string
-        }
-        Insert: {
-          city?: string | null
-          country?: string | null
-          id?: string
-          lat?: number | null
-          lng?: number | null
-          medium?: string
-          profile_id?: string | null
-          qr_code_id: string
-          scanned_at?: string
-        }
-        Update: {
-          city?: string | null
-          country?: string | null
-          id?: string
-          lat?: number | null
-          lng?: number | null
-          medium?: string
-          profile_id?: string | null
-          qr_code_id?: string
-          scanned_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "qr_scans_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "qr_scans_qr_code_id_fkey"
-            columns: ["qr_code_id"]
-            isOneToOne: false
-            referencedRelation: "qr_codes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       notification_preferences: {
         Row: {
           created_at: string
@@ -2417,6 +2915,141 @@ export type Database = {
             columns: ["recipient_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nurture_enrollments: {
+        Row: {
+          contact_id: string
+          created_at: string
+          email: string
+          enrolled_at: string
+          id: string
+          last_sent_at: string | null
+          next_run_at: string
+          next_step_order: number
+          persona: string
+          sequence_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string
+          email: string
+          enrolled_at?: string
+          id?: string
+          last_sent_at?: string | null
+          next_run_at?: string
+          next_step_order?: number
+          persona: string
+          sequence_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string
+          email?: string
+          enrolled_at?: string
+          id?: string
+          last_sent_at?: string | null
+          next_run_at?: string
+          next_step_order?: number
+          persona?: string
+          sequence_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nurture_enrollments_sequence_id_fkey"
+            columns: ["sequence_id"]
+            isOneToOne: false
+            referencedRelation: "nurture_sequences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nurture_sequences: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          enabled: boolean
+          id: string
+          name: string
+          persona: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          enabled?: boolean
+          id?: string
+          name: string
+          persona: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          enabled?: boolean
+          id?: string
+          name?: string
+          persona?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nurture_sequences_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nurture_steps: {
+        Row: {
+          body: string
+          created_at: string
+          delay_hours: number
+          enabled: boolean
+          id: string
+          sequence_id: string
+          step_order: number
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          delay_hours?: number
+          enabled?: boolean
+          id?: string
+          sequence_id: string
+          step_order?: number
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          delay_hours?: number
+          enabled?: boolean
+          id?: string
+          sequence_id?: string
+          step_order?: number
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nurture_steps_sequence_id_fkey"
+            columns: ["sequence_id"]
+            isOneToOne: false
+            referencedRelation: "nurture_sequences"
             referencedColumns: ["id"]
           },
         ]
@@ -2659,6 +3292,44 @@ export type Database = {
           },
         ]
       }
+      platform_flag_events: {
+        Row: {
+          changed_by: string | null
+          created_at: string
+          flag_key: string
+          id: string
+          previous: boolean | null
+          source: string
+          value: boolean
+        }
+        Insert: {
+          changed_by?: string | null
+          created_at?: string
+          flag_key: string
+          id?: string
+          previous?: boolean | null
+          source?: string
+          value: boolean
+        }
+        Update: {
+          changed_by?: string | null
+          created_at?: string
+          flag_key?: string
+          id?: string
+          previous?: boolean | null
+          source?: string
+          value?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_flag_events_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_flags: {
         Row: {
           key: string
@@ -2881,10 +3552,156 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "practice_logs_practice_id_fkey"
+            columns: ["practice_id"]
+            isOneToOne: false
+            referencedRelation: "practices_ranked"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "practice_logs_profile_id_fkey"
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      practice_subcategories: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_order: number
+          domain_id: string
+          id: string
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          domain_id: string
+          id?: string
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          domain_id?: string
+          id?: string
+          name?: string
+          slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_subcategories_domain_id_fkey"
+            columns: ["domain_id"]
+            isOneToOne: false
+            referencedRelation: "domains"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      practice_tag_defs: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          domain_id: string | null
+          id: string
+          is_canonical: boolean
+          label: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          domain_id?: string | null
+          id?: string
+          is_canonical?: boolean
+          label: string
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          domain_id?: string | null
+          id?: string
+          is_canonical?: boolean
+          label?: string
+          slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_tag_defs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_tag_defs_domain_id_fkey"
+            columns: ["domain_id"]
+            isOneToOne: false
+            referencedRelation: "domains"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      practice_tags: {
+        Row: {
+          assigned_by: string | null
+          created_at: string
+          id: string
+          practice_id: string
+          source: string
+          tag_id: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          created_at?: string
+          id?: string
+          practice_id: string
+          source?: string
+          tag_id: string
+        }
+        Update: {
+          assigned_by?: string | null
+          created_at?: string
+          id?: string
+          practice_id?: string
+          source?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_tags_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_tags_practice_id_fkey"
+            columns: ["practice_id"]
+            isOneToOne: false
+            referencedRelation: "practices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_tags_practice_id_fkey"
+            columns: ["practice_id"]
+            isOneToOne: false
+            referencedRelation: "practices_ranked"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "practice_tag_defs"
             referencedColumns: ["id"]
           },
         ]
@@ -2898,13 +3715,19 @@ export type Database = {
           created_by: string | null
           description: string | null
           domain_id: string | null
+          embedding: string | null
           header_image: string | null
           icon: string
           id: string
           is_demo: boolean
           is_public: boolean
+          is_template: boolean
+          reviewed_at: string | null
+          reviewed_by: string | null
           reward_note: string | null
           reward_zaps: number | null
+          status: string
+          subcategory_id: string | null
           summary: string | null
           title: string
         }
@@ -2916,13 +3739,19 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           domain_id?: string | null
+          embedding?: string | null
           header_image?: string | null
           icon?: string
           id?: string
           is_demo?: boolean
           is_public?: boolean
+          is_template?: boolean
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           reward_note?: string | null
           reward_zaps?: number | null
+          status?: string
+          subcategory_id?: string | null
           summary?: string | null
           title: string
         }
@@ -2934,13 +3763,19 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           domain_id?: string | null
+          embedding?: string | null
           header_image?: string | null
           icon?: string
           id?: string
           is_demo?: boolean
           is_public?: boolean
+          is_template?: boolean
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           reward_note?: string | null
           reward_zaps?: number | null
+          status?: string
+          subcategory_id?: string | null
           summary?: string | null
           title?: string
         }
@@ -2959,11 +3794,26 @@ export type Database = {
             referencedRelation: "domains"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "practices_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practices_subcategory_id_fkey"
+            columns: ["subcategory_id"]
+            isOneToOne: false
+            referencedRelation: "practice_subcategories"
+            referencedColumns: ["id"]
+          },
         ]
       }
       profiles: {
         Row: {
           achievement_count: number
+          acquisition: Json | null
           auth_user_id: string | null
           avatar_url: string | null
           bio: string | null
@@ -2978,7 +3828,14 @@ export type Database = {
           display_name: string
           embedding: string | null
           entity_types: string[] | null
+          feed_radius_m: number
           handle: string
+          header_image_url: string | null
+          home_geog: unknown
+          home_label: string | null
+          home_lat: number | null
+          home_lng: number | null
+          home_timezone: string | null
           id: string
           is_active: boolean | null
           is_crew_lead: boolean | null
@@ -2987,26 +3844,30 @@ export type Database = {
           last_seen_at: string | null
           lifetime_gems: number
           lifetime_zaps: number
+          live_lat: number | null
+          live_lng: number | null
+          live_updated_at: string | null
+          location_mode: string
           longest_streak: number
           meta: Json | null
-          acquisition: Json | null
           nexus_region_id: string | null
-          referred_by_profile_id: string | null
-          vcard: Json
           phone: string | null
           profile_border: string | null
           profile_flair: string | null
           profile_theme: string | null
+          referred_by_profile_id: string | null
           season_challenges_complete: boolean
           suspended_at: string | null
           suspended_by: string | null
           suspended_reason: string | null
           suspended_until: string | null
           updated_at: string | null
+          vcard: Json
           website: string | null
         }
         Insert: {
           achievement_count?: number
+          acquisition?: Json | null
           auth_user_id?: string | null
           avatar_url?: string | null
           bio?: string | null
@@ -3021,7 +3882,14 @@ export type Database = {
           display_name: string
           embedding?: string | null
           entity_types?: string[] | null
+          feed_radius_m?: number
           handle: string
+          header_image_url?: string | null
+          home_geog?: unknown
+          home_label?: string | null
+          home_lat?: number | null
+          home_lng?: number | null
+          home_timezone?: string | null
           id?: string
           is_active?: boolean | null
           is_crew_lead?: boolean | null
@@ -3030,26 +3898,30 @@ export type Database = {
           last_seen_at?: string | null
           lifetime_gems?: number
           lifetime_zaps?: number
+          live_lat?: number | null
+          live_lng?: number | null
+          live_updated_at?: string | null
+          location_mode?: string
           longest_streak?: number
           meta?: Json | null
-          acquisition?: Json | null
           nexus_region_id?: string | null
-          referred_by_profile_id?: string | null
-          vcard?: Json
           phone?: string | null
           profile_border?: string | null
           profile_flair?: string | null
           profile_theme?: string | null
+          referred_by_profile_id?: string | null
           season_challenges_complete?: boolean
           suspended_at?: string | null
           suspended_by?: string | null
           suspended_reason?: string | null
           suspended_until?: string | null
           updated_at?: string | null
+          vcard?: Json
           website?: string | null
         }
         Update: {
           achievement_count?: number
+          acquisition?: Json | null
           auth_user_id?: string | null
           avatar_url?: string | null
           bio?: string | null
@@ -3064,7 +3936,14 @@ export type Database = {
           display_name?: string
           embedding?: string | null
           entity_types?: string[] | null
+          feed_radius_m?: number
           handle?: string
+          header_image_url?: string | null
+          home_geog?: unknown
+          home_label?: string | null
+          home_lat?: number | null
+          home_lng?: number | null
+          home_timezone?: string | null
           id?: string
           is_active?: boolean | null
           is_crew_lead?: boolean | null
@@ -3073,22 +3952,25 @@ export type Database = {
           last_seen_at?: string | null
           lifetime_gems?: number
           lifetime_zaps?: number
+          live_lat?: number | null
+          live_lng?: number | null
+          live_updated_at?: string | null
+          location_mode?: string
           longest_streak?: number
           meta?: Json | null
-          acquisition?: Json | null
           nexus_region_id?: string | null
-          referred_by_profile_id?: string | null
-          vcard?: Json
           phone?: string | null
           profile_border?: string | null
           profile_flair?: string | null
           profile_theme?: string | null
+          referred_by_profile_id?: string | null
           season_challenges_complete?: boolean
           suspended_at?: string | null
           suspended_by?: string | null
           suspended_reason?: string | null
           suspended_until?: string | null
           updated_at?: string | null
+          vcard?: Json
           website?: string | null
         }
         Relationships: [
@@ -3100,8 +3982,123 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "profiles_referred_by_profile_id_fkey"
+            columns: ["referred_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "profiles_suspended_by_fkey"
             columns: ["suspended_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      program_adoptions: {
+        Row: {
+          created_at: string
+          id: string
+          profile_id: string
+          program_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          profile_id: string
+          program_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          profile_id?: string
+          program_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "program_adoptions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "program_adoptions_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      programs: {
+        Row: {
+          adopt_count: number
+          author_id: string | null
+          body: string | null
+          cover_image: string | null
+          created_at: string
+          id: string
+          is_demo: boolean
+          pillar: string | null
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          slug: string
+          status: string
+          summary: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          adopt_count?: number
+          author_id?: string | null
+          body?: string | null
+          cover_image?: string | null
+          created_at?: string
+          id?: string
+          is_demo?: boolean
+          pillar?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          slug: string
+          status?: string
+          summary?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          adopt_count?: number
+          author_id?: string | null
+          body?: string | null
+          cover_image?: string | null
+          created_at?: string
+          id?: string
+          is_demo?: boolean
+          pillar?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          slug?: string
+          status?: string
+          summary?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "programs_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programs_reviewed_by_fkey"
+            columns: ["reviewed_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -3145,6 +4142,191 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      qr_codes: {
+        Row: {
+          active: boolean
+          alt_target_url: string | null
+          campaign_id: string | null
+          circle_id: string | null
+          created_at: string
+          created_by: string | null
+          destination_type: string
+          event_id: string | null
+          flyer: Json
+          id: string
+          node_id: string | null
+          owner_profile_id: string | null
+          partner_id: string | null
+          purpose: string | null
+          scan_count: number
+          slug: string
+          source_tag: string | null
+          style: Json
+          switch_at: string | null
+          target_url: string | null
+          template_id: string | null
+          title: string
+          updated_at: string
+          valid_from: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          active?: boolean
+          alt_target_url?: string | null
+          campaign_id?: string | null
+          circle_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          destination_type?: string
+          event_id?: string | null
+          flyer?: Json
+          id?: string
+          node_id?: string | null
+          owner_profile_id?: string | null
+          partner_id?: string | null
+          purpose?: string | null
+          scan_count?: number
+          slug: string
+          source_tag?: string | null
+          style?: Json
+          switch_at?: string | null
+          target_url?: string | null
+          template_id?: string | null
+          title: string
+          updated_at?: string
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          active?: boolean
+          alt_target_url?: string | null
+          campaign_id?: string | null
+          circle_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          destination_type?: string
+          event_id?: string | null
+          flyer?: Json
+          id?: string
+          node_id?: string | null
+          owner_profile_id?: string | null
+          partner_id?: string | null
+          purpose?: string | null
+          scan_count?: number
+          slug?: string
+          source_tag?: string | null
+          style?: Json
+          switch_at?: string | null
+          target_url?: string | null
+          template_id?: string | null
+          title?: string
+          updated_at?: string
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qr_codes_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "entry_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_codes_circle_id_fkey"
+            columns: ["circle_id"]
+            isOneToOne: false
+            referencedRelation: "circles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_codes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_codes_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_codes_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_codes_owner_profile_id_fkey"
+            columns: ["owner_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_codes_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      qr_scans: {
+        Row: {
+          city: string | null
+          country: string | null
+          id: string
+          lat: number | null
+          lng: number | null
+          medium: string
+          profile_id: string | null
+          qr_code_id: string
+          scanned_at: string
+        }
+        Insert: {
+          city?: string | null
+          country?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          medium?: string
+          profile_id?: string | null
+          qr_code_id: string
+          scanned_at?: string
+        }
+        Update: {
+          city?: string | null
+          country?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          medium?: string
+          profile_id?: string | null
+          qr_code_id?: string
+          scanned_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qr_scans_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_scans_qr_code_id_fkey"
+            columns: ["qr_code_id"]
+            isOneToOne: false
+            referencedRelation: "qr_codes"
             referencedColumns: ["id"]
           },
         ]
@@ -3369,6 +4551,7 @@ export type Database = {
           author_id: string
           body: string
           created_at: string
+          embedding: string | null
           id: string
           media_url: string | null
           parent_id: string | null
@@ -3378,6 +4561,7 @@ export type Database = {
           author_id: string
           body: string
           created_at?: string
+          embedding?: string | null
           id?: string
           media_url?: string | null
           parent_id?: string | null
@@ -3387,6 +4571,7 @@ export type Database = {
           author_id?: string
           body?: string
           created_at?: string
+          embedding?: string | null
           id?: string
           media_url?: string | null
           parent_id?: string | null
@@ -3419,7 +4604,7 @@ export type Database = {
       rooms: {
         Row: {
           created_at: string
-          creator_id: string
+          creator_id: string | null
           description: string | null
           id: string
           last_message_at: string | null
@@ -3430,7 +4615,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          creator_id: string
+          creator_id?: string | null
           description?: string | null
           id?: string
           last_message_at?: string | null
@@ -3441,7 +4626,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          creator_id?: string
+          creator_id?: string | null
           description?: string | null
           id?: string
           last_message_at?: string | null
@@ -4035,6 +5220,66 @@ export type Database = {
         }
         Relationships: []
       }
+      practices_ranked: {
+        Row: {
+          adopters: number | null
+          body: string | null
+          cadence: string | null
+          category: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          domain_id: string | null
+          embedding: string | null
+          header_image: string | null
+          icon: string | null
+          id: string | null
+          is_demo: boolean | null
+          is_public: boolean | null
+          is_template: boolean | null
+          logs_30d: number | null
+          logs_total: number | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          reward_note: string | null
+          reward_zaps: number | null
+          score: number | null
+          status: string | null
+          subcategory_id: string | null
+          summary: string | null
+          title: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practices_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practices_domain_id_fkey"
+            columns: ["domain_id"]
+            isOneToOne: false
+            referencedRelation: "domains"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practices_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practices_subcategory_id_fkey"
+            columns: ["subcategory_id"]
+            isOneToOne: false
+            referencedRelation: "practice_subcategories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       _postgis_deprecate: {
@@ -4196,6 +5441,24 @@ export type Database = {
           type: string
         }[]
       }
+      community_library: {
+        Args: { _limit?: number; _pillar?: string; _type?: string }
+        Returns: {
+          adoptions: number
+          author_id: string
+          completions: number
+          content_type: string
+          cover_image: string
+          created_at: string
+          id: string
+          pillar: string
+          ratings: number
+          score: number
+          slug: string
+          summary: string
+          title: string
+        }[]
+      }
       disablelongtransactions: { Args: never; Returns: string }
       dropgeometrycolumn:
         | {
@@ -4245,12 +5508,19 @@ export type Database = {
       }
       equals: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
       feed_for_viewer: {
-        Args: { _limit?: number; _sort?: string }
+        Args: {
+          _lat?: number
+          _limit?: number
+          _lng?: number
+          _radius_m?: number
+          _sort?: string
+        }
         Returns: {
           author: Json
           body: string
           comment_count: number
           created_at: string
+          distance_m: number
           engagement_score: number
           id: string
           is_demo: boolean
@@ -4393,6 +5663,32 @@ export type Database = {
           slug: string
         }[]
       }
+      match_practices: {
+        Args: {
+          exclude_id?: string
+          match_count?: number
+          query_embedding: string
+        }
+        Returns: {
+          id: string
+          similarity: number
+          title: string
+        }[]
+      }
+      match_room_messages: {
+        Args: {
+          _room_id: string
+          match_count?: number
+          query_embedding: string
+        }
+        Returns: {
+          author_id: string
+          body: string
+          created_at: string
+          id: string
+          similarity: number
+        }[]
+      }
       member_engagement_stats: {
         Args: never
         Returns: {
@@ -4503,29 +5799,13 @@ export type Database = {
         Returns: boolean
       }
       nodes_geo: {
-        Args: Record<PropertyKey, never>
-        Returns: { id: string; lng: number; lat: number; proximity_m: number }[]
-      }
-      set_node_geo: {
-        Args: {
-          p_node_id: string
-          p_lng: number | null
-          p_lat: number | null
-          p_proximity_m: number | null
-        }
-        Returns: undefined
-      }
-      record_qr_scan: {
-        Args: {
-          p_code_id: string
-          p_profile?: string
-          p_country?: string
-          p_city?: string
-          p_lat?: number
-          p_lng?: number
-          p_medium?: string
-        }
-        Returns: undefined
+        Args: never
+        Returns: {
+          id: string
+          lat: number
+          lng: number
+          proximity_m: number
+        }[]
       }
       populate_geometry_columns:
         | { Args: { tbl_oid: unknown; use_typmod?: boolean }; Returns: number }
@@ -4662,6 +5942,18 @@ export type Database = {
           started: number
         }[]
       }
+      record_qr_scan: {
+        Args: {
+          p_city?: string
+          p_code_id: string
+          p_country?: string
+          p_lat?: number
+          p_lng?: number
+          p_medium?: string
+          p_profile?: string
+        }
+        Returns: undefined
+      }
       reset_season: { Args: never; Returns: undefined }
       scoped_feed_for_viewer: {
         Args: { _limit?: number; _scope_ids: string[]; _sort?: string }
@@ -4690,6 +5982,15 @@ export type Database = {
           handle: string
           id: string
         }[]
+      }
+      set_node_geo: {
+        Args: {
+          p_lat: number
+          p_lng: number
+          p_node_id: string
+          p_proximity_m: number
+        }
+        Returns: undefined
       }
       st_3dclosestpoint: {
         Args: { geom1: unknown; geom2: unknown }

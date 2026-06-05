@@ -616,17 +616,19 @@ export async function publishDispatch(id: string) {
       const dispatchUrl = `${appUrl}/broadcast/${id}`
 
       let profileIds: string[] = []
-      if (dispatch.audience_scope === 'circle') {
+      // A scoped dispatch always has an audience_id; the `&& audience_id` narrows the
+      // now-nullable column to string (global dispatches carry a null audience_id).
+      if (dispatch.audience_scope === 'circle' && dispatch.audience_id) {
         const { data } = await admin.from('memberships').select('profile_id').eq('circle_id', dispatch.audience_id).eq('status', 'active')
         profileIds = (data ?? []).map((m) => m.profile_id)
-      } else if (dispatch.audience_scope === 'hub') {
+      } else if (dispatch.audience_scope === 'hub' && dispatch.audience_id) {
         const { data: circles } = await admin.from('circles').select('id').eq('hub_id', dispatch.audience_id)
         const cids = (circles ?? []).map((c) => c.id)
         if (cids.length > 0) {
           const { data } = await admin.from('memberships').select('profile_id').in('circle_id', cids).eq('status', 'active')
           profileIds = (data ?? []).map((m) => m.profile_id)
         }
-      } else if (dispatch.audience_scope === 'nexus') {
+      } else if (dispatch.audience_scope === 'nexus' && dispatch.audience_id) {
         const { data: hubs } = await admin.from('hubs').select('id').eq('nexus_id', dispatch.audience_id)
         const hids = (hubs ?? []).map((h) => h.id)
         if (hids.length > 0) {
