@@ -2,8 +2,8 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2, Eye, Sparkles, Trash2, MapPin, Wind } from 'lucide-react'
-import { previewArea, seedArea, purgeArea, runDemoDecay } from './actions'
+import { Loader2, Eye, Sparkles, MapPin } from 'lucide-react'
+import { previewArea, seedArea } from './actions'
 import { LocationAutocomplete } from '@/components/admin/location-autocomplete'
 
 type Channel = { slug: string; name: string }
@@ -22,7 +22,6 @@ export function StudioWizard({ channels }: { channels: Channel[] }) {
   const [error, setError] = useState<string | null>(null)
   const [preview, setPreview] = useState<Preview | null>(null)
   const [result, setResult] = useState<Record<string, number> | null>(null)
-  const [decay, setDecay] = useState<Awaited<ReturnType<typeof runDemoDecay>> | null>(null)
 
   // location
   const [areaName, setAreaName] = useState('Encinitas')
@@ -192,48 +191,6 @@ export function StudioWizard({ channels }: { channels: Channel[] }) {
           </button>
         </div>
         {result && <p className="mt-3 rounded-lg border border-success-bg bg-success-bg/40 px-3 py-2 text-sm text-success">Seeded {result.circles} circles · {result.members} members · {result.posts} posts · {result.events} events · {result.rsvps} RSVPs · {result.reactions} reactions · {result.practiceLogs} practice logs · {result.journeys} journeys · {result.connections} connections. The ⚡ demo notice now reflects the new totals.</p>}
-      </section>
-
-      {/* Reverse */}
-      <section className="rounded-2xl border border-danger-bg bg-danger-bg/10 p-5">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-bold text-text">Purge this area</h3>
-            <p className="text-sm text-muted">Deletes demo content within the radius around the center above.</p>
-          </div>
-          <button type="button" disabled={pending} onClick={() => run(async () => { await purgeArea(lat, lng, radius); setResult(null); setPreview(null); router.refresh() })}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-danger px-3 py-1.5 text-sm font-semibold text-danger hover:bg-danger-bg/30 disabled:opacity-50">
-            <Trash2 className="h-4 w-4" /> Purge area
-          </button>
-        </div>
-      </section>
-
-      {/* Decay — recede + purge demo content as areas go real (also runs nightly) */}
-      <section className="rounded-2xl border border-border bg-surface p-5">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-start gap-2">
-            <Wind className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-            <div>
-              <h3 className="text-sm font-bold text-text">Decay pass</h3>
-              <p className="text-sm text-muted">Runs nightly. Purges demo circles where real circles have taken over, prunes old demo posts in sprouting areas, and sheds demo neighbors from circles gaining real members.</p>
-            </div>
-          </div>
-          <div className="flex shrink-0 gap-2">
-            <button type="button" disabled={pending} onClick={() => run(async () => setDecay(await runDemoDecay(true)))}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-semibold text-text hover:border-primary disabled:opacity-50">
-              {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />} Preview
-            </button>
-            <button type="button" disabled={pending} onClick={() => run(async () => { setDecay(await runDemoDecay(false)); router.refresh() })}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-50">
-              <Wind className="h-4 w-4" /> Run now
-            </button>
-          </div>
-        </div>
-        {decay && (
-          <p className="mt-3 rounded-lg border border-border bg-canvas px-3 py-2 text-sm text-muted">
-            {decay.dryRun ? 'Would' : 'Did'}: purge <b className="text-text">{decay.purgedCircles}</b> circles, prune <b className="text-text">{decay.prunedPosts}</b> posts in <b className="text-text">{decay.prunedCircles}</b> circles, shed <b className="text-text">{decay.trimmedNeighbours}</b> demo neighbors, remove <b className="text-text">{decay.orphansRemoved}</b> orphans. ({decay.realCircles} real / {decay.demoCircles} demo circles.)
-          </p>
-        )}
       </section>
     </div>
   )
