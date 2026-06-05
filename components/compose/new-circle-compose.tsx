@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Plus, CircleDot } from 'lucide-react'
+import { Plus, CircleDot, Sparkles } from 'lucide-react'
 import { createCircle } from '@/app/(main)/admin/actions'
+import { suggestCircle } from '@/app/(main)/circles/actions'
 import { CreateModal, cmInput, cmLabel } from '@/components/create-modal'
 
 interface HubOption { id: string; name: string }
@@ -38,10 +39,35 @@ export function NewCircleCompose({
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
+  // Vera assist — suggest a name + about from the chosen Interest.
+  const [suggesting, setSuggesting] = useState(false)
+  const [veraFilled, setVeraFilled] = useState(false)
+
   const inChannel = !!topicalChannelId
   // Outside a channel, the member must pick an Interest (the topical channel the
   // circle practices). That also satisfies the bottom-up create rule server-side.
   const needsInterest = !inChannel && interests.length > 0
+
+  // The practice Vera reasons about: the channel we're in, else the picked Interest.
+  const interestName = inChannel
+    ? (topicalChannelName ?? '')
+    : (interests.find((i) => i.id === interestId)?.name ?? '')
+  const canSuggest = interestName.trim().length > 0
+
+  async function askVera() {
+    if (!canSuggest || suggesting) return
+    setSuggesting(true)
+    try {
+      const s = await suggestCircle(interestName, type)
+      setName(s.name)
+      setAbout(s.about)
+      setVeraFilled(true)
+    } catch {
+      // Non-fatal — the host can always type their own.
+    } finally {
+      setSuggesting(false)
+    }
+  }
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -113,6 +139,30 @@ export function NewCircleCompose({
               <option value="">What does it practice?</option>
               {interests.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
             </select>
+          </div>
+        )}
+        {/* Vera assist — once a practice is known, she'll draft a name + about. */}
+        {canSuggest && (
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-signal/30 bg-signal-bg/40 px-3 py-2.5">
+            <div className="flex min-w-0 items-center gap-2">
+              <Sparkles className="h-4 w-4 shrink-0 text-signal-strong" />
+              <p className="min-w-0 text-xs leading-snug text-muted">
+                {veraFilled ? (
+                  <><span className="font-semibold text-text">Vera</span> drafted these — edit freely.</>
+                ) : (
+                  <>Stuck on a name? <span className="font-semibold text-text">Vera</span> can draft one, and an intro.</>
+                )}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={askVera}
+              disabled={suggesting || isPending}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-signal px-3 py-1.5 text-xs font-semibold text-on-signal shadow-sm transition-colors hover:bg-signal-strong disabled:opacity-50"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              {suggesting ? 'Thinking…' : veraFilled ? 'Again' : 'Suggest'}
+            </button>
           </div>
         )}
         <div>
