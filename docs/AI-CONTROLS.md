@@ -1,6 +1,6 @@
 # AI controls — the master switch + audit
 
-> **Status:** ✅ Live · janitor-only · `/admin/ai`. Source: `app/(main)/admin/ai/*`, `lib/platform-flags.ts`, `supabase/migrations/20260606010000_platform_flag_events.sql`. Decision: [ADR-096](DECISIONS.md) (addendum).
+> **Status:** ✅ Live · janitor-only · `/admin/ai`. Source: `app/(main)/admin/ai/*`, `lib/platform-flags.ts`, `supabase/migrations/20260606010000_platform_flag_events.sql`. Decision: [ADR-097](DECISIONS.md) (addendum).
 
 A janitor-facing operator surface to turn AI on/off platform-wide, see today's spend against the per-feature caps, and read the full toggle history — instead of only flipping the flag via SQL.
 

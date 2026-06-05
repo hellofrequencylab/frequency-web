@@ -2016,6 +2016,7 @@ export type Database = {
           proximity_m: number | null
           reward_event_type: string | null
           secret: string | null
+          style: Json
           type: string
           valid_from: string | null
           valid_until: string | null
@@ -2033,6 +2034,7 @@ export type Database = {
           proximity_m?: number | null
           reward_event_type?: string | null
           secret?: string | null
+          style?: Json
           type: string
           valid_from?: string | null
           valid_until?: string | null
@@ -2050,6 +2052,7 @@ export type Database = {
           proximity_m?: number | null
           reward_event_type?: string | null
           secret?: string | null
+          style?: Json
           type?: string
           valid_from?: string | null
           valid_until?: string | null

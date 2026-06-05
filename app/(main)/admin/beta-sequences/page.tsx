@@ -1,0 +1,150 @@
+import Link from 'next/link'
+import { ExternalLink, ArrowRight, Tag, CheckCircle2, AlertTriangle } from 'lucide-react'
+import { requireAdmin } from '@/lib/admin/guard'
+import { AdminPage, AdminSection } from '@/components/admin/admin-page'
+import { listSequences } from '@/lib/onboarding/beta-sequences'
+import { getTrait } from '@/lib/traits/registry'
+import { CopyLink } from './copy-link'
+
+// The splash-page creator (ADR-068). Janitor-only catalog of the beta induction's
+// audience sequences — early-adopter / personal / founding-partner. Each has a
+// shareable splash URL (/beta/<slug>) that carries the audience into the induction
+// (?seq=) and stamps a marketing tag so the founding cohort stays segmentable
+// forever. Copy is authored in lib/onboarding/beta-sequences.ts (source of truth);
+// a DB-backed editable layer can override it later without changing this page.
+
+export const dynamic = 'force-dynamic'
+
+export default async function BetaSequencesPage() {
+  await requireAdmin('janitor')
+  const sequences = listSequences()
+
+  return (
+    <AdminPage
+      title="Beta sequences"
+      eyebrow="Vera"
+      description="Audience-targeted splash pages that feed the founder induction. Share a sequence’s link, and everyone who joins through it runs that voiced flow and gets its marketing tag."
+      width="default"
+    >
+      <AdminSection
+        title={`${sequences.length} sequences`}
+        description="Each card shows the public splash, the induction copy it drives, and the cohort tag it stamps."
+      >
+        <div className="space-y-4">
+          {sequences.map((seq) => {
+            const splashPath = `/beta/${seq.slug}`
+            const inductionPath = `/onboarding/beta?seq=${seq.slug}`
+            const tagDef = getTrait(seq.marketingTag)
+
+            return (
+              <article key={seq.slug} className="space-y-4 rounded-2xl border border-border bg-surface p-5">
+                {/* Header: audience + the cohort tag */}
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 className="text-base font-bold text-text">{seq.audience}</h3>
+                    <p className="mt-0.5 font-mono text-xs text-subtle">{splashPath}</p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-bg px-2.5 py-1 text-xs font-semibold text-primary-strong">
+                      <Tag className="h-3 w-3" />
+                      {seq.marketingTag}
+                    </span>
+                    {tagDef ? (
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-success" title="Registered in the trait registry">
+                        <CheckCircle2 className="h-3.5 w-3.5" /> Registered
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-warning" title="Not in lib/traits/registry.ts — tagging will be skipped">
+                        <AlertTriangle className="h-3.5 w-3.5" /> Unregistered
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Actions: copy + open */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <CopyLink path={splashPath} label="Copy splash link" />
+                  <Link
+                    href={splashPath}
+                    target="_blank"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" /> Open splash
+                  </Link>
+                  <Link
+                    href={inductionPath}
+                    target="_blank"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated"
+                  >
+                    <ArrowRight className="h-3.5 w-3.5" /> Run induction
+                  </Link>
+                </div>
+
+                {/* Splash preview — the real public copy, scaled down */}
+                <div className="rounded-xl border border-border bg-surface-elevated/50 p-5 text-center">
+                  <p className="text-[0.65rem] font-semibold uppercase tracking-widest text-primary-strong">
+                    {seq.splash.eyebrow}
+                  </p>
+                  <p className="mt-2 text-balance text-xl font-bold leading-tight text-text">{seq.splash.headline}</p>
+                  <p className="mx-auto mt-2 max-w-lg text-pretty text-sm leading-relaxed text-muted">{seq.splash.body}</p>
+                  <span className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-on-primary">
+                    {seq.splash.cta} <ArrowRight className="h-3.5 w-3.5" />
+                  </span>
+                </div>
+
+                {/* Induction copy this sequence drives (Vera's voiced beats) */}
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-xl border border-border bg-surface-elevated/50 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-subtle">Oath beat</p>
+                    <p className="mt-1.5 text-sm font-bold text-text">{seq.vera.oath.heading}</p>
+                    <p className="mt-1 text-xs leading-relaxed text-muted">{seq.vera.oath.body}</p>
+                  </div>
+                  <div className="rounded-xl border border-border bg-surface-elevated/50 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-subtle">Welcome beat</p>
+                    <p className="mt-1.5 text-sm font-bold text-text">{seq.vera.intro.heading}</p>
+                    <p className="mt-1 text-xs leading-relaxed text-muted">{seq.vera.intro.body}</p>
+                  </div>
+                </div>
+
+                {/* The oaths + heard-about options */}
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-subtle">The oaths</p>
+                    <ul className="mt-1.5 space-y-1">
+                      {seq.oaths.map((o) => (
+                        <li key={o.id} className="text-sm text-text">
+                          <span className="text-success">✅</span> {o.label}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-subtle">“How did you hear?” options</p>
+                    <ul className="mt-1.5 flex flex-wrap gap-1.5">
+                      {seq.heardAbout.map((h) => (
+                        <li key={h} className="rounded-full bg-surface-elevated px-2.5 py-1 text-xs text-muted">
+                          {h}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </article>
+            )
+          })}
+        </div>
+      </AdminSection>
+
+      <AdminSection title="How it works">
+        <ol className="space-y-2 rounded-2xl border border-border bg-surface p-5 text-sm text-muted">
+          <li><span className="font-semibold text-text">1. Share the link.</span> Each sequence has a public splash at <code className="rounded bg-surface-elevated px-1 py-0.5 font-mono text-xs">/beta/&lt;slug&gt;</code> — drop it in a video description, a DM, or a partner email.</li>
+          <li><span className="font-semibold text-text">2. They run the matching flow.</span> The CTA carries the audience into the induction (<code className="rounded bg-surface-elevated px-1 py-0.5 font-mono text-xs">?seq=</code>), which speaks in that sequence’s voice. A cookie keeps it through sign-in.</li>
+          <li><span className="font-semibold text-text">3. The cohort is tagged.</span> On completion the member is stamped with the sequence’s marketing tag, so you can segment the founding cohort by entry path forever — see <Link href="/admin/segments" className="text-primary-strong hover:underline">Segments</Link>.</li>
+        </ol>
+        <p className="text-xs text-subtle">
+          Copy lives in <code className="font-mono">lib/onboarding/beta-sequences.ts</code> (source of truth). Editing it here in-app is the next step — for now, sequences ship in code and are reviewed in PRs.
+        </p>
+      </AdminSection>
+    </AdminPage>
+  )
+}

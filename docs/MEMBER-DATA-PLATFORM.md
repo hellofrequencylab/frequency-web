@@ -66,6 +66,24 @@ against the registry — **a typo can't mint a tag.**
 | How much they've used the site | `last_active_at`, `days_active_30`, `wam_status`, `rfm_score` | computed nightly from `engagement_events` |
 | Discounts / early registration | a **Segment** (`web_beta` + active) → audience | reverse-ETL into `campaigns` / `contacts` |
 
+## Acquisition source — first-touch attribution ([ADR-095](DECISIONS.md))
+
+How a member/lead **first reached us** is captured at the edge and stamped as a
+governed tag, so origin is segmentable forever. One channel taxonomy lives in
+`lib/attribution/channels.ts`; each channel is a `source_<channel>` **tag**
+(category `marketing`), exactly like the `beta_*` cohort tags.
+
+| | |
+|---|---|
+| **Channels** | `donor` · `referral` · `qr_scan` · `event_guest` · `video` · `social` · `search` · `email` · `organic` · `direct` |
+| **Capture** | `proxy.ts` writes an **immutable** `fq_attr` first-touch cookie on an anon's first request (utm_*, gclid/fbclid, referrer, landing, ts); entry routes drop an `fq_src` channel hint |
+| **Resolve** | `resolveAcquisition()` (`lib/attribution/server.ts`) folds the cookies into one record at signup — **first-touch primary** |
+| **Persist** | governed tag `source_<channel>` (the first-touch channel) + full record on `profiles.meta.acquisition` / `contacts.meta.acquisition` |
+| **Model** | first-touch = the canonical tag (credits true origin); converting/last-touch + utm detail kept in `meta` for multi-touch analysis |
+| **No migration** | rides `member_tags` + `meta` only; best-effort, never blocks signup |
+
+`donor` + `event_guest` are **plumbing only** (channels + resolver wired; flows not built). A **backfill** (`lib/attribution/backfill.ts`) infers a source for pre-capture members from `referred_by_profile_id` + `meta.beta.*`; the **channel-mix rollup** (`lib/attribution/rollup.ts`) renders on `/admin/intel` with a one-click backfill button.
+
 ## Phases
 
 | Phase | Deliverable | Status |
@@ -91,8 +109,11 @@ against the registry — **a typo can't mint a tag.**
 
 | Path | Role |
 |---|---|
-| `lib/traits/registry.ts` | the catalog — typed trait/tag definitions (the library) |
+| `lib/traits/registry.ts` | the catalog — typed trait/tag definitions (the library; incl. `source_*` acquisition tags) |
 | `lib/traits/tags.ts` | `assignTag` / `removeTag` / `getMemberTags` / `hasTag` (registry-validated) |
+| `lib/attribution/channels.ts` | acquisition channel taxonomy + pure `deriveChannel()` (unit-tested) |
+| `lib/attribution/first-touch.ts` | edge-safe first-touch cookie capture (used by `proxy.ts`) |
+| `lib/attribution/server.ts` | `resolveAcquisition()` + `stampAcquisitionTag()` (first-touch primary) |
 | `lib/traits/compute.ts` | pure trait computation (cohort, lifecycle, WAM, RFM…) — unit-tested |
 | `lib/traits/refresh.ts` | the nightly job — RPC aggregates → compute → upsert `member_traits` |
 | `lib/traits/segments.ts` | segment model + pure evaluator/validator/describer + live counts |

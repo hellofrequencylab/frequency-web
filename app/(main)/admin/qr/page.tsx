@@ -3,7 +3,6 @@ import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { AdminPage } from '@/components/admin/admin-page'
 import { nodeUrl, shortLinkUrl } from '@/lib/qr/links'
-import { renderQrSvg } from '@/lib/qr/render'
 import { renderStyledQrSvg } from '@/lib/qr/render-styled'
 import { parseStyle } from '@/lib/qr/style'
 import { summarizeScans, type ScanRow } from '@/lib/qr/analytics'
@@ -28,7 +27,7 @@ export default async function QrStudioPage() {
     await Promise.all([
       db
         .from('nodes')
-        .select('id, type, label, zaps_value, capture_rule, active, valid_until, partner_id, created_at')
+        .select('id, type, label, zaps_value, capture_rule, active, valid_until, partner_id, style, created_at')
         .order('created_at', { ascending: false }),
       db.from('captures').select('node_id').eq('verified', true),
       db
@@ -46,6 +45,7 @@ export default async function QrStudioPage() {
   const initialNodes: StudioNode[] = await Promise.all(
     (nodes ?? []).map(async (n) => {
       const url = nodeUrl(n.id)
+      const style = parseStyle(n.style)
       return {
         id: n.id,
         type: n.type,
@@ -56,8 +56,9 @@ export default async function QrStudioPage() {
         valid_until: n.valid_until,
         partner_id: n.partner_id,
         captures: captureCounts.get(n.id) ?? 0,
+        style,
         url,
-        svg: await renderQrSvg(url, 168),
+        svg: renderStyledQrSvg(url, style, 168),
       }
     }),
   )

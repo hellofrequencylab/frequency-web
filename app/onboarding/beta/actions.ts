@@ -14,7 +14,29 @@ import { sanitizeProfileInput } from '@/lib/profile-input'
 import { rememberFacts } from '@/lib/ai/memory'
 import { track } from '@/lib/analytics/track'
 import { BETA_INDUCTION_VERSION, BETA_MEMBERS_GET_CREW, type OathId } from '@/lib/onboarding/beta-script'
+import { getSequence } from '@/lib/onboarding/beta-sequences'
+import { assignTag } from '@/lib/traits/tags'
+import { resolveAcquisition, stampAcquisitionTag } from '@/lib/attribution/server'
 import type { Json } from '@/lib/database.types'
+
+/** The audience sequence the member arrived through (cookie set by the induction). */
+async function readBetaSequenceSlug(): Promise<string | null> {
+  try {
+    return (await cookies()).get('fq_beta_seq')?.value ?? null
+  } catch {
+    return null
+  }
+}
+
+/** Stamp the cohort's marketing tag on the member (best-effort; never blocks). */
+async function tagBetaCohort(profileId: string, seqSlug: string | null): Promise<void> {
+  if (!seqSlug) return
+  try {
+    await assignTag(profileId, getSequence(seqSlug).marketingTag)
+  } catch {
+    /* tagging is best-effort */
+  }
+}
 
 /** During the Beta, grant every new member Crew (full gamification). Only upgrades
  *  members — leaders (host+) and existing crew are untouched — and they can
@@ -97,6 +119,9 @@ async function writeBetaInduction(data: InductionData): Promise<void> {
   const interests = data.interests.trim().slice(0, 200)
   const heardAbout = data.heardAbout.trim().slice(0, 120)
   const location = data.location.trim().slice(0, 160)
+  const seqSlug = await readBetaSequenceSlug()
+  // How they first reached us (ADR-095) — resolved from the attribution cookies.
+  const acquisition = await resolveAcquisition()
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -115,6 +140,8 @@ async function writeBetaInduction(data: InductionData): Promise<void> {
       meta: {
         ...meta,
         onboarding_completed: true,
+        // First-touch acquisition record (utm / referrer / landing / channel).
+        acquisition: (acquisition as unknown as Json),
         beta: {
           ...beta,
           version: BETA_INDUCTION_VERSION,
@@ -127,6 +154,8 @@ async function writeBetaInduction(data: InductionData): Promise<void> {
           intent: intent || null,
           interests: interests || null,
           heard_about: heardAbout || null,
+          // The audience sequence they arrived through — recorded for segmentation.
+          sequence: seqSlug ?? (beta.sequence as string | undefined) ?? null,
           location: location ? { label: location, lat: data.lat, lng: data.lng } : null,
           completed_at: new Date().toISOString(),
         },
@@ -162,6 +191,8 @@ async function writeBetaInduction(data: InductionData): Promise<void> {
     // get here, so profile is "completed" by our funnel's definition.
     await track('onboarding.induction_completed', { hasAvatar: !!avatarUrl, hasIntent: !!intent }, prof.id)
     await track('profile.completed', { hasAvatar: !!avatarUrl }, prof.id)
+    await tagBetaCohort(prof.id, seqSlug)
+    await stampAcquisitionTag(prof.id, acquisition)
   }
 
   if (user.email) {

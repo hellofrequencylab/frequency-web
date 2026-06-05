@@ -1,4 +1,4 @@
--- Network Profiles · "Profile Creator" intake (ADR-096, docs/NETWORK-CRM.md).
+-- Network Profiles · "Profile Creator" intake (ADR-097, docs/NETWORK-CRM.md).
 --
 -- A NEW entity, deliberately distinct from `profiles` (real members, PUBLIC read)
 -- and `contacts` (the marketing list, service-role). It captures the people a
@@ -154,7 +154,7 @@ create policy "network-contacts: owner delete" on storage.objects for delete to 
 
 -- ── Docs ─────────────────────────────────────────────────────────────────────
 comment on table public.network_contacts is
-  'Owner-scoped "Profile Creator" intake (card scan / poster / manual+Vera). Private by default; visibility gates promotion. Distinct from profiles (members) and contacts (marketing). See docs/NETWORK-CRM.md, ADR-096.';
+  'Owner-scoped "Profile Creator" intake (card scan / poster / manual+Vera). Private by default; visibility gates promotion. Distinct from profiles (members) and contacts (marketing). See docs/NETWORK-CRM.md, ADR-097.';
 comment on column public.network_contacts.avatar_path is
   'Key in the PRIVATE network-contacts storage bucket. Render via a server-minted signed URL — never a public URL.';
 comment on column public.network_contacts.visibility is

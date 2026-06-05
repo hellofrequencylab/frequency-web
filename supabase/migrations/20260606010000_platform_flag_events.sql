@@ -1,5 +1,5 @@
 -- Audit log for platform_flags toggles + the operator surface behind /admin/ai
--- (ADR-096 addendum). Append-only: who flipped which flag, when, old → new. The
+-- (ADR-097 addendum). Append-only: who flipped which flag, when, old → new. The
 -- AI kill switch (platform_flags.ai_enabled) is now operable from the Janitor menu
 -- instead of only via SQL, and every change is recorded here for accountability.
 --
@@ -22,4 +22,4 @@ alter table public.platform_flag_events enable row level security;
 -- No policies: operator-only via the service role behind requireAdmin('janitor').
 
 comment on table public.platform_flag_events is
-  'Append-only audit of platform_flags toggles (who/when/old->new). Operator-only via service role; surfaced at /admin/ai. See ADR-096.';
+  'Append-only audit of platform_flags toggles (who/when/old->new). Operator-only via service role; surfaced at /admin/ai. See ADR-097.';

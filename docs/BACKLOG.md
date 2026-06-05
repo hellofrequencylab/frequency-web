@@ -355,6 +355,30 @@ inline path (wizard is an optional guided alt); RLS isolation between `journey_p
   - **Guide:** Dispatch→Hub. **Mentor:** Dispatch→Nexus. **Staff:** Dispatch→Global · Feature a post.
   - The composer shows base options for all + a **Dispatch with a scope picker limited to the tiers
     you lead** + leader extras. Ties into comms Phase D (dispatch UI) + the Create Wizard (§Q2). (M–L)
+- [ ] **S7 · Uniform right rail on every interior page** 🔴 *site-wide structural rule (owner, screenshot
+  review).* Any Circle, Event, or interior/detail page MUST carry a right-hand menu/rail — the same
+  two-column shell everywhere (main content + right rail of contextual modules). The Circle page is the
+  reference (Circle events + Members). Audit every interior route (Circles ✅, Events, Channels, Practices,
+  Journeys, Programs, Profile, Hub/Nexus, Messages detail, etc.) and give each a right rail with the
+  relevant context (related items, members/attendees, actions, "see all"). Build a shared
+  `InteriorLayout`/`RightRail` primitive so the structure is uniform and can't drift page-to-page, then
+  migrate routes onto it. (M–L)
+- [ ] **S8 · No orange highlight on input focus, site-wide** *(owner, screenshot review).* Inputs
+  currently focus with the orange `primary` ring/border (`focus:border-primary` across many fields, plus
+  the composer's orange outline). Replace with a neutral, calmer focus treatment everywhere (soft
+  `border-strong` / subtle ring — no brand-orange on text inputs). Define ONE canonical focus style and
+  apply via the shared field classes so it can't drift; sweep existing `focus:border-primary` /
+  `focus:ring-primary` on inputs/textareas/selects. (S–M)
+- [ ] **S9 · Warm up the beta demo content — it feels sterile** *(owner, screenshot review).* The seeded
+  demo posts/circles/people read flat and "seeded," not lived-in. Warm the generated copy + curation
+  (Seed Studio / `lib/demo/*` palette + templates): more human, specific, emotionally textured posts;
+  real-feeling names + bios + circle blurbs; varied cadence and warmth. Goal — a newcomer's first scroll
+  feels like a real, warm community, not a demo. (M)
+- [ ] **S10 · Vercel preview deploys hang in "Initializing"** *(owner, observed).* A preview deployment
+  sat in **Initializing** for 8m+ and never started building (no build logs). Investigate stuck/never-
+  starting Vercel previews — check the Git integration + build queue, deployment-settings recommendations,
+  and whether concurrent force-pushes orphan in-flight builds. Make preview deploys reliably start (or
+  fail fast with a clear error) so PR previews are trustworthy. (S–M)
 
 ## Accepted (no action)
 - `npm audit`: 4 moderate transitive advisories (postcss in Next's toolchain,

@@ -1,4 +1,4 @@
-// The AI harvest for the Profile Creator (docs/NETWORK-CRM.md, ADR-096). Two
+// The AI harvest for the Profile Creator (docs/NETWORK-CRM.md, ADR-097). Two
 // surfaces, one structured-extraction tool:
 //   • scanCardImage  — vision: a photo of a business card / poster → fields, a
 //     suggested connection note, tags, and a normalized face box for the crop.

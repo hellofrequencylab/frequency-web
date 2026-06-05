@@ -1,7 +1,7 @@
 # Profile Creator — Network Profiles
 
 > **Status:** ✅ Built · ✅ migration applied to prod (`Frequency Community`) · ✅ AI harvest live (`platform_flags.ai_enabled = true`; toggle at `/admin/ai` — see [AI-CONTROLS.md](AI-CONTROLS.md)) · ✅ mobile quick-add (`+` → `/connections/new`, stewards/staff) · ⏳ full type regen deferred to merge-time (store uses the untyped admin handle) · gated to stewards (host+) / Studio staff.
-> Source of truth: `supabase/migrations/20260606000000_network_contacts.sql`, `lib/connections/*`, `lib/ai/connections-ai.ts`, `app/(main)/connections/*`. Decision: [ADR-096](DECISIONS.md).
+> Source of truth: `supabase/migrations/20260606000000_network_contacts.sql`, `lib/connections/*`, `lib/ai/connections-ai.ts`, `app/(main)/connections/*`. Decision: [ADR-097](DECISIONS.md).
 
 The Profile Creator lets a steward capture the people they meet — snap a business
 card or poster, harvest the details, cut out a profile photo, and get a drafted

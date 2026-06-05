@@ -2139,8 +2139,9 @@ box), and a CTA card frame. Style is a sanitized `QrStyle` persisted on `qr_code
 isomorphic, the **live editor preview (client)**, the Studio list, and `/api/qr?code=` downloads
 emit identical SVG. No new dependency.
 
-**Consequences:** Styling lives only on `qr_codes` (the managed entity); check-in `nodes` +
-member connect codes stay plain for now (a later pass can adopt the same renderer). Styled
+**Consequences:** The same styler now applies across **`qr_codes`** (dynamic links + member +
+marketing) **and `nodes`** (check-in codes, `nodes.style`, backlog #5), and member connect codes
+ship a styled default (avatar logo). Styled
 **downloads are SVG** (vector, ideal for print); a **styled PNG** is now also available (backlog #4,
 `lib/qr/raster.ts` via `@resvg/resvg-wasm` — remote logos inlined as data URLs, plain-PNG fallback).
 Historical note: PNG was plain until a server-side SVG
@@ -2503,9 +2504,139 @@ a background job remains the path for very large areas (carried from ADR-091).
 
 ---
 
-## ADR-096: Profile Creator — a new owner-scoped intake entity (`network_contacts`)
+## ADR-094: Beta induction sequences — one template, audience-targeted copy, cohort tags
 
-**Status:** Accepted · `supabase/migrations/20260606000000_network_contacts.sql`, `lib/connections/*`, `app/(main)/connections/*`, `lib/ai/connections-ai.ts`. See [NETWORK-CRM.md](NETWORK-CRM.md).
+**Decision.** The beta induction (ADR-068) becomes **audience-parameterized** rather
+than one-size-fits-all. A *sequence* (`lib/onboarding/beta-sequences.ts`) bundles a
+public **splash** (`/beta/<slug>`) with the induction's **voiced copy** (Vera's HOT
+register) and a **marketing tag**. Three ship at launch: `early-adopter` (the
+original — followers from Daniel's video), `personal` (Daniel's hand-invites into
+"the dream"), and `founding-partner` (collaborators + businesses, "Founder energy").
+The induction template already accepted a `copy` override, so a sequence just *feeds*
+it — no rewrite. The splash CTA carries the audience via `?seq=`; a 30-day
+`fq_beta_seq` cookie keeps it across the deferred sign-in round-trip; on completion
+`writeBetaInduction` records `meta.beta.sequence` and stamps the cohort's marketing
+tag. A janitor-only **splash-page creator** at `/admin/beta-sequences` lists +
+previews every sequence (copy, the tag, and the shareable link).
+
+**Why.** Same product, very different doorways: a stranger from a video, a personal
+friend, and a prospective business partner each need a different first sentence to
+feel *spoken to*. One induction engine with swappable copy keeps the cinematic flow
+DRY while letting the voice change per audience. Tagging at the door means the
+founding cohort stays **segmentable by entry path forever** — even after the beta
+flow itself is deleted at launch (the tags are durable; the sequences are not).
+
+**Mechanics.** `typeof VERA` is all readonly string *literals*, which rejects any
+different wording, so a widened `VeraCopy` type (same shape, `string` leaves) is the
+contract for sequence/operator copy. Marketing tags are governed: they're declared
+in the trait registry (`lib/traits/registry.ts`) as snake_case keys
+(`beta_early_adopter`, `beta_personal`, `beta_founding_partner`) — `assignTag`
+refuses unregistered keys, so a typo can't create an orphan tag. Tagging is
+best-effort and never blocks onboarding. Operator copy overrides from `/admin/vera`
+still apply to the **default** (early-adopter) sequence — that's what they were
+authored against; the other sequences use their own copy.
+
+**Consequences.** Sequence copy lives in code (reviewed in PRs), not yet a DB-backed
+editable layer — the creator page is read/preview for v1; an editable override
+(vera_config pattern) is the noted follow-on. The whole module is TEMPORARY by
+design and deleted at public launch, leaving only the durable cohort tags behind.
+
+---
+
+## ADR-095: Acquisition attribution — first-touch capture at the edge, governed source tags
+
+**Decision.** Capture **how every visitor first reached us** and persist it on the
+member/lead, following marketing best practice: **capture-on-arrival, first-touch
+primary, never overwrite.** A new `lib/attribution/` module owns one channel
+taxonomy (`donor`, `referral`, `qr_scan`, `event_guest`, `video`, `social`,
+`search`, `email`, `organic`, `direct`). The **edge proxy** (`proxy.ts`) writes an
+immutable `fq_attr` first-touch cookie on an anonymous visitor's first request —
+utm_* params, `gclid`/`fbclid`, referrer, landing path, timestamp — plus an
+`fq_src` channel hint on the person-driven entry routes (`/join`, `/events`; the
+`/q` resolver sets `qr_scan`). At member/lead creation `resolveAcquisition()` folds
+the cookies into one canonical record; the **first-touch channel** becomes the
+governed tag `source_<channel>` (`lib/traits/registry.ts`) and the full record
+(first-touch detail + converting/last-touch channel + signals like the referrer
+profile id and beta sequence) is written to `profiles.meta.acquisition` /
+`contacts.meta.acquisition`.
+
+**Why.** Attribution that's collected at signup-time has already lost the truth —
+the campaign and referrer that brought someone are only knowable on their *first*
+request, and they must survive the whole sign-in round-trip. Capturing at the edge
+into an immutable cookie is the standard fix. **First-touch primary** credits the
+founding cohort's true origin (the choice for this stage); last-touch is still kept
+for multi-touch analysis. Modeling the channel as a governed `source_*` **tag**
+(one boolean per channel, exactly like the `beta_*` cohort tags) makes every origin
+instantly segmentable in `/admin/segments` with zero new query code, while the rich
+utm/referrer detail rides `meta` where free-form JSON belongs.
+
+**No migration.** It rides existing surfaces only — `member_tags` (governed tags),
+`profiles.meta`, `contacts.meta` — so it sidesteps the type-regen / migration-drift
+issue entirely. Tags are validated against the registry (`assignTag` refuses
+unregistered keys), keys are snake_case (`source_qr_scan` mirrors `channelTag()`),
+and all writes are best-effort — attribution never blocks signup.
+
+**Scope.** `donor` and `event_guest` are **plumbing only** for now: the channels +
+resolver are wired so they attribute the moment those flows exist; `event_guest` is
+already set on anonymous event-page visits, but no donations product or guest-RSVP
+flow is built yet. Channel derivation is pure + unit-tested
+(`lib/attribution/channels.test.ts`). A **backfill** (`lib/attribution/backfill.ts`)
+infers a source for pre-capture members from `referred_by_profile_id` +
+`meta.beta.{heard_about,sequence}` (idempotent; honest — uninferable members stay
+untagged, not mislabeled `direct`); a **rollup** (`lib/attribution/rollup.ts`) groups
+the `source_*` tags into the channel-mix view on `/admin/intel` with a one-click
+backfill button. Both are migration-free reads/writes over `member_tags` + `meta`.
+
+---
+
+## ADR-096: Member authoring — practices editor + Journeys builder, personal-free / library-paid
+
+**Decision.** Members can **author**, not just consume. Two halves:
+
+- **Practices editor (free).** A member can fully edit a practice they **created**
+  (name, summary, description, full markdown guide, cadence, pillar, category, icon,
+  header image) at `/practices/<id>/edit`. To change a library practice they don't
+  own, the library offers **"Customize"** — `forkPractice()` makes a **private copy**
+  they own (`is_public=false`) and opens the editor on it. Quick-create then routes
+  straight into the editor ("add a basic practice, then modify it"). **Rewards
+  (`reward_zaps`/`reward_note`) are NOT member-editable** — the economy stays
+  admin-governed; that's the "partial flexibility" line.
+
+- **Journeys builder (personal-free / publish-paid).** The Journeys editing suite
+  lets a member assemble a path of practices with **per-item cadence + note**
+  overrides, reorder, and edit the plan's title/summary/cover. Building and using a
+  **personal** journey (private/unlisted) is **free**; the **public library /
+  marketplace is the Crew (paid) surface** — publishing a journey, and adopting or
+  forking someone else's public journey, require Crew. (Closes the loophole where a
+  free member could fork-then-adopt around a paywalled adopt.) Per-item cadence adds
+  one additive column, `journey_plan_items.cadence` (null = the practice's default).
+
+**Why.** "A way to turn the people near you into community" wants members shaping
+the practice content, not just admins. Editing **your own** + **fork-to-customize**
+gives real flexibility while protecting the shared library (you never mutate a
+practice others adopted). Gating on **the library, both sides** (publish + consume)
+is the coherent monetization the owner chose — "paid = the library" — and matches
+the ADR-084 economy (Crew is the paid tier; free in Beta via `BETA_MEMBERS_GET_CREW`).
+Keeping rewards out of the member editor protects economy integrity (ADR-037/084).
+
+**Mechanics.** All writes go through the service-role lib behind app-code authz
+(`created_by`/`author_id` ownership), the repo convention for the untyped
+practices/journey tables. The Crew check reuses the role ladder (`atLeastRole`,
+`lib/core/roles.ts`); the paywall surfaces via the existing CrewGate pattern.
+Per-item cadence is the only schema change (additive column, applied via MCP);
+everything else rides existing tables.
+
+**Consequences.** A markdown textarea (not a WYSIWYG) for practice bodies in v1 —
+the Puck block editor is heavier than a personal practice guide needs; can upgrade
+later. Forked practices are private by default; a "share my practice to the library"
+(publish a member practice) is a follow-on. Backlog **S7** (uniform right rail on
+every interior page) will give these new editor/detail routes the standard shell.
+
+---
+
+## ADR-097: Profile Creator — a new owner-scoped intake entity (`network_contacts`)
+
+**Status:** Accepted · `supabase/migrations/20260606000000_network_contacts.sql`, `lib/connections/*`, `app/(main)/connections/*`, `lib/ai/connections-ai.ts`. See [NETWORK-CRM.md](NETWORK-CRM.md). AI kill-switch operator surface (addendum): `supabase/migrations/20260606010000_platform_flag_events.sql`, `app/(main)/admin/ai/*`, [AI-CONTROLS.md](AI-CONTROLS.md).
 
 **Context.** Stewards wanted to capture people they meet — snap a business card or
 poster, harvest the details, cut out a profile photo, draft a connection note + tags
@@ -2537,6 +2668,12 @@ payload via a forced tool call (`save_contact`), including a normalized face
 bounding-box; the client crops the photo on a `<canvas>` (no server image lib /
 new dependency). All model output is re-validated by `coerceExtraction()` before it
 touches the form — never trusted raw.
+
+**AI kill-switch addendum.** The platform-wide AI switch (`platform_flags.ai_enabled`)
+becomes operable from the Janitor menu (`/admin/ai`) instead of SQL-only, with a new
+append-only `platform_flag_events` audit table (who/when/old→new). The page also
+surfaces per-feature daily spend from `ai_usage`. A mobile `+` quick-add (stewards/
+staff) jumps straight to `/connections/new`.
 
 **Consequences.** New tables aren't in `database.types` yet, so the store talks to
 them through the untyped admin handle (repo convention, cf. `lib/studio/contacts.ts`)
