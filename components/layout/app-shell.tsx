@@ -28,6 +28,7 @@ import {
   ChevronRight,
   ChevronLeft,
   QrCode,
+  Megaphone,
   HelpCircle,
   PanelLeft,
   PanelRight,
@@ -423,6 +424,16 @@ function AccountDropdown({
               <QrCode className="w-4 h-4 text-subtle" />
               My code
             </Link>
+            {showCrewLink && (
+              <Link
+                href="/entry-points"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-surface-elevated transition-colors"
+              >
+                <Megaphone className="w-4 h-4 text-subtle" />
+                Entry points
+              </Link>
+            )}
             <Link
               href="/help"
               onClick={() => setOpen(false)}
