@@ -3,7 +3,7 @@ title: Practices, choose, do, log
 description: Adopt a practice or follow your circle's, then log it each day to earn zaps and build your streak.
 category: getting-started
 order: 3
-updated: 2026-06-04
+updated: 2026-06-05
 audience: member
 featureKeys: [practices, gamification]
 status: published
@@ -58,6 +58,20 @@ Open any practice and you will find more than a title: a short summary of what i
 is, a "how to do it" walk-through, a category (movement, holistic health,
 spirituality, creative, human relating, business support), and a cadence hint
 (daily, weekly, as needed). The library is browsable by what you are drawn to.
+
+## Find your way around the library
+
+The library is organized so you can find practices that fit you:
+
+- **Pillars and sub-categories.** Everything sits under one of the four Pillars —
+  **Mind, Body, Spirit, Expression** — and within a Pillar you can narrow to a
+  sub-category (for example Body → Cardio, Strength, Mobility).
+- **Tags.** Practices carry tags like `morning`, `quick`, `outdoor`, or `social` so
+  you can spot what suits the moment. When you create or edit your own practice, add
+  your own tags to help others find it.
+- **Sort.** Browse by **Trending** (what people are doing lately), **All-time**, or
+  **New**. Trending is the default, so the practices the community is loving rise to
+  the top.
 
 ## Rewards vary by practice
 

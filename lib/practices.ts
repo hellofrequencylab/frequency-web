@@ -37,21 +37,119 @@ export interface Practice {
   reward_note: string | null
   /** The Pillar this practice belongs to (domains.id), or null if uncategorized. */
   domain_id: string | null
+  /** The sub-category within the Pillar (practice_subcategories.id), or null. */
+  subcategory_id: string | null
 }
+
+/** A library tag (canonical or member/Vera folksonomy) as shown on a practice. */
+export interface PracticeTag {
+  slug: string
+  label: string
+}
+
+/** A practice enriched with its popularity signal + display taxonomy, for the library. */
+export interface RankedPractice extends Practice {
+  adopters: number
+  logs_30d: number
+  logs_total: number
+  score: number
+  subcategory: { slug: string; name: string } | null
+  tags: PracticeTag[]
+}
+
+export interface Subcategory {
+  id: string
+  domain_id: string
+  slug: string
+  name: string
+  display_order: number
+}
+
+export type PracticeSort = 'trending' | 'top' | 'new'
 
 const PRACTICE_COLS =
   'id, title, description, created_by, is_public, created_at, ' +
-  'category, icon, summary, header_image, body, cadence, reward_zaps, reward_note, domain_id'
+  'category, icon, summary, header_image, body, cadence, reward_zaps, reward_note, domain_id, subcategory_id'
 
 // --- Library + reads ------------------------------------------------------
 
-export async function listPublicPractices(): Promise<Practice[]> {
-  const { data } = await db()
-    .from('practices')
-    .select(PRACTICE_COLS)
+/**
+ * The public library, ranked. Reads the server-only `practices_ranked` view (adopters
+ * + recent logs → score) so popular practices rise. `sort`: 'trending' (recent usage,
+ * default) · 'top' (all-time) · 'new'. Enriches each row with its sub-category label and
+ * its tags in one extra round-trip each (small library; cheap).
+ */
+export async function listPublicPractices(sort: PracticeSort = 'trending'): Promise<RankedPractice[]> {
+  const order =
+    sort === 'new'
+      ? [{ col: 'created_at', asc: false }]
+      : sort === 'top'
+        ? [{ col: 'logs_total', asc: false }, { col: 'created_at', asc: false }]
+        : [{ col: 'score', asc: false }, { col: 'created_at', asc: false }]
+
+  let q = db()
+    .from('practices_ranked')
+    .select(`${PRACTICE_COLS}, adopters, logs_30d, logs_total, score`)
     .eq('is_public', true)
-    .order('created_at', { ascending: true })
-  return (data as Practice[] | null) ?? []
+  for (const o of order) q = q.order(o.col, { ascending: o.asc })
+  const rows = (await q).data as (Practice & {
+    adopters: number; logs_30d: number; logs_total: number; score: number
+  })[] | null
+  const base = rows ?? []
+  if (base.length === 0) return []
+
+  const [subById, tagsByPractice] = await Promise.all([
+    subcategoryMap(),
+    tagsForPractices(base.map((p) => p.id)),
+  ])
+  return base.map((p) => {
+    const sc = p.subcategory_id ? subById.get(p.subcategory_id) : null
+    return {
+      ...p,
+      subcategory: sc ? { slug: sc.slug, name: sc.name } : null,
+      tags: tagsByPractice.get(p.id) ?? [],
+    }
+  })
+}
+
+// --- Taxonomy reads -------------------------------------------------------
+
+/** All sub-categories (Focus, Cardio, …) ordered for filters + the editor. */
+export async function listSubcategories(): Promise<Subcategory[]> {
+  const { data } = await db()
+    .from('practice_subcategories')
+    .select('id, domain_id, slug, name, display_order')
+    .order('display_order', { ascending: true })
+  return (data as Subcategory[] | null) ?? []
+}
+
+async function subcategoryMap(): Promise<Map<string, Subcategory>> {
+  const all = await listSubcategories()
+  return new Map(all.map((s) => [s.id, s]))
+}
+
+/** Tags for a set of practices, grouped by practice id. */
+async function tagsForPractices(ids: string[]): Promise<Map<string, PracticeTag[]>> {
+  const out = new Map<string, PracticeTag[]>()
+  if (ids.length === 0) return out
+  const { data } = await db()
+    .from('practice_tags')
+    .select('practice_id, def:practice_tag_defs(slug, label)')
+    .in('practice_id', ids)
+  const rows = (data as { practice_id: string; def: PracticeTag | null }[] | null) ?? []
+  for (const r of rows) {
+    if (!r.def) continue
+    const list = out.get(r.practice_id) ?? []
+    list.push({ slug: r.def.slug, label: r.def.label })
+    out.set(r.practice_id, list)
+  }
+  return out
+}
+
+/** Tag labels currently on a practice (for pre-filling the editor). */
+export async function getPracticeTagLabels(practiceId: string): Promise<string[]> {
+  const map = await tagsForPractices([practiceId])
+  return (map.get(practiceId) ?? []).map((t) => t.label)
 }
 
 export async function getCircleActivePractice(circleId: string): Promise<Practice | null> {
@@ -116,6 +214,7 @@ export interface PracticeEdit {
   icon?: string | null
   header_image?: string | null
   domain_id?: string | null
+  subcategory_id?: string | null
 }
 
 const STR = (v: string | null | undefined, max: number): string | null => {
@@ -136,10 +235,63 @@ export async function updatePractice(id: string, patch: PracticeEdit): Promise<P
   if (patch.icon !== undefined) update.icon = STR(patch.icon, 40)
   if (patch.header_image !== undefined) update.header_image = STR(patch.header_image, 500)
   if (patch.domain_id !== undefined) update.domain_id = patch.domain_id || null
+  if (patch.subcategory_id !== undefined) update.subcategory_id = patch.subcategory_id || null
   if (Object.keys(update).length === 0) return getPractice(id)
 
   const { data } = await db().from('practices').update(update).eq('id', id).select(PRACTICE_COLS).maybeSingle()
   return (data as Practice | null) ?? null
+}
+
+const slugify = (s: string): string =>
+  s.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40)
+
+/**
+ * Replace a practice's tags for a given `source` with `labels` (hybrid model: any new
+ * label becomes a non-canonical folksonomy tag; existing slugs are reused). Tags from
+ * other sources (e.g. Vera, other members) are left untouched. Caller enforces authz
+ * (owner for 'author'). Capped at 12 tags.
+ */
+export async function setPracticeTags(
+  practiceId: string,
+  labels: string[],
+  opts: { source?: 'author' | 'member' | 'vera'; assignedBy?: string | null } = {},
+): Promise<void> {
+  const source = opts.source ?? 'author'
+  const client = db()
+
+  // Normalize to unique (slug, label) pairs and ensure a def row exists for each.
+  const seen = new Map<string, string>() // slug -> label
+  for (const raw of labels) {
+    const label = (raw ?? '').trim().slice(0, 40)
+    const slug = slugify(label)
+    if (slug && !seen.has(slug)) seen.set(slug, label)
+  }
+  const pairs = Array.from(seen.entries()).slice(0, 12)
+
+  if (pairs.length > 0) {
+    await client
+      .from('practice_tag_defs')
+      .upsert(
+        pairs.map(([slug, label]) => ({ slug, label, is_canonical: false })),
+        { onConflict: 'slug', ignoreDuplicates: true },
+      )
+  }
+
+  const slugs = pairs.map(([slug]) => slug)
+  const { data: defs } = slugs.length
+    ? await client.from('practice_tag_defs').select('id, slug').in('slug', slugs)
+    : { data: [] as { id: string; slug: string }[] }
+  const idBySlug = new Map(((defs as { id: string; slug: string }[] | null) ?? []).map((d) => [d.slug, d.id]))
+
+  // Swap this source's tags for the new set.
+  await client.from('practice_tags').delete().eq('practice_id', practiceId).eq('source', source)
+  const rows = slugs
+    .map((s) => idBySlug.get(s))
+    .filter((id): id is string => !!id)
+    .map((tag_id) => ({ practice_id: practiceId, tag_id, source, assigned_by: opts.assignedBy ?? null }))
+  if (rows.length > 0) {
+    await client.from('practice_tags').upsert(rows, { onConflict: 'practice_id,tag_id', ignoreDuplicates: true })
+  }
 }
 
 /** Fork a practice into a PRIVATE copy owned by the caller (is_public=false), so a
@@ -160,6 +312,7 @@ export async function forkPractice(profileId: string, practiceId: string): Promi
       icon: src.icon,
       header_image: src.header_image,
       domain_id: src.domain_id,
+      subcategory_id: src.subcategory_id,
       created_by: profileId,
       is_public: false,
     })
