@@ -11,6 +11,7 @@ export async function updateProfile(data: {
   handle: string
   bio: string
   avatarUrl: string
+  headerImageUrl?: string
   phone?: string
   city?: string
   website?: string
@@ -47,6 +48,10 @@ export async function updateProfile(data: {
     website: website || null,
   }
   if (avatarUrl) update.avatar_url = avatarUrl
+  // header_image_url isn't in the generated types yet (new column) — set via cast.
+  if (data.headerImageUrl !== undefined) {
+    (update as Record<string, unknown>).header_image_url = data.headerImageUrl.trim() || null
+  }
 
   const { error } = await supabase
     .from('profiles')

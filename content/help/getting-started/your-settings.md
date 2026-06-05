@@ -3,7 +3,7 @@ title: Your settings
 description: Where to update your profile, preferences, and account.
 category: getting-started
 order: 12
-updated: 2026-06-03
+updated: 2026-06-05
 audience: member
 featureKeys: [settings]
 status: published
@@ -13,7 +13,7 @@ Settings is where you tune your account and how Frequency reaches you.
 
 ## What you'll find there
 
-- **Profile**: your display name, handle, photo, bio, and region. This is what other members see.
+- **Profile**: your display name, handle, photo, **header image** (the banner across the top of your profile), bio, and region. This is what other members see.
 - **Notifications**: choose what you're told about and how (in-app, email, push). See [Notifications](/help/getting-started/notifications).
 - **Account**: sign-in and account-level controls.
 - **Billing**: for membership. During the beta this is a placeholder; everything is free (see [Membership & the Vault](/help/membership/the-vault)).

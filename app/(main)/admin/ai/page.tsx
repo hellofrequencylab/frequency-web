@@ -7,6 +7,7 @@ import { FEATURE_DAILY_CAP_USD, dailyCapFor } from '@/lib/ai/budget'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { AdminPage } from '@/components/admin/admin-page'
 import { AiToggle } from './toggle'
+import { ReindexHelpButton } from './reindex-help-button'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,6 +35,12 @@ export default async function AiControlsPage() {
   }
   const features = Array.from(new Set([...Object.keys(FEATURE_DAILY_CAP_USD), ...spend.keys()])).sort()
   const totalSpend = Array.from(spend.values()).reduce((a, b) => a + b, 0)
+
+  // "Ask Vera" retrieves from help_chunks; surface the count so an empty index
+  // (the reason Vera deflects) is obvious + one-click fixable.
+  const { count: helpChunks } = await admin
+    .from('help_chunks')
+    .select('id', { count: 'exact', head: true })
 
   // Resolve who toggled the flag (for the audit log).
   const ids = [...new Set(events.map((e) => e.changedBy).filter((x): x is string => !!x))]
@@ -74,6 +81,9 @@ export default async function AiControlsPage() {
           </div>
         )}
       </section>
+
+      {/* Ask Vera — help index (build/refresh the RAG corpus) */}
+      <ReindexHelpButton embeddedChunks={helpChunks ?? 0} />
 
       {/* Today's spend vs caps */}
       <section className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
