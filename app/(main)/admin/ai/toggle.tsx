@@ -5,14 +5,18 @@ import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import { setAiEnabled } from './actions'
 
-export function AiToggle({ enabled }: { enabled: boolean }) {
+// `onToggled` lets an embedded host (e.g. the in-place AI module in the console)
+// re-fetch its own state after a change; the standalone page omits it and falls
+// back to a router refresh.
+export function AiToggle({ enabled, onToggled }: { enabled: boolean; onToggled?: () => void }) {
   const router = useRouter()
   const [pending, start] = useTransition()
 
   function toggle() {
     start(async () => {
       await setAiEnabled(!enabled)
-      router.refresh()
+      if (onToggled) onToggled()
+      else router.refresh()
     })
   }
 
