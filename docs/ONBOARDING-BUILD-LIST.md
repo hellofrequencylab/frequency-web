@@ -379,11 +379,11 @@ hub (`/marketing`) all exist — **scattered**.
 **Gap roadmap (UI builders the launchpad will host):**
 | # | Gap | Where it'd live |
 |---|---|---|
-| 9.1 | **Onboarding-sequence editor** (splash copy/hero/oaths/routing — code-first today) | extend `/pages/sequences/[slug]/edit`, persist over `lib/onboarding/beta-sequences.ts` |
+| 9.1 | ✅ **shipped — Onboarding-sequence editor (splash).** `/pages/sequences/[slug]/edit` edits the splash copy; a `sequence_overrides` table (⚠️ apply `20260608020000`) merges over the code default at `/beta/[slug]` render — publish without a deploy. Voiced copy/oaths stay code-first (follow-up). | `lib/onboarding/sequence-overrides.ts`, `/beta/[slug]` |
 | 9.2 | **Visual entry-point / flyer designer** (live preview; templates immutable today) | `/entry-points/[id]/edit`, over `lib/entry-points/flyer.ts` |
 | 9.3 | **Live QR style preview** (JSON editor exists, no live render) | `/admin/qr/[id]` style editor |
 | 9.4 | **Unified link generator** (referral/campaign/invite links are 3 places) | a `/growth/links` dashboard over `qr_codes` + `invite_links` |
-| 9.5 | **CRM deal create/edit + drag-stage** (board is read-only) | `/crm` board actions + a deal modal |
+| 9.5 | ✅ **shipped — CRM deal create/edit.** `/crm/deals/new` + `/crm/deals/[id]/edit` (`DealForm`) wire the UI to the existing actions (`createDeal`/`updateDeal`/`moveDeal`); "New deal" button + per-card edit link. Stage-move was already on the cards. | `components/crm/deal-form.tsx`, `/crm` |
 | 9.6 | **Lead-flow customization UI** (personas/routing code-first) | over `lib/onboarding/lead-flows.ts` |
 | 9.7 | **A/B builder + scheduled publish** (infra exists: `entry_point_variants`, `fq_var`) | entry-point + page editor |
 
