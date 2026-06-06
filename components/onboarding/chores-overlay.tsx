@@ -31,6 +31,9 @@ export function ChoresOverlay({
 }) {
   const [open, setOpen] = useState(false)
   const [claimed, setClaimed] = useState<{ amount: number } | null>(null)
+  // Two-stage reveal: starts tucked off the left edge (peek). Tap → slides on; tap
+  // again → opens the full overlay.
+  const [peek, setPeek] = useState(true)
   const cardRef = useRef<HTMLDivElement>(null)
 
   const reward = chores.complete && !chores.rewarded
@@ -64,6 +67,7 @@ export function ChoresOverlay({
 
   const close = useCallback(() => {
     setOpen(false)
+    setPeek(true)
     try {
       localStorage.setItem(SEEN_KEY, String(Date.now()))
       sessionStorage.setItem(SESSION_KEY, '1')
@@ -95,14 +99,16 @@ export function ChoresOverlay({
   const pill = showPill ? (
     <button
       type="button"
-      onClick={() => setOpen(true)}
+      onClick={() => (peek ? setPeek(false) : setOpen(true))}
       aria-label={coach ? 'Vera — your next move' : `Vera’s chores — ${left} left`}
-      className="fixed left-4 bottom-20 z-40 inline-flex items-center gap-1.5 rounded-full border border-border bg-surface/90 px-3 py-1.5 text-xs font-semibold text-broadcast-strong shadow-sm backdrop-blur-sm transition-transform hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] md:bottom-6"
+      className={`fixed left-0 bottom-20 z-40 inline-flex items-center gap-1.5 rounded-r-full border border-l-0 border-border bg-surface/90 py-1.5 pl-4 pr-3 text-xs font-semibold text-broadcast-strong shadow-sm backdrop-blur-sm transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] md:bottom-6 ${
+        peek ? '-translate-x-[calc(100%-2rem)]' : 'translate-x-0'
+      }`}
     >
       {coach ? (
-        <><Sparkles className="h-4 w-4" aria-hidden /> Next move</>
+        <>Next move <Sparkles className="h-4 w-4 shrink-0" aria-hidden /></>
       ) : (
-        <><ListChecks className="h-4 w-4" aria-hidden /> {left} {left === 1 ? 'chore' : 'chores'}</>
+        <>{left} {left === 1 ? 'chore' : 'chores'} <ListChecks className="h-4 w-4 shrink-0" aria-hidden /></>
       )}
     </button>
   ) : null

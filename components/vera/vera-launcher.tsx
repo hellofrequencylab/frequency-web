@@ -22,6 +22,8 @@ type Tab = 'chat' | 'help'
 
 export function VeraLauncher({ index }: { index: HelpSearchEntry[] }) {
   const [open, setOpen] = useState(false)
+  // Two-stage reveal: tucked off the right edge (peek) → tap slides it on → tap opens.
+  const [peek, setPeek] = useState(true)
   const [tab, setTab] = useState<Tab>('chat')
   const [q, setQ] = useState('')
   const panelRef = useRef<HTMLDivElement>(null)
@@ -43,6 +45,7 @@ export function VeraLauncher({ index }: { index: HelpSearchEntry[] }) {
 
   function close() {
     setOpen(false)
+    setPeek(true)
     setQ('')
   }
 
@@ -53,13 +56,16 @@ export function VeraLauncher({ index }: { index: HelpSearchEntry[] }) {
       {/* Floating launcher — raised on mobile to clear the bottom nav. */}
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={() => (peek ? setPeek(false) : setOpen(true))}
         aria-label="Open Vera"
         aria-haspopup="dialog"
         aria-expanded={open}
-        className="fixed right-4 bottom-20 z-40 inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary/90 text-on-primary shadow-sm transition-transform hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] md:bottom-6"
+        className={`fixed right-0 bottom-20 z-40 inline-flex items-center gap-1.5 rounded-l-full bg-primary/90 py-2 pl-3 pr-4 text-on-primary shadow-sm transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] md:bottom-6 ${
+          peek ? 'translate-x-[calc(100%-2rem)]' : 'translate-x-0'
+        }`}
       >
-        <Sparkles className="h-5 w-5" aria-hidden />
+        <Sparkles className="h-5 w-5 shrink-0" aria-hidden />
+        <span className="text-sm font-semibold">Vera</span>
       </button>
 
       {open && (
