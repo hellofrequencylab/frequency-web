@@ -6,6 +6,7 @@ import { Sparkles, Check, X, ArrowRight, ListChecks, PartyPopper, Gem } from 'lu
 import type { ProfileChores } from '@/lib/onboarding/profile-chores'
 import type { OnboardingStep } from '@/lib/onboarding/status'
 import { claimChoresReward } from '@/app/(main)/feed/chores-actions'
+import { EdgePill } from '@/components/layout/edge-pill'
 
 // Vera's coach — the bait-and-switch (BETA-ACTIVATION §2) plus the "what next" nudge
 // (§5, build item 1.3 folded in here rather than a competing feed card). One Vera
@@ -32,10 +33,6 @@ export function ChoresOverlay({
 }) {
   const [open, setOpen] = useState(false)
   const [claimed, setClaimed] = useState<{ amount: number } | null>(null)
-  // The "What's next" pill stays VISIBLE (no edge-tuck) as a standing reminder that
-  // tasks remain; it pulses (a gem dot) until onboarding is complete, then disappears.
-  // Snoozing still tucks it for the day.
-  const [peek, setPeek] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
 
   const reward = chores.complete && !chores.rewarded
@@ -70,7 +67,6 @@ export function ChoresOverlay({
 
   const snoozeTomorrow = useCallback(() => {
     setOpen(false)
-    setPeek(true)
     try {
       localStorage.setItem(SNOOZE_KEY, String(Date.now() + 24 * 60 * 60 * 1000))
       sessionStorage.setItem(SESSION_KEY, '1')
@@ -107,27 +103,20 @@ export function ChoresOverlay({
   // ── Persistent entry: a slim pill (bottom-LEFT, clear of the Vera launcher) so
   //    the current nudge is reachable any time. Hidden on the reward beat (it
   //    auto-opens) and once everything's done. ─────────────────────────────────
+  // Next Steps — left-edge pill: present only while tasks remain (disappears when
+  // done), collapsed until hover (web) / tap (mobile), then a click opens the overlay.
+  // Pulses a blue glow while there's something waiting.
   const showPill = !open && (!chores.complete || coach)
   const pill = showPill ? (
-    <button
-      type="button"
-      onClick={() => (peek ? setPeek(false) : setOpen(true))}
-      aria-label={coach ? 'Vera — your next move (earn gems)' : `Vera’s chores — ${left} left, earn gems`}
-      className={`fixed left-0 bottom-20 z-40 inline-flex items-center gap-1.5 rounded-r-full border border-l-0 border-border bg-surface/90 py-1.5 pl-4 pr-3 text-xs font-semibold text-broadcast-strong shadow-sm backdrop-blur-sm transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] md:bottom-6 ${
-        peek ? '-translate-x-[calc(100%-2rem)]' : 'translate-x-0'
-      }`}
-    >
-      {coach ? (
-        <>Next move <Sparkles className="h-4 w-4 shrink-0" aria-hidden /></>
-      ) : (
-        <>{left} {left === 1 ? 'chore' : 'chores'} <ListChecks className="h-4 w-4 shrink-0" aria-hidden /></>
-      )}
-      {/* Pulsing gem dot — a standing reminder there are rewards to earn. */}
-      <span className="absolute -right-1 -top-1 flex h-3 w-3" aria-hidden>
-        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-signal opacity-75" />
-        <span className="relative inline-flex h-3 w-3 rounded-full bg-signal ring-2 ring-surface" />
-      </span>
-    </button>
+    <EdgePill
+      side="left"
+      glow="blue"
+      label={coach ? 'Next move' : `${left} ${left === 1 ? 'chore' : 'chores'}`}
+      icon={coach ? <Sparkles className="h-5 w-5" aria-hidden /> : <ListChecks className="h-5 w-5" aria-hidden />}
+      waiting
+      onOpen={() => setOpen(true)}
+      ariaLabel={coach ? 'Vera — your next move (earn gems)' : `Vera’s chores — ${left} left, earn gems`}
+    />
   ) : null
 
   if (!open) return pill
