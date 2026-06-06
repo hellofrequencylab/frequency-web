@@ -501,98 +501,67 @@ async function checkAllChallengesComplete(admin: AdminClient, profileId: string)
 // ---------------------------------------------------------------------------
 
 async function advanceQuests(admin: AdminClient, event: GamificationEvent) {
-  const { data: chains } = await admin
-    .from('quest_chains')
-    .select('id')
+  // Join-gated (ADR-140): only advance Journeys the member has explicitly STARTED.
+  // A quest_progress row means "joined" — the engine never auto-enrolls. (Premium
+  // model: members browse, then choose to start; created via startQuest.)
+  const { data: joined } = await admin
+    .from('quest_progress')
+    .select('id, chain_id, current_step, step_progress')
+    .eq('profile_id', event.profileId)
+    .is('completed_at', null)
 
-  if (!chains?.length) return
+  if (!joined?.length) return
 
-  for (const chain of chains) {
+  for (const progress of joined) {
     const { data: steps } = await admin
       .from('quest_steps')
       .select('id, step_order, criteria, target, zaps_reward')
-      .eq('chain_id', chain.id)
+      .eq('chain_id', progress.chain_id)
       .order('step_order')
 
     if (!steps?.length) continue
 
-    const { data: progress } = await admin
-      .from('quest_progress')
-      .select('id, current_step, step_progress, completed_at')
-      .eq('profile_id', event.profileId)
-      .eq('chain_id', chain.id)
-      .maybeSingle()
-
-    if (progress?.completed_at) continue
-
-    const currentStepOrder = progress?.current_step ?? 1
-    const currentStep = steps.find(s => s.step_order === currentStepOrder)
+    const currentStep = steps.find(s => s.step_order === progress.current_step)
     if (!currentStep) continue
 
     const criteria = currentStep.criteria as Record<string, unknown>
     if (!isArcStepRelevant(criteria, event)) continue
 
-    const newProgress = (progress?.step_progress ?? 0) + 1
+    const newProgress = progress.step_progress + 1
 
     if (newProgress >= currentStep.target) {
-      // Step complete — advance to next or finish chain
-      const nextStep = steps.find(s => s.step_order === currentStepOrder + 1)
+      const nextStep = steps.find(s => s.step_order === progress.current_step + 1)
 
       if (nextStep) {
-        // Advance to next step
-        if (progress) {
-          await admin
-            .from('quest_progress')
-            .update({ current_step: nextStep.step_order, step_progress: 0 })
-            .eq('id', progress.id)
-        } else {
-          await admin
-            .from('quest_progress')
-            .insert({
-              profile_id: event.profileId,
-              chain_id: chain.id,
-              current_step: nextStep.step_order,
-              step_progress: 0,
-            })
-        }
+        await admin
+          .from('quest_progress')
+          .update({ current_step: nextStep.step_order, step_progress: 0 })
+          .eq('id', progress.id)
       } else {
-        // Chain complete
-        const now = new Date().toISOString()
-        if (progress) {
-          await admin
-            .from('quest_progress')
-            .update({ step_progress: newProgress, completed_at: now })
-            .eq('id', progress.id)
-        } else {
-          await admin
-            .from('quest_progress')
-            .insert({
-              profile_id: event.profileId,
-              chain_id: chain.id,
-              current_step: currentStepOrder,
-              step_progress: newProgress,
-              completed_at: now,
-            })
-        }
+        // Chain complete.
+        await admin
+          .from('quest_progress')
+          .update({ step_progress: newProgress, completed_at: new Date().toISOString() })
+          .eq('id', progress.id)
 
-        // Award chain completion reward, in the chain's currency: zaps if the
-        // journey includes any real-life step (drives season rank), else gems for
-        // a purely on-platform journey (ADR-139).
+        // Chain completion reward, in the chain's currency: zaps if the journey
+        // includes any real-life step (drives season rank), else gems for a
+        // purely on-platform journey (ADR-139).
         const { data: chainData } = await admin
           .from('quest_chains')
           .select('zaps_reward')
-          .eq('id', chain.id)
+          .eq('id', progress.chain_id)
           .maybeSingle()
         await grantReward(
           event.profileId,
           chainCurrency(steps),
           chainData?.zaps_reward ?? 0,
           'quest_complete',
-          { chain: chain.id },
+          { chain: progress.chain_id },
         )
       }
 
-      // Award step reward, in the step's own currency (ADR-139).
+      // Step reward, in the step's own currency (ADR-139).
       if (currentStep.zaps_reward > 0) {
         const sc = currentStep.criteria as { type?: string; streak_type?: string }
         await grantReward(
@@ -600,26 +569,14 @@ async function advanceQuests(admin: AdminClient, event: GamificationEvent) {
           currencyForCriteria(sc.type, { streakType: sc.streak_type }),
           currentStep.zaps_reward,
           'quest_complete',
-          { chain: chain.id, step: currentStep.step_order },
+          { chain: progress.chain_id, step: currentStep.step_order },
         )
       }
     } else {
-      // Increment progress
-      if (progress) {
-        await admin
-          .from('quest_progress')
-          .update({ step_progress: newProgress })
-          .eq('id', progress.id)
-      } else {
-        await admin
-          .from('quest_progress')
-          .insert({
-            profile_id: event.profileId,
-            chain_id: chain.id,
-            current_step: currentStepOrder,
-            step_progress: newProgress,
-          })
-      }
+      await admin
+        .from('quest_progress')
+        .update({ step_progress: newProgress })
+        .eq('id', progress.id)
     }
   }
 }
