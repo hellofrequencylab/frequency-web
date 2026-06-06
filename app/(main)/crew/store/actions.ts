@@ -12,7 +12,7 @@ export async function redeemItem(itemId: string): Promise<ActionResult> {
 
   const admin = createAdminClient()
 
-  const [{ data: item }, { data: profile }] = await Promise.all([
+  const [{ data: item }, { data: profile }, { data: spends }] = await Promise.all([
     admin.from('store_items')
       .select('id, slug, gem_cost, stock, is_active, metadata, category')
       .eq('id', itemId)
@@ -21,15 +21,21 @@ export async function redeemItem(itemId: string): Promise<ActionResult> {
       .select('id, lifetime_gems')
       .eq('id', profileId)
       .maybeSingle(),
+    admin.from('store_redemptions')
+      .select('gems_spent')
+      .eq('profile_id', profileId),
   ])
 
   if (!item) return fail('Item not found')
   if (!item.is_active) return fail('Item is no longer available')
   if (item.stock !== null && item.stock <= 0) return fail('Out of stock')
 
-  const gems = profile?.lifetime_gems ?? 0
-  if (gems < item.gem_cost) {
-    return fail(`Not enough gems. You need ${item.gem_cost - gems} more.`)
+  // Spendable balance = gems earned (lifetime) − gems already spent. lifetime_gems
+  // is monotonic, so the difference is the real wallet (ADR-140 fix).
+  const spent = (spends ?? []).reduce((s, r) => s + (r.gems_spent ?? 0), 0)
+  const balance = (profile?.lifetime_gems ?? 0) - spent
+  if (balance < item.gem_cost) {
+    return fail(`Not enough gems. You need ${item.gem_cost - balance} more.`)
   }
 
   // Check if already purchased (for non-stackable items like cosmetics/titles)
@@ -105,7 +111,7 @@ export async function getStoreData() {
       .eq('is_active', true)
       .order('sort_order'),
     admin.from('store_redemptions')
-      .select('item_id, redeemed_at')
+      .select('item_id, redeemed_at, gems_spent')
       .eq('profile_id', profileId),
     admin.from('profiles')
       .select('lifetime_gems, profile_border, profile_flair, custom_title')
@@ -114,13 +120,15 @@ export async function getStoreData() {
   ])
 
   const ownedIds = new Set((redemptions ?? []).map(r => r.item_id))
+  // Spendable balance = gems earned − gems spent (lifetime_gems is monotonic).
+  const spent = (redemptions ?? []).reduce((s, r) => s + (r.gems_spent ?? 0), 0)
 
   return {
     items: (items ?? []).map(item => ({
       ...item,
       owned: ownedIds.has(item.id),
     })),
-    balance: profile?.lifetime_gems ?? 0,
+    balance: Math.max(0, (profile?.lifetime_gems ?? 0) - spent),
     equipped: {
       border: profile?.profile_border ?? null,
       flair: profile?.profile_flair ?? null,

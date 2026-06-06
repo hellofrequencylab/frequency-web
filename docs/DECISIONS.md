@@ -4368,6 +4368,43 @@ GAMIFICATION-AUDIT.md: Journey **join-gating** + a **pillar column** on `quest_c
 member **zap-rate multiplier** (ECONOMY §6).
 
 ---
+
+## ADR-140: Gamification gap closure — joinable Pillar Journeys, member zap-rate, store balance
+
+**Status:** Accepted — shipped. Follows [ADR-139](DECISIONS.md). Spec:
+[ECONOMY-AND-JOURNEYS.md](ECONOMY-AND-JOURNEYS.md) §5–§7,
+[GAMIFICATION-AUDIT.md](GAMIFICATION-AUDIT.md).
+
+**Context.** ADR-139 fixed reward categorization and shipped the points log; its audit listed
+four open gaps. Closing them: (1) the Quests engine auto-enrolled every member in every chain
+and had **no browse/join UI** (the route just redirected) — the opposite of the "browse, then
+choose to Start" premium model; (2) `quest_chains` were pillar-themed by name only; (3) the
+"member zaps earn at a lower rate" decision (ECONOMY §6, *locked*) was never implemented; (4)
+the Store treated `lifetime_gems` (a monotonic total) as the spendable balance and never
+decremented on spend.
+
+**Decision.**
+- **Join-gating.** A `quest_progress` row now means *joined*. `advanceQuests` only advances
+  chains the member has started — it never auto-creates progress. A new `startQuest` action
+  (Crew-only; free in Beta) creates the row, and a real **`/crew/quests`** page lets members
+  browse seasonal Journeys grouped by Pillar, see per-step currency/reward and their progress,
+  and Start one (free members hit the upgrade lightbox via `CrewGate`).
+- **Pillar column.** `quest_chains.domain_id → domains`, backfilled on the four seasonal
+  Journeys, so they group by Pillar (Mind/Body/Spirit/Expression).
+- **Member zap-rate.** `awardZaps` applies `MEMBER_ZAP_RATE` (0.5, floored, min 1) to free
+  members; Crew earn full rate. Gated on `BETA_MEMBERS_GET_CREW`, so it is **inert during Beta**
+  (everyone is Crew) and switches on at Launch. One role lookup, skipped entirely in Beta.
+- **Store balance.** Spendable balance is now `lifetime_gems − Σ gems_spent` (from
+  `store_redemptions`), enforced in both `getStoreData` and `redeemItem`.
+- **Content.** Two bonus micro-journeys + a starter spine of seven system-curated library
+  practices across the Pillars.
+
+**Consequences.** Journeys become a real, opt-in surface (the premium marquee), and the dock's
+"Journey → View" now points at `/crew/quests`. Existing auto-enrolled progress rows simply keep
+advancing (no backfill needed). The zap-rate is a single tunable constant. Endorsement display
+(rank/badges on public profiles) and a DIY journey builder remain the open items in ECONOMY §6–§7.
+
+---
 ### Decisions intentionally NOT duplicated here
 
 Already fully covered by the repo docs (no ADR needed): the RLS / admin-client

@@ -57,16 +57,24 @@ chain in the currency of its real-world steps.
   profile totals (and, for zaps, rank) move — so the log and the counters can never
   disagree.
 
+## Closed since the audit (ADR-140)
+
+| Gap | Resolution | Status |
+|---|---|---|
+| Journey **join-gating** | `quest_progress` = joined; `advanceQuests` only advances started chains; new `startQuest` action + a real `/crew/quests` browse/join page | ✅ done |
+| **Pillar column** on `quest_chains` | `domain_id → domains`, backfilled on the 4 seasonal Journeys; page groups by Pillar | ✅ done |
+| Member **zap-rate multiplier** | `MEMBER_ZAP_RATE` (0.5) in `awardZaps`; gated on `BETA_MEMBERS_GET_CREW` so it's inert in Beta, live at Launch | ✅ done |
+| Store **gems balance** | Spendable = `lifetime_gems − Σ gems_spent`, enforced in `getStoreData` + `redeemItem` | ✅ done |
+| Starter **content** | 2 bonus micro-journeys + 7 system-curated library practices across the Pillars | ✅ seeded |
+
 ## Where the program is still lacking (recommended next)
 
 | Gap | Why it matters | Effort |
 |---|---|---|
-| ⏳ Journey **join-gating** — the engine auto-progresses every member through every chain | Premium model (ECONOMY §5) wants members to *choose/Join* a Journey; today all chains advance passively | M (engine + UI) |
-| ⏳ **Pillar column** on `quest_chains` | Journeys are pillar-themed by name only; a real `domain_id` enables per-Pillar browse + the "4 primary per season" contract | S (migration + admin) |
-| ⏳ Member **zap-rate multiplier** (ECONOMY §6, "locked") | Free members are meant to earn zaps slower; not yet implemented — today member vs. crew earn the same | S–M |
 | ⏳ Season challenges are all tagged **Season 1** | The engine ignores the season filter so they still fire, but new seasons need fresh challenge sets to feel like "a new climb" | S (seasonal seed) |
-| ⚠️ `season_convert` / store **spend** writes `lifetime_gems` as the balance | The Store treats `lifetime_gems` as spendable but redemptions don't decrement it — a separate balance bug worth confirming (out of scope here) | review |
-| ⏳ **Beta zap-rate of online reach** | Most beta activity is online (gems). Drive zaps with seeded ghost nodes / QR drops + event check-ins so the rank ladder isn't flat | content |
+| ⏳ **Endorsement layer** (ECONOMY §4/§7) | Rank badges / titles / journey badges on public profiles + people cards, Crew-gated — the visible half of the upsell | M |
+| ⏳ **DIY journey builder** (ECONOMY §7) | Free members pick practices → a personal journey (the non-premium approximation) | M |
+| ⏳ **Beta zap supply** | Most beta activity is online (gems). Drive zaps with seeded ghost nodes / QR drops + event check-ins so the rank ladder isn't flat | content |
 
 > Demo community already looks alive: the demo engine seeds zaps/gems/ranks/streaks
 > per rank-band and inserts attendance streaks + trophy cases, so leaderboards and
