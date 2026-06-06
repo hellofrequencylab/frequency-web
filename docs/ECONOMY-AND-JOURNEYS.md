@@ -115,9 +115,11 @@ you can only *do* as Crew.
 
 **Locked:**
 - **Member zap rate → lower multiplier.** Members earn Zaps at a reduced rate (they
-  climb, slowly). Gems stay easy.
+  climb, slowly). Gems stay easy. ✅ Done (ADR-140): `MEMBER_ZAP_RATE` in `awardZaps`,
+  gated on `BETA_MEMBERS_GET_CREW` (inert in Beta, live at Launch).
 - **Journeys are Crew-only — no member DIY.** Free members get individual practices,
-  not the tracked all-in-one Journey flow.
+  not the tracked all-in-one Journey flow. ✅ Join-gating done (ADR-140): `startQuest`
+  is Crew-gated; `/crew/quests` browse + CrewGate Start.
 - **Rename depth → full.** `arc_* → journey_*` tables + `/crew/journeys` route +
   `/crew/arcs` redirect. ✅ Done (ADR-085).
 
@@ -131,11 +133,12 @@ you can only *do* as Crew.
 ## 7. Build order (once §6 lands)
 
 1. ✅ Rename Arcs → Journeys (user-facing).
-2. **Earning stays open for members; ranks/endorsements/spend gate** — member zaps at
-   the chosen rate; rank + endorsements suppressed on free profiles; Store spend gated
-   (done). 
-3. **Journey gating** — browse open, **Join** gated to Crew (CrewGate), preview banner.
-4. **Seasonal journeys** — link `arc_chains` to a season + a Pillar; ship 4 primary +
-   micro tracks per season; authoring surface.
-5. **DIY journey builder** — pick practices → a personal journey.
-6. **Endorsement layer** — the profile/people-card badge rendering, Crew-gated.
+2. ✅ **Earning open + spend/rate gated** — member zap-rate multiplier (ADR-140); Store
+   spend gated + balance = earned − spent (ADR-140). Rank/endorsement suppression on
+   free profiles still pending (see Endorsement layer below).
+3. ✅ **Journey gating** — `/crew/quests` browse; **Start** gated to Crew (CrewGate);
+   preview banner (ADR-140).
+4. ✅ **Seasonal journeys** — `quest_chains.domain_id` → Pillar; 4 primary + 2 micro
+   tracks seeded for the active season (ADR-139/140). Authoring surface still pending.
+5. ⏳ **DIY journey builder** — pick practices → a personal journey.
+6. ⏳ **Endorsement layer** — the profile/people-card badge rendering, Crew-gated.

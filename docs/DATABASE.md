@@ -49,9 +49,13 @@ these tables mean.
 `season_trophies`, `seasons`, `crew_tasks`, `crew_completions`, `gem_config`,
 `gem_transactions`, `zap_config`, `zap_transactions`, `store_items`, `store_redemptions`
 
-> **`arc_chains` / `arc_steps` / `arc_progress`** were renamed from
-> `quest_chains` / `quest_steps` / `quest_progress` (compat `quest_*` views still
-> exist) — the multi-step feature is now an "Arc" (the GAME remains "The Quest").
+> **`quest_chains` / `quest_steps` / `quest_progress`** are the gamified seasonal
+> Journeys engine (renamed arc_*→journey_*→quest_* over time; the live tables are
+> `quest_*`). `quest_chains.domain_id → domains` tags each Journey to a Pillar.
+> **Join-gated (ADR-140):** a `quest_progress` row means the member *started* the
+> Journey; `advanceQuests` only advances started chains (no auto-enroll). Browse +
+> Start at `/crew/quests`. Distinct from `journey_plans` (the open, free, member-built
+> practice-combo library at `/journeys`).
 
 > **`seasons`** gives seasons a first-class identity (`season_number`, `name`,
 > `theme`, `starts_at`/`ends_at`, `status`; one `active` at a time). `reset_season()`
