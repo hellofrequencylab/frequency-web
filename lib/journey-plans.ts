@@ -361,8 +361,12 @@ export function planPillarMap(items: JourneyPlanItem[]): PlanPillarSlice[] {
 // --- Active-journey progress (no schema; derived from the practice log) --------
 
 export interface JourneyProgressItem extends JourneyPlanItem {
-  /** Logged at least once → the step counts as done (the v1 definition). */
-  logged: boolean
+  /** Distinct days this practice was logged in the last 7 days. */
+  loggedThisWeek: number
+  /** Weekly target parsed from the item's (or practice's) cadence (1–7). */
+  target: number
+  /** Cadence met this week → the step counts as done. */
+  met: boolean
 }
 
 export interface JourneyProgress {
@@ -371,15 +375,30 @@ export interface JourneyProgress {
   total: number
   done: number
   percent: number
-  /** First not-yet-logged item, in order — the member's "current step". */
+  /** First item not yet on track this week, in order — the "current step". */
   nextItem: JourneyProgressItem | null
 }
 
+/** Parse a free-text cadence ("Daily", "3x a week", "Weekly", …) into a weekly
+ *  target: how many of the last 7 days the practice should be logged. Unknown,
+ *  weekly, or monthly cadences fall back to 1 (lenient — "did it recently" counts).
+ *  Clamped to 1–7 since a 7-day window can't exceed 7 distinct days. */
+export function weeklyTargetFromCadence(cadence: string | null): number {
+  const c = (cadence ?? '').toLowerCase()
+  const clamp = (n: number) => Math.min(7, Math.max(1, n))
+  const num = c.match(/(\d+)\s*(x|×|times|day|\/|per)/)
+  if (num) return clamp(parseInt(num[1], 10))
+  if (/(daily|every ?day|each day)/.test(c)) return 7
+  if (/(thrice|three times)/.test(c)) return 3
+  if (/(twice|two times)/.test(c)) return 2
+  return 1
+}
+
 /** A member's active (adopted) journeys with progress derived from their practice
- *  log: a step is "done" once they've logged that practice at least once, so the
- *  current step is the first item they haven't logged. No progress schema needed —
- *  this rides the same practice_logs the gamification (zaps / streak) runs on, so
- *  logging a journey's practice advances the journey AND earns the rewards. */
+ *  log. A step is "done" when its cadence is MET this week — logged on at least
+ *  `target` of the last 7 days — so the current step is the first one off track.
+ *  No progress schema; it rides the same practice_logs the gamification runs on,
+ *  so logging a journey's practice advances it AND earns the rewards. */
 export async function getActiveJourneyProgress(profileId: string): Promise<JourneyProgress[]> {
   const client = db()
 
@@ -394,16 +413,20 @@ export async function getActiveJourneyProgress(profileId: string): Promise<Journ
     .filter((p): p is JourneyPlan => !!p)
   if (plans.length === 0) return []
 
-  // Which practices has the member ever logged? (the step-done signal)
+  // Logs in the last 7 days → distinct days per practice (the cadence signal).
+  // Logging is once per practice per day, so a row count per practice == days logged.
+  const weekAgo = new Date()
+  weekAgo.setDate(weekAgo.getDate() - 6) // inclusive 7-day window: today + 6 prior
+  const since = weekAgo.toISOString().slice(0, 10)
   const { data: logRows } = await client
     .from('practice_logs')
-    .select('practice_id')
+    .select('practice_id, logged_for')
     .eq('profile_id', profileId)
-  const logged = new Set(
-    ((logRows ?? []) as { practice_id: string | null }[])
-      .map((r) => r.practice_id)
-      .filter((id): id is string => !!id),
-  )
+    .gte('logged_for', since)
+  const daysByPractice = new Map<string, number>()
+  for (const r of (logRows ?? []) as { practice_id: string | null }[]) {
+    if (r.practice_id) daysByPractice.set(r.practice_id, (daysByPractice.get(r.practice_id) ?? 0) + 1)
+  }
 
   const { data: itemRows } = await client
     .from('journey_plan_items')
@@ -418,8 +441,12 @@ export async function getActiveJourneyProgress(profileId: string): Promise<Journ
   return plans.map((plan) => {
     const items: JourneyProgressItem[] = allItems
       .filter((it) => it.plan_id === plan.id)
-      .map((it) => ({ ...it, logged: logged.has(it.practice_id) }))
-    const done = items.filter((it) => it.logged).length
+      .map((it) => {
+        const target = weeklyTargetFromCadence(it.cadence ?? it.practice?.cadence ?? null)
+        const loggedThisWeek = daysByPractice.get(it.practice_id) ?? 0
+        return { ...it, loggedThisWeek, target, met: loggedThisWeek >= target }
+      })
+    const done = items.filter((it) => it.met).length
     const total = items.length
     return {
       plan,
@@ -427,7 +454,7 @@ export async function getActiveJourneyProgress(profileId: string): Promise<Journ
       total,
       done,
       percent: total > 0 ? Math.round((done / total) * 100) : 0,
-      nextItem: items.find((it) => !it.logged) ?? null,
+      nextItem: items.find((it) => !it.met) ?? null,
     }
   })
 }
