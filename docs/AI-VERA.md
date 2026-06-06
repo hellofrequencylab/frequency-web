@@ -1,6 +1,9 @@
 # Vera — the resident guide (persona + integration system)
 
-Status: **design / not yet built.** Decisions: [ADR-049](DECISIONS.md) (persona + registry) and
+Status: **Phases A–D shipped & live** (kernel, help-RAG voice, member memory, onboarding
+concierge — ADR-074/075). ⏳ Pending: the persistent companion launcher (ADR-086), proactive
+encouragement/accountability (Phase E), and the host copilot (Phase F) — see §12 + the build
+list in [ONBOARDING-BUILD-LIST.md](ONBOARDING-BUILD-LIST.md). Decisions: [ADR-049](DECISIONS.md) (persona + registry) and
 [ADR-066](DECISIONS.md) (integration: the bridge doctrine, the memory shape, one concierge+help
 voice on the shared kernel). Runs on the AI core ([ADR-041](DECISIONS.md)/[AI-STRATEGY.md](AI-STRATEGY.md))
 under the governance kernel ([ADR-028](DECISIONS.md)); is the conversational layer of onboarding
