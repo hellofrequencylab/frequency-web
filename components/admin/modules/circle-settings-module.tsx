@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { Check } from 'lucide-react'
 import { AdminModuleCard } from '@/components/admin/admin-module-card'
 import { moduleById } from '@/lib/admin/modules/registry'
+import { fieldClasses, labelClasses } from '@/components/ui/field'
 import { getCircleAdminData, updateCircleSettings } from '@/app/(main)/circles/admin-actions'
 
 // The Phase-2 pilot module (EMBEDDED-ADMIN.md / ADR-133): in-place "Circle
@@ -16,9 +17,8 @@ import { getCircleAdminData, updateCircleSettings } from '@/app/(main)/circles/a
 
 type CircleData = NonNullable<Awaited<ReturnType<typeof getCircleAdminData>>>
 
-const input =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'
-const fieldLabel = 'text-xs font-medium text-muted'
+const input = fieldClasses
+const fieldLabel = labelClasses
 
 export function CircleSettingsModule() {
   const pathname = usePathname()
