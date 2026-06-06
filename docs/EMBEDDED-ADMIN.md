@@ -354,7 +354,13 @@ group of modules; `/admin/*` retires once empty.
 > Circle + Event descriptions) via field-level `update*Field` actions, each
 > capability-gated. ✅ **Cover image** is inline too on Circle (`InlineCover` →
 > `uploadCircleCover`/`removeCircleCover` to the `site-media` bucket, capability-gated).
-> **Next:** the sidebar **drill-down** (ADR-137, the manage half); Profile inline later.
+> ✅ The **sidebar drill-down** shipped (`components/admin/sidebar/admin-console.tsx`):
+> the dock is now a category home → category screen → back + search, **driven by the
+> role-gated admin catalog** (`visibleLinks`) so tiers filter automatically — a janitor
+> sees every category, a host only what they steward; reach any admin surface from the
+> sidebar, no `/admin` trip. **Next:** the `@admin` server slot (make the categories
+> render real `modulesForSurface(...)` instead of catalog deep-links); Profile inline;
+> QR-generator + Vera-tone inline tuners.
 
 1. **Engine.** `AdminModule` registry + `modulesFor`/`showsAdminPanel`; `AdminModuleCard`
    over `SidebarCard`; add `hub`/`nexus` loaders + `loadCapabilitiesForScope`; the `@admin`
