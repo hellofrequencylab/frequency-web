@@ -4335,6 +4335,7 @@ export type Database = {
         Row: {
           created_at: string
           description: string
+          domain_id: string | null
           icon: string
           id: string
           name: string
@@ -4346,6 +4347,7 @@ export type Database = {
         Insert: {
           created_at?: string
           description: string
+          domain_id?: string | null
           icon?: string
           id?: string
           name: string
@@ -4357,6 +4359,7 @@ export type Database = {
         Update: {
           created_at?: string
           description?: string
+          domain_id?: string | null
           icon?: string
           id?: string
           name?: string
@@ -4365,7 +4368,15 @@ export type Database = {
           sort_order?: number
           zaps_reward?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "quest_chains_domain_id_fkey"
+            columns: ["domain_id"]
+            isOneToOne: false
+            referencedRelation: "domains"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       quest_progress: {
         Row: {

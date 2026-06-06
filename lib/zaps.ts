@@ -13,6 +13,29 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Database } from '@/lib/database.types'
+import { BETA_MEMBERS_GET_CREW } from '@/lib/onboarding/beta-script'
+import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
+
+// Free members climb the zap ladder at a reduced rate; Crew earn full rate
+// (ECONOMY-AND-JOURNEYS §6 — locked). Gems stay easy for everyone; only zaps are
+// throttled. In Beta everyone is Crew (BETA_MEMBERS_GET_CREW), so this is inert
+// until that flag flips off at Launch. Tunable here.
+export const MEMBER_ZAP_RATE = 0.5
+
+/** Apply the member zap-rate to a base amount. Crew (and all of Beta) earn full;
+ *  a free member earns `MEMBER_ZAP_RATE` of it (floored, but never below 1 so a
+ *  grant is never silently zeroed). One role lookup, skipped entirely in Beta. */
+async function effectiveZaps(
+  admin: ReturnType<typeof createAdminClient>,
+  profileId: string,
+  amount: number,
+): Promise<number> {
+  if (BETA_MEMBERS_GET_CREW) return amount
+  const { data } = await admin.from('profiles').select('community_role').eq('id', profileId).maybeSingle()
+  const role = (data?.community_role ?? 'member') as CommunityRole
+  if (atLeastRole(role, 'crew')) return amount
+  return Math.max(1, Math.floor(amount * MEMBER_ZAP_RATE))
+}
 
 // Fallback base zap amounts for external / in-person actions. The live, tunable
 // numbers come from the `zap_config` table (awardZapsForAction); these are only
@@ -69,12 +92,14 @@ export async function awardZaps(
   if (!Number.isFinite(amount) || amount <= 0) return { awarded: false, amount: 0 }
 
   const admin = createAdminClient()
+  // Free members earn zaps at a reduced rate (ADR-140 / ECONOMY §6); inert in Beta.
+  const finalAmount = await effectiveZaps(admin, profileId, amount)
   const { error } = await admin
     .from('zap_transactions')
     .insert({
       profile_id: profileId,
       action_type: opts.actionType ?? 'manual',
-      amount,
+      amount: finalAmount,
       metadata: (opts.metadata ?? {}) as Database['public']['Tables']['zap_transactions']['Insert']['metadata'],
     })
 
@@ -83,7 +108,7 @@ export async function awardZaps(
     return { awarded: false, amount: 0 }
   }
 
-  return { awarded: true, amount }
+  return { awarded: true, amount: finalAmount }
 }
 
 /**
