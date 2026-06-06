@@ -489,6 +489,7 @@ function NavLinkList({
   permissions,
   staffRole = null,
   sections = NAV_SECTIONS,
+  compact = false,
 }: {
   isActive: (href: string) => boolean
   /** Gating role; null = visitor (the janitor's "view as visitor" preview). */
@@ -502,6 +503,8 @@ function NavLinkList({
   staffRole?: StaffRole | null
   /** Which area sections to render. Defaults to the full rail (NAV_SECTIONS). */
   sections?: NavSectionGroup[]
+  /** Icon-only column (the micro edge menu): no labels, no section headers. */
+  compact?: boolean
 }) {
   // `emphasize` = the home anchor (Feed): always the brand's dark brown and bold,
   // active or not, so it reads as the rail's permanent "home".
@@ -535,14 +538,53 @@ function NavLinkList({
         return (
         <div
           key={section.label ?? `top-${i}`}
-          className={`space-y-0.5 ${i > 0 ? 'mt-2' : ''} ${isHomeAnchor ? 'pb-2 mb-1 border-b border-border' : ''}`}
+          className={
+            compact
+              ? `flex flex-col items-center gap-1 ${isHomeAnchor ? 'pb-1.5 mb-0.5 border-b border-border' : ''}`
+              : `space-y-0.5 ${i > 0 ? 'mt-2' : ''} ${isHomeAnchor ? 'pb-2 mb-1 border-b border-border' : ''}`
+          }
         >
-          {section.label && <p className={sectionLabelClass}>{section.label}</p>}
+          {!compact && section.label && <p className={sectionLabelClass}>{section.label}</p>}
           {visibleItems.map((item) => {
             const { href, label, Icon } = item
             // Member worlds always show (muting/preview below); admin sections were
             // pre-filtered to reachable items above.
             const reachable = meetsAccess(effectiveAccess(item, permissions), role) || meetsStaff(item, staffRole)
+
+            // Icon-only column (micro edge menu): one square per area, tooltip-labelled.
+            if (compact) {
+              const active = isActive(href)
+              if (!reachable && !item.preview) {
+                return (
+                  <div
+                    key={href}
+                    aria-disabled="true"
+                    title="You don't have access to this yet"
+                    className="flex h-11 w-11 items-center justify-center rounded-xl text-subtle opacity-50 cursor-not-allowed select-none"
+                  >
+                    <Icon className="h-5 w-5" strokeWidth={2} />
+                  </div>
+                )
+              }
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  onClick={onNavigate}
+                  aria-label={label}
+                  title={label}
+                  className={`flex h-11 w-11 items-center justify-center rounded-xl transition-colors ${
+                    active
+                      ? 'bg-primary-bg text-primary-strong'
+                      : reachable
+                        ? 'text-muted hover:bg-surface-elevated hover:text-text'
+                        : 'text-subtle hover:bg-surface-elevated'
+                  }`}
+                >
+                  <Icon className="h-5 w-5" strokeWidth={active ? 2.5 : 2} />
+                </Link>
+              )
+            }
             // Preview-able areas (the Quest) stay CLICKABLE but read as a muted
             // "dead" state for below-access viewers; the page gates engagement.
             if (!reachable && item.preview) {
@@ -591,10 +633,29 @@ function NavLinkList({
       })}
 
       {extraSections?.map((section, i) => (
-        <div key={`extra-${section.label ?? i}`} className="space-y-0.5 mt-2">
-          {section.label && <p className={sectionLabelClass}>{section.label}</p>}
+        <div
+          key={`extra-${section.label ?? i}`}
+          className={compact ? 'flex flex-col items-center gap-1 mt-1' : 'space-y-0.5 mt-2'}
+        >
+          {!compact && section.label && <p className={sectionLabelClass}>{section.label}</p>}
           {section.items.map(({ href, label, Icon }) => {
             const active = isActive(href)
+            if (compact) {
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  onClick={onNavigate}
+                  aria-label={label}
+                  title={label}
+                  className={`flex h-11 w-11 items-center justify-center rounded-xl transition-colors ${
+                    active ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:bg-surface-elevated hover:text-text'
+                  }`}
+                >
+                  <Icon className="h-5 w-5" strokeWidth={active ? 2.5 : 2} />
+                </Link>
+              )
+            }
             return (
               <Link key={href} href={href} onClick={onNavigate} className={itemClass(active)}>
                 <Icon
@@ -816,22 +877,20 @@ function MobileTabBar({
   )
 }
 
-// ── Mobile edge menus (left nav · right stats) — one unified component ─────────
-// Both sides have the SAME format/width/styles:
+// ── Mobile edge menus (left = primary nav · right = stats/streaks) ────────────
+// Both sides share the SAME format/width/styles:
 //   • an ALWAYS-visible, darker tab tight to the screen edge (the content has a
 //     small gutter so the tab never touches it);
-//   • tap the tab → the menu opens and STAYS open until you click outside (the
-//     backdrop), select a link (route change), or scroll;
+//   • tap the tab → the menu slides open and STAYS open until you click outside
+//     (the shared backdrop), select a link (route change), or scroll;
 //   • a Micro / Full size selector at the bottom (shared per-device setting).
+// Both MICRO icon columns can be open together; only ONE FULL menu shows at a time
+// — expanding one slides the opposite closed (the shell owns that coordination).
+// The panel is always mounted and slides on a transform, so open/close animates.
 // Mobile only — desktop uses the real rails.
 
 export type RailSize = 'micro' | 'full'
 
-// One edge menu (left = nav, right = stats). Controlled by the shell so only one
-// can be open at a time — opening one pushes the other closed. Two body slots:
-// `micro` (a single icon column) and `full` (content-appropriate). The shared
-// Micro/Full size picks which renders; the icon column is narrow (`w-16`), full is
-// sized to its content.
 function EdgeMenu({
   side,
   ariaLabel,
@@ -839,7 +898,6 @@ function EdgeMenu({
   onSizeChange,
   open,
   onOpen,
-  onClose,
   micro,
   children,
 }: {
@@ -849,7 +907,6 @@ function EdgeMenu({
   onSizeChange: (s: RailSize) => void
   open: boolean
   onOpen: () => void
-  onClose: () => void
   /** The collapsed body — a single icon column. */
   micro: React.ReactNode
   /** The expanded body — full, content-appropriate. */
@@ -859,71 +916,68 @@ function EdgeMenu({
   const Chevron = onLeft ? ChevronRight : ChevronLeft
   const widthClass =
     size === 'micro' ? 'w-16' : onLeft ? 'w-64 max-w-[80vw]' : 'w-[88vw] max-w-sm'
+  // Closed → slid fully off its own edge; open → flush. Transitions both ways.
+  const slideClass = open ? 'translate-x-0' : onLeft ? '-translate-x-full' : 'translate-x-full'
 
   return (
     <>
-      {/* Always-visible tab — darker, tight to the edge. */}
-      {!open && (
-        <button
-          type="button"
-          onClick={onOpen}
-          aria-label={ariaLabel}
-          className={`md:hidden fixed top-1/2 z-30 flex h-[36vh] w-5 -translate-y-1/2 items-center justify-center border-y border-border bg-surface-elevated text-muted shadow-sm transition-colors hover:text-text ${
-            onLeft ? 'left-0 rounded-r-lg border-r' : 'right-0 rounded-l-lg border-l'
-          }`}
-        >
-          <Chevron className="h-4 w-4" />
-        </button>
-      )}
+      {/* Always-visible tab — darker, tight to the edge. Fades out while open. */}
+      <button
+        type="button"
+        onClick={onOpen}
+        aria-label={ariaLabel}
+        className={`md:hidden fixed top-1/2 z-30 flex h-[36vh] w-5 -translate-y-1/2 items-center justify-center border-y border-border bg-surface-elevated text-muted shadow-sm transition-opacity duration-200 hover:text-text ${
+          onLeft ? 'left-0 rounded-r-lg border-r' : 'right-0 rounded-l-lg border-l'
+        } ${open ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+      >
+        <Chevron className="h-4 w-4" />
+      </button>
 
-      {open && (
-        <>
-          <div onClick={onClose} aria-hidden className="md:hidden fixed inset-0 z-30 bg-black/10" />
-          <aside
-            role="dialog"
-            aria-label={ariaLabel}
-            className={`md:hidden fixed top-14 z-40 flex flex-col border-border bg-surface shadow-xl ${
-              onLeft ? 'left-0 border-r' : 'right-0 border-l'
-            } ${widthClass}`}
-            style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom))' }}
+      {/* Panel — always mounted, slides in/out (and animates its width on resize). */}
+      <aside
+        role="dialog"
+        aria-label={ariaLabel}
+        aria-hidden={!open}
+        className={`md:hidden fixed top-14 z-40 flex flex-col border-border bg-surface shadow-xl transition-all duration-200 ease-out ${
+          onLeft ? 'left-0 border-r' : 'right-0 border-l'
+        } ${widthClass} ${slideClass} ${open ? '' : 'pointer-events-none'}`}
+        style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom))' }}
+      >
+        <div className="flex-1 overflow-y-auto">{size === 'micro' ? micro : children}</div>
+
+        {/* Bottom control. In micro it's a single expand button (the column is too
+            narrow for a segmented control); in full it's the Micro/Full picker
+            (shared per-device across both menus). */}
+        {size === 'micro' ? (
+          <button
+            type="button"
+            onClick={() => onSizeChange('full')}
+            aria-label="Expand menu"
+            className="flex shrink-0 items-center justify-center border-t border-border p-2.5 text-subtle transition-colors hover:text-text"
           >
-            <div className="flex-1 overflow-y-auto">{size === 'micro' ? micro : children}</div>
-
-            {/* Bottom control. In micro it's a single expand button (the column is
-                too narrow for a segmented control); in full it's the Micro/Full
-                picker (shared per-device across both menus). */}
-            {size === 'micro' ? (
-              <button
-                type="button"
-                onClick={() => onSizeChange('full')}
-                aria-label="Expand menu"
-                className="flex shrink-0 items-center justify-center border-t border-border p-2.5 text-subtle transition-colors hover:text-text"
-              >
-                <Maximize2 className="h-4 w-4" />
-              </button>
-            ) : (
-              <div className="flex shrink-0 items-center gap-2 border-t border-border p-2">
-                <span className="flex-1 pl-1 text-[11px] font-semibold uppercase tracking-wide text-subtle">View</span>
-                <div className="flex items-center rounded-lg bg-surface-elevated p-0.5">
-                  {(['micro', 'full'] as const).map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      onClick={() => onSizeChange(s)}
-                      aria-pressed={size === s}
-                      className={`rounded-md px-2.5 py-1 text-[11px] font-semibold capitalize transition-colors ${
-                        size === s ? 'bg-surface text-text shadow-sm' : 'text-subtle hover:text-text'
-                      }`}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </aside>
-        </>
-      )}
+            <Maximize2 className="h-4 w-4" />
+          </button>
+        ) : (
+          <div className="flex shrink-0 items-center gap-2 border-t border-border p-2">
+            <span className="flex-1 pl-1 text-[11px] font-semibold uppercase tracking-wide text-subtle">View</span>
+            <div className="flex items-center rounded-lg bg-surface-elevated p-0.5">
+              {(['micro', 'full'] as const).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => onSizeChange(s)}
+                  aria-pressed={size === s}
+                  className={`rounded-md px-2.5 py-1 text-[11px] font-semibold capitalize transition-colors ${
+                    size === s ? 'bg-surface text-text shadow-sm' : 'text-subtle hover:text-text'
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </aside>
     </>
   )
 }
@@ -986,9 +1040,26 @@ export default function AppShell({
   const [lastPath, setLastPath] = useState(pathname)
 
   // Mobile edge menus — both share one Micro/Full size preference (per device).
-  // Only one edge can be open at a time; opening one pushes the other closed.
+  // Both MICRO icon columns can be open at once; only ONE FULL menu shows at a
+  // time. Open state lives here (per side) so opening/expanding one full menu can
+  // slide the opposite closed.
   const [railSize, setRailSize] = useState<RailSize>('micro')
-  const [openMenu, setOpenMenu] = useState<'left' | 'right' | null>(null)
+  const [leftOpen, setLeftOpen] = useState(false)
+  const [rightOpen, setRightOpen] = useState(false)
+  const anyEdgeOpen = leftOpen || rightOpen
+  function closeEdges() {
+    setLeftOpen(false)
+    setRightOpen(false)
+  }
+  function openEdge(side: 'left' | 'right') {
+    if (side === 'left') {
+      setLeftOpen(true)
+      if (railSize === 'full') setRightOpen(false) // one full menu at a time
+    } else {
+      setRightOpen(true)
+      if (railSize === 'full') setLeftOpen(false)
+    }
+  }
   // Page admin dock — open state (shared so PUSH mode can pad the content), plus
   // the persisted mode (overlay/push) + width preferences.
   const [adminOpen, setAdminOpen] = useState(false)
@@ -1004,9 +1075,14 @@ export default function AppShell({
     const w = Number(localStorage.getItem('freq-admin-width'))
     if (w >= 260 && w <= 560) setAdminWidth(w)
   }, [])
-  function changeRailSize(s: RailSize) {
+  function changeRailSize(s: RailSize, side: 'left' | 'right') {
     localStorage.setItem('freq-rail-size', s)
     setRailSize(s)
+    // Expanding one edge to full slides the opposite closed (one full at a time).
+    if (s === 'full') {
+      if (side === 'left') setRightOpen(false)
+      else setLeftOpen(false)
+    }
   }
   function changeAdminMode(m: AdminDockMode) {
     localStorage.setItem('freq-admin-mode', m)
@@ -1022,22 +1098,22 @@ export default function AppShell({
   if (lastPath !== pathname) {
     setLastPath(pathname)
     if (drawerOpen) setDrawerOpen(false)
-    if (openMenu) setOpenMenu(null)
+    if (leftOpen || rightOpen) closeEdges()
   }
 
-  // Scrolling the feed closes whichever edge menu is open.
+  // Scrolling the feed closes any open edge menu.
   useEffect(() => {
-    if (!openMenu) return
+    if (!anyEdgeOpen) return
     const el = document.querySelector('[data-feed-scroll]') as HTMLElement | null
     if (!el) return
     let lastTop = el.scrollTop
     const onScroll = () => {
-      if (Math.abs(el.scrollTop - lastTop) > 6) setOpenMenu(null)
+      if (Math.abs(el.scrollTop - lastTop) > 6) closeEdges()
       lastTop = el.scrollTop
     }
     el.addEventListener('scroll', onScroll, { passive: true })
     return () => el.removeEventListener('scroll', onScroll)
-  }, [openMenu])
+  }, [anyEdgeOpen])
 
   // ⌘K / Ctrl+K → open the live search overlay
   const [searchOpen, setSearchOpen] = useState(false)
@@ -1285,100 +1361,77 @@ export default function AppShell({
         />
       )}
 
-      {/* ── Mobile edge menus — always-visible tabs; left = nav, right = stats.
-            Same format/width/styles; one shared Micro/Full size. ── */}
+      {/* ── Mobile edge menus — always-visible tabs; left = the PRIMARY nav,
+            right = stats / streaks / gamification. Both micro icon columns can be
+            open together; only one full menu shows at a time. ── */}
       {!hideAppNav && (
-        <EdgeMenu
-          side="left"
-          ariaLabel="Quick navigation"
-          size={railSize}
-          onSizeChange={changeRailSize}
-          open={openMenu === 'left'}
-          onOpen={() => setOpenMenu('left')}
-          onClose={() => setOpenMenu(null)}
-          micro={
-            <nav className="flex flex-col items-center gap-1 p-2">
-              {MOBILE_TABS.map((tab) => {
-                const Icon = AREA_ICONS[tab.key] ?? Globe
-                const active = isActive(tab.href)
-                return (
-                  <Link
-                    key={tab.key}
-                    href={tab.href}
-                    aria-label={tab.label}
-                    title={tab.label}
-                    onClick={() => setOpenMenu(null)}
-                    className={`flex h-11 w-11 items-center justify-center rounded-xl transition-colors ${
-                      active ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:bg-surface-elevated hover:text-text'
-                    }`}
-                  >
-                    <Icon className="h-5 w-5" strokeWidth={active ? 2.5 : 2} />
-                  </Link>
-                )
-              })}
-              <button
-                type="button"
-                aria-label="More"
-                title="More"
-                onClick={() => {
-                  setOpenMenu(null)
-                  setDrawerOpen(true)
-                }}
-                className="flex h-11 w-11 items-center justify-center rounded-xl text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-              >
-                <Menu className="h-5 w-5" strokeWidth={2} />
-              </button>
+        <>
+          {/* Shared, fading backdrop — a tap anywhere outside closes both edges. */}
+          <div
+            aria-hidden
+            onClick={closeEdges}
+            className={`md:hidden fixed inset-0 z-30 bg-black/10 transition-opacity duration-200 ${
+              anyEdgeOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
+          />
+          <EdgeMenu
+            side="left"
+            ariaLabel="Menu"
+            size={railSize}
+            onSizeChange={(s) => changeRailSize(s, 'left')}
+            open={leftOpen}
+            onOpen={() => openEdge('left')}
+            micro={
+              <NavLinkList
+                isActive={isActive}
+                role={gateRole}
+                onNavigate={closeEdges}
+                extraSections={extraSections}
+                hideAppNav={hideAppNav}
+                permissions={permissions}
+                staffRole={staffRole}
+                compact
+              />
+            }
+          >
+            <nav className="p-2">
+              <NavLinkList
+                isActive={isActive}
+                role={gateRole}
+                onNavigate={closeEdges}
+                extraSections={extraSections}
+                hideAppNav={hideAppNav}
+                permissions={permissions}
+                staffRole={staffRole}
+              />
             </nav>
-          }
-        >
-          <nav className="p-2 space-y-0.5">
-            {MOBILE_TABS.map((tab) => {
-              const Icon = AREA_ICONS[tab.key] ?? Globe
-              const active = isActive(tab.href)
-              return (
-                <Link
-                  key={tab.key}
-                  href={tab.href}
-                  onClick={() => setOpenMenu(null)}
-                  className={`flex items-center gap-3 rounded-xl px-2.5 py-2 text-sm font-medium transition-colors ${
-                    active ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:bg-surface-elevated hover:text-text'
-                  }`}
-                >
-                  <Icon className="h-5 w-5 shrink-0" strokeWidth={active ? 2.5 : 2} />
-                  <span className="truncate">{tab.label}</span>
-                </Link>
-              )
-            })}
-            <button
-              type="button"
-              onClick={() => {
-                setOpenMenu(null)
-                setDrawerOpen(true)
-              }}
-              className="flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-            >
-              <Menu className="h-5 w-5 shrink-0" strokeWidth={2} />
-              <span className="truncate">More</span>
-            </button>
-          </nav>
-        </EdgeMenu>
+          </EdgeMenu>
+        </>
       )}
       {!hideAppNav && statsPanel && (
         <EdgeMenu
           side="right"
-          ariaLabel="Your stats"
+          ariaLabel="Streaks & stats"
           size={railSize}
-          onSizeChange={changeRailSize}
-          open={openMenu === 'right'}
-          onOpen={() => setOpenMenu('right')}
-          onClose={() => setOpenMenu(null)}
+          onSizeChange={(s) => changeRailSize(s, 'right')}
+          open={rightOpen}
+          onOpen={() => openEdge('right')}
           micro={
             <div className="flex flex-col items-center gap-1.5 p-2">
               <Link
                 href="/crew"
+                aria-label="Streak"
+                title="Streak"
+                onClick={closeEdges}
+                className="flex h-11 w-11 items-center justify-center rounded-xl text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+              >
+                <Flame className="h-5 w-5" strokeWidth={2} />
+              </Link>
+              <Link
+                href="/crew"
                 aria-label="Bolts this season"
                 title="Bolts this season"
-                onClick={() => setOpenMenu(null)}
+                onClick={closeEdges}
                 className="flex flex-col items-center gap-0.5 rounded-xl px-1 py-1.5 text-muted transition-colors hover:bg-surface-elevated"
               >
                 <Zap className="h-5 w-5 text-primary" strokeWidth={2.5} />
@@ -1390,22 +1443,13 @@ export default function AppShell({
                 href="/crew"
                 aria-label="Gems"
                 title="Gems"
-                onClick={() => setOpenMenu(null)}
+                onClick={closeEdges}
                 className="flex flex-col items-center gap-0.5 rounded-xl px-1 py-1.5 text-muted transition-colors hover:bg-surface-elevated"
               >
                 <Gem className="h-5 w-5 text-signal" strokeWidth={2.5} />
                 <span className="text-[10px] font-bold tabular-nums text-text">
                   {(profile.lifetime_gems ?? 0).toLocaleString()}
                 </span>
-              </Link>
-              <Link
-                href="/crew"
-                aria-label="Streak"
-                title="Streak"
-                onClick={() => setOpenMenu(null)}
-                className="flex h-11 w-11 items-center justify-center rounded-xl text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-              >
-                <Flame className="h-5 w-5" strokeWidth={2} />
               </Link>
             </div>
           }
