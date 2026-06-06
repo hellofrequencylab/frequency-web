@@ -93,14 +93,16 @@ editor, event create, circle inline-edit, marketplace edit, contact editor, **CR
 **sequence editor** (§9.1), QR studio, profile/account settings. The nav points *at* them; editing
 happens *in* them.
 
-## Open questions for approval
+## Owner decisions (approved 2026-06-06)
 
-1. **"Around You" naming** — keep, or rename to **Community Hub**? (Feed vs Around You currently blur.)
-2. **Practices ⊕ Library** — fold Library into Practices as a tab, or keep separate?
-3. **Marketing** — fold under Growth Studio (recommended), or keep as its own Studio entry?
-4. **Scope rails** (circle/channel detail in-body rail) — keep as context, or also remove?
-5. **Quest** — one dashboard with sections is the recommendation; confirm you want achievements/
-   challenges/leaderboard as *sections*, not nav items.
+- ✅ **Library → fold into Practices** (a "Curated" tab).
+- ✅ **Marketing → fold into Growth Studio** (no full-screen takeover).
+- ✅ **Quest → one dashboard with sections** (store/achievements/challenges/leaderboard/streaks are
+  sections, not nav items).
+- ✅ **Scope rails → keep** as in-body context on circle/channel detail pages.
+- ⏳ Open: **"Around You" naming** — keep, or rename to **Community Hub**?
+
+The proposed left menu above stands with these. Ready to sequence the build (see below).
 
 ---
 
