@@ -1,4 +1,4 @@
--- Density / demand read-model (ADR-150, closes Stage B). The "where to seed the
+-- Density / demand read-model (ADR-151, closes Stage B). The "where to seed the
 -- next third space" surface off the place-tree (PLATFORM-VISION §6): one
 -- deterministic SQL aggregate per city that joins supply (circles + capacity),
 -- realized demand (members in circles), latent demand (residents on the platform

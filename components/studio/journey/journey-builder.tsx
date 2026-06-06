@@ -48,7 +48,6 @@ interface Props {
   initialItems: BuilderItem[]
   available: AvailablePractice[]
   pillars: PillarLite[]
-  isCrew: boolean
 }
 
 export function JourneyBuilder(props: Props) {
@@ -156,7 +155,7 @@ export function JourneyBuilder(props: Props) {
           className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
           title={items.length === 0 ? 'Add a practice first' : undefined}
         >
-          {props.isCrew ? <Globe className="h-4 w-4" /> : <Lock className="h-4 w-4" />} Share to community
+          <Globe className="h-4 w-4" /> Share to community
         </button>
       )}
     </StudioFooter>

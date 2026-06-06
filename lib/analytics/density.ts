@@ -1,4 +1,4 @@
-// Density / demand read-model (ADR-150, closes Stage B). Answers PLATFORM-VISION
+// Density / demand read-model (ADR-151, closes Stage B). Answers PLATFORM-VISION
 // §6's question — "where is local community density crossing the threshold that
 // justifies a Lab?" — as a product surface, not a slogan. The expansion
 // decision-engine that doubles as the grant-funder + for-profit growth story.

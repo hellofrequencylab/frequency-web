@@ -507,7 +507,7 @@ verticals that don't need the money foundation. **Depends on:** Stage A.
       (`MarketGrid` + browser geolocation), listing edit on the Studio shell (`ListingBuilder`,
       per-field autosave), and image galleries — `images`/`lat`/`lng` carried through create + update.
 - [x] **Density / demand read-model**: the "where to seed the next third space" surface off
-      the place-tree (PLATFORM-VISION §6). *Shipped (ADR-150, migration `20260608000000`):* the
+      the place-tree (PLATFORM-VISION §6). *Shipped (ADR-151, migration `20260608000000`):* the
       `density_by_city` RPC joins supply (circles + capacity), realized demand (members in
       circles), latent demand (residents + 30-day arrivals), and local exchange (active
       listings) per city; `lib/analytics/density` scores each into a 0–100 Lab-readiness with a

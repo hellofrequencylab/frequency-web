@@ -10,7 +10,7 @@ import {
   type ExpansionStage,
 } from '@/lib/analytics/density'
 
-// Janitor-only: the Density / demand read-model (ADR-150, PLATFORM-VISION §6).
+// Janitor-only: the Density / demand read-model (ADR-151, PLATFORM-VISION §6).
 // The expansion decision-engine — where local community density is crossing the
 // threshold that justifies a Lab (a physical third space). Deterministic + dark-
 // safe: the SQL spine supplies facts, lib/analytics/density scores them, this page

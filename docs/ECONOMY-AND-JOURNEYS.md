@@ -3,12 +3,14 @@
 Status: ⏳ **draft, pre-build.** Extends ADR-084 (Beta = Crew) and the Quest economy
 (zaps/gems/seasons). Decisions in §6 are open.
 
-> ⚠️ **Terminology updated ([ADR-087](DECISIONS.md)).** What this doc calls the premium,
-> Crew-gated, tracked "Journey" engine is now named **"Quests"** (`quest_chains`,
-> `/crew/quests`). The name **"Journeys"** now means the **open, free, member-built**
-> practice-combo library (backlog §Q1) — *not* gated. So below: read "Journeys (premium)"
-> as **"Quests (premium)"**; the free DIY practice-combo plans are the new open
-> **Journeys**. This doc gets a full terminology pass when §Q1 builds.
+> 🔴 **Superseded in part by [ADR-150](DECISIONS.md) (2026-06-06): Journeys are now FREE.**
+> The premium-Journeys framing throughout this doc (§2 tiers row, §5 "premium marquee") no
+> longer holds — Quests and Journeys are one **Journey** concept, free for everyone, and the
+> paywall on adopting/forking/publishing/starting a Journey has been removed. "The Quest"
+> stays the game layer, and **only** its rank-endorsement (ADR-141) and Gem **spend** (Store)
+> remain Crew-gated. Read the rest of this doc as historical context for those *remaining*
+> gates, not for Journeys. (Earlier note, now also moot: ADR-087 had split "Journeys" =
+> open library vs "Quests" = `quest_chains` engine; ADR-150 collapses them.)
 
 ## 1. The principle (lead with the answer)
 
@@ -32,7 +34,7 @@ endorsements, and not enough to unlock the premium Journeys. That gap is the ups
 | **Endorsements on public profile** (rank badge, titles, journey badges) | ❌ earned, not shown | ✅ |
 | Keep personal **practice streaks** | ✅ always | ✅ |
 | Choose/log **individual practices** | ✅ (the loose equivalent) | ✅ |
-| **Journeys** (the tracked, all-in-one flow) | ❌ browse only → upgrade | ✅ |
+| **Journeys** (the tracked, all-in-one flow) | ✅ *(free — ADR-150)* | ✅ |
 
 This is the Launch member experience. **In Beta everyone is Crew (ADR-084)**, so the
 whole thing is unlocked today; the gates below switch on when `BETA_MEMBERS_GET_CREW`
@@ -90,6 +92,10 @@ Rewards split into **earned** vs **endorsed**:
   earned. This is a core part of the upsell.
 
 ## 5. Journeys — the premium marquee
+
+> 🔴 **Superseded by [ADR-150](DECISIONS.md): Journeys are free.** This section described
+> Journeys as the Crew-only upsell; that gate is removed. Kept for history — the *remaining*
+> Crew gates are rank-endorsement (ADR-141) and Gem spend (Store), not Journeys.
 
 A **Journey** is a curated, multi-step **practice track** — a coaching package with a
 narrative arc, built on the existing `arc_chains`/`arc_steps` engine.
