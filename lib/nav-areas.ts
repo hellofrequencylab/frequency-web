@@ -49,49 +49,51 @@ export type NavArea = {
 // (My Code, Help, Settings) in the account menu. Step 2 splits Manage further into
 // Steward / Structure / Studio / Platform. Programs left the rail — its leader-
 // training materials now live under Steward › Crew tasks (see admin/sections.ts).
+// Order here IS the render order down the rail. Categorical IA (ADR-approved
+// 2026-06-06, IA-RESTRUCTURE.md §10): Home · Community · Practice · Quest · Messages
+// (member), then the operator world collapsed from four sections (Steward /
+// Structure / Studio / Platform) into two: **Studio** (host+/staff stewardship +
+// business) and **Platform** (janitor operator keys). Deeper page-level dashboard
+// merges (Quest sections, Network unification, Marketing→Growth) follow as §10.2+.
 export const NAV_AREAS: readonly NavArea[] = [
-  // ── Home base → the two awareness surfaces, pinned headerless at the top ──────
+  // ── Home → the two awareness surfaces, pinned headerless at the top ───────────
   { key: 'feed',      href: '/feed',      label: 'Feed',       section: null, defaultAccess: 'member' },
   { key: 'broadcast', href: '/broadcast', label: 'Around You', section: null, defaultAccess: 'member' },
 
-  // ── Practice → the North-Star engine, its own world so the "what do I do"
-  //    content reads separately from the game it feeds. Open to everyone. ────────
+  // ── Community → belong & gather (browse). Hubs/Nexuses stay contextual. ───────
+  { key: 'circles',  href: '/circles',  label: 'Circles',     section: 'Community', defaultAccess: 'visitor' },
+  { key: 'channels', href: '/channels', label: 'Channels',    section: 'Community', defaultAccess: 'visitor' },
+  { key: 'events',   href: '/events',   label: 'Events',      section: 'Community', defaultAccess: 'member'  },
+  { key: 'market',   href: '/market',   label: 'Marketplace', section: 'Community', defaultAccess: 'member'  },
+  { key: 'people',   href: '/people',   label: 'People',      section: 'Community', defaultAccess: 'member'  },
+
+  // ── Practice → the North-Star engine (Library folds into Practices, §10.4). ───
   { key: 'journeys',  href: '/journeys',  label: 'Journeys',  section: 'Practice', defaultAccess: 'member' },
   { key: 'practices', href: '/practices', label: 'Practices', section: 'Practice', defaultAccess: 'member' },
   { key: 'library',   href: '/library',   label: 'Library',   section: 'Practice', defaultAccess: 'member' },
 
-  // ── Community → belong & gather. Hubs/Nexuses are contextual, never rail. ─────
-  { key: 'circles',  href: '/circles',  label: 'Circles',   section: 'Community', defaultAccess: 'visitor' },
-  { key: 'channels', href: '/channels', label: 'Channels',  section: 'Community', defaultAccess: 'visitor' },
-  { key: 'events',   href: '/events',   label: 'Events',    section: 'Community', defaultAccess: 'member'  },
-  { key: 'market',   href: '/market',   label: 'Marketplace', section: 'Community', defaultAccess: 'member' },
-  { key: 'people',   href: '/people',   label: 'Directory', section: 'Community', defaultAccess: 'member'  },
+  // ── Quest → the game; the Dashboard absorbs the /crew/* sub-pages as sections
+  //    (§10.1). Crew-gated → preview for non-crew. ──────────────────────────────
+  { key: 'crew',  href: '/crew',       label: 'Quest', section: 'Quest', defaultAccess: 'crew', previewBelowAccess: true },
+  { key: 'store', href: '/crew/store', label: 'Store', section: 'Quest', defaultAccess: 'crew', previewBelowAccess: true },
 
-  // ── The Quest → the game + shop. Practice content now lives in its own world;
-  //    the Dashboard and Store stay here. Crew-gated → preview for non-crew. ─────
-  { key: 'crew',  href: '/crew',       label: 'Dashboard', section: 'The Quest', defaultAccess: 'crew', previewBelowAccess: true },
-  { key: 'store', href: '/crew/store', label: 'Store',     section: 'The Quest', defaultAccess: 'crew', previewBelowAccess: true },
+  // ── Messages → DMs + rooms (Friends folds in, §10). ──────────────────────────
+  { key: 'messages', href: '/messages', label: 'Messages', section: 'Messages', defaultAccess: 'member' },
 
-  // ── Manage → four axis-gated worlds, each telescoped at its floor (IA step 2):
-  //    Steward (host stewardship) · Structure (the place tree) · Studio (the staff
-  //    business cockpit, on the team_members axis) · Platform (operator keys). ─────
-  // Steward — community stewardship (trust host+).
-  { key: 'admin-community', href: '/admin',       label: 'Overview',  section: 'Steward', defaultAccess: 'host' },
-  { key: 'crm',             href: '/crm',         label: 'CRM',       section: 'Steward', defaultAccess: 'host' },
-  // Profile Creator — owner-scoped network intake (card scan / manual + Vera).
-  // Host+ on the trust ladder, OR Studio staff (team_members axis), per ADR-098.
-  { key: 'connections',     href: '/connections', label: 'Profiles',  section: 'Steward', defaultAccess: 'host', staffDomain: 'profiles' },
-  { key: 'admin-qr',        href: '/admin/qr',    label: 'QR Studio', section: 'Steward', defaultAccess: 'host' },
-  // Structure — the place tree that circles cluster into (trust guide/mentor).
-  { key: 'admin-structure', href: '/admin/hubs',  label: 'Hubs & Nexuses', section: 'Structure', defaultAccess: 'guide' },
-  // Studio — the business cockpit, on the STAFF axis (ADR-127): shown to staff
-  // marketers regardless of trust role, or to trust admin+.
+  // ── Studio → community stewardship + business (host+/staff). Four sections
+  //    collapsed to one; the launchpads (Overview, Growth) aggregate the rest. ───
+  { key: 'admin-community', href: '/admin',       label: 'Overview',  section: 'Studio', defaultAccess: 'host' },
+  { key: 'crm',             href: '/crm',         label: 'CRM',       section: 'Studio', defaultAccess: 'host' },
+  { key: 'connections',     href: '/connections', label: 'Profiles',  section: 'Studio', defaultAccess: 'host', staffDomain: 'profiles' },
+  { key: 'admin-qr',        href: '/admin/qr',    label: 'QR Studio', section: 'Studio', defaultAccess: 'host' },
+  { key: 'admin-structure', href: '/admin/hubs',  label: 'Hubs & Nexuses', section: 'Studio', defaultAccess: 'guide' },
   { key: 'marketing',       href: '/marketing',   label: 'Marketing', section: 'Studio', defaultAccess: 'admin', staffDomain: 'marketing' },
-  // Platform — sensitive operator keys (trust janitor).
+
+  // ── Platform → sensitive operator keys (janitor). ────────────────────────────
+  { key: 'growth',          href: '/growth',           label: 'Growth Studio', section: 'Platform', defaultAccess: 'janitor' },
   { key: 'admin-insights',  href: '/admin/engagement', label: 'Insights', section: 'Platform', defaultAccess: 'janitor' },
   { key: 'admin-vera',      href: '/admin/vera',       label: 'Vera',     section: 'Platform', defaultAccess: 'janitor' },
   { key: 'admin-platform',  href: '/admin/members',    label: 'Members',  section: 'Platform', defaultAccess: 'janitor' },
-  { key: 'growth',          href: '/growth',           label: 'Growth Studio', section: 'Platform', defaultAccess: 'janitor' },
   { key: 'pages',           href: '/pages',            label: 'Pages',    section: 'Platform', defaultAccess: 'janitor' },
 ] as const
 
