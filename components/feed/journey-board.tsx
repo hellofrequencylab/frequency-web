@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Flame, Check, ChevronDown, Sparkles, Heart, Compass, Map, Users, Route, ArrowRight } from 'lucide-react'
+import { Flame, Check, ChevronDown, Sparkles, Heart, Compass, Map, Users, Route, ArrowRight, Snowflake } from 'lucide-react'
 import { LogPracticeButton } from '@/components/practice/log-practice-button'
 import { STREAK_MILESTONES, streakProgress } from '@/lib/streak'
 import type { Practice } from '@/lib/practices'
@@ -36,11 +36,23 @@ const RESOURCES = [
 export function JourneyBoard({
   practices,
   streak = 0,
+  atRisk = false,
+  loggedToday = false,
+  freezeTokens = 0,
+  willFreezeProtect = false,
   pillarBalance,
   activeJourney,
 }: {
   practices: Practice[]
   streak?: number
+  /** Streak is alive but today isn't logged yet — log to keep it. */
+  atRisk?: boolean
+  /** A practice was already logged today (streak is safe). */
+  loggedToday?: boolean
+  /** Banked freeze tokens that can absorb a missed day. */
+  freezeTokens?: number
+  /** A freeze would automatically protect today if missed. */
+  willFreezeProtect?: boolean
   /** The member's adopted practices counted per Pillar (all four, zero-filled). */
   pillarBalance?: PillarCount[]
   /** The member's top active journey — a slim "current step" line that links to
@@ -82,15 +94,29 @@ export function JourneyBoard({
               <Flame className="h-4 w-4" />
             </span>
             <div className="min-w-0">
-              <p className="text-sm font-bold leading-tight text-text">
-                {streak > 0 ? `${streak} day streak` : 'Your journey'}
+              <p className="flex items-center gap-1.5 text-sm font-bold leading-tight text-text">
+                <span>{streak > 0 ? `${streak} day streak` : 'Your journey'}</span>
                 {!p.maxed && p.next && (
-                  <span className="ml-1.5 font-medium text-muted">
+                  <span className="font-medium text-muted">
                     · {p.toNext} {p.toNext === 1 ? 'day' : 'days'} to your {p.next.day}-day badge
                   </span>
                 )}
+                {freezeTokens > 0 && (
+                  <span
+                    title={`${freezeTokens} streak freeze${freezeTokens === 1 ? '' : 's'} banked — bridges a missed day`}
+                    className="inline-flex items-center gap-0.5 rounded-full bg-signal-bg/50 px-1.5 py-0.5 text-3xs font-semibold text-signal-strong"
+                  >
+                    <Snowflake className="h-3 w-3" />{freezeTokens}
+                  </span>
+                )}
               </p>
-              <p className="mt-0.5 text-[13px] leading-snug text-muted">{encouragement(streak)}</p>
+              <p className="mt-0.5 text-[13px] leading-snug text-muted">
+                {atRisk
+                  ? willFreezeProtect
+                    ? 'Today’s not logged yet — a freeze has you covered, but logging keeps it clean.'
+                    : 'Log one practice today to keep your streak alive.'
+                  : encouragement(streak)}
+              </p>
             </div>
           </div>
           <button
@@ -153,7 +179,7 @@ export function JourneyBoard({
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 shrink-0 text-primary-strong" />
             <p className="text-sm text-muted">
-              {streak > 0
+              {loggedToday || streak > 0
                 ? 'All caught up. Come back tomorrow to keep your streak alive.'
                 : 'Adopt a practice to start your streak.'}
             </p>

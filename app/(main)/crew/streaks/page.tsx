@@ -1,32 +1,29 @@
 import { notFound } from 'next/navigation'
-import { Flame, CalendarCheck, PenTool, Mic, LogIn, Snowflake } from 'lucide-react'
+import { Flame, CalendarCheck, PenTool, Mic, Snowflake, Check, AlertTriangle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
+import { getMyProfileId } from '@/lib/auth'
 import { getStreaksData } from '../gamification-actions'
+import { getPracticeStreak } from '@/lib/practice-streak'
 import { STREAK_CONFIG, isStreakActive } from '@/lib/gamification'
 import type { StreakType } from '@/lib/gamification'
+import { STREAK_MILESTONES, streakProgress } from '@/lib/streak'
 import { IndexTemplate } from '@/components/templates'
 
 const STREAK_ICONS: Record<StreakType, React.ElementType> = {
   attendance: CalendarCheck,
   posting: PenTool,
   hosting: Mic,
-  login: LogIn,
+  login: Flame,
 }
 
 function getFlameColor(count: number): string {
   if (count >= 13) return 'text-signal'
-  if (count >= 8) return 'text-primary'
-  if (count >= 4) return 'text-primary'
-  if (count >= 1) return 'text-primary'
-  return 'text-subtle'
+  return count >= 1 ? 'text-primary' : 'text-subtle'
 }
 
 function getFlameBg(count: number): string {
   if (count >= 13) return 'bg-signal-bg/40'
-  if (count >= 8) return 'bg-warning-bg'
-  if (count >= 4) return 'bg-warning-bg/40'
-  if (count >= 1) return 'bg-warning-bg'
-  return 'bg-surface-elevated'
+  return count >= 1 ? 'bg-warning-bg' : 'bg-surface-elevated'
 }
 
 export default async function StreaksPage() {
@@ -34,113 +31,166 @@ export default async function StreaksPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) notFound()
 
-  const streaks = await getStreaksData()
+  const profileId = await getMyProfileId()
+  if (!profileId) notFound()
 
-  // Build map with all streak types (show inactive ones too)
+  const [streaks, practice] = await Promise.all([
+    getStreaksData(),
+    getPracticeStreak(profileId),
+  ])
+
+  // Daily practice streak — the headline.
+  const prog = streakProgress(practice.current)
+
+  // Weekly streaks (the show-up rhythms) sit below.
   const streakMap = new Map(streaks.map(s => [s.streak_type, s]))
-  const allTypes: StreakType[] = ['attendance', 'posting', 'hosting']
+  const weeklyTypes: StreakType[] = ['attendance', 'posting', 'hosting']
 
   return (
     <IndexTemplate
       title="Streaks"
-      description="Build momentum by showing up consistently. Maintain streaks to earn bonus achievements and freeze tokens."
+      description="Build momentum by showing up. Your daily practice streak is the heartbeat; the weekly rhythms below track the rest of how you show up."
     >
-      {/* Streak cards */}
+      {/* ── Hero: daily practice streak ─────────────────────────────── */}
+      <div className="rounded-2xl border border-primary-bg bg-primary-bg/30 p-5">
+        <div className="flex items-start gap-4">
+          <div className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl ${getFlameBg(practice.current)}`}>
+            <Flame className={`h-8 w-8 ${getFlameColor(practice.current)}`} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-sm font-semibold text-text">Daily practice streak</h2>
+              {practice.status === 'logged_today' && (
+                <span className="inline-flex items-center gap-1 rounded-md bg-success-bg px-1.5 py-0.5 text-xs font-semibold text-success">
+                  <Check className="h-3 w-3" /> Logged today
+                </span>
+              )}
+              {practice.status === 'at_risk' && (
+                <span className="inline-flex items-center gap-1 rounded-md bg-warning-bg px-1.5 py-0.5 text-xs font-semibold text-warning">
+                  <AlertTriangle className="h-3 w-3" /> Log today to keep it
+                </span>
+              )}
+              {practice.status === 'broken' && (
+                <span className="rounded-md bg-danger-bg px-1.5 py-0.5 text-xs font-semibold text-danger">
+                  Streak reset
+                </span>
+              )}
+            </div>
+            <p className="mt-0.5 text-xs text-muted">
+              Consecutive days you’ve logged a practice. A practice a day keeps it lit.
+            </p>
+
+            {/* Stats row */}
+            <div className="mt-3 flex items-center gap-4">
+              <div>
+                <span className="text-3xl font-bold text-text tabular-nums">{practice.current}</span>
+                <span className="ml-1 text-xs text-subtle">{practice.current === 1 ? 'day' : 'days'}</span>
+              </div>
+              <div className="h-6 w-px bg-border-strong" />
+              <div>
+                <span className="text-sm font-semibold text-muted tabular-nums">{practice.longest}</span>
+                <span className="ml-1 text-xs text-subtle">best</span>
+              </div>
+              <div className="h-6 w-px bg-border-strong" />
+              <div className="flex items-center gap-1" title="Streak freezes — each bridges one missed day automatically">
+                <Snowflake className="h-3.5 w-3.5 text-signal-strong" />
+                <span className="text-sm font-semibold text-signal tabular-nums">{practice.freezeTokens}</span>
+                <span className="text-xs text-subtle">{practice.freezeTokens === 1 ? 'freeze' : 'freezes'}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Milestone progress bar + pips (day-based). */}
+        <div className="mt-5">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-surface">
+            <div className="h-full rounded-full bg-primary transition-[width] duration-500" style={{ width: `${prog.pct}%` }} />
+          </div>
+          <div className="mt-2.5 flex items-center justify-between gap-1">
+            {STREAK_MILESTONES.map(m => {
+              const hit = m.day <= practice.current
+              const isNext = prog.next?.day === m.day
+              return (
+                <div key={m.day} className="flex flex-col items-center gap-1" title={`${m.label} · ${m.day} days · +${m.zaps} zaps`}>
+                  <span className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-3xs font-bold ${
+                    hit ? 'bg-primary text-on-primary' : isNext ? 'bg-surface text-primary-strong ring-2 ring-primary' : 'bg-surface text-subtle'
+                  }`}>
+                    {hit ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : m.day}
+                  </span>
+                  <span className="text-3xs text-subtle">{m.label}</span>
+                </div>
+              )
+            })}
+          </div>
+          {prog.next && (
+            <p className="mt-3 text-xs text-subtle">
+              {prog.toNext} {prog.toNext === 1 ? 'day' : 'days'} to the {prog.next.label} badge
+              {` · +${STREAK_MILESTONES.find(m => m.day === prog.next!.day)?.zaps ?? 0} zaps`}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* ── Weekly rhythms ──────────────────────────────────────────── */}
+      <h2 className="mt-8 mb-3 text-sm font-semibold text-text">Weekly rhythms</h2>
       <div className="space-y-4">
-        {allTypes.map(type => {
+        {weeklyTypes.map(type => {
           const streak = streakMap.get(type)
           const config = STREAK_CONFIG[type]
           const Icon = STREAK_ICONS[type]
           const current = streak?.current_count ?? 0
           const longest = streak?.longest_count ?? 0
           const active = streak ? isStreakActive(streak.last_activity_at, config.window_days) : false
-          const freezes = streak?.freeze_tokens ?? 0
           const milestones = [3, 4, 8, 13]
 
           return (
-            <div
-              key={type}
-              className="rounded-2xl bg-surface-elevated/60"
-            >
+            <div key={type} className="rounded-2xl bg-surface-elevated/60">
               <div className="p-5">
                 <div className="flex items-start gap-4">
-                  {/* Flame indicator */}
-                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${getFlameBg(current)}`}>
-                    <Flame className={`w-7 h-7 ${getFlameColor(current)}`} />
+                  <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${getFlameBg(current)}`}>
+                    <Icon className={`h-6 w-6 ${getFlameColor(current)}`} />
                   </div>
-
-                  <div className="flex-1 min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <Icon className="w-4 h-4 text-subtle" />
-                      <h3 className="text-sm font-semibold text-text">
-                        {config.label} Streak
-                      </h3>
+                      <h3 className="text-sm font-semibold text-text">{config.label} streak</h3>
                       {active && current > 0 && (
-                        <span className="text-xs px-1.5 py-0.5 rounded-md bg-success-bg text-success font-semibold">
-                          Active
-                        </span>
+                        <span className="rounded-md bg-success-bg px-1.5 py-0.5 text-xs font-semibold text-success">Active</span>
                       )}
                       {!active && current > 0 && (
-                        <span className="text-xs px-1.5 py-0.5 rounded-md bg-danger-bg dark:bg-danger-bg text-danger font-semibold">
-                          Expired
-                        </span>
+                        <span className="rounded-md bg-danger-bg px-1.5 py-0.5 text-xs font-semibold text-danger">Expired</span>
                       )}
                     </div>
-                    <p className="text-xs text-muted mt-0.5">
-                      {config.description}
-                    </p>
-
-                    {/* Stats row */}
-                    <div className="flex items-center gap-4 mt-3">
+                    <p className="mt-0.5 text-xs text-muted">{config.description}</p>
+                    <div className="mt-3 flex items-center gap-4">
                       <div>
-                        <span className="text-2xl font-bold text-text">{current}</span>
-                        <span className="text-xs text-subtle ml-1">weeks</span>
+                        <span className="text-2xl font-bold text-text tabular-nums">{current}</span>
+                        <span className="ml-1 text-xs text-subtle">{current === 1 ? 'week' : 'weeks'}</span>
                       </div>
-                      <div className="w-px h-6 bg-border-strong" />
+                      <div className="h-6 w-px bg-border-strong" />
                       <div>
-                        <span className="text-sm font-semibold text-muted">{longest}</span>
-                        <span className="text-xs text-subtle ml-1">best</span>
+                        <span className="text-sm font-semibold text-muted tabular-nums">{longest}</span>
+                        <span className="ml-1 text-xs text-subtle">best</span>
                       </div>
-                      {freezes > 0 && (
-                        <>
-                          <div className="w-px h-6 bg-border-strong" />
-                          <div className="flex items-center gap-1">
-                            <Snowflake className="w-3.5 h-3.5 text-signal-strong" />
-                            <span className="text-sm font-semibold text-signal">{freezes}</span>
-                            <span className="text-xs text-subtle">freezes</span>
-                          </div>
-                        </>
-                      )}
                     </div>
                   </div>
                 </div>
 
-                {/* Milestone track */}
                 <div className="mt-5">
                   <div className="flex items-center justify-between gap-1">
                     {milestones.map(m => {
                       const reached = current >= m
                       return (
-                        <div key={m} className="flex flex-col items-center gap-1 flex-1">
-                          <div className={`w-full h-1.5 rounded-full ${
-                            reached
-                              ? 'bg-primary'
-                              : 'bg-surface-elevated'
-                          }`} />
-                          <span className={`text-xs font-semibold ${
-                            reached ? 'text-warning' : 'text-subtle'
-                          }`}>
-                            {m}w
-                          </span>
+                        <div key={m} className="flex flex-1 flex-col items-center gap-1">
+                          <div className={`h-1.5 w-full rounded-full ${reached ? 'bg-primary' : 'bg-surface-elevated'}`} />
+                          <span className={`text-xs font-semibold ${reached ? 'text-warning' : 'text-subtle'}`}>{m}w</span>
                         </div>
                       )
                     })}
                   </div>
                 </div>
 
-                {/* Last activity */}
                 {streak?.last_activity_at && (
-                  <p className="text-xs text-subtle mt-3">
+                  <p className="mt-3 text-xs text-subtle">
                     Last recorded: {new Date(streak.last_activity_at).toLocaleDateString('en-US', {
                       month: 'short', day: 'numeric', year: 'numeric',
                     })}
@@ -152,16 +202,17 @@ export default async function StreaksPage() {
         })}
       </div>
 
-      {/* Streak freeze explanation */}
+      {/* ── Streak freeze explanation ───────────────────────────────── */}
       <div className="mt-8 rounded-2xl bg-signal-bg/40 p-4">
         <div className="flex items-start gap-3">
-          <Snowflake className="w-5 h-5 text-signal-strong shrink-0 mt-0.5" />
+          <Snowflake className="mt-0.5 h-5 w-5 shrink-0 text-signal-strong" />
           <div>
-            <p className="text-sm font-semibold text-signal-strong">Streak Freezes</p>
-            <p className="text-xs text-signal-strong mt-1 leading-relaxed">
-              Earn freeze tokens at streak milestones (4, 8, 13, 26, 52 weeks).
-              When a streak would break, a freeze token is automatically used to protect it.
-              Build long streaks to bank more freezes.
+            <p className="text-sm font-semibold text-signal-strong">Streak freezes</p>
+            <p className="mt-1 text-xs leading-relaxed text-signal-strong">
+              You bank a freeze token when you reach the Week, Month, Century and Year
+              milestones (up to two at a time). If you miss a single day, a freeze is
+              spent automatically the next time you log — so one slip never erases the
+              momentum you’ve built. Miss two days in a row and the streak resets.
             </p>
           </div>
         </div>

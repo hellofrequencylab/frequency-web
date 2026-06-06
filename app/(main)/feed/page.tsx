@@ -14,6 +14,7 @@ import { VeraLightbox } from '@/components/onboarding/vera-lightbox'
 import { buildVeraOpening, buildWelcomeSlides } from '@/lib/onboarding/vera-welcome'
 import { getPracticesToLogToday } from '@/lib/practices'
 import { getActiveJourneyProgress } from '@/lib/journey-plans'
+import { getPracticeStreak } from '@/lib/practice-streak'
 import { getOnboardingStatus } from '@/lib/onboarding/status'
 import { getMemberPillarBalance } from '@/lib/pillars'
 
@@ -111,6 +112,11 @@ export default async function FeedPage({
   // Adopted practices not yet logged today -> the feed "log today" nudge (WAM).
   const practicesToLog = myProfileId ? await getPracticesToLogToday(myProfileId) : []
 
+  // The daily practice streak — the headline streak the hero surfaces show. Derived
+  // live from the practice log (effective today), so a broken streak reads as 0 and
+  // an unlogged-but-alive streak reads "at risk". Replaces the stale profile column.
+  const practiceStreak = myProfileId ? await getPracticeStreak(myProfileId) : null
+
   // The feed "hero" slot: a persistent teal onboarding guide until a member is fully
   // set up, then it graduates into the JourneyBoard. One shared status drives both.
   const onboarding = myProfileId ? await getOnboardingStatus(myProfileId) : null
@@ -164,8 +170,22 @@ export default async function FeedPage({
       {onboarding && !onboarding.complete && <FeedOnboardingGuide status={onboarding} />}
 
       {onboarding?.complete
-        ? <JourneyBoard practices={practicesToLog} streak={streak} pillarBalance={pillarBalance} activeJourney={activeJourney} />
-        : <PracticePrompt practices={practicesToLog} streak={streak} />}
+        ? <JourneyBoard
+            practices={practicesToLog}
+            streak={practiceStreak?.current ?? streak}
+            atRisk={practiceStreak?.atRisk ?? false}
+            loggedToday={practiceStreak?.loggedToday ?? false}
+            freezeTokens={practiceStreak?.freezeTokens ?? 0}
+            willFreezeProtect={practiceStreak?.willFreezeProtect ?? false}
+            pillarBalance={pillarBalance}
+            activeJourney={activeJourney}
+          />
+        : <PracticePrompt
+            practices={practicesToLog}
+            streak={practiceStreak?.current ?? streak}
+            atRisk={practiceStreak?.atRisk ?? false}
+            loggedToday={practiceStreak?.loggedToday ?? false}
+          />}
 
       {/* Composer */}
       {composerScopeId && (
