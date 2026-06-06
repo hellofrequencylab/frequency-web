@@ -5139,3 +5139,32 @@ to avoid a heavy dependency; paste/attach covers v1.
 **Consequences.** New tables + a private bucket (additive, applied). Tickets are loosely typed
 via the admin handle until type regen. Roadmap: CRM Support panel, reply notifications, SLA
 timers, tags, and folding recurring bug subjects into the living-docs demand loop.
+
+---
+
+## ADR-160 — Operator menu restructure + inline on-page admin
+
+**Status:** Accepted · implemented. **Context:** operator surfaces were grouped *by tool*,
+so AI surfaces like the marketing **Agent** ended up buried deep in the Marketing tab bar,
+and page-specific admin lived in an easy-to-miss right-edge drawer (`PageAdminDock`). We
+wanted the simplest possible operator structure and admin functions condensed onto each page.
+
+**Decision.** Three moves: (1) **One AI control room** — the operator **Agent** (proposes
+actions for approval) moves out of the deep Marketing menu and is surfaced from the **Vera**
+admin area (`/admin/vera`), removed from the marketing tab bar + Growth Studio channel list
+(route `/marketing/agent` still resolves). (2) **Group by job** — keep the two operator axes
+(Studio = workbench, Platform = system keys); the hubs (Overview, Growth Studio) aggregate the
+rest. (3) **Inline admin layer** — a slim **"Admin ▾"** disclosure (`PageAdminBar`) renders at
+the top of every operator-visible page and expands an inline section hosting the existing
+page-aware console (`AdminConsole`, ADR-137/153). The right-edge `PageAdminDock` is **retired**
+(deleted), condensing admin to one consistent, collapsible spot per page.
+
+**Alternatives.** A new route-keyed page-admin registry (rejected for v1 — duplicates the
+page-aware logic `AdminConsole` already has, and risks dead links). Physically moving
+`/marketing/agent` → `/admin/vera/agent` (deferred — file move risk; surfacing it from Vera
+solves the discoverability complaint). Keeping both the drawer and the inline bar (rejected —
+two admin surfaces is the opposite of condensing).
+
+**Consequences.** `app-shell` drops the dock state/push-padding. Marketing-staff who only used
+the Agent reach it via the Vera area or the URL. Further nav merges (QR Studio / Hubs under a
+hub) remain optional follow-ups.
