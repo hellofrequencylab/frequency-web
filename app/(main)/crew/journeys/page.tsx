@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 
-// The gamified engine was renamed Journeys -> Quests (ADR-087). Keep the old path.
+// Legacy path. The season's official tracks live at /crew/quests now (ADR-152:
+// The Quest -> Seasonal Quest -> Journeys -> Practices). Keep the redirect.
 export default function JourneysRedirect() {
   redirect('/crew/quests')
 }
