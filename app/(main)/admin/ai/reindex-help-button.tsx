@@ -9,7 +9,9 @@ import { isError } from '@/lib/action-result'
 // Populate/refresh the "Ask Vera" help index (help_chunks). One click embeds the
 // help articles so Vera can actually answer; safe to re-run (only changed chunks
 // re-embed). Shows the live chunk count so it's obvious whether Vera has data.
-export function ReindexHelpButton({ embeddedChunks }: { embeddedChunks: number }) {
+// `onReindexed` lets an embedded host (the in-place AI module) refresh its own
+// chunk count after a rebuild; the standalone page omits it and refreshes the route.
+export function ReindexHelpButton({ embeddedChunks, onReindexed }: { embeddedChunks: number; onReindexed?: () => void }) {
   const router = useRouter()
   const [pending, start] = useTransition()
   const [msg, setMsg] = useState<string | null>(null)
@@ -26,7 +28,8 @@ export function ReindexHelpButton({ embeddedChunks }: { embeddedChunks: number }
       }
       const r = res.data
       setMsg(`Indexed ${r.articles} articles → ${r.chunks} chunks (${r.embedded} embedded, ${r.skipped} unchanged, ${r.removed} removed).`)
-      router.refresh()
+      if (onReindexed) onReindexed()
+      else router.refresh()
     })
   }
 

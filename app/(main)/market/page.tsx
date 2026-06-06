@@ -1,39 +1,18 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { MapPin, Store } from 'lucide-react'
+import { Store } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
-import { listListings, LISTING_KINDS, type ListingKind, type MarketListingWithAuthor } from '@/lib/marketplace'
+import { listListings, LISTING_KINDS, type ListingKind } from '@/lib/marketplace'
 import { IndexTemplate } from '@/components/templates/index-template'
 import { EmptyState } from '@/components/ui/empty-state'
 import { NewListingButton } from '@/components/studio/market/new-listing-button'
+import { MarketGrid, type GridListing } from '@/components/market/market-grid'
 
 export const metadata: Metadata = {
   title: 'Marketplace',
   description: 'Swap, give, lend, and find things with people near you — no fees, just neighbors.',
 }
 export const dynamic = 'force-dynamic'
-
-const KIND_LABEL: Record<ListingKind, string> = Object.fromEntries(LISTING_KINDS.map((k) => [k.key, k.label])) as Record<ListingKind, string>
-
-function ListingCard({ l }: { l: MarketListingWithAuthor }) {
-  const place = [l.neighborhood, l.city].filter(Boolean).join(', ')
-  return (
-    <Link href={`/market/${l.id}`} className="flex flex-col rounded-2xl border border-border bg-surface p-4 shadow-sm transition-colors hover:border-primary/60">
-      <div className="flex items-center justify-between gap-2">
-        <span className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-2 py-0.5 text-2xs font-semibold uppercase tracking-wide text-primary-strong">
-          {KIND_LABEL[l.kind] ?? l.kind}
-        </span>
-        {l.price_note && <span className="text-sm font-semibold text-text">{l.price_note}</span>}
-      </div>
-      <h3 className="mt-2 text-sm font-bold text-text">{l.title}</h3>
-      {l.description && <p className="mt-1 line-clamp-2 text-sm text-muted">{l.description}</p>}
-      <div className="mt-3 flex items-center gap-2 text-xs text-subtle">
-        {place && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{place}</span>}
-        {l.author && <span className="truncate">· {l.author.display_name}</span>}
-      </div>
-    </Link>
-  )
-}
 
 export default async function MarketPage({ searchParams }: { searchParams: Promise<{ kind?: string }> }) {
   const { kind } = await searchParams
@@ -42,6 +21,20 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
     getMyProfileId(),
     listListings({ kind: activeKind }),
   ])
+
+  const grid: GridListing[] = listings.map((l) => ({
+    id: l.id,
+    title: l.title,
+    kind: l.kind,
+    price_note: l.price_note,
+    description: l.description,
+    neighborhood: l.neighborhood,
+    city: l.city,
+    images: l.images ?? [],
+    latitude: l.latitude,
+    longitude: l.longitude,
+    author: l.author ? { display_name: l.author.display_name } : null,
+  }))
 
   return (
     <IndexTemplate
@@ -63,16 +56,14 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
         ))}
       </div>
 
-      {listings.length === 0 ? (
+      {grid.length === 0 ? (
         <EmptyState
           icon={Store}
           title={activeKind ? 'Nothing here yet' : 'The marketplace is just getting started'}
           description={profileId ? 'Post the first listing — offer something, give it away, or ask for what you need.' : 'Sign in to post and respond to listings.'}
         />
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {listings.map((l) => <ListingCard key={l.id} l={l} />)}
-        </div>
+        <MarketGrid listings={grid} />
       )}
     </IndexTemplate>
   )
