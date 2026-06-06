@@ -195,6 +195,21 @@
 > Migrations `20260606000000`–`20260607030000` applied to prod + version-reconciled. Operator how-to in
 > Notion (Training & Strategy → "Entry Points & Campaigns (lead funnels)").
 
+> **2026-06-06:** **Game economy hardened to launch quality** (vertical 2, Stage A "Reward economy" →
+> ✅). Reward currency now follows the act everywhere — online → Gems, real-life → Zaps — across base
+> actions *and* the meta-layer (achievements/challenges/quests), fixing a leak that paid zaps for online
+> milestones + an achievement double-award (ADR-139). Zaps got a real ledger (`zap_transactions`),
+> powering the Vault **"how you earned" points log**. Journeys (the gamified `quest_chains`) became
+> **join-gated + Pillar-tagged** with a real `/crew/quests` browse/start surface; the **member zap-rate**
+> and the **endorsement layer** (rank shown only for Crew) landed gated/inert-in-Beta (ADR-140/141); the
+> Store gem balance now nets spend. Migrations `20260607040000`–`20260607070000` applied to prod.
+>
+> **2026-06-06:** **The Studio** — the DIY journey builder shipped as the first instance of a reusable
+> creation window (ADR-142), closing the last open ECONOMY item (§7.5). Best-practice plan to bring
+> circles/practices/events onto the same shell — **compose, don't configure** — is ADR-143 /
+> [STUDIO.md](STUDIO.md): a shared shell + a studio *kit* + a thin registry, one entity per follow-on PR.
+> Migration `20260607080000` applied to prod. Audit + remaining gamification backlog: [GAMIFICATION-AUDIT.md](GAMIFICATION-AUDIT.md).
+
 ---
 
 ## Mission (locked)
