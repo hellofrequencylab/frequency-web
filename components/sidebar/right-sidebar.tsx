@@ -1,9 +1,15 @@
+import { Suspense } from 'react'
+import { headers } from 'next/headers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { SEASON_RANKS, rankForZaps } from '@/lib/season-ranks'
 import { GameStatsDockClient, GameStatsPanel, type DockData } from '@/components/sidebar/game-stats-dock'
 import { getPracticesToLogToday, getRecentPracticeLogs, getMemberPractices } from '@/lib/practices'
 import { getActiveJourneyProgress } from '@/lib/journey-plans'
 import { DemoNotice } from '@/components/sidebar/demo-notice'
+import { pageRailPanels } from '@/lib/layout/rail-panels'
+import {
+  DispatchesPanel, EventsPanel, MembersPanel, LeaderboardPanel, PanelSkeleton,
+} from '@/components/sidebar/rail-panels'
 
 export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
 
@@ -12,13 +18,15 @@ interface RightSidebarProps {
   role: CommunityRole
 }
 
-// ── Game stats dock ───────────────────────────────────────────────────────────
-// The right rail is now a UNIFORM, widget-free strip site-wide (IA §10.6): just the
-// player's progress cockpit. The list widgets (Dispatches/Events/Members/Leaderboard)
-// were removed — that content lives in its own destination on the left menu (Around
-// You · Events · People · Quest). Tapping the dock opens today's move, streak, rank
-// progress, an arc, and the Vault. Best-effort — any source failing degrades to a
-// teaser rather than breaking the rail.
+// ── The right rail (ADR-161) ──────────────────────────────────────────────────
+// Two tiers of PANELS (no longer "widgets"):
+//   • STANDING panels — site-wide standards shown on every page: the demo notice +
+//     the player's progress cockpit (GameStatsDock, pinned to the bottom).
+//   • PAGE panels — stats specific to the page being viewed, resolved from the route
+//     via lib/layout/rail-panels.ts. Each is its own async server component behind a
+//     <Suspense> so a slow one never blocks the rest (PAGE-FRAMEWORK §5).
+// The rail is page-aware via the `x-pathname` request header (set in proxy.ts —
+// Next 16's middleware), which keeps the panels server-rendered while varying by route.
 
 async function GameStatsDock({ profileId }: { profileId: string }) {
   return <GameStatsDockClient data={await loadGameStats(profileId)} />
@@ -100,14 +108,52 @@ export async function loadGameStats(profileId: string): Promise<DockData> {
   return { zaps, gems, streak, rank, todaysMove, last7, rankProgress, arc, vaultGems: gems }
 }
 
-// ── Right sidebar — the uniform, widget-free stats rail ───────────────────────
+// Render the page panels for the current route (each its own Suspense boundary).
+async function PagePanels({ profileId, role }: RightSidebarProps) {
+  const pathname = (await headers()).get('x-pathname') ?? ''
+  const keys = pageRailPanels(pathname)
+  const isCrew = ['crew', 'host', 'guide', 'mentor', 'admin', 'janitor'].includes(role)
 
-export default async function RightSidebar({ profileId }: RightSidebarProps) {
+  // The members/events/broadcasts panels need the viewer's circles; fetch once, share.
+  const needsCircles = keys.includes('events') || keys.includes('members') || keys.includes('dispatches')
+  let circleIds: string[] = []
+  if (needsCircles) {
+    const { data } = await createAdminClient()
+      .from('memberships')
+      .select('circle_id')
+      .eq('profile_id', profileId)
+      .eq('status', 'active')
+    circleIds = (data ?? []).map((m: { circle_id: string }) => m.circle_id as string)
+  }
+
+  return (
+    <>
+      {keys.map((key) => {
+        const node =
+          key === 'dispatches' ? <DispatchesPanel profileId={profileId} circleIds={circleIds} />
+          : key === 'events' ? <EventsPanel circleIds={circleIds} />
+          : key === 'members' ? <MembersPanel profileId={profileId} circleIds={circleIds} />
+          : key === 'leaderboard' ? (isCrew ? <LeaderboardPanel /> : null)
+          : null
+        return node ? <Suspense key={key} fallback={<PanelSkeleton />}>{node}</Suspense> : null
+      })}
+    </>
+  )
+}
+
+// ── Right sidebar — standing panels (site-wide) + page panels (contextual) ─────
+export default async function RightSidebar({ profileId, role }: RightSidebarProps) {
   return (
     <div className="flex flex-1 flex-col">
-      <div className="flex-1 px-3 py-6">
+      <div className="flex-1 space-y-8 px-3 py-6">
+        {/* Standing panel — site-wide. */}
         <DemoNotice />
+        {/* Page panels — stats specific to this route. */}
+        <Suspense fallback={<PanelSkeleton />}>
+          <PagePanels profileId={profileId} role={role} />
+        </Suspense>
       </div>
+      {/* Standing panel — the player's progress cockpit, pinned to the bottom. */}
       <GameStatsDock profileId={profileId} />
     </div>
   )

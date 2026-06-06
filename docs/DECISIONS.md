@@ -5168,3 +5168,33 @@ two admin surfaces is the opposite of condensing).
 **Consequences.** `app-shell` drops the dock state/push-padding. Marketing-staff who only used
 the Agent reach it via the Vera area or the URL. Further nav merges (QR Studio / Hubs under a
 hub) remain optional follow-ups.
+
+---
+
+## ADR-161 — The right rail: standing + page panels (page-aware, server-rendered)
+
+**Status:** Accepted · implemented. **Context:** §10.6 stripped the right rail's ad-hoc
+"widgets" to a uniform slim strip, which left it empty. We want it to always show
+site-wide standards AND stats specific to the page being viewed, in a format that scales
+with the page framework — not one-off widgets bolted onto a shared layout.
+
+**Decision.** The right rail is composed of **panels** in two tiers: **standing panels**
+(site-wide — the demo notice + the player progress cockpit `GameStatsDock`, shown on every
+page) and **page panels** (route-specific stats — Broadcasts · Events · Members ·
+Leaderboard), resolved from a route registry (`lib/layout/rail-panels.ts`, mirroring
+page-chrome's role for the rail's *presence*). Panels are independent **async server
+components**, each in its own `<Suspense>` (PAGE-FRAMEWORK §5), degrading to nothing when
+there's no data. The shared server rail is made **page-aware** via the existing `proxy.ts`
+(Next 16 renamed middleware → proxy) forwarding the route as an `x-pathname` request header,
+read via `next/headers` — so panels stay server-rendered (SSR, no client fetch) while still
+varying per page. "Widgets" are retired as a term; they're **panels** now.
+
+**Alternatives.** Parallel routes (`@rail` slot) — idiomatic but a heavy per-route refactor;
+deferred. A client rail that fetches each panel via server actions — page-aware trivially but
+loses SSR and adds a round-trip per panel. Rendering every panel always and hiding by route on
+the client — wasteful, doesn't scale.
+
+**Consequences.** Reuses the existing `proxy.ts` (Next 16's middleware) — the route is
+forwarded as a header alongside the Supabase session refresh, with no change to auth. Adding a
+panel = a component + a registry entry; re-pointing a route = one line in the registry. The
+rail reads `x-pathname`, so it renders dynamically (already the case behind its Suspense).
