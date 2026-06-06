@@ -29,6 +29,7 @@ import { CircleSettingsModule } from '@/components/admin/modules/circle-settings
 import { HubSettingsModule } from '@/components/admin/modules/hub-settings-module'
 import { NexusSettingsModule } from '@/components/admin/modules/nexus-settings-module'
 import { EventSettingsModule } from '@/components/admin/modules/event-settings-module'
+import { ModerationModule } from '@/components/admin/modules/moderation-module'
 
 // The page-admin sidebar console (ADR-137 drill-down · ADR-138 the "manage" surface).
 // Home lists the categories that apply for THIS viewer; tap one to drill into its
@@ -135,11 +136,27 @@ export function AdminConsole({
     ...(isJanitor ? [{ kind: 'link' as const, label: 'Pages & content', href: '/pages', Icon: FileText }] : []),
   ]
 
+  // Moderation: render the in-place queue (ADR-138) in place of the deep-link, when
+  // the role-gated catalog grants it.
+  const canModerate = (itemsBySlot.get('safety') ?? []).some((it) => it.kind === 'link' && it.href === '/admin/moderation')
+
   const categories: Category[] = CATEGORIES.map((c) => {
-    const items = c.key === 'layout' ? [...layoutExtra, ...(itemsBySlot.get(c.key) ?? [])] : itemsBySlot.get(c.key) ?? []
-    const mod = c.key === 'basics' ? settingsModule ?? undefined : undefined
+    const items =
+      c.key === 'layout'
+        ? [...layoutExtra, ...(itemsBySlot.get(c.key) ?? [])]
+        : c.key === 'safety'
+          ? (itemsBySlot.get('safety') ?? []).filter((it) => !(it.kind === 'link' && it.href === '/admin/moderation'))
+          : itemsBySlot.get(c.key) ?? []
+    const mod =
+      c.key === 'basics'
+        ? settingsModule ?? undefined
+        : c.key === 'safety' && canModerate
+          ? <ModerationModule />
+          : undefined
     const summary = mod
-      ? 'Name, details, status'
+      ? c.key === 'basics'
+        ? 'Name, details, status'
+        : 'Reports queue'
       : items.length
         ? `${items.length} ${items.length === 1 ? 'setting' : 'settings'}`
         : undefined
