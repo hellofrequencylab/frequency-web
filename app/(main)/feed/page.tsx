@@ -2,7 +2,7 @@ import Link from 'next/link'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
-import { Composer } from '@/components/feed/composer'
+import { CaptureBar } from '@/components/feed/capture-bar'
 import { CreateMenu } from '@/components/feed/create-menu'
 import { FeedList } from '@/components/feed/feed-list'
 import { StreamTemplate } from '@/components/templates/stream-template'
@@ -208,10 +208,11 @@ export default async function FeedPage({
             loggedToday={practiceStreak?.loggedToday ?? false}
           />}
 
-      {/* Composer */}
+      {/* Capture — the primary "log a moment" entry (ADR-155/156); posting is one
+          mode inside it. Replaces the always-open inline composer. */}
       {composerScopeId && (
         <div className="mb-6">
-          <Composer
+          <CaptureBar
             scopeId={composerScopeId}
             visibility={composerVisibility}
             placeholder={primaryCircleId ? 'What’s on your mind? Your circle’s listening.' : 'What’s on your mind?'}
