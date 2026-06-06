@@ -99,10 +99,11 @@ function buildSections(areas: typeof NAV_AREAS[number][]): NavSectionGroup[] {
   return sections
 }
 
-// One vertical rail holds every destination: Feed (home anchor, pinned top), then
-// the two worlds — Community and The Quest — and finally Manage (Steward + Platform),
-// grouped by section. Sections and their order are derived entirely from NAV_AREAS
-// (no hardcoded section list). The desktop rail and mobile drawer render the same set.
+// One vertical rail holds every destination: the Home anchors (Feed · Around You,
+// pinned top), then the worlds — Practice · Community · The Quest — and finally
+// Manage, split into four axis-gated groups (Steward · Structure · Studio ·
+// Platform). Sections and their order are derived entirely from NAV_AREAS (no
+// hardcoded section list). The desktop rail and mobile drawer render the same set.
 const NAV_SECTIONS = buildSections([...NAV_AREAS])
 
 // The Manage sections TELESCOPE: an item the viewer can't reach is hidden (not
@@ -110,7 +111,7 @@ const NAV_SECTIONS = buildSections([...NAV_AREAS])
 // — so a member never sees empty admin headers and a host isn't shown greyed-out
 // janitor tools. Member worlds (Community, The Quest) still mute/preview instead,
 // as aspirational surfaces.
-const TELESCOPE_SECTIONS = new Set(['Steward', 'Platform'])
+const TELESCOPE_SECTIONS = new Set(['Steward', 'Structure', 'Studio', 'Platform'])
 
 // The effective access for an area = a janitor's per-area override, if any,
 // else the code default. `role` is the viewer's community role (null = visitor).
