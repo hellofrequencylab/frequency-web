@@ -384,10 +384,13 @@ group of modules; `/admin/*` retires once empty.
 > compose + admin clients, stacked in Spaces; each self-gates so the stack degrades cleanly).
 > ✅ **Engage · Crew tasks** too (`CrewTasksModule` reuses `NewTaskCompose` + `CrewTasksClient`
 > — define & verify tasks, stacked under Gamification in *Engage*; host+ loader, degrades cleanly).
+> ✅ **Spaces · Channels + Events** too — their inlined lists were extracted into shared
+> `ChannelsAdminList` / `EventsAdminList` (used by both the page *and* the module, so they stay
+> DRY), fed by `loadChannelsAdmin` / `loadEventsAdmin` (host+); stacked in Spaces.
 > In-place ports so far: **Moderation · Broadcasts · Gamification · Crew tasks · Members ·
-> Insights · Roles · QR generator · Demo · Circles · Hubs · Nexuses**. **Next:** **Channels** +
-> **Events** managers (their admin lists are inlined in the page — need a small list extraction,
-> like Vera); **Vera** config form extraction; the `@admin` slot + the Vera-tone inline tuner.
+> Insights · Roles · QR generator · Demo · Circles · Channels · Events · Hubs · Nexuses**.
+> **Next:** **Vera** config form extraction; **AI controls**; the Insights dashboards
+> (intel/outcomes/AI read/segments); the `@admin` slot + the Vera-tone inline tuner.
 
 1. **Engine.** `AdminModule` registry + `modulesFor`/`showsAdminPanel`; `AdminModuleCard`
    over `SidebarCard`; add `hub`/`nexus` loaders + `loadCapabilitiesForScope`; the `@admin`
