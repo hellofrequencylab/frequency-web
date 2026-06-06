@@ -4658,3 +4658,48 @@ inbox (rejected — reuse DMs/profile, don't fork messaging).
 Follow-ons: precise "near me" geo sort (lat/lng columns already present), listing edit via the
 Studio window (status/delete shipped), images, and a density read-model feeding "where to seed
 the next third space."
+
+---
+
+## ADR-149: Absorbing `/admin/*` into the console — the deep-link→module recipe + `IN_PLACE` map
+
+**Status:** Accepted — shipped (14 surfaces). Implements [ADR-137](DECISIONS.md) (the console) /
+[ADR-138](DECISIONS.md) (two surfaces) / [ADR-133](DECISIONS.md) (Phase 2). Spec:
+[EMBEDDED-ADMIN.md §6–7](EMBEDDED-ADMIN.md).
+
+**Context.** ADR-137/138 set the target — *no entity admin in `/admin/*`; administer every page
+in place*. That left the **migration mechanics** undecided: how to move ~20 `/admin/*` surfaces
+into the console **one at a time**, each independently shippable, without rewriting the working
+admin UIs or colliding with other agents working the same tree. The console already renders the
+role-gated catalog (`visibleLinks`) as deep-links bucketed into the 9-category spine
+(`slotForHref`); the question was how a deep-link becomes an in-place module.
+
+**Decision.** Port each surface with a fixed, low-risk **recipe** and register it in **one place**:
+- **Recipe (4 parts).** (1) a **loader util** that mirrors the page's data fetch (the page can
+  adopt it to stay DRY); (2) a gated **`'use server'` action** (`load*Admin`) that re-checks the
+  caller (`getCallerProfile` + `atLeastRole`, matching the page's gate) and returns `null`
+  otherwise; (3) a **client module** that fetches via the action on open and **reuses the existing
+  admin components** — never a rewrite; (4) one entry in the console's **`IN_PLACE` map**.
+- **`IN_PLACE` has three modes.** **Replace** — an `href` lists the catalog link the module
+  supplants (the link drops, the module renders). **Additive** — no `href`; the module heads the
+  category *above* the kept links (e.g. Insights summary over its dashboards). **Stacked** —
+  `hrefs[]`; a category holds several modules that each **self-gate server-side** and render `null`
+  when the role lacks access, so the stack degrades cleanly (People = Members + Roles; Spaces =
+  Circles + Channels + Events + Hubs + Nexuses; Engage = Gamification + Crew tasks).
+- **Inlined lists get extracted, not duplicated.** Where a surface rendered its admin list inline
+  in the page (Channels, Events), the list moves to a **shared presentational component**
+  (`ChannelsAdminList` / `EventsAdminList`) consumed by **both** the page and the module — server
+  actions (`archiveChannel`, `toggleCancelEvent`) reused as form actions from the now-client list.
+
+**Alternatives.** Big-bang rewrite of all admin UIs as modules (rejected — high risk, not
+shippable incrementally, collision-prone). A server-composed `@admin` parallel-route slot *first*
+(deferred — it touches the shell/layout; the on-open client fetch ships value now and the slot can
+swap in behind the same modules later). Duplicating inlined lists into module-only copies (rejected
+— drift; extract-and-share keeps one source).
+
+**Consequences.** 14 surfaces absorbed with a uniform, reviewable shape (one PR per surface);
+adding the next is a loader + action + module + one map entry. Modules self-gate, so the same
+stacked category serves every tier. The `@admin` server slot remains the optimization to land
+next (modules wire to the client dock via capability-gated fetch until then). Remaining in
+`/admin/*`: Vera (needs its config form extracted first), AI controls, the Insights dashboards —
+then the route group retires per ADR-138. Operator guide → Notion.
