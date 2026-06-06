@@ -27,6 +27,7 @@ import {
   Route,
   QrCode,
   Library,
+  LifeBuoy,
 } from 'lucide-react'
 
 // Maps each NAV_AREAS key (lib/nav-areas.ts — the framework-free source of truth)
@@ -54,6 +55,7 @@ export const AREA_ICONS: Record<string, ElementType> = {
   store: Store,
   vault: Gem,
   'admin-community': LayoutDashboard,
+  'admin-support': LifeBuoy,
   'admin-structure': Building2,
   'admin-insights': Activity,
   'admin-vera': Bot,
