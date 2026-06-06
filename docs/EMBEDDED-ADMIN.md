@@ -418,11 +418,17 @@ Hubs · Nexuses (see the §7 *Progress* table). ⏳ **Left in `/admin/*`:** the 
 > page *and* the module (DRY). Vera's form is the whole-config-rewrite case: its uncontrolled
 > `<form action={saveVera}>` carries every field, so the extracted form is the same on both surfaces.
 >
-> ⏳ **Remaining, in priority order:** ① the read-only **Insights dashboards** (engagement full /
-> intel / outcomes / AI read / segments) + **Help gaps** — heavier surfaces; decide per-surface
-> whether to embed a compact read or keep the deep-link; ② the server-composed **`@admin` slot**
-> (move modules off the client on-open fetch); ③ the rest of the inline **tuning** layer (Layout,
-> **Vera-tone**). Then `/admin/*` retires.
+> ✅ The read-only **Insights dashboards** (engagement / intel / outcomes / AI read / segments /
+> expansion) and **Help gaps** now live as **tabs in their full-page suites** (ADR-153 Layer 2),
+> not crammed into the sidebar — so that earlier "embed vs deep-link" question is resolved by the
+> suite model.
+>
+> ⏳ **Remaining (polish, non-blocking):** ① the inline **tuning** layer — the **Layout /
+> page-template** editor + the **Vera-tone** tuner (still "Soon" in the console); ② more sidebar
+> **page-globals** — a per-page **Stats** read + **adjustments**; ③ the server-composed **`@admin`
+> slot** (move the page-global modules off the client on-open fetch); ④ optionally align the
+> left-rail "Manage" labels to the suite names. The `/admin/*` routes now *are* the suite pages
+> (Layer 2) — they no longer retire, they're the management layer.
 
 1. **Engine.** `AdminModule` registry + `modulesFor`/`showsAdminPanel`; `AdminModuleCard`
    over `SidebarCard`; add `hub`/`nexus` loaders + `loadCapabilitiesForScope`; the `@admin`
