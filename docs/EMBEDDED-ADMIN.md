@@ -363,8 +363,11 @@ group of modules; `/admin/*` retires once empty.
 > existing `ModerationQueue` via a capability-gated loader) — clear reports without leaving
 > the page. ✅ **Broadcasts** ported too (`BroadcastsModule` renders the existing
 > `BroadcastCompose` + `DispatchesClient` in the *Comms* category via a role-scoped,
-> capability-gated loader). Profile inline is already covered by `EditableIdentity`.
-> **Next:** keep porting deep-links the same way (Members, Gamification, QR, …) and/or
+> capability-gated loader). ✅ **Gamification** ported too (`GamificationModule` reuses
+> `SeasonControl` / `AwardDialog` / `RewardConfig` + a stat summary in the *Engage*
+> category; the full catalogs stay linked). The per-category in-place wiring is now a
+> one-line `IN_PLACE` map entry. Profile inline is already covered by `EditableIdentity`.
+> **Next:** keep porting deep-links the same way (Members, QR, Insights, …) and/or
 > the `@admin` server slot; the QR-generator + Vera-tone inline tuners.
 
 1. **Engine.** `AdminModule` registry + `modulesFor`/`showsAdminPanel`; `AdminModuleCard`
