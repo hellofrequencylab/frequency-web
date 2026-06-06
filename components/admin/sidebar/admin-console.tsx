@@ -34,6 +34,7 @@ import { BroadcastsModule } from '@/components/admin/modules/broadcasts-module'
 import { GamificationModule } from '@/components/admin/modules/gamification-module'
 import { MembersModule } from '@/components/admin/modules/members-module'
 import { InsightsModule } from '@/components/admin/modules/insights-module'
+import { RolesModule } from '@/components/admin/modules/roles-module'
 
 // The page-admin sidebar console (ADR-137 drill-down · ADR-138 the "manage" surface).
 // Home lists the categories that apply for THIS viewer; tap one to drill into its
@@ -145,22 +146,34 @@ export function AdminConsole({
   // Deep-link → in-place ports: when the role-gated catalog includes a surface's
   // link, render its in-place module in the spine category and drop the duplicate
   // link. Adding a ported surface = one entry here.
-  // When `href` is set, the module REPLACES that catalog link in its category. When
-  // omitted, it's ADDITIVE — a summary above the kept links (e.g. Insights), shown
-  // whenever the viewer has any link in that category.
-  const IN_PLACE: Record<string, { href?: string; module: ReactNode; summary: string }> = {
-    safety: { href: '/admin/moderation', module: <ModerationModule />, summary: 'Reports queue' },
-    comms: { href: '/admin/dispatches', module: <BroadcastsModule />, summary: 'Broadcast' },
-    engage: { href: '/admin/gamification', module: <GamificationModule />, summary: 'Season, awards' },
-    people: { href: '/admin/members', module: <MembersModule />, summary: 'Roster & roles' },
+  // `hrefs` lists the catalog links this category's in-place module(s) REPLACE (the
+  // module renders, those links drop). An empty/absent `hrefs` is ADDITIVE — the
+  // module heads the category above the kept links (e.g. Insights). Shown whenever the
+  // viewer has a relevant link (any of `hrefs`, or any link when additive).
+  const IN_PLACE: Record<string, { hrefs?: string[]; module: ReactNode; summary: string }> = {
+    safety: { hrefs: ['/admin/moderation'], module: <ModerationModule />, summary: 'Reports queue' },
+    comms: { hrefs: ['/admin/dispatches'], module: <BroadcastsModule />, summary: 'Broadcast' },
+    engage: { hrefs: ['/admin/gamification'], module: <GamificationModule />, summary: 'Season, awards' },
+    people: {
+      hrefs: ['/admin/members', '/admin/roles'],
+      module: (
+        <div className="space-y-4">
+          <MembersModule />
+          <RolesModule />
+        </div>
+      ),
+      summary: 'Roster & roles',
+    },
     insights: { module: <InsightsModule />, summary: 'Live signal' },
   }
 
   const categories: Category[] = CATEGORIES.map((c) => {
     const raw = itemsBySlot.get(c.key) ?? []
     const inPlace = IN_PLACE[c.key]
-    const hasInPlace = !!inPlace && (inPlace.href ? raw.some((it) => it.kind === 'link' && it.href === inPlace.href) : raw.length > 0)
-    const base = inPlace?.href ? raw.filter((it) => !(it.kind === 'link' && it.href === inPlace.href)) : raw
+    const hrefs = inPlace?.hrefs ?? []
+    const hasInPlace =
+      !!inPlace && (hrefs.length ? raw.some((it) => it.kind === 'link' && hrefs.includes(it.href)) : raw.length > 0)
+    const base = hrefs.length ? raw.filter((it) => !(it.kind === 'link' && hrefs.includes(it.href))) : raw
     const items = c.key === 'layout' ? [...layoutExtra, ...base] : base
     const mod =
       c.key === 'basics' ? settingsModule ?? undefined : hasInPlace ? inPlace.module : undefined
