@@ -26,8 +26,11 @@ export default async function FeedPage({
   searchParams: Promise<{ sort?: string; welcome?: string; v?: string }>
 }) {
   const { sort: sortParam, welcome, v } = await searchParams
-  const sort: 'recent' | 'relevant' | 'nearby' =
-    sortParam === 'recent' ? 'recent' : sortParam === 'nearby' ? 'nearby' : 'relevant'
+  const sort: 'recent' | 'relevant' | 'nearby' | 'story' =
+    sortParam === 'recent' ? 'recent'
+      : sortParam === 'nearby' ? 'nearby'
+      : sortParam === 'story' ? 'story'
+      : 'relevant'
   const showVeraWelcome = welcome === 'vera'
   // "Ask Vera" opens straight in chat; the post-induction welcome plays the deck.
   const veraStartInChat = v === 'chat'
@@ -232,7 +235,7 @@ export default async function FeedPage({
       {/* Sort toggle + feed */}
       <section className="mt-8">
         <SectionHeader
-          title={sort === 'nearby' ? 'Nearby' : sort === 'relevant' ? 'For you' : 'Recent'}
+          title={sort === 'nearby' ? 'Nearby' : sort === 'relevant' ? 'For you' : sort === 'story' ? 'The community’s story' : 'Recent'}
           action={
             <div className="flex items-center gap-0.5 bg-surface-elevated rounded-lg p-0.5">
               {hasHome && (
@@ -267,9 +270,25 @@ export default async function FeedPage({
               >
                 Recent
               </Link>
+              <Link
+                href="?sort=story"
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                  sort === 'story'
+                    ? 'bg-surface text-text shadow-sm'
+                    : 'text-muted hover:text-text'
+                }`}
+              >
+                Story
+              </Link>
             </div>
           }
         />
+
+        {sort === 'story' && (
+          <p className="-mt-1 mb-4 px-1 text-xs text-muted">
+            A record of what the community lived — not a scroll to consume.
+          </p>
+        )}
 
         <FeedList
           myProfileId={myProfileId}

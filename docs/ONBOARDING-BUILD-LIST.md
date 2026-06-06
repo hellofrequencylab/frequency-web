@@ -35,7 +35,7 @@ Two levers, in order: **(0) flip the switches that let real testers in today**, 
 | **3.x** | Proactive Vera (encouragement/accountability, host copilot) | Day-2 retention | M–L | 🔴 gated |
 | **5.1–5.2** | Rename Directory → **Network** + member-tier personal contacts + quick-add capture | Real-life contacts, kept | S–M | 📋 |
 | **5.3–5.5** | Event-invite capture loop (QR → RSVP → triple-write) + gamification | The growth loop | M–L | 📋 |
-| **6** | **Capture** — primary "log life" button (Photo/Note/Post + In-Person card/poster) | The community story + every member a node | L | ⏳ Phases 1–2 shipped |
+| **6** | **Capture** — primary "log life" button (Photo/Note/Post + In-Person card/poster) | The community story + every member a node | L | ⏳ Phases 1–3 shipped |
 | **4.x** | Cleanup + doc hygiene | Lean tree | S | ⏳ |
 
 Legend: ✅ done · ⏳ partially built / in flight · 📋 specced, not built · 🔴 blocked.
@@ -277,11 +277,14 @@ Frequency — a community-management tool where every member is a node.
    Opens the same mode picker in a modal; posts default to the member's wall. Hidden on `/feed` (the
    inline bar already serves there); the four modes are shared via `CAPTURE_MODES` so the two entries
    can't drift. *Tweak:* suppress on focus/compose surfaces (settings, `/connections/new`).
-3. ⏳ **"Daily journal / community story" framing.** ✅ shipped the personal half: `/journal`
-   (`app/(main)/journal/page.tsx`) — your captured moments (notes/photos/posts) grouped by day in
-   the feed-as-record voice ("your record of showing up"); linked from the Capture launcher; reads
-   the posts substrate (no new store). 📋 *remaining:* a community-story lane/filter on `/feed`
-   (everyone's captures as the running record) + the feed-as-record voice on the main feed header.
+3. ✅ **shipped — "Daily journal / community story" framing.**
+   - **Personal:** `/journal` (`app/(main)/journal/page.tsx`) — your captured moments grouped by day
+     in the feed-as-record voice; linked from the Capture launcher.
+   - **Community:** a **Story** lens on `/feed` (`?sort=story`) — the whole community's posts as the
+     running record, **chronological + day-grouped**, no feed furniture (dispatch/event cards), with
+     the record voice ("what the community lived — not a scroll to consume"). `FeedList` gained a
+     `'story'` sort that reuses the visibility-correct `feed_for_viewer` RPC (fetched as `recent`).
+   - Both read the posts substrate — no new store.
 4. 📋 Richer kinds (video · cinema · live) into the same picker as demand warrants.
 
 **Open questions (owner):** does "Note" share the post table or get its own journal store · how
