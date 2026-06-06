@@ -292,10 +292,32 @@ export async function addStaffMessage(
   })
   const now = new Date().toISOString()
   const update: Record<string, unknown> = { last_activity_at: now, updated_at: now }
+
+  // A public reply moves an open ticket to 'waiting' and notifies the reporter so
+  // the loop closes — they hear back without having to revisit /support. Internal
+  // notes do neither.
   if (!isInternal) {
-    const { data } = await db().from('support_tickets').select('status').eq('id', ticketId).maybeSingle()
-    const status = (data as { status: string } | null)?.status as TicketStatus | undefined
-    if (status && isOpenStatus(status)) update.status = 'waiting'
+    const { data } = await db()
+      .from('support_tickets')
+      .select('status, profile_id, ref')
+      .eq('id', ticketId)
+      .maybeSingle()
+    const t = data as { status: string; profile_id: string; ref: number } | null
+    if (t && isOpenStatus(t.status as TicketStatus)) update.status = 'waiting'
+    if (t) {
+      try {
+        await db().from('notifications').insert({
+          recipient_id: t.profile_id,
+          actor_id: staffId,
+          type: 'support_reply',
+          reference_type: 'support_ticket',
+          reference_id: ticketId,
+          body: `replied to your report #${t.ref}`,
+        })
+      } catch {
+        /* notification is best-effort, never blocks the reply */
+      }
+    }
   }
   await db().from('support_tickets').update(update).eq('id', ticketId)
 }
@@ -312,6 +334,12 @@ export async function listAssignableAgents(): Promise<TicketParty[]> {
   return ((data as { id: string; display_name: string; handle: string; avatar_url: string | null }[] | null) ?? []).map(
     (p) => ({ id: p.id, name: p.display_name, handle: p.handle, avatarUrl: p.avatar_url }),
   )
+}
+
+/** A given member's tickets — for the staff member-record panel (same query as
+ *  listMyTickets, named for the operator context). */
+export function listTicketsForProfile(profileId: string): Promise<SupportTicket[]> {
+  return listMyTickets(profileId)
 }
 
 /** Count of a member's tickets — surfaced on their profile/CRM record. */
