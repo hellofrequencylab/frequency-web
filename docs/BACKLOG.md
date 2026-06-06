@@ -17,13 +17,13 @@ The current build order for the progress / streak / disclosure arc and the pract
 follow-ups it surfaced. Full detail lives in the lettered sections below — this is the ranking.
 
 **P0 — ✅ DONE (2026-06-06, ADR-152): The Quest → Seasonal Quest → Journeys → Practices (all free).**
-1. **S1 · Quest/Journey hierarchy** — A + **B1** + **B2** + **B3 *shipped***. A · paywall gone,
-   "Quests" restored. B1 · `quests` table + `journey_plans.quest_id`/`official` + seed (migration
-   `20260608010000`, *needs applying to prod*). B2 · `/crew/quests` lists the Seasonal Quest → its
-   Journeys (`lib/quests.ts`). B3 · legacy action-chain engine retired in code (`advanceQuests` +
-   old actions removed, sidebar repointed) + GLOSSARY/THE-QUEST/DATABASE terminology pass. *Only
-   loose end:* physically drop the dormant `quest_*` tables once `quest_outcomes()` + its analytics
-   surface are retired and types regenerated (tracked in §S). *(§S)*
+1. **S1 · Quest/Journey hierarchy — ✅ COMPLETE & LIVE.** A · paywall gone, "Quests" restored.
+   B1 · `quests` table + `journey_plans.quest_id`/`official` + seed (migration `20260608010000`
+   **applied to prod**, types regenerated; verified: Season 1 Quest + 4 official Pillar Journeys).
+   B2 · `/crew/quests` lists the Seasonal Quest → its Journeys (`lib/quests.ts`). B3 · legacy
+   action-chain engine retired in code + GLOSSARY/THE-QUEST/DATABASE terminology pass. *Only loose
+   end → §S1b:* physically drop the dormant `quest_*` tables once `quest_outcomes()` + its
+   analytics surface are retired.
 
 **P1 — finish the shipped arc (ready, high value, low risk)**
 2. **Stage-driven disclosure → crew dashboard + surfaces** *(§F, ADR-146)* — the spine is
@@ -378,7 +378,7 @@ inline path (wizard is an optional guided alt); RLS isolation between `journey_p
   removed the paywall everywhere and restored **"Quests"** as the seasonal container surface
   (`/crew/quests`). **B1 ✅ shipped** — `quests` table + `journey_plans.quest_id`/`official` + a
   seed (active season's Quest + one official Journey per Pillar, ≤3 practices each); migration
-  `20260608010000` **(needs applying to prod)**. **B2 ✅ shipped** — `/crew/quests` lists the
+  `20260608010000` **applied to prod + types regenerated** (verified live). **B2 ✅ shipped** — `/crew/quests` lists the
   Seasonal Quest → its official Journeys (each → the Journey detail's practices + free Adopt);
   `lib/quests.ts` reads defensively. **B3 ✅ shipped** — legacy action-chain engine retired in
   code: `advanceQuests` + `isArcStepRelevant` + `chainCurrency` removed from `lib/achievements.ts`,
