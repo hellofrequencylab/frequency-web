@@ -70,10 +70,8 @@ export function PostReplies({
     <div>
       <button
         onClick={() => setOpen((o) => !o)}
-        className={`ml-auto flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${
-          open
-            ? 'bg-primary-bg text-primary-strong'
-            : 'text-subtle hover:bg-surface hover:text-muted'
+        className={`flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors ${
+          open ? 'text-primary-strong' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
         }`}
       >
         {isPending && !open ? (
@@ -96,8 +94,9 @@ export function PostReplies({
           ) : replies.length === 0 ? (
             <p className="text-xs text-subtle text-center py-1">No replies yet. Be the first.</p>
           ) : (
-            replies.map((r) => (
-              <div key={r.id} className="flex items-start gap-2.5 pl-2">
+            <div className="ml-1 space-y-3 border-l-2 border-border/60 pl-3">
+            {replies.map((r) => (
+              <div key={r.id} className="flex items-start gap-2.5">
                 <Link href={r.author ? `/people/${r.author.handle}` : '#'} className="shrink-0">
                   {r.author?.avatar_url ? (
                     <Image src={r.author.avatar_url} alt={r.author.display_name} width={24} height={24} className="w-6 h-6 rounded-full object-cover" />
@@ -125,7 +124,8 @@ export function PostReplies({
                   <PostBody body={r.body} className="mt-0.5 text-xs leading-relaxed text-text" />
                 </div>
               </div>
-            ))
+            ))}
+            </div>
           )}
 
           {/* Reply composer — a single growing line; ⌘/Ctrl+Enter or the button sends. */}
