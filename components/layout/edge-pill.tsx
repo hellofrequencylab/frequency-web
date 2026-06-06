@@ -15,6 +15,7 @@ export function EdgePill({
   icon,
   waiting = false,
   glow,
+  glowMobile = true,
   onOpen,
   ariaLabel,
 }: {
@@ -24,16 +25,22 @@ export function EdgePill({
   /** Pulse the glow + (mobile) act as the "message waiting" indicator. */
   waiting?: boolean
   glow: 'blue' | 'orange'
+  /** Show the glow on mobile too (default). False = glow on web only (mobile just shows the tab). */
+  glowMobile?: boolean
   onOpen: () => void
   ariaLabel: string
 }) {
   const [expanded, setExpanded] = useState(false)
+  // The glow is acknowledged once the tab is clicked, and only returns on a page
+  // refresh (this state resets on mount).
+  const [dismissed, setDismissed] = useState(false)
   const onLeft = side === 'left'
 
   // Reveal-then-open: while collapsed a click reveals; once revealed a click opens.
   // On web, mouse-over reveals first, so a single click opens; on touch there's no
   // hover, so it's two taps.
   function handleClick() {
+    setDismissed(true)
     if (expanded) {
       setExpanded(false)
       onOpen()
@@ -67,11 +74,12 @@ export function EdgePill({
         onLeft ? 'flex-row-reverse pl-4 pr-3.5' : 'pl-3.5 pr-4'
       } ${skin} ${peek}`}
     >
-      {/* Outer glow glimmer — only when a message is waiting. */}
-      {waiting && (
+      {/* Outer glow glimmer — only while a message is waiting and not yet acknowledged
+          (cleared on click, returns on refresh). `glowMobile=false` hides it on phones. */}
+      {waiting && !dismissed && (
         <span
           aria-hidden
-          className={`pointer-events-none absolute -inset-1.5 ${glowRound} ${glowColor} blur-md motion-safe:animate-pulse`}
+          className={`pointer-events-none absolute -inset-1.5 ${glowRound} ${glowColor} blur-md motion-safe:animate-pulse ${glowMobile ? '' : 'hidden md:block'}`}
         />
       )}
       <span className="relative shrink-0">{icon}</span>
