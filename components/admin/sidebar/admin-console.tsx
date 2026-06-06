@@ -39,6 +39,8 @@ import { RolesModule } from '@/components/admin/modules/roles-module'
 import { QrGeneratorModule } from '@/components/admin/modules/qr-generator-module'
 import { DemoModule } from '@/components/admin/modules/demo-module'
 import { SpacesCirclesModule } from '@/components/admin/modules/spaces-circles-module'
+import { ChannelsModule } from '@/components/admin/modules/channels-module'
+import { EventsModule } from '@/components/admin/modules/events-module'
 import { SpacesHubsModule } from '@/components/admin/modules/spaces-hubs-module'
 import { SpacesNexusesModule } from '@/components/admin/modules/spaces-nexuses-module'
 
@@ -183,15 +185,17 @@ export function AdminConsole({
     reach: { module: <QrGeneratorModule />, summary: 'Generate & export' },
     platform: { hrefs: ['/admin/demo'], module: <DemoModule />, summary: 'Demo content' },
     spaces: {
-      hrefs: ['/admin/circles', '/admin/hubs', '/admin/nexuses'],
+      hrefs: ['/admin/circles', '/admin/channels', '/admin/events', '/admin/hubs', '/admin/nexuses'],
       module: (
         <div className="space-y-4">
           <SpacesCirclesModule />
+          <ChannelsModule />
+          <EventsModule />
           <SpacesHubsModule />
           <SpacesNexusesModule />
         </div>
       ),
-      summary: 'Circles, hubs, nexuses',
+      summary: 'Circles, channels, events, hubs, nexuses',
     },
   }
 
