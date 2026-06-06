@@ -25,6 +25,7 @@ import type { TourState } from '@/lib/onboarding/select'
 import { getOnboardingStatus } from '@/lib/onboarding/status'
 import { BETA_INDUCTION_ACTIVE } from '@/lib/onboarding/beta-script'
 import { ChoresOverlay } from '@/components/onboarding/chores-overlay'
+import { CaptureLauncher } from '@/components/feed/capture-launcher'
 import { getProfileChores } from '@/lib/onboarding/profile-chores'
 import { getFounderTasks } from '@/lib/onboarding/founder-tasks'
 
@@ -180,6 +181,9 @@ export default async function MainLayout({
       <PresenceHeartbeat />
       <PushRegistration />
       <VeraLauncher index={helpIndex} />
+      {/* Capture — the app-wide primary action (§6 Phase 2). Posts default to the
+          member's wall; reachable from any page in the shell. */}
+      <CaptureLauncher scopeId={profile.id} />
       {chores && (!chores.complete || !chores.rewarded || coachNext) && (
         <ChoresOverlay chores={chores} nextAction={coachNext} />
       )}
