@@ -40,11 +40,15 @@ export function JourneyBoard({
   loggedToday = false,
   freezeTokens = 0,
   willFreezeProtect = false,
+  stageIndex = 99,
   pillarBalance,
   activeJourney,
 }: {
   practices: Practice[]
   streak?: number
+  /** Member stage index (lib/member-progress). Drives progressive reveal of the
+   *  lower panels; defaults high so an un-staged caller shows everything. */
+  stageIndex?: number
   /** Streak is alive but today isn't logged yet — log to keep it. */
   atRisk?: boolean
   /** A practice was already logged today (streak is safe). */
@@ -212,7 +216,7 @@ export function JourneyBoard({
 
       {/* Pillar balance — a calm read of where your practice sits across the four
           Pillars. Coverage, not a score. */}
-      {!collapsed && pillarBalance && pillarBalance.length > 0 && (
+      {!collapsed && stageIndex >= 3 && pillarBalance && pillarBalance.length > 0 && (
         <div className="mt-3 border-t border-primary-bg px-4 pt-3">
           <p className="mb-1.5 text-2xs font-medium text-subtle">Your pillars</p>
           <div className="flex gap-1.5">
@@ -233,8 +237,9 @@ export function JourneyBoard({
         </div>
       )}
 
-      {/* Resource center — a few warm doors back into the place. */}
-      {!collapsed && (
+      {/* Resource center — a few warm doors back into the place. Held back until a
+          member is past the very first days so the board stays focused early on. */}
+      {!collapsed && stageIndex >= 2 && (
         <div className="mt-3 flex items-center gap-1.5 border-t border-primary-bg bg-surface/40 px-3 py-2.5">
           <Compass className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
           <span className="mr-0.5 text-xs font-medium text-subtle">Keep exploring</span>

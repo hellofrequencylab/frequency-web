@@ -4598,3 +4598,26 @@ unlogged-but-alive one reads "at risk"), so reads stay pure — only a practice 
 state. Existing members get a correct streak immediately from their log history. A future move
 to a structured store can replace the deriver without changing callers. See
 `content/help/the-game/streaks.md`.
+
+## ADR-146: Member progress spine + stage-driven progressive disclosure
+
+**Status:** Accepted · corroborated by `lib/member-progress.ts`
+(`getMemberProgress`, `deriveStage`, `gatesFor`) + `app/(main)/feed/page.tsx`
+**Context:** Progress signals were scattered — activation (`getOnboardingStatus`), the
+daily streak (ADR-145), adopted Journeys (`getActiveJourneyProgress`) and season rank
+(`rankForZaps`) each had their own surface, with no single "where am I / what's next"
+read and no way to reveal the product gradually. The owner asked for progressive
+disclosure driven by strong progress, with the left nav staying fully visible.
+**Decision:** Add a **stage spine**: `getMemberProgress()` folds the four signals into a
+five-rung **stage** (Newcomer → Finding your feet → Regular → Established → Anchor) via a
+pure, monotonic `deriveStage`, and returns the gates to the next stage. The home feed
+reads it **once** (the spine also carries the raw onboarding status + Journeys, so the feed
+doesn't re-fetch). Stages reveal **surfaces, not nav**: the JourneyBoard shows only the
+streak + today's move early, then the resource center (stage ≥ Regular) and the pillar
+balance (stage ≥ Established) appear as the member climbs; a `StageStrip` shows the ladder +
+next gate, and a one-time `StageCelebration` fires on advance (acknowledged via
+`acknowledgeStage`, stored in `profiles.meta.progressStage`, so it shows exactly once).
+**Consequences:** Disclosure is one pure function — easy to retune thresholds or add a rung
+without touching surfaces. Reads stay pure (the celebration acknowledges itself client-side).
+No schema beyond the `meta.progressStage` marker. The crew dashboard and other surfaces can
+adopt the same `stageIndex` gate later. See `lib/member-progress.ts`.
