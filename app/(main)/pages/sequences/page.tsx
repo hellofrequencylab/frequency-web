@@ -68,6 +68,12 @@ export default async function BetaSequencesPage() {
                     <p className="mt-0.5 font-mono text-xs text-subtle">{splashPath}</p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
+                    <Link
+                      href={`/pages/sequences/${seq.slug}/edit`}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+                    >
+                      Edit splash
+                    </Link>
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-bg px-2.5 py-1 text-xs font-semibold text-primary-strong">
                       <Tag className="h-3 w-3" />
                       {seq.marketingTag}

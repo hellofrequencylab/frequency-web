@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { Loader2, Plus, ChevronLeft, ChevronRight, CalendarClock } from 'lucide-react'
+import { Loader2, Plus, ChevronLeft, ChevronRight, CalendarClock, Pencil } from 'lucide-react'
 import { createDeal, moveDeal } from './actions'
 import { isError } from '@/lib/action-result'
 import { formatMoney, type CrmStage, type CrmDeal, type PersonLite } from '@/lib/crm/pipeline'
@@ -177,9 +177,18 @@ function DealCard({
 
   return (
     <div className="rounded-xl border border-border bg-surface p-3 shadow-sm">
-      <Link href={`/crm/deals/${deal.id}`} className="block">
-        <p className="line-clamp-2 text-sm font-semibold text-text hover:underline">{deal.title}</p>
-      </Link>
+      <div className="flex items-start justify-between gap-1">
+        <Link href={`/crm/deals/${deal.id}`} className="block min-w-0 flex-1">
+          <p className="line-clamp-2 text-sm font-semibold text-text hover:underline">{deal.title}</p>
+        </Link>
+        <Link
+          href={`/crm/deals/${deal.id}/edit`}
+          aria-label="Edit deal"
+          className="shrink-0 rounded p-1 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+        >
+          <Pencil className="h-3.5 w-3.5" />
+        </Link>
+      </div>
       {who && <p className="mt-0.5 truncate text-xs text-muted">{who}</p>}
       <div className="mt-2 flex items-center justify-between gap-2">
         <span className="text-sm font-bold tabular-nums text-text">{formatMoney(deal.value, deal.currency)}</span>
