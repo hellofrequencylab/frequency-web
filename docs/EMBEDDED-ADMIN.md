@@ -376,8 +376,10 @@ group of modules; `/admin/*` retires once empty.
 > takes an `hrefs[]` so a category can hold two modules). ✅ **QR generator** too
 > (`QrGeneratorModule` — a self-contained Reach tool: any URL/text → styled QR, exported
 > as **SVG · PNG 256–2048px · JPG · copy**, rendered client-side via the pure
-> `renderStyledQrSvg`; the full Studio stays linked). In-place ports so far: **Moderation ·
-> Broadcasts · Gamification · Members · Insights · Roles · QR generator**. **Next:** Demo,
+> `renderStyledQrSvg`; the full Studio stays linked). ✅ **Demo Studio** too (`DemoModule`
+> reuses `DemoOverview` / `StudioWizard` / `GrowNetwork` / `DangerZone` in *Platform*,
+> janitor-gated). In-place ports so far: **Moderation · Broadcasts · Gamification · Members ·
+> Insights · Roles · QR generator · Demo**. **Next:**
 > the Spaces entity-managers; **Vera** needs its config *form extracted into a component
 > first* (the page inlines it + `saveVera` rewrites the whole config) — deferred. Plus the
 > `@admin` slot + the Vera-tone inline tuner.
