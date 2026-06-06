@@ -4972,3 +4972,31 @@ same picker; the picker is the consumer surface for the eventual Create Wizard r
 not a parallel system. Gamification is unchanged (a Note pays `post_create` like any post — reward the
 real act, anti-farm doctrine). Spec/build: [ONBOARDING-BUILD-LIST.md](ONBOARDING-BUILD-LIST.md) §6.
 Member-facing "how to Capture" guidance → help center / Notion when it stabilises.
+
+### ADR-156a — Capture rework: one multi-mode box, contact-forward (owner direction)
+
+**Refines ADR-156.** Capture is **one Substack-style box, not a picker → composer two-step.** The
+box body swaps by mode; a **bottom rail of prompts** picks what you're capturing (Post · Note ·
+Photo · **Contact**); the send button always reads **"Capture"** (`components/feed/capture-box.tsx`).
+The shared `Composer` stays the post/note/photo editor (it's also used on circle/channel/profile
+pages, so the Capture-mode rail lives in `CaptureBox`, *not* in `Composer` — `Composer` only gained
+a `submitLabel`). The feed shows the box inline; the app-wide FAB opens the same box in a modal.
+
+**Contact capture is integrated, not a link-out.** A new **Contact** mode (`contact-capture-form.tsx`)
+drops a person straight into the member's personal CRM via `createProfile({source:'manual'})` (§5.2,
+member-tier). On **web** this is manual entry — you won't shoot a card on a laptop — with the
+card/poster *scan* path one tap away at `/connections/new`. On **mobile/app** (next) the box opens
+**contact-forward** and the Capture button lives **centre-nav** as the primary mobile action: you're
+out on your Quest, meeting life's moments — QR check-in, a photo of their card, a photo of them, a
+note.
+
+**Why contact-first matters (the strategy).** A member's contacts are their personal CRM **and**
+their *sales pipeline for The Quest*: the more people they invite and convert, the more they earn —
+ultimately a **sponsor-backed, real-life reward system** (the more you give the community, the more
+you're rewarded). This is the activation loop of ADR-155 made personal. Reward mechanics + sponsor
+backing are backlogged ([BACKLOG.md](BACKLOG.md) §F); the privacy invariant holds (captured people
+stay personal, enter marketing only on consent — ADR-099/154).
+
+**Status.** Web multi-mode box + inline Contact capture **shipped**. Mobile centre-nav placement and
+the sponsor reward/pipeline are the next passes ([ONBOARDING-BUILD-LIST.md](ONBOARDING-BUILD-LIST.md)
+§6).
