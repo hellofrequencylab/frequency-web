@@ -16,8 +16,22 @@ import type { Capability, Scope } from '@/lib/core/capabilities'
 /** The Scope union's discriminant — where a module can attach. */
 export type ScopeKind = Scope['kind']
 
-/** Panel grouping for a module (modules render grouped + ordered by slot). */
-export type AdminSlot = 'settings' | 'people' | 'content' | 'moderation' | 'insights' | 'danger'
+/** The 9-category spine (EMBEDDED-ADMIN.md / ADR-137) — a module's category. */
+export type AdminSlot =
+  | 'basics'
+  | 'place'
+  | 'people'
+  | 'layout'
+  | 'engage'
+  | 'reach'
+  | 'comms'
+  | 'safety'
+  | 'insights'
+  | 'danger'
+
+/** Which surface renders a module (ADR-138): `inline` = tune, on the page ·
+ *  `sidebar` = manage, in the page admin dock. */
+export type AdminSurface = 'inline' | 'sidebar'
 
 export interface AdminModule {
   /** Stable id — e.g. 'circle.settings'. */
@@ -37,7 +51,10 @@ export interface AdminModule {
    * here is UX; the action is law (capabilities.ts).
    */
   requiredCapability: Capability
+  /** The spine category this module belongs to. */
   slot: AdminSlot
+  /** Which surface renders it — inline (tune) or sidebar (manage). ADR-138. */
+  surface: AdminSurface
   /** Vertical order within a slot. */
   order: number
 }
@@ -50,7 +67,8 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     Icon: Settings,
     scopes: ['circle'],
     requiredCapability: 'circle.editSettings',
-    slot: 'settings',
+    slot: 'basics',
+    surface: 'sidebar',
     order: 10,
   },
   {
@@ -60,7 +78,8 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     Icon: Building2,
     scopes: ['hub'],
     requiredCapability: 'hub.manage',
-    slot: 'settings',
+    slot: 'basics',
+    surface: 'sidebar',
     order: 10,
   },
   {
@@ -70,7 +89,8 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     Icon: Network,
     scopes: ['nexus'],
     requiredCapability: 'nexus.manage',
-    slot: 'settings',
+    slot: 'basics',
+    surface: 'sidebar',
     order: 10,
   },
   {
@@ -80,7 +100,8 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     Icon: CalendarDays,
     scopes: ['event'],
     requiredCapability: 'event.editSettings',
-    slot: 'settings',
+    slot: 'basics',
+    surface: 'sidebar',
     order: 10,
   },
 ] as const
@@ -95,6 +116,15 @@ export function modulesFor(scope: Scope, caps: ReadonlySet<Capability>): AdminMo
 /** Whether the Admin affordance should appear at all for this (scope, viewer). */
 export function showsAdminPanel(scope: Scope, caps: ReadonlySet<Capability>): boolean {
   return modulesFor(scope, caps).length > 0
+}
+
+/** Modules for a scope on one surface — inline (tune) vs sidebar (manage). ADR-138. */
+export function modulesForSurface(
+  scope: Scope,
+  caps: ReadonlySet<Capability>,
+  surface: AdminSurface,
+): AdminModule[] {
+  return modulesFor(scope, caps).filter((m) => m.surface === surface)
 }
 
 /** Look a module up by id (modules use this for their own label/icon/desc). */
