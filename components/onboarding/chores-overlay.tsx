@@ -111,6 +111,7 @@ export function ChoresOverlay({
     <EdgePill
       side="left"
       glow="blue"
+      glowMobile={false}
       label={coach ? 'Next move' : `${left} ${left === 1 ? 'chore' : 'chores'}`}
       icon={coach ? <Sparkles className="h-5 w-5" aria-hidden /> : <ListChecks className="h-5 w-5" aria-hidden />}
       waiting
