@@ -202,7 +202,7 @@
 > `getActiveJourneyProgress()` derives live Journey progress from `practice_logs` (cadence-based
 > done-this-week + `circleCompanions`), surfaced on the `/crew/journey` Dashboard tab and the home
 > `JourneyBoard` current-step line — realizes BACKLOG §Q, no migration. **Design-system cohesion**
-> (ADR-143): shared in-app primitives (`components/ui/field`, `button`, `dialog`, `lib/utils` `cn`) + a
+> (ADR-147): shared in-app primitives (`components/ui/field`, `button`, `dialog`, `lib/utils` `cn`) + a
 > named sub-xs type scale (`text-2xs`/`text-3xs` `@utility`) replacing the `text-[Npx]` anti-pattern, and
 > token-only color (raw palette → DAWN tokens). **Admin dedup:** per-entity *editing* now lives on the
 > page dock; the redundant `StaffEditButton` deep-link was removed from circle/hub/nexus pages.
