@@ -68,21 +68,31 @@ a fresh climb.
 > reserved for the game as a whole. The martial-arts rank names
 > (deshi/sempai/sensei…) are **legacy** — ignore them.
 
-**Two currencies, split by where the activity happens:**
+**Two currencies, split by where the activity happens. The rule is canonical
+(ADR-139): _anything online → Gems; anything in real life → Zaps_** — and it
+applies to base actions AND the meta-layer (achievements, season challenges,
+quests/arcs, streaks). A milestone pays the currency of the act it rewards: an
+in-person challenge ("Attend 8 events") pays zaps; an online one ("Make 5 posts")
+pays gems. The single source of truth is `currencyForCriteria` /
+`currencyForSource` (`lib/engagement/currency.ts`).
 
 - **Gems** — earned through **internal, on-platform (web) engagement** (posts,
-  comments, reactions, logins, RSVPs, joins). `gem_transactions`, `gem_config`,
-  `store_items`, `store_redemptions`. The **spendable** currency: buy digital
-  badges/cosmetics and **trade for physical merch** in the web store.
+  comments, reactions, logins, RSVPs, joins, welcomes). `gem_transactions`,
+  `gem_config`, `store_items`, `store_redemptions`. The **spendable** currency:
+  buy digital badges/cosmetics and **trade for physical merch** in the web store.
   `awardGems()` (`lib/gems.ts`). Tracked as `lifetime_gems` + `current_season_gems`.
-- **Zaps** — earned through **external + in-person activity**: outreach, invites,
-  in-person events, ghost-node captures, business/NFC programs — "anything in
-  person." Season XP that drives **season ranks**:
+- **Zaps** — earned through **external + in-person activity**: showing up, hosting,
+  founding/leading a circle, outreach + invites that land, ghost-node captures,
+  business/NFC programs, and **every practice log** (personal or circle — the
+  real-world doing). Season XP that drives **season ranks**:
   `ghost → runner → operative → agent → conduit → luminary` (auto-advance at
   100 / 300 / 750 / 1500 zaps; luminary is a manual admin promotion gated on
-  `season_challenges_complete`). `awardZaps()` (`lib/zaps.ts`); the engagement
-  layer routes sources to the right currency via `currencyForSource`
-  (`lib/engagement/currency.ts`).
+  `season_challenges_complete`). `awardZaps()` (`lib/zaps.ts`).
+- **Twin ledgers + the points log.** Both currencies write **one row per grant**
+  (`gem_transactions` / `zap_transactions`); an `AFTER INSERT` trigger on each is
+  the only place profile totals (and, for zaps, rank) move. Those ledgers back the
+  member-facing **"how you earned" log** in the Vault (`/crew/store/ledger`,
+  `lib/economy/ledger.ts`). `awardZaps`/`awardGems` only ever append a ledger row.
 - **Season rollover** — at season end, `reset_season()` converts a **rank-based
   share** of `current_season_zaps` into gems (luminary 1/1.5 … default 1/5),
   mints a `season_trophies` row, then zeroes season counters. So zaps are the

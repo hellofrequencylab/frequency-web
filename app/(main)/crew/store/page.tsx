@@ -1,5 +1,6 @@
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Gem, Zap, Flame, Trophy } from 'lucide-react'
+import { Gem, Zap, Flame, Trophy, Receipt, ArrowRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getStoreData } from './actions'
@@ -87,6 +88,16 @@ export default async function StorePage() {
               <p className="text-[10px] text-signal mt-0.5">Won</p>
             </div>
           </div>
+
+          {/* How you earned — the points & streaks ledger. */}
+          <Link
+            href="/crew/store/ledger"
+            className="mt-3 flex items-center gap-2 rounded-xl bg-success-bg/50 px-3 py-2.5 text-signal-strong transition-colors hover:bg-success-bg"
+          >
+            <Receipt className="h-4 w-4 shrink-0" />
+            <span className="flex-1 text-xs font-semibold">How you earned — points &amp; streaks log</span>
+            <ArrowRight className="h-3.5 w-3.5 shrink-0" />
+          </Link>
 
           {/* Equipped winnings */}
           {(equipped.border || equipped.flair || equipped.title) && (

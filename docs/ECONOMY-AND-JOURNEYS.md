@@ -45,9 +45,20 @@ how each gate reads: browse freely, muted, click → upgrade lightbox.
   between gatherings (post, comment, react, welcome, RSVP). Daily-capped so they
   can't be farmed; spendable in the Vault — by Crew. For a Member they pile up, inert.
 - **Zaps = the showing-up currency** that drives **season ranks** — *the weight of
-  being there*. Earned by **in-person + outreach** acts, the biggest rewards living
-  off the screen. Harder to earn, and for a Member **harder still** (a lower rate /
-  level cap, §6); Member zaps accumulate but stay **inert**.
+  being there*. Earned by **in-person + outreach** acts (and **every practice log**,
+  personal or circle — the real-world doing), the biggest rewards living off the
+  screen. Harder to earn, and for a Member **harder still** (a lower rate / level
+  cap, §6); Member zaps accumulate but stay **inert**.
+
+> **Categorization is canonical (ADR-139): online → Gems, real life → Zaps — and
+> it applies to the meta-layer too.** Achievements, season challenges, and Journeys
+> pay the currency of the act they reward, not a flat zap bounty. So "Make 5 posts"
+> pays gems; "Attend 8 events" pays zaps; a Journey that mixes both pays each step
+> in kind and the chain in the currency of its real-world steps. One source of truth:
+> `currencyForCriteria` (`lib/engagement/currency.ts`). Every grant is ledgered
+> (`gem_transactions` / `zap_transactions`) and shown to the member in the Vault's
+> **"how you earned" log** (`/crew/store/ledger`) — the transparency that makes
+> "look at everything you've earned" land.
 
 **Reward ladder** (live in `gem_config` / `zap_config`; ADR-104 / the
 `…_economy_rebalance` migration). Tuned so a ~13-week season lands a **casual member
