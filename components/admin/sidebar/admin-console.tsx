@@ -92,7 +92,7 @@ function slotForHref(href: string): string {
   if (href.startsWith('/admin/dispatches') || href.startsWith('/outreach')) return 'comms'
   if (href.startsWith('/admin/gamification') || href.startsWith('/admin/crew-tasks') || href.startsWith('/programs')) return 'engage'
   if (href.startsWith('/admin/qr')) return 'reach'
-  if (/^\/admin\/(engagement|intel|outcomes|insights|segments)/.test(href)) return 'insights'
+  if (/^\/admin\/(engagement|intel|outcomes|insights|segments|expansion)/.test(href)) return 'insights'
   if (/^\/admin\/(circles|channels|events|hubs|nexuses)/.test(href)) return 'spaces'
   if (href === '/pages') return 'layout'
   return 'platform' // /admin overview, vera, help-gaps, ai, demo
