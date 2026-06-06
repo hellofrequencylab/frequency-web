@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { Check } from 'lucide-react'
 import { AdminModuleCard } from '@/components/admin/admin-module-card'
 import { moduleById } from '@/lib/admin/modules/registry'
+import { fieldClasses, labelClasses } from '@/components/ui/field'
 import { getHubAdminData, updateHubSettings } from '@/app/(main)/hubs/admin-actions'
 
 // In-place "Hub settings" module (EMBEDDED-ADMIN.md / ADR-133). Mirrors the circle
@@ -14,9 +15,8 @@ import { getHubAdminData, updateHubSettings } from '@/app/(main)/hubs/admin-acti
 
 type HubData = NonNullable<Awaited<ReturnType<typeof getHubAdminData>>>
 
-const input =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'
-const fieldLabel = 'text-xs font-medium text-muted'
+const input = fieldClasses
+const fieldLabel = labelClasses
 
 export function HubSettingsModule() {
   const pathname = usePathname()

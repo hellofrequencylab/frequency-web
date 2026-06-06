@@ -1,5 +1,10 @@
 // ── Shared utility functions ──────────────────────────────────────────────────
 
+/** Join truthy class names — a tiny dependency-free classnames helper. */
+export function cn(...classes: Array<string | false | null | undefined>): string {
+  return classes.filter(Boolean).join(' ')
+}
+
 /**
  * Returns initials from a display name (up to 2 characters).
  * e.g. "Daniel Tyack" → "DT", "Madonna" → "M"
