@@ -19,7 +19,7 @@ import { getPillars, pillarsById, type Pillar } from '@/lib/pillars'
 import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
 import { LogPracticeButton } from '@/components/practice/log-practice-button'
 import { AdoptPracticeButton } from '@/components/practice/adopt-practice-button'
-import { CreatePracticeForm } from '@/components/practice/create-practice-form'
+import { NewPracticeButton } from '@/components/studio/practice/new-practice-button'
 import { PillarBadge } from '@/components/practice/pillar-badge'
 import { PracticeAdminMenu } from '@/components/practice/practice-admin-menu'
 import { EntityCard } from '@/components/cards/entity-card'
@@ -199,7 +199,7 @@ export default async function PracticesPage({
     <IndexTemplate
       title="Practices"
       description="This is where the points come from — a growing community library. Adopt or claim a practice, then log it every day to earn zaps, climb the ranks, and keep your streak alive."
-      action={profileId ? <CreatePracticeForm /> : undefined}
+      action={profileId ? <NewPracticeButton /> : undefined}
       toolbar={
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           {/* Search (GET form — shareable, no client JS) */}

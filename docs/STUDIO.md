@@ -102,9 +102,12 @@ All four data layers + server actions **already exist** — the work is the buil
    atoms, `StudioField`/`StudioSectionLabel`, `SaveStatus`/`StudioFooter`,
    `StudioLaunchButton`) + the registry (§3); the journey builder now composes it
    (behavior-neutral). The proof the kit fits.
-3. **Practice** ← next — closest to journey (members already create them; pillar/cadence/body).
-   Replace the inline-create + `/practices/[id]/edit` page.
-4. **Circle** — adds geo + topic; high leverage (the member-create flywheel). Replace
+3. ✅ **Practice** — `components/studio/practice/*`: a `NewPracticeButton` launcher
+   (replaced the inline create) + a `PracticeBuilder` window (replaced
+   `/practices/[id]/edit`), composing `useStudioDraft` (autosave) + `StudioField`.
+   Practices keep their own lucide-icon identity (no emoji/accent) — proof the kit is
+   composed-from, not a rigid template.
+4. **Circle** ← next — adds geo + topic; high leverage (the member-create flywheel). Replace
    `NewCircleCompose` (CreateModal) + inline edit.
 5. **Event** — adds date/recurrence; host+. Replace `/events/new` + inline edit.
 6. **Universal Create** — a single `+` driven by the registry, surfaced in the shell.

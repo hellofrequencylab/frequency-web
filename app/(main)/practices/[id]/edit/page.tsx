@@ -4,8 +4,7 @@ import { getMyProfileId } from '@/lib/auth'
 import { getPractice, listSubcategories, getPracticeTagLabels } from '@/lib/practices'
 import { getPillars } from '@/lib/pillars'
 import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
-import { FocusTemplate } from '@/components/templates'
-import { PracticeEditor } from '@/components/practice/practice-editor'
+import { PracticeBuilder } from '@/components/studio/practice/practice-builder'
 
 export const metadata: Metadata = { title: 'Edit practice' }
 export const dynamic = 'force-dynamic'
@@ -32,17 +31,21 @@ export default async function EditPracticePage({ params }: { params: Promise<{ i
   ])
 
   return (
-    <FocusTemplate
-      title="Edit practice"
-      description="Shape your practice — its cadence, guide, and how it shows up across the app."
-      back={{ href: '/practices', label: 'Practices' }}
-    >
-      <PracticeEditor
-        practice={practice}
-        pillars={pillars.map((p) => ({ id: p.id, name: p.name }))}
-        subcategories={subcategories.map((s) => ({ id: s.id, domain_id: s.domain_id, name: s.name }))}
-        initialTags={tags}
-      />
-    </FocusTemplate>
+    <PracticeBuilder
+      id={practice.id}
+      title={practice.title}
+      summary={practice.summary}
+      description={practice.description}
+      body={practice.body}
+      cadence={practice.cadence}
+      category={practice.category}
+      icon={practice.icon}
+      domainId={practice.domain_id}
+      subcategoryId={practice.subcategory_id}
+      headerImage={practice.header_image}
+      pillars={pillars.map((p) => ({ id: p.id, name: p.name }))}
+      subcategories={subcategories.map((s) => ({ id: s.id, domain_id: s.domain_id, name: s.name }))}
+      initialTags={tags}
+    />
   )
 }
