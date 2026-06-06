@@ -4487,6 +4487,47 @@ so up/down controls back it on mobile. The reusable specs for circle/practice/ev
 follow-on work; the shell + journey prove the pattern.
 
 ---
+
+## ADR-143: The Studio generalizes by *composition*, not a config engine
+
+**Status:** Accepted — plan of record (foundation + entities build in follow-on PRs). Spec:
+[STUDIO.md](STUDIO.md). Extends [ADR-142](DECISIONS.md).
+
+**Context.** The owner wants the Studio window used "anywhere there's something to make"
+(circle/practice/event, not just journeys), each launched with that instance's create/edit
+settings. The tempting move is a **declarative form-engine**: one config/schema per entity,
+rendered generically. But the entities genuinely differ — events have start/end + recurrence,
+circles have geo + topic + caps, practices have pillar + cadence + a long markdown body — so a
+generic schema would have to grow date pickers, geo pickers, recurrence rules, markdown, drag
+lists… i.e. become its own framework to maintain. Today's create surfaces are also inconsistent
+(circle = `CreateModal`, practice = inline form + edit page, event = `/events/new` page, journey
+= Studio window), which is the duplication to retire.
+
+**Decision.** Generalize by **composition**, mirroring the page framework (one shell · a kit ·
+compose per surface):
+- **Shared shell** — `StudioWindow` (ADR-142), unchanged.
+- **A studio kit** (`components/studio/kit/`), extracted from the journey builder: `StudioIdentity`
+  (emoji/accent/title/summary), `StudioSection`/`StudioField` (the label-row grammar),
+  `useStudioDraft` (optimistic + debounced autosave + save-state), `StudioFooter`, a generalized
+  `StudioLaunchButton`, and `SortableList` (HTML5 DnD reorder, no dep).
+- **A thin registry** (`lib/studio/registry.ts`): entity → label · icon · launch · `canCreate` —
+  powering a universal "Create" and **one** place for create-gating.
+- **Each entity's builder is composed** from the kit + its few bespoke fields, persisting through
+  its **already-built** data layer/actions, with **per-instance capability gating resolved from
+  `lib/core/capabilities.ts`** (member vs host vs admin tools), not re-decided in the UI.
+
+**Alternatives.** (a) *Declarative form-engine / spec object per entity* — rejected: the field
+diversity turns the "config" into a second framework; composition keeps each builder honest and
+readable. (b) *Leave each entity's bespoke create surface* — rejected: that's the inconsistency
+this removes.
+
+**Consequences.** A new entity's create/edit becomes "compose the kit against an existing data
+layer," not a new screen. Migration is one entity per PR (foundation → practice → circle → event
+→ universal Create), each replacing the old surface and retiring `components/create-modal.tsx`
+once circles move. The risk is kit churn early; we accept it because the journey builder already
+validated the pieces.
+
+---
 ### Decisions intentionally NOT duplicated here
 
 Already fully covered by the repo docs (no ADR needed): the RLS / admin-client
