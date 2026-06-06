@@ -61,11 +61,13 @@ The game is named **The Quest**. It is seasonal: a 13-week cycle aligned to the
 natural calendar (spring / summer / fall / winter) that resets, so every season is
 a fresh climb.
 
-> Terminology is **canonical**: say **zaps**, not "points". Say **Arc** for a
-> multi-step seasonal journey (the feature implemented by the `arc_chains` /
-> `arc_steps` / `arc_progress` tables, renamed from `quest_*`; see ADR-079 +
-> THE-QUEST.md). Never call an Arc a "quest" in player-facing copy — that word is
-> reserved for the game as a whole. The martial-arts rank names
+> Terminology is **canonical** (ADR-152): the game is **The Quest**. A **Seasonal Quest**
+> (table `quests`) is a season's official, free collection of **Journeys**; a **Journey**
+> (`journey_plans`) is a set of **practices** you move through — official Journeys nest under a
+> Quest via `journey_plans.quest_id`, member-built ones live in the open library; a **practice**
+> is the atomic thing you do. So the hierarchy is **The Quest → Seasonal Quest → Journeys →
+> Practices**, and everything is free. Say **zaps**, not "points". *("Arc" is retired — the old
+> `quest_chains` action-chain engine is wound down.)* The martial-arts rank names
 > (deshi/sempai/sensei…) are **legacy** — ignore them.
 
 **Two currencies, split by where the activity happens. The rule is canonical
@@ -97,12 +99,12 @@ pays gems. The single source of truth is `currencyForCriteria` /
   share** of `current_season_zaps` into gems (luminary 1/1.5 … default 1/5),
   mints a `season_trophies` row, then zeroes season counters. So zaps are the
   seasonal "doing", gems are the durable spendable that accrues from it.
-- **Arcs** — multi-step seasonal journeys a member chooses and works through over
-  a season (e.g. "The Connector", "Host in Training"). Implemented by
-  `arc_chains` (the Arc), `arc_steps` (each step / weekly action), and
-  `arc_progress` (per-member progress; all renamed from `quest_*`). Each Arc
-  carries a `season` and a domain tag (Mind / Body / Spirit / Expression).
-  **Player-facing name: Arc.**
+- **Quests & Journeys** — the canonical hierarchy is **The Quest → Seasonal Quest → Journeys
+  → Practices** (ADR-152). A **Quest** (`quests`) is a season's official, free container of
+  Journeys; a **Journey** (`journey_plans` + `journey_plan_items`) is a set of practices —
+  official (nested under a Quest via `quest_id`) or member-built (open library) — with progress
+  derived from the practice log (ADR-144). All free. *(The legacy `quest_chains`/`quest_steps`/
+  `quest_progress` action-chain engine is retired in code and dormant, pending a table drop.)*
 - **Achievements / streaks** — `achievements`, `user_achievements`, `streaks`,
   `challenge_progress`, `season_challenges`, `season_trophies`.
 

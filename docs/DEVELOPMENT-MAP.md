@@ -249,7 +249,11 @@
 > `journey_plans.quest_id`/`official` + a seed (the active season's Quest with one official Journey
 > per Pillar), migration `20260608010000`. *B2* rebuilt `/crew/quests` to list the Seasonal Quest →
 > its official Journeys (each → the Journey detail's practices + free Adopt; `lib/quests.ts`).
-> Remaining: B3 (retire the legacy `quest_*` action-chains + `advanceQuests` + terminology pass).
+> *B3* retired the legacy action-chain engine in code (`advanceQuests` + old `getQuestsData`/
+> `startQuest` removed; sidebar repointed to the active Journey) + the GLOSSARY/THE-QUEST/DATABASE
+> terminology pass. Migration `20260608010000` applied to prod + types regenerated. Loose end
+> (§S1b): physically drop the now-dormant `quest_*` tables once the `quest_outcomes()` analytics
+> RPC is retired.
 >
 > **2026-06-06:** **Admin gets three layers** (ADR-153) — whole management suites were too much for
 > the narrow sidebar. Admin is now: ① the **catalog spine** (`admin/sections.ts`, one declaration per

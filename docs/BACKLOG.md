@@ -16,13 +16,14 @@ greenfield initiative (G).
 The current build order for the progress / streak / disclosure arc and the practice-engine
 follow-ups it surfaced. Full detail lives in the lettered sections below — this is the ranking.
 
-**P0 — decided ✅ (2026-06-06, ADR-152): The Quest → Seasonal Quest → Journeys → Practices (all free).**
-1. **S1 · Quest/Journey hierarchy** — Phase A + **B1** + **B2 *shipped***. A · paywall gone, "Quests"
-   restored. B1 · `quests` table + `journey_plans.quest_id`/`official` + seed (migration
-   `20260608010000`, *needs applying to prod*). B2 · `/crew/quests` now lists the Seasonal Quest →
-   its official Journeys (each → the Journey detail's practices + free Adopt); `lib/quests.ts`.
-   Remaining: **B3** (retire the legacy `quest_*` + `advanceQuests` + old `getQuestsData`/`startQuest`;
-   GLOSSARY/THE-QUEST/DATABASE/ECONOMY terminology pass). *(§S)*
+**P0 — ✅ DONE (2026-06-06, ADR-152): The Quest → Seasonal Quest → Journeys → Practices (all free).**
+1. **S1 · Quest/Journey hierarchy** — A + **B1** + **B2** + **B3 *shipped***. A · paywall gone,
+   "Quests" restored. B1 · `quests` table + `journey_plans.quest_id`/`official` + seed (migration
+   `20260608010000`, *needs applying to prod*). B2 · `/crew/quests` lists the Seasonal Quest → its
+   Journeys (`lib/quests.ts`). B3 · legacy action-chain engine retired in code (`advanceQuests` +
+   old actions removed, sidebar repointed) + GLOSSARY/THE-QUEST/DATABASE terminology pass. *Only
+   loose end:* physically drop the dormant `quest_*` tables once `quest_outcomes()` + its analytics
+   surface are retired and types regenerated (tracked in §S). *(§S)*
 
 **P1 — finish the shipped arc (ready, high value, low risk)**
 2. **Stage-driven disclosure → crew dashboard + surfaces** *(§F, ADR-146)* — the spine is
@@ -377,12 +378,17 @@ inline path (wizard is an optional guided alt); RLS isolation between `journey_p
   removed the paywall everywhere and restored **"Quests"** as the seasonal container surface
   (`/crew/quests`). **B1 ✅ shipped** — `quests` table + `journey_plans.quest_id`/`official` + a
   seed (active season's Quest + one official Journey per Pillar, ≤3 practices each); migration
-  `20260608010000` **(needs applying to prod)**. **B2 ✅ shipped** — `/crew/quests` now lists the
-  Seasonal Quest → its official Journeys (each card → the Journey detail's practices + the free
-  Adopt flow); `lib/quests.ts` reads defensively (empty state if the migration isn't applied yet).
-  **Remaining: B3** — retire the legacy `quest_*` + `advanceQuests` + the old
-  `getQuestsData`/`startQuest`/`start-quest-button`; then the GLOSSARY/THE-QUEST/DATABASE/ECONOMY
-  terminology pass. *(Naming stable — no more renames.)*
+  `20260608010000` **(needs applying to prod)**. **B2 ✅ shipped** — `/crew/quests` lists the
+  Seasonal Quest → its official Journeys (each → the Journey detail's practices + free Adopt);
+  `lib/quests.ts` reads defensively. **B3 ✅ shipped** — legacy action-chain engine retired in
+  code: `advanceQuests` + `isArcStepRelevant` + `chainCurrency` removed from `lib/achievements.ts`,
+  the old `getQuestsData`/`startQuest`/`start-quest-button` deleted, the `Arc*` types dropped, and
+  the sidebar "current track" repointed to the active Journey. Terminology pass: GLOSSARY /
+  THE-QUEST / DATABASE updated to the hierarchy. *(Naming stable — no more renames.)*
+- [ ] **S1b · Drop the dormant `quest_*` tables** — `quest_chains`/`quest_steps`/`quest_progress`
+  are now unused by app code (engine retired in B3) but still exist. Drop them once the
+  `quest_outcomes()` analytics RPC + its `/admin` outcomes surface (`lib/analytics/outcomes.ts`)
+  are retired and `lib/database.types.ts` is regenerated. (S)
 - [ ] **S2 · Streak box: half-height when collapsed** — tighten `PracticePrompt` collapsed state. (S)
 - [ ] **S3 · Broadcast color → light blue** — introduce a `broadcast` blue token (complements the
   site orange) and apply to dispatch/broadcast surfaces (currently the teal `signal`). No hardcoded

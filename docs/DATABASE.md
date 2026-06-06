@@ -57,12 +57,13 @@ these tables mean.
 > B1 migration seeds the active season's Quest + one official Journey per Pillar (≤3 of that
 > Pillar's practices each). **Everything is free** (ADR-150/152).
 >
-> **`quest_chains` / `quest_steps` / `quest_progress`** are the **legacy** gamified seasonal
-> engine (renamed arc_*→journey_*→quest_* over time). `quest_chains.domain_id → domains`.
-> **Join-gated (ADR-140):** a `quest_progress` row means the member *started* it; `advanceQuests`
-> only advances started chains. ⏳ **Being retired (ADR-152 Phase B):** these action-chains
-> (attend/post/refer) give way to the `quests`/`journey_plans` nesting above; their mechanic lives
-> on in `season_challenges`/achievements. Still backing `/crew/quests` until Phase B2/B3.
+> **`quest_chains` / `quest_steps` / `quest_progress`** are the **legacy** action-chain engine
+> (attend/post/refer steps; renamed arc_*→journey_*→quest_* over time). **🔴 Retired in code
+> (ADR-152 Phase B3):** `advanceQuests`, the `/crew/quests` action-chain reads, and `startQuest`
+> are removed — `/crew/quests` now renders `quests` → their `journey_plans`, and the sidebar reads
+> the active Journey. The tables are **dormant** (no writes); the mechanic lives on in
+> `season_challenges`/achievements. ⏳ **Physical drop deferred** — the `quest_outcomes()`
+> analytics RPC (`lib/analytics/outcomes.ts`) still reads them; retire that + regen types first.
 
 > **`seasons`** gives seasons a first-class identity (`season_number`, `name`,
 > `theme`, `starts_at`/`ends_at`, `status`; one `active` at a time). `reset_season()`
