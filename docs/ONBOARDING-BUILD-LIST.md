@@ -166,7 +166,7 @@ in small reviewable PRs. Best-practice guardrails in the last section.
 
 | # | Item | Reuse / gap | Touch | Notes |
 |---|---|---|---|---|
-| 2.1 | **Welcome community post** 📋 | ONBOARDING beat #6 / AI-VERA §7 — system account posts "welcome [Name] 👋" once name is set | system-account post path, induction completion | Decide scope (community vs nexus) + opt-out *before* build. Turns signups into *greeted* members. |
+| 2.1 | **Welcome community post** ✅ shipped | `lib/onboarding/welcome.ts` `postWelcomeForMember` — the `is_system` account posts "Everyone, welcome @handle 👋" to the public feed on first induction completion (`app/onboarding/beta/actions.ts`, best-effort, once-only via pre-update meta). Turns sign-ups into *greeted* members + seeds the feed. *Tweaks:* scope (community vs nexus), member opt-out, notify the welcomed member. |
 | 2.2 | **Finish `draft_intro`** ⏳ | Tool is declared but `lib/ai/vera/execute.ts` returns ok with no effect | `lib/ai/vera/execute.ts`, intro-post path | Removes the awkward part of the cold-start; "scary part done." |
 | 2.3 | **Memory batch summarization cron** 📋 | `ai_member_context` captures facts; summary never regenerated (Vera Phase C tail) | new cron on Batch API, `lib/ai/memory.ts` | Keeps memory fresh + makes the footprint-decay metric real. |
 | 2.4 | **Warm demo content** 📋 | §S9 (sterile seed copy) + §S4 (demo box → action links with point values) | `lib/demo/*`, Seed Studio, the demo notice box | First scroll should feel like a real warm community, not a demo. Directly affects "excited." |

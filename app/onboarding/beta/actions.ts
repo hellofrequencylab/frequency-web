@@ -12,6 +12,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { sendWelcomeEmail } from '@/lib/email'
 import { sanitizeProfileInput } from '@/lib/profile-input'
 import { rememberFacts } from '@/lib/ai/memory'
+import { postWelcomeForMember } from '@/lib/onboarding/welcome'
 import { track } from '@/lib/analytics/track'
 import { BETA_INDUCTION_VERSION, BETA_MEMBERS_GET_CREW, type OathId } from '@/lib/onboarding/beta-script'
 import { getSequence } from '@/lib/onboarding/beta-sequences'
@@ -220,6 +221,11 @@ async function writeBetaInduction(data: InductionData): Promise<void> {
     await tagBetaCohort(prof.id, seqSlug)
     await tagPersona(prof.id, personaSlug)
     await stampAcquisitionTag(prof.id, acquisition)
+    // Greet the new member in the public feed — once, only on first completion
+    // (`meta` was read pre-update, so it reflects the prior state). Best-effort.
+    if (!(meta as { onboarding_completed?: boolean }).onboarding_completed) {
+      postWelcomeForMember(displayName, handle).catch(() => {})
+    }
   }
 
   if (user.email) {
