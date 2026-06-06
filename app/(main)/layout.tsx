@@ -26,6 +26,7 @@ import { getOnboardingStatus } from '@/lib/onboarding/status'
 import { BETA_INDUCTION_ACTIVE } from '@/lib/onboarding/beta-script'
 import { ChoresOverlay } from '@/components/onboarding/chores-overlay'
 import { CaptureLauncher } from '@/components/feed/capture-launcher'
+import { DailyCheckIn } from '@/components/daily-check-in'
 import { getProfileChores } from '@/lib/onboarding/profile-chores'
 import { getFounderTasks } from '@/lib/onboarding/founder-tasks'
 
@@ -188,6 +189,7 @@ export default async function MainLayout({
         <ChoresOverlay chores={chores} nextAction={coachNext} />
       )}
       <PageViewTracker />
+      <DailyCheckIn />
       <TourProvider initialState={tourState} satisfied={tourSatisfied} />
     </AppShell>
   )
