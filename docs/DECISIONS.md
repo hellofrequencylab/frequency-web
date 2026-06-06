@@ -4905,3 +4905,41 @@ The genuinely new build is the public RSVP capture surface + `event_guests` + th
 shares the deferred-no-auth pattern (`/onboarding/beta`), the referral plumbing, and the consent ladder,
 so it's additive. Spec: [NETWORK-CRM.md](NETWORK-CRM.md) § *The Network rework*; build items:
 [ONBOARDING-BUILD-LIST.md](ONBOARDING-BUILD-LIST.md) §5. Operator/usage guidance → Notion.
+
+## ADR-155: The Portal Loop — optimize for activation, never dwell-time (and a named Doomscroll release valve)
+
+**Decision.** Frequency is a **portal that loops people out into the world, not a destination that
+holds them on the glass.** The home surface exists to *dispatch*: a member arrives, discovers their
+**assignments** (from their circle, their selected Journeys, their Practices — effectively gamified
+e-learning), goes out into society to act on them, **Captures** the moment to check in for points, and
+that content returns to the feed where it **disperses through the locality × in-person feed rank**
+(`lib/feed-rank.ts`, ADR-080). The loop — *see what's good → get sent out → check back in → feed the
+next person's "what's good"* — **is the product**, and it is also the marketing engine
+([ENGAGEMENT-MARKETING-ENGINE.md](ENGAGEMENT-MARKETING-ENGINE.md) § *The Portal Loop*).
+
+This generalizes ADR-080's ranking guardrail to the **whole surface and every mechanic**: streaks,
+chores, tasks, challenges, Quests and Vera's nudges all exist to **resolve a standing tension** —
+*the pull to doomscroll vs. the pull to activate.* We design that tension on purpose. Activation is
+the default voice; dwell-time is **never** an optimization target. If a metric ever rewards
+time-on-glass over real-world action, we've become the thing we're replacing.
+
+**Doomscroll mode (the release valve).** We will ship an explicit, member-toggled **Doomscroll mode**
+that strips *all* streak/activation prompts (chores pill, Vera coach full-stops, task nudges) and shows
+**only content**. Counterintuitively it is the most on-brand feature we could build: by making "just
+scroll" an **honest, named choice** rather than the manipulated default, we prove we aren't optimizing
+for dwell — the prompts are an invitation you can decline, not a slot machine. The valve also protects
+the activation voice from nag-fatigue (a member who needs a break takes one, on the record, instead of
+churning). Backlogged (§F) — not load-bearing for launch, but a first-class brand statement.
+
+**Alternatives.** Maximize engagement-time like incumbent social (rejected — inverts the mission; the
+feed is a *record of lived experience*, not curated entertainment). Make activation prompts
+non-dismissible "for the member's own good" (rejected — coercion reads as a slot machine and breeds
+resentment; the beta screen-lock is a *playful, dismissible* gag, not a trap — see BETA-ACTIVATION §2).
+Leave the principle implicit in ADR-080 (rejected — it now governs streaks, Capture, Vera and the whole
+shell, so it earns a first-class decision the mechanics can point back to).
+
+**Consequences.** Every new engagement mechanic carries an explicit acceptance line: *does this serve
+activation or just dwell?* The Capture feature ([ONBOARDING-BUILD-LIST.md](ONBOARDING-BUILD-LIST.md) §6)
+is the loop's check-in primitive and inherits this directly. Doomscroll mode adds a single preference
+(profile/meta flag) the shell reads to suppress the prompt layer — additive, low-risk, parked in
+[BACKLOG.md](BACKLOG.md) §F. Worldview/strategy framing for operators → Notion.

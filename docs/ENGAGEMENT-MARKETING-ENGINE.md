@@ -24,6 +24,37 @@ system. Instrument → `engagement_events` → projections (dashboards, outcomes
 Governed by the AI kernel (caps, kill switch, consent) + two locked guardrails: **aggregate-only
 privacy** for anything outbound, and **human-approves-anything-public**.
 
+## The Portal Loop (the engine's shape) — ADR-155
+
+The engine isn't a dashboard you watch; it's a **loop that sends people out and pulls their lived
+experience back in.** This is the marketing flywheel and the product, the same motion:
+
+```
+   ┌─────────────────────── the web app is a PORTAL, not a destination ───────────────────────┐
+   │                                                                                            │
+   ▼                                                                                            │
+ 1. SEE WHAT'S GOOD        2. GET YOUR ASSIGNMENT       3. GO OUT & ACT        4. CAPTURE (check-in)
+ the feed: a record of   from your circle / Journeys /  into society —        photo · note · post ·
+ the community's day      Practices (gamified           the points are        in-person card capture
+                          e-learning courses)           OUT THERE             → earns points
+   ▲                                                                                            │
+   │                                                                                            ▼
+   └──────────  5. DISPERSE  ◀── content re-enters the feed and spreads through the  ───────────┘
+                 locality × in-person feed rank (lib/feed-rank.ts, ADR-080)
+```
+
+**The deliberate tension (design it, don't deny it).** Every member arrives holding two pulls: the
+pull to **doomscroll** and the pull to **activate**. We optimize for activation — *getting into a
+room* — and **never** for dwell-time. Streaks, chores, tasks, challenges, Quests and Vera's nudges are
+all instruments tuned to that tension; each one earns its place only if it moves someone toward step 3,
+not deeper into step 1. Acceptance test for any new mechanic: *does this serve activation, or just
+dwell?*
+
+**Doomscroll mode (the named release valve).** A member-toggled mode that strips the entire prompt
+layer (chores pill, Vera full-stops, task nudges) and shows **only content**. Making "just scroll" an
+honest, named choice — not the manipulated default — is the brand statement: we are not a content
+casino, we're the thing that sends you out to be social. Spec/decision: ADR-155. Build: BACKLOG §F.
+
 ## Phases
 
 | Phase | Deliverable | Status |

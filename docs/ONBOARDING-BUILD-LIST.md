@@ -232,6 +232,10 @@ activation push, since they share the QR/referral + consent plumbing.
 > society, gamified. **Capture** is how members *log and track that lived experience* and share it.
 > The community feed becomes **the story of the community's experience** — not content curated to
 > be enjoyed online. Every user becomes an **access point** that brings people into the network.
+>
+> **Capture is the check-in step of the Portal Loop (ADR-155):** *see what's good → get your
+> assignment → go out & act → **Capture** → content disperses through the locality × in-person feed
+> rank (ADR-080).* It inherits that ADR's law — built to serve activation, never dwell-time.
 
 **The shape.** A **primary Capture button** (a camera-style affordance) that opens a *mode picker*
 — the same vibe as tapping a camera icon and getting Photo / Video / Cinema / Live. Capture is for
