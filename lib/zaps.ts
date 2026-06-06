@@ -6,16 +6,13 @@
 // reset_season() converts a rank-based share of season zaps into gems, which buy
 // digital badges and trade for physical merch in the web store.
 //
-// Mirrors the direct current_season_zaps + lifetime_zaps update used by the
-// challenge/quest engine in lib/achievements.ts (season rank advances via the
-// existing DB logic). Server-only.
+// Every grant is one row in the `zap_transactions` ledger; the
+// `after_zap_transaction` trigger is the single place season + lifetime totals
+// move and the season rank advances (mirrors gems / gem_transactions). This is
+// also what powers the Vault "how you earned" log (ADR-139). Server-only.
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/database.types'
-import { rankForZaps } from '@/lib/season-ranks'
-
-type ProfileRow = Database['public']['Tables']['profiles']['Row']
 
 // Fallback base zap amounts for external / in-person actions. The live, tunable
 // numbers come from the `zap_config` table (awardZapsForAction); these are only
@@ -48,37 +45,43 @@ export interface ZapAwardResult {
   amount: number
 }
 
+export interface AwardZapsOpts {
+  /** Ledger label for the "how you earned" log (defaults to 'manual'). */
+  actionType?: string
+  /** Extra context stored on the ledger row (node id, achievement slug, …). */
+  metadata?: Record<string, unknown>
+}
+
 /**
- * Add `amount` zaps to a profile's current season + lifetime totals. Use for
- * verified external / in-person engagement. Amounts come from the reward economy
- * (config), not from here. Idempotency is the caller's responsibility — drive
- * grants through recordEngagementEvent (lib/engagement/events.ts) for
- * exactly-once.
+ * Grant `amount` zaps to a profile by appending a row to the zap ledger
+ * (`zap_transactions`). The `after_zap_transaction` trigger is the single place
+ * season + lifetime totals and the season rank advance — so every grant is
+ * recorded (powering the Vault points log) and the rank never drifts. Use for
+ * verified external / in-person engagement. Idempotency is the caller's
+ * responsibility — drive grants through recordEngagementEvent
+ * (lib/engagement/events.ts) for exactly-once.
  */
-export async function awardZaps(profileId: string, amount: number): Promise<ZapAwardResult> {
+export async function awardZaps(
+  profileId: string,
+  amount: number,
+  opts: AwardZapsOpts = {},
+): Promise<ZapAwardResult> {
   if (!Number.isFinite(amount) || amount <= 0) return { awarded: false, amount: 0 }
 
   const admin = createAdminClient()
-  const { data } = await admin
-    .from('profiles')
-    .select('current_season_zaps, lifetime_zaps')
-    .eq('id', profileId)
-    .maybeSingle()
-
-  const p = data as Pick<ProfileRow, 'current_season_zaps' | 'lifetime_zaps'> | null
-
-  const newSeasonZaps = (p?.current_season_zaps ?? 0) + amount
-
-  await admin
-    .from('profiles')
-    .update({
-      current_season_zaps: newSeasonZaps,
-      lifetime_zaps: (p?.lifetime_zaps ?? 0) + amount,
-      // Keep the season rank in lockstep with the zaps total so the tally never
-      // drifts (the previous code left current_season_rank stale).
-      current_season_rank: rankForZaps(newSeasonZaps),
+  const { error } = await admin
+    .from('zap_transactions')
+    .insert({
+      profile_id: profileId,
+      action_type: opts.actionType ?? 'manual',
+      amount,
+      metadata: (opts.metadata ?? {}) as Database['public']['Tables']['zap_transactions']['Insert']['metadata'],
     })
-    .eq('id', profileId)
+
+  if (error) {
+    console.error('[awardZaps]', error.message)
+    return { awarded: false, amount: 0 }
+  }
 
   return { awarded: true, amount }
 }
@@ -97,17 +100,13 @@ export async function awardZapsForAction(
 ): Promise<ZapAwardResult> {
   const admin = createAdminClient()
 
-  // `zap_config` is a new table; until `supabase gen types` is re-run it is not in
-  // the generated Database types, so read it through an untyped handle. Drop the
-  // cast once types are regenerated (see docs/START-HERE.md).
-  const { data } = await (admin as unknown as SupabaseClient)
+  const { data: cfg } = await admin
     .from('zap_config')
     .select('zaps_amount, is_active')
     .eq('action_type', action)
     .maybeSingle()
-  const cfg = data as { zaps_amount: number; is_active: boolean } | null
 
   if (cfg && !cfg.is_active) return { awarded: false, amount: 0 }
   const amount = overrideAmount ?? cfg?.zaps_amount ?? ZAP_AMOUNTS[action]
-  return awardZaps(profileId, amount)
+  return awardZaps(profileId, amount, { actionType: action })
 }

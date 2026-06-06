@@ -47,7 +47,7 @@ these tables mean.
 `achievements`, `user_achievements`, `streaks`, `challenge_progress`,
 `arc_chains`, `arc_steps`, `arc_progress`, `season_challenges`,
 `season_trophies`, `seasons`, `crew_tasks`, `crew_completions`, `gem_config`,
-`gem_transactions`, `zap_config`, `store_items`, `store_redemptions`
+`gem_transactions`, `zap_config`, `zap_transactions`, `store_items`, `store_redemptions`
 
 > **`arc_chains` / `arc_steps` / `arc_progress`** were renamed from
 > `quest_chains` / `quest_steps` / `quest_progress` (compat `quest_*` views still
@@ -63,6 +63,17 @@ these tables mean.
 > amount, read by `awardGems` / `awardZapsForAction` (gems also enforce `daily_cap`
 > via `gem_transactions`; zap caps are enforced upstream at `engagement_events`
 > idempotency). Code holds fallback defaults so a missing row never breaks a grant.
+
+> **`gem_transactions` / `zap_transactions`** are the twin ledgers — one row per
+> grant — and the single source of the "how you earned" Vault log
+> (`/crew/store/ledger`, `lib/economy/ledger.ts`). Each has an `AFTER INSERT`
+> trigger that is the **only** place profile totals move: `after_gem_transaction`
+> bumps `current_season_gems`/`lifetime_gems`; `after_zap_transaction` bumps
+> `current_season_zaps`/`lifetime_zaps` **and** advances `current_season_rank`
+> (auto up to Conduit; Luminary stays a manual promotion). `awardZaps` /
+> `awardGems` only ever insert a ledger row — never write the profile directly
+> (ADR-139). Crew-task completions route through the zap ledger too (the
+> `after_crew_completion` trigger appends a row instead of touching the profile).
 
 **Practices (North Star)**
 `practices`, `circle_practices`, `member_practices`, `practice_logs`

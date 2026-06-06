@@ -73,7 +73,10 @@ export async function captureNode(attempt: CaptureAttempt): Promise<CaptureResul
   // 4) Reward — physical = zaps.
   const amount = Number(node.zaps_value ?? 0)
   if (amount > 0 && currencyForSource(source) === 'zaps') {
-    await awardZaps(attempt.actorProfileId, amount)
+    await awardZaps(attempt.actorProfileId, amount, {
+      actionType: 'node_capture',
+      metadata: { nodeId: attempt.nodeId },
+    })
   }
 
   // 4b) A proximity-verified physical capture is also a verified practice (the

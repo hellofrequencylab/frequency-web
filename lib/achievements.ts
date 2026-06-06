@@ -6,10 +6,43 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import type { AchievementCriteria, StreakType } from '@/lib/gamification'
 import { STREAK_CONFIG } from '@/lib/gamification'
 import { awardGems } from '@/lib/gems'
+import { awardZaps } from '@/lib/zaps'
+import { currencyForCriteria, type EngagementCurrency } from '@/lib/engagement/currency'
 import type { Database } from '@/lib/database.types'
 
 type AdminClient = ReturnType<typeof createAdminClient>
 type ProfileRow  = Database['public']['Tables']['profiles']['Row']
+
+// Pay a meta-layer reward (achievement / challenge / quest) in the currency that
+// fits the milestone (ADR-139): real-life acts pay zaps, online acts pay gems.
+// Both currencies are ledgered (zap_transactions / gem_transactions), so the
+// grant surfaces in the Vault "how you earned" log. The gem path reuses the
+// configured action row (overriding its amount); the zap path labels the ledger.
+async function grantReward(
+  profileId: string,
+  currency: EngagementCurrency,
+  amount: number,
+  action: 'achievement' | 'challenge_complete' | 'quest_complete',
+  metadata: Record<string, unknown>,
+): Promise<void> {
+  if (!(amount > 0)) return
+  if (currency === 'zaps') {
+    await awardZaps(profileId, amount, { actionType: action, metadata })
+  } else {
+    await awardGems(profileId, action, amount, metadata)
+  }
+}
+
+// The currency a whole quest chain pays on completion: zaps if ANY step rewards a
+// real-life act (so a mixed or in-person journey drives season rank), else gems
+// (a purely on-platform journey like "Content Creator").
+function chainCurrency(steps: { criteria: unknown }[]): EngagementCurrency {
+  for (const s of steps) {
+    const c = (s.criteria ?? {}) as { type?: string; streak_type?: string }
+    if (currencyForCriteria(c.type, { streakType: c.streak_type }) === 'zaps') return 'zaps'
+  }
+  return 'gems'
+}
 
 // ---------------------------------------------------------------------------
 // Public API — call after each user action
@@ -180,8 +213,16 @@ async function evaluateAchievements(admin: AdminClient, event: GamificationEvent
           tier: achievement.tier,
           zapsReward: achievement.zaps_reward,
         })
+        // Pay the reward ONCE, in the currency that matches the achievement's
+        // nature. In-person achievements (attend/host/lead, attendance streaks)
+        // pay zaps; online ones (posts, joins, welcomes) pay gems. The DB trigger
+        // no longer pays zaps here — this is the single award (ADR-139).
         if (achievement.zaps_reward > 0) {
-          awardGems(event.profileId, 'achievement', achievement.zaps_reward, { achievement: achievement.slug }).catch(() => {})
+          const streakType = criteria.type === 'streak' ? criteria.streak_type : undefined
+          const currency = currencyForCriteria(criteria.type, { streakType })
+          grantReward(event.profileId, currency, achievement.zaps_reward, 'achievement', {
+            achievement: achievement.slug,
+          }).catch(() => {})
         }
       }
     }
@@ -337,7 +378,7 @@ function isCriteriaMet(
 async function advanceChallenges(admin: AdminClient, event: GamificationEvent) {
   const { data: challenges } = await admin
     .from('season_challenges')
-    .select('id, criteria, target, valid_from, valid_until')
+    .select('id, criteria, target, valid_from, valid_until, zaps_reward')
 
   if (!challenges?.length) return
 
@@ -395,8 +436,15 @@ async function advanceChallenges(admin: AdminClient, event: GamificationEvent) {
     }
 
     if (completed) {
-      await awardChallengeZaps(admin, event.profileId, challenge.id)
-      awardGems(event.profileId, 'challenge_complete', 10, { challenge: challenge.id }).catch(() => {})
+      // A challenge pays in the currency of the act it tracks: an in-person
+      // challenge ("Attend 8 events") pays zaps and drives season rank; an online
+      // one ("Make 5 posts") pays gems (ADR-139).
+      const ctype = (criteria.type as string) ?? ''
+      const streakType = ctype === 'streak' ? (criteria.streak_type as string) : undefined
+      const currency = currencyForCriteria(ctype, { streakType })
+      await grantReward(event.profileId, currency, challenge.zaps_reward ?? 0, 'challenge_complete', {
+        challenge: challenge.id,
+      })
       await checkAllChallengesComplete(admin, event.profileId)
     }
   }
@@ -420,33 +468,6 @@ function isChallengeRelevant(
     case 'rank_reached':   return event.type === 'rank_change' || event.type === 'task_complete'
     case 'all_challenges': return true
     default:               return false
-  }
-}
-
-async function awardChallengeZaps(admin: AdminClient, profileId: string, challengeId: string) {
-  const { data: challenge } = await admin
-    .from('season_challenges')
-    .select('zaps_reward')
-    .eq('id', challengeId)
-    .maybeSingle()
-
-  if (!challenge?.zaps_reward) return
-
-  const { data: profile } = await admin
-    .from('profiles')
-    .select('current_season_zaps, lifetime_zaps')
-    .eq('id', profileId)
-    .maybeSingle()
-
-  if (profile) {
-    const p = profile as Pick<ProfileRow, 'current_season_zaps' | 'lifetime_zaps'>
-    await admin
-      .from('profiles')
-      .update({
-        current_season_zaps: (p.current_season_zaps ?? 0) + challenge.zaps_reward,
-        lifetime_zaps: (p.lifetime_zaps ?? 0) + challenge.zaps_reward,
-      })
-      .eq('id', profileId)
   }
 }
 
@@ -554,51 +575,33 @@ async function advanceQuests(admin: AdminClient, event: GamificationEvent) {
             })
         }
 
-        // Award chain completion zaps
+        // Award chain completion reward, in the chain's currency: zaps if the
+        // journey includes any real-life step (drives season rank), else gems for
+        // a purely on-platform journey (ADR-139).
         const { data: chainData } = await admin
           .from('quest_chains')
           .select('zaps_reward')
           .eq('id', chain.id)
           .maybeSingle()
-
-        if (chainData?.zaps_reward) {
-          const { data: profile } = await admin
-            .from('profiles')
-            .select('current_season_zaps, lifetime_zaps')
-            .eq('id', event.profileId)
-            .maybeSingle()
-
-          if (profile) {
-            const p = profile as Pick<ProfileRow, 'current_season_zaps' | 'lifetime_zaps'>
-            await admin
-              .from('profiles')
-              .update({
-                current_season_zaps: (p.current_season_zaps ?? 0) + chainData.zaps_reward,
-                lifetime_zaps: (p.lifetime_zaps ?? 0) + chainData.zaps_reward,
-              })
-              .eq('id', event.profileId)
-          }
-        }
+        await grantReward(
+          event.profileId,
+          chainCurrency(steps),
+          chainData?.zaps_reward ?? 0,
+          'quest_complete',
+          { chain: chain.id },
+        )
       }
 
-      // Award step zaps
+      // Award step reward, in the step's own currency (ADR-139).
       if (currentStep.zaps_reward > 0) {
-        const { data: profile } = await admin
-          .from('profiles')
-          .select('current_season_zaps, lifetime_zaps')
-          .eq('id', event.profileId)
-          .maybeSingle()
-
-        if (profile) {
-          const p = profile as Pick<ProfileRow, 'current_season_zaps' | 'lifetime_zaps'>
-          await admin
-            .from('profiles')
-            .update({
-              current_season_zaps: (p.current_season_zaps ?? 0) + currentStep.zaps_reward,
-              lifetime_zaps: (p.lifetime_zaps ?? 0) + currentStep.zaps_reward,
-            })
-            .eq('id', event.profileId)
-        }
+        const sc = currentStep.criteria as { type?: string; streak_type?: string }
+        await grantReward(
+          event.profileId,
+          currencyForCriteria(sc.type, { streakType: sc.streak_type }),
+          currentStep.zaps_reward,
+          'quest_complete',
+          { chain: chain.id, step: currentStep.step_order },
+        )
       }
     } else {
       // Increment progress
