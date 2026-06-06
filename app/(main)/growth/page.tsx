@@ -5,7 +5,7 @@ import {
   KanbanSquare, Contact, Users, ArrowRight,
   Filter, Mail, Workflow, BarChart3, Radar, Rocket, Sparkles,
 } from 'lucide-react'
-import { getJanitor } from '@/lib/page-editor/guard'
+import { canAccessGrowthStudio } from '@/lib/page-editor/guard'
 import { SectionHeader } from '@/components/ui/section-header'
 
 export const dynamic = 'force-dynamic'
@@ -56,7 +56,7 @@ const GROUPS: { title: string; items: { label: string; desc: string; href: strin
 ]
 
 export default async function GrowthStudioPage() {
-  if (!(await getJanitor())) notFound()
+  if (!(await canAccessGrowthStudio())) notFound()
 
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-6">
