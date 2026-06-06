@@ -119,13 +119,13 @@ export function PostCard({
           {isAnnouncement && (
             <div className="flex items-center gap-1.5 mb-2.5">
               <Megaphone className="w-3 h-3 text-primary" />
-              <p className="text-[11px] font-bold uppercase tracking-wider text-warning">
+              <p className="text-2xs font-bold uppercase tracking-wider text-warning">
                 Announcement
               </p>
             </div>
           )}
           {!isAnnouncement && post.is_pinned && (
-            <p className="text-[11px] font-medium text-primary-strong mb-2.5">
+            <p className="text-2xs font-medium text-primary-strong mb-2.5">
               📌 Pinned
             </p>
           )}
@@ -164,7 +164,7 @@ export function PostCard({
                 >
                   {author.display_name}
                 </Link>
-                <RoleBadge role={role} className="text-[11px] leading-tight" />
+                <RoleBadge role={role} className="text-2xs leading-tight" />
                 {post.is_demo && <DemoBadge />}
                 {post.scopeContext && (
                   <>

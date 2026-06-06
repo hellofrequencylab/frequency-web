@@ -24,7 +24,7 @@ export type DockData = {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[10px] font-semibold uppercase tracking-widest text-subtle">{children}</p>
+    <p className="text-3xs font-semibold uppercase tracking-widest text-subtle">{children}</p>
   )
 }
 
@@ -58,7 +58,7 @@ export function GameStatsDockClient({ data }: { data: DockData }) {
           <div className="flex items-center gap-1.5">
             <p className="text-sm font-semibold text-text leading-tight">Your stats</p>
             {rank && (
-              <span className="rank-badge text-[10px] leading-tight" style={seasonRankStyle(rank)}>
+              <span className="rank-badge text-3xs leading-tight" style={seasonRankStyle(rank)}>
                 {RANK_LABELS[rank] ?? rank}
               </span>
             )}
@@ -107,7 +107,7 @@ export function GameStatsPanel({ data, showSummary = false }: { data: DockData; 
             <span className="inline-flex items-center gap-1"><Flame className="w-4 h-4 text-primary" />{streak}w</span>
           </div>
           {rank && (
-            <span className="rank-badge text-[10px] leading-tight" style={seasonRankStyle(rank)}>
+            <span className="rank-badge text-3xs leading-tight" style={seasonRankStyle(rank)}>
               {RANK_LABELS[rank] ?? rank}
             </span>
           )}
@@ -145,7 +145,7 @@ export function GameStatsPanel({ data, showSummary = false }: { data: DockData; 
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
           <SectionLabel>Rank</SectionLabel>
-          <span className="text-[11px] text-subtle">
+          <span className="text-2xs text-subtle">
             {rankProgress.nextLabel
               ? `${rankProgress.toGo.toLocaleString()} zaps to ${rankProgress.nextLabel}`
               : 'Top rank reached'}
@@ -164,14 +164,14 @@ export function GameStatsPanel({ data, showSummary = false }: { data: DockData; 
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
             <SectionLabel>Journey</SectionLabel>
-            <Link href="/crew/quests" className="text-[11px] font-semibold text-primary-strong hover:text-primary-hover">View →</Link>
+            <Link href="/crew/quests" className="text-2xs font-semibold text-primary-strong hover:text-primary-hover">View →</Link>
           </div>
           <div className="rounded-xl bg-surface-elevated px-3 py-2.5">
             <div className="flex items-center gap-1.5">
               <Target className="w-3.5 h-3.5 text-signal-strong shrink-0" />
               <span className="truncate text-xs font-semibold text-text">{arc.chain}</span>
             </div>
-            <p className="mt-0.5 mb-1.5 truncate text-[11px] text-subtle">{arc.step}</p>
+            <p className="mt-0.5 mb-1.5 truncate text-2xs text-subtle">{arc.step}</p>
             <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface">
               <div className="h-full rounded-full bg-signal-strong" style={{ width: `${Math.min(100, Math.max(2, arc.pct))}%` }} />
             </div>
@@ -192,7 +192,7 @@ export function GameStatsPanel({ data, showSummary = false }: { data: DockData; 
           <Gem className="w-3.5 h-3.5 text-signal" />
           {vaultGems.toLocaleString()} gems to spend
         </p>
-        <p className="mt-0.5 text-[11px] text-subtle">Titles, cosmetics &amp; membership credits →</p>
+        <p className="mt-0.5 text-2xs text-subtle">Titles, cosmetics &amp; membership credits →</p>
       </Link>
 
       {/* Full dashboard */}

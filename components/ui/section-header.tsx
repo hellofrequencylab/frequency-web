@@ -1,5 +1,5 @@
 // Shared section header — a light, editorial group label (title + optional
-// count + optional action). Replaces the ad-hoc "uppercase text-[11px]" and
+// count + optional action). Replaces the ad-hoc "uppercase text-2xs" and
 // hairline-divider section headers scattered across the browse pages.
 
 export function SectionHeader({

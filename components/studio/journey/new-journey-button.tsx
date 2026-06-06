@@ -95,7 +95,7 @@ export function NewJourneyButton({ className }: { className?: string }) {
 
         {/* Emoji choices */}
         <div className="mt-5">
-          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-subtle">Pick a face</p>
+          <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">Pick a face</p>
           <div className="flex flex-wrap gap-1">
             {EMOJI_CHOICES.map((e) => (
               <button
@@ -112,7 +112,7 @@ export function NewJourneyButton({ className }: { className?: string }) {
 
         {/* Accent */}
         <div className="mt-4">
-          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-subtle">Accent</p>
+          <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">Accent</p>
           <div className="flex gap-1.5">
             {STUDIO_ACCENTS.map((a) => (
               <button

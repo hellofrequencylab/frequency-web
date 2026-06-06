@@ -30,13 +30,15 @@ import { ClaimCircle } from '@/components/circles/claim-circle'
 import { StaffEditButton } from '@/components/ui/staff-edit-button'
 import { EditModeButton, StartEditingLink } from '@/components/admin/inline/edit-mode-button'
 import { InlineText } from '@/components/admin/inline/inline-text'
-import { updateCircleField } from '../admin-actions'
+import { updateCircleField, uploadCircleCover, removeCircleCover } from '../admin-actions'
+import { InlineCover } from '@/components/admin/inline/inline-cover'
 
 type CircleDetail = {
   id: string
   name: string
   slug: string
   about: string | null
+  image_url: string | null
   type: 'in-person' | 'online'
   member_count: number
   member_cap: number
@@ -88,7 +90,7 @@ export default async function CirclePage({
   const { data: rawCircle } = await admin
     .from('circles')
     .select(
-      `id, name, slug, about, type, member_count, member_cap, status, is_demo,
+      `id, name, slug, about, image_url, type, member_count, member_cap, status, is_demo,
        host:profiles!host_id ( id, display_name, handle, avatar_url ),
        hub:hubs!hub_id (
          id, name, slug,
@@ -232,6 +234,14 @@ export default async function CirclePage({
           practices={practiceLibrary.map((p) => ({ id: p.id, title: p.title }))}
         />
       )}
+
+      <InlineCover
+        value={circle.image_url}
+        alt={circle.name}
+        canEdit={canManage}
+        upload={uploadCircleCover.bind(null, circle.id, slug)}
+        remove={removeCircleCover.bind(null, circle.id, slug)}
+      />
 
       {/* Unified Detail header (REDESIGN-INAPP Phase 1): title + status/type
           badges, member/host + capacity below, capability-gated actions right. */}

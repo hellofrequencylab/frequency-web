@@ -120,7 +120,7 @@ export function DealDetail({
             Contact
             <input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Who" className={field} />
             {deal.member && (
-              <Link href={`/people/${deal.member.handle}`} className="text-[11px] text-primary-strong hover:underline">
+              <Link href={`/people/${deal.member.handle}`} className="text-2xs text-primary-strong hover:underline">
                 Linked member · @{deal.member.handle}
               </Link>
             )}
@@ -271,14 +271,14 @@ export function DealDetail({
                 )}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-semibold uppercase tracking-wide text-subtle">{label}</span>
+                    <span className="text-2xs font-semibold uppercase tracking-wide text-subtle">{label}</span>
                     {a.due_at && !done && (
-                      <span className="text-[11px] text-warning">due {new Date(a.due_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>
+                      <span className="text-2xs text-warning">due {new Date(a.due_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>
                     )}
-                    {done && <span className="text-[11px] text-success">done</span>}
+                    {done && <span className="text-2xs text-success">done</span>}
                   </div>
                   {a.body && <p className={`mt-0.5 whitespace-pre-wrap text-sm ${done ? 'text-subtle line-through' : 'text-text'}`}>{a.body}</p>}
-                  <p className="mt-0.5 text-[11px] text-subtle">
+                  <p className="mt-0.5 text-2xs text-subtle">
                     {a.author?.display_name ? `${a.author.display_name} · ` : ''}
                     {relativeTime(a.created_at)}
                   </p>

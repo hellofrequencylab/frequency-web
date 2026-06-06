@@ -132,7 +132,7 @@ export function HeaderEditor({
               className="block w-full cursor-grab touch-none active:cursor-grabbing"
               style={{ aspectRatio: `${OW} / ${OH}` }}
             />
-            <span className="pointer-events-none absolute left-2 top-2 inline-flex items-center gap-1 rounded-md bg-black/45 px-2 py-1 text-[11px] font-medium text-white">
+            <span className="pointer-events-none absolute left-2 top-2 inline-flex items-center gap-1 rounded-md bg-black/45 px-2 py-1 text-2xs font-medium text-white">
               <Move className="h-3 w-3" /> Drag to reposition
             </span>
           </div>

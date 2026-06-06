@@ -10,7 +10,7 @@ const STATUS_STYLES: Record<GroupStatus, { label: string; cls: string }> = {
 export function StatusBadge({ status }: { status: GroupStatus | string }) {
   const config = STATUS_STYLES[status as GroupStatus] ?? STATUS_STYLES.forming
   return (
-    <span className={`text-[11px] px-1.5 py-0.5 rounded-md font-medium ${config.cls}`}>
+    <span className={`text-2xs px-1.5 py-0.5 rounded-md font-medium ${config.cls}`}>
       {config.label}
     </span>
   )

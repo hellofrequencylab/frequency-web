@@ -88,7 +88,7 @@ export function NewRoomCompose({
               <Globe className={`w-4 h-4 mt-0.5 shrink-0 ${visibility === 'public' ? 'text-primary-strong' : 'text-subtle'}`} />
               <div className="min-w-0">
                 <p className={`text-xs font-semibold ${visibility === 'public' ? 'text-primary-strong' : 'text-text'}`}>Public</p>
-                <p className="text-[11px] text-subtle">Anyone can find and join</p>
+                <p className="text-2xs text-subtle">Anyone can find and join</p>
               </div>
             </button>
             <button type="button" onClick={() => setVisibility('private')} disabled={isPending}
@@ -100,7 +100,7 @@ export function NewRoomCompose({
               <Lock className={`w-4 h-4 mt-0.5 shrink-0 ${visibility === 'private' ? 'text-primary-strong' : 'text-subtle'}`} />
               <div className="min-w-0">
                 <p className={`text-xs font-semibold ${visibility === 'private' ? 'text-primary-strong' : 'text-text'}`}>Private</p>
-                <p className="text-[11px] text-subtle">Invite only</p>
+                <p className="text-2xs text-subtle">Invite only</p>
               </div>
             </button>
           </div>

@@ -120,7 +120,7 @@ export default async function VaultLedgerPage() {
           <div className="space-y-6">
             {groups.map((g) => (
               <div key={g.label}>
-                <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-subtle">{g.label}</p>
+                <p className="mb-2 text-2xs font-semibold uppercase tracking-widest text-subtle">{g.label}</p>
                 <ul className="overflow-hidden rounded-2xl border border-border">
                   {g.items.map((e, i) => {
                     const isZap = e.currency === 'zaps'

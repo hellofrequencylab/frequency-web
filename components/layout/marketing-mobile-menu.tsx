@@ -48,7 +48,7 @@ export function MarketingMobileMenu({ light }: { light: boolean }) {
           />
           <div className="absolute inset-x-0 top-0 rounded-b-2xl bg-surface p-4 pt-4 shadow-pop">
             <div className="mb-3 flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-subtle">Menu</span>
+              <span className="text-2xs font-bold uppercase tracking-wider text-subtle">Menu</span>
               <button
                 type="button"
                 aria-label="Close menu"
@@ -70,7 +70,7 @@ export function MarketingMobileMenu({ light }: { light: boolean }) {
                   {item.label}
                 </Link>
               ))}
-              <p className="pb-1 pt-4 text-[11px] font-bold uppercase tracking-wider text-subtle">
+              <p className="pb-1 pt-4 text-2xs font-bold uppercase tracking-wider text-subtle">
                 Discover
               </p>
               {DISCOVER_NAV.map((item) => (

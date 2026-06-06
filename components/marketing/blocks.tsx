@@ -114,7 +114,7 @@ export function LivePostsBlock({ heading, live, pad, vis = '' }: { heading?: str
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-base font-semibold text-text truncate">{a?.display_name ?? 'Community member'}</span>
-                        {showRole && <RoleBadge role={a!.community_role as CommunityRole} className="text-[10px] leading-tight" />}
+                        {showRole && <RoleBadge role={a!.community_role as CommunityRole} className="text-3xs leading-tight" />}
                       </div>
                       <p className="text-xs text-subtle mt-0.5">
                         {a?.handle && <>@{a.handle} · </>}

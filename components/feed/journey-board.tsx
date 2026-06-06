@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Flame, Check, ChevronDown, Sparkles, Heart, Compass, Map, Users } from 'lucide-react'
+import { Flame, Check, ChevronDown, Sparkles, Heart, Compass, Map, Users, Route, ArrowRight } from 'lucide-react'
 import { LogPracticeButton } from '@/components/practice/log-practice-button'
 import { STREAK_MILESTONES, streakProgress } from '@/lib/streak'
 import type { Practice } from '@/lib/practices'
@@ -37,11 +37,21 @@ export function JourneyBoard({
   practices,
   streak = 0,
   pillarBalance,
+  activeJourney,
 }: {
   practices: Practice[]
   streak?: number
   /** The member's adopted practices counted per Pillar (all four, zero-filled). */
   pillarBalance?: PillarCount[]
+  /** The member's top active journey — a slim "current step" line that links to
+   *  the full /crew/journey tab. Undefined = no adopted journey. */
+  activeJourney?: {
+    title: string
+    href: string
+    done: number
+    total: number
+    nextStepTitle: string | null
+  }
 }) {
   const [collapsed, setCollapsed] = useState(false)
 
@@ -111,7 +121,7 @@ export function JourneyBoard({
                   <span
                     key={m.day}
                     title={`${m.label} · ${m.day} days`}
-                    className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold transition-colors ${
+                    className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-3xs font-bold transition-colors ${
                       hit
                         ? 'bg-primary text-on-primary'
                         : isNext
@@ -151,11 +161,34 @@ export function JourneyBoard({
         )}
       </div>
 
+      {/* Your journey — a slim "current step" line; the full tab lives at the link. */}
+      {activeJourney && (
+        <Link
+          href={activeJourney.href}
+          className="group mx-4 mt-3 flex items-center gap-2.5 border-t border-primary-bg pt-3"
+        >
+          <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface text-primary-strong">
+            <Route className="h-3.5 w-3.5" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium text-text">
+              {activeJourney.nextStepTitle
+                ? `Next: ${activeJourney.nextStepTitle}`
+                : `You're on track in ${activeJourney.title}`}
+            </p>
+            <p className="truncate text-2xs text-subtle">
+              {activeJourney.title} · {activeJourney.done}/{activeJourney.total} on track this week
+            </p>
+          </div>
+          <ArrowRight className="h-3.5 w-3.5 shrink-0 text-subtle transition-colors group-hover:text-primary-strong" />
+        </Link>
+      )}
+
       {/* Pillar balance — a calm read of where your practice sits across the four
           Pillars. Coverage, not a score. */}
       {!collapsed && pillarBalance && pillarBalance.length > 0 && (
         <div className="mt-3 border-t border-primary-bg px-4 pt-3">
-          <p className="mb-1.5 text-[11px] font-medium text-subtle">Your pillars</p>
+          <p className="mb-1.5 text-2xs font-medium text-subtle">Your pillars</p>
           <div className="flex gap-1.5">
             {pillarBalance.map((p) => (
               <div
@@ -167,7 +200,7 @@ export function JourneyBoard({
                 <p className={`text-sm font-bold tabular-nums ${p.count > 0 ? 'text-text' : 'text-subtle'}`}>
                   {p.count}
                 </p>
-                <p className="text-[10px] text-subtle">{p.name}</p>
+                <p className="text-3xs text-subtle">{p.name}</p>
               </div>
             ))}
           </div>

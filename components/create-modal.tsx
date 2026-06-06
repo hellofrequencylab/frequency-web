@@ -1,6 +1,8 @@
 'use client'
 
 import { X, Check, Loader2 } from 'lucide-react'
+import { fieldClasses } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 
 const ICON_COLORS: Record<string, { bg: string; text: string }> = {
   indigo: { bg: 'bg-primary-bg', text: 'text-primary-strong' },
@@ -98,22 +100,13 @@ export function CreateModal({
 
         {/* Footer — same warm sand band as the header, bookending the form. */}
         <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-border bg-surface-elevated/50 sm:rounded-b-2xl shrink-0">
-          <button
-            type="button"
-            onClick={() => !isPending && onClose()}
-            disabled={isPending}
-            className="rounded-lg border border-border bg-surface px-4 py-2 text-xs font-medium text-muted hover:bg-surface-elevated transition-colors"
-          >
+          <Button type="button" variant="secondary" onClick={() => !isPending && onClose()} disabled={isPending}>
             Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={submitDisabled || isPending}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-5 py-2 text-xs font-semibold text-on-primary shadow-sm hover:bg-primary-hover disabled:opacity-40 transition-colors"
-          >
+          </Button>
+          <Button type="submit" className="shadow-sm" disabled={submitDisabled || isPending}>
             {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
             <span className="text-emboss">{isPending ? pendingLabel : submitLabel}</span>
-          </button>
+          </Button>
         </div>
       </form>
     </div>
@@ -127,5 +120,5 @@ export function CreateModal({
 // Focus reads as a calm, on-brand state — the border firms to the strong sand
 // tone with a soft neutral halo, NOT a loud amber ring. (This class wins over the
 // global amber :focus-visible ring on these fields, by specificity.)
-export const cmInput = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none transition-colors focus:border-border-strong focus:ring-2 focus:ring-border-strong/35 disabled:opacity-50 placeholder:text-subtle'
+export const cmInput = fieldClasses
 export const cmLabel = 'block text-xs font-medium text-muted mb-1'

@@ -333,7 +333,7 @@ export default async function DirectoryPage({
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-1.5">
                     <span className="truncate text-sm font-semibold text-text">{l.displayName}</span>
-                    <span className="shrink-0 rounded-md bg-surface-elevated px-1.5 py-0.5 text-[10px] font-medium text-muted">Lead</span>
+                    <span className="shrink-0 rounded-md bg-surface-elevated px-1.5 py-0.5 text-3xs font-medium text-muted">Lead</span>
                   </span>
                   <span className="mt-0.5 block truncate text-xs text-subtle">
                     {[l.email, l.city, l.ownerName ? `shared by ${l.ownerName}` : null]
