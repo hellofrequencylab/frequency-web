@@ -13,10 +13,10 @@ import { JourneyBoard } from '@/components/feed/journey-board'
 import { VeraLightbox } from '@/components/onboarding/vera-lightbox'
 import { buildVeraOpening, buildWelcomeSlides } from '@/lib/onboarding/vera-welcome'
 import { getPracticesToLogToday } from '@/lib/practices'
-import { getActiveJourneyProgress } from '@/lib/journey-plans'
-import { getPracticeStreak } from '@/lib/practice-streak'
-import { getOnboardingStatus } from '@/lib/onboarding/status'
+import { getMemberProgress } from '@/lib/member-progress'
 import { getMemberPillarBalance } from '@/lib/pillars'
+import { StageStrip } from '@/components/progress/stage-strip'
+import { StageCelebration } from '@/components/progress/stage-celebration'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
 
@@ -112,24 +112,25 @@ export default async function FeedPage({
   // Adopted practices not yet logged today -> the feed "log today" nudge (WAM).
   const practicesToLog = myProfileId ? await getPracticesToLogToday(myProfileId) : []
 
-  // The daily practice streak — the headline streak the hero surfaces show. Derived
-  // live from the practice log (effective today), so a broken streak reads as 0 and
-  // an unlogged-but-alive streak reads "at risk". Replaces the stale profile column.
-  const practiceStreak = myProfileId ? await getPracticeStreak(myProfileId) : null
+  // The member progress spine — one read that folds activation, the daily practice
+  // streak, Journeys and rank into a stage. It drives the hero: a teal onboarding
+  // guide until set up, then the JourneyBoard, which reveals more panels as the
+  // stage climbs (progressive disclosure, ADR-146). It also carries the activation
+  // status, the streak and the Journeys, so the feed reads them all just once.
+  const progress = myProfileId ? await getMemberProgress(myProfileId) : null
+  const onboarding = progress?.onboarding ?? null
+  const practiceStreak = progress?.streakState ?? null
+  const stageIndex = progress?.stage.index ?? 0
+  const nextGateLabel = progress?.nextGates.find((g) => !g.met)?.label ?? null
 
-  // The feed "hero" slot: a persistent teal onboarding guide until a member is fully
-  // set up, then it graduates into the JourneyBoard. One shared status drives both.
-  const onboarding = myProfileId ? await getOnboardingStatus(myProfileId) : null
-
-  // Pillar balance for the graduated board — only needed once onboarding is done.
-  const pillarBalance = myProfileId && onboarding?.complete
+  // Pillar balance for the graduated board — only surfaced once the member is
+  // Established (stage 3), so fetch it only then.
+  const pillarBalance = myProfileId && stageIndex >= 3
     ? await getMemberPillarBalance(myProfileId)
     : undefined
 
   // Top active journey → a slim "current step" line on the graduated board.
-  const journeyProgress = myProfileId && onboarding?.complete
-    ? await getActiveJourneyProgress(myProfileId)
-    : []
+  const journeyProgress = progress?.journeys ?? []
   const activeJourney = journeyProgress[0]
     ? {
         title: journeyProgress[0].plan.title,
@@ -166,8 +167,27 @@ export default async function FeedPage({
 
       {/* Hero slot. Onboarding incomplete → the persistent teal guide sits up top and
           the streak box (if any) rides below it. Complete → the guide is gone and the
-          streak box graduates into the JourneyBoard, which takes the top spot. */}
+          streak box graduates into the JourneyBoard, which takes the top spot, fronted
+          by the stage strip (and a one-time celebration when the stage advances). */}
       {onboarding && !onboarding.complete && <FeedOnboardingGuide status={onboarding} />}
+
+      {progress?.justAdvanced && progress.newlyUnlocked && (
+        <StageCelebration
+          stageIndex={progress.newlyUnlocked.index}
+          stageLabel={progress.newlyUnlocked.label}
+          tagline={progress.newlyUnlocked.tagline}
+        />
+      )}
+
+      {onboarding?.complete && progress && (
+        <StageStrip
+          stageIndex={progress.stage.index}
+          stageLabel={progress.stage.label}
+          tagline={progress.stage.tagline}
+          nextStageLabel={progress.next?.label ?? null}
+          nextGateLabel={nextGateLabel}
+        />
+      )}
 
       {onboarding?.complete
         ? <JourneyBoard
@@ -177,6 +197,7 @@ export default async function FeedPage({
             loggedToday={practiceStreak?.loggedToday ?? false}
             freezeTokens={practiceStreak?.freezeTokens ?? 0}
             willFreezeProtect={practiceStreak?.willFreezeProtect ?? false}
+            stageIndex={stageIndex}
             pillarBalance={pillarBalance}
             activeJourney={activeJourney}
           />
