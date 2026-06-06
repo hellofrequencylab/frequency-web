@@ -26,7 +26,7 @@ Two levers, in order: **(0) flip the switches that let real testers in today**, 
 | **1.1** | Persistent Vera launcher, app-wide | Deep Vera integration | M | ✅ shipped |
 | **1.2** | Vera's "chores" — profile + first-post, matriarch full-stop | Create a profile + seed content | M | ✅ shipped |
 | **1.3** | Vera coach "next best action" — folded into the chores surface | Excitement + direction | S | ✅ shipped |
-| **1.4** | "Founder's First Week" tasks + badge | Create content | M | 📋 |
+| **1.4** | "Founder's First Week" tasks + badge | Create content | M | ✅ shipped |
 | **1.5** | Live-loop suggestion chips | Guided depth | S | ⏳ |
 | **2.1** | Welcome community post | Arrive *greeted* | S–M | 📋 |
 | **2.2** | Finish `draft_intro` (no-op today) | Warm intros land | S–M | ⏳ |
@@ -126,16 +126,30 @@ in small reviewable PRs. Best-practice guardrails in the last section.
 - **Second pass:** AI-improvised copy on top of the deterministic picker (today the lines are
   the funnel's `headline`/`blurb`); let Vera deliver the same coach beat *in the launcher chat*.
 
-### 1.4 — "Founder's First Week" tasks + badge 📋 (BETA-ACTIVATION §3–4)
-- **Goal.** Seed first **content** + real connections (first post, comment/react, friend,
-  2nd circle, RSVP/event, 3-day practice streak).
-- **Decision (recommended, BETA-ACTIVATION §4).** **Event-derived** engine — compute the
-  checklist from `engagement_events` + a thin reward-on-first-occurrence layer + a
-  "Founding Founder" badge. No new engine, no crew-tier mismatch.
-- **Build.** Add the 1–2 missing events (`reaction.added`, invite-accepted), the
-  reward-on-first idempotency layer, the badge/achievement, a "Founder tasks" view.
-- **Touch.** `lib/engagement/`, achievements catalog, a tasks view component, `/admin/engagement`.
-- **Acceptance.** Tasks reflect real events, reward once each, badge on set-complete, skippable.
+### 1.4 — "Founder's First Week" tasks + badge ✅ **shipped** (BETA-ACTIVATION §3–4)
+- **Decision (owner).** **Event-derived** engine — no new machinery.
+- **What shipped.**
+  - `lib/onboarding/founder-tasks.ts` — `getFounderTasks()` derives 6 tasks from the domain
+    tables the engagement events write to (posts · post_reactions · friendships · 2nd
+    membership · event_rsvps · 3-day practice streak) — same source-of-truth as `getUserStats`,
+    so it can't disagree with the gamification engine.
+  - `app/(main)/founder/founder-actions.ts` — `claimFounderRewards()`: **reward-on-first**
+    reconciliation (5💎 per task the first time it's seen done, tracked in
+    `meta.founder.rewarded`) + the **badge** on set-complete (25💎 bonus). Idempotent,
+    flag-first — safe to call on every view.
+  - `supabase/migrations/20260606170000_founders_first_week_badge.sql` — the
+    **`founders-first-week`** manual achievement (gold/special), granted by the app (mirrors
+    the existing `founding-member` manual pattern). ⚠️ **Apply on deploy** — until then the
+    per-task gems still pay; only the badge waits.
+  - `app/(main)/founder/page.tsx` — a `FocusTemplate` "Founder's First Week" view (progress +
+    6 task rows + badge state); registered Focus in `lib/layout/page-chrome.ts`.
+  - **Vera hands off**: once activation is complete, the coach beat points to `/founder`
+    (the founder query runs only for that small activated cohort).
+- **Acceptance.** ✅ tasks reflect real state · ✅ reward once each · ✅ badge on set-complete ·
+  ✅ skippable (it's a page, nothing blocks).
+- **Second pass:** emit the 1–2 missing ledger events (`reaction.added`, invite-accepted) so
+  the tasks can read the event ledger directly · an `/admin/engagement` operator view ·
+  a unit test once the supabase mock harness is in place · richer badge reward (zaps vs gems).
 
 ### 1.5 — Live-loop suggestion chips ⏳ (BACKLOG §P)
 - **Goal.** Keep guided depth flowing instead of dead-ending a turn.
