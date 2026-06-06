@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { ADMIN_MODULES, modulesFor, showsAdminPanel, moduleById } from './registry'
+import { ADMIN_MODULES, modulesFor, modulesForSurface, showsAdminPanel, moduleById } from './registry'
 import type { Capability, Scope } from '@/lib/core/capabilities'
 
 // The engine is pure: which modules a tier sees is (scope kind × capabilities),
@@ -63,5 +63,12 @@ describe('admin module registry', () => {
     expect(new Set(ids).size).toBe(ids.length)
     expect(moduleById('circle.settings')?.requiredCapability).toBe('circle.editSettings')
     expect(moduleById('does.not.exist')).toBeUndefined()
+  })
+
+  it('routes modules by surface, and every module declares one', () => {
+    const caps = new Set<Capability>(['circle.editSettings'])
+    expect(modulesForSurface(circleScope, caps, 'sidebar').map((m) => m.id)).toContain('circle.settings')
+    expect(modulesForSurface(circleScope, caps, 'inline')).toHaveLength(0)
+    expect(ADMIN_MODULES.every((m) => m.surface === 'inline' || m.surface === 'sidebar')).toBe(true)
   })
 })

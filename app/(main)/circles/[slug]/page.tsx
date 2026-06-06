@@ -27,6 +27,9 @@ import { ProfileFlair } from '@/components/profile-flair'
 import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
 import { ClaimCircle } from '@/components/circles/claim-circle'
 import { StaffEditButton } from '@/components/ui/staff-edit-button'
+import { EditModeButton, StartEditingLink } from '@/components/admin/inline/edit-mode-button'
+import { InlineText } from '@/components/admin/inline/inline-text'
+import { updateCircleField } from '../admin-actions'
 
 type CircleDetail = {
   id: string
@@ -232,7 +235,17 @@ export default async function CirclePage({
       {/* Unified Detail header (REDESIGN-INAPP Phase 1): title + status/type
           badges, member/host + capacity below, capability-gated actions right. */}
       <DetailTemplate
-        title={circle.name}
+        title={
+          canManage ? (
+            <InlineText
+              value={circle.name}
+              save={updateCircleField.bind(null, circle.id, circle.slug, 'name')}
+              inputClassName="w-full rounded-lg border border-border-strong bg-surface px-2 py-0.5 text-xl sm:text-2xl font-bold text-text outline-none focus:ring-2 focus:ring-border-strong/30"
+            />
+          ) : (
+            circle.name
+          )
+        }
         badges={
           <>
             <span className={`text-xs px-1.5 py-0.5 rounded-md font-medium ${statusPill.cls}`}>
@@ -277,6 +290,8 @@ export default async function CirclePage({
         }
         actions={
           <>
+            {canManage && <EditModeButton />}
+
             <StaffEditButton href={`/admin/circles?edit=${circle.id}`} label="Edit circle" />
 
             {canManage && <CircleHostMenu circleId={circle.id} />}
@@ -318,17 +333,25 @@ export default async function CirclePage({
         }
       >
         {/* ── About (boxless, collapsible) ───────────── */}
-        {circle.about ? (
+        {canManage ? (
+          <div className="mb-6">
+            <InlineText
+              value={circle.about}
+              multiline
+              placeholder="Add a description for your circle…"
+              save={updateCircleField.bind(null, circle.id, circle.slug, 'about')}
+            >
+              {circle.about ? (
+                <CollapsibleAbout text={circle.about} />
+              ) : (
+                <StartEditingLink label="+ Add a description for your circle" />
+              )}
+            </InlineText>
+          </div>
+        ) : circle.about ? (
           <div className="mb-6">
             <CollapsibleAbout text={circle.about} />
           </div>
-        ) : canManage ? (
-          <Link
-            href={`/circles/${circle.slug}?edit=true`}
-            className="inline-block mb-6 text-xs text-subtle hover:text-primary-strong transition-colors"
-          >
-            + Add a description for your circle
-          </Link>
         ) : null}
 
         {/* ── This week's practice (host-assigned). Members log it for
