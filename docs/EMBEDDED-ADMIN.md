@@ -371,9 +371,13 @@ group of modules; `/admin/*` retires once empty.
 > inline is already covered by `EditableIdentity`. ✅ **Insights** too — an *additive*
 > live-stats summary (`InsightsModule` via `getEngagementDashboard`) heads the Insights
 > category above its full-dashboard links (the `IN_PLACE` map now supports additive
-> modules with no `href`). In-place ports so far: **Moderation · Broadcasts ·
-> Gamification · Members · Insights**. **Next:** keep porting (QR, Vera, Roles, Spaces,
-> …) and/or the `@admin` server slot; the QR-generator + Vera-tone inline tuners.
+> modules with no `href`). ✅ **Roles** too (`RolesModule` reuses `RoleManager` /
+> `StaffRoleManager` / `PermissionGrid` in *People* alongside Members; `IN_PLACE` now
+> takes an `hrefs[]` so a category can hold two modules). In-place ports so far:
+> **Moderation · Broadcasts · Gamification · Members · Insights · Roles**. **Next:** QR
+> Studio, Demo, the Spaces entity-managers; **Vera** needs its config *form extracted
+> into a component first* (the page inlines it + `saveVera` rewrites the whole config,
+> so a partial port would wipe it) — deferred. Plus the `@admin` slot + QR/Vera tuners.
 
 1. **Engine.** `AdminModule` registry + `modulesFor`/`showsAdminPanel`; `AdminModuleCard`
    over `SidebarCard`; add `hub`/`nexus` loaders + `loadCapabilitiesForScope`; the `@admin`
