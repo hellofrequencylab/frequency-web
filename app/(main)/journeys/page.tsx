@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Image from 'next/image'
-import { Map, Users, Lock, Globe, Link2, Sparkles } from 'lucide-react'
+import Link from 'next/link'
+import { Map, Users, Lock, Globe, Link2, Sparkles, Compass, ArrowRight } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import { getMyPlans, listPublicPlans, type JourneyPlan } from '@/lib/journey-plans'
 import { EntityCard } from '@/components/cards/entity-card'
@@ -86,6 +87,25 @@ export default async function JourneysPage() {
               <NewJourneyButton />
             </div>
           </div>
+        </section>
+
+        {/* Official seasonal Journeys — the same concept, curated for the season. */}
+        <section>
+          <Link
+            href="/crew/quests"
+            className="group flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm transition-colors hover:border-primary"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
+              <Compass className="h-5 w-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-sm font-bold text-text">Seasonal Journeys</h2>
+              <p className="mt-0.5 text-sm text-muted">
+                Official tracks for the season, one per Pillar — free to start, with rewards as you go.
+              </p>
+            </div>
+            <ArrowRight className="h-4 w-4 shrink-0 text-subtle transition-colors group-hover:text-primary-strong" />
+          </Link>
         </section>
 
         <section>
