@@ -8,6 +8,7 @@ import { isOnline, ONLINE_MS } from '@/lib/presence'
 import { WidgetCard } from '@/components/modules/module-card'
 import { GameStatsDockClient, GameStatsPanel, type DockData } from '@/components/sidebar/game-stats-dock'
 import { getPracticesToLogToday, getRecentPracticeLogs, getMemberPractices } from '@/lib/practices'
+import { getActiveJourneyProgress } from '@/lib/journey-plans'
 import { getRecentDispatchesForProfile } from '@/lib/dispatches'
 import { DemoNotice } from '@/components/sidebar/demo-notice'
 
@@ -413,28 +414,17 @@ export async function loadGameStats(profileId: string): Promise<DockData> {
       }
     : { nextLabel: null, toGo: 0, pct: 100 }
 
-  // Current arc (best-effort; tolerant of schema differences)
+  // The member's active Journey → the dock's "current track" line (ADR-152;
+  // replaces the retired quest_chains engine). Best-effort.
   let arc: DockData['arc'] = null
   try {
-    const { data: qp } = await admin
-      .from('quest_progress')
-      .select('chain_id, current_step')
-      .eq('profile_id', profileId)
-      .is('completed_at', null)
-      .order('started_at', { ascending: true })
-      .limit(1)
-      .maybeSingle()
-    if (qp) {
-      const [{ data: chain }, { data: steps }] = await Promise.all([
-        admin.from('quest_chains').select('name').eq('id', qp.chain_id).maybeSingle(),
-        admin.from('quest_steps').select('step_order, name').eq('chain_id', qp.chain_id).order('step_order'),
-      ])
-      const total = (steps ?? []).length || 1
-      const cur = (steps ?? []).find((s: { step_order: number }) => s.step_order === qp.current_step) as { name?: string } | undefined
+    const progress = await getActiveJourneyProgress(profileId)
+    const top = progress[0]
+    if (top) {
       arc = {
-        chain: (chain as { name?: string } | null)?.name ?? 'Your arc',
-        step: cur?.name ?? `Step ${qp.current_step}`,
-        pct: Math.round(((qp.current_step - 1) / total) * 100),
+        chain: top.plan.title,
+        step: top.nextItem?.practice?.title ?? 'On track this week',
+        pct: top.percent,
       }
     }
   } catch {
