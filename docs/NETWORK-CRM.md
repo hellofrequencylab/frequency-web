@@ -157,3 +157,124 @@ locality (`canViewLead`). A capture that's become a member is skipped (you find 
 - **Promotion into public/network** (`→ contacts`, link to a member `profile`) — schema hooks exist; the action is gated behind its own review since that's where leak risk concentrates.
 - `shared` (team) visibility — modelled, not yet surfaced.
 - More sources (email/calendar import) — `source` is open for it.
+
+---
+
+# The Network rework (planned) — member-facing IA + the event-capture loop
+
+> **Decision: [ADR-154](DECISIONS.md).** Status: 📋 designed, not built. Reworks the
+> Profile Creator from a host-only steward tool into a **member-facing "Network"** product —
+> *manage the real-life people you meet* — and adds the missing **event-invite capture loop**.
+> The data model (the three entities above) is unchanged; this is IA, an access-tier change,
+> and one new public capture surface. Build items in
+> [`ONBOARDING-BUILD-LIST.md`](ONBOARDING-BUILD-LIST.md) §5.
+
+## In one line
+
+People should make **real-life contacts** — and keep them. Rename **Directory → Network**,
+fold *your personal contacts* into it as a **member** feature (today it's host-gated), and let
+a member grow that library by **inviting people to events**: their custom QR opens an RSVP
+contact form, and the new contact lands in the member's personal library, the event's guest
+list, and the marketing DB — *with permission observed at every hop*.
+
+## The three entities (unchanged) and the one privacy rule
+
+| Entity | Whose | Read scope | Role |
+|---|---|---|---|
+| `profiles` | the platform | **public** | real members |
+| `network_contacts` | **the member** (`owner_id`) | **private** (owner only; `network` opt-in) | your personal CRM |
+| `contacts` | the platform | service-role | the marketing DB |
+
+**The one rule (the "bleed" boundary):** a person a member captures stays **personal**. They
+enter the **marketing** DB only as `consent_state` *unknown* (added, never mailed), and become
+mailable (`subscribed`) **only when the person confirms an email or signs up for something at
+Frequency**. Promotion `network_contacts → contacts` is the deliberate, consent-gated act
+(ADR-099); it never happens silently.
+
+## IA — the Network tab (two faces, member-tier)
+
+`Directory` (`/people`) and `Profiles`/`Connections` (`/connections`) **merge under one rail
+item: `Network`** (`lib/nav-areas.ts`, section **Community**, `defaultAccess: 'member'`).
+
+| Face | What | Source | Who |
+|---|---|---|---|
+| **Directory** | the full searchable directory — members **+ people you've met** | `profiles` + your `network_contacts` + `canViewLead` | all members |
+| **Contacts** (your library) | your personal CRM — scanned cards, posters, manual+Vera, event RSVPs | `network_contacts` (owner = you) | all members |
+
+- **Tier change:** personal **Contacts** drop from host+/staff (ADR-098) to **member**. Safe —
+  `network_contacts` is already owner-scoped by RLS; only the gate in `lib/connections/access.ts`
+  moves. Every member gets a private contact library; the data boundary is untouched.
+- **Stays steward-gated:** the **cross-steward `network_local` sharing** (ADR-132 — surfacing a
+  *shared* capture to other local stewards) remains host+. Members get their *own* contacts; they
+  do **not** get to browse other people's captures.
+- **Stays distinct:** the steward **`/crm`** (deals pipeline over `contacts`) and **Marketing →
+  Contacts** (the marketing list) are unchanged — Network is the *personal* layer beneath them.
+
+## The headline build — the event-invite capture loop
+
+**The missing piece.** Today RSVP is members-only (`toggleRSVP`), and QR codes point at browse
+pages. The loop the product is built around — *meet someone, invite them to your event, keep them
+as a contact* — has no surface. Build it:
+
+```
+Member promotes an event → shares their attributed code  /q/<slug>  (owner + event stamped, ADR-091/099)
+  → invitee scans in person
+  → PUBLIC event RSVP contact form  (name · email · phone · socials · "how we met" note — all optional but encouraged)
+  → on submit, ONE person, written to THREE places, consent observed:
+       1. event guest list   → they RSVP'd to THIS event           (new: event_guests, per-event)
+       2. owner's personal CRM → network_contacts (owner = inviter, source='event', linked_*)   ← "for their personal library"
+       3. marketing DB        → contacts (source='event_rsvp', consent_state='unknown')          ← mailable only on opt-in
+  → confirmation → soft prompt to finish their profile / join Frequency (the owner's referral converts)
+```
+
+- **Reuse, don't rebuild:** the attributed `/q/<slug>` referral primitive (ADR-091), the
+  `network_contacts` write + `crm-sync.ts` upsert-by-email + the consent ladder (ADR-099), the
+  `event_guest` acquisition-channel hint already scaffolded in `lib/qr/acquisition.ts`, and the
+  AI harvest for the "how we met" note (`connections-ai.ts`).
+- **New:** the **public RSVP capture form** (non-member, no auth — like `/onboarding/beta`'s
+  deferred flow, exempted in `proxy.ts`, noindexed); a per-event **`event_guests`** list (a
+  non-member can RSVP to one event without an account); the **triple-write** action carrying the
+  owner attribution from the code.
+- **Privacy at the door:** the form states what's shared. The contact info is the *invitee's* to
+  give; the personal-library copy is the *inviter's*; the marketing copy is consent-`unknown`
+  until they opt in. CAN-SPAM/RFC-8058 footer + `/u/scan`-style unsubscribe already exist.
+
+## Vera — the contact-completion assist (mostly built)
+
+The product promise — *snap a card / poster / the person, drop a note, Vera finishes the card* —
+is **already live** (`lib/ai/connections-ai.ts`: Sonnet vision OCR + Haiku text assist → a
+fully-structured contact + drafted connection note + tags, all re-validated). The rework just
+**surfaces it to members** (quick-add `+` → capture) and points the same harvest at the event-RSVP
+"how we met" note. Degrades to manual entry when AI is off.
+
+## Gamification — reward the *real* connection, never the row
+
+Ride the existing **zaps = real-life/outreach** currency (`lib/zaps.ts`, `lib/engagement/currency.ts`).
+Guardrail (engine doctrine): pay for **real outcomes**, idempotent, daily-capped — *adding a row is
+not an outcome*.
+
+| Moment | Reward | Anti-farm |
+|---|---|---|
+| Capture a contact (scan/manual) | small ⚡ "grew your network" | first N/day only; not per-row |
+| Invitee **RSVPs** via your code | ⚡ (`event_guest`) | once per distinct invitee+event |
+| Invitee **attends** | ⚡⚡ | gated on attendance check-in |
+| Invitee **joins Frequency** | `invite_accepted` ⚡⚡ + 💎 (already pays, ADR-099) | referral attribution, idempotent |
+| Milestone: 10 / 25 / 100 real contacts | **"Connector" achievement** + badge | counts linked/confirmed contacts, not raw rows |
+
+Feeds the season **Zap** ladder (in-world doing → rank), and a Network stat on the member's
+profile/dashboard ("people you've brought in"). Keeps Vera's doctrine: she nudges you to invite a
+*real* person to a *real* event, not to chat.
+
+## Reworked file map
+
+| Piece | Path | State |
+|---|---|---|
+| Nav: `people`+`connections` → one `Network` (member) | `lib/nav-areas.ts`, `components/layout/nav-icons.ts` | 📋 |
+| Access tier → member (keep cross-steward host+) | `lib/connections/access.ts` | 📋 |
+| Network page (Directory + Contacts tabs) | `app/(main)/people/` ← merge `app/(main)/connections/` | 📋 |
+| Member quick-add capture (`+` → scan/manual+Vera) | `app/(main)/connections/new/` (exists; ungate) | ⏳ exists, host-gated |
+| Public event RSVP capture form | new `app/events/[slug]/rsvp/` (no-auth, proxy-exempt) | 📋 |
+| `event_guests` (per-event, non-member RSVP) | new migration | 📋 |
+| Triple-write action (guest + network_contact + contact) | new, reuses `crm-sync.ts` | 📋 |
+| Owner+event attribution on the code | `lib/qr/codes.ts` (`event` type exists), `app/q/[slug]` | ⏳ extend |
+| Gamification hooks | `lib/zaps.ts`, `lib/engagement/currency.ts`, achievements catalog | 📋 |
