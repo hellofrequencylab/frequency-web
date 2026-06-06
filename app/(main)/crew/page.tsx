@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Star, CheckCircle, Zap, Award, Flame, Target, Map, TrendingUp, Gem, ShoppingBag, CalendarDays, ArrowRight } from 'lucide-react'
+import { Star, CheckCircle, Zap, Award, Flame, Target, Map, TrendingUp, Gem, ShoppingBag, CalendarDays, ArrowRight, Compass } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { getPracticesToLogToday } from '@/lib/practices'
@@ -207,6 +207,24 @@ export default async function CrewPage() {
         <span className="hidden shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-on-primary sm:inline-flex">
           {nextAction.label}<ArrowRight className="h-3.5 w-3.5" />
         </span>
+      </Link>
+
+      {/* Your Journey — the active-journey progress tab (practices + their rewards). */}
+      <Link
+        href="/crew/journey"
+        className="mb-6 flex items-center gap-4 rounded-2xl bg-surface-elevated/60 p-5 transition-colors hover:bg-surface-elevated"
+      >
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-signal-bg text-signal-strong">
+          <Compass className="h-5 w-5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-medium text-subtle">Your Journey</p>
+          <p className="text-base font-bold leading-tight text-text">Track your season&rsquo;s practices</p>
+          <p className="mt-0.5 text-sm leading-relaxed text-muted">
+            Your progress across Mind &middot; Body &middot; Spirit &middot; Expression, and the next step to log.
+          </p>
+        </div>
+        <ArrowRight className="hidden h-4 w-4 shrink-0 text-subtle sm:block" />
       </Link>
 
       {/* ── Season Progress (full width, top) ────────── */}
