@@ -28,6 +28,7 @@ const FOCUS_PREFIXES = [
   '/entry-points', // crew "My Entry Points" builder (ADR-126)
   '/founder', // Founder's First Week checklist (build item 1.4)
   '/journal', // your Capture daily-log (build item §6 Phase 3)
+  '/training', // role-advancement training (ADR-157 §7)
   '/upgrade', // single conversion card
   '/g/', // gift-a-zap confirm
   '/n/', // scan-landing claim

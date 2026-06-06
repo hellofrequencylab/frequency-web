@@ -14,6 +14,7 @@ import { recordEngagementEvent } from '@/lib/engagement/events'
 import { awardZapsForAction } from '@/lib/zaps'
 import { processGamificationEvent } from '@/lib/achievements'
 import { atLeastRole } from '@/lib/core/roles'
+import { assignTraining } from '@/lib/onboarding/training'
 import { authorizeAction } from '@/lib/admin/guard'
 
 // Role-ladder comparison — single source in lib/core/roles.
@@ -35,6 +36,8 @@ export async function assignRole(profileId: string, role: CommunityRole) {
   const { error } = await admin.from('profiles').update({ community_role: role }).eq('id', profileId)
   if (error) throw new Error(error.message)
   processGamificationEvent({ type: 'role_change', profileId, role }).catch(() => {})
+  // Assign the role's training Journey on promotion (ADR-157 §7.1). Best-effort.
+  assignTraining(profileId, role).catch(() => {})
   revalidatePath('/admin')
 }
 
