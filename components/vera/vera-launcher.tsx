@@ -23,12 +23,26 @@ type Tab = 'chat' | 'help'
 
 export function VeraLauncher({ index }: { index: HelpSearchEntry[] }) {
   const [open, setOpen] = useState(false)
-  // Two-stage reveal: tucked off the right edge (peek) → tap slides it on → tap opens.
-  const [peek, setPeek] = useState(true)
   const [tab, setTab] = useState<Tab>('chat')
   const [q, setQ] = useState('')
+  // The tab stays open + clickable (no edge-tuck). It PULSES when there's an unclosed
+  // chat — a conversation the member started and hasn't reopened/resolved (the flag is
+  // set by vera-chat on each turn, cleared when they reopen the panel).
+  const [pulse, setPulse] = useState(() => typeof window !== 'undefined' && localStorage.getItem('fq_vera_unread') === '1')
   const panelRef = useRef<HTMLDivElement>(null)
   const results = useMemo(() => searchHelp(index, q, 6), [q, index])
+
+  useEffect(() => {
+    const onActivity = () => setPulse(true)
+    window.addEventListener('vera-activity', onActivity)
+    return () => window.removeEventListener('vera-activity', onActivity)
+  }, [])
+
+  const openPanel = () => {
+    setOpen(true)
+    setPulse(false)
+    try { localStorage.removeItem('fq_vera_unread') } catch {}
+  }
 
   // ESC closes; focus moves into the panel when it opens.
   useEffect(() => {
@@ -46,7 +60,6 @@ export function VeraLauncher({ index }: { index: HelpSearchEntry[] }) {
 
   function close() {
     setOpen(false)
-    setPeek(true)
     setQ('')
   }
 
@@ -54,19 +67,24 @@ export function VeraLauncher({ index }: { index: HelpSearchEntry[] }) {
 
   return (
     <>
-      {/* Floating launcher — raised on mobile to clear the bottom nav. */}
+      {/* Floating launcher — always visible + clickable; raised on mobile to clear the
+          bottom nav. Pulses when a chat is left unclosed. */}
       <button
         type="button"
-        onClick={() => (peek ? setPeek(false) : setOpen(true))}
+        onClick={openPanel}
         aria-label="Open Vera"
         aria-haspopup="dialog"
         aria-expanded={open}
-        className={`fixed right-0 bottom-20 z-40 inline-flex items-center gap-1.5 rounded-l-full bg-primary/90 py-2 pl-3 pr-4 text-on-primary shadow-sm transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] md:bottom-6 ${
-          peek ? 'translate-x-[calc(100%-2rem)]' : 'translate-x-0'
-        }`}
+        className="fixed right-0 bottom-20 z-40 inline-flex items-center gap-1.5 rounded-l-full bg-primary/90 py-2 pl-3 pr-4 text-on-primary shadow-sm transition-colors hover:bg-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] md:bottom-6"
       >
         <Sparkles className="h-5 w-5 shrink-0" aria-hidden />
         <span className="text-sm font-semibold">Vera</span>
+        {pulse && (
+          <span className="absolute -left-1 -top-1 flex h-3 w-3" aria-hidden>
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-signal opacity-75" />
+            <span className="relative inline-flex h-3 w-3 rounded-full bg-signal ring-2 ring-surface" />
+          </span>
+        )}
       </button>
 
       {open && (

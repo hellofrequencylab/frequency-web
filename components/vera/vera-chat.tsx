@@ -59,6 +59,9 @@ export function VeraChat({ opening }: { opening: VeraOpeningSeed }) {
 
   function turn(text: string) {
     const history: VeraMessage[] = messages.map((m) => ({ role: m.from === 'you' ? 'user' : 'assistant', text: m.text }))
+    // Mark the chat as "unclosed" so the launcher pulses if they navigate away mid-
+    // conversation (cleared when they reopen Vera).
+    if (text) { try { localStorage.setItem('fq_vera_unread', '1') } catch {} }
     if (text) setMessages((m) => [...m, { from: 'you', text }])
     setProposals([])
     setSuggestions([])

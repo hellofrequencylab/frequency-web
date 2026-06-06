@@ -1,11 +1,12 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { MapPin, Megaphone, Zap } from 'lucide-react'
+import { MapPin, Megaphone, Zap, Gem, Flame, Compass, ArrowRight } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getInitials, relativeTime } from '@/lib/utils'
-import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
+import { RANK_LABELS, seasonRankStyle, rankForZaps, SEASON_RANKS, type SeasonRank } from '@/lib/season-ranks'
 import { isOnline, ONLINE_MS } from '@/lib/presence'
 import { getRecentDispatchesForProfile } from '@/lib/dispatches'
+import { getOnboardingStatus } from '@/lib/onboarding/status'
 import { WidgetCard } from '@/components/modules/module-card'
 
 // The rail's PAGE PANELS (ADR-161) — contextual stat cards keyed into the right rail
@@ -249,6 +250,77 @@ export async function LeaderboardPanel() {
         <Link href="/crew/leaderboard" className="text-[13px] font-semibold text-primary-strong hover:text-primary-hover transition-colors">
           Full leaderboard →
         </Link>
+      </div>
+    </WidgetCard>
+  )
+}
+
+// ── Control center (STANDING, top of the rail) ───────────────────────────────
+// Always-on "where am I in the Quest" cockpit: the next onboarding/setup step (with
+// a gems nudge) when there's one, else a keep-climbing line, plus live rank progress
+// and the streak. Pinned to the TOP of the rail on every page (right-sidebar.tsx).
+export async function ControlCenterPanel({ profileId }: { profileId: string }) {
+  const [status, prof] = await Promise.all([
+    getOnboardingStatus(profileId).catch(() => null),
+    createAdminClient().from('profiles').select('current_season_zaps, current_streak').eq('id', profileId).maybeSingle(),
+  ])
+  const p = prof.data as { current_season_zaps?: number; current_streak?: number } | null
+  const zaps = p?.current_season_zaps ?? 0
+  const streak = p?.current_streak ?? 0
+  const rank = rankForZaps(zaps)
+  const idx = SEASON_RANKS.findIndex((r) => r.rank === rank)
+  const cur = idx < 0 ? 0 : idx
+  const next = SEASON_RANKS[cur + 1]
+  const curMin = SEASON_RANKS[cur]?.minZaps ?? 0
+  const pct = next && next.minZaps > curMin ? Math.round(((zaps - curMin) / (next.minZaps - curMin)) * 100) : 100
+  const nextStep = status?.current ?? null
+
+  return (
+    <WidgetCard title="Your Quest">
+      {nextStep ? (
+        <Link
+          href={nextStep.href}
+          className="group block rounded-xl border border-broadcast/30 bg-broadcast-bg/30 p-3 transition-colors hover:bg-broadcast-bg/50"
+        >
+          <p className="flex items-center justify-between text-2xs font-semibold uppercase tracking-wide text-broadcast-strong">
+            <span className="inline-flex items-center gap-1"><Compass className="h-3 w-3" /> Next step</span>
+            {status && <span className="tabular-nums">{status.pct}%</span>}
+          </p>
+          <p className="mt-1 text-sm font-bold leading-snug text-text">{nextStep.headline}</p>
+          <p className="mt-0.5 line-clamp-2 text-xs text-muted">{nextStep.blurb}</p>
+          <p className="mt-2 flex items-center justify-between">
+            <span className="inline-flex items-center gap-1 text-2xs font-semibold text-signal">
+              <Gem className="h-3 w-3" /> Earn gems for finishing
+            </span>
+            <span className="inline-flex items-center gap-0.5 text-2xs font-semibold text-broadcast-strong">
+              {nextStep.cta} <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+            </span>
+          </p>
+        </Link>
+      ) : (
+        <p className="rounded-xl bg-surface-elevated/50 px-3 py-2.5 text-xs text-muted">
+          You’re all set up — keep your streak alive and climb the ranks.
+        </p>
+      )}
+
+      {/* Rank progress + streak */}
+      <div className="mt-3 space-y-1.5 px-1">
+        <div className="flex items-center justify-between gap-2 text-2xs">
+          <span className="rank-badge font-bold leading-tight" style={seasonRankStyle(rank)}>
+            {RANK_LABELS[rank] ?? rank}
+          </span>
+          <span className="text-subtle">
+            {next ? <>{(next.minZaps - zaps).toLocaleString()} ⚡ to {next.label}</> : 'Max rank'}
+          </span>
+        </div>
+        <div className="h-1.5 overflow-hidden rounded-full bg-surface-elevated">
+          <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+        </div>
+        {streak > 0 && (
+          <p className="flex items-center gap-1 text-2xs font-semibold text-primary-strong">
+            <Flame className="h-3 w-3" /> {streak}-day streak — keep it going
+          </p>
+        )}
       </div>
     </WidgetCard>
   )
