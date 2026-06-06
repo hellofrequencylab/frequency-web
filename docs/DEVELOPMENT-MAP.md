@@ -493,18 +493,21 @@ on the real domain. **Depends on:** nothing (all in-codebase closeouts).
       area with `admin-community`/`admin-structure`/`admin-insights`/`admin-vera`/`admin-platform`),
       and the sub-nav shows only the active category's pages. No route moves, no gate change — just
       chrome + organization unified.
-- [~] **Embedded admin console** (ADR-133/137/138/149 · [EMBEDDED-ADMIN.md](EMBEDDED-ADMIN.md)) — the
-      successor to the catalog above: `/admin` is **absorbed into the page**. **Edit** opens a
-      drill-down **console** in the `PageAdminDock` (`components/admin/sidebar/admin-console.tsx`),
-      categories driven by the same role-gated catalog (tiers auto-filter; no `/admin` trip). **16
-      surfaces ported in place** — Moderation · Broadcasts · Gamification · Crew tasks · Members ·
-      Roles · Insights (summary) · QR generator · Demo · AI controls · Vera config · Circles ·
-      Channels · Events · Hubs · Nexuses (each: a loader + gated action + a module reusing the existing
-      admin UI; inlined pages were first extracted into a shared component). **Remaining, in priority
-      order:** ① the read-only **Insights dashboards** (engagement full / intel / outcomes / AI read /
-      segments) + **Help gaps** — embed a compact read or keep the deep-link per surface; ② the
-      server-composed **`@admin` parallel-route slot** (move modules off the client on-open fetch);
-      ③ the rest of the inline **tuning** layer (Layout, Vera-tone). Then `/admin/*` retires.
+- [~] **Embedded admin — three layers** (ADR-133/137/138/149/**153** · [EMBEDDED-ADMIN.md](EMBEDDED-ADMIN.md))
+      — the successor to the catalog above. ✅ **Layer 1 — catalog spine** (`admin/sections.ts`, one
+      declaration per surface, the single source of truth). ✅ **Layer 2 — nine full-page suites**
+      (Spaces · Engage · Comms · Safety · Reach · People · Insights · Vera · System), each a full page
+      whose links are its **top-bar sub-nav tabs** + a launchpad section, role-telescoped — this is
+      where the read-only **Insights dashboards** (engagement / intel / outcomes / AI read / segments /
+      expansion) and **Help gaps** now live. ✅ **Layer 3 — the per-page sidebar console** trimmed to
+      **light page-globals** (Basics settings + this page's QR) that **link back to each parent suite +
+      its sub-item tabs**; the 16 in-sidebar modules + their loaders (40 files) were removed. The
+      `/admin/*` routes remain as the suites' pages (no longer deep-linked from the sidebar). **Remaining
+      (polish, non-blocking):** ① the inline **tuning** layer — the **Layout / page-template** editor +
+      the **Vera-tone** tuner (still "Soon" in the console); ② more sidebar **page-globals** — a per-page
+      **Stats** read + **adjustments**; ③ the server-composed **`@admin` parallel-route slot** (move the
+      page-global modules off the client on-open fetch); ④ optionally align the left-rail "Manage" labels
+      to the suite names.
 - [x] **Onboarding → Vera handoff + activation instrumentation** (ADR-074/075): induction now redirects
       to **`/onboarding/vera`** (the Vera concierge — the primary new-member path), with a feed
       first-run banner catching anyone who skips; the dead `/feed?intro=1` param is retired. The
