@@ -16,9 +16,10 @@ greenfield initiative (G).
 The current build order for the progress / streak / disclosure arc and the practice-engine
 follow-ups it surfaced. Full detail lives in the lettered sections below — this is the ranking.
 
-**P0 — decide first**
-1. **S1 · Unify Quests + Journeys** 🔴 *(§S, decision)* — a fork that shapes the two journey
-   authoring/moderation items below; resolve it before building them.
+**P0 — decided ✅ (2026-06-06, ADR-149): unify into one FREE Journey concept.**
+1. **S1 · Unify Quests + Journeys** — Phase 1 *shipped* (paywall removed everywhere; one
+   concept). Phase 2 *(§S, M)* — merge the two table families into one (the practice-combo vs
+   action-chain modeling fork); this is what now gates the journey authoring/moderation items.
 
 **P1 — finish the shipped arc (ready, high value, low risk)**
 2. **Stage-driven disclosure → crew dashboard + surfaces** *(§F, ADR-146)* — the spine is
@@ -367,13 +368,16 @@ inline path (wizard is an optional guided alt); RLS isolation between `journey_p
 > progress ring + stepper, obscured force-complete, graduates to the tracker — ✅.
 > **Still open:** S4 (demo box), S6 (tiered post options), broadcast-surface + label sweeps.
 
-- [ ] **S1 · Unify Quests + Journeys** 🔴 *decision needed (reverses ADR-087).* The owner's
-  model: *"The Quest"* is the game; a **Journey** is a set of practices you progress through —
-  Quests and Journeys are the **same unit**. ADR-087 split them (Journeys = open library;
-  Quests = the gamified `quest_chains` engine). Resolution to confirm: make **Journey** the one
-  unit (open + trackable), keep **"The Quest"** as the game/section name, and fold the
-  `quest_chains` engine back into the Journeys concept. *(Naming has flip-flopped quest→arc→
-  journey→quest; confirm before another rename.)* (M)
+- [~] **S1 · Unify Quests + Journeys** — ✅ *decided + Phase 1 shipped (ADR-149, 2026-06-06):*
+  one **Journey** concept, **free for everyone**; "The Quest" stays the game. Phase 1 removed
+  the paywall on every Journey surface (adopt/fork/publish on `/journeys`; start on
+  `/crew/quests`, retitled "Seasonal Journeys" + cross-linked). **Phase 2 (remaining, M):** merge
+  the table families. The fork to settle — `journey_plans` are **practice-combos** (progress from
+  `practice_logs`) while `quest_chains` are **action-chains** (attend/post/refer + `advanceQuests`
+  rewards), so either (a) generalize a Journey step to *practice OR action-criteria*, or (b)
+  re-express seasonal content as practice-combo Journeys and let action-chains live on as
+  `season_challenges`. Then GLOSSARY/THE-QUEST/DATABASE get their terminology pass. *(No more
+  renames — "Journey" is the kept name.)*
 - [ ] **S2 · Streak box: half-height when collapsed** — tighten `PracticePrompt` collapsed state. (S)
 - [ ] **S3 · Broadcast color → light blue** — introduce a `broadcast` blue token (complements the
   site orange) and apply to dispatch/broadcast surfaces (currently the teal `signal`). No hardcoded

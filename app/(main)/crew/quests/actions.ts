@@ -164,13 +164,10 @@ export async function getQuestsData(): Promise<{ pillars: QuestPillar[]; isCrew:
   return { pillars, isCrew }
 }
 
-/** Start (join) a seasonal Journey — Crew-only (free in Beta). Idempotent. */
+/** Start (join) a seasonal Journey — free for every member (ADR-149). Idempotent. */
 export async function startQuest(chainId: string): Promise<ActionResult> {
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Not authenticated')
-
-  const caller = await getCallerProfile()
-  if (!caller || !atLeastRole(caller.community_role, 'crew')) return fail('Journeys are a Crew feature.')
 
   const admin = createAdminClient()
   const { data: chain } = await admin.from('quest_chains').select('id').eq('id', chainId).maybeSingle()

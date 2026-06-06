@@ -10,6 +10,13 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ## [Unreleased]
 
+### Changed
+
+- **Journeys are now free for everyone**: Quests and Journeys are one thing now — a
+  **Journey** is simply a set of practices you move through. Every Journey is free to start,
+  adopt, build, remix and share, including the official seasonal tracks. (The Quest stays the
+  game; only the Store and your public rank badge are still Crew perks.)
+
 ### Added
 
 - **A home screen that grows with you**: your home now shows your **stage** — from finding

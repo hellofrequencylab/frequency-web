@@ -4658,3 +4658,33 @@ inbox (rejected — reuse DMs/profile, don't fork messaging).
 Follow-ons: precise "near me" geo sort (lat/lng columns already present), listing edit via the
 Studio window (status/delete shipped), images, and a density read-model feeding "where to seed
 the next third space."
+
+## ADR-149: Unify Quests + Journeys into one free "Journey" concept (reverses ADR-087's paywall)
+
+**Status:** Accepted · Phase 1 (ungating) shipped; Phase 2 (table merge) pending
+**Context:** ADR-087 split the word: **Journeys** = the open, free, member-built practice-combo
+library (`journey_plans`); **Quests** = the gamified, Crew-gated, seasonal engine
+(`quest_chains`). In practice this produced *two* things both labelled "Journeys" (the
+`/crew/quests` page is literally titled "Journeys"), and a paywall the owner no longer wants.
+The owner's model: **"The Quest" is the game; a Journey is a set of practices you progress
+through — they are the same unit, and every Journey is free.**
+**Decision:** Collapse to **one concept — the Journey — free for everyone.** "The Quest"
+remains the name of the game/season layer (ranks · zaps · gems · store · challenges), whose
+own gating (endorsement/spend, ADR-141) is unchanged. **Phase 1 (shipped):** remove the Crew
+paywall from every Journey surface — adopting/forking/publishing community Journeys
+(`/journeys`) and starting seasonal Journeys (`/crew/quests`) are now free for all members;
+the upgrade lightbox / preview banner / locked variants are gone; `/crew/quests` is retitled
+**"Seasonal Journeys"** and cross-linked with the community library as one concept. No schema
+change. **Phase 2 (pending):** merge the two table families into one. The fork to settle:
+`journey_plans` are **practice-combos** (progress derived from `practice_logs`, ADR-144) while
+`quest_chains` are **action-chains** (attend/post/refer steps with `advanceQuests` rewards) —
+so unifying the data model means either (a) generalizing a Journey step to be *practice OR
+action-criteria*, or (b) re-expressing seasonal content as practice-combo Journeys and letting
+the action-chain mechanics live on as `season_challenges`/achievements. The seed content is
+small (≈6 chains), so either is tractable.
+**Consequences:** Supersedes ADR-087's premium-Journeys economics and the
+ECONOMY-AND-JOURNEYS "premium marquee" framing (updated). The naming flip-flop
+(quest→arc→journey→quest) does **not** reopen — "Journey" is already the open-library name; we
+widen it, coining nothing. GLOSSARY.md / THE-QUEST.md / DATABASE.md get their full pass when
+the Phase 2 table merge lands; until then the `quest_*` tables remain as the seasonal-Journey
+store. Member how-to + CHANGELOG updated to "free".
