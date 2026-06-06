@@ -132,9 +132,11 @@ follow-ups it surfaced. Full detail lives in the lettered sections below — thi
   now reveals by member stage; extend the same `stageIndex` gate (from `getMemberProgress`)
   to the crew dashboard, profile, and rails so the whole product opens up as a member climbs.
   The spine is built — this is applying it. (M)
-- [ ] **Wire the login / activity streak.** The `login` streak type exists end-to-end but
-  nothing triggers it; tick it on the first authenticated visit per day
-  (`recordStreakActivity(profileId, 'login')`). (S)
+- [x] **Wire the login / activity streak — ✅ done.** A daily check-in (`app/(main)/checkin-actions.ts`
+  + `components/daily-check-in.tsx`, mounted in the shell) fires on the first authenticated visit each
+  day: pays the `daily_login` gems + ticks the `login` streak, idempotent via
+  `profiles.meta.daily_checkin_date`, with a "welcome back" toast. *Tweaks:* local-timezone day
+  boundary (UTC today); a prominent streak counter in the shell; reuse the shared toast system.
 - [ ] **Daily-streak achievement badges.** The catalog's streak badges are still the weekly
   `attendance` ones; add badges for the daily practice streak (3/7/30/100/365) so those
   milestone moments also live in the Vault. Milestone *zaps* already pay (ADR-145). (S)
