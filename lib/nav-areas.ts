@@ -87,10 +87,13 @@ export const NAV_AREAS: readonly NavArea[] = [
   { key: 'connections',     href: '/connections', label: 'Profiles',  section: 'Studio', defaultAccess: 'host', staffDomain: 'profiles' },
   { key: 'admin-qr',        href: '/admin/qr',    label: 'QR Studio', section: 'Studio', defaultAccess: 'host' },
   { key: 'admin-structure', href: '/admin/hubs',  label: 'Hubs & Nexuses', section: 'Studio', defaultAccess: 'guide' },
-  { key: 'marketing',       href: '/marketing',   label: 'Marketing', section: 'Studio', defaultAccess: 'admin', staffDomain: 'marketing' },
+  // Growth Studio absorbs the old Marketing suite (IA §10.2): pages · onboarding ·
+  // acquisition · pipeline · the marketing channels. The standalone Marketing item
+  // retired; reachable by community admin+ OR a staff role with the 'marketing'
+  // capability — the same gate the suite used (lib/page-editor/guard.ts).
+  { key: 'growth',          href: '/growth',      label: 'Growth Studio', section: 'Studio', defaultAccess: 'admin', staffDomain: 'marketing' },
 
   // ── Platform → sensitive operator keys (janitor). ────────────────────────────
-  { key: 'growth',          href: '/growth',           label: 'Growth Studio', section: 'Platform', defaultAccess: 'janitor' },
   { key: 'admin-insights',  href: '/admin/engagement', label: 'Insights', section: 'Platform', defaultAccess: 'janitor' },
   { key: 'admin-vera',      href: '/admin/vera',       label: 'Vera',     section: 'Platform', defaultAccess: 'janitor' },
   { key: 'admin-platform',  href: '/admin/members',    label: 'Members',  section: 'Platform', defaultAccess: 'janitor' },
