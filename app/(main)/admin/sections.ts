@@ -3,9 +3,13 @@
 // (sub-nav.tsx) and the Overview launchpad (page.tsx) render from this, so a
 // feature is declared in exactly ONE place and can never be orphaned again.
 //
-// Groups telescope by role: a host sees Community; a guide adds Structure; a
-// janitor adds Insights, Vera, and Platform. That mirrors the permission model —
-// each role manages the surfaces for the people under them (docs/GLOSSARY.md).
+// Each group is a **suite** (ADR-153): a full-page admin area whose links render
+// as the top-bar sub-nav tabs, and as a launchpad section. Nine domain suites,
+// telescoped by role — a host sees Spaces / Engage / Comms / Safety / Reach; a
+// guide/mentor adds the Hubs/Nexuses tabs; a janitor adds People / Insights / Vera
+// / System. Each manages the surfaces for the people under them (docs/GLOSSARY.md).
+// The per-page sidebar console links *back* into these suites (it no longer hosts
+// the heavy suites itself).
 
 import {
   LayoutDashboard,
@@ -31,6 +35,7 @@ import {
   Shield,
   QrCode,
   Power,
+  FileText,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
@@ -64,28 +69,60 @@ export interface AdminGroup {
 
 export const ADMIN_GROUPS: readonly AdminGroup[] = [
   {
-    key: 'community',
-    label: 'Community',
-    blurb: 'The spaces and people you steward day to day.',
+    key: 'spaces',
+    label: 'Spaces',
+    blurb: 'The circles, channels, and events you run — and the place tree they cluster into.',
     links: [
       { href: '/admin', label: 'Overview', desc: 'Your dashboard at a glance.', Icon: LayoutDashboard, min: 'host', staffDomain: 'community', exact: true },
       { href: '/admin/circles', label: 'Circles', desc: 'Create, edit, and archive circles.', Icon: CircleDot, min: 'host', staffDomain: 'community' },
       { href: '/admin/channels', label: 'Channels', desc: 'Interest and event channels.', Icon: Radio, min: 'host', staffDomain: 'community' },
       { href: '/admin/events', label: 'Events', desc: 'Gatherings across your circles.', Icon: CalendarDays, min: 'host', staffDomain: 'community' },
-      { href: '/admin/dispatches', label: 'Broadcasts', desc: 'Posts and polls to your people.', Icon: Megaphone, min: 'host', staffDomain: 'community' },
+      { href: '/admin/hubs', label: 'Hubs', desc: 'Clusters of circles in an area.', Icon: Building2, min: 'guide', staffDomain: 'structure' },
+      { href: '/admin/nexuses', label: 'Nexuses', desc: 'Regions that hold hubs.', Icon: Network, min: 'mentor', staffDomain: 'structure' },
+    ],
+  },
+  {
+    key: 'engage',
+    label: 'Engage',
+    blurb: 'The game that drives members to show up — seasons, tasks, and leader training.',
+    links: [
+      { href: '/admin/gamification', label: 'Gamification', desc: 'Achievements, seasons, rewards.', Icon: Trophy, min: 'host', staffDomain: 'community' },
       { href: '/admin/crew-tasks', label: 'Crew tasks', desc: 'Define and verify member tasks.', Icon: ClipboardList, min: 'host', staffDomain: 'community' },
       { href: '/programs', label: 'Leader training', desc: 'Materials to start and run a circle.', Icon: BookOpen, min: 'host', staffDomain: 'community' },
-      { href: '/admin/gamification', label: 'Gamification', desc: 'Achievements, seasons, rewards.', Icon: Trophy, min: 'host', staffDomain: 'community' },
+    ],
+  },
+  {
+    key: 'comms',
+    label: 'Comms',
+    blurb: 'Reach your people — broadcasts, posts, and polls.',
+    links: [
+      { href: '/admin/dispatches', label: 'Broadcasts', desc: 'Posts and polls to your people.', Icon: Megaphone, min: 'host', staffDomain: 'community' },
+    ],
+  },
+  {
+    key: 'safety',
+    label: 'Safety',
+    blurb: 'Keep the community healthy — reports and moderation.',
+    links: [
       { href: '/admin/moderation', label: 'Moderation', desc: 'Review and resolve reports.', Icon: ShieldAlert, min: 'host', staffDomain: 'community' },
     ],
   },
   {
-    key: 'structure',
-    label: 'Structure',
-    blurb: 'The place tree under you — hubs and nexuses.',
+    key: 'reach',
+    label: 'Reach',
+    blurb: 'How people find and enter your spaces — every QR code and its scans.',
     links: [
-      { href: '/admin/hubs', label: 'Hubs', desc: 'Clusters of circles in an area.', Icon: Building2, min: 'guide', staffDomain: 'structure' },
-      { href: '/admin/nexuses', label: 'Nexuses', desc: 'Regions that hold hubs.', Icon: Network, min: 'mentor', staffDomain: 'structure' },
+      { href: '/admin/qr', label: 'QR Studio', desc: 'Generate, design, and manage all QR codes.', Icon: QrCode, min: 'host', staffDomain: 'qr' },
+      { href: '/admin/qr/stats', label: 'QR stats', desc: 'Scans, locator map, and the full QR dashboard.', Icon: Activity, min: 'host', staffDomain: 'qr' },
+    ],
+  },
+  {
+    key: 'people',
+    label: 'People',
+    blurb: 'The roster and who can do what.',
+    links: [
+      { href: '/admin/members', label: 'Members', desc: 'Roster, subscribers, and accounts.', Icon: Users, min: 'janitor' },
+      { href: '/admin/roles', label: 'Roles', desc: 'Assign roles and the permission grid.', Icon: Shield, min: 'janitor' },
     ],
   },
   {
@@ -111,31 +148,21 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     ],
   },
   {
-    key: 'platform',
-    label: 'Platform',
-    blurb: 'The sensitive keys — handled by janitors only.',
+    key: 'system',
+    label: 'System',
+    blurb: 'The sensitive platform keys — AI, demo content, and public pages.',
     links: [
-      { href: '/admin/members', label: 'Members', desc: 'Roster, subscribers, and accounts.', Icon: Users, min: 'janitor' },
-      { href: '/admin/roles', label: 'Roles', desc: 'Assign roles and the permission grid.', Icon: Shield, min: 'janitor' },
       { href: '/admin/ai', label: 'AI controls', desc: 'Turn AI on or off platform-wide; usage and audit.', Icon: Power, min: 'janitor' },
       { href: '/admin/demo', label: 'Demo Studio', desc: 'Generate, manage, and purge seeded demo content.', Icon: Sparkles, min: 'janitor' },
-    ],
-  },
-  {
-    key: 'qr',
-    label: 'QR Studio',
-    blurb: 'Generate, design, and track every code — members, links, check-ins, campaigns.',
-    links: [
-      { href: '/admin/qr', label: 'QR Studio', desc: 'Generate, design, and manage all QR codes.', Icon: QrCode, min: 'host', staffDomain: 'qr' },
-      { href: '/admin/qr/stats', label: 'QR stats', desc: 'Scans, locator map, and the full QR dashboard.', Icon: Activity, min: 'host', staffDomain: 'qr' },
+      { href: '/pages', label: 'Pages', desc: 'Edit public pages and content blocks.', Icon: FileText, min: 'janitor' },
     ],
   },
 ] as const
 
-/** The admin group that owns a path — by longest matching link href (so `/admin`
- *  resolves to Community, `/admin/hubs` to Structure, etc.). Used to drive the
- *  per-category sub-tabs (layer 2) from the current URL. Falls back to the first
- *  visible group. */
+/** The suite that owns a path — by longest matching link href (so `/admin/hubs`
+ *  resolves to Spaces, `/admin/qr/stats` to Reach, etc.). Drives the suite's
+ *  top-bar sub-nav tabs (layer 2) from the current URL. Falls back to the first
+ *  visible suite. */
 export function groupForPath(pathname: string, role: CommunityRole, staffRole: StaffRole | null = null): AdminGroup {
   const groups = visibleGroups(role, staffRole)
   let best: AdminGroup | null = null
