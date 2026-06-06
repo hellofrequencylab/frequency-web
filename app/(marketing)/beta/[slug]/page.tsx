@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { PhotoHero, Statement, Button } from '@/components/marketing/marketing-ui'
 import { BETA_SEQUENCES, getSequence } from '@/lib/onboarding/beta-sequences'
+import { getSplashOverride } from '@/lib/onboarding/sequence-overrides'
 
 // Per-audience beta splash. Each sequence (early-adopter / personal / founding-
 // partner) gets a shareable URL (/beta/<slug>) whose copy + CTA carry the audience
@@ -19,11 +20,12 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params
   const seq = BETA_SEQUENCES[slug]
   if (!seq) return {}
+  const splash = { ...seq.splash, ...(await getSplashOverride(slug)) }
   return {
-    title: seq.splash.headline,
-    description: seq.splash.body,
+    title: splash.headline,
+    description: splash.body,
     alternates: { canonical: `/beta/${slug}` },
-    openGraph: { title: seq.splash.headline, description: seq.splash.body, url: `/beta/${slug}` },
+    openGraph: { title: splash.headline, description: splash.body, url: `/beta/${slug}` },
   }
 }
 
@@ -39,16 +41,17 @@ export default async function BetaSequenceSplash({ params }: { params: Promise<{
   const { slug } = await params
   if (!BETA_SEQUENCES[slug]) notFound()
   const seq = getSequence(slug)
+  const splash = { ...seq.splash, ...(await getSplashOverride(slug)) }
   const start = `/onboarding/beta?seq=${seq.slug}`
 
   return (
     <>
       <PhotoHero
-        image={seq.splash.image}
-        alt={seq.splash.imageAlt}
-        eyebrow={seq.splash.eyebrow}
-        title={seq.splash.headline}
-        subtitle={seq.splash.body}
+        image={splash.image}
+        alt={splash.imageAlt}
+        eyebrow={splash.eyebrow}
+        title={splash.headline}
+        subtitle={splash.body}
         minHeight="screen"
         footer={
           <p className="mt-8 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-white/60">
@@ -59,11 +62,11 @@ export default async function BetaSequenceSplash({ params }: { params: Promise<{
         }
       >
         <Button href={start} size="lg">
-          {seq.splash.cta}
+          {splash.cta}
         </Button>
       </PhotoHero>
 
-      <Statement tone="canvas">{accent(seq.splash.statement)}</Statement>
+      <Statement tone="canvas">{accent(splash.statement)}</Statement>
 
       <section className="bg-surface px-6 py-16 text-center sm:py-20">
         <p className="mx-auto max-w-xl text-lg leading-relaxed text-muted">
@@ -71,7 +74,7 @@ export default async function BetaSequenceSplash({ params }: { params: Promise<{
         </p>
         <div className="mt-7">
           <Button href={start} size="md">
-            {seq.splash.cta}
+            {splash.cta}
           </Button>
         </div>
       </section>
