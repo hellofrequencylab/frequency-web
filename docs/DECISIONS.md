@@ -4536,26 +4536,6 @@ universal-entity design, soft-hide/suspension, and FK-on-delete conventions (DAT
 the Circle/Hub/Nexus/Outpost hierarchy and role ladder (GLOSSARY.md); cron, notifications,
 email, push, and SEO/AEO (ARCHITECTURE.md + ROADMAP.md / SEO-AEO-PLAN.md).
 
----
-
-## ADR-143: Shared in-app UI primitives + named sub-xs type scale + token-only color
-
-**Status:** Accepted · corroborated by `components/ui/{field,button,dialog}.tsx`,
-`lib/utils.ts` (`cn`), and `app/globals.css` (`@utility text-2xs/text-3xs`)
-**Context:** A design-system audit found the in-app UI inconsistent: ~40 files hand-rolled
-form-field and button class strings, 5+ bespoke modal overlays, ~195 uses of the arbitrary
-`text-[10/11px]` size anti-pattern, and raw-palette colors (`indigo-600`, `accent-indigo-600`)
-instead of DAWN tokens. No `Button`/`Input`/`Dialog` primitive and no `cn()` helper existed.
-**Decision:** Introduce shared primitives + conventions: `Input`/`Textarea`/`Label`
-(+ `fieldClasses`/`labelClasses` for a native `<select>`), `Button` (variant × size),
-`Dialog` (one backdrop · ESC · scroll-lock · aria overlay shell), and `cn()`. Add named
-sub-xs steps `text-2xs` (11px) / `text-3xs` (10px) as `@utility` rules (font-size only, so
-no line-height is coupled). In-app colors are DAWN tokens only.
-**Consequences:** New code composes these — no hand-rolled fields/buttons/modals, no
-`text-[Npx]`, no raw palette. Existing call sites migrate opportunistically (the four admin
-settings-modules, `create-modal`, and `compose-lightbox` already do). The marketing kit's
-own `Button` (DESIGN-LANGUAGE.md) is a separate surface, unchanged. See PAGE-FRAMEWORK.md §8.
-
 ## ADR-144: Active-Journey progress derived from the practice log (no schema)
 
 **Status:** Accepted · corroborated by `lib/journey-plans.ts`
@@ -4621,3 +4601,24 @@ next gate, and a one-time `StageCelebration` fires on advance (acknowledged via
 without touching surfaces. Reads stay pure (the celebration acknowledges itself client-side).
 No schema beyond the `meta.progressStage` marker. The crew dashboard and other surfaces can
 adopt the same `stageIndex` gate later. See `lib/member-progress.ts`.
+
+## ADR-147: Shared in-app UI primitives + named sub-xs type scale + token-only color
+
+> Renumbered from ADR-143 (2026-06-06): the number collided with a parallel branch's
+> Studio "compose, not configure" decision, which keeps ADR-143.
+
+**Status:** Accepted · corroborated by `components/ui/{field,button,dialog}.tsx`,
+`lib/utils.ts` (`cn`), and `app/globals.css` (`@utility text-2xs/text-3xs`)
+**Context:** A design-system audit found the in-app UI inconsistent: ~40 files hand-rolled
+form-field and button class strings, 5+ bespoke modal overlays, ~195 uses of the arbitrary
+`text-[10/11px]` size anti-pattern, and raw-palette colors (`indigo-600`, `accent-indigo-600`)
+instead of DAWN tokens. No `Button`/`Input`/`Dialog` primitive and no `cn()` helper existed.
+**Decision:** Introduce shared primitives + conventions: `Input`/`Textarea`/`Label`
+(+ `fieldClasses`/`labelClasses` for a native `<select>`), `Button` (variant × size),
+`Dialog` (one backdrop · ESC · scroll-lock · aria overlay shell), and `cn()`. Add named
+sub-xs steps `text-2xs` (11px) / `text-3xs` (10px) as `@utility` rules (font-size only, so
+no line-height is coupled). In-app colors are DAWN tokens only.
+**Consequences:** New code composes these — no hand-rolled fields/buttons/modals, no
+`text-[Npx]`, no raw palette. Existing call sites migrate opportunistically (the four admin
+settings-modules, `create-modal`, and `compose-lightbox` already do). The marketing kit's
+own `Button` (DESIGN-LANGUAGE.md) is a separate surface, unchanged. See PAGE-FRAMEWORK.md §8.
