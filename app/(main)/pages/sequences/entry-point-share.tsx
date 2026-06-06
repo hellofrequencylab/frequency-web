@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Link2, Check, Download, ExternalLink } from 'lucide-react'
+import { Link2, Check, Download, ExternalLink, QrCode, ChevronDown, ChevronUp } from 'lucide-react'
 
 type Mode = 'splash' | 'induction'
 
@@ -32,6 +32,10 @@ export function EntryPointShare({
 }) {
   const [mode, setMode] = useState<Mode>('splash')
   const [copied, setCopied] = useState(false)
+  // The QR + admin options stay COLLAPSED on open — the card leads with the splash
+  // preview, not a wall of controls. Closed = a one-line share menu (copy the link);
+  // expanded = the admin options (incoming-point toggle + QR variants + downloads).
+  const [expanded, setExpanded] = useState(false)
 
   // Remember the chosen incoming point per sequence (this browser only). Restore
   // after mount, deferred a frame so SSR + first client render stay 'splash' (no
@@ -82,8 +86,46 @@ export function EntryPointShare({
 
   const btn = 'inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated'
 
+  // Collapsed (default): a one-line share menu — the link + copy, and a prompt to
+  // reveal the QR & admin options.
+  if (!expanded) {
+    return (
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-surface-elevated/40 px-3 py-2">
+        <Link2 className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
+        <code className="min-w-0 flex-1 truncate font-mono text-xs text-muted" title={shareUrl}>
+          {shareUrl}
+        </code>
+        <button type="button" onClick={copy} className={btn} title={`Copy ${shareUrl}`}>
+          {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Link2 className="h-3.5 w-3.5" />}
+          {copied ? 'Copied!' : 'Copy link'}
+        </button>
+        <button
+          type="button"
+          onClick={() => setExpanded(true)}
+          aria-expanded={false}
+          className={`${btn} text-primary-strong hover:text-primary-strong`}
+        >
+          <QrCode className="h-3.5 w-3.5" /> QR &amp; options <ChevronDown className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    )
+  }
+
+  // Expanded: the admin options — incoming-point toggle, the live QR, and downloads.
   return (
-    <div className="flex flex-col gap-4 rounded-xl border border-border bg-surface-elevated/40 p-4 sm:flex-row sm:items-stretch">
+    <div className="rounded-xl border border-border bg-surface-elevated/40 p-4">
+      <div className="mb-3 flex items-center justify-between">
+        <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Entry point · share &amp; QR</p>
+        <button
+          type="button"
+          onClick={() => setExpanded(false)}
+          aria-expanded
+          className="inline-flex items-center gap-1 text-2xs font-semibold text-muted transition-colors hover:text-text"
+        >
+          Collapse <ChevronUp className="h-3.5 w-3.5" />
+        </button>
+      </div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-stretch">
       {/* QR for the active incoming point */}
       <div
         className="flex h-[160px] w-[160px] shrink-0 items-center justify-center self-center rounded-xl bg-white p-2 ring-1 ring-border [&>svg]:h-full [&>svg]:w-full"
@@ -129,6 +171,7 @@ export function EntryPointShare({
             <ExternalLink className="h-3.5 w-3.5" /> Open
           </a>
         </div>
+      </div>
       </div>
     </div>
   )

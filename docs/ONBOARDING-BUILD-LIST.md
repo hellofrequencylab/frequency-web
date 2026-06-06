@@ -434,12 +434,13 @@ keep scope rails. **Open:** "Around You" naming. **Sequence:** 10.1 → 10.2 →
   as the rest of the app (members flagged the "missing right column" on these). FOCUS keeps only genuine
   single-task surfaces (settings forms, /codes card, founder/training/journal, /upgrade, /g//n claims)
   plus the compose/edit patterns.
-- ✅ **Marketing channels folded into Growth Studio (visible half of 10.2).** `app/(main)/growth/page.tsx`
-  Marketing group expanded from one "hub" link into the individual channels (Campaigns · Funnels ·
-  Nurture · Automations · Analytics · Market read · Beta · Agent). **Open decision (blocks full
-  disband):** `/growth` is janitor-only but `/marketing` is admin + `staffDomain:'marketing'` — removing
-  the standalone Marketing nav item would cut marketing-staff access, so the nav item stays until we pick
-  a gating model.
+- ✅ **10.2 — Marketing suite disbanded into Growth Studio.** `app/(main)/growth/page.tsx` lists the
+  channels directly (Campaigns · Funnels · Nurture · Automations · Analytics · Market read · Beta ·
+  Agent). The standalone **Marketing** nav item retired; `growth` moved into the **Studio** section with
+  `defaultAccess:'admin'` + `staffDomain:'marketing'`. New shared gate `canAccessGrowthStudio()`
+  (`lib/page-editor/guard.ts`) — community admin/janitor OR marketing-staff — so no one loses access
+  (decision: *open Growth Studio to marketing staff*). `/marketing/*` routes still resolve (reached via
+  Growth Studio); their pages keep their own staff gate.
 - ✅ **Feed/comment + capture polish.** Post action line consolidated: reactions · comment · zaps now sit
   on ONE right-aligned line under the content (`PostReplies` owns the row via `reactions`/`reward`
   slots); the reply thread's vertical rule removed (`post-card.tsx`, `post-replies.tsx`). Mobile Capture
@@ -447,6 +448,12 @@ keep scope rails. **Open:** "Around You" naming. **Sequence:** 10.1 → 10.2 →
   Note · Connect** (inline Photo dropped — it lives in the full-screen camera); the bottom-nav Capture
   button opens the full-screen surface on **Post** (`capture-box.tsx`, `app-shell.tsx`). Left profile
   quick-actions dock is now **click-only** (no scroll/hover reveal).
+- ✅ **Onboarding sequences — QR section collapses; editing confirmed.**
+  `app/(main)/pages/sequences/entry-point-share.tsx` now opens **collapsed** to a one-line share menu
+  (link + copy) with a "QR & options" prompt; expanding reveals the admin options (incoming-point toggle,
+  live QR, PNG/SVG downloads). Per-sequence editing already ships (the "Edit splash" link →
+  `/pages/sequences/[slug]/edit`), and the catalog is reachable from **Growth Studio › Pages &
+  onboarding**, so positioning + editability are in place.
 - ⏳ **Entry points "show my past ones" — diagnosed, deferred.** DB check: the account owns **0**
   `qr_codes`; the one code in the DB is `owner_profile_id = NULL`, no `template_id` (made in the older QR
   flow). The list is correctly empty — surfacing legacy codes needs the QR-Studio ↔ entry-points data
