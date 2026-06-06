@@ -2,7 +2,6 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft, Globe, Lock, Link2, CheckCircle, Heart, GitFork, Clock, Pencil, Users } from 'lucide-react'
 import { getCallerProfile } from '@/lib/auth'
-import { atLeastRole } from '@/lib/core/roles'
 import { getPlan, planPillarMap, isPlanAdopted, type JourneyPlanItem } from '@/lib/journey-plans'
 import { listPublicPractices } from '@/lib/practices'
 import { getPillars, pillarsById, type Pillar } from '@/lib/pillars'
@@ -35,7 +34,6 @@ export default async function JourneyPlanPage({
   if (!loaded) notFound()
   const { plan, items } = loaded
   const profileId = caller?.id ?? null
-  const isCrew = !!caller && atLeastRole(caller.community_role, 'crew')
 
   const isAuthor = !!profileId && plan.author_id === profileId
   if (!isAuthor && plan.visibility === 'private') notFound()
@@ -68,7 +66,6 @@ export default async function JourneyPlanPage({
         initialItems={builderItems}
         available={available}
         pillars={pillars.map((p) => ({ id: p.id, slug: p.slug, name: p.name }))}
-        isCrew={isCrew}
       />
     )
   }
@@ -179,9 +176,7 @@ export default async function JourneyPlanPage({
             <p className="text-sm text-muted">
               {adopted
                 ? 'You’ve adopted this journey — its practices are in your daily loop.'
-                : isCrew
-                  ? 'Adopt it to add these practices to your daily loop, or remix it into your own.'
-                  : 'Adopting and remixing library journeys is a Crew perk.'}
+                : 'Adopt it to add these practices to your daily loop, or remix it into your own.'}
             </p>
             <div className="flex shrink-0 items-center gap-2">
               {adopted ? (
@@ -191,14 +186,14 @@ export default async function JourneyPlanPage({
                   <input type="hidden" name="planId" value={plan.id} />
                   <input type="hidden" name="slug" value={plan.slug} />
                   <button type="submit" disabled={items.length === 0} className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50">
-                    {isCrew ? <Heart className="h-4 w-4" /> : <Lock className="h-4 w-4" />} Adopt
+                    <Heart className="h-4 w-4" /> Adopt
                   </button>
                 </form>
               )}
               <form action={forkPlanAction}>
                 <input type="hidden" name="planId" value={plan.id} />
                 <button type="submit" className="inline-flex items-center gap-1.5 rounded-xl border border-border px-4 py-2 text-sm font-medium text-text transition-colors hover:border-primary hover:text-primary-strong">
-                  {isCrew ? <GitFork className="h-4 w-4" /> : <Lock className="h-4 w-4" />} Remix
+                  <GitFork className="h-4 w-4" /> Remix
                 </button>
               </form>
             </div>

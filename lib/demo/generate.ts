@@ -55,7 +55,7 @@ const pick = <T,>(a: readonly T[]): T => a[rand(a.length)]
 const between = ([lo, hi]: [number, number]) => lo + rand(hi - lo + 1)
 
 // Real coordinates for the cities the demo network seeds into, so the map,
-// `circles_near`, and the Expansion read-model (ADR-150, density by city) all
+// `circles_near`, and the Expansion read-model (ADR-151, density by city) all
 // agree. Unknown cities fall back to Encinitas. Keyed case-insensitively.
 const CITY_COORDS: Record<string, [number, number]> = {
   encinitas: [33.0369, -117.292],
@@ -106,7 +106,7 @@ async function seedMember(
   city: string,
 ): Promise<string> {
   const p = person(rank)
-  const home = cityCoords(city) // members live near their circle — so they read as residents (ADR-150)
+  const home = cityCoords(city) // members live near their circle — so they read as residents (ADR-151)
   const { data: prof } = await d
     .from('profiles')
     .insert({

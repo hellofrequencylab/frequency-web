@@ -4704,9 +4704,41 @@ next (modules wire to the client dock via capability-gated fetch until then). Re
 `/admin/*`: Vera (needs its config form extracted first), AI controls, the Insights dashboards —
 then the route group retires per ADR-138. Operator guide → Notion.
 
-## ADR-150: Density / demand read-model — the expansion decision-engine (closes Stage B)
+## ADR-150: Unify Quests + Journeys into one free "Journey" concept (reverses ADR-087's paywall)
+
+**Status:** Accepted · Phase 1 (ungating) shipped; Phase 2 (table merge) pending
+*(Renumbered from ADR-149 — that number went to the admin-console port on a parallel branch.)*
+**Context:** ADR-087 split the word: **Journeys** = the open, free, member-built practice-combo
+library (`journey_plans`); **Quests** = the gamified, Crew-gated, seasonal engine
+(`quest_chains`). In practice this produced *two* things both labelled "Journeys" (the
+`/crew/quests` page is literally titled "Journeys"), and a paywall the owner no longer wants.
+The owner's model: **"The Quest" is the game; a Journey is a set of practices you progress
+through — they are the same unit, and every Journey is free.**
+**Decision:** Collapse to **one concept — the Journey — free for everyone.** "The Quest"
+remains the name of the game/season layer (ranks · zaps · gems · store · challenges), whose
+own gating (endorsement/spend, ADR-141) is unchanged. **Phase 1 (shipped):** remove the Crew
+paywall from every Journey surface — adopting/forking/publishing community Journeys
+(`/journeys`) and starting seasonal Journeys (`/crew/quests`) are now free for all members;
+the upgrade lightbox / preview banner / locked variants are gone; `/crew/quests` is retitled
+**"Seasonal Journeys"** and cross-linked with the community library as one concept. No schema
+change. **Phase 2 (pending):** merge the two table families into one. The fork to settle:
+`journey_plans` are **practice-combos** (progress derived from `practice_logs`, ADR-144) while
+`quest_chains` are **action-chains** (attend/post/refer steps with `advanceQuests` rewards) —
+so unifying the data model means either (a) generalizing a Journey step to be *practice OR
+action-criteria*, or (b) re-expressing seasonal content as practice-combo Journeys and letting
+the action-chain mechanics live on as `season_challenges`/achievements. The seed content is
+small (≈6 chains), so either is tractable.
+**Consequences:** Supersedes ADR-087's premium-Journeys economics and the
+ECONOMY-AND-JOURNEYS "premium marquee" framing (updated). The naming flip-flop
+(quest→arc→journey→quest) does **not** reopen — "Journey" is already the open-library name; we
+widen it, coining nothing. GLOSSARY.md / THE-QUEST.md / DATABASE.md get their full pass when
+the Phase 2 table merge lands; until then the `quest_*` tables remain as the seasonal-Journey
+store. Member how-to + CHANGELOG updated to "free".
+
+## ADR-151: Density / demand read-model — the expansion decision-engine (closes Stage B)
 
 **Status:** Accepted · 2026-06-06
+*(Renumbered from ADR-150 — that number went to the Quests+Journeys unification on a parallel branch.)*
 
 **Context.** PLATFORM-VISION §6 frames "seed the need for the next third space" as a *product
 feature*, not a slogan: a density/demand read-model off the place-tree that answers *where is
@@ -4734,9 +4766,10 @@ in Stage B (DEVELOPMENT-MAP), alongside the now-shipped Local Marketplace (ADR-1
 - **Surface:** `/admin/expansion` (Insights group, janitor / `insights:read`), built on the shared
   `AdminPage` shell — totals, a "Lab-ready now" card grid (with closest-to-ready fallback), the full
   ranked table, and a "how it's scored" note. Registered once in `admin/sections.ts`.
-- **Demo coherence:** the demo generator now places circles at **real city coordinates**
-  (a small North-County catalog, fallback Encinitas) instead of always jittering around Encinitas,
-  so the map, `circles_near`, and this read-model agree when an operator distributes demo circles.
+- **Demo coherence:** the demo generator places circles at **real city coordinates** (a small
+  North-County catalog, fallback Encinitas) and tags generated members with their circle's city +
+  home coords, so the map, `circles_near`, and this read-model agree — and demo members read as
+  residents of their city.
 
 **Alternatives.** A PostGIS radius/cluster model independent of the `city` string (deferred — more
 power than v1 needs, and most rows only have a city today; the `geog` columns remain for a map

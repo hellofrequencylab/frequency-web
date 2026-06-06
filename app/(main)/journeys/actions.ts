@@ -2,8 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { getMyProfileId, getCallerProfile } from '@/lib/auth'
-import { atLeastRole } from '@/lib/core/roles'
+import { getMyProfileId } from '@/lib/auth'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 import {
   createPlan,
@@ -22,10 +21,10 @@ import {
   type PlanVisibility,
 } from '@/lib/journey-plans'
 
-// Server actions for the Journeys builder (ADR-096). Building + editing a PERSONAL
-// journey is free; the public library/marketplace is the Crew (paid) surface —
-// publishing, and adopting/forking someone else's public journey, require Crew.
-// FormData-based so the builder works without client JS.
+// Server actions for the Journeys builder (ADR-096; unified + free, ADR-150).
+// Building, editing, publishing to the community library, and adopting/forking
+// anyone's public journey are ALL free — Journeys carry no paywall. FormData-based
+// so the builder works without client JS.
 
 /** Caller must be the plan's author. Returns the caller's profile id, or null. */
 async function assertOwner(planId: string): Promise<string | null> {
@@ -33,12 +32,6 @@ async function assertOwner(planId: string): Promise<string | null> {
   if (!profileId) return null
   const author = await planAuthorId(planId)
   return author && author === profileId ? profileId : null
-}
-
-/** True when the caller is Crew or higher (the paid tier; free in Beta). */
-async function callerIsCrew(): Promise<boolean> {
-  const c = await getCallerProfile()
-  return !!c && atLeastRole(c.community_role, 'crew')
 }
 
 const revalidateSlug = (formData: FormData) =>
@@ -126,12 +119,11 @@ export async function setVisibilityAction(formData: FormData) {
   revalidateSlug(formData)
 }
 
-// --- The library / marketplace (Crew, paid) -------------------------------
+// --- The library (free for everyone) --------------------------------------
 
 export async function publishPlanAction(formData: FormData) {
   const planId = String(formData.get('planId') ?? '')
   if (!(await assertOwner(planId))) return
-  if (!(await callerIsCrew())) redirect('/upgrade')
   await publishPlan(planId)
   revalidateSlug(formData)
 }
@@ -142,12 +134,8 @@ export async function adoptPlanAction(formData: FormData) {
   const planId = String(formData.get('planId') ?? '')
   const meta = await planMeta(planId)
   if (!meta) return
-  const isOwn = meta.author_id === profileId
-  // Adopting your OWN journey is free; adopting someone else's (the library) is Crew.
-  if (!isOwn) {
-    if (meta.visibility === 'private') return
-    if (!(await callerIsCrew())) redirect('/upgrade')
-  }
+  // You can adopt your own journey or any non-private one — all free.
+  if (meta.author_id !== profileId && meta.visibility === 'private') return
   await adoptPlan(profileId, planId)
   revalidateSlug(formData)
 }
@@ -155,8 +143,6 @@ export async function adoptPlanAction(formData: FormData) {
 export async function forkPlanAction(formData: FormData) {
   const profileId = await getMyProfileId()
   if (!profileId) return
-  // Remixing a library journey into your own is a library benefit → Crew.
-  if (!(await callerIsCrew())) redirect('/upgrade')
   const planId = String(formData.get('planId') ?? '')
   const fork = await forkPlan(profileId, planId)
   if (fork) redirect(`/journeys/${fork.slug}`)
@@ -239,14 +225,13 @@ export async function setJourneyStep(
   return ok()
 }
 
-/** Set visibility. Public = publish to the library (Crew-gated, stamps published_at). */
+/** Set visibility. Public = publish to the community library (free; stamps published_at). */
 export async function setJourneyVisibility(
   planId: string,
   visibility: PlanVisibility,
 ): Promise<ActionResult> {
   if (!(await assertOwner(planId))) return fail('Not allowed.')
   if (visibility === 'public') {
-    if (!(await callerIsCrew())) return fail('Sharing to the community library is a Crew perk.')
     await publishPlan(planId)
   } else {
     await setPlanVisibility(planId, visibility)
