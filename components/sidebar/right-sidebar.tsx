@@ -8,7 +8,7 @@ import { getActiveJourneyProgress } from '@/lib/journey-plans'
 import { DemoNotice } from '@/components/sidebar/demo-notice'
 import { pageRailPanels } from '@/lib/layout/rail-panels'
 import {
-  DispatchesPanel, EventsPanel, MembersPanel, LeaderboardPanel, PanelSkeleton,
+  DispatchesPanel, EventsPanel, MembersPanel, LeaderboardPanel, ControlCenterPanel, PanelSkeleton,
 } from '@/components/sidebar/rail-panels'
 
 export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
@@ -146,7 +146,12 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
   return (
     <div className="flex flex-1 flex-col">
       <div className="flex-1 space-y-8 px-3 py-6">
-        {/* Standing panel — site-wide. */}
+        {/* Standing panel — the always-on Quest control center, pinned to the TOP:
+            next onboarding step (+ gems nudge), rank progress, streak. */}
+        <Suspense fallback={<PanelSkeleton />}>
+          <ControlCenterPanel profileId={profileId} />
+        </Suspense>
+        {/* Standing panel — site-wide demo notice. */}
         <DemoNotice />
         {/* Page panels — stats specific to this route. */}
         <Suspense fallback={<PanelSkeleton />}>
