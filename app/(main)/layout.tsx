@@ -26,6 +26,7 @@ import { getOnboardingStatus } from '@/lib/onboarding/status'
 import { BETA_INDUCTION_ACTIVE } from '@/lib/onboarding/beta-script'
 import { ChoresOverlay } from '@/components/onboarding/chores-overlay'
 import { CaptureLauncher } from '@/components/feed/capture-launcher'
+import { SupportLauncher } from '@/components/support/support-launcher'
 import { DailyCheckIn } from '@/components/daily-check-in'
 import { getProfileChores } from '@/lib/onboarding/profile-chores'
 import { getFounderTasks } from '@/lib/onboarding/founder-tasks'
@@ -204,6 +205,9 @@ export default async function MainLayout({
       {/* Capture — the app-wide primary action (§6 Phase 2). Posts default to the
           member's wall; reachable from any page in the shell. */}
       <CaptureLauncher scopeId={profile.id} />
+      {/* Support — the app-wide bug/report dialog; opened from the account menu, the
+          Vera chat box, or any "Report" button via the 'open-support' event. */}
+      <SupportLauncher />
       {chores && (!chores.complete || !chores.rewarded || coachNext) && (
         <ChoresOverlay chores={chores} nextAction={coachNext} />
       )}

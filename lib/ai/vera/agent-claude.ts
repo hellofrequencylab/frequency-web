@@ -59,13 +59,21 @@ export function parseAssistantContent(content: ContentBlock[]): {
 }
 
 /** Vera's voice + the bridge doctrine + the member's known context + operator tuning. */
-function buildSystemPrompt(ctx: MemberContext | null | undefined, cfg: VeraConfig): string {
+function buildSystemPrompt(ctx: MemberContext | null | undefined, cfg: VeraConfig, supportSummary?: string): string {
   const facts = ctx?.facts
   const known: string[] = []
   if (facts?.interests?.length) known.push(`interests: ${facts.interests.join(', ')}`)
   if (facts?.goals?.length) known.push(`goals: ${facts.goals.join(', ')}`)
   if (facts?.neighborhood) known.push(`neighborhood: ${facts.neighborhood}`)
   const grounding = known.length ? `\n\nWhat you already know about them — use it, don't re-ask: ${known.join('; ')}.` : ''
+
+  // Their support history (ADR-159) — so Vera can speak to open reports and, when
+  // they describe a problem, point them at the report dialog (which captures their
+  // screen + page details). The dialog opens from the "Report a bug" button in this
+  // chat; you can't file it for them, but you can tell them exactly where it is.
+  const support = supportSummary?.trim()
+    ? `\n\nTheir recent support tickets (you can reference these): ${supportSummary.trim()}. If they describe a bug or something broken, empathize, then tell them to tap "Report a bug" here so it captures the page + a screenshot for the team.`
+    : '\n\nIf they describe a bug or something broken, empathize, then tell them to tap "Report a bug" here so it captures the page + a screenshot for the team.'
 
   // Operator-tunable knobs (/admin/vera).
   const register = cfg.register === 'hot'
@@ -90,7 +98,7 @@ Working with your tools:
 - When they share something durable (an interest, a goal, where they live), call remember_fact so you carry it forward. Use set_profile_field only for their own profile, as a light offer (e.g. a one-line bio); for a photo, point them to /settings/profile. These are PROPOSALS — they don't run until the member approves, so it's warm, never pushy, to offer.
 - Always make what you mention reachable: name the circle, host, practice, or page and offer the tap. Never leave a feature as a bare mention they have to go hunt for.
 
-Read the room on tone: gentle if they're nervous, playful (volley, never mean) if they're a smartass — but always on their side, always quietly moving them toward each other and toward their best expression.${grounding}${register}${style}${length}${greeting}`
+Read the room on tone: gentle if they're nervous, playful (volley, never mean) if they're a smartass — but always on their side, always quietly moving them toward each other and toward their best expression.${grounding}${support}${register}${style}${length}${greeting}`
 }
 
 /** One live Vera turn. Null ⇒ kernel unavailable (caller falls back to deterministic). */
@@ -98,6 +106,8 @@ export async function runVeraClaudeTurn(input: {
   history: VeraMessage[]
   memberText: string
   memberContext?: MemberContext | null
+  /** Short plain-text summary of the member's recent support tickets (ADR-159). */
+  supportSummary?: string
 }): Promise<VeraClaudeResult | null> {
   const client = getAnthropic()
   if (!client || !aiEnabled()) return null
@@ -105,7 +115,7 @@ export async function runVeraClaudeTurn(input: {
   try {
     const cfg = await getVeraConfig()
     const model = MODELS[cfg.tier]
-    const system = buildSystemPrompt(input.memberContext, cfg)
+    const system = buildSystemPrompt(input.memberContext, cfg, input.supportSummary)
     const tools = toAnthropicTools(VERA_TOOLS)
     const messages: Anthropic.MessageParam[] = [
       ...input.history.map((m) => ({ role: m.role, content: m.text })),
