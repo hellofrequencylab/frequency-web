@@ -9,12 +9,13 @@
 
 ---
 
-## ★ Navigation rebuild (2026-06-06) — CANONICAL · IN BUILD
+## ★ Navigation rebuild (2026-06-06) — CANONICAL · ✅ SHIPPED
 
 > Owner-locked teardown + rebuild from the product vision: **home base → get your
 > assignment → do it in real life → track it in the Quest.** Supersedes the
-> 2026-06-05 spec below where they differ. Building phase by phase, primarily in
-> `lib/nav-areas.ts` + `app/(main)/admin/sections.ts`.
+> 2026-06-05 spec below where they differ. **Phases 1–3 are shipped** (PRs #301 /
+> #302 / #303 / #304); the rail now reads as the five worlds. The remaining items
+> in the table are separate, deliberate initiatives — not nav cleanup.
 
 **The spine.** Every surface is one of four layers — **Awareness** (Home) · **Content**
 (Practice) · **Community** · **The Game** (The Quest) — plus a fifth role-gated
@@ -38,10 +39,19 @@ Expression** — are the cross-cutting taxonomy that tags content and channels.
 **Build phases:**
 | Phase | Move | Status |
 |---|---|---|
-| 0–1 | Member rail → five worlds; renames; drop Messages/Programs from rail; Programs → Leader training | ✅ shipping |
-| 2 | Manage → Steward / Structure / Studio / Platform (4 axis-gated groups); delete Outreach stub | ✅ shipping |
-| 3 | Demote Hubs/Nexuses to contextual; "Today" launchpad; mobile avatar-menu Manage; dedup per-entity admin into the page dock | ⏳ |
+| 1 | Member rail → five worlds; renames; drop Messages/Programs from rail; Programs → Leader training | ✅ shipped (#301) |
+| 2 | Manage → Steward / Structure / Studio / Platform (4 axis-gated groups); delete Outreach stub | ✅ shipped (#302) |
+| 3a | Hubs/Nexuses → contextual (place line on the Circle page) | ✅ shipped (#303) |
+| 3b | Mobile: global Manage → the avatar (initials) menu | ✅ shipped (#304) |
+| 3c | "Today" launchpad | ✅ already exists — the `JourneyBoard` at the top of Feed |
 | 4 | Persona surfaces (Business / Practitioner / Partner); milestone gating | 🔵 later |
+
+**Banked 2026-06-06 — the navigation rearrangement is complete.** Five-world rail,
+four axis-gated Manage groups, contextual Hubs/Nexuses, and mobile avatar-menu Manage
+are live on `main`; the "Today" home surface already exists as the `JourneyBoard`. Two
+ideas remain as *separate* initiatives (not nav cleanup): **active-Journey progress**
+on the home board (needs a journey-progress schema — see BACKLOG §Q), and **deduping
+the per-entity admin editors** into the page dock (optional).
 
 ---
 
