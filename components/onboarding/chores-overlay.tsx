@@ -32,9 +32,10 @@ export function ChoresOverlay({
 }) {
   const [open, setOpen] = useState(false)
   const [claimed, setClaimed] = useState<{ amount: number } | null>(null)
-  // Two-stage reveal: starts tucked off the left edge (peek). Tap → slides on; tap
-  // again → opens the full overlay.
-  const [peek, setPeek] = useState(true)
+  // The "What's next" pill stays VISIBLE (no edge-tuck) as a standing reminder that
+  // tasks remain; it pulses (a gem dot) until onboarding is complete, then disappears.
+  // Snoozing still tucks it for the day.
+  const [peek, setPeek] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
 
   const reward = chores.complete && !chores.rewarded
@@ -78,7 +79,7 @@ export function ChoresOverlay({
 
   const close = useCallback(() => {
     setOpen(false)
-    setPeek(true)
+    // Keep the pill visible (don't re-tuck) so the reminder persists until done.
     try {
       localStorage.setItem(SEEN_KEY, String(Date.now()))
       sessionStorage.setItem(SESSION_KEY, '1')
@@ -111,7 +112,7 @@ export function ChoresOverlay({
     <button
       type="button"
       onClick={() => (peek ? setPeek(false) : setOpen(true))}
-      aria-label={coach ? 'Vera — your next move' : `Vera’s chores — ${left} left`}
+      aria-label={coach ? 'Vera — your next move (earn gems)' : `Vera’s chores — ${left} left, earn gems`}
       className={`fixed left-0 bottom-20 z-40 inline-flex items-center gap-1.5 rounded-r-full border border-l-0 border-border bg-surface/90 py-1.5 pl-4 pr-3 text-xs font-semibold text-broadcast-strong shadow-sm backdrop-blur-sm transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] md:bottom-6 ${
         peek ? '-translate-x-[calc(100%-2rem)]' : 'translate-x-0'
       }`}
@@ -121,6 +122,11 @@ export function ChoresOverlay({
       ) : (
         <>{left} {left === 1 ? 'chore' : 'chores'} <ListChecks className="h-4 w-4 shrink-0" aria-hidden /></>
       )}
+      {/* Pulsing gem dot — a standing reminder there are rewards to earn. */}
+      <span className="absolute -right-1 -top-1 flex h-3 w-3" aria-hidden>
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-signal opacity-75" />
+        <span className="relative inline-flex h-3 w-3 rounded-full bg-signal ring-2 ring-surface" />
+      </span>
     </button>
   ) : null
 
