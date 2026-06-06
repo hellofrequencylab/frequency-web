@@ -25,8 +25,8 @@ interface RightSidebarProps {
 //   • PAGE panels — stats specific to the page being viewed, resolved from the route
 //     via lib/layout/rail-panels.ts. Each is its own async server component behind a
 //     <Suspense> so a slow one never blocks the rest (PAGE-FRAMEWORK §5).
-// The rail is page-aware via the `x-pathname` request header (set in middleware.ts),
-// which keeps the panels server-rendered while still varying by route.
+// The rail is page-aware via the `x-pathname` request header (set in proxy.ts —
+// Next 16's middleware), which keeps the panels server-rendered while varying by route.
 
 async function GameStatsDock({ profileId }: { profileId: string }) {
   return <GameStatsDockClient data={await loadGameStats(profileId)} />

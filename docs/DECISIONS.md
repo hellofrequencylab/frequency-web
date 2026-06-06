@@ -5184,16 +5184,17 @@ page) and **page panels** (route-specific stats — Broadcasts · Events · Memb
 Leaderboard), resolved from a route registry (`lib/layout/rail-panels.ts`, mirroring
 page-chrome's role for the rail's *presence*). Panels are independent **async server
 components**, each in its own `<Suspense>` (PAGE-FRAMEWORK §5), degrading to nothing when
-there's no data. The shared server rail is made **page-aware** by a minimal middleware that
-forwards the route as an `x-pathname` request header, read via `next/headers` — so panels
-stay server-rendered (SSR, no client fetch) while still varying per page. "Widgets" are
-retired as a term; they're **panels** now.
+there's no data. The shared server rail is made **page-aware** via the existing `proxy.ts`
+(Next 16 renamed middleware → proxy) forwarding the route as an `x-pathname` request header,
+read via `next/headers` — so panels stay server-rendered (SSR, no client fetch) while still
+varying per page. "Widgets" are retired as a term; they're **panels** now.
 
 **Alternatives.** Parallel routes (`@rail` slot) — idiomatic but a heavy per-route refactor;
 deferred. A client rail that fetches each panel via server actions — page-aware trivially but
 loses SSR and adds a round-trip per panel. Rendering every panel always and hiding by route on
 the client — wasteful, doesn't scale.
 
-**Consequences.** First middleware in the app (pure pass-through, no auth logic). Adding a
+**Consequences.** Reuses the existing `proxy.ts` (Next 16's middleware) — the route is
+forwarded as a header alongside the Supabase session refresh, with no change to auth. Adding a
 panel = a component + a registry entry; re-pointing a route = one line in the registry. The
 rail reads `x-pathname`, so it renders dynamically (already the case behind its Suspense).
