@@ -82,7 +82,7 @@ function ManageLink() {
     <div className="pt-3">
       <Link
         href="/settings/notifications"
-        className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold px-4 py-2 hover:bg-indigo-700 transition-colors"
+        className="inline-flex items-center gap-1.5 rounded-lg bg-primary text-on-primary text-sm font-semibold px-4 py-2 hover:bg-primary-hover transition-colors"
       >
         Manage all preferences →
       </Link>

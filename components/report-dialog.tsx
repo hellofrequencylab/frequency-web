@@ -103,7 +103,7 @@ export function ReportDialog({ targetType, targetId, open, onClose }: ReportDial
                     value={r.value}
                     checked={reason === r.value}
                     onChange={() => setReason(r.value)}
-                    className="accent-indigo-600"
+                    className="accent-primary"
                   />
                   <span className="text-sm text-text">{r.label}</span>
                 </label>
