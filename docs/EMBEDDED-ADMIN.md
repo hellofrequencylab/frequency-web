@@ -24,6 +24,15 @@
 > drill-down **settings console** with a universal **9-category spine** (next section).
 > On-page **Edit Mode** becomes the way *all* entity admin happens — `/admin/*` entity
 > surfaces go away entirely.
+>
+> **Update — [ADR-152](DECISIONS.md) (three layers):** whole *management suites* don't fit a
+> narrow rail, so admin is split into **three layers**: ① the **catalog spine**
+> (`admin/sections.ts`) — every surface declared once; ② **nine full-page suites** — *Spaces ·
+> Engage · Comms · Safety · Reach · People · Insights · Vera · System* — each a full page whose
+> links are its **top-bar sub-nav tabs** (and a launchpad section), telescoped by role; ③ the
+> **per-page sidebar console** trims to **light page-globals** (Basics, Layout, this page's Stats +
+> QR, adjustments) and **links back to each surface's parent suite + sub-item tabs**. The sidebar
+> *tunes the page*; the suite *manages the domain*.
 
 ---
 
