@@ -8,6 +8,7 @@ import { searchHelp } from '@/lib/help/search'
 import { CONTACT_EMAIL } from '@/lib/site'
 import { VeraChat, COMPANION_OPENING } from '@/components/vera/vera-chat'
 import { openSupport } from '@/components/support/support-launcher'
+import { EdgePill } from '@/components/layout/edge-pill'
 
 // The persistent companion launcher (AI-VERA §4.0, ADR-086). ONE floating bubble
 // on every member page that opens Vera's panel — unifying what used to be two
@@ -67,25 +68,17 @@ export function VeraLauncher({ index }: { index: HelpSearchEntry[] }) {
 
   return (
     <>
-      {/* Floating launcher — always visible + clickable; raised on mobile to clear the
-          bottom nav. Pulses when a chat is left unclosed. */}
-      <button
-        type="button"
-        onClick={openPanel}
-        aria-label="Open Vera"
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        className="fixed right-0 bottom-20 z-40 inline-flex items-center gap-1.5 rounded-l-full bg-primary/90 py-2 pl-3 pr-4 text-on-primary shadow-sm transition-colors hover:bg-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] md:bottom-6"
-      >
-        <Sparkles className="h-5 w-5 shrink-0" aria-hidden />
-        <span className="text-sm font-semibold">Vera</span>
-        {pulse && (
-          <span className="absolute -left-1 -top-1 flex h-3 w-3" aria-hidden>
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-signal opacity-75" />
-            <span className="relative inline-flex h-3 w-3 rounded-full bg-signal ring-2 ring-surface" />
-          </span>
-        )}
-      </button>
+      {/* Vera — right-edge pill: collapsed until hover (web) / tap (mobile), then a
+          click opens the chat. Pulses an orange glow when a chat is left unclosed. */}
+      <EdgePill
+        side="right"
+        glow="orange"
+        label="Vera"
+        icon={<Sparkles className="h-5 w-5" aria-hidden />}
+        waiting={pulse}
+        onOpen={openPanel}
+        ariaLabel="Open Vera"
+      />
 
       {open && (
         <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-labelledby="vera-launcher-title">
