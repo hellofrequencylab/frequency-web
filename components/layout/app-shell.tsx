@@ -869,6 +869,17 @@ function MobileTabBar({
       active ? 'text-primary-strong' : 'text-muted hover:text-text'
     }`
 
+  const renderTab = (tab: { key: string; href: string; label: string }) => {
+    const Icon = AREA_ICONS[tab.key] ?? Globe
+    const active = isActive(tab.href)
+    return (
+      <Link key={tab.key} href={tab.href} aria-label={tab.label} className={tabClass(active)}>
+        <Icon className="h-[22px] w-[22px]" strokeWidth={active ? 2.5 : 2} />
+        <span className="leading-none">{tab.label}</span>
+      </Link>
+    )
+  }
+
   return (
     <nav
       className="md:hidden fixed inset-x-0 bottom-0 z-40 flex items-stretch bg-surface/95 backdrop-blur-sm border-t border-border"
@@ -877,16 +888,26 @@ function MobileTabBar({
         paddingBottom: 'env(safe-area-inset-bottom)',
       }}
     >
-      {!hideAppNav && MOBILE_TABS.map((tab) => {
-        const Icon = AREA_ICONS[tab.key] ?? Globe
-        const active = isActive(tab.href)
-        return (
-          <Link key={tab.key} href={tab.href} aria-label={tab.label} className={tabClass(active)}>
-            <Icon className="h-[22px] w-[22px]" strokeWidth={active ? 2.5 : 2} />
-            <span className="leading-none">{tab.label}</span>
-          </Link>
-        )
-      })}
+      {!hideAppNav && MOBILE_TABS.slice(0, 2).map(renderTab)}
+
+      {/* Capture — the primary mobile action (ADR-156a), raised in the centre of the
+          nav. Opens the Capture box (contact-forward on mobile) via CaptureLauncher. */}
+      {!hideAppNav && (
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new CustomEvent('open-capture', { detail: { mode: 'contact' } }))}
+          aria-label="Capture a moment"
+          className="flex flex-1 flex-col items-center justify-center gap-1 text-3xs font-semibold text-primary-strong"
+        >
+          <span className="-mt-3 flex h-11 w-11 items-center justify-center rounded-full bg-primary text-on-primary shadow-pop">
+            <Camera className="h-[22px] w-[22px]" strokeWidth={2.5} />
+          </span>
+          <span className="-mt-0.5 leading-none">Capture</span>
+        </button>
+      )}
+
+      {!hideAppNav && MOBILE_TABS.slice(2).map(renderTab)}
+
       <button
         type="button"
         onClick={onOpenMenu}
