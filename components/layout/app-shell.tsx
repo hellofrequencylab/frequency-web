@@ -132,6 +132,7 @@ interface Profile extends ProfileIdentity {
   community_role: CommunityRole
   current_season_zaps?: number | null
   lifetime_gems?: number | null
+  meta?: unknown
 }
 
 // ── Theme hook ────────────────────────────────────────────────────────────────
@@ -1285,6 +1286,16 @@ export default function AppShell({
             >
               <Users className="w-5 h-5" />
             </Link>
+            {/* Daily check-in streak — always-visible so it's worth chasing. */}
+            {Number((profile.meta as { daily_checkin_streak?: number } | null)?.daily_checkin_streak ?? 0) >= 1 && (
+              <span
+                className="hidden sm:inline-flex items-center gap-1 rounded-full bg-primary-bg px-2 py-1 text-xs font-bold text-primary-strong"
+                title="Daily check-in streak — show up tomorrow to keep it going"
+              >
+                <Flame className="w-3.5 h-3.5" />
+                {Number((profile.meta as { daily_checkin_streak?: number } | null)?.daily_checkin_streak ?? 0)}
+              </span>
+            )}
             <NotificationBell initialUnread={unreadCount} />
           </div>
 
