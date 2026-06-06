@@ -27,6 +27,7 @@ import { BETA_INDUCTION_ACTIVE } from '@/lib/onboarding/beta-script'
 import { ChoresOverlay } from '@/components/onboarding/chores-overlay'
 import { CaptureLauncher } from '@/components/feed/capture-launcher'
 import { SupportLauncher } from '@/components/support/support-launcher'
+import { InviteLauncher } from '@/components/invite/invite-launcher'
 import { DailyCheckIn } from '@/components/daily-check-in'
 import { getProfileChores } from '@/lib/onboarding/profile-chores'
 import { getFounderTasks } from '@/lib/onboarding/founder-tasks'
@@ -208,6 +209,9 @@ export default async function MainLayout({
       {/* Support — the app-wide bug/report dialog; opened from the account menu, the
           Vera chat box, or any "Report" button via the 'open-support' event. */}
       <SupportLauncher />
+      {/* Invite — the app-wide "invite friends, earn zaps" modal; opened from the
+          account menu / anywhere via the 'open-invite' event. */}
+      <InviteLauncher />
       {chores && (!chores.complete || !chores.rewarded || coachNext) && (
         <ChoresOverlay chores={chores} nextAction={coachNext} />
       )}
