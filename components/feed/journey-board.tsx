@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Flame, Check, ChevronDown, Sparkles, Heart, Compass, Map, Users } from 'lucide-react'
+import { Flame, Check, ChevronDown, Sparkles, Heart, Compass, Map, Users, Route, ArrowRight } from 'lucide-react'
 import { LogPracticeButton } from '@/components/practice/log-practice-button'
 import { STREAK_MILESTONES, streakProgress } from '@/lib/streak'
 import type { Practice } from '@/lib/practices'
@@ -37,11 +37,21 @@ export function JourneyBoard({
   practices,
   streak = 0,
   pillarBalance,
+  activeJourney,
 }: {
   practices: Practice[]
   streak?: number
   /** The member's adopted practices counted per Pillar (all four, zero-filled). */
   pillarBalance?: PillarCount[]
+  /** The member's top active journey — a slim "current step" line that links to
+   *  the full /crew/journey tab. Undefined = no adopted journey. */
+  activeJourney?: {
+    title: string
+    href: string
+    done: number
+    total: number
+    nextStepTitle: string | null
+  }
 }) {
   const [collapsed, setCollapsed] = useState(false)
 
@@ -150,6 +160,29 @@ export function JourneyBoard({
           </div>
         )}
       </div>
+
+      {/* Your journey — a slim "current step" line; the full tab lives at the link. */}
+      {activeJourney && (
+        <Link
+          href={activeJourney.href}
+          className="group mx-4 mt-3 flex items-center gap-2.5 border-t border-primary-bg pt-3"
+        >
+          <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface text-primary-strong">
+            <Route className="h-3.5 w-3.5" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium text-text">
+              {activeJourney.nextStepTitle
+                ? `Next: ${activeJourney.nextStepTitle}`
+                : `You're on track in ${activeJourney.title}`}
+            </p>
+            <p className="truncate text-[11px] text-subtle">
+              {activeJourney.title} · {activeJourney.done}/{activeJourney.total} on track this week
+            </p>
+          </div>
+          <ArrowRight className="h-3.5 w-3.5 shrink-0 text-subtle transition-colors group-hover:text-primary-strong" />
+        </Link>
+      )}
 
       {/* Pillar balance — a calm read of where your practice sits across the four
           Pillars. Coverage, not a score. */}
