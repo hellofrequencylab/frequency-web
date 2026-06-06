@@ -113,6 +113,13 @@ const NAV_SECTIONS = buildSections([...NAV_AREAS])
 // as aspirational surfaces.
 const TELESCOPE_SECTIONS = new Set(['Steward', 'Structure', 'Studio', 'Platform'])
 
+// Split the rail for mobile: the member worlds vs the axis-gated Manage groups. On
+// a phone the member worlds stay in the drawer / edge menus while Manage moves to
+// the avatar (initials) menu, so the primary nav stays calm. Desktop shows both in
+// the left rail. (Manage = the TELESCOPE groups.)
+const MEMBER_SECTIONS = NAV_SECTIONS.filter((s) => !TELESCOPE_SECTIONS.has(s.label ?? ''))
+const MANAGE_SECTIONS = NAV_SECTIONS.filter((s) => TELESCOPE_SECTIONS.has(s.label ?? ''))
+
 // The effective access for an area = a janitor's per-area override, if any,
 // else the code default. `role` is the viewer's community role (null = visitor).
 function effectiveAccess(
@@ -295,6 +302,10 @@ function AccountDropdown({
   profile,
   profileHref,
   role,
+  gateRole,
+  staffRole,
+  permissions,
+  isActive,
   themeLabel,
   ThemeIcon,
   cycleTheme,
@@ -302,6 +313,11 @@ function AccountDropdown({
   profile: Profile
   profileHref: string
   role: CommunityRole
+  /** Gating role (respects "view as") used to telescope the mobile Manage groups. */
+  gateRole: CommunityRole | null
+  staffRole: StaffRole | null
+  permissions?: Record<string, NavAccess>
+  isActive: (href: string) => boolean
   themeLabel: string
   ThemeIcon: React.ElementType
   cycleTheme: () => void
@@ -318,6 +334,11 @@ function AccountDropdown({
   }, [])
 
   const showCrewLink = role === 'crew' || role === 'host' || role === 'guide' || role === 'mentor' || role === 'admin' || role === 'janitor'
+  // Mobile-only: the Manage groups the viewer can actually reach (telescoped), so
+  // global admin lives in the initials menu on a phone (desktop keeps it in the rail).
+  const hasManage = MANAGE_SECTIONS.some((s) =>
+    s.items.some((it) => meetsAccess(effectiveAccess(it, permissions), gateRole) || meetsStaff(it, staffRole)),
+  )
 
   return (
     <div ref={ref} className="relative">
@@ -376,6 +397,21 @@ function AccountDropdown({
                 <Zap className="w-4 h-4 text-primary" />
                 Dashboard
               </Link>
+            </div>
+          )}
+
+          {/* Manage — mobile only. On desktop these live in the left rail; on a
+              phone the primary nav stays member-only and admin lives here. */}
+          {hasManage && (
+            <div className="md:hidden border-t border-border py-1">
+              <NavLinkList
+                isActive={isActive}
+                role={gateRole}
+                staffRole={staffRole}
+                permissions={permissions}
+                sections={MANAGE_SECTIONS}
+                onNavigate={() => setOpen(false)}
+              />
             </div>
           )}
 
@@ -782,7 +818,7 @@ function MobileLeftDrawer({
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-          <NavLinkList isActive={isActive} role={role} onNavigate={onClose} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} staffRole={staffRole} sections={NAV_SECTIONS} />
+          <NavLinkList isActive={isActive} role={role} onNavigate={onClose} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} staffRole={staffRole} sections={MEMBER_SECTIONS} />
         </nav>
 
         {/* Bottom close. Sits in the thumb zone */}
@@ -1264,6 +1300,10 @@ export default function AppShell({
               profile={profile}
               profileHref={profileHref}
               role={role}
+              gateRole={gateRole}
+              staffRole={staffRole}
+              permissions={permissions}
+              isActive={isActive}
               themeLabel={themeLabel}
               ThemeIcon={ThemeIcon}
               cycleTheme={cycleTheme}
@@ -1382,6 +1422,7 @@ export default function AppShell({
                 hideAppNav={hideAppNav}
                 permissions={permissions}
                 staffRole={staffRole}
+                sections={MEMBER_SECTIONS}
                 compact
               />
             }
@@ -1395,6 +1436,7 @@ export default function AppShell({
                 hideAppNav={hideAppNav}
                 permissions={permissions}
                 staffRole={staffRole}
+                sections={MEMBER_SECTIONS}
               />
             </nav>
           </EdgeMenu>
