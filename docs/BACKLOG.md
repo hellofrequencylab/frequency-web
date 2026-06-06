@@ -180,6 +180,16 @@ follow-ups it surfaced. Full detail lives in the lettered sections below — thi
 - [ ] Semantic search across dispatches/posts + AI digest summarizer. (M)
 
 ## J. CMS / page framework / marketing / SEO
+- [ ] **Site Navigation — a full menu-management admin suite (under Platform).** Today the nav is
+  code-driven (`lib/nav-areas.ts` `NAV_AREAS` + `lib/layout/page-chrome.ts`). Add a **Site Navigation**
+  item under the **Platform** admin section (janitor) that makes the menu + site structure
+  **data-driven and editable**: a tree/drag editor for nav areas, sections, items, ordering, labels,
+  icons, and per-item access. **Moving a page reassigns its links and the surrounding site structure**
+  (the nav entry, breadcrumbs, the page-chrome rail registration, and any internal links/redirects
+  follow the move — no dead links). Needs a `nav_structure` schema (DB-backed, seeded from the current
+  `NAV_AREAS` so nothing regresses), a resolver that reads DB-or-code, and the editor surface composed
+  from the page framework. Tie-ins: roles/permissions (per-item access), the page-editor/CMS,
+  `page-chrome` (rail), and redirects on move. (L)
 - [ ] Submit sitemap to Google/Bing + set `NEXT_PUBLIC_SITE_URL` (supersedes the
   custom-domain half of ROADMAP P3.31; the domain is already live). (S)
 - [ ] Domain setup: point `frequencylocal.com` (GoDaddy -> Vercel) at the apex,
