@@ -49,7 +49,7 @@ import { BrandMark } from '@/components/layout/brand-mark'
 import { AREA_ICONS } from '@/components/layout/nav-icons'
 import { UpgradeCrew } from '@/components/layout/upgrade-crew'
 import { DemoToggle } from '@/components/layout/demo-toggle'
-import { DockRevealProvider, useDockRevealed, useHoverScrollReveal } from '@/components/sidebar/dock-reveal'
+import { DockRevealProvider } from '@/components/sidebar/dock-reveal'
 import { railFor } from '@/lib/layout/page-chrome'
 import { SearchOverlay } from '@/components/search/search-overlay'
 import { PageAdminDock, type AdminDockMode } from '@/components/layout/page-admin-dock'
@@ -194,16 +194,14 @@ function ProfileCard({
   previewVisitor?: boolean
 }) {
   // Pinned at the bottom of the (non-scrolling) left rail, so it stays put on a
-  // long scroll. The quick-actions panel rises when the feed reaches its end
-  // (shared reveal), on a hover-scroll over the card, or on tapping the chevron.
+  // long scroll. The quick-actions panel opens ONLY on tapping the chevron — it
+  // never rises on scroll or hover (that was disorienting); it stays put until the
+  // member chooses to open it.
   const [manualOpen, setManualOpen] = useState(false)
-  const rootRef = useRef<HTMLDivElement>(null)
-  const revealed = useDockRevealed()
-  const hoverOpen = useHoverScrollReveal(rootRef)
-  const open = manualOpen || revealed || hoverOpen
+  const open = manualOpen
 
   return (
-    <div ref={rootRef} className="border-t border-border">
+    <div className="border-t border-border">
       {/* Compact identity bar — matched in height to the right stats bar.
           Stays on top; the quick actions fill in underneath it. */}
       <div className="flex items-center gap-2.5 px-3 py-3.5">
@@ -915,7 +913,7 @@ function MobileTabBar({
       {!hideAppNav && (
         <button
           type="button"
-          onClick={() => window.dispatchEvent(new CustomEvent('open-capture', { detail: { mode: 'contact' } }))}
+          onClick={() => window.dispatchEvent(new CustomEvent('open-capture', { detail: { mode: 'post' } }))}
           aria-label="Capture a moment"
           className="relative flex flex-1 flex-col items-center justify-end gap-1 pb-1.5 text-3xs font-semibold text-primary-strong"
         >

@@ -2,7 +2,8 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import {
   LayoutTemplate, DoorOpen, Megaphone, QrCode, Link2,
-  KanbanSquare, Contact, Users, Sparkles, ArrowRight,
+  KanbanSquare, Contact, Users, ArrowRight,
+  Filter, Mail, Workflow, BarChart3, Radar, Rocket, Sparkles,
 } from 'lucide-react'
 import { getJanitor } from '@/lib/page-editor/guard'
 import { SectionHeader } from '@/components/ui/section-header'
@@ -38,9 +39,18 @@ const GROUPS: { title: string; items: { label: string; desc: string; href: strin
     ],
   },
   {
+    // The marketing suite folds in here as individual channels (IA §10.2) rather
+    // than a single "hub" hop — each tool is one tap from Growth Studio.
     title: 'Marketing',
     items: [
-      { label: 'Marketing hub', desc: 'Campaigns, funnels, nurture & automations', href: '/marketing', icon: Sparkles },
+      { label: 'Campaigns', desc: 'Plan & send broadcast campaigns', href: '/marketing/campaigns', icon: Megaphone },
+      { label: 'Funnels', desc: 'Lead flows & conversion paths', href: '/marketing/funnels', icon: Filter },
+      { label: 'Nurture', desc: 'Drip sequences & follow-ups', href: '/marketing/nurture', icon: Mail },
+      { label: 'Automations', desc: 'Triggered journeys & rules', href: '/marketing/automations', icon: Workflow },
+      { label: 'Analytics', desc: 'Funnel & campaign performance', href: '/marketing/analytics', icon: BarChart3 },
+      { label: 'Market read', desc: 'Audience & demand signals', href: '/marketing/market-read', icon: Radar },
+      { label: 'Beta waitlist', desc: 'Invites & onboarding queue', href: '/marketing/beta', icon: Rocket },
+      { label: 'Marketing agent', desc: 'AI assistant for growth tasks', href: '/marketing/agent', icon: Sparkles },
     ],
   },
 ]

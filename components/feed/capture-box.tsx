@@ -1,23 +1,25 @@
 'use client'
 
 import { useState } from 'react'
-import { PenLine, Megaphone, NotebookPen, Camera, UserPlus } from 'lucide-react'
+import { PenLine, Megaphone, NotebookPen, UserPlus } from 'lucide-react'
 import { Composer } from './composer'
 import { ContactCaptureForm } from './contact-capture-form'
 
 // The Capture box — one Substack-style box, one **bottom row of selectable capture
-// features** (the rework): Post · Dispatch · Note · Photo · Contact, displayed as a
-// single segmented control alongside the send button. The active feature drives the
-// editor + send behaviour; Dispatch (host announcement) is just one of the features.
+// features** (the rework): Post · Dispatch · Note · Connect, an icon segmented control
+// alongside the send button. Each selector shows just its icon until it's the active
+// mode, when it reveals its label — so the row stays compact on a phone and the
+// current mode reads at a glance. The active feature drives the editor + send
+// behaviour; Dispatch (host announcement) is just one of the features. (Photo is
+// reached through the full-screen Capture's camera, not this inline row.)
 
 type Mode = 'post' | 'dispatch' | 'note' | 'photo' | 'contact'
 
 const MODES: { key: Mode; icon: typeof PenLine; label: string; hostOnly?: boolean }[] = [
-  { key: 'contact', icon: UserPlus, label: 'Connect' },
   { key: 'post', icon: PenLine, label: 'Post' },
   { key: 'dispatch', icon: Megaphone, label: 'Dispatch', hostOnly: true },
   { key: 'note', icon: NotebookPen, label: 'Note' },
-  { key: 'photo', icon: Camera, label: 'Photo' },
+  { key: 'contact', icon: UserPlus, label: 'Connect' },
 ]
 
 export function CaptureBox({
@@ -48,13 +50,16 @@ export function CaptureBox({
             type="button"
             onClick={() => setMode(m.key)}
             aria-pressed={active}
+            aria-label={m.label}
             className={`inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-2xs font-semibold transition-colors ${
               active
                 ? `bg-surface shadow-sm ${m.key === 'dispatch' ? 'text-warning' : 'text-primary-strong'}`
                 : 'text-subtle hover:text-muted'
             }`}
           >
-            <m.icon className="h-3.5 w-3.5" /> {m.label}
+            <m.icon className="h-3.5 w-3.5" />
+            {/* Reveal the label only for the active mode — icon-only otherwise. */}
+            {active && <span>{m.label}</span>}
           </button>
         )
       })}
