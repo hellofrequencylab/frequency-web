@@ -448,6 +448,12 @@ keep scope rails. **Open:** "Around You" naming. **Sequence:** 10.1 → 10.2 →
   Note · Connect** (inline Photo dropped — it lives in the full-screen camera); the bottom-nav Capture
   button opens the full-screen surface on **Post** (`capture-box.tsx`, `app-shell.tsx`). Left profile
   quick-actions dock is now **click-only** (no scroll/hover reveal).
+- ✅ **Onboarding sequences — QR section collapses; editing confirmed.**
+  `app/(main)/pages/sequences/entry-point-share.tsx` now opens **collapsed** to a one-line share menu
+  (link + copy) with a "QR & options" prompt; expanding reveals the admin options (incoming-point toggle,
+  live QR, PNG/SVG downloads). Per-sequence editing already ships (the "Edit splash" link →
+  `/pages/sequences/[slug]/edit`), and the catalog is reachable from **Growth Studio › Pages &
+  onboarding**, so positioning + editability are in place.
 - ⏳ **Entry points "show my past ones" — diagnosed, deferred.** DB check: the account owns **0**
   `qr_codes`; the one code in the DB is `owner_profile_id = NULL`, no `template_id` (made in the older QR
   flow). The list is correctly empty — surfacing legacy codes needs the QR-Studio ↔ entry-points data
