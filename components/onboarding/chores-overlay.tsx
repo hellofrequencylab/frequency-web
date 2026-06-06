@@ -20,6 +20,7 @@ import { claimChoresReward } from '@/app/(main)/feed/chores-actions'
 const COOLDOWN_MS = 60 * 60 * 1000 // 1 hour between unprompted full-stops
 const SEEN_KEY = 'fq_chores_seen_at'
 const SESSION_KEY = 'fq_chores_session'
+const SNOOZE_KEY = 'fq_chores_snooze_until' // "Don't show till tomorrow"
 
 export function ChoresOverlay({
   chores,
@@ -49,6 +50,7 @@ export function ChoresOverlay({
     }
     if (!(!chores.complete || coach)) return
     if (sessionStorage.getItem(SESSION_KEY)) return
+    if (Date.now() < Number(localStorage.getItem(SNOOZE_KEY) ?? 0)) return // snoozed
     const last = Number(localStorage.getItem(SEEN_KEY) ?? 0)
     if (Date.now() - last > COOLDOWN_MS) setOpen(true)
   }, [reward, coach, chores.complete])
@@ -64,6 +66,15 @@ export function ChoresOverlay({
       live = false
     }
   }, [reward])
+
+  const snoozeTomorrow = useCallback(() => {
+    setOpen(false)
+    setPeek(true)
+    try {
+      localStorage.setItem(SNOOZE_KEY, String(Date.now() + 24 * 60 * 60 * 1000))
+      sessionStorage.setItem(SESSION_KEY, '1')
+    } catch {}
+  }, [])
 
   const close = useCallback(() => {
     setOpen(false)
@@ -183,16 +194,25 @@ export function ChoresOverlay({
               </span>
               <h2 id="chores-title" className="mt-3 text-xl font-bold leading-tight text-text">{nextAction!.headline}</h2>
               <p className="mt-2 max-w-sm self-center text-pretty text-[15px] leading-relaxed text-muted">{nextAction!.blurb}</p>
+              <p className="mt-3 inline-flex items-center justify-center gap-1.5 self-center rounded-full bg-signal-bg px-3 py-1 text-xs font-semibold text-signal">
+                <Gem className="h-3.5 w-3.5" aria-hidden /> Every step earns gems — and brings your people closer
+              </p>
               <Link
                 href={nextAction!.href}
                 onClick={close}
-                className="mt-6 inline-flex items-center gap-2 self-center rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                className="mt-5 inline-flex items-center gap-2 self-center rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
               >
                 {nextAction!.cta} <ArrowRight className="h-4 w-4" aria-hidden />
               </Link>
-              <button type="button" onClick={close} className="mt-3 text-xs font-medium text-subtle transition-colors hover:text-muted">
-                Maybe later
-              </button>
+              <p className="mt-3 text-xs text-subtle">You’re almost there — just a couple more moves and you’re fully set up.</p>
+              <div className="mt-2 flex items-center justify-center gap-5">
+                <button type="button" onClick={close} className="text-xs font-medium text-subtle transition-colors hover:text-muted">
+                  Maybe later
+                </button>
+                <button type="button" onClick={snoozeTomorrow} className="text-xs font-medium text-subtle transition-colors hover:text-muted">
+                  Don’t show till tomorrow
+                </button>
+              </div>
             </div>
           ) : (
             /* ── Beat 1: chores first ────────────────────────────────────────── */

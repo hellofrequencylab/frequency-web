@@ -218,50 +218,49 @@ export function PostCard({
             </div>
           )}
 
-          {/* Reactions + the zaps this post has earned (the clean gamification cue) */}
-          <div className="flex items-center justify-between gap-2 pt-3 border-t border-border">
-            <div className="flex items-center gap-1">
-              <form action={toggleReaction.bind(null, post.id, 'heart')}>
-                <button
-                  type="submit"
-                  className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${
-                    myHeart
-                      ? 'bg-danger-bg/30 text-danger'
-                      : 'text-subtle hover:bg-surface-elevated hover:text-muted'
-                  }`}
-                >
-                  <Heart className={`w-3.5 h-3.5 ${myHeart ? 'fill-current' : ''}`} />
-                  {heartCount > 0 && <span>{heartCount}</span>}
-                </button>
-              </form>
+          {/* A small, balanced action row directly under the post — like · plus · the
+              comment toggle, with the zaps earned on the right. The thread expands
+              full-width BELOW it (no more sandwiching). */}
+          <div className="mt-3 flex items-center gap-1 border-t border-border pt-2">
+            <form action={toggleReaction.bind(null, post.id, 'heart')}>
+              <button
+                type="submit"
+                className={`flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors ${
+                  myHeart ? 'text-danger' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
+                }`}
+              >
+                <Heart className={`w-3.5 h-3.5 ${myHeart ? 'fill-current' : ''}`} />
+                {heartCount > 0 && <span>{heartCount}</span>}
+              </button>
+            </form>
 
-              <form action={toggleReaction.bind(null, post.id, 'plus_one')}>
-                <button
-                  type="submit"
-                  className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${
-                    myPlus
-                      ? 'bg-primary-bg text-primary-strong'
-                      : 'text-subtle hover:bg-surface-elevated hover:text-muted'
-                  }`}
-                >
-                  <ThumbsUp className={`w-3.5 h-3.5 ${myPlus ? 'fill-current' : ''}`} />
-                  {plusCount > 0 && <span>{plusCount}</span>}
-                </button>
-              </form>
+            <form action={toggleReaction.bind(null, post.id, 'plus_one')}>
+              <button
+                type="submit"
+                className={`flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors ${
+                  myPlus ? 'text-primary-strong' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
+                }`}
+              >
+                <ThumbsUp className={`w-3.5 h-3.5 ${myPlus ? 'fill-current' : ''}`} />
+                {plusCount > 0 && <span>{plusCount}</span>}
+              </button>
+            </form>
 
-              <PostReplies postId={post.id} initialCount={replyCount} />
-            </div>
+            <span className="flex-1" />
 
             {zapsEarned > 0 && (
               <span
                 title={`Earned ${zapsEarned} zap${zapsEarned !== 1 ? 's' : ''} from reactions and replies`}
-                className="flex items-center gap-1 rounded-full bg-primary-bg px-2.5 py-1 text-xs font-semibold text-primary-strong shrink-0"
+                className="flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold text-primary-strong"
               >
                 <Zap className="w-3.5 h-3.5 fill-current" />
                 {zapsEarned}
               </span>
             )}
           </div>
+
+          {/* The thread — full width, below the action row (no sandwiching). */}
+          <PostReplies postId={post.id} initialCount={replyCount} />
       </div>
     </article>
   )
