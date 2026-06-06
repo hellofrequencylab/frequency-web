@@ -4,7 +4,6 @@ import { useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  Pencil,
   LayoutTemplate,
   Palette,
   Megaphone,
@@ -12,47 +11,75 @@ import {
   LayoutDashboard,
   FileText,
   Users,
-  Lock,
+  CircleDot,
+  Trophy,
+  QrCode,
+  ShieldAlert,
+  BarChart3,
   ChevronRight,
   ChevronLeft,
   Search,
+  type LucideIcon,
 } from 'lucide-react'
 import { meetsAccess } from '@/lib/nav-areas'
 import type { CommunityRole } from '@/lib/community-roles'
 import type { StaffRole } from '@/lib/staff'
+import { visibleLinks } from '@/app/(main)/admin/sections'
 import { CircleSettingsModule } from '@/components/admin/modules/circle-settings-module'
 import { HubSettingsModule } from '@/components/admin/modules/hub-settings-module'
 import { NexusSettingsModule } from '@/components/admin/modules/nexus-settings-module'
 import { EventSettingsModule } from '@/components/admin/modules/event-settings-module'
 
 // The page-admin sidebar console (ADR-137 drill-down · ADR-138 the "manage" surface).
-// Home lists the spine categories that apply to this page; tap one to drill into its
-// settings; search jumps straight to any item. Replaces the dock's old flat list —
-// same content, organized by the 9-category spine, so it scales as modules land.
+// Home lists the categories that apply for THIS viewer; tap one to drill into its
+// settings; search jumps to any item. Tiers filter automatically because the manage
+// links come from the role-gated admin catalog (`visibleLinks`) — a janitor (the top
+// tier) sees every category populated; a host sees only what they steward. The aim:
+// reach any admin surface from the sidebar, no trip to /admin.
 //
-// Today the categories are assembled here (the registry's modules aren't yet
-// server-composed with their own Components); as the @admin slot lands this becomes
-// `modulesForSurface(scope, caps, 'sidebar')` grouped by slot.
+// The per-page in-place settings module lives under **Basics**. As the @admin server
+// slot lands, the catalog links become server-composed `modulesForSurface(...)`.
 
 type Item =
-  | { kind: 'link'; label: string; sub?: string; href: string; Icon: typeof Pencil }
-  | { kind: 'soon'; label: string; sub?: string; Icon: typeof Pencil }
+  | { kind: 'link'; label: string; sub?: string; href: string; Icon: LucideIcon }
+  | { kind: 'soon'; label: string; sub?: string; Icon: LucideIcon }
 
 type Category = {
   key: string
   label: string
-  Icon: typeof Pencil
+  Icon: LucideIcon
   summary?: string
   module?: ReactNode
   items: Item[]
 }
 
-// The "Edit info" deep-link for routes that don't yet have an in-place module.
-function sectionEdit(pathname: string): { label: string; href: string } | null {
-  if (pathname.startsWith('/channels')) return { label: 'Channels', href: '/admin/channels' }
-  if (pathname.startsWith('/people')) return { label: 'Members', href: '/admin/members' }
-  if (/^\/(crew|practices|journeys|programs|library)/.test(pathname)) return { label: 'Gamification', href: '/admin/gamification' }
-  return null
+// Spine categories (ADR-137) the console can populate, in order. `spaces` collects
+// the global entity-management surfaces (manage all circles / channels / …); the
+// rest are the spine proper. `platform` is the janitor's sensitive keys.
+const CATEGORIES: { key: string; label: string; Icon: LucideIcon }[] = [
+  { key: 'basics', label: 'Basics', Icon: SlidersHorizontal },
+  { key: 'spaces', label: 'Spaces', Icon: CircleDot },
+  { key: 'people', label: 'People', Icon: Users },
+  { key: 'engage', label: 'Engage', Icon: Trophy },
+  { key: 'comms', label: 'Comms', Icon: Megaphone },
+  { key: 'reach', label: 'Reach', Icon: QrCode },
+  { key: 'safety', label: 'Safety', Icon: ShieldAlert },
+  { key: 'insights', label: 'Insights', Icon: BarChart3 },
+  { key: 'layout', label: 'Layout', Icon: LayoutTemplate },
+  { key: 'platform', label: 'Platform', Icon: LayoutDashboard },
+]
+
+// Map an admin surface to its spine category.
+function slotForHref(href: string): string {
+  if (href.startsWith('/admin/moderation')) return 'safety'
+  if (href.startsWith('/admin/members') || href.startsWith('/admin/roles')) return 'people'
+  if (href.startsWith('/admin/dispatches') || href.startsWith('/outreach')) return 'comms'
+  if (href.startsWith('/admin/gamification') || href.startsWith('/admin/crew-tasks') || href.startsWith('/programs')) return 'engage'
+  if (href.startsWith('/admin/qr')) return 'reach'
+  if (/^\/admin\/(engagement|intel|outcomes|insights|segments)/.test(href)) return 'insights'
+  if (/^\/admin\/(circles|channels|events|hubs|nexuses)/.test(href)) return 'spaces'
+  if (href === '/pages') return 'layout'
+  return 'platform' // /admin overview, vera, help-gaps, ai, demo
 }
 
 export function AdminConsole({
@@ -76,8 +103,7 @@ export function AdminConsole({
     setQuery('')
   }
 
-  const isStaff = staffRole != null
-  const isJanitor = meetsAccess('janitor', role) || isStaff
+  const isJanitor = meetsAccess('janitor', role) || staffRole != null
 
   const circleSlug = pathname.match(/^\/circles\/([^/]+)/)?.[1] ?? null
   const hubSlug = pathname.match(/^\/hubs\/([^/]+)/)?.[1] ?? null
@@ -93,57 +119,32 @@ export function AdminConsole({
   ) : eventSlug ? (
     <EventSettingsModule />
   ) : null
-  const edit = sectionEdit(pathname)
 
-  const categories: Category[] = [
-    {
-      key: 'basics',
-      label: 'Basics',
-      Icon: SlidersHorizontal,
-      summary: settingsModule ? 'Name, details, status' : edit?.label,
-      module: settingsModule ?? undefined,
-      items: settingsModule || !edit ? [] : [{ kind: 'link' as const, label: 'Edit info', sub: edit.label, href: edit.href, Icon: Pencil }],
-    },
-    {
-      key: 'layout',
-      label: 'Layout',
-      Icon: LayoutTemplate,
-      summary: 'Page modules & styles',
-      items: [
-        { kind: 'soon' as const, label: 'Layout template', sub: 'Soon', Icon: LayoutTemplate },
-        { kind: 'soon' as const, label: 'Basic styles', sub: 'Soon', Icon: Palette },
-        ...(isJanitor ? [{ kind: 'link' as const, label: 'Pages & content', href: '/pages', Icon: FileText }] : []),
-      ],
-    },
-    {
-      key: 'comms',
-      label: 'Comms',
-      Icon: Megaphone,
-      summary: 'Broadcast to your people',
-      items: [{ kind: 'link' as const, label: 'Group dispatch', sub: 'Broadcast', href: '/admin/dispatches', Icon: Megaphone }],
-    },
-    ...(isJanitor
-      ? [
-          {
-            key: 'people',
-            label: 'People',
-            Icon: Users,
-            summary: 'Members & roles',
-            items: [
-              { kind: 'link' as const, label: 'Members', href: '/admin/members', Icon: Users },
-              { kind: 'link' as const, label: 'Roles & access', href: '/admin/roles', Icon: Lock },
-            ],
-          },
-        ]
-      : []),
-    {
-      key: 'platform',
-      label: 'Platform',
-      Icon: LayoutDashboard,
-      summary: 'Full admin',
-      items: [{ kind: 'link' as const, label: 'Admin home', href: '/admin', Icon: LayoutDashboard }],
-    },
-  ].filter((c) => c.module || c.items.length > 0)
+  // Bucket the role-gated admin catalog into spine categories.
+  const itemsBySlot = new Map<string, Item[]>()
+  for (const l of visibleLinks(role ?? 'member', staffRole)) {
+    const slot = slotForHref(l.href)
+    const arr = itemsBySlot.get(slot) ?? []
+    arr.push({ kind: 'link', label: l.label, sub: l.desc, href: l.href, Icon: l.Icon })
+    itemsBySlot.set(slot, arr)
+  }
+  // Layout tuners (page-builder), still "Soon"; plus a janitor's Pages link.
+  const layoutExtra: Item[] = [
+    { kind: 'soon', label: 'Layout template', sub: 'Soon', Icon: LayoutTemplate },
+    { kind: 'soon', label: 'Basic styles', sub: 'Soon', Icon: Palette },
+    ...(isJanitor ? [{ kind: 'link' as const, label: 'Pages & content', href: '/pages', Icon: FileText }] : []),
+  ]
+
+  const categories: Category[] = CATEGORIES.map((c) => {
+    const items = c.key === 'layout' ? [...layoutExtra, ...(itemsBySlot.get(c.key) ?? [])] : itemsBySlot.get(c.key) ?? []
+    const mod = c.key === 'basics' ? settingsModule ?? undefined : undefined
+    const summary = mod
+      ? 'Name, details, status'
+      : items.length
+        ? `${items.length} ${items.length === 1 ? 'setting' : 'settings'}`
+        : undefined
+    return { ...c, items, module: mod, summary }
+  }).filter((c) => c.module || c.items.length > 0)
 
   const q = query.trim().toLowerCase()
   const searchResults: Item[] = q
@@ -171,7 +172,7 @@ export function AdminConsole({
       >
         <it.Icon className="h-4 w-4 shrink-0 text-muted" />
         <span className="flex-1 truncate">{it.label}</span>
-        {it.sub && <span className="truncate text-[11px] text-subtle">{it.sub}</span>}
+        {it.sub && <span className="max-w-[45%] truncate text-[11px] text-subtle">{it.sub}</span>}
       </Link>
     )
   }
@@ -180,7 +181,6 @@ export function AdminConsole({
     <div className="flex-1 overflow-y-auto">
       {view === 'home' ? (
         <>
-          {/* Search */}
           <div className="sticky top-0 z-10 bg-surface p-1.5">
             <div className="flex items-center gap-2 rounded-lg border border-border bg-surface-elevated/50 px-2.5 py-1.5">
               <Search className="h-3.5 w-3.5 shrink-0 text-subtle" />
@@ -221,7 +221,6 @@ export function AdminConsole({
         </>
       ) : active ? (
         <>
-          {/* Category screen header */}
           <div className="sticky top-0 z-10 flex items-center gap-1.5 border-b border-border bg-surface px-2 py-2">
             <button
               type="button"
