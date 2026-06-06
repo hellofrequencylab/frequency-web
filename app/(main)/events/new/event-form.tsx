@@ -138,14 +138,14 @@ export function EventForm({ groups }: { groups: Group[] }) {
                 disabled={isPending}
                 className={`rounded-lg border px-3 py-2 text-left transition-colors ${
                   active
-                    ? 'border-indigo-400 bg-indigo-50 ring-2 ring-indigo-100'
-                    : 'border-gray-200 bg-white hover:border-gray-300'
+                    ? 'border-primary bg-primary-bg ring-2 ring-primary/30'
+                    : 'border-border bg-surface hover:border-border-strong'
                 } disabled:opacity-60`}
               >
-                <p className={`text-sm font-medium ${active ? 'text-indigo-700' : 'text-gray-900'}`}>
+                <p className={`text-sm font-medium ${active ? 'text-primary-strong' : 'text-text'}`}>
                   {label}
                 </p>
-                <p className="text-[11px] text-gray-500 mt-0.5">{helper}</p>
+                <p className="text-2xs text-gray-500 mt-0.5">{helper}</p>
               </button>
             )
           })}
@@ -162,7 +162,7 @@ export function EventForm({ groups }: { groups: Group[] }) {
               disabled={isPending}
               className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-60"
             />
-            <p className="text-[11px] text-gray-500 mt-1.5">
+            <p className="text-2xs text-gray-500 mt-1.5">
               The first 60 days of occurrences will be created immediately. A daily job rolls the window forward.
             </p>
           </div>

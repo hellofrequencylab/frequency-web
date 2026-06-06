@@ -186,7 +186,7 @@ function DealCard({
         {deal.owner && <Avatar person={deal.owner} />}
       </div>
       {deal.expected_close_date && (
-        <p className="mt-1 flex items-center gap-1 text-[11px] text-subtle">
+        <p className="mt-1 flex items-center gap-1 text-2xs text-subtle">
           <CalendarClock className="h-3 w-3" />
           {new Date(deal.expected_close_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
         </p>
@@ -201,7 +201,7 @@ function DealCard({
         >
           <ChevronLeft className="h-3.5 w-3.5" />
         </button>
-        <span className="text-[10px] uppercase tracking-wide text-subtle">{stages[idx]?.name ?? '—'}</span>
+        <span className="text-3xs uppercase tracking-wide text-subtle">{stages[idx]?.name ?? '—'}</span>
         <button
           type="button"
           disabled={!next || pending}

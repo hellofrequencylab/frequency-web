@@ -88,7 +88,7 @@ export function RoomSearch({ roomId }: { roomId: string }) {
                 <p className="px-1 py-2 text-xs text-subtle">No matching messages.</p>
               ) : (
                 <>
-                  <p className="mb-1.5 flex items-center gap-1 px-1 text-[11px] font-medium uppercase tracking-wide text-subtle">
+                  <p className="mb-1.5 flex items-center gap-1 px-1 text-2xs font-medium uppercase tracking-wide text-subtle">
                     {mode === 'semantic' ? <><Sparkles className="h-3 w-3 text-primary-strong" /> Closest in meaning</> : 'Matches'}
                     <span className="ml-auto normal-case tracking-normal">{hits.length}</span>
                   </p>
@@ -96,7 +96,7 @@ export function RoomSearch({ roomId }: { roomId: string }) {
                     {hits.map((h) => (
                       <li key={h.id} className="rounded-lg px-2 py-1.5 hover:bg-surface-elevated">
                         <p className="line-clamp-3 text-sm leading-snug text-text">{h.body}</p>
-                        <p className="mt-0.5 text-[11px] text-subtle">{relativeTime(h.created_at)}</p>
+                        <p className="mt-0.5 text-2xs text-subtle">{relativeTime(h.created_at)}</p>
                       </li>
                     ))}
                   </ul>

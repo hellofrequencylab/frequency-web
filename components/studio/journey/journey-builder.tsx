@@ -436,7 +436,7 @@ export function JourneyBuilder(props: Props) {
                   {/* Per-step controls */}
                   {expanded === it.practiceId && (
                     <div className="mt-2 flex flex-wrap items-end gap-2 border-t border-border pt-2.5">
-                      <label className="flex flex-col gap-1 text-[11px] font-semibold uppercase tracking-wide text-subtle">
+                      <label className="flex flex-col gap-1 text-2xs font-semibold uppercase tracking-wide text-subtle">
                         Cadence
                         <select
                           value={it.cadence ?? ''}
@@ -447,7 +447,7 @@ export function JourneyBuilder(props: Props) {
                           {CADENCES.map((c) => <option key={c} value={c}>{c}</option>)}
                         </select>
                       </label>
-                      <label className="flex min-w-[12rem] flex-1 flex-col gap-1 text-[11px] font-semibold uppercase tracking-wide text-subtle">
+                      <label className="flex min-w-[12rem] flex-1 flex-col gap-1 text-2xs font-semibold uppercase tracking-wide text-subtle">
                         Note for this step
                         <input
                           defaultValue={it.note ?? ''}
@@ -493,7 +493,7 @@ export function JourneyBuilder(props: Props) {
                   <p className="px-1 py-3 text-sm text-muted">{available.length === 0 ? 'Every library practice is already on your path.' : 'No practices match that search.'}</p>
                 ) : pickerGroups.map((g) => (
                   <div key={g.name}>
-                    <p className="mb-1 px-1 text-[11px] font-semibold uppercase tracking-wide text-subtle">{g.name}</p>
+                    <p className="mb-1 px-1 text-2xs font-semibold uppercase tracking-wide text-subtle">{g.name}</p>
                     <ul className="space-y-1">
                       {g.list.map((p) => (
                         <li key={p.id}>

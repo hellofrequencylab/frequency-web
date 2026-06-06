@@ -261,7 +261,7 @@ function BetaBanner() {
           <span className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-widest text-primary-strong">
             <Sparkles className="w-4 h-4" /> Free during beta
           </span>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-on-primary bg-primary px-2 py-0.5 rounded-md">
+          <span className="text-3xs font-bold uppercase tracking-wider text-on-primary bg-primary px-2 py-0.5 rounded-md">
             Active now
           </span>
         </div>
@@ -319,7 +319,7 @@ function TierCard({
       <div className="flex items-center gap-2 mb-1">
         <h3 className="font-display uppercase text-text text-2xl">{name}</h3>
         {founder && (
-          <span className="inline-flex items-center gap-1 rounded-md bg-signal-bg px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-signal-strong">
+          <span className="inline-flex items-center gap-1 rounded-md bg-signal-bg px-2 py-0.5 text-3xs font-bold uppercase tracking-wider text-signal-strong">
             <Award className="w-3 h-3" /> Founder
           </span>
         )}

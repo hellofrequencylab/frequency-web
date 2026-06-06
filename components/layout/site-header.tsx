@@ -82,7 +82,7 @@ export async function SiteHeader({ profile: profileProp, variant = 'light' }: Si
         <Search className="w-3.5 h-3.5" />
         <span>Search</span>
         <kbd
-          className={`text-[10px] rounded px-1 border ${
+          className={`text-3xs rounded px-1 border ${
             isDark
               ? 'border-white/20 text-white/40'
               : 'border-border text-subtle'

@@ -86,7 +86,7 @@ export function CommentSection({
               {c.author.avatar_url ? (
                 <Image src={c.author.avatar_url} alt={c.author.display_name} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0 mt-0.5" />
               ) : (
-                <div className="w-7 h-7 rounded-full bg-border-strong flex items-center justify-center text-[10px] font-bold text-muted shrink-0 mt-0.5 select-none">
+                <div className="w-7 h-7 rounded-full bg-border-strong flex items-center justify-center text-3xs font-bold text-muted shrink-0 mt-0.5 select-none">
                   {getInitials(c.author.display_name)}
                 </div>
               )}
@@ -98,7 +98,7 @@ export function CommentSection({
                   >
                     {c.author.display_name}
                   </Link>
-                  <span className="text-[11px] text-subtle">{relTime(c.created_at)}</span>
+                  <span className="text-2xs text-subtle">{relTime(c.created_at)}</span>
                 </div>
                 <p className="text-sm text-text leading-relaxed mt-0.5 whitespace-pre-wrap break-words">
                   {c.body}

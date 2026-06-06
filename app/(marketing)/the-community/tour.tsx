@@ -161,7 +161,7 @@ export function PhoneFrame({ children }: { children: React.ReactNode }) {
             <span className="font-display uppercase text-lg text-text leading-none">
               Frequency
             </span>
-            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-primary-strong">
+            <span className="inline-flex items-center gap-1.5 text-2xs font-bold uppercase tracking-widest text-primary-strong">
               <MapPin className="w-3 h-3" aria-hidden />
               North County
             </span>
@@ -203,7 +203,7 @@ function FeedPanel() {
               <span className="text-sm font-semibold text-text truncate">Maya R.</span>
               <RoleBadge role="host" className="text-[9px] leading-tight" />
             </div>
-            <p className="text-[11px] text-subtle mt-0.5">@maya · 12m · Sunrise Breathwork</p>
+            <p className="text-2xs text-subtle mt-0.5">@maya · 12m · Sunrise Breathwork</p>
           </div>
         </div>
         <p className="text-sm text-text leading-relaxed">
@@ -234,7 +234,7 @@ function FeedPanel() {
               <span className="text-sm font-semibold text-text truncate">Devon T.</span>
               <RoleBadge role="crew" className="text-[9px] leading-tight" />
             </div>
-            <p className="text-[11px] text-subtle mt-0.5">@devon · 1h · Saturday Sauna</p>
+            <p className="text-2xs text-subtle mt-0.5">@devon · 1h · Saturday Sauna</p>
           </div>
         </div>
         <p className="text-sm text-text leading-relaxed">
@@ -251,7 +251,7 @@ function CirclesPanel() {
     <>
       <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
         <div className="flex items-center gap-2 mb-1">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-bg px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-primary-strong">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-bg px-2.5 py-1 text-3xs font-bold uppercase tracking-widest text-primary-strong">
             <Sparkles className="w-3 h-3" aria-hidden />
             Movement
           </span>
@@ -280,14 +280,14 @@ function CirclesPanel() {
               +4
             </span>
           </div>
-          <span className="text-[11px] font-bold uppercase tracking-widest text-primary-strong">
+          <span className="text-2xs font-bold uppercase tracking-widest text-primary-strong">
             Join Circle
           </span>
         </div>
       </div>
 
       <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-info-bg px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-info">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-info-bg px-2.5 py-1 text-3xs font-bold uppercase tracking-widest text-info">
           <Sparkles className="w-3 h-3" aria-hidden />
           Human relating
         </span>
@@ -321,9 +321,9 @@ function EventRow({
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-text truncate">{title}</p>
-        <p className="text-[11px] text-subtle mt-0.5">{meta}</p>
+        <p className="text-2xs text-subtle mt-0.5">{meta}</p>
       </div>
-      <span className="text-[11px] font-bold uppercase tracking-widest text-primary-strong shrink-0">
+      <span className="text-2xs font-bold uppercase tracking-widest text-primary-strong shrink-0">
         RSVP
       </span>
     </div>
@@ -367,7 +367,7 @@ function LeaderRow({
       >
         {rank}
       </span>
-      <span className="w-9 h-9 rounded-full bg-surface-elevated text-[10px] font-bold text-muted flex items-center justify-center shrink-0 select-none" aria-hidden>
+      <span className="w-9 h-9 rounded-full bg-surface-elevated text-3xs font-bold text-muted flex items-center justify-center shrink-0 select-none" aria-hidden>
         {initials}
       </span>
       <span className="flex-1 min-w-0 text-sm font-semibold text-text truncate">{name}</span>
@@ -385,7 +385,7 @@ function ZapsPanel() {
       <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
         <div className="flex items-center gap-2 mb-3">
           <Trophy className="w-4 h-4 text-signal-strong" aria-hidden />
-          <span className="text-[11px] font-bold uppercase tracking-widest text-muted">
+          <span className="text-2xs font-bold uppercase tracking-widest text-muted">
             This week · North County
           </span>
         </div>

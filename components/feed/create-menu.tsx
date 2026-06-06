@@ -35,7 +35,7 @@ export function CreateMenu({ role }: { role: CommunityRole }) {
       {open && (
         <div className="absolute right-0 top-full mt-2 w-64 rounded-xl border border-border bg-surface shadow-xl shadow-black/5 py-1 z-50">
           <div className="px-3 py-2 border-b border-border">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-subtle">
+            <p className="text-3xs font-semibold uppercase tracking-wider text-subtle">
               Quick Create
             </p>
           </div>
@@ -50,7 +50,7 @@ export function CreateMenu({ role }: { role: CommunityRole }) {
                 <Icon className="w-4 h-4 text-subtle mt-0.5 shrink-0" />
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-text dark:text-subtle/60">{label}</p>
-                  <p className="text-[11px] text-subtle leading-tight">{hint}</p>
+                  <p className="text-2xs text-subtle leading-tight">{hint}</p>
                 </div>
               </Link>
             ))}

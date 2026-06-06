@@ -133,7 +133,7 @@ export function RoomThread({
                       <span className={`text-sm font-semibold ${isOwn ? 'text-primary-strong' : 'text-text'}`}>
                         {a?.display_name ?? 'Unknown'}
                       </span>
-                      <span className="text-[10px] text-subtle">{formatTime(m.created_at)}</span>
+                      <span className="text-3xs text-subtle">{formatTime(m.created_at)}</span>
                     </div>
                   )}
                   <p className="text-sm text-text whitespace-pre-wrap leading-relaxed">{m.body}</p>

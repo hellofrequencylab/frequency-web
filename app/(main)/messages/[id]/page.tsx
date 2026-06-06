@@ -129,7 +129,7 @@ export default async function ConversationPage({
             )}
             <div className="min-w-0">
               <p className="text-sm font-semibold text-text truncate leading-tight">{others[0].display_name}</p>
-              <p className="text-[11px] text-subtle">@{others[0].handle}</p>
+              <p className="text-2xs text-subtle">@{others[0].handle}</p>
             </div>
           </Link>
         ) : (
@@ -163,7 +163,7 @@ export default async function ConversationPage({
         {isGroup && (
           <aside className="hidden lg:flex w-64 shrink-0 flex-col border-l border-border bg-surface/30 dark:bg-canvas/30">
             <div className="px-4 py-3 border-b border-border">
-              <h3 className="text-[11px] font-semibold uppercase tracking-wider text-subtle">
+              <h3 className="text-2xs font-semibold uppercase tracking-wider text-subtle">
                 People ({participants.length})
               </h3>
             </div>
@@ -177,13 +177,13 @@ export default async function ConversationPage({
                     {p.avatar_url ? (
                       <Image src={p.avatar_url} alt={p.display_name} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0" />
                     ) : (
-                      <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-[10px] font-semibold flex items-center justify-center shrink-0 select-none">
+                      <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-3xs font-semibold flex items-center justify-center shrink-0 select-none">
                         {getInitials(p.display_name)}
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-text truncate">{p.display_name}</p>
-                      {p.id === myProfileId && <p className="text-[10px] text-subtle">You</p>}
+                      {p.id === myProfileId && <p className="text-3xs text-subtle">You</p>}
                     </div>
                   </Link>
                 </li>

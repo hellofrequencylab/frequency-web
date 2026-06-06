@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { Compass, Zap, Flame, Gem, Check, ArrowRight } from 'lucide-react'
+import { Compass, Zap, Flame, Gem, Check, ArrowRight, Users } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { IndexTemplate } from '@/components/templates'
@@ -41,7 +41,7 @@ export default async function JourneyPage() {
   const toNext = nextRank ? Math.max(0, nextRank.minZaps - seasonZaps) : 0
 
   const [journeys, pillars] = await Promise.all([
-    getActiveJourneyProgress(profile.id),
+    getActiveJourneyProgress(profile.id, { withCompanions: true }),
     getPillars(),
   ])
   const byId = pillarsById(pillars)
@@ -49,7 +49,7 @@ export default async function JourneyPage() {
   return (
     <IndexTemplate
       title="Your Journey"
-      description="Your season's practices across Mind · Body · Spirit · Expression — and the rank, streak, and gems they earn. Logging a practice is the one move that advances both."
+      description="Your season's practices across Mind · Body · Spirit · Expression — keep each one on its cadence this week. Logging is the one move that advances your journey and earns the rank, streak, and gems."
     >
       {/* Gamification panel — the practice log is what drives these. */}
       <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -90,11 +90,19 @@ export default async function JourneyPage() {
                 title={j.plan.title}
                 action={
                   <span className="text-xs font-semibold tabular-nums text-subtle">
-                    {j.done} / {j.total} done · {j.percent}%
+                    {j.done} / {j.total} on track · {j.percent}%
                   </span>
                 }
               />
               {j.plan.summary && <p className="-mt-2 mb-3 text-sm text-muted">{j.plan.summary}</p>}
+
+              {/* Doing it with your circle — companions on the same journey (Path A). */}
+              {j.circleCompanions > 0 && (
+                <p className="mb-3 inline-flex items-center gap-1.5 rounded-md bg-signal-bg px-2 py-1 text-xs font-medium text-signal-strong">
+                  <Users className="h-3.5 w-3.5" />
+                  {j.circleCompanions} in your circle doing this too
+                </p>
+              )}
 
               {/* Progress bar */}
               <div className="mb-4 h-2 overflow-hidden rounded-full bg-surface-elevated">
@@ -121,7 +129,7 @@ export default async function JourneyPage() {
                 })}
               </div>
 
-              {/* The ordered steps — logged ✓, the next step highlighted with a Log. */}
+              {/* The ordered steps — cadence met ✓ this week, the current step highlighted. */}
               <ol className="space-y-2">
                 {j.items.map((it, idx) => {
                   const isNext = j.nextItem?.id === it.id
@@ -133,23 +141,31 @@ export default async function JourneyPage() {
                       }`}
                     >
                       <span
-                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
-                          it.logged
+                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-2xs font-bold ${
+                          it.met
                             ? 'bg-success text-on-primary'
                             : isNext
                               ? 'bg-primary text-on-primary'
                               : 'bg-surface text-subtle ring-1 ring-border'
                         }`}
                       >
-                        {it.logged ? <Check className="h-3.5 w-3.5" /> : idx + 1}
+                        {it.met ? <Check className="h-3.5 w-3.5" /> : idx + 1}
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className={`truncate text-sm font-medium ${it.logged ? 'text-muted line-through' : 'text-text'}`}>
+                        <p className={`truncate text-sm font-medium ${it.met ? 'text-muted' : 'text-text'}`}>
                           {it.practice?.title ?? 'Practice'}
                         </p>
-                        {isNext && <p className="text-xs font-semibold text-primary-strong">Your next step</p>}
+                        <p className="text-xs">
+                          {it.met ? (
+                            <span className="font-semibold text-success">On track · {it.loggedThisWeek}/{it.target} this week</span>
+                          ) : isNext ? (
+                            <span className="font-semibold text-primary-strong">Your next step · {it.loggedThisWeek}/{it.target} this week</span>
+                          ) : (
+                            <span className="text-subtle">{it.loggedThisWeek}/{it.target} this week</span>
+                          )}
+                        </p>
                       </div>
-                      {!it.logged && <LogPracticeButton practiceId={it.practice_id} label="Log" />}
+                      {!it.met && <LogPracticeButton practiceId={it.practice_id} label="Log" />}
                     </li>
                   )
                 })}

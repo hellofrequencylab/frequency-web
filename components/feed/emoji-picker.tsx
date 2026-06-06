@@ -74,7 +74,7 @@ export function EmojiPicker({ onSelect, disabled }: { onSelect: (emoji: string) 
         >
           {GROUPS.map((group) => (
             <div key={group.label} className="mb-1.5 last:mb-0">
-              <p className="px-1.5 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wide text-subtle">
+              <p className="px-1.5 pb-1 pt-1 text-3xs font-semibold uppercase tracking-wide text-subtle">
                 {group.label}
               </p>
               <div className="grid grid-cols-8 gap-0.5">
