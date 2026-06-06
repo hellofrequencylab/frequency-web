@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { Check } from 'lucide-react'
 import { AdminModuleCard } from '@/components/admin/admin-module-card'
 import { moduleById } from '@/lib/admin/modules/registry'
+import { fieldClasses, labelClasses } from '@/components/ui/field'
 import { getNexusAdminData, updateNexusSettings } from '@/app/(main)/nexuses/admin-actions'
 
 // In-place "Nexus settings" module (EMBEDDED-ADMIN.md / ADR-133). Mirrors the
@@ -14,9 +15,8 @@ import { getNexusAdminData, updateNexusSettings } from '@/app/(main)/nexuses/adm
 
 type NexusData = NonNullable<Awaited<ReturnType<typeof getNexusAdminData>>>
 
-const input =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'
-const fieldLabel = 'text-xs font-medium text-muted'
+const input = fieldClasses
+const fieldLabel = labelClasses
 
 export function NexusSettingsModule() {
   const pathname = usePathname()
