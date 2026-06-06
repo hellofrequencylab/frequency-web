@@ -123,11 +123,14 @@ you can only *do* as Crew.
 - **Rename depth → full.** `arc_* → journey_*` tables + `/crew/journeys` route +
   `/crew/arcs` redirect. ✅ Done (ADR-085).
 
+**Resolved ([ADR-141](DECISIONS.md)):**
+- **Member rank display → no rank** at all on a free member's public profile (no inert
+  chip). The rank reappears on upgrade. `isEndorsed(role)` gates it; inert in Beta.
+- **Endorsement set → rank only, for now.** The rank badge is Crew-gated; streak,
+  achievement count, and gem tier stay visible for everyone as *earned* stats. Cosmetics,
+  titles, and Journey badges ride the same `isEndorsed` gate once they render publicly.
+
 **Still open:**
-- **Member rank display.** Show an inert "Ghost" rank, or **no rank** at all on a free
-  member's public profile?
-- **Endorsement set.** Confirm what becomes profile-endorsed (rank badge · titles ·
-  store cosmetics · journey badges) vs merely earned.
 - **Authoring.** Who builds the seasonal journeys, and where (admin content tool)?
 
 ## 7. Build order (once §6 lands)
@@ -141,4 +144,6 @@ you can only *do* as Crew.
 4. ✅ **Seasonal journeys** — `quest_chains.domain_id` → Pillar; 4 primary + 2 micro
    tracks seeded for the active season (ADR-139/140). Authoring surface still pending.
 5. ⏳ **DIY journey builder** — pick practices → a personal journey.
-6. ⏳ **Endorsement layer** — the profile/people-card badge rendering, Crew-gated.
+6. ✅ **Endorsement layer** — rank shown on public profile + people cards + post flair is
+   Crew-gated via `isEndorsed` (ADR-141); free profiles show earned stats but no rank.
+   Cosmetics/titles/journey badges ride the same gate when they render.
