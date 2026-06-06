@@ -5,7 +5,8 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getVeraConfig } from '@/lib/ai/vera/config'
 import { VERA, BETA_OATHS } from '@/lib/onboarding/beta-script'
-import { getSequence, DEFAULT_SEQUENCE } from '@/lib/onboarding/beta-sequences'
+import { DEFAULT_SEQUENCE } from '@/lib/onboarding/beta-sequences'
+import { resolveSequence } from '@/lib/onboarding/resolve-sequence'
 import { isPersonaId, type PersonaId } from '@/lib/onboarding/personas'
 import BetaInduction from './induction'
 
@@ -21,7 +22,8 @@ export default async function BetaInductionPage({
   // copy. Operator overrides from /admin/vera still apply to the DEFAULT sequence
   // (that's what they were authored against); audience sequences use their own copy.
   const { seq: seqSlug, persona: personaSlug } = await searchParams
-  const seq = getSequence(seqSlug)
+  // Resolve from code + DB (owner edits + wizard-built versions render here, ADR-162).
+  const seq = await resolveSequence(seqSlug)
   // Who they said they are in the lead flow (ADR-125) — pre-selects the Welcome-beat
   // picker, branches the tour reel, and is stamped on the member at completion.
   const persona: PersonaId | undefined = isPersonaId(personaSlug) ? personaSlug : undefined
