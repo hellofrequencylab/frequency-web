@@ -16,9 +16,9 @@ greenfield initiative (G).
 The current build order for the progress / streak / disclosure arc and the practice-engine
 follow-ups it surfaced. Full detail lives in the lettered sections below — this is the ranking.
 
-**P0 — decided ✅ (2026-06-06, ADR-151): The Quest → Seasonal Quest → Journeys → Practices (all free).**
+**P0 — decided ✅ (2026-06-06, ADR-152): The Quest → Seasonal Quest → Journeys → Practices (all free).**
 1. **S1 · Quest/Journey hierarchy** — Phase A *shipped* (paywall removed everywhere; "Quests"
-   restored as the distinct seasonal container — ADR-151 supersedes the ADR-150 "one concept"
+   restored as the distinct seasonal container — ADR-152 supersedes the ADR-150 "one concept"
    call). Phase B *(§S, M)* — the data nesting: a `quests` container table, `journey_plans` gains
    `quest_id` (nullable) + `official`, seasonal Pillar content becomes official **Journeys**
    (practice-based) under the season's Quest, legacy action-chains retire to `season_challenges`.
@@ -370,8 +370,8 @@ inline path (wizard is an optional guided alt); RLS isolation between `journey_p
 > progress ring + stepper, obscured force-complete, graduates to the tracker — ✅.
 > **Still open:** S4 (demo box), S6 (tiered post options), broadcast-surface + label sweeps.
 
-- [~] **S1 · Quest/Journey hierarchy** — ✅ *decided + Phase A shipped (ADR-151, 2026-06-06):*
-  **The Quest → Seasonal Quest → Journeys → Practices**, all **free**. (ADR-151 supersedes
+- [~] **S1 · Quest/Journey hierarchy** — ✅ *decided + Phase A shipped (ADR-152, 2026-06-06):*
+  **The Quest → Seasonal Quest → Journeys → Practices**, all **free**. (ADR-152 supersedes
   ADR-150's brief "one concept" detour — Quests and Journeys are *distinct nested levels*.) Phase A
   removed the paywall everywhere and restored **"Quests"** as the seasonal container surface
   (`/crew/quests`). **Phase B (remaining, M):** the data nesting — add a `quests` seasonal-container
