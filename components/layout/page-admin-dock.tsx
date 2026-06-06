@@ -1,19 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import {
-  Shield, X, Pencil, LayoutTemplate, Palette, Megaphone, SlidersHorizontal,
-  LayoutDashboard, FileText, Users, Lock, PanelRight, Columns2,
-} from 'lucide-react'
+import { Shield, X, PanelRight, Columns2 } from 'lucide-react'
 import { meetsAccess } from '@/lib/nav-areas'
 import type { CommunityRole } from '@/lib/community-roles'
 import type { StaffRole } from '@/lib/staff'
-import { CircleSettingsModule } from '@/components/admin/modules/circle-settings-module'
-import { HubSettingsModule } from '@/components/admin/modules/hub-settings-module'
-import { NexusSettingsModule } from '@/components/admin/modules/nexus-settings-module'
-import { EventSettingsModule } from '@/components/admin/modules/event-settings-module'
+import { AdminConsole } from '@/components/admin/sidebar/admin-console'
 
 // The page admin dock (CAPABILITIES-AND-MOBILE.md — inline admin as a side panel).
 // Operators get per-page admin actions (edit info, layout template, basic styles,
@@ -26,20 +19,6 @@ import { EventSettingsModule } from '@/components/admin/modules/event-settings-m
 // State (open/mode/width) is owned by the shell so PUSH can pad the content.
 
 export type AdminDockMode = 'overlay' | 'push'
-
-type Action =
-  | { kind: 'link'; label: string; sub?: string; href: string; Icon: typeof Pencil }
-  | { kind: 'soon'; label: string; sub?: string; Icon: typeof Pencil }
-
-// The "Edit info" deep-link for the current route → its admin editor.
-function sectionEdit(pathname: string): { label: string; href: string } | null {
-  if (pathname.startsWith('/circles')) return { label: 'Circles', href: '/admin/circles' }
-  if (pathname.startsWith('/channels')) return { label: 'Channels', href: '/admin/channels' }
-  if (pathname.startsWith('/events')) return { label: 'Events', href: '/admin/events' }
-  if (pathname.startsWith('/people')) return { label: 'Members', href: '/admin/members' }
-  if (/^\/(crew|practices|journeys|programs|library)/.test(pathname)) return { label: 'Gamification', href: '/admin/gamification' }
-  return null
-}
 
 export function PageAdminDock({
   role,
@@ -71,30 +50,7 @@ export function PageAdminDock({
 
   const isStaff = staffRole != null
   const can = (min: CommunityRole) => meetsAccess(min, role) || isStaff
-  const isJanitor = meetsAccess('janitor', role)
   if (!can('host')) return null // operators only
-
-  const circleSlug = pathname.match(/^\/circles\/([^/]+)/)?.[1] ?? null
-  const hubSlug = pathname.match(/^\/hubs\/([^/]+)/)?.[1] ?? null
-  const nexusSlug = pathname.match(/^\/nexuses\/([^/]+)/)?.[1] ?? null
-  const eventSlug = pathname.match(/^\/events\/([^/]+)/)?.[1] ?? null
-  const edit = sectionEdit(pathname)
-  const actions: Action[] = [
-    // On a circle/event detail page the in-place module replaces the deep-link.
-    ...(edit && !circleSlug && !eventSlug ? [{ kind: 'link' as const, label: 'Edit info', sub: edit.label, href: edit.href, Icon: Pencil }] : []),
-    { kind: 'soon', label: 'Layout template', sub: 'Soon', Icon: LayoutTemplate },
-    { kind: 'soon', label: 'Basic styles', sub: 'Soon', Icon: Palette },
-    { kind: 'link', label: 'Group dispatch', sub: 'Broadcast to your people', href: '/admin/dispatches', Icon: Megaphone },
-    { kind: 'link', label: 'Settings', sub: 'Admin overview', href: '/admin', Icon: SlidersHorizontal },
-    ...(isJanitor
-      ? [
-          { kind: 'link' as const, label: 'Members', href: '/admin/members', Icon: Users },
-          { kind: 'link' as const, label: 'Pages & content', href: '/pages', Icon: FileText },
-          { kind: 'link' as const, label: 'Roles & access', href: '/admin/roles', Icon: Lock },
-        ]
-      : []),
-    { kind: 'link', label: 'Admin home', href: '/admin', Icon: LayoutDashboard },
-  ]
 
   // Drag the left edge to resize (desktop). Width persists via onWidthChange.
   function startResize(e: React.PointerEvent) {
@@ -186,50 +142,8 @@ export function PageAdminDock({
               </button>
             </div>
 
-            {/* Actions */}
-            <div className="flex-1 overflow-y-auto p-1.5">
-              {/* In-place admin module(s) for this scope (Phase 2). */}
-              {circleSlug && (
-                <div className="px-1 pb-2 pt-1">
-                  <CircleSettingsModule />
-                </div>
-              )}
-              {hubSlug && (
-                <div className="px-1 pb-2 pt-1">
-                  <HubSettingsModule />
-                </div>
-              )}
-              {nexusSlug && (
-                <div className="px-1 pb-2 pt-1">
-                  <NexusSettingsModule />
-                </div>
-              )}
-              {eventSlug && (
-                <div className="px-1 pb-2 pt-1">
-                  <EventSettingsModule />
-                </div>
-              )}
-              {actions.map((a) =>
-                a.kind === 'soon' ? (
-                  <div key={a.label} aria-disabled className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium text-subtle opacity-60">
-                    <a.Icon className="h-4 w-4 shrink-0" />
-                    <span className="flex-1">{a.label}</span>
-                    <span className="rounded-full bg-surface-elevated px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-subtle">Soon</span>
-                  </div>
-                ) : (
-                  <Link
-                    key={a.label}
-                    href={a.href}
-                    onClick={() => onOpenChange(false)}
-                    className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
-                  >
-                    <a.Icon className="h-4 w-4 shrink-0 text-muted" />
-                    <span className="flex-1 truncate">{a.label}</span>
-                    {a.sub && <span className="truncate text-[11px] text-subtle">{a.sub}</span>}
-                  </Link>
-                ),
-              )}
-            </div>
+            {/* Drill-down console (ADR-137 spine · ADR-138 the "manage" surface). */}
+            <AdminConsole role={role} staffRole={staffRole} onNavigate={() => onOpenChange(false)} />
           </aside>
         </>
       )}
