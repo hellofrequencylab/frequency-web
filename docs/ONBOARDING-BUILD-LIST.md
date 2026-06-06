@@ -40,6 +40,7 @@ Two levers, in order: **(0) flip the switches that let real testers in today**, 
 | **7** | **Role-advancement training** — a training Journey per role transition | Onboarding never ends; every role is taught | L | ⏳ spine shipped (7.1–7.2) |
 | **8** | **Hook Networks** — federated white-label sub-communities (+ Organization role) | Pros/orgs run their own bubble that feeds the network | XL | 📋 designed (ADR-158) |
 | **9** | **Growth Studio** — unified "Leadpages-style" onboarding/growth suite | One place to manage pages, entry points, QR, links, pipeline | M | ⏳ launchpad shipped (9.0) |
+| **10** | **Navigation restructure** — left-menu-only, categorical, minimal drill-down | Clean IA; condense sprawl into dashboards | L | ✅ map approved → building |
 | **4.x** | Cleanup + doc hygiene | Lean tree | S | ⏳ |
 
 Legend: ✅ done · ⏳ partially built / in flight · 📋 specced, not built · 🔴 blocked.
@@ -390,6 +391,30 @@ hub (`/marketing`) all exist — **scattered**.
 **Sequencing:** 9.0 ships the hub now (done). 9.1 (sequence editor) + 9.5 (CRM deal editing) are the
 highest-value next builds — they turn the two biggest "view-only" surfaces into real management. All
 reuse existing tables; the work is editors + actions.
+
+## Section 10 — Navigation restructure — ✅ map approved, building (full plan: [IA-RESTRUCTURE.md](IA-RESTRUCTURE.md))
+
+> **Goal (owner):** everything from the **left menu**, categorical, **minimal drill-down**; sprawl
+> condensed into **Growth-Studio-style dashboards**; **right-column nav removed**. Map approved
+> 2026-06-06.
+
+**Proposed left menu:** Home (Feed · Around You) · Community (Circles · Channels · Events · Marketplace
+· People) · Practice (Journeys · Practices+Curated) · Quest (one dashboard + Store) · Messages ·
+**Studio** (Community Studio · Growth Studio · Network · Insights · Platform) · Account.
+
+| # | Item | What |
+|---|---|---|
+| 10.1 | **Quest dashboard** | Collapse `/crew/*` (10 routes) into one dashboard with sections (stats · tasks · streaks · achievements · challenges · leaderboard); Store absorbs Vault |
+| 10.2 | **Operator dashboards** | `/admin` 9 suites/23 pages → **Community Studio** + **Insights** + **Platform**; **Marketing** folds into **Growth Studio** |
+| 10.3 | **Network hub** | Unify `/people` + `/connections` + `/marketing/contacts` into one tabbed Contacts hub |
+| 10.4 | **Practices + Library** | Library folds into Practices as a "Curated" tab |
+| 10.5 | **Settings hub** | 5 routes → one sectioned hub |
+| 10.6 | **Drop the global right rail** | Relocate widgets (Dispatches/Events → Around You · Active Members → People · Leaderboard/Stats → Quest); keep in-body **scope rails** on circle/channel detail |
+| 10.7 | **Rewrite `NAV_AREAS`** | New categories; later make it owner-editable (Site Navigation suite, BACKLOG §J) |
+
+**Approved decisions:** Library→Practices · Marketing→Growth Studio · Quest→one dashboard (sections) ·
+keep scope rails. **Open:** "Around You" naming. **Sequence:** 10.1 → 10.2 → 10.3 → 10.4/10.5 → 10.6 →
+10.7. Each is a contextual page/dashboard over existing data — UI + nav, minimal new schema.
 
 ## Reuse map — what already exists (so you never rebuild it)
 

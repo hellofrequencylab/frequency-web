@@ -13,11 +13,11 @@ import { ContactCaptureForm } from './contact-capture-form'
 type Mode = 'post' | 'dispatch' | 'note' | 'photo' | 'contact'
 
 const MODES: { key: Mode; icon: typeof PenLine; label: string; hostOnly?: boolean }[] = [
+  { key: 'contact', icon: UserPlus, label: 'Connect' },
   { key: 'post', icon: PenLine, label: 'Post' },
   { key: 'dispatch', icon: Megaphone, label: 'Dispatch', hostOnly: true },
   { key: 'note', icon: NotebookPen, label: 'Note' },
   { key: 'photo', icon: Camera, label: 'Photo' },
-  { key: 'contact', icon: UserPlus, label: 'Contact' },
 ]
 
 export function CaptureBox({
@@ -37,9 +37,9 @@ export function CaptureBox({
   const [mode, setMode] = useState<Mode>(defaultMode)
   const modes = MODES.filter((m) => !m.hostOnly || canAnnounce)
 
-  // The one row of selectable capture features (segmented, like the old Post|Dispatch).
+  // One row of selectable capture features — never wraps; scrolls if it must.
   const featureRow = (
-    <div className="inline-flex flex-wrap items-center gap-0.5 rounded-lg bg-surface-elevated p-0.5">
+    <div className="flex flex-nowrap items-center gap-0.5 overflow-x-auto rounded-lg bg-surface-elevated p-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {modes.map((m) => {
         const active = mode === m.key
         return (
@@ -48,7 +48,7 @@ export function CaptureBox({
             type="button"
             onClick={() => setMode(m.key)}
             aria-pressed={active}
-            className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-2xs font-semibold transition-colors ${
+            className={`inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-2xs font-semibold transition-colors ${
               active
                 ? `bg-surface shadow-sm ${m.key === 'dispatch' ? 'text-warning' : 'text-primary-strong'}`
                 : 'text-subtle hover:text-muted'
