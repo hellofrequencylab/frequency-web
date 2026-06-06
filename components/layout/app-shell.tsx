@@ -317,7 +317,6 @@ function AccountDropdown({
   }, [])
 
   const showCrewLink = role === 'crew' || role === 'host' || role === 'guide' || role === 'mentor' || role === 'admin' || role === 'janitor'
-  const showAdminLink = role === 'host' || role === 'guide' || role === 'mentor' || role === 'admin' || role === 'janitor'
 
   return (
     <div ref={ref} className="relative">
@@ -364,29 +363,18 @@ function AccountDropdown({
             </Link>
           </div>
 
-          {/* Crew + Admin. Role-gated */}
-          {(showCrewLink || showAdminLink) && (
+          {/* Crew dashboard. Role-gated. (Admin lives in the page admin dock +
+              the primary nav's Manage sections, not here.) */}
+          {showCrewLink && (
             <div className="border-t border-border py-1">
-              {showCrewLink && (
-                <Link
-                  href="/crew"
-                  onClick={() => setOpen(false)}
-                  className="flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-surface-elevated transition-colors"
-                >
-                  <Zap className="w-4 h-4 text-primary" />
-                  Dashboard
-                </Link>
-              )}
-              {showAdminLink && (
-                <Link
-                  href="/admin"
-                  onClick={() => setOpen(false)}
-                  className="flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-surface-elevated transition-colors"
-                >
-                  <Shield className="w-4 h-4 text-signal-strong" />
-                  Admin
-                </Link>
-              )}
+              <Link
+                href="/crew"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-surface-elevated transition-colors"
+              >
+                <Zap className="w-4 h-4 text-primary" />
+                Dashboard
+              </Link>
             </div>
           )}
 
@@ -921,24 +909,26 @@ function EdgeMenu({
 
   return (
     <>
-      {/* Always-visible tab — darker, tight to the edge. Fades out while open. */}
+      {/* Always-visible tab — a light brand-tinted handle so it reads as obviously
+          interactive. Fades out while open. */}
       <button
         type="button"
         onClick={onOpen}
         aria-label={ariaLabel}
-        className={`md:hidden fixed top-1/2 z-30 flex h-[36vh] w-5 -translate-y-1/2 items-center justify-center border-y border-border bg-surface-elevated text-muted shadow-sm transition-opacity duration-200 hover:text-text ${
+        className={`md:hidden fixed top-1/2 z-30 flex h-[36vh] w-5 -translate-y-1/2 items-center justify-center border-y border-primary/20 bg-primary-bg text-primary shadow-sm transition-opacity duration-300 ease-in-out hover:text-primary-strong ${
           onLeft ? 'left-0 rounded-r-lg border-r' : 'right-0 rounded-l-lg border-l'
         } ${open ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
       >
-        <Chevron className="h-4 w-4" />
+        <Chevron className="h-4 w-4" strokeWidth={2.5} />
       </button>
 
-      {/* Panel — always mounted, slides in/out (and animates its width on resize). */}
+      {/* Panel — always mounted, slides in/out (and animates its width on resize).
+          Soft easing both ways. */}
       <aside
         role="dialog"
         aria-label={ariaLabel}
         aria-hidden={!open}
-        className={`md:hidden fixed top-14 z-40 flex flex-col border-border bg-surface shadow-xl transition-all duration-200 ease-out ${
+        className={`md:hidden fixed top-14 z-40 flex flex-col border-border bg-surface shadow-xl transition-all duration-300 ease-in-out ${
           onLeft ? 'left-0 border-r' : 'right-0 border-l'
         } ${widthClass} ${slideClass} ${open ? '' : 'pointer-events-none'}`}
         style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom))' }}
@@ -1370,7 +1360,7 @@ export default function AppShell({
           <div
             aria-hidden
             onClick={closeEdges}
-            className={`md:hidden fixed inset-0 z-30 bg-black/10 transition-opacity duration-200 ${
+            className={`md:hidden fixed inset-0 z-30 bg-black/10 transition-opacity duration-300 ease-in-out ${
               anyEdgeOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
             }`}
           />
