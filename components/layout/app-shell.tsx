@@ -8,7 +8,6 @@ import {
   Globe,
   User,
   LogOut,
-  Shield,
   Moon,
   Sun,
   Settings,
@@ -1266,18 +1265,6 @@ export default function AppShell({
               <Users className="w-5 h-5" />
             </Link>
             <NotificationBell initialUnread={unreadCount} />
-            {/* Page admin — mobile opens the admin panel from here (no edge tab on
-                mobile). Operators only. */}
-            {canAdmin && (
-              <button
-                type="button"
-                onClick={() => setAdminOpen(true)}
-                aria-label="Page admin"
-                className="md:hidden flex items-center justify-center w-8 h-8 rounded-full text-muted hover:text-text hover:bg-surface-elevated transition-colors"
-              >
-                <Shield className="w-5 h-5" />
-              </button>
-            )}
           </div>
 
           {/* Account group — set off by its own divider. Quick-capture (mobile,
@@ -1285,13 +1272,14 @@ export default function AppShell({
               the far-right anchor and the two read as one balanced pair. */}
           <div className="flex items-center gap-1 ml-1 pl-1.5 border-l border-border md:gap-2 md:pl-2">
             {/* Quick capture — snap a card straight into your contacts. A filled
-                primary box with a white camera. Mobile only, stewards + staff. */}
+                primary button (rounded like Create) with a white camera. Mobile
+                only, stewards + staff. */}
             {canCreateProfile && (
               <Link
                 href="/connections/new"
                 aria-label="New contact"
                 title="New contact"
-                className="md:hidden flex items-center justify-center w-8 h-8 shrink-0 rounded-full bg-primary text-on-primary shadow-sm hover:bg-primary-hover transition-colors"
+                className="md:hidden flex items-center justify-center w-8 h-8 shrink-0 rounded-lg bg-primary text-on-primary shadow-sm hover:bg-primary-hover transition-colors"
               >
                 <Camera className="w-5 h-5" />
               </Link>
