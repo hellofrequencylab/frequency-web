@@ -202,7 +202,7 @@
 > `getActiveJourneyProgress()` derives live Journey progress from `practice_logs` (cadence-based
 > done-this-week + `circleCompanions`), surfaced on the `/crew/journey` Dashboard tab and the home
 > `JourneyBoard` current-step line — realizes BACKLOG §Q, no migration. **Design-system cohesion**
-> (ADR-143): shared in-app primitives (`components/ui/field`, `button`, `dialog`, `lib/utils` `cn`) + a
+> (ADR-147): shared in-app primitives (`components/ui/field`, `button`, `dialog`, `lib/utils` `cn`) + a
 > named sub-xs type scale (`text-2xs`/`text-3xs` `@utility`) replacing the `text-[Npx]` anti-pattern, and
 > token-only color (raw palette → DAWN tokens). **Admin dedup:** per-entity *editing* now lives on the
 > page dock; the redundant `StaffEditButton` deep-link was removed from circle/hub/nexus pages.
@@ -499,7 +499,7 @@ verticals that don't need the money foundation. **Depends on:** Stage A.
       entitlement layer ships (ADR-037).
 - [~] **Local Marketplace (vertical 5)**: Foundation, no fee, geolocated to circle/hub/nexus,
       listings + messaging (no in-app payment). Proves local exchange + feeds the density
-      signal. *Foundation shipped (ADR-147, migration `20260607090000`):* `market_listings`
+      signal. *Foundation shipped (ADR-148, migration `20260607090000`):* `market_listings`
       (offer/free/lend/request · free-text price · geo + optional circle anchor · status) with
       RLS; `/market` browse + `/market/[id]` detail + owner controls; create via the Studio
       window (`NewListingButton`, reuses the ADR-143 kit); contact hands off to the seller's

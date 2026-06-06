@@ -1,5 +1,5 @@
 -- =============================================================================
--- Local Marketplace (vertical 5) — foundation (ADR-147)
+-- Local Marketplace (vertical 5) — foundation (ADR-148)
 --
 -- Foundation entity, **no fee, no in-app payment** (DEVELOPMENT-MAP Stage B;
 -- PLATFORM-VISION §verticals): geolocated goods/services that members swap, give,
