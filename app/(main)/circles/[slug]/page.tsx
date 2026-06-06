@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Users, MessageSquare, Activity, TrendingUp, Zap, Flame, Pencil } from 'lucide-react'
+import { Users, MessageSquare, Activity, TrendingUp, Zap, Flame, Pencil, MapPin } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { leaveCircle, joinCircle } from '../actions'
@@ -263,6 +263,20 @@ export default async function CirclePage({
         }
         subtitle={
           <>
+            {/* Place-first context: the locale, then the Hub this circle belongs to.
+                Hubs/Nexuses surface here as the emergent "where this sits", never as
+                primary nav — a member reads it as place, not an org chart (IA §3a/§4). */}
+            {circle.hub && (
+              <div className="mb-1.5 flex items-center gap-1.5 text-sm text-subtle">
+                <MapPin className="w-4 h-4 shrink-0" />
+                <span className="truncate">
+                  {circle.hub.nexus?.outpost?.name && <>{circle.hub.nexus.outpost.name} · </>}
+                  <Link href={`/hubs/${circle.hub.slug}`} className="hover:text-primary-strong hover:underline">
+                    {circle.hub.name}
+                  </Link>
+                </span>
+              </div>
+            )}
             <div className="flex items-center gap-x-4 gap-y-1 flex-wrap">
               <span className="flex items-center gap-1.5">
                 <Users className="w-4 h-4" />
