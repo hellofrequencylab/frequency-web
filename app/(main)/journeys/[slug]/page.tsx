@@ -187,14 +187,14 @@ export default async function JourneyPlanPage({ params }: { params: Promise<{ sl
                         <input type="hidden" name="planId" value={plan.id} />
                         <input type="hidden" name="slug" value={plan.slug} />
                         <input type="hidden" name="practiceId" value={it.practice_id} />
-                        <label className="flex flex-col gap-1 text-[11px] font-semibold uppercase tracking-wide text-subtle">
+                        <label className="flex flex-col gap-1 text-2xs font-semibold uppercase tracking-wide text-subtle">
                           Cadence
                           <select name="cadence" defaultValue={it.cadence ?? ''} className="rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-text">
                             <option value="">Use practice default{it.practice?.cadence ? ` (${it.practice.cadence})` : ''}</option>
                             {CADENCES.map((c) => <option key={c} value={c}>{c}</option>)}
                           </select>
                         </label>
-                        <label className="flex min-w-[12rem] flex-1 flex-col gap-1 text-[11px] font-semibold uppercase tracking-wide text-subtle">
+                        <label className="flex min-w-[12rem] flex-1 flex-col gap-1 text-2xs font-semibold uppercase tracking-wide text-subtle">
                           Note
                           <input name="note" defaultValue={it.note ?? ''} maxLength={200} placeholder="e.g. before breakfast" className="rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-text" />
                         </label>

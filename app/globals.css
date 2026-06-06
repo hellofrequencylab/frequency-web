@@ -256,6 +256,16 @@
   --shadow-pop-lg: 0 10px 24px -6px rgb(20 16 10 / 0.20), 0 36px 70px -16px rgb(20 16 10 / 0.30);
 }
 
+/* Sub-xs type scale — named steps so tiny labels/badges stop using the
+   text-[10/11px] arbitrary anti-pattern (AGENTS.md). Font-size only (matching the
+   px values they replace), so no line-height is coupled in. */
+@utility text-2xs {
+  font-size: 11px;
+}
+@utility text-3xs {
+  font-size: 10px;
+}
+
 /* ── Base ────────────────────────────────────────────────────────────────── */
 html {
   font-family: var(--font-nunito, 'Nunito', sans-serif);

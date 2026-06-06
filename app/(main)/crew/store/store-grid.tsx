@@ -119,7 +119,7 @@ function StoreCard({ item, balance }: { item: StoreItem; balance: number }) {
           </div>
 
           {item.stock !== null && item.stock > 0 && !item.owned && (
-            <p className="text-[10px] text-subtle mt-1">{item.stock} remaining</p>
+            <p className="text-3xs text-subtle mt-1">{item.stock} remaining</p>
           )}
         </div>
       </div>

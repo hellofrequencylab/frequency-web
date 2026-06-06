@@ -142,7 +142,7 @@ export default async function RoomPage({
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <h1 className="text-base font-bold text-text truncate">{r.name}</h1>
-              <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-surface-elevated text-muted capitalize">
+              <span className="text-2xs px-1.5 py-0.5 rounded-md bg-surface-elevated text-muted capitalize">
                 {r.visibility}
               </span>
             </div>
@@ -215,7 +215,7 @@ export default async function RoomPage({
         {/* Members sidebar (desktop) */}
         <aside className="hidden lg:flex w-64 shrink-0 flex-col border-l border-border bg-surface/30 dark:bg-canvas/30">
           <div className="px-4 py-3 border-b border-border">
-            <h3 className="text-[11px] font-semibold uppercase tracking-wider text-subtle mb-2">
+            <h3 className="text-2xs font-semibold uppercase tracking-wider text-subtle mb-2">
               Members ({r.member_count})
             </h3>
             {isMember && <InviteToRoomButton roomId={roomId} />}
@@ -231,13 +231,13 @@ export default async function RoomPage({
                       {p.avatar_url ? (
                         <Image src={p.avatar_url} alt={p.display_name} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0" />
                       ) : (
-                        <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-[10px] font-semibold flex items-center justify-center shrink-0 select-none">
+                        <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-3xs font-semibold flex items-center justify-center shrink-0 select-none">
                           {getInitials(p.display_name)}
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-medium text-text truncate">{p.display_name}</p>
-                        {m.is_admin && <p className="text-[10px] text-primary-strong">Admin</p>}
+                        {m.is_admin && <p className="text-3xs text-primary-strong">Admin</p>}
                       </div>
                     </Link>
                     {isAdmin && !isSelf && (

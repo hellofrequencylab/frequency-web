@@ -399,13 +399,13 @@ export function Composer({
                 {p.avatar_url ? (
                   <Image src={p.avatar_url} alt={p.display_name} width={24} height={24} className="h-6 w-6 shrink-0 rounded-full object-cover" />
                 ) : (
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-bg text-[10px] font-bold text-primary-strong">
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-bg text-3xs font-bold text-primary-strong">
                     {getInitials(p.display_name)}
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-xs font-semibold text-text">{p.display_name}</p>
-                  <p className="truncate text-[11px] text-subtle">@{p.handle}</p>
+                  <p className="truncate text-2xs text-subtle">@{p.handle}</p>
                 </div>
               </button>
             ))}
@@ -472,7 +472,7 @@ export function Composer({
             <button
               type="button"
               onClick={() => setIsAnnouncement(false)}
-              className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+              className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-2xs font-semibold transition-colors ${
                 !isAnnouncement ? 'bg-surface text-primary-strong shadow-sm' : 'text-subtle hover:text-muted'
               }`}
               title="A regular post"
@@ -483,7 +483,7 @@ export function Composer({
             <button
               type="button"
               onClick={() => setIsAnnouncement(true)}
-              className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+              className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-2xs font-semibold transition-colors ${
                 isAnnouncement ? 'bg-surface text-warning shadow-sm' : 'text-subtle hover:text-muted'
               }`}
               title="Dispatch: send an announcement to your group"
@@ -497,7 +497,7 @@ export function Composer({
         )}
 
         <div className="flex items-center gap-2.5">
-          <span className="hidden text-[11px] text-subtle sm:inline">⌘ + Enter</span>
+          <span className="hidden text-2xs text-subtle sm:inline">⌘ + Enter</span>
           <button
             onClick={submit}
             disabled={!canPost}

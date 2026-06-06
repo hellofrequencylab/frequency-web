@@ -87,7 +87,7 @@ export function PracticePrompt({
             <p className="text-sm font-bold leading-tight text-text">
               {streak > 0 ? `${streak} day streak` : 'Start your streak'}
             </p>
-            <p className="text-[11px] leading-tight text-muted">
+            <p className="text-2xs leading-tight text-muted">
               {p.maxed
                 ? 'Every badge earned. Legend.'
                 : p.next
@@ -124,7 +124,7 @@ export function PracticePrompt({
               return (
                 <div key={m.day} className="flex flex-col items-center gap-1" title={`${m.label} · ${m.day} days`}>
                   <span
-                    className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold transition-colors ${
+                    className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-3xs font-bold transition-colors ${
                       hit
                         ? 'bg-primary text-on-primary'
                         : isNext

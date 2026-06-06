@@ -229,12 +229,12 @@ function ProfileCard({
             </p>
           </Link>
           {previewVisitor ? (
-            <span className="mt-1 inline-block rounded-full bg-surface-elevated px-2 py-0.5 text-[10px] font-semibold leading-tight text-muted">
+            <span className="mt-1 inline-block rounded-full bg-surface-elevated px-2 py-0.5 text-3xs font-semibold leading-tight text-muted">
               Visitor
             </span>
           ) : (
             <span
-              className="rank-badge mt-1 inline-block text-[10px] leading-tight"
+              className="rank-badge mt-1 inline-block text-3xs leading-tight"
               style={roleBadgeStyle(role)}
             >
               {ROLE_LABEL[role]}
@@ -345,7 +345,7 @@ function AccountDropdown({
         onClick={() => setOpen((v) => !v)}
         aria-label="Account menu"
         aria-expanded={open}
-        className="flex items-center justify-center w-8 h-8 rounded-full bg-surface-elevated text-muted text-[11px] font-semibold ring-1 ring-border hover:text-text hover:ring-border-strong transition-colors select-none shrink-0"
+        className="flex items-center justify-center w-8 h-8 rounded-full bg-surface-elevated text-muted text-2xs font-semibold ring-1 ring-border hover:text-text hover:ring-border-strong transition-colors select-none shrink-0"
       >
         {getInitials(profile.display_name)}
       </button>
@@ -355,7 +355,7 @@ function AccountDropdown({
 
           {/* Header */}
           <div className="px-3 py-2.5 border-b border-border">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-subtle mb-0.5">
+            <p className="text-3xs font-semibold uppercase tracking-wider text-subtle mb-0.5">
               Account
             </p>
             <p className="text-sm font-semibold text-text truncate">
@@ -542,7 +542,7 @@ function NavLinkList({
     }`
 
   const sectionLabelClass =
-    'px-3 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-subtle'
+    'px-3 pt-1 pb-1 text-3xs font-semibold uppercase tracking-wider text-subtle'
 
   return (
     <>
@@ -788,7 +788,7 @@ function MobileLeftDrawer({
                 {profile.display_name}
               </p>
               <span
-                className="rank-badge mt-0.5 inline-block text-[10px] leading-tight"
+                className="rank-badge mt-0.5 inline-block text-3xs leading-tight"
                 style={roleBadgeStyle(identityRole)}
               >
                 {ROLE_LABEL[identityRole]}
@@ -865,7 +865,7 @@ function MobileTabBar({
   hideAppNav?: boolean
 }) {
   const tabClass = (active: boolean) =>
-    `flex flex-1 flex-col items-center justify-center gap-1 text-[10px] font-medium transition-colors ${
+    `flex flex-1 flex-col items-center justify-center gap-1 text-3xs font-medium transition-colors ${
       active ? 'text-primary-strong' : 'text-muted hover:text-text'
     }`
 
@@ -986,7 +986,7 @@ function EdgeMenu({
           </button>
         ) : (
           <div className="flex shrink-0 items-center gap-2 border-t border-border p-2">
-            <span className="flex-1 pl-1 text-[11px] font-semibold uppercase tracking-wide text-subtle">View</span>
+            <span className="flex-1 pl-1 text-2xs font-semibold uppercase tracking-wide text-subtle">View</span>
             <div className="flex items-center rounded-lg bg-surface-elevated p-0.5">
               {(['micro', 'full'] as const).map((s) => (
                 <button
@@ -994,7 +994,7 @@ function EdgeMenu({
                   type="button"
                   onClick={() => onSizeChange(s)}
                   aria-pressed={size === s}
-                  className={`rounded-md px-2.5 py-1 text-[11px] font-semibold capitalize transition-colors ${
+                  className={`rounded-md px-2.5 py-1 text-2xs font-semibold capitalize transition-colors ${
                     size === s ? 'bg-surface text-text shadow-sm' : 'text-subtle hover:text-text'
                   }`}
                 >
@@ -1226,7 +1226,7 @@ export default function AppShell({
           >
             <Search className="w-4 h-4" />
             <span>Search</span>
-            <kbd className="text-[10px] leading-none rounded px-1.5 py-1 border border-border bg-surface text-subtle">
+            <kbd className="text-3xs leading-none rounded px-1.5 py-1 border border-border bg-surface text-subtle">
               ⌘K
             </kbd>
           </button>
@@ -1457,7 +1457,7 @@ export default function AppShell({
                 className="flex flex-col items-center gap-0.5 rounded-xl px-1 py-1.5 text-muted transition-colors hover:bg-surface-elevated"
               >
                 <Zap className="h-5 w-5 text-primary" strokeWidth={2.5} />
-                <span className="text-[10px] font-bold tabular-nums text-text">
+                <span className="text-3xs font-bold tabular-nums text-text">
                   {(profile.current_season_zaps ?? 0).toLocaleString()}
                 </span>
               </Link>
@@ -1469,7 +1469,7 @@ export default function AppShell({
                 className="flex flex-col items-center gap-0.5 rounded-xl px-1 py-1.5 text-muted transition-colors hover:bg-surface-elevated"
               >
                 <Gem className="h-5 w-5 text-signal" strokeWidth={2.5} />
-                <span className="text-[10px] font-bold tabular-nums text-text">
+                <span className="text-3xs font-bold tabular-nums text-text">
                   {(profile.lifetime_gems ?? 0).toLocaleString()}
                 </span>
               </Link>

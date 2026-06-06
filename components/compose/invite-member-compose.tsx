@@ -59,16 +59,16 @@ export function InviteMemberCompose({
           <label className={cmLabel}>Your message</label>
           <textarea value={message} onChange={e => setMessage(e.target.value)}
             rows={4} className={`${cmInput} resize-y leading-relaxed`} />
-          <p className="text-[11px] text-subtle mt-1">
+          <p className="text-2xs text-subtle mt-1">
             The signup link will be added automatically at the bottom.
           </p>
         </div>
 
         <div className="rounded-lg border border-border bg-surface-elevated p-3">
           <div className="flex items-center justify-between gap-2">
-            <code className="text-[11px] text-muted truncate">{signupUrl}</code>
+            <code className="text-2xs text-muted truncate">{signupUrl}</code>
             <button type="button" onClick={handleCopy}
-              className="shrink-0 inline-flex items-center gap-1 rounded px-2 py-1 text-[11px] font-medium text-primary-strong hover:bg-primary-bg dark:hover:bg-primary-bg transition-colors">
+              className="shrink-0 inline-flex items-center gap-1 rounded px-2 py-1 text-2xs font-medium text-primary-strong hover:bg-primary-bg dark:hover:bg-primary-bg transition-colors">
               {copied ? <><Check className="w-3 h-3" /> Copied</> : <><Copy className="w-3 h-3" /> Copy link</>}
             </button>
           </div>

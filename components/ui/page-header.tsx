@@ -52,7 +52,7 @@ export function PageHeader({
             href="/crew"
             className="inline-flex items-center gap-2.5 self-start rounded-full border border-border bg-surface px-3 py-1.5 shadow-sm transition-colors hover:border-primary-bg sm:hidden"
           >
-            <span className="rank-badge text-[10px] font-bold leading-none" style={seasonRankStyle(gam.rank)}>
+            <span className="rank-badge text-3xs font-bold leading-none" style={seasonRankStyle(gam.rank)}>
               {RANK_LABELS[gam.rank]}
             </span>
             <span className="inline-flex items-center gap-1 text-xs font-bold tabular-nums text-text">

@@ -113,13 +113,13 @@ export function InviteToRoomButton({ roomId }: { roomId: string }) {
                   {r.avatar_url ? (
                     <Image src={r.avatar_url} alt={r.display_name} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0" />
                   ) : (
-                    <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-[10px] font-semibold flex items-center justify-center shrink-0">
+                    <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-3xs font-semibold flex items-center justify-center shrink-0">
                       {getInitials(r.display_name)}
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold text-text truncate">{r.display_name}</p>
-                    <p className="text-[11px] text-subtle truncate">@{r.handle}</p>
+                    <p className="text-2xs text-subtle truncate">@{r.handle}</p>
                   </div>
                   {wasInvited && <Check className="w-4 h-4 text-success shrink-0" />}
                 </button>
@@ -133,7 +133,7 @@ export function InviteToRoomButton({ roomId }: { roomId: string }) {
         )}
 
         {invited.size > 0 && (
-          <p className="text-[11px] text-success flex items-center gap-1">
+          <p className="text-2xs text-success flex items-center gap-1">
             <Check className="w-3 h-3" /> Invited {invited.size} {invited.size === 1 ? 'member' : 'members'}
           </p>
         )}

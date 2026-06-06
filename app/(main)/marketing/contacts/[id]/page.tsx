@@ -39,7 +39,7 @@ function fmtDate(iso: string | null): string {
 
 function Chip({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center rounded-md bg-surface-elevated px-1.5 py-0.5 text-[11px] font-medium text-muted">
+    <span className="inline-flex items-center rounded-md bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-muted">
       {children}
     </span>
   )
