@@ -134,6 +134,9 @@ export default async function MainLayout({
   // oath justifies the friction); retires once everything's done + rewarded. Off at
   // launch with the induction flag (back to the non-blocking model).
   const chores = BETA_INDUCTION_ACTIVE ? await getProfileChores(profile.id) : null
+  // Once chores are done, Vera keeps coaching (build item 1.3, folded into the same
+  // surface — no competing card): surface the single next activation step.
+  const coachNext = chores?.complete ? (await getOnboardingStatus(profile.id)).current : null
 
   // Community news ticker — streams in independently, never blocks the shell.
   const ticker = (
@@ -163,7 +166,9 @@ export default async function MainLayout({
       <PresenceHeartbeat />
       <PushRegistration />
       <VeraLauncher index={helpIndex} />
-      {chores && (!chores.complete || !chores.rewarded) && <ChoresOverlay chores={chores} />}
+      {chores && (!chores.complete || !chores.rewarded || coachNext) && (
+        <ChoresOverlay chores={chores} nextAction={coachNext} />
+      )}
       <PageViewTracker />
       <TourProvider initialState={tourState} satisfied={tourSatisfied} />
     </AppShell>

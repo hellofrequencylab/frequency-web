@@ -25,7 +25,7 @@ Two levers, in order: **(0) flip the switches that let real testers in today**, 
 | **0** | Pre-test enablement (config, not code) | Get testers in *today* | S | ⏳ |
 | **1.1** | Persistent Vera launcher, app-wide | Deep Vera integration | M | ✅ shipped |
 | **1.2** | Vera's "chores" — profile + first-post, matriarch full-stop | Create a profile + seed content | M | ✅ shipped |
-| **1.3** | Vera coach "next best action" card | Excitement + direction | S–M | 📋 |
+| **1.3** | Vera coach "next best action" — folded into the chores surface | Excitement + direction | S | ✅ shipped |
 | **1.4** | "Founder's First Week" tasks + badge | Create content | M | 📋 |
 | **1.5** | Live-loop suggestion chips | Guided depth | S | ⏳ |
 | **2.1** | Welcome community post | Arrive *greeted* | S–M | 📋 |
@@ -112,15 +112,19 @@ in small reviewable PRs. Best-practice guardrails in the last section.
   - **Coordinate with the activation guide** so the two onboarding surfaces never pop at once.
   - **Fold in Capture chores** once §6 lands (e.g. "capture your first moment").
 
-### 1.3 — Vera coach "next best action" card 📋 (BETA-ACTIVATION §5)
-- **Goal.** Vera surfaces the *single* next best action in her voice, advancing as they finish.
-- **Reuse.** The deterministic next-best-action logic already exists in
-  `lib/ai/vera/concierge.ts`; the copy lines are written in BETA-ACTIVATION §5.
-- **Build.** A small feed coach card (deterministic picker; AI may improvise on top),
-  every mention a **link** (the "Vera always links" doctrine).
-- **Touch.** `components/feed/`, `lib/onboarding/status.ts` (picker), `app/(main)/feed/page.tsx`.
-- **Acceptance.** One action at a time, ready-gated (no "join a 2nd circle" before the 1st),
-  always linked, graduates to "I'll step back" when activation is complete.
+### 1.3 — Vera coach "next best action" ✅ **shipped** — folded into Vera (BETA-ACTIVATION §5)
+- **Decision (owner).** *Not* a separate feed card — that would compete with the inline
+  `FeedOnboardingGuide`. Folded into the **same Vera surface** as the chores overlay (1.2):
+  one Vera, three beats — chores → reward → **coach**.
+- **What shipped.** Once chores are done + rewarded, `ChoresOverlay` flips to a **coach** beat:
+  it surfaces the *single* next activation step from `getOnboardingStatus().current`
+  (`lib/onboarding/status.ts` — already the source of truth, so it can't disagree with the
+  feed guide). Warm voice (she's softened back up), one deep-linked CTA, paced like the chores
+  nudge, and the bottom-left pill reads **"Next move."** Wired in `app/(main)/layout.tsx`.
+- **Acceptance.** ✅ one action at a time · ✅ ready-gated (reads the funnel's first incomplete
+  step) · ✅ always linked · ✅ retires when activation is complete (nothing left to mount).
+- **Second pass:** AI-improvised copy on top of the deterministic picker (today the lines are
+  the funnel's `headline`/`blurb`); let Vera deliver the same coach beat *in the launcher chat*.
 
 ### 1.4 — "Founder's First Week" tasks + badge 📋 (BETA-ACTIVATION §3–4)
 - **Goal.** Seed first **content** + real connections (first post, comment/react, friend,

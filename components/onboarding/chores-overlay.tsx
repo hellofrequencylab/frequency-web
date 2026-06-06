@@ -1,55 +1,66 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback, useTransition } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { Sparkles, Check, X, ArrowRight, ListChecks, PartyPopper, Gem } from 'lucide-react'
 import type { ProfileChores } from '@/lib/onboarding/profile-chores'
+import type { OnboardingStep } from '@/lib/onboarding/status'
 import { claimChoresReward } from '@/app/(main)/feed/chores-actions'
 
-// Vera's "chores" — the bait-and-switch (BETA-ACTIVATION §2). She's warm on the way
-// in; here she hardens into a playful stern matriarch: "everything in its place."
-// A full-stop overlay that periodically blocks the screen with the Founder's unfinished
-// profile + first-post tasks. They signed the oath to *build*, so she holds them to it —
-// in a fun way. Dismissible (ESC / X / "later"): the screen-lock is a gag, not a trap
-// (accessibility first). Paced so it nudges, never nags; retires once everything's done.
+// Vera's coach — the bait-and-switch (BETA-ACTIVATION §2) plus the "what next" nudge
+// (§5, build item 1.3 folded in here rather than a competing feed card). One Vera
+// surface, three beats:
+//   1. chores   — the stern matriarch full-stop: tidy your profile + first post.
+//   2. reward   — she pays up once at 100% (welcome_member gem drop).
+//   3. coach    — warmed back up, she points at the single next activation step
+//                 (join a circle, log a practice) from the funnel, then retires.
+// Dismissible throughout (ESC / ✕ / "later"): the screen-lock is a gag, not a trap.
+// Paced so it nudges, never nags.
 
-// Min gap between unprompted full-stops, and a once-per-session auto-open guard.
-const COOLDOWN_MS = 60 * 60 * 1000 // 1 hour
+const COOLDOWN_MS = 60 * 60 * 1000 // 1 hour between unprompted full-stops
 const SEEN_KEY = 'fq_chores_seen_at'
 const SESSION_KEY = 'fq_chores_session'
 
-export function ChoresOverlay({ chores }: { chores: ProfileChores }) {
+export function ChoresOverlay({
+  chores,
+  nextAction = null,
+}: {
+  chores: ProfileChores
+  /** The next activation step once chores are done — drives the coach beat. */
+  nextAction?: OnboardingStep | null
+}) {
   const [open, setOpen] = useState(false)
   const [claimed, setClaimed] = useState<{ amount: number } | null>(null)
-  const [, startClaim] = useTransition()
   const cardRef = useRef<HTMLDivElement>(null)
 
-  const celebrate = chores.complete && !chores.rewarded
+  const reward = chores.complete && !chores.rewarded
+  const coach = chores.complete && chores.rewarded && !!nextAction
 
-  // Decide whether to auto-open. Celebrate state always opens (she pays up once);
-  // the todo state opens on a pace (once per session, ≥1h since last seen).
+  // Auto-open: the reward beat always fires (she pays up once); the chores and
+  // coach beats nudge on a pace (once per session, ≥1h since last seen).
   useEffect(() => {
-    if (celebrate) {
+    if (reward) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setOpen(true)
       return
     }
-    if (chores.complete) return // done + already rewarded → nothing to do
+    if (!(!chores.complete || coach)) return
     if (sessionStorage.getItem(SESSION_KEY)) return
     const last = Number(localStorage.getItem(SEEN_KEY) ?? 0)
-    if (Date.now() - last > COOLDOWN_MS) {
-      setOpen(true)
-    }
-  }, [celebrate, chores.complete])
+    if (Date.now() - last > COOLDOWN_MS) setOpen(true)
+  }, [reward, coach, chores.complete])
 
-  // On the celebrate pass, claim the one-time reward (idempotent server-side).
+  // On the reward beat, claim the one-time gem drop (idempotent server-side).
   useEffect(() => {
-    if (!celebrate) return
-    startClaim(async () => {
-      const r = await claimChoresReward()
-      if (r.awarded) setClaimed({ amount: r.amount })
+    if (!reward) return
+    let live = true
+    claimChoresReward().then((r) => {
+      if (live && r.awarded) setClaimed({ amount: r.amount })
     })
-  }, [celebrate])
+    return () => {
+      live = false
+    }
+  }, [reward])
 
   const close = useCallback(() => {
     setOpen(false)
@@ -59,7 +70,7 @@ export function ChoresOverlay({ chores }: { chores: ProfileChores }) {
     } catch {}
   }, [])
 
-  // ESC closes; focus moves into the card while open.
+  // ESC closes; focus moves into the card; body scroll locks while open.
   useEffect(() => {
     if (!open) return
     const prev = document.body.style.overflow
@@ -77,19 +88,24 @@ export function ChoresOverlay({ chores }: { chores: ProfileChores }) {
 
   const left = chores.todo.length
 
-  // ── The persistent entry: a slim pill so chores are reachable any time (bottom-
-  //    LEFT, clear of the Vera launcher). Hidden once everything's done. ──────────
-  const pill =
-    !open && !chores.complete ? (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-label={`Vera’s chores — ${left} left`}
-        className="fixed left-4 bottom-20 z-40 inline-flex items-center gap-2 rounded-full border border-broadcast-bg bg-broadcast-bg/80 px-3.5 py-2 text-sm font-semibold text-broadcast-strong shadow-pop backdrop-blur-sm transition-transform hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] md:bottom-6 dark:bg-broadcast-bg/40"
-      >
-        <ListChecks className="h-4 w-4" aria-hidden /> {left} {left === 1 ? 'chore' : 'chores'}
-      </button>
-    ) : null
+  // ── Persistent entry: a slim pill (bottom-LEFT, clear of the Vera launcher) so
+  //    the current nudge is reachable any time. Hidden on the reward beat (it
+  //    auto-opens) and once everything's done. ─────────────────────────────────
+  const showPill = !open && (!chores.complete || coach)
+  const pill = showPill ? (
+    <button
+      type="button"
+      onClick={() => setOpen(true)}
+      aria-label={coach ? 'Vera — your next move' : `Vera’s chores — ${left} left`}
+      className="fixed left-4 bottom-20 z-40 inline-flex items-center gap-2 rounded-full border border-broadcast-bg bg-broadcast-bg/80 px-3.5 py-2 text-sm font-semibold text-broadcast-strong shadow-pop backdrop-blur-sm transition-transform hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] md:bottom-6 dark:bg-broadcast-bg/40"
+    >
+      {coach ? (
+        <><Sparkles className="h-4 w-4" aria-hidden /> Next move</>
+      ) : (
+        <><ListChecks className="h-4 w-4" aria-hidden /> {left} {left === 1 ? 'chore' : 'chores'}</>
+      )}
+    </button>
+  ) : null
 
   if (!open) return pill
 
@@ -119,32 +135,61 @@ export function ChoresOverlay({ chores }: { chores: ProfileChores }) {
             <X className="h-4 w-4" />
           </button>
 
-          {celebrate ? (
-            /* ── She pays up ─────────────────────────────────────────────────── */
+          {reward ? (
+            /* ── Beat 2: she pays up ─────────────────────────────────────────── */
             <div className="flex flex-col items-center px-7 pb-7 pt-9 text-center">
               <span className="flex h-14 w-14 items-center justify-center rounded-full bg-broadcast-bg text-broadcast-strong">
                 <PartyPopper className="h-6 w-6" aria-hidden />
               </span>
               <h2 id="chores-title" className="mt-4 text-2xl font-bold text-text">There. Lived-in.</h2>
               <p className="mt-2 max-w-sm text-pretty text-[15px] leading-relaxed text-muted">
-                Place looks like someone actually lives here now. Knew you had it in you. Off you go —
-                go meet your people.
+                Place looks like someone actually lives here now. Knew you had it in you.
+                {nextAction ? ' One more nudge and I’ll leave you be —' : ' Off you go — go meet your people.'}
               </p>
               {claimed && (
                 <p className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-signal-bg px-3 py-1.5 text-sm font-bold text-signal">
                   <Gem className="h-4 w-4" aria-hidden /> +{claimed.amount} gems
                 </p>
               )}
-              <button
-                type="button"
+              {nextAction ? (
+                <Link
+                  href={nextAction.href}
+                  onClick={close}
+                  className="mt-6 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                >
+                  {nextAction.cta} <ArrowRight className="h-4 w-4" aria-hidden />
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={close}
+                  className="mt-6 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                >
+                  Got it
+                </button>
+              )}
+            </div>
+          ) : coach ? (
+            /* ── Beat 3: the coach — one next move, warmly ───────────────────── */
+            <div className="flex flex-col px-7 pb-7 pt-9 text-center">
+              <span className="mx-auto inline-flex items-center gap-1.5 rounded-full bg-broadcast-bg px-3 py-1 text-xs font-semibold uppercase tracking-wide text-broadcast-strong">
+                <Sparkles className="h-3.5 w-3.5" aria-hidden /> Vera
+              </span>
+              <h2 id="chores-title" className="mt-3 text-xl font-bold leading-tight text-text">{nextAction!.headline}</h2>
+              <p className="mt-2 max-w-sm self-center text-pretty text-[15px] leading-relaxed text-muted">{nextAction!.blurb}</p>
+              <Link
+                href={nextAction!.href}
                 onClick={close}
-                className="mt-6 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                className="mt-6 inline-flex items-center gap-2 self-center rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
               >
-                Got it
+                {nextAction!.cta} <ArrowRight className="h-4 w-4" aria-hidden />
+              </Link>
+              <button type="button" onClick={close} className="mt-3 text-xs font-medium text-subtle transition-colors hover:text-muted">
+                Maybe later
               </button>
             </div>
           ) : (
-            /* ── Chores first ────────────────────────────────────────────────── */
+            /* ── Beat 1: chores first ────────────────────────────────────────── */
             <div className="flex flex-1 flex-col overflow-hidden">
               <div className="shrink-0 border-b border-border px-6 pb-4 pt-7">
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-broadcast-bg px-3 py-1 text-xs font-semibold uppercase tracking-wide text-broadcast-strong">
@@ -155,7 +200,6 @@ export function ChoresOverlay({ chores }: { chores: ProfileChores }) {
                   You signed up to <em>build</em>, not to lurk. {left} {left === 1 ? 'thing' : 'things'} out of place —
                   let’s get your corner of this place in order. Won’t take a minute.
                 </p>
-                {/* progress */}
                 <div className="mt-3 flex items-center gap-2">
                   <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-broadcast-bg">
                     <span className="block h-full rounded-full bg-broadcast transition-all duration-500" style={{ width: `${chores.pct}%` }} />
