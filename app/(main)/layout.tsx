@@ -26,6 +26,7 @@ import { getOnboardingStatus } from '@/lib/onboarding/status'
 import { BETA_INDUCTION_ACTIVE } from '@/lib/onboarding/beta-script'
 import { ChoresOverlay } from '@/components/onboarding/chores-overlay'
 import { getProfileChores } from '@/lib/onboarding/profile-chores'
+import { getFounderTasks } from '@/lib/onboarding/founder-tasks'
 
 // Authenticated app layout. Wraps Feed, Groups, Events, Admin.
 // Pages outside this group (onboarding, settings, sign-in, /people) render
@@ -136,7 +137,20 @@ export default async function MainLayout({
   const chores = BETA_INDUCTION_ACTIVE ? await getProfileChores(profile.id) : null
   // Once chores are done, Vera keeps coaching (build item 1.3, folded into the same
   // surface — no competing card): surface the single next activation step.
-  const coachNext = chores?.complete ? (await getOnboardingStatus(profile.id)).current : null
+  let coachNext = chores?.complete ? (await getOnboardingStatus(profile.id)).current : null
+  // Activation done? Hand off to Founder's First Week (build item 1.4) while it's
+  // unfinished. The founder query only runs for this small, fully-activated cohort.
+  if (chores?.complete && !coachNext && !(await getFounderTasks(profile.id)).complete) {
+    coachNext = {
+      key: 'log', // synthetic step — the overlay renders by copy/href, not key
+      label: 'Founder’s First Week',
+      headline: 'Your Founder’s First Week',
+      blurb: 'You’re activated — now the fun part. Six moves to become a Founder, and a badge when you finish.',
+      href: '/founder',
+      cta: 'See your tasks',
+      done: false,
+    }
+  }
 
   // Community news ticker — streams in independently, never blocks the shell.
   const ticker = (
