@@ -3,6 +3,12 @@
 > **Status:** 📐 Strategy locked, build not started. Decision record: **ADR-059**
 > (`docs/DECISIONS.md`). Canonical, fuller strategy doc lives in the Hook repo:
 > `hook/docs/FREQUENCY-INTEGRATION.md`. First test client: **danieltyack.com**.
+>
+> **Expanded by ADR-158 / build §8 — "Hook Networks":** generalizes this integration from a
+> marketplace over Hook programs to a **federated network of white-label Hook sub-communities**
+> (pro-profile types + a new **Organization** role · membership rollover · points rollup ·
+> channel/circle federation). Same principle: Frequency = federation layer, Hook = the tenant OS,
+> typed contracts.
 
 ## TL;DR
 
