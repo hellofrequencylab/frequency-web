@@ -4130,9 +4130,10 @@ was clutter — the edges should just *be there*. The two edges had also drifted
 components (`MobileSideRail` / `MobileStatsMenu`) with slightly different chrome.
 
 **Decision.** Collapse both edges into **one `EdgeMenu` component** (`side="left" | "right"`):
-- **Always-visible tab**, tight to the edge — a **light brand-tinted handle** (`bg-primary-bg`,
-  `text-primary`, `border-primary/20`, `h-[36vh] w-5`) so it reads as obviously interactive. No
-  scroll-reveal, no on/off setting — the selector is gone.
+- **Always-visible tab** (`h-[36vh] w-5`) on the **same surface as the post box** (`bg-surface`,
+  `border-border`), tucked a little farther off the edge (`±translate-x-1.5`) for more buffer to
+  content. It **rests dimmed in a ghost state** (`opacity-40`) and brightens on touch
+  (`hover/focus/active:opacity-100`). No scroll-reveal, no on/off setting — the selector is gone.
 - **Slides open and stays** until the member taps the shared backdrop, selects a link (route
   change), or scrolls the feed (`[data-feed-scroll]`, >6px). The panel is **always mounted** and
   slides on a `transform` with soft easing (`transition-all duration-300 ease-in-out`), so

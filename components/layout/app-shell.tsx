@@ -909,17 +909,18 @@ function EdgeMenu({
 
   return (
     <>
-      {/* Always-visible tab — a light brand-tinted handle so it reads as obviously
-          interactive. Fades out while open. */}
+      {/* Always-visible tab — same surface as the post box, tucked a little farther
+          off the edge (more buffer to content). Rests dimmed in a ghost state and
+          brightens on touch; fades fully out while the menu is open. */}
       <button
         type="button"
         onClick={onOpen}
         aria-label={ariaLabel}
-        className={`md:hidden fixed top-1/2 z-30 flex h-[36vh] w-5 -translate-y-1/2 items-center justify-center border-y border-primary/20 bg-primary-bg text-primary shadow-sm transition-opacity duration-300 ease-in-out hover:text-primary-strong ${
-          onLeft ? 'left-0 rounded-r-lg border-r' : 'right-0 rounded-l-lg border-l'
-        } ${open ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+        className={`md:hidden fixed top-1/2 z-30 flex h-[36vh] w-5 -translate-y-1/2 items-center justify-center border-y border-border bg-surface text-muted shadow-sm transition-opacity duration-300 ease-in-out ${
+          onLeft ? 'left-0 -translate-x-1.5 rounded-r-lg border-r' : 'right-0 translate-x-1.5 rounded-l-lg border-l'
+        } ${open ? 'opacity-0 pointer-events-none' : 'opacity-40 hover:opacity-100 focus-visible:opacity-100 active:opacity-100'}`}
       >
-        <Chevron className="h-4 w-4" strokeWidth={2.5} />
+        <Chevron className="h-4 w-4" strokeWidth={2} />
       </button>
 
       {/* Panel — always mounted, slides in/out (and animates its width on resize).
