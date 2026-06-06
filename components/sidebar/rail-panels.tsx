@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { MapPin, Megaphone, Zap, Gem, Flame, Compass, ArrowRight } from 'lucide-react'
+import { MapPin, Megaphone, Zap, Gem, Flame, Compass, ArrowRight, Users } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getInitials, relativeTime } from '@/lib/utils'
 import { RANK_LABELS, seasonRankStyle, rankForZaps, SEASON_RANKS, type SeasonRank } from '@/lib/season-ranks'
@@ -303,6 +303,23 @@ export async function ControlCenterPanel({ profileId }: { profileId: string }) {
         </p>
       )}
 
+      {/* The rest of the setup steps as tight progress cards. */}
+      {status && status.todo.length > 1 && (
+        <div className="mt-2 space-y-1">
+          {status.todo.slice(1, 4).map((s) => (
+            <Link
+              key={s.key}
+              href={s.href}
+              className="group flex items-center gap-2 rounded-lg border border-border bg-surface px-2.5 py-1.5 transition-colors hover:border-broadcast/50 hover:bg-broadcast-bg/20"
+            >
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-broadcast-bg ring-1 ring-broadcast/40" />
+              <span className="min-w-0 flex-1 truncate text-xs font-medium text-text">{s.label}</span>
+              <ArrowRight className="h-3 w-3 shrink-0 text-subtle transition-transform group-hover:translate-x-0.5" />
+            </Link>
+          ))}
+        </div>
+      )}
+
       {/* Rank progress + streak */}
       <div className="mt-3 space-y-1.5 px-1">
         <div className="flex items-center justify-between gap-2 text-2xs">
@@ -321,6 +338,91 @@ export async function ControlCenterPanel({ profileId }: { profileId: string }) {
             <Flame className="h-3 w-3" /> {streak}-day streak — keep it going
           </p>
         )}
+      </div>
+    </WidgetCard>
+  )
+}
+
+// ── Who's online (compact presence) ──────────────────────────────────────────
+export async function WhoOnlinePanel({ profileId }: { profileId: string }) {
+  const admin = createAdminClient()
+  const cutoff = new Date(new Date().getTime() - ONLINE_MS).toISOString()
+  const { data } = await admin
+    .from('profiles')
+    .select('id, display_name, handle, avatar_url')
+    .gte('last_seen_at', cutoff)
+    .neq('id', profileId)
+    .eq('is_active', true)
+    .eq('is_system', false)
+    .order('last_seen_at', { ascending: false })
+    .limit(14)
+  const people = (data ?? []) as { id: string; display_name: string; handle: string; avatar_url: string | null }[]
+  if (people.length === 0) return null
+
+  return (
+    <WidgetCard title="Who’s online" badge={`${people.length}`}>
+      <div className="flex flex-wrap gap-1.5 px-1 py-1">
+        {people.slice(0, 10).map((p) => (
+          <Link key={p.id} href={`/people/${p.handle}`} title={p.display_name} className="relative shrink-0">
+            {p.avatar_url ? (
+              <Image src={p.avatar_url} alt={p.display_name} width={32} height={32} className="h-8 w-8 rounded-full object-cover" />
+            ) : (
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-border-strong text-2xs font-bold text-muted">
+                {getInitials(p.display_name ?? '')}
+              </div>
+            )}
+            <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-success ring-2 ring-surface" aria-hidden />
+          </Link>
+        ))}
+      </div>
+      <div className="px-1 pt-3">
+        <Link href="/people" className="text-[13px] font-semibold text-primary-strong hover:text-primary-hover transition-colors">
+          See who’s around →
+        </Link>
+      </div>
+    </WidgetCard>
+  )
+}
+
+// ── Nearby / popular circles to explore ───────────────────────────────────────
+export async function CirclesPanel({ circleIds }: { circleIds: string[] }) {
+  const admin = createAdminClient()
+  const { data } = await admin
+    .from('circles')
+    .select('id, name, slug, neighborhood, member_count')
+    .eq('is_demo', false)
+    .order('member_count', { ascending: false })
+    .limit(12)
+  const rows = ((data ?? []) as { id: string; name: string; slug: string; neighborhood: string | null; member_count: number | null }[])
+    .filter((c) => !circleIds.includes(c.id))
+    .slice(0, 4)
+  if (rows.length === 0) return null
+
+  return (
+    <WidgetCard title="Circles to explore">
+      <div className="space-y-0.5">
+        {rows.map((c) => (
+          <Link
+            key={c.id}
+            href={`/circles/${c.slug}`}
+            className="flex items-center gap-3 rounded-lg px-1 py-2 transition-colors hover:bg-surface-elevated"
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
+              <Users className="h-4 w-4" aria-hidden />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-text">{c.name}</p>
+              <p className="text-xs text-subtle">
+                {c.neighborhood ? `${c.neighborhood} · ` : ''}{(c.member_count ?? 0).toLocaleString()} member{c.member_count === 1 ? '' : 's'}
+              </p>
+            </div>
+          </Link>
+        ))}
+      </div>
+      <div className="px-1 pt-3">
+        <Link href="/circles" className="text-[13px] font-semibold text-primary-strong hover:text-primary-hover transition-colors">
+          Browse all circles →
+        </Link>
       </div>
     </WidgetCard>
   )
