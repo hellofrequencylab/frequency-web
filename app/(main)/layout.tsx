@@ -29,6 +29,8 @@ import { CaptureLauncher } from '@/components/feed/capture-launcher'
 import { DailyCheckIn } from '@/components/daily-check-in'
 import { getProfileChores } from '@/lib/onboarding/profile-chores'
 import { getFounderTasks } from '@/lib/onboarding/founder-tasks'
+import { getActiveTraining } from '@/lib/onboarding/training'
+import { atLeastRole } from '@/lib/core/roles'
 
 // Authenticated app layout. Wraps Feed, Groups, Events, Admin.
 // Pages outside this group (onboarding, settings, sign-in, /people) render
@@ -151,6 +153,23 @@ export default async function MainLayout({
       href: '/founder',
       cta: 'See your tasks',
       done: false,
+    }
+  }
+  // Role-advancement training (ADR-157 §7): if a promotion assigned training, Vera
+  // points at it (takes precedence — it's the freshest thing they unlocked). Query
+  // gated to crew+ so the vast member majority never pays for it.
+  if (chores?.complete && atLeastRole(realRole, 'crew')) {
+    const training = await getActiveTraining(profile.id)
+    if (training) {
+      coachNext = {
+        key: 'log',
+        label: training.title,
+        headline: training.title,
+        blurb: training.blurb,
+        href: '/training',
+        cta: 'Start training',
+        done: false,
+      }
     }
   }
 
