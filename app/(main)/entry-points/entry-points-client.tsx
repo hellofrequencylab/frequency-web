@@ -319,12 +319,8 @@ export function EntryRow({ card, destinationGroups }: { card: EntryCard; destina
             <span className="font-semibold text-text">{card.scans}</span> scan{card.scans === 1 ? '' : 's'}
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <a href={`/api/entry-points/${encodeURIComponent(card.slug)}/flyer`} className={action}>
-              <Download className="h-3 w-3" /> Flyer SVG
-            </a>
-            <a href={`/api/entry-points/${encodeURIComponent(card.slug)}/flyer?format=png`} className={action}>
-              <Download className="h-3 w-3" /> Flyer PNG
-            </a>
+            {/* Flyer downloads are turned off for now (kept on the dev list, BACKLOG §
+                "Entry-point flyer designer"). QR PNG/SVG + link stay. */}
             <a href={`${qrApi}&format=png&download=${encodeURIComponent(card.slug)}`} className={action}>
               <Download className="h-3 w-3" /> QR PNG
             </a>

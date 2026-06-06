@@ -600,3 +600,11 @@ cutover + prod env config; submit the sitemap; the `shouldSend` consent test.
   falls back to `frequencylocal.com` in several server paths today).
 - `RESEND_WEBHOOK_SECRET`, `EMAIL_FROM`.
 - Supabase URL / anon key / service-role key.
+
+## Entry-point flyer designer (deferred — flyers OFF for now)
+
+Entry-point **flyer** downloads (the print-ready branded poster: `/api/entry-points/<slug>/flyer`
+SVG/PNG) are **turned off in the UI** for now (the QR PNG/SVG + short link stay). The flyer API
+route + `buildEntryFlyerSvg` remain in the code, just unlinked. Bring it back as a proper **flyer
+designer** (layout/template picker, editable poster, brand presets) rather than the fixed
+template, and re-expose the download buttons in `entry-points-client.tsx` (EntryRow).
