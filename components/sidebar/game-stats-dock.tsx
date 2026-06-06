@@ -66,7 +66,7 @@ export function GameStatsDockClient({ data }: { data: DockData }) {
           <p className="mt-1 flex items-center gap-2.5 text-xs text-subtle tabular-nums">
             <span className="inline-flex items-center gap-0.5"><Zap className="w-3 h-3 text-primary" />{zaps.toLocaleString()}</span>
             <span className="inline-flex items-center gap-0.5"><Gem className="w-3 h-3 text-signal" />{gems.toLocaleString()}</span>
-            <span className="inline-flex items-center gap-0.5"><Flame className="w-3 h-3 text-primary" />{streak}w</span>
+            <span className="inline-flex items-center gap-0.5"><Flame className="w-3 h-3 text-primary" />{streak}d</span>
           </p>
         </div>
         <ChevronUp className={`w-4 h-4 text-muted shrink-0 transition-transform duration-300 ${open ? '' : 'rotate-180'}`} />
@@ -104,7 +104,7 @@ export function GameStatsPanel({ data, showSummary = false }: { data: DockData; 
           <div className="flex items-center gap-3 text-sm font-bold text-text tabular-nums">
             <span className="inline-flex items-center gap-1"><Zap className="w-4 h-4 text-primary fill-current" />{zaps.toLocaleString()}</span>
             <span className="inline-flex items-center gap-1"><Gem className="w-4 h-4 text-signal" />{gems.toLocaleString()}</span>
-            <span className="inline-flex items-center gap-1"><Flame className="w-4 h-4 text-primary" />{streak}w</span>
+            <span className="inline-flex items-center gap-1"><Flame className="w-4 h-4 text-primary" />{streak}d</span>
           </div>
           {rank && (
             <span className="rank-badge text-3xs leading-tight" style={seasonRankStyle(rank)}>

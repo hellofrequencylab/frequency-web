@@ -14,6 +14,7 @@ import { recordEngagementEvent } from '@/lib/engagement/events'
 import { track } from '@/lib/analytics/track'
 import { awardZapsForAction } from '@/lib/zaps'
 import { recordStreakActivity } from '@/lib/achievements'
+import { recordPracticeStreak } from '@/lib/practice-streak'
 
 function db(): SupabaseClient {
   return createAdminClient() as unknown as SupabaseClient
@@ -671,6 +672,10 @@ export async function logPractice(input: {
     // never let a reward read break the log
   }
   await recordStreakActivity(profileId, 'attendance').catch(() => {})
+  // The daily practice streak (the headline streak members feel) — advances the
+  // consecutive-day count, spends a freeze to bridge a slip, and pays milestone
+  // rewards. Owns profiles.current_streak / longest_streak (lib/practice-streak.ts).
+  await recordPracticeStreak(profileId).catch(() => {})
 
   return { logged: true, zapsAwarded }
 }
