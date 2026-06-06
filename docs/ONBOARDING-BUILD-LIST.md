@@ -35,7 +35,7 @@ Two levers, in order: **(0) flip the switches that let real testers in today**, 
 | **3.x** | Proactive Vera (encouragement/accountability, host copilot) | Day-2 retention | M–L | 🔴 gated |
 | **5.1–5.2** | Rename Directory → **Network** + member-tier personal contacts + quick-add capture | Real-life contacts, kept | S–M | 📋 |
 | **5.3–5.5** | Event-invite capture loop (QR → RSVP → triple-write) + gamification | The growth loop | M–L | 📋 |
-| **6** | **Capture** — primary "log life" button (Photo/Note/Post + In-Person card/poster) | The community story + every member a node | L | 📋 |
+| **6** | **Capture** — primary "log life" button (Photo/Note/Post + In-Person card/poster) | The community story + every member a node | L | ⏳ Phase 1 shipped |
 | **4.x** | Cleanup + doc hygiene | Lean tree | S | ⏳ |
 
 Legend: ✅ done · ⏳ partially built / in flight · 📋 specced, not built · 🔴 blocked.
@@ -266,12 +266,15 @@ Frequency — a community-management tool where every member is a node.
 - **Gamification** = zaps for in-person/IRL capture + outreach (the Quest ladder), gems for content
   (the existing engines) — reward the *real moment*, not the row (§5.5 anti-farm doctrine).
 
-**Phasing (proposed — add an ADR on build).**
-1. The **Capture button + mode picker** over the existing composer (Photo/Post), revived as the
-   app-shell primary action (BACKLOG §Q2 Phase 3).
-2. **In-Person capture** folded in (Business Card / Poster → personal CRM + the §5 loop).
-3. **Note** journal subtype + the "daily journal / community story" feed framing.
-4. Richer kinds (video/cinema/live) as demand warrants.
+**Phasing (ADR-156 on build).**
+1. ✅ **shipped — Capture button + mode picker** replaces the inline composer (Photo · Note · Post ·
+   In-Person). `components/feed/capture-bar.tsx`; composer gained `kind`/`autoImage`;
+   `post_type='note'` migration; `post-card` Note badge; In-Person → `/connections/new`.
+   ⚠️ apply `20260606180000_post_type_note.sql` on deploy for Note.
+2. 📋 **Promote to a dedicated nav/FAB** (the loud primary action, BACKLOG §Q2 Phase 3) once the new
+   modes are proven.
+3. 📋 **"Daily journal / community story" framing** — a Notes/Capture lane + the feed-as-record voice.
+4. 📋 Richer kinds (video · cinema · live) into the same picker as demand warrants.
 
 **Open questions (owner):** does "Note" share the post table or get its own journal store · how
 loud is the Capture button vs. the feed composer · which captures are public-by-default (moments)
