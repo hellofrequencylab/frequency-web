@@ -1,21 +1,26 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Plus, X, GripVertical, ChevronUp, ChevronDown, Clock, Search, Sparkles,
-  Globe, Lock, Link2, Check, Loader2, Smile, PencilLine, PartyPopper, Eye,
+  Globe, Lock, Link2, Check, PencilLine, PartyPopper, Eye,
 } from 'lucide-react'
 import { StudioWindow } from '../studio-window'
-import { STUDIO_ACCENTS, accentColor, accentTint, DEFAULT_ACCENT } from '@/lib/studio/accents'
-import { isError } from '@/lib/action-result'
+import { useStudioDraft } from '../kit/use-studio-draft'
+import { useSortable } from '../kit/use-sortable'
+import { EmojiAccentFace, AccentPicker, EmojiGrid } from '../kit/studio-identity'
+import { StudioField, StudioSectionLabel } from '../kit/studio-field'
+import { SaveStatus, StudioFooter } from '../kit/studio-footer'
+import { accentColor, accentTint, DEFAULT_ACCENT } from '@/lib/studio/accents'
 import {
   saveJourneyMeta, addPracticeToJourney, removeJourneyStep, reorderJourneySteps,
   setJourneyStep, setJourneyVisibility,
 } from '@/app/(main)/journeys/actions'
 
 const CADENCES = ['Daily', 'A few times a week', 'Weekly', 'As needed']
-const EMOJI_CHOICES = ['🧭','🌱','🔥','🧘','🏃','💪','📓','📖','🌊','☀️','🌙','✨','🎯','🫀','🧠','🎨','🎸','🛠️','🤝','🕊️','💧','🏔️','🌀','💫']
+// Pillar → accent token, for the balance meter + per-step dot.
+const PILLAR_ACCENT: Record<string, string> = { mind: 'indigo', body: 'jade', spirit: 'plum', expression: 'gold' }
 
 export type Visibility = 'private' | 'unlisted' | 'public'
 
@@ -46,13 +51,19 @@ interface Props {
   isCrew: boolean
 }
 
-type SaveState = 'idle' | 'saving' | 'saved'
-
 export function JourneyBuilder(props: Props) {
   const router = useRouter()
   const close = useCallback(() => router.push('/journeys'), [router])
 
-  // Identity (debounced autosave)
+  // Studio autosave engine (kit) — stable save/onError so its callbacks stay stable.
+  const save = useCallback(
+    (patch: Parameters<typeof saveJourneyMeta>[1]) => saveJourneyMeta(props.planId, patch),
+    [props.planId],
+  )
+  const onError = useCallback(() => router.refresh(), [router])
+  const { saveState, error, run, queueSave } = useStudioDraft({ save, onError })
+
+  // Identity
   const [emoji, setEmoji] = useState(props.initialEmoji ?? '')
   const [accent, setAccent] = useState(props.initialAccent ?? DEFAULT_ACCENT)
   const [title, setTitle] = useState(props.initialTitle)
@@ -67,123 +78,43 @@ export function JourneyBuilder(props: Props) {
   const [pickerOpen, setPickerOpen] = useState(props.initialItems.length === 0)
   const [query, setQuery] = useState('')
 
-  // Visibility + status
+  // Visibility + celebration
   const [visibility, setVisibility] = useState<Visibility>(props.initialVisibility)
-  const [save, setSave] = useState<SaveState>('idle')
-  const [error, setError] = useState<string | null>(null)
   const [celebrate, setCelebrate] = useState(false)
 
-  // Drag state
-  const [dragId, setDragId] = useState<string | null>(null)
-  const [overId, setOverId] = useState<string | null>(null)
-
-  const metaTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  const flagSaved = useCallback(() => setSave('saved'), [])
-
-  // Auto-revert the "Saved" badge back to idle (no ref needed in the save path).
-  useEffect(() => {
-    if (save !== 'saved') return
-    const t = setTimeout(() => setSave('idle'), 1800)
-    return () => clearTimeout(t)
-  }, [save])
-
-  // Persist helper for item ops (best-effort; resync from server on failure).
-  const persist = useCallback(
-    async (fn: () => Promise<{ data: unknown } | { error: string }>) => {
-      setSave('saving')
-      setError(null)
-      const res = await fn()
-      if (isError(res)) {
-        setError(res.error)
-        setSave('idle')
-        router.refresh()
-        return false
-      }
-      flagSaved()
-      return true
-    },
-    [flagSaved, router],
-  )
-
-  // Debounced identity save.
-  const queueMetaSave = useCallback(
-    (patch: Parameters<typeof saveJourneyMeta>[1]) => {
-      setSave('saving')
-      if (metaTimer.current) clearTimeout(metaTimer.current)
-      metaTimer.current = setTimeout(async () => {
-        const res = await saveJourneyMeta(props.planId, patch)
-        if (isError(res)) { setError(res.error); setSave('idle') } else flagSaved()
-      }, 600)
-    },
-    [props.planId, flagSaved],
-  )
-
-  useEffect(() => () => {
-    if (metaTimer.current) clearTimeout(metaTimer.current)
-  }, [])
-
-  // --- Item operations (optimistic) ---------------------------------------
+  // --- Item operations (optimistic; run() resyncs on failure) --------------
   const pillarById = new Map(props.pillars.map((p) => [p.id, p]))
   const inPlan = new Set(items.map((i) => i.practiceId))
   const available = props.available.filter((p) => !inPlan.has(p.id))
 
   const addPractice = (p: AvailablePractice) => {
-    const item: BuilderItem = {
+    setItems((prev) => [...prev, {
       practiceId: p.id, title: p.title, description: p.description,
       domainId: p.domainId, note: null, cadence: null, practiceCadence: null,
-    }
-    setItems((prev) => [...prev, item])
-    void persist(() => addPracticeToJourney(props.planId, p.id, p.domainId))
+    }])
+    void run(() => addPracticeToJourney(props.planId, p.id, p.domainId))
   }
-
   const removeStep = (practiceId: string) => {
     setItems((prev) => prev.filter((i) => i.practiceId !== practiceId))
-    void persist(() => removeJourneyStep(props.planId, practiceId))
+    void run(() => removeJourneyStep(props.planId, practiceId))
   }
-
   const commitOrder = (next: BuilderItem[]) => {
     setItems(next)
-    void persist(() => reorderJourneySteps(props.planId, next.map((i) => i.practiceId)))
+    void run(() => reorderJourneySteps(props.planId, next.map((i) => i.practiceId)))
   }
-
-  const move = (practiceId: string, dir: -1 | 1) => {
-    const idx = items.findIndex((i) => i.practiceId === practiceId)
-    const swap = idx + dir
-    if (idx < 0 || swap < 0 || swap >= items.length) return
-    const next = [...items]
-    ;[next[idx], next[swap]] = [next[swap], next[idx]]
-    commitOrder(next)
-  }
-
   const setStep = (practiceId: string, patch: { note?: string | null; cadence?: string | null }) => {
     setItems((prev) => prev.map((i) => (i.practiceId === practiceId ? { ...i, ...patch } : i)))
-    void persist(() => setJourneyStep(props.planId, practiceId, patch))
+    void run(() => setJourneyStep(props.planId, practiceId, patch))
   }
 
-  const onDrop = (targetId: string) => {
-    if (!dragId || dragId === targetId) { setDragId(null); setOverId(null); return }
-    const from = items.findIndex((i) => i.practiceId === dragId)
-    const to = items.findIndex((i) => i.practiceId === targetId)
-    if (from < 0 || to < 0) return
-    const next = [...items]
-    const [moved] = next.splice(from, 1)
-    next.splice(to, 0, moved)
-    setDragId(null); setOverId(null)
-    commitOrder(next)
-  }
+  const { itemProps, move, isDragging, isOver } = useSortable(items, (i) => i.practiceId, commitOrder)
 
   const changeVisibility = async (v: Visibility) => {
     const prev = visibility
     setVisibility(v)
-    setSave('saving'); setError(null)
-    const res = await setJourneyVisibility(props.planId, v)
-    if (isError(res)) {
-      setVisibility(prev); setError(res.error); setSave('idle')
-    } else {
-      flagSaved()
-      if (v === 'public') { setCelebrate(true); setTimeout(() => setCelebrate(false), 2600) }
-    }
+    const ok = await run(() => setJourneyVisibility(props.planId, v))
+    if (!ok) setVisibility(prev)
+    else if (v === 'public') { setCelebrate(true); setTimeout(() => setCelebrate(false), 2600) }
   }
 
   // --- Derived ------------------------------------------------------------
@@ -201,54 +132,38 @@ export function JourneyBuilder(props: Props) {
     { name: 'Other', list: filtered.filter((p) => !p.domainId) },
   ].filter((g) => g.list.length > 0)
 
-  const PILLAR_ACCENT: Record<string, string> = { mind: 'indigo', body: 'jade', spirit: 'plum', expression: 'gold' }
-
-  // --- Footer -------------------------------------------------------------
   const footer = (
-    <div className="flex items-center justify-between gap-3">
-      <span className="flex items-center gap-1.5 text-xs text-subtle">
-        {save === 'saving' ? (
-          <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving…</>
-        ) : save === 'saved' ? (
-          <><Check className="h-3.5 w-3.5 text-success" /> Saved</>
-        ) : (
-          <>Autosaves as you go</>
-        )}
-        {error && <span className="ml-2 text-danger">{error}</span>}
-      </span>
-      <div className="flex items-center gap-2">
-        <a
-          href={`/journeys/${props.slug}?preview=1`}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
+    <StudioFooter left={<SaveStatus state={saveState} error={error} />}>
+      <a
+        href={`/journeys/${props.slug}?preview=1`}
+        className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
+      >
+        <Eye className="h-4 w-4" /> Preview
+      </a>
+      {visibility === 'public' ? (
+        <button
+          type="button"
+          onClick={() => changeVisibility('unlisted')}
+          className="inline-flex items-center gap-1.5 rounded-xl bg-success-bg px-4 py-2 text-sm font-semibold text-success transition-colors hover:opacity-90"
         >
-          <Eye className="h-4 w-4" /> Preview
-        </a>
-        {visibility === 'public' ? (
-          <button
-            type="button"
-            onClick={() => changeVisibility('unlisted')}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-success-bg px-4 py-2 text-sm font-semibold text-success transition-colors hover:opacity-90"
-          >
-            <Check className="h-4 w-4" /> Shared
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => changeVisibility('public')}
-            disabled={items.length === 0}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-            title={items.length === 0 ? 'Add a practice first' : undefined}
-          >
-            {props.isCrew ? <Globe className="h-4 w-4" /> : <Lock className="h-4 w-4" />} Share to community
-          </button>
-        )}
-      </div>
-    </div>
+          <Check className="h-4 w-4" /> Shared
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => changeVisibility('public')}
+          disabled={items.length === 0}
+          className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+          title={items.length === 0 ? 'Add a practice first' : undefined}
+        >
+          {props.isCrew ? <Globe className="h-4 w-4" /> : <Lock className="h-4 w-4" />} Share to community
+        </button>
+      )}
+    </StudioFooter>
   )
 
   return (
     <StudioWindow open onClose={close} eyebrow="Studio · Journey" footer={footer}>
-      {/* Celebration banner on publish */}
       {celebrate && (
         <div className="mb-4 flex items-center gap-2 rounded-2xl border border-success/50 bg-success-bg px-4 py-3 text-sm font-medium text-success motion-safe:animate-in motion-safe:zoom-in-95">
           <PartyPopper className="h-5 w-5 shrink-0" />
@@ -258,69 +173,38 @@ export function JourneyBuilder(props: Props) {
 
       {/* ── Identity ─────────────────────────────────────────────── */}
       <div className="flex items-start gap-3">
-        {/* Emoji + accent face */}
         <div className="relative shrink-0">
-          <button
-            type="button"
-            onClick={() => setEmojiOpen((v) => !v)}
-            className="flex h-16 w-16 items-center justify-center rounded-2xl text-3xl transition-transform hover:scale-105"
-            style={{ backgroundColor: accentTint(accent, 16), color: accentColor(accent) }}
-            aria-label="Choose an emoji"
-          >
-            {emoji || <Smile className="h-7 w-7" />}
-          </button>
+          <EmojiAccentFace emoji={emoji} accent={accent} size="lg" onClick={() => setEmojiOpen((v) => !v)} />
           {emojiOpen && (
             <div className="absolute left-0 top-[4.5rem] z-10 w-64 rounded-2xl border border-border bg-surface p-3 shadow-xl">
-              <div className="grid grid-cols-8 gap-1">
-                {EMOJI_CHOICES.map((e) => (
-                  <button
-                    key={e}
-                    type="button"
-                    onClick={() => { setEmoji(e); setEmojiOpen(false); queueMetaSave({ emoji: e }) }}
-                    className="flex h-7 w-7 items-center justify-center rounded-lg text-lg hover:bg-surface-elevated"
-                  >
-                    {e}
-                  </button>
-                ))}
-              </div>
+              <EmojiGrid value={emoji} size="sm" onPick={(e) => { setEmoji(e); setEmojiOpen(false); queueSave({ emoji: e }) }} />
               <div className="mt-2 flex items-center gap-2 border-t border-border pt-2">
                 <input
                   value={emoji}
-                  onChange={(e) => { setEmoji(e.target.value.slice(0, 4)); queueMetaSave({ emoji: e.target.value.slice(0, 4) }) }}
+                  onChange={(e) => { const v = e.target.value.slice(0, 4); setEmoji(v); queueSave({ emoji: v }) }}
                   placeholder="or type one"
                   className="w-full rounded-lg border border-border bg-surface px-2 py-1 text-sm"
                 />
-                <button type="button" onClick={() => { setEmoji(''); setEmojiOpen(false); queueMetaSave({ emoji: '' }) }} className="text-xs text-subtle hover:text-text">Clear</button>
+                <button type="button" onClick={() => { setEmoji(''); setEmojiOpen(false); queueSave({ emoji: '' }) }} className="text-xs text-subtle hover:text-text">Clear</button>
               </div>
             </div>
           )}
-          {/* Accent dots */}
-          <div className="mt-2 flex justify-center gap-1">
-            {STUDIO_ACCENTS.map((a) => (
-              <button
-                key={a.key}
-                type="button"
-                aria-label={a.label}
-                onClick={() => { setAccent(a.key); queueMetaSave({ accent: a.key }) }}
-                className={`h-3 w-3 rounded-full ring-offset-1 ring-offset-canvas transition-transform hover:scale-125 ${accent === a.key ? 'ring-2' : ''}`}
-                style={{ backgroundColor: accentColor(a.key), ['--tw-ring-color' as string]: accentColor(a.key) }}
-              />
-            ))}
+          <div className="mt-2 flex justify-center">
+            <AccentPicker accent={accent} onChange={(a) => { setAccent(a); queueSave({ accent: a }) }} />
           </div>
         </div>
 
-        {/* Title + summary */}
         <div className="min-w-0 flex-1">
           <input
             value={title}
-            onChange={(e) => { setTitle(e.target.value); queueMetaSave({ title: e.target.value }) }}
+            onChange={(e) => { setTitle(e.target.value); queueSave({ title: e.target.value }) }}
             maxLength={120}
             placeholder="Name your journey"
             className="w-full bg-transparent text-2xl font-bold text-text outline-none placeholder:text-subtle"
           />
           <input
             value={summary}
-            onChange={(e) => { setSummary(e.target.value); queueMetaSave({ summary: e.target.value }) }}
+            onChange={(e) => { setSummary(e.target.value); queueSave({ summary: e.target.value }) }}
             maxLength={280}
             placeholder="One line on what this is and who it’s for"
             className="mt-1 w-full bg-transparent text-sm text-muted outline-none placeholder:text-subtle"
@@ -328,12 +212,12 @@ export function JourneyBuilder(props: Props) {
         </div>
       </div>
 
-      {/* Why / intro — the depth that turns a combo into a course */}
+      {/* Why / intro */}
       <div className="mt-4">
         {showIntro || intro ? (
           <textarea
             value={intro}
-            onChange={(e) => { setIntro(e.target.value); queueMetaSave({ intro: e.target.value }) }}
+            onChange={(e) => { setIntro(e.target.value); queueSave({ intro: e.target.value }) }}
             rows={4}
             maxLength={8000}
             placeholder="The why, the how, what you'll get from it. Write as much or as little as you like — a line for a simple practice, a full curriculum for a course."
@@ -391,18 +275,14 @@ export function JourneyBuilder(props: Props) {
             {items.map((it, i) => {
               const pillar = it.domainId ? pillarById.get(it.domainId) : null
               const cadence = it.cadence ?? it.practiceCadence
-              const isOver = overId === it.practiceId && dragId !== it.practiceId
               return (
                 <li
                   key={it.practiceId}
+                  {...itemProps(it.practiceId)}
                   draggable={expanded !== it.practiceId}
-                  onDragStart={() => setDragId(it.practiceId)}
-                  onDragOver={(e) => { e.preventDefault(); setOverId(it.practiceId) }}
-                  onDragEnd={() => { setDragId(null); setOverId(null) }}
-                  onDrop={() => onDrop(it.practiceId)}
                   className={`group rounded-2xl border bg-surface px-3 py-2.5 shadow-sm transition-all ${
-                    dragId === it.practiceId ? 'opacity-40' : ''
-                  } ${isOver ? 'border-primary ring-2 ring-primary/30' : 'border-border'}`}
+                    isDragging(it.practiceId) ? 'opacity-40' : ''
+                  } ${isOver(it.practiceId) ? 'border-primary ring-2 ring-primary/30' : 'border-border'}`}
                 >
                   <div className="flex items-center gap-2">
                     <GripVertical className="h-4 w-4 shrink-0 cursor-grab text-subtle opacity-40 transition-opacity group-hover:opacity-100" />
@@ -436,8 +316,7 @@ export function JourneyBuilder(props: Props) {
                   {/* Per-step controls */}
                   {expanded === it.practiceId && (
                     <div className="mt-2 flex flex-wrap items-end gap-2 border-t border-border pt-2.5">
-                      <label className="flex flex-col gap-1 text-2xs font-semibold uppercase tracking-wide text-subtle">
-                        Cadence
+                      <StudioField label="Cadence">
                         <select
                           value={it.cadence ?? ''}
                           onChange={(e) => setStep(it.practiceId, { cadence: e.target.value || null })}
@@ -446,9 +325,8 @@ export function JourneyBuilder(props: Props) {
                           <option value="">Default{it.practiceCadence ? ` (${it.practiceCadence})` : ''}</option>
                           {CADENCES.map((c) => <option key={c} value={c}>{c}</option>)}
                         </select>
-                      </label>
-                      <label className="flex min-w-[12rem] flex-1 flex-col gap-1 text-2xs font-semibold uppercase tracking-wide text-subtle">
-                        Note for this step
+                      </StudioField>
+                      <StudioField label="Note for this step" className="min-w-[12rem] flex-1">
                         <input
                           defaultValue={it.note ?? ''}
                           maxLength={200}
@@ -456,7 +334,7 @@ export function JourneyBuilder(props: Props) {
                           placeholder="e.g. first thing, before coffee"
                           className="rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-text"
                         />
-                      </label>
+                      </StudioField>
                     </div>
                   )}
                 </li>
@@ -493,7 +371,7 @@ export function JourneyBuilder(props: Props) {
                   <p className="px-1 py-3 text-sm text-muted">{available.length === 0 ? 'Every library practice is already on your path.' : 'No practices match that search.'}</p>
                 ) : pickerGroups.map((g) => (
                   <div key={g.name}>
-                    <p className="mb-1 px-1 text-2xs font-semibold uppercase tracking-wide text-subtle">{g.name}</p>
+                    <StudioSectionLabel className="mb-1 px-1">{g.name}</StudioSectionLabel>
                     <ul className="space-y-1">
                       {g.list.map((p) => (
                         <li key={p.id}>
