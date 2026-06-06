@@ -17,11 +17,12 @@ The current build order for the progress / streak / disclosure arc and the pract
 follow-ups it surfaced. Full detail lives in the lettered sections below — this is the ranking.
 
 **P0 — decided ✅ (2026-06-06, ADR-152): The Quest → Seasonal Quest → Journeys → Practices (all free).**
-1. **S1 · Quest/Journey hierarchy** — Phase A *shipped* (paywall gone; "Quests" restored). **B1
-   *shipped*** — `quests` table + `journey_plans.quest_id`/`official` + seed (migration
-   `20260608010000`, *needs applying to prod*). Remaining: **B2** (surfaces — `/crew/quests` shows
-   the Seasonal Quest → its Journeys; Quest detail; adoption) · **B3** (retire `quest_*` +
-   `advanceQuests`; GLOSSARY/THE-QUEST/DATABASE/ECONOMY terminology pass). *(§S)*
+1. **S1 · Quest/Journey hierarchy** — Phase A + **B1** + **B2 *shipped***. A · paywall gone, "Quests"
+   restored. B1 · `quests` table + `journey_plans.quest_id`/`official` + seed (migration
+   `20260608010000`, *needs applying to prod*). B2 · `/crew/quests` now lists the Seasonal Quest →
+   its official Journeys (each → the Journey detail's practices + free Adopt); `lib/quests.ts`.
+   Remaining: **B3** (retire the legacy `quest_*` + `advanceQuests` + old `getQuestsData`/`startQuest`;
+   GLOSSARY/THE-QUEST/DATABASE/ECONOMY terminology pass). *(§S)*
 
 **P1 — finish the shipped arc (ready, high value, low risk)**
 2. **Stage-driven disclosure → crew dashboard + surfaces** *(§F, ADR-146)* — the spine is
@@ -376,10 +377,12 @@ inline path (wizard is an optional guided alt); RLS isolation between `journey_p
   removed the paywall everywhere and restored **"Quests"** as the seasonal container surface
   (`/crew/quests`). **B1 ✅ shipped** — `quests` table + `journey_plans.quest_id`/`official` + a
   seed (active season's Quest + one official Journey per Pillar, ≤3 practices each); migration
-  `20260608010000` **(needs applying to prod)**, no surface change yet. **Remaining:**
-  **B2** — surfaces: `/crew/quests` lists the Seasonal Quest → its Journeys; Quest detail; adoption.
-  **B3** — retire `quest_*` + `advanceQuests` + the old `getQuestsData`/`startQuest`; then the
-  GLOSSARY/THE-QUEST/DATABASE/ECONOMY terminology pass. *(Naming stable — no more renames.)*
+  `20260608010000` **(needs applying to prod)**. **B2 ✅ shipped** — `/crew/quests` now lists the
+  Seasonal Quest → its official Journeys (each card → the Journey detail's practices + the free
+  Adopt flow); `lib/quests.ts` reads defensively (empty state if the migration isn't applied yet).
+  **Remaining: B3** — retire the legacy `quest_*` + `advanceQuests` + the old
+  `getQuestsData`/`startQuest`/`start-quest-button`; then the GLOSSARY/THE-QUEST/DATABASE/ECONOMY
+  terminology pass. *(Naming stable — no more renames.)*
 - [ ] **S2 · Streak box: half-height when collapsed** — tighten `PracticePrompt` collapsed state. (S)
 - [ ] **S3 · Broadcast color → light blue** — introduce a `broadcast` blue token (complements the
   site orange) and apply to dispatch/broadcast surfaces (currently the teal `signal`). No hardcoded
