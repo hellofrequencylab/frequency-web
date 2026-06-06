@@ -40,7 +40,7 @@ Two levers, in order: **(0) flip the switches that let real testers in today**, 
 | **7** | **Role-advancement training** — a training Journey per role transition | Onboarding never ends; every role is taught | L | ⏳ spine shipped (7.1–7.2) |
 | **8** | **Hook Networks** — federated white-label sub-communities (+ Organization role) | Pros/orgs run their own bubble that feeds the network | XL | 📋 designed (ADR-158) |
 | **9** | **Growth Studio** — unified "Leadpages-style" onboarding/growth suite | One place to manage pages, entry points, QR, links, pipeline | M | ⏳ launchpad shipped (9.0) |
-| **10** | **Navigation restructure** — left-menu-only, categorical, minimal drill-down | Clean IA; condense sprawl into dashboards | L | ✅ map approved → building |
+| **10** | **Navigation restructure** — left-menu-only, categorical, minimal drill-down | Clean IA; condense sprawl into dashboards | L | ⏳ rail recategorized; dashboards next |
 | **4.x** | Cleanup + doc hygiene | Lean tree | S | ⏳ |
 
 Legend: ✅ done · ⏳ partially built / in flight · 📋 specced, not built · 🔴 blocked.
@@ -415,6 +415,13 @@ reuse existing tables; the work is editors + actions.
 **Approved decisions:** Library→Practices · Marketing→Growth Studio · Quest→one dashboard (sections) ·
 keep scope rails. **Open:** "Around You" naming. **Sequence:** 10.1 → 10.2 → 10.3 → 10.4/10.5 → 10.6 →
 10.7. Each is a contextual page/dashboard over existing data — UI + nav, minimal new schema.
+
+- ✅ **Rail recategorized (first cut of 10.7).** `NAV_AREAS` rewritten to the categorical IA: **Home ·
+  Community · Practice · Quest · Messages** (member) + the four operator sections collapsed to
+  **Studio** (host+) + **Platform** (janitor). Quest relabeled; **Messages added to the rail**; no items
+  orphaned (deep dashboard merges keep everything reachable). Routes unchanged — pages still gate
+  themselves. *Next:* 10.1 Quest dashboard (sections) → 10.2 operator dashboards → 10.3 Network → 10.6
+  drop the global right rail.
 
 ## Reuse map — what already exists (so you never rebuild it)
 
