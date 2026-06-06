@@ -5,7 +5,6 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { HierarchyBreadcrumb } from '@/components/hierarchy/breadcrumb'
 import { StatusBadge } from '@/components/groups/status-badge'
 import { DetailTemplate } from '@/components/templates/detail-template'
-import { StaffEditButton } from '@/components/ui/staff-edit-button'
 import { EditModeButton } from '@/components/admin/inline/edit-mode-button'
 import { InlineText } from '@/components/admin/inline/inline-text'
 import { getNexusCapabilities } from '@/lib/core/load-capabilities'
@@ -114,7 +113,6 @@ export default async function NexusPage({
         actions={
           <>
             {canManage && <EditModeButton />}
-            <StaffEditButton href={`/admin/nexuses?edit=${nexus.id}`} label="Edit nexus" />
           </>
         }
         subtitle={

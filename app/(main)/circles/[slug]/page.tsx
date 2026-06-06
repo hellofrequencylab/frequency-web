@@ -27,7 +27,6 @@ import { ProfileFlair } from '@/components/profile-flair'
 import { isEndorsed } from '@/lib/season-ranks'
 import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
 import { ClaimCircle } from '@/components/circles/claim-circle'
-import { StaffEditButton } from '@/components/ui/staff-edit-button'
 import { EditModeButton, StartEditingLink } from '@/components/admin/inline/edit-mode-button'
 import { InlineText } from '@/components/admin/inline/inline-text'
 import { updateCircleField, uploadCircleCover, removeCircleCover } from '../admin-actions'
@@ -316,8 +315,6 @@ export default async function CirclePage({
         actions={
           <>
             {canManage && <EditModeButton />}
-
-            <StaffEditButton href={`/admin/circles?edit=${circle.id}`} label="Edit circle" />
 
             {canManage && <CircleHostMenu circleId={circle.id} />}
 
