@@ -79,6 +79,16 @@ these tables mean.
 > (ADR-139). Crew-task completions route through the zap ledger too (the
 > `after_crew_completion` trigger appends a row instead of touching the profile).
 
+**Local Marketplace (vertical 5)**
+`market_listings`
+
+> **`market_listings`** (ADR-145) — Foundation, **no-fee, no-payment** local exchange:
+> `kind` (offer/free/lend/request), free-text `price_note` (no processing), geo
+> (neighborhood/city/lat/lng) + optional `circle_id` locality anchor, `status`
+> (active/claimed/closed), `is_demo`. RLS: public read active, author manages own.
+> `lib/marketplace.ts` (admin handle + app-code authz); `/market`. Contact hands off to
+> the seller's profile/DMs — no in-app payment.
+
 **Practices (North Star)**
 `practices`, `circle_practices`, `member_practices`, `practice_logs`
 

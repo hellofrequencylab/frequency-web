@@ -38,6 +38,7 @@ export const AREA_ICONS: Record<string, ElementType> = {
   circles: Users,
   channels: Radio,
   events: CalendarDays,
+  market: Store,
   practices: Sparkles,
   journeys: Route,
   programs: BookOpen,
