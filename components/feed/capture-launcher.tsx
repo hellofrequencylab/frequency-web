@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { X, BookOpen } from 'lucide-react'
+import { X, BookOpen, ScanLine, Compass, ArrowRight } from 'lucide-react'
 import { CaptureBox } from './capture-box'
 
 type Mode = 'post' | 'note' | 'photo' | 'contact'
@@ -64,21 +64,54 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
             className="relative flex w-full flex-col overflow-y-auto border-border bg-canvas p-4 shadow-2xl motion-safe:animate-[slideUp_0.25s_ease-out] sm:max-h-[90vh] sm:max-w-md sm:rounded-3xl sm:border"
             style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
           >
-            <div className="mb-1 flex items-center justify-between px-1 pt-[max(0px,env(safe-area-inset-top))]">
-              <p className="text-base font-bold text-text">Capture a moment</p>
+            {/* Header — quest-framed: this is the player catching something real from
+                the world, an expression of the Quest they're on. */}
+            <div className="mb-3 flex items-start justify-between gap-2 px-1 pt-[max(0px,env(safe-area-inset-top))]">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-bg text-primary-strong">
+                  <Compass className="h-5 w-5" aria-hidden />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-base font-bold text-text">Capture a moment</p>
+                  <p className="text-xs text-muted">A piece of your Quest, caught from real life.</p>
+                </div>
+              </div>
               <button
                 type="button"
                 onClick={close}
                 aria-label="Close"
-                className="rounded-full p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+                className="-mr-1 shrink-0 rounded-full p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <p className="mb-3 px-1 text-xs leading-relaxed text-muted">
-              Log a moment as it happens — add a contact to your CRM, or share a post, note, or photo.
-              It lands in your journal and the community feed.
-            </p>
+
+            {/* The reader — the headline action, up top. Point your camera at a card,
+                poster, or a Frequency code to capture a person or a node from the world. */}
+            <Link
+              href="/connections/new"
+              onClick={close}
+              className="group mb-4 flex items-center gap-3 overflow-hidden rounded-2xl border border-primary/30 bg-primary-bg/40 p-4 transition-colors hover:border-primary/60 hover:bg-primary-bg/60"
+            >
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary text-on-primary shadow-pop">
+                <ScanLine className="h-6 w-6" aria-hidden />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-bold text-text">Scan a card or poster</span>
+                <span className="block text-xs leading-relaxed text-muted">
+                  Point your camera at a business card, a flyer, or a Frequency code — capture a new
+                  contact or a node you found in the wild.
+                </span>
+              </span>
+              <ArrowRight className="h-4 w-4 shrink-0 text-primary-strong transition-transform group-hover:translate-x-0.5" aria-hidden />
+            </Link>
+
+            {/* …or capture by hand */}
+            <div className="mb-3 flex items-center gap-3">
+              <span className="h-px flex-1 bg-border" />
+              <span className="text-2xs font-semibold uppercase tracking-wide text-subtle">or capture by hand</span>
+              <span className="h-px flex-1 bg-border" />
+            </div>
 
             <CaptureBox key={mode} scopeId={scopeId} visibility="public" defaultMode={mode} />
 

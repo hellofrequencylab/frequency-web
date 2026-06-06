@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useRef, useEffect, useTransition } from 'react'
-import { Check, X, Send } from 'lucide-react'
+import { Check, X, Send, Bug } from 'lucide-react'
 import { conciergeTurn, confirmProposal } from '@/app/onboarding/vera-actions'
+import { openSupport } from '@/components/support/support-launcher'
 import type { ProposedToolCall } from '@/lib/ai/vera/concierge'
 import type { VeraMessage } from '@/lib/ai/vera/agent-claude'
 
@@ -140,6 +141,15 @@ export function VeraChat({ opening }: { opening: VeraOpeningSeed }) {
             <Send className="h-4 w-4" />
           </button>
         </div>
+        {/* Always-available bug report — opens the capture dialog (page details +
+            screenshot). Vera can also point members here in conversation. */}
+        <button
+          type="button"
+          onClick={() => openSupport('bug')}
+          className="inline-flex items-center gap-1.5 text-2xs font-medium text-subtle transition-colors hover:text-text"
+        >
+          <Bug className="h-3.5 w-3.5" /> Report a bug or get help
+        </button>
       </div>
     </div>
   )
