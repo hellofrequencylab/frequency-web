@@ -35,7 +35,9 @@ export function PostReplies({
   postId: string
   initialCount: number
 }) {
-  const [open, setOpen] = useState(false)
+  // Comments show in the feed: a post with replies opens its thread by default
+  // (fetched on mount) instead of hiding them behind a click.
+  const [open, setOpen] = useState(initialCount > 0)
   const [replies, setReplies] = useState<Reply[]>([])
   const [loaded, setLoaded] = useState(false)
   const [body, setBody] = useState('')
@@ -126,25 +128,28 @@ export function PostReplies({
             ))
           )}
 
-          {/* Reply composer */}
-          <form onSubmit={handleSubmit} className="flex items-start gap-2 pl-2">
-            <div className="flex-1">
-              <textarea
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-                placeholder="Write a reply…"
-                rows={2}
-                disabled={isPending}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSubmit(e)
-                }}
-                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs text-text placeholder-subtle focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30 dark:focus:ring-border-strong/30 resize-none disabled:opacity-50"
-              />
-            </div>
+          {/* Reply composer — a single growing line; ⌘/Ctrl+Enter or the button sends. */}
+          <form onSubmit={handleSubmit} className="flex items-end gap-2 pl-2">
+            <textarea
+              value={body}
+              onChange={(e) => {
+                setBody(e.target.value)
+                e.target.style.height = 'auto'
+                e.target.style.height = `${Math.min(e.target.scrollHeight, 140)}px`
+              }}
+              placeholder="Add a comment…"
+              rows={1}
+              disabled={isPending}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) handleSubmit(e)
+              }}
+              className="flex-1 resize-none rounded-xl border border-border bg-surface px-3.5 py-2 text-xs leading-relaxed text-text placeholder-subtle focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30 disabled:opacity-50"
+            />
             <button
               type="submit"
               disabled={!body.trim() || isPending}
-              className="mt-0.5 p-2 rounded-lg bg-primary text-on-primary hover:bg-primary-hover disabled:opacity-40 transition-colors shrink-0"
+              aria-label="Send comment"
+              className="shrink-0 rounded-xl bg-primary p-2.5 text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
             >
               {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
             </button>

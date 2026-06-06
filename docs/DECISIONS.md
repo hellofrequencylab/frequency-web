@@ -4976,9 +4976,10 @@ Member-facing "how to Capture" guidance → help center / Notion when it stabili
 ### ADR-156a — Capture rework: one multi-mode box, contact-forward (owner direction)
 
 **Refines ADR-156.** Capture is **one Substack-style box, not a picker → composer two-step.** The
-box body swaps by mode; **mode tabs inside the box** (top, active one filled so the current mode is
-unmistakable) pick what you're capturing (Post · Note ·
-Photo · **Contact**); the send button always reads **"Capture"** (`components/feed/capture-box.tsx`).
+box body swaps by mode; a **single bottom row of selectable capture features** (segmented, beside the
+send button) picks what you're capturing — **Post · Dispatch · Note · Photo · Contact** (Dispatch is
+host-only; the old Post|Dispatch toggle folded into this row). The send button always reads
+**"Capture"** (`components/feed/capture-box.tsx`; `Composer` gained `bottomSlot` + `forceAnnouncement`).
 The shared `Composer` stays the post/note/photo editor (it's also used on circle/channel/profile
 pages, so the Capture-mode rail lives in `CaptureBox`, *not* in `Composer` — `Composer` only gained
 a `submitLabel`). The feed shows the box inline; the app-wide FAB opens the same box in a modal.
