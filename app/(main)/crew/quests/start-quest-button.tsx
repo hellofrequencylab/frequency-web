@@ -6,8 +6,7 @@ import { Play, Loader2 } from 'lucide-react'
 import { startQuest } from './actions'
 import { isError } from '@/lib/action-result'
 
-/** Join a seasonal Journey. Crew-only; the page wraps this in a CrewGate for
- *  free members, so by the time it renders the viewer can start. */
+/** Join a seasonal Journey — free for every member (ADR-149). */
 export function StartQuestButton({ chainId }: { chainId: string }) {
   const [pending, start] = useTransition()
   const [err, setErr] = useState<string | null>(null)

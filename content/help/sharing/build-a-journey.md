@@ -39,7 +39,7 @@ Your journey starts **private** (just you). When you're ready:
 
 - **Anyone with the link** — share it directly without listing it publicly.
 - **Share to community** — publish it to the open library so anyone can adopt it.
-  (Publishing to the library is a Crew feature.)
+  Publishing, adopting and remixing journeys are all **free**.
 
 When someone **adopts** your journey, its practices flow into their daily loop — and
 every time they log one, they earn zaps and build their streak, just like their own
