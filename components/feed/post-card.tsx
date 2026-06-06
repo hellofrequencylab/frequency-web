@@ -218,49 +218,50 @@ export function PostCard({
             </div>
           )}
 
-          {/* A small, balanced action row directly under the post — like · plus · the
-              comment toggle, with the zaps earned on the right. The thread expands
-              full-width BELOW it (no more sandwiching). */}
-          <div className="mt-3 flex items-center gap-1 border-t border-border pt-2">
-            <form action={toggleReaction.bind(null, post.id, 'heart')}>
-              <button
-                type="submit"
-                className={`flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors ${
-                  myHeart ? 'text-danger' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
-                }`}
-              >
-                <Heart className={`w-3.5 h-3.5 ${myHeart ? 'fill-current' : ''}`} />
-                {heartCount > 0 && <span>{heartCount}</span>}
-              </button>
-            </form>
-
-            <form action={toggleReaction.bind(null, post.id, 'plus_one')}>
-              <button
-                type="submit"
-                className={`flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors ${
-                  myPlus ? 'text-primary-strong' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
-                }`}
-              >
-                <ThumbsUp className={`w-3.5 h-3.5 ${myPlus ? 'fill-current' : ''}`} />
-                {plusCount > 0 && <span>{plusCount}</span>}
-              </button>
-            </form>
-
-            <span className="flex-1" />
-
-            {zapsEarned > 0 && (
-              <span
-                title={`Earned ${zapsEarned} zap${zapsEarned !== 1 ? 's' : ''} from reactions and replies`}
-                className="flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold text-primary-strong"
-              >
-                <Zap className="w-3.5 h-3.5 fill-current" />
-                {zapsEarned}
-              </span>
-            )}
-          </div>
-
-          {/* The thread — full width, below the action row (no sandwiching). */}
-          <PostReplies postId={post.id} initialCount={replyCount} />
+          {/* Reactions, the comment toggle, and the zaps earned all sit on ONE
+              right-aligned line directly under the content (PostReplies owns the row
+              so the toggle stays inline); the thread expands full-width below it. */}
+          <PostReplies
+            postId={post.id}
+            initialCount={replyCount}
+            reactions={
+              <>
+                <form action={toggleReaction.bind(null, post.id, 'heart')}>
+                  <button
+                    type="submit"
+                    className={`flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors ${
+                      myHeart ? 'text-danger' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
+                    }`}
+                  >
+                    <Heart className={`w-3.5 h-3.5 ${myHeart ? 'fill-current' : ''}`} />
+                    {heartCount > 0 && <span>{heartCount}</span>}
+                  </button>
+                </form>
+                <form action={toggleReaction.bind(null, post.id, 'plus_one')}>
+                  <button
+                    type="submit"
+                    className={`flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors ${
+                      myPlus ? 'text-primary-strong' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
+                    }`}
+                  >
+                    <ThumbsUp className={`w-3.5 h-3.5 ${myPlus ? 'fill-current' : ''}`} />
+                    {plusCount > 0 && <span>{plusCount}</span>}
+                  </button>
+                </form>
+              </>
+            }
+            reward={
+              zapsEarned > 0 ? (
+                <span
+                  title={`Earned ${zapsEarned} zap${zapsEarned !== 1 ? 's' : ''} from reactions and replies`}
+                  className="flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold text-primary-strong"
+                >
+                  <Zap className="w-3.5 h-3.5 fill-current" />
+                  {zapsEarned}
+                </span>
+              ) : null
+            }
+          />
       </div>
     </article>
   )

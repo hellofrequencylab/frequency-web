@@ -428,8 +428,31 @@ keep scope rails. **Open:** "Around You" naming. **Sequence:** 10.1 → 10.2 →
   four list widgets (Dispatches/Events/Members/Leaderboard) + DateChip; the global rail is now a single
   uniform slim strip everywhere it renders — `DemoNotice` over the player progress cockpit
   (`GameStatsDock`). `loadGameStats`/`MobileGameStats` preserved (still consumed by the shell + mobile
-  stats menu). Scoped circle/channel detail rails untouched. *Next:* 10.2 operator dashboards → 10.3
-  Network hub → 10.4/10.5 Practices+Library / Settings.
+  stats menu). Scoped circle/channel detail rails untouched.
+- ✅ **Rail now uniform across operator workspaces.** `lib/layout/page-chrome.ts` FOCUS list trimmed —
+  Marketing · CRM · Outreach · Entry points dropped from FOCUS, so they carry the same slim stats rail
+  as the rest of the app (members flagged the "missing right column" on these). FOCUS keeps only genuine
+  single-task surfaces (settings forms, /codes card, founder/training/journal, /upgrade, /g//n claims)
+  plus the compose/edit patterns.
+- ✅ **Marketing channels folded into Growth Studio (visible half of 10.2).** `app/(main)/growth/page.tsx`
+  Marketing group expanded from one "hub" link into the individual channels (Campaigns · Funnels ·
+  Nurture · Automations · Analytics · Market read · Beta · Agent). **Open decision (blocks full
+  disband):** `/growth` is janitor-only but `/marketing` is admin + `staffDomain:'marketing'` — removing
+  the standalone Marketing nav item would cut marketing-staff access, so the nav item stays until we pick
+  a gating model.
+- ✅ **Feed/comment + capture polish.** Post action line consolidated: reactions · comment · zaps now sit
+  on ONE right-aligned line under the content (`PostReplies` owns the row via `reactions`/`reward`
+  slots); the reply thread's vertical rule removed (`post-card.tsx`, `post-replies.tsx`). Mobile Capture
+  box selectors are icon-only and reveal their label only when active, reordered **Post · Dispatch ·
+  Note · Connect** (inline Photo dropped — it lives in the full-screen camera); the bottom-nav Capture
+  button opens the full-screen surface on **Post** (`capture-box.tsx`, `app-shell.tsx`). Left profile
+  quick-actions dock is now **click-only** (no scroll/hover reveal).
+- ⏳ **Entry points "show my past ones" — diagnosed, deferred.** DB check: the account owns **0**
+  `qr_codes`; the one code in the DB is `owner_profile_id = NULL`, no `template_id` (made in the older QR
+  flow). The list is correctly empty — surfacing legacy codes needs the QR-Studio ↔ entry-points data
+  unification (own + backfill `owner_profile_id`), tracked with the QR-section collapse + sequence-editor
+  asks under §9.
+  *Next:* 10.2 operator dashboards → 10.3 Network hub → 10.4/10.5 Practices+Library / Settings.
 
 ## Reuse map — what already exists (so you never rebuild it)
 
