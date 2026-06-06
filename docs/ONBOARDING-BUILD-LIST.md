@@ -297,9 +297,10 @@ Frequency — a community-management tool where every member is a node.
   composers, so the tabs live in `CaptureBox`, passed into the box via `topSlot`).
 - ✅ **Contact mode is inline** (`contact-capture-form.tsx`) — manual entry → personal CRM via
   `createProfile` (§5.2); card *scan* one tap away at `/connections/new`.
-- 📋 **Mobile centre-nav Capture button** — the primary mobile action; opens the box **contact-
-  forward** (QR check-in · photo of card · photo of them · note). Touch `MobileTabBar` in
-  `app-shell.tsx` (insert a raised centre slot).
+- ✅ **Mobile centre-nav Capture button** — a raised centre button in `MobileTabBar` (`app-shell.tsx`)
+  dispatches `open-capture`; `CaptureLauncher` catches it and opens the box **contact-forward** on
+  mobile. Desktop keeps the floating FAB; one modal, two triggers. (Richer contact intake — QR
+  check-in · photo of them — rides the Contact mode + the card scanner as it grows.)
 - 📋 **Quest pipeline + sponsor-backed rewards** — contacts billed as a personal CRM **and** the
   member's Quest sales pipeline; invites/conversions earn escalating, ultimately sponsor-backed
   real-life rewards (ADR-155 loop, ADR-156a). Spec → BACKLOG §F.

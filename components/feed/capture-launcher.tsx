@@ -6,19 +6,34 @@ import { usePathname } from 'next/navigation'
 import { Camera, X, BookOpen } from 'lucide-react'
 import { CaptureBox } from './capture-box'
 
-// Capture — the app-wide primary action (§6 Phase 2, the rework). A raised FAB
-// (bottom-centre, clear of the Vera launcher + chores pill) opens the Capture box
-// in a modal so you can log a moment — or a contact — from anywhere. On mobile this
-// is the centre-nav button; it opens contact-forward (you're out meeting people).
-// Posts default to your wall.
+type Mode = 'post' | 'note' | 'photo' | 'contact'
 
+// Capture — the app-wide primary action (ADR-155/156a). Two triggers, one modal:
+//   • mobile  → the raised centre-nav button (MobileTabBar) dispatches 'open-capture'
+//     (contact-forward — you're out meeting people);
+//   • desktop → a floating FAB (the mobile tab bar isn't there).
+// The modal is always mounted so either trigger can open it from any page. Posts
+// default to the member's wall.
 export function CaptureLauncher({ scopeId }: { scopeId: string }) {
   const [open, setOpen] = useState(false)
+  const [mode, setMode] = useState<Mode>('post')
   const pathname = usePathname()
-  // The feed already carries the inline Capture box; don't double up there.
-  const hidden = pathname === '/feed'
+  // The feed carries the inline Capture box, so the desktop FAB is redundant there.
+  const showFab = pathname !== '/feed'
 
   const close = useCallback(() => setOpen(false), [])
+
+  // The centre-nav button (and anything else) opens the modal via a window event,
+  // optionally requesting a starting mode.
+  useEffect(() => {
+    const onOpen = (e: Event) => {
+      const m = (e as CustomEvent).detail?.mode as Mode | undefined
+      setMode(m ?? 'post')
+      setOpen(true)
+    }
+    window.addEventListener('open-capture', onOpen)
+    return () => window.removeEventListener('open-capture', onOpen)
+  }, [])
 
   useEffect(() => {
     if (!open) return
@@ -34,18 +49,22 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
     }
   }, [open, close])
 
-  if (hidden) return null
-
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-label="Capture a moment"
-        className="fixed left-1/2 z-40 inline-flex h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full bg-primary text-on-primary shadow-pop transition-transform hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] bottom-[calc(4rem+env(safe-area-inset-bottom)+0.75rem)] md:bottom-6"
-      >
-        <Camera className="h-6 w-6" aria-hidden />
-      </button>
+      {/* Desktop FAB (mobile uses the centre-nav button instead). */}
+      {showFab && (
+        <button
+          type="button"
+          onClick={() => {
+            setMode('post')
+            setOpen(true)
+          }}
+          aria-label="Capture a moment"
+          className="fixed bottom-6 left-1/2 z-40 hidden h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full bg-primary text-on-primary shadow-pop transition-transform hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] md:inline-flex"
+        >
+          <Camera className="h-6 w-6" aria-hidden />
+        </button>
+      )}
 
       {open && (
         <div
@@ -72,7 +91,7 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
               </button>
             </div>
 
-            <CaptureBox scopeId={scopeId} visibility="public" />
+            <CaptureBox key={mode} scopeId={scopeId} visibility="public" defaultMode={mode} />
 
             <Link
               href="/journal"
