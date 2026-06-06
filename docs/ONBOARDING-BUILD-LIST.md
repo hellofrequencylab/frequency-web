@@ -35,7 +35,7 @@ Two levers, in order: **(0) flip the switches that let real testers in today**, 
 | **3.x** | Proactive Vera (encouragement/accountability, host copilot) | Day-2 retention | M–L | 🔴 gated |
 | **5.1–5.2** | Rename Directory → **Network** + member-tier personal contacts + quick-add capture | Real-life contacts, kept | S–M | 📋 |
 | **5.3–5.5** | Event-invite capture loop (QR → RSVP → triple-write) + gamification | The growth loop | M–L | 📋 |
-| **6** | **Capture** — primary "log life" button (Photo/Note/Post + In-Person card/poster) | The community story + every member a node | L | ⏳ Phase 1 shipped |
+| **6** | **Capture** — primary "log life" button (Photo/Note/Post + In-Person card/poster) | The community story + every member a node | L | ⏳ Phases 1–2 shipped |
 | **4.x** | Cleanup + doc hygiene | Lean tree | S | ⏳ |
 
 Legend: ✅ done · ⏳ partially built / in flight · 📋 specced, not built · 🔴 blocked.
@@ -271,8 +271,12 @@ Frequency — a community-management tool where every member is a node.
    In-Person). `components/feed/capture-bar.tsx`; composer gained `kind`/`autoImage`;
    `post_type='note'` migration; `post-card` Note badge; In-Person → `/connections/new`.
    ⚠️ apply `20260606180000_post_type_note.sql` on deploy for Note.
-2. 📋 **Promote to a dedicated nav/FAB** (the loud primary action, BACKLOG §Q2 Phase 3) once the new
-   modes are proven.
+2. ✅ **shipped — promoted to an app-wide FAB.** `components/feed/capture-launcher.tsx`: a raised
+   Capture button docked bottom-centre (above the mobile tab bar; floating on desktop), clear of the
+   Vera launcher + chores pill, mounted in `app/(main)/layout.tsx` so it's reachable from every page.
+   Opens the same mode picker in a modal; posts default to the member's wall. Hidden on `/feed` (the
+   inline bar already serves there); the four modes are shared via `CAPTURE_MODES` so the two entries
+   can't drift. *Tweak:* suppress on focus/compose surfaces (settings, `/connections/new`).
 3. 📋 **"Daily journal / community story" framing** — a Notes/Capture lane + the feed-as-record voice.
 4. 📋 Richer kinds (video · cinema · live) into the same picker as demand warrants.
 
