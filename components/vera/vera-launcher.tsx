@@ -57,7 +57,7 @@ export function VeraLauncher({ index }: { index: HelpSearchEntry[] }) {
         aria-label="Open Vera"
         aria-haspopup="dialog"
         aria-expanded={open}
-        className="fixed right-4 bottom-20 z-40 inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary text-on-primary shadow-pop transition-transform hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] md:bottom-6"
+        className="fixed right-4 bottom-20 z-40 inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary/90 text-on-primary shadow-sm transition-transform hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] md:bottom-6"
       >
         <Sparkles className="h-5 w-5" aria-hidden />
       </button>

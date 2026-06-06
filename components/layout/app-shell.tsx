@@ -19,7 +19,6 @@ import {
   UserPlus,
   Camera,
   Users,
-  Menu,
   X,
   Gem,
   Monitor,
@@ -856,13 +855,15 @@ const MOBILE_TABS: { key: string; href: string; label: string }[] = [
 function MobileTabBar({
   isActive,
   onOpenMenu,
+  onOpenStats,
   menuOpen,
   hideAppNav = false,
 }: {
   isActive: (href: string) => boolean
   onOpenMenu: () => void
+  onOpenStats: () => void
   menuOpen: boolean
-  /** Stripped shells (e.g. Studio) hide the app destinations; only Menu remains. */
+  /** Stripped shells (e.g. Studio) hide the app destinations; only the menu arrow remains. */
   hideAppNav?: boolean
 }) {
   const tabClass = (active: boolean) =>
@@ -881,24 +882,38 @@ function MobileTabBar({
     )
   }
 
+  const arrow = 'flex w-7 shrink-0 items-center justify-center text-muted transition-colors hover:text-text'
+
   return (
     <nav
-      className="md:hidden fixed inset-x-0 bottom-0 z-40 flex items-stretch bg-surface/95 backdrop-blur-sm border-t border-border"
+      className="md:hidden fixed inset-x-0 bottom-0 z-40 flex items-stretch border-t border-border bg-surface/95 backdrop-blur-sm"
       style={{
         height: 'calc(4rem + env(safe-area-inset-bottom))',
         paddingBottom: 'env(safe-area-inset-bottom)',
       }}
     >
+      {/* Arched notch behind the raised centre Capture button. */}
+      {!hideAppNav && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute left-1/2 top-0 h-8 w-[4.75rem] -translate-x-1/2 -translate-y-1/2 rounded-full border border-border bg-surface"
+        />
+      )}
+
+      {/* Left arrow → the nav menu. Kept even in stripped shells. */}
+      <button type="button" onClick={onOpenMenu} aria-label="Open menu" aria-expanded={menuOpen} className={arrow}>
+        <ChevronLeft className="h-5 w-5" strokeWidth={menuOpen ? 2.5 : 2} />
+      </button>
+
       {!hideAppNav && MOBILE_TABS.slice(0, 2).map(renderTab)}
 
-      {/* Capture — the primary mobile action (ADR-156a), raised in the centre of the
-          nav. Opens the Capture box (contact-forward on mobile) via CaptureLauncher. */}
+      {/* Capture — the primary mobile action (ADR-156a), raised dead-centre. */}
       {!hideAppNav && (
         <button
           type="button"
           onClick={() => window.dispatchEvent(new CustomEvent('open-capture', { detail: { mode: 'contact' } }))}
           aria-label="Capture a moment"
-          className="flex flex-1 flex-col items-center justify-center gap-1 text-3xs font-semibold text-primary-strong"
+          className="relative flex flex-1 flex-col items-center justify-center gap-1 text-3xs font-semibold text-primary-strong"
         >
           <span className="-mt-3 flex h-11 w-11 items-center justify-center rounded-full bg-primary text-on-primary shadow-pop">
             <Camera className="h-[22px] w-[22px]" strokeWidth={2.5} />
@@ -909,16 +924,12 @@ function MobileTabBar({
 
       {!hideAppNav && MOBILE_TABS.slice(2).map(renderTab)}
 
-      <button
-        type="button"
-        onClick={onOpenMenu}
-        aria-label="Open menu"
-        aria-expanded={menuOpen}
-        className={tabClass(menuOpen)}
-      >
-        <Menu className="h-[22px] w-[22px]" strokeWidth={menuOpen ? 2.5 : 2} />
-        <span className="leading-none">Menu</span>
-      </button>
+      {/* Right arrow → the stats / streaks panel. */}
+      {!hideAppNav && (
+        <button type="button" onClick={onOpenStats} aria-label="Open stats" className={arrow}>
+          <ChevronRight className="h-5 w-5" />
+        </button>
+      )}
     </nav>
   )
 }
@@ -1081,8 +1092,6 @@ export default function AppShell({
   // Nav gating role: a visitor preview gates as a logged-out visitor (null).
   const gateRole: CommunityRole | null = previewVisitor ? null : role
   // Stewards (host+) and Studio staff get a mobile quick-add for the Profile
-  // Creator — tap to scan a card / add a profile on the go (ADR-096).
-  const canCreateProfile = meetsAccess('host', gateRole) || meetsStaff({ staffDomain: 'profiles' }, staffRole)
   const profileHref = `/people/${profile.handle}`
   const { theme, setTheme } = useTheme()
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -1299,23 +1308,9 @@ export default function AppShell({
             <NotificationBell initialUnread={unreadCount} />
           </div>
 
-          {/* Account group — set off by its own divider. Quick-capture (mobile,
-              stewards) sits to the LEFT of the account avatar so the profile stays
-              the far-right anchor and the two read as one balanced pair. */}
+          {/* Account group — set off by its own divider. (Quick-capture removed from
+              the header — Capture lives in the centre of the bottom nav on mobile.) */}
           <div className="flex items-center gap-1 ml-1 pl-1.5 border-l border-border md:gap-2 md:pl-2">
-            {/* Quick capture — snap a card straight into your contacts. A filled
-                primary button (rounded like Create) with a white camera. Mobile
-                only, stewards + staff. */}
-            {canCreateProfile && (
-              <Link
-                href="/connections/new"
-                aria-label="New contact"
-                title="New contact"
-                className="md:hidden flex items-center justify-center w-8 h-8 shrink-0 rounded-lg bg-primary text-on-primary shadow-sm hover:bg-primary-hover transition-colors"
-              >
-                <Camera className="w-5 h-5" />
-              </Link>
-            )}
             <AccountDropdown
               profile={profile}
               profileHref={profileHref}
@@ -1514,7 +1509,7 @@ export default function AppShell({
 
       {/* ── Mobile bottom tab bar ─────────────────────────── */}
       {/* Feed · Circles · Channels · Events · Menu (opens the full drawer). */}
-      <MobileTabBar isActive={isActive} onOpenMenu={() => setDrawerOpen(true)} menuOpen={drawerOpen} hideAppNav={hideAppNav} />
+      <MobileTabBar isActive={isActive} onOpenMenu={() => setDrawerOpen(true)} onOpenStats={() => setRightOpen(true)} menuOpen={drawerOpen} hideAppNav={hideAppNav} />
 
       {/* ── Mobile left drawer (the full menu) ────────────── */}
       <MobileLeftDrawer

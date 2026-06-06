@@ -97,7 +97,7 @@ export function ChoresOverlay({
       type="button"
       onClick={() => setOpen(true)}
       aria-label={coach ? 'Vera — your next move' : `Vera’s chores — ${left} left`}
-      className="fixed left-4 bottom-20 z-40 inline-flex items-center gap-2 rounded-full border border-broadcast-bg bg-broadcast-bg/80 px-3.5 py-2 text-sm font-semibold text-broadcast-strong shadow-pop backdrop-blur-sm transition-transform hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] md:bottom-6 dark:bg-broadcast-bg/40"
+      className="fixed left-4 bottom-20 z-40 inline-flex items-center gap-1.5 rounded-full border border-border bg-surface/90 px-3 py-1.5 text-xs font-semibold text-broadcast-strong shadow-sm backdrop-blur-sm transition-transform hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] md:bottom-6"
     >
       {coach ? (
         <><Sparkles className="h-4 w-4" aria-hidden /> Next move</>
