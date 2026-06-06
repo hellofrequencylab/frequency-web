@@ -37,6 +37,7 @@ import { InsightsModule } from '@/components/admin/modules/insights-module'
 import { RolesModule } from '@/components/admin/modules/roles-module'
 import { QrGeneratorModule } from '@/components/admin/modules/qr-generator-module'
 import { DemoModule } from '@/components/admin/modules/demo-module'
+import { SpacesCirclesModule } from '@/components/admin/modules/spaces-circles-module'
 
 // The page-admin sidebar console (ADR-137 drill-down · ADR-138 the "manage" surface).
 // Home lists the categories that apply for THIS viewer; tap one to drill into its
@@ -169,6 +170,7 @@ export function AdminConsole({
     insights: { module: <InsightsModule />, summary: 'Live signal' },
     reach: { module: <QrGeneratorModule />, summary: 'Generate & export' },
     platform: { hrefs: ['/admin/demo'], module: <DemoModule />, summary: 'Demo content' },
+    spaces: { hrefs: ['/admin/circles'], module: <SpacesCirclesModule />, summary: 'Manage circles' },
   }
 
   const categories: Category[] = CATEGORIES.map((c) => {

@@ -378,11 +378,13 @@ group of modules; `/admin/*` retires once empty.
 > as **SVG · PNG 256–2048px · JPG · copy**, rendered client-side via the pure
 > `renderStyledQrSvg`; the full Studio stays linked). ✅ **Demo Studio** too (`DemoModule`
 > reuses `DemoOverview` / `StudioWizard` / `GrowNetwork` / `DangerZone` in *Platform*,
-> janitor-gated). In-place ports so far: **Moderation · Broadcasts · Gamification · Members ·
-> Insights · Roles · QR generator · Demo**. **Next:**
-> the Spaces entity-managers; **Vera** needs its config *form extracted into a component
-> first* (the page inlines it + `saveVera` rewrites the whole config) — deferred. Plus the
-> `@admin` slot + the Vera-tone inline tuner.
+> janitor-gated). ✅ **Spaces · Circles** too (`SpacesCirclesModule` reuses
+> `NewCircleCompose` + `CirclesClient` — manage all circles in scope; role-scoped loader).
+> In-place ports so far: **Moderation · Broadcasts · Gamification · Members · Insights ·
+> Roles · QR generator · Demo · Circles**. **Next:** the rest of Spaces (Channels / Events /
+> Hubs / Nexuses managers — same recipe); **Vera** needs its config *form extracted into a
+> component first* (the page inlines it + `saveVera` rewrites the whole config) — deferred.
+> Plus the `@admin` slot + the Vera-tone inline tuner.
 
 1. **Engine.** `AdminModule` registry + `modulesFor`/`showsAdminPanel`; `AdminModuleCard`
    over `SidebarCard`; add `hub`/`nexus` loaders + `loadCapabilitiesForScope`; the `@admin`
