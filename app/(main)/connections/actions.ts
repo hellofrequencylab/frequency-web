@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { getCachedUser } from '@/lib/auth'
-import { connectionsOwnerId } from '@/lib/connections/access'
+import { contactsOwnerId } from '@/lib/connections/access'
 import { aiAvailable, featureOverBudget } from '@/lib/ai/usage'
 import { scanCardImage, assistFromText } from '@/lib/ai/connections-ai'
 import { dedupeTags, normalizeTag } from '@/lib/connections/normalize'
@@ -21,7 +21,7 @@ type Reason = 'unauthorized' | 'ai_unavailable' | 'no_read' | 'no_result'
 type ExtractResult = { ok: true; extraction: ExtractedContact } | { ok: false; reason: Reason }
 
 async function requireOwner(): Promise<string> {
-  const ownerId = await connectionsOwnerId()
+  const ownerId = await contactsOwnerId()
   if (!ownerId) throw new Error('Unauthorized')
   return ownerId
 }

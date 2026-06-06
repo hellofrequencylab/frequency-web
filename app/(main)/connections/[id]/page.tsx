@@ -1,14 +1,14 @@
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
-import { connectionsOwnerId } from '@/lib/connections/access'
+import { contactsOwnerId } from '@/lib/connections/access'
 import { getContact } from '@/lib/connections/store'
 import { Detail } from './detail'
 
 export const dynamic = 'force-dynamic'
 
 export default async function ProfileDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const ownerId = await connectionsOwnerId()
+  const ownerId = await contactsOwnerId()
   if (!ownerId) redirect('/feed')
 
   const { id } = await params

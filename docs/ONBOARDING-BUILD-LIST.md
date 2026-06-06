@@ -33,7 +33,8 @@ Two levers, in order: **(0) flip the switches that let real testers in today**, 
 | **2.3** | Memory batch summarization cron | Vera stays fresh | M | 📋 |
 | **2.4** | Warm up seeded demo content (§S9) + demo box → action links (§S4) | First scroll feels alive | M | 📋 |
 | **3.x** | Proactive Vera (encouragement/accountability, host copilot) | Day-2 retention | M–L | 🔴 gated |
-| **5.1–5.2** | Rename Directory → **Network** + member-tier personal contacts + quick-add capture | Real-life contacts, kept | S–M | 📋 |
+| **5.2** | Member-tier personal contacts + quick-add capture (ungate) | Real-life contacts, kept | S | ✅ shipped |
+| **5.1** | Rename Directory → **Network** + merge `/people` + `/connections` into one member tab | Findable as a product | S–M | 📋 next |
 | **5.3–5.5** | Event-invite capture loop (QR → RSVP → triple-write) + gamification | The growth loop | M–L | 📋 |
 | **6** | **Capture** — primary "log life" button (Photo/Note/Post + In-Person card/poster) | The community story + every member a node | L | ⏳ Phases 1–3 shipped |
 | **4.x** | Cleanup + doc hygiene | Lean tree | S | ⏳ |
@@ -213,7 +214,7 @@ harvest + consent boundary are **already built**; this is IA, an access-tier cha
 | # | Item | Why | Reuse | Size |
 |---|---|---|---|---|
 | 5.1 | **Rename `Directory → Network`; merge `/people` + `/connections` into one member-tier tab** (Directory + Contacts faces) | Makes personal contacts a *member* product, not a host tool | `lib/nav-areas.ts`, `lib/connections/access.ts` (gate move only — RLS already owner-scoped) | S–M |
-| 5.2 | **Member quick-add capture** (`+` → scan card/poster/person, manual + Vera completes the card) | The headline promise; **already built**, just host-gated today | `app/(main)/connections/new/`, `lib/ai/connections-ai.ts` | S |
+| 5.2 | ✅ **shipped — Member quick-add capture.** The personal-CRM pages + create action now resolve owner via the new member-tier `contactsOwnerId()` (`lib/connections/access.ts`), so **every member** can scan/add their own owner-scoped contacts — this is what Capture's "In person" mode hits. Steward gate (`connectionsOwnerId`) retained for the directory-embedded view (`/people`) + search until 5.1 merges them. RLS already owner-scoped, so opening the tool is safe (ADR-154). | The headline promise; was host-gated | `lib/connections/access.ts`, `app/(main)/connections/{new,[id],}`, `actions.ts` | S |
 | 5.3 | **Event-invite capture loop** — public RSVP contact form via an attributed QR → triple-write (event guest list · owner's personal CRM · marketing DB, consent observed) | The growth loop the product is built around; **doesn't exist yet** (RSVP is members-only) | `/q/<slug>` referral (ADR-091/099), `crm-sync.ts`, `event_guest` channel hint | M–L |
 | 5.4 | **`event_guests`** table — let a non-member RSVP to one event without an account | Backs 5.3 | new migration (additive) | S |
 | 5.5 | **Gamification** — zaps for capture/RSVP/attend/join + a "Connector" achievement, reward real outcomes not rows | Closes the loop into the season ladder | `lib/zaps.ts`, `lib/engagement/currency.ts`, achievements | S–M |
