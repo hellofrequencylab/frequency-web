@@ -10,6 +10,7 @@ import { ProfileFeed } from '@/components/feed/profile-feed'
 import { ProfilePosts } from '@/components/feed/profile-posts'
 import { ProfileTabs, type ProfileTab } from './profile-tabs'
 import { getInitials } from '@/lib/utils'
+import { isEndorsed } from '@/lib/season-ranks'
 import { FriendButton, type FriendState } from './friend-button'
 import { BlockButton } from './block-button'
 import { hasBlocked } from '@/lib/blocking'
@@ -163,6 +164,9 @@ export default async function ProfilePage({
   const rank = getRank(totalZaps)
   const nextRank = getNextRank(totalZaps)
   const progress = nextRank ? Math.min(100, Math.round(((totalZaps - rank.min) / (nextRank.min - rank.min)) * 100)) : 100
+  // Rank is *endorsed* (shown publicly) only for Crew+; a free member earns it but
+  // it stays in their own Vault, not on their public profile (ADR-141). Inert in Beta.
+  const rankEndorsed = isEndorsed(role)
 
   // Rewards — surface the "nearly earned" ones so the next milestone feels within
   // reach (the celebration hook from the Progress spec), not just dimmed-out.
@@ -265,7 +269,9 @@ export default async function ProfilePage({
             badges={
               <div className="flex items-center gap-2 flex-wrap">
                 <RoleBadge role={role} className="text-xs leading-tight" />
-                <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${rank.cls}`}>{rank.name}</span>
+                {rankEndorsed && (
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${rank.cls}`}>{rank.name}</span>
+                )}
                 {isDemo && <DemoBadge />}
               </div>
             }
@@ -284,15 +290,19 @@ export default async function ProfilePage({
 
           {/* ── Gamification: rank · core stats · achievements ─── */}
           <div className="mt-5 border-t border-border pt-4">
-            <div className="mb-1.5 flex items-center justify-between gap-2">
-              <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${rank.cls}`}>{rank.name}</span>
-              <span className="text-xs text-subtle">
-                {nextRank ? <>{nextRank.min - totalZaps} zaps to <span className="font-medium text-muted">{nextRank.name}</span></> : 'Max rank reached'}
-              </span>
-            </div>
-            <div className="h-2 w-full overflow-hidden rounded-full bg-surface-elevated">
-              <div className={`h-full rounded-full transition-all ${rank.bar}`} style={{ width: `${progress}%` }} />
-            </div>
+            {rankEndorsed && (
+              <>
+                <div className="mb-1.5 flex items-center justify-between gap-2">
+                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${rank.cls}`}>{rank.name}</span>
+                  <span className="text-xs text-subtle">
+                    {nextRank ? <>{nextRank.min - totalZaps} zaps to <span className="font-medium text-muted">{nextRank.name}</span></> : 'Max rank reached'}
+                  </span>
+                </div>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-surface-elevated">
+                  <div className={`h-full rounded-full transition-all ${rank.bar}`} style={{ width: `${progress}%` }} />
+                </div>
+              </>
+            )}
 
             <div className="mt-4 grid grid-cols-3 gap-3">
               <HeaderStat icon={Zap} label="Zaps" value={totalZaps} />
