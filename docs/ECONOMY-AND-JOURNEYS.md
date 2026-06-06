@@ -3,7 +3,7 @@
 Status: ⏳ **draft, pre-build.** Extends ADR-084 (Beta = Crew) and the Quest economy
 (zaps/gems/seasons). Decisions in §6 are open.
 
-> 🔴 **Superseded in part by [ADR-151](DECISIONS.md) (2026-06-06): Quests + Journeys are FREE.**
+> 🔴 **Superseded in part by [ADR-152](DECISIONS.md) (2026-06-06): Quests + Journeys are FREE.**
 > The premium-Journeys framing throughout this doc (§2 tiers row, §5 "premium marquee") no
 > longer holds — the paywall on adopting/forking/publishing/starting is gone. The canonical
 > model is now a hierarchy: **The Quest** (game) → **Seasonal Quest** (official, free container)
@@ -34,7 +34,7 @@ endorsements, and not enough to unlock the premium Journeys. That gap is the ups
 | **Endorsements on public profile** (rank badge, titles, journey badges) | ❌ earned, not shown | ✅ |
 | Keep personal **practice streaks** | ✅ always | ✅ |
 | Choose/log **individual practices** | ✅ (the loose equivalent) | ✅ |
-| **Journeys** (the tracked, all-in-one flow) | ✅ *(free — ADR-151)* | ✅ |
+| **Journeys** (the tracked, all-in-one flow) | ✅ *(free — ADR-152)* | ✅ |
 
 This is the Launch member experience. **In Beta everyone is Crew (ADR-084)**, so the
 whole thing is unlocked today; the gates below switch on when `BETA_MEMBERS_GET_CREW`
@@ -93,7 +93,7 @@ Rewards split into **earned** vs **endorsed**:
 
 ## 5. Journeys — the premium marquee
 
-> 🔴 **Superseded by [ADR-151](DECISIONS.md): Journeys are free.** This section described
+> 🔴 **Superseded by [ADR-152](DECISIONS.md): Journeys are free.** This section described
 > Journeys as the Crew-only upsell; that gate is removed. Kept for history — the *remaining*
 > Crew gates are rank-endorsement (ADR-141) and Gem spend (Store), not Journeys.
 

@@ -6,7 +6,7 @@ import { Play, Loader2 } from 'lucide-react'
 import { startQuest } from './actions'
 import { isError } from '@/lib/action-result'
 
-/** Start a Quest — free for every member (ADR-151). */
+/** Start a Quest — free for every member (ADR-152). */
 export function StartQuestButton({ chainId }: { chainId: string }) {
   const [pending, start] = useTransition()
   const [err, setErr] = useState<string | null>(null)

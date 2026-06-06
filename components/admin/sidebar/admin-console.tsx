@@ -39,6 +39,7 @@ import { RolesModule } from '@/components/admin/modules/roles-module'
 import { QrGeneratorModule } from '@/components/admin/modules/qr-generator-module'
 import { DemoModule } from '@/components/admin/modules/demo-module'
 import { AiModule } from '@/components/admin/modules/ai-module'
+import { VeraModule } from '@/components/admin/modules/vera-module'
 import { SpacesCirclesModule } from '@/components/admin/modules/spaces-circles-module'
 import { ChannelsModule } from '@/components/admin/modules/channels-module'
 import { EventsModule } from '@/components/admin/modules/events-module'
@@ -91,7 +92,7 @@ function slotForHref(href: string): string {
   if (href.startsWith('/admin/dispatches') || href.startsWith('/outreach')) return 'comms'
   if (href.startsWith('/admin/gamification') || href.startsWith('/admin/crew-tasks') || href.startsWith('/programs')) return 'engage'
   if (href.startsWith('/admin/qr')) return 'reach'
-  if (/^\/admin\/(engagement|intel|outcomes|insights|segments)/.test(href)) return 'insights'
+  if (/^\/admin\/(engagement|intel|outcomes|insights|segments|expansion)/.test(href)) return 'insights'
   if (/^\/admin\/(circles|channels|events|hubs|nexuses)/.test(href)) return 'spaces'
   if (href === '/pages') return 'layout'
   return 'platform' // /admin overview, vera, help-gaps, ai, demo
@@ -185,14 +186,15 @@ export function AdminConsole({
     insights: { module: <InsightsModule />, summary: 'Live signal' },
     reach: { module: <QrGeneratorModule />, summary: 'Generate & export' },
     platform: {
-      hrefs: ['/admin/demo', '/admin/ai'],
+      hrefs: ['/admin/demo', '/admin/ai', '/admin/vera'],
       module: (
         <div className="space-y-4">
           <DemoModule />
           <AiModule />
+          <VeraModule />
         </div>
       ),
-      summary: 'Demo, AI controls',
+      summary: 'Demo, AI, Vera',
     },
     spaces: {
       hrefs: ['/admin/circles', '/admin/channels', '/admin/events', '/admin/hubs', '/admin/nexuses'],

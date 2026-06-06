@@ -89,6 +89,12 @@ these tables mean.
 > `lib/marketplace.ts` (admin handle + app-code authz); `/market`. Contact hands off to
 > the seller's profile/DMs — no in-app payment.
 
+> **`density_by_city()` RPC** (ADR-151) — the Density / demand read-model. A
+> deterministic, `service_role`-only aggregate (security definer) joining circles +
+> capacity, members-in-circles, residents (+ 30-day arrivals), and active listings per
+> normalized city. `lib/analytics/density.ts` scores each city into a 0–100 Lab-readiness
+> (🌱 Seed → ⏳ Growing → ✅ Ready, + ⚠️ capacity-crunch); surfaced at `/admin/expansion`.
+
 **Practices (North Star)**
 `practices`, `circle_practices`, `member_practices`, `practice_logs`
 

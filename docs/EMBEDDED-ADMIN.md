@@ -16,9 +16,9 @@
 > and [PAGE-FRAMEWORK.md §3/§6](PAGE-FRAMEWORK.md).
 >
 > **Status:** ✅ Phase 1 shipped (the dock) · ✅ Phase 2 **substantially shipped** — the
-> drill-down console + the inline tuning layer are live, and **15 `/admin/*` surfaces are ported
-> in place**. Remaining: the server-composed `@admin` slot and the Vera / Insights-dashboard
-> ports (see §7 *Progress*).
+> drill-down console + the inline tuning layer are live, and **16 `/admin/*` surfaces are ported
+> in place**. Remaining: the server-composed `@admin` slot and the Insights-dashboard ports
+> (see §7 *Progress*).
 >
 > **Update — [ADR-137](DECISIONS.md):** the in-place modules are organized into a
 > drill-down **settings console** with a universal **9-category spine** (next section).
@@ -338,10 +338,10 @@ group of modules; `/admin/*` retires once empty.
 | 🌐 **Global** | Members, Roles, AI, Demo, Vera, Help gaps, analytics, QR | `global`-scope modules (the Platform group) |
 | ⚠️ **Both** | Channels, Moderation, Broadcasts | Per-scope module **and** a global module |
 
-✅ **Absorbed so far (15):** Moderation · Broadcasts · Gamification · Crew tasks · Members ·
-Roles · Insights · QR generator · Demo · AI controls · Circles · Channels · Events · Hubs ·
-Nexuses (see the §7 *Progress* table). ⏳ **Left in `/admin/*`:** Vera config, the Insights
-dashboards (intel / outcomes / AI read / segments) — then the route group retires.
+✅ **Absorbed so far (16):** Moderation · Broadcasts · Gamification · Crew tasks · Members ·
+Roles · Insights · QR generator · Demo · AI controls · Vera config · Circles · Channels · Events ·
+Hubs · Nexuses (see the §7 *Progress* table). ⏳ **Left in `/admin/*`:** the Insights dashboards
+(intel / outcomes / AI read / segments) and Help gaps — then the route group retires.
 
 ---
 
@@ -368,7 +368,7 @@ dashboards (intel / outcomes / AI read / segments) — then the route group reti
 > **Deep-link → in-place ports.** Each `/admin/*` surface, as it's ported, renders **in place**
 > in its spine category and its deep-link drops — adding one is a single `IN_PLACE` map entry.
 > The recipe: a loader util + a gated `'use server'` action + a client module reusing the
-> existing admin components. **15 surfaces ported:**
+> existing admin components. **16 surfaces ported:**
 >
 > | Surface | Category | Reuses | Gate |
 > |---|---|---|---|
@@ -382,6 +382,7 @@ dashboards (intel / outcomes / AI read / segments) — then the route group reti
 > | QR generator | Reach | `renderStyledQrSvg` → SVG · PNG 256–2048 · JPG · copy | host+ |
 > | Demo Studio | Platform | `DemoOverview` / `StudioWizard` / `GrowNetwork` / `DangerZone` | janitor |
 > | AI controls | Platform | extracted `AiControlsView` (shared w/ page) — `AiToggle` + reindex + spend + audit | janitor |
+> | Vera config | Platform | extracted `VeraConfigForm` (shared w/ page) — voice + induction copy + splash feed | janitor |
 > | Circles | Spaces | `NewCircleCompose` + `CirclesClient` | host+ |
 > | Channels | Spaces | extracted `ChannelsAdminList` (shared w/ page) | host+ |
 > | Events | Spaces | extracted `EventsAdminList` (shared w/ page) | host+ |
@@ -392,14 +393,16 @@ dashboards (intel / outcomes / AI read / segments) — then the route group reti
 > (no `href` — the module heads the category above kept links, e.g. Insights), and **stacked**
 > (`hrefs[]` — a category holds several self-gating modules: People = Members + Roles; Spaces =
 > Circles + Channels + Events + Hubs + Nexuses; Engage = Gamification + Crew tasks; Platform =
-> Demo + AI controls). Surfaces whose admin UI was inlined in the page (Channels, Events,
-> AI controls) were first extracted into a **shared presentational component** (`ChannelsAdminList`
-> / `EventsAdminList` / `AiControlsView`) used by both the page *and* the module (DRY).
+> Demo + AI controls + Vera config). Surfaces whose admin UI was inlined in the page (Channels,
+> Events, AI controls, Vera) were first extracted into a **shared presentational component**
+> (`ChannelsAdminList` / `EventsAdminList` / `AiControlsView` / `VeraConfigForm`) used by both the
+> page *and* the module (DRY). Vera's form is the whole-config-rewrite case: its uncontrolled
+> `<form action={saveVera}>` carries every field, so the extracted form is the same on both surfaces.
 >
-> ⏳ **Remaining to absorb:** **Vera** config (extract its inline config form first, so a partial
-> port can't wipe induction copy) · the **Insights dashboards** (intel / outcomes / AI read /
-> segments). Then the server-composed **`@admin` slot** + the **Vera-tone**
-> inline tuner.
+> ⏳ **Remaining to absorb:** the **Insights dashboards** (intel / outcomes / AI read / segments)
+> — heavier read-only surfaces; decide per-surface whether to embed a compact read or keep the
+> deep-link. Then the server-composed **`@admin` slot** + the **Vera-tone** inline tuner, and
+> `/admin/*` retires.
 
 1. **Engine.** `AdminModule` registry + `modulesFor`/`showsAdminPanel`; `AdminModuleCard`
    over `SidebarCard`; add `hub`/`nexus` loaders + `loadCapabilitiesForScope`; the `@admin`
