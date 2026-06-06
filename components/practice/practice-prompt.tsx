@@ -16,9 +16,15 @@ const COLLAPSE_KEY = 'fq_streak_collapsed'
 export function PracticePrompt({
   practices,
   streak = 0,
+  atRisk = false,
+  loggedToday = false,
 }: {
   practices: Practice[]
   streak?: number
+  /** Streak is alive but today isn't logged yet — log to keep it. */
+  atRisk?: boolean
+  /** A practice was already logged today (streak is safe). */
+  loggedToday?: boolean
 }) {
   const [collapsed, setCollapsed] = useState(false)
 
@@ -87,12 +93,16 @@ export function PracticePrompt({
             <p className="text-sm font-bold leading-tight text-text">
               {streak > 0 ? `${streak} day streak` : 'Start your streak'}
             </p>
-            <p className="text-2xs leading-tight text-muted">
-              {p.maxed
-                ? 'Every badge earned. Legend.'
-                : p.next
-                  ? `${p.toNext} ${p.toNext === 1 ? 'day' : 'days'} to your ${p.next.day}-day badge`
-                  : 'Log a practice to begin'}
+            <p className={`text-2xs leading-tight ${atRisk ? 'font-semibold text-warning' : 'text-muted'}`}>
+              {atRisk
+                ? 'Log today to keep your streak alive.'
+                : loggedToday && p.next
+                  ? `Logged today — ${p.toNext} ${p.toNext === 1 ? 'day' : 'days'} to your ${p.next.day}-day badge`
+                  : p.maxed
+                    ? 'Every badge earned. Legend.'
+                    : p.next
+                      ? `${p.toNext} ${p.toNext === 1 ? 'day' : 'days'} to your ${p.next.day}-day badge`
+                      : 'Log a practice to begin'}
             </p>
           </div>
         </div>

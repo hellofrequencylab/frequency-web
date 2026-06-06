@@ -82,7 +82,7 @@ these tables mean.
 **Local Marketplace (vertical 5)**
 `market_listings`
 
-> **`market_listings`** (ADR-145) — Foundation, **no-fee, no-payment** local exchange:
+> **`market_listings`** (ADR-146) — Foundation, **no-fee, no-payment** local exchange:
 > `kind` (offer/free/lend/request), free-text `price_note` (no processing), geo
 > (neighborhood/city/lat/lng) + optional `circle_id` locality anchor, `status`
 > (active/claimed/closed), `is_demo`. RLS: public read active, author manages own.
@@ -95,8 +95,12 @@ these tables mean.
 > A **practice** is what a member does. A host sets a circle's current practice
 > (`circle_practices`, one active per circle) or a member adopts their own
 > (`member_practices`); logging it (`practice_logs`, unique per member+practice+day)
-> emits `practice.verified` (the WAM North-Star event) + zaps + an attendance streak
-> via `lib/practices.ts` (`logPractice`).
+> emits `practice.verified` (the WAM North-Star event) + zaps + a weekly attendance
+> streak tick + the **daily practice streak** via `lib/practices.ts` (`logPractice`).
+> The daily streak is derived from `practice_logs` and owns
+> `profiles.current_streak` / `longest_streak`; its freeze tokens + milestone-payout
+> bookkeeping live in `profiles.meta.practiceStreak` (no new table — ADR-145,
+> `lib/practice-streak.ts`).
 
 **RPCs / views (public read layer)**
 `get_my_role`, `public_circles`, `public_circle_by_id`, `public_events`,

@@ -13,7 +13,7 @@ import { createListingAction } from '@/app/(main)/market/actions'
 const FIELD = 'rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
 
 // Post a marketplace listing via the Studio window. No payment — it just connects
-// neighbors; contact happens over DMs from the listing. (ADR-145)
+// neighbors; contact happens over DMs from the listing. (ADR-146)
 export function NewListingButton({ className }: { className?: string }) {
   const router = useRouter()
   const [title, setTitle] = useState('')

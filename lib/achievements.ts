@@ -116,7 +116,6 @@ export async function recordStreakActivity(
       .select('current_count, longest_count')
       .single()
 
-    await updateProfileStreak(admin, profileId)
     await processGamificationEvent({
       type: 'streak_update',
       profileId,
@@ -162,7 +161,6 @@ export async function recordStreakActivity(
     })
     .eq('id', existing.id)
 
-  await updateProfileStreak(admin, profileId)
   await processGamificationEvent({
     type: 'streak_update',
     profileId,
@@ -598,25 +596,10 @@ function isArcStepRelevant(criteria: Record<string, unknown>, event: Gamificatio
 // Helpers
 // ---------------------------------------------------------------------------
 
-async function updateProfileStreak(admin: AdminClient, profileId: string) {
-  const { data: streaks } = await admin
-    .from('streaks')
-    .select('current_count, longest_count')
-    .eq('profile_id', profileId)
-
-  if (!streaks?.length) return
-
-  const maxCurrent = Math.max(...streaks.map(s => s.current_count))
-  const maxLongest = Math.max(...streaks.map(s => s.longest_count))
-
-  await admin
-    .from('profiles')
-    .update({
-      current_streak: maxCurrent,
-      longest_streak: maxLongest,
-    })
-    .eq('id', profileId)
-}
+// Note: the headline streak columns (profiles.current_streak / longest_streak)
+// now track the DAILY practice streak, owned by lib/practice-streak.ts (ADR-145).
+// The weekly attendance/posting/hosting streaks below live only in the `streaks`
+// table and surface on /crew/streaks — they no longer drive the headline.
 
 function isSameWeek(a: Date, b: Date): boolean {
   const startOfWeek = (d: Date) => {
