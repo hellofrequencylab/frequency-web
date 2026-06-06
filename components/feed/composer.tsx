@@ -54,6 +54,8 @@ export function Composer({
   autoImage = false,
   submitLabel,
   topSlot,
+  bottomSlot,
+  forceAnnouncement,
 }: {
   scopeId: string
   visibility?: 'public' | 'region' | 'cluster' | 'group'
@@ -65,11 +67,17 @@ export function Composer({
   autoImage?: boolean
   /** Override the send-button label (Capture box uses "Capture"). */
   submitLabel?: string
-  /** Rendered inside the box at the top (the Capture mode tabs live here). */
+  /** Rendered inside the box at the top. */
   topSlot?: ReactNode
+  /** Replaces the Post/Dispatch toggle in the bottom row (Capture's feature row). */
+  bottomSlot?: ReactNode
+  /** When `bottomSlot` is set, force announcement on/off (the Dispatch feature). */
+  forceAnnouncement?: boolean
 }) {
   const [body, setBody] = useState('')
-  const [isAnnouncement, setIsAnnouncement] = useState(false)
+  // Capture remounts the composer per feature (key=mode), so the Dispatch feature's
+  // `forceAnnouncement` seeds the initial state — no effect needed.
+  const [isAnnouncement, setIsAnnouncement] = useState(!!forceAnnouncement)
   const [isPending, startTransition] = useTransition()
   const [expanded, setExpanded] = useState(false)
   const [manualHeight, setManualHeight] = useState<number | null>(null)
@@ -486,7 +494,9 @@ export function Composer({
 
       {/* Settings + send. */}
       <div className="mt-2 flex items-center justify-between gap-2 border-t border-border pt-3">
-        {canAnnounce && kind !== 'note' ? (
+        {bottomSlot != null ? (
+          bottomSlot
+        ) : canAnnounce && kind !== 'note' ? (
           <div className="inline-flex items-center gap-0.5 rounded-lg bg-surface-elevated p-0.5">
             <button
               type="button"
@@ -524,7 +534,7 @@ export function Composer({
           >
             {isPending
               ? kind === 'note' ? 'Saving…' : 'Posting…'
-              : isAnnouncement ? 'Announce' : submitLabel ?? (kind === 'note' ? 'Save note' : 'Post')}
+              : submitLabel ?? (isAnnouncement ? 'Announce' : kind === 'note' ? 'Save note' : 'Post')}
           </button>
         </div>
       </div>
