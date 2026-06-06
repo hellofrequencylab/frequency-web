@@ -17,7 +17,11 @@ import { Composer } from './composer'
 
 type View = 'closed' | 'menu' | 'post' | 'photo' | 'note'
 
-const MODES: { key: Exclude<View, 'closed' | 'menu'> | 'in_person'; icon: typeof Camera; label: string; hint: string; href?: string }[] = [
+export type CaptureMode = 'photo' | 'note' | 'post' | 'in_person'
+
+// Shared so the feed bar and the global Capture launcher (capture-launcher.tsx)
+// can never drift out of sync on the modes they offer.
+export const CAPTURE_MODES: { key: CaptureMode; icon: typeof Camera; label: string; hint: string; href?: string }[] = [
   { key: 'photo', icon: Camera, label: 'Photo', hint: 'Snap the moment you’re in' },
   { key: 'note', icon: NotebookPen, label: 'Note', hint: 'Jot a quick journal entry' },
   { key: 'post', icon: PenLine, label: 'Post', hint: 'Say something to your people' },
@@ -86,7 +90,7 @@ export function CaptureBar({
           </button>
         </div>
         <div className="grid grid-cols-2 gap-2">
-          {MODES.map((m) => {
+          {CAPTURE_MODES.map((m) => {
             const inner = (
               <>
                 <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-broadcast-bg text-broadcast-strong">
