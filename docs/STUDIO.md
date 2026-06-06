@@ -23,8 +23,8 @@ Three shared things make every builder feel identical:
 | Layer | What | State |
 |---|---|---|
 | **Shell** | `StudioWindow` — overlay panel, chrome, Esc/backdrop close, scroll-lock, sticky footer | ✅ built (ADR-142) |
-| **Kit** | the building blocks each builder composes (identity, fields, autosave, footer, launcher) | ⏳ extract from journey |
-| **Registry** | a thin map: entity → label · icon · launch · who-can-create — powers a universal "Create" + one place for gating | ⏳ |
+| **Kit** | the building blocks each builder composes (identity, fields, autosave, footer, launcher, sortable) — `components/studio/kit/` | ✅ built (ADR-143); journey composes it |
+| **Registry** | a thin map: entity → label · icon · launch · who-can-create — powers a universal "Create" + one place for gating — `lib/studio/registry.ts` | ✅ built (journey ready; others declared) |
 
 ## 1. The shell (built — keep it)
 
@@ -98,9 +98,11 @@ All four data layers + server actions **already exist** — the work is the buil
 ## 6. Migration order (one entity per PR, lowest risk first)
 
 1. ✅ **Journey** — the reference instance (ADR-142).
-2. **Foundation PR** — extract the kit (§2) + add the registry (§3); refactor the journey
-   builder onto the kit so it's the proof, no behavior change.
-3. **Practice** — closest to journey (members already create them; pillar/cadence/body).
+2. ✅ **Foundation** — the kit (§2: `useStudioDraft`, `useSortable`, `StudioIdentity`
+   atoms, `StudioField`/`StudioSectionLabel`, `SaveStatus`/`StudioFooter`,
+   `StudioLaunchButton`) + the registry (§3); the journey builder now composes it
+   (behavior-neutral). The proof the kit fits.
+3. **Practice** ← next — closest to journey (members already create them; pillar/cadence/body).
    Replace the inline-create + `/practices/[id]/edit` page.
 4. **Circle** — adds geo + topic; high leverage (the member-create flywheel). Replace
    `NewCircleCompose` (CreateModal) + inline edit.
