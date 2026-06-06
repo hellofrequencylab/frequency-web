@@ -8,7 +8,7 @@ import { PageHeading } from '@/components/templates/page-heading'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 
-export const metadata = { title: 'Journeys · The Quest' }
+export const metadata = { title: 'Quests · The Quest' }
 
 // Quest icons are stored as lucide names; resolve the curated set we seed, with a
 // calm fallback. Keeps the card visual without a full dynamic-icon resolver.
@@ -90,9 +90,9 @@ export default async function QuestsPage() {
     <div>
       <PageHeading
         eyebrow="The Quest"
-        title="Seasonal Journeys"
-        description="Official tracks for the season, one per Pillar — free for everyone. Start one and work its steps; online steps pay Gems, real-world steps pay Zaps, and your progress shows up in the Vault log. Looking for member-made Journeys? Browse the community library."
-        back={{ href: '/journeys', label: 'All Journeys' }}
+        title="Quests"
+        description="Each season's Quests are official, free tracks — one per Pillar — that guide you through a set of practices. Start one and work its steps; online steps pay Gems, real-world steps pay Zaps, and your progress shows up in the Vault log."
+        back={{ href: '/crew', label: 'Dashboard' }}
       />
 
       {pillars.length === 0 ? (
