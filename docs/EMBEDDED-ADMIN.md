@@ -358,8 +358,11 @@ group of modules; `/admin/*` retires once empty.
 > the dock is now a category home → category screen → back + search, **driven by the
 > role-gated admin catalog** (`visibleLinks`) so tiers filter automatically — a janitor
 > sees every category, a host only what they steward; reach any admin surface from the
-> sidebar, no `/admin` trip. **Next:** the `@admin` server slot (make the categories
-> render real `modulesForSurface(...)` instead of catalog deep-links); Profile inline;
+> sidebar, no `/admin` trip. ✅ The first **deep-link → in-place port**: the **Moderation
+> queue** now renders in the console's *Safety* category (`ModerationModule` reusing the
+> existing `ModerationQueue` via a capability-gated loader) — clear reports without leaving
+> the page. Profile inline is already covered by `EditableIdentity`. **Next:** port more
+> deep-links the same way (Members, Broadcasts, …) and/or the `@admin` server slot; the
 > QR-generator + Vera-tone inline tuners.
 
 1. **Engine.** `AdminModule` registry + `modulesFor`/`showsAdminPanel`; `AdminModuleCard`
