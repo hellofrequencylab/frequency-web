@@ -380,11 +380,12 @@ group of modules; `/admin/*` retires once empty.
 > reuses `DemoOverview` / `StudioWizard` / `GrowNetwork` / `DangerZone` in *Platform*,
 > janitor-gated). ✅ **Spaces · Circles** too (`SpacesCirclesModule` reuses
 > `NewCircleCompose` + `CirclesClient` — manage all circles in scope; role-scoped loader).
+> ✅ **Spaces · Hubs + Nexuses** too (`SpacesHubsModule`/`SpacesNexusesModule` reuse their
+> compose + admin clients, stacked in Spaces; each self-gates so the stack degrades cleanly).
 > In-place ports so far: **Moderation · Broadcasts · Gamification · Members · Insights ·
-> Roles · QR generator · Demo · Circles**. **Next:** the rest of Spaces (Channels / Events /
-> Hubs / Nexuses managers — same recipe); **Vera** needs its config *form extracted into a
-> component first* (the page inlines it + `saveVera` rewrites the whole config) — deferred.
-> Plus the `@admin` slot + the Vera-tone inline tuner.
+> Roles · QR generator · Demo · Circles · Hubs · Nexuses**. **Next:** **Channels** + **Events**
+> managers (their admin lists are inlined in the page — need a small list extraction, like
+> Vera); **Vera** config form extraction; the `@admin` slot + the Vera-tone inline tuner.
 
 1. **Engine.** `AdminModule` registry + `modulesFor`/`showsAdminPanel`; `AdminModuleCard`
    over `SidebarCard`; add `hub`/`nexus` loaders + `loadCapabilitiesForScope`; the `@admin`
