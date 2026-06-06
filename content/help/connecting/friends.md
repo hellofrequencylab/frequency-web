@@ -1,9 +1,9 @@
 ---
 title: Friends
-description: Send and accept friend requests, and why they matter for messaging.
+description: Send and accept friend requests, invite new people, and why they matter for messaging.
 category: connecting
 order: 2
-updated: 2026-06-03
+updated: 2026-06-06
 audience: member
 featureKeys: [friends]
 status: published
@@ -16,6 +16,10 @@ Friends are your direct connections on Frequency. Adding someone is also the key
 - **Send a request** from someone's profile. They'll see it as an incoming request.
 - **Accept or decline** requests sent to you. Your friends page shows incoming, outgoing, and accepted connections.
 - Once you're friends, you can start a [direct message or group thread](/help/connecting/messages) together.
+
+## Invite people in
+
+Use **Invite friends** — from your account menu or the top of your Friends page — to bring new people to Frequency. You'll get a personal invite link and a QR code you can copy, share, or show in person. When someone joins through your link, you're connected automatically and you earn zaps for the introduction.
 
 ## Good to know
 
