@@ -11,6 +11,26 @@ hygiene, the audit findings, the AI fabric/webmaster, and the product verticals.
 Legend: done this session (D) | left, sized S/M/L | decision needed (?) | large
 greenfield initiative (G).
 
+## ▶ Now — prioritized queue (2026-06-06)
+
+The current build order for the progress / streak / disclosure arc and the practice-engine
+follow-ups it surfaced. Full detail lives in the lettered sections below — this is the ranking.
+
+**P0 — decide first**
+1. **S1 · Unify Quests + Journeys** 🔴 *(§S, decision)* — a fork that shapes the two journey
+   authoring/moderation items below; resolve it before building them.
+
+**P1 — finish the shipped arc (ready, high value, low risk)**
+2. **Stage-driven disclosure → crew dashboard + surfaces** *(§F, ADR-146)* — the spine is
+   built; apply the `stageIndex` gate beyond the home feed. (M)
+3. **Wire the login / activity streak** *(§F)* — tiny; completes "showing up = a streak". (S)
+4. **Daily-streak achievement badges** *(§F)* — small; completes the streak loop (zaps already pay). (S)
+
+**P2 — depth + integrity (M; the journey items gated on P0)**
+5. **`practice.verified` host/peer verification layers** *(§F)*. (M)
+6. **Seasonal Journey authoring surface** *(§Q)* — tracks are seeded; no editor yet. (M)
+7. **Community library moderation + promote-to-tracked plan** *(§Q Phase 5)*. (M)
+
 ## A. Security and hardening
 - D economy-column lock trigger, map XSS escape, open-redirect fix, gem-farm fix,
   private-reply authz, shared input sanitizer, baseline security headers.
@@ -84,6 +104,16 @@ greenfield initiative (G).
 - [ ] Programs content depth (only 4 seed frameworks). (M)
 - [ ] Program-as-template "Add to Circle" instantiation (sets adopter as host). (M)
 - [ ] Cohort / acquisition-source analytics. (M)
+- [ ] **Stage-driven disclosure → crew dashboard + other surfaces** (ADR-146). The home feed
+  now reveals by member stage; extend the same `stageIndex` gate (from `getMemberProgress`)
+  to the crew dashboard, profile, and rails so the whole product opens up as a member climbs.
+  The spine is built — this is applying it. (M)
+- [ ] **Wire the login / activity streak.** The `login` streak type exists end-to-end but
+  nothing triggers it; tick it on the first authenticated visit per day
+  (`recordStreakActivity(profileId, 'login')`). (S)
+- [ ] **Daily-streak achievement badges.** The catalog's streak badges are still the weekly
+  `attendance` ones; add badges for the daily practice streak (3/7/30/100/365) so those
+  milestone moments also live in the Vault. Milestone *zaps* already pay (ADR-145). (S)
 
 ## G. Circles / hierarchy / discovery / IA
 - [ ] Circle-discovery visual map layer (proximity list shipped). (M)
