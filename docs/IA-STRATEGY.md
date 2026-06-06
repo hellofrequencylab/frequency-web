@@ -39,7 +39,7 @@ Expression** — are the cross-cutting taxonomy that tags content and channels.
 | Phase | Move | Status |
 |---|---|---|
 | 0–1 | Member rail → five worlds; renames; drop Messages/Programs from rail; Programs → Leader training | ✅ shipping |
-| 2 | Manage → Steward / Structure / Studio / Platform (4 axis-gated launchpads); delete Outreach stub | ⏳ next |
+| 2 | Manage → Steward / Structure / Studio / Platform (4 axis-gated groups); delete Outreach stub | ✅ shipping |
 | 3 | Demote Hubs/Nexuses to contextual; "Today" launchpad; mobile avatar-menu Manage; dedup per-entity admin into the page dock | ⏳ |
 | 4 | Persona surfaces (Business / Practitioner / Partner); milestone gating | 🔵 later |
 

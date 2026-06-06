@@ -71,22 +71,25 @@ export const NAV_AREAS: readonly NavArea[] = [
   { key: 'crew',  href: '/crew',       label: 'Dashboard', section: 'The Quest', defaultAccess: 'crew', previewBelowAccess: true },
   { key: 'store', href: '/crew/store', label: 'Store',     section: 'The Quest', defaultAccess: 'crew', previewBelowAccess: true },
 
-  // ── Manage → split by the axis that grants it (telescoped at each floor) ──────
-  // Steward — community stewardship + the business cockpit (trust host+ / staff axis).
-  { key: 'admin-community', href: '/admin',       label: 'Overview',       section: 'Steward', defaultAccess: 'host' },
-  { key: 'crm',             href: '/crm',         label: 'CRM',            section: 'Steward', defaultAccess: 'host' },
+  // ── Manage → four axis-gated worlds, each telescoped at its floor (IA step 2):
+  //    Steward (host stewardship) · Structure (the place tree) · Studio (the staff
+  //    business cockpit, on the team_members axis) · Platform (operator keys). ─────
+  // Steward — community stewardship (trust host+).
+  { key: 'admin-community', href: '/admin',       label: 'Overview',  section: 'Steward', defaultAccess: 'host' },
+  { key: 'crm',             href: '/crm',         label: 'CRM',       section: 'Steward', defaultAccess: 'host' },
   // Profile Creator — owner-scoped network intake (card scan / manual + Vera).
   // Host+ on the trust ladder, OR Studio staff (team_members axis), per ADR-098.
-  { key: 'connections',     href: '/connections', label: 'Profiles',       section: 'Steward', defaultAccess: 'host', staffDomain: 'profiles' },
-  { key: 'marketing',       href: '/marketing',   label: 'Marketing',      section: 'Steward', defaultAccess: 'admin', staffDomain: 'marketing' },
-  { key: 'admin-structure', href: '/admin/hubs',  label: 'Hubs & Nexuses', section: 'Steward', defaultAccess: 'guide' },
-  // Platform — operator controls (trust janitor).
+  { key: 'connections',     href: '/connections', label: 'Profiles',  section: 'Steward', defaultAccess: 'host', staffDomain: 'profiles' },
+  { key: 'admin-qr',        href: '/admin/qr',    label: 'QR Studio', section: 'Steward', defaultAccess: 'host' },
+  // Structure — the place tree that circles cluster into (trust guide/mentor).
+  { key: 'admin-structure', href: '/admin/hubs',  label: 'Hubs & Nexuses', section: 'Structure', defaultAccess: 'guide' },
+  // Studio — the business cockpit, on the STAFF axis (ADR-127): shown to staff
+  // marketers regardless of trust role, or to trust admin+.
+  { key: 'marketing',       href: '/marketing',   label: 'Marketing', section: 'Studio', defaultAccess: 'admin', staffDomain: 'marketing' },
+  // Platform — sensitive operator keys (trust janitor).
   { key: 'admin-insights',  href: '/admin/engagement', label: 'Insights', section: 'Platform', defaultAccess: 'janitor' },
   { key: 'admin-vera',      href: '/admin/vera',       label: 'Vera',     section: 'Platform', defaultAccess: 'janitor' },
   { key: 'admin-platform',  href: '/admin/members',    label: 'Members',  section: 'Platform', defaultAccess: 'janitor' },
-  // QR Studio — its own spot under Platform, but host+ (the studio is a stewardship
-  // tool, not a janitor key). See app/(main)/admin/sections.ts `qr` group.
-  { key: 'admin-qr',        href: '/admin/qr',         label: 'QR Studio', section: 'Platform', defaultAccess: 'host' },
   { key: 'pages',           href: '/pages',            label: 'Pages',    section: 'Platform', defaultAccess: 'janitor' },
 ] as const
 
