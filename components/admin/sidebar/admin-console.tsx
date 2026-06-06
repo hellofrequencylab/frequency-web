@@ -18,6 +18,7 @@ import {
   BarChart3,
   ChevronRight,
   ChevronLeft,
+  ArrowUpRight,
   Search,
   type LucideIcon,
 } from 'lucide-react'
@@ -29,32 +30,15 @@ import { CircleSettingsModule } from '@/components/admin/modules/circle-settings
 import { HubSettingsModule } from '@/components/admin/modules/hub-settings-module'
 import { NexusSettingsModule } from '@/components/admin/modules/nexus-settings-module'
 import { EventSettingsModule } from '@/components/admin/modules/event-settings-module'
-import { ModerationModule } from '@/components/admin/modules/moderation-module'
-import { BroadcastsModule } from '@/components/admin/modules/broadcasts-module'
-import { GamificationModule } from '@/components/admin/modules/gamification-module'
-import { CrewTasksModule } from '@/components/admin/modules/crew-tasks-module'
-import { MembersModule } from '@/components/admin/modules/members-module'
-import { InsightsModule } from '@/components/admin/modules/insights-module'
-import { RolesModule } from '@/components/admin/modules/roles-module'
 import { QrGeneratorModule } from '@/components/admin/modules/qr-generator-module'
-import { DemoModule } from '@/components/admin/modules/demo-module'
-import { AiModule } from '@/components/admin/modules/ai-module'
-import { VeraModule } from '@/components/admin/modules/vera-module'
-import { SpacesCirclesModule } from '@/components/admin/modules/spaces-circles-module'
-import { ChannelsModule } from '@/components/admin/modules/channels-module'
-import { EventsModule } from '@/components/admin/modules/events-module'
-import { SpacesHubsModule } from '@/components/admin/modules/spaces-hubs-module'
-import { SpacesNexusesModule } from '@/components/admin/modules/spaces-nexuses-module'
 
-// The page-admin sidebar console (ADR-137 drill-down · ADR-138 the "manage" surface).
-// Home lists the categories that apply for THIS viewer; tap one to drill into its
-// settings; search jumps to any item. Tiers filter automatically because the manage
-// links come from the role-gated admin catalog (`visibleLinks`) — a janitor (the top
-// tier) sees every category populated; a host sees only what they steward. The aim:
-// reach any admin surface from the sidebar, no trip to /admin.
-//
-// The per-page in-place settings module lives under **Basics**. As the @admin server
-// slot lands, the catalog links become server-composed `modulesForSurface(...)`.
+// The page-admin sidebar console (ADR-153 — layer 3, the *light* per-page layer).
+// Home lists the categories that apply for THIS viewer; tap one to drill in. The
+// console holds **page-globals** only — this page's Basics settings + its QR code —
+// and otherwise **links back to the full-page suite** (its top-bar tabs) for the heavy
+// management. So the sidebar *tunes the page*; the suite *manages the domain*. Tiers
+// filter automatically because the links come from the role-gated catalog
+// (`visibleLinks`) — a janitor sees every suite, a host only what they steward.
 
 type Item =
   | { kind: 'link'; label: string; sub?: string; href: string; Icon: LucideIcon }
@@ -66,6 +50,8 @@ type Category = {
   Icon: LucideIcon
   summary?: string
   module?: ReactNode
+  /** The full-page suite this category opens into (its first catalog link). */
+  suiteHref?: string
   items: Item[]
 }
 
@@ -151,85 +137,31 @@ export function AdminConsole({
     ...(isJanitor ? [{ kind: 'link' as const, label: 'Pages & content', href: '/pages', Icon: FileText }] : []),
   ]
 
-  // Moderation: render the in-place queue (ADR-138) in place of the deep-link, when
-  // the role-gated catalog grants it.
-  // Deep-link → in-place ports: when the role-gated catalog includes a surface's
-  // link, render its in-place module in the spine category and drop the duplicate
-  // link. Adding a ported surface = one entry here.
-  // `hrefs` lists the catalog links this category's in-place module(s) REPLACE (the
-  // module renders, those links drop). An empty/absent `hrefs` is ADDITIVE — the
-  // module heads the category above the kept links (e.g. Insights). Shown whenever the
-  // viewer has a relevant link (any of `hrefs`, or any link when additive).
-  const IN_PLACE: Record<string, { hrefs?: string[]; module: ReactNode; summary: string }> = {
-    safety: { hrefs: ['/admin/moderation'], module: <ModerationModule />, summary: 'Reports queue' },
-    comms: { hrefs: ['/admin/dispatches'], module: <BroadcastsModule />, summary: 'Broadcast' },
-    engage: {
-      hrefs: ['/admin/gamification', '/admin/crew-tasks'],
-      module: (
-        <div className="space-y-4">
-          <GamificationModule />
-          <CrewTasksModule />
-        </div>
-      ),
-      summary: 'Season, awards, crew tasks',
-    },
-    people: {
-      hrefs: ['/admin/members', '/admin/roles'],
-      module: (
-        <div className="space-y-4">
-          <MembersModule />
-          <RolesModule />
-        </div>
-      ),
-      summary: 'Roster & roles',
-    },
-    insights: { module: <InsightsModule />, summary: 'Live signal' },
-    reach: { module: <QrGeneratorModule />, summary: 'Generate & export' },
-    platform: {
-      hrefs: ['/admin/demo', '/admin/ai', '/admin/vera'],
-      module: (
-        <div className="space-y-4">
-          <DemoModule />
-          <AiModule />
-          <VeraModule />
-        </div>
-      ),
-      summary: 'Demo, AI, Vera',
-    },
-    spaces: {
-      hrefs: ['/admin/circles', '/admin/channels', '/admin/events', '/admin/hubs', '/admin/nexuses'],
-      module: (
-        <div className="space-y-4">
-          <SpacesCirclesModule />
-          <ChannelsModule />
-          <EventsModule />
-          <SpacesHubsModule />
-          <SpacesNexusesModule />
-        </div>
-      ),
-      summary: 'Circles, channels, events, hubs, nexuses',
-    },
+  // Page-globals (ADR-153 layer 3) — the ONLY in-context modules the sidebar keeps:
+  // the page's own QR code under Reach (Basics is the entity settings module, below).
+  // Heavy management suites are NOT rendered here; a category instead links back to its
+  // full-page suite (its top-bar tabs) for that work — the sidebar tunes the page.
+  const PAGE_GLOBALS: Record<string, { module: ReactNode; summary: string }> = {
+    reach: { module: <QrGeneratorModule />, summary: 'This page’s QR code' },
   }
 
   const categories: Category[] = CATEGORIES.map((c) => {
     const raw = itemsBySlot.get(c.key) ?? []
-    const inPlace = IN_PLACE[c.key]
-    const hrefs = inPlace?.hrefs ?? []
-    const hasInPlace =
-      !!inPlace && (hrefs.length ? raw.some((it) => it.kind === 'link' && hrefs.includes(it.href)) : raw.length > 0)
-    const base = hrefs.length ? raw.filter((it) => !(it.kind === 'link' && hrefs.includes(it.href))) : raw
-    const items = c.key === 'layout' ? [...layoutExtra, ...base] : base
-    const mod =
-      c.key === 'basics' ? settingsModule ?? undefined : hasInPlace ? inPlace.module : undefined
+    const items = c.key === 'layout' ? [...layoutExtra, ...raw] : raw
+    const pageGlobal = PAGE_GLOBALS[c.key]
+    const mod = c.key === 'basics' ? settingsModule ?? undefined : pageGlobal?.module
+    // The parent suite this category opens into — its first catalog link is the suite's
+    // entry tab; landing there reveals the suite's full top-bar sub-nav (parent + tabs).
+    const suiteHref = raw.find((it): it is Extract<Item, { kind: 'link' }> => it.kind === 'link')?.href
     const summary =
       c.key === 'basics' && mod
         ? 'Name, details, status'
-        : hasInPlace && mod
-          ? inPlace.summary
+        : pageGlobal && mod
+          ? pageGlobal.summary
           : items.length
             ? `${items.length} ${items.length === 1 ? 'setting' : 'settings'}`
             : undefined
-    return { ...c, items, module: mod, summary }
+    return { ...c, items, module: mod, suiteHref, summary }
   }).filter((c) => c.module || c.items.length > 0)
 
   const q = query.trim().toLowerCase()
@@ -316,13 +248,31 @@ export function AdminConsole({
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
-            <span className="flex items-center gap-1.5 text-sm font-bold text-text">
-              <active.Icon className="h-4 w-4 text-primary-strong" />
-              {active.label}
-            </span>
+            {active.suiteHref ? (
+              <Link
+                href={active.suiteHref}
+                onClick={onNavigate}
+                className="group flex items-center gap-1.5 text-sm font-bold text-text transition-colors hover:text-primary-strong"
+                title={`Open the ${active.label} suite`}
+              >
+                <active.Icon className="h-4 w-4 text-primary-strong" />
+                {active.label}
+                <ArrowUpRight className="h-3.5 w-3.5 text-subtle transition-colors group-hover:text-primary-strong" />
+              </Link>
+            ) : (
+              <span className="flex items-center gap-1.5 text-sm font-bold text-text">
+                <active.Icon className="h-4 w-4 text-primary-strong" />
+                {active.label}
+              </span>
+            )}
           </div>
           <div className="space-y-2 p-1.5">
             {active.module && <div className="px-1 py-1">{active.module}</div>}
+            {active.suiteHref && (
+              <p className="px-2.5 pt-0.5 text-2xs text-subtle">
+                Manage in the full <span className="font-medium text-muted">{active.label}</span> suite — these open its tabs:
+              </p>
+            )}
             {active.items.map(renderItem)}
           </div>
         </>
