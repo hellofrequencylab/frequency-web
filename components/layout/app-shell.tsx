@@ -1377,8 +1377,9 @@ export default function AppShell({
               <main className="flex-1 min-w-0 px-6 py-6" data-tour-anchor="content">
                 <Breadcrumbs />
                 {/* Inline page-admin layer — operators get an "Admin ▾" disclosure
-                    with this page's admin functions, in place of the old edge drawer. */}
-                {canAdmin && <PageAdminBar role={gateRole} staffRole={staffRole} />}
+                    with this page's admin functions. Suppressed on individual profile
+                    pages (the QR/admin lives in Edit Profile there instead). */}
+                {canAdmin && !pathname.startsWith('/people/') && <PageAdminBar role={gateRole} staffRole={staffRole} />}
                 {children}
               </main>
             </div>
