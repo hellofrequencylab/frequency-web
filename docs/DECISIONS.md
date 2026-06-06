@@ -4976,7 +4976,8 @@ Member-facing "how to Capture" guidance → help center / Notion when it stabili
 ### ADR-156a — Capture rework: one multi-mode box, contact-forward (owner direction)
 
 **Refines ADR-156.** Capture is **one Substack-style box, not a picker → composer two-step.** The
-box body swaps by mode; a **bottom rail of prompts** picks what you're capturing (Post · Note ·
+box body swaps by mode; **mode tabs inside the box** (top, active one filled so the current mode is
+unmistakable) pick what you're capturing (Post · Note ·
 Photo · **Contact**); the send button always reads **"Capture"** (`components/feed/capture-box.tsx`).
 The shared `Composer` stays the post/note/photo editor (it's also used on circle/channel/profile
 pages, so the Capture-mode rail lives in `CaptureBox`, *not* in `Composer` — `Composer` only gained
@@ -5000,3 +5001,57 @@ stay personal, enter marketing only on consent — ADR-099/154).
 **Status.** Web multi-mode box + inline Contact capture **shipped**. Mobile centre-nav placement and
 the sponsor reward/pipeline are the next passes ([ONBOARDING-BUILD-LIST.md](ONBOARDING-BUILD-LIST.md)
 §6).
+
+## ADR-157: Role-advancement training — a training Journey per role transition (design)
+
+**Decision.** Onboarding is not a one-time signup event; it's **continuous, keyed to role**. Every
+time a member advances a role, the system **assigns a role-specific training Journey** to their
+account — a guided walkthrough of the functions that role just unlocked. The member onboarding we
+already ship (beta induction → activation → Vera coach) becomes the *first* rung of one ladder:
+
+| Transition | Training Journey | Teaches |
+|---|---|---|
+| → **Member** (signup) | Member onboarding (built: induction + activation + chores + Founder's First Week) | Be findable, seed content, join a circle, log a practice |
+| **Member → Crew** (paid) | Crew feature tour | The paid features; prompted to join local circles + adopt a Journey/Practice |
+| **Crew → Host** | Host Training | Hosting + a tour of the new **admin area** they just unlocked |
+| **Host → Guide/Mentor/…** | Steward training | The wider scope (hub/nexus), outreach, moderation |
+| **Staff/admin roles** | Advancement training per admin role | The Studio/admin functions that role gains |
+
+**Build on what exists — do not invent a flow engine.** The pieces are already here:
+- **Trigger:** the `role_change` gamification event is already emitted on promotion
+  (`app/(main)/admin/actions.ts`; also the paid Crew upgrade path). Assignment hooks there.
+- **Flow engine:** the **Journeys/Quests** engine (`lib/journey-plans.ts`, `quest_steps`,
+  `journey_plan_adoptions`) runs multi-step plans with adoption records — a training Journey *is* a
+  system-assigned Journey plan.
+- **In-product walkthrough:** the **tour/coachmark** system (`TourState`, `TourProvider`,
+  `profiles.meta.tour`) drives the "here's the new button" highlights; the **Vera coach** delivers
+  the next step (ADR-156/1.3).
+- **Content:** **help articles** (`content/help/*`) are the canonical "how a function works"; a
+  training Journey is a *curated path* through the role's help articles + in-product tours. Tag help
+  articles by `role` + `featureKeys` so a Journey can assemble itself from the role's newly-unlocked
+  surfaces.
+- **Permissions tie-in:** the Journey's contents are **derived from the delta** in `lib/permissions`
+  / `lib/nav-areas` access between the old and new role — teach exactly what just became reachable,
+  nothing they already had.
+
+**New pieces to build (phased — see [ONBOARDING-BUILD-LIST.md](ONBOARDING-BUILD-LIST.md) §7):**
+1. **Assignment-on-promotion** — `role_change` → assign the matching training Journey + a Vera nudge.
+2. **Training-path records** — extend `journey_plan_adoptions` (or a `training_paths` table) to record
+   *assigned / started / completed* per (member, role) — the durable advancement transcript, also the
+   gate ("you can't skip Host Training silently") and the analytics surface.
+3. **Role→Journey content** — seed one training Journey per role, each step = a help article + an
+   optional coachmark tour; rewards on completion (online training → **gems**, ADR-139).
+4. **Flow management** — an admin surface to author/edit training Journeys per role (reuse the
+   Journey/Quest authoring + the help-article editor), so the curriculum is owner-tunable, not
+   hard-coded.
+
+**Alternatives.** A single static onboarding tour for everyone (rejected — a Host needs Host
+training, not the member tour again). Hard-code each role's flow in app code (rejected — flows must
+be owner-managed content, and they already have a CMS-grade engine in Journeys + help). Block the app
+until training is done (rejected — non-blocking doctrine, ADR-155; training *invites*, the beta
+induction is the one deliberate exception).
+
+**Consequences.** Onboarding, help, Journeys, roles/permissions and the Vera coach converge into one
+**role-advancement ladder** with a transcript. Member-facing "how training works" + the per-role
+curriculum → help center / Notion; the engine, assignment hook, and records → git. No migration in
+this ADR (design only); the build adds the records table + seed content + the assignment hook.

@@ -45,7 +45,7 @@ export function ContactCaptureForm() {
 
   if (savedName) {
     return (
-      <div className="flex flex-col items-center gap-2 px-4 py-6 text-center">
+      <div className="flex flex-col items-center gap-2 py-4 text-center">
         <span className="flex h-10 w-10 items-center justify-center rounded-full bg-broadcast-bg text-broadcast-strong">
           <Check className="h-5 w-5" strokeWidth={3} aria-hidden />
         </span>
@@ -63,7 +63,7 @@ export function ContactCaptureForm() {
   }
 
   return (
-    <div className="space-y-2 p-3">
+    <div className="space-y-2">
       <input className={input} placeholder="Name *" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
       <input className={input} placeholder="Email (optional)" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
       <textarea
