@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { Compass, Zap, Flame, Gem, Check, ArrowRight } from 'lucide-react'
+import { Compass, Zap, Flame, Gem, Check, ArrowRight, Users } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { IndexTemplate } from '@/components/templates'
@@ -41,7 +41,7 @@ export default async function JourneyPage() {
   const toNext = nextRank ? Math.max(0, nextRank.minZaps - seasonZaps) : 0
 
   const [journeys, pillars] = await Promise.all([
-    getActiveJourneyProgress(profile.id),
+    getActiveJourneyProgress(profile.id, { withCompanions: true }),
     getPillars(),
   ])
   const byId = pillarsById(pillars)
@@ -95,6 +95,14 @@ export default async function JourneyPage() {
                 }
               />
               {j.plan.summary && <p className="-mt-2 mb-3 text-sm text-muted">{j.plan.summary}</p>}
+
+              {/* Doing it with your circle — companions on the same journey (Path A). */}
+              {j.circleCompanions > 0 && (
+                <p className="mb-3 inline-flex items-center gap-1.5 rounded-md bg-signal-bg px-2 py-1 text-xs font-medium text-signal-strong">
+                  <Users className="h-3.5 w-3.5" />
+                  {j.circleCompanions} in your circle doing this too
+                </p>
+              )}
 
               {/* Progress bar */}
               <div className="mb-4 h-2 overflow-hidden rounded-full bg-surface-elevated">
