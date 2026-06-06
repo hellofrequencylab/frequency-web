@@ -96,6 +96,11 @@ follow-ups it surfaced. Full detail lives in the lettered sections below — thi
   findings ledger, autonomy tiers (gated on D). (M)
 
 ## F. Engagement / gamification / practices / programs
+- [ ] **Doomscroll mode — the named release valve (ADR-155).** A member-toggled mode that strips
+  the entire activation prompt layer (chores pill, Vera coach full-stops, task nudges) and shows
+  **only content**. One preference flag (`profiles.meta`) the app shell reads to suppress the prompt
+  layer; the feed itself is unchanged. The point is the brand statement — making "just scroll" an
+  honest, named choice proves we don't optimize for dwell-time. Not launch-blocking. (S)
 - [ ] **Progressive onboarding (ADR-047 / ONBOARDING.md).** Phase 0: decouple the blocking
   `/onboarding` gate (lazy profile capture). Phase 1: interaction-paced coachmark tour
   driven by a declarative tip registry + `profiles.meta.tour` (no migration); folds in the
