@@ -12,6 +12,11 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **Daily practice streaks that actually work**: your streak now counts the days in a
+  row you’ve logged a practice (it used to quietly count weeks). Hit 3, 7, 14, 30, 60,
+  100 or 365 days to earn a badge and bonus zaps, bank **streak freezes** at the bigger
+  milestones that automatically save you if you miss a day, and get an **at-risk** nudge
+  on your home screen before a streak slips away. See the new Streaks page in your dashboard.
 - **Your Journey on the Dashboard**: adopt a seasonal Journey and follow it on your
   dashboard — each practice checks off as you keep its weekly rhythm, your next step
   stays front-and-centre, and you can see who in your circle is walking it too. The
