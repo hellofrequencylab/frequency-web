@@ -32,6 +32,7 @@ import { EventSettingsModule } from '@/components/admin/modules/event-settings-m
 import { ModerationModule } from '@/components/admin/modules/moderation-module'
 import { BroadcastsModule } from '@/components/admin/modules/broadcasts-module'
 import { GamificationModule } from '@/components/admin/modules/gamification-module'
+import { CrewTasksModule } from '@/components/admin/modules/crew-tasks-module'
 import { MembersModule } from '@/components/admin/modules/members-module'
 import { InsightsModule } from '@/components/admin/modules/insights-module'
 import { RolesModule } from '@/components/admin/modules/roles-module'
@@ -158,7 +159,16 @@ export function AdminConsole({
   const IN_PLACE: Record<string, { hrefs?: string[]; module: ReactNode; summary: string }> = {
     safety: { hrefs: ['/admin/moderation'], module: <ModerationModule />, summary: 'Reports queue' },
     comms: { hrefs: ['/admin/dispatches'], module: <BroadcastsModule />, summary: 'Broadcast' },
-    engage: { hrefs: ['/admin/gamification'], module: <GamificationModule />, summary: 'Season, awards' },
+    engage: {
+      hrefs: ['/admin/gamification', '/admin/crew-tasks'],
+      module: (
+        <div className="space-y-4">
+          <GamificationModule />
+          <CrewTasksModule />
+        </div>
+      ),
+      summary: 'Season, awards, crew tasks',
+    },
     people: {
       hrefs: ['/admin/members', '/admin/roles'],
       module: (
