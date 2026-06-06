@@ -12,6 +12,11 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **A home screen that grows with you**: your home now shows your **stage** — from finding
+  your feet to becoming an anchor of the community — with the next thing that moves you up.
+  New members get a calm, focused screen; more tools and panels reveal themselves as you
+  build a streak, follow Journeys and climb the ranks, and you get a little moment when you
+  reach a new stage.
 - **Daily practice streaks that actually work**: your streak now counts the days in a
   row you’ve logged a practice (it used to quietly count weeks). Hit 3, 7, 14, 30, 60,
   100 or 365 days to earn a badge and bonus zaps, bank **streak freezes** at the bigger
