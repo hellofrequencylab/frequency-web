@@ -24,7 +24,7 @@ Two levers, in order: **(0) flip the switches that let real testers in today**, 
 |---|---|---|---|---|
 | **0** | Pre-test enablement (config, not code) | Get testers in *today* | S | ⏳ |
 | **1.1** | Persistent Vera launcher, app-wide | Deep Vera integration | M | ✅ shipped |
-| **1.2** | "Complete Your Profile" feed card | Create a profile | S–M | 📋 |
+| **1.2** | Vera's "chores" — profile + first-post, matriarch full-stop | Create a profile + seed content | M | ✅ shipped |
 | **1.3** | Vera coach "next best action" card | Excitement + direction | S–M | 📋 |
 | **1.4** | "Founder's First Week" tasks + badge | Create content | M | 📋 |
 | **1.5** | Live-loop suggestion chips | Guided depth | S | ⏳ |
@@ -35,6 +35,7 @@ Two levers, in order: **(0) flip the switches that let real testers in today**, 
 | **3.x** | Proactive Vera (encouragement/accountability, host copilot) | Day-2 retention | M–L | 🔴 gated |
 | **5.1–5.2** | Rename Directory → **Network** + member-tier personal contacts + quick-add capture | Real-life contacts, kept | S–M | 📋 |
 | **5.3–5.5** | Event-invite capture loop (QR → RSVP → triple-write) + gamification | The growth loop | M–L | 📋 |
+| **6** | **Capture** — primary "log life" button (Photo/Note/Post + In-Person card/poster) | The community story + every member a node | L | 📋 |
 | **4.x** | Cleanup + doc hygiene | Lean tree | S | ⏳ |
 
 Legend: ✅ done · ⏳ partially built / in flight · 📋 specced, not built · 🔴 blocked.
@@ -84,14 +85,32 @@ in small reviewable PRs. Best-practice guardrails in the last section.
     (today Help search is article-only and routes deeper questions to Chat).
   - **Proactive badge** on the bubble once Phase E (encouragement) lands.
 
-### 1.2 — "Complete Your Profile" feed card 📋 (BETA-ACTIVATION §2)
-- **Goal.** Make "create your profile" the obvious first move; visible, rewarded, dismissible.
-- **Reuse.** `lib/onboarding/status.ts:getOnboardingStatus()` already scores avatar /
-  circle / practice / log. Reuse the streak progress-ring; each row deep-links to the exact editor.
-- **Build.** A dismissible feed card (hidden once complete), one-time gem drop at 100%,
-  fires `profile.completed` (already in funnel).
-- **Touch.** `components/feed/` (new card), `app/(main)/feed/page.tsx`, reward on first completion (idempotent key).
-- **Acceptance.** Shows while incomplete, never nags a done field, awards once, vanishes at 100%.
+### 1.2 — Vera's "chores" — the matriarch bait-and-switch ✅ **shipped** (BETA-ACTIVATION §2)
+- **The concept (owner direction).** Vera is warm on the way in; then she hardens into a
+  *playful stern matriarch* — "everything in its place." A **full-stop overlay** periodically
+  blocks the screen with the Founder's unfinished **chores**: tidy your profile (photo · bio ·
+  city) **and** seed content (first post). They signed the oath to *build*, so she holds them to
+  it — in a fun way ("I've 'locked' your screen. Dramatic, I know — the ✕ still works").
+- **What shipped.**
+  - `lib/onboarding/profile-chores.ts` — `getProfileChores()` scores photo/bio/city/first-post
+    (distinct from the activation funnel in `status.ts`).
+  - `components/onboarding/chores-overlay.tsx` — the dismissible full-stop overlay + a persistent
+    bottom-left **chores pill**; paced (≥1h, once/session) so it nudges, never nags; accessible
+    (ESC/✕/backdrop, focus, reduced-motion).
+  - `app/(main)/feed/chores-actions.ts` — `claimChoresReward()`, one-time gem drop at 100% via the
+    long-dangling **`welcome_member`** gem action (also closes BACKLOG §C's "unobtainable" item);
+    idempotent on `meta.chores.rewarded`.
+  - Mounted in `app/(main)/layout.tsx`, **beta-gated** (`BETA_INDUCTION_ACTIVE`) so it retires to
+    the non-blocking model at launch.
+- **Second pass (tweaks):**
+  - **Per-task micro-rewards** (today: one bonus at 100%).
+  - **Add the "interests" chore** (separate join; needs a clean editor deep-link).
+  - **Live matriarch register** — dial the stern voice through `vera_config` / the live loop
+    (today the copy is scripted); let her deliver chores *in the Vera launcher chat* too.
+  - **Escalating pace** (gentle → sterner) + configurable cooldown; emit a `chores.completed`
+    event for the funnel.
+  - **Coordinate with the activation guide** so the two onboarding surfaces never pop at once.
+  - **Fold in Capture chores** once §6 lands (e.g. "capture your first moment").
 
 ### 1.3 — Vera coach "next best action" card 📋 (BETA-ACTIVATION §5)
 - **Goal.** Vera surfaces the *single* next best action in her voice, advancing as they finish.
@@ -188,6 +207,53 @@ marketing as `consent_state='unknown'` (added, never mailed) and become mailable
 **Sequencing note:** 5.1 + 5.2 are a small, self-contained PR (IA + ungate) that ships the
 member product immediately. 5.3–5.5 are the bigger growth-loop build — do after the §1
 activation push, since they share the QR/referral + consent plumbing.
+
+## Section 6 — Capture (the primary "log life as it happens" surface) — 📋 (owner vision, needs ADR)
+
+> **The frame (owner).** The Quest is about *activation* — going outside and engaging with
+> society, gamified. **Capture** is how members *log and track that lived experience* and share it.
+> The community feed becomes **the story of the community's experience** — not content curated to
+> be enjoyed online. Every user becomes an **access point** that brings people into the network.
+
+**The shape.** A **primary Capture button** (a camera-style affordance) that opens a *mode picker*
+— the same vibe as tapping a camera icon and getting Photo / Video / Cinema / Live. Capture is for
+grabbing life as it goes by: a moment, a **Note** *(new)*, a Post — building a shared daily journal.
+
+| Capture mode | What | State |
+|---|---|---|
+| **Photo / moment** | snap + share to the feed/journal | ⏳ composer has media; needs the Capture entry + journal framing |
+| **Note** *(new)* | a lightweight text journal entry (a "showed up / saw this" log) | 📋 new post subtype |
+| **Post** | the existing composer | ✅ exists |
+| **In-Person → Business Card / Poster** | "we stop and trade info with a new friend" — the **Profile Creator** folded in as a Capture category | ✅ built (`/connections/new`), needs to live under Capture |
+| *(later)* Video · Cinema · Live | richer capture kinds | 📋 future |
+
+**Why this is one feature, not many.** "Stop and take a picture" and "stop and trade information"
+are the *same gesture* — capturing a real-world moment. So **In-Person capture** (the card/poster
+scanner, §5/ADR-098/154) becomes a **category inside Capture**, alongside Photo/Note/Post. One
+button: capture life's moments to share **and** manage your contacts **and** bring people into
+Frequency — a community-management tool where every member is a node.
+
+**Build approach (reuse, don't rebuild).**
+- Wrap the existing **composer / `CreateModal`** and the planned **Create Wizard registry** (BACKLOG
+  §Q2) so Capture is a *mode picker* over typed create-kinds — Capture is the consumer surface for
+  that registry, not a parallel system.
+- **In-Person** = the existing Profile Creator (`app/(main)/connections/new/`, `lib/ai/connections-ai.ts`)
+  surfaced as a Capture category; ties straight into the **Network** rework (§5) and the
+  event-invite capture loop.
+- **Note** = a new lightweight post subtype (ties into BACKLOG §S6 tiered composer options).
+- **Gamification** = zaps for in-person/IRL capture + outreach (the Quest ladder), gems for content
+  (the existing engines) — reward the *real moment*, not the row (§5.5 anti-farm doctrine).
+
+**Phasing (proposed — add an ADR on build).**
+1. The **Capture button + mode picker** over the existing composer (Photo/Post), revived as the
+   app-shell primary action (BACKLOG §Q2 Phase 3).
+2. **In-Person capture** folded in (Business Card / Poster → personal CRM + the §5 loop).
+3. **Note** journal subtype + the "daily journal / community story" feed framing.
+4. Richer kinds (video/cinema/live) as demand warrants.
+
+**Open questions (owner):** does "Note" share the post table or get its own journal store · how
+loud is the Capture button vs. the feed composer · which captures are public-by-default (moments)
+vs. private-by-default (contacts — stays private per ADR-154).
 
 ## Reuse map — what already exists (so you never rebuild it)
 
