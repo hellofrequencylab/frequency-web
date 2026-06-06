@@ -18,6 +18,8 @@ import { MessageSquare, CalendarDays, Zap, Gem, Users, MapPin, Settings, Trophy,
 import { parseVcard } from '@/lib/vcard'
 import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
 import { getProfileCapabilities } from '@/lib/core/load-capabilities'
+import { atLeastRole } from '@/lib/core/roles'
+import { MemberSupportPanel } from '@/components/support/member-support-panel'
 import { ModerateProfileButton } from './moderate-profile-button'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EditableIdentity } from './editable-identity'
@@ -323,6 +325,9 @@ export default async function ProfilePage({
           </div>
         </div>
       </div>
+
+      {/* ── Staff-only: this member's support history, wired into the console ── */}
+      {!isOwner && atLeastRole(myRole, 'host') && <MemberSupportPanel profileId={profileId} />}
 
       {/* ── Composer + timeline (single column; the global rail is on the right) ── */}
       {myProfileId && (

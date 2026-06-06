@@ -32,11 +32,17 @@ via short-lived **signed URLs** minted server-side (reports can carry on-screen 
 
 Nav: `admin-support` → Studio section (host+; janitor-retunable in the permission grid).
 
+## Shipped since v1
+- ✅ **Reply notifications** — a staff public reply notifies the reporter (`support_reply`
+  → `/support/[id]` in the notification bell), closing the loop; the reply also moves an
+  open ticket to `waiting`.
+- ✅ **Member-record integration** — a staff-only **Support history** panel on
+  `/people/[handle]` (host+) lists the member's tickets, linked into the console
+  (`components/support/member-support-panel.tsx`, `listTicketsForProfile`).
+
 ## Roadmap (not yet built)
 - One-click DOM screenshot (html2canvas) alongside paste/attach.
-- Deeper CRM: a Support panel on the connection/profile detail (ticket count is already
-  on the console reporter card via `ticketCountForProfile`).
 - A Vera write-tool to open a ticket conversationally (today she points at the richer
   dialog, which captures the screenshot + context).
-- Notify on staff reply; SLA timers; tags/labels for richer cataloging.
+- SLA timers; tags/labels for richer cataloging; email (not just in-app) on reply.
 - Fold the demand signal into the living-docs loop (recurring bug subjects → doc gaps).

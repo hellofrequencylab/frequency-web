@@ -17,6 +17,7 @@ const TYPE_ICON: Record<string, string> = {
   lifecycle_day7:  '🎉',
   friend_request:  '👤',
   friend_accepted: '🤝',
+  support_reply:   '🛟',
 }
 
 function notifHref(n: NotificationItem): string {
@@ -26,6 +27,7 @@ function notifHref(n: NotificationItem): string {
   }
   if (n.reference_type === 'post' && n.reference_id) return `/feed`
   if (n.reference_type === 'dispatch' && n.reference_id) return `/broadcast/${n.reference_id}`
+  if (n.reference_type === 'support_ticket' && n.reference_id) return `/support/${n.reference_id}`
   return '/feed'
 }
 
