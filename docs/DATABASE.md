@@ -49,13 +49,20 @@ these tables mean.
 `season_trophies`, `seasons`, `crew_tasks`, `crew_completions`, `gem_config`,
 `gem_transactions`, `zap_config`, `zap_transactions`, `store_items`, `store_redemptions`
 
-> **`quest_chains` / `quest_steps` / `quest_progress`** are the gamified seasonal
-> Journeys engine (renamed arc_*→journey_*→quest_* over time; the live tables are
-> `quest_*`). `quest_chains.domain_id → domains` tags each Journey to a Pillar.
-> **Join-gated (ADR-140):** a `quest_progress` row means the member *started* the
-> Journey; `advanceQuests` only advances started chains (no auto-enroll). Browse +
-> Start at `/crew/quests`. Distinct from `journey_plans` (the open, free, member-built
-> practice-combo library at `/journeys`).
+> **`quests`** (ADR-152, Phase B1) is the **Seasonal Quest** container — the canonical
+> hierarchy is **The Quest → Seasonal Quest → Journeys → Practices**. A `quests` row is a
+> season's official, free collection of Journeys (`season` = `season_number`, null = evergreen).
+> Official Journeys nest under it via **`journey_plans.quest_id`** (+ `official` flag); a NULL
+> `quest_id` is a member-built Journey in the open library. Public read; service-role writes. The
+> B1 migration seeds the active season's Quest + one official Journey per Pillar (≤3 of that
+> Pillar's practices each). **Everything is free** (ADR-150/152).
+>
+> **`quest_chains` / `quest_steps` / `quest_progress`** are the **legacy** gamified seasonal
+> engine (renamed arc_*→journey_*→quest_* over time). `quest_chains.domain_id → domains`.
+> **Join-gated (ADR-140):** a `quest_progress` row means the member *started* it; `advanceQuests`
+> only advances started chains. ⏳ **Being retired (ADR-152 Phase B):** these action-chains
+> (attend/post/refer) give way to the `quests`/`journey_plans` nesting above; their mechanic lives
+> on in `season_challenges`/achievements. Still backing `/crew/quests` until Phase B2/B3.
 
 > **`seasons`** gives seasons a first-class identity (`season_number`, `name`,
 > `theme`, `starts_at`/`ends_at`, `status`; one `active` at a time). `reset_season()`

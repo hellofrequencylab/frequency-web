@@ -17,11 +17,11 @@ The current build order for the progress / streak / disclosure arc and the pract
 follow-ups it surfaced. Full detail lives in the lettered sections below — this is the ranking.
 
 **P0 — decided ✅ (2026-06-06, ADR-152): The Quest → Seasonal Quest → Journeys → Practices (all free).**
-1. **S1 · Quest/Journey hierarchy** — Phase A *shipped* (paywall removed everywhere; "Quests"
-   restored as the distinct seasonal container — ADR-152 supersedes the ADR-150 "one concept"
-   call). Phase B *(§S, M)* — the data nesting: a `quests` container table, `journey_plans` gains
-   `quest_id` (nullable) + `official`, seasonal Pillar content becomes official **Journeys**
-   (practice-based) under the season's Quest, legacy action-chains retire to `season_challenges`.
+1. **S1 · Quest/Journey hierarchy** — Phase A *shipped* (paywall gone; "Quests" restored). **B1
+   *shipped*** — `quests` table + `journey_plans.quest_id`/`official` + seed (migration
+   `20260608010000`, *needs applying to prod*). Remaining: **B2** (surfaces — `/crew/quests` shows
+   the Seasonal Quest → its Journeys; Quest detail; adoption) · **B3** (retire `quest_*` +
+   `advanceQuests`; GLOSSARY/THE-QUEST/DATABASE/ECONOMY terminology pass). *(§S)*
 
 **P1 — finish the shipped arc (ready, high value, low risk)**
 2. **Stage-driven disclosure → crew dashboard + surfaces** *(§F, ADR-146)* — the spine is
@@ -374,13 +374,12 @@ inline path (wizard is an optional guided alt); RLS isolation between `journey_p
   **The Quest → Seasonal Quest → Journeys → Practices**, all **free**. (ADR-152 supersedes
   ADR-150's brief "one concept" detour — Quests and Journeys are *distinct nested levels*.) Phase A
   removed the paywall everywhere and restored **"Quests"** as the seasonal container surface
-  (`/crew/quests`). **Phase B (remaining, M):** the data nesting — add a `quests` seasonal-container
-  table (or repurpose `quest_chains`); `journey_plans` gains `quest_id` (nullable = member-built
-  library) + `official`; the seeded seasonal Pillar content becomes official **Journeys**
-  (practice-based) grouped under the season's Quest; legacy action-chain steps (attend/post/refer)
-  retire to `season_challenges`/achievements. Then GLOSSARY/THE-QUEST/DATABASE/ECONOMY get their
-  terminology pass. *(Naming is now stable — "Quest" = game + seasonal containers; "Journey" = a
-  practice path. No more renames.)*
+  (`/crew/quests`). **B1 ✅ shipped** — `quests` table + `journey_plans.quest_id`/`official` + a
+  seed (active season's Quest + one official Journey per Pillar, ≤3 practices each); migration
+  `20260608010000` **(needs applying to prod)**, no surface change yet. **Remaining:**
+  **B2** — surfaces: `/crew/quests` lists the Seasonal Quest → its Journeys; Quest detail; adoption.
+  **B3** — retire `quest_*` + `advanceQuests` + the old `getQuestsData`/`startQuest`; then the
+  GLOSSARY/THE-QUEST/DATABASE/ECONOMY terminology pass. *(Naming stable — no more renames.)*
 - [ ] **S2 · Streak box: half-height when collapsed** — tighten `PracticePrompt` collapsed state. (S)
 - [ ] **S3 · Broadcast color → light blue** — introduce a `broadcast` blue token (complements the
   site orange) and apply to dispatch/broadcast surfaces (currently the teal `signal`). No hardcoded
