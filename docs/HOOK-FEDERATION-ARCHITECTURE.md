@@ -2,7 +2,8 @@
 
 > **Status:** 🟡 Living design doc — **update as the model evolves.** The *decision* is
 > [ADR-158](DECISIONS.md) (extends [ADR-059](DECISIONS.md)); the product framing is
-> [HOOK-INTEGRATION.md](HOOK-INTEGRATION.md). The **canonical cross-product contract** lives in the
+> [HOOK-INTEGRATION.md](HOOK-INTEGRATION.md); the governance/compliance layer is
+> [HOOK-MULTI-ORG-GOVERNANCE.md](HOOK-MULTI-ORG-GOVERNANCE.md). The **canonical cross-product contract** lives in the
 > Hook repo (`hook/docs/FREQUENCY-INTEGRATION.md`) — this is the **Frequency-side** view.
 >
 > Tags: **[built]** = exists in Frequency today · **[designed]** = ADR-158, not built ·
