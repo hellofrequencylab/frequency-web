@@ -248,7 +248,12 @@ the graduated feed **Journey board** showcases them. Add an ADR per cluster on b
   complete, then becomes the `JourneyBoard` (streak + today's move + resource center).
   Retired `FeedWelcome` + the redundant sidebar Getting-started checklist.
 - [x] **JourneyBoard pillar-balance** — a calm 4-pillar coverage read from the
-  member's adopted practices. (Active Journey plan + suggested plan land with Q1 P1.)
+  member's adopted practices.
+- [x] **Active Journey on the board + Dashboard tab (2026-06-06, ADR-144)** — the adopted
+  Journey's current step shows on the home `JourneyBoard`; full cadence-based progress
+  (derived from the practice log) + a gamification panel + circle companions live on
+  `/crew/journey`. (`lib/journey-plans.ts:getActiveJourneyProgress`; see
+  ECONOMY-AND-JOURNEYS.) Suggested-plan still rides with Q1 P1.
 
 ### ✅ Naming decided (ADR-087) — Journeys = open library; engine → Quests
 The member-facing **"Journeys"** is the open, free, user-built library. The gamified

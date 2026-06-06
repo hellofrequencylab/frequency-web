@@ -298,6 +298,13 @@ admin equivalent of Dashboard is `<AdminPage>` (a rail-less sibling under
 cards), `StatCard` (KPI tile with delta/drill-down), `SectionHeader`, `EmptyState`,
 `ModuleCard`/`SidebarCard` (rail/admin panels).
 
+**Form + control primitives (2026-06-06, ADR-143):** `Input`/`Textarea`/`Label` (+
+`fieldClasses`/`labelClasses` for a native `<select>`), `Button` (variant × size),
+`Dialog` (the shared backdrop · ESC · scroll-lock overlay shell), and `cn()`
+(`lib/utils`). Type: use the named scale incl. `text-2xs` (11px) / `text-3xs` (10px)
+— **never** `text-[Npx]`; colors are DAWN tokens only (**no** raw palette like
+`indigo-600`).
+
 ### 8.2 The chrome map — `lib/layout/page-chrome.ts`
 
 Which rail frames a page is **one pure function**, `railFor(pathname)`, returning:

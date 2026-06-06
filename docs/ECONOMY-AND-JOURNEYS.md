@@ -149,3 +149,27 @@ you can only *do* as Crew.
 6. ✅ **Endorsement layer** — rank shown on public profile + people cards + post flair is
    Crew-gated via `isEndorsed` (ADR-141); free profiles show earned stats but no rank.
    Cosmetics/titles/journey badges ride the same gate when they render.
+
+## Active-Journey progress (2026-06-06, ADR-144)
+
+Adopting a Journey adds its practices to the daily log (no separate tracker), and the
+member's **live progress is derived from `practice_logs`** — there is **no new schema**.
+`getActiveJourneyProgress()` (`lib/journey-plans.ts`) loads the member's active adoption
+(`journey_plan_adoptions` + `journey_plan_items`), then for each step computes
+**done-this-week** by comparing the logs in the current week against the step's cadence
+target — `weeklyTargetFromCadence()` maps a daily cadence to "most days" and a weekly one
+to once. A step is **on track** once it hits its weekly target; the first not-yet-on-track
+step is the **current step**. `circleCompanions()` counts how many people in the member's
+circle have adopted the same Journey ("N in your circle doing this too").
+
+Surfaces:
+
+- **`/crew/journey`** — the *Your Journey* Dashboard tab: the ordered, domain-grouped
+  checklist, the highlighted next step with a quick **Log** button, and a rewards panel
+  (season zaps/rank, streak, gems) reinforcing that logging a Journey practice is the one
+  move that advances the Journey *and* earns the rewards.
+- **Home feed** — the `JourneyBoard` shows the **current-step line** so the next thing to do
+  greets the member on arrival.
+
+This realizes **BACKLOG §Q** ("active Journey plan on the board"). Member-facing how-to
+lives in `content/help/the-game/your-journey.md`.
