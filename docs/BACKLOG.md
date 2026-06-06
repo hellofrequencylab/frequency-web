@@ -96,6 +96,12 @@ follow-ups it surfaced. Full detail lives in the lettered sections below — thi
   findings ledger, autonomy tiers (gated on D). (M)
 
 ## F. Engagement / gamification / practices / programs
+- [ ] **Quest pipeline + sponsor-backed rewards (ADR-156a / ADR-155).** A member's contacts are
+  their personal CRM **and** their Quest *sales pipeline*: invites → signups → conversions earn
+  escalating rewards, ultimately **sponsor-backed real-life** ones ("the more you give the
+  community, the more you're rewarded"). Reward the real outcome (a confirmed signup), idempotent +
+  consent-gated (ADR-099/154); never reward a row. Surfaces a pipeline view over `network_contacts`
+  status + the referral plumbing. Build after Capture's mobile centre-nav lands. (L)
 - [ ] **Doomscroll mode — the named release valve (ADR-155).** A member-toggled mode that strips
   the entire activation prompt layer (chores pill, Vera coach full-stops, task nudges) and shows
   **only content**. One preference flag (`profiles.meta`) the app shell reads to suppress the prompt

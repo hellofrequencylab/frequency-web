@@ -288,6 +288,20 @@ Frequency — a community-management tool where every member is a node.
    - Both read the posts substrate — no new store.
 4. 📋 Richer kinds (video · cinema · live) into the same picker as demand warrants.
 
+**Rework (ADR-156a) — ✅ shipped + 📋 next.**
+- ✅ **One multi-mode box** (`capture-box.tsx`), Substack-style: body swaps by mode, a **bottom rail**
+  of prompts (Post · Note · Photo · **Contact**), send button always says **"Capture"**. The picker →
+  composer two-step is gone; `Composer` only gained `submitLabel` (it's shared with circle/channel/
+  profile composers, so the rail lives in `CaptureBox`).
+- ✅ **Contact mode is inline** (`contact-capture-form.tsx`) — manual entry → personal CRM via
+  `createProfile` (§5.2); card *scan* one tap away at `/connections/new`.
+- 📋 **Mobile centre-nav Capture button** — the primary mobile action; opens the box **contact-
+  forward** (QR check-in · photo of card · photo of them · note). Touch `MobileTabBar` in
+  `app-shell.tsx` (insert a raised centre slot).
+- 📋 **Quest pipeline + sponsor-backed rewards** — contacts billed as a personal CRM **and** the
+  member's Quest sales pipeline; invites/conversions earn escalating, ultimately sponsor-backed
+  real-life rewards (ADR-155 loop, ADR-156a). Spec → BACKLOG §F.
+
 **Open questions (owner):** does "Note" share the post table or get its own journal store · how
 loud is the Capture button vs. the feed composer · which captures are public-by-default (moments)
 vs. private-by-default (contacts — stays private per ADR-154).
