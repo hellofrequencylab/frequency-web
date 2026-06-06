@@ -4856,3 +4856,52 @@ update automatically; the console is unaffected (it buckets the flattened links 
 admin live?" answer mechanical: light + page-scoped → sidebar; multi-surface domain management →
 its suite. Follow-ons: trim the sidebar console to page-globals + suite back-links; align the rail
 labels to the suite names if desired. Operator guide → Notion.
+
+---
+
+## ADR-154: The Network rework — member-facing personal contacts + the event-invite capture loop
+
+**Context.** ADR-098 built the Profile Creator (`network_contacts`) as a host/staff steward tool,
+and the member directory (`/people`, "Directory") lives separately. The product we actually want is
+*every member making and keeping real-life contacts* — and growing that library by **inviting people
+to events**. The data architecture for this already exists and is sound: three entities with a clean
+privacy boundary — `profiles` (public members), `network_contacts` (owner-scoped, private-by-default
+personal CRM), `contacts` (the consent-gated marketing DB) — plus a live AI harvest (scan a card /
+poster / person → Vera completes the card) and a referral primitive (`/q/<slug>`, ADR-091/099). What's
+missing is (a) **positioning** — it's gated to hosts, not members — and (b) **the capture loop**: RSVP
+today is members-only (`toggleRSVP`), so there is no way for a member to invite a non-member to an
+event and keep them as a contact.
+
+**Decision.**
+1. **Rename `Directory → Network`** and merge `/people` + `/connections` into **one member-tier rail
+   item** with two faces: **Directory** (browse members + people you've met) and **Contacts** (your
+   personal CRM = `network_contacts`). Personal contacts become a **member** feature.
+2. **Democratize personal contacts to member tier.** The access gate in `lib/connections/access.ts`
+   moves host+ → member; the data model is untouched (`network_contacts` is already owner-scoped by
+   RLS). The **cross-steward `network_local` sharing** (ADR-132) **stays host+** — members get their
+   *own* contacts, never a window into others'.
+3. **Build the event-invite capture loop.** A member's attributed QR (`/q/<slug>`, owner + event
+   stamped) opens a **public, non-member event RSVP contact form** that, on submit, writes **one person
+   to three places, consent observed**: the event's **guest list** (new `event_guests`), the inviter's
+   **personal CRM** (`network_contacts`, `source='event'`), and the **marketing DB** (`contacts`,
+   `consent_state='unknown'` — added, never mailed). Reuses `crm-sync.ts`, the consent ladder, and the
+   `event_guest` acquisition hint already scaffolded in `lib/qr/acquisition.ts`.
+4. **Gamification:** reward the *real outcome*, idempotent + daily-capped — capture (small ⚡), invitee
+   RSVPs (⚡), attends (⚡⚡), joins (`invite_accepted` ⚡⚡+💎, already paid), plus a **"Connector"**
+   achievement at 10/25/100 confirmed contacts. Adding a row is never a payout (anti-farm doctrine).
+
+**The privacy invariant (non-negotiable).** A captured person stays **personal**. They enter the
+marketing DB only as `consent_state='unknown'` and become mailable (`subscribed`) **only when they
+confirm an email or sign up for something at Frequency**. Promotion `network_contacts → contacts` is
+the deliberate, consent-gated act (ADR-099) — never silent.
+
+**Alternatives.** Keep contacts host-gated (rejected — the product offering is *for members*). One
+table for members+leads+marketing (rejected — ADR-098's reason: public read leaks private captures;
+no consent axis). Auto-subscribe event RSVPs to marketing (rejected — violates the bleed boundary and
+CAN-SPAM). Members RSVP only, no non-member capture (rejected — that *is* the loop).
+
+**Consequences.** Most of this is IA + an access-gate move over a built, owner-scoped model — low risk.
+The genuinely new build is the public RSVP capture surface + `event_guests` + the triple-write; it
+shares the deferred-no-auth pattern (`/onboarding/beta`), the referral plumbing, and the consent ladder,
+so it's additive. Spec: [NETWORK-CRM.md](NETWORK-CRM.md) § *The Network rework*; build items:
+[ONBOARDING-BUILD-LIST.md](ONBOARDING-BUILD-LIST.md) §5. Operator/usage guidance → Notion.

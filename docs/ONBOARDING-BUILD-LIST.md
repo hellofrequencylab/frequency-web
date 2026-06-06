@@ -33,6 +33,8 @@ Two levers, in order: **(0) flip the switches that let real testers in today**, 
 | **2.3** | Memory batch summarization cron | Vera stays fresh | M | 📋 |
 | **2.4** | Warm up seeded demo content (§S9) + demo box → action links (§S4) | First scroll feels alive | M | 📋 |
 | **3.x** | Proactive Vera (encouragement/accountability, host copilot) | Day-2 retention | M–L | 🔴 gated |
+| **5.1–5.2** | Rename Directory → **Network** + member-tier personal contacts + quick-add capture | Real-life contacts, kept | S–M | 📋 |
+| **5.3–5.5** | Event-invite capture loop (QR → RSVP → triple-write) + gamification | The growth loop | M–L | 📋 |
 | **4.x** | Cleanup + doc hygiene | Lean tree | S | ⏳ |
 
 Legend: ✅ done · ⏳ partially built / in flight · 📋 specced, not built · 🔴 blocked.
@@ -157,6 +159,29 @@ harness** exists (BACKLOG §D). Build the harness first; then:
 - ⏳ **Consolidate overlapping doc clusters** — onboarding/beta (4 docs), AI (5), engagement (4).
 
 ---
+
+## Section 5 — Network (consolidate Contacts / Directory) — 📋 (ADR-154)
+
+The "make real-life contacts and keep them" product. Full design:
+[`NETWORK-CRM.md`](NETWORK-CRM.md) § *The Network rework*. The 3-entity data model + AI
+harvest + consent boundary are **already built**; this is IA, an access-tier change, and
+**one new public capture surface**. Ranked:
+
+| # | Item | Why | Reuse | Size |
+|---|---|---|---|---|
+| 5.1 | **Rename `Directory → Network`; merge `/people` + `/connections` into one member-tier tab** (Directory + Contacts faces) | Makes personal contacts a *member* product, not a host tool | `lib/nav-areas.ts`, `lib/connections/access.ts` (gate move only — RLS already owner-scoped) | S–M |
+| 5.2 | **Member quick-add capture** (`+` → scan card/poster/person, manual + Vera completes the card) | The headline promise; **already built**, just host-gated today | `app/(main)/connections/new/`, `lib/ai/connections-ai.ts` | S |
+| 5.3 | **Event-invite capture loop** — public RSVP contact form via an attributed QR → triple-write (event guest list · owner's personal CRM · marketing DB, consent observed) | The growth loop the product is built around; **doesn't exist yet** (RSVP is members-only) | `/q/<slug>` referral (ADR-091/099), `crm-sync.ts`, `event_guest` channel hint | M–L |
+| 5.4 | **`event_guests`** table — let a non-member RSVP to one event without an account | Backs 5.3 | new migration (additive) | S |
+| 5.5 | **Gamification** — zaps for capture/RSVP/attend/join + a "Connector" achievement, reward real outcomes not rows | Closes the loop into the season ladder | `lib/zaps.ts`, `lib/engagement/currency.ts`, achievements | S–M |
+
+**Privacy invariant (non-negotiable):** captured people stay **personal**; they enter
+marketing as `consent_state='unknown'` (added, never mailed) and become mailable only when
+**they** confirm an email or sign up. Promotion is the deliberate, consent-gated act (ADR-099).
+
+**Sequencing note:** 5.1 + 5.2 are a small, self-contained PR (IA + ungate) that ships the
+member product immediately. 5.3–5.5 are the bigger growth-loop build — do after the §1
+activation push, since they share the QR/referral + consent plumbing.
 
 ## Reuse map — what already exists (so you never rebuild it)
 
