@@ -373,11 +373,14 @@ group of modules; `/admin/*` retires once empty.
 > category above its full-dashboard links (the `IN_PLACE` map now supports additive
 > modules with no `href`). ✅ **Roles** too (`RolesModule` reuses `RoleManager` /
 > `StaffRoleManager` / `PermissionGrid` in *People* alongside Members; `IN_PLACE` now
-> takes an `hrefs[]` so a category can hold two modules). In-place ports so far:
-> **Moderation · Broadcasts · Gamification · Members · Insights · Roles**. **Next:** QR
-> Studio, Demo, the Spaces entity-managers; **Vera** needs its config *form extracted
-> into a component first* (the page inlines it + `saveVera` rewrites the whole config,
-> so a partial port would wipe it) — deferred. Plus the `@admin` slot + QR/Vera tuners.
+> takes an `hrefs[]` so a category can hold two modules). ✅ **QR generator** too
+> (`QrGeneratorModule` — a self-contained Reach tool: any URL/text → styled QR, exported
+> as **SVG · PNG 256–2048px · JPG · copy**, rendered client-side via the pure
+> `renderStyledQrSvg`; the full Studio stays linked). In-place ports so far: **Moderation ·
+> Broadcasts · Gamification · Members · Insights · Roles · QR generator**. **Next:** Demo,
+> the Spaces entity-managers; **Vera** needs its config *form extracted into a component
+> first* (the page inlines it + `saveVera` rewrites the whole config) — deferred. Plus the
+> `@admin` slot + the Vera-tone inline tuner.
 
 1. **Engine.** `AdminModule` registry + `modulesFor`/`showsAdminPanel`; `AdminModuleCard`
    over `SidebarCard`; add `hub`/`nexus` loaders + `loadCapabilitiesForScope`; the `@admin`
