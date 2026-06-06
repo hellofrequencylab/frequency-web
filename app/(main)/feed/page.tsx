@@ -13,6 +13,7 @@ import { JourneyBoard } from '@/components/feed/journey-board'
 import { VeraLightbox } from '@/components/onboarding/vera-lightbox'
 import { buildVeraOpening, buildWelcomeSlides } from '@/lib/onboarding/vera-welcome'
 import { getPracticesToLogToday } from '@/lib/practices'
+import { getActiveJourneyProgress } from '@/lib/journey-plans'
 import { getOnboardingStatus } from '@/lib/onboarding/status'
 import { getMemberPillarBalance } from '@/lib/pillars'
 
@@ -119,6 +120,20 @@ export default async function FeedPage({
     ? await getMemberPillarBalance(myProfileId)
     : undefined
 
+  // Top active journey → a slim "current step" line on the graduated board.
+  const journeyProgress = myProfileId && onboarding?.complete
+    ? await getActiveJourneyProgress(myProfileId)
+    : []
+  const activeJourney = journeyProgress[0]
+    ? {
+        title: journeyProgress[0].plan.title,
+        href: '/crew/journey',
+        done: journeyProgress[0].done,
+        total: journeyProgress[0].total,
+        nextStepTitle: journeyProgress[0].nextItem?.practice?.title ?? null,
+      }
+    : undefined
+
   // Warm, time-aware greeting headline (the feed is "home", so it greets you).
   // Greet in the community's timezone (the beta is North County San Diego) so the
   // server's UTC clock doesn't roll the date + greeting forward late at night.
@@ -149,7 +164,7 @@ export default async function FeedPage({
       {onboarding && !onboarding.complete && <FeedOnboardingGuide status={onboarding} />}
 
       {onboarding?.complete
-        ? <JourneyBoard practices={practicesToLog} streak={streak} pillarBalance={pillarBalance} />
+        ? <JourneyBoard practices={practicesToLog} streak={streak} pillarBalance={pillarBalance} activeJourney={activeJourney} />
         : <PracticePrompt practices={practicesToLog} streak={streak} />}
 
       {/* Composer */}
