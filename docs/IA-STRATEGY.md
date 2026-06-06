@@ -9,7 +9,43 @@
 
 ---
 
-## ★ Navigation redesign (2026-06-05) — CANONICAL
+## ★ Navigation rebuild (2026-06-06) — CANONICAL · IN BUILD
+
+> Owner-locked teardown + rebuild from the product vision: **home base → get your
+> assignment → do it in real life → track it in the Quest.** Supersedes the
+> 2026-06-05 spec below where they differ. Building phase by phase, primarily in
+> `lib/nav-areas.ts` + `app/(main)/admin/sections.ts`.
+
+**The spine.** Every surface is one of four layers — **Awareness** (Home) · **Content**
+(Practice) · **Community** · **The Game** (The Quest) — plus a fifth role-gated
+**Operations** layer (Manage). The four life domains — **Mind · Body · Spirit ·
+Expression** — are the cross-cutting taxonomy that tags content and channels.
+
+**The member rail — five worlds:**
+```
+⌂ Home        Feed · Around You                      (awareness; pinned headerless on top)
+◇ Practice    Journeys · Practices · Library         (the North-Star engine — its own world)
+◇ Community   Circles · Channels · Events · Directory
+◆ The Quest   Dashboard · Store                      (paid = game + shop; free previews)
+⚙ Manage      Steward · Structure · Studio · Platform  (axis-gated, telescoped)
+```
+- Messages · Notifications · Search → **header**. Friends · My Code · Help · Settings → **account menu**.
+- **Around You** = renamed *Broadcast* (the local-happenings board). **Store** = renamed *Vault*.
+- **Programs** left the member rail → its leader-training materials live under **Steward › Crew
+  tasks**, marked **"Leader training."**
+- Hubs / Nexuses are **contextual only** (inside a Circle), never rail.
+
+**Build phases:**
+| Phase | Move | Status |
+|---|---|---|
+| 0–1 | Member rail → five worlds; renames; drop Messages/Programs from rail; Programs → Leader training | ✅ shipping |
+| 2 | Manage → Steward / Structure / Studio / Platform (4 axis-gated launchpads); delete Outreach stub | ⏳ next |
+| 3 | Demote Hubs/Nexuses to contextual; "Today" launchpad; mobile avatar-menu Manage; dedup per-entity admin into the page dock | ⏳ |
+| 4 | Persona surfaces (Business / Practitioner / Partner); milestone gating | 🔵 later |
+
+---
+
+## Navigation redesign (2026-06-05) — superseded (see 2026-06-06 above)
 
 > Owner-reviewed full redesign (4-agent study of code + docs). **Supersedes the
 > grouped-rail spec in §1 below** (kept for history) and folds in ADR-089. Locked via

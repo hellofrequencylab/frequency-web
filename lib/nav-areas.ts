@@ -41,33 +41,35 @@ export type NavArea = {
   staffDomain?: StaffDomain
 }
 
-// Order here IS the render order down the rail (IA refresh — screenshot review,
-// supersedes the 5-world split in ADR-095's nav notes). THREE worlds anchored by
-// Feed — Community · The Quest — then Manage, split into Steward (community
-// stewardship, host+) and Platform (operator, janitor), each telescoped at its
-// floor. Friends moved to a top-right header icon; personal utilities (My Code,
-// Help, Settings) live in the account menu; Outreach folds into the admin Overview.
+// Order here IS the render order down the rail. FIVE worlds (IA plan, 2026-06-06):
+//   Home (Feed + Around You, pinned headerless at the very top) · Practice (the
+//   North-Star engine, lifted out of The Quest) · Community · The Quest (game +
+//   shop) · then Manage — Steward (host+) and Platform (janitor), each telescoped.
+// Messages/Notifications/Search live in the header; Friends + personal utilities
+// (My Code, Help, Settings) in the account menu. Step 2 splits Manage further into
+// Steward / Structure / Studio / Platform. Programs left the rail — its leader-
+// training materials now live under Steward › Crew tasks (see admin/sections.ts).
 export const NAV_AREAS: readonly NavArea[] = [
-  // ── Home anchor → pinned above the section groups ────────────────────────────
-  { key: 'feed',      href: '/feed',      label: 'Feed',      section: null,        defaultAccess: 'member'  },
+  // ── Home base → the two awareness surfaces, pinned headerless at the top ──────
+  { key: 'feed',      href: '/feed',      label: 'Feed',       section: null, defaultAccess: 'member' },
+  { key: 'broadcast', href: '/broadcast', label: 'Around You', section: null, defaultAccess: 'member' },
 
-  // ── Community → belong & gather. Broadcast leads as the local-happenings board. ─
-  { key: 'broadcast', href: '/broadcast', label: 'Broadcast', section: 'Community', defaultAccess: 'member'  },
-  { key: 'channels',  href: '/channels',  label: 'Channels',  section: 'Community', defaultAccess: 'visitor' },
-  { key: 'circles',   href: '/circles',   label: 'Circles',   section: 'Community', defaultAccess: 'visitor' },
-  { key: 'events',    href: '/events',    label: 'Events',    section: 'Community', defaultAccess: 'member'  },
-  { key: 'messages',  href: '/messages',  label: 'Messages',  section: 'Community', defaultAccess: 'member'  },
-  { key: 'people',    href: '/people',    label: 'Directory', section: 'Community', defaultAccess: 'member'  },
+  // ── Practice → the North-Star engine, its own world so the "what do I do"
+  //    content reads separately from the game it feeds. Open to everyone. ────────
+  { key: 'journeys',  href: '/journeys',  label: 'Journeys',  section: 'Practice', defaultAccess: 'member' },
+  { key: 'practices', href: '/practices', label: 'Practices', section: 'Practice', defaultAccess: 'member' },
+  { key: 'library',   href: '/library',   label: 'Library',   section: 'Practice', defaultAccess: 'member' },
 
-  // ── The Quest → the game + practice. One integrated world: the Dashboard, the
-  //    North-Star practice loop (Practices/Journeys/Programs), and the Store.
-  //    Crew-gated items preview for non-crew → full at crew/paid. ────────────────
-  { key: 'crew',      href: '/crew',       label: 'Dashboard', section: 'The Quest', defaultAccess: 'crew', previewBelowAccess: true },
-  { key: 'practices', href: '/practices',  label: 'Practices', section: 'The Quest', defaultAccess: 'member'  },
-  { key: 'journeys',  href: '/journeys',   label: 'Journeys',  section: 'The Quest', defaultAccess: 'member'  },
-  { key: 'programs',  href: '/programs',   label: 'Programs',  section: 'The Quest', defaultAccess: 'member'  },
-  { key: 'library',   href: '/library',    label: 'Library',   section: 'The Quest', defaultAccess: 'member'  },
-  { key: 'store',     href: '/crew/store', label: 'Vault Store', section: 'The Quest', defaultAccess: 'crew', previewBelowAccess: true },
+  // ── Community → belong & gather. Hubs/Nexuses are contextual, never rail. ─────
+  { key: 'circles',  href: '/circles',  label: 'Circles',   section: 'Community', defaultAccess: 'visitor' },
+  { key: 'channels', href: '/channels', label: 'Channels',  section: 'Community', defaultAccess: 'visitor' },
+  { key: 'events',   href: '/events',   label: 'Events',    section: 'Community', defaultAccess: 'member'  },
+  { key: 'people',   href: '/people',   label: 'Directory', section: 'Community', defaultAccess: 'member'  },
+
+  // ── The Quest → the game + shop. Practice content now lives in its own world;
+  //    the Dashboard and Store stay here. Crew-gated → preview for non-crew. ─────
+  { key: 'crew',  href: '/crew',       label: 'Dashboard', section: 'The Quest', defaultAccess: 'crew', previewBelowAccess: true },
+  { key: 'store', href: '/crew/store', label: 'Store',     section: 'The Quest', defaultAccess: 'crew', previewBelowAccess: true },
 
   // ── Manage → split by the axis that grants it (telescoped at each floor) ──────
   // Steward — community stewardship + the business cockpit (trust host+ / staff axis).
