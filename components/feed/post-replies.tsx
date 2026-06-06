@@ -7,6 +7,7 @@ import { Loader2, Send } from 'lucide-react'
 import { createReply, fetchReplies } from '@/app/(main)/feed/actions'
 import { getInitials, relativeTime } from '@/lib/utils'
 import { ProfileFlair } from '@/components/profile-flair'
+import { isEndorsed } from '@/lib/season-ranks'
 import { PostBody } from './post-body'
 
 type ReplyAuthor = {
@@ -113,6 +114,7 @@ export function PostReplies({
                       <ProfileFlair
                         rank={r.author.current_season_rank}
                         streak={r.author.current_streak}
+                        endorsed={isEndorsed(r.author.community_role)}
                         compact
                       />
                     )}

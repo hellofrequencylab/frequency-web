@@ -24,6 +24,7 @@ import { DetailTemplate } from '@/components/templates/detail-template'
 import { ModuleCard } from '@/components/modules/module-card'
 import { getInitials, isoDaysAgo } from '@/lib/utils'
 import { ProfileFlair } from '@/components/profile-flair'
+import { isEndorsed } from '@/lib/season-ranks'
 import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
 import { ClaimCircle } from '@/components/circles/claim-circle'
 import { StaffEditButton } from '@/components/ui/staff-edit-button'
@@ -552,6 +553,7 @@ export default async function CirclePage({
                                   <ProfileFlair
                                     rank={profile.current_season_rank}
                                     streak={profile.current_streak}
+                                    endorsed={isEndorsed(profile.community_role)}
                                     compact
                                   />
                                 </div>
