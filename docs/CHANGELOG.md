@@ -12,10 +12,10 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Changed
 
-- **Journeys are now free for everyone**: Quests and Journeys are one thing now — a
-  **Journey** is simply a set of practices you move through. Every Journey is free to start,
-  adopt, build, remix and share, including the official seasonal tracks. (The Quest stays the
-  game; only the Store and your public rank badge are still Crew perks.)
+- **Quests and Journeys are free for everyone**: a **Journey** is a set of practices you move
+  through; a **Quest** is a season's official collection of Journeys. Both are free now — start
+  a seasonal Quest, and build, adopt, remix and share your own Journeys at no cost. (The Quest
+  is still the game; only the Store and your public rank badge remain Crew perks.)
 
 ### Added
 
