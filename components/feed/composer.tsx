@@ -52,6 +52,7 @@ export function Composer({
   canAnnounce = false,
   kind = 'post',
   autoImage = false,
+  submitLabel,
 }: {
   scopeId: string
   visibility?: 'public' | 'region' | 'cluster' | 'group'
@@ -61,6 +62,8 @@ export function Composer({
   kind?: 'post' | 'note'
   /** Open the image picker on mount (the Capture "Photo" mode). */
   autoImage?: boolean
+  /** Override the send-button label (Capture box uses "Capture"). */
+  submitLabel?: string
 }) {
   const [body, setBody] = useState('')
   const [isAnnouncement, setIsAnnouncement] = useState(false)
@@ -516,7 +519,7 @@ export function Composer({
           >
             {isPending
               ? kind === 'note' ? 'Saving…' : 'Posting…'
-              : isAnnouncement ? 'Announce' : kind === 'note' ? 'Save note' : 'Post'}
+              : isAnnouncement ? 'Announce' : submitLabel ?? (kind === 'note' ? 'Save note' : 'Post')}
           </button>
         </div>
       </div>

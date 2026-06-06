@@ -2,33 +2,24 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { useRouter, usePathname } from 'next/navigation'
-import { Camera, ArrowLeft, X, BookOpen } from 'lucide-react'
-import { Composer } from './composer'
-import { CAPTURE_MODES, type CaptureMode } from './capture-bar'
+import { usePathname } from 'next/navigation'
+import { Camera, X, BookOpen } from 'lucide-react'
+import { CaptureBox } from './capture-box'
 
-// Capture — the app-wide primary action (§6 Phase 2, ADR-155/156). Promotes Capture
-// from the feed-only bar to a loud, always-reachable button: a raised FAB docked
-// bottom-centre (above the mobile tab bar; floating on desktop), clear of the Vera
-// launcher (right) and chores pill (left). Opens the same mode picker in a modal so
-// you can log a moment from anywhere in the app. Posts default to your wall (public).
-
-type Live = Exclude<CaptureMode, 'in_person'>
+// Capture — the app-wide primary action (§6 Phase 2, the rework). A raised FAB
+// (bottom-centre, clear of the Vera launcher + chores pill) opens the Capture box
+// in a modal so you can log a moment — or a contact — from anywhere. On mobile this
+// is the centre-nav button; it opens contact-forward (you're out meeting people).
+// Posts default to your wall.
 
 export function CaptureLauncher({ scopeId }: { scopeId: string }) {
   const [open, setOpen] = useState(false)
-  const [mode, setMode] = useState<Live | null>(null)
-  const router = useRouter()
   const pathname = usePathname()
-  // The feed already carries the inline Capture bar; don't double up there.
+  // The feed already carries the inline Capture box; don't double up there.
   const hidden = pathname === '/feed'
 
-  const close = useCallback(() => {
-    setOpen(false)
-    setMode(null)
-  }, [])
+  const close = useCallback(() => setOpen(false), [])
 
-  // ESC closes; lock body scroll while the modal is up.
   useEffect(() => {
     if (!open) return
     const prev = document.body.style.overflow
@@ -47,8 +38,6 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
 
   return (
     <>
-      {/* The dock: a raised circular Capture button. Bottom-centre so it never
-          collides with Vera (right) or the chores pill (left). */}
       <button
         type="button"
         onClick={() => setOpen(true)}
@@ -69,20 +58,10 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
             role="dialog"
             aria-modal="true"
             aria-label="Capture a moment"
-            className="relative w-full max-w-md overflow-hidden rounded-3xl border border-border bg-surface p-4 shadow-2xl motion-safe:animate-[slideUp_0.25s_ease-out]"
+            className="relative w-full max-w-md rounded-3xl border border-border bg-canvas p-4 shadow-2xl motion-safe:animate-[slideUp_0.25s_ease-out]"
           >
-            <div className="mb-3 flex items-center justify-between px-1">
-              {mode ? (
-                <button
-                  type="button"
-                  onClick={() => setMode(null)}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-subtle transition-colors hover:text-text"
-                >
-                  <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> Capture
-                </button>
-              ) : (
-                <p className="text-sm font-semibold text-text">Capture a moment</p>
-              )}
+            <div className="mb-2 flex items-center justify-between px-1">
+              <p className="text-sm font-semibold text-text">Capture a moment</p>
               <button
                 type="button"
                 onClick={close}
@@ -93,43 +72,15 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
               </button>
             </div>
 
-            {mode ? (
-              <Composer
-                scopeId={scopeId}
-                visibility="public"
-                kind={mode === 'note' ? 'note' : 'post'}
-                autoImage={mode === 'photo'}
-                placeholder={mode === 'note' ? 'Jot a note — what happened, what you noticed…' : 'What’s on your mind?'}
-              />
-            ) : (
-              <>
-              <div className="grid grid-cols-2 gap-2">
-                {CAPTURE_MODES.map((m) => (
-                  <button
-                    key={m.key}
-                    type="button"
-                    onClick={() => (m.href ? (close(), router.push(m.href)) : setMode(m.key as Live))}
-                    className="flex items-center gap-3 rounded-xl border border-border bg-surface px-3 py-2.5 text-left transition-colors hover:border-broadcast hover:bg-broadcast-bg/30"
-                  >
-                    <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-broadcast-bg text-broadcast-strong">
-                      <m.icon className="h-4 w-4" aria-hidden />
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block text-sm font-semibold text-text">{m.label}</span>
-                      <span className="block truncate text-xs text-muted">{m.hint}</span>
-                    </span>
-                  </button>
-                ))}
-              </div>
-              <Link
-                href="/journal"
-                onClick={close}
-                className="mt-2 flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
-              >
-                <BookOpen className="h-3.5 w-3.5" aria-hidden /> View your journal
-              </Link>
-              </>
-            )}
+            <CaptureBox scopeId={scopeId} visibility="public" />
+
+            <Link
+              href="/journal"
+              onClick={close}
+              className="mt-2 flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+            >
+              <BookOpen className="h-3.5 w-3.5" aria-hidden /> View your journal
+            </Link>
           </div>
         </div>
       )}
