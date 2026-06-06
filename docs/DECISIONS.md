@@ -4405,6 +4405,44 @@ advancing (no backfill needed). The zap-rate is a single tunable constant. Endor
 (rank/badges on public profiles) and a DIY journey builder remain the open items in ECONOMY §6–§7.
 
 ---
+
+## ADR-141: The endorsement layer — rank is earned by all, shown only for Crew
+
+**Status:** Accepted — shipped. Resolves the two open §6 questions in
+[ECONOMY-AND-JOURNEYS.md](ECONOMY-AND-JOURNEYS.md) (member rank display, endorsement set).
+Follows [ADR-140](DECISIONS.md).
+
+**Context.** The economy's free→paid story (ECONOMY §1/§4) hinges on a split: everyone
+*earns* points and rank, but only Crew are *endorsed* — i.e. have their rank/status shown on
+**public** surfaces (their profile, people cards, post flair). Until now rank rendered for
+everyone, so the free tier's public profile looked identical to a payer's, blunting the upsell.
+Two product calls were open: (a) for a free member's public profile, show an inert rank or none?
+(b) which rewards are endorsed vs. merely earned?
+
+**Decision.**
+- **Endorsement = Crew+.** One helper, `isEndorsed(role)` (`lib/season-ranks.ts`) =
+  `atLeastRole(role, 'crew')`, gates public rank display on the *displayed* member's role. Inert
+  in Beta (everyone is Crew); it switches on at Launch, like the member zap-rate (ADR-140).
+- **(a) Free member rank → hidden entirely.** No inert chip — a non-Crew public profile simply
+  shows no rank (and no rank-progress bar). The rank reappears on upgrade.
+- **(b) Endorsement set = rank only (for now).** The rank badge is Crew-gated; **streak,
+  achievement count, and gem tier stay visible** for everyone as *earned* stats (streaks are free,
+  ECONOMY §5, and the visible earned totals are themselves upsell proof). Cosmetics, custom titles,
+  and Journey-completion badges are not yet rendered on public surfaces; when they are, they ride
+  the same `isEndorsed` gate.
+- **Self always sees their own.** The viewer's own Vault/dashboard/dock shows their earned rank
+  regardless — the gate is for *others'* view of a profile, not the owner's.
+
+**Surfaces gated:** the public profile rank chip + progress (`/people/[handle]`), and the
+`ProfileFlair` rank badge (circle member lists, post-reply authors). `ProfileFlair` gains an
+`endorsed` prop (defaults true).
+
+**Consequences.** At Launch a free member's public profile reads as "Member" with their earned
+stats but no rank tier — the deliberate gap. Centralizing on `isEndorsed` means the future
+endorsement set (cosmetics/titles/journey badges) is a one-line gate, not a re-litigation. The DIY
+journey builder (§7.5) remains the last open ECONOMY item.
+
+---
 ### Decisions intentionally NOT duplicated here
 
 Already fully covered by the repo docs (no ADR needed): the RLS / admin-client

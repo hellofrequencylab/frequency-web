@@ -57,7 +57,7 @@ chain in the currency of its real-world steps.
   profile totals (and, for zaps, rank) move — so the log and the counters can never
   disagree.
 
-## Closed since the audit (ADR-140)
+## Closed since the audit (ADR-140 / ADR-141)
 
 | Gap | Resolution | Status |
 |---|---|---|
@@ -66,13 +66,14 @@ chain in the currency of its real-world steps.
 | Member **zap-rate multiplier** | `MEMBER_ZAP_RATE` (0.5) in `awardZaps`; gated on `BETA_MEMBERS_GET_CREW` so it's inert in Beta, live at Launch | ✅ done |
 | Store **gems balance** | Spendable = `lifetime_gems − Σ gems_spent`, enforced in `getStoreData` + `redeemItem` | ✅ done |
 | Starter **content** | 2 bonus micro-journeys + 7 system-curated library practices across the Pillars | ✅ seeded |
+| **Endorsement layer** (rank) | `isEndorsed(role)` Crew-gates the public rank on profile + people cards + post flair; free profiles show earned stats but no rank (ADR-141). Inert in Beta. | ✅ done (rank) |
 
 ## Where the program is still lacking (recommended next)
 
 | Gap | Why it matters | Effort |
 |---|---|---|
 | ⏳ Season challenges are all tagged **Season 1** | The engine ignores the season filter so they still fire, but new seasons need fresh challenge sets to feel like "a new climb" | S (seasonal seed) |
-| ⏳ **Endorsement layer** (ECONOMY §4/§7) | Rank badges / titles / journey badges on public profiles + people cards, Crew-gated — the visible half of the upsell | M |
+| ⏳ **Endorsement set — cosmetics/titles/journey badges** | These aren't rendered on public surfaces yet; when they are, gate them on the same `isEndorsed` helper | S (rides existing gate) |
 | ⏳ **DIY journey builder** (ECONOMY §7) | Free members pick practices → a personal journey (the non-premium approximation) | M |
 | ⏳ **Beta zap supply** | Most beta activity is online (gems). Drive zaps with seeded ghost nodes / QR drops + event check-ins so the rank ladder isn't flat | content |
 

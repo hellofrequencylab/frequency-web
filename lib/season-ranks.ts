@@ -10,6 +10,8 @@
 // components/layout/app-shell.tsx) apexes on `plum` instead, so the human
 // ladder stays visually distinct from the play ladders.
 
+import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
+
 export type RankKey =
   | 'stone' | 'clay' | 'gold' | 'olive' | 'jade'
   | 'teal'  | 'slate' | 'indigo' | 'plum'  | 'rose'
@@ -59,6 +61,18 @@ export function seasonRankStyle(rank: SeasonRank): React.CSSProperties {
 
 export function getRankDef(rank: SeasonRank) {
   return SEASON_RANKS.find(r => r.rank === rank) ?? SEASON_RANKS[0]
+}
+
+/**
+ * Whether a member's rank (and other status endorsements — cosmetics, custom
+ * titles, Journey badges as they ship) render on PUBLIC surfaces (their profile,
+ * people cards, post flair). Everyone *earns*; only Crew+ are *endorsed*
+ * (ECONOMY-AND-JOURNEYS §4, ADR-141). A free member's earned rank stays visible
+ * to themselves in their own Vault/dashboard, but not to others. Inert in Beta,
+ * where everyone is Crew. Pass the DISPLAYED profile's role, not the viewer's.
+ */
+export function isEndorsed(role: CommunityRole | string | null | undefined): boolean {
+  return atLeastRole((role ?? null) as CommunityRole | null, 'crew')
 }
 
 /** The rank a given season-zaps total actually earns (highest tier whose

@@ -8,10 +8,14 @@ interface ProfileFlairProps {
   achievementCount?: number | null
   gems?: number | null
   compact?: boolean
+  /** Whether the rank badge is *endorsed* (shown publicly). Crew+ only; free
+   *  members earn a rank but don't display it (ADR-141). Streak/gems/achievements
+   *  are earned stats and show regardless. Defaults true (Beta = everyone Crew). */
+  endorsed?: boolean
 }
 
-export function ProfileFlair({ rank, streak, achievementCount, gems, compact = false }: ProfileFlairProps) {
-  const validRank = rank && rank !== 'ghost' ? (rank as SeasonRank) : null
+export function ProfileFlair({ rank, streak, achievementCount, gems, compact = false, endorsed = true }: ProfileFlairProps) {
+  const validRank = endorsed && rank && rank !== 'ghost' ? (rank as SeasonRank) : null
   const hasStreak = (streak ?? 0) > 0
   const hasAchievements = (achievementCount ?? 0) > 0
   const gemCount = gems ?? 0
