@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
-import { Briefcase, DollarSign, Trophy, Percent, CheckSquare } from 'lucide-react'
+import Link from 'next/link'
+import { Briefcase, DollarSign, Trophy, Percent, CheckSquare, Plus } from 'lucide-react'
 import { getCallerProfile } from '@/lib/auth'
 import { atLeastRole } from '@/lib/core/roles'
 import { DashboardTemplate } from '@/components/templates'
@@ -35,6 +36,15 @@ export default async function CrmPage() {
         <StatCard label="Won" value={formatMoney(metrics.wonValue)} icon={Trophy} />
         <StatCard label="Win rate" value={metrics.winRatePct === null ? '—' : `${metrics.winRatePct}%`} icon={Percent} />
         <StatCard label="Tasks due" value={metrics.tasksDue.toLocaleString()} icon={CheckSquare} />
+      </div>
+
+      <div className="mt-2 flex justify-end">
+        <Link
+          href="/crm/deals/new"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+        >
+          <Plus className="h-4 w-4" aria-hidden /> New deal
+        </Link>
       </div>
 
       <PipelineBoard stages={stages} deals={deals} />
