@@ -399,10 +399,11 @@ Hubs · Nexuses (see the §7 *Progress* table). ⏳ **Left in `/admin/*`:** the 
 > page *and* the module (DRY). Vera's form is the whole-config-rewrite case: its uncontrolled
 > `<form action={saveVera}>` carries every field, so the extracted form is the same on both surfaces.
 >
-> ⏳ **Remaining to absorb:** the **Insights dashboards** (intel / outcomes / AI read / segments)
-> — heavier read-only surfaces; decide per-surface whether to embed a compact read or keep the
-> deep-link. Then the server-composed **`@admin` slot** + the **Vera-tone** inline tuner, and
-> `/admin/*` retires.
+> ⏳ **Remaining, in priority order:** ① the read-only **Insights dashboards** (engagement full /
+> intel / outcomes / AI read / segments) + **Help gaps** — heavier surfaces; decide per-surface
+> whether to embed a compact read or keep the deep-link; ② the server-composed **`@admin` slot**
+> (move modules off the client on-open fetch); ③ the rest of the inline **tuning** layer (Layout,
+> **Vera-tone**). Then `/admin/*` retires.
 
 1. **Engine.** `AdminModule` registry + `modulesFor`/`showsAdminPanel`; `AdminModuleCard`
    over `SidebarCard`; add `hub`/`nexus` loaders + `loadCapabilitiesForScope`; the `@admin`
