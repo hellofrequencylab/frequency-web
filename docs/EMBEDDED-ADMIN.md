@@ -366,8 +366,10 @@ group of modules; `/admin/*` retires once empty.
 > capability-gated loader). ✅ **Gamification** ported too (`GamificationModule` reuses
 > `SeasonControl` / `AwardDialog` / `RewardConfig` + a stat summary in the *Engage*
 > category; the full catalogs stay linked). The per-category in-place wiring is now a
-> one-line `IN_PLACE` map entry. Profile inline is already covered by `EditableIdentity`.
-> **Next:** keep porting deep-links the same way (Members, QR, Insights, …) and/or
+> one-line `IN_PLACE` map entry. ✅ **Members** ported too (`MembersModule` reuses the
+> `MemberAdmin` roster in *People*, janitor-gated; subscribers/beta stay linked). Profile
+> inline is already covered by `EditableIdentity`. In-place ports so far: **Moderation ·
+> Broadcasts · Gamification · Members**. **Next:** keep porting (QR, Insights, …) and/or
 > the `@admin` server slot; the QR-generator + Vera-tone inline tuners.
 
 1. **Engine.** `AdminModule` registry + `modulesFor`/`showsAdminPanel`; `AdminModuleCard`
