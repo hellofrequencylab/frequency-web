@@ -64,7 +64,7 @@ export function ContactCaptureForm() {
 
   return (
     <div className="space-y-2">
-      <input className={input} placeholder="Name *" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+      <input className={input} placeholder="Name *" value={name} onChange={(e) => setName(e.target.value)} />
       <input className={input} placeholder="Email (optional)" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
       <textarea
         className={`${input} resize-none`}

@@ -68,35 +68,41 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
 
       {open && (
         <div
-          className="fixed inset-0 z-[70] flex items-end justify-center bg-black/70 p-4 backdrop-blur-sm sm:items-center"
+          className="fixed inset-0 z-[70] flex items-stretch justify-center bg-black/70 backdrop-blur-sm sm:items-center sm:p-4"
           onMouseDown={(e) => {
             if (e.target === e.currentTarget) close()
           }}
         >
+          {/* Full-screen on mobile, a centred card on desktop. */}
           <div
             role="dialog"
             aria-modal="true"
             aria-label="Capture a moment"
-            className="relative w-full max-w-md rounded-3xl border border-border bg-canvas p-4 shadow-2xl motion-safe:animate-[slideUp_0.25s_ease-out]"
+            className="relative flex w-full flex-col overflow-y-auto border-border bg-canvas p-4 shadow-2xl motion-safe:animate-[slideUp_0.25s_ease-out] sm:max-h-[90vh] sm:max-w-md sm:rounded-3xl sm:border"
+            style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
           >
-            <div className="mb-2 flex items-center justify-between px-1">
-              <p className="text-sm font-semibold text-text">Capture a moment</p>
+            <div className="mb-1 flex items-center justify-between px-1 pt-[max(0px,env(safe-area-inset-top))]">
+              <p className="text-base font-bold text-text">Capture a moment</p>
               <button
                 type="button"
                 onClick={close}
                 aria-label="Close"
-                className="rounded-full p-1 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+                className="rounded-full p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
               >
-                <X className="h-4 w-4" />
+                <X className="h-5 w-5" />
               </button>
             </div>
+            <p className="mb-3 px-1 text-xs leading-relaxed text-muted">
+              Log a moment as it happens — add a contact to your CRM, or share a post, note, or photo.
+              It lands in your journal and the community feed.
+            </p>
 
             <CaptureBox key={mode} scopeId={scopeId} visibility="public" defaultMode={mode} />
 
             <Link
               href="/journal"
               onClick={close}
-              className="mt-2 flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+              className="mt-3 flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
             >
               <BookOpen className="h-3.5 w-3.5" aria-hidden /> View your journal
             </Link>
