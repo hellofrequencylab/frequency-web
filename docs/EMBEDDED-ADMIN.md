@@ -15,7 +15,10 @@
 > `lib/staff.ts` `staffCan`). Refines [CAPABILITIES-AND-MOBILE.md §2](CAPABILITIES-AND-MOBILE.md)
 > and [PAGE-FRAMEWORK.md §3/§6](PAGE-FRAMEWORK.md).
 >
-> **Status:** ✅ Phase 1 shipped (the dock) · ⏳ Phase 2 build pending (this doc).
+> **Status:** ✅ Phase 1 shipped (the dock) · ✅ Phase 2 **substantially shipped** — the
+> drill-down console + the inline tuning layer are live, and **14 `/admin/*` surfaces are ported
+> in place**. Remaining: the server-composed `@admin` slot and the Vera / AI / Insights-dashboard
+> ports (see §7 *Progress*).
 >
 > **Update — [ADR-137](DECISIONS.md):** the in-place modules are organized into a
 > drill-down **settings console** with a universal **9-category spine** (next section).
@@ -335,62 +338,66 @@ group of modules; `/admin/*` retires once empty.
 | 🌐 **Global** | Members, Roles, AI, Demo, Vera, Help gaps, analytics, QR | `global`-scope modules (the Platform group) |
 | ⚠️ **Both** | Channels, Moderation, Broadcasts | Per-scope module **and** a global module |
 
+✅ **Absorbed so far (14):** Moderation · Broadcasts · Gamification · Crew tasks · Members ·
+Roles · Insights · QR generator · Demo · Circles · Channels · Events · Hubs · Nexuses (see the
+§7 *Progress* table). ⏳ **Left in `/admin/*`:** Vera config, AI controls, the Insights
+dashboards (intel / outcomes / AI read / segments) — then the route group retires.
+
 ---
 
 ## 7. Build sequence (additive, each step shippable)
 
-> **Progress:** ✅ the registry/engine (`lib/admin/modules/registry.ts` —
-> `modulesFor`/`showsAdminPanel`, tested), `AdminModuleCard`, and in-place
-> **Circle / Hub / Nexus / Event** settings modules have landed (steps 2–3), with
-> `hub`/`nexus`/`event` capability loaders added to `load-capabilities.ts` and an
-> `event` scope + `event.editSettings` added to the resolver. Still open: the
-> `loadCapabilitiesForScope` dispatcher and the server-composed `@admin` slot —
-> modules currently wire into the client dock with an on-open, capability-gated
-> fetch (`get*AdminData`) rather than server composition. ✅ The registry now carries
-> the **9-category `slot` spine + a `surface` field** (`modulesForSurface`), and the
-> **inline tuning layer** has a first pilot: page-level **Edit Mode** (`useEditMode`,
-> `?edit=1`), a discoverable **Edit button** (`EditModeButton`), and `InlineText`
-> click-to-edit now wired across **Circle / Hub / Nexus / Event** (title on all;
-> Circle + Event descriptions) via field-level `update*Field` actions, each
-> capability-gated. ✅ **Cover image** is inline too on Circle (`InlineCover` →
-> `uploadCircleCover`/`removeCircleCover` to the `site-media` bucket, capability-gated).
-> ✅ The **sidebar drill-down** shipped (`components/admin/sidebar/admin-console.tsx`):
-> the dock is now a category home → category screen → back + search, **driven by the
-> role-gated admin catalog** (`visibleLinks`) so tiers filter automatically — a janitor
-> sees every category, a host only what they steward; reach any admin surface from the
-> sidebar, no `/admin` trip. ✅ The first **deep-link → in-place port**: the **Moderation
-> queue** now renders in the console's *Safety* category (`ModerationModule` reusing the
-> existing `ModerationQueue` via a capability-gated loader) — clear reports without leaving
-> the page. ✅ **Broadcasts** ported too (`BroadcastsModule` renders the existing
-> `BroadcastCompose` + `DispatchesClient` in the *Comms* category via a role-scoped,
-> capability-gated loader). ✅ **Gamification** ported too (`GamificationModule` reuses
-> `SeasonControl` / `AwardDialog` / `RewardConfig` + a stat summary in the *Engage*
-> category; the full catalogs stay linked). The per-category in-place wiring is now a
-> one-line `IN_PLACE` map entry. ✅ **Members** ported too (`MembersModule` reuses the
-> `MemberAdmin` roster in *People*, janitor-gated; subscribers/beta stay linked). Profile
-> inline is already covered by `EditableIdentity`. ✅ **Insights** too — an *additive*
-> live-stats summary (`InsightsModule` via `getEngagementDashboard`) heads the Insights
-> category above its full-dashboard links (the `IN_PLACE` map now supports additive
-> modules with no `href`). ✅ **Roles** too (`RolesModule` reuses `RoleManager` /
-> `StaffRoleManager` / `PermissionGrid` in *People* alongside Members; `IN_PLACE` now
-> takes an `hrefs[]` so a category can hold two modules). ✅ **QR generator** too
-> (`QrGeneratorModule` — a self-contained Reach tool: any URL/text → styled QR, exported
-> as **SVG · PNG 256–2048px · JPG · copy**, rendered client-side via the pure
-> `renderStyledQrSvg`; the full Studio stays linked). ✅ **Demo Studio** too (`DemoModule`
-> reuses `DemoOverview` / `StudioWizard` / `GrowNetwork` / `DangerZone` in *Platform*,
-> janitor-gated). ✅ **Spaces · Circles** too (`SpacesCirclesModule` reuses
-> `NewCircleCompose` + `CirclesClient` — manage all circles in scope; role-scoped loader).
-> ✅ **Spaces · Hubs + Nexuses** too (`SpacesHubsModule`/`SpacesNexusesModule` reuse their
-> compose + admin clients, stacked in Spaces; each self-gates so the stack degrades cleanly).
-> ✅ **Engage · Crew tasks** too (`CrewTasksModule` reuses `NewTaskCompose` + `CrewTasksClient`
-> — define & verify tasks, stacked under Gamification in *Engage*; host+ loader, degrades cleanly).
-> ✅ **Spaces · Channels + Events** too — their inlined lists were extracted into shared
-> `ChannelsAdminList` / `EventsAdminList` (used by both the page *and* the module, so they stay
-> DRY), fed by `loadChannelsAdmin` / `loadEventsAdmin` (host+); stacked in Spaces.
-> In-place ports so far: **Moderation · Broadcasts · Gamification · Crew tasks · Members ·
-> Insights · Roles · QR generator · Demo · Circles · Channels · Events · Hubs · Nexuses**.
-> **Next:** **Vera** config form extraction; **AI controls**; the Insights dashboards
-> (intel/outcomes/AI read/segments); the `@admin` slot + the Vera-tone inline tuner.
+> **Progress — ✅ the console is live and `/admin/*` is being absorbed.** The drill-down
+> **settings console** (`components/admin/sidebar/admin-console.tsx`) ships inside the dock:
+> a category **home → category screen → back + search**, **driven by the role-gated admin
+> catalog** (`visibleLinks`) so tiers filter automatically — a janitor sees every category, a
+> host only what they steward. Reach any admin surface from the sidebar; no `/admin` trip.
+>
+> **Engine & inline layer.** ✅ The `AdminModule` registry (`modulesFor` / `showsAdminPanel`,
+> tested) + the 9-category `slot` spine and a `surface` field (`modulesForSurface`).
+> ✅ In-place **Circle / Hub / Nexus / Event** settings modules (capability loaders in
+> `load-capabilities.ts`; an `event` scope + `event.editSettings` in the resolver). ✅ The
+> **inline tuning layer**: page-level **Edit Mode** (`useEditMode`, `?edit=1`), a discoverable
+> **Edit button** (`EditModeButton`), `InlineText` click-to-edit across Circle / Hub / Nexus /
+> Event (titles; Circle + Event descriptions) via field-level `update*Field` actions, plus
+> **inline Cover** on Circle (`InlineCover` → `uploadCircleCover` / `removeCircleCover`). ⏳ Still
+> open: the `loadCapabilitiesForScope` dispatcher and the server-composed **`@admin` slot** —
+> modules currently wire into the client dock via an on-open, capability-gated fetch
+> (`get*AdminData`) rather than server composition.
+>
+> **Deep-link → in-place ports.** Each `/admin/*` surface, as it's ported, renders **in place**
+> in its spine category and its deep-link drops — adding one is a single `IN_PLACE` map entry.
+> The recipe: a loader util + a gated `'use server'` action + a client module reusing the
+> existing admin components. **14 surfaces ported:**
+>
+> | Surface | Category | Reuses | Gate |
+> |---|---|---|---|
+> | Moderation | Safety | `ModerationQueue` | capability |
+> | Broadcasts | Comms | `BroadcastCompose` + `DispatchesClient` | host+ |
+> | Gamification | Engage | `SeasonControl` / `AwardDialog` / `RewardConfig` | host+ |
+> | Crew tasks | Engage | `NewTaskCompose` + `CrewTasksClient` | host+ |
+> | Members | People | `MemberAdmin` | janitor |
+> | Roles | People | `RoleManager` / `StaffRoleManager` / `PermissionGrid` | janitor |
+> | Insights | Insights | `getEngagementDashboard` (additive summary) | janitor |
+> | QR generator | Reach | `renderStyledQrSvg` → SVG · PNG 256–2048 · JPG · copy | host+ |
+> | Demo Studio | Platform | `DemoOverview` / `StudioWizard` / `GrowNetwork` / `DangerZone` | janitor |
+> | Circles | Spaces | `NewCircleCompose` + `CirclesClient` | host+ |
+> | Channels | Spaces | extracted `ChannelsAdminList` (shared w/ page) | host+ |
+> | Events | Spaces | extracted `EventsAdminList` (shared w/ page) | host+ |
+> | Hubs | Spaces | `NewHubCompose` + `HubsClient` | guide+ |
+> | Nexuses | Spaces | `NewNexusCompose` + `NexusesClient` | mentor+ |
+>
+> `IN_PLACE` supports three modes: **replace** (an `href` drops for the module), **additive**
+> (no `href` — the module heads the category above kept links, e.g. Insights), and **stacked**
+> (`hrefs[]` — a category holds several self-gating modules: People = Members + Roles; Spaces =
+> Circles + Channels + Events + Hubs + Nexuses; Engage = Gamification + Crew tasks). Surfaces
+> whose admin list was inlined in the page (Channels, Events) were first extracted into a
+> **shared presentational list** used by both the page *and* the module (DRY).
+>
+> ⏳ **Remaining to absorb:** **Vera** config (extract its inline config form first, so a partial
+> port can't wipe induction copy) · **AI controls** · the **Insights dashboards** (intel /
+> outcomes / AI read / segments). Then the server-composed **`@admin` slot** + the **Vera-tone**
+> inline tuner.
 
 1. **Engine.** `AdminModule` registry + `modulesFor`/`showsAdminPanel`; `AdminModuleCard`
    over `SidebarCard`; add `hub`/`nexus` loaders + `loadCapabilitiesForScope`; the `@admin`
@@ -420,6 +427,8 @@ group of modules; `/admin/*` retires once empty.
   parallel-shipped Phase 1 (ADR-128) and operations roles (ADR-127).
 - **New ADR:** [ADR-137](DECISIONS.md) — the settings console: on-page Edit Mode, the
   9-category spine, and drill-down navigation (the target shape above).
+- **New ADR:** [ADR-149](DECISIONS.md) — absorbing `/admin/*`: the deep-link→module recipe,
+  the `IN_PLACE` map's three modes, and the shared-list extraction (14 surfaces shipped).
 - **Refined:** [CAPABILITIES-AND-MOBILE.md §2](CAPABILITIES-AND-MOBILE.md) — the inline-admin
   model is realized by the dock (Phase 1) and made capability-driven + in-place (Phase 2).
 - **Refined:** [PAGE-FRAMEWORK.md §3/§6](PAGE-FRAMEWORK.md) — `headerActions` "admin gear" =
