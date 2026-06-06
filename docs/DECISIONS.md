@@ -4603,7 +4603,32 @@ to a structured store can replace the deriver without changing callers. See
 
 ---
 
-## ADR-146: Local Marketplace — a free, no-payment, geolocated exchange (vertical 5)
+## ADR-146: Member progress spine + stage-driven progressive disclosure
+
+**Status:** Accepted · corroborated by `lib/member-progress.ts`
+(`getMemberProgress`, `deriveStage`, `gatesFor`) + `app/(main)/feed/page.tsx`
+**Context:** Progress signals were scattered — activation (`getOnboardingStatus`), the
+daily streak (ADR-145), adopted Journeys (`getActiveJourneyProgress`) and season rank
+(`rankForZaps`) each had their own surface, with no single "where am I / what's next"
+read and no way to reveal the product gradually. The owner asked for progressive
+disclosure driven by strong progress, with the left nav staying fully visible.
+**Decision:** Add a **stage spine**: `getMemberProgress()` folds the four signals into a
+five-rung **stage** (Newcomer → Finding your feet → Regular → Established → Anchor) via a
+pure, monotonic `deriveStage`, and returns the gates to the next stage. The home feed
+reads it **once** (the spine also carries the raw onboarding status + Journeys, so the feed
+doesn't re-fetch). Stages reveal **surfaces, not nav**: the JourneyBoard shows only the
+streak + today's move early, then the resource center (stage ≥ Regular) and the pillar
+balance (stage ≥ Established) appear as the member climbs; a `StageStrip` shows the ladder +
+next gate, and a one-time `StageCelebration` fires on advance (acknowledged via
+`acknowledgeStage`, stored in `profiles.meta.progressStage`, so it shows exactly once).
+**Consequences:** Disclosure is one pure function — easy to retune thresholds or add a rung
+without touching surfaces. Reads stay pure (the celebration acknowledges itself client-side).
+No schema beyond the `meta.progressStage` marker. The crew dashboard and other surfaces can
+adopt the same `stageIndex` gate later. See `lib/member-progress.ts`.
+
+---
+
+## ADR-147: Local Marketplace — a free, no-payment, geolocated exchange (vertical 5)
 
 **Status:** Accepted — foundation shipped. Plan: [DEVELOPMENT-MAP.md](DEVELOPMENT-MAP.md)
 Stage B; [PLATFORM-VISION.md](PLATFORM-VISION.md) §verticals. The first **Stage B mission
@@ -4614,7 +4639,7 @@ lending, and asking for things — to deepen real-world density (the North Star)
 become a consumerist storefront, and during the free Beta **no money moves**.
 
 **Decision.** Ship a **Foundation, no-fee, no-in-app-payment** marketplace:
-- **`market_listings`** (ADR-146 migration): `kind` ∈ offer/free/lend/request, free-text
+- **`market_listings`** (ADR-147 migration): `kind` ∈ offer/free/lend/request, free-text
   `price_note` (no processing), free-text + optional geo location, an optional `circle_id`
   locality anchor, `status` (active/claimed/closed), `is_demo`. RLS: public reads active; an
   author manages only their own. Reads/writes via the admin handle + app-code authz (the

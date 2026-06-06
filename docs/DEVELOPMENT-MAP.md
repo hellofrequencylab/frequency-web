@@ -221,6 +221,16 @@
 > circles/practices/events onto the same shell — **compose, don't configure** — is ADR-143 /
 > [STUDIO.md](STUDIO.md): a shared shell + a studio *kit* + a thin registry, one entity per follow-on PR.
 > Migration `20260607080000` applied to prod. Audit + remaining gamification backlog: [GAMIFICATION-AUDIT.md](GAMIFICATION-AUDIT.md).
+>
+> **2026-06-06:** **Progress-driven disclosure** — strong streaks + a stage spine that reveals the
+> product gradually. (1) A real **daily practice streak** (consecutive days with a logged practice)
+> is now the headline streak, derived live from `practice_logs` with working **freeze tokens**,
+> milestone **zap rewards**, and an at-risk nudge — fixing the bug where weekly counts rendered as
+> "X day streak" (ADR-145, `lib/practice-streak.ts`). (2) `getMemberProgress()` folds activation +
+> streak + Journeys + rank into a five-rung **stage** (Newcomer → Anchor); the home feed reveals more
+> panels as the stage climbs, with a stage strip + one-time "stage reached" moment (ADR-146,
+> `lib/member-progress.ts`). Left nav stays fully visible (owner decision). No migration — both derive
+> from existing data + a `profiles.meta` marker.
 
 ---
 
@@ -489,7 +499,7 @@ verticals that don't need the money foundation. **Depends on:** Stage A.
       entitlement layer ships (ADR-037).
 - [~] **Local Marketplace (vertical 5)**: Foundation, no fee, geolocated to circle/hub/nexus,
       listings + messaging (no in-app payment). Proves local exchange + feeds the density
-      signal. *Foundation shipped (ADR-146, migration `20260607090000`):* `market_listings`
+      signal. *Foundation shipped (ADR-147, migration `20260607090000`):* `market_listings`
       (offer/free/lend/request · free-text price · geo + optional circle anchor · status) with
       RLS; `/market` browse + `/market/[id]` detail + owner controls; create via the Studio
       window (`NewListingButton`, reuses the ADR-143 kit); contact hands off to the seller's
