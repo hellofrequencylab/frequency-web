@@ -2,12 +2,13 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Store, Loader2, ArrowRight } from 'lucide-react'
+import { Plus, Store, Loader2, ArrowRight, MapPin, Check } from 'lucide-react'
 import { StudioLaunchButton } from '../kit/studio-launch-button'
 import { StudioField } from '../kit/studio-field'
 import { StudioFooter } from '../kit/studio-footer'
 import { isError } from '@/lib/action-result'
 import { LISTING_KINDS, type ListingKind } from '@/lib/marketplace'
+import { getBrowserPosition } from '@/lib/geo-browser'
 import { createListingAction } from '@/app/(main)/market/actions'
 
 const FIELD = 'rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
@@ -23,14 +24,29 @@ export function NewListingButton({ className }: { className?: string }) {
   const [description, setDescription] = useState('')
   const [neighborhood, setNeighborhood] = useState('')
   const [city, setCity] = useState('')
+  const [images, setImages] = useState('')
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null)
+  const [locating, setLocating] = useState(false)
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
+
+  const useMyLocation = async () => {
+    setLocating(true)
+    const pos = await getBrowserPosition()
+    setLocating(false)
+    if (pos) setCoords(pos)
+    else setError('Couldn’t get your location — you can still set a neighborhood/city.')
+  }
 
   const create = () => {
     if (!title.trim()) { setError('Give your listing a title.'); return }
     start(async () => {
       setError(null)
-      const res = await createListingAction({ title, kind, category, priceNote, description, neighborhood, city })
+      const res = await createListingAction({
+        title, kind, category, priceNote, description, neighborhood, city,
+        images: images.split(/[\n,]/).map((s) => s.trim()).filter(Boolean),
+        latitude: coords?.lat ?? null, longitude: coords?.lng ?? null,
+      })
       if (isError(res)) { setError(res.error); return }
       router.push(`/market/${res.data.id}`)
     })
@@ -95,6 +111,26 @@ export function NewListingButton({ className }: { className?: string }) {
         </StudioField>
         <StudioField label="City">
           <input value={city} onChange={(e) => setCity(e.target.value)} maxLength={80} placeholder="optional" className={FIELD} />
+        </StudioField>
+      </div>
+
+      {/* Precise location (optional) — powers "near me" for people browsing. */}
+      <div className="mt-3">
+        <button
+          type="button"
+          onClick={useMyLocation}
+          disabled={locating}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
+        >
+          {locating ? <Loader2 className="h-4 w-4 animate-spin" /> : coords ? <Check className="h-4 w-4 text-success" /> : <MapPin className="h-4 w-4" />}
+          {coords ? 'Location pinned' : 'Use my location'}
+        </button>
+        <span className="ml-2 text-xs text-subtle">Helps neighbors find it by distance (never shown exactly).</span>
+      </div>
+
+      <div className="mt-4">
+        <StudioField label="Image URLs (one per line)">
+          <textarea value={images} onChange={(e) => setImages(e.target.value)} rows={2} placeholder="https://…  (optional)" className={FIELD} />
         </StudioField>
       </div>
 

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, MapPin, MessageCircle, CalendarDays } from 'lucide-react'
+import { ArrowLeft, MapPin, MessageCircle, CalendarDays, Pencil } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import { getListing, LISTING_KINDS, type ListingKind } from '@/lib/marketplace'
 import { relativeTime } from '@/lib/utils'
@@ -48,6 +48,16 @@ export default async function ListingPage({ params }: { params: Promise<{ id: st
           <span className="inline-flex items-center gap-1"><CalendarDays className="h-3 w-3" />{relativeTime(listing.created_at)}</span>
         </div>
 
+        {/* Images */}
+        {listing.images.length > 0 && (
+          <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {listing.images.map((src, i) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img key={i} src={src} alt={`${listing.title} — ${i + 1}`} className="aspect-square w-full rounded-xl border border-border object-cover" />
+            ))}
+          </div>
+        )}
+
         {listing.description && (
           <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-text">{listing.description}</p>
         )}
@@ -58,7 +68,14 @@ export default async function ListingPage({ params }: { params: Promise<{ id: st
             <Link href={`/people/${listing.author.handle}`} className="text-sm text-muted hover:text-text">
               Posted by <span className="font-semibold text-text">{listing.author.display_name}</span>
             </Link>
-            {!isOwner && (
+            {isOwner ? (
+              <Link
+                href={`/market/${listing.id}/edit`}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-border px-4 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
+              >
+                <Pencil className="h-4 w-4" /> Edit listing
+              </Link>
+            ) : (
               <Link
                 href={`/people/${listing.author.handle}`}
                 className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"

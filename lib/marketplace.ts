@@ -103,6 +103,11 @@ export async function listingAuthorId(id: string): Promise<string | null> {
 
 // --- Mutations (callers enforce: the author owns the listing) ---------------
 
+/** Normalize image URLs: trim, drop empties, cap at 6. */
+function cleanImages(images: string[] | undefined): string[] {
+  return (images ?? []).map((s) => s.trim()).filter(Boolean).slice(0, 6)
+}
+
 export interface ListingInput {
   title: string
   description?: string | null
@@ -112,6 +117,9 @@ export interface ListingInput {
   neighborhood?: string | null
   city?: string | null
   circleId?: string | null
+  images?: string[]
+  latitude?: number | null
+  longitude?: number | null
 }
 
 export async function createListing(authorId: string, input: ListingInput): Promise<MarketListing | null> {
@@ -127,6 +135,9 @@ export async function createListing(authorId: string, input: ListingInput): Prom
       neighborhood: input.neighborhood?.trim() || null,
       city: input.city?.trim() || null,
       circle_id: input.circleId || null,
+      images: cleanImages(input.images),
+      latitude: input.latitude ?? null,
+      longitude: input.longitude ?? null,
     })
     .select(COLS)
     .maybeSingle()
@@ -141,6 +152,9 @@ export interface ListingPatch {
   priceNote?: string | null
   neighborhood?: string | null
   city?: string | null
+  images?: string[]
+  latitude?: number | null
+  longitude?: number | null
 }
 
 export async function updateListing(id: string, patch: ListingPatch): Promise<void> {
@@ -152,6 +166,9 @@ export async function updateListing(id: string, patch: ListingPatch): Promise<vo
   if (patch.priceNote !== undefined) update.price_note = patch.priceNote?.trim().slice(0, 80) || null
   if (patch.neighborhood !== undefined) update.neighborhood = patch.neighborhood?.trim() || null
   if (patch.city !== undefined) update.city = patch.city?.trim() || null
+  if (patch.images !== undefined) update.images = cleanImages(patch.images)
+  if (patch.latitude !== undefined) update.latitude = patch.latitude
+  if (patch.longitude !== undefined) update.longitude = patch.longitude
   if (Object.keys(update).length === 0) return
   await db().from('market_listings').update({ ...update, ...touch() }).eq('id', id)
 }

@@ -16,7 +16,7 @@ greenfield initiative (G).
 The current build order for the progress / streak / disclosure arc and the practice-engine
 follow-ups it surfaced. Full detail lives in the lettered sections below — this is the ranking.
 
-**P0 — decided ✅ (2026-06-06, ADR-149): unify into one FREE Journey concept.**
+**P0 — decided ✅ (2026-06-06, ADR-150): unify into one FREE Journey concept.**
 1. **S1 · Unify Quests + Journeys** — Phase 1 *shipped* (paywall removed everywhere; one
    concept). Phase 2 *(§S, M)* — merge the two table families into one (the practice-combo vs
    action-chain modeling fork); this is what now gates the journey authoring/moderation items.
@@ -368,7 +368,7 @@ inline path (wizard is an optional guided alt); RLS isolation between `journey_p
 > progress ring + stepper, obscured force-complete, graduates to the tracker — ✅.
 > **Still open:** S4 (demo box), S6 (tiered post options), broadcast-surface + label sweeps.
 
-- [~] **S1 · Unify Quests + Journeys** — ✅ *decided + Phase 1 shipped (ADR-149, 2026-06-06):*
+- [~] **S1 · Unify Quests + Journeys** — ✅ *decided + Phase 1 shipped (ADR-150, 2026-06-06):*
   one **Journey** concept, **free for everyone**; "The Quest" stays the game. Phase 1 removed
   the paywall on every Journey surface (adopt/fork/publish on `/journeys`; start on
   `/crew/quests`, retitled "Seasonal Journeys" + cross-linked). **Phase 2 (remaining, M):** merge
