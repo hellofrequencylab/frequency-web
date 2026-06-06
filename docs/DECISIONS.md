@@ -4943,3 +4943,32 @@ activation or just dwell?* The Capture feature ([ONBOARDING-BUILD-LIST.md](ONBOA
 is the loop's check-in primitive and inherits this directly. Doomscroll mode adds a single preference
 (profile/meta flag) the shell reads to suppress the prompt layer — additive, low-risk, parked in
 [BACKLOG.md](BACKLOG.md) §F. Worldview/strategy framing for operators → Notion.
+
+## ADR-156: Capture — the primary "log a moment" surface; a mode picker over the posts substrate
+
+**Decision.** **Capture** becomes the primary create surface and the check-in step of the Portal Loop
+(ADR-155). The always-open inline feed composer is **replaced by one branded Capture button** that opens
+a **mode picker** — *the same vibe as tapping a camera icon and getting Photo / Video / Live.* Phase 1
+ships four modes: **Photo** (composer with the image picker primed), **Note** (new — a quiet text
+journal entry), **Post** (the full composer), and **In-Person** (the already-built card/poster capture
+at `/connections/new` — "stop and trade info with a new friend," every member an access point).
+
+**Note = a `post_type`, not a parallel store.** A Note is `post_type='note'` on the existing `posts`
+table (migration `20260606180000_post_type_note.sql`), so it inherits the feed, the locality × in-person
+rank (ADR-080), reactions, replies and moderation for free. The composer gained a `kind` prop (`'post' |
+'note'`) and an `autoImage` flag (the Photo mode); `post-card.tsx` renders a quiet "Note" badge. No new
+table, no new server action — `createPost` already passes `post_type` through.
+
+**Alternatives.** A separate `notes`/journal table (rejected — splits the feed substrate, duplicates
+ranking/reactions/moderation, and a Note *is* feed content by design). A new column to tag kinds
+(rejected — `post_type` is exactly that enum already). Keep the inline composer and add Capture beside it
+(rejected — the owner's call is that posting is *one mode inside Capture*, not a peer; two create
+entries muddies the primary action). A dedicated nav/FAB now (deferred — Phase 2, once Note + In-Person
+are proven; Phase 1 keeps the change contained to the feed compose slot).
+
+**Consequences.** ⚠️ The `'note'` enum value ships in a migration — **apply on deploy**; until then Photo
+/ Post / In-Person work and only Note posting waits. Future modes (Video · Cinema · Live) slot into the
+same picker; the picker is the consumer surface for the eventual Create Wizard registry (BACKLOG §Q2),
+not a parallel system. Gamification is unchanged (a Note pays `post_create` like any post — reward the
+real act, anti-farm doctrine). Spec/build: [ONBOARDING-BUILD-LIST.md](ONBOARDING-BUILD-LIST.md) §6.
+Member-facing "how to Capture" guidance → help center / Notion when it stabilises.

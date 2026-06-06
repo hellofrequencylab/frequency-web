@@ -50,11 +50,17 @@ export function Composer({
   visibility = 'group',
   placeholder = 'Share something with your group…',
   canAnnounce = false,
+  kind = 'post',
+  autoImage = false,
 }: {
   scopeId: string
   visibility?: 'public' | 'region' | 'cluster' | 'group'
   placeholder?: string
   canAnnounce?: boolean
+  /** Capture mode (ADR-156): a 'note' submits post_type='note' — a quiet journal entry. */
+  kind?: 'post' | 'note'
+  /** Open the image picker on mount (the Capture "Photo" mode). */
+  autoImage?: boolean
 }) {
   const [body, setBody] = useState('')
   const [isAnnouncement, setIsAnnouncement] = useState(false)
@@ -89,6 +95,11 @@ export function Composer({
     const max = expanded ? 600 : 220
     ta.style.height = `${Math.min(ta.scrollHeight, max)}px`
   }, [body, manualHeight, expanded])
+
+  // Capture "Photo" mode: pop the image picker as soon as the composer mounts.
+  useEffect(() => {
+    if (autoImage) fileInputRef.current?.click()
+  }, [autoImage])
 
   function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -160,7 +171,7 @@ export function Composer({
       fd.set('body', trimmed)
       fd.set('scopeId', scopeId)
       fd.set('visibility', visibility)
-      fd.set('post_type', isAnnouncement ? 'announcement' : 'feed')
+      fd.set('post_type', isAnnouncement ? 'announcement' : kind === 'note' ? 'note' : 'feed')
       if (imageUrl) fd.set('imageUrl', imageUrl)
 
       await createPost(fd)
@@ -467,7 +478,7 @@ export function Composer({
 
       {/* Settings + send. */}
       <div className="mt-2 flex items-center justify-between gap-2 border-t border-border pt-3">
-        {canAnnounce ? (
+        {canAnnounce && kind !== 'note' ? (
           <div className="inline-flex items-center gap-0.5 rounded-lg bg-surface-elevated p-0.5">
             <button
               type="button"
@@ -503,7 +514,9 @@ export function Composer({
             disabled={!canPost}
             className="shrink-0 rounded-lg bg-primary px-4 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {isPending ? 'Posting…' : isAnnouncement ? 'Announce' : 'Post'}
+            {isPending
+              ? kind === 'note' ? 'Saving…' : 'Posting…'
+              : isAnnouncement ? 'Announce' : kind === 'note' ? 'Save note' : 'Post'}
           </button>
         </div>
       </div>
