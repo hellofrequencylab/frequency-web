@@ -406,3 +406,9 @@ group of modules; `/admin/*` retires once empty.
   the dock trigger; `/admin/*` is being absorbed, not a standalone pattern.
 - **Add on ship:** kit entry for `AdminModuleCard` (DESIGN.md "In-app scale"),
   `DEVELOPMENT-MAP.md` build-status, and a Notion operator page (source of truth = this doc).
+
+- **Admin dedup (2026-06-06):** per-entity *editing* now lives on the page dock
+  (`*-settings-module`). The redundant `StaffEditButton` deep-link to the full `/admin`
+  editor was removed from the circle/hub/nexus pages (kept on broadcast + practices, which
+  have no dock module). The `/admin` list keeps create / archive / host-hub reassignment —
+  the structural ops the dock doesn't carry.

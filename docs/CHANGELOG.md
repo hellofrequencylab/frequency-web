@@ -12,6 +12,10 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **Your Journey on the Dashboard**: adopt a seasonal Journey and follow it on your
+  dashboard — each practice checks off as you keep its weekly rhythm, your next step
+  stays front-and-centre, and you can see who in your circle is walking it too. The
+  current step also shows on your home feed.
 - **User Stats for contacts**: open anyone in Marketing → Contacts to see one grouped
   record — their member profile, CRM details and every card-scan capture together — plus
   the **path they took through the system**: how they arrived, the intro you sent, the QR
