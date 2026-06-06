@@ -23,7 +23,7 @@ Two levers, in order: **(0) flip the switches that let real testers in today**, 
 | Rank | Item | Goal it serves | Size | Status |
 |---|---|---|---|---|
 | **0** | Pre-test enablement (config, not code) | Get testers in *today* | S | ⏳ |
-| **1.1** | Persistent Vera launcher, app-wide | Deep Vera integration | M | ⏳ |
+| **1.1** | Persistent Vera launcher, app-wide | Deep Vera integration | M | ✅ shipped |
 | **1.2** | "Complete Your Profile" feed card | Create a profile | S–M | 📋 |
 | **1.3** | Vera coach "next best action" card | Excitement + direction | S–M | 📋 |
 | **1.4** | "Founder's First Week" tasks + badge | Create content | M | 📋 |
@@ -64,21 +64,25 @@ lightbox opens with live (not scripted) replies → the funnel shows the events.
 Ship as **one arc** (they share `getOnboardingStatus()` and an extracted `<VeraChat>`),
 in small reviewable PRs. Best-practice guardrails in the last section.
 
-### 1.1 — Persistent Vera launcher, app-wide ⏳ (ADR-086 / AI-VERA §4.0)
-- **Goal.** Vera is one tap away on *every* member page, not just onboarding. This is the
-  whole of "deeply integrated."
-- **Reuse, don't rebuild.** Extract a headless `<VeraChat>` from
-  `components/onboarding/vera-lightbox.tsx` (the chat already runs the live loop +
-  proposals + suggestions). Decouple it from the feed-specific close/redirect.
-- **Build.** A docked launcher bubble in the app shell (`app/(main)/layout.tsx` /
-  the rail) that opens `<VeraChat>`. **Fold the help launcher's three tiers**
-  (search → grounded answer → human) into her panel so there's *one* bubble, not two.
-- **Touch.** `components/onboarding/vera-lightbox.tsx` (extract), new
-  `components/vera/vera-launcher.tsx` + `vera-chat.tsx`, `app/(main)/layout.tsx`,
-  fold in `app/(help)/help/ask`.
-- **Acceptance.** Bubble on every `(main)` page; opens chat with memory; help questions
-  answer in her voice with citations; deterministic fallback when AI is off; honors
-  `prefers-reduced-motion` + sleep-mode recede.
+### 1.1 — Persistent Vera launcher, app-wide ✅ **shipped** (ADR-086 / AI-VERA §4.0)
+- **What shipped.** One floating Vera bubble on every `(main)` page (`components/vera/vera-launcher.tsx`,
+  mounted in `app/(main)/layout.tsx`), opening a two-tab panel: **Chat** — the multi-turn
+  companion (`components/vera/vera-chat.tsx`, runs the live Claude loop + propose-and-confirm,
+  deterministic concierge fallback) — and **Help** — the folded-in tiers (instant article search →
+  browse the help center → talk to a human). The old `SupportLauncher` was retired, so there's
+  **one bubble, not two**. tsc + eslint + Vera tests green.
+- **Second pass (tweaks, not blockers):**
+  - **Dedup:** migrate `vera-lightbox.tsx` + `vera-concierge.tsx` onto the shared `<VeraChat>`
+    (remove the duplicated turn/proposal/`proposalLabel` logic — 3 copies today).
+  - **Warm opening:** seed the companion greeting with the member's name + memory (the lightbox
+    already builds a personalized opening; the launcher uses a generic one).
+  - **Sleep-mode recede** on the launcher panel (the lightbox has it; the launcher omits it).
+  - **Suggestion chips in the live loop** (= item 1.5) so Chat keeps offering quick replies.
+  - **Persist the transcript** across a full reload (it already survives in-app navigation via the
+    persistent layout; a hard refresh resets it).
+  - **Grounded help inline:** optionally fold the one-shot `/help/ask` RAG answer into the Help tab
+    (today Help search is article-only and routes deeper questions to Chat).
+  - **Proactive badge** on the bubble once Phase E (encouragement) lands.
 
 ### 1.2 — "Complete Your Profile" feed card 📋 (BETA-ACTIVATION §2)
 - **Goal.** Make "create your profile" the obvious first move; visible, rewarded, dismissible.
@@ -148,8 +152,10 @@ harness** exists (BACKLOG §D). Build the harness first; then:
 
 ## Section 4 — Cleanup & doc hygiene (cheap; some ✅ done this pass)
 
-- ✅ **Deleted 4 orphan modules** — `components/ui/can.tsx`, `components/compose-button.tsx`,
-  `lib/contract/views.ts`, `lib/help/feature-keys.ts` (verified zero importers).
+- ✅ **Deleted 3 orphan modules** — `components/ui/can.tsx`, `components/compose-button.tsx`,
+  `lib/contract/views.ts` (verified zero importers). *(`lib/help/feature-keys.ts` was initially
+  removed too but **restored** — it's imported by the `scripts/help-*` CI tooling, which the
+  first grep didn't cover. Lesson: orphan-checks must include `scripts/`.)*
 - ✅ **Fixed `AI-VERA.md` stale header** ("design / not yet built" → Phases A–D shipped).
 - ⏳ **Drop ~5 orphan quest tables** — `quest_steps`, `quest_progress`, `season_trophies`,
   `group_memberships`, `circle_topics` (residue of the Jun-4→8 quest/arc/journey rename
