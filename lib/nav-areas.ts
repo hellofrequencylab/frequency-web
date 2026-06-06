@@ -64,6 +64,7 @@ export const NAV_AREAS: readonly NavArea[] = [
   { key: 'circles',  href: '/circles',  label: 'Circles',   section: 'Community', defaultAccess: 'visitor' },
   { key: 'channels', href: '/channels', label: 'Channels',  section: 'Community', defaultAccess: 'visitor' },
   { key: 'events',   href: '/events',   label: 'Events',    section: 'Community', defaultAccess: 'member'  },
+  { key: 'market',   href: '/market',   label: 'Marketplace', section: 'Community', defaultAccess: 'member' },
   { key: 'people',   href: '/people',   label: 'Directory', section: 'Community', defaultAccess: 'member'  },
 
   // ── The Quest → the game + shop. Practice content now lives in its own world;
