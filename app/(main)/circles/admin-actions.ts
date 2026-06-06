@@ -78,3 +78,49 @@ export async function updateCircleField(id: string, slug: string, field: InlineF
   revalidatePath(`/circles/${slug}`)
   revalidatePath('/circles')
 }
+
+// Cover image: upload to the public `site-media` bucket and persist image_url, or
+// clear it. Both re-check circle.editSettings (capabilities are law). Mirrors the
+// Puck uploader (lib/page-editor/upload-action.ts) but gated per-circle, not staff.
+export async function uploadCircleCover(
+  id: string,
+  slug: string,
+  formData: FormData,
+): Promise<{ url: string } | { error: string }> {
+  const caps = await getCircleCapabilities(id)
+  if (!caps.has('circle.editSettings')) return { error: 'Unauthorized' }
+
+  const file = formData.get('file')
+  if (!(file instanceof File) || file.size === 0) return { error: 'No file selected.' }
+  if (file.size > 8 * 1024 * 1024) return { error: 'Image must be under 8MB.' }
+
+  const admin = createAdminClient()
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '')
+  const path = `circles/${id}/${Date.now()}-${Math.round(Math.random() * 1e6).toString(36)}.${ext}`
+  const bytes = new Uint8Array(await file.arrayBuffer())
+
+  const { error: upErr } = await admin.storage
+    .from('site-media')
+    .upload(path, bytes, { contentType: file.type || 'image/jpeg', upsert: false })
+  if (upErr) return { error: upErr.message }
+
+  const { data } = admin.storage.from('site-media').getPublicUrl(path)
+  const { error: dbErr } = await admin.from('circles').update({ image_url: data.publicUrl }).eq('id', id)
+  if (dbErr) return { error: dbErr.message }
+
+  revalidatePath(`/circles/${slug}`)
+  revalidatePath('/circles')
+  return { url: data.publicUrl }
+}
+
+export async function removeCircleCover(id: string, slug: string) {
+  const caps = await getCircleCapabilities(id)
+  if (!caps.has('circle.editSettings')) throw new Error('Unauthorized')
+
+  const admin = createAdminClient()
+  const { error } = await admin.from('circles').update({ image_url: null }).eq('id', id)
+  if (error) throw new Error(error.message)
+
+  revalidatePath(`/circles/${slug}`)
+  revalidatePath('/circles')
+}
