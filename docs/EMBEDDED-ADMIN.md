@@ -25,7 +25,7 @@
 > On-page **Edit Mode** becomes the way *all* entity admin happens — `/admin/*` entity
 > surfaces go away entirely.
 >
-> **Update — [ADR-152](DECISIONS.md) (three layers):** whole *management suites* don't fit a
+> **Update — [ADR-153](DECISIONS.md) (three layers):** whole *management suites* don't fit a
 > narrow rail, so admin is split into **three layers**: ① the **catalog spine**
 > (`admin/sections.ts`) — every surface declared once; ② **nine full-page suites** — *Spaces ·
 > Engage · Comms · Safety · Reach · People · Insights · Vera · System* — each a full page whose

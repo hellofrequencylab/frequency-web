@@ -4706,8 +4706,10 @@ then the route group retires per ADR-138. Operator guide → Notion.
 
 ## ADR-150: Unify Quests + Journeys into one free "Journey" concept (reverses ADR-087's paywall)
 
-**Status:** Accepted · Phase 1 (ungating) shipped; Phase 2 (table merge) pending
-*(Renumbered from ADR-149 — that number went to the admin-console port on a parallel branch.)*
+**Status:** 🔴 **Superseded by [ADR-152](DECISIONS.md).** The "all free" call from this ADR
+stands; the "collapse into one concept" call was reversed — Quests and Journeys are *distinct
+nested levels*, not one unit. *(Renumbered from ADR-149 — that number went to the admin-console
+port on a parallel branch.)*
 **Context:** ADR-087 split the word: **Journeys** = the open, free, member-built practice-combo
 library (`journey_plans`); **Quests** = the gamified, Crew-gated, seasonal engine
 (`quest_chains`). In practice this produced *two* things both labelled "Journeys" (the
@@ -4782,9 +4784,35 @@ is now observable as one operator surface. The threshold constants live in one f
 unit-tested, so tuning them is a one-line, reviewable change. Adding map/heatmap or a hub/nexus
 roll-up is additive (the `geog` columns and place-tree are already there). Operator guide → Notion.
 
+## ADR-152: The Quest → Seasonal Quest → Journeys → Practices (the canonical hierarchy)
+
+**Status:** Accepted · supersedes [ADR-150](DECISIONS.md) (the "one concept" part) and settles
+the [ADR-087](DECISIONS.md) Quest/Journey question. Phase A (concept + naming) shipping; Phase B
+(schema nesting) planned. Keeps ADR-150's **all-free** decision. *(Renumbered from ADR-151 — that
+number went to the density read-model on a parallel branch.)*
+**Context:** ADR-150 collapsed Quests and Journeys into a single "Journey". The owner corrected
+the model: that flattened a real hierarchy. **The Quest** is the game; a **Seasonal Quest** is a
+curated, official container that holds **multiple Journeys**; a **Journey** is a set of
+**practices** you progress through. So they are *distinct nested levels*, not the same unit.
+**Decision:** Adopt the four-level hierarchy **The Quest → Seasonal Quest → Journeys →
+Practices.** A **Journey** (practice-combo, `journey_plans`) has **two homes**: official Journeys
+that belong to a Seasonal Quest, and member-built Journeys in the open community library
+(standalone, `quest_id` null). **Everything is free** (ADR-150 stands); only the Store (Gem
+spend) and the public rank badge (ADR-141) remain Crew. Restore "Quests" as the distinct
+player-facing concept (undo ADR-150's "Seasonal Journeys" relabel). **Phase A (this pass):**
+concept + naming + docs corrected; `/crew/quests` is **Quests** again. **Phase B (planned):** the
+data nesting — a `quests` seasonal-container table (or repurposed `quest_chains`), `journey_plans`
+gains `quest_id` (nullable) + `official`, the seeded seasonal Pillar content becomes official
+**Journeys** (practice-based) grouped under the season's Quest, and the legacy action-chain steps
+(attend/post/refer) retire to `season_challenges`/achievements where that mechanic already lives.
+**Consequences:** No more "two Journeys" confusion — Quests contain Journeys; Journeys contain
+practices. The naming is now **stable** ("Quest" = the game + its seasonal containers; "Journey" =
+a practice path) — no further renames. GLOSSARY.md / THE-QUEST.md / DATABASE.md / ECONOMY get
+their full pass when Phase B's schema lands; until then `quest_chains` remains the seasonal store.
+
 ---
 
-## ADR-152: Three admin layers — page-globals sidebar · nine full-page suites · the catalog spine
+## ADR-153: Three admin layers — page-globals sidebar · nine full-page suites · the catalog spine
 
 **Status:** Accepted — suites shipped, sidebar trim follows. Refines [ADR-137](DECISIONS.md) /
 [ADR-138](DECISIONS.md) / [ADR-149](DECISIONS.md). Spec: [EMBEDDED-ADMIN.md](EMBEDDED-ADMIN.md).

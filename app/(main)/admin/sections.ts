@@ -3,7 +3,7 @@
 // (sub-nav.tsx) and the Overview launchpad (page.tsx) render from this, so a
 // feature is declared in exactly ONE place and can never be orphaned again.
 //
-// Each group is a **suite** (ADR-152): a full-page admin area whose links render
+// Each group is a **suite** (ADR-153): a full-page admin area whose links render
 // as the top-bar sub-nav tabs, and as a launchpad section. Nine domain suites,
 // telescoped by role — a host sees Spaces / Engage / Comms / Safety / Reach; a
 // guide/mentor adds the Hubs/Nexuses tabs; a janitor adds People / Insights / Vera

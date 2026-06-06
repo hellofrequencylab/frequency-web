@@ -242,7 +242,16 @@
 > Hubs, Nexuses. Remaining: the read-only Insights dashboards + Help gaps, then the server-composed
 > `@admin` slot — and `/admin/*` retires. Operator guide synced to Notion.
 >
-> **2026-06-06:** **Admin gets three layers** (ADR-152) — whole management suites were too much for
+> **2026-06-06:** **Quest/Journey hierarchy** (ADR-152) — canonical model **The Quest → Seasonal
+> Quest → Journeys → Practices**, all **free** (reverses the ADR-150 "one concept" detour and
+> ADR-087's paywall). *Phase A* restored "Quests" as the distinct seasonal concept + removed every
+> Journey paywall. *B1* added the data nesting: a `quests` container table +
+> `journey_plans.quest_id`/`official` + a seed (the active season's Quest with one official Journey
+> per Pillar), migration `20260608010000`. *B2* rebuilt `/crew/quests` to list the Seasonal Quest →
+> its official Journeys (each → the Journey detail's practices + free Adopt; `lib/quests.ts`).
+> Remaining: B3 (retire the legacy `quest_*` action-chains + `advanceQuests` + terminology pass).
+>
+> **2026-06-06:** **Admin gets three layers** (ADR-153) — whole management suites were too much for
 > the narrow sidebar. Admin is now: ① the **catalog spine** (`admin/sections.ts`, one declaration per
 > surface); ② **nine full-page suites** — *Spaces · Engage · Comms · Safety · Reach · People ·
 > Insights · Vera · System* — each a full page whose links are its **top-bar sub-nav tabs** (and a

@@ -12,13 +12,17 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Changed
 
-- **Journeys are now free for everyone**: Quests and Journeys are one thing now — a
-  **Journey** is simply a set of practices you move through. Every Journey is free to start,
-  adopt, build, remix and share, including the official seasonal tracks. (The Quest stays the
-  game; only the Store and your public rank badge are still Crew perks.)
+- **Quests and Journeys are free for everyone**: a **Journey** is a set of practices you move
+  through; a **Quest** is a season's official collection of Journeys. Both are free now — start
+  a seasonal Quest, and build, adopt, remix and share your own Journeys at no cost. (The Quest
+  is still the game; only the Store and your public rank badge remain Crew perks.)
 
 ### Added
 
+- **Local Marketplace**: a no-fee place to swap, give away, lend, or find things with
+  neighbors. Browse by type, sort by **Near me** to see what's closest to you, post a
+  listing with photos, and edit it anytime. No payment ever happens in the app — you
+  arrange the handoff offline. Find it at `/market`.
 - **A home screen that grows with you**: your home now shows your **stage** — from finding
   your feet to becoming an anchor of the community — with the next thing that moves you up.
   New members get a calm, focused screen; more tools and panels reveal themselves as you
