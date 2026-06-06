@@ -89,10 +89,10 @@ export function NotificationsForm({ initial }: { initial: NotificationPreference
                         relative inline-flex items-center justify-center
                         w-10 h-6 rounded-full transition-colors
                         ${disabled
-                          ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed opacity-50'
+                          ? 'bg-surface-elevated cursor-not-allowed opacity-50'
                           : checked
-                            ? 'bg-indigo-500 dark:bg-indigo-600'
-                            : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'}
+                            ? 'bg-primary'
+                            : 'bg-border hover:bg-border-strong'}
                       `}
                     >
                       <span
