@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Plus, ScanText, Lock, Globe, MapPin, Search } from 'lucide-react'
-import { connectionsOwnerId } from '@/lib/connections/access'
+import { contactsOwnerId } from '@/lib/connections/access'
 import { listContacts } from '@/lib/connections/store'
 import { getInitials } from '@/lib/utils'
 import { IndexTemplate } from '@/components/templates'
@@ -35,7 +35,7 @@ export default async function ConnectionsPage({
 }: {
   searchParams: Promise<{ status?: string; q?: string }>
 }) {
-  const ownerId = await connectionsOwnerId()
+  const ownerId = await contactsOwnerId()
   if (!ownerId) redirect('/feed')
 
   const { status: rawStatus, q: rawQ } = await searchParams

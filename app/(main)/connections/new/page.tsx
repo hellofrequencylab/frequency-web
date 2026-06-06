@@ -1,13 +1,13 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { connectionsOwnerId } from '@/lib/connections/access'
+import { contactsOwnerId } from '@/lib/connections/access'
 import { FocusTemplate } from '@/components/templates'
 import { Creator } from './creator'
 
 export const dynamic = 'force-dynamic'
 
 export default async function NewProfilePage() {
-  const ownerId = await connectionsOwnerId()
+  const ownerId = await contactsOwnerId()
   if (!ownerId) redirect('/feed')
 
   const supabase = await createClient()
