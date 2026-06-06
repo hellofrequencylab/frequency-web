@@ -32,6 +32,7 @@ import { EventSettingsModule } from '@/components/admin/modules/event-settings-m
 import { ModerationModule } from '@/components/admin/modules/moderation-module'
 import { BroadcastsModule } from '@/components/admin/modules/broadcasts-module'
 import { GamificationModule } from '@/components/admin/modules/gamification-module'
+import { MembersModule } from '@/components/admin/modules/members-module'
 
 // The page-admin sidebar console (ADR-137 drill-down · ADR-138 the "manage" surface).
 // Home lists the categories that apply for THIS viewer; tap one to drill into its
@@ -147,6 +148,7 @@ export function AdminConsole({
     safety: { href: '/admin/moderation', module: <ModerationModule />, summary: 'Reports queue' },
     comms: { href: '/admin/dispatches', module: <BroadcastsModule />, summary: 'Broadcast' },
     engage: { href: '/admin/gamification', module: <GamificationModule />, summary: 'Season, awards' },
+    people: { href: '/admin/members', module: <MembersModule />, summary: 'Roster & roles' },
   }
 
   const categories: Category[] = CATEGORIES.map((c) => {
