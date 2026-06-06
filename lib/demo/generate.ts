@@ -103,8 +103,10 @@ async function seedMember(
   role: 'host' | 'crew' | 'member',
   activePracticeId: string | null,
   circlePostIds: string[],
+  city: string,
 ): Promise<string> {
   const p = person(rank)
+  const home = cityCoords(city) // members live near their circle — so they read as residents (ADR-150)
   const { data: prof } = await d
     .from('profiles')
     .insert({
@@ -124,6 +126,9 @@ async function seedMember(
       last_seen_at: new Date(Date.now() - rand(72) * 3600_000).toISOString(),
       is_active: true,
       is_demo: true,
+      city: home.label,
+      home_lat: home.latitude,
+      home_lng: home.longitude,
     })
     .select('id')
     .single()
@@ -174,14 +179,16 @@ async function seedMember(
 export async function addDemoMembers(circleId: string, count: number): Promise<number> {
   const d = db()
   const n = Math.max(1, Math.min(count, 50))
-  const [{ data: cp }, { data: posts }] = await Promise.all([
+  const [{ data: cp }, { data: posts }, { data: circ }] = await Promise.all([
     d.from('circle_practices').select('practice_id').eq('circle_id', circleId).eq('active', true).maybeSingle(),
     d.from('posts').select('id').eq('scope_id', circleId).eq('is_demo', true).limit(40),
+    d.from('circles').select('city').eq('id', circleId).maybeSingle(),
   ])
   const practiceId = (cp as { practice_id: string } | null)?.practice_id ?? null
   const postIds = (posts as { id: string }[] | null ?? []).map((p) => p.id)
+  const city = (circ as { city: string | null } | null)?.city ?? 'Encinitas'
   for (let i = 0; i < n; i++) {
-    await seedMember(d, circleId, pick(NEW_MEMBER_RANKS), 'member', practiceId, postIds)
+    await seedMember(d, circleId, pick(NEW_MEMBER_RANKS), 'member', practiceId, postIds, city)
   }
   return n
 }
@@ -230,19 +237,19 @@ export async function addDemoCircle(input: {
   const circleId = (circle as { id: string }).id
 
   // Host first so the circle has a leader; then the roster.
-  const hostId = await seedMember(d, circleId, 'conduit', 'host', practiceId, [])
+  const hostId = await seedMember(d, circleId, 'conduit', 'host', practiceId, [], geo.label)
   if (practiceId) {
     await d.from('circle_practices').insert({ circle_id: circleId, practice_id: practiceId, set_by: hostId, active: true })
   }
 
   const size = Math.max(6, Math.min(input.size ?? 14, 49))
   // crew x2, then members
-  await seedMember(d, circleId, 'operative', 'crew', practiceId, [])
-  await seedMember(d, circleId, 'operative', 'crew', practiceId, [])
+  await seedMember(d, circleId, 'operative', 'crew', practiceId, [], geo.label)
+  await seedMember(d, circleId, 'operative', 'crew', practiceId, [], geo.label)
   const { data: posts } = await d.from('posts').select('id').eq('scope_id', circleId).eq('is_demo', true)
   const postIds = (posts as { id: string }[] | null ?? []).map((p) => p.id)
   for (let i = 0; i < size - 3; i++) {
-    await seedMember(d, circleId, pick(NEW_MEMBER_RANKS), 'member', practiceId, postIds)
+    await seedMember(d, circleId, pick(NEW_MEMBER_RANKS), 'member', practiceId, postIds, geo.label)
   }
 
   // An upcoming event + RSVPs from the roster.
