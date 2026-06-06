@@ -68,6 +68,14 @@ follow-ups it surfaced. Full detail lives in the lettered sections below — thi
   Broadcast realtime, Redis/search/vector on signal. (L)
 
 ## C. Correctness / economy integrity (mostly product decisions)
+- [ ] **Online actions (comment/react) award zaps instead of gems (live bug).** Reported from prod:
+  a comment + like paid **3 zaps**. The app pays this correctly as gems (`feed/actions.ts` →
+  `awardGems('comment_reply' / 'reaction')`); the stray zaps come from the **achievement-unlock DB
+  trigger** firing when the action unlocks an *online* achievement — the "long-standing double-award
+  (gems in code + zaps in the trigger)" called out in `20260607040000_zap_ledger_and_recategorize.sql`.
+  **Fix already authored, just unapplied:** that migration makes `after_achievement_unlocked()` stop
+  paying zaps (online achievements pay gems via the app layer, ADR-139). **Action: apply
+  `20260607040000` to prod** + spot-check no other trigger pays zaps on `post_reactions`/replies. (S)
 - [ ] `awardZaps` auto-promotes to `luminary` past the earned gate. (?)
 - [ ] Store redeem TOCTOU race. (?)
 - [ ] `lifetime_gems` doubles as the spendable wallet (semantics). (?)

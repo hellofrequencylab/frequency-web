@@ -37,6 +37,7 @@ Two levers, in order: **(0) flip the switches that let real testers in today**, 
 | **5.1** | Rename Directory → **Network** + merge `/people` + `/connections` into one member tab | Findable as a product | S–M | 📋 next |
 | **5.3–5.5** | Event-invite capture loop (QR → RSVP → triple-write) + gamification | The growth loop | M–L | 📋 |
 | **6** | **Capture** — primary "log life" button (Photo/Note/Post + In-Person card/poster) | The community story + every member a node | L | ⏳ Phases 1–3 shipped |
+| **7** | **Role-advancement training** — a training Journey per role transition | Onboarding never ends; every role is taught | L | 📋 designed (ADR-157) |
 | **4.x** | Cleanup + doc hygiene | Lean tree | S | ⏳ |
 
 Legend: ✅ done · ⏳ partially built / in flight · 📋 specced, not built · 🔴 blocked.
@@ -305,6 +306,31 @@ Frequency — a community-management tool where every member is a node.
 **Open questions (owner):** does "Note" share the post table or get its own journal store · how
 loud is the Capture button vs. the feed composer · which captures are public-by-default (moments)
 vs. private-by-default (contacts — stays private per ADR-154).
+
+## Section 7 — Role-advancement training (a training Journey per role) — 📋 (ADR-157)
+
+> **The frame (owner).** Onboarding never ends — it's keyed to **role**. Every promotion assigns a
+> new training Journey that walks the member through the functions that role just unlocked. Member
+> onboarding (built) is rung one; Crew, Host, and every admin role get their own advancement
+> training, with permissions, help articles, and a completion transcript all tied in.
+
+**Composes existing systems** (ADR-157): the `role_change` event (already emitted), the Journeys/
+Quests engine (`lib/journey-plans.ts`, `quest_steps`, `journey_plan_adoptions`), the tour/coachmark
+system (`TourState`/`TourProvider`), the Vera coach, help articles (`content/help/*`), and the
+roles/permissions model (`lib/permissions`, `lib/nav-areas`). **No new flow engine.**
+
+| # | Item | What | Reuse | Size |
+|---|---|---|---|---|
+| 7.1 | **Assignment-on-promotion** | `role_change` → assign the matching training Journey + a Vera nudge | `app/(main)/admin/actions.ts` (+ Crew upgrade path), journey-plans adoption | S–M |
+| 7.2 | **Training-path records** | record *assigned / started / completed* per (member, role) — the advancement transcript + gate + analytics | extend `journey_plan_adoptions` or a `training_paths` table | M |
+| 7.3 | **Role→Journey content** | one training Journey per role; each step = a help article + optional coachmark tour; completion rewards (online → gems, ADR-139) | help center, Journeys, coachmark registry | M–L |
+| 7.4 | **Help-article role tagging** | tag `content/help/*` by `role` + `featureKeys` so a Journey assembles from the role's newly-unlocked surfaces | help front-matter (already has `featureKeys`/`audience`) | S |
+| 7.5 | **Flow management (admin)** | owner-tunable authoring of training Journeys per role | Journey/Quest authoring + help editor | M |
+
+**Sequencing:** 7.1 + 7.2 are the spine (assign + record) — ship first. 7.3–7.5 are the curriculum
++ management layer. The **member** rung already exists (induction + activation + chores + Founder's
+First Week); 7.x generalizes it up the ladder. Member-facing curriculum → help/Notion; engine →
+git. **Open (owner):** does Crew→Host training *gate* admin access until complete, or just nudge?
 
 ## Reuse map — what already exists (so you never rebuild it)
 
