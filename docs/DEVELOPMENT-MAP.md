@@ -251,8 +251,18 @@
 > its official Journeys (each → the Journey detail's practices + free Adopt; `lib/quests.ts`).
 > *B3* retired the legacy action-chain engine in code (`advanceQuests` + old `getQuestsData`/
 > `startQuest` removed; sidebar repointed to the active Journey) + the GLOSSARY/THE-QUEST/DATABASE
-> terminology pass. Loose end (§S1b): physically drop the now-dormant `quest_*` tables once the
-> `quest_outcomes()` analytics RPC is retired + types regenerated.
+> terminology pass. Migration `20260608010000` applied to prod + types regenerated. Loose end
+> (§S1b): physically drop the now-dormant `quest_*` tables once the `quest_outcomes()` analytics
+> RPC is retired.
+>
+> **2026-06-06:** **Admin gets three layers** (ADR-153) — whole management suites were too much for
+> the narrow sidebar. Admin is now: ① the **catalog spine** (`admin/sections.ts`, one declaration per
+> surface); ② **nine full-page suites** — *Spaces · Engage · Comms · Safety · Reach · People ·
+> Insights · Vera · System* — each a full page whose links are its **top-bar sub-nav tabs** (and a
+> launchpad section), telescoped by role; ③ the **per-page sidebar console**, trimmed to **light
+> page-globals** (Basics, Layout, this page's Stats + QR) that **link back to each surface's parent
+> suite + sub-items**. Regrouping the catalog updated the sub-nav + launchpad for free; the sidebar
+> trim follows. The sidebar *tunes the page*; the suite *manages the domain*.
 
 ---
 

@@ -4809,3 +4809,50 @@ gains `quest_id` (nullable) + `official`, the seeded seasonal Pillar content bec
 practices. The naming is now **stable** ("Quest" = the game + its seasonal containers; "Journey" =
 a practice path) — no further renames. GLOSSARY.md / THE-QUEST.md / DATABASE.md / ECONOMY get
 their full pass when Phase B's schema lands; until then `quest_chains` remains the seasonal store.
+
+---
+
+## ADR-153: Three admin layers — page-globals sidebar · nine full-page suites · the catalog spine
+
+**Status:** Accepted — suites shipped, sidebar trim follows. Refines [ADR-137](DECISIONS.md) /
+[ADR-138](DECISIONS.md) / [ADR-149](DECISIONS.md). Spec: [EMBEDDED-ADMIN.md](EMBEDDED-ADMIN.md).
+
+**Context.** ADR-149 absorbed 16 `/admin/*` surfaces into the per-page **sidebar console**. In
+practice the sidebar — a narrow rail — became overloaded: it's right for *light, in-context* page
+admin (this page's name/cover, layout, stats, its QR code), but cramming **whole management suites**
+into it (the full Gamification system, the five-tab Spaces tree, Members + Roles, Vera's full
+config) doesn't fit. Big suites need width, a header, and their own tabbing. Meanwhile `/admin`
+*already* had that shape — a route group with a **top-bar sub-nav** (`AdminSubNav`) that renders the
+active group's pages as tabs — but the groups had grown ad hoc (Community / Structure / Insights /
+Vera / Platform / QR).
+
+**Decision.** Split admin into **three intentional layers**, and regroup the catalog into **nine
+domain suites**:
+- **Layer 1 — the catalog spine** (`app/(main)/admin/sections.ts`, single source of truth). Every
+  admin surface is one `AdminLink` in exactly one **suite** (`AdminGroup`), with its role/staff gate.
+  Drives every other layer; a feature declared here can't be orphaned.
+- **Layer 2 — nine full-page suites.** Each suite is a full-page admin area; its links render as the
+  **top-bar sub-nav tabs** (`AdminSubNav` via `groupForPath`) and as a launchpad section
+  (`AdminLaunchpad` via `visibleGroups`). The suites — **Spaces · Engage · Comms · Safety · Reach ·
+  People · Insights · Vera · System** — are one-domain-each and telescope by role (host sees the
+  first five; guide/mentor add the Hubs/Nexuses tabs; janitor adds the last four). Heavy suites live
+  here, with room to breathe.
+- **Layer 3 — the per-page sidebar console** (`components/admin/sidebar/admin-console.tsx`). Trims to
+  **light page-globals only** — Basics, Layout/template, this page's Stats, its QR code, page
+  adjustments — and **each category links back to its parent suite menu item + that suite's sub-item
+  tabs**. The sidebar tunes the page; the suite manages the domain. (Sidebar trim is the follow-on
+  to the suite regroup.)
+
+**Alternatives.** Keep everything in the sidebar (rejected — the trigger for this ADR; suites don't
+fit a rail). One flat `/admin` list, no suites (rejected — no grouping is the problem we're fixing).
+Put suites in the left rail as nine top-level items (rejected — bloats the rail for janitors; the
+`/admin` launchpad is the suites' menu, reached from the rail's one Overview entry). Two sources of
+truth for tabs vs. cards (rejected — `sections.ts` already drives both; regrouping it updates the
+sub-nav *and* launchpad for free).
+
+**Consequences.** The regroup is a contained edit to `sections.ts` — the sub-nav and launchpad
+update automatically; the console is unaffected (it buckets the flattened links by `slotForHref`).
+`/admin` Overview's sub-nav now defaults to the Spaces suite. The split makes the "where does this
+admin live?" answer mechanical: light + page-scoped → sidebar; multi-surface domain management →
+its suite. Follow-ons: trim the sidebar console to page-globals + suite back-links; align the rail
+labels to the suite names if desired. Operator guide → Notion.
