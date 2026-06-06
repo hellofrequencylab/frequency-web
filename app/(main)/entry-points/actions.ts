@@ -128,10 +128,13 @@ export async function createEntryPoint(input: EntryPointInput): Promise<ActionRe
   return ok({ id: (data as { id: string }).id })
 }
 
+// A member can manage an entry point they OWN or CREATED — the latter covers codes
+// made in the older QR flow that never got an `owner_profile_id`/`template_id`. The
+// first edit claims them (sets owner + template), so they become proper entry points.
 async function ownEntryPoint(db: SupabaseClient, id: string, ownerId: string): Promise<boolean> {
-  const { data } = await db.from('qr_codes').select('owner_profile_id, template_id').eq('id', id).maybeSingle()
-  const row = data as { owner_profile_id: string | null; template_id: string | null } | null
-  return !!row && row.owner_profile_id === ownerId && !!row.template_id
+  const { data } = await db.from('qr_codes').select('owner_profile_id, created_by').eq('id', id).maybeSingle()
+  const row = data as { owner_profile_id: string | null; created_by: string | null } | null
+  return !!row && (row.owner_profile_id === ownerId || row.created_by === ownerId)
 }
 
 export async function updateEntryPoint(id: string, input: EntryPointInput): Promise<ActionResult> {
@@ -151,6 +154,9 @@ export async function updateEntryPoint(id: string, input: EntryPointInput): Prom
       target_url: row.target_url,
       template_id: row.template_id,
       flyer: row.flyer,
+      style: row.style,
+      // Claim a legacy/ownerless code on first edit, so it's fully owned afterward.
+      owner_profile_id: crew.id,
       ...(campaignId ? { campaign_id: campaignId } : {}),
     })
     .eq('id', id)

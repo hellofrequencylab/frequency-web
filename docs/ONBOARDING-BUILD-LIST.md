@@ -454,12 +454,18 @@ keep scope rails. **Open:** "Around You" naming. **Sequence:** 10.1 → 10.2 →
   live QR, PNG/SVG downloads). Per-sequence editing already ships (the "Edit splash" link →
   `/pages/sequences/[slug]/edit`), and the catalog is reachable from **Growth Studio › Pages &
   onboarding**, so positioning + editability are in place.
-- ⏳ **Entry points "show my past ones" — diagnosed, deferred.** DB check: the account owns **0**
-  `qr_codes`; the one code in the DB is `owner_profile_id = NULL`, no `template_id` (made in the older QR
-  flow). The list is correctly empty — surfacing legacy codes needs the QR-Studio ↔ entry-points data
-  unification (own + backfill `owner_profile_id`), tracked with the QR-section collapse + sequence-editor
-  asks under §9.
-  *Next:* 10.2 operator dashboards → 10.3 Network hub → 10.4/10.5 Practices+Library / Settings.
+- ✅ **Entry points now surface legacy/own codes (no migration).** Root cause (DB check): the account
+  owns **0** `qr_codes`; the one code in the DB has `owner_profile_id = NULL` + no `template_id` (older QR
+  flow), so the templated-owner-only query showed nothing. Fix: `listMyEntryPoints` now matches
+  `owner_profile_id = me OR created_by = me` and drops the template requirement (templateless rows render
+  with the default template); `ownEntryPoint` accepts owner-or-creator, and the first edit **claims** the
+  code (`updateEntryPoint` sets `owner_profile_id` + template/style). Non-destructive — no backfill
+  migration.
+- ✅ **Edit-path audit shipped** — `docs/EDIT-PATH-AUDIT.md`. 28/33 nav surfaces have an in-app edit path;
+  the real build gaps are **Nurture** + **Automations** (stubbed marketing channels). People · Library ·
+  Beta · Contacts are browse/append by design.
+  *Next:* 10.2 operator dashboards → 10.3 Network hub → 10.4/10.5 Practices+Library / Settings; marketing
+  **Nurture/Automations** editors are the remaining edit-path gaps.
 
 ## Reuse map — what already exists (so you never rebuild it)
 
