@@ -357,3 +357,77 @@ export function planPillarMap(items: JourneyPlanItem[]): PlanPillarSlice[] {
   }
   return [...counts.entries()].map(([domainId, count]) => ({ domainId, count }))
 }
+
+// --- Active-journey progress (no schema; derived from the practice log) --------
+
+export interface JourneyProgressItem extends JourneyPlanItem {
+  /** Logged at least once → the step counts as done (the v1 definition). */
+  logged: boolean
+}
+
+export interface JourneyProgress {
+  plan: JourneyPlan
+  items: JourneyProgressItem[]
+  total: number
+  done: number
+  percent: number
+  /** First not-yet-logged item, in order — the member's "current step". */
+  nextItem: JourneyProgressItem | null
+}
+
+/** A member's active (adopted) journeys with progress derived from their practice
+ *  log: a step is "done" once they've logged that practice at least once, so the
+ *  current step is the first item they haven't logged. No progress schema needed —
+ *  this rides the same practice_logs the gamification (zaps / streak) runs on, so
+ *  logging a journey's practice advances the journey AND earns the rewards. */
+export async function getActiveJourneyProgress(profileId: string): Promise<JourneyProgress[]> {
+  const client = db()
+
+  const { data: adoptionRows } = await client
+    .from('journey_plan_adoptions')
+    .select(`created_at, plan:journey_plans(${PLAN_COLS})`)
+    .eq('profile_id', profileId)
+    .eq('active', true)
+    .order('created_at', { ascending: false })
+  const plans = ((adoptionRows ?? []) as unknown as { plan: JourneyPlan | null }[])
+    .map((a) => a.plan)
+    .filter((p): p is JourneyPlan => !!p)
+  if (plans.length === 0) return []
+
+  // Which practices has the member ever logged? (the step-done signal)
+  const { data: logRows } = await client
+    .from('practice_logs')
+    .select('practice_id')
+    .eq('profile_id', profileId)
+  const logged = new Set(
+    ((logRows ?? []) as { practice_id: string | null }[])
+      .map((r) => r.practice_id)
+      .filter((id): id is string => !!id),
+  )
+
+  const { data: itemRows } = await client
+    .from('journey_plan_items')
+    .select(ITEM_COLS)
+    .in(
+      'plan_id',
+      plans.map((p) => p.id),
+    )
+    .order('sort_order', { ascending: true })
+  const allItems = (itemRows ?? []) as unknown as JourneyPlanItem[]
+
+  return plans.map((plan) => {
+    const items: JourneyProgressItem[] = allItems
+      .filter((it) => it.plan_id === plan.id)
+      .map((it) => ({ ...it, logged: logged.has(it.practice_id) }))
+    const done = items.filter((it) => it.logged).length
+    const total = items.length
+    return {
+      plan,
+      items,
+      total,
+      done,
+      percent: total > 0 ? Math.round((done / total) * 100) : 0,
+      nextItem: items.find((it) => !it.logged) ?? null,
+    }
+  })
+}
