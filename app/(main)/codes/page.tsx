@@ -15,6 +15,7 @@ import { MemberCodes, type MemberCodeCard } from './member-codes'
 import { MarketingCodes, type MarketingCard } from './marketing-codes'
 import { VcardEditor } from './vcard-editor'
 import { updateMyVcard } from './actions'
+import { FocusTemplate } from '@/components/templates'
 
 export const dynamic = 'force-dynamic'
 
@@ -63,33 +64,29 @@ export default async function CodesPage() {
   })
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-6 py-2">
-      <header>
-        <h1 className="flex items-center gap-2 text-2xl font-bold text-text">
-          <QrCode className="h-5 w-5 text-primary-strong" /> Your codes
-        </h1>
-        <p className="mt-1 text-sm text-muted">
-          Your personal QR codes — share them in person or in your outreach. Design each one, and
-          watch the scans add up.
-        </p>
-      </header>
+    <FocusTemplate
+      width="wide"
+      title={<span className="flex items-center gap-2"><QrCode className="h-5 w-5 text-primary-strong" /> Your codes</span>}
+      description="Your personal QR codes — share them in person or in your outreach. Design each one, and watch the scans add up."
+    >
+      <div className="space-y-6">
+        <MemberCodes cards={cards} referralCount={referralCount ?? 0} walletEnabled={isGoogleWalletConfigured()} />
 
-      <MemberCodes cards={cards} referralCount={referralCount ?? 0} walletEnabled={isGoogleWalletConfigured()} />
+        <VcardEditor config={parseVcard(me.vcard)} handle={me.handle} onSave={updateMyVcard} />
 
-      <VcardEditor config={parseVcard(me.vcard)} handle={me.handle} onSave={updateMyVcard} />
+        {isCrew && <CrewMarketing profileId={profileId} />}
 
-      {isCrew && <CrewMarketing profileId={profileId} />}
-
-      <div className="rounded-2xl border border-border bg-surface-elevated/50 p-4">
-        <h2 className="flex items-center gap-2 text-sm font-bold text-text">
-          <ScanLine className="w-4 h-4 text-primary-strong" /> Scanning a code
-        </h2>
-        <p className="mt-1 text-sm text-muted">
-          Point your phone&apos;s camera at any Frequency QR — on a poster, plaque, or someone&apos;s
-          screen — to connect, join, or send a zap.
-        </p>
+        <div className="rounded-2xl border border-border bg-surface-elevated/50 p-4">
+          <h2 className="flex items-center gap-2 text-sm font-bold text-text">
+            <ScanLine className="w-4 h-4 text-primary-strong" /> Scanning a code
+          </h2>
+          <p className="mt-1 text-sm text-muted">
+            Point your phone&apos;s camera at any Frequency QR — on a poster, plaque, or someone&apos;s
+            screen — to connect, join, or send a zap.
+          </p>
+        </div>
       </div>
-    </div>
+    </FocusTemplate>
   )
 }
 
