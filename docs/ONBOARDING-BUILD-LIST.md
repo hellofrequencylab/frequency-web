@@ -1,0 +1,215 @@
+# Onboarding & Vera — prioritized build list
+
+> **Purpose.** The single, ranked, execute-from list for the onboarding push: get a real
+> beta cohort *in the door, excited, and creating a profile + content* — coached by Vera,
+> deeply integrated. Written after a full docs+code audit (2026-06-06). Companion specs:
+> [`ONBOARDING.md`](ONBOARDING.md), [`AI-VERA.md`](AI-VERA.md), [`BETA-ACTIVATION.md`](BETA-ACTIVATION.md),
+> [`BETA-INDUCTION.md`](BETA-INDUCTION.md). Sequencing in [`BACKLOG.md`](BACKLOG.md) §F/§P.
+
+## The headline
+
+**You are not building onboarding from scratch — you're finishing the last mile.** The
+induction, the Vera concierge (deterministic **and** live Claude loop), the AI kernel,
+help-RAG, member memory, the coachmark tour, and the spotlight tour are **all shipped and
+wired**. `tsc` and `eslint` are clean. The gaps are *connective* (Vera isn't present
+outside onboarding) and *proactive* (no day-2 nudges) — plus a handful of config flips to
+actually turn a test cohort loose.
+
+Two levers, in order: **(0) flip the switches that let real testers in today**, then
+**(1) make Vera ever-present and the feed an activation engine.**
+
+## Priority ladder (read this first)
+
+| Rank | Item | Goal it serves | Size | Status |
+|---|---|---|---|---|
+| **0** | Pre-test enablement (config, not code) | Get testers in *today* | S | ⏳ |
+| **1.1** | Persistent Vera launcher, app-wide | Deep Vera integration | M | ⏳ |
+| **1.2** | "Complete Your Profile" feed card | Create a profile | S–M | 📋 |
+| **1.3** | Vera coach "next best action" card | Excitement + direction | S–M | 📋 |
+| **1.4** | "Founder's First Week" tasks + badge | Create content | M | 📋 |
+| **1.5** | Live-loop suggestion chips | Guided depth | S | ⏳ |
+| **2.1** | Welcome community post | Arrive *greeted* | S–M | 📋 |
+| **2.2** | Finish `draft_intro` (no-op today) | Warm intros land | S–M | ⏳ |
+| **2.3** | Memory batch summarization cron | Vera stays fresh | M | 📋 |
+| **2.4** | Warm up seeded demo content (§S9) + demo box → action links (§S4) | First scroll feels alive | M | 📋 |
+| **3.x** | Proactive Vera (encouragement/accountability, host copilot) | Day-2 retention | M–L | 🔴 gated |
+| **5.1–5.2** | Rename Directory → **Network** + member-tier personal contacts + quick-add capture | Real-life contacts, kept | S–M | 📋 |
+| **5.3–5.5** | Event-invite capture loop (QR → RSVP → triple-write) + gamification | The growth loop | M–L | 📋 |
+| **4.x** | Cleanup + doc hygiene | Lean tree | S | ⏳ |
+
+Legend: ✅ done · ⏳ partially built / in flight · 📋 specced, not built · 🔴 blocked.
+
+---
+
+## Section 0 — Pre-test enablement (do this first; mostly config)
+
+The fastest path to "people in there and testing." None of this is a feature build.
+
+| # | Action | Where | Why it gates testing |
+|---|---|---|---|
+| 0.1 | Set `ANTHROPIC_API_KEY` in prod | env | Live Vera loop is dark without it (falls back to deterministic — still works, but not the real test). |
+| 0.2 | Flip `platform_flags.ai_enabled` **on** | `/admin/ai` toggle | Defaults **false** (fail-closed). Live Vera + help-RAG stay off until flipped. |
+| 0.3 | Click **Build index** once in prod | `/admin/ai` | `help_chunks` corpus is empty until ingested; "Ask Vera" help deflects to human otherwise. |
+| 0.4 | Run the 2 pending migrations | `supabase db push` | `lock_economy_columns` (critical) + `perf_indexes`. |
+| 0.5 | Set prod env: `CRON_SECRET`, `UNSUBSCRIBE_SECRET`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_APP_URL`, `EMAIL_FROM`, `RESEND_WEBHOOK_SECRET` | env | Cron, email, metadata, unsubscribe all reject/misfire without these. |
+| 0.6 | Confirm `BETA_INDUCTION_ACTIVE = true` + verify the funnel fires on `/admin/engagement` | `lib/onboarding/beta-script.ts`, `/admin/engagement` | Induction is the live path; confirm `onboarding.induction_completed → vera_opened → circle.joined → practice.adopted → profile.completed` all land so the test is *measurable*. |
+
+**Acceptance:** a fresh signup completes induction → lands on `/feed?welcome=vera` → Vera's
+lightbox opens with live (not scripted) replies → the funnel shows the events.
+
+---
+
+## Section 1 — The activation + deep-Vera push (P0 build)
+
+Ship as **one arc** (they share `getOnboardingStatus()` and an extracted `<VeraChat>`),
+in small reviewable PRs. Best-practice guardrails in the last section.
+
+### 1.1 — Persistent Vera launcher, app-wide ⏳ (ADR-086 / AI-VERA §4.0)
+- **Goal.** Vera is one tap away on *every* member page, not just onboarding. This is the
+  whole of "deeply integrated."
+- **Reuse, don't rebuild.** Extract a headless `<VeraChat>` from
+  `components/onboarding/vera-lightbox.tsx` (the chat already runs the live loop +
+  proposals + suggestions). Decouple it from the feed-specific close/redirect.
+- **Build.** A docked launcher bubble in the app shell (`app/(main)/layout.tsx` /
+  the rail) that opens `<VeraChat>`. **Fold the help launcher's three tiers**
+  (search → grounded answer → human) into her panel so there's *one* bubble, not two.
+- **Touch.** `components/onboarding/vera-lightbox.tsx` (extract), new
+  `components/vera/vera-launcher.tsx` + `vera-chat.tsx`, `app/(main)/layout.tsx`,
+  fold in `app/(help)/help/ask`.
+- **Acceptance.** Bubble on every `(main)` page; opens chat with memory; help questions
+  answer in her voice with citations; deterministic fallback when AI is off; honors
+  `prefers-reduced-motion` + sleep-mode recede.
+
+### 1.2 — "Complete Your Profile" feed card 📋 (BETA-ACTIVATION §2)
+- **Goal.** Make "create your profile" the obvious first move; visible, rewarded, dismissible.
+- **Reuse.** `lib/onboarding/status.ts:getOnboardingStatus()` already scores avatar /
+  circle / practice / log. Reuse the streak progress-ring; each row deep-links to the exact editor.
+- **Build.** A dismissible feed card (hidden once complete), one-time gem drop at 100%,
+  fires `profile.completed` (already in funnel).
+- **Touch.** `components/feed/` (new card), `app/(main)/feed/page.tsx`, reward on first completion (idempotent key).
+- **Acceptance.** Shows while incomplete, never nags a done field, awards once, vanishes at 100%.
+
+### 1.3 — Vera coach "next best action" card 📋 (BETA-ACTIVATION §5)
+- **Goal.** Vera surfaces the *single* next best action in her voice, advancing as they finish.
+- **Reuse.** The deterministic next-best-action logic already exists in
+  `lib/ai/vera/concierge.ts`; the copy lines are written in BETA-ACTIVATION §5.
+- **Build.** A small feed coach card (deterministic picker; AI may improvise on top),
+  every mention a **link** (the "Vera always links" doctrine).
+- **Touch.** `components/feed/`, `lib/onboarding/status.ts` (picker), `app/(main)/feed/page.tsx`.
+- **Acceptance.** One action at a time, ready-gated (no "join a 2nd circle" before the 1st),
+  always linked, graduates to "I'll step back" when activation is complete.
+
+### 1.4 — "Founder's First Week" tasks + badge 📋 (BETA-ACTIVATION §3–4)
+- **Goal.** Seed first **content** + real connections (first post, comment/react, friend,
+  2nd circle, RSVP/event, 3-day practice streak).
+- **Decision (recommended, BETA-ACTIVATION §4).** **Event-derived** engine — compute the
+  checklist from `engagement_events` + a thin reward-on-first-occurrence layer + a
+  "Founding Founder" badge. No new engine, no crew-tier mismatch.
+- **Build.** Add the 1–2 missing events (`reaction.added`, invite-accepted), the
+  reward-on-first idempotency layer, the badge/achievement, a "Founder tasks" view.
+- **Touch.** `lib/engagement/`, achievements catalog, a tasks view component, `/admin/engagement`.
+- **Acceptance.** Tasks reflect real events, reward once each, badge on set-complete, skippable.
+
+### 1.5 — Live-loop suggestion chips ⏳ (BACKLOG §P)
+- **Goal.** Keep guided depth flowing instead of dead-ending a turn.
+- **Gap.** The live Claude loop returns empty `suggestions[]`.
+- **Build.** Have Vera surface 1–3 quick-reply chips per turn (the deterministic concierge
+  already returns them; mirror in the live path).
+- **Touch.** `lib/ai/vera/agent-claude.ts`, `lib/ai/vera/loop.ts`.
+
+---
+
+## Section 2 — Finish the started loops (P1)
+
+| # | Item | Reuse / gap | Touch | Notes |
+|---|---|---|---|---|
+| 2.1 | **Welcome community post** 📋 | ONBOARDING beat #6 / AI-VERA §7 — system account posts "welcome [Name] 👋" once name is set | system-account post path, induction completion | Decide scope (community vs nexus) + opt-out *before* build. Turns signups into *greeted* members. |
+| 2.2 | **Finish `draft_intro`** ⏳ | Tool is declared but `lib/ai/vera/execute.ts` returns ok with no effect | `lib/ai/vera/execute.ts`, intro-post path | Removes the awkward part of the cold-start; "scary part done." |
+| 2.3 | **Memory batch summarization cron** 📋 | `ai_member_context` captures facts; summary never regenerated (Vera Phase C tail) | new cron on Batch API, `lib/ai/memory.ts` | Keeps memory fresh + makes the footprint-decay metric real. |
+| 2.4 | **Warm demo content** 📋 | §S9 (sterile seed copy) + §S4 (demo box → action links with point values) | `lib/demo/*`, Seed Studio, the demo notice box | First scroll should feel like a real warm community, not a demo. Directly affects "excited." |
+| 2.5 | **Confirm activation funnel** ⏳ | Events emit; verify end-to-end on `/admin/engagement` | — | Makes the *test* measurable (drop-off per step). |
+
+---
+
+## Section 3 — Proactive Vera (P2) — 🔴 gated
+
+**Hard gate (ADR-028):** no autonomous Vera writes until the vitest **consent/`shouldSend`
+harness** exists (BACKLOG §D). Build the harness first; then:
+
+- **3.1 — Encouragement + goal-anchored accountability** (Phase E) — streak-risk /
+  milestone / "you said you wanted X, the Tuesday circle meets at 6" nudges via the existing
+  `notification_queue` + cron + Batch, frequency-capped through `shouldSend`. (M–L)
+- **3.2 — Host/Guide copilot** (Phase F) — circle summaries, at-risk flags, draft
+  announcements. The human-amplifier; the biggest anti-lean-in lever. (L)
+- **3.3 — Nurture email sequence copy** — infra built (`lib/nurture/*`), persona-specific
+  copy unwritten (ADR-125 follow-up). (S–M, ungated — copy only)
+
+---
+
+## Section 4 — Cleanup & doc hygiene (cheap; some ✅ done this pass)
+
+- ✅ **Deleted 4 orphan modules** — `components/ui/can.tsx`, `components/compose-button.tsx`,
+  `lib/contract/views.ts`, `lib/help/feature-keys.ts` (verified zero importers).
+- ✅ **Fixed `AI-VERA.md` stale header** ("design / not yet built" → Phases A–D shipped).
+- ⏳ **Drop ~5 orphan quest tables** — `quest_steps`, `quest_progress`, `season_trophies`,
+  `group_memberships`, `circle_topics` (residue of the Jun-4→8 quest/arc/journey rename
+  churn). **Do only after** retiring `quest_outcomes()` + its `/admin` surface and
+  regenerating `database.types.ts` (BACKLOG §S1b). Needs a migration — not a free delete.
+- ⏳ **Split / index `DECISIONS.md`** — 4,858 lines / 161 ADRs, 31% of all doc lines.
+- ⏳ **Consolidate overlapping doc clusters** — onboarding/beta (4 docs), AI (5), engagement (4).
+
+---
+
+## Section 5 — Network (consolidate Contacts / Directory) — 📋 (ADR-154)
+
+The "make real-life contacts and keep them" product. Full design:
+[`NETWORK-CRM.md`](NETWORK-CRM.md) § *The Network rework*. The 3-entity data model + AI
+harvest + consent boundary are **already built**; this is IA, an access-tier change, and
+**one new public capture surface**. Ranked:
+
+| # | Item | Why | Reuse | Size |
+|---|---|---|---|---|
+| 5.1 | **Rename `Directory → Network`; merge `/people` + `/connections` into one member-tier tab** (Directory + Contacts faces) | Makes personal contacts a *member* product, not a host tool | `lib/nav-areas.ts`, `lib/connections/access.ts` (gate move only — RLS already owner-scoped) | S–M |
+| 5.2 | **Member quick-add capture** (`+` → scan card/poster/person, manual + Vera completes the card) | The headline promise; **already built**, just host-gated today | `app/(main)/connections/new/`, `lib/ai/connections-ai.ts` | S |
+| 5.3 | **Event-invite capture loop** — public RSVP contact form via an attributed QR → triple-write (event guest list · owner's personal CRM · marketing DB, consent observed) | The growth loop the product is built around; **doesn't exist yet** (RSVP is members-only) | `/q/<slug>` referral (ADR-091/099), `crm-sync.ts`, `event_guest` channel hint | M–L |
+| 5.4 | **`event_guests`** table — let a non-member RSVP to one event without an account | Backs 5.3 | new migration (additive) | S |
+| 5.5 | **Gamification** — zaps for capture/RSVP/attend/join + a "Connector" achievement, reward real outcomes not rows | Closes the loop into the season ladder | `lib/zaps.ts`, `lib/engagement/currency.ts`, achievements | S–M |
+
+**Privacy invariant (non-negotiable):** captured people stay **personal**; they enter
+marketing as `consent_state='unknown'` (added, never mailed) and become mailable only when
+**they** confirm an email or sign up. Promotion is the deliberate, consent-gated act (ADR-099).
+
+**Sequencing note:** 5.1 + 5.2 are a small, self-contained PR (IA + ungate) that ships the
+member product immediately. 5.3–5.5 are the bigger growth-loop build — do after the §1
+activation push, since they share the QR/referral + consent plumbing.
+
+## Reuse map — what already exists (so you never rebuild it)
+
+| Need | Already built | Path |
+|---|---|---|
+| Live Vera turn (Claude + tools + memory) | ✅ | `lib/ai/vera/agent-claude.ts` |
+| Deterministic Vera fallback | ✅ | `lib/ai/vera/concierge.ts` |
+| Bounded typed tools + validators | ✅ | `lib/ai/vera/tools.ts`, `execute.ts`, `read-tools.ts` |
+| Member memory (facts/summary, erasable) | ✅ | `lib/ai/memory.ts` + `ai_member_context` |
+| AI kernel (router, caps, dual kill-switch, ledger) | ✅ | `lib/ai/{client,models,budget,usage,complete}.ts` |
+| Help RAG (embed → ground → cite → deflect) | ✅ | `lib/ai/help-rag.ts`, `help-index.ts` |
+| Activation status (single source of truth) | ✅ | `lib/onboarding/status.ts` |
+| Coachmark tour (mounted) | ✅ | `components/onboarding/tour-provider.tsx` + `lib/onboarding/{tips,select}.ts` |
+| Spotlight tour | ✅ | `components/onboarding/spotlight-tour.tsx` |
+| Vera chat UI (extract `<VeraChat>` from here) | ✅ | `components/onboarding/vera-lightbox.tsx` |
+| Vera operator config | ✅ | `/admin/vera`, `lib/ai/vera/config.ts` |
+| Beta funnel (splash → lead-flow → induction → complete) | ✅ | `app/(marketing)/`, `app/onboarding/beta/`, `lib/onboarding/{personas,lead-flows,beta-sequences}.ts` |
+
+## Best-practice guardrails (apply to every item above)
+
+- **Deterministic-first.** Every surface keeps its non-AI baseline; Vera is an enhancement.
+  Kill switch on ⇒ the product is still whole.
+- **Propose-and-confirm.** No autonomous writes; every Vera write shows an Allow/Skip. No
+  autonomy graduation until the consent harness (ADR-028).
+- **Non-blocking & paced.** One cue at a time, skippable, never re-shown — never a wizard
+  (ADR-047). Honor `prefers-reduced-motion`, focus management, mobile-first.
+- **Vera always links.** Every feature/page/action she names renders as a tappable link.
+- **Compose from the kit.** Use the templates + `EntityCard`/`StatCard`/`SectionHeader`;
+  no hand-rolled headers, no `text-[10/11px]` content, semantic tokens only (no hex).
+- **Measure the right funnel.** Activation up, time-to-human down, Vera footprint per
+  established member *decays*. If "messages to Vera" is what climbs, she's failing.
