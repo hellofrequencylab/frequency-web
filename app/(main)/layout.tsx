@@ -13,7 +13,7 @@ import { AchievementToastContainer } from '@/components/achievement-toast'
 import { ZapToastContainer } from '@/components/zap-toast'
 import { PresenceHeartbeat } from '@/components/presence/heartbeat'
 import { PushRegistration } from '@/components/push/registration'
-import { SupportLauncher } from '@/components/support/support-launcher'
+import { VeraLauncher } from '@/components/vera/vera-launcher'
 import { PageViewTracker } from '@/components/analytics/track-provider'
 import { GaConsentGate } from '@/components/analytics/ga-consent-gate'
 import { hasConsent } from '@/lib/consent/consent'
@@ -155,7 +155,7 @@ export default async function MainLayout({
       <ZapToastContainer />
       <PresenceHeartbeat />
       <PushRegistration />
-      <SupportLauncher index={helpIndex} />
+      <VeraLauncher index={helpIndex} />
       <PageViewTracker />
       <TourProvider initialState={tourState} satisfied={tourSatisfied} />
     </AppShell>
