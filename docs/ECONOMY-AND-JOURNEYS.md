@@ -143,7 +143,9 @@ you can only *do* as Crew.
    preview banner (ADR-140).
 4. ✅ **Seasonal journeys** — `quest_chains.domain_id` → Pillar; 4 primary + 2 micro
    tracks seeded for the active season (ADR-139/140). Authoring surface still pending.
-5. ⏳ **DIY journey builder** — pick practices → a personal journey.
+5. ✅ **DIY journey builder** — the **Studio** window: pick practices → a personal journey,
+   with emoji/accent identity, a markdown intro, drag-reorder steps, per-step cadence/note, a
+   live Pillar balance, and share-to-library (Crew). Reusable shell for future entities (ADR-142).
 6. ✅ **Endorsement layer** — rank shown on public profile + people cards + post flair is
    Crew-gated via `isEndorsed` (ADR-141); free profiles show earned stats but no rank.
    Cosmetics/titles/journey badges ride the same gate when they render.

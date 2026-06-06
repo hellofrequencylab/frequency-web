@@ -4443,6 +4443,50 @@ endorsement set (cosmetics/titles/journey badges) is a one-line gate, not a re-l
 journey builder (§7.5) remains the last open ECONOMY item.
 
 ---
+
+## ADR-142: The Studio — one reusable creation window, Journey builder as first instance
+
+**Status:** Accepted — shipped (framework + Journey). Spec:
+[ECONOMY-AND-JOURNEYS.md](ECONOMY-AND-JOURNEYS.md) §5/§7, [PAGE-FRAMEWORK.md](PAGE-FRAMEWORK.md)
+(§ Studio). Closes ECONOMY §7.5 (DIY journey builder).
+
+**Context.** The open Journeys library (`journey_plans`, ADR-096) had a full data layer +
+server actions but only a no-JS, form-per-row author UI — functional, not the expressive
+"share yourself with the community" experience journeys are meant to be. And the ask is bigger
+than journeys: a **familiar creation window + toolset reused anywhere there's something to make**
+(journey, circle, practice, event…), each launched with that instance's create/edit settings.
+
+**Decision.**
+- **One shared shell — the Studio window** (`components/studio/studio-window.tsx`): a launchable
+  overlay panel (full-screen on mobile) with consistent chrome — eyebrow, Esc/backdrop close,
+  scroll-lock, a body the entity fills with its tools, and a sticky footer action bar. Generic
+  and reused; entities pass their identity header, tools, and footer.
+- **Launchable + deep-linkable.** A launcher (e.g. `NewJourneyButton`) opens the window in place
+  anywhere; the full builder also lives at a real URL (`/journeys/[slug]` for the author) so it
+  opens standalone and is linkable. `?preview=1` renders the read-only "as others see it" view.
+- **Per-entity config is the extension point.** Journey is the first fully-realized builder
+  (identity: emoji + accent + title + summary + a markdown "intro" that scales a combo into a
+  course; a drag-reorder path of practices with a searchable picker grouped by Pillar, per-step
+  cadence + note; a live Pillar-balance meter; autosave; a celebratory share-to-community).
+  Circle/practice/event become follow-on builders that mount the same shell with their own tools +
+  capability gating ("specific admin create setting per instance").
+- **Schema.** `journey_plans` gains optional `intro`, `emoji`, `accent` (identity without an image;
+  `cover_image` stays for power users).
+- **Trust + gating unchanged.** New JSON server actions (`createJourney`, `saveJourneyMeta`,
+  add/remove/reorder/setStep, `setJourneyVisibility`) re-check ownership + Crew gating server-side;
+  the FormData actions remain the no-JS fallback. Building a personal journey is free; sharing to
+  the library is Crew (free in Beta).
+
+**Alternatives.** A full-page Focus route only (rejected — loses the "launches in place"
+feel); a heavyweight drag library (rejected — native HTML5 DnD + up/down buttons covers it with
+zero deps); per-entity bespoke editors (rejected — that's the duplication this replaces).
+
+**Consequences.** Journeys are now a genuine self-expression surface, and the next entity's
+"create/edit" is a spec against an existing shell, not a new screen. Native DnD is weak on touch,
+so up/down controls back it on mobile. The reusable specs for circle/practice/event are the
+follow-on work; the shell + journey prove the pattern.
+
+---
 ### Decisions intentionally NOT duplicated here
 
 Already fully covered by the repo docs (no ADR needed): the RLS / admin-client

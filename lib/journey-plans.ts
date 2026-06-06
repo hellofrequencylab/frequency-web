@@ -26,6 +26,13 @@ export interface JourneyPlan {
   slug: string
   title: string
   summary: string | null
+  /** Longer "why this journey" body (markdown) — the depth that turns a combo into
+   *  a course. Optional. */
+  intro: string | null
+  /** A single emoji giving the journey a face without an image. Optional. */
+  emoji: string | null
+  /** Accent color token (a pillar/brand token name, e.g. 'jade'). Optional. */
+  accent: string | null
   author_id: string | null
   visibility: PlanVisibility
   fork_of: string | null
@@ -50,8 +57,8 @@ export interface JourneyPlanItem {
 }
 
 const PLAN_COLS =
-  'id, slug, title, summary, author_id, visibility, fork_of, forked_count, adopt_count, ' +
-  'cover_image, created_at, updated_at, published_at'
+  'id, slug, title, summary, intro, emoji, accent, author_id, visibility, fork_of, ' +
+  'forked_count, adopt_count, cover_image, created_at, updated_at, published_at'
 
 const ITEM_COLS =
   'id, plan_id, practice_id, domain_id, sort_order, note, cadence, ' +
@@ -126,6 +133,8 @@ export async function createPlan(input: {
   authorId: string
   title: string
   summary?: string | null
+  emoji?: string | null
+  accent?: string | null
 }): Promise<JourneyPlan | null> {
   const { data } = await db()
     .from('journey_plans')
@@ -133,6 +142,8 @@ export async function createPlan(input: {
       slug: slugify(input.title),
       title: input.title.trim(),
       summary: input.summary?.trim() || null,
+      emoji: input.emoji?.trim() || null,
+      accent: input.accent?.trim() || null,
       author_id: input.authorId,
       visibility: 'private',
     })
@@ -188,14 +199,24 @@ export async function updateItem(
   await client.from('journey_plans').update(touch()).eq('id', planId)
 }
 
-/** Edit a plan's own fields (title / summary / cover). Caller enforces ownership. */
+/** Edit a plan's own fields (identity + intro). Caller enforces ownership. */
 export async function updatePlan(
   planId: string,
-  patch: { title?: string; summary?: string | null; coverImage?: string | null },
+  patch: {
+    title?: string
+    summary?: string | null
+    intro?: string | null
+    emoji?: string | null
+    accent?: string | null
+    coverImage?: string | null
+  },
 ): Promise<void> {
   const update: Record<string, unknown> = {}
   if (patch.title !== undefined) update.title = patch.title.trim().slice(0, 120) || 'Untitled journey'
   if (patch.summary !== undefined) update.summary = patch.summary?.trim().slice(0, 280) || null
+  if (patch.intro !== undefined) update.intro = patch.intro?.trim().slice(0, 8000) || null
+  if (patch.emoji !== undefined) update.emoji = patch.emoji?.trim().slice(0, 16) || null
+  if (patch.accent !== undefined) update.accent = patch.accent?.trim().slice(0, 24) || null
   if (patch.coverImage !== undefined) update.cover_image = patch.coverImage?.trim().slice(0, 500) || null
   if (Object.keys(update).length === 0) return
   await db().from('journey_plans').update({ ...update, ...touch() }).eq('id', planId)
