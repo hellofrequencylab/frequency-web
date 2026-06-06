@@ -33,6 +33,7 @@ import { ModerationModule } from '@/components/admin/modules/moderation-module'
 import { BroadcastsModule } from '@/components/admin/modules/broadcasts-module'
 import { GamificationModule } from '@/components/admin/modules/gamification-module'
 import { MembersModule } from '@/components/admin/modules/members-module'
+import { InsightsModule } from '@/components/admin/modules/insights-module'
 
 // The page-admin sidebar console (ADR-137 drill-down · ADR-138 the "manage" surface).
 // Home lists the categories that apply for THIS viewer; tap one to drill into its
@@ -144,18 +145,22 @@ export function AdminConsole({
   // Deep-link → in-place ports: when the role-gated catalog includes a surface's
   // link, render its in-place module in the spine category and drop the duplicate
   // link. Adding a ported surface = one entry here.
-  const IN_PLACE: Record<string, { href: string; module: ReactNode; summary: string }> = {
+  // When `href` is set, the module REPLACES that catalog link in its category. When
+  // omitted, it's ADDITIVE — a summary above the kept links (e.g. Insights), shown
+  // whenever the viewer has any link in that category.
+  const IN_PLACE: Record<string, { href?: string; module: ReactNode; summary: string }> = {
     safety: { href: '/admin/moderation', module: <ModerationModule />, summary: 'Reports queue' },
     comms: { href: '/admin/dispatches', module: <BroadcastsModule />, summary: 'Broadcast' },
     engage: { href: '/admin/gamification', module: <GamificationModule />, summary: 'Season, awards' },
     people: { href: '/admin/members', module: <MembersModule />, summary: 'Roster & roles' },
+    insights: { module: <InsightsModule />, summary: 'Live signal' },
   }
 
   const categories: Category[] = CATEGORIES.map((c) => {
     const raw = itemsBySlot.get(c.key) ?? []
     const inPlace = IN_PLACE[c.key]
-    const hasInPlace = !!inPlace && raw.some((it) => it.kind === 'link' && it.href === inPlace.href)
-    const base = inPlace ? raw.filter((it) => !(it.kind === 'link' && it.href === inPlace.href)) : raw
+    const hasInPlace = !!inPlace && (inPlace.href ? raw.some((it) => it.kind === 'link' && it.href === inPlace.href) : raw.length > 0)
+    const base = inPlace?.href ? raw.filter((it) => !(it.kind === 'link' && it.href === inPlace.href)) : raw
     const items = c.key === 'layout' ? [...layoutExtra, ...base] : base
     const mod =
       c.key === 'basics' ? settingsModule ?? undefined : hasInPlace ? inPlace.module : undefined

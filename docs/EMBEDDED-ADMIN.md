@@ -368,9 +368,12 @@ group of modules; `/admin/*` retires once empty.
 > category; the full catalogs stay linked). The per-category in-place wiring is now a
 > one-line `IN_PLACE` map entry. ✅ **Members** ported too (`MembersModule` reuses the
 > `MemberAdmin` roster in *People*, janitor-gated; subscribers/beta stay linked). Profile
-> inline is already covered by `EditableIdentity`. In-place ports so far: **Moderation ·
-> Broadcasts · Gamification · Members**. **Next:** keep porting (QR, Insights, …) and/or
-> the `@admin` server slot; the QR-generator + Vera-tone inline tuners.
+> inline is already covered by `EditableIdentity`. ✅ **Insights** too — an *additive*
+> live-stats summary (`InsightsModule` via `getEngagementDashboard`) heads the Insights
+> category above its full-dashboard links (the `IN_PLACE` map now supports additive
+> modules with no `href`). In-place ports so far: **Moderation · Broadcasts ·
+> Gamification · Members · Insights**. **Next:** keep porting (QR, Vera, Roles, Spaces,
+> …) and/or the `@admin` server slot; the QR-generator + Vera-tone inline tuners.
 
 1. **Engine.** `AdminModule` registry + `modulesFor`/`showsAdminPanel`; `AdminModuleCard`
    over `SidebarCard`; add `hub`/`nexus` loaders + `loadCapabilitiesForScope`; the `@admin`
