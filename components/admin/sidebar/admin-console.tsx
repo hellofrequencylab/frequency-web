@@ -31,6 +31,7 @@ import { NexusSettingsModule } from '@/components/admin/modules/nexus-settings-m
 import { EventSettingsModule } from '@/components/admin/modules/event-settings-module'
 import { ModerationModule } from '@/components/admin/modules/moderation-module'
 import { BroadcastsModule } from '@/components/admin/modules/broadcasts-module'
+import { GamificationModule } from '@/components/admin/modules/gamification-module'
 
 // The page-admin sidebar console (ADR-137 drill-down · ADR-138 the "manage" surface).
 // Home lists the categories that apply for THIS viewer; tap one to drill into its
@@ -139,35 +140,31 @@ export function AdminConsole({
 
   // Moderation: render the in-place queue (ADR-138) in place of the deep-link, when
   // the role-gated catalog grants it.
-  const canModerate = (itemsBySlot.get('safety') ?? []).some((it) => it.kind === 'link' && it.href === '/admin/moderation')
-  const canBroadcast = (itemsBySlot.get('comms') ?? []).some((it) => it.kind === 'link' && it.href === '/admin/dispatches')
+  // Deep-link → in-place ports: when the role-gated catalog includes a surface's
+  // link, render its in-place module in the spine category and drop the duplicate
+  // link. Adding a ported surface = one entry here.
+  const IN_PLACE: Record<string, { href: string; module: ReactNode; summary: string }> = {
+    safety: { href: '/admin/moderation', module: <ModerationModule />, summary: 'Reports queue' },
+    comms: { href: '/admin/dispatches', module: <BroadcastsModule />, summary: 'Broadcast' },
+    engage: { href: '/admin/gamification', module: <GamificationModule />, summary: 'Season, awards' },
+  }
 
   const categories: Category[] = CATEGORIES.map((c) => {
-    const items =
-      c.key === 'layout'
-        ? [...layoutExtra, ...(itemsBySlot.get(c.key) ?? [])]
-        : c.key === 'safety'
-          ? (itemsBySlot.get('safety') ?? []).filter((it) => !(it.kind === 'link' && it.href === '/admin/moderation'))
-          : c.key === 'comms'
-            ? (itemsBySlot.get('comms') ?? []).filter((it) => !(it.kind === 'link' && it.href === '/admin/dispatches'))
-            : itemsBySlot.get(c.key) ?? []
+    const raw = itemsBySlot.get(c.key) ?? []
+    const inPlace = IN_PLACE[c.key]
+    const hasInPlace = !!inPlace && raw.some((it) => it.kind === 'link' && it.href === inPlace.href)
+    const base = inPlace ? raw.filter((it) => !(it.kind === 'link' && it.href === inPlace.href)) : raw
+    const items = c.key === 'layout' ? [...layoutExtra, ...base] : base
     const mod =
-      c.key === 'basics'
-        ? settingsModule ?? undefined
-        : c.key === 'safety' && canModerate
-          ? <ModerationModule />
-          : c.key === 'comms' && canBroadcast
-            ? <BroadcastsModule />
-            : undefined
-    const summary = mod
-      ? c.key === 'basics'
+      c.key === 'basics' ? settingsModule ?? undefined : hasInPlace ? inPlace.module : undefined
+    const summary =
+      c.key === 'basics' && mod
         ? 'Name, details, status'
-        : c.key === 'safety'
-          ? 'Reports queue'
-          : 'Broadcast'
-      : items.length
-        ? `${items.length} ${items.length === 1 ? 'setting' : 'settings'}`
-        : undefined
+        : hasInPlace && mod
+          ? inPlace.summary
+          : items.length
+            ? `${items.length} ${items.length === 1 ? 'setting' : 'settings'}`
+            : undefined
     return { ...c, items, module: mod, summary }
   }).filter((c) => c.module || c.items.length > 0)
 
