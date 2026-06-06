@@ -409,7 +409,7 @@ reuse existing tables; the work is editors + actions.
 | 10.3 | **Network hub** | Unify `/people` + `/connections` + `/marketing/contacts` into one tabbed Contacts hub |
 | 10.4 | **Practices + Library** | Library folds into Practices as a "Curated" tab |
 | 10.5 | **Settings hub** | 5 routes → one sectioned hub |
-| 10.6 | **Drop the global right rail** | Relocate widgets (Dispatches/Events → Around You · Active Members → People · Leaderboard/Stats → Quest); keep in-body **scope rails** on circle/channel detail |
+| 10.6 | ✅ **Uniform widget-free right rail** | Stripped the four list widgets (Dispatches/Events/Members/Leaderboard); rail is now a uniform slim stats strip site-wide (DemoNotice + progress cockpit). That content lives on the left menu (Around You · Events · People · Quest); in-body **scope rails** on circle/channel detail kept |
 | 10.7 | **Rewrite `NAV_AREAS`** | New categories; later make it owner-editable (Site Navigation suite, BACKLOG §J) |
 
 **Approved decisions:** Library→Practices · Marketing→Growth Studio · Quest→one dashboard (sections) ·
@@ -423,8 +423,13 @@ keep scope rails. **Open:** "Around You" naming. **Sequence:** 10.1 → 10.2 →
   themselves.
 - ✅ **10.1 — Quest tabbed dashboard.** `components/crew/quest-tabs.tsx` + `app/(main)/crew/layout.tsx`:
   a shared sub-nav (Dashboard · Quests · Achievements · Challenges · Leaderboard · Streaks · Store)
-  above every `/crew` page. *Next:* 10.2 operator dashboards → 10.3 Network → 10.6 drop the global
-  right rail.
+  above every `/crew` page.
+- ✅ **10.6 — Uniform widget-free right rail.** `components/sidebar/right-sidebar.tsx` stripped of the
+  four list widgets (Dispatches/Events/Members/Leaderboard) + DateChip; the global rail is now a single
+  uniform slim strip everywhere it renders — `DemoNotice` over the player progress cockpit
+  (`GameStatsDock`). `loadGameStats`/`MobileGameStats` preserved (still consumed by the shell + mobile
+  stats menu). Scoped circle/channel detail rails untouched. *Next:* 10.2 operator dashboards → 10.3
+  Network hub → 10.4/10.5 Practices+Library / Settings.
 
 ## Reuse map — what already exists (so you never rebuild it)
 
