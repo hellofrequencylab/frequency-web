@@ -30,6 +30,7 @@ import { HubSettingsModule } from '@/components/admin/modules/hub-settings-modul
 import { NexusSettingsModule } from '@/components/admin/modules/nexus-settings-module'
 import { EventSettingsModule } from '@/components/admin/modules/event-settings-module'
 import { ModerationModule } from '@/components/admin/modules/moderation-module'
+import { BroadcastsModule } from '@/components/admin/modules/broadcasts-module'
 
 // The page-admin sidebar console (ADR-137 drill-down · ADR-138 the "manage" surface).
 // Home lists the categories that apply for THIS viewer; tap one to drill into its
@@ -139,6 +140,7 @@ export function AdminConsole({
   // Moderation: render the in-place queue (ADR-138) in place of the deep-link, when
   // the role-gated catalog grants it.
   const canModerate = (itemsBySlot.get('safety') ?? []).some((it) => it.kind === 'link' && it.href === '/admin/moderation')
+  const canBroadcast = (itemsBySlot.get('comms') ?? []).some((it) => it.kind === 'link' && it.href === '/admin/dispatches')
 
   const categories: Category[] = CATEGORIES.map((c) => {
     const items =
@@ -146,17 +148,23 @@ export function AdminConsole({
         ? [...layoutExtra, ...(itemsBySlot.get(c.key) ?? [])]
         : c.key === 'safety'
           ? (itemsBySlot.get('safety') ?? []).filter((it) => !(it.kind === 'link' && it.href === '/admin/moderation'))
-          : itemsBySlot.get(c.key) ?? []
+          : c.key === 'comms'
+            ? (itemsBySlot.get('comms') ?? []).filter((it) => !(it.kind === 'link' && it.href === '/admin/dispatches'))
+            : itemsBySlot.get(c.key) ?? []
     const mod =
       c.key === 'basics'
         ? settingsModule ?? undefined
         : c.key === 'safety' && canModerate
           ? <ModerationModule />
-          : undefined
+          : c.key === 'comms' && canBroadcast
+            ? <BroadcastsModule />
+            : undefined
     const summary = mod
       ? c.key === 'basics'
         ? 'Name, details, status'
-        : 'Reports queue'
+        : c.key === 'safety'
+          ? 'Reports queue'
+          : 'Broadcast'
       : items.length
         ? `${items.length} ${items.length === 1 ? 'setting' : 'settings'}`
         : undefined
