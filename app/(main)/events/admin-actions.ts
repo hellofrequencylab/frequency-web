@@ -47,3 +47,29 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
   revalidatePath('/events')
   revalidatePath('/feed')
 }
+
+// Field-level patch for the inline tuning layer (ADR-138). Allowlisted; re-checks
+// event.editSettings, same as the full settings form.
+const INLINE_FIELDS = ['title', 'description'] as const
+type InlineField = (typeof INLINE_FIELDS)[number]
+
+export async function updateEventField(id: string, slug: string, field: InlineField, value: string) {
+  if (!INLINE_FIELDS.includes(field)) throw new Error('Invalid field')
+
+  const caps = await getEventCapabilities(id)
+  if (!caps.has('event.editSettings')) throw new Error('Unauthorized')
+
+  const trimmed = value.trim()
+  if (field === 'title' && !trimmed) throw new Error('Title is required')
+
+  const admin = createAdminClient()
+  const { error } = await admin
+    .from('events')
+    .update(field === 'title' ? { title: trimmed } : { description: trimmed || null })
+    .eq('id', id)
+  if (error) throw new Error(error.message)
+
+  revalidatePath(`/events/${slug}`)
+  revalidatePath('/events')
+  revalidatePath('/feed')
+}

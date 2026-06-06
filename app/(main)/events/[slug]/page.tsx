@@ -9,6 +9,10 @@ import { EventCheckInButton } from './check-in-button'
 import { CrewGateButton } from '@/components/crew/upgrade-lightbox'
 import { ContextActions } from '@/components/context-actions'
 import { DetailTemplate } from '@/components/templates/detail-template'
+import { EditModeButton, StartEditingLink } from '@/components/admin/inline/edit-mode-button'
+import { InlineText } from '@/components/admin/inline/inline-text'
+import { getEventCapabilities } from '@/lib/core/load-capabilities'
+import { updateEventField } from '../admin-actions'
 import { getInitials } from '@/lib/utils'
 
 type EventDetail = {
@@ -99,6 +103,9 @@ export default async function EventDetailPage({
   if (!rawEvent) notFound()
   const event = rawEvent as unknown as EventDetail
 
+  const eventCaps = await getEventCapabilities(event.id)
+  const canManage = eventCaps.has('event.editSettings')
+
   const { data: rawRsvps } = await admin
     .from('event_rsvps')
     .select('id, status, profile:profiles!profile_id ( id, display_name, handle, avatar_url )')
@@ -182,18 +189,31 @@ export default async function EventDetailPage({
       {/* Unified Detail header (REDESIGN-INAPP Phase 1): title + the when/where/
           host meta as subtitle; the host/admin kebab as the action. */}
       <DetailTemplate
-        title={event.title}
+        title={
+          canManage ? (
+            <InlineText
+              value={event.title}
+              save={updateEventField.bind(null, event.id, slug, 'title')}
+              inputClassName="w-full rounded-lg border border-border-strong bg-surface px-2 py-0.5 text-xl sm:text-2xl font-bold text-text outline-none focus:ring-2 focus:ring-border-strong/30"
+            />
+          ) : (
+            event.title
+          )
+        }
         actions={
-          <ContextActions
-            role={myRole}
-            context={{
-              type: 'event',
-              id: event.id,
-              slug: event.slug,
-              isHost,
-              isCancelled: event.is_cancelled,
-            }}
-          />
+          <>
+            {canManage && <EditModeButton />}
+            <ContextActions
+              role={myRole}
+              context={{
+                type: 'event',
+                id: event.id,
+                slug: event.slug,
+                isHost,
+                isCancelled: event.is_cancelled,
+              }}
+            />
+          </>
         }
         subtitle={
           <div className="space-y-1.5">
@@ -338,13 +358,30 @@ export default async function EventDetailPage({
         )}
 
         {/* ── Description (open prose, not boxed) ─────── */}
-        {event.description && (
+        {canManage ? (
+          <div className="mb-6 max-w-2xl">
+            <InlineText
+              value={event.description}
+              multiline
+              placeholder="Add a description…"
+              save={updateEventField.bind(null, event.id, slug, 'description')}
+            >
+              {event.description ? (
+                <p className="text-sm text-text leading-relaxed whitespace-pre-wrap">
+                  {event.description}
+                </p>
+              ) : (
+                <StartEditingLink label="+ Add a description" />
+              )}
+            </InlineText>
+          </div>
+        ) : event.description ? (
           <div className="mb-6 max-w-2xl">
             <p className="text-sm text-text leading-relaxed whitespace-pre-wrap">
               {event.description}
             </p>
           </div>
-        )}
+        ) : null}
 
         {/* ── Attendees ──────────────────────────────── */}
         <section>
