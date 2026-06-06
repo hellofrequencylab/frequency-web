@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { Check } from 'lucide-react'
 import { AdminModuleCard } from '@/components/admin/admin-module-card'
 import { moduleById } from '@/lib/admin/modules/registry'
+import { fieldClasses, labelClasses } from '@/components/ui/field'
 import { getEventAdminData, updateEventSettings } from '@/app/(main)/events/admin-actions'
 
 // In-place "Event settings" module (EMBEDDED-ADMIN.md / ADR-133). Renders inside
@@ -14,9 +15,8 @@ import { getEventAdminData, updateEventSettings } from '@/app/(main)/events/admi
 
 type EventData = NonNullable<Awaited<ReturnType<typeof getEventAdminData>>>
 
-const input =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'
-const fieldLabel = 'text-xs font-medium text-muted'
+const input = fieldClasses
+const fieldLabel = labelClasses
 
 // ISO → the `YYYY-MM-DDTHH:mm` a <input type="datetime-local"> expects, in local time.
 function toLocalInput(iso: string | null): string {

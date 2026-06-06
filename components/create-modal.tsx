@@ -1,6 +1,7 @@
 'use client'
 
 import { X, Check, Loader2 } from 'lucide-react'
+import { fieldClasses } from '@/components/ui/field'
 
 const ICON_COLORS: Record<string, { bg: string; text: string }> = {
   indigo: { bg: 'bg-primary-bg', text: 'text-primary-strong' },
@@ -127,5 +128,5 @@ export function CreateModal({
 // Focus reads as a calm, on-brand state — the border firms to the strong sand
 // tone with a soft neutral halo, NOT a loud amber ring. (This class wins over the
 // global amber :focus-visible ring on these fields, by specificity.)
-export const cmInput = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none transition-colors focus:border-border-strong focus:ring-2 focus:ring-border-strong/35 disabled:opacity-50 placeholder:text-subtle'
+export const cmInput = fieldClasses
 export const cmLabel = 'block text-xs font-medium text-muted mb-1'
