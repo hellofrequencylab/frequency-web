@@ -19,13 +19,14 @@
 export type Rail = 'global' | 'scoped' | 'none'
 
 // FOCUS — no right rail. Prefix match (covers the route and everything under it).
+// Kept deliberately small: only genuine single-task surfaces (narrow forms, single
+// conversion / claim cards) go full-width. Operator/steward DASHBOARDS (Marketing,
+// CRM, Entry points, Outreach…) keep the uniform slim stats rail like the rest of
+// the app — the rail is now a thin strip, so there's no double-rail/clutter cost,
+// and members asked for a consistent right column site-wide.
 const FOCUS_PREFIXES = [
   '/settings', // narrow account forms
-  '/marketing', // operator workspace (its own tab bar)
-  '/crm', // steward member workspace
-  '/outreach', // steward composer
-  '/codes', // personal codes / QR hub
-  '/entry-points', // crew "My Entry Points" builder (ADR-126)
+  '/codes', // personal codes / QR hub (a single centered card)
   '/founder', // Founder's First Week checklist (build item 1.4)
   '/journal', // your Capture daily-log (build item §6 Phase 3)
   '/training', // role-advancement training (ADR-157 §7)
