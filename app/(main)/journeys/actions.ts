@@ -21,7 +21,7 @@ import {
   type PlanVisibility,
 } from '@/lib/journey-plans'
 
-// Server actions for the Journeys builder (ADR-096; unified + free, ADR-150).
+// Server actions for the Journeys builder (ADR-096; free, ADR-151).
 // Building, editing, publishing to the community library, and adopting/forking
 // anyone's public journey are ALL free — Journeys carry no paywall. FormData-based
 // so the builder works without client JS.

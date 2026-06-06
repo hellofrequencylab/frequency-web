@@ -16,10 +16,12 @@ greenfield initiative (G).
 The current build order for the progress / streak / disclosure arc and the practice-engine
 follow-ups it surfaced. Full detail lives in the lettered sections below — this is the ranking.
 
-**P0 — decided ✅ (2026-06-06, ADR-150): unify into one FREE Journey concept.**
-1. **S1 · Unify Quests + Journeys** — Phase 1 *shipped* (paywall removed everywhere; one
-   concept). Phase 2 *(§S, M)* — merge the two table families into one (the practice-combo vs
-   action-chain modeling fork); this is what now gates the journey authoring/moderation items.
+**P0 — decided ✅ (2026-06-06, ADR-151): The Quest → Seasonal Quest → Journeys → Practices (all free).**
+1. **S1 · Quest/Journey hierarchy** — Phase A *shipped* (paywall removed everywhere; "Quests"
+   restored as the distinct seasonal container — ADR-151 supersedes the ADR-150 "one concept"
+   call). Phase B *(§S, M)* — the data nesting: a `quests` container table, `journey_plans` gains
+   `quest_id` (nullable) + `official`, seasonal Pillar content becomes official **Journeys**
+   (practice-based) under the season's Quest, legacy action-chains retire to `season_challenges`.
 
 **P1 — finish the shipped arc (ready, high value, low risk)**
 2. **Stage-driven disclosure → crew dashboard + surfaces** *(§F, ADR-146)* — the spine is
@@ -368,16 +370,17 @@ inline path (wizard is an optional guided alt); RLS isolation between `journey_p
 > progress ring + stepper, obscured force-complete, graduates to the tracker — ✅.
 > **Still open:** S4 (demo box), S6 (tiered post options), broadcast-surface + label sweeps.
 
-- [~] **S1 · Unify Quests + Journeys** — ✅ *decided + Phase 1 shipped (ADR-150, 2026-06-06):*
-  one **Journey** concept, **free for everyone**; "The Quest" stays the game. Phase 1 removed
-  the paywall on every Journey surface (adopt/fork/publish on `/journeys`; start on
-  `/crew/quests`, retitled "Seasonal Journeys" + cross-linked). **Phase 2 (remaining, M):** merge
-  the table families. The fork to settle — `journey_plans` are **practice-combos** (progress from
-  `practice_logs`) while `quest_chains` are **action-chains** (attend/post/refer + `advanceQuests`
-  rewards), so either (a) generalize a Journey step to *practice OR action-criteria*, or (b)
-  re-express seasonal content as practice-combo Journeys and let action-chains live on as
-  `season_challenges`. Then GLOSSARY/THE-QUEST/DATABASE get their terminology pass. *(No more
-  renames — "Journey" is the kept name.)*
+- [~] **S1 · Quest/Journey hierarchy** — ✅ *decided + Phase A shipped (ADR-151, 2026-06-06):*
+  **The Quest → Seasonal Quest → Journeys → Practices**, all **free**. (ADR-151 supersedes
+  ADR-150's brief "one concept" detour — Quests and Journeys are *distinct nested levels*.) Phase A
+  removed the paywall everywhere and restored **"Quests"** as the seasonal container surface
+  (`/crew/quests`). **Phase B (remaining, M):** the data nesting — add a `quests` seasonal-container
+  table (or repurpose `quest_chains`); `journey_plans` gains `quest_id` (nullable = member-built
+  library) + `official`; the seeded seasonal Pillar content becomes official **Journeys**
+  (practice-based) grouped under the season's Quest; legacy action-chain steps (attend/post/refer)
+  retire to `season_challenges`/achievements. Then GLOSSARY/THE-QUEST/DATABASE/ECONOMY get their
+  terminology pass. *(Naming is now stable — "Quest" = game + seasonal containers; "Journey" = a
+  practice path. No more renames.)*
 - [ ] **S2 · Streak box: half-height when collapsed** — tighten `PracticePrompt` collapsed state. (S)
 - [ ] **S3 · Broadcast color → light blue** — introduce a `broadcast` blue token (complements the
   site orange) and apply to dispatch/broadcast surfaces (currently the teal `signal`). No hardcoded

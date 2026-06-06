@@ -164,7 +164,7 @@ export async function getQuestsData(): Promise<{ pillars: QuestPillar[]; isCrew:
   return { pillars, isCrew }
 }
 
-/** Start (join) a seasonal Journey — free for every member (ADR-150). Idempotent. */
+/** Start (join) a Quest — free for every member (ADR-151). Idempotent. */
 export async function startQuest(chainId: string): Promise<ActionResult> {
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Not authenticated')
