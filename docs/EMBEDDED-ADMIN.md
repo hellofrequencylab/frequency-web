@@ -361,9 +361,11 @@ group of modules; `/admin/*` retires once empty.
 > sidebar, no `/admin` trip. ✅ The first **deep-link → in-place port**: the **Moderation
 > queue** now renders in the console's *Safety* category (`ModerationModule` reusing the
 > existing `ModerationQueue` via a capability-gated loader) — clear reports without leaving
-> the page. Profile inline is already covered by `EditableIdentity`. **Next:** port more
-> deep-links the same way (Members, Broadcasts, …) and/or the `@admin` server slot; the
-> QR-generator + Vera-tone inline tuners.
+> the page. ✅ **Broadcasts** ported too (`BroadcastsModule` renders the existing
+> `BroadcastCompose` + `DispatchesClient` in the *Comms* category via a role-scoped,
+> capability-gated loader). Profile inline is already covered by `EditableIdentity`.
+> **Next:** keep porting deep-links the same way (Members, Gamification, QR, …) and/or
+> the `@admin` server slot; the QR-generator + Vera-tone inline tuners.
 
 1. **Engine.** `AdminModule` registry + `modulesFor`/`showsAdminPanel`; `AdminModuleCard`
    over `SidebarCard`; add `hub`/`nexus` loaders + `loadCapabilitiesForScope`; the `@admin`
