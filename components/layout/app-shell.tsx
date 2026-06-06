@@ -857,17 +857,19 @@ function MobileTabBar({
   onOpenMenu,
   onOpenStats,
   menuOpen,
+  statsOpen,
   hideAppNav = false,
 }: {
   isActive: (href: string) => boolean
   onOpenMenu: () => void
   onOpenStats: () => void
   menuOpen: boolean
+  statsOpen: boolean
   /** Stripped shells (e.g. Studio) hide the app destinations; only the menu arrow remains. */
   hideAppNav?: boolean
 }) {
   const tabClass = (active: boolean) =>
-    `flex flex-1 flex-col items-center justify-center gap-1 text-3xs font-medium transition-colors ${
+    `flex flex-1 flex-col items-center justify-end gap-1 pb-1.5 text-3xs font-medium transition-colors ${
       active ? 'text-primary-strong' : 'text-muted hover:text-text'
     }`
 
@@ -892,42 +894,44 @@ function MobileTabBar({
         paddingBottom: 'env(safe-area-inset-bottom)',
       }}
     >
-      {/* Arched notch behind the raised centre Capture button. */}
+      {/* One continuous arch — a bump in the bar's top edge that rises up & over the
+          Capture button, so the whole bar reads as a single shape. */}
       {!hideAppNav && (
         <span
           aria-hidden
-          className="pointer-events-none absolute left-1/2 top-0 h-8 w-[4.75rem] -translate-x-1/2 -translate-y-1/2 rounded-full border border-border bg-surface"
+          className="pointer-events-none absolute bottom-full left-1/2 -mb-px h-5 w-[4.75rem] -translate-x-1/2 rounded-t-full border-x border-t border-border bg-surface"
         />
       )}
 
-      {/* Left arrow → the nav menu. Kept even in stripped shells. */}
-      <button type="button" onClick={onOpenMenu} aria-label="Open menu" aria-expanded={menuOpen} className={arrow}>
-        <ChevronLeft className="h-5 w-5" strokeWidth={menuOpen ? 2.5 : 2} />
+      {/* Left arrow → nav menu. Points IN (›) to expand, OUT (‹) to collapse. */}
+      <button type="button" onClick={onOpenMenu} aria-label={menuOpen ? 'Close menu' : 'Open menu'} aria-expanded={menuOpen} className={arrow}>
+        {menuOpen ? <ChevronLeft className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
       </button>
 
       {!hideAppNav && MOBILE_TABS.slice(0, 2).map(renderTab)}
 
-      {/* Capture — the primary mobile action (ADR-156a), raised dead-centre. */}
+      {/* Capture — the circle sticks up above the bar; the label is bottom-aligned
+          with the other tabs (which are justify-end now). */}
       {!hideAppNav && (
         <button
           type="button"
           onClick={() => window.dispatchEvent(new CustomEvent('open-capture', { detail: { mode: 'contact' } }))}
           aria-label="Capture a moment"
-          className="relative flex flex-1 flex-col items-center justify-center gap-1 text-3xs font-semibold text-primary-strong"
+          className="relative flex flex-1 flex-col items-center justify-end gap-1 pb-1.5 text-3xs font-semibold text-primary-strong"
         >
-          <span className="-mt-3 flex h-11 w-11 items-center justify-center rounded-full bg-primary text-on-primary shadow-pop">
+          <span className="-mt-6 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-on-primary shadow-pop">
             <Camera className="h-[22px] w-[22px]" strokeWidth={2.5} />
           </span>
-          <span className="-mt-0.5 leading-none">Capture</span>
+          <span className="leading-none">Capture</span>
         </button>
       )}
 
       {!hideAppNav && MOBILE_TABS.slice(2).map(renderTab)}
 
-      {/* Right arrow → the stats / streaks panel. */}
+      {/* Right arrow → stats. Points IN (‹) to expand, OUT (›) to collapse. */}
       {!hideAppNav && (
-        <button type="button" onClick={onOpenStats} aria-label="Open stats" className={arrow}>
-          <ChevronRight className="h-5 w-5" />
+        <button type="button" onClick={onOpenStats} aria-label={statsOpen ? 'Close stats' : 'Open stats'} aria-expanded={statsOpen} className={arrow}>
+          {statsOpen ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
         </button>
       )}
     </nav>
@@ -1509,7 +1513,7 @@ export default function AppShell({
 
       {/* ── Mobile bottom tab bar ─────────────────────────── */}
       {/* Feed · Circles · Channels · Events · Menu (opens the full drawer). */}
-      <MobileTabBar isActive={isActive} onOpenMenu={() => setDrawerOpen(true)} onOpenStats={() => setRightOpen(true)} menuOpen={drawerOpen} hideAppNav={hideAppNav} />
+      <MobileTabBar isActive={isActive} onOpenMenu={() => setDrawerOpen((o) => !o)} onOpenStats={() => setRightOpen((o) => !o)} menuOpen={drawerOpen} statsOpen={rightOpen} hideAppNav={hideAppNav} />
 
       {/* ── Mobile left drawer (the full menu) ────────────── */}
       <MobileLeftDrawer
