@@ -33,17 +33,6 @@ async function grantReward(
   }
 }
 
-// The currency a whole quest chain pays on completion: zaps if ANY step rewards a
-// real-life act (so a mixed or in-person journey drives season rank), else gems
-// (a purely on-platform journey like "Content Creator").
-function chainCurrency(steps: { criteria: unknown }[]): EngagementCurrency {
-  for (const s of steps) {
-    const c = (s.criteria ?? {}) as { type?: string; streak_type?: string }
-    if (currencyForCriteria(c.type, { streakType: c.streak_type }) === 'zaps') return 'zaps'
-  }
-  return 'gems'
-}
-
 // ---------------------------------------------------------------------------
 // Public API — call after each user action
 // ---------------------------------------------------------------------------
@@ -77,7 +66,6 @@ export async function processGamificationEvent(
   try {
     const newAchievements = await evaluateAchievements(admin, event)
     await advanceChallenges(admin, event)
-    await advanceQuests(admin, event)
     return newAchievements
   } catch (err) {
     console.error('[gamification] event processing failed:', err)
@@ -491,104 +479,6 @@ async function checkAllChallengesComplete(admin: AdminClient, profileId: string)
       .from('profiles')
       .update({ season_challenges_complete: true })
       .eq('id', profileId)
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Quest chain advancement
-// ---------------------------------------------------------------------------
-
-async function advanceQuests(admin: AdminClient, event: GamificationEvent) {
-  // Join-gated (ADR-140): only advance Journeys the member has explicitly STARTED.
-  // A quest_progress row means "joined" — the engine never auto-enrolls. (Premium
-  // model: members browse, then choose to start; created via startQuest.)
-  const { data: joined } = await admin
-    .from('quest_progress')
-    .select('id, chain_id, current_step, step_progress')
-    .eq('profile_id', event.profileId)
-    .is('completed_at', null)
-
-  if (!joined?.length) return
-
-  for (const progress of joined) {
-    const { data: steps } = await admin
-      .from('quest_steps')
-      .select('id, step_order, criteria, target, zaps_reward')
-      .eq('chain_id', progress.chain_id)
-      .order('step_order')
-
-    if (!steps?.length) continue
-
-    const currentStep = steps.find(s => s.step_order === progress.current_step)
-    if (!currentStep) continue
-
-    const criteria = currentStep.criteria as Record<string, unknown>
-    if (!isArcStepRelevant(criteria, event)) continue
-
-    const newProgress = progress.step_progress + 1
-
-    if (newProgress >= currentStep.target) {
-      const nextStep = steps.find(s => s.step_order === progress.current_step + 1)
-
-      if (nextStep) {
-        await admin
-          .from('quest_progress')
-          .update({ current_step: nextStep.step_order, step_progress: 0 })
-          .eq('id', progress.id)
-      } else {
-        // Chain complete.
-        await admin
-          .from('quest_progress')
-          .update({ step_progress: newProgress, completed_at: new Date().toISOString() })
-          .eq('id', progress.id)
-
-        // Chain completion reward, in the chain's currency: zaps if the journey
-        // includes any real-life step (drives season rank), else gems for a
-        // purely on-platform journey (ADR-139).
-        const { data: chainData } = await admin
-          .from('quest_chains')
-          .select('zaps_reward')
-          .eq('id', progress.chain_id)
-          .maybeSingle()
-        await grantReward(
-          event.profileId,
-          chainCurrency(steps),
-          chainData?.zaps_reward ?? 0,
-          'quest_complete',
-          { chain: progress.chain_id },
-        )
-      }
-
-      // Step reward, in the step's own currency (ADR-139).
-      if (currentStep.zaps_reward > 0) {
-        const sc = currentStep.criteria as { type?: string; streak_type?: string }
-        await grantReward(
-          event.profileId,
-          currencyForCriteria(sc.type, { streakType: sc.streak_type }),
-          currentStep.zaps_reward,
-          'quest_complete',
-          { chain: progress.chain_id, step: currentStep.step_order },
-        )
-      }
-    } else {
-      await admin
-        .from('quest_progress')
-        .update({ step_progress: newProgress })
-        .eq('id', progress.id)
-    }
-  }
-}
-
-function isArcStepRelevant(criteria: Record<string, unknown>, event: GamificationEvent): boolean {
-  const cType = criteria.type as string
-  switch (cType) {
-    case 'event_attend':  return event.type === 'event_attend'
-    case 'event_host':    return event.type === 'event_host'
-    case 'post_create':   return event.type === 'post_create'
-    case 'task_complete': return event.type === 'task_complete'
-    case 'referral':      return event.type === 'referral'
-    case 'post_replies':  return event.type === 'post_create'
-    default:              return false
   }
 }
 
