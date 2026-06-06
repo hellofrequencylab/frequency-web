@@ -5198,3 +5198,34 @@ the client — wasteful, doesn't scale.
 forwarded as a header alongside the Supabase session refresh, with no change to auth. Adding a
 panel = a component + a registry entry; re-pointing a route = one line in the registry. The
 rail reads `x-pathname`, so it renders dynamically (already the case behind its Suspense).
+
+---
+
+## ADR-162 — Full-induction sequence builder (guided beat-by-beat wizard)
+
+**Status:** Accepted · implemented. **Context:** the first "sequences" editor only edited a
+splash card — but a sequence is the WHOLE cinematic induction at `/onboarding/beta` (splash +
+Vera's voiced beats oath·intro·identity·place·tour·enter + the three oaths + "how did you
+hear" + a marketing tag). Owners want to build different VERSIONS of that induction and preview
+them.
+
+**Decision.** A **guided beat-by-beat wizard** (one screen per beat, mirroring how the induction
+presents) with an **in-page preview** of each beat + a **"View live induction"** link to the
+real `/onboarding/beta?seq=<slug>`. Versions are **DB-backed**: `sequence_overrides` gains a
+`data jsonb` holding a full sequence override (any subset of a `BetaSequence`) + an `audience`
+mirror; a row with a brand-new slug **is** a created version. A server resolver
+(`lib/onboarding/resolve-sequence.ts`) merges code-first sequences (the immutable templates)
+with the DB layer — `resolveSequence(slug)` for render (the induction page now goes through it)
+and `listAllSequences()` for the catalog. The 3 code sequences become clone-able templates; new
+versions are created from the sequences page and edited in the wizard. Janitor-gated; saving
+publishes immediately; a beforeunload guard protects unsaved edits.
+
+**Alternatives.** A from-scratch full editor on one page (rejected — the user wanted the guided,
+induction-mirroring flow). A separate `sequences` table (rejected — extending `sequence_overrides`
+with `data jsonb` reuses the existing merge + back-compat with the splash editor). Rich block
+editor for the splash body (deferred — the induction is fixed-field; *accent* asterisks cover
+emphasis).
+
+**Consequences.** The induction renders code + DB versions via one resolver. The original
+splash-only editor stays for quick splash tweaks; the wizard is the full surface. `sequence_
+overrides` migration extended + applied.

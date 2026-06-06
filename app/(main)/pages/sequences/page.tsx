@@ -1,8 +1,10 @@
 import Link from 'next/link'
-import { ArrowRight, ArrowLeft, Tag, CheckCircle2, AlertTriangle } from 'lucide-react'
+import { ArrowRight, ArrowLeft, Tag, CheckCircle2, AlertTriangle, Wand2, Plus, ExternalLink } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminPage, AdminSection } from '@/components/admin/admin-page'
 import { listSequences } from '@/lib/onboarding/beta-sequences'
+import { listAllSequences } from '@/lib/onboarding/resolve-sequence'
+import { createSequenceVersion } from './builder-actions'
 import { getTrait } from '@/lib/traits/registry'
 import { renderQrSvg } from '@/lib/qr/render'
 import { toAbsoluteSiteUrl } from '@/lib/qr/links'
@@ -23,6 +25,7 @@ export const dynamic = 'force-dynamic'
 export default async function BetaSequencesPage() {
   await requireAdmin('janitor')
   const sequences = listSequences()
+  const customVersions = (await listAllSequences()).filter((s) => s.source === 'custom')
 
   // Pre-render both QR variants per sequence server-side (same renderer as every
   // other QR surface), so the client toggle swaps them with zero round-trips.
@@ -54,6 +57,50 @@ export default async function BetaSequencesPage() {
       }
     >
       <AdminSection
+        title="Build a version"
+        description="Spin up a new version of the whole induction (every voiced beat), or jump into an existing one with the guided builder."
+      >
+        <div className="rounded-2xl border border-border bg-surface p-5">
+          <form action={createSequenceVersion} className="flex flex-wrap items-end gap-2">
+            <label className="min-w-0 flex-1">
+              <span className="mb-1 block text-xs font-semibold text-subtle">New version — audience name</span>
+              <input
+                name="audience"
+                required
+                placeholder="e.g. Local business owners"
+                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle outline-none focus:border-broadcast"
+              />
+            </label>
+            <button type="submit" className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover">
+              <Plus className="h-4 w-4" /> Create &amp; build
+            </button>
+          </form>
+
+          {customVersions.length > 0 && (
+            <div className="mt-4 border-t border-border pt-4">
+              <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-subtle">Your versions</p>
+              <ul className="space-y-1.5">
+                {customVersions.map((v) => (
+                  <li key={v.slug} className="flex items-center gap-2 rounded-lg border border-border px-3 py-2">
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-semibold text-text">{v.audience}</span>
+                      <span className="font-mono text-2xs text-subtle">/onboarding/beta?seq={v.slug}</span>
+                    </span>
+                    <a href={`/onboarding/beta?seq=${v.slug}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-2xs font-semibold text-muted hover:bg-surface-elevated hover:text-text">
+                      <ExternalLink className="h-3 w-3" /> Live
+                    </a>
+                    <Link href={`/pages/sequences/${v.slug}/build`} className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1 text-2xs font-semibold text-on-primary hover:bg-primary-hover">
+                      <Wand2 className="h-3 w-3" /> Build
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      </AdminSection>
+
+      <AdminSection
         title={`${cards.length} sequences`}
         description="Each card shows the public splash, the induction copy it drives, a shareable link + QR for the entry point you choose, and the cohort tag it stamps."
       >
@@ -68,6 +115,12 @@ export default async function BetaSequencesPage() {
                     <p className="mt-0.5 font-mono text-xs text-subtle">{splashPath}</p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
+                    <Link
+                      href={`/pages/sequences/${seq.slug}/build`}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-2.5 py-1 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                    >
+                      <Wand2 className="h-3 w-3" /> Build induction
+                    </Link>
                     <Link
                       href={`/pages/sequences/${seq.slug}/edit`}
                       className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text"
