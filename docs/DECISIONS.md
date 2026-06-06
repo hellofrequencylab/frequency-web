@@ -4622,3 +4622,39 @@ no line-height is coupled). In-app colors are DAWN tokens only.
 `text-[Npx]`, no raw palette. Existing call sites migrate opportunistically (the four admin
 settings-modules, `create-modal`, and `compose-lightbox` already do). The marketing kit's
 own `Button` (DESIGN-LANGUAGE.md) is a separate surface, unchanged. See PAGE-FRAMEWORK.md §8.
+
+---
+
+## ADR-148: Local Marketplace — a free, no-payment, geolocated exchange (vertical 5)
+
+**Status:** Accepted — foundation shipped. Plan: [DEVELOPMENT-MAP.md](DEVELOPMENT-MAP.md)
+Stage B; [PLATFORM-VISION.md](PLATFORM-VISION.md) §verticals. The first **Stage B mission
+vertical** (post-gamification/Studio work).
+
+**Context.** The mission's flywheel wants local mutual support — neighbors swapping, giving,
+lending, and asking for things — to deepen real-world density (the North Star). It must NOT
+become a consumerist storefront, and during the free Beta **no money moves**.
+
+**Decision.** Ship a **Foundation, no-fee, no-in-app-payment** marketplace:
+- **`market_listings`** (ADR-148 migration): `kind` ∈ offer/free/lend/request, free-text
+  `price_note` (no processing), free-text + optional geo location, an optional `circle_id`
+  locality anchor, `status` (active/claimed/closed), `is_demo`. RLS: public reads active; an
+  author manages only their own. Reads/writes via the admin handle + app-code authz (the
+  practices/journey_plans convention); RLS guards any direct user reads.
+- **Connect, don't transact.** There is no checkout. Contact hands off to the member's
+  **profile** (where the existing connect/DM affordances + friendship safety gate live) — we
+  deliberately do not open unsolicited stranger DMs. Money is arranged offline.
+- **Create via the Studio** (`NewListingButton`) — reuses the Studio kit, proving it on a
+  third surface. Browse at `/market` (Index template + kind filter); detail at `/market/[id]`
+  with owner status/delete controls.
+- **Guardrail (ADR-034):** any *future* high-value reward tied to marketplace activity must
+  ladder to verified practice; the no-payment v1 keeps reward stakes nil.
+
+**Alternatives.** In-app peer payment (rejected for v1 — open decision #2 confirms *no fee*;
+arranging offline keeps trust-&-safety light and the worldview intact). A bespoke listing
+inbox (rejected — reuse DMs/profile, don't fork messaging).
+
+**Consequences.** A new mission vertical with minimal trust-&-safety surface (no money).
+Follow-ons: precise "near me" geo sort (lat/lng columns already present), listing edit via the
+Studio window (status/delete shipped), images, and a density read-model feeding "where to seed
+the next third space."

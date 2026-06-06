@@ -497,9 +497,14 @@ verticals that don't need the money foundation. **Depends on:** Stage A.
       (first practice), and an accepted invite all award zaps through the ledger (attending
       already did). Credits live today; will land in the Vault for free users once the
       entitlement layer ships (ADR-037).
-- [ ] **Local Marketplace (vertical 5)**: Foundation, no fee, geolocated to circle/hub/nexus,
+- [~] **Local Marketplace (vertical 5)**: Foundation, no fee, geolocated to circle/hub/nexus,
       listings + messaging (no in-app payment). Proves local exchange + feeds the density
-      signal.
+      signal. *Foundation shipped (ADR-148, migration `20260607090000`):* `market_listings`
+      (offer/free/lend/request · free-text price · geo + optional circle anchor · status) with
+      RLS; `/market` browse + `/market/[id]` detail + owner controls; create via the Studio
+      window (`NewListingButton`, reuses the ADR-143 kit); contact hands off to the seller's
+      profile/DMs (no stranger DMs, no payment). *Next:* "near me" geo sort, listing edit,
+      images, the density read-model.
 - [ ] **Density / demand read-model**: the "where to seed the next third space" surface off
       the place-tree + PostGIS (PLATFORM-VISION §6). Doubles as grant-funder + expansion story.
 
