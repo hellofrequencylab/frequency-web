@@ -63,6 +63,7 @@ export const AREA_ICONS: Record<string, ElementType> = {
   connections: ContactRound,
   marketing: Briefcase,
   outreach: Send,
+  growth: Sparkles,
   pages: FileText,
 }
 

@@ -91,6 +91,7 @@ export const NAV_AREAS: readonly NavArea[] = [
   { key: 'admin-insights',  href: '/admin/engagement', label: 'Insights', section: 'Platform', defaultAccess: 'janitor' },
   { key: 'admin-vera',      href: '/admin/vera',       label: 'Vera',     section: 'Platform', defaultAccess: 'janitor' },
   { key: 'admin-platform',  href: '/admin/members',    label: 'Members',  section: 'Platform', defaultAccess: 'janitor' },
+  { key: 'growth',          href: '/growth',           label: 'Growth Studio', section: 'Platform', defaultAccess: 'janitor' },
   { key: 'pages',           href: '/pages',            label: 'Pages',    section: 'Platform', defaultAccess: 'janitor' },
 ] as const
 
