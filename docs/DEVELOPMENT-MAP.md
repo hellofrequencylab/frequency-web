@@ -245,10 +245,11 @@
 > **2026-06-06:** **Quest/Journey hierarchy** (ADR-152) — canonical model **The Quest → Seasonal
 > Quest → Journeys → Practices**, all **free** (reverses the ADR-150 "one concept" detour and
 > ADR-087's paywall). *Phase A* restored "Quests" as the distinct seasonal concept + removed every
-> Journey paywall. *Phase B1* added the data nesting: a `quests` container table +
+> Journey paywall. *B1* added the data nesting: a `quests` container table +
 > `journey_plans.quest_id`/`official` + a seed (the active season's Quest with one official Journey
-> per Pillar), migration `20260608010000`. Remaining: B2 (surfaces — Quest → its Journeys), B3
-> (retire the legacy `quest_*` action-chains + terminology pass).
+> per Pillar), migration `20260608010000`. *B2* rebuilt `/crew/quests` to list the Seasonal Quest →
+> its official Journeys (each → the Journey detail's practices + free Adopt; `lib/quests.ts`).
+> Remaining: B3 (retire the legacy `quest_*` action-chains + `advanceQuests` + terminology pass).
 
 ---
 
