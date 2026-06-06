@@ -194,11 +194,11 @@ function DispatchFeedCard({ dispatch: d }: { dispatch: DispatchItem }) {
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-0.5">
-            <span className="text-[10px] font-black uppercase tracking-widest text-broadcast-strong">
+            <span className="text-3xs font-black uppercase tracking-widest text-broadcast-strong">
               {d.audience_scope} broadcast
             </span>
             {d.linked_task && (
-              <span className="text-[10px] font-bold text-primary flex items-center gap-0.5">
+              <span className="text-3xs font-bold text-primary flex items-center gap-0.5">
                 <Zap className="w-2.5 h-2.5" /> Challenge
               </span>
             )}
@@ -210,7 +210,7 @@ function DispatchFeedCard({ dispatch: d }: { dispatch: DispatchItem }) {
             <p className="text-xs text-muted line-clamp-1 mt-0.5">{d.excerpt}</p>
           )}
           <div className="flex items-center justify-between mt-1.5">
-            <span className="text-[11px] text-subtle">
+            <span className="text-2xs text-subtle">
               {d.author?.display_name} · {relativeTime(d.published_at)}
             </span>
             <ArrowRight className="w-3 h-3 text-broadcast-strong group-hover:text-broadcast transition-colors" />
@@ -241,15 +241,15 @@ function EventFeedCard({ event: e }: { event: { id: string; title: string; start
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-0.5">
             <CalendarDays className="w-3 h-3 text-success" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-success">Upcoming event</span>
+            <span className="text-3xs font-black uppercase tracking-widest text-success">Upcoming event</span>
           </div>
           <p className="text-sm font-bold text-text group-hover:text-success transition-colors line-clamp-1">
             {e.title}
           </p>
           <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-[11px] text-subtle">{dateStr}</span>
+            <span className="text-2xs text-subtle">{dateStr}</span>
             {e.location && (
-              <span className="text-[11px] text-subtle flex items-center gap-0.5">
+              <span className="text-2xs text-subtle flex items-center gap-0.5">
                 <MapPin className="w-2.5 h-2.5" /> {e.location}
               </span>
             )}

@@ -88,7 +88,7 @@ function MarketingCard({ code }: { code: MarketingCodeAdmin }) {
           <div className="flex items-center gap-2">
             <h3 className="truncate text-sm font-bold text-text">{code.title}</h3>
             {!code.active && (
-              <span className="rounded-full bg-surface-elevated px-1.5 py-0.5 text-[10px] font-medium text-muted">
+              <span className="rounded-full bg-surface-elevated px-1.5 py-0.5 text-3xs font-medium text-muted">
                 Paused
               </span>
             )}

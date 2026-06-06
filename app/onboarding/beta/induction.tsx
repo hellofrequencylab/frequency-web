@@ -378,7 +378,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
       {/* Preview-only badge (subtle; public /preview route; ADR-068). */}
       {preview && (
         <div className="pointer-events-none fixed inset-x-0 top-3 z-50 flex justify-center">
-          <span className="rounded-full bg-black/5 px-3 py-1 text-[11px] font-medium text-subtle backdrop-blur-sm">
+          <span className="rounded-full bg-black/5 px-3 py-1 text-2xs font-medium text-subtle backdrop-blur-sm">
             Preview · nothing is saved
           </span>
         </div>
@@ -412,7 +412,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
       {/* Stage: one centered column — logo, content, progress — with tight, consistent gaps. */}
       <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 py-12">
         <div className="flex shrink-0 flex-col items-center">
-          <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-subtle">Beta</span>
+          <span className="text-3xs font-bold uppercase tracking-[0.4em] text-subtle">Beta</span>
           <span className="brandmark-link mt-5 block">
             <span className="brandmark h-12 aspect-[963/170] sm:h-[52px]" aria-hidden />
           </span>

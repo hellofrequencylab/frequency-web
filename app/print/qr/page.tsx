@@ -97,7 +97,7 @@ function StickerSheet({ svg, title }: { svg: string; title: string }) {
           className="flex flex-col items-center gap-2 border border-dashed border-border p-4"
         >
           <div className="h-[150px] w-[150px] [&>svg]:h-full [&>svg]:w-full" dangerouslySetInnerHTML={{ __html: svg }} />
-          <p className="line-clamp-1 text-center text-[11px] font-semibold text-text">{title}</p>
+          <p className="line-clamp-1 text-center text-2xs font-semibold text-text">{title}</p>
         </div>
       ))}
     </div>

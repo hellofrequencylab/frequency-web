@@ -166,7 +166,7 @@ export default async function DispatchDetailPage({ params }: Props) {
               {author?.avatar_url ? (
                 <Image src={author.avatar_url} alt={author.display_name} width={20} height={20} className="w-5 h-5 rounded-full object-cover" />
               ) : (
-                <span className="w-5 h-5 rounded-full bg-primary-bg flex items-center justify-center text-[10px] font-bold text-primary-strong">
+                <span className="w-5 h-5 rounded-full bg-primary-bg flex items-center justify-center text-3xs font-bold text-primary-strong">
                   {getInitials(author?.display_name ?? '?')}
                 </span>
               )}

@@ -121,7 +121,7 @@ export function JourneyBoard({
                   <span
                     key={m.day}
                     title={`${m.label} · ${m.day} days`}
-                    className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold transition-colors ${
+                    className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-3xs font-bold transition-colors ${
                       hit
                         ? 'bg-primary text-on-primary'
                         : isNext
@@ -176,7 +176,7 @@ export function JourneyBoard({
                 ? `Next: ${activeJourney.nextStepTitle}`
                 : `You're on track in ${activeJourney.title}`}
             </p>
-            <p className="truncate text-[11px] text-subtle">
+            <p className="truncate text-2xs text-subtle">
               {activeJourney.title} · {activeJourney.done}/{activeJourney.total} on track this week
             </p>
           </div>
@@ -188,7 +188,7 @@ export function JourneyBoard({
           Pillars. Coverage, not a score. */}
       {!collapsed && pillarBalance && pillarBalance.length > 0 && (
         <div className="mt-3 border-t border-primary-bg px-4 pt-3">
-          <p className="mb-1.5 text-[11px] font-medium text-subtle">Your pillars</p>
+          <p className="mb-1.5 text-2xs font-medium text-subtle">Your pillars</p>
           <div className="flex gap-1.5">
             {pillarBalance.map((p) => (
               <div
@@ -200,7 +200,7 @@ export function JourneyBoard({
                 <p className={`text-sm font-bold tabular-nums ${p.count > 0 ? 'text-text' : 'text-subtle'}`}>
                   {p.count}
                 </p>
-                <p className="text-[10px] text-subtle">{p.name}</p>
+                <p className="text-3xs text-subtle">{p.name}</p>
               </div>
             ))}
           </div>

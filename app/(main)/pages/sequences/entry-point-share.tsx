@@ -94,12 +94,12 @@ export function EntryPointShare({
       {/* Controls */}
       <div className="flex min-w-0 flex-1 flex-col gap-3">
         <div>
-          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-subtle">Incoming point</p>
+          <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">Incoming point</p>
           <div className="inline-flex rounded-lg border border-border bg-surface-elevated p-0.5">
             {tab('splash', 'Splash page')}
             {tab('induction', 'Skip to induction')}
           </div>
-          <p className="mt-1.5 text-[11px] leading-snug text-subtle">
+          <p className="mt-1.5 text-2xs leading-snug text-subtle">
             {mode === 'splash'
               ? 'Lands on the audience splash, then into the induction.'
               : 'Drops straight into the voiced induction, no splash.'}

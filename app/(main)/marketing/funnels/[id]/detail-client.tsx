@@ -161,7 +161,7 @@ export function CampaignDetail({
             <div className="ml-1 flex flex-wrap items-center gap-3">
               <Link
                 href={`/marketing/funnels/variants/${card.id}`}
-                className="inline-flex items-center gap-1 text-[11px] font-semibold text-muted transition-colors hover:text-text"
+                className="inline-flex items-center gap-1 text-2xs font-semibold text-muted transition-colors hover:text-text"
               >
                 <FlaskConical className="h-3 w-3" /> A/B test
               </Link>
@@ -210,7 +210,7 @@ function OwnerControl({
       <button
         onClick={() => setOpen(true)}
         disabled={pending}
-        className="inline-flex items-center gap-1 text-[11px] font-semibold text-muted transition-colors hover:text-text disabled:opacity-60"
+        className="inline-flex items-center gap-1 text-2xs font-semibold text-muted transition-colors hover:text-text disabled:opacity-60"
         title="Reassign owner"
       >
         <User className="h-3 w-3" /> {currentName}
@@ -225,7 +225,7 @@ function OwnerControl({
         defaultValue={owner?.ownerId ?? ''}
         onChange={(e) => reassign(e.target.value)}
         disabled={pending}
-        className="rounded-md border border-border bg-canvas px-1.5 py-0.5 text-[11px] text-text"
+        className="rounded-md border border-border bg-canvas px-1.5 py-0.5 text-2xs text-text"
       >
         <option value="" disabled>Assign to…</option>
         {members.map((m) => (
@@ -234,7 +234,7 @@ function OwnerControl({
           </option>
         ))}
       </select>
-      <button onClick={() => setOpen(false)} className="text-[11px] text-muted hover:text-text">×</button>
+      <button onClick={() => setOpen(false)} className="text-2xs text-muted hover:text-text">×</button>
     </span>
   )
 }

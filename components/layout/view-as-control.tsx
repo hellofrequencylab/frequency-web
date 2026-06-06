@@ -113,7 +113,7 @@ export function ViewAsControl({
           }}
           className="z-[60] rounded-xl border border-border bg-surface-elevated shadow-xl shadow-black/10 py-1"
         >
-          <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-subtle">
+          <p className="px-3 py-1.5 text-3xs font-semibold uppercase tracking-wider text-subtle">
             View the app as
           </p>
           {ROLE_HIERARCHY.map((r) => {
@@ -126,7 +126,7 @@ export function ViewAsControl({
                 onClick={() => choose(r)}
                 className="flex w-full items-center gap-2 px-3 py-2 text-sm text-text hover:bg-surface transition-colors"
               >
-                <span className="rank-badge text-[10px] leading-tight" style={roleBadgeStyle(r)}>
+                <span className="rank-badge text-3xs leading-tight" style={roleBadgeStyle(r)}>
                   {ROLE_LABEL[r]}
                 </span>
                 {isSelf && <span className="text-xs text-subtle">(you)</span>}
@@ -140,7 +140,7 @@ export function ViewAsControl({
             onClick={() => choose('visitor')}
             className="flex w-full items-center gap-2 px-3 py-2 text-sm text-text hover:bg-surface transition-colors"
           >
-            <span className="rounded-full bg-surface px-2 py-0.5 text-[10px] font-semibold leading-tight text-muted">
+            <span className="rounded-full bg-surface px-2 py-0.5 text-3xs font-semibold leading-tight text-muted">
               Visitor
             </span>
             <span className="text-xs text-subtle">logged out</span>
