@@ -277,7 +277,11 @@ Frequency — a community-management tool where every member is a node.
    Opens the same mode picker in a modal; posts default to the member's wall. Hidden on `/feed` (the
    inline bar already serves there); the four modes are shared via `CAPTURE_MODES` so the two entries
    can't drift. *Tweak:* suppress on focus/compose surfaces (settings, `/connections/new`).
-3. 📋 **"Daily journal / community story" framing** — a Notes/Capture lane + the feed-as-record voice.
+3. ⏳ **"Daily journal / community story" framing.** ✅ shipped the personal half: `/journal`
+   (`app/(main)/journal/page.tsx`) — your captured moments (notes/photos/posts) grouped by day in
+   the feed-as-record voice ("your record of showing up"); linked from the Capture launcher; reads
+   the posts substrate (no new store). 📋 *remaining:* a community-story lane/filter on `/feed`
+   (everyone's captures as the running record) + the feed-as-record voice on the main feed header.
 4. 📋 Richer kinds (video · cinema · live) into the same picker as demand warrants.
 
 **Open questions (owner):** does "Note" share the post table or get its own journal store · how
