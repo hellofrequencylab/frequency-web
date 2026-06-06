@@ -8,7 +8,7 @@ import {
   type ListingInput, type ListingPatch, type ListingStatus,
 } from '@/lib/marketplace'
 
-// Local Marketplace actions (ADR-145). Building/managing a listing is free for any
+// Local Marketplace actions (ADR-146). Building/managing a listing is free for any
 // member (own listings only); there is no payment — "contact" hands off to DMs.
 
 async function assertOwner(id: string): Promise<string | null> {

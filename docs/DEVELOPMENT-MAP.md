@@ -489,7 +489,7 @@ verticals that don't need the money foundation. **Depends on:** Stage A.
       entitlement layer ships (ADR-037).
 - [~] **Local Marketplace (vertical 5)**: Foundation, no fee, geolocated to circle/hub/nexus,
       listings + messaging (no in-app payment). Proves local exchange + feeds the density
-      signal. *Foundation shipped (ADR-145, migration `20260607090000`):* `market_listings`
+      signal. *Foundation shipped (ADR-146, migration `20260607090000`):* `market_listings`
       (offer/free/lend/request · free-text price · geo + optional circle anchor · status) with
       RLS; `/market` browse + `/market/[id]` detail + owner controls; create via the Studio
       window (`NewListingButton`, reuses the ADR-143 kit); contact hands off to the seller's
