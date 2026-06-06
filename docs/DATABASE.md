@@ -82,7 +82,7 @@ these tables mean.
 **Local Marketplace (vertical 5)**
 `market_listings`
 
-> **`market_listings`** (ADR-147) — Foundation, **no-fee, no-payment** local exchange:
+> **`market_listings`** (ADR-148) — Foundation, **no-fee, no-payment** local exchange:
 > `kind` (offer/free/lend/request), free-text `price_note` (no processing), geo
 > (neighborhood/city/lat/lng) + optional `circle_id` locality anchor, `status`
 > (active/claimed/closed), `is_demo`. RLS: public read active, author manages own.

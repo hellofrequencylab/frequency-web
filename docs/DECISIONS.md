@@ -4536,26 +4536,6 @@ universal-entity design, soft-hide/suspension, and FK-on-delete conventions (DAT
 the Circle/Hub/Nexus/Outpost hierarchy and role ladder (GLOSSARY.md); cron, notifications,
 email, push, and SEO/AEO (ARCHITECTURE.md + ROADMAP.md / SEO-AEO-PLAN.md).
 
----
-
-## ADR-143: Shared in-app UI primitives + named sub-xs type scale + token-only color
-
-**Status:** Accepted · corroborated by `components/ui/{field,button,dialog}.tsx`,
-`lib/utils.ts` (`cn`), and `app/globals.css` (`@utility text-2xs/text-3xs`)
-**Context:** A design-system audit found the in-app UI inconsistent: ~40 files hand-rolled
-form-field and button class strings, 5+ bespoke modal overlays, ~195 uses of the arbitrary
-`text-[10/11px]` size anti-pattern, and raw-palette colors (`indigo-600`, `accent-indigo-600`)
-instead of DAWN tokens. No `Button`/`Input`/`Dialog` primitive and no `cn()` helper existed.
-**Decision:** Introduce shared primitives + conventions: `Input`/`Textarea`/`Label`
-(+ `fieldClasses`/`labelClasses` for a native `<select>`), `Button` (variant × size),
-`Dialog` (one backdrop · ESC · scroll-lock · aria overlay shell), and `cn()`. Add named
-sub-xs steps `text-2xs` (11px) / `text-3xs` (10px) as `@utility` rules (font-size only, so
-no line-height is coupled). In-app colors are DAWN tokens only.
-**Consequences:** New code composes these — no hand-rolled fields/buttons/modals, no
-`text-[Npx]`, no raw palette. Existing call sites migrate opportunistically (the four admin
-settings-modules, `create-modal`, and `compose-lightbox` already do). The marketing kit's
-own `Button` (DESIGN-LANGUAGE.md) is a separate surface, unchanged. See PAGE-FRAMEWORK.md §8.
-
 ## ADR-144: Active-Journey progress derived from the practice log (no schema)
 
 **Status:** Accepted · corroborated by `lib/journey-plans.ts`
@@ -4572,8 +4552,6 @@ Surfaced on the `/crew/journey` Dashboard tab + the home `JourneyBoard`.
 **Consequences:** Logging a Journey's practice advances the Journey and earns the same
 zaps/streak the gamification already runs on — one event, no divergence. A future structured
 cadence model can replace the parser without changing callers. See ECONOMY-AND-JOURNEYS.md.
-
----
 
 ## ADR-145: The daily practice streak is the headline streak (derived from the log, no schema)
 
@@ -4601,8 +4579,6 @@ state. Existing members get a correct streak immediately from their log history.
 to a structured store can replace the deriver without changing callers. See
 `content/help/the-game/streaks.md`.
 
----
-
 ## ADR-146: Member progress spine + stage-driven progressive disclosure
 
 **Status:** Accepted · corroborated by `lib/member-progress.ts`
@@ -4626,9 +4602,30 @@ without touching surfaces. Reads stay pure (the celebration acknowledges itself 
 No schema beyond the `meta.progressStage` marker. The crew dashboard and other surfaces can
 adopt the same `stageIndex` gate later. See `lib/member-progress.ts`.
 
+## ADR-147: Shared in-app UI primitives + named sub-xs type scale + token-only color
+
+> Renumbered from ADR-143 (2026-06-06): the number collided with a parallel branch's
+> Studio "compose, not configure" decision, which keeps ADR-143.
+
+**Status:** Accepted · corroborated by `components/ui/{field,button,dialog}.tsx`,
+`lib/utils.ts` (`cn`), and `app/globals.css` (`@utility text-2xs/text-3xs`)
+**Context:** A design-system audit found the in-app UI inconsistent: ~40 files hand-rolled
+form-field and button class strings, 5+ bespoke modal overlays, ~195 uses of the arbitrary
+`text-[10/11px]` size anti-pattern, and raw-palette colors (`indigo-600`, `accent-indigo-600`)
+instead of DAWN tokens. No `Button`/`Input`/`Dialog` primitive and no `cn()` helper existed.
+**Decision:** Introduce shared primitives + conventions: `Input`/`Textarea`/`Label`
+(+ `fieldClasses`/`labelClasses` for a native `<select>`), `Button` (variant × size),
+`Dialog` (one backdrop · ESC · scroll-lock · aria overlay shell), and `cn()`. Add named
+sub-xs steps `text-2xs` (11px) / `text-3xs` (10px) as `@utility` rules (font-size only, so
+no line-height is coupled). In-app colors are DAWN tokens only.
+**Consequences:** New code composes these — no hand-rolled fields/buttons/modals, no
+`text-[Npx]`, no raw palette. Existing call sites migrate opportunistically (the four admin
+settings-modules, `create-modal`, and `compose-lightbox` already do). The marketing kit's
+own `Button` (DESIGN-LANGUAGE.md) is a separate surface, unchanged. See PAGE-FRAMEWORK.md §8.
+
 ---
 
-## ADR-147: Local Marketplace — a free, no-payment, geolocated exchange (vertical 5)
+## ADR-148: Local Marketplace — a free, no-payment, geolocated exchange (vertical 5)
 
 **Status:** Accepted — foundation shipped. Plan: [DEVELOPMENT-MAP.md](DEVELOPMENT-MAP.md)
 Stage B; [PLATFORM-VISION.md](PLATFORM-VISION.md) §verticals. The first **Stage B mission
@@ -4639,7 +4636,7 @@ lending, and asking for things — to deepen real-world density (the North Star)
 become a consumerist storefront, and during the free Beta **no money moves**.
 
 **Decision.** Ship a **Foundation, no-fee, no-in-app-payment** marketplace:
-- **`market_listings`** (ADR-147 migration): `kind` ∈ offer/free/lend/request, free-text
+- **`market_listings`** (ADR-148 migration): `kind` ∈ offer/free/lend/request, free-text
   `price_note` (no processing), free-text + optional geo location, an optional `circle_id`
   locality anchor, `status` (active/claimed/closed), `is_demo`. RLS: public reads active; an
   author manages only their own. Reads/writes via the admin handle + app-code authz (the
@@ -4647,7 +4644,7 @@ become a consumerist storefront, and during the free Beta **no money moves**.
 - **Connect, don't transact.** There is no checkout. Contact hands off to the member's
   **profile** (where the existing connect/DM affordances + friendship safety gate live) — we
   deliberately do not open unsolicited stranger DMs. Money is arranged offline.
-- **Create via the Studio** (`NewListingButton`) — reuses the ADR-143 kit, proving it on a
+- **Create via the Studio** (`NewListingButton`) — reuses the Studio kit, proving it on a
   third surface. Browse at `/market` (Index template + kind filter); detail at `/market/[id]`
   with owner status/delete controls.
 - **Guardrail (ADR-034):** any *future* high-value reward tied to marketplace activity must

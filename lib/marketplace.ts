@@ -1,4 +1,4 @@
-// Local Marketplace (vertical 5, ADR-147): geolocated, no-fee listings members
+// Local Marketplace (vertical 5, ADR-148): geolocated, no-fee listings members
 // swap / give / lend / request. No in-app payment — we connect people (DMs) and
 // they arrange offline. Server-only. Writes go through the service-role admin
 // client behind app-code authz (callers enforce: author owns the listing); the
