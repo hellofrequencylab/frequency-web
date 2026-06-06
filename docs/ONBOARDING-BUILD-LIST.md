@@ -38,6 +38,7 @@ Two levers, in order: **(0) flip the switches that let real testers in today**, 
 | **5.3–5.5** | Event-invite capture loop (QR → RSVP → triple-write) + gamification | The growth loop | M–L | 📋 |
 | **6** | **Capture** — primary "log life" button (Photo/Note/Post + In-Person card/poster) | The community story + every member a node | L | ⏳ Phases 1–3 shipped |
 | **7** | **Role-advancement training** — a training Journey per role transition | Onboarding never ends; every role is taught | L | ⏳ spine shipped (7.1–7.2) |
+| **8** | **Hook Networks** — federated white-label sub-communities (+ Organization role) | Pros/orgs run their own bubble that feeds the network | XL | 📋 designed (ADR-158) |
 | **4.x** | Cleanup + doc hygiene | Lean tree | S | ⏳ |
 
 Legend: ✅ done · ⏳ partially built / in flight · 📋 specced, not built · 🔴 blocked.
@@ -333,6 +334,31 @@ roles/permissions model (`lib/permissions`, `lib/nav-areas`). **No new flow engi
 + management layer. The **member** rung already exists (induction + activation + chores + Founder's
 First Week); 7.x generalizes it up the ladder. Member-facing curriculum → help/Notion; engine →
 git. **Open (owner):** does Crew→Host training *gate* admin access until complete, or just nudge?
+
+## Section 8 — Hook Networks: federated white-label sub-communities — 📋 (ADR-158, extends ADR-059)
+
+> **The frame (owner).** Pros and organizations run their own **white-label bubble** (a *Hook tenant*:
+> private lessons · journeys · gamification · branded site · Substack-style subscription privacy) that
+> **opts into** the main Frequency network for contacts, events, and gamification. Their private points
+> roll up to their Frequency score; their channels/circles can federate in. Any organization bettering
+> society is welcome. **Active Hook-community members get rollover Frequency membership.**
+
+**The strategy (ADR-158): build the *federation layer*, not the OS.** Hook owns the bubble (ADR-059);
+Frequency owns discovery + the shared social graph + the gamification rollup, bound by **typed
+contracts, never merged code**.
+
+| # | Item | What | Reuse | Size |
+|---|---|---|---|---|
+| 8.0 | **Pro-profile types + Organization** | Formalize personas (`practitioner/partner/builder/investor`) into a profile `kind`: practitioner · business · partner · creator · **Organization**; each unlocks role-appropriate surfaces + its §7 training | `lib/onboarding/personas.ts`, traits registry, role/permission grid, §7 | M |
+| 8.1 | **Identity link + membership rollover** | Frequency↔Hook account link; an active Hook-community member → Frequency member (provisioning contract) | ADR-059 contracts, auth/profiles | M |
+| 8.2 | **Points rollup** | Private-program points → Frequency score via a contract endpoint, **idempotent + capped** (anti-farm, §5.5/ADR-139) | `lib/zaps.ts`/`lib/gems.ts`, engagement ledger | M |
+| 8.3 | **Community federation + lead-funnel bubble** | Host opts to expose channels/circles into the main network; public bubble (per-tenant subdomain, BACKLOG §J) funnels into the gated sub-community | `feed_for_viewer` reach model, channels/circles, subdomains | L |
+
+**Sequencing:** 8.0 is the cheapest first step (extends personas + the grid; ties to §7) and unblocks the
+rest. 8.1 delivers "energy flowing between" fastest. 8.2 + 8.3 are the bigger federation builds. Hook
+owns the white-label site, private content/gamification, and subscription billing throughout (ADR-059).
+**Cross-product contract → the Hook repo** (`hook/docs/FREQUENCY-INTEGRATION.md`); operator/strategy →
+Notion.
 
 ## Reuse map — what already exists (so you never rebuild it)
 

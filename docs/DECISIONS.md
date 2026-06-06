@@ -5056,3 +5056,53 @@ induction is the one deliberate exception).
 **role-advancement ladder** with a transcript. Member-facing "how training works" + the per-role
 curriculum → help center / Notion; the engine, assignment hook, and records → git. No migration in
 this ADR (design only); the build adds the records table + seed content + the assignment hook.
+
+## ADR-158: Hook Networks — federated white-label sub-communities (extends ADR-059) (design)
+
+**Decision.** Frequency becomes a **federated network of white-label sub-communities** ("Hook
+networks"). This is the *generalization* of ADR-059 (Frequency ⇄ Hook): there, Hook is the
+**Practitioner OS** (branded sites, private cohorts/courses, member→creator billing) and Frequency is
+the **marketplace + movement** (discovery, the shared social graph, gamification, in-person), bound by
+**typed contracts, never merged code**. ADR-158 extends that from "a marketplace over Hook programs" to
+"a network of Hook sub-communities that opt into the wider Frequency network." **Frequency does not
+rebuild the white-label OS** — Hook owns the bubble; Frequency owns the **federation layer**.
+
+**Pro-profile types (+ a new Organization).** Formalize the existing **personas**
+(`practitioner · partner · builder · investor`, `lib/onboarding/personas.ts`) into first-class
+**pro-profile types** — a profile `kind` distinct from the privilege `community_role` ladder:
+**practitioner · business · partner · creator/guide · Organization** (non-profit). *Any organization
+working toward bettering society is welcomed.* Each type unlocks role-appropriate "website
+functionality" (its surfaces + tools), which plugs straight into §7 role-advancement training (the
+type's training Journey) and the page CMS. "Organization" is a profile **type**, not a privilege level;
+its operators still hold a `community_role`.
+
+**The white-label bubble = a Hook tenant** (Hook owns it, per ADR-059): private lessons, journeys, and
+gamification; a branded site on a **per-tenant subdomain** (BACKLOG §J); **Substack-model subscription
+privacy** (free / paid / private tiers). Its public face is a **lead funnel** into the gated
+sub-community.
+
+**The federation layer (what Frequency builds) — all opt-in by the community host, all typed
+contracts:**
+1. **Membership rollover** — an *active* Hook-community member gets Frequency membership (an identity
+   link + a provisioning contract). The cheapest "keep energy flowing between."
+2. **Points rollup** — private-program points count toward the member's **Frequency score** via a
+   contract endpoint — **idempotent + capped, reward the real outcome** (anti-farm, §5.5 / ADR-139).
+3. **Community federation** — a host can **expose their channels/circles** into the main network (and
+   tap the wider network's), keeping per-content privacy (the `feed_for_viewer` reach model already
+   gates this).
+4. **Contacts & events** — Hook tenants read/write the shared social graph + events through the
+   Capture/Network spine (§5/§6) via contracts.
+
+**Alternatives.** Build course hosting + a second community engine inside Frequency (rejected — ADR-059:
+that's Hook's job; merging the code couples two products). One global community, no tenancy (rejected —
+pros need a private, branded bubble; the Substack model *is* the funnel). Auto-federate everything
+(rejected — federation is the host's opt-in; privacy + revenue stay theirs until they choose to share).
+
+**Consequences.** A big, phased program — added to the plan, not built now
+([ONBOARDING-BUILD-LIST.md](ONBOARDING-BUILD-LIST.md) §8). **Phasing (prioritized):** (0) pro-profile
+types + Organization (extends personas + the role/permission grid; ties to §7) · (1) identity link +
+membership rollover · (2) points rollup · (3) channel/circle federation + the public lead-funnel bubble
+on a subdomain. The canonical cross-product contract lives in the Hook repo
+(`hook/docs/FREQUENCY-INTEGRATION.md`, ADR-059). **Open (owner):** which pro types ship v1 · is
+"Organization" ever also a privilege role · the subscription revenue split · how points-rollup weights
+private vs. public acts. Strategy/worldview → Notion; the contracts + schema → git.
