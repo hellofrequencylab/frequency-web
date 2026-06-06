@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useEffect } from 'react'
+import { useState, useTransition, useEffect, type ReactNode } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Loader2, Send } from 'lucide-react'
@@ -31,9 +31,15 @@ type Reply = {
 export function PostReplies({
   postId,
   initialCount,
+  reactions,
+  reward,
 }: {
   postId: string
   initialCount: number
+  /** Reaction controls (heart/plus) rendered inline, left of the comment toggle. */
+  reactions?: ReactNode
+  /** Reward chip (zaps) rendered inline, right of the comment toggle. */
+  reward?: ReactNode
 }) {
   // Comments show in the feed: a post with replies opens its thread by default
   // (fetched on mount) instead of hiding them behind a click.
@@ -68,21 +74,28 @@ export function PostReplies({
 
   return (
     <div>
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className={`flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors ${
-          open ? 'text-primary-strong' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
-        }`}
-      >
-        {isPending && !open ? (
-          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-        ) : (
-          <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M14 8.5c0 3.04-2.686 5.5-6 5.5a6.6 6.6 0 01-2.4-.45L2 15l.95-3.05A5.23 5.23 0 012 8.5C2 5.46 4.686 3 8 3s6 2.46 6 5.5z" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        )}
-        {count > 0 ? count : 'Reply'}
-      </button>
+      {/* One balanced action line under the post content: reactions, the comment
+          toggle, and the reward chip — all on the right. */}
+      <div className="mt-3 flex items-center justify-end gap-0.5 border-t border-border pt-2">
+        {reactions}
+        <button
+          onClick={() => setOpen((o) => !o)}
+          aria-label={open ? 'Hide comments' : 'Show comments'}
+          className={`flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors ${
+            open ? 'text-primary-strong' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
+          }`}
+        >
+          {isPending && !open ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M14 8.5c0 3.04-2.686 5.5-6 5.5a6.6 6.6 0 01-2.4-.45L2 15l.95-3.05A5.23 5.23 0 012 8.5C2 5.46 4.686 3 8 3s6 2.46 6 5.5z" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          )}
+          {count > 0 ? count : 'Reply'}
+        </button>
+        {reward}
+      </div>
 
       {open && (
         <div className="mt-3 border-t border-border pt-3 space-y-3">
@@ -94,7 +107,7 @@ export function PostReplies({
           ) : replies.length === 0 ? (
             <p className="text-xs text-subtle text-center py-1">No replies yet. Be the first.</p>
           ) : (
-            <div className="ml-1 space-y-3 border-l-2 border-border/60 pl-3">
+            <div className="space-y-3">
             {replies.map((r) => (
               <div key={r.id} className="flex items-start gap-2.5">
                 <Link href={r.author ? `/people/${r.author.handle}` : '#'} className="shrink-0">
