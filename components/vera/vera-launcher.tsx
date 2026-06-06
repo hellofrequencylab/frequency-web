@@ -2,11 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import { Sparkles, Search, BookOpen, Mail, X, MessageCircle, LifeBuoy } from 'lucide-react'
+import { Sparkles, Search, BookOpen, Mail, X, MessageCircle, LifeBuoy, Bug, Ticket } from 'lucide-react'
 import type { HelpSearchEntry } from '@/lib/help/content'
 import { searchHelp } from '@/lib/help/search'
 import { CONTACT_EMAIL } from '@/lib/site'
 import { VeraChat, COMPANION_OPENING } from '@/components/vera/vera-chat'
+import { openSupport } from '@/components/support/support-launcher'
 
 // The persistent companion launcher (AI-VERA §4.0, ADR-086). ONE floating bubble
 // on every member page that opens Vera's panel — unifying what used to be two
@@ -162,6 +163,16 @@ export function VeraLauncher({ index }: { index: HelpSearchEntry[] }) {
                 </button>
 
                 <div className="mt-auto space-y-1 pt-3">
+                  <button
+                    type="button"
+                    onClick={() => { close(); openSupport('bug') }}
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-text hover:bg-surface-elevated"
+                  >
+                    <Bug className="h-4 w-4 text-muted" aria-hidden /> Report a bug
+                  </button>
+                  <Link href="/support" onClick={close} className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-text hover:bg-surface-elevated">
+                    <Ticket className="h-4 w-4 text-muted" aria-hidden /> Your support tickets
+                  </Link>
                   <Link href="/help" onClick={close} className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-text hover:bg-surface-elevated">
                     <BookOpen className="h-4 w-4 text-muted" aria-hidden /> Browse the help center
                   </Link>

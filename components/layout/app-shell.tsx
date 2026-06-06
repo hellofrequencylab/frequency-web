@@ -30,6 +30,8 @@ import {
   QrCode,
   Megaphone,
   HelpCircle,
+  LifeBuoy,
+  Bug,
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { NotificationBell } from '@/components/layout/notification-bell'
@@ -456,6 +458,22 @@ function AccountDropdown({
                 Entry points
               </Link>
             )}
+            <Link
+              href="/support"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-surface-elevated transition-colors"
+            >
+              <LifeBuoy className="w-4 h-4 text-subtle" />
+              Support tickets
+            </Link>
+            <button
+              type="button"
+              onClick={() => { setOpen(false); window.dispatchEvent(new CustomEvent('open-support', { detail: { type: 'bug' } })) }}
+              className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-text hover:bg-surface-elevated transition-colors"
+            >
+              <Bug className="w-4 h-4 text-subtle" />
+              Report a bug
+            </button>
             <Link
               href="/help"
               onClick={() => setOpen(false)}

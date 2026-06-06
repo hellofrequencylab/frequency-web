@@ -5106,3 +5106,36 @@ on a subdomain. The canonical cross-product contract lives in the Hook repo
 (`hook/docs/FREQUENCY-INTEGRATION.md`, ADR-059). **Open (owner):** which pro types ship v1 · is
 "Organization" ever also a privilege role · the subscription revenue split · how points-rollup weights
 private vs. public acts. Strategy/worldview → Notion; the contracts + schema → git.
+
+---
+
+## ADR-159 — Support tickets & bug reporting (the cataloged "talk to a human")
+
+**Status:** Accepted · implemented. **Context:** the support menu (SUPPORT-SYSTEM.md) had
+search → Ask Vera → "Talk to a human" as a `mailto:` — no catalog, no history, no triage.
+We needed a brilliant, tight ticketing layer built into Vera and reachable from anywhere,
+capturing page/activity data + a screenshot, with member history, an admin console wired to
+the CRM, and Vera aware of a member's tickets.
+
+**Decision.** Two tables — `support_tickets` (+ human `ref`, type/status/priority, page_url,
+`context` jsonb, private `screenshot_path`, assignee) and `support_ticket_messages` (threaded,
+`author_kind`, `is_internal` staff notes). Members self-serve under RLS; staff operate through
+the service-role admin client behind app-code authz (repo convention). Screenshots go to a
+**private `support` storage bucket**, served via short-lived **signed URLs** (reports can carry
+on-screen data — never a public URL). One global `open-support` window event opens a capture
+dialog (type · subject · details · paste/attach screenshot · captured-context preview),
+mounted app-wide; entry points live in the account menu, the **Vera chat box**, and the Vera
+Help tab. Member history at `/support`; staff console at `/admin/support` (Studio, host+) with
+triage + public reply / internal note + a reporter card linking to the profile and CRM. Vera's
+recent-ticket summary is injected into her system prompt so she can speak to open reports and
+point members at the report dialog. Full spec: [SUPPORT-TICKETS.md](SUPPORT-TICKETS.md).
+
+**Alternatives.** A third-party desk (Zendesk/Linear) — rejected: no in-product catalog, no
+Vera/CRM integration, data leaves the platform. A Vera write-tool that files tickets
+conversationally — deferred: the richer dialog captures the screenshot + context that make a
+report actionable; Vera points at it instead. One-click DOM screenshot (html2canvas) — deferred
+to avoid a heavy dependency; paste/attach covers v1.
+
+**Consequences.** New tables + a private bucket (additive, applied). Tickets are loosely typed
+via the admin handle until type regen. Roadmap: CRM Support panel, reply notifications, SLA
+timers, tags, and folding recurring bug subjects into the living-docs demand loop.

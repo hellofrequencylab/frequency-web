@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { aiEnabled } from '@/lib/ai'
 import { getMemberContext } from '@/lib/ai/memory'
+import { supportSummaryForVera } from '@/lib/support/store'
 import { runVeraTurn } from '@/lib/ai/vera/loop'
 import { runVeraClaudeTurn, type VeraMessage } from '@/lib/ai/vera/agent-claude'
 import { executeConfirmedTool } from '@/lib/ai/vera/execute'
@@ -33,8 +34,10 @@ export interface ConciergeTurnResult {
 export async function conciergeTurn(stage: string, memberText: string, history: VeraMessage[] = []): Promise<ConciergeTurnResult> {
   if (aiEnabled()) {
     const profileId = await callerProfileId()
-    const memberContext = profileId ? await getMemberContext(profileId) : null
-    const live = await runVeraClaudeTurn({ history, memberText, memberContext })
+    const [memberContext, supportSummary] = profileId
+      ? await Promise.all([getMemberContext(profileId), supportSummaryForVera(profileId).catch(() => '')])
+      : [null, '']
+    const live = await runVeraClaudeTurn({ history, memberText, memberContext, supportSummary })
     if (live) return { message: live.reply, stage: 'chat', proposals: live.proposals, suggestions: [], done: false }
   }
 

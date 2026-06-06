@@ -83,6 +83,7 @@ export const NAV_AREAS: readonly NavArea[] = [
   // ── Studio → community stewardship + business (host+/staff). Four sections
   //    collapsed to one; the launchpads (Overview, Growth) aggregate the rest. ───
   { key: 'admin-community', href: '/admin',       label: 'Overview',  section: 'Studio', defaultAccess: 'host' },
+  { key: 'admin-support',   href: '/admin/support', label: 'Support', section: 'Studio', defaultAccess: 'host' },
   { key: 'crm',             href: '/crm',         label: 'CRM',       section: 'Studio', defaultAccess: 'host' },
   { key: 'connections',     href: '/connections', label: 'Profiles',  section: 'Studio', defaultAccess: 'host', staffDomain: 'profiles' },
   { key: 'admin-qr',        href: '/admin/qr',    label: 'QR Studio', section: 'Studio', defaultAccess: 'host' },
