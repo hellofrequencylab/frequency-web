@@ -24,6 +24,8 @@ import { TourProvider } from '@/components/onboarding/tour-provider'
 import type { TourState } from '@/lib/onboarding/select'
 import { getOnboardingStatus } from '@/lib/onboarding/status'
 import { BETA_INDUCTION_ACTIVE } from '@/lib/onboarding/beta-script'
+import { ChoresOverlay } from '@/components/onboarding/chores-overlay'
+import { getProfileChores } from '@/lib/onboarding/profile-chores'
 
 // Authenticated app layout. Wraps Feed, Groups, Events, Admin.
 // Pages outside this group (onboarding, settings, sign-in, /people) render
@@ -128,6 +130,11 @@ export default async function MainLayout({
   // (global demo_mode on); reflects the member's own hide/show cookie.
   const [demoMode, demoHidden] = await Promise.all([demoModeEnabled(), viewerHidesDemo()])
 
+  // Vera's "chores" — the matriarch full-stop (BETA-ACTIVATION §2). Beta-only (the
+  // oath justifies the friction); retires once everything's done + rewarded. Off at
+  // launch with the induction flag (back to the non-blocking model).
+  const chores = BETA_INDUCTION_ACTIVE ? await getProfileChores(profile.id) : null
+
   // Community news ticker — streams in independently, never blocks the shell.
   const ticker = (
     <Suspense fallback={null}>
@@ -156,6 +163,7 @@ export default async function MainLayout({
       <PresenceHeartbeat />
       <PushRegistration />
       <VeraLauncher index={helpIndex} />
+      {chores && (!chores.complete || !chores.rewarded) && <ChoresOverlay chores={chores} />}
       <PageViewTracker />
       <TourProvider initialState={tourState} satisfied={tourSatisfied} />
     </AppShell>
