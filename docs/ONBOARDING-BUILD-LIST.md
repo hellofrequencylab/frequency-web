@@ -37,7 +37,7 @@ Two levers, in order: **(0) flip the switches that let real testers in today**, 
 | **5.1** | Rename Directory → **Network** + merge `/people` + `/connections` into one member tab | Findable as a product | S–M | 📋 next |
 | **5.3–5.5** | Event-invite capture loop (QR → RSVP → triple-write) + gamification | The growth loop | M–L | 📋 |
 | **6** | **Capture** — primary "log life" button (Photo/Note/Post + In-Person card/poster) | The community story + every member a node | L | ⏳ Phases 1–3 shipped |
-| **7** | **Role-advancement training** — a training Journey per role transition | Onboarding never ends; every role is taught | L | 📋 designed (ADR-157) |
+| **7** | **Role-advancement training** — a training Journey per role transition | Onboarding never ends; every role is taught | L | ⏳ spine shipped (7.1–7.2) |
 | **4.x** | Cleanup + doc hygiene | Lean tree | S | ⏳ |
 
 Legend: ✅ done · ⏳ partially built / in flight · 📋 specced, not built · 🔴 blocked.
@@ -323,8 +323,8 @@ roles/permissions model (`lib/permissions`, `lib/nav-areas`). **No new flow engi
 
 | # | Item | What | Reuse | Size |
 |---|---|---|---|---|
-| 7.1 | **Assignment-on-promotion** | `role_change` → assign the matching training Journey + a Vera nudge | `app/(main)/admin/actions.ts` (+ Crew upgrade path), journey-plans adoption | S–M |
-| 7.2 | **Training-path records** | record *assigned / started / completed* per (member, role) — the advancement transcript + gate + analytics | extend `journey_plan_adoptions` or a `training_paths` table | M |
+| 7.1 | ✅ **shipped — Assignment-on-promotion.** `assignRole` (`admin/actions.ts`) now calls `assignTraining(profileId, role)`; the **Vera coach** hands off to `/training` when active (gated to crew+ so members never pay for the query). | `lib/onboarding/training.ts`, `app/(main)/layout.tsx` | S–M |
+| 7.2 | ✅ **shipped — Training-path records.** `training_paths` table (assigned/started/completed per member+role) — the transcript + gate + analytics. The `/training` page (`app/(main)/training/`) shows the active Journey as a curated path through the help center + a one-time gem reward on completion. ⚠️ **apply `20260608010000_training_paths.sql` on deploy.** | new migration, `lib/onboarding/training.ts` | M |
 | 7.3 | **Role→Journey content** | one training Journey per role; each step = a help article + optional coachmark tour; completion rewards (online → gems, ADR-139) | help center, Journeys, coachmark registry | M–L |
 | 7.4 | **Help-article role tagging** | tag `content/help/*` by `role` + `featureKeys` so a Journey assembles from the role's newly-unlocked surfaces | help front-matter (already has `featureKeys`/`audience`) | S |
 | 7.5 | **Flow management (admin)** | owner-tunable authoring of training Journeys per role | Journey/Quest authoring + help editor | M |
