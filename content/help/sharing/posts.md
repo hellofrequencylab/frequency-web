@@ -3,7 +3,7 @@ title: Posts, reactions & comments
 description: Share with your circle and join the conversation.
 category: sharing
 order: 1
-updated: 2026-06-03
+updated: 2026-06-06
 audience: member
 featureKeys: [posts]
 status: published
@@ -13,8 +13,14 @@ Posts are how you share with your circle: a thought, a photo, a question, a head
 
 ## Posting
 
-- Write a post and it's shared with your circle.
-- Add photos to bring it to life.
+Tap **Capture** to log a moment, then pick how:
+
+- **Photo** — snap what you're in the middle of.
+- **Note** — a quick journal jot: what happened, what you noticed.
+- **Post** — say something to your people.
+- **In person** — met someone? Capture their card or poster to add them.
+
+Whatever you capture is shared with your circle and shows up in their feed.
 
 ## Reacting & commenting
 
