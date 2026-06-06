@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { Heart, ThumbsUp, Megaphone, ArrowRight, Zap } from 'lucide-react'
+import { Heart, ThumbsUp, Megaphone, ArrowRight, Zap, NotebookPen } from 'lucide-react'
 import { toggleReaction } from '@/app/(main)/feed/actions'
 import { PostReplies } from './post-replies'
 import { ContextActions } from '@/components/context-actions'
@@ -98,6 +98,7 @@ export function PostCard({
   )
   const isOwn = author.id === myProfileId
   const isAnnouncement = post.post_type === 'announcement'
+  const isNote = post.post_type === 'note'
   const totalReactions = heartCount + plusCount
   const replyCount = post.replyCount ?? 0
   // Zaps this post has earned: each reaction is worth 1, each reply 2. One clean
@@ -128,6 +129,14 @@ export function PostCard({
             <p className="text-2xs font-medium text-primary-strong mb-2.5">
               📌 Pinned
             </p>
+          )}
+          {isNote && (
+            <div className="flex items-center gap-1.5 mb-2.5">
+              <NotebookPen className="w-3 h-3 text-subtle" />
+              <p className="text-2xs font-semibold uppercase tracking-wider text-subtle">
+                Note
+              </p>
+            </div>
           )}
 
           {/* Author row */}
