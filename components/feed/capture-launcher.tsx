@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
-import { Camera, ArrowLeft, X } from 'lucide-react'
+import { Camera, ArrowLeft, X, BookOpen } from 'lucide-react'
 import { Composer } from './composer'
 import { CAPTURE_MODES, type CaptureMode } from './capture-bar'
 
@@ -101,6 +102,7 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
                 placeholder={mode === 'note' ? 'Jot a note — what happened, what you noticed…' : 'What’s on your mind?'}
               />
             ) : (
+              <>
               <div className="grid grid-cols-2 gap-2">
                 {CAPTURE_MODES.map((m) => (
                   <button
@@ -119,6 +121,14 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
                   </button>
                 ))}
               </div>
+              <Link
+                href="/journal"
+                onClick={close}
+                className="mt-2 flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+              >
+                <BookOpen className="h-3.5 w-3.5" aria-hidden /> View your journal
+              </Link>
+              </>
             )}
           </div>
         </div>
