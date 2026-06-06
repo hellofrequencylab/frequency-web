@@ -152,8 +152,10 @@ harness** exists (BACKLOG §D). Build the harness first; then:
 
 ## Section 4 — Cleanup & doc hygiene (cheap; some ✅ done this pass)
 
-- ✅ **Deleted 4 orphan modules** — `components/ui/can.tsx`, `components/compose-button.tsx`,
-  `lib/contract/views.ts`, `lib/help/feature-keys.ts` (verified zero importers).
+- ✅ **Deleted 3 orphan modules** — `components/ui/can.tsx`, `components/compose-button.tsx`,
+  `lib/contract/views.ts` (verified zero importers). *(`lib/help/feature-keys.ts` was initially
+  removed too but **restored** — it's imported by the `scripts/help-*` CI tooling, which the
+  first grep didn't cover. Lesson: orphan-checks must include `scripts/`.)*
 - ✅ **Fixed `AI-VERA.md` stale header** ("design / not yet built" → Phases A–D shipped).
 - ⏳ **Drop ~5 orphan quest tables** — `quest_steps`, `quest_progress`, `season_trophies`,
   `group_memberships`, `circle_topics` (residue of the Jun-4→8 quest/arc/journey rename
