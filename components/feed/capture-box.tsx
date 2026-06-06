@@ -5,12 +5,10 @@ import { PenLine, NotebookPen, Camera, UserPlus } from 'lucide-react'
 import { Composer } from './composer'
 import { ContactCaptureForm } from './contact-capture-form'
 
-// The Capture box — one Substack-style box, multiple modes (the rework). The body
-// swaps by mode; a bottom rail of prompts picks what you're capturing; the send
-// button always says "Capture". Posts/notes/photos ride the composer; Contact is
-// the headline — drop a person straight into your personal CRM (ADR-155/156).
-//   On web this box is the modal post box. On mobile the same box opens from the
-//   centre-nav Capture button, contact-forward (you're out meeting people).
+// The Capture box — one Substack-style box, multiple modes (the rework). The mode
+// tabs live INSIDE the box (top), the active one filled so it's always obvious what
+// you're capturing; the body + send button below match the mode. Posts/notes/photos
+// ride the composer; Contact drops a person straight into the personal CRM (ADR-155/156).
 
 type Mode = 'post' | 'note' | 'photo' | 'contact'
 
@@ -37,45 +35,52 @@ export function CaptureBox({
 }) {
   const [mode, setMode] = useState<Mode>(defaultMode)
 
-  return (
-    <div className="space-y-2">
-      {mode === 'contact' ? (
-        <div className="rounded-2xl border border-border bg-surface">
-          <ContactCaptureForm />
-        </div>
-      ) : (
-        <Composer
-          key={mode}
-          scopeId={scopeId}
-          visibility={visibility}
-          canAnnounce={canAnnounce}
-          kind={mode === 'note' ? 'note' : 'post'}
-          autoImage={mode === 'photo'}
-          placeholder={mode === 'note' ? 'Jot a note — what happened, what you noticed…' : placeholder}
-          submitLabel="Capture"
-        />
-      )}
-
-      {/* Bottom rail — the "what are you capturing?" prompts. */}
-      <div className="flex items-center gap-1 px-1">
-        <span className="mr-1 text-2xs font-semibold uppercase tracking-wide text-subtle">Capture</span>
-        {MODES.map((m) => {
-          const active = mode === m.key
-          return (
-            <button
-              key={m.key}
-              type="button"
-              onClick={() => setMode(m.key)}
-              aria-pressed={active}
-              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition-colors ${
-                active ? 'bg-broadcast text-on-broadcast' : 'text-subtle hover:bg-surface-elevated hover:text-text'
-              }`}
-            >
-              <m.icon className="h-3.5 w-3.5" aria-hidden /> {m.label}
-            </button>
-          )
-        })}
-      </div>
+  // The mode tabs — rendered inside the box (top). Active = filled, so the current
+  // mode is unmistakable.
+  const tabs = (
+    <div className="flex flex-wrap items-center gap-1">
+      <span className="mr-1.5 text-2xs font-bold uppercase tracking-wide text-subtle">Capture</span>
+      {MODES.map((m) => {
+        const active = mode === m.key
+        return (
+          <button
+            key={m.key}
+            type="button"
+            onClick={() => setMode(m.key)}
+            aria-pressed={active}
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition-colors ${
+              active
+                ? 'bg-broadcast text-on-broadcast shadow-sm'
+                : 'text-subtle hover:bg-surface-elevated hover:text-text'
+            }`}
+          >
+            <m.icon className="h-3.5 w-3.5" aria-hidden /> {m.label}
+          </button>
+        )
+      })}
     </div>
+  )
+
+  if (mode === 'contact') {
+    return (
+      <div className="rounded-2xl bg-surface p-4 shadow-md">
+        <div className="-mx-4 mb-3 border-b border-border px-4 pb-3">{tabs}</div>
+        <ContactCaptureForm />
+      </div>
+    )
+  }
+
+  return (
+    <Composer
+      key={mode}
+      scopeId={scopeId}
+      visibility={visibility}
+      canAnnounce={canAnnounce}
+      kind={mode === 'note' ? 'note' : 'post'}
+      autoImage={mode === 'photo'}
+      placeholder={mode === 'note' ? 'Jot a note — what happened, what you noticed…' : placeholder}
+      submitLabel="Capture"
+      topSlot={tabs}
+    />
   )
 }
