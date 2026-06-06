@@ -38,6 +38,7 @@ import { InsightsModule } from '@/components/admin/modules/insights-module'
 import { RolesModule } from '@/components/admin/modules/roles-module'
 import { QrGeneratorModule } from '@/components/admin/modules/qr-generator-module'
 import { DemoModule } from '@/components/admin/modules/demo-module'
+import { AiModule } from '@/components/admin/modules/ai-module'
 import { SpacesCirclesModule } from '@/components/admin/modules/spaces-circles-module'
 import { ChannelsModule } from '@/components/admin/modules/channels-module'
 import { EventsModule } from '@/components/admin/modules/events-module'
@@ -183,7 +184,16 @@ export function AdminConsole({
     },
     insights: { module: <InsightsModule />, summary: 'Live signal' },
     reach: { module: <QrGeneratorModule />, summary: 'Generate & export' },
-    platform: { hrefs: ['/admin/demo'], module: <DemoModule />, summary: 'Demo content' },
+    platform: {
+      hrefs: ['/admin/demo', '/admin/ai'],
+      module: (
+        <div className="space-y-4">
+          <DemoModule />
+          <AiModule />
+        </div>
+      ),
+      summary: 'Demo, AI controls',
+    },
     spaces: {
       hrefs: ['/admin/circles', '/admin/channels', '/admin/events', '/admin/hubs', '/admin/nexuses'],
       module: (
