@@ -420,8 +420,11 @@ keep scope rails. **Open:** "Around You" naming. **Sequence:** 10.1 → 10.2 →
   Community · Practice · Quest · Messages** (member) + the four operator sections collapsed to
   **Studio** (host+) + **Platform** (janitor). Quest relabeled; **Messages added to the rail**; no items
   orphaned (deep dashboard merges keep everything reachable). Routes unchanged — pages still gate
-  themselves. *Next:* 10.1 Quest dashboard (sections) → 10.2 operator dashboards → 10.3 Network → 10.6
-  drop the global right rail.
+  themselves.
+- ✅ **10.1 — Quest tabbed dashboard.** `components/crew/quest-tabs.tsx` + `app/(main)/crew/layout.tsx`:
+  a shared sub-nav (Dashboard · Quests · Achievements · Challenges · Leaderboard · Streaks · Store)
+  above every `/crew` page. *Next:* 10.2 operator dashboards → 10.3 Network → 10.6 drop the global
+  right rail.
 
 ## Reuse map — what already exists (so you never rebuild it)
 

@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { Camera, X, BookOpen } from 'lucide-react'
+import { X, BookOpen } from 'lucide-react'
 import { CaptureBox } from './capture-box'
 
 type Mode = 'post' | 'note' | 'photo' | 'contact'
@@ -17,9 +16,6 @@ type Mode = 'post' | 'note' | 'photo' | 'contact'
 export function CaptureLauncher({ scopeId }: { scopeId: string }) {
   const [open, setOpen] = useState(false)
   const [mode, setMode] = useState<Mode>('post')
-  const pathname = usePathname()
-  // The feed carries the inline Capture box, so the desktop FAB is redundant there.
-  const showFab = pathname !== '/feed'
 
   const close = useCallback(() => setOpen(false), [])
 
@@ -51,21 +47,8 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
 
   return (
     <>
-      {/* Desktop FAB (mobile uses the centre-nav button instead). */}
-      {showFab && (
-        <button
-          type="button"
-          onClick={() => {
-            setMode('post')
-            setOpen(true)
-          }}
-          aria-label="Capture a moment"
-          className="fixed bottom-6 left-1/2 z-40 hidden h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full bg-primary text-on-primary shadow-pop transition-transform hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] md:inline-flex"
-        >
-          <Camera className="h-6 w-6" aria-hidden />
-        </button>
-      )}
-
+      {/* No desktop button — Capture lives in the mobile centre-nav; on web the feed's
+          inline Capture box is the entry. This component only hosts the modal. */}
       {open && (
         <div
           className="fixed inset-0 z-[70] flex items-stretch justify-center bg-black/70 backdrop-blur-sm sm:items-center sm:p-4"
