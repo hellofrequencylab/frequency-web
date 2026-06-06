@@ -8,6 +8,7 @@ import { IndexTemplate } from '@/components/templates/index-template'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { PersonCard } from '@/components/cards/person-card'
+import { InviteButton } from '@/components/invite/invite-button'
 import {
   AcceptDeclineButtons,
   CancelOutgoingButton,
@@ -43,6 +44,7 @@ export default async function FriendsPage() {
     <IndexTemplate
       title="Friends"
       description="Your friends and any pending requests live here. Add someone before you start a direct message or group thread with them."
+      action={<InviteButton label="Invite friends · earn zaps" />}
     >
       <div className="space-y-8">
         {incoming.length > 0 && (
