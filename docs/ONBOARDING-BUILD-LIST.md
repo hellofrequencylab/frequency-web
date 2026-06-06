@@ -39,6 +39,7 @@ Two levers, in order: **(0) flip the switches that let real testers in today**, 
 | **6** | **Capture** — primary "log life" button (Photo/Note/Post + In-Person card/poster) | The community story + every member a node | L | ⏳ Phases 1–3 shipped |
 | **7** | **Role-advancement training** — a training Journey per role transition | Onboarding never ends; every role is taught | L | ⏳ spine shipped (7.1–7.2) |
 | **8** | **Hook Networks** — federated white-label sub-communities (+ Organization role) | Pros/orgs run their own bubble that feeds the network | XL | 📋 designed (ADR-158) |
+| **9** | **Growth Studio** — unified "Leadpages-style" onboarding/growth suite | One place to manage pages, entry points, QR, links, pipeline | M | ⏳ launchpad shipped (9.0) |
 | **4.x** | Cleanup + doc hygiene | Lean tree | S | ⏳ |
 
 Legend: ✅ done · ⏳ partially built / in flight · 📋 specced, not built · 🔴 blocked.
@@ -359,6 +360,36 @@ rest. 8.1 delivers "energy flowing between" fastest. 8.2 + 8.3 are the bigger fe
 owns the white-label site, private content/gamification, and subscription billing throughout (ADR-059).
 **Cross-product contract → the Hook repo** (`hook/docs/FREQUENCY-INTEGRATION.md`); operator/strategy →
 Notion.
+
+## Section 9 — Growth Studio: the "Leadpages-style" onboarding/growth suite — ⏳ (owner)
+
+> **The frame (owner).** One place to manage onboarding pages + a full settings suite + entry points +
+> pipeline + QR editor + link generator — Leadpages-style.
+
+**Key finding (codebase map):** every data model already exists — the gaps are **UI + unification, no
+new tables.** The page editor (Puck) is shipped (`/pages`, `/edit/[slug]`); entry points
+(`/entry-points`), QR Studio (`/admin/qr`), codes/links (`/codes`), CRM pipeline (`/crm`), contacts
+(`/connections`, `/marketing/contacts`), onboarding sequences (`/pages/sequences`) and the marketing
+hub (`/marketing`) all exist — **scattered**.
+
+- ✅ **9.0 — Growth Studio launchpad** (`app/(main)/growth/page.tsx`, `/growth`, janitor-gated; nav +
+  icon added). One home that gathers all of the above into grouped quick-links — the "one place" win
+  by unifying, not rebuilding.
+
+**Gap roadmap (UI builders the launchpad will host):**
+| # | Gap | Where it'd live |
+|---|---|---|
+| 9.1 | **Onboarding-sequence editor** (splash copy/hero/oaths/routing — code-first today) | extend `/pages/sequences/[slug]/edit`, persist over `lib/onboarding/beta-sequences.ts` |
+| 9.2 | **Visual entry-point / flyer designer** (live preview; templates immutable today) | `/entry-points/[id]/edit`, over `lib/entry-points/flyer.ts` |
+| 9.3 | **Live QR style preview** (JSON editor exists, no live render) | `/admin/qr/[id]` style editor |
+| 9.4 | **Unified link generator** (referral/campaign/invite links are 3 places) | a `/growth/links` dashboard over `qr_codes` + `invite_links` |
+| 9.5 | **CRM deal create/edit + drag-stage** (board is read-only) | `/crm` board actions + a deal modal |
+| 9.6 | **Lead-flow customization UI** (personas/routing code-first) | over `lib/onboarding/lead-flows.ts` |
+| 9.7 | **A/B builder + scheduled publish** (infra exists: `entry_point_variants`, `fq_var`) | entry-point + page editor |
+
+**Sequencing:** 9.0 ships the hub now (done). 9.1 (sequence editor) + 9.5 (CRM deal editing) are the
+highest-value next builds — they turn the two biggest "view-only" surfaces into real management. All
+reuse existing tables; the work is editors + actions.
 
 ## Reuse map — what already exists (so you never rebuild it)
 
