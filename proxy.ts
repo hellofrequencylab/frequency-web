@@ -30,9 +30,21 @@ const PROTECTED_PATHS = [
 ]
 
 export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl
+
+  // Expose the current route to server components — next/headers can't see the URL
+  // otherwise. The right rail reads `x-pathname` to choose its page-specific panels
+  // while staying server-rendered (ADR-161). Recomputed per response so it always
+  // reflects the latest (cookie-mutated) request headers.
+  const withPath = (req: NextRequest) => {
+    const headers = new Headers(req.headers)
+    headers.set('x-pathname', pathname)
+    return headers
+  }
+
   // Start with a plain pass-through response. We may replace it below once
   // the Supabase cookie handler needs to write updated session cookies.
-  let supabaseResponse = NextResponse.next({ request })
+  let supabaseResponse = NextResponse.next({ request: { headers: withPath(request) } })
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -49,8 +61,8 @@ export async function proxy(request: NextRequest) {
             request.cookies.set(name, value)
           )
           // Re-create the response with the mutated request so Next.js forwards
-          // the updated cookies to the browser.
-          supabaseResponse = NextResponse.next({ request })
+          // the updated cookies to the browser (and re-stamp x-pathname).
+          supabaseResponse = NextResponse.next({ request: { headers: withPath(request) } })
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           )
@@ -63,8 +75,6 @@ export async function proxy(request: NextRequest) {
   // A stray await or early return can silently break session refresh, causing
   // users to appear randomly logged out.
   const { data: { user } } = await supabase.auth.getUser()
-
-  const { pathname } = request.nextUrl
 
   // First-touch attribution (ADR-095): record HOW an anonymous visitor first
   // arrived — campaign, referrer, landing page — once, immutably, so it survives
