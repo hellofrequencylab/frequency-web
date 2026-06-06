@@ -32,6 +32,7 @@ import {
   HelpCircle,
   LifeBuoy,
   Bug,
+  Gift,
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { NotificationBell } from '@/components/layout/notification-bell'
@@ -382,6 +383,14 @@ function AccountDropdown({
               <UserPlus className="w-4 h-4 text-subtle" />
               Friends
             </Link>
+            <button
+              type="button"
+              onClick={() => { setOpen(false); window.dispatchEvent(new Event('open-invite')) }}
+              className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-text hover:bg-surface-elevated transition-colors"
+            >
+              <Gift className="w-4 h-4 text-primary-strong" />
+              Invite friends · earn zaps
+            </button>
           </div>
 
           {/* Crew dashboard. Role-gated. (Admin lives in the page admin dock +
