@@ -4703,3 +4703,48 @@ stacked category serves every tier. The `@admin` server slot remains the optimiz
 next (modules wire to the client dock via capability-gated fetch until then). Remaining in
 `/admin/*`: Vera (needs its config form extracted first), AI controls, the Insights dashboards —
 then the route group retires per ADR-138. Operator guide → Notion.
+
+## ADR-150: Density / demand read-model — the expansion decision-engine (closes Stage B)
+
+**Status:** Accepted · 2026-06-06
+
+**Context.** PLATFORM-VISION §6 frames "seed the need for the next third space" as a *product
+feature*, not a slogan: a density/demand read-model off the place-tree that answers *where is
+local community density crossing the threshold that justifies a Lab?* It doubles as the
+grant-funder (nonprofit impact) and for-profit (expansion ROI) story. It is the last open item
+in Stage B (DEVELOPMENT-MAP), alongside the now-shipped Local Marketplace (ADR-148).
+
+**Decision.**
+- **City is the clustering key.** Circles, profiles, and marketplace listings all carry a
+  free-text `city`; we normalize on `lower(trim(city))` to join the three and surface a
+  representative label. This matches the existing `mkt_geo` aggregate and needs no schema change.
+  (PostGIS `geog` columns stay available for a future map/heatmap layer; v1 is city-grouped.)
+- **Facts in SQL, judgment in TS** — the same split as the `mkt_*` spine → `marketing-forecast`.
+  A single deterministic RPC `density_by_city()` (security definer, granted to `service_role`
+  only) returns grounded per-city facts: circles, active circles, members-in-circles, capacity,
+  residents (profiles), 30-day new residents, and active listings. `lib/analytics/density`
+  computes the **Lab-readiness score** + stage, so the expansion call is **auditable + unit-tested**.
+- **The readiness heuristic** is a documented weighted blend: circle **saturation** (45%, members ÷
+  capacity), **demand** (35%, residents capped at `READY_MEMBERS=40`), and **momentum** (20%, monthly
+  resident growth capped at 25%). Bands: **🌱 Seed** → **⏳ Growing** (≥40) → **✅ Ready** (≥70). A
+  population with *no* circles caps at Growing — seed a circle first, not a building. A separate
+  **⚠️ capacity-crunch** flag fires at ≥85% fill (people are being turned away).
+- **member growth ≠ membership churn.** `memberships` has no `created_at`, so resident momentum is
+  read from `profiles.created_at` (new arrivals in a place), not membership events.
+- **Surface:** `/admin/expansion` (Insights group, janitor / `insights:read`), built on the shared
+  `AdminPage` shell — totals, a "Lab-ready now" card grid (with closest-to-ready fallback), the full
+  ranked table, and a "how it's scored" note. Registered once in `admin/sections.ts`.
+- **Demo coherence:** the demo generator now places circles at **real city coordinates**
+  (a small North-County catalog, fallback Encinitas) instead of always jittering around Encinitas,
+  so the map, `circles_near`, and this read-model agree when an operator distributes demo circles.
+
+**Alternatives.** A PostGIS radius/cluster model independent of the `city` string (deferred — more
+power than v1 needs, and most rows only have a city today; the `geog` columns remain for a map
+layer later). Scoring inside SQL (rejected — opaque + untestable; the TS split keeps the expansion
+call reviewable and grant-defensible). A new aggregate table / materialized view (rejected for v1 —
+the live counts are small and the RPC is cheap; revisit if it gets hot).
+
+**Consequences.** Stage B is closed: the flywheel (Programs → circles → local exchange → density)
+is now observable as one operator surface. The threshold constants live in one file and are
+unit-tested, so tuning them is a one-line, reviewable change. Adding map/heatmap or a hub/nexus
+roll-up is additive (the `geog` columns and place-tree are already there). Operator guide → Notion.
