@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useRef, useEffect, useCallback } from 'react'
+import { useState, useTransition, useRef, useEffect, useCallback, type ReactNode } from 'react'
 import Image from 'next/image'
 import { Megaphone, ImagePlus, X, PenLine, Bold, Italic, List, Link2, Maximize2, Minimize2 } from 'lucide-react'
 import { createPost } from '@/app/(main)/feed/actions'
@@ -53,6 +53,7 @@ export function Composer({
   kind = 'post',
   autoImage = false,
   submitLabel,
+  topSlot,
 }: {
   scopeId: string
   visibility?: 'public' | 'region' | 'cluster' | 'group'
@@ -64,6 +65,8 @@ export function Composer({
   autoImage?: boolean
   /** Override the send-button label (Capture box uses "Capture"). */
   submitLabel?: string
+  /** Rendered inside the box at the top (the Capture mode tabs live here). */
+  topSlot?: ReactNode
 }) {
   const [body, setBody] = useState('')
   const [isAnnouncement, setIsAnnouncement] = useState(false)
@@ -364,6 +367,8 @@ export function Composer({
           </Tool>
         </div>
       )}
+
+      {topSlot && <div className="-mx-4 mb-3 border-b border-border px-4 pb-3">{topSlot}</div>}
 
       {/* Text region — soft, roomy, and auto-growing. */}
       <div className="relative">
