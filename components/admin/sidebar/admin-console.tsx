@@ -38,6 +38,8 @@ import { RolesModule } from '@/components/admin/modules/roles-module'
 import { QrGeneratorModule } from '@/components/admin/modules/qr-generator-module'
 import { DemoModule } from '@/components/admin/modules/demo-module'
 import { SpacesCirclesModule } from '@/components/admin/modules/spaces-circles-module'
+import { SpacesHubsModule } from '@/components/admin/modules/spaces-hubs-module'
+import { SpacesNexusesModule } from '@/components/admin/modules/spaces-nexuses-module'
 
 // The page-admin sidebar console (ADR-137 drill-down · ADR-138 the "manage" surface).
 // Home lists the categories that apply for THIS viewer; tap one to drill into its
@@ -170,7 +172,17 @@ export function AdminConsole({
     insights: { module: <InsightsModule />, summary: 'Live signal' },
     reach: { module: <QrGeneratorModule />, summary: 'Generate & export' },
     platform: { hrefs: ['/admin/demo'], module: <DemoModule />, summary: 'Demo content' },
-    spaces: { hrefs: ['/admin/circles'], module: <SpacesCirclesModule />, summary: 'Manage circles' },
+    spaces: {
+      hrefs: ['/admin/circles', '/admin/hubs', '/admin/nexuses'],
+      module: (
+        <div className="space-y-4">
+          <SpacesCirclesModule />
+          <SpacesHubsModule />
+          <SpacesNexusesModule />
+        </div>
+      ),
+      summary: 'Circles, hubs, nexuses',
+    },
   }
 
   const categories: Category[] = CATEGORIES.map((c) => {
