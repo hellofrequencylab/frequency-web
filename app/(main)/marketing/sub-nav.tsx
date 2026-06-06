@@ -10,7 +10,6 @@ import {
   Workflow,
   BarChart3,
   Radar,
-  Sparkles,
   Filter,
   Mail,
 } from 'lucide-react'
@@ -34,7 +33,6 @@ const TABS: NavItem[] = [
   { href: '/marketing/automations', label: 'Automations',  Icon: Workflow },
   { href: '/marketing/analytics',   label: 'Analytics',    Icon: BarChart3 },
   { href: '/marketing/market-read', label: 'Market read',  Icon: Radar },
-  { href: '/marketing/agent',       label: 'Agent',        Icon: Sparkles },
 ]
 
 export function MarketingSubNav() {

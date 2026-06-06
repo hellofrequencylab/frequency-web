@@ -3,7 +3,7 @@ import Link from 'next/link'
 import {
   LayoutTemplate, DoorOpen, Megaphone, QrCode, Link2,
   KanbanSquare, Contact, Users, ArrowRight,
-  Filter, Mail, Workflow, BarChart3, Radar, Rocket, Sparkles,
+  Filter, Mail, Workflow, BarChart3, Radar, Rocket,
 } from 'lucide-react'
 import { canAccessGrowthStudio } from '@/lib/page-editor/guard'
 import { SectionHeader } from '@/components/ui/section-header'
@@ -50,7 +50,6 @@ const GROUPS: { title: string; items: { label: string; desc: string; href: strin
       { label: 'Analytics', desc: 'Funnel & campaign performance', href: '/marketing/analytics', icon: BarChart3 },
       { label: 'Market read', desc: 'Audience & demand signals', href: '/marketing/market-read', icon: Radar },
       { label: 'Beta waitlist', desc: 'Invites & onboarding queue', href: '/marketing/beta', icon: Rocket },
-      { label: 'Marketing agent', desc: 'AI assistant for growth tasks', href: '/marketing/agent', icon: Sparkles },
     ],
   },
 ]

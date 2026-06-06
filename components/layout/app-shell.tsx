@@ -54,7 +54,7 @@ import { DemoToggle } from '@/components/layout/demo-toggle'
 import { DockRevealProvider } from '@/components/sidebar/dock-reveal'
 import { railFor } from '@/lib/layout/page-chrome'
 import { SearchOverlay } from '@/components/search/search-overlay'
-import { PageAdminDock, type AdminDockMode } from '@/components/layout/page-admin-dock'
+import { PageAdminBar } from '@/components/layout/page-admin-bar'
 
 // The sidebar + community bar are built from NAV_AREAS (lib/nav-areas.ts — the
 // single source of truth shared with the permission grid). The whole menu is
@@ -1138,20 +1138,12 @@ export default function AppShell({
       if (railSize === 'full') setLeftOpen(false)
     }
   }
-  // Page admin dock — open state (shared so PUSH mode can pad the content), plus
-  // the persisted mode (overlay/push) + width preferences.
-  const [adminOpen, setAdminOpen] = useState(false)
-  const [adminMode, setAdminMode] = useState<AdminDockMode>('overlay')
-  const [adminWidth, setAdminWidth] = useState(340)
   useEffect(() => {
     // One-time hydration of client-only prefs: server + first client render both see
     // the defaults → no hydration mismatch; we sync to the stored values after
     // mount. (This is the legitimate effect→setState case.)
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (localStorage.getItem('freq-rail-size') === 'full') setRailSize('full')
-    if (localStorage.getItem('freq-admin-mode') === 'push') setAdminMode('push')
-    const w = Number(localStorage.getItem('freq-admin-width'))
-    if (w >= 260 && w <= 560) setAdminWidth(w)
   }, [])
   function changeRailSize(s: RailSize, side: 'left' | 'right') {
     localStorage.setItem('freq-rail-size', s)
@@ -1162,14 +1154,8 @@ export default function AppShell({
       else setLeftOpen(false)
     }
   }
-  function changeAdminMode(m: AdminDockMode) {
-    localStorage.setItem('freq-admin-mode', m)
-    setAdminMode(m)
-  }
-  function changeAdminWidth(w: number) {
-    localStorage.setItem('freq-admin-width', String(w))
-    setAdminWidth(w)
-  }
+  // Page-specific admin now lives INLINE at the top of the content (PageAdminBar),
+  // not in a right-edge drawer — operators only.
   const canAdmin = !hideAppNav && (meetsAccess('host', gateRole) || staffRole != null)
 
   // Close mobile drawer + edge menus when the route changes (covers back/forward).
@@ -1378,8 +1364,7 @@ export default function AppShell({
             scrolling back up brings the rail back. Normal flow, no sticky. */}
         <div
           data-feed-scroll
-          style={{ ['--admin-pr' as string]: canAdmin && adminOpen && adminMode === 'push' ? `${adminWidth}px` : '0px' }}
-          className="flex-1 min-w-0 overflow-y-auto pb-[calc(4rem_+_env(safe-area-inset-bottom))] transition-[padding] duration-200 md:pb-0 md:pr-[var(--admin-pr)]"
+          className="flex-1 min-w-0 overflow-y-auto pb-[calc(4rem_+_env(safe-area-inset-bottom))] md:pb-0"
         >
           <div className="flex items-stretch min-h-full">
 
@@ -1391,6 +1376,9 @@ export default function AppShell({
               {!hideAppNav && ticker}
               <main className="flex-1 min-w-0 px-6 py-6" data-tour-anchor="content">
                 <Breadcrumbs />
+                {/* Inline page-admin layer — operators get an "Admin ▾" disclosure
+                    with this page's admin functions, in place of the old edge drawer. */}
+                {canAdmin && <PageAdminBar role={gateRole} staffRole={staffRole} />}
                 {children}
               </main>
             </div>
@@ -1413,20 +1401,8 @@ export default function AppShell({
       {/* ── Live search overlay (⌘K or the header search) ─────────────────── */}
       {searchOpen && <SearchOverlay onClose={() => setSearchOpen(false)} />}
 
-      {/* ── Page admin dock — light desktop edge tab / mobile header button →
-            per-page admin actions; opens push (content shifts) or overlay. ── */}
-      {canAdmin && (
-        <PageAdminDock
-          role={gateRole}
-          staffRole={staffRole}
-          open={adminOpen}
-          onOpenChange={setAdminOpen}
-          mode={adminMode}
-          onModeChange={changeAdminMode}
-          width={adminWidth}
-          onWidthChange={changeAdminWidth}
-        />
-      )}
+      {/* Page-specific admin now lives inline at the top of the content
+          (PageAdminBar in <main>), replacing the old right-edge admin drawer. */}
 
       {/* ── Mobile edge menus — always-visible tabs; left = the PRIMARY nav,
             right = stats / streaks / gamification. Both micro icon columns can be
