@@ -8,7 +8,8 @@ import { getActiveJourneyProgress } from '@/lib/journey-plans'
 import { DemoNotice } from '@/components/sidebar/demo-notice'
 import { pageRailPanels } from '@/lib/layout/rail-panels'
 import {
-  DispatchesPanel, EventsPanel, MembersPanel, LeaderboardPanel, ControlCenterPanel, PanelSkeleton,
+  DispatchesPanel, EventsPanel, MembersPanel, LeaderboardPanel, WhoOnlinePanel, CirclesPanel,
+  ControlCenterPanel, PanelSkeleton,
 } from '@/components/sidebar/rail-panels'
 
 export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
@@ -114,8 +115,9 @@ async function PagePanels({ profileId, role }: RightSidebarProps) {
   const keys = pageRailPanels(pathname)
   const isCrew = ['crew', 'host', 'guide', 'mentor', 'admin', 'janitor'].includes(role)
 
-  // The members/events/broadcasts panels need the viewer's circles; fetch once, share.
-  const needsCircles = keys.includes('events') || keys.includes('members') || keys.includes('dispatches')
+  // The members/events/broadcasts/circles panels need the viewer's circles; fetch once.
+  const needsCircles =
+    keys.includes('events') || keys.includes('members') || keys.includes('dispatches') || keys.includes('circles')
   let circleIds: string[] = []
   if (needsCircles) {
     const { data } = await createAdminClient()
@@ -133,6 +135,8 @@ async function PagePanels({ profileId, role }: RightSidebarProps) {
           key === 'dispatches' ? <DispatchesPanel profileId={profileId} circleIds={circleIds} />
           : key === 'events' ? <EventsPanel circleIds={circleIds} />
           : key === 'members' ? <MembersPanel profileId={profileId} circleIds={circleIds} />
+          : key === 'online' ? <WhoOnlinePanel profileId={profileId} />
+          : key === 'circles' ? <CirclesPanel circleIds={circleIds} />
           : key === 'leaderboard' ? (isCrew ? <LeaderboardPanel /> : null)
           : null
         return node ? <Suspense key={key} fallback={<PanelSkeleton />}>{node}</Suspense> : null
