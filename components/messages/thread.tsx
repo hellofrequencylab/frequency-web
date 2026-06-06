@@ -165,7 +165,7 @@ export function MessageThread({
                       className="w-7 h-7 rounded-full object-cover"
                     />
                   ) : (
-                    <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-[10px] font-bold flex items-center justify-center select-none">
+                    <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-3xs font-bold flex items-center justify-center select-none">
                       {sender ? getInitials(sender.display_name) : '?'}
                     </div>
                   )
@@ -180,7 +180,7 @@ export function MessageThread({
                 }`}
               >
                 {!isMine && sender && (
-                  <span className="text-[11px] text-subtle px-1 mb-0.5">
+                  <span className="text-2xs text-subtle px-1 mb-0.5">
                     {sender.display_name}
                   </span>
                 )}
@@ -191,7 +191,7 @@ export function MessageThread({
                     <div key={msg.id} className="group flex items-end gap-1.5">
                       {isMine && (
                         <span
-                          className={`text-[10px] text-subtle opacity-0 group-hover:opacity-100 transition-opacity ${
+                          className={`text-3xs text-subtle opacity-0 group-hover:opacity-100 transition-opacity ${
                             isLast ? '' : 'invisible'
                           }`}
                         >
@@ -211,7 +211,7 @@ export function MessageThread({
                       </div>
                       {!isMine && (
                         <span
-                          className={`text-[10px] text-subtle opacity-0 group-hover:opacity-100 transition-opacity ${
+                          className={`text-3xs text-subtle opacity-0 group-hover:opacity-100 transition-opacity ${
                             isLast ? '' : 'invisible'
                           }`}
                         >
@@ -262,7 +262,7 @@ export function MessageThread({
             </svg>
           </button>
         </div>
-        <p className="text-[10px] text-subtle mt-1.5 text-right">Enter to send · Shift+Enter for new line</p>
+        <p className="text-3xs text-subtle mt-1.5 text-right">Enter to send · Shift+Enter for new line</p>
       </div>
     </div>
   )

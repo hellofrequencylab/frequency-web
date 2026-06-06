@@ -56,7 +56,7 @@ function AchievementToastCard({ achievement, onDismiss }: ToastProps) {
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-subtle">
+              <p className="text-3xs font-bold uppercase tracking-wider text-subtle">
                 Achievement Unlocked
               </p>
               <button
@@ -73,11 +73,11 @@ function AchievementToastCard({ achievement, onDismiss }: ToastProps) {
               {achievement.description}
             </p>
             <div className="flex items-center gap-2 mt-2">
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-semibold ${tier.bg} ${tier.color}`}>
+              <span className={`text-3xs px-1.5 py-0.5 rounded-md font-semibold ${tier.bg} ${tier.color}`}>
                 {tier.label}
               </span>
               {achievement.zapsReward > 0 && (
-                <span className="text-[11px] font-medium text-warning flex items-center gap-0.5">
+                <span className="text-2xs font-medium text-warning flex items-center gap-0.5">
                   <Zap className="w-3 h-3" />
                   +{achievement.zapsReward} zaps
                 </span>

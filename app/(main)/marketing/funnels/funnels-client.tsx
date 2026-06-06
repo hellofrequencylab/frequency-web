@@ -71,7 +71,7 @@ function CampaignRow({ campaign }: { campaign: Campaign }) {
       <Link href={`/marketing/funnels/${campaign.id}`} className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <h3 className="truncate text-sm font-bold text-text">{campaign.name}</h3>
-          <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${STATUS_STYLE[campaign.status] ?? STATUS_STYLE.draft}`}>
+          <span className={`rounded-full px-2 py-0.5 text-3xs font-semibold uppercase ${STATUS_STYLE[campaign.status] ?? STATUS_STYLE.draft}`}>
             {campaign.status}
           </span>
         </div>

@@ -185,20 +185,20 @@ function ResultRow({
       {result.avatar_url ? (
         <Image src={result.avatar_url} alt={result.display_name} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0" />
       ) : (
-        <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-[10px] font-semibold flex items-center justify-center shrink-0">
+        <div className="w-7 h-7 rounded-full bg-primary-bg text-primary-strong text-3xs font-semibold flex items-center justify-center shrink-0">
           {getInitials(result.display_name)}
         </div>
       )}
       <div className="flex-1 min-w-0">
         <p className="text-xs font-semibold text-text truncate">{result.display_name}</p>
-        <p className="text-[11px] text-subtle truncate">@{result.handle}</p>
+        <p className="text-2xs text-subtle truncate">@{result.handle}</p>
       </div>
 
       {isFriend && (
         <button
           type="button"
           onClick={onAdd}
-          className="shrink-0 rounded-md bg-primary px-2 py-1 text-[11px] font-semibold text-on-primary hover:bg-primary-hover transition-colors"
+          className="shrink-0 rounded-md bg-primary px-2 py-1 text-2xs font-semibold text-on-primary hover:bg-primary-hover transition-colors"
         >
           Add
         </button>
@@ -211,20 +211,20 @@ function ResultRow({
             await sendFriendRequest(result.id)
             setRequested(true)
           })}
-          className="shrink-0 inline-flex items-center gap-1 rounded-md border border-border-strong px-2 py-1 text-[11px] font-medium text-muted hover:border-primary hover:text-primary-strong disabled:opacity-50 transition-colors"
+          className="shrink-0 inline-flex items-center gap-1 rounded-md border border-border-strong px-2 py-1 text-2xs font-medium text-muted hover:border-primary hover:text-primary-strong disabled:opacity-50 transition-colors"
         >
           <UserPlus className="w-3 h-3" />
           Add Friend
         </button>
       )}
       {(status === 'pending_outgoing' || requested) && (
-        <span className="shrink-0 inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] text-subtle">
+        <span className="shrink-0 inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-2xs text-subtle">
           <Clock className="w-3 h-3" />
           Pending
         </span>
       )}
       {status === 'pending_incoming' && (
-        <span className="shrink-0 rounded-md border border-warning px-2 py-1 text-[11px] font-medium text-warning">
+        <span className="shrink-0 rounded-md border border-warning px-2 py-1 text-2xs font-medium text-warning">
           Accept on profile
         </span>
       )}

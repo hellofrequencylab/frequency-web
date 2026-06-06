@@ -100,7 +100,7 @@ export function PostReplies({
                   {r.author?.avatar_url ? (
                     <Image src={r.author.avatar_url} alt={r.author.display_name} width={24} height={24} className="w-6 h-6 rounded-full object-cover" />
                   ) : (
-                    <div className="w-6 h-6 rounded-full bg-primary-bg text-primary-strong text-[10px] font-semibold flex items-center justify-center">
+                    <div className="w-6 h-6 rounded-full bg-primary-bg text-primary-strong text-3xs font-semibold flex items-center justify-center">
                       {getInitials(r.author?.display_name ?? '?')}
                     </div>
                   )}
@@ -118,7 +118,7 @@ export function PostReplies({
                         compact
                       />
                     )}
-                    <span className="text-[11px] text-subtle">{relativeTime(r.created_at)}</span>
+                    <span className="text-2xs text-subtle">{relativeTime(r.created_at)}</span>
                   </div>
                   <PostBody body={r.body} className="mt-0.5 text-xs leading-relaxed text-text" />
                 </div>

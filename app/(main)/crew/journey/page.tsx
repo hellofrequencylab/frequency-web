@@ -141,7 +141,7 @@ export default async function JourneyPage() {
                       }`}
                     >
                       <span
-                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
+                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-2xs font-bold ${
                           it.met
                             ? 'bg-success text-on-primary'
                             : isNext

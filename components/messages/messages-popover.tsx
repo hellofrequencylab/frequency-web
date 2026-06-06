@@ -63,7 +63,7 @@ export function MessagesPopover({ initialUnread = 0 }: { initialUnread?: number 
             <Link
               href="/messages"
               onClick={() => setOpen(false)}
-              className="text-[11px] font-medium text-primary-strong hover:underline flex items-center gap-0.5"
+              className="text-2xs font-medium text-primary-strong hover:underline flex items-center gap-0.5"
             >
               View all <ArrowRight className="w-3 h-3" />
             </Link>
@@ -86,7 +86,7 @@ export function MessagesPopover({ initialUnread = 0 }: { initialUnread?: number 
 
             {data && data.rooms.length > 0 && (
               <div className="py-1">
-                <p className="px-4 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-widest text-subtle">Rooms</p>
+                <p className="px-4 pt-2 pb-1 text-3xs font-semibold uppercase tracking-widest text-subtle">Rooms</p>
                 {data.rooms.map(r => (
                   <Link
                     key={r.id}
@@ -102,7 +102,7 @@ export function MessagesPopover({ initialUnread = 0 }: { initialUnread?: number 
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold text-text truncate">{r.name}</p>
                       {r.last_message_at && (
-                        <p className="text-[10px] text-subtle">{relativeTime(r.last_message_at)}</p>
+                        <p className="text-3xs text-subtle">{relativeTime(r.last_message_at)}</p>
                       )}
                     </div>
                     {r.unread > 0 && (
@@ -117,7 +117,7 @@ export function MessagesPopover({ initialUnread = 0 }: { initialUnread?: number 
 
             {data && data.conversations.length > 0 && (
               <div className="py-1 border-t border-border">
-                <p className="px-4 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-widest text-subtle">Direct messages</p>
+                <p className="px-4 pt-2 pb-1 text-3xs font-semibold uppercase tracking-widest text-subtle">Direct messages</p>
                 {data.conversations.map(c => {
                   const isGroup = c.participants.length > 1
                   const display = c.name || (isGroup
@@ -135,7 +135,7 @@ export function MessagesPopover({ initialUnread = 0 }: { initialUnread?: number 
                       {firstAvatar?.avatar_url ? (
                         <Image src={firstAvatar.avatar_url} alt={firstAvatar.display_name} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0" />
                       ) : (
-                        <div className="w-7 h-7 rounded-full bg-surface-elevated text-muted text-[10px] font-semibold flex items-center justify-center shrink-0 select-none">
+                        <div className="w-7 h-7 rounded-full bg-surface-elevated text-muted text-3xs font-semibold flex items-center justify-center shrink-0 select-none">
                           {firstAvatar ? getInitials(firstAvatar.display_name) : '?'}
                         </div>
                       )}
@@ -144,7 +144,7 @@ export function MessagesPopover({ initialUnread = 0 }: { initialUnread?: number 
                           {display}
                         </p>
                         {c.lastMessage && (
-                          <p className="text-[10px] text-subtle truncate">{c.lastMessage.body}</p>
+                          <p className="text-3xs text-subtle truncate">{c.lastMessage.body}</p>
                         )}
                       </div>
                       {c.unread > 0 && (

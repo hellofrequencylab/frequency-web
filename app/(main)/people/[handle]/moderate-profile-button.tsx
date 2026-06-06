@@ -37,7 +37,7 @@ export function ModerateProfileButton({
 
   return (
     <div className="absolute right-0 top-full mt-2 z-50 w-72 rounded-xl border border-border bg-surface shadow-xl p-3 space-y-2">
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-subtle">Moderator edit</p>
+      <p className="text-2xs font-semibold uppercase tracking-wider text-subtle">Moderator edit</p>
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}

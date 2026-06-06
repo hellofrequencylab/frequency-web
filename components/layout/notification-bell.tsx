@@ -128,7 +128,7 @@ export function NotificationBell({ initialUnread }: { initialUnread: number }) {
                     )}
                     {n.body}
                   </p>
-                  <p className="text-[11px] text-subtle mt-0.5">{relativeTime(n.created_at)}</p>
+                  <p className="text-2xs text-subtle mt-0.5">{relativeTime(n.created_at)}</p>
                 </div>
                 {!n.read_at && (
                   <span className="w-2 h-2 rounded-full bg-primary shrink-0 mt-1" />

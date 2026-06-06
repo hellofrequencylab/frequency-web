@@ -53,7 +53,7 @@ export function CircleCard({ circle, isAuthed = false }: { circle: PublicCircle;
           {circle.name}
         </h3>
         {circle.status === 'forming' && (
-          <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-md font-medium bg-warning-bg text-warning capitalize">
+          <span className="shrink-0 text-3xs px-1.5 py-0.5 rounded-md font-medium bg-warning-bg text-warning capitalize">
             forming
           </span>
         )}
@@ -130,7 +130,7 @@ export function PostPreview({ post, isAuthed = false }: { post: PublicPost; isAu
         <span className="text-sm font-semibold text-text truncate block">
           {post.author_display_name ?? 'Community member'}
         </span>
-        <p className="text-[11px] text-subtle mt-0.5">
+        <p className="text-2xs text-subtle mt-0.5">
           {post.author_handle && <>@{post.author_handle} · </>}
           {relativeTime(post.created_at)}
         </p>

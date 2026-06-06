@@ -3,7 +3,7 @@
 // on-brand in light + dark.
 export function PillarBadge({ name }: { name: string }) {
   return (
-    <span className="inline-flex shrink-0 items-center rounded-full bg-surface-elevated px-2 py-0.5 text-[11px] font-medium text-muted">
+    <span className="inline-flex shrink-0 items-center rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-muted">
       {name}
     </span>
   )

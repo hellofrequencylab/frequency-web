@@ -176,13 +176,13 @@ export function SupportLauncher({ index }: { index: HelpSearchEntry[] }) {
                   </p>
                 ) : result?.answer ? (
                   <>
-                    <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-primary-strong">
+                    <span className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-primary-strong">
                       <Sparkles className="h-3.5 w-3.5" aria-hidden /> Vera
                     </span>
                     <p className="mt-1 whitespace-pre-wrap text-sm text-text">{result.answer}</p>
                     {result.citations.length > 0 && (
                       <div className="mt-2 border-t border-border pt-2">
-                        <p className="text-[11px] uppercase tracking-wide text-subtle">Sources</p>
+                        <p className="text-2xs uppercase tracking-wide text-subtle">Sources</p>
                         <ul className="mt-1 space-y-0.5">
                           {result.citations.map((c) => (
                             <li key={c.href}>
@@ -194,7 +194,7 @@ export function SupportLauncher({ index }: { index: HelpSearchEntry[] }) {
                         </ul>
                       </div>
                     )}
-                    <p className="mt-2 text-[11px] text-subtle">AI answer — double-check anything important.</p>
+                    <p className="mt-2 text-2xs text-subtle">AI answer — double-check anything important.</p>
                   </>
                 ) : (
                   <>

@@ -409,7 +409,7 @@ export function TiersBlock({
               <div className="flex items-center gap-2 mb-1">
                 <h3 className="font-display uppercase text-text text-2xl">{tier.name}</h3>
                 {tier.badge === 'founder' && (
-                  <span className="inline-flex items-center gap-1 rounded-md bg-signal-bg px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-signal-strong">
+                  <span className="inline-flex items-center gap-1 rounded-md bg-signal-bg px-2 py-0.5 text-3xs font-bold uppercase tracking-wider text-signal-strong">
                     <Award className="w-3 h-3" aria-hidden /> Founder
                   </span>
                 )}

@@ -117,7 +117,7 @@ export function NewChannelCompose({ domains = [] }: { domains?: DomainOption[] }
                   <option key={d.id} value={d.id}>{d.name}</option>
                 ))}
               </select>
-              <p className="mt-1 text-[11px] text-subtle">
+              <p className="mt-1 text-2xs text-subtle">
                 The Channel (Mind, Body, Spirit, Expression) this Interest sits under.
               </p>
             </div>
@@ -135,7 +135,7 @@ export function NewChannelCompose({ domains = [] }: { domains?: DomainOption[] }
                 <option key={c.value} value={c.value}>{c.label}</option>
               ))}
             </select>
-            <p className="mt-1 text-[11px] text-subtle">
+            <p className="mt-1 text-2xs text-subtle">
               The category sets the icon and where the channel sits in browse.
             </p>
           </div>

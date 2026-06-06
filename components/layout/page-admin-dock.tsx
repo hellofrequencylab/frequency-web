@@ -77,7 +77,7 @@ export function PageAdminDock({
           className="fixed right-0 top-1/2 z-30 hidden h-[40vh] w-7 -translate-y-1/2 flex-col items-center justify-center gap-2 rounded-l-2xl border border-r-0 border-border/50 bg-surface/40 text-muted opacity-60 backdrop-blur-sm transition-opacity hover:opacity-100 md:flex"
         >
           <Shield className="h-4 w-4" />
-          <span className="text-[10px] font-semibold uppercase tracking-wider [writing-mode:vertical-rl]">Admin</span>
+          <span className="text-3xs font-semibold uppercase tracking-wider [writing-mode:vertical-rl]">Admin</span>
         </button>
       )}
 
@@ -117,7 +117,7 @@ export function PageAdminDock({
                   onClick={() => onModeChange('push')}
                   aria-pressed={mode === 'push'}
                   title="Push the page over"
-                  className={`flex items-center gap-1 rounded-md px-1.5 py-1 text-[11px] font-medium transition-colors ${mode === 'push' ? 'bg-primary-bg text-primary-strong' : 'text-subtle hover:text-text'}`}
+                  className={`flex items-center gap-1 rounded-md px-1.5 py-1 text-2xs font-medium transition-colors ${mode === 'push' ? 'bg-primary-bg text-primary-strong' : 'text-subtle hover:text-text'}`}
                 >
                   <Columns2 className="h-3.5 w-3.5" />Push
                 </button>
@@ -126,7 +126,7 @@ export function PageAdminDock({
                   onClick={() => onModeChange('overlay')}
                   aria-pressed={mode === 'overlay'}
                   title="Float over the page"
-                  className={`flex items-center gap-1 rounded-md px-1.5 py-1 text-[11px] font-medium transition-colors ${mode === 'overlay' ? 'bg-primary-bg text-primary-strong' : 'text-subtle hover:text-text'}`}
+                  className={`flex items-center gap-1 rounded-md px-1.5 py-1 text-2xs font-medium transition-colors ${mode === 'overlay' ? 'bg-primary-bg text-primary-strong' : 'text-subtle hover:text-text'}`}
                 >
                   <PanelRight className="h-3.5 w-3.5" />Over
                 </button>

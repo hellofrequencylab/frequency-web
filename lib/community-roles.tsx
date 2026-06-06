@@ -62,7 +62,7 @@ export function RoleBadge({
     : ROLE_LABEL[safeRole]
   return (
     <span
-      className={`rank-badge ${className ?? 'text-[10px] leading-tight'}`}
+      className={`rank-badge ${className ?? 'text-3xs leading-tight'}`}
       style={roleBadgeStyle(safeRole)}
     >
       {label}

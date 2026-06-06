@@ -302,11 +302,11 @@ function DispatchTimelineCard({ dispatch: d }: { dispatch: DispatchItem }) {
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-0.5">
-            <span className="text-[10px] font-black uppercase tracking-widest text-primary-strong">
+            <span className="text-3xs font-black uppercase tracking-widest text-primary-strong">
               {d.audience_scope} broadcast
             </span>
             {d.linked_task && (
-              <span className="text-[10px] font-bold text-primary flex items-center gap-0.5">
+              <span className="text-3xs font-bold text-primary flex items-center gap-0.5">
                 <Zap className="w-2.5 h-2.5" /> Challenge
               </span>
             )}
@@ -318,7 +318,7 @@ function DispatchTimelineCard({ dispatch: d }: { dispatch: DispatchItem }) {
             <p className="text-xs text-muted line-clamp-1 mt-0.5">{d.excerpt}</p>
           )}
           <div className="flex items-center justify-between mt-1.5">
-            <span className="text-[11px] text-subtle">
+            <span className="text-2xs text-subtle">
               {d.author?.display_name} · {relativeTime(d.published_at)}
             </span>
             <ArrowRight className="w-3 h-3 text-primary-strong dark:text-primary-strong group-hover:text-primary-strong transition-colors" />
@@ -346,7 +346,7 @@ function EventTimelineCard({ event: e }: { event: EventItem }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-0.5">
             <CalendarDays className="w-3 h-3 text-primary" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-primary">Event</span>
+            <span className="text-3xs font-black uppercase tracking-widest text-primary">Event</span>
           </div>
           <p className="text-sm font-bold text-text group-hover:text-warning dark:group-hover:text-primary transition-colors line-clamp-1">
             {e.title}

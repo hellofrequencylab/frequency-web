@@ -181,7 +181,7 @@ export function CountUp({
 export function ScrollCue({ label }: { label: string }) {
   return (
     <div className="mt-12 flex flex-col items-center gap-2 text-white/45">
-      <span className="text-[11px] font-bold tracking-widest uppercase">{label}</span>
+      <span className="text-2xs font-bold tracking-widest uppercase">{label}</span>
       <ChevronDown className="w-5 h-5 animate-cue" aria-hidden />
     </div>
   )
