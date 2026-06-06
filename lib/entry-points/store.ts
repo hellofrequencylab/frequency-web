@@ -59,14 +59,17 @@ function toEntryPoint(row: EntryRow): EntryPoint {
 
 const COLS = 'id, slug, title, target_url, template_id, flyer, style, scan_count'
 
-/** Every entry point a member owns (template_id set), newest first. */
+/** Every entry point a member owns OR created, newest first. We match `created_by`
+ *  too (not just `owner_profile_id`) and no longer require a `template_id`, so codes
+ *  made in the older QR flow — before the entry-point model set an owner/template —
+ *  still surface here. Templateless rows render with the default template, and the
+ *  first edit claims ownership (see updateEntryPoint). */
 export async function listMyEntryPoints(ownerId: string): Promise<EntryPoint[]> {
   const db = createAdminClient() as unknown as SupabaseClient
   const { data } = await db
     .from('qr_codes')
     .select(COLS)
-    .eq('owner_profile_id', ownerId)
-    .not('template_id', 'is', null)
+    .or(`owner_profile_id.eq.${ownerId},created_by.eq.${ownerId}`)
     .order('created_at', { ascending: false })
   return ((data as EntryRow[] | null) ?? []).map(toEntryPoint)
 }
