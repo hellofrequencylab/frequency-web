@@ -331,6 +331,28 @@ a new layout.
 
 ---
 
+## 9. The Studio — the shared *creation* surface (ADR-142)
+
+Pages are for *reading*; the **Studio** is the one window for *making*. Anywhere
+there's something to create or edit (a journey today; circles, practices, events
+next), the same launchable window opens — so authoring feels identical everywhere,
+the way the five templates make reading feel identical.
+
+- **Shell:** `components/studio/studio-window.tsx` — an overlay panel (full-screen on
+  mobile) with shared chrome (eyebrow, Esc/backdrop close, scroll-lock), a body the
+  entity fills with its tools, and a sticky footer action bar. Launchable in place
+  **and** deep-linkable (the full builder also lives at the entity's route).
+- **Per-entity builder = the extension point.** The shell is generic; each entity
+  supplies its identity header, tool components, and footer, plus its create/edit
+  **capability gating** for that instance. First instance:
+  `components/studio/journey/*` (emoji/accent identity, markdown intro, drag-reorder
+  path, per-step cadence/note, live Pillar balance, autosave, share-to-library).
+- **Build the next entity** by mounting `<StudioWindow>` with that entity's tools —
+  don't author a new editor. Accents come from `lib/studio/accents.ts` (token-based,
+  never hex).
+
+---
+
 ## Decisions captured
 
 - **One shell, FIVE templates (Stream / Index / Detail / Dashboard / Focus)** — all

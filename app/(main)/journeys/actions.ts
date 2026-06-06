@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { atLeastRole } from '@/lib/core/roles'
+import { ok, fail, type ActionResult } from '@/lib/action-result'
 import {
   createPlan,
   addItem,
@@ -159,4 +160,97 @@ export async function forkPlanAction(formData: FormData) {
   const planId = String(formData.get('planId') ?? '')
   const fork = await forkPlan(profileId, planId)
   if (fork) redirect(`/journeys/${fork.slug}`)
+}
+
+// --- Studio (client builder) actions — JSON args, return ActionResult ---------
+// These power the interactive Studio window (components/studio/journey). The
+// FormData actions above stay as the no-JS fallback. Ownership + Crew gating are
+// re-checked here (the client is never trusted).
+
+export async function createJourney(input: {
+  title: string
+  summary?: string
+  emoji?: string
+  accent?: string
+}): Promise<ActionResult<{ slug: string }>> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Sign in to create a journey.')
+  const title = (input.title ?? '').trim()
+  if (!title) return fail('Give your journey a name.')
+  const plan = await createPlan({
+    authorId: profileId,
+    title,
+    summary: input.summary,
+    emoji: input.emoji,
+    accent: input.accent,
+  })
+  if (!plan) return fail('Could not create the journey. Try again.')
+  revalidatePath('/journeys', 'layout')
+  return ok({ slug: plan.slug })
+}
+
+export async function saveJourneyMeta(
+  planId: string,
+  patch: {
+    title?: string
+    summary?: string | null
+    intro?: string | null
+    emoji?: string | null
+    accent?: string | null
+    coverImage?: string | null
+  },
+): Promise<ActionResult> {
+  if (!(await assertOwner(planId))) return fail('Not allowed.')
+  await updatePlan(planId, patch)
+  revalidatePath('/journeys', 'layout')
+  return ok()
+}
+
+export async function addPracticeToJourney(
+  planId: string,
+  practiceId: string,
+  domainId: string | null,
+): Promise<ActionResult> {
+  if (!(await assertOwner(planId))) return fail('Not allowed.')
+  if (!practiceId) return fail('No practice given.')
+  await addItem({ planId, practiceId, domainId })
+  return ok()
+}
+
+export async function removeJourneyStep(planId: string, practiceId: string): Promise<ActionResult> {
+  if (!(await assertOwner(planId))) return fail('Not allowed.')
+  await removeItem(planId, practiceId)
+  return ok()
+}
+
+export async function reorderJourneySteps(planId: string, order: string[]): Promise<ActionResult> {
+  if (!(await assertOwner(planId))) return fail('Not allowed.')
+  await reorderItems(planId, order)
+  return ok()
+}
+
+export async function setJourneyStep(
+  planId: string,
+  practiceId: string,
+  patch: { note?: string | null; cadence?: string | null },
+): Promise<ActionResult> {
+  if (!(await assertOwner(planId))) return fail('Not allowed.')
+  await updateItem(planId, practiceId, patch)
+  return ok()
+}
+
+/** Set visibility. Public = publish to the library (Crew-gated, stamps published_at). */
+export async function setJourneyVisibility(
+  planId: string,
+  visibility: PlanVisibility,
+): Promise<ActionResult> {
+  if (!(await assertOwner(planId))) return fail('Not allowed.')
+  if (visibility === 'public') {
+    if (!(await callerIsCrew())) return fail('Sharing to the community library is a Crew perk.')
+    await publishPlan(planId)
+  } else {
+    await setPlanVisibility(planId, visibility)
+  }
+  revalidatePath('/journeys', 'layout')
+  return ok()
 }
