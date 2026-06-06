@@ -231,6 +231,14 @@
 > panels as the stage climbs, with a stage strip + one-time "stage reached" moment (ADR-146,
 > `lib/member-progress.ts`). Left nav stays fully visible (owner decision). No migration — both derive
 > from existing data + a `profiles.meta` marker.
+>
+> **2026-06-06:** **Quest/Journey hierarchy** (ADR-152) — canonical model **The Quest → Seasonal
+> Quest → Journeys → Practices**, all **free** (reverses the ADR-150 "one concept" detour and
+> ADR-087's paywall). *Phase A* restored "Quests" as the distinct seasonal concept + removed every
+> Journey paywall. *Phase B1* added the data nesting: a `quests` container table +
+> `journey_plans.quest_id`/`official` + a seed (the active season's Quest with one official Journey
+> per Pillar), migration `20260608010000`. Remaining: B2 (surfaces — Quest → its Journeys), B3
+> (retire the legacy `quest_*` action-chains + terminology pass).
 
 ---
 
