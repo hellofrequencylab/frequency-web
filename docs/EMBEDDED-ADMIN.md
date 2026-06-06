@@ -356,11 +356,20 @@ Hubs · Nexuses (see the §7 *Progress* table). ⏳ **Left in `/admin/*`:** the 
 
 ## 7. Build sequence (additive, each step shippable)
 
-> **Progress — ✅ the console is live and `/admin/*` is being absorbed.** The drill-down
-> **settings console** (`components/admin/sidebar/admin-console.tsx`) ships inside the dock:
-> a category **home → category screen → back + search**, **driven by the role-gated admin
-> catalog** (`visibleLinks`) so tiers filter automatically — a janitor sees every category, a
-> host only what they steward. Reach any admin surface from the sidebar; no `/admin` trip.
+> **Progress — ✅ the console is live; admin is now three layers ([ADR-153](DECISIONS.md)).** The
+> drill-down **settings console** (`components/admin/sidebar/admin-console.tsx`) ships inside the
+> dock: a category **home → category screen → back + search**, **driven by the role-gated admin
+> catalog** (`visibleLinks`) so tiers filter automatically.
+>
+> **✅ Layer 3 — the sidebar is trimmed to *page-globals*.** After the [ADR-153](DECISIONS.md)
+> three-layer split, the console no longer hosts whole management suites (they overloaded the rail).
+> It keeps only **light, in-context** modules — the page's **Basics** settings module and its
+> **QR code** generator — and **every other category links back to its parent suite** (the category
+> title is a link; its sub-items are the suite's tabs). The 15 in-sidebar module wrappers + their
+> gated loaders were **deleted**; the heavy management lives in the **nine full-page suites** (§ below,
+> ADR-153 Layer 2), with the shared extracted views (`ChannelsAdminList` / `EventsAdminList` /
+> `AiControlsView` / `VeraConfigForm`) retained for the pages. The sidebar *tunes the page*; the
+> suite *manages the domain*.
 >
 > **Engine & inline layer.** ✅ The `AdminModule` registry (`modulesFor` / `showsAdminPanel`,
 > tested) + the 9-category `slot` spine and a `surface` field (`modulesForSurface`).
@@ -374,10 +383,11 @@ Hubs · Nexuses (see the §7 *Progress* table). ⏳ **Left in `/admin/*`:** the 
 > modules currently wire into the client dock via an on-open, capability-gated fetch
 > (`get*AdminData`) rather than server composition.
 >
-> **Deep-link → in-place ports.** Each `/admin/*` surface, as it's ported, renders **in place**
-> in its spine category and its deep-link drops — adding one is a single `IN_PLACE` map entry.
-> The recipe: a loader util + a gated `'use server'` action + a client module reusing the
-> existing admin components. **16 surfaces ported:**
+> **Deep-link → in-place ports (history — now relocated to the suites).** Before ADR-153, each
+> `/admin/*` surface was ported into the sidebar as an in-place module. That work proved the catalog
+> recipe and produced the **shared extracted views** the pages still use; under ADR-153 the *heavy*
+> modules were removed from the sidebar and their management lives in the full-page suites instead.
+> **16 surfaces were ported this way:**
 >
 > | Surface | Category | Reuses | Gate |
 > |---|---|---|---|
