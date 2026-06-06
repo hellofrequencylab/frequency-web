@@ -43,7 +43,7 @@ export const STUDIO_REGISTRY: Record<StudioEntity, StudioEntityEntry> = {
     blurb: 'A single thing you do — meditate, move, journal',
     launch: 'modal',
     createRule: 'any member',
-    ready: false,
+    ready: true,
   },
   circle: {
     entity: 'circle',
