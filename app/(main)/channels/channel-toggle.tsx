@@ -53,7 +53,7 @@ export function TuneInButton({
   const cls =
     size === 'md'
       ? 'shrink-0 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors'
-      : 'shrink-0 inline-flex items-center justify-center rounded-lg bg-primary px-3 py-1.5 text-[11px] font-semibold text-on-primary hover:bg-primary-hover transition-colors'
+      : 'shrink-0 inline-flex items-center justify-center rounded-lg bg-primary px-3 py-1.5 text-2xs font-semibold text-on-primary hover:bg-primary-hover transition-colors'
 
   return (
     <form action={tuneInChannel.bind(null, channelId, slug)}>
@@ -82,7 +82,7 @@ export function TunedInButton({
   const cls =
     size === 'md'
       ? 'shrink-0 inline-flex items-center justify-center rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-text hover:text-danger hover:border-danger transition-colors'
-      : 'shrink-0 inline-flex items-center justify-center rounded-lg border border-border bg-surface px-3 py-1.5 text-[11px] font-medium text-text hover:text-danger hover:border-danger transition-colors'
+      : 'shrink-0 inline-flex items-center justify-center rounded-lg border border-border bg-surface px-3 py-1.5 text-2xs font-medium text-text hover:text-danger hover:border-danger transition-colors'
 
   return (
     <>

@@ -56,7 +56,7 @@ export function SeasonBanner({
         <Flame className="h-5 w-5" aria-hidden />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-[11px] font-bold uppercase tracking-widest text-primary-strong">
+        <p className="text-2xs font-bold uppercase tracking-widest text-primary-strong">
           Season {seasonNumber}
         </p>
         <p className="truncate text-base font-semibold text-text">
@@ -68,7 +68,7 @@ export function SeasonBanner({
         {endsLabel ? (
           <>
             <p className="text-sm font-semibold text-text">{countdown ?? `Ends ${endsLabel}`}</p>
-            <p className="text-[11px] text-subtle">Ends {endsLabel}</p>
+            <p className="text-2xs text-subtle">Ends {endsLabel}</p>
           </>
         ) : (
           <p className="text-sm font-medium text-subtle">Ongoing</p>

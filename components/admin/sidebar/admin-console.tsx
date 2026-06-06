@@ -159,7 +159,7 @@ export function AdminConsole({
         <div key={it.label} aria-disabled className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium text-subtle opacity-60">
           <it.Icon className="h-4 w-4 shrink-0" />
           <span className="flex-1">{it.label}</span>
-          <span className="rounded-full bg-surface-elevated px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-subtle">Soon</span>
+          <span className="rounded-full bg-surface-elevated px-1.5 py-0.5 text-3xs font-semibold uppercase tracking-wide text-subtle">Soon</span>
         </div>
       )
     }
@@ -172,7 +172,7 @@ export function AdminConsole({
       >
         <it.Icon className="h-4 w-4 shrink-0 text-muted" />
         <span className="flex-1 truncate">{it.label}</span>
-        {it.sub && <span className="max-w-[45%] truncate text-[11px] text-subtle">{it.sub}</span>}
+        {it.sub && <span className="max-w-[45%] truncate text-2xs text-subtle">{it.sub}</span>}
       </Link>
     )
   }
@@ -212,7 +212,7 @@ export function AdminConsole({
                 >
                   <c.Icon className="h-4 w-4 shrink-0 text-primary-strong" />
                   <span className="shrink-0 text-sm font-medium text-text">{c.label}</span>
-                  {c.summary && <span className="flex-1 truncate text-right text-[11px] text-subtle">{c.summary}</span>}
+                  {c.summary && <span className="flex-1 truncate text-right text-2xs text-subtle">{c.summary}</span>}
                   <ChevronRight className="h-4 w-4 shrink-0 text-subtle" />
                 </button>
               ))}

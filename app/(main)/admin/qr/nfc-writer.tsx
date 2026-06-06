@@ -96,7 +96,7 @@ export function NfcWriter({
         {state === 'writing' ? 'Tap tag…' : state === 'done' ? 'Written' : 'Write NFC'}
       </button>
       {message && state !== 'idle' && (
-        <span className={`text-[11px] ${state === 'error' ? 'text-danger' : 'text-muted'}`}>{message}</span>
+        <span className={`text-2xs ${state === 'error' ? 'text-danger' : 'text-muted'}`}>{message}</span>
       )}
     </span>
   )

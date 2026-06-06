@@ -45,7 +45,7 @@ export async function DemoNotice() {
         </span>
         <div className="min-w-0">
           <h3 className="text-[13px] font-extrabold uppercase tracking-wide text-warning">Help build it</h3>
-          <p className="text-[11px] font-semibold leading-tight text-text">
+          <p className="text-2xs font-semibold leading-tight text-text">
             {demoCount.toLocaleString()} demo {demoCount === 1 ? 'member' : 'members'} · {realCount} real
           </p>
         </div>

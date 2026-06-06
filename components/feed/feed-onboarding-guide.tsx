@@ -106,7 +106,7 @@ export function FeedOnboardingGuide({ status }: { status: OnboardingStatus }) {
               className="transition-all duration-700"
             />
           </svg>
-          <span className="absolute inset-0 flex items-center justify-center text-[11px] font-bold tabular-nums text-broadcast-strong">
+          <span className="absolute inset-0 flex items-center justify-center text-2xs font-bold tabular-nums text-broadcast-strong">
             {status.pct}%
           </span>
         </div>

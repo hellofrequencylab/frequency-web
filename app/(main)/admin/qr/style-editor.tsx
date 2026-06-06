@@ -57,7 +57,7 @@ export function StyleEditor({
           key={p.key}
           type="button"
           onClick={() => onChange({ ...p.style })}
-          className="rounded-full border border-border px-2.5 py-1 text-[11px] font-medium text-muted transition-colors hover:border-primary hover:bg-primary-bg hover:text-primary-strong"
+          className="rounded-full border border-border px-2.5 py-1 text-2xs font-medium text-muted transition-colors hover:border-primary hover:bg-primary-bg hover:text-primary-strong"
         >
           {p.label}
         </button>
@@ -69,10 +69,10 @@ export function StyleEditor({
   // logo-heavy design is flagged before it's printed.
   const warningsBox = warnings.length > 0 && (
     <div className="mt-2 rounded-lg border border-warning/40 bg-warning-bg/50 p-2">
-      <p className="flex items-center gap-1 text-[11px] font-semibold text-warning">
+      <p className="flex items-center gap-1 text-2xs font-semibold text-warning">
         <TriangleAlert className="h-3 w-3" /> Scannability
       </p>
-      <ul className="mt-1 space-y-1 text-[11px] text-muted">
+      <ul className="mt-1 space-y-1 text-2xs text-muted">
         {warnings.map((w, i) => (
           <li key={i}>• {w}</li>
         ))}
@@ -261,14 +261,14 @@ export function StyleEditor({
           dangerouslySetInnerHTML={{ __html: svg }}
         />
         <div>
-          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-subtle">Presets</p>
+          <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wider text-subtle">Presets</p>
           {presets}
           {warningsBox}
         </div>
         <div className="border-t border-border pt-3">
           <div className="mb-2 flex items-center gap-1.5">
             <Palette className="h-3.5 w-3.5 text-primary-strong" />
-            <h4 className="text-[11px] font-semibold uppercase tracking-wider text-text">Design</h4>
+            <h4 className="text-2xs font-semibold uppercase tracking-wider text-text">Design</h4>
           </div>
           {controls}
         </div>

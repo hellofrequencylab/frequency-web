@@ -176,7 +176,7 @@ function ResultGroup({ label, icon: Icon, count, children }: { label: string; ic
   if (count === 0) return null
   return (
     <div className="mb-1">
-      <p className="flex items-center gap-1.5 px-4 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wider text-subtle">
+      <p className="flex items-center gap-1.5 px-4 pb-1 pt-3 text-2xs font-semibold uppercase tracking-wider text-subtle">
         <Icon className="h-3.5 w-3.5" />
         {label}
       </p>
@@ -220,7 +220,7 @@ function ResultRow({
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-1.5">
           <span className="truncate text-sm font-semibold text-text">{title}</span>
-          {badge && <span className="shrink-0 rounded-md bg-danger-bg px-1.5 py-0.5 text-[10px] font-medium text-danger">{badge}</span>}
+          {badge && <span className="shrink-0 rounded-md bg-danger-bg px-1.5 py-0.5 text-3xs font-medium text-danger">{badge}</span>}
         </span>
         {subtitle && (
           <span className={`mt-0.5 block text-xs text-subtle ${clampSubtitle ? 'line-clamp-1' : 'truncate'}`}>{subtitle}</span>

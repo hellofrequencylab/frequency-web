@@ -76,7 +76,7 @@ export function DispatchTicker({ items }: { items: TickerItem[] }) {
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
-          <span className="min-w-[2.2rem] text-center text-[11px] tabular-nums text-subtle">
+          <span className="min-w-[2.2rem] text-center text-2xs tabular-nums text-subtle">
             {index + 1}/{items.length}
           </span>
           <button

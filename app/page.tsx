@@ -662,7 +662,7 @@ function PostPreviewCard({ post }: { post: PostPreviewRow }) {
             {a?.display_name ?? 'Community member'}
           </span>
           {showRole && (
-            <RoleBadge role={a!.community_role as CommunityRole} className="text-[10px] leading-tight" />
+            <RoleBadge role={a!.community_role as CommunityRole} className="text-3xs leading-tight" />
           )}
         </div>
         <p className="text-xs text-subtle mt-0.5">

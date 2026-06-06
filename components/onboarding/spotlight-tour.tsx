@@ -164,7 +164,7 @@ export function SpotlightTour({
             <Sparkles className="h-4 w-4" aria-hidden />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-primary-strong">Vera</p>
+            <p className="text-2xs font-semibold uppercase tracking-wider text-primary-strong">Vera</p>
             <h2 id="spotlight-title" className="mt-0.5 text-sm font-bold text-text">{stop.title}</h2>
             <p className="mt-1 text-[13px] leading-snug text-muted">{stop.body}</p>
           </div>
@@ -215,7 +215,7 @@ export function SpotlightTour({
             </button>
           </div>
         </div>
-        <p className="mt-1.5 text-center text-[11px] tabular-nums text-subtle">
+        <p className="mt-1.5 text-center text-2xs tabular-nums text-subtle">
           {i + 1} of {stops.length}
         </p>
       </div>

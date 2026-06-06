@@ -71,21 +71,21 @@ export default async function StorePage() {
                 <Zap className="w-3.5 h-3.5" strokeWidth={2.5} />
                 <span className="text-base font-bold tabular-nums text-success">{zaps.toLocaleString()}</span>
               </div>
-              <p className="text-[10px] text-signal mt-0.5">Zaps</p>
+              <p className="text-3xs text-signal mt-0.5">Zaps</p>
             </div>
             <div className="rounded-xl bg-success-bg/50 px-2 py-2 text-center" title="Current streak">
               <div className="flex items-center justify-center gap-1 text-signal-strong">
                 <Flame className="w-3.5 h-3.5" strokeWidth={2.5} />
                 <span className="text-base font-bold tabular-nums text-success">{streak.toLocaleString()}</span>
               </div>
-              <p className="text-[10px] text-signal mt-0.5">Streak</p>
+              <p className="text-3xs text-signal mt-0.5">Streak</p>
             </div>
             <div className="rounded-xl bg-success-bg/50 px-2 py-2 text-center" title="Items won">
               <div className="flex items-center justify-center gap-1 text-signal-strong">
                 <Trophy className="w-3.5 h-3.5" strokeWidth={2.5} />
                 <span className="text-base font-bold tabular-nums text-success">{ownedCount.toLocaleString()}</span>
               </div>
-              <p className="text-[10px] text-signal mt-0.5">Won</p>
+              <p className="text-3xs text-signal mt-0.5">Won</p>
             </div>
           </div>
 
