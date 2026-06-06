@@ -28,6 +28,10 @@ Roughly what things are worth — the biggest rewards live off the screen:
 - Show up (a verified event check-in) — **25**
 - Log a real-world practice — **12**
 
+**Every practice you log earns zaps** — whether it's tied to a circle or it's just
+your own personal practice. Practices are real-world doing, so they always count
+toward your climb.
+
 Zaps reset each season, so every season is a fresh climb.
 
 ## Gems: the on-platform currency
@@ -38,6 +42,15 @@ and **capped per day** so they can't be farmed, and they're the currency you
 **spend** in the Vault on titles, cosmetics, and membership credits. For example:
 welcome a newcomer (**8**), RSVP or join a circle (**5**), a post (**3**), a reply
 (**2**), and your daily login (**2**).
+
+## See exactly how you earned
+
+Your Vault keeps a running **points & streaks log** — open it from the Vault
+("How you earned") to see every gem and zap you've banked, what earned it, and
+when, plus your live streaks. The simple rule behind it: **anything you do online
+earns gems; anything you do in the real world earns zaps.** That holds everywhere —
+even completing a challenge or a Journey pays you in the currency that matches what
+you actually did.
 
 ## How they connect
 

@@ -37,7 +37,7 @@ export async function giftZap(slug: string): Promise<ActionResult<{ awarded: boo
     context: { to: code.owner_profile_id },
   })
   if (recorded) {
-    await awardZaps(code.owner_profile_id, GIFT_ZAPS)
+    await awardZaps(code.owner_profile_id, GIFT_ZAPS, { actionType: 'gift_zap', metadata: { from: me } })
     void track('qr.gift_zap', { to: code.owner_profile_id }, me)
   }
 

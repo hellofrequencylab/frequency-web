@@ -4315,6 +4315,59 @@ both). EMBEDDED-ADMIN.md "target shape" updated to the two-surface model. Operat
 on ship.
 
 ---
+
+## ADR-139: Reward currency follows the action — a zap ledger + the Vault points log
+
+**Status:** Accepted — shipped. Spec: [ECONOMY-AND-JOURNEYS.md](ECONOMY-AND-JOURNEYS.md) §3,
+[GLOSSARY.md](GLOSSARY.md) (currency model), [GAMIFICATION-AUDIT.md](GAMIFICATION-AUDIT.md).
+
+**Context.** The two-currency model (Gems = online, Zaps = real-life) was sound for *base
+actions* — `currencyForSource` routed them and a test pinned it. But the **meta-layer leaked**:
+achievements, season challenges, and quests/arcs always paid **zaps**, regardless of whether the
+milestone was online or in-person. So a single post (an online act that should pay only gems)
+unlocked "First Post" — which **double-awarded** (the app paid the reward as gems while a DB
+trigger, `after_achievement_unlocked`, paid the same amount as zaps) — and completed the
+"Content Creator" quest step, paying more zaps. One online post minted zaps from three paths.
+Compounding it, **zaps had no ledger**: every grant wrote `profiles.current_season_zaps`
+directly from ~6 call sites, so there was no history to show a member *how* they earned, and
+no single place to keep rank in lockstep.
+
+**Decision.**
+- **Currency follows the act, everywhere.** One source of truth, `currencyForCriteria`
+  (`lib/engagement/currency.ts`), maps every milestone/streak type to a currency: online
+  (post, reply, react, RSVP, join, welcome) → **gems**; real-life (attend, host, found/lead a
+  circle, outreach/crew tasks, captures, **all practice logs**) → **zaps**. Achievements,
+  challenges, and each quest step/chain now pay through it. A mixed Journey pays each step in
+  kind and the chain in the currency of its real-world steps.
+- **A zap ledger mirrors the gem ledger.** New `zap_transactions` (one row per grant) with an
+  `AFTER INSERT` trigger (`after_zap_transaction`) that is the **only** place
+  `current_season_zaps` / `lifetime_zaps` move and `current_season_rank` advances (auto to
+  Conduit; Luminary stays a manual, challenge-gated promotion). `awardZaps` only inserts a
+  ledger row; the crew-completion and challenge/quest paths route through it too. The
+  achievement trigger drops its zap award (killing the double-award) and keeps only
+  `achievement_count`.
+- **The Vault "how you earned" log.** `/crew/store/ledger` (`lib/economy/ledger.ts`) merges
+  both ledgers into one reverse-chron history with friendly labels, plus the member's streaks
+  and headline totals — visible to free members too (their points racking up *is* the upsell).
+- **Content gap fill.** Seed the four seasonal Pillar Journeys (Mind/Body/Spirit/Expression),
+  each mixing an online and a real-world step so both currencies show up as you work it.
+
+**Alternatives.** (a) *Meta-layer pays gems only* — simpler, but an in-person accomplishment
+("Attend 8 events") wouldn't move your season rank, gutting the zap ladder. (b) *Reuse
+`engagement_events` as the zap history* — rejected: not every zap grant flows through it
+(achievements/challenges/quests don't), so it can't be the complete log. A dedicated ledger
+mirroring gems is symmetric and complete.
+
+**Consequences.** Zaps and gems are now symmetric (ledger + trigger + totals), so reward code
+has one shape. Rank auto-advance caps at Conduit in the trigger (matching the prior
+crew-completion trigger and the "Luminary is manual" rule), replacing `awardZaps`'s old
+`rankForZaps` write that could auto-mint Luminary at 3000. The free member's value story gains
+a concrete surface (the log). Demo profiles still set economy columns directly (they have no
+ledger rows — fine, no one reads a demo member's personal log). Remaining work tracked in
+GAMIFICATION-AUDIT.md: Journey **join-gating** + a **pillar column** on `quest_chains`, and a
+member **zap-rate multiplier** (ECONOMY §6).
+
+---
 ### Decisions intentionally NOT duplicated here
 
 Already fully covered by the repo docs (no ADR needed): the RLS / admin-client
