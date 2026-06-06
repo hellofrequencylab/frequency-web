@@ -231,6 +231,16 @@
 > panels as the stage climbs, with a stage strip + one-time "stage reached" moment (ADR-146,
 > `lib/member-progress.ts`). Left nav stays fully visible (owner decision). No migration — both derive
 > from existing data + a `profiles.meta` marker.
+>
+> **2026-06-06:** **Embedded admin console** — the `/admin` catalog is being absorbed into the page
+> itself (ADR-133/137/138/149, [EMBEDDED-ADMIN.md](EMBEDDED-ADMIN.md)). Hit **Edit** on a page you
+> steward and a drill-down settings **console** (`components/admin/sidebar/admin-console.tsx`) opens
+> in the `PageAdminDock`, its categories driven by the role-gated catalog so tiers auto-filter — no
+> trip to `/admin`. **16 surfaces ported in place** (each a loader + gated `'use server'` action + a
+> module reusing the existing admin UI): Moderation, Broadcasts, Gamification, Crew tasks, Members,
+> Roles, Insights summary, QR generator, Demo, AI controls, Vera config, Circles, Channels, Events,
+> Hubs, Nexuses. Remaining: the read-only Insights dashboards + Help gaps, then the server-composed
+> `@admin` slot — and `/admin/*` retires. Operator guide synced to Notion.
 
 ---
 
@@ -461,6 +471,18 @@ on the real domain. **Depends on:** nothing (all in-codebase closeouts).
       area with `admin-community`/`admin-structure`/`admin-insights`/`admin-vera`/`admin-platform`),
       and the sub-nav shows only the active category's pages. No route moves, no gate change — just
       chrome + organization unified.
+- [~] **Embedded admin console** (ADR-133/137/138/149 · [EMBEDDED-ADMIN.md](EMBEDDED-ADMIN.md)) — the
+      successor to the catalog above: `/admin` is **absorbed into the page**. **Edit** opens a
+      drill-down **console** in the `PageAdminDock` (`components/admin/sidebar/admin-console.tsx`),
+      categories driven by the same role-gated catalog (tiers auto-filter; no `/admin` trip). **16
+      surfaces ported in place** — Moderation · Broadcasts · Gamification · Crew tasks · Members ·
+      Roles · Insights (summary) · QR generator · Demo · AI controls · Vera config · Circles ·
+      Channels · Events · Hubs · Nexuses (each: a loader + gated action + a module reusing the existing
+      admin UI; inlined pages were first extracted into a shared component). **Remaining, in priority
+      order:** ① the read-only **Insights dashboards** (engagement full / intel / outcomes / AI read /
+      segments) + **Help gaps** — embed a compact read or keep the deep-link per surface; ② the
+      server-composed **`@admin` parallel-route slot** (move modules off the client on-open fetch);
+      ③ the rest of the inline **tuning** layer (Layout, Vera-tone). Then `/admin/*` retires.
 - [x] **Onboarding → Vera handoff + activation instrumentation** (ADR-074/075): induction now redirects
       to **`/onboarding/vera`** (the Vera concierge — the primary new-member path), with a feed
       first-run banner catching anyone who skips; the dead `/feed?intro=1` param is retired. The
