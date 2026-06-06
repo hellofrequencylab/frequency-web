@@ -54,6 +54,27 @@ const rand = (n: number) => Math.floor(Math.random() * n)
 const pick = <T,>(a: readonly T[]): T => a[rand(a.length)]
 const between = ([lo, hi]: [number, number]) => lo + rand(hi - lo + 1)
 
+// Real coordinates for the cities the demo network seeds into, so the map,
+// `circles_near`, and the Expansion read-model (ADR-150, density by city) all
+// agree. Unknown cities fall back to Encinitas. Keyed case-insensitively.
+const CITY_COORDS: Record<string, [number, number]> = {
+  encinitas: [33.0369, -117.292],
+  carlsbad: [33.1581, -117.3506],
+  oceanside: [33.1959, -117.3795],
+  cardiff: [33.0203, -117.2797],
+  'solana beach': [32.9912, -117.2712],
+  leucadia: [33.0686, -117.2986],
+  vista: [33.2, -117.2425],
+  'del mar': [32.9595, -117.2653],
+  'san diego': [32.7157, -117.1611],
+}
+const jitter = () => (rand(40) - 20) / 1000
+function cityCoords(city: string | undefined): { latitude: number; longitude: number; label: string } {
+  const label = city?.trim() || 'Encinitas'
+  const [lat, lng] = CITY_COORDS[label.toLowerCase()] ?? CITY_COORDS.encinitas
+  return { latitude: lat + jitter(), longitude: lng + jitter(), label }
+}
+
 function person(rank: keyof typeof BANDS) {
   const b = BANDS[rank]
   const z = between(b.z)
@@ -186,6 +207,7 @@ export async function addDemoCircle(input: {
     .maybeSingle()
   const practiceId = (pr as { id: string } | null)?.id ?? null
 
+  const geo = cityCoords(input.city)
   const { data: circle } = await d
     .from('circles')
     .insert({
@@ -195,10 +217,10 @@ export async function addDemoCircle(input: {
       type: 'in-person',
       member_cap: 50,
       status: 'active',
-      about: `A new ${input.channel.replace(/-/g, ' ')} circle in ${input.city ?? 'Encinitas'}.`,
-      latitude: 33.0369 + (rand(40) - 20) / 1000,
-      longitude: -117.292 + (rand(40) - 20) / 1000,
-      city: input.city ?? 'Encinitas',
+      about: `A new ${input.channel.replace(/-/g, ' ')} circle in ${geo.label}.`,
+      latitude: geo.latitude,
+      longitude: geo.longitude,
+      city: geo.label,
       topical_channel_id: (ch as { id: string } | null)?.id ?? null,
       image_url: `https://picsum.photos/seed/${slug}/400/400`,
       is_demo: true,
@@ -234,7 +256,7 @@ export async function addDemoCircle(input: {
       title: `${input.name} — First Gathering`,
       slug: `${slug}-first-gathering`,
       starts_at: starts.toISOString(), ends_at: ends.toISOString(),
-      location: `${input.city ?? 'Encinitas'}`, is_cancelled: false, is_demo: true,
+      location: geo.label, is_cancelled: false, is_demo: true,
     })
     .select('id')
     .single()
