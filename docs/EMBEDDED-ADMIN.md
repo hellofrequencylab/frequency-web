@@ -350,9 +350,10 @@ group of modules; `/admin/*` retires once empty.
 > the **9-category `slot` spine + a `surface` field** (`modulesForSurface`), and the
 > **inline tuning layer** has a first pilot: page-level **Edit Mode** (`useEditMode`,
 > `?edit=1`), a discoverable **Edit button** (`EditModeButton`), and `InlineText`
-> click-to-edit wired to the **Circle** title + description (field-level
-> `updateCircleField`, capability-gated). **Next:** the sidebar **drill-down** (ADR-137)
-> and more inline fields/entities.
+> click-to-edit now wired across **Circle / Hub / Nexus / Event** (title on all;
+> Circle + Event descriptions) via field-level `update*Field` actions, each
+> capability-gated. **Next:** cover-image inline edit + Profile, and the sidebar
+> **drill-down** (ADR-137, the manage half).
 
 1. **Engine.** `AdminModule` registry + `modulesFor`/`showsAdminPanel`; `AdminModuleCard`
    over `SidebarCard`; add `hub`/`nexus` loaders + `loadCapabilitiesForScope`; the `@admin`

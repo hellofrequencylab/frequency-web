@@ -6,6 +6,10 @@ import { HierarchyBreadcrumb } from '@/components/hierarchy/breadcrumb'
 import { StatusBadge } from '@/components/groups/status-badge'
 import { DetailTemplate } from '@/components/templates/detail-template'
 import { StaffEditButton } from '@/components/ui/staff-edit-button'
+import { EditModeButton } from '@/components/admin/inline/edit-mode-button'
+import { InlineText } from '@/components/admin/inline/inline-text'
+import { getHubCapabilities } from '@/lib/core/load-capabilities'
+import { updateHubField } from '../admin-actions'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import type { CircleBase } from '@/lib/types/circle'
@@ -61,6 +65,9 @@ export default async function HubPage({
   if (!rawHub) notFound()
   const hub = rawHub as unknown as HubDetail
 
+  const caps = await getHubCapabilities(hub.id)
+  const canManage = caps.has('hub.manage')
+
   const { data: rawCircles } = await admin
     .from('circles')
     .select(
@@ -94,9 +101,24 @@ export default async function HubPage({
 
       {/* ── Header (DetailTemplate) ─────────────────── */}
       <DetailTemplate
-        title={hub.name}
+        title={
+          canManage ? (
+            <InlineText
+              value={hub.name}
+              save={updateHubField.bind(null, hub.id, slug, 'name')}
+              inputClassName="w-full rounded-lg border border-border-strong bg-surface px-2 py-0.5 text-xl sm:text-2xl font-bold text-text outline-none focus:ring-2 focus:ring-border-strong/30"
+            />
+          ) : (
+            hub.name
+          )
+        }
         badges={<StatusBadge status={hub.status} />}
-        actions={<StaffEditButton href={`/admin/hubs?edit=${hub.id}`} label="Edit hub" />}
+        actions={
+          <>
+            {canManage && <EditModeButton />}
+            <StaffEditButton href={`/admin/hubs?edit=${hub.id}`} label="Edit hub" />
+          </>
+        }
         subtitle={
           <>
             {hub.guide && (

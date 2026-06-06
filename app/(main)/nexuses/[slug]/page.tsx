@@ -6,6 +6,10 @@ import { HierarchyBreadcrumb } from '@/components/hierarchy/breadcrumb'
 import { StatusBadge } from '@/components/groups/status-badge'
 import { DetailTemplate } from '@/components/templates/detail-template'
 import { StaffEditButton } from '@/components/ui/staff-edit-button'
+import { EditModeButton } from '@/components/admin/inline/edit-mode-button'
+import { InlineText } from '@/components/admin/inline/inline-text'
+import { getNexusCapabilities } from '@/lib/core/load-capabilities'
+import { updateNexusField } from '../admin-actions'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 
@@ -56,6 +60,9 @@ export default async function NexusPage({
   if (!rawNexus) notFound()
   const nexus = rawNexus as unknown as NexusDetail
 
+  const caps = await getNexusCapabilities(nexus.id)
+  const canManage = caps.has('nexus.manage')
+
   const { data: rawHubs } = await admin
     .from('hubs')
     .select(
@@ -92,9 +99,24 @@ export default async function NexusPage({
 
       {/* ── Header (DetailTemplate) ─────────────────── */}
       <DetailTemplate
-        title={nexus.name}
+        title={
+          canManage ? (
+            <InlineText
+              value={nexus.name}
+              save={updateNexusField.bind(null, nexus.id, slug, 'name')}
+              inputClassName="w-full rounded-lg border border-border-strong bg-surface px-2 py-0.5 text-xl sm:text-2xl font-bold text-text outline-none focus:ring-2 focus:ring-border-strong/30"
+            />
+          ) : (
+            nexus.name
+          )
+        }
         badges={<StatusBadge status={nexus.status} />}
-        actions={<StaffEditButton href={`/admin/nexuses?edit=${nexus.id}`} label="Edit nexus" />}
+        actions={
+          <>
+            {canManage && <EditModeButton />}
+            <StaffEditButton href={`/admin/nexuses?edit=${nexus.id}`} label="Edit nexus" />
+          </>
+        }
         subtitle={
           <>
             {nexus.mentor && (
