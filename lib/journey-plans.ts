@@ -377,6 +377,9 @@ export interface JourneyProgress {
   percent: number
   /** First item not yet on track this week, in order — the "current step". */
   nextItem: JourneyProgressItem | null
+  /** Members of the viewer's circles also on this journey (0 unless requested via
+   *  { withCompanions }). The "doing it with your circle" signal (Path A). */
+  circleCompanions: number
 }
 
 /** Parse a free-text cadence ("Daily", "3x a week", "Weekly", …) into a weekly
@@ -399,7 +402,10 @@ export function weeklyTargetFromCadence(cadence: string | null): number {
  *  `target` of the last 7 days — so the current step is the first one off track.
  *  No progress schema; it rides the same practice_logs the gamification runs on,
  *  so logging a journey's practice advances it AND earns the rewards. */
-export async function getActiveJourneyProgress(profileId: string): Promise<JourneyProgress[]> {
+export async function getActiveJourneyProgress(
+  profileId: string,
+  opts: { withCompanions?: boolean } = {},
+): Promise<JourneyProgress[]> {
   const client = db()
 
   const { data: adoptionRows } = await client
@@ -438,6 +444,42 @@ export async function getActiveJourneyProgress(profileId: string): Promise<Journ
     .order('sort_order', { ascending: true })
   const allItems = (itemRows ?? []) as unknown as JourneyPlanItem[]
 
+  // Path A — "doing it with your circle": members of the viewer's active circles
+  // who also hold an active adoption of each plan (distinct profiles, self excluded).
+  // Opt-in (the feed home line skips this to stay light).
+  const companionsByPlan = new Map<string, number>()
+  if (opts.withCompanions) {
+    const { data: myMemberships } = await client
+      .from('memberships')
+      .select('circle_id')
+      .eq('profile_id', profileId)
+      .eq('status', 'active')
+    const myCircleIds = [...new Set(((myMemberships ?? []) as { circle_id: string }[]).map((m) => m.circle_id))]
+    if (myCircleIds.length > 0) {
+      const { data: coMembers } = await client
+        .from('memberships')
+        .select('profile_id')
+        .in('circle_id', myCircleIds)
+        .eq('status', 'active')
+        .neq('profile_id', profileId)
+      const companionIds = [...new Set(((coMembers ?? []) as { profile_id: string }[]).map((m) => m.profile_id))]
+      if (companionIds.length > 0) {
+        const { data: coAdoptions } = await client
+          .from('journey_plan_adoptions')
+          .select('plan_id, profile_id')
+          .in(
+            'plan_id',
+            plans.map((p) => p.id),
+          )
+          .eq('active', true)
+          .in('profile_id', companionIds)
+        for (const r of (coAdoptions ?? []) as { plan_id: string }[]) {
+          companionsByPlan.set(r.plan_id, (companionsByPlan.get(r.plan_id) ?? 0) + 1)
+        }
+      }
+    }
+  }
+
   return plans.map((plan) => {
     const items: JourneyProgressItem[] = allItems
       .filter((it) => it.plan_id === plan.id)
@@ -455,6 +497,7 @@ export async function getActiveJourneyProgress(profileId: string): Promise<Journ
       done,
       percent: total > 0 ? Math.round((done / total) * 100) : 0,
       nextItem: items.find((it) => !it.met) ?? null,
+      circleCompanions: companionsByPlan.get(plan.id) ?? 0,
     }
   })
 }
