@@ -1654,6 +1654,107 @@ export type Database = {
           },
         ]
       }
+      entry_point_conversions: {
+        Row: {
+          created_at: string
+          id: string
+          profile_id: string
+          qr_code_id: string
+          variant_key: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          profile_id: string
+          qr_code_id: string
+          variant_key: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          profile_id?: string
+          qr_code_id?: string
+          variant_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entry_point_conversions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_point_conversions_qr_code_id_fkey"
+            columns: ["qr_code_id"]
+            isOneToOne: false
+            referencedRelation: "qr_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entry_point_variants: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          label: string
+          qr_code_id: string
+          target_url: string
+          updated_at: string
+          variant_key: string
+          weight: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          label: string
+          qr_code_id: string
+          target_url: string
+          updated_at?: string
+          variant_key: string
+          weight?: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          label?: string
+          qr_code_id?: string
+          target_url?: string
+          updated_at?: string
+          variant_key?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entry_point_variants_qr_code_id_fkey"
+            columns: ["qr_code_id"]
+            isOneToOne: false
+            referencedRelation: "qr_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entry_template_settings: {
+        Row: {
+          enabled: boolean
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          enabled?: boolean
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          enabled?: boolean
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       event_rsvps: {
         Row: {
           created_at: string | null
@@ -2123,14 +2224,19 @@ export type Database = {
       }
       journey_plans: {
         Row: {
+          accent: string | null
           adopt_count: number
           author_id: string | null
           cover_image: string | null
           created_at: string
+          emoji: string | null
           fork_of: string | null
           forked_count: number
           id: string
+          intro: string | null
+          official: boolean
           published_at: string | null
+          quest_id: string | null
           reviewed_at: string | null
           reviewed_by: string | null
           slug: string
@@ -2141,14 +2247,19 @@ export type Database = {
           visibility: string
         }
         Insert: {
+          accent?: string | null
           adopt_count?: number
           author_id?: string | null
           cover_image?: string | null
           created_at?: string
+          emoji?: string | null
           fork_of?: string | null
           forked_count?: number
           id?: string
+          intro?: string | null
+          official?: boolean
           published_at?: string | null
+          quest_id?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           slug: string
@@ -2159,14 +2270,19 @@ export type Database = {
           visibility?: string
         }
         Update: {
+          accent?: string | null
           adopt_count?: number
           author_id?: string | null
           cover_image?: string | null
           created_at?: string
+          emoji?: string | null
           fork_of?: string | null
           forked_count?: number
           id?: string
+          intro?: string | null
+          official?: boolean
           published_at?: string | null
+          quest_id?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           slug?: string
@@ -2192,10 +2308,92 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "journey_plans_quest_id_fkey"
+            columns: ["quest_id"]
+            isOneToOne: false
+            referencedRelation: "quests"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "journey_plans_reviewed_by_fkey"
             columns: ["reviewed_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      market_listings: {
+        Row: {
+          author_id: string | null
+          category: string | null
+          circle_id: string | null
+          city: string | null
+          created_at: string
+          description: string | null
+          id: string
+          images: string[]
+          is_demo: boolean
+          kind: string
+          latitude: number | null
+          longitude: number | null
+          neighborhood: string | null
+          price_note: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author_id?: string | null
+          category?: string | null
+          circle_id?: string | null
+          city?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          images?: string[]
+          is_demo?: boolean
+          kind?: string
+          latitude?: number | null
+          longitude?: number | null
+          neighborhood?: string | null
+          price_note?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string | null
+          category?: string | null
+          circle_id?: string | null
+          city?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          images?: string[]
+          is_demo?: boolean
+          kind?: string
+          latitude?: number | null
+          longitude?: number | null
+          neighborhood?: string | null
+          price_note?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "market_listings_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "market_listings_circle_id_fkey"
+            columns: ["circle_id"]
+            isOneToOne: false
+            referencedRelation: "circles"
             referencedColumns: ["id"]
           },
         ]
@@ -4291,6 +4489,7 @@ export type Database = {
           profile_id: string | null
           qr_code_id: string
           scanned_at: string
+          variant_key: string | null
         }
         Insert: {
           city?: string | null
@@ -4302,6 +4501,7 @@ export type Database = {
           profile_id?: string | null
           qr_code_id: string
           scanned_at?: string
+          variant_key?: string | null
         }
         Update: {
           city?: string | null
@@ -4313,6 +4513,7 @@ export type Database = {
           profile_id?: string | null
           qr_code_id?: string
           scanned_at?: string
+          variant_key?: string | null
         }
         Relationships: [
           {
@@ -4463,6 +4664,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      quests: {
+        Row: {
+          accent: string | null
+          created_at: string
+          description: string | null
+          emoji: string | null
+          id: string
+          is_demo: boolean
+          name: string
+          season: number | null
+          slug: string
+          sort_order: number
+          status: string
+        }
+        Insert: {
+          accent?: string | null
+          created_at?: string
+          description?: string | null
+          emoji?: string | null
+          id?: string
+          is_demo?: boolean
+          name: string
+          season?: number | null
+          slug: string
+          sort_order?: number
+          status?: string
+        }
+        Update: {
+          accent?: string | null
+          created_at?: string
+          description?: string | null
+          emoji?: string | null
+          id?: string
+          is_demo?: boolean
+          name?: string
+          season?: number | null
+          slug?: string
+          sort_order?: number
+          status?: string
+        }
+        Relationships: []
       }
       reports: {
         Row: {
@@ -5505,6 +5748,19 @@ export type Database = {
           title: string
         }[]
       }
+      density_by_city: {
+        Args: never
+        Returns: {
+          active_circles: number
+          capacity: number
+          circle_members: number
+          circles: number
+          city: string
+          listings: number
+          new_residents_30d: number
+          residents: number
+        }[]
+      }
       disablelongtransactions: { Args: never; Returns: string }
       dropgeometrycolumn:
         | {
@@ -5988,18 +6244,32 @@ export type Database = {
           started: number
         }[]
       }
-      record_qr_scan: {
-        Args: {
-          p_city?: string
-          p_code_id: string
-          p_country?: string
-          p_lat?: number
-          p_lng?: number
-          p_medium?: string
-          p_profile?: string
-        }
-        Returns: undefined
-      }
+      record_qr_scan:
+        | {
+            Args: {
+              p_city?: string
+              p_code_id: string
+              p_country?: string
+              p_lat?: number
+              p_lng?: number
+              p_medium?: string
+              p_profile?: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_city?: string
+              p_code_id: string
+              p_country?: string
+              p_lat?: number
+              p_lng?: number
+              p_medium?: string
+              p_profile?: string
+              p_variant?: string
+            }
+            Returns: undefined
+          }
       reset_season: { Args: never; Returns: undefined }
       scoped_feed_for_viewer: {
         Args: { _limit?: number; _scope_ids: string[]; _sort?: string }
