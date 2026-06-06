@@ -4572,3 +4572,29 @@ Surfaced on the `/crew/journey` Dashboard tab + the home `JourneyBoard`.
 **Consequences:** Logging a Journey's practice advances the Journey and earns the same
 zaps/streak the gamification already runs on — one event, no divergence. A future structured
 cadence model can replace the parser without changing callers. See ECONOMY-AND-JOURNEYS.md.
+
+## ADR-145: The daily practice streak is the headline streak (derived from the log, no schema)
+
+**Status:** Accepted · corroborated by `lib/practice-streak.ts`
+(`derivePracticeStreak`, `getPracticeStreak`, `recordPracticeStreak`) + `lib/streak.ts`
+**Context:** The home feed and profile flair render `profiles.current_streak` as an "X day
+streak" with day-based milestones (3/7/14/30…), but that column tracked the **weekly**
+attendance streak (`streaks` table, 9-day window) — so a 3-week streak displayed as "3 day
+streak." Freeze tokens existed in the schema/UI but no code ever awarded or spent them,
+milestone checkpoints paid nothing, and there was no "at risk" state. The owner asked for a
+strong daily streak alongside the existing weekly rhythms.
+**Decision:** Add a **daily practice streak** = consecutive UTC days with ≥1 `practice_logs`
+row, derived live from the log (no new table, no backfill, no cron). `profiles.meta.practiceStreak`
+augments it with what logs can't express: banked **freeze tokens**, the specific missed days a
+freeze has bridged (`frozenDates`), and which **milestones have paid** (exactly-once). A freeze
+auto-bridges a **single** missed day on the next log; two missed days reset. Reaching a
+milestone pays escalating **zaps** (real-life act → zaps, ADR-139) and banks a freeze at the
+Week/Month/Century/Year marks (cap 2). The headline columns `profiles.current_streak` /
+`longest_streak` now mean **this** streak — `recordPracticeStreak` owns them, and the weekly
+`recordStreakActivity` no longer writes them. The weekly streaks keep their `streaks`-table
+home and their own achievements, shown below the daily streak on `/crew/streaks`.
+**Consequences:** Every read computes the *effective* streak (a broken streak reads 0; an
+unlogged-but-alive one reads "at risk"), so reads stay pure — only a practice log mutates
+state. Existing members get a correct streak immediately from their log history. A future move
+to a structured store can replace the deriver without changing callers. See
+`content/help/the-game/streaks.md`.

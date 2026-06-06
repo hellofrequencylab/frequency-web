@@ -85,8 +85,12 @@ these tables mean.
 > A **practice** is what a member does. A host sets a circle's current practice
 > (`circle_practices`, one active per circle) or a member adopts their own
 > (`member_practices`); logging it (`practice_logs`, unique per member+practice+day)
-> emits `practice.verified` (the WAM North-Star event) + zaps + an attendance streak
-> via `lib/practices.ts` (`logPractice`).
+> emits `practice.verified` (the WAM North-Star event) + zaps + a weekly attendance
+> streak tick + the **daily practice streak** via `lib/practices.ts` (`logPractice`).
+> The daily streak is derived from `practice_logs` and owns
+> `profiles.current_streak` / `longest_streak`; its freeze tokens + milestone-payout
+> bookkeeping live in `profiles.meta.practiceStreak` (no new table — ADR-145,
+> `lib/practice-streak.ts`).
 
 **RPCs / views (public read layer)**
 `get_my_role`, `public_circles`, `public_circle_by_id`, `public_events`,
