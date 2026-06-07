@@ -14,8 +14,8 @@ from clustering — they are not appointed top-down.
 |---|---|---|
 | **Circle** | `circles` | The atomic unit: a local practice group. `type` is `in-person` (cap 50) or `online` (cap 100). Has location fields (city, neighborhood, lat/lng, timezone). Declares one topical Channel. |
 | **Hub** | `hubs` | A cluster of up to 5 Circles in a locale. `circles.hub_id` is nullable — Circles can exist before a Hub crystallises. |
-| **Nexus** | `nexuses` | A cluster of Hubs (default 2500-member cap). Belongs to an Outpost. `hubs.nexus_id` nullable. |
-| **Outpost** | `outposts` | Top of the place tree; a Nexus requires an `outpost_id`. |
+| **Nexus** | `nexuses` | A cluster of Hubs (default 2500-member cap) — **the top community unit**. `hubs.nexus_id` nullable. |
+| **Outpost** | `outposts` | *(Reframed — see [ROLES.md](ROLES.md).)* No longer the top container. An **in-person overlay**: a local clubhouse/Club that forms **inside a Nexus**, cross-engages its Circles, and hosts the primary local events. The in-person twin of a **Channel**; aspirationally housed in a **Frequency Lab** (for-profit venue). *(Current code still treats it as the top container; rework in [ONBOARDING-BUILD-LIST.md](ONBOARDING-BUILD-LIST.md) §11.)* |
 | **Nexus region** | `nexus_regions` | Legacy geography tree. Being phased out. |
 
 > **Two "channel" concepts — do not confuse:**
@@ -27,6 +27,15 @@ from clustering — they are not appointed top-down.
 >   `/admin/channels`. Older concept, still present.
 
 ## Roles
+
+> **The role model is being reworked** into three orthogonal systems —
+> **Community** (scoped stewardship ladder), **Partners** (self-serve account
+> personas), **Admin** (internal staff matrix) — plus a **Free → Member →
+> Supporter** billing entitlement. [ROLES.md](ROLES.md) is the canonical spec;
+> decision in [DECISIONS.md](DECISIONS.md) ADR-163; build plan in
+> [ONBOARDING-BUILD-LIST.md](ONBOARDING-BUILD-LIST.md) §11. The terms below
+> describe the **current code** (the old global `community_role` enum) until that
+> ships.
 
 Ascending privilege: **member → crew → host → guide → mentor → janitor**.
 
