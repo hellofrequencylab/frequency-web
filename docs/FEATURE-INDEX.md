@@ -101,7 +101,7 @@
 | **Studio Overview** | `/admin` | The operator dashboard → all management surfaces | STUDIO |
 | **Support console** | `/admin/support` | Triage queue: status/priority/assign, replies, internal notes, CRM link | SUPPORT-TICKETS |
 | **Inline page admin** | "Admin ▾" accordion | Per-page admin dashboard (share QR + settings) in-page (ADR-160) | EMBEDDED-ADMIN |
-| **Roles & permissions** | `/admin/roles` | The NAV_AREAS permission grid (trust ladder × staff axis) | — |
+| **Roles & permissions** | `/admin/roles` | The NAV_AREAS permission grid (trust ladder × staff axis). Being reworked into three systems — Community / Partners / Admin — + a Free/Member/Supporter entitlement | ROLES |
 | **Moderation** | `/admin/moderation` | Content/member moderation | — |
 | **Structure** | `/admin/hubs` · `/admin/circles` · `/admin/events` | Manage the community tree & entities | — |
 | **Insights** | `/admin/engagement` · `/admin/insights` · `/admin/intel` | First-party engagement analytics | ENGAGEMENT-ARCHITECTURE · ANALYTICS |

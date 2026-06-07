@@ -497,3 +497,70 @@ keep scope rails. **Open:** "Around You" naming. **Sequence:** 10.1 → 10.2 →
   no hand-rolled headers, no `text-[10/11px]` content, semantic tokens only (no hex).
 - **Measure the right funnel.** Activation up, time-to-human down, Vera footprint per
   established member *decays*. If "messages to Vera" is what climbs, she's failing.
+
+---
+
+## §11 — Role system rework (Community · Partners · Admin + Entitlement)
+
+> Canonical spec: [ROLES.md](ROLES.md) · decision: [DECISIONS.md](DECISIONS.md) ADR-163.
+> Staged so **every step is non-breaking** (the old global `community_role` stays valid as a
+> derived cache until the final cleanup). Do the stages in order.
+
+### 11.1 — Foundation: scoped stewardship
+- Migration: **`stewardships`** `(profile_id, role[crew|host|guide|mentor|outpost_lead],
+  scope_type[circle|hub|nexus|outpost], scope_id, state, created_at)`, unique `(profile_id,
+  role, scope_type, scope_id)`; RLS + service-role writes.
+- **Backfill** from today: `community_role` + `circles.host_id` + hub/nexus stewardship → edges.
+- Add a cached `profiles.community_level` (derived = highest edge) for fast global gates; keep
+  `community_role` writing it for now.
+- Extend the capability resolver (ADR-017) to read **edges scoped to the entity in context**
+  (`@everyone`/`@hosts`/`@hub`/`@nexus` resolve by scope). *No behavior change yet.*
+
+### 11.2 — Entitlement split (Free / Member / Supporter)
+- Add membership/subscription **tier flag** (`free|member|supporter`) + game-claim state.
+- Re-point `isCrew`, gamification cash-in eligibility, and `/upgrade` to the **tier**, not the
+  `crew` role. **Crew becomes a pure stewardship role.**
+- Supporter = paid + extra contribution → a **special badge** (reuse the flair/badge system).
+- Gate "special role/partner features" behind the paid Member tier (pin the exact list first).
+
+### 11.3 — Admin axis (move janitor/admin out of Community)
+- Promote `janitor`/`admin` into the **staff matrix** (`team_members`): **Janitor** = full
+  (financials, destructive DB, owner-sensitive, role-granting, grid); **Admin** = all minus
+  those; Operations/Marketing/Accounting/Support/Analyst domain-scoped.
+- `/admin/roles` permission grid + `requireStaff()`/`meetsStaff()` read the matrix; **migrate**
+  existing janitors/admins to staff rows; remove `admin`/`janitor` from the community ladder.
+
+### 11.4 — Partners (personas)
+- Migration: **`profile_personas`** `(profile_id, persona, state[claimed→verified→active→
+  suspended], stripe_account_id?, entity_id?)`; per-persona verification; Stripe Connect where money moves.
+- Self-serve **sign-up + dashboard** per persona:
+  - **Collaborator** — featured **program directory** for their Practices/Journeys + **influencer
+    program** (kickbacks tied to their activity + gamification).
+  - **Practitioner** — paywalled **Programs** + **client gamification** + a private Channel &
+    private Circles (Frequency-branded).
+  - **Business** — listing + network integration + **loyalty rewards** + CRM + web builder.
+  - **Organization** — **Hook tenant** sub-community + its own **scoped** admin matrix (isolated,
+    no bleed to Frequency) + CRM + gamification + promotion.
+- Nav/capabilities light up per active persona (union resolver).
+
+### 11.5 — Overlays: Outpost + Lab
+- Migration: **`outposts`** `(nexus_id, lab_id?, name, place, …)` + **`labs`** (for-profit venues).
+- **Outpost** = in-person overlay inside a Nexus (in-person twin of a Channel); **Outpost Lead**
+  stewardship role + `scope_type='outpost'`; events can scope to an outpost.
+- **Reframe the place tree:** drop the old `Outpost → Nexus` containment (Nexus is the top
+  community unit); update GLOSSARY + any `nexuses.outpost_id` usage.
+
+### 11.6 — Resolver + nav unification
+- One **capability resolver** = union of (Community edges ⊕ Entitlement ⊕ Partner personas ⊕
+  Admin matrix); **org tenant roles isolated**. `NAV_AREAS` + `page-chrome` read it; the inline
+  "Admin ▾" + left rail surface the right things per the union.
+
+### 11.7 — Cleanup & migration
+- `community_role` enum → **fully derived** from `stewardships` (drop direct writes; keep cache).
+- Data migration + backfill verification; update GLOSSARY/DOCS to ROLES.md; tests for the resolver
+  union + scope targeting + org isolation.
+
+**Dependencies/risks:** touches auth, nav, gamification, billing, and the place tree — do the
+stages in order behind the derived cache; never break the live permission gates. **Open decisions
+(resolve first):** Organization as persona vs tenant tier · the exact paid-gated feature list ·
+Crew cross-circle visibility · Collaborator↔Practitioner boundary.
