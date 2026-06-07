@@ -91,6 +91,17 @@ tracks" and "many roles as we grow" cheap forever. There are **three independent
 | **Staff/ops role** | business cockpit access | `team_members` (owner/admin/marketer/analyst), `requireStaff()` | **exists** (ADR-027) |
 | **Persona / track** | what is this person *here to do* | **multi-select set** of persona records (hats) | **new** (ADR-030) |
 
+> **Naming & shape, finalized.** These three axes are now named and specced as
+> **Community** (the trust ladder, rebuilt as *scoped stewardship edges* — Member ·
+> Crew · Host · Guide · Mentor · Outpost Lead), **Partners** (the persona axis —
+> Collaborator · Practitioner · Business · Organization), and **Admin** (the staff
+> axis — Janitor · Admin · Operations · Marketing · Accounting · Support · Analyst),
+> plus a separate **Free → Member → Supporter** billing entitlement that replaces the
+> old "crew = paid" overload. **Outpost** is reframed from the top place container to
+> an **in-person overlay** inside a Nexus (twin of a Channel). Canonical spec:
+> [ROLES.md](ROLES.md); decision [DECISIONS.md](DECISIONS.md) ADR-163; build plan
+> [ONBOARDING-BUILD-LIST.md](ONBOARDING-BUILD-LIST.md) §11.
+
 **Personas are hats, not ranks, and multi-select.** One human can be a general member
 *and* a practitioner *and* an affiliate *and* a business, simultaneously, each
 separately verified. A practitioner is **not** "above" a member. Therefore a persona is
