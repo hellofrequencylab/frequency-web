@@ -5229,3 +5229,43 @@ emphasis).
 **Consequences.** The induction renders code + DB versions via one resolver. The original
 splash-only editor stays for quick splash tweaks; the wizard is the full surface. `sequence_
 overrides` migration extended + applied.
+
+---
+
+## ADR-163 — Role system rework: three orthogonal systems + a billing entitlement
+
+**Status:** Accepted (design) · not yet built. **Spec:** [ROLES.md](ROLES.md). **Build plan:**
+[ONBOARDING-BUILD-LIST.md](ONBOARDING-BUILD-LIST.md) §11.
+
+**Context.** Today a single global `community_role` enum (`member<crew<host<guide<mentor<admin<
+janitor`) conflates four different things: in-person stewardship, paid membership/game
+eligibility, partner capabilities, and internal platform admin. "Crew" means both a circle
+helper *and* the paid tier; `admin`/`janitor` sit atop the community ladder but are really
+internal roles; partner types (practitioner/business/etc.) have nowhere clean to live; and
+roles aren't scoped to the place they steward.
+
+**Decision.** Split into **three independent, orthogonal systems + a billing entitlement**,
+resolved as a **union** by one capability resolver (extends ADR-017/030):
+1. **Community** — a **scoped stewardship** ladder; a role is an edge `(person · role · scope)`
+   over a circle/hub/**outpost**/nexus (Member · Crew · Host · Guide · Mentor · Outpost Lead).
+   The global level is *derived* from the highest edge.
+2. **Partners** — self-serve **account personas** (multi-select hats, verification + money
+   binding): Collaborator · Practitioner · Business · Organization.
+3. **Admin** — internal staff: **Janitor** (mega) → **Admin** (near-mega) → domain-scoped
+   Operations/Marketing/Accounting/Support/Analyst. `admin`/`janitor` move here.
+- **Entitlement** (orthogonal billing flag): **Free → Member (paid) → Supporter (badge)**.
+  Free = whole program minus gamification + special features; Member = everything; Supporter =
+  extra contribution + badge. `crew`-as-paid is retired (Crew stays a stewardship role).
+- **Overlays:** **Outpost** repurposed from place-tree top → an **in-person overlay** inside a
+  Nexus (the in-person twin of a Channel), housed in a for-profit **Lab** when one exists.
+- **Isolation:** an Organization's own staff roles live in its **Hook tenant** and never cross
+  to the main Frequency site.
+
+**Alternatives.** Keep inflating the single ladder (rejected — conflates concerns, ADR-034).
+Personas as an enum on `profiles` (rejected — they're multi-select w/ per-persona verification,
+ADR-030). Outpost as a tenant tier (open — see ROLES.md).
+
+**Consequences.** New tables (`stewardships`, `profile_personas`, `outposts`, `labs`) + an
+entitlement flag; `community_role` becomes a derived cache; the permission grid + NAV reads the
+union resolver; a phased migration (§11) keeps each step non-breaking. GLOSSARY/place-tree docs
+need the Outpost reframe.
