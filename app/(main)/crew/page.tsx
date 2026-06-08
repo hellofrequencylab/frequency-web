@@ -15,6 +15,7 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ModuleCard } from '@/components/modules/module-card'
 import { CrewPreviewBanner } from '@/components/crew/crew-preview-banner'
+import { isPaidViewer } from '@/lib/core/viewer-hats'
 
 const TASK_TYPE_LABEL: Record<string, string> = {
   attendance:   'Attendance',
@@ -42,7 +43,7 @@ export default async function CrewPage() {
 
   if (!profile) notFound()
 
-  const isCrew = ['crew', 'host', 'guide', 'mentor', 'janitor'].includes((profile as { community_role: string }).community_role ?? '')
+  const isCrew = await isPaidViewer()
 
   const currentSeasonZaps: number = (profile as { current_season_zaps: number }).current_season_zaps ?? 0
   // Derive the rank from the zaps total so a stale current_season_rank column

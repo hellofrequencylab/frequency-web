@@ -14,6 +14,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { getStaffMember } from '@/lib/staff'
 import {
   accessTo,
+  columnsForHats,
   type AccessLevel,
   type Hats,
   type Surface,
@@ -45,4 +46,14 @@ export async function surfaceAccess(surface: Surface): Promise<AccessLevel> {
 /** Convenience: does the live caller get FULL function on this surface? */
 export async function canUseSurface(surface: Surface): Promise<boolean> {
   return (await surfaceAccess(surface)) === 'full'
+}
+
+/**
+ * Does the live caller hold the paid ("crew") entitlement? The single source for the
+ * scattered `['crew','host',…].includes(role)` gamification checks. Today the crew-or-
+ * above proxy (via the matrix's `crew` column); once the entitlement tier (P2) lands,
+ * `getViewerHats` reads the real flag and every call site flips automatically.
+ */
+export async function isPaidViewer(): Promise<boolean> {
+  return columnsForHats(await getViewerHats()).has('crew')
 }
