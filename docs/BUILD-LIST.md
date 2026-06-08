@@ -19,21 +19,22 @@ site for everyone, function-gated per role* — and **(2) the money layer** (ent
 
 | Rank | Track | Delivers | Size | Status |
 |---|---|---|---|---|
-| **P1** | **Permissions & Roles** | One site, function-gated per role (the matrix) | XL | ⏳ 1.1 done |
-| **P2** | **Entitlement & Billing** | Free → Member → Supporter + Stripe; the ✋ gates go live | L | 🔴 billing stub |
-| **P3** | **Partners** | Collaborator · Practitioner · Business · Organization + Hook | XL | 📋 |
-| **P4** | **Platform completion** | The concrete stubs the sweep found | M | ⏳ |
+| **P1** | **Permissions & Roles** | One site, function-gated per role (the matrix) | XL | ✅ matrix+menu+nav synced to sheet; scope edge-cases ⏳ |
+| **P2** | **Entitlement & Billing** | Free → Member → Supporter + Stripe; the ✋ gates go live | L | ✅ live (Supporter + lifetime rank); Connect binding blocked on owner setup |
+| **P3** | **Partners** | Collaborator · Practitioner · Business · Organization + Hook | XL | ⏳ personas + verification + listings done; Hook/paywalled left |
+| **P4** | **Platform completion** | The concrete stubs the sweep found | M | ⏳ few small gaps (4.2/4.8/4.9) |
 | **P5** | **Member · Practice · Operator depth** | The feature-depth backlog | L | ⏳ |
-| **P6** | **Onboarding / Vera / AI / Capture** | Finish the last-mile activation items | M | ⏳ |
-| **P7** | **Navigation & IA** | Collapse sprawl into dashboards; data-driven nav | L | ⏳ |
-| **P8** | **Infra · Data · Security · Hardening** | Migrations, RLS Phase 2, CI gates, scale ladder | L | ⏳ |
-| **PI** | **Intelligence & Activation Engine** | Wide behavioral capture → feature store → AI site-improvement loop → retroactive rewards | XL | 📋 PI.1 is the *capture-now* piece |
+| **P6** | **Onboarding / Vera / AI / Capture** | Finish the last-mile activation items | M | ⏳ (AI core largely built via PI) |
+| **P7** | **Navigation & IA** | Collapse sprawl into dashboards; data-driven nav | L | ✅ 4-section menu + matrix-driven nav (this session) |
+| **P8** | **Infra · Data · Security · Hardening** | Migrations, RLS Phase 2, CI gates, scale ladder | L | ⏳ hardening |
+| **PI** | **Intelligence & Activation Engine** | Wide behavioral capture → feature store → AI site-improvement loop → retroactive rewards | XL | ✅ all 5 layers built (PI.1–PI.5) |
 | **PM** | **Money verticals** (gated) | Collective · Affiliate · Donations · Lab Spaces | XL | 🔴 after PMF |
 
 **Outpost is parked** (owner direction) — tracked in ROLES.md/§11.5 but not scheduled.
 
 ## Progress log
 
+- **2026-06-08 ✅ P8 (CI gate)** — added `.github/workflows/ci.yml`: typecheck (`tsc --noEmit`) + lint (`eslint`) + tests (`vitest run`) on every PR to main + pushes, with pnpm cache + concurrency cancel. The Vercel build never ran the suite; now a red PR is caught before merge. No app secrets needed (tsc/eslint/vitest don’t touch env). `pnpm lint` is clean repo-wide; 443 tests green.
 - **2026-06-08 ✅ Roles/permissions + menu (owner sheet)** — synced `lib/core/access-matrix.ts` to the owner CSV exactly (full-grid conformance test, all 30×13 cells) and rebuilt the left-nav into the sheet’s four sections — **Community · The Quest · Studio · Platform** — in the exact item order/labels. Message Boards → Messages; Website / Hook Network / Studio-Finances / Financial-Dashboard / Status are gated **Coming-soon** stubs; the Quest dashboard is now member-full (only the Vault stays paid-gated). Each nav item carries its `surface` (the matrix seam). 443 tests green. *Nav visibility floors are reviewable in the preview (open decision: structure mgmt → Admin-only).*
 - **2026-06-08 ⏳ PI.5 (retroactive rewards)** — the final PI layer (ADR-168, migration `20260608110000`): a governed reward-rule registry (pure predicates over the durable history — lifetime rank, feature-store traits, tags, tier) + an idempotent **claim-then-pay** batch evaluator that grants once against the immutable history (the reward lands in the gem/zap ledgers; `reward_grants` unique guard makes re-runs safe). `/admin/rewards` previews pending grants (dry-run) and grants them one-click. v1 ships 5 gem rules (e.g. *ever reached Agent → 200 gems*). 415 tests green. **Completes the engine: capture → feature store → predictions → AI Studio → retroactive rewards.**
 - **2026-06-08 ⏳ PI.4 (AI Studio — increment 1)** — the AI Intelligence Studio is live (ADR-167, migration `20260608100000`): `/admin/studio` (Admin/Janitor) turns the banked signal — feature store + PI.3 predictions + interaction-surface rollups + **support tickets + help-gaps** — into **ranked, evidence-backed recommendations**, with Claude narrating the summary (deterministic fallback). The safety core is a **governed allow-list** of reversible, audited, role-gated site actions (`reindex_help`, `set_flag`) an operator applies one-click — the AI can only ever propose a registered action, never an arbitrary backend mutation. Every change logs to `studio_site_changes` with one-click revert. 407 tests green. Ties support pain → recommendation → applied fix (the "virtual staff" loop); agentic support replies + experiment-spawn are the next increments.
