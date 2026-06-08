@@ -9,6 +9,9 @@ import { getUnreadCount } from '@/app/(main)/notifications/actions'
 import { getAreaPermissions } from '@/lib/permissions'
 import { applyViewAs, viewingAsVisitor } from '@/lib/view-as'
 import { getStaffMember } from '@/lib/staff'
+import { getViewerHats } from '@/lib/core/viewer-hats'
+import { accessTo, type AccessLevel, type Hats, type Surface } from '@/lib/core/access-matrix'
+import { NAV_AREAS } from '@/lib/nav-areas'
 import { AchievementToastContainer } from '@/components/achievement-toast'
 import { ZapToastContainer } from '@/components/zap-toast'
 import { PresenceHeartbeat } from '@/components/presence/heartbeat'
@@ -90,6 +93,23 @@ export default async function MainLayout({
   const previewingDown = previewVisitor || effectiveRole !== realRole
   const staff = previewingDown ? null : await getStaffMember()
   const staffRole = staff?.role ?? null
+
+  // Matrix-driven nav visibility (owner directive): resolve each nav item's access for
+  // this viewer — respecting "view as" (effectiveRole) and suppressing personas/staff
+  // when previewing down — so the menu shows every item they can reach, wherever it sits.
+  const realHats = await getViewerHats()
+  const navHats: Hats = previewVisitor
+    ? { loggedIn: false }
+    : {
+        loggedIn: true,
+        role: effectiveRole,
+        tier: realHats.tier,
+        personas: previewingDown ? [] : realHats.personas,
+        staff: staffRole,
+      }
+  const navAccess: Record<string, AccessLevel> = Object.fromEntries(
+    NAV_AREAS.map((a) => [a.key, a.surface ? accessTo(a.surface as Surface, navHats) : 'full']),
+  )
 
   // Help index for the app-wide support launcher (docs/SUPPORT-SYSTEM.md §1).
   // Small + read from local Markdown; cheap to load with the shell.
@@ -194,6 +214,7 @@ export default async function MainLayout({
       ticker={ticker}
       unreadCount={unreadCount}
       permissions={permissions}
+      navAccess={navAccess}
       staffRole={staffRole}
       demoMode={demoMode}
       demoHidden={demoHidden}
