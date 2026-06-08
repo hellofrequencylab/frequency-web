@@ -2,10 +2,11 @@
 //
 // Gems and zaps each have their own transaction table (gem_transactions,
 // zap_transactions); this merges a member's rows from both into one reverse-chron
-// history, alongside their streaks and headline totals. Read-only, server-only
-// (admin client; the page authorizes to the viewer's own profile). See ADR-139.
+// history, alongside their streaks and headline totals. Read-only, server-only.
+// Uses the user-scoped client — RLS on all four tables enforces owner-only reads
+// so the profileId filter is belt-and-suspenders, not the only guard. See ADR-174.
 
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 
 export type LedgerCurrency = 'gems' | 'zaps'
 
@@ -53,26 +54,26 @@ interface TxnRow {
 
 /** A member's merged gem + zap history (newest first), streaks, and totals. */
 export async function getEarningLog(profileId: string, limit = 80): Promise<EarningLog> {
-  const admin = createAdminClient()
+  const supabase = await createClient()
 
   const [gemRes, zapRes, streakRes, profRes] = await Promise.all([
-    admin
+    supabase
       .from('gem_transactions')
       .select('id, action_type, amount, metadata, created_at')
       .eq('profile_id', profileId)
       .order('created_at', { ascending: false })
       .limit(limit),
-    admin
+    supabase
       .from('zap_transactions')
       .select('id, action_type, amount, metadata, created_at')
       .eq('profile_id', profileId)
       .order('created_at', { ascending: false })
       .limit(limit),
-    admin
+    supabase
       .from('streaks')
       .select('streak_type, current_count, longest_count, last_activity_at')
       .eq('profile_id', profileId),
-    admin
+    supabase
       .from('profiles')
       .select(
         'current_season_zaps, lifetime_zaps, current_season_gems, lifetime_gems, current_streak, longest_streak, current_season_rank, lifetime_rank',

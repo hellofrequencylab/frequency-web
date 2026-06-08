@@ -9,6 +9,7 @@
 
 import webpush from 'web-push'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { resolveSendGate, type SendCategory } from '@/lib/comms/send-gate'
 
 const PUBLIC_KEY  = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
 const PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY
@@ -33,13 +34,19 @@ export type PushPayload = {
   tag?:  string
 }
 
-// Fan out to all push subscriptions for a single profile. Returns the
-// number of successful sends. Prunes invalid subscriptions in-place.
+// Fan out to all push subscriptions for a single profile. Runs the full
+// send-gate (preferences + consent + suppression) before touching the DB —
+// if the gate denies, returns 0 without loading subscriptions. Prunes
+// revoked subscriptions in-place (404/410 from the push service).
 export async function sendPushToProfile(
   profileId: string,
   payload:   PushPayload,
+  category:  SendCategory,
 ): Promise<number> {
   if (!configure()) return 0
+
+  const gate = await resolveSendGate(profileId, 'push', category)
+  if (!gate.allowed) return 0
 
   const admin = createAdminClient()
   const { data: subs } = await admin

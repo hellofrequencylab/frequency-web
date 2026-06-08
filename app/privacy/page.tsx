@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { FocusTemplate } from '@/components/templates'
 
 export const metadata: Metadata = {
   title: 'Privacy Policy',
@@ -10,13 +11,13 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   return (
     <div className="min-h-screen bg-surface">
-      <div className="max-w-2xl mx-auto px-6 py-16">
-        <h1 className="text-3xl font-bold text-text mb-2">
-          Privacy Policy
-        </h1>
-        <p className="text-sm text-subtle mb-10">Last updated: May 27, 2026</p>
-
-        <div className="prose prose-sm prose-gray dark:prose-invert max-w-none space-y-8">
+      <div className="px-6 py-16">
+        <FocusTemplate
+          title="Privacy Policy"
+          description="Last updated: May 27, 2026"
+          width="default"
+        >
+          <div className="prose prose-sm prose-gray dark:prose-invert max-w-none space-y-8">
           <section>
             <h2 className="text-lg font-semibold text-text">1. Who we are</h2>
             <p className="text-muted leading-relaxed">
@@ -117,7 +118,8 @@ export default function PrivacyPage() {
               </a>.
             </p>
           </section>
-        </div>
+          </div>
+        </FocusTemplate>
       </div>
     </div>
   )

@@ -53,8 +53,9 @@ export async function getPage(slug: string): Promise<PageRow | null> {
 }
 
 // The live document the public site renders, or null (→ legacy fallback).
+// Catches missing-credentials errors at build time so static pages degrade cleanly.
 export async function getPublishedData(slug: string): Promise<Data | null> {
-  const page = await getPage(slug)
+  const page = await getPage(slug).catch(() => null)
   return (page?.published_data as Data | null) ?? null
 }
 

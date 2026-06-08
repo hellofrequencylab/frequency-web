@@ -103,15 +103,13 @@ export async function sendOutreach(message: string): Promise<ActionResult<{ sent
         notified = true
       }
     }
-    if (await shouldSend(p.id, 'push', 'dispatches')) {
-      await sendPushToProfile(p.id, {
-        title: `✉️ ${authorName}`,
-        body: body.slice(0, 180),
-        url: '/feed',
-        tag: `outreach-${caller.id}`,
-      })
-      notified = true
-    }
+    const pushSent = await sendPushToProfile(p.id, {
+      title: `✉️ ${authorName}`,
+      body: body.slice(0, 180),
+      url: '/feed',
+      tag: `outreach-${caller.id}`,
+    }, 'dispatches')
+    if (pushSent > 0) notified = true
     if (notified) sent++
   }
 

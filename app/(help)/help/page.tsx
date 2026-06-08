@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { LifeBuoy } from 'lucide-react'
 import { getAllCategories, helpHref } from '@/lib/help/content'
 import { EmptyState } from '@/components/ui/empty-state'
+import { IndexTemplate } from '@/components/templates'
 
 export const metadata: Metadata = {
   title: 'Help Center',
@@ -15,15 +16,10 @@ export default async function HelpHomePage() {
   const categories = await getAllCategories()
 
   return (
-    <div>
-      <header className="mb-10">
-        <h1 className="font-display text-4xl text-text">How can we help?</h1>
-        <p className="mt-3 max-w-2xl text-lg text-muted">
-          Everything you need to find your people, show up, and make the most of
-          Frequency.
-        </p>
-      </header>
-
+    <IndexTemplate
+      title="How can we help?"
+      description="Everything you need to find your people, show up, and make the most of Frequency."
+    >
       <div className="grid gap-5 sm:grid-cols-2">
         {categories.map((cat) => (
           <section
@@ -59,6 +55,6 @@ export default async function HelpHomePage() {
           description="We're writing up guides for finding Circles, showing up, and how the Quest works. Check back soon."
         />
       )}
-    </div>
+    </IndexTemplate>
   )
 }

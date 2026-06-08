@@ -5678,3 +5678,49 @@ this fixes).
 not layout work. The kit is the single source of truth for page structure; visual changes happen in one
 place and propagate. Rollout is mechanical now that preservation is off the table — the remaining work is
 volume, not judgment.
+
+**Exemption — public marketing landing pages.** The four `/discover` index pages (`/discover`,
+`/discover/circles`, `/discover/topics`, `/discover/events`) are explicitly exempt from this standard.
+They are full-bleed marketing surfaces built around `PhotoHero` (full-viewport image hero), `ZigZag`
+(editorial image/text splits), `Statement` (dark typographic beats), and `BetaCTA` (conversion section).
+These components are architecturally incompatible with `IndexTemplate` (would destroy the full-bleed
+design, create duplicate H1s on ISR-cached SEO pages, and lose structured marketing prose). They are
+treated as a distinct surface type — "marketing landing" — that follows the marketing-component grammar
+(`components/marketing/marketing-ui`) rather than the app-template grammar. Future marketing pages of
+the same type follow this pattern; any page that is NOT full-bleed marketing follows ADR-173.
+
+## ADR-174 — RLS Phase 2: three surfaces migrated from service-role to user-scoped client
+
+**Status:** Accepted · applied (`supabase/migrations/20260608140000_rls_qr_codes.sql`).
+
+**Context.** ADR-056 established the RLS convergence pattern: owner-scoped reads and writes should use
+the user-scoped Supabase client so RLS enforces scope automatically — eliminating the service-role bypass
+for data the caller owns. Phase 1 (ADR-004) set the foundational policies; Phase 2 converges surface by
+surface. Six surfaces were completed prior to this ADR (notifications read, friendships, feed main/detail,
+DM inbox, room thread). This ADR ships surfaces 7–9.
+
+**Surface 7 — Economy Ledger reads** (`lib/economy/ledger.ts`).
+`gem_transactions`, `zap_transactions`, `streaks`, and `profiles` all had SELECT policies covering
+owner-reads (policy: `profile_id = get_my_profile_id() OR role >= host/crew`). `getEarningLog()` is
+called exclusively with the viewer's own `profileId` (from `getMyProfileId()`). Switch: `createAdminClient`
+→ `createClient` (user-scoped). The explicit `.eq('profile_id', profileId)` filter remains as belt-and-suspenders
+(belt = RLS, suspenders = the app-level filter). No migration needed.
+
+**Surface 8 — Notification preferences settings** (`settings/notifications/page.tsx` + `actions.ts`).
+`notification_preferences` already had full SELECT/INSERT/UPDATE owner policies; `profiles` has
+self-read policy. Both the settings page load and the save action used `createAdminClient` unnecessarily.
+Switched both to `createClient`. `lib/notification-preferences.ts:getPreferences()` retains `createAdminClient`
+because it is called from the system send-gate and nurture runner with arbitrary profile IDs — that
+path is intentionally service-role. No migration needed.
+
+**Surface 9 — QR member codes** (`lib/qr/member-codes.ts`, `supabase/migrations/20260608140000_rls_qr_codes.sql`).
+`qr_codes` had RLS enabled but zero policies. Added: SELECT (owner reads own), INSERT (owner creates own
+with `owner_profile_id = created_by = get_my_profile_id()`), UPDATE (owner edits own). `ensureMemberCodes()`
+is called exclusively in the owner's session context, so the user-scoped client satisfies all three operations.
+`qr_scans` (written by the QR-resolver system) and `scan_count` increments remain service-role.
+`entry-points/store.ts` retains `createAdminClient` because it contains cross-actor reads (campaign lists,
+assignable-member lookups) that are intentionally operator-scoped.
+
+**Pattern reminder (ADR-056).** For each surface: (1) confirm RLS policies exist; (2) replace `createAdminClient`
+with `createClient` in the owner-scoped path; (3) keep `createAdminClient` on any cross-actor or system path in
+the same module. Deploy order: migration first, then code.

@@ -12,6 +12,7 @@ import {
   assignRole, deactivateMember, reactivateMember,
   sendMagicLink, updateMemberProfile, deleteUserAccount,
 } from '../actions'
+import { EconomyPanel } from './economy-panel'
 
 import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
 
@@ -281,6 +282,11 @@ function MemberRow({
               </div>
             </form>
           ) : null}
+
+          {/* Economy: gem / zap grant + revoke */}
+          <div className="mb-4">
+            <EconomyPanel profileId={m.id} displayName={m.display_name} />
+          </div>
 
           {/* Action buttons */}
           <div className="flex items-center gap-2 flex-wrap">

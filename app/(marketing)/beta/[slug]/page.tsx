@@ -20,7 +20,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params
   const seq = BETA_SEQUENCES[slug]
   if (!seq) return {}
-  const splash = { ...seq.splash, ...(await getSplashOverride(slug)) }
+  const override = await getSplashOverride(slug).catch(() => null)
+  const splash = { ...seq.splash, ...override }
   return {
     title: splash.headline,
     description: splash.body,
@@ -41,7 +42,8 @@ export default async function BetaSequenceSplash({ params }: { params: Promise<{
   const { slug } = await params
   if (!BETA_SEQUENCES[slug]) notFound()
   const seq = getSequence(slug)
-  const splash = { ...seq.splash, ...(await getSplashOverride(slug)) }
+  const override = await getSplashOverride(slug).catch(() => null)
+  const splash = { ...seq.splash, ...override }
   const start = `/onboarding/beta?seq=${seq.slug}`
 
   return (
