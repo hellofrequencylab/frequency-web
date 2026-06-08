@@ -29,7 +29,7 @@ export async function createMembershipCheckout(opts: {
         price_data: {
           currency: 'usd',
           product_data: { name: opts.tier === 'supporter' ? 'Frequency Supporter' : 'Frequency Membership (Crew)' },
-          unit_amount: membershipAmount(),
+          unit_amount: membershipAmount(opts.tier),
           recurring: { interval: 'month' },
         },
       }

@@ -22,10 +22,9 @@ export default async function BillingPage({
   // Webhook-independent fallback: when Stripe redirects back from a completed checkout,
   // confirm the session and flip the tier here (the webhook also does this, idempotently).
   const params = await searchParams
-  let justUpgraded = false
+  let justUpgradedTo: EntitlementTier | null = null
   if (params.session_id) {
-    const confirmed = await confirmCheckout(params.session_id, me.id)
-    justUpgraded = confirmed != null
+    justUpgradedTo = await confirmCheckout(params.session_id, me.id)
   }
 
   // Read the tier fresh (getCallerProfile is request-cached and may pre-date the confirm).
@@ -44,9 +43,12 @@ export default async function BillingPage({
       description="Your plan and payment."
       back={{ href: '/settings', label: 'Settings' }}
     >
-      {justUpgraded && (
+      {justUpgradedTo && (
         <div className="mb-4 inline-flex items-center gap-2 rounded-xl border border-success/50 bg-success-bg/30 px-4 py-2.5 text-sm font-semibold text-success">
-          <Check className="h-4 w-4" /> You’re in — welcome to the Crew.
+          <Check className="h-4 w-4" />{' '}
+          {justUpgradedTo === 'supporter'
+            ? 'You’re in — thank you for supporting Frequency.'
+            : 'You’re in — welcome to the Crew.'}
         </div>
       )}
 

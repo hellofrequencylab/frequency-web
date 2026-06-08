@@ -39,10 +39,13 @@ export async function toggleMembership(): Promise<ActionResult<{ tier: string }>
   return ok({ tier: next })
 }
 
-// Real membership purchase — a Stripe Checkout session for the Crew tier (P2.2).
-// Returns the hosted-checkout URL; the webhook flips membership_tier on completion.
-// Only reachable when billing is configured (the page renders this path then).
-export async function startMembershipCheckout(): Promise<ActionResult<{ url: string }>> {
+// Real membership purchase — a Stripe Checkout session for a paid tier (P2.2/P2.4).
+// Crew is the standard membership; Supporter is the pay-more tier (P2.4). Returns the
+// hosted-checkout URL; the webhook (and the success-redirect fallback) flip
+// membership_tier on completion. Only reachable when billing is configured.
+export async function startMembershipCheckout(
+  tier: 'crew' | 'supporter' = 'crew',
+): Promise<ActionResult<{ url: string }>> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return fail('Not signed in')
@@ -54,7 +57,7 @@ export async function startMembershipCheckout(): Promise<ActionResult<{ url: str
     .maybeSingle()
   if (!profile) return fail('Profile not found')
 
-  const url = await createMembershipCheckout({ profileId: profile.id, email: user.email, tier: 'crew' })
+  const url = await createMembershipCheckout({ profileId: profile.id, email: user.email, tier })
   if (!url) return fail('Billing isn’t available right now.')
   return ok({ url })
 }

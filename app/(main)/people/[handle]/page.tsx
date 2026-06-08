@@ -24,6 +24,7 @@ import { ModerateProfileButton } from './moderate-profile-button'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EditableIdentity } from './editable-identity'
 import { DemoBadge } from '@/components/ui/demo-badge'
+import { SupporterBadge } from '@/components/supporter-badge'
 
 const RANK_TIERS = [
   { name: 'Ghost',    min: 0,    cls: 'bg-surface-elevated text-muted',     bar: 'bg-border-strong' },
@@ -69,6 +70,7 @@ export default async function ProfilePage({
       bio,
       avatar_url,
       community_role,
+      membership_tier,
       created_at,
       current_streak,
       lifetime_gems,
@@ -169,6 +171,9 @@ export default async function ProfilePage({
   // Rank is *endorsed* (shown publicly) only for Crew+; a free member earns it but
   // it stays in their own Vault, not on their public profile (ADR-141). Inert in Beta.
   const rankEndorsed = isEndorsed(role)
+  // Supporter is the pay-more entitlement tier (orthogonal to role/rank) — endorse it
+  // publicly with the thank-you badge (P2.4).
+  const isSupporter = profile.membership_tier === 'supporter'
 
   // Rewards — surface the "nearly earned" ones so the next milestone feels within
   // reach (the celebration hook from the Progress spec), not just dimmed-out.
@@ -271,6 +276,7 @@ export default async function ProfilePage({
             badges={
               <div className="flex items-center gap-2 flex-wrap">
                 <RoleBadge role={role} className="text-xs leading-tight" />
+                {isSupporter && <SupporterBadge />}
                 {rankEndorsed && (
                   <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${rank.cls}`}>{rank.name}</span>
                 )}
