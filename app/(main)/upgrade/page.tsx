@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { Zap, Check, MessageSquare, CalendarDays, Users, Star, Radio, BarChart3, ArrowRight } from 'lucide-react'
+import { Zap, Check, MessageSquare, CalendarDays, Users, Star, Radio, BarChart3, ArrowRight, Heart } from 'lucide-react'
 import { FocusTemplate } from '@/components/templates'
 import { billingEnabled } from '@/lib/billing/stripe'
 import { UpgradeToggle } from './upgrade-toggle'
@@ -20,9 +20,11 @@ export default async function UpgradePage() {
 
   if (!profile) redirect('/onboarding')
 
-  // Membership is the entitlement axis (orthogonal to the community role). Paid = Crew.
+  // Membership is the entitlement axis (orthogonal to the community role). Paid = Crew;
+  // Supporter is the pay-more tier above it (P2.4).
   const tier = (profile.membership_tier ?? 'free') as string
   const isCrew = tier !== 'free'
+  const isSupporter = tier === 'supporter'
   // When Stripe billing is configured, /upgrade is a real checkout; otherwise it's the
   // free beta toggle (P2.2 — the layer is dormant until keys + price IDs land).
   const live = billingEnabled()
@@ -107,6 +109,28 @@ export default async function UpgradePage() {
           )}
         </div>
       </div>
+
+      {/* Supporter tier — the pay-more upgrade (P2.4). Offered to free + Crew members
+          when billing is live; Supporters already have it. */}
+      {live && !isSupporter && (
+        <div className="mt-5 rounded-2xl border border-signal/30 bg-signal-bg/20 p-5">
+          <div className="flex items-start gap-3">
+            <div className="shrink-0 mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-signal-bg/60">
+              <Heart className="h-4 w-4 text-signal-strong" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold text-text">Become a Supporter</p>
+              <p className="mt-0.5 text-xs leading-relaxed text-muted">
+                Chip in beyond membership to keep Frequency running — and wear the
+                Supporter badge on your profile.
+              </p>
+              <div className="mt-3">
+                <CheckoutButton tier="supporter" />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Founder note */}
       <div className="mt-8 text-center px-4">

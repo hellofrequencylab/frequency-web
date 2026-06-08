@@ -22,7 +22,7 @@ As you take part, the game's rewards, zaps, gems, milestones, **accrue for every
 
 ## Cashing in (membership)
 
-To **claim** what's in your Vault (spend gems, compete in the live season, and lock in a lifetime rank) you need an active game membership. A low membership floor unlocks it as a member benefit, and you can give more if you want to support the mission. Hosts can also grant access to a circle member who can't pay, so cost never keeps someone out.
+To **claim** what's in your Vault (spend gems, compete in the live season, and lock in a lifetime rank) you need an active game membership. A low membership floor unlocks it as a member benefit, and you can give more if you want to support the mission — that's the **Supporter** tier, which adds a small Supporter badge to your profile as a thank-you (the access is the same either way). Hosts can also grant access to a circle member who can't pay, so cost never keeps someone out.
 
 When you cash in, your Vault converts to gems and a lifetime rank, and the live season starts fresh for fair competition.
 
