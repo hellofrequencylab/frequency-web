@@ -300,6 +300,75 @@ export const TRAIT_REGISTRY: readonly TraitDef[] = [
     pii: 'none', freshness: 'nightly', retentionDays: null, owner: 'growth',
     derivation: 'quantized recency × frequency from engagement_events (+ currency depth)',
   },
+
+  // ── Behavioral features (the firehose feature store · PI.2 / ADR-166) ────────
+  // Derived from the raw interaction_events stream (views/dwell/scroll/clicks), not
+  // the semantic ledger — the durable per-member aggregate the AI + reward engine read.
+  {
+    key: 'interaction_count_30',
+    label: 'Interactions (30d)',
+    description: 'Raw interaction events (views, dwell, scroll, clicks) in the last 30 days — overall on-site activity volume.',
+    kind: 'computed', category: 'engagement', type: 'number',
+    pii: 'none', freshness: 'nightly', retentionDays: null, owner: 'growth',
+    derivation: 'count(interaction_events) over 30d',
+  },
+  {
+    key: 'interaction_days_30',
+    label: 'Active days · interactions (30d)',
+    description: 'Distinct days with any on-site interaction in the last 30 days — a stickiness signal.',
+    kind: 'computed', category: 'engagement', type: 'number',
+    pii: 'none', freshness: 'nightly', retentionDays: null, owner: 'growth',
+    derivation: 'distinct day(occurred_at) over 30d',
+  },
+  {
+    key: 'surfaces_touched_30',
+    label: 'Surfaces touched (30d)',
+    description: 'Distinct pages/surfaces the member engaged in the last 30 days — breadth of use.',
+    kind: 'computed', category: 'engagement', type: 'number',
+    pii: 'none', freshness: 'nightly', retentionDays: null, owner: 'growth',
+    derivation: 'distinct surface over 30d',
+  },
+  {
+    key: 'dwell_minutes_30',
+    label: 'Dwell minutes (30d)',
+    description: 'Total time-on-page (minutes) across surfaces in the last 30 days — attention/depth.',
+    kind: 'computed', category: 'engagement', type: 'number',
+    pii: 'none', freshness: 'nightly', retentionDays: null, owner: 'growth',
+    derivation: "sum(props.ms) where kind='dwell' over 30d, ÷60000",
+  },
+  {
+    key: 'sessions_30',
+    label: 'Sessions (30d)',
+    description: 'Distinct visit sessions in the last 30 days — frequency of return.',
+    kind: 'computed', category: 'engagement', type: 'number',
+    pii: 'none', freshness: 'nightly', retentionDays: null, owner: 'growth',
+    derivation: 'distinct session_id over 30d',
+  },
+  {
+    key: 'scroll_depth_avg',
+    label: 'Avg scroll depth (30d)',
+    description: 'Average scroll-depth milestone reached (0–100) — content consumption depth.',
+    kind: 'computed', category: 'engagement', type: 'number',
+    pii: 'none', freshness: 'nightly', retentionDays: null, owner: 'growth',
+    derivation: "avg(props.pct) where kind='scroll' over 30d",
+  },
+  {
+    key: 'last_interaction_at',
+    label: 'Last interaction',
+    description: 'Timestamp of the most recent raw interaction — finer-grained recency than the semantic ledger.',
+    kind: 'computed', category: 'engagement', type: 'timestamp',
+    pii: 'none', freshness: 'nightly', retentionDays: null, owner: 'growth',
+    derivation: 'max(interaction_events.occurred_at)',
+  },
+  {
+    key: 'engagement_depth',
+    label: 'Engagement depth',
+    description: 'Composite behavioral depth band (idle / shallow / moderate / deep) from interaction frequency + dwell. A feature the AI + reward engine read.',
+    kind: 'computed', category: 'engagement', type: 'enum',
+    pii: 'none', freshness: 'nightly', retentionDays: null, owner: 'growth',
+    values: ['idle', 'shallow', 'moderate', 'deep'],
+    derivation: 'banded from interaction_days_30 + dwell_minutes_30',
+  },
 ] as const
 
 const BY_KEY = new Map(TRAIT_REGISTRY.map((t) => [t.key, t]))
