@@ -12,6 +12,7 @@
 
 import { getCallerProfile } from '@/lib/auth'
 import { getStaffMember } from '@/lib/staff'
+import { deriveTier } from './entitlement'
 import {
   accessTo,
   columnsForHats,
@@ -29,9 +30,10 @@ export async function getViewerHats(): Promise<Hats> {
   return {
     loggedIn: true,
     role: profile.community_role,
-    // TODO(P2): read the real entitlement tier (free/member/supporter). Until the tier
-    // flag lands, the paid gate falls back to the crew-or-above proxy in columnsForHats.
-    tier: null,
+    // Entitlement, centralized in deriveTier. Transitional: the crew-or-above proxy
+    // until profiles.membership_tier (migration 20260608040000) is applied + billing
+    // (P2.2) lands — then pass `membershipTier: profile.membership_tier` here.
+    tier: deriveTier({ role: profile.community_role }),
     // TODO(P3): read the caller's active profile_personas.
     personas: null,
     staff: staff?.role ?? null,

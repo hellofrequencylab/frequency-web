@@ -2,3 +2,4 @@
 export * from './roles'
 export * from './capabilities'
 export * from './access-matrix'
+export * from './entitlement'

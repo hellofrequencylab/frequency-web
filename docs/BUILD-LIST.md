@@ -33,6 +33,7 @@ site for everyone, function-gated per role* — and **(2) the money layer** (ent
 
 ## Progress log
 
+- **2026-06-08 ⏳ P2.1 (foundation)** — `deriveTier` + `lib/core/entitlement.ts`; `getViewerHats` sets `tier`; migration `20260608040000_membership_tier.sql` authored (⚠️ apply pending). Behavior-preserving. PR #410.
 - **2026-06-08 ✅ P1.3 (rollout)** — centralized the scattered `['crew',…]` paid-proxy into `isPaidViewer()` across `/crew`, `/circles/[slug]`, `/events/[slug]`, `/codes`. One matrix-backed source. PR #410.
 - **2026-06-08 ✅ P1.3 (pilot)** — `lib/core/viewer-hats.ts` seam + Vault/Store wired to `surfaceAccess('vault')`. The unified-site pattern is established. PR #410.
 - **2026-06-08 ✅ P1.2** — Scope re-validation on structure/event mutations + `assignRole` escalation closed (`app/(main)/admin/actions.ts`). PR #410.
@@ -67,7 +68,7 @@ site for everyone, function-gated per role* — and **(2) the money layer** (ent
 
 | # | Item | Status | Notes |
 |---|---|---|---|
-| 2.1 | Tier flag `free / member / supporter` | 📋 | Re-point `isCrew`, game cash-in eligibility, `/upgrade` to the tier; **Crew → pure stewardship**. |
+| 2.1 | Tier flag `free / member / supporter` | ⏳ | ✅ foundation: `deriveTier` centralizes the entitlement (`lib/core/entitlement.ts`); `getViewerHats` sets `tier`. ⏳ **migration `20260608040000_membership_tier.sql` authored — apply with `supabase db push`, regenerate types, then flip `deriveTier` to read the column.** Then: re-point game cash-in / `/upgrade`; Crew → pure stewardship. |
 | 2.2 | Stripe Connect / payments module | 📋 | `create_checkout` · `process_payout` · `record_commission` — shared rail for billing + all partner money (DEVELOPMENT-MAP C2). |
 | 2.3 | Stripe membership checkout | 📋 | Replace the `/settings/billing` stub + `/upgrade` ($10 hardcoded → "Free") with a real flow. |
 | 2.4 | Supporter badge | 📋 | Pay-more tier → flair/badge (reuse the badge system). |
