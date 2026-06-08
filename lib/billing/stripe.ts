@@ -20,6 +20,11 @@ const SECRET = process.env.STRIPE_SECRET_KEY
 /** The Stripe client, or null when billing isn't configured. */
 export const stripe = SECRET ? new Stripe(SECRET) : null
 
+// Throw at module load time so a missing webhook secret is caught at startup (when
+// billing is enabled), not silently at webhook receipt.
+if (SECRET && !process.env.STRIPE_WEBHOOK_SECRET) {
+  throw new Error('STRIPE_WEBHOOK_SECRET is not set — required when STRIPE_SECRET_KEY is configured')
+}
 export const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET ?? ''
 
 /** Explicit price id for a paid tier, if the owner configured one. Optional — when

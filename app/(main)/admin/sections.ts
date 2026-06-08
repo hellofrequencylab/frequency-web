@@ -43,6 +43,7 @@ import {
   ScrollText,
   Globe,
   Cog,
+  LifeBuoy,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
@@ -135,10 +136,11 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
   {
     key: 'safety',
     label: 'Safety',
-    blurb: 'Keep the community healthy — reports and moderation.',
+    blurb: 'Keep the community healthy — reports, moderation, and member support.',
     dashboard: 'community',
     links: [
       { href: '/admin/moderation', label: 'Moderation', desc: 'Review and resolve reports.', Icon: ShieldAlert, min: 'host', staffDomain: 'community' },
+      { href: '/admin/support', label: 'Support', desc: 'Member support tickets and help requests.', Icon: LifeBuoy, min: 'host', staffDomain: 'members' },
     ],
   },
   {

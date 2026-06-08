@@ -7,7 +7,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { enqueueEmail, listUnsubscribeHeaders } from '@/lib/email'
-import { shouldSend } from '@/lib/notification-preferences'
+import { resolveSendGate } from '@/lib/comms/send-gate'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { SITE_URL } from '@/lib/site'
 
@@ -84,7 +84,8 @@ export async function runAutomationsForEvent(
 
   for (const rule of rules) {
     if (rule.action_type === 'email_actor' && actorEmail) {
-      if (!(await shouldSend(actorProfileId, 'email', 'lifecycle'))) continue
+      const gate = await resolveSendGate(actorProfileId, 'email', 'lifecycle')
+      if (!gate.allowed) continue
       const cfg = (rule.action_config ?? {}) as { subject?: string; body?: string }
       const unsubscribeUrl = buildUnsubscribeUrl({ baseUrl: SITE_URL, profileId: actorProfileId, category: 'lifecycle' })
       await enqueueEmail({
