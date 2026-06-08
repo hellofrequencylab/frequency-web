@@ -6,7 +6,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { enqueueEmail, listUnsubscribeHeaders } from '@/lib/email'
-import { shouldSend } from '@/lib/notification-preferences'
+import { resolveSendGate } from '@/lib/comms/send-gate'
 import { buildLeadUnsubUrl } from '@/lib/connections/lead-unsub'
 import { nextStepAfter, runAtFrom, type NurtureStep } from '@/lib/nurture/schedule'
 
@@ -94,8 +94,11 @@ export async function runDueNurture(limit = 200): Promise<NurtureRunResult> {
 
     const contact = contactById.get(e.contact_id)
     if (!contact || contact.consent_state === 'unsubscribed') { await cancel(e.id); cancelled++; continue }
-    if (contact.profile_id && !(await shouldSend(contact.profile_id, 'email', 'lifecycle'))) {
-      await cancel(e.id); cancelled++; continue
+    if (contact.profile_id) {
+      // Route the autonomous send through the unified gate (ADR-169): preference +
+      // lifecycle consent + suppression in one verified decision, not an ad-hoc check.
+      const gate = await resolveSendGate(contact.profile_id, 'email', 'lifecycle', { email: e.email })
+      if (!gate.allowed) { await cancel(e.id); cancelled++; continue }
     }
 
     const unsubscribeUrl = buildLeadUnsubUrl(e.contact_id)
