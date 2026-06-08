@@ -16,6 +16,7 @@ import { processGamificationEvent } from '@/lib/achievements'
 import { atLeastRole } from '@/lib/core/roles'
 import { assignTraining } from '@/lib/onboarding/training'
 import { authorizeAction } from '@/lib/admin/guard'
+import { logAdminAction } from '@/lib/admin/audit'
 import { getStaffMember } from '@/lib/staff'
 import { staffCan, type StaffDomain } from '@/lib/core/staff-roles'
 import {
@@ -79,6 +80,8 @@ export async function assignRole(profileId: string, role: CommunityRole) {
   processGamificationEvent({ type: 'role_change', profileId, role }).catch(() => {})
   // Assign the role's training Journey on promotion (ADR-157 §7.1). Best-effort.
   assignTraining(profileId, role).catch(() => {})
+  // Audit the role grant — a crown-jewel platform action (P8). Best-effort.
+  await logAdminAction({ actorId: caller.id, action: 'role.assign', targetType: 'profile', targetId: profileId, detail: { role } })
   revalidatePath('/admin')
 }
 
