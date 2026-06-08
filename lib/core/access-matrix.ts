@@ -67,13 +67,17 @@ export type Surface =
 
 type Row = Partial<Record<MatrixColumn, AccessLevel>> // omitted column ⇒ 'none'
 
-// Shared row shapes (kept DRY — many surfaces share a cell pattern).
+// Shared row shapes (kept DRY — many surfaces share a cell pattern). Mirrors the owner's
+// Roles & Permissions sheet (2026-06-08): ⏱️/✋🏼 = limited, ✅ = full, 🚫 = none.
 const COMMUNITY_OPEN: Row = { visitor: 'limited', member: 'full' } // browse as visitor, full as member
 const QUEST_OPEN: Row = { visitor: 'limited', member: 'full' }
-// Free preview → paid unlock (✋→✅). Stewards (host+) get full regardless of payment —
-// access to their tools is granted by the role, not the membership.
-const PAID_GATE: Row = { member: 'limited', crew: 'full', host: 'full' }
 const EVERYONE: Row = { visitor: 'full', member: 'full' } // universal (Status, Settings)
+
+// Every active partner persona — used where the sheet grants all four personas full.
+const PARTNERS_FULL = { collaborator: 'full', practitioner: 'full', business: 'full', organization: 'full' } as const
+// Free preview → paid unlock (✋→✅), then full for stewards, every partner persona, and
+// staff (analyst/admin/janitor). The sheet's Vault / Studio Overview / Support / QR shape.
+const PAID_FULL: Row = { member: 'limited', crew: 'full', host: 'full', ...PARTNERS_FULL, analyst: 'full', admin: 'full', janitor: 'full' }
 
 // THE MATRIX. Encodes docs/ROLES.md › "The access matrix". Omitted columns ⇒ 'none'.
 // Two deliberate, documented deviations from the literal sheet:
@@ -91,31 +95,33 @@ export const ACCESS_MATRIX: Record<Surface, Row> = {
   channels: COMMUNITY_OPEN,
   events: COMMUNITY_OPEN,
   market: COMMUNITY_OPEN,
-  people: COMMUNITY_OPEN,
-  messageBoards: { member: 'full' }, // visitor 🚫
+  people: { member: 'full' }, // visitor 🚫 (sheet)
+  messageBoards: { member: 'full' }, // visitor 🚫 — maps to Messages
 
-  // ── The Quest ──────────────────────────────────────────────────────────────────
+  // ── The Quest — everyone plays; only the Vault (cash-in) is paid-gated ───────────
   quest: QUEST_OPEN,
   journeys: QUEST_OPEN,
   practices: QUEST_OPEN,
   library: QUEST_OPEN,
-  vault: { visitor: 'limited', member: 'limited', crew: 'full', host: 'full' }, // paid gate; stewards full
+  vault: { visitor: 'limited', ...PAID_FULL }, // preview → paid; stewards/partners/staff full
 
   // ── Studio — stewardship + the partner business block ───────────────────────────
-  studioOverview: { visitor: 'limited', member: 'limited', crew: 'full', host: 'full' },
-  support: { member: 'full' }, // Help Center — members+; visitor 🚫
-  personalCrm: PAID_GATE, // Connections / personal CRM — free preview → paid
+  studioOverview: { visitor: 'limited', ...PAID_FULL }, // everyone previews the Studio; full at crew+
+  support: { visitor: 'limited', ...PAID_FULL }, // members submit a request (limited); full console at crew+/staff
+  personalCrm: PAID_FULL, // Connections / personal CRM — member preview → paid; partners/staff full
   businessCrm: { practitioner: 'limited', business: 'full', organization: 'full', analyst: 'full', admin: 'full', janitor: 'full' },
   website: { practitioner: 'limited', business: 'full', organization: 'full', admin: 'full', janitor: 'full' }, // analyst 🚫
   hookNetwork: { business: 'limited', organization: 'full', admin: 'full', janitor: 'full' }, // Org product
-  growthStudio: { practitioner: 'limited', business: 'full', organization: 'full', analyst: 'full', admin: 'full', janitor: 'full' },
-  earnings: { collaborator: 'full', practitioner: 'full', business: 'full', organization: 'full', analyst: 'full', admin: 'full', janitor: 'full' },
-  qrStudio: PAID_GATE,
+  growthStudio: { business: 'full', organization: 'full', analyst: 'full', admin: 'full', janitor: 'full' }, // practitioner 🚫 (sheet)
+  earnings: { ...PARTNERS_FULL, admin: 'full', janitor: 'full' }, // analyst 🚫 (sheet)
+  qrStudio: PAID_FULL, // member preview → paid; partners/staff full
 
   // ── Platform — operator keys ────────────────────────────────────────────────────
   status: EVERYONE,
-  insight: { host: 'limited', practitioner: 'limited', business: 'full', organization: 'full', analyst: 'full', admin: 'full', janitor: 'full' },
-  veraAi: { host: 'limited', business: 'limited', organization: 'full', analyst: 'full', admin: 'full', janitor: 'full' },
+  // Insight & Vera: Host gets a LIMITED view (basic circle support); Guide/Mentor get the
+  // deeper analytics (owner correction to the sheet — seniors get MORE, not less).
+  insight: { host: 'limited', guide: 'full', mentor: 'full', collaborator: 'full', practitioner: 'limited', business: 'full', organization: 'full', analyst: 'full', admin: 'full', janitor: 'full' },
+  veraAi: { host: 'limited', guide: 'full', mentor: 'full', practitioner: 'limited', business: 'full', organization: 'full', analyst: 'full', admin: 'full', janitor: 'full' },
   platformManage: { admin: 'full', janitor: 'full' }, // Hubs & Nexuses · Memberships · Pages — admin only
   financialDashboard: { janitor: 'full' }, // Janitor ONLY — Admin is excluded (the financials carve-out)
   settings: EVERYONE,
