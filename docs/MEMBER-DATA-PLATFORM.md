@@ -23,7 +23,7 @@ contacts   _events      computed)   audiences)  automation /  AI recommend +
 | Layer | What | Where |
 |---|---|---|
 | Identity | members, leads, staff | `profiles`, `contacts`, `team_members` |
-| Events | the raw behavioral truth (typed, idempotent) | `engagement_events` ✅, `interaction_events` 📋 (PI.1) |
+| Events | the raw behavioral truth (typed, idempotent) | `engagement_events` ✅ (semantic), `interaction_events` ⏳ (raw firehose, PI.1) |
 | **Traits** | tags + computed per-member variables | `member_tags` ✅, `member_traits` ✅ |
 | **Segments** | saved, reusable audience definitions | `segments` ✅ |
 | Activation | send / segment / automate | `campaigns`, `automation_rules`, comms spine |
