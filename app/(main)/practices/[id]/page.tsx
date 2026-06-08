@@ -12,6 +12,7 @@ import { AdoptPracticeButton } from '@/components/practice/adopt-practice-button
 import { PillarBadge } from '@/components/practice/pillar-badge'
 import { ClaimPractice } from '@/components/practice/claim-practice'
 import { StaffEditButton } from '@/components/ui/staff-edit-button'
+import { ProposeToLibraryButton } from '@/components/library/propose-to-library'
 import { forkPracticeAction } from '../actions'
 
 export const dynamic = 'force-dynamic'
@@ -133,6 +134,11 @@ export default async function PracticeDetailPage({ params }: Params) {
             >
               <Pencil className="h-3.5 w-3.5" /> Edit
             </Link>
+            <ProposeToLibraryButton
+              type="practice"
+              id={practice.id}
+              state={practice.is_public ? 'published' : practice.status === 'pending' ? 'pending' : 'draft'}
+            />
           </>
         ) : practice.is_template ? (
           <>

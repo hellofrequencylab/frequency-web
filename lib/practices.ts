@@ -42,6 +42,8 @@ export interface Practice {
   domain_id: string | null
   /** The sub-category within the Pillar (practice_subcategories.id), or null. */
   subcategory_id: string | null
+  /** Library review status — null/draft until proposed, then pending → approved/rejected. */
+  status: string | null
 }
 
 /** A library tag (canonical or member/Vera folksonomy) as shown on a practice. */
@@ -72,7 +74,7 @@ export type PracticeSort = 'trending' | 'top' | 'new' | 'az'
 
 const PRACTICE_COLS =
   'id, title, description, created_by, is_public, is_template, created_at, ' +
-  'category, icon, summary, header_image, body, cadence, reward_zaps, reward_note, domain_id, subcategory_id'
+  'category, icon, summary, header_image, body, cadence, reward_zaps, reward_note, domain_id, subcategory_id, status'
 
 // --- Library + reads ------------------------------------------------------
 
