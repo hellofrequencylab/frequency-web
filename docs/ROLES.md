@@ -142,25 +142,25 @@ cell across every hat a person holds. *(The **Crew** column = the **paid members
 | Surface | Vis | Mbr | Crew | Host | Guide | Mntr | Coll | Prac | Biz | Org | Anl | Adm | Jan |
 |---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
 | **Community** |||||||||||||||
-| Feed · Around You · Circles · Channels · Events · Marketplace · People | ✋ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Message Boards | 🚫 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Feed · Around You · Circles · Channels · Events · Marketplace | ✋ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Message Boards · People | 🚫 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **The Quest** |||||||||||||||
 | Dashboard · Journeys · Practices · Library | ✋ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | The Vault | ✋ | ✋ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Studio** |||||||||||||||
 | Overview | ✋ | ✋ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Support (Help Center) | 🚫 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Support (submit a request → full console) | ✋ | ✋ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Connections (Personal CRM) | 🚫 | ✋ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | CRM Pipeline (Business CRM) | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | ✋ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Website (hosted site builder) | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | ✋ | ✅ | ✅ | 🚫 | ✅ | ✅ |
 | Hook Network | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | ✋ | ✅ | 🚫 | ✅ | ✅ |
-| Growth Studio | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | ✋ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Finances (Earnings & Commissions) | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Growth Studio | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Finances (Earnings & Commissions) | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | ✅ | ✅ | ✅ | ✅ | 🚫 | ✅ | ✅ |
 | QR Studio | 🚫 | ✋ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Platform** |||||||||||||||
 | Status (Platform Dashboard) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Insight (Analytics) | 🚫 | 🚫 | 🚫 | ✋ | 🚫 | 🚫 | 🚫 | ✋ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Vera AI | 🚫 | 🚫 | 🚫 | ✋ | 🚫 | 🚫 | 🚫 | 🚫 | ✋ | ✅ | ✅ | ✅ | ✅ |
+| Insight (Analytics) | 🚫 | 🚫 | 🚫 | ✋ | ✅ | ✅ | ✅ | ✋ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Vera AI | 🚫 | 🚫 | 🚫 | ✋ | ✅ | ✅ | 🚫 | ✋ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Hubs & Nexuses · Memberships · Pages | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | ✅ | ✅ |
 | Finances (Financial Dashboard) | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | ✅ |
 | Settings (Site Settings) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
@@ -177,11 +177,15 @@ cell across every hat a person holds. *(The **Crew** column = the **paid members
   **Financial Dashboard is Janitor-only** (Admin excluded) — the Admin system, with the
   financials/owner carve-out. ⚠️ *This centralizes structure management to Admin — stricter than
   today, where Host/Guide self-manage structure. Confirm (open decision).*
+- **Insight & Vera AI stewardship:** **Host** gets a **limited** view (basic, circle-support); **Guide
+  & Mentor get the full** deeper analytics. (Owner correction 2026-06-08 — seniors get *more*, not
+  less; the sheet's Guide/Mentor 🚫 was an oversight.)
 - **Status + Settings** are universal.
 
-> ⚠️ **Cells to confirm against the sheet:** the partner-column partials on **Insight**, **Vera AI**
-> and **Website** (Biz/Org/Analyst) were read from a rendered preview. **Outpost is intentionally out
-> of scope for now** (owner direction) — no Outpost column or surface is built yet.
+> ✅ **Synced to the owner CSV (2026-06-08)** and locked by a full-grid conformance test
+> (`lib/core/access-matrix-sheet.test.ts` — all 30 surfaces × 13 roles). The two deliberate
+> deviations from the literal sheet are the Insight/Vera seniors-deeper correction above. **Outpost is
+> intentionally out of scope** (owner direction) — no Outpost column or surface yet.
 
 ## Unified-site principle (owner directive)
 

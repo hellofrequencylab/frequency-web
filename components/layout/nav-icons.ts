@@ -28,6 +28,10 @@ import {
   QrCode,
   Library,
   LifeBuoy,
+  Network,
+  Coins,
+  Banknote,
+  Settings,
 } from 'lucide-react'
 
 // Maps each NAV_AREAS key (lib/nav-areas.ts — the framework-free source of truth)
@@ -51,9 +55,17 @@ export const AREA_ICONS: Record<string, ElementType> = {
   people: Globe,
   codes: QrCode,
   crew: Zap,
+  quest: Compass,
   quests: Compass,
   store: Store,
   vault: Vault,
+  messageBoards: MessageSquare,
+  website: Globe,
+  'hook-network': Network,
+  earnings: Coins,
+  status: Activity,
+  financials: Banknote,
+  settings: Settings,
   'admin-community': LayoutDashboard,
   'admin-support': LifeBuoy,
   'admin-structure': Building2,
