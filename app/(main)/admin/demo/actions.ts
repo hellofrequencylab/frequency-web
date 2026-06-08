@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
+import { logAdminAction } from '@/lib/admin/audit'
 import { atLeastRole } from '@/lib/core/roles'
 import { addDemoMembers as genMembers, addDemoCircle as genCircle } from '@/lib/demo/generate'
 import { deletePlansByAuthors } from '@/lib/journey-plans'
@@ -40,6 +41,7 @@ export async function setDemoMode(enabled: boolean) {
 export async function purgeDemoContent() {
   const caller = await getCallerProfile()
   if (!caller || !atLeastRole(caller.community_role, 'janitor')) throw new Error('Unauthorized')
+  const callerId = caller.id
 
   // Untyped cast: hubs.is_demo isn't in the generated types yet (cast pattern).
   const admin = createAdminClient() as unknown as SupabaseClient
@@ -53,6 +55,9 @@ export async function purgeDemoContent() {
     const { error } = await admin.from(table).delete().eq('is_demo', true)
     if (error) throw new Error(`${table}: ${error.message}`)
   }
+
+  // Audit the irreversible purge (P8). Best-effort.
+  await logAdminAction({ actorId: callerId, action: 'demo.purge', targetType: 'platform', targetId: null, detail: { profiles: demoIds.length } })
 
   revalidatePath('/', 'layout')
 }

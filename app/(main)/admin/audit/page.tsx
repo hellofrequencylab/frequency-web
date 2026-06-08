@@ -11,6 +11,12 @@ const ACTION_LABEL: Record<string, string> = {
   'persona.verified': 'Verified a partner persona',
   'persona.active': 'Activated a partner persona',
   'persona.suspended': 'Suspended a partner persona',
+  'moderation.hide': 'Hid reported content',
+  'moderation.dismiss': 'Dismissed a report',
+  'moderation.warn': 'Warned a member',
+  'moderation.suspend': 'Suspended a member',
+  'moderation.event_cancel': 'Cancelled a reported event',
+  'demo.purge': 'Purged demo content',
 }
 const label = (a: string) => ACTION_LABEL[a] ?? a
 
