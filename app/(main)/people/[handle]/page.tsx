@@ -25,6 +25,7 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { EditableIdentity } from './editable-identity'
 import { DemoBadge } from '@/components/ui/demo-badge'
 import { SupporterBadge } from '@/components/supporter-badge'
+import { DetailTemplate } from '@/components/templates'
 
 const RANK_TIERS = [
   { name: 'Ghost',    min: 0,    cls: 'bg-surface-elevated text-muted',     bar: 'bg-border-strong' },
@@ -190,12 +191,99 @@ export default async function ProfilePage({
     .sort((a, b) => Number(b.earned) - Number(a.earned) || b.ratio - a.ratio)
   const rewardsEarned = rewards.filter((r) => r.earned).length
 
+  // The avatar node, sized to sit inline with the name in the Detail band.
+  const avatarNode = profile.avatar_url ? (
+    <Image
+      src={profile.avatar_url}
+      alt={profile.display_name}
+      width={56}
+      height={56}
+      className={`h-14 w-14 rounded-full object-cover ring-2 ring-surface ${isDemo ? 'grayscale-[0.5]' : ''}`}
+    />
+  ) : (
+    <span className="flex h-14 w-14 items-center justify-center rounded-full bg-primary-bg text-primary-strong text-xl font-semibold ring-2 ring-surface">
+      {initials}
+    </span>
+  )
+
   return (
-    <div>
-      {/* ── Cover image + avatar header (the one hero card) ─────── */}
+    <DetailTemplate
+      title={
+        <span className="inline-flex items-center gap-3 align-middle">
+          {avatarNode}
+          <span className="min-w-0 break-words">{profile.display_name}</span>
+        </span>
+      }
+      subtitle={
+        <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
+          <span className="font-medium">@{profile.handle as string}</span>
+          {regionName && (
+            <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {regionName}</span>
+          )}
+          <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" /> Joined {joinedDate}</span>
+          {circles.length > 0 && (
+            <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {circles.length} {circles.length === 1 ? 'circle' : 'circles'}</span>
+          )}
+        </span>
+      }
+      badges={
+        <span className="flex items-center gap-2 flex-wrap">
+          <RoleBadge role={role} className="text-xs leading-tight" />
+          {isSupporter && <SupporterBadge />}
+          {rankEndorsed && (
+            <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${rank.cls}`}>{rank.name}</span>
+          )}
+          {isDemo && <DemoBadge />}
+        </span>
+      }
+      actions={
+        isOwner ? (
+          <Link
+            href="/settings/profile"
+            className="flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-elevated transition-colors"
+          >
+            <Settings className="w-3.5 h-3.5" />
+            Settings
+          </Link>
+        ) : user ? (
+          <>
+            {!isBlocked && <FriendButton targetProfileId={profileId} state={friendState} />}
+            {vcardEnabled && (
+              <a
+                href={`/people/${profile.handle}/vcard`}
+                className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+              >
+                <Contact className="w-3.5 h-3.5" />
+                Save contact
+              </a>
+            )}
+            {!isBlocked && friendState.kind === 'accepted' && (
+              <form action={startConversation.bind(null, profileId)}>
+                <button
+                  type="submit"
+                  className="flex items-center gap-1.5 rounded-lg border border-primary-bg bg-primary-bg px-3 py-1.5 text-sm font-medium text-primary-strong hover:bg-primary-bg transition-colors"
+                >
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  Message
+                </button>
+              </form>
+            )}
+            {!isOwner && <BlockButton profileId={profileId} blocked={isBlocked} />}
+            {canModerateProfile && (
+              <ModerateProfileButton
+                profileId={profileId}
+                initialName={profile.display_name}
+                initialBio={profile.bio ?? ''}
+              />
+            )}
+          </>
+        ) : null
+      }
+    >
+      {/* ── Cover image + bio + gamification (the identity hero, now in the body) ─── */}
       <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden mb-6">
         {/* Cover — the member's header image when set, else the default gradient. */}
-        <div className="relative h-44 sm:h-56 bg-gradient-to-br from-primary via-signal to-signal-strong">
+        <div className="relative h-32 sm:h-44 bg-gradient-to-br from-primary via-signal to-signal-strong">
           {headerImageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={headerImageUrl} alt="" className={`absolute inset-0 h-full w-full object-cover ${isDemo ? 'grayscale-[0.5]' : ''}`} />
@@ -204,96 +292,13 @@ export default async function ProfilePage({
           )}
         </div>
 
-        {/* Avatar overlapping the cover */}
-        <div className="relative px-6 pb-5">
-          <div className="flex items-end justify-between -mt-12 mb-4">
-            <div className="shrink-0">
-              {profile.avatar_url ? (
-                <Image
-                  src={profile.avatar_url}
-                  alt={profile.display_name}
-                  width={96}
-                  height={96}
-                  className={`w-24 h-24 rounded-full object-cover ring-4 ring-surface ${isDemo ? 'grayscale-[0.5]' : ''}`}
-                />
-              ) : (
-                <div className="w-24 h-24 rounded-full bg-primary-bg text-primary-strong text-3xl font-semibold flex items-center justify-center ring-4 ring-surface">
-                  {initials}
-                </div>
-              )}
-            </div>
-            <div className="relative flex flex-wrap items-center justify-end gap-2 shrink-0 pb-1">
-              {isOwner ? (
-                <Link
-                  href="/settings/profile"
-                  className="flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-elevated transition-colors"
-                >
-                  <Settings className="w-3.5 h-3.5" />
-                  Settings
-                </Link>
-              ) : user ? (
-                <>
-                  {!isBlocked && <FriendButton targetProfileId={profileId} state={friendState} />}
-                  {vcardEnabled && (
-                    <a
-                      href={`/people/${profile.handle}/vcard`}
-                      className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-                    >
-                      <Contact className="w-3.5 h-3.5" />
-                      Save contact
-                    </a>
-                  )}
-                  {!isBlocked && friendState.kind === 'accepted' && (
-                    <form action={startConversation.bind(null, profileId)}>
-                      <button
-                        type="submit"
-                        className="flex items-center gap-1.5 rounded-lg border border-primary-bg bg-primary-bg px-3 py-1.5 text-sm font-medium text-primary-strong hover:bg-primary-bg transition-colors"
-                      >
-                        <MessageSquare className="w-3.5 h-3.5" />
-                        Message
-                      </button>
-                    </form>
-                  )}
-                  {!isOwner && <BlockButton profileId={profileId} blocked={isBlocked} />}
-                  {canModerateProfile && (
-                    <ModerateProfileButton
-                      profileId={profileId}
-                      initialName={profile.display_name}
-                      initialBio={profile.bio ?? ''}
-                    />
-                  )}
-                </>
-              ) : null}
-            </div>
-          </div>
-
-          {/* Identity — inline-editable for the owner */}
+        <div className="relative px-6 pb-5 pt-5">
+          {/* Bio — inline-editable for the owner (name + bio autosave). */}
           <EditableIdentity
             isOwner={isOwner}
             displayName={profile.display_name}
             handle={profile.handle as string}
             bio={profile.bio ?? ''}
-            badges={
-              <div className="flex items-center gap-2 flex-wrap">
-                <RoleBadge role={role} className="text-xs leading-tight" />
-                {isSupporter && <SupporterBadge />}
-                {rankEndorsed && (
-                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${rank.cls}`}>{rank.name}</span>
-                )}
-                {isDemo && <DemoBadge />}
-              </div>
-            }
-            meta={
-              <div className="mt-4 flex items-center gap-4 flex-wrap text-xs text-subtle">
-                {regionName && (
-                  <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {regionName}</span>
-                )}
-                <span className="flex items-center gap-1"><CalendarDays className="w-3 h-3" /> Joined {joinedDate}</span>
-                {circles.length > 0 && (
-                  <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {circles.length} {circles.length === 1 ? 'circle' : 'circles'}</span>
-                )}
-              </div>
-            }
           />
 
           {/* ── Gamification: rank · core stats · achievements ─── */}
@@ -371,7 +376,7 @@ export default async function ProfilePage({
           viewerRole={myRole}
         />
       )}
-    </div>
+    </DetailTemplate>
   )
 }
 

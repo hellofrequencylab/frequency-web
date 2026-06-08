@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { MapPin } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { FocusTemplate } from '@/components/templates'
 import { ClaimButton } from './claim-button'
 
 export const dynamic = 'force-dynamic'
@@ -36,23 +37,27 @@ export default async function NodePage({
   }
 
   return (
-    <div className="max-w-md mx-auto text-center py-12">
-      <div className="w-16 h-16 mx-auto rounded-2xl bg-primary-bg text-primary-strong flex items-center justify-center">
-        <MapPin className="w-8 h-8" />
+    <FocusTemplate
+      width="narrow"
+      divider={false}
+      title={node.label ?? 'Check in'}
+      description={partnerName ? `at ${partnerName}` : undefined}
+    >
+      <div className="text-center">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-bg text-primary-strong">
+          <MapPin className="h-8 w-8" />
+        </div>
+
+        <p className="mt-4 text-sm text-muted">
+          {node.zaps_value > 0
+            ? `Claim this spot to earn ${node.zaps_value} zaps.`
+            : 'Claim this spot.'}
+        </p>
+
+        <div className="mt-6 flex justify-center">
+          <ClaimButton nodeId={node.id} secret={secret ?? null} />
+        </div>
       </div>
-
-      <h1 className="text-2xl font-bold text-text mt-4">{node.label ?? 'Check in'}</h1>
-      {partnerName && <p className="text-sm text-muted mt-1">at {partnerName}</p>}
-
-      <p className="text-sm text-muted mt-4">
-        {node.zaps_value > 0
-          ? `Claim this spot to earn ${node.zaps_value} zaps.`
-          : 'Claim this spot.'}
-      </p>
-
-      <div className="mt-6 flex justify-center">
-        <ClaimButton nodeId={node.id} secret={secret ?? null} />
-      </div>
-    </div>
+    </FocusTemplate>
   )
 }

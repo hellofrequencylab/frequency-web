@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft, Globe, Lock, Link2, CheckCircle, Heart, GitFork, Clock, Pencil, Users } from 'lucide-react'
+import { DetailTemplate } from '@/components/templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getPlan, planPillarMap, isPlanAdopted, type JourneyPlanItem } from '@/lib/journey-plans'
 import { listPublicPractices } from '@/lib/practices'
@@ -90,43 +91,47 @@ export default async function JourneyPlanPage({
         </div>
       )}
 
-      {/* Identity header */}
-      <div className="rounded-3xl border border-border bg-surface p-5 shadow-sm">
-        <div className="flex items-start gap-4">
-          <div
-            className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl text-3xl"
-            style={{ backgroundColor: accentTint(plan.accent, 16), color: accentColor(plan.accent) }}
-          >
-            {plan.emoji || '🧭'}
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-bold text-text">{plan.title}</h1>
-              <span className="inline-flex items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5 text-xs font-medium text-muted">
-                {plan.visibility === 'public' ? <Globe className="h-3 w-3" /> : plan.visibility === 'unlisted' ? <Link2 className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
-                {plan.visibility === 'public' ? 'Public' : plan.visibility === 'unlisted' ? 'Unlisted' : 'Private'}
-              </span>
-            </div>
-            {plan.summary && <p className="mt-1 text-sm leading-relaxed text-muted">{plan.summary}</p>}
-            {plan.adopt_count > 0 && (
-              <p className="mt-2 inline-flex items-center gap-1 text-xs text-subtle">
-                <Users className="h-3 w-3" /> {plan.adopt_count} {plan.adopt_count === 1 ? 'person on this path' : 'people on this path'}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Pillar coverage */}
-        <div className="mt-4 flex flex-wrap gap-1.5">
-          {pillars.map((pl) => {
-            const n = coverage.get(pl.id) ?? 0
-            return (
-              <span key={pl.slug} className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${n > 0 ? 'bg-primary-bg text-primary-strong' : 'bg-surface-elevated text-subtle'}`}>
-                {pl.name} {n > 0 ? n : ''}
-              </span>
-            )
-          })}
-        </div>
+      <DetailTemplate
+        title={
+          <span className="inline-flex items-center gap-3 align-middle">
+            <span
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-2xl"
+              style={{ backgroundColor: accentTint(plan.accent, 16), color: accentColor(plan.accent) }}
+            >
+              {plan.emoji || '🧭'}
+            </span>
+            <span className="min-w-0 break-words">{plan.title}</span>
+          </span>
+        }
+        subtitle={
+          (plan.summary || plan.adopt_count > 0) ? (
+            <span className="flex flex-col gap-1">
+              {plan.summary && <span className="leading-relaxed">{plan.summary}</span>}
+              {plan.adopt_count > 0 && (
+                <span className="inline-flex items-center gap-1 text-xs text-subtle">
+                  <Users className="h-3 w-3" /> {plan.adopt_count} {plan.adopt_count === 1 ? 'person on this path' : 'people on this path'}
+                </span>
+              )}
+            </span>
+          ) : undefined
+        }
+        badges={
+          <span className="inline-flex items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5 text-xs font-medium text-muted">
+            {plan.visibility === 'public' ? <Globe className="h-3 w-3" /> : plan.visibility === 'unlisted' ? <Link2 className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
+            {plan.visibility === 'public' ? 'Public' : plan.visibility === 'unlisted' ? 'Unlisted' : 'Private'}
+          </span>
+        }
+      >
+      {/* Pillar coverage */}
+      <div className="flex flex-wrap gap-1.5">
+        {pillars.map((pl) => {
+          const n = coverage.get(pl.id) ?? 0
+          return (
+            <span key={pl.slug} className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${n > 0 ? 'bg-primary-bg text-primary-strong' : 'bg-surface-elevated text-subtle'}`}>
+              {pl.name} {n > 0 ? n : ''}
+            </span>
+          )
+        })}
       </div>
 
       {/* Intro / story */}
@@ -200,6 +205,7 @@ export default async function JourneyPlanPage({
           </div>
         </section>
       )}
+      </DetailTemplate>
     </div>
   )
 }
