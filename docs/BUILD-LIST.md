@@ -177,9 +177,11 @@ from role), the role-based proxies are wrong and must move to the tier.
 | # | Item | Status |
 |---|---|---|
 | PB.2a | Dedup the `Stat` components. ✅ The identical *de-boxed* stat in `/circles` + `/channels` → shared `StatInline`. Remaining: `practices/[id]` (bordered+icon), `admin/qr/analytics` (has `delta`/`detail`/`link`), `admin/qr/stats` are distinct visuals — fold into `StatCard`/`StatInline` variants. | ⏳ |
-| PB.2b | Re-compose the quick wins onto templates: `/support`, `/growth`, `/crew/quests`, `/crew/store/ledger` (IndexTemplate) | 📋 quick win |
-| PB.2c | Re-compose the crew section + broadcast: `/crew` (Dashboard), `/broadcast` (Stream), `/crew/store`, achievements, challenges, journey, streaks | 📋 |
-| PB.2d | Re-compose the heavy detail pages: `/people/[handle]`, `/journeys/[slug]` (DetailTemplate) | 📋 |
+| PB.2b | Quick wins → kit. ✅ `/support` + `/growth` recomposed (IndexTemplate + EmptyState). `/crew/quests` + `/crew/store/ledger` were **already** composing PageHeading + StatCard + EmptyState. | ✅ |
+| PB.2c | Crew section + broadcast headers → shared `PageHeading`. ✅ `/crew` + `/broadcast` (the two raw-`<h1>` offenders). achievements · challenges · journey · streaks **already** compose PageHeading/IndexTemplate — verified. | ✅ |
+| PB.2d | Remaining genuine offenders: `/crew/store` (bespoke Vault-aside header) + the detail pages `/people/[handle]`, `/journeys/[slug]` → DetailTemplate. | 📋 **remaining** |
+
+> **Audit recalibration:** the "46% hand-rolled" overcounted — many pages compose `PageHeading`/`StatCard`/`EmptyState` directly without the template *wrapper*, which is correct (e.g. where a back-link/eyebrow is needed). The real cobbling is pages that hand-roll the *primitives* (raw `<h1>`, bespoke empties/stats): `/support`, `/growth`, `/circles`+`/channels` (StatInline), `/crew`, `/broadcast` — now fixed — leaving PB.2d.
 
 *(Specialist surfaces — message threads, editors, QR/CRM tools, scan landings — stay custom by
 design; ~27 pages.) Token hygiene is good: **zero** `text-[Npx]`, only 3 acceptable hardcoded-hex
