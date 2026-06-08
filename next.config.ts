@@ -1,30 +1,46 @@
 import type { NextConfig } from "next";
 
-// A Content-Security-Policy in REPORT-ONLY mode (P8 hardening). It never blocks —
-// it only reports what an ENFORCED policy would catch (to /api/csp-report) — so we can
-// see the real source set (the inline theme script + JSON-LD need nonces before we can
-// enforce) and tighten toward `Content-Security-Policy` without breaking anything. The
-// `https:`/`data:` allowances for img/media are deliberately generous for this baseline.
-const cspReportOnly = [
+// An ENFORCED Content-Security-Policy (P8 hardening, ADR-170). Graduated from
+// report-only after the report-only pass confirmed the real source set.
+//
+// What this blocks NOW: clickjacking (`frame-ancestors 'self'`), `<base>`-tag
+// injection (`base-uri 'self'`), form hijacking (`form-action 'self'`), plugins
+// (`object-src 'none'`), and data-exfiltration to any host outside the verified
+// `connect-src` allowlist — plus `eval()` as an XSS vector (dropped in production;
+// React/Next only need it in dev). `'wasm-unsafe-eval'` keeps the WASM rasterizer
+// (resvg) and maplibre working.
+//
+// The one directive still permissive: `script-src` keeps `'unsafe-inline'`. Next's
+// App Router emits inline RSC streaming scripts on every page, so dropping inline
+// without nonces (which force every page dynamic — see ADR-170) or experimental SRI
+// would break hydration site-wide. The full inline-script XSS mile is the tracked
+// follow-up; everything around it is enforced today.
+const isDev = process.env.NODE_ENV === 'development'
+const csp = [
   "default-src 'self'",
   "base-uri 'self'",
   "object-src 'none'",
   "frame-ancestors 'self'", // matches X-Frame-Options SAMEORIGIN (clickjacking)
   "form-action 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://va.vercel-scripts.com https://*.vercel.live",
+  // 'unsafe-inline' retained for Next's inline RSC scripts; 'unsafe-eval' is dev-only
+  // (React debug); 'wasm-unsafe-eval' for the resvg WASM rasterizer + maplibre.
+  `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${isDev ? " 'unsafe-eval'" : ''} https://www.googletagmanager.com https://va.vercel-scripts.com https://*.vercel.live`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://vitals.vercel-insights.com https://*.vercel.live",
+  // connect-src is the exfiltration gate — every runtime fetch/XHR/WS target is listed:
+  // Supabase (REST + realtime), GA, Vercel insights/live, OpenFreeMap tiles (maplibre),
+  // Photon (address geocoding), ipapi (IP geo).
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://vitals.vercel-insights.com https://*.vercel.live https://tiles.openfreemap.org https://photon.komoot.io https://ipapi.co",
   "frame-src 'self' https://*.vercel.live https://www.youtube.com https://player.vimeo.com",
   "media-src 'self' blob: https:",
   "worker-src 'self' blob:",
-  'report-uri /api/csp-report',
+  'report-uri /api/csp-report', // keep reporting even while enforcing — catch any miss
 ].join('; ')
 
 // Baseline security headers applied to every route. X-Frame-Options is SAMEORIGIN (not
 // DENY) so the Puck editor's same-origin preview iframe keeps working while cross-origin
-// clickjacking is still blocked. CSP runs report-only until the inline scripts get nonces.
+// clickjacking is still blocked. CSP is now ENFORCED (graduated from report-only).
 const securityHeaders = [
   { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
   { key: 'X-Content-Type-Options', value: 'nosniff' },
@@ -32,7 +48,7 @@ const securityHeaders = [
   { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
   // Map uses the Geolocation API; camera/microphone are never used.
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(self)' },
-  { key: 'Content-Security-Policy-Report-Only', value: cspReportOnly },
+  { key: 'Content-Security-Policy', value: csp },
 ]
 
 const nextConfig: NextConfig = {
