@@ -38,8 +38,9 @@ export function maxLevel(a: AccessLevel, b: AccessLevel): AccessLevel {
 
 // ── New axes the matrix introduces (see docs/ROLES.md). Defined here so the matrix
 //    is self-contained until the dedicated tables land (P1.3 / P2 / P3). ──────────
-/** Billing entitlement — orthogonal to every role. Free → Member (paid) → Supporter. */
-export type EntitlementTier = 'free' | 'member' | 'supporter'
+/** Billing entitlement — the membership axis, orthogonal to every role.
+ *  Member (free) → Crew (paid) → Supporter. "Everyone is part of the Crew on the paid tier." */
+export type EntitlementTier = 'free' | 'crew' | 'supporter'
 
 /** Self-serve partner personas (multi-select hats). */
 export type PartnerPersona = 'collaborator' | 'practitioner' | 'business' | 'organization'
@@ -69,7 +70,9 @@ type Row = Partial<Record<MatrixColumn, AccessLevel>> // omitted column ⇒ 'non
 // Shared row shapes (kept DRY — many surfaces share a cell pattern).
 const COMMUNITY_OPEN: Row = { visitor: 'limited', member: 'full' } // browse as visitor, full as member
 const QUEST_OPEN: Row = { visitor: 'limited', member: 'full' }
-const PAID_GATE: Row = { member: 'limited', crew: 'full' } // free preview → paid unlock (✋→✅)
+// Free preview → paid unlock (✋→✅). Stewards (host+) get full regardless of payment —
+// access to their tools is granted by the role, not the membership.
+const PAID_GATE: Row = { member: 'limited', crew: 'full', host: 'full' }
 const EVERYONE: Row = { visitor: 'full', member: 'full' } // universal (Status, Settings)
 
 // THE MATRIX. Encodes docs/ROLES.md › "The access matrix". Omitted columns ⇒ 'none'.
@@ -96,10 +99,10 @@ export const ACCESS_MATRIX: Record<Surface, Row> = {
   journeys: QUEST_OPEN,
   practices: QUEST_OPEN,
   library: QUEST_OPEN,
-  vault: { visitor: 'limited', member: 'limited', crew: 'full' }, // paid gate
+  vault: { visitor: 'limited', member: 'limited', crew: 'full', host: 'full' }, // paid gate; stewards full
 
   // ── Studio — stewardship + the partner business block ───────────────────────────
-  studioOverview: { visitor: 'limited', member: 'limited', crew: 'full' },
+  studioOverview: { visitor: 'limited', member: 'limited', crew: 'full', host: 'full' },
   support: { member: 'full' }, // Help Center — members+; visitor 🚫
   personalCrm: PAID_GATE, // Connections / personal CRM — free preview → paid
   businessCrm: { practitioner: 'limited', business: 'full', organization: 'full', analyst: 'full', admin: 'full', janitor: 'full' },
@@ -132,9 +135,9 @@ export type Hats = {
   staff?: StaffRole | null
 }
 
-/** True when the viewer holds a paid membership (the entitlement unlock). */
+/** True when the viewer holds a paid membership — Crew or Supporter (the entitlement unlock). */
 export function isPaid(tier: EntitlementTier | null | undefined): boolean {
-  return tier === 'member' || tier === 'supporter'
+  return tier === 'crew' || tier === 'supporter'
 }
 
 /**
@@ -146,17 +149,17 @@ export function columnsForHats(h: Hats): Set<MatrixColumn> {
 
   const cols = new Set<MatrixColumn>(['member']) // logged-in baseline
 
-  // Entitlement: a paid tier — OR, until the tier flag is wired, a crew-or-above
-  // community role (today's `isCrew = role !== 'member'` proxy) — unlocks the paid column.
-  if (isPaid(h.tier) || roleRank(h.role) >= roleRank('crew')) cols.add('crew')
+  // Entitlement → the paid ('crew') column. DECOUPLED from role (§11.2): paid is the
+  // billing tier ONLY. The community 'crew' role is pure stewardship — member-level on
+  // surfaces; its circle-helper powers live in the per-scope resolver, not here.
+  if (isPaid(h.tier)) cols.add('crew')
 
-  // Stewardship ladder is cumulative & monotonic: a role grants its column and every
-  // lower rung (so a Mentor covers Host/Guide; Admin/Janitor reach their columns too).
+  // Stewardship ladder — member → host → guide → mentor → admin → janitor. The 'crew'
+  // rung is intentionally skipped (it's the paid column above, not a surface tier).
+  // Cumulative & monotonic: a Mentor covers Host/Guide; Admin/Janitor reach theirs too.
   const r = roleRank(h.role)
-  if (r >= 0) {
-    for (const rung of ROLE_HIERARCHY) {
-      if (roleRank(rung) <= r) cols.add(rung as MatrixColumn)
-    }
+  for (const rung of ROLE_HIERARCHY) {
+    if (rung !== 'crew' && roleRank(rung) <= r) cols.add(rung as MatrixColumn)
   }
 
   // Partner personas — independent hats, each lights its own column.

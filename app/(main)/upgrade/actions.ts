@@ -5,7 +5,11 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
-export async function toggleCrewRole(): Promise<ActionResult<{ role: string }>> {
+// Membership is the ENTITLEMENT axis (profiles.membership_tier), orthogonal to the
+// community role (ADR-163 §11.2). Upgrading no longer touches community_role — Crew is
+// a pure stewardship role now. During beta this is a free self-serve toggle; real
+// upgrades (free → member → supporter) route through billing (P2.2).
+export async function toggleMembership(): Promise<ActionResult<{ tier: string }>> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return fail('Not signed in')
@@ -13,28 +17,23 @@ export async function toggleCrewRole(): Promise<ActionResult<{ role: string }>> 
   const admin = createAdminClient()
   const { data: profile } = await admin
     .from('profiles')
-    .select('id, community_role')
+    .select('id, membership_tier')
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
   if (!profile) return fail('Profile not found')
 
-  const currentRole = profile.community_role as string
-
-  // Only toggle between member and crew. Don't touch host+ roles.
-  if (!['member', 'crew'].includes(currentRole)) {
-    return fail('Your role is managed by community leadership')
-  }
-
-  const newRole = currentRole === 'crew' ? 'member' : 'crew'
+  // Beta toggle: free ↔ crew (the paid membership). 'supporter' is reserved for billing.
+  const current = (profile.membership_tier ?? 'free') as string
+  const next = current === 'free' ? 'crew' : 'free'
 
   const { error } = await admin
     .from('profiles')
-    .update({ community_role: newRole })
+    .update({ membership_tier: next })
     .eq('id', profile.id)
 
   if (error) return fail(error.message)
 
   revalidatePath('/', 'layout')
-  return ok({ role: newRole })
+  return ok({ tier: next })
 }

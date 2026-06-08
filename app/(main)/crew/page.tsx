@@ -16,6 +16,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { ModuleCard } from '@/components/modules/module-card'
 import { CrewPreviewBanner } from '@/components/crew/crew-preview-banner'
 import { isPaidViewer } from '@/lib/core/viewer-hats'
+import { PageHeading } from '@/components/templates/page-heading'
 
 const TASK_TYPE_LABEL: Record<string, string> = {
   attendance:   'Attendance',
@@ -160,26 +161,26 @@ export default async function CrewPage() {
   return (
     <div>
       {!isCrew && <CrewPreviewBanner />}
-      {/* ── Header ──────────────────────────────────── */}
-      <div className="flex items-end justify-between gap-4 mb-6">
-        <div>
-          <div className="flex items-center gap-2 flex-wrap mb-1">
-            <h1 className="text-2xl font-bold text-text">Crew Dashboard</h1>
+      <PageHeading
+        title={
+          <span className="inline-flex flex-wrap items-center gap-2">
+            Crew Dashboard
             {isCrewLead && (
-              <span className="text-xs px-2 py-0.5 rounded-md bg-warning-bg dark:bg-warning-bg text-warning font-semibold">
+              <span className="rounded-md bg-warning-bg px-2 py-0.5 text-xs font-semibold text-warning">
                 Crew Lead
               </span>
             )}
-          </div>
-          <p className="text-sm text-muted leading-relaxed max-w-2xl">
-            Your contributions and season progress. Keep showing up and the rank
-            comes with it.
+          </span>
+        }
+        description={
+          <>
+            Your contributions and season progress. Keep showing up and the rank comes with it.
             {circleName && (
               <> You&apos;re in <span className="font-medium text-text">{circleName}</span>.</>
             )}
-          </p>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* ── Season banner + live countdown ──────────── */}
       {season && (

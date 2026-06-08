@@ -10,6 +10,7 @@ import { NewChannelCompose } from './new-channel-compose'
 import { IndexTemplate } from '@/components/templates/index-template'
 import { PageContents } from '@/components/templates/page-contents'
 import { SectionHeader } from '@/components/ui/section-header'
+import { StatInline } from '@/components/ui/stat-inline'
 import { EmptyState } from '@/components/ui/empty-state'
 import { EntityCard } from '@/components/cards/entity-card'
 
@@ -198,10 +199,10 @@ export default async function ChannelsPage() {
           <section>
             <SectionHeader title="At a glance" />
             <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-              <Stat value={stats.channels} label="Channels" />
-              <Stat value={stats.interests} label="Interests" />
-              <Stat value={stats.tunedIn} label="Tuned in" />
-              <Stat value={stats.circles} label="Circles" />
+              <StatInline value={stats.channels} label="Channels" />
+              <StatInline value={stats.interests} label="Interests" />
+              <StatInline value={stats.tunedIn} label="Tuned in" />
+              <StatInline value={stats.circles} label="Circles" />
             </div>
           </section>
 
@@ -306,16 +307,6 @@ function TopicGrid({
           canToggle={canToggle}
         />
       ))}
-    </div>
-  )
-}
-
-// De-boxed stat — a value over a label, in the right column.
-function Stat({ value, label }: { value: number; label: string }) {
-  return (
-    <div>
-      <div className="text-xl font-bold leading-none tabular-nums text-text">{value.toLocaleString()}</div>
-      <div className="mt-1 text-xs text-subtle">{label}</div>
     </div>
   )
 }

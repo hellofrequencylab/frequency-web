@@ -5,7 +5,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
-import { atLeastRole } from '@/lib/core/roles'
+import { isPaid } from '@/lib/core/entitlement'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { parseStyle, type QrStyle } from '@/lib/qr/style'
 import { generateSlug } from '@/lib/qr/codes'
@@ -37,11 +37,11 @@ export interface MarketingInput {
   style: QrStyle
 }
 
-/** Crew-gated caller id, or an error message. */
+/** Crew (paid-tier)-gated caller id, or an error message. */
 async function requireCrew(): Promise<{ id: string } | string> {
   const me = await getCallerProfile()
   if (!me) return 'Sign in first.'
-  if (!atLeastRole(me.community_role, 'crew')) return 'Marketing codes are a Crew feature.'
+  if (!isPaid(me.membershipTier)) return 'Marketing codes are a Crew (paid membership) feature.'
   return { id: me.id }
 }
 

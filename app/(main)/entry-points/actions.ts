@@ -9,7 +9,7 @@
 import { revalidatePath } from 'next/cache'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { getCallerProfile } from '@/lib/auth'
-import { atLeastRole } from '@/lib/core/roles'
+import { isPaid } from '@/lib/core/entitlement'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { generateSlug } from '@/lib/qr/codes'
 import { STYLE_PRESETS, DEFAULT_STYLE, parseStyle } from '@/lib/qr/style'
@@ -47,10 +47,11 @@ interface CleanEntry {
   style: Json
 }
 
+// Crew = the paid membership tier. Entry points are a paid (Crew) feature.
 async function requireCrew(): Promise<{ id: string } | string> {
   const me = await getCallerProfile()
   if (!me) return 'Sign in first.'
-  if (!atLeastRole(me.community_role, 'crew')) return 'Entry points are a Crew feature.'
+  if (!isPaid(me.membershipTier)) return 'Entry points are a Crew (paid membership) feature.'
   return { id: me.id }
 }
 

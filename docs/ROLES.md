@@ -9,14 +9,14 @@
 ## The shape: three independent systems + a billing entitlement
 
 Access is the **union** of four orthogonal things. A person can hold a position in each
-at once (e.g. a **Host** of one circle, a paid **Member**, a **Practitioner + Collaborator**,
+at once (e.g. a **Host** of one circle, a paid **Crew** member, a **Practitioner + Collaborator**,
 and **Support** staff). Adding a role anywhere lights up its surfaces; nothing else changes.
 
 | Layer | Answers | How you get it | Stored as | Stack? |
 |---|---|---|---|---|
 | **1 · Community** | how much do you steward, *where*? | community position | stewardship **edges** (role × place) | one per scope |
-| **· Entitlement** | free, member, or supporter? | self-serve billing | flag | n/a |
-| **2 · Partners** | what are you here to do/sell? | **sign up** for the account role | persona rows (multi-select) | yes — any combo |
+| **· Entitlement** | Member (free), Crew (paid), or Supporter? | self-serve billing | tier flag | n/a |
+| **2 · Partners** | what are you here to do/sell? | **paid upgrade package** (sign up) | persona rows (multi-select) | yes — any combo |
 | **3 · Admin** | what platform tooling do you run? | granted, top-down | super-ladder + capability matrix | one |
 
 ## The place tree + overlays
@@ -34,31 +34,36 @@ unit; city/region grouping is `nexus_regions`. *(Outpost is no longer the top co
 ## System 1 — Community (scoped stewardship ladder)
 
 A role is a **stewardship edge** `(person · role · scope)`; the global level is *derived*
-from the highest edge. Platform `admin`/`janitor` are **not** here (→ System 3).
+from the highest edge. These are the **management roles — extra work, layered on top of
+membership.** Platform `admin`/`janitor` are **not** here (→ System 3), and **Crew is not a
+rung here — it's the paid membership tier** (→ Entitlement).
 
 | Role | Scope | Responsibility | Unlocks |
 |---|---|---|---|
 | 🌱 **Member** | global (base) | participate, show up, contribute | post/engage, RSVP, log practices, DM friends |
-| ⚙️ **Crew** | a Circle | volunteer support + accountability | circle admin dashboard + task list; admin-helper |
 | 🔑 **Host** | a Circle | **admin-manages their own circle(s)** as host | manage circle page, set events, dispatch, `@everyone`, DM/group within the circle |
 | 🧭 **Guide** | a Hub | **oversees a Hub of local circles** | manage all circles under them; `@hosts`; `@hub` dispatch + hub dashboard |
 | 🌟 **Mentor** | a Nexus | **oversees the Guides' hubs** (a Nexus of hubs) | `@nexus`; deep Nexus admin dashboard |
 | 📍 **Outpost Lead** | an Outpost *(overlay)* | convenes the local in-person community | runs the Outpost's events + calendar; cross-engages its Circles; usually also a Host/Guide/Mentor |
 
 Broadcasts flow **downward by scope**: Mentor → Nexus · Guide → Hub · Host → Circle ·
-Channel/Outpost lead → its members.
+Channel/Outpost lead → its members. **Management roles get the full member site** (they need it
+to do the work) — access comes from the role, not from paying.
 
-## Entitlement — Free → Member → Supporter (billing axis)
+## Entitlement — Member (free) → Crew (paid) → Supporter (billing axis)
 
-Orthogonal to every role.
+The **membership** axis, orthogonal to every role. *"Everyone is part of the Crew on the paid
+tier — that's the membership point."*
 
 | Tier | Cost | Access |
 |---|---|---|
-| 🆓 **Free** *(default)* | $0 | The **entire program** — community, circles, practices, events, Capture, messaging — **except gamification (the Quest cash-in) and special role/partner features**. |
-| 💳 **Member** *(paid membership)* | paid | **Everything** — gamification on (claim/spend/compete; rewards already accrue for all in the Vault) **+** the special role/partner features. |
-| 💖 **Supporter** | pays more | Everything a Member has, **plus a special Supporter badge** — recognition for contributing beyond the membership. |
+| 🌱 **Member** *(free, default)* | $0 | The community to **participate** — but with **limited ✋ access**: some areas are greyed out (the Quest cash-in / Vault, and the paid-only surfaces). |
+| 🚀 **Crew** *(paid membership)* | paid | **The full member site — no core feature is limited.** Gamification cash-in on (claim/spend/compete; rewards already accrue for all in the Vault). This is the membership. |
+| 💖 **Supporter** | pays more | Everything Crew has, **plus a special Supporter badge** — recognition for contributing beyond the membership. |
 
-*(Replaces the old "crew = paid" overload: Crew is now purely a stewardship role; paying is this axis.)*
+**Partner packages are separate paid upgrades** (a higher monthly rate for added services) —
+Practitioner · Collaborator · Business · Organization (→ System 2). Stored as `membership_tier`
+(`free` → `crew` → `supporter`); paying for a partner package is its own persona + billing.
 
 ## System 2 — Partners (self-serve account roles · multi-select hats)
 
@@ -125,8 +130,8 @@ access = union of
 Encodes the owner's **Roles & Permissions** sheet (2026-06-08). Legend: **✅ full** ·
 **✋ limited** (logged-out preview / free-tier or upgrade-gated / scoped partial) ·
 **🚫 none**. Columns are the role & persona hats; access to a surface is the **most-open**
-cell across every hat a person holds. *(Crew here = the old paid column; under the new model
-the ✋→✅ jump is the **Entitlement** gate, not the Crew stewardship role.)*
+cell across every hat a person holds. *(The **Crew** column = the **paid membership tier** — the
+✋→✅ jump is the Entitlement gate. Stewardship is the separate Host/Guide/Mentor ladder.)*
 
 | Surface | Vis | Mbr | Crew | Host | Guide | Mntr | Coll | Prac | Biz | Org | Anl | Adm | Jan |
 |---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|

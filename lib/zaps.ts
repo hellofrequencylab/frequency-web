@@ -14,7 +14,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Database } from '@/lib/database.types'
 import { BETA_MEMBERS_GET_CREW } from '@/lib/onboarding/beta-script'
-import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
+import { isPaid, type EntitlementTier } from '@/lib/core/entitlement'
 
 // Free members climb the zap ladder at a reduced rate; Crew earn full rate
 // (ECONOMY-AND-JOURNEYS §6 — locked). Gems stay easy for everyone; only zaps are
@@ -22,18 +22,18 @@ import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
 // until that flag flips off at Launch. Tunable here.
 export const MEMBER_ZAP_RATE = 0.5
 
-/** Apply the member zap-rate to a base amount. Crew (and all of Beta) earn full;
+/** Apply the member zap-rate to a base amount. Paid (Crew, and all of Beta) earn full;
  *  a free member earns `MEMBER_ZAP_RATE` of it (floored, but never below 1 so a
- *  grant is never silently zeroed). One role lookup, skipped entirely in Beta. */
+ *  grant is never silently zeroed). Gated on the membership TIER, not the role; one
+ *  lookup, skipped entirely in Beta. */
 async function effectiveZaps(
   admin: ReturnType<typeof createAdminClient>,
   profileId: string,
   amount: number,
 ): Promise<number> {
   if (BETA_MEMBERS_GET_CREW) return amount
-  const { data } = await admin.from('profiles').select('community_role').eq('id', profileId).maybeSingle()
-  const role = (data?.community_role ?? 'member') as CommunityRole
-  if (atLeastRole(role, 'crew')) return amount
+  const { data } = await admin.from('profiles').select('membership_tier').eq('id', profileId).maybeSingle()
+  if (isPaid((data?.membership_tier ?? 'free') as EntitlementTier)) return amount
   return Math.max(1, Math.floor(amount * MEMBER_ZAP_RATE))
 }
 
