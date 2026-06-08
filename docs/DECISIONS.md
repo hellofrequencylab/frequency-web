@@ -5303,3 +5303,38 @@ enough for now).
 bump); no read-path break. Season rank and lifetime rank are now two distinct stats; the Vault
 headline reads the locked peak. `lib/season-ranks.ts` mirrors the enum order (`RANK_ORDER`,
 `higherRank`) so app code compares ranks without a DB round-trip.
+
+## ADR-165 — Partner persona verification: a staff-gated state machine, surfaces light on verified
+
+**Status:** Accepted · built (migration `20260608070000_persona_verification.sql`).
+**Implements:** P2.7 (verification half) / ADR-163 System 2. **Spec:** [ROLES.md](ROLES.md) "System 2 — Partners".
+
+**Context.** `profile_personas` carried the state column (`claimed → verified → active →
+suspended`) and the money-binding columns (`stripe_account_id`, `entity_id`), but the
+self-serve claim jumped straight to `active` and `getActivePersonas` lit a persona's
+surfaces on *anything not suspended* — so a bare claim immediately unlocked partner tools,
+with no vetting and no audit trail. Per-persona Stripe Connect binding isn't configured yet.
+
+**Decision.** Build the **verification half** now; keep the **money binding** stubbed.
+- **Surfaces light on `verified` + `active` only** (`LIVE_PERSONA_STATES`). A bare `claimed`
+  is *pending review* — its tools wait on a staff verify. `suspended` is off.
+- **Member self-serve** = claim (→ `claimed`, clearing any prior verification) / release
+  (→ `suspended`). It no longer grants tools directly.
+- **Staff ladder** (the admin queue, `/admin/personas`, janitor OR `profiles`-domain staff):
+  `claimed → verified → active`, plus suspend from any held state and reinstate
+  (`suspended → verified`). Transitions are validated against an allow-map
+  (`canStaffTransition`) — no skipping verify, no demotions.
+- **Audit trail**: added `verified_at`, `verified_by`, `notes`, and a maintained
+  `updated_at` (generic `set_updated_at` trigger). Verifying stamps who/when.
+- The Connect binding (`stripe_account_id`) stays the unbuilt gate at `active` — activation
+  is allowed today without it; it becomes a precondition when Connect lands.
+
+**Alternatives.** Auto-verify low-stakes personas (Collaborator) and gate only money ones
+(rejected for now — a uniform ladder is simpler and the owner is the verifier in Beta). Light
+surfaces on `claimed` and gate only money features (rejected — verification should have teeth;
+the table was empty, so no member lost access).
+
+**Consequences.** Claiming a partner program is now a request, not an instant unlock — the
+team verifies before tools turn on. `getActivePersonas` semantics narrowed (verified/active),
+which the access matrix consumes unchanged. New admin surface under **People**. The money
+binding remains the one piece left for the Connect increment.

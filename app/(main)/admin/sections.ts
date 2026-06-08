@@ -36,6 +36,7 @@ import {
   QrCode,
   Power,
   FileText,
+  BadgeCheck,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
@@ -123,6 +124,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     links: [
       { href: '/admin/members', label: 'Members', desc: 'Roster, subscribers, and accounts.', Icon: Users, min: 'janitor' },
       { href: '/admin/roles', label: 'Roles', desc: 'Assign roles and the permission grid.', Icon: Shield, min: 'janitor' },
+      { href: '/admin/personas', label: 'Partner verification', desc: 'Vet and verify partner persona claims.', Icon: BadgeCheck, min: 'janitor', staffDomain: 'profiles' },
     ],
   },
   {

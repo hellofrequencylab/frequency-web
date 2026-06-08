@@ -21,6 +21,13 @@ describe('railFor — the single source of truth for page chrome', () => {
       '/broadcast',
       '/search',
       '/crew',
+      // Operator / steward DASHBOARDS keep the uniform slim stats rail like the rest
+      // of the app (page-chrome.ts §FOCUS_PREFIXES note — a consistent right column
+      // site-wide; the rail is a thin strip, so no double-rail cost).
+      '/marketing',
+      '/marketing/analytics',
+      '/crm',
+      '/outreach',
     ]) {
       expect(railFor(p), p).toBe('global')
     }
@@ -38,10 +45,6 @@ describe('railFor — the single source of truth for page chrome', () => {
     for (const p of [
       '/settings',
       '/settings/account', // other settings stay Focus
-      '/marketing',
-      '/marketing/analytics',
-      '/crm',
-      '/outreach',
       '/codes',
       '/upgrade',
       '/g/abc123',
