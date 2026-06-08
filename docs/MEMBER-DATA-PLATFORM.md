@@ -44,15 +44,15 @@ backfill. Five capabilities (full status in [BUILD-LIST.md](BUILD-LIST.md) PI):
 | **PI.4 AI Studio** | Claude reads aggregates → ranked, falsifiable **site-change** hypotheses → each spawns an experiment → measures lift | `lib/experiments` + `lib/ai` kernel + `admin/insights` |
 | **PI.5 Retroactive rewards** | rule DSL over historical events/ledgers/traits + idempotent batch grant — reward *past* behavior from a rule defined *today* | the append-only gem/zap ledgers + idempotency |
 
-## Two kinds of trait — kept separate
+## Three kinds of trait — kept separate
 
-| | **Tag** | **Computed trait** |
-|---|---|---|
-| Nature | declarative membership, asserted | derived from the ledger |
-| Examples | `web_beta`, `founder`, `host`, `vip` | `lifecycle_stage`, `join_cohort`, `wam_status`, `rfm_score` |
-| Provenance | `source`, `assigned_at`, `expires_at` | `derivation`, `computed_at` |
-| Storage | `member_tags` (rows) | `member_traits` (projection, Phase 2) |
-| Freshness | `static` | `nightly` / `realtime` |
+| | **Tag** | **Computed trait** | **Predicted trait** (PI.3) |
+|---|---|---|---|
+| Nature | declarative membership, asserted | derived from the ledger + interaction firehose | forward-looking inference over the feature store |
+| Examples | `web_beta`, `founder`, `host`, `vip` | `lifecycle_stage`, `wam_status`, `rfm_score`, `engagement_depth` | `churn_risk`, `activation_propensity`, `next_best_action` |
+| Provenance | `source`, `assigned_at`, `expires_at` | `derivation`, `computed_at` | `derivation` (heuristic v1 → model later), `computed_at` |
+| Storage | `member_tags` (rows) | `member_traits` (projection) | `member_traits` (same projection) |
+| Freshness | `static` | `nightly` / `realtime` | `nightly` |
 
 ## The registry *is* the library — `lib/traits/registry.ts`
 

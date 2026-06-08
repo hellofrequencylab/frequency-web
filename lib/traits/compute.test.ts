@@ -8,8 +8,13 @@ import {
   computeTraits,
   computeBehavioralTraits,
   engagementDepth,
+  churnRisk,
+  activationPropensity,
+  nextBestAction,
+  computePredictiveTraits,
   type MemberStats,
   type InteractionStats,
+  type PredictiveInputs,
 } from './compute'
 
 const DAY = 86_400_000
@@ -125,5 +130,49 @@ describe('computeBehavioralTraits', () => {
     expect(byKey.interaction_count_30).toBe(0)
     expect(byKey.engagement_depth).toBe('idle')
     expect(byKey.last_interaction_at).toBeNull()
+  })
+})
+
+const pbase: PredictiveInputs = {
+  lifecycle: 'engaged', rfmScore: 44, activated: true, engagementDepth: 'moderate',
+  interactionDays30: 4, surfaces30: 6, sessions30: 5, tenureDays: 60,
+}
+
+describe('churnRisk (PI.3)', () => {
+  it('escalates with lifecycle drift and shallow depth', () => {
+    expect(churnRisk({ ...pbase, lifecycle: 'dormant' })).toBe('high')
+    expect(churnRisk({ ...pbase, lifecycle: 'at_risk', engagementDepth: 'shallow' })).toBe('high')
+    expect(churnRisk({ ...pbase, lifecycle: 'at_risk', engagementDepth: 'deep' })).toBe('medium')
+    expect(churnRisk({ ...pbase, lifecycle: 'engaged', engagementDepth: 'moderate' })).toBe('low')
+    expect(churnRisk({ ...pbase, lifecycle: 'engaged', engagementDepth: 'idle' })).toBe('medium')
+  })
+})
+
+describe('activationPropensity (PI.3)', () => {
+  it('is 100 once activated, else scales with early engagement', () => {
+    expect(activationPropensity({ ...pbase, activated: true })).toBe(100)
+    const cold = activationPropensity({ ...pbase, activated: false, interactionDays30: 0, surfaces30: 0, sessions30: 0, tenureDays: 90 })
+    expect(cold).toBe(0)
+    const newish = activationPropensity({ ...pbase, activated: false, interactionDays30: 0, surfaces30: 0, sessions30: 0, tenureDays: 3 })
+    expect(newish).toBe(10) // baseline for a fresh joiner
+    const warm = activationPropensity({ ...pbase, activated: false, interactionDays30: 5, surfaces30: 5, sessions30: 4, tenureDays: 20 })
+    expect(warm).toBeGreaterThan(50)
+    expect(warm).toBeLessThanOrEqual(100)
+  })
+})
+
+describe('nextBestAction (PI.3)', () => {
+  it('follows the urgency ladder', () => {
+    expect(nextBestAction({ ...pbase, lifecycle: 'at_risk' })).toBe('reengage')
+    expect(nextBestAction({ ...pbase, activated: false })).toBe('activate')
+    expect(nextBestAction({ ...pbase, engagementDepth: 'deep' })).toBe('invite')
+    expect(nextBestAction({ ...pbase, surfaces30: 1 })).toBe('deepen')
+    expect(nextBestAction({ ...pbase, rfmScore: 12 })).toBe('join_circle')
+    expect(nextBestAction(pbase)).toBe('none')
+  })
+
+  it('computePredictiveTraits emits all three predicted keys', () => {
+    const keys = computePredictiveTraits(pbase).map((t) => t.key).sort()
+    expect(keys).toEqual(['activation_propensity', 'churn_risk', 'next_best_action'])
   })
 })
