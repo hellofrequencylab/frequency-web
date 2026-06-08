@@ -11,22 +11,38 @@ variables" is, precisely, a **registry** — definitions in git, values in Postg
 
 ---
 
-## The model — five layers
+## The model — six layers
 
 ```
-Identity → Events → TRAITS → SEGMENTS → Activation
-profiles   engagement   (tags +     (saved      campaigns /
-contacts   _events      computed)   audiences)  automation_rules / Vera
- ✅          ✅           ◑ P1        ⏳ P3         ✅
+Identity → Events → TRAITS → SEGMENTS → Activation → INTELLIGENCE
+profiles   engagement   (tags +     (saved      campaigns /   feature store +
+contacts   _events      computed)   audiences)  automation /  AI recommend +
+ ✅          ✅           ✅          ✅          Vera ✅        retro rewards 📋
 ```
 
 | Layer | What | Where |
 |---|---|---|
 | Identity | members, leads, staff | `profiles`, `contacts`, `team_members` |
-| Events | the raw behavioral truth (typed, idempotent) | `engagement_events` |
+| Events | the raw behavioral truth (typed, idempotent) | `engagement_events` ✅, `interaction_events` 📋 (PI.1) |
 | **Traits** | tags + computed per-member variables | `member_tags` ✅, `member_traits` ✅ |
-| **Segments** | saved, reusable audience definitions | ⏳ Phase 3 |
+| **Segments** | saved, reusable audience definitions | `segments` ✅ |
 | Activation | send / segment / automate | `campaigns`, `automation_rules`, comms spine |
+| **Intelligence** | feature store → AI site-improvement loop → retroactive rewards | track **PI** 📋 ([ADR-166](DECISIONS.md)) |
+
+## Layer 6 — Intelligence & Activation (track PI, [ADR-166](DECISIONS.md))
+
+The owner vision — *track everything, let the AI recommend site changes, and reward past behavior* —
+is this layer. It does **not** rebuild the spine; it extends it. **One rule governs it: capture wide
+and immutable now** — every future metric/reward/model is a *read* over data already banked, never a
+backfill. Five capabilities (full status in [BUILD-LIST.md](BUILD-LIST.md) PI):
+
+| Cap | What | Builds on |
+|---|---|---|
+| **PI.1 Wide capture** | `interaction_events` — the raw twin of the semantic `engagement_events`: a batched, sampled, consent-aware client `observe()` beacon (view · dwell · scroll · click · search/zero-result · abandon · rage-click), wide + jsonb-extensible | the event spine + consent scopes |
+| **PI.2 Feature store** | `member_traits` → a per-member behavioral vector (recency/frequency/depth per surface, affinities, stage) + per-surface rollups — the clean aggregate AI + rewards read | `lib/traits/compute` + the nightly cron |
+| **PI.3 Predictive traits** | churn-risk · activation-propensity · next-best-action · LTV as `predicted` traits | the slot `member_traits` was shaped for (below) |
+| **PI.4 AI Studio** | Claude reads aggregates → ranked, falsifiable **site-change** hypotheses → each spawns an experiment → measures lift | `lib/experiments` + `lib/ai` kernel + `admin/insights` |
+| **PI.5 Retroactive rewards** | rule DSL over historical events/ledgers/traits + idempotent batch grant — reward *past* behavior from a rule defined *today* | the append-only gem/zap ledgers + idempotency |
 
 ## Two kinds of trait — kept separate
 
@@ -93,6 +109,7 @@ governed tag, so origin is segmentable forever. One channel taxonomy lives in
 | **3 · Segments** | saved segment definitions + Studio admin (name, predicates, member count) | ✅ shipped |
 | **4 · Activation** | trait segments selectable as campaign audiences (`seg:<slug>` → member contacts, consent-aware) | ✅ shipped |
 | **5 · Consent & experiments** | experiments + holdouts (`lib/experiments`) · append-only consent ledger + retention cron (`lib/consent`) | ✅ shipped |
+| **6 · Intelligence & Activation** | wide `interaction_events` capture → feature store → predictive traits → AI site-improvement loop → retroactive reward engine (track PI, [ADR-166](DECISIONS.md)) | 📋 PI.1 first |
 
 ## Future-proofing (set up now, not retrofitted)
 

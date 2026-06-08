@@ -5338,3 +5338,55 @@ the table was empty, so no member lost access).
 team verifies before tools turn on. `getActivePersonas` semantics narrowed (verified/active),
 which the access matrix consumes unchanged. New admin surface under **People**. The money
 binding remains the one piece left for the Connect increment.
+
+## ADR-166 — Intelligence & Activation: a 6th MDP layer (wide capture → AI site-improvement loop → retroactive rewards)
+
+**Status:** Accepted (design) · not yet built. **Spec:** [MEMBER-DATA-PLATFORM.md](MEMBER-DATA-PLATFORM.md) Layer 6. **Build plan:** [BUILD-LIST.md](BUILD-LIST.md) track **PI**.
+
+**Context.** The owner's vision: *track everything a member does, have the AI studio recommend
+site changes for better engagement, and mint future rewards from past behavior.* The platform
+already has most of the spine — the append-only idempotent `engagement_events` ledger (ADR-019/025),
+the Member Data Platform (ADR-068/069: `member_tags`, nightly-computed `member_traits`, `segments`,
+acquisition attribution), the rollup crons, `lib/experiments` (deterministic variant assignment +
+holdouts) + the consent ledger, the deterministic admin insight surfaces (Engagement Read, Marketing
+Intel, Outcomes), GA4 dual-emit (ADR-093), and the Vera/Claude kernel (router, model tiering, budget,
+kill switch — ADR-039/066). The gap is not a tracking system from scratch; it's four capabilities on
+top of what exists. The risk to avoid is **instrumenting narrow now and being unable to backfill
+later** — you cannot retroactively observe behavior you never recorded.
+
+**Decision.** Add a **6th MDP layer — "Intelligence & Activation"** — as track PI, governed by one
+rule and built as five capabilities:
+
+- **The rule — capture wide & immutable NOW.** Every future metric, reward, or model must be a *read*
+  over data already banked, never a backfill. So the raw interaction stream ships first, even before
+  anything consumes it.
+- **PI.1 Wide capture.** A first-party `interaction_events` stream (the raw twin of the semantic
+  `engagement_events`): a batched, sampled, consent-aware client `observe()` beacon for view/dwell/
+  scroll/click/search/zero-result/abandon/rage-click/nav-path + server context, on a deliberately
+  **wide, jsonb-extensible** schema so new signals need no migration.
+- **PI.2 Feature store.** Extend `member_traits` into a per-member behavioral feature vector + per-
+  surface/cohort rollups — the *clean* aggregate the AI and rewards read (never the raw firehose).
+- **PI.3 Predictive traits.** Churn-risk / activation-propensity / next-best-action / LTV as
+  registry-declared `predicted` traits (the slot `member_traits` was shaped for) — heuristic first,
+  model/Claude-graded later.
+- **PI.4 AI Intelligence Studio.** Claude reads aggregates (not raw PII) to explain → predict →
+  emit **ranked, falsifiable site-change hypotheses**; each spawns an experiment via the existing
+  `lib/experiments`, logs exposure through the spine, and the loop **measures lift** — closing
+  recommendation → change → result. Operator approves before anything ships (ADR-028/066).
+- **PI.5 Retroactive reward engine.** A rule DSL over historical events/ledgers/traits/segments + an
+  idempotent batch evaluator that grants *once* against the immutable history — a rule written today
+  can reward last season's behavior.
+
+**Alternatives.** Bolt on a third-party product-analytics SDK (PostHog/Amplitude/Mixpanel) as the
+capture layer (rejected — splits the source of truth, adds a PII processor + cost, and the
+first-party append-only ledger is already the spine and warehouse-syncable). Compute predictions
+ad hoc in each dashboard (rejected — predictions belong in the governed trait registry, privacy-
+classed and reusable). Keep rewards forward-only (rejected — defeats "future rewards from past
+behavior," which the immutable ledgers already make possible).
+
+**Consequences.** New high-volume `interaction_events` table (sampled/retention-bounded, ADR-069
+classes apply) is the only genuinely new heavy infra; PI.4–PI.5 are mostly *composition* of existing
+primitives (experiments, segments, ledgers, the AI kernel, idempotency). The AI recommends **site
+changes**, not just member nudges, and every recommendation is measurable via the experiment loop.
+Privacy-by-design carries forward unchanged: consent-gated capture, registry-declared variables,
+retention crons, aggregate-only AI reads.
