@@ -1,10 +1,10 @@
 import { redirect } from 'next/navigation'
-import { Send, Users } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
 import { ROLE_LABEL } from '@/lib/community-roles'
 import { FocusTemplate } from '@/components/templates'
+import { OutreachForm } from './outreach-form'
 
 export const dynamic = 'force-dynamic'
 
@@ -45,32 +45,11 @@ export default async function OutreachPage() {
         </>
       }
     >
-      <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
-        <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-text">
-          <Users className="h-4 w-4 text-primary-strong" />
-          Message your {scope}
-        </div>
-        <textarea
-          disabled
-          rows={4}
-          placeholder={`Write a note to everyone in your ${scope}…`}
-          className="w-full resize-none rounded-xl border border-border bg-surface-elevated px-4 py-3 text-sm text-text placeholder:text-subtle outline-none disabled:opacity-70"
-        />
-        <div className="mt-3 flex items-center justify-between">
-          <p className="text-xs text-subtle">Sends through the same email + push spine as Broadcast.</p>
-          <button
-            type="button"
-            disabled
-            className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-on-primary opacity-60"
-          >
-            <Send className="h-4 w-4" /> Send
-          </button>
-        </div>
-      </div>
+      <OutreachForm scope={scope} />
 
       <p className="mt-3 text-xs text-subtle">
-        Member-targeted sending is being wired up — for now use{' '}
-        <strong className="text-text">Broadcast</strong> for community-wide messages.
+        Outreach is a direct note to your members’ inbox + notifications. For a public,
+        community-wide post, use <strong className="text-text">Broadcast</strong>.
       </p>
     </FocusTemplate>
   )
