@@ -33,6 +33,7 @@ site for everyone, function-gated per role* — and **(2) the money layer** (ent
 
 ## Progress log
 
+- **2026-06-08 ✅ P1.2** — Scope re-validation on structure/event mutations + `assignRole` escalation closed (`app/(main)/admin/actions.ts`). PR #410.
 - **2026-06-08 ✅ P1.1** — Access matrix encoded (`lib/core/access-matrix.ts`, 18 tests, tsc+eslint clean). PR #410.
 - **2026-06-08 ✅ docs** — Master list, ROLES.md access matrix + unified-site principle, ADR-163.
 
@@ -49,7 +50,7 @@ site for everyone, function-gated per role* — and **(2) the money layer** (ent
 | # | Item | Status | Notes |
 |---|---|---|---|
 | **1.1** | Encode the matrix as one source of truth | ✅ | `lib/core/access-matrix.ts` — `accessTo(surface, hats) → none/limited/full`. Done. |
-| **1.2** | 🔴 **Security: re-validate scope on mutation** | 📋 | Admin actions (`/admin/circles`, `/admin/events`) don't re-auth scope on write — a Guide could mutate a circle outside their hub by ID. **Small, urgent — do next.** |
+| **1.2** | 🔴 **Security: re-validate scope on mutation** | ✅ | Structure/event mutations now re-resolve per-scope leadership (`requireScopedManage`); `assignRole` privilege-escalation closed (janitor/owner/staff-roles only). Done. |
 | **1.3** | Unified-site refactor (pilot one surface) | 📋 | A page reads `accessTo()` + reveals/hides controls by level; pick one surface (Vault or a circle page) as the pattern, then roll out. Collapses `/admin/*` into in-page controls (IA-RESTRUCTURE §10). |
 | **1.4** | Scoped stewardship (`stewardships` table) | 📋 | §11.1 — scoped (circle/hub/nexus) edges; derive + cache `community_level`; backfill from `community_role` + `circles.host_id`. |
 | **1.5** | Admin axis formalization | 📋 | §11.3 — move `admin`/`janitor` into `team_members`; add the **missing staff-domain unlocks** (Support→`/admin/support`, Members roster, Vera); migrate the manual `/admin/support` guard to `requireAdmin`. |
