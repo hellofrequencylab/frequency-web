@@ -5632,3 +5632,49 @@ rewrite for little v1 gain; the sub-routes work fine where they are).
 **Consequences.** Members get one Network home with two clear tabs; the operator lead CRM is undisturbed
 in Studio. Follow-up (optional): relocate the `/connections/*` sub-routes under `/network/contacts/*` and
 update their internal links, for path consistency.
+
+---
+
+## ADR-173 — The standardized internal-page system: every page is one archetype + slots
+
+**Status:** Accepted · in rollout (`components/templates/*`). **Implements:** the owner directive
+("completely redesign all internal pages into a scalable, standardized template system; refine the
+current language"). **Supersedes the loose end of** PB.2/PB.2e (template adoption) with a hard standard.
+
+**Context.** Interior pages had drifted: ~60 used the template kit, the rest hand-rolled headers and
+ad-hoc `<div>` layouts with bespoke spacing/width. PB.2e tried to *wrap pages while preserving their
+layout* — which kept hitting per-page judgment (a full-width page centering under DashboardTemplate, a
+nested page losing its back-link). The owner cut through it: **don't preserve the old layouts — impose
+one standard and redesign onto it.** Keep the current calm, rounded, token-based language; make it
+strictly uniform.
+
+**Decision.** One system, no page authors its own layout.
+- **Five archetypes** (the proven taxonomy), each a thin preset over the shared `PageHeading` grammar
+  (eyebrow · title · description · actions · back · divider):
+  **Stream** (a flow) · **Index** (a collection) · **Detail** (one entity: context band + tabs) ·
+  **Dashboard** (metric-led: stats slot + section rhythm) · **Focus** (centered no-rail surface).
+- **One header grammar** everywhere — `PageHeading`; Detail keeps its richer band on the same type scale.
+- **A shared `width` token** across the centered archetypes (`narrow`/`default`/`wide`) and a single
+  vertical-rhythm scale (Dashboard's `space-y-8` body, `mb-5/6` header) — so no page sets its own
+  spacing or max-width again. `back?`/`eyebrow?` now thread through Stream/Index/Dashboard so a nested
+  page wraps **losslessly** (the gap that made PB.2e painful).
+- **A fixed primitive set** pages compose inside the body — `SectionHeader`/`AdminSection`, `StatCard`,
+  card grids (`EntityCard`/`PersonCard`), `EmptyState`. Raw `<div>` header/stat/empty layouts are
+  retired (REDESIGN-INAPP defects #1/#5/#6/#8).
+- **The rail is declarative** — `lib/layout/page-chrome.ts` (`global`/`scoped`/`none`); pages never
+  toggle it.
+- A new page = **pick an archetype, fill slots.** Zero layout authoring; that is the scalability.
+
+**Rollout (waves).** Wave 0: harden the kit (the `back`/`eyebrow` passthrough) + convert a flagship per
+archetype (`/broadcast`→Stream, `/crew/quests`→Index, `/crew/store/ledger`→Dashboard). Waves 1–N: go
+wide section by section (Community · The Quest · Studio · system/Focus · Detail pages), converting every
+remaining hand-rolled page onto its archetype. Already-templated pages are left unless they hand-roll.
+
+**Alternatives.** Wrap-while-preserving (rejected by the owner — the PB.2e friction). A brand-new visual
+language (rejected — "refine the current," not restyle). Per-page bespoke freedom (rejected — the drift
+this fixes).
+
+**Consequences.** Every interior page reads the same and is built the same; a new surface is slot-filling,
+not layout work. The kit is the single source of truth for page structure; visual changes happen in one
+place and propagate. Rollout is mechanical now that preservation is off the table — the remaining work is
+volume, not judgment.
