@@ -13,23 +13,29 @@
 import { PageHeading } from './page-heading'
 
 export function IndexTemplate({
+  eyebrow,
   title,
   description,
   action,
+  back,
   toolbar,
   children,
 }: {
+  /** Small contextual line above the title. */
+  eyebrow?: React.ReactNode
   title: React.ReactNode
   description?: React.ReactNode
   /** Header-right action, e.g. a "New circle" button. */
   action?: React.ReactNode
+  /** Back-link for a nested index (e.g. a sub-page under a dashboard). */
+  back?: { href: string; label: string }
   /** Optional filter/search row under the header. */
   toolbar?: React.ReactNode
   children: React.ReactNode
 }) {
   return (
     <div>
-      <PageHeading title={title} description={description} actions={action} />
+      <PageHeading eyebrow={eyebrow} title={title} description={description} actions={action} back={back} />
       {toolbar && <div className="mb-4">{toolbar}</div>}
       {children}
     </div>

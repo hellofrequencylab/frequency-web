@@ -10,7 +10,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { EntityCard } from '@/components/cards/entity-card'
 import { SectionHeader } from '@/components/ui/section-header'
 import { ModuleCard } from '@/components/modules/module-card'
-import { PageHeading } from '@/components/templates/page-heading'
+import { StreamTemplate } from '@/components/templates'
 
 // /broadcast is the Community Dashboard — the counterpart to the Quest Dashboard
 // (/crew), but for community life: what's being announced, what's coming up, and
@@ -147,17 +147,15 @@ export default async function BroadcastPage() {
   const nextEvent = upcomingEvents[0]
 
   return (
-    <div>
-      <PageHeading
-        title="Community"
-        description="Everything happening around you — announcements, what’s coming up, and what’s new to join."
-        actions={
-          (canCompose || role === 'janitor') ? (
-            <BroadcastCompose circles={namedCircles} hubs={namedHubs} nexuses={namedNexuses} canGlobal={role === 'janitor'} />
-          ) : undefined
-        }
-      />
-
+    <StreamTemplate
+      title="Community"
+      description="Everything happening around you — announcements, what’s coming up, and what’s new to join."
+      action={
+        (canCompose || role === 'janitor') ? (
+          <BroadcastCompose circles={namedCircles} hubs={namedHubs} nexuses={namedNexuses} canGlobal={role === 'janitor'} />
+        ) : undefined
+      }
+    >
       {/* ── Highlight hero: the latest broadcast, else the next event ── */}
       {latest ? (
         <Link
@@ -232,7 +230,7 @@ export default async function BroadcastPage() {
             <QuickLink href="/events" Icon={CalendarDays} label="Events" sub="What’s on" color="bg-primary-bg text-primary-strong" />
             <QuickLink href="/circles" Icon={CircleDot} label="Circles" sub="Find your people" color="bg-signal-bg text-signal-strong" />
             <QuickLink href="/channels" Icon={Radio} label="Channels" sub="By interest" color="bg-broadcast-bg text-broadcast-strong" />
-            <QuickLink href="/people" Icon={Users} label="Directory" sub="The community" color="bg-warning-bg text-warning" />
+            <QuickLink href="/network" Icon={Users} label="Directory" sub="The community" color="bg-warning-bg text-warning" />
           </div>
 
           {upcomingEvents.length > 0 && (
@@ -275,7 +273,7 @@ export default async function BroadcastPage() {
           )}
         </div>
       </div>
-    </div>
+    </StreamTemplate>
   )
 }
 

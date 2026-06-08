@@ -15,6 +15,7 @@ export function StreamTemplate({
   title,
   description,
   action,
+  back,
   composer,
   sort,
   children,
@@ -25,6 +26,8 @@ export function StreamTemplate({
   description?: React.ReactNode
   /** Header-right action, e.g. a create menu. */
   action?: React.ReactNode
+  /** Back-link for a nested stream (e.g. a sub-page under a dashboard). */
+  back?: { href: string; label: string }
   /** Composer / create-post slot rendered above the stream. */
   composer?: React.ReactNode
   /** Sort/filter control shown on the header row (right side). Use when there's no `action`. */
@@ -38,6 +41,7 @@ export function StreamTemplate({
         title={title}
         description={description}
         actions={action ?? sort}
+        back={back}
       />
       {composer && <div className="mb-6">{composer}</div>}
       {children}
