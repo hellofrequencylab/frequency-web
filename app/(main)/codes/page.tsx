@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { QrCode, ScanLine } from 'lucide-react'
-import { requireProfileId, getCallerProfile } from '@/lib/auth'
-import { atLeastRole } from '@/lib/core/roles'
+import { requireProfileId } from '@/lib/auth'
+import { isPaidViewer } from '@/lib/core/viewer-hats'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { shortLinkUrl } from '@/lib/qr/links'
@@ -41,8 +41,7 @@ export default async function CodesPage() {
     .select('id', { count: 'exact', head: true })
     .eq('referred_by_profile_id', profileId)
 
-  const caller = await getCallerProfile()
-  const isCrew = !!caller && atLeastRole(caller.community_role, 'crew')
+  const isCrew = await isPaidViewer()
 
   const avatar = me.avatar_url && isSafeLogoSrc(me.avatar_url) ? me.avatar_url : null
 

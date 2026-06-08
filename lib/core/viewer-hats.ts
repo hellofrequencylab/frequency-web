@@ -1,0 +1,61 @@
+// Server seam: the live caller → the access matrix's `Hats` (access-matrix.ts).
+//
+// THE ONE PLACE that reads the caller's role / entitlement / personas / staff and
+// projects them onto the access matrix, so every surface gates the same way and never
+// drifts. Server-only (uses getCallerProfile + the staff lookup) — the client mirrors
+// the same matrix from props. Mirrors load-capabilities.ts (the per-scope resolver's
+// server seam) for the surface-level matrix.
+//
+// This is the unified-site spine: a page asks `surfaceAccess('vault')` and reveals the
+// matching controls. When the entitlement tier (P2) and personas (P3) tables land, ONLY
+// this function changes — every wired surface flips automatically.
+
+import { getCallerProfile } from '@/lib/auth'
+import { getStaffMember } from '@/lib/staff'
+import { deriveTier } from './entitlement'
+import {
+  accessTo,
+  columnsForHats,
+  type AccessLevel,
+  type Hats,
+  type Surface,
+} from './access-matrix'
+
+/** Resolve the live caller's hats. Logged-out ⇒ a visitor. */
+export async function getViewerHats(): Promise<Hats> {
+  const profile = await getCallerProfile()
+  if (!profile) return { loggedIn: false }
+
+  const staff = await getStaffMember().catch(() => null)
+  return {
+    loggedIn: true,
+    role: profile.community_role,
+    // Entitlement, centralized in deriveTier. Transitional: the crew-or-above proxy
+    // until profiles.membership_tier (migration 20260608040000) is applied + billing
+    // (P2.2) lands — then pass `membershipTier: profile.membership_tier` here.
+    tier: deriveTier({ role: profile.community_role }),
+    // TODO(P3): read the caller's active profile_personas.
+    personas: null,
+    staff: staff?.role ?? null,
+  }
+}
+
+/** The caller's access level on a surface — the matrix, resolved for the live viewer. */
+export async function surfaceAccess(surface: Surface): Promise<AccessLevel> {
+  return accessTo(surface, await getViewerHats())
+}
+
+/** Convenience: does the live caller get FULL function on this surface? */
+export async function canUseSurface(surface: Surface): Promise<boolean> {
+  return (await surfaceAccess(surface)) === 'full'
+}
+
+/**
+ * Does the live caller hold the paid ("crew") entitlement? The single source for the
+ * scattered `['crew','host',…].includes(role)` gamification checks. Today the crew-or-
+ * above proxy (via the matrix's `crew` column); once the entitlement tier (P2) lands,
+ * `getViewerHats` reads the real flag and every call site flips automatically.
+ */
+export async function isPaidViewer(): Promise<boolean> {
+  return columnsForHats(await getViewerHats()).has('crew')
+}
