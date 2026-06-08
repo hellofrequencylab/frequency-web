@@ -5,13 +5,26 @@
 // `support` bucket; everything else is plain ticket data.
 
 import { revalidatePath } from 'next/cache'
-import { getCallerProfile } from '@/lib/auth'
+import { getCallerProfile, getMyProfileId } from '@/lib/auth'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { createTicket, addMemberMessage, uploadScreenshot } from '@/lib/support/store'
 import { TICKET_TYPES, type SupportContext, type TicketType } from '@/lib/support/types'
+import { answerHelpQuestion, type HelpCitation } from '@/lib/ai/help-rag'
 
 function parseType(v: unknown): TicketType {
   return TICKET_TYPES.includes(v as TicketType) ? (v as TicketType) : 'bug'
+}
+
+// "Ask Vera before you file" (the support deflection / intake side of the living-docs
+// loop, ADR-067). Runs the member's question through the grounded help RAG; if it answers,
+// the member can close without filing a ticket. Logs the query (demand signal) and never
+// throws — degrades to a deflect when AI is off.
+export async function askHelp(question: string): Promise<ActionResult<{ answer: string | null; citations: HelpCitation[]; deflected: boolean }>> {
+  const profileId = await getMyProfileId()
+  const q = question.trim()
+  if (!q) return fail('Type your question first.')
+  const res = await answerHelpQuestion(q, profileId)
+  return ok({ answer: res.answer, citations: res.citations, deflected: res.deflected })
 }
 
 /** Create a support ticket from the report dialog. Carries the page/activity context

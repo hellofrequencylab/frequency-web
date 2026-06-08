@@ -4,11 +4,13 @@ import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import {
   Bug, HelpCircle, MessageSquare, Lightbulb, X, ImagePlus, Loader2, Check,
-  ExternalLink, ChevronDown, ChevronUp, Trash2,
+  ExternalLink, ChevronDown, ChevronUp, Trash2, Sparkles,
 } from 'lucide-react'
-import { createSupportTicket } from '@/app/(main)/support/actions'
+import { createSupportTicket, askHelp } from '@/app/(main)/support/actions'
+import { isError } from '@/lib/action-result'
 import { gatherSupportContext, contextLines } from '@/lib/support/context'
 import { TYPE_LABELS, type SupportContext, type TicketType } from '@/lib/support/types'
+import type { HelpCitation } from '@/lib/ai/help-rag'
 
 const TYPE_META: { key: TicketType; icon: typeof Bug }[] = [
   { key: 'bug', icon: Bug },
@@ -41,7 +43,21 @@ export function ReportDialog({
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState<{ id: string; ref: number } | null>(null)
   const [pending, start] = useTransition()
+  const [asking, startAsk] = useTransition()
+  const [vera, setVera] = useState<{ answer: string | null; citations: HelpCitation[]; deflected: boolean } | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  // "Ask Vera before you file" — try the help center first; if it answers, the member can
+  // close without filing a ticket (the support-deflection / intake side of the loop).
+  function askVera() {
+    if (!subject.trim() || asking) return
+    setError(null)
+    startAsk(async () => {
+      const r = await askHelp(`${subject}\n${body}`.trim())
+      if (isError(r)) { setError(r.error); return }
+      setVera(r.data)
+    })
+  }
 
   // Esc to close + lock body scroll while open.
   useEffect(() => {
@@ -233,9 +249,46 @@ export function ReportDialog({
               </div>
             )}
 
+            {/* Ask-Vera answer — try the help center before filing. */}
+            {vera && (
+              <div className="mt-3 rounded-2xl border border-signal/40 bg-signal-bg/20 p-3">
+                <div className="mb-1 flex items-center gap-1.5 text-signal-strong">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  <span className="text-2xs font-bold uppercase tracking-wide">Vera</span>
+                </div>
+                <p className="text-sm leading-relaxed text-text">
+                  {vera.answer ?? "I couldn’t find a sure answer in the help center — go ahead and send it to the team."}
+                </p>
+                {vera.citations.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {vera.citations.map((c) => (
+                      <Link key={c.href} href={c.href} onClick={onClose} className="inline-flex items-center gap-1 rounded-lg bg-surface px-2 py-0.5 text-2xs font-semibold text-signal-strong hover:underline">
+                        {c.heading || c.slug} <ExternalLink className="h-3 w-3" />
+                      </Link>
+                    ))}
+                  </div>
+                )}
+                {vera.answer && (
+                  <button type="button" onClick={onClose} className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-success-bg/50 px-3 py-1.5 text-xs font-semibold text-success transition-colors hover:bg-success-bg/70">
+                    <Check className="h-3.5 w-3.5" /> That solved it — close
+                  </button>
+                )}
+              </div>
+            )}
+
             {error && <p className="mt-3 text-xs text-danger">{error}</p>}
 
-            <div className="mt-4 flex items-center gap-2">
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={askVera}
+                disabled={asking || !subject.trim()}
+                title="Check the help center before filing"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-signal/50 bg-signal-bg/30 px-3 py-2 text-sm font-semibold text-signal-strong transition-colors hover:bg-signal-bg/50 disabled:opacity-50"
+              >
+                {asking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                Ask Vera first
+              </button>
               <button
                 type="button"
                 onClick={submit}
@@ -243,7 +296,7 @@ export function ReportDialog({
                 className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
               >
                 {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                {pending ? 'Sending…' : 'Send report'}
+                {pending ? 'Sending…' : vera ? 'Send to the team' : 'Send report'}
               </button>
               <button type="button" onClick={onClose} className="rounded-xl px-3 py-2 text-sm font-semibold text-muted hover:text-text">
                 Cancel
