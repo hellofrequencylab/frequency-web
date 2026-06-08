@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { canAccessGrowthStudio } from '@/lib/page-editor/guard'
 import { SectionHeader } from '@/components/ui/section-header'
+import { IndexTemplate } from '@/components/templates'
 
 export const dynamic = 'force-dynamic'
 
@@ -58,14 +59,12 @@ export default async function GrowthStudioPage() {
   if (!(await canAccessGrowthStudio())) notFound()
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-4 py-6">
-      <h1 className="text-2xl font-bold tracking-tight text-text">Growth Studio</h1>
-      <p className="mt-1 text-sm text-muted">
-        One place to manage how people find, join, and move through Frequency — pages, onboarding,
-        acquisition, and your pipeline.
-      </p>
-
-      <div className="mt-6 space-y-7">
+    <div className="mx-auto w-full max-w-4xl">
+      <IndexTemplate
+        title="Growth Studio"
+        description="One place to manage how people find, join, and move through Frequency — pages, onboarding, acquisition, and your pipeline."
+      >
+      <div className="space-y-7">
         {GROUPS.map((group) => (
           <section key={group.title}>
             <SectionHeader title={group.title} />
@@ -92,6 +91,7 @@ export default async function GrowthStudioPage() {
           </section>
         ))}
       </div>
+      </IndexTemplate>
     </div>
   )
 }
