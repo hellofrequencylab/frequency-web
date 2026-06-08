@@ -5597,3 +5597,38 @@ owner directive + the operator-load problem).
 permission change and the catalog still the single source of truth. The per-page sidebar console
 (ADR-153 layer 3) keeps its own page-context categories — a separate concern, intentionally not folded
 in. Remaining P7: the Network hub merge (`/people` + `/connections` + `/marketing/contacts`).
+
+---
+
+## ADR-172 — The Network hub: member directory + personal contacts under one home
+
+**Status:** Accepted · built (`app/(main)/network/*`). **Implements:** P7 §10.3 (Network hub merge).
+**Owner decision (2026-06-08):** member hub, operator CRM stays in Studio.
+
+**Context.** Three "people" surfaces had drifted apart: `/people` (the community **member directory** —
+browse everyone, filter by role/circle/city), `/connections` (every member's **personal contact book** —
+scanned cards/posters/manual, owner-scoped), and `/marketing/contacts` (the operator **lead/subscriber
+CRM** — consent state, subscriber management, living inside the Growth Studio workspace). They share a
+noun ("people/contacts") but serve **different audiences**: the first two are member-facing, the third is
+operator tooling.
+
+**Decision.** Unify the **two member-facing** surfaces into a single `/network` hub; **leave the operator
+CRM in Growth Studio** (different audience, belongs beside campaigns/automations).
+- `/network` is a tabbed hub (`network/layout.tsx` + `NetworkTabs`): **Community** (the directory, at
+  `/network`) and **My Contacts** (the personal book, at `/network/contacts`).
+- The old routes **redirect** (`/people → /network`, `/connections → /network/contacts`), forwarding their
+  query filters so shared/bookmarked filtered links survive.
+- The personal-CRM **sub-routes stay in place** (`/connections/[id]`, `/new`, `/shared`) — the hub's
+  contact cards link to them; only the list page moved. Avoids a large link rewrite for v1.
+- Nav: the Community section's `people` item now points at `/network` labelled **Network**; the separate
+  Studio "Connections" entry is removed (folded into the hub). `surface`/matrix gating unchanged
+  (`people` = member directory; `personalCrm` reached inside the hub, member-tier).
+
+**Alternatives.** Full 3-way hub that also pulls the operator CRM out of Studio (rejected by the owner —
+mixes member-facing + operator tooling). Light-touch nav grouping with no route merge (rejected — not a
+true hub). Move the entire `/connections` sub-tree under `/network/contacts/*` (deferred — a large link
+rewrite for little v1 gain; the sub-routes work fine where they are).
+
+**Consequences.** Members get one Network home with two clear tabs; the operator lead CRM is undisturbed
+in Studio. Follow-up (optional): relocate the `/connections/*` sub-routes under `/network/contacts/*` and
+update their internal links, for path consistency.

@@ -74,7 +74,7 @@ export const NAV_AREAS: readonly NavArea[] = [
   { key: 'events',        href: '/events',    label: 'Events',       section: 'Community', defaultAccess: 'visitor', surface: 'events' },
   { key: 'market',        href: '/market',    label: 'Marketplace',  section: 'Community', defaultAccess: 'visitor', surface: 'market' },
   { key: 'messageBoards', href: '/messages',  label: 'Message Boards', section: 'Community', defaultAccess: 'member', surface: 'messageBoards' },
-  { key: 'people',        href: '/people',    label: 'People',       section: 'Community', defaultAccess: 'member',  surface: 'people' },
+  { key: 'people',        href: '/network',   label: 'Network',      section: 'Community', defaultAccess: 'member',  surface: 'people' },
 
   // ── The Quest → everyone plays; only the Vault (cash-in) is paid-gated ────────
   { key: 'quest',     href: '/crew',       label: 'Dashboard', section: 'The Quest', defaultAccess: 'member', surface: 'quest' },
@@ -86,7 +86,8 @@ export const NAV_AREAS: readonly NavArea[] = [
   // ── Studio → stewardship + the partner business block ────────────────────────
   { key: 'admin-community', href: '/admin',         label: 'Overview',      section: 'Studio', defaultAccess: 'host', surface: 'studioOverview' },
   { key: 'admin-support',   href: '/admin/support', label: 'Support',       section: 'Studio', defaultAccess: 'member', surface: 'support' },
-  { key: 'connections',     href: '/connections',   label: 'Connections',   section: 'Studio', defaultAccess: 'member', staffDomain: 'profiles', surface: 'personalCrm' },
+  // Personal contacts (surface 'personalCrm') folded into the Network hub's
+  // "My Contacts" tab (ADR-172) — reached via Community › Network, not a Studio entry.
   { key: 'crm',             href: '/crm',           label: 'CRM Pipeline',  section: 'Studio', defaultAccess: 'admin', surface: 'businessCrm' },
   { key: 'website',         href: '/coming-soon?feature=website',     label: 'Website',       section: 'Studio', defaultAccess: 'admin', surface: 'website', comingSoon: true },
   { key: 'hook-network',    href: '/coming-soon?feature=hook',        label: 'Hook Network',  section: 'Studio', defaultAccess: 'admin', surface: 'hookNetwork', comingSoon: true },
