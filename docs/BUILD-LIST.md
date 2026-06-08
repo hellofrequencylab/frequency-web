@@ -197,7 +197,8 @@ from role), the role-based proxies are wrong and must move to the tier.
 - **Help:** `/help`, `/help/[category]`, `/help/[category]/[slug]`, `/help/changelog` → Index/Stream/Detail
 - **Discover:** `/discover`(+`/circles`,`/events`,`/topics` & their `[id]`/`[slug]`) → Index/Detail
 - **Focus/system:** `/sign-in`(+confirm) · `/privacy` · `/unsubscribe` · `/code-unavailable` · `/n/[nodeId]` · `/g/[slug]` → Focus
-- **Sanctioned exceptions (do NOT migrate):** `/admin/*` (AdminPage) · `(marketing)/*` · `/edit/[slug]`, `/journeys/[slug]`, `/practices/[id]/edit`, `/pages/sequences/[slug]/{build,edit}` (editors) · `/messages/[id]`, `/messages/r/[roomId]` (real-time) · `/join/[token]`, `/onboarding/*` (flows) · redirects/print.
+- **Sanctioned exceptions (do NOT migrate):** `(marketing)/*` · `/edit/[slug]`, `/journeys/[slug]`, `/practices/[id]/edit`, `/pages/sequences/[slug]/{build,edit}` (editors) · `/messages/[id]`, `/messages/r/[roomId]` (real-time) · `/join/[token]`, `/onboarding/*` (flows) · redirects/print.
+- ✅ **`/admin/*` (20 pages) now on the template system** — `AdminPage` promoted to a first-class **`AdminTemplate`** in `@/components/templates` that composes the shared `PageHeading` (was a parallel hand-rolled header). All 20 admin pages adopt it via a back-compat alias — zero per-page changes. The sixth template; the admin-nav sibling of Dashboard.
 
 *(Specialist surfaces — message threads, editors, QR/CRM tools, scan landings — stay custom by
 design; ~27 pages.) Token hygiene is good: **zero** `text-[Npx]`, only 3 acceptable hardcoded-hex
