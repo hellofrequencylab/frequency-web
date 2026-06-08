@@ -49,18 +49,19 @@
   --color-primary-bg:       #FBEFD9;
   --color-text-on-primary:  #FFFFFF;
 
-  /* Brand. Signal (teal) */
-  --color-signal:           #1E9E89;
-  --color-signal-strong:    #0F6657;
-  --color-signal-bg:        #D6F0EA;
+  /* Brand. Signal (emerald-teal) — a deep, green-leaning jewel teal, distinct in hue
+     from Broadcast's cyan and cohesive with the teal success. */
+  --color-signal:           #0F8E78;
+  --color-signal-strong:    #0A5C4D;
+  --color-signal-bg:        #D2EDE6;
   --color-text-on-signal:   #04231E;
 
-  /* Brand. Broadcast (azure) — the orange's complement. Used for broadcasts /
+  /* Brand. Broadcast (robin's-egg / Tiffany blue) — a bright cyan-blue for broadcasts /
      dispatches and the onboarding guide, so "comms + getting set up" reads cool +
-     calm against the warm amber lead. */
-  --color-broadcast:          #2F8FE2;
-  --color-broadcast-strong:   #1B6BB5;
-  --color-broadcast-bg:       #E2EFFB;
+     calm against the warm amber lead. Comms ONLY — never general chrome. */
+  --color-broadcast:          #1EB6C5;
+  --color-broadcast-strong:   #0E808D;
+  --color-broadcast-bg:       #D8F2F5;
   --color-text-on-broadcast:  #FFFFFF;
 
   /* Semantic states. Success is a teal (the orange's complement), not a true
@@ -135,15 +136,15 @@
 
   /* Teal stays the calibrated secondary (pool-water accent); slightly richer
      tint so it reads clearly teal against the warm dark wood. Amber still leads. */
-  --color-signal:           #5FD3BE;
-  --color-signal-strong:    #5FD3BE;
-  --color-signal-bg:        #0F2C24;
+  --color-signal:           #53CFAC;
+  --color-signal-strong:    #53CFAC;
+  --color-signal-bg:        #0C2C25;
   --color-text-on-signal:   #04231E;
 
-  /* Broadcast (azure) — brighter tint so it reads clearly against dark wood. */
-  --color-broadcast:          #5BAAEC;
-  --color-broadcast-strong:   #5BAAEC;
-  --color-broadcast-bg:       #11243A;
+  /* Broadcast (robin's-egg) — brighter cyan so it reads clearly against dark wood. */
+  --color-broadcast:          #69D6E6;
+  --color-broadcast-strong:   #69D6E6;
+  --color-broadcast-bg:       #0F2A34;
   --color-text-on-broadcast:  #FFFFFF;
 
   --color-success:          #5FD3BE;
