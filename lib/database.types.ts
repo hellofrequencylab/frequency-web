@@ -4019,6 +4019,7 @@ export type Database = {
           community_role: Database["public"]["Enums"]["community_role"] | null
           created_at: string | null
           current_season_gems: number
+          membership_tier: string
           current_season_rank: Database["public"]["Enums"]["season_rank_enum"]
           current_season_zaps: number
           current_streak: number
@@ -4072,6 +4073,7 @@ export type Database = {
           city?: string | null
           community_role?: Database["public"]["Enums"]["community_role"] | null
           created_at?: string | null
+          membership_tier?: string
           current_season_gems?: number
           current_season_rank?: Database["public"]["Enums"]["season_rank_enum"]
           current_season_zaps?: number
@@ -4126,6 +4128,7 @@ export type Database = {
           city?: string | null
           community_role?: Database["public"]["Enums"]["community_role"] | null
           created_at?: string | null
+          membership_tier?: string
           current_season_gems?: number
           current_season_rank?: Database["public"]["Enums"]["season_rank_enum"]
           current_season_zaps?: number
