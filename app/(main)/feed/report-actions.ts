@@ -3,7 +3,8 @@
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
-import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { logAdminAction } from '@/lib/admin/audit'
+import { type ActionResult, ok, fail, isError } from '@/lib/action-result'
 import { atLeastRole } from '@/lib/core/roles'
 
 type TargetType = 'post' | 'dispatch' | 'comment' | 'member' | 'event'
@@ -121,6 +122,7 @@ export async function reviewReport(
   }
 
   const admin = createAdminClient()
+  let hidden: { targetType: string; targetId: string } | null = null
 
   if (action === 'actioned') {
     const { data: report } = await admin
@@ -136,14 +138,27 @@ export async function reviewReport(
       }
       if (report.target_type === 'post' || report.target_type === 'comment') {
         await admin.from('posts').update(hidePayload).eq('id', report.target_id)
+        hidden = { targetType: report.target_type, targetId: report.target_id }
       } else if (report.target_type === 'dispatch') {
         await admin.from('dispatches').update(hidePayload).eq('id', report.target_id)
+        hidden = { targetType: report.target_type, targetId: report.target_id }
       }
       // member/event handled via dedicated helpers; reviewReport just closes them.
     }
   }
 
-  return closeReport(reportId, caller.id, action)
+  const result = await closeReport(reportId, caller.id, action)
+  if (!isError(result)) {
+    // Audit the moderation decision (P8). Best-effort.
+    await logAdminAction({
+      actorId: caller.id,
+      action: action === 'actioned' ? 'moderation.hide' : 'moderation.dismiss',
+      targetType: hidden?.targetType ?? 'report',
+      targetId: hidden?.targetId ?? reportId,
+      detail: { reportId },
+    })
+  }
+  return result
 }
 
 
@@ -236,7 +251,11 @@ export async function warnMember(
     return fail('Could not send warning message')
   }
 
-  return closeReport(reportId, caller.id, 'actioned')
+  const result = await closeReport(reportId, caller.id, 'actioned')
+  if (!isError(result)) {
+    await logAdminAction({ actorId: caller.id, action: 'moderation.warn', targetType: 'member', targetId: memberProfileId, detail: { reportId, reason: reason ?? null } })
+  }
+  return result
 }
 
 export async function suspendMember(
@@ -270,7 +289,11 @@ export async function suspendMember(
     return fail('Failed to suspend member')
   }
 
-  return closeReport(reportId, caller.id, 'actioned')
+  const result = await closeReport(reportId, caller.id, 'actioned')
+  if (!isError(result)) {
+    await logAdminAction({ actorId: caller.id, action: 'moderation.suspend', targetType: 'member', targetId: memberProfileId, detail: { reportId, reason: options.reason ?? null, durationDays: options.durationDays ?? null } })
+  }
+  return result
 }
 
 
@@ -296,7 +319,11 @@ export async function cancelEventFromReport(
     return fail('Failed to cancel event')
   }
 
-  return closeReport(reportId, caller.id, 'actioned')
+  const result = await closeReport(reportId, caller.id, 'actioned')
+  if (!isError(result)) {
+    await logAdminAction({ actorId: caller.id, action: 'moderation.event_cancel', targetType: 'event', targetId: eventId, detail: { reportId } })
+  }
+  return result
 }
 
 
