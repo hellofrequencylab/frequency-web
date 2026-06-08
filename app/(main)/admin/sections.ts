@@ -43,6 +43,8 @@ import {
   ScrollText,
   Globe,
   Cog,
+  LifeBuoy,
+  ShoppingBag,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
@@ -118,6 +120,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     dashboard: 'community',
     links: [
       { href: '/admin/gamification', label: 'Gamification', desc: 'Achievements, seasons, rewards.', Icon: Trophy, min: 'host', staffDomain: 'community' },
+      { href: '/admin/store', label: 'Store', desc: 'Manage gem store items and catalog.', Icon: ShoppingBag, min: 'host', staffDomain: 'community' },
       { href: '/admin/crew-tasks', label: 'Crew tasks', desc: 'Define and verify member tasks.', Icon: ClipboardList, min: 'host', staffDomain: 'community' },
       { href: '/admin/rewards', label: 'Retroactive rewards', desc: 'Reward past behavior — define a rule, grant once.', Icon: Gift, min: 'admin' },
       { href: '/programs', label: 'Leader training', desc: 'Materials to start and run a circle.', Icon: BookOpen, min: 'host', staffDomain: 'community' },
@@ -135,10 +138,11 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
   {
     key: 'safety',
     label: 'Safety',
-    blurb: 'Keep the community healthy — reports and moderation.',
+    blurb: 'Keep the community healthy — reports, moderation, and member support.',
     dashboard: 'community',
     links: [
       { href: '/admin/moderation', label: 'Moderation', desc: 'Review and resolve reports.', Icon: ShieldAlert, min: 'host', staffDomain: 'community' },
+      { href: '/admin/support', label: 'Support', desc: 'Member support tickets and help requests.', Icon: LifeBuoy, min: 'host', staffDomain: 'members' },
     ],
   },
   {

@@ -1,6 +1,12 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { PhotoHero } from '@/components/marketing/marketing-ui'
 import { signInWithMagicLink, signInWithGoogle } from './actions'
+
+export const metadata: Metadata = {
+  title: 'Sign In',
+  robots: { index: false, follow: false },
+}
 
 // Sign-in styled like the founder splash (the beta-sequence pages): a full-bleed
 // photo hero with the warm gradient scrim, and the auth card sitting over it.

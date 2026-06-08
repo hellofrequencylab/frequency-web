@@ -1,6 +1,5 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { DEFAULT_PREFERENCES, type NotificationPreferences } from '@/lib/notification-preferences'
 import { FocusTemplate } from '@/components/templates'
 import { NotificationsForm } from './form'
@@ -10,15 +9,15 @@ export default async function NotificationsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) notFound()
 
-  const admin = createAdminClient()
-  const { data: profile } = await admin
+  // RLS covers both reads: profiles self-read + notification_preferences owner-read.
+  const { data: profile } = await supabase
     .from('profiles')
     .select('id')
     .eq('auth_user_id', user.id)
     .maybeSingle()
   if (!profile) notFound()
 
-  const { data: prefsRow } = await admin
+  const { data: prefsRow } = await supabase
     .from('notification_preferences')
     .select('*')
     .eq('profile_id', profile.id)

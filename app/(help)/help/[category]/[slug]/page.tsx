@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getAllArticles, getArticle, helpHref } from '@/lib/help/content'
 import { HelpMarkdown } from '@/components/help/help-markdown'
+import { DetailTemplate } from '@/components/templates'
 
 type Params = { params: Promise<{ category: string; slug: string }> }
 
@@ -34,50 +35,50 @@ export default async function HelpArticlePage({ params }: Params) {
   const next = idx < cat.articles.length - 1 ? cat.articles[idx + 1] : null
 
   return (
-    <article className="max-w-3xl">
-      <nav className="mb-4 text-sm text-subtle">
-        <Link href="/help" className="hover:text-text">
-          Help
-        </Link>{' '}
-        /{' '}
-        <Link href={`/help/${cat.slug}`} className="hover:text-text">
-          {cat.title}
-        </Link>{' '}
-        / <span className="text-muted">{article.title}</span>
-      </nav>
+    <DetailTemplate
+      title={article.title}
+      subtitle={
+        <>
+          <Link href={`/help/${cat.slug}`} className="hover:text-text">
+            {cat.title}
+          </Link>
+          {article.updated && <> · Updated {article.updated}</>}
+        </>
+      }
+    >
+      <div className="max-w-3xl">
+        {article.description && <p className="text-lg text-muted">{article.description}</p>}
 
-      <h1 className="font-display text-3xl text-text">{article.title}</h1>
-      {article.description && <p className="mt-2 text-lg text-muted">{article.description}</p>}
+        <div className="mt-8">
+          <HelpMarkdown>{article.body}</HelpMarkdown>
+        </div>
 
-      <div className="mt-8">
-        <HelpMarkdown>{article.body}</HelpMarkdown>
+        {article.updated && (
+          <p className="mt-10 border-t border-border pt-4 text-xs text-subtle">
+            Last updated {article.updated}
+          </p>
+        )}
+
+        <nav className="mt-6 flex justify-between gap-4 text-sm">
+          {prev ? (
+            <Link href={helpHref(cat.slug, prev.slug)} className="text-primary-strong hover:underline">
+              &larr; {prev.title}
+            </Link>
+          ) : (
+            <span />
+          )}
+          {next ? (
+            <Link
+              href={helpHref(cat.slug, next.slug)}
+              className="text-right text-primary-strong hover:underline"
+            >
+              {next.title} &rarr;
+            </Link>
+          ) : (
+            <span />
+          )}
+        </nav>
       </div>
-
-      {article.updated && (
-        <p className="mt-10 border-t border-border pt-4 text-xs text-subtle">
-          Last updated {article.updated}
-        </p>
-      )}
-
-      <nav className="mt-6 flex justify-between gap-4 text-sm">
-        {prev ? (
-          <Link href={helpHref(cat.slug, prev.slug)} className="text-primary-strong hover:underline">
-            &larr; {prev.title}
-          </Link>
-        ) : (
-          <span />
-        )}
-        {next ? (
-          <Link
-            href={helpHref(cat.slug, next.slug)}
-            className="text-right text-primary-strong hover:underline"
-          >
-            {next.title} &rarr;
-          </Link>
-        ) : (
-          <span />
-        )}
-      </nav>
-    </article>
+    </DetailTemplate>
   )
 }

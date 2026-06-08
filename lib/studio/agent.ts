@@ -8,7 +8,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { enqueueEmail, listUnsubscribeHeaders } from '@/lib/email'
-import { shouldSend } from '@/lib/notification-preferences'
+import { resolveSendGate } from '@/lib/comms/send-gate'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { SITE_URL } from '@/lib/site'
 import {
@@ -99,9 +99,10 @@ export async function proposeWinbacks(limit = 20): Promise<number> {
   }
 
   // Consent gate at proposal time: only members opted in to lifecycle email.
-  const eligible = await filterByConsent(candidates, (id) =>
-    shouldSend(id, 'email', 'lifecycle'),
-  )
+  const eligible = await filterByConsent(candidates, async (id) => {
+    const gate = await resolveSendGate(id, 'email', 'lifecycle')
+    return gate.allowed
+  })
 
   let created = 0
   for (const c of eligible) {
@@ -139,7 +140,8 @@ export async function executeAction(id: string): Promise<{ ok: boolean; error?: 
 
   if (action.kind === 'email_contact') {
     const p = (action.payload ?? {}) as { profileId?: string; email?: string; subject?: string; body?: string }
-    if (p.profileId && p.email && (await shouldSend(p.profileId, 'email', 'lifecycle'))) {
+    const gate = p.profileId ? await resolveSendGate(p.profileId, 'email', 'lifecycle') : null
+    if (p.profileId && p.email && gate?.allowed) {
       const unsubscribeUrl = buildUnsubscribeUrl({ baseUrl: SITE_URL, profileId: p.profileId, category: 'lifecycle' })
       const safe = (p.body || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\n/g, '<br/>')
       await enqueueEmail({

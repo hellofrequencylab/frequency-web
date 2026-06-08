@@ -4,7 +4,7 @@
 // IS the referral code too. (The earlier referral / gift_zap codes are retired; any
 // already minted keep working but aren't re-provisioned.) Server-only.
 
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import { generateSlug } from './codes'
 import { connectUrl } from './links'
 import { STYLE_PRESETS, DEFAULT_STYLE, type QrStyle } from './style'
@@ -35,7 +35,7 @@ const SPEC: Record<MemberCodePurpose, { title: string; destination_type: string;
 
 /** Return the member's three personal codes, creating any that don't exist yet. */
 export async function ensureMemberCodes(profileId: string, handle: string): Promise<MemberCodeRow[]> {
-  const db = createAdminClient()
+  const db = await createClient()
 
   const { data: existing } = await db
     .from('qr_codes')

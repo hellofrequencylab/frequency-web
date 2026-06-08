@@ -20,6 +20,11 @@ const SECRET = process.env.STRIPE_SECRET_KEY
 /** The Stripe client, or null when billing isn't configured. */
 export const stripe = SECRET ? new Stripe(SECRET) : null
 
+// The webhook route guards `if (!stripe || !STRIPE_WEBHOOK_SECRET)` before use.
+// Warn at module load (not throw) so a misconfigured env doesn't crash unrelated pages.
+if (SECRET && !process.env.STRIPE_WEBHOOK_SECRET) {
+  console.warn('[stripe] STRIPE_WEBHOOK_SECRET is not set — webhook endpoint will return 503')
+}
 export const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET ?? ''
 
 /** Explicit price id for a paid tier, if the owner configured one. Optional — when

@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getAllCategories, helpHref } from '@/lib/help/content'
+import { IndexTemplate } from '@/components/templates'
 
 type Params = { params: Promise<{ category: string }> }
 
@@ -27,18 +28,12 @@ export default async function HelpCategoryPage({ params }: Params) {
   if (!cat) notFound()
 
   return (
-    <div>
-      <nav className="mb-4 text-sm text-subtle">
-        <Link href="/help" className="hover:text-text">
-          Help
-        </Link>{' '}
-        / <span className="text-muted">{cat.title}</span>
-      </nav>
-
-      <h1 className="font-display text-3xl text-text">{cat.title}</h1>
-      {cat.description && <p className="mt-2 text-muted">{cat.description}</p>}
-
-      <ul className="mt-8 divide-y divide-border rounded-xl border border-border bg-surface-elevated">
+    <IndexTemplate
+      title={cat.title}
+      description={cat.description}
+      back={{ href: '/help', label: 'Help center' }}
+    >
+      <ul className="divide-y divide-border rounded-xl border border-border bg-surface-elevated">
         {cat.articles.map((a) => (
           <li key={a.slug}>
             <Link href={helpHref(cat.slug, a.slug)} className="block px-5 py-4 hover:bg-surface">
@@ -50,6 +45,6 @@ export default async function HelpCategoryPage({ params }: Params) {
           </li>
         ))}
       </ul>
-    </div>
+    </IndexTemplate>
   )
 }

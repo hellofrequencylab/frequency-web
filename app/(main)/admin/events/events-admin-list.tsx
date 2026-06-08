@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { CalendarDays, MapPin } from 'lucide-react'
+import { CalendarDays, MapPin, Pencil } from 'lucide-react'
 import { CancelToggle } from './events-client'
 import type { AdminEvent } from './load-events'
 
@@ -93,6 +93,13 @@ function EventRow({ event }: { event: AdminEvent }) {
         </div>
       </div>
 
+      <Link
+        href={`/admin/events/${event.id}`}
+        className="shrink-0 rounded-lg border border-border p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+        aria-label="Edit event"
+      >
+        <Pencil className="h-3.5 w-3.5" />
+      </Link>
       <CancelToggle id={event.id} isCancelled={event.is_cancelled ?? false} />
     </div>
   )

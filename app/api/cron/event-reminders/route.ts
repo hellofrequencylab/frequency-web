@@ -138,14 +138,14 @@ async function processLead(lead: ReminderLead): Promise<{ events: number; sent: 
         }
       }
 
-      if (wantsPush) {
-        await sendPushToProfile(profile.id, {
-          title: lead === '24h' ? `🗓️ Tomorrow: ${ev.title}` : `⏰ Starting soon: ${ev.title}`,
-          body:  ev.location ? `${formatRelative(lead)} · ${ev.location}` : formatRelative(lead),
-          url:   `/events/${ev.slug}`,
-          tag:   `event-${ev.id}-${lead}`,
-        })
-      }
+      // Gate is inside sendPushToProfile (full preference + consent check).
+      // wantsPush above is kept for the early-exit optimization only.
+      await sendPushToProfile(profile.id, {
+        title: lead === '24h' ? `🗓️ Tomorrow: ${ev.title}` : `⏰ Starting soon: ${ev.title}`,
+        body:  ev.location ? `${formatRelative(lead)} · ${ev.location}` : formatRelative(lead),
+        url:   `/events/${ev.slug}`,
+        tag:   `event-${ev.id}-${lead}`,
+      }, 'events')
 
       await admin
         .from('event_rsvps')
