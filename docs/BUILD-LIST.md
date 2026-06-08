@@ -33,6 +33,7 @@ site for everyone, function-gated per role* — and **(2) the money layer** (ent
 
 ## Progress log
 
+- **2026-06-08 ✅ model correction + audits** — Crew = the paid membership tier (migration `20260608050000`, values `free|crew|supporter`); ROLES.md vision rewritten. Two best-practice audits (access-control · page-framework) folded into track **PB** — no security holes, no `text-[Npx]`; main work = unify "is paid" to the tier + re-compose ~26 hand-rolled pages.
 - **2026-06-08 ✅ P2 (decouple, §11.2)** — paid is now the **tier only** (removed the role≥crew proxy from `columnsForHats`); stewards (host+) get full on steward surfaces via their role, not payment; `/upgrade` sets `membership_tier` (Crew = pure stewardship). Backfill means no current user loses access. *Follow-up policy: auto-comp leaders' membership on promotion?* PR #411.
 - **2026-06-08 ✅ P2.1 (live)** — `membership_tier` migration **applied** to the DB (backfilled: 10 paid / 1 free); read path flipped from the crew proxy to the real column (`lib/auth.ts` → `getViewerHats` → `deriveTier`). The entitlement is now real.
 - **2026-06-08 ⏳ P2.1 (foundation)** — `deriveTier` + `lib/core/entitlement.ts`; `getViewerHats` sets `tier`; migration `20260608040000_membership_tier.sql` authored (⚠️ apply pending). Behavior-preserving. PR #410.
@@ -144,6 +145,44 @@ site for everyone, function-gated per role* — and **(2) the money layer** (ent
 Designed, sequenced after Stage C2: **D1 The Collective** (contributor verification → paid offerings → payout) · **D3 Affiliate** (referral → commission → payout ledger) · **D4 Donations & Grants** (Foundation rail) · **D5 Lab Spaces** (gym SaaS + Lab membership + rollup) · **Money foundation** (entity partition + `financial_transactions` ledger, ADR-029/032).
 
 ---
+
+## PB — Best-practice cleanup & hardening (2026-06-08 audits)
+
+> Two read-only audits (access-control architecture · page-framework consistency). Verdict:
+> **the architecture is well-layered and there are no security holes** — the gaps are *semantic
+> drift* (gating computed two ways) and *incomplete framework adoption* (cobbled pages).
+
+### PB.1 — Unify access control (one capability layer)
+
+The permission stack (matrix → per-scope resolver → staff matrix → nav grid) is sound; the issue
+is **"is paid / is steward" computed in divergent ways**. Now that Crew = the paid tier (decoupled
+from role), the role-based proxies are wrong and must move to the tier.
+
+| # | Item | Where | Status |
+|---|---|---|---|
+| PB.1a | Drop the role≥crew fallback in `deriveTier` | `lib/core/entitlement.ts` | ✅ done |
+| PB.1b | **Unify "is paid" → the tier** — replace `atLeastRole(role,'crew')` gamification gates | `lib/core/capabilities.ts:125`, `lib/season-ranks.ts:75`, `lib/zaps.ts:36`, `app/(main)/layout.tsx`, `entry-points/actions.ts`, `codes/actions.ts` | 📋 **next** |
+| PB.1c | Thread the tier into the per-scope resolver (a `ViewerContext { role, tier, personas, staff }`) so `capabilities.ts` can gate on entitlement, not role | `lib/core/load-capabilities.ts`, `capabilities.ts` | 📋 |
+| PB.1d | Rename `requireCrew()` → `requirePaidTier()` (comments said "Crew feature", meant "paid") | entry-points/codes actions | 📋 |
+| PB.1e | Add a page-level `requireAdmin('janitor')` on the roles page so `assignRole` fails faster (defense in depth) | `/admin/roles` | 📋 |
+| PB.1f | Thread `profile_personas` through `getViewerHats` (unblocks P3 matrix columns) | `lib/core/viewer-hats.ts:37` | 📋 (with P3) |
+| PB.1g | Capability **reason** metadata ("upgrade to unlock" vs "host a circle to unlock") | resolver | 📋 nice-to-have |
+| PB.1h | Bring janitor-only admin surfaces (Vera/AI) under the matrix | `access-matrix.ts` | 📋 |
+
+### PB.2 — Page-framework re-composition (same framework on every page)
+
+**54% template adoption** (62/115 pages) — the rest hand-roll headers/layouts. Target 75%+.
+
+| # | Item | Status |
+|---|---|---|
+| PB.2a | **Delete the 5 duplicate `Stat` components** → use `StatCard` (`circles`, `channels`, `practices/[id]`, `admin/qr/analytics`, `admin/qr/stats`) | 📋 quick win |
+| PB.2b | Re-compose the quick wins onto templates: `/support`, `/growth`, `/crew/quests`, `/crew/store/ledger` (IndexTemplate) | 📋 quick win |
+| PB.2c | Re-compose the crew section + broadcast: `/crew` (Dashboard), `/broadcast` (Stream), `/crew/store`, achievements, challenges, journey, streaks | 📋 |
+| PB.2d | Re-compose the heavy detail pages: `/people/[handle]`, `/journeys/[slug]` (DetailTemplate) | 📋 |
+
+*(Specialist surfaces — message threads, editors, QR/CRM tools, scan landings — stay custom by
+design; ~27 pages.) Token hygiene is good: **zero** `text-[Npx]`, only 3 acceptable hardcoded-hex
+specialist tools.*
 
 ## Source map — legacy lists folded in here
 
