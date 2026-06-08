@@ -47,8 +47,11 @@ export function tierForPrice(priceId: string | null | undefined): EntitlementTie
 }
 
 export function appUrl(): string {
-  // Prefer an explicit URL; on Vercel fall back to the current deploy (so preview
-  // deploys send checkout back to themselves), else the production default.
+  // On a Vercel PREVIEW deploy, always use the deploy's own URL so checkout returns to
+  // the preview being tested — even when NEXT_PUBLIC_APP_URL points at production.
+  if (process.env.VERCEL_ENV === 'preview' && process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`
+  }
   if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`
   return 'https://frequencylocal.com'
