@@ -1,11 +1,12 @@
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, MapPin, Globe, Users, Lightbulb, User } from 'lucide-react'
+import { MapPin, Globe, Users, Lightbulb, User } from 'lucide-react'
 import { connectionsOwnerId } from '@/lib/connections/access'
 import { getSharedContact } from '@/lib/connections/store'
 import { canViewLead } from '@/lib/crm/visibility'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getInitials } from '@/lib/utils'
+import { DetailTemplate } from '@/components/templates'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,40 +40,36 @@ export default async function SharedContactPage({ params }: { params: Promise<{ 
   const website = c.website ? (c.website.startsWith('http') ? c.website : `https://${c.website}`) : null
   const hasLinks = website || c.socials.instagram || c.socials.linkedin || c.socials.x
 
+  const metaParts = [c.title, c.company].filter(Boolean).join(' · ')
+
   return (
     <div className="mx-auto max-w-2xl">
-      <Link
-        href="/people"
-        className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-text"
-      >
-        <ArrowLeft className="h-4 w-4" /> Back to people
-      </Link>
-
-      <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
-        <div className="flex items-start gap-4">
-          <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-lg font-semibold text-muted">
-            {c.displayName ? getInitials(name) : <User className="h-7 w-7" />}
+      <DetailTemplate
+        title={
+          <span className="inline-flex items-center gap-3 align-middle">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-base font-semibold text-muted">
+              {c.displayName ? getInitials(name) : <User className="h-6 w-6" />}
+            </span>
+            <span className="truncate">{name}</span>
           </span>
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="truncate text-xl font-bold text-text">{name}</h1>
-              <span className="inline-flex items-center gap-1 rounded-md bg-surface-elevated px-1.5 py-0.5 text-xs font-medium text-muted">
-                <Globe className="h-3 w-3" /> Network contact
-              </span>
-            </div>
-            {(c.title || c.company) && (
-              <p className="truncate text-sm text-muted">{[c.title, c.company].filter(Boolean).join(' · ')}</p>
-            )}
+        }
+        subtitle={
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            {metaParts && <span>{metaParts}</span>}
             {c.city && (
-              <p className="mt-1 inline-flex items-center gap-1 text-xs text-subtle">
-                <MapPin className="h-3 w-3" /> {c.city}
-              </p>
+              <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" /> {c.city}</span>
             )}
-          </div>
-        </div>
-
+          </span>
+        }
+        badges={
+          <span className="inline-flex items-center gap-1 rounded-md bg-surface-elevated px-1.5 py-0.5 text-xs font-medium text-muted">
+            <Globe className="h-3 w-3" /> Network contact
+          </span>
+        }
+      >
+      <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
         {/* How to act on it: ask the capturing steward for an intro. */}
-        <div className="mt-4 rounded-xl bg-surface-elevated/60 p-3">
+        <div className="rounded-xl bg-surface-elevated/60 p-3">
           <p className="flex items-center gap-1.5 text-sm text-muted">
             <Users className="h-4 w-4 shrink-0" /> Shared to the network by{' '}
             {c.ownerHandle ? (
@@ -107,6 +104,7 @@ export default async function SharedContactPage({ params }: { params: Promise<{ 
         A steward chose to share this private contact with stewards in {c.city ?? 'your area'}. Their notes, email and
         phone stay private — connect through the steward above.
       </p>
+      </DetailTemplate>
     </div>
   )
 }

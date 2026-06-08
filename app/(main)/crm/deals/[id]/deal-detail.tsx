@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import {
   Loader2, ChevronLeft, Trash2, Check, Save, StickyNote, Phone, Mail, Users, CheckSquare, Plus,
 } from 'lucide-react'
+import { DetailTemplate } from '@/components/templates'
 import { updateDeal, moveDeal, deleteDeal, addActivity, toggleTask, deleteActivity } from '../../actions'
 import { isError, type ActionResult } from '@/lib/action-result'
 import { formatMoney, type CrmStage, type CrmDeal, type CrmActivity } from '@/lib/crm/pipeline'
@@ -77,85 +78,44 @@ export function DealDetail({
         : 'bg-primary-bg text-primary-strong'
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-6">
-      <Link href="/crm" className="inline-flex items-center gap-1 text-sm font-medium text-muted transition-colors hover:text-text">
+    <div className="mx-auto w-full max-w-3xl">
+      <Link href="/crm" className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-muted transition-colors hover:text-text">
         <ChevronLeft className="h-4 w-4" /> Pipeline
       </Link>
 
-      {error && <p className="rounded-lg border border-danger-bg bg-danger-bg/30 px-3 py-2 text-sm text-danger">{error}</p>}
+      {error && <p className="mb-4 rounded-lg border border-danger-bg bg-danger-bg/30 px-3 py-2 text-sm text-danger">{error}</p>}
 
-      {/* Header card — title, stage, value, the editable fields */}
-      <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full bg-transparent text-xl font-bold text-text focus:outline-none"
-              aria-label="Deal title"
-            />
-            <span className={`mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${statusTone}`}>
-              {deal.status}
-            </span>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <label className="text-xs text-muted">Stage</label>
-            <select
-              value={deal.stage_id ?? ''}
-              disabled={pending}
-              onChange={(e) => run(() => moveDeal(deal.id, e.target.value))}
-              className={field}
-            >
-              {stages.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <label className="flex flex-col gap-1 text-xs text-muted">
-            Contact
-            <input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Who" className={field} />
-            {deal.member && (
-              <Link href={`/people/${deal.member.handle}`} className="text-2xs text-primary-strong hover:underline">
-                Linked member · @{deal.member.handle}
-              </Link>
-            )}
-          </label>
-          <label className="flex flex-col gap-1 text-xs text-muted">
-            Value ($)
-            <input type="number" min={0} value={value} onChange={(e) => setValue(e.target.value)} className={field} />
-          </label>
-          <label className="flex flex-col gap-1 text-xs text-muted">
-            Expected close
-            <input type="date" value={close} onChange={(e) => setClose(e.target.value)} className={field} />
-          </label>
-          <label className="flex flex-col gap-1 text-xs text-muted">
-            Source
-            <input value={source} onChange={(e) => setSource(e.target.value)} placeholder="e.g. referral, event" className={field} />
-          </label>
-        </div>
-
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3 text-xs text-muted">
-            <span className="text-base font-bold tabular-nums text-text">{formatMoney(Number(value) || 0, deal.currency)}</span>
-            {deal.owner && (
-              <span className="inline-flex items-center gap-1.5">
-                {deal.owner.avatar_url ? (
-                  <Image src={deal.owner.avatar_url} alt="" width={20} height={20} className="h-5 w-5 rounded-full object-cover" />
-                ) : (
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary-bg text-[9px] font-semibold text-primary-strong">
-                    {getInitials(deal.owner.display_name)}
-                  </span>
-                )}
-                {deal.owner.display_name}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
+      <DetailTemplate
+        title={
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="w-full min-w-0 bg-transparent text-xl font-bold text-text focus:outline-none sm:text-2xl"
+            aria-label="Deal title"
+          />
+        }
+        badges={
+          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${statusTone}`}>
+            {deal.status}
+          </span>
+        }
+        actions={
+          <>
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-muted">Stage</label>
+              <select
+                value={deal.stage_id ?? ''}
+                disabled={pending}
+                onChange={(e) => run(() => moveDeal(deal.id, e.target.value))}
+                className={field}
+              >
+                {stages.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
             {wonStage && deal.stage_id !== wonStage.id && (
               <button
                 type="button"
@@ -194,6 +154,51 @@ export function DealDetail({
             >
               {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Save
             </button>
+          </>
+        }
+      >
+      <div className="space-y-6">
+      {/* Editable fields */}
+      <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="flex flex-col gap-1 text-xs text-muted">
+            Contact
+            <input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Who" className={field} />
+            {deal.member && (
+              <Link href={`/people/${deal.member.handle}`} className="text-2xs text-primary-strong hover:underline">
+                Linked member · @{deal.member.handle}
+              </Link>
+            )}
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-muted">
+            Value ($)
+            <input type="number" min={0} value={value} onChange={(e) => setValue(e.target.value)} className={field} />
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-muted">
+            Expected close
+            <input type="date" value={close} onChange={(e) => setClose(e.target.value)} className={field} />
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-muted">
+            Source
+            <input value={source} onChange={(e) => setSource(e.target.value)} placeholder="e.g. referral, event" className={field} />
+          </label>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-border pt-4">
+          <div className="flex items-center gap-3 text-xs text-muted">
+            <span className="text-base font-bold tabular-nums text-text">{formatMoney(Number(value) || 0, deal.currency)}</span>
+            {deal.owner && (
+              <span className="inline-flex items-center gap-1.5">
+                {deal.owner.avatar_url ? (
+                  <Image src={deal.owner.avatar_url} alt="" width={20} height={20} className="h-5 w-5 rounded-full object-cover" />
+                ) : (
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary-bg text-[9px] font-semibold text-primary-strong">
+                    {getInitials(deal.owner.display_name)}
+                  </span>
+                )}
+                {deal.owner.display_name}
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -309,6 +314,8 @@ export function DealDetail({
           <Trash2 className="h-4 w-4" /> Delete deal
         </button>
       </div>
+      </div>
+      </DetailTemplate>
     </div>
   )
 }

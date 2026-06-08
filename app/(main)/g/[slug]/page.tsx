@@ -3,6 +3,7 @@ import { Zap } from 'lucide-react'
 import { requireProfileId } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getInitials } from '@/lib/utils'
+import { FocusTemplate } from '@/components/templates'
 import { GiftButton } from './gift-button'
 
 export const dynamic = 'force-dynamic'
@@ -34,27 +35,33 @@ export default async function GiftPage({ params }: { params: Promise<{ slug: str
   const name = owner.display_name ?? `@${owner.handle}`
 
   return (
-    <div className="mx-auto w-full max-w-md text-center py-12">
-      <div className="w-16 h-16 mx-auto rounded-full bg-primary-bg text-primary-strong flex items-center justify-center overflow-hidden">
-        {owner.avatar_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={owner.avatar_url} alt="" className="w-full h-full object-cover" />
-        ) : (
-          <span className="text-lg font-bold">{getInitials(name)}</span>
-        )}
-      </div>
+    <FocusTemplate
+      width="narrow"
+      divider={false}
+      title={
+        <span className="flex items-center justify-center gap-1.5">
+          <Zap className="h-5 w-5 text-primary" /> Gift {name} a zap
+        </span>
+      }
+    >
+      <div className="text-center">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-primary-bg text-primary-strong">
+          {owner.avatar_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={owner.avatar_url} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <span className="text-lg font-bold">{getInitials(name)}</span>
+          )}
+        </div>
 
-      <h1 className="flex items-center justify-center gap-1.5 text-2xl font-bold text-text mt-4">
-        <Zap className="w-5 h-5 text-primary" /> Gift {name} a zap
-      </h1>
-
-      <div className="mt-6 flex justify-center">
-        {isSelf ? (
-          <p className="text-sm text-muted">This is your own code — share it for others to gift you a zap.</p>
-        ) : (
-          <GiftButton slug={slug} />
-        )}
+        <div className="mt-6 flex justify-center">
+          {isSelf ? (
+            <p className="text-sm text-muted">This is your own code — share it for others to gift you a zap.</p>
+          ) : (
+            <GiftButton slug={slug} />
+          )}
+        </div>
       </div>
-    </div>
+    </FocusTemplate>
   )
 }

@@ -1,9 +1,8 @@
-import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import { ArrowLeft } from 'lucide-react'
 import { getCallerProfile } from '@/lib/auth'
 import { getTicketForViewer } from '@/lib/support/store'
 import { relativeTime } from '@/lib/utils'
+import { DetailTemplate } from '@/components/templates'
 import { TicketMessages } from '@/components/support/ticket-messages'
 import { TicketContext } from '@/components/support/ticket-context'
 import { TicketReply } from '@/components/support/ticket-reply'
@@ -21,30 +20,28 @@ export default async function SupportTicketPage({ params }: { params: Promise<{ 
   if (!ticket) notFound()
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-5">
-      <Link href="/support" className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted hover:text-text">
-        <ArrowLeft className="h-3.5 w-3.5" /> Your reports
-      </Link>
-
-      <header className="rounded-2xl border border-border bg-surface p-4">
-        <div className="flex items-center gap-2">
+    <div className="mx-auto w-full max-w-3xl">
+      <DetailTemplate
+        title={ticket.subject}
+        subtitle={`${TYPE_LABELS[ticket.type]} · #${ticket.ref} · opened ${relativeTime(ticket.createdAt)}`}
+        badges={
           <span className={`rounded-full px-2 py-0.5 text-2xs font-semibold ${statusChipClass(ticket.status)}`}>
             {STATUS_LABELS[ticket.status]}
           </span>
-          <span className="text-2xs font-medium text-subtle">{TYPE_LABELS[ticket.type]} · #{ticket.ref} · opened {relativeTime(ticket.createdAt)}</span>
-        </div>
-        <h1 className="mt-1.5 text-lg font-bold text-text">{ticket.subject}</h1>
-      </header>
+        }
+      >
+        <div className="space-y-5">
+          <TicketContext context={ticket.context} pageUrl={ticket.pageUrl} screenshotUrl={ticket.screenshotUrl} />
 
-      <TicketContext context={ticket.context} pageUrl={ticket.pageUrl} screenshotUrl={ticket.screenshotUrl} />
-
-      <section className="rounded-2xl border border-border bg-surface p-4">
-        <p className="mb-3 text-2xs font-semibold uppercase tracking-wide text-subtle">Conversation</p>
-        <TicketMessages messages={ticket.messages} />
-        <div className="mt-4 border-t border-border pt-3">
-          <TicketReply ticketId={ticket.id} disabled={ticket.status === 'closed'} />
+          <section className="rounded-2xl border border-border bg-surface p-4">
+            <p className="mb-3 text-2xs font-semibold uppercase tracking-wide text-subtle">Conversation</p>
+            <TicketMessages messages={ticket.messages} />
+            <div className="mt-4 border-t border-border pt-3">
+              <TicketReply ticketId={ticket.id} disabled={ticket.status === 'closed'} />
+            </div>
+          </section>
         </div>
-      </section>
+      </DetailTemplate>
     </div>
   )
 }
