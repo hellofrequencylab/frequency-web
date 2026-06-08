@@ -120,6 +120,71 @@ access = union of
 | Overlays | **`outposts`** `(nexus_id, lab_id?, place)` + **`labs`** (for-profit venues) + `channels`; members affiliate via join rows; events can scope to an outpost. |
 | All | one **capability resolver** computing the union per request/context (extends ADR-017). |
 
+## The access matrix (source of truth)
+
+Encodes the owner's **Roles & Permissions** sheet (2026-06-08). Legend: **✅ full** ·
+**✋ limited** (logged-out preview / free-tier or upgrade-gated / scoped partial) ·
+**🚫 none**. Columns are the role & persona hats; access to a surface is the **most-open**
+cell across every hat a person holds. *(Crew here = the old paid column; under the new model
+the ✋→✅ jump is the **Entitlement** gate, not the Crew stewardship role.)*
+
+| Surface | Vis | Mbr | Crew | Host | Guide | Mntr | Coll | Prac | Biz | Org | Anl | Adm | Jan |
+|---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
+| **Community** |||||||||||||||
+| Feed · Around You · Circles · Channels · Events · Marketplace · People | ✋ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Message Boards | 🚫 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **The Quest** |||||||||||||||
+| Dashboard · Journeys · Practices · Library | ✋ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| The Vault | ✋ | ✋ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Studio** |||||||||||||||
+| Overview | ✋ | ✋ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Support (Help Center) | 🚫 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Connections (Personal CRM) | 🚫 | ✋ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| CRM Pipeline (Business CRM) | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | ✋ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Website (hosted site builder) | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | ✋ | ✅ | ✅ | 🚫 | ✅ | ✅ |
+| Hook Network | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | ✋ | ✅ | 🚫 | ✅ | ✅ |
+| Growth Studio | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | ✋ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Finances (Earnings & Commissions) | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| QR Studio | 🚫 | ✋ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Platform** |||||||||||||||
+| Status (Platform Dashboard) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Insight (Analytics) | 🚫 | 🚫 | 🚫 | ✋ | 🚫 | 🚫 | 🚫 | ✋ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Vera AI | 🚫 | 🚫 | 🚫 | ✋ | 🚫 | 🚫 | 🚫 | 🚫 | ✋ | ✅ | ✅ | ✅ | ✅ |
+| Hubs & Nexuses · Memberships · Pages | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | ✅ | ✅ |
+| Finances (Financial Dashboard) | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | ✅ |
+| Settings (Site Settings) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+
+**How to read it — the structure that drives the build:**
+- **One site for everyone.** All Community + Quest surfaces are ✅ for every member; Visitors get a
+  ✋ preview (Message Boards 🚫). Nobody gets a *different* site — see the principle below.
+- **✋ = the paid-membership gate.** The Vault, Studio Overview, Connections (Personal CRM) and QR
+  Studio are ✋ for free Members and ✅ once paid → this is the **Entitlement** axis (Free → Member).
+- **Studio business block** (CRM Pipeline · Website · Hook · Growth · Finances) is the **Partners**
+  surface: Business/Organization ✅, Practitioner ✋, Collaborator gets the Earnings view; Hook
+  Network is Org-only.
+- **Platform management** (Hubs & Nexuses · Memberships · Pages) is **Admin/Janitor only**, and
+  **Financial Dashboard is Janitor-only** (Admin excluded) — the Admin system, with the
+  financials/owner carve-out. ⚠️ *This centralizes structure management to Admin — stricter than
+  today, where Host/Guide self-manage structure. Confirm (open decision).*
+- **Status + Settings** are universal.
+
+> ⚠️ **Cells to confirm against the sheet:** the partner-column partials on **Insight**, **Vera AI**
+> and **Website** (Biz/Org/Analyst) were read from a rendered preview. **Outpost is intentionally out
+> of scope for now** (owner direction) — no Outpost column or surface is built yet.
+
+## Unified-site principle (owner directive)
+
+> "I want the site to be **exactly the same for everyone**, with different **functions and options**
+> available for the different roles."
+
+The site is **identical for everyone** — same shell, same pages, same navigation. Roles never get
+different *destinations*; they get different **functions and options inside the shared surfaces**. A
+Host opens the same circle page a Member does — just with extra controls on it. Therefore permissions
+gate **capabilities within a surface**, not whole routes: the matrix above is read as *how much
+function* (🚫 none / ✋ limited / ✅ full) each hat gets per surface, and the resolver returns that
+**level** to the page so it can reveal the right controls. This supersedes "route gating + a separate
+/admin world" with "one set of pages that progressively reveal function by capability."
+
 ## Migrations from today
 
 - `community_role` global enum → **derived from `stewardships`** (keep a denormalized cache).
