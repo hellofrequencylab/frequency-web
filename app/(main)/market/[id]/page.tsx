@@ -1,10 +1,11 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, MapPin, MessageCircle, CalendarDays, Pencil } from 'lucide-react'
+import { MapPin, MessageCircle, CalendarDays, Pencil } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import { getListing, LISTING_KINDS, type ListingKind } from '@/lib/marketplace'
 import { relativeTime } from '@/lib/utils'
 import { ListingOwnerControls } from '@/components/market/listing-owner-controls'
+import { DetailTemplate } from '@/components/templates'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,31 +24,28 @@ export default async function ListingPage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="mx-auto w-full max-w-2xl">
-      <Link href="/market" className="mb-4 inline-flex items-center gap-1.5 text-sm text-subtle transition-colors hover:text-text">
-        <ArrowLeft className="h-4 w-4" /> Marketplace
-      </Link>
-
-      <div className="rounded-3xl border border-border bg-surface p-5 shadow-sm">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center rounded-full bg-primary-bg px-2 py-0.5 text-2xs font-semibold uppercase tracking-wide text-primary-strong">
-            {KIND_LABEL[listing.kind] ?? listing.kind}
+      <DetailTemplate
+        title={listing.title}
+        subtitle={
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            {listing.price_note && <span className="font-semibold text-text">{listing.price_note}</span>}
+            {place && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{place}</span>}
+            <span className="inline-flex items-center gap-1"><CalendarDays className="h-3 w-3" />{relativeTime(listing.created_at)}</span>
           </span>
-          {listing.category && <span className="text-xs text-subtle">{listing.category}</span>}
-          {listing.status !== 'active' && (
-            <span className="inline-flex items-center rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold uppercase tracking-wide text-muted">{listing.status}</span>
-          )}
-        </div>
-
-        <div className="mt-2 flex items-start justify-between gap-3">
-          <h1 className="text-2xl font-bold text-text">{listing.title}</h1>
-          {listing.price_note && <span className="shrink-0 text-lg font-bold text-text">{listing.price_note}</span>}
-        </div>
-
-        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-subtle">
-          {place && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{place}</span>}
-          <span className="inline-flex items-center gap-1"><CalendarDays className="h-3 w-3" />{relativeTime(listing.created_at)}</span>
-        </div>
-
+        }
+        badges={
+          <span className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center rounded-full bg-primary-bg px-2 py-0.5 text-2xs font-semibold uppercase tracking-wide text-primary-strong">
+              {KIND_LABEL[listing.kind] ?? listing.kind}
+            </span>
+            {listing.category && <span className="text-xs text-subtle">{listing.category}</span>}
+            {listing.status !== 'active' && (
+              <span className="inline-flex items-center rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold uppercase tracking-wide text-muted">{listing.status}</span>
+            )}
+          </span>
+        }
+      >
+      <div className="rounded-3xl border border-border bg-surface p-5 shadow-sm">
         {/* Images */}
         {listing.images.length > 0 && (
           <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -96,6 +94,7 @@ export default async function ListingPage({ params }: { params: Promise<{ id: st
           <ListingOwnerControls id={listing.id} status={listing.status} />
         </div>
       )}
+      </DetailTemplate>
     </div>
   )
 }

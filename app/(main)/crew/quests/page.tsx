@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { Map as MapIcon, ArrowRight } from 'lucide-react'
 import { getSeasonalQuests, type QuestJourneyCard } from '@/lib/quests'
-import { PageHeading } from '@/components/templates/page-heading'
+import { IndexTemplate } from '@/components/templates'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { accentColor, accentTint } from '@/lib/studio/accents'
@@ -37,14 +37,12 @@ export default async function QuestsPage() {
   const quests = await getSeasonalQuests()
 
   return (
-    <div>
-      <PageHeading
-        eyebrow="The Quest"
-        title="Quests"
-        description="Each season's Quest gathers a set of Journeys — one per Pillar — to move through. Every Journey is a handful of practices; start any of them free, and your progress rides your daily practice log."
-        back={{ href: '/crew', label: 'Dashboard' }}
-      />
-
+    <IndexTemplate
+      eyebrow="The Quest"
+      title="Quests"
+      description="Each season's Quest gathers a set of Journeys — one per Pillar — to move through. Every Journey is a handful of practices; start any of them free, and your progress rides your daily practice log."
+      back={{ href: '/crew', label: 'Dashboard' }}
+    >
       {quests.length === 0 ? (
         <EmptyState
           icon={MapIcon}
@@ -74,6 +72,6 @@ export default async function QuestsPage() {
           ))}
         </div>
       )}
-    </div>
+    </IndexTemplate>
   )
 }

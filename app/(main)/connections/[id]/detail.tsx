@@ -6,6 +6,7 @@ import {
   Mail, Phone, MapPin, Globe, Lock, Pencil, Check, X, Plus, Trash2, Loader2, User, Sparkles,
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
+import { DetailTemplate } from '@/components/templates'
 import { normalizeTag } from '@/lib/connections/normalize'
 import type { ContactDetail } from '@/lib/connections/store'
 import type { ContactStatus, Visibility } from '@/lib/connections/types'
@@ -54,42 +55,36 @@ export function Detail({ initial }: { initial: ContactDetail }) {
   }
 
   return (
-    <div className="space-y-5">
-      {/* Header */}
-      <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
-        <div className="flex items-start gap-4">
+    <DetailTemplate
+      title={
+        <span className="inline-flex items-center gap-3 align-middle">
           {avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={avatarUrl} alt="" className="h-16 w-16 shrink-0 rounded-full object-cover ring-2 ring-surface" />
+            <img src={avatarUrl} alt="" className="h-12 w-12 shrink-0 rounded-full object-cover ring-2 ring-surface" />
           ) : (
-            <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-lg font-semibold text-muted">
-              {contact.displayName ? getInitials(name) : <User className="h-7 w-7" />}
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-base font-semibold text-muted">
+              {contact.displayName ? getInitials(name) : <User className="h-6 w-6" />}
             </span>
           )}
-          <div className="min-w-0 flex-1">
-            <h1 className="truncate text-xl font-bold text-text">{name}</h1>
-            {(contact.title || contact.company) && (
-              <p className="truncate text-sm text-muted">{[contact.title, contact.company].filter(Boolean).join(' · ')}</p>
-            )}
-            <p className="mt-1 text-xs text-subtle">Added {fmtDate(contact.createdAt)}</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setEditing((v) => !v)}
-            className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-text transition-colors hover:bg-surface-elevated"
-          >
-            {editing ? <X className="h-3.5 w-3.5" /> : <Pencil className="h-3.5 w-3.5" />}
-            {editing ? 'Close' : 'Edit'}
-          </button>
-        </div>
-
-        {/* Quick controls */}
-        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <span className="truncate">{name}</span>
+        </span>
+      }
+      subtitle={
+        <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+          {(contact.title || contact.company) && (
+            <span>{[contact.title, contact.company].filter(Boolean).join(' · ')}</span>
+          )}
+          <span className="text-xs text-subtle">Added {fmtDate(contact.createdAt)}</span>
+        </span>
+      }
+      badges={
+        <span className="inline-flex items-center gap-1.5">
           <select
             value={contact.status}
             disabled={pending}
             onChange={(e) => start(async () => { await setStatus(contact.id, e.target.value as ContactStatus); router.refresh() })}
             className="rounded-lg border border-border-strong bg-surface px-2 py-1 text-xs text-text focus:outline-none"
+            aria-label="Status"
           >
             <option value="new">New</option>
             <option value="active">Active</option>
@@ -107,17 +102,30 @@ export function Detail({ initial }: { initial: ContactDetail }) {
             {contact.visibility === 'network' ? <Globe className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
             {contact.visibility === 'network' ? 'Network' : 'Private'}
           </button>
+        </span>
+      }
+      actions={
+        <>
+          <button
+            type="button"
+            onClick={() => setEditing((v) => !v)}
+            className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-text transition-colors hover:bg-surface-elevated"
+          >
+            {editing ? <X className="h-3.5 w-3.5" /> : <Pencil className="h-3.5 w-3.5" />}
+            {editing ? 'Close' : 'Edit'}
+          </button>
           <button
             type="button"
             disabled={pending}
             onClick={onDelete}
-            className="ml-auto inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-danger transition-colors hover:bg-danger-bg"
+            className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-danger transition-colors hover:bg-danger-bg"
           >
             <Trash2 className="h-3.5 w-3.5" /> Delete
           </button>
-        </div>
-      </div>
-
+        </>
+      }
+    >
+    <div className="space-y-5">
       {/* Details — read or edit. A calm, divided panel rather than three heavy
           boxes: one soft surface, section labels, hairline dividers between. */}
       {editing ? (
@@ -206,6 +214,7 @@ export function Detail({ initial }: { initial: ContactDetail }) {
         </ul>
       </Section>
     </div>
+    </DetailTemplate>
   )
 }
 
