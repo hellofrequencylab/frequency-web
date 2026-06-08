@@ -27,7 +27,7 @@ contacts   _events      computed)   audiences)  automation /  AI recommend +
 | **Traits** | tags + computed per-member variables | `member_tags` ✅, `member_traits` ✅ |
 | **Segments** | saved, reusable audience definitions | `segments` ✅ |
 | Activation | send / segment / automate | `campaigns`, `automation_rules`, comms spine |
-| **Intelligence** | feature store → AI site-improvement loop → retroactive rewards | track **PI** 📋 ([ADR-166](DECISIONS.md)) |
+| **Intelligence** | feature store → AI site-improvement loop → retroactive rewards | track **PI** ⏳ all 5 caps built ([ADR-166](DECISIONS.md)) |
 
 ## Layer 6 — Intelligence & Activation (track PI, [ADR-166](DECISIONS.md))
 
@@ -109,7 +109,7 @@ governed tag, so origin is segmentable forever. One channel taxonomy lives in
 | **3 · Segments** | saved segment definitions + Studio admin (name, predicates, member count) | ✅ shipped |
 | **4 · Activation** | trait segments selectable as campaign audiences (`seg:<slug>` → member contacts, consent-aware) | ✅ shipped |
 | **5 · Consent & experiments** | experiments + holdouts (`lib/experiments`) · append-only consent ledger + retention cron (`lib/consent`) | ✅ shipped |
-| **6 · Intelligence & Activation** | wide `interaction_events` capture → feature store → predictive traits → AI site-improvement loop → retroactive reward engine (track PI, [ADR-166](DECISIONS.md)) | 📋 PI.1 first |
+| **6 · Intelligence & Activation** | wide `interaction_events` capture → feature store → predictive traits → AI site-improvement loop → retroactive reward engine (track PI, [ADR-166](DECISIONS.md)) | ⏳ all 5 caps built (PI.1–PI.5) |
 
 ## Future-proofing (set up now, not retrofitted)
 

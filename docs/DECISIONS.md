@@ -5436,3 +5436,40 @@ moves. The allow-list is the seam the "virtual staff" grows along: new safe acti
 draft, promote a segment to a campaign, tune Vera copy) are added as registered, reversible entries —
 never as ad-hoc AI write access. Agentic support (Claude drafting ticket replies / fixes end-to-end)
 layers on top of this governed base in later increments.
+
+## ADR-168 — Retroactive reward engine: future rewards from past behavior, granted once
+
+**Status:** Accepted · built (migration `20260608110000_reward_grants.sql`). **Implements:** PI.5 /
+ADR-166. **Builds on:** the append-only gem/zap ledgers, the feature store (ADR-069/166), lifetime_rank (ADR-164).
+
+**Context.** Rewards were forward-only — `processGamificationEvent` fires on a live event, so a reward
+that didn't exist when the behavior happened could never be granted. The owner wants the opposite:
+*define a rule today and reward behavior members already earned.* This is only possible because the
+PI track banks an immutable history — the gem/zap ledgers, `lifetime_rank` (the locked peak), the
+behavioral feature store, and the `web_beta` tag are all durable, so a rule written now can read what
+happened last season.
+
+**Decision.** A **governed rule registry + an idempotent batch evaluator.**
+- **Rules** (`lib/rewards/rules.ts`) are pure predicates over a member's durable snapshot
+  (membership tier, lifetime rank, feature-store traits, tags) + a fixed reward — declared in git,
+  unit-tested, the same registry pattern as traits/site-actions. v1: `seasoned_agent` (ever reached
+  Agent → 200 gems), `og_beta`, `supporter_thanks`, `deep_engager`, `loyal_30`.
+- **Idempotency is the backstop.** `reward_grants` has a `UNIQUE (rule_key, profile_id)`; the
+  evaluator **claims before it pays** — insert the grant row first, and only on a fresh claim write the
+  reward into the gem/zap ledger. A re-run (or a concurrent run) loses the unique race and never
+  double-grants. So the engine is safe to run on any schedule.
+- **The reward lands in the existing ledgers** (`gem_transactions` / `zap_transactions`, action
+  `retro_reward`), so totals/rank stay in lockstep via their triggers — no parallel balance.
+- **Operator-driven** (`/admin/rewards`, Admin/Janitor): a dry-run **preview** shows what would grant
+  per rule (matched − already-granted) with no writes; one button grants the pending set.
+
+**Alternatives.** Grant inside the nightly trait cron automatically (rejected for v1 — keep a human in
+the loop on minting currency; the evaluator is cron-ready when trusted). Track a separate reward
+balance (rejected — reuse the gem/zap ledgers). Re-derive eligibility on every read (rejected — a grant
+is a one-time event; the ledger row is the record).
+
+**Consequences.** New rules are a reviewed code change with a stable key; running the engine is
+idempotent and auditable (`reward_grants` is the per-member receipt, readable by the member). The
+gems/zaps split is wired (v1 ships gem rules; zap rules drop in unchanged). Completes the PI track:
+capture (PI.1) → feature store (PI.2) → predictions (PI.3) → AI Studio (PI.4) → retroactive rewards
+(PI.5), all reading the same immutable history.
