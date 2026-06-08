@@ -1,21 +1,39 @@
 // Stripe checkout + billing-portal session creation (P2.2). Server-only. No-ops
 // (return null) when billing isn't configured, so callers degrade gracefully.
+//
+// Works with JUST the Stripe connector (STRIPE_SECRET_KEY): if no explicit price id is
+// set, checkout builds an inline subscription price, and `confirmCheckout` flips the
+// member's tier on the success redirect — so the upgrade works even before a webhook
+// is wired (the webhook then handles async events + cancellation).
 
-import { stripe, priceFor, appUrl } from './stripe'
+import type Stripe from 'stripe'
+import { stripe, priceFor, membershipAmount, appUrl } from './stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { EntitlementTier } from '@/lib/core/entitlement'
+
+type PaidTier = Exclude<EntitlementTier, 'free'>
 
 /** Create a subscription Checkout session for a membership tier; returns the URL. */
 export async function createMembershipCheckout(opts: {
   profileId: string
   email?: string | null
-  tier: Exclude<EntitlementTier, 'free'>
+  tier: PaidTier
 }): Promise<string | null> {
   if (!stripe) return null
-  const price = priceFor(opts.tier)
-  if (!price) return null
 
-  // Reuse the profile's Stripe customer if we've seen one (keeps one customer per member).
+  const priceId = priceFor(opts.tier)
+  const lineItem: Stripe.Checkout.SessionCreateParams.LineItem = priceId
+    ? { price: priceId, quantity: 1 }
+    : {
+        quantity: 1,
+        price_data: {
+          currency: 'usd',
+          product_data: { name: opts.tier === 'supporter' ? 'Frequency Supporter' : 'Frequency Membership (Crew)' },
+          unit_amount: membershipAmount(),
+          recurring: { interval: 'month' },
+        },
+      }
+
   const { data: profile } = await createAdminClient()
     .from('profiles')
     .select('stripe_customer_id')
@@ -25,16 +43,41 @@ export async function createMembershipCheckout(opts: {
 
   const session = await stripe.checkout.sessions.create({
     mode: 'subscription',
-    line_items: [{ price, quantity: 1 }],
+    line_items: [lineItem],
     ...(customer ? { customer } : { customer_email: opts.email ?? undefined }),
     client_reference_id: opts.profileId,
     metadata: { profile_id: opts.profileId, tier: opts.tier },
     subscription_data: { metadata: { profile_id: opts.profileId, tier: opts.tier } },
-    success_url: `${appUrl()}/settings/billing?upgraded=1`,
+    success_url: `${appUrl()}/settings/billing?upgraded=1&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${appUrl()}/upgrade`,
     allow_promotion_codes: true,
   })
   return session.url
+}
+
+/**
+ * Confirm a completed checkout on the success redirect and flip the member's tier
+ * (a webhook-independent fallback). Verifies the session is paid AND belongs to this
+ * profile before writing. Returns the new tier, or null if not applicable.
+ */
+export async function confirmCheckout(sessionId: string, profileId: string): Promise<EntitlementTier | null> {
+  if (!stripe) return null
+  let session: Stripe.Checkout.Session
+  try {
+    session = await stripe.checkout.sessions.retrieve(sessionId)
+  } catch {
+    return null
+  }
+  if (session.payment_status !== 'paid') return null
+  if ((session.metadata?.profile_id ?? session.client_reference_id) !== profileId) return null
+
+  const tier: EntitlementTier = session.metadata?.tier === 'supporter' ? 'supporter' : 'crew'
+  const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id
+  await createAdminClient()
+    .from('profiles')
+    .update({ membership_tier: tier, ...(customerId ? { stripe_customer_id: customerId } : {}) })
+    .eq('id', profileId)
+  return tier
 }
 
 /** Open the Stripe billing portal for a member to manage/cancel; returns the URL. */
