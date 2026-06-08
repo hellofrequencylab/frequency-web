@@ -15,6 +15,7 @@ import { PresenceHeartbeat } from '@/components/presence/heartbeat'
 import { PushRegistration } from '@/components/push/registration'
 import { VeraLauncher } from '@/components/vera/vera-launcher'
 import { PageViewTracker } from '@/components/analytics/track-provider'
+import { ObserveProvider } from '@/components/analytics/observe-provider'
 import { GaConsentGate } from '@/components/analytics/ga-consent-gate'
 import { hasConsent } from '@/lib/consent/consent'
 import { demoModeEnabled } from '@/lib/platform-flags'
@@ -217,6 +218,7 @@ export default async function MainLayout({
         <ChoresOverlay chores={chores} nextAction={coachNext} />
       )}
       <PageViewTracker />
+      <ObserveProvider />
       <DailyCheckIn />
       <TourProvider initialState={tourState} satisfied={tourSatisfied} />
     </AppShell>
