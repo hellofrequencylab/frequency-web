@@ -12,6 +12,9 @@
 import type { EntitlementTier } from './access-matrix'
 
 export type { EntitlementTier }
+// `isPaid(tier)` is THE single "is this person paid?" predicate (defined next to the
+// matrix it feeds). Re-exported here so app code imports it from the entitlement seam.
+export { isPaid } from './access-matrix'
 
 export const ENTITLEMENT_TIERS: readonly EntitlementTier[] = ['free', 'crew', 'supporter'] as const
 
@@ -19,11 +22,6 @@ export const ENTITLEMENT_LABEL: Record<EntitlementTier, string> = {
   free: 'Member', // the free participant — "come in as a member on the free tier"
   crew: 'Crew', // the paid membership
   supporter: 'Supporter',
-}
-
-/** True for the paid tiers (Crew or Supporter). */
-export function isPaidTier(tier: EntitlementTier | null | undefined): boolean {
-  return tier === 'crew' || tier === 'supporter'
 }
 
 /**

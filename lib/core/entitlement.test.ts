@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { deriveTier, isPaidTier } from '@/lib/core/entitlement'
+import { deriveTier, isPaid } from '@/lib/core/entitlement'
 import { accessTo } from '@/lib/core/access-matrix'
 
 describe('deriveTier', () => {
@@ -12,12 +12,12 @@ describe('deriveTier', () => {
   })
 })
 
-describe('isPaidTier', () => {
+describe('isPaid', () => {
   it('Crew and Supporter are paid; free is not', () => {
-    expect(isPaidTier('free')).toBe(false)
-    expect(isPaidTier('crew')).toBe(true)
-    expect(isPaidTier('supporter')).toBe(true)
-    expect(isPaidTier(null)).toBe(false)
+    expect(isPaid('free')).toBe(false)
+    expect(isPaid('crew')).toBe(true)
+    expect(isPaid('supporter')).toBe(true)
+    expect(isPaid(null)).toBe(false)
   })
 })
 

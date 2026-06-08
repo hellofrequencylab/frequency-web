@@ -161,10 +161,11 @@ from role), the role-based proxies are wrong and must move to the tier.
 | # | Item | Where | Status |
 |---|---|---|---|
 | PB.1a | Drop the role≥crew fallback in `deriveTier` | `lib/core/entitlement.ts` | ✅ done |
-| PB.1b | **Unify "is paid" → the tier** — replace `atLeastRole(role,'crew')` gamification gates | `lib/core/capabilities.ts:125`, `lib/season-ranks.ts:75`, `lib/zaps.ts:36`, `app/(main)/layout.tsx`, `entry-points/actions.ts`, `codes/actions.ts` | 📋 **next** |
-| PB.1c | Thread the tier into the per-scope resolver (a `ViewerContext { role, tier, personas, staff }`) so `capabilities.ts` can gate on entitlement, not role | `lib/core/load-capabilities.ts`, `capabilities.ts` | 📋 |
-| PB.1d | Rename `requireCrew()` → `requirePaidTier()` (comments said "Crew feature", meant "paid") | entry-points/codes actions | 📋 |
-| PB.1e | Add a page-level `requireAdmin('janitor')` on the roles page so `assignRole` fails faster (defense in depth) | `/admin/roles` | 📋 |
+| PB.1b | **Unify "is paid" → the tier** — `isPaid(tier)` is now the single predicate; gamification gates moved off `atLeastRole(role,'crew')` (capabilities task · zaps rate · entry-points · codes). Also fixed a regression: beta-grant now comps the Crew **tier**. | `capabilities.ts`, `zaps.ts`, `entry-points`/`codes` actions, `beta/actions.ts` | ✅ done |
+| PB.1c | Thread the tier into the per-scope resolver (`Viewer.tier`, fed by `load-capabilities`) | `load-capabilities.ts`, `capabilities.ts` | ✅ done |
+| PB.1d | `requireCrew()` — name is now correct (Crew = the paid tier); body checks `isPaid(tier)` | entry-points/codes | ✅ done |
+| PB.1e | Page-level `requireAdmin('janitor')` on `/admin/roles` (defense in depth for `assignRole`) | `/admin/roles` | ✅ already in place |
+| PB.1i | **`isEndorsed` display → tier** + retire the `community_role='crew'` value (migrate rows; drop the beta role-write) — needs `membership_tier` threaded through the feed author RPCs + profile/circle selects (`layout` training gate already moved to host+) | `season-ranks.ts` + feed/profile types | 📋 **remaining** |
 | PB.1f | Thread `profile_personas` through `getViewerHats` (unblocks P3 matrix columns) | `lib/core/viewer-hats.ts:37` | 📋 (with P3) |
 | PB.1g | Capability **reason** metadata ("upgrade to unlock" vs "host a circle to unlock") | resolver | 📋 nice-to-have |
 | PB.1h | Bring janitor-only admin surfaces (Vera/AI) under the matrix | `access-matrix.ts` | 📋 |
