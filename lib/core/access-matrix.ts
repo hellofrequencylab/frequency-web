@@ -38,8 +38,9 @@ export function maxLevel(a: AccessLevel, b: AccessLevel): AccessLevel {
 
 // ── New axes the matrix introduces (see docs/ROLES.md). Defined here so the matrix
 //    is self-contained until the dedicated tables land (P1.3 / P2 / P3). ──────────
-/** Billing entitlement — orthogonal to every role. Free → Member (paid) → Supporter. */
-export type EntitlementTier = 'free' | 'member' | 'supporter'
+/** Billing entitlement — the membership axis, orthogonal to every role.
+ *  Member (free) → Crew (paid) → Supporter. "Everyone is part of the Crew on the paid tier." */
+export type EntitlementTier = 'free' | 'crew' | 'supporter'
 
 /** Self-serve partner personas (multi-select hats). */
 export type PartnerPersona = 'collaborator' | 'practitioner' | 'business' | 'organization'
@@ -134,9 +135,9 @@ export type Hats = {
   staff?: StaffRole | null
 }
 
-/** True when the viewer holds a paid membership (the entitlement unlock). */
+/** True when the viewer holds a paid membership — Crew or Supporter (the entitlement unlock). */
 export function isPaid(tier: EntitlementTier | null | undefined): boolean {
-  return tier === 'member' || tier === 'supporter'
+  return tier === 'crew' || tier === 'supporter'
 }
 
 /**

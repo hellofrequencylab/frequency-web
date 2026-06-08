@@ -23,9 +23,9 @@ export async function toggleMembership(): Promise<ActionResult<{ tier: string }>
 
   if (!profile) return fail('Profile not found')
 
-  // Beta toggle: free ↔ member. 'supporter' is reserved for the billing flow.
+  // Beta toggle: free ↔ crew (the paid membership). 'supporter' is reserved for billing.
   const current = (profile.membership_tier ?? 'free') as string
-  const next = current === 'free' ? 'member' : 'free'
+  const next = current === 'free' ? 'crew' : 'free'
 
   const { error } = await admin
     .from('profiles')

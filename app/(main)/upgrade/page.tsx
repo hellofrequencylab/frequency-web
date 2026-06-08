@@ -17,9 +17,9 @@ export default async function UpgradePage() {
 
   if (!profile) redirect('/onboarding')
 
-  // Membership is the entitlement axis (orthogonal to the community role).
+  // Membership is the entitlement axis (orthogonal to the community role). Paid = Crew.
   const tier = (profile.membership_tier ?? 'free') as string
-  const isMember = tier !== 'free'
+  const isCrew = tier !== 'free'
 
   const benefits = [
     { icon: MessageSquare, label: 'Full community feed access' },
@@ -59,7 +59,7 @@ export default async function UpgradePage() {
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm mb-4">
             <Zap className="w-7 h-7 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-white mb-1">Membership</h1>
+          <h1 className="text-2xl font-bold text-white mb-1">Join the Crew</h1>
           <p className="text-primary-bg/80 text-sm">Full access to the Frequency community</p>
           <div className="mt-4 flex items-baseline justify-center gap-1">
             <span className="text-3xl font-black text-white line-through opacity-50">$10</span>
@@ -87,7 +87,7 @@ export default async function UpgradePage() {
 
         {/* Toggle */}
         <div className="px-6 pb-6">
-          <UpgradeToggle isMember={isMember} />
+          <UpgradeToggle isCrew={isCrew} />
         </div>
       </div>
 
@@ -95,7 +95,7 @@ export default async function UpgradePage() {
       <div className="mt-8 text-center px-4">
         <p className="text-xs text-subtle leading-relaxed">
           When paid memberships launch, beta members will be offered exclusive
-          Founder pricing. You can switch between Free and Member freely
+          Founder pricing. You can switch between the free tier and Crew freely
           during the beta period.
         </p>
       </div>
