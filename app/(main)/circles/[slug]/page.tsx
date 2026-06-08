@@ -17,6 +17,7 @@ import { HostInviteEmail } from '@/components/circles/host-invite-email'
 import { CollapsibleAbout } from '@/components/circles/collapsible-about'
 import { CircleHostMenu } from '@/components/circles/circle-host-menu'
 import { getCircleCapabilities } from '@/lib/core/load-capabilities'
+import { isPaidViewer } from '@/lib/core/viewer-hats'
 import { getCircleActivePractice, listPublicPractices } from '@/lib/practices'
 import { LogPracticeButton } from '@/components/practice/log-practice-button'
 import { SetCirclePractice } from '@/components/practice/set-circle-practice'
@@ -173,8 +174,7 @@ export default async function CirclePage({
       myProfileId = myProfile.id
       isMember = members.some((m) => m.profile.id === myProfileId)
       isHost = circle.host?.id === myProfileId
-      const role = (myProfile as { community_role: string }).community_role ?? ''
-      isCrew = ['crew', 'host', 'guide', 'mentor', 'admin', 'janitor'].includes(role)
+      isCrew = await isPaidViewer()
     }
   }
 

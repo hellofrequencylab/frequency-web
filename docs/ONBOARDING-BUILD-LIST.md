@@ -502,9 +502,16 @@ keep scope rails. **Open:** "Around You" naming. **Sequence:** 10.1 → 10.2 →
 
 ## §11 — Role system rework (Community · Partners · Admin + Entitlement)
 
-> Canonical spec: [ROLES.md](ROLES.md) · decision: [DECISIONS.md](DECISIONS.md) ADR-163.
-> Staged so **every step is non-breaking** (the old global `community_role` stays valid as a
-> derived cache until the final cleanup). Do the stages in order.
+> Canonical spec: [ROLES.md](ROLES.md) (now incl. the **access matrix** + the **unified-site
+> principle**) · decision: [DECISIONS.md](DECISIONS.md) ADR-163 · master sequencing:
+> [BUILD-LIST.md](BUILD-LIST.md) P1. Staged so **every step is non-breaking** (the old global
+> `community_role` stays valid as a derived cache until the final cleanup). Do the stages in order.
+>
+> **Owner directive (2026-06-08):** the site is **identical for everyone** — same shell, pages and
+> nav — with role-specific **functions/options revealed inside shared surfaces**. So gating moves
+> from **per-route → per-capability**: encode the owner's Roles & Permissions matrix as one typed
+> source of truth (`lib/core`, extends `NAV_AREAS`) and have pages reveal function by level
+> (🚫 none / ✋ limited / ✅ full). **This is step 11.0 and the recommended first PR.**
 
 ### 11.1 — Foundation: scoped stewardship
 - Migration: **`stewardships`** `(profile_id, role[crew|host|guide|mentor|outpost_lead],

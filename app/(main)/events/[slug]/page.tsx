@@ -12,6 +12,7 @@ import { DetailTemplate } from '@/components/templates/detail-template'
 import { EditModeButton, StartEditingLink } from '@/components/admin/inline/edit-mode-button'
 import { InlineText } from '@/components/admin/inline/inline-text'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
+import { isPaidViewer } from '@/lib/core/viewer-hats'
 import { updateEventField } from '../admin-actions'
 import { getInitials } from '@/lib/utils'
 
@@ -145,7 +146,7 @@ export default async function EventDetailPage({
       myProfileId = profile.id
       myRole = (profile.community_role ?? 'member') as typeof myRole
       isHost = event.host?.id === myProfileId
-      isCrew = ['crew', 'host', 'guide', 'mentor', 'janitor'].includes(profile.community_role ?? '')
+      isCrew = await isPaidViewer()
       const myRsvp = rsvps.find((r) => r.profile.id === myProfileId)
       myRsvpStatus = myRsvp?.status ?? null
     }
