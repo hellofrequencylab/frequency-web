@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Briefcase, DollarSign, Trophy, Percent, CheckSquare, Plus } from 'lucide-react'
 import { getCallerProfile } from '@/lib/auth'
 import { atLeastRole } from '@/lib/core/roles'
+import { canUseSurface } from '@/lib/core/viewer-hats'
 import { DashboardTemplate } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
 import { getStages, getDeals, countOpenTasks, computeMetrics, formatMoney } from '@/lib/crm/pipeline'
@@ -12,10 +13,12 @@ import { PipelineBoard } from './pipeline-board'
 export const dynamic = 'force-dynamic'
 
 // The unified CRM suite (ADR-102). Pipeline tab: KPI row + a stage board of deals.
-// Gated to stewards (host+), same as the Contacts tab.
+// Open to stewards (host+) OR a Business/Organization partner persona (the matrix's
+// Business-CRM surface, P3.2) — additive, so claiming a partner program unlocks it.
 export default async function CrmPage() {
   const caller = await getCallerProfile()
-  if (!caller || !atLeastRole(caller.community_role, 'host')) redirect('/feed')
+  const allowed = (!!caller && atLeastRole(caller.community_role, 'host')) || (await canUseSurface('businessCrm'))
+  if (!allowed) redirect('/feed')
 
   const [stages, deals, tasksDue] = await Promise.all([getStages(), getDeals(), countOpenTasks()])
   const metrics = computeMetrics(deals, tasksDue)
