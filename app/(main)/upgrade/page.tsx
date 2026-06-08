@@ -4,8 +4,6 @@ import { Zap, Check, MessageSquare, CalendarDays, Users, Star, Radio, BarChart3 
 import { FocusTemplate } from '@/components/templates'
 import { UpgradeToggle } from './upgrade-toggle'
 
-type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
-
 export default async function UpgradePage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -13,15 +11,15 @@ export default async function UpgradePage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, community_role')
+    .select('id, membership_tier')
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
   if (!profile) redirect('/onboarding')
 
-  const role = (profile.community_role ?? 'member') as CommunityRole
-  const isCrew = role !== 'member'
-  const isLeadership = ['host', 'guide', 'mentor', 'janitor'].includes(role)
+  // Membership is the entitlement axis (orthogonal to the community role).
+  const tier = (profile.membership_tier ?? 'free') as string
+  const isMember = tier !== 'free'
 
   const benefits = [
     { icon: MessageSquare, label: 'Full community feed access' },
@@ -29,7 +27,7 @@ export default async function UpgradePage() {
     { icon: CalendarDays, label: 'Create and RSVP to events' },
     { icon: Radio, label: 'Access all channels' },
     { icon: Star, label: 'Earn Zaps and climb the leaderboard' },
-    { icon: BarChart3, label: 'Track your crew progress' },
+    { icon: BarChart3, label: 'Track your Quest progress' },
   ]
 
   return (
@@ -61,7 +59,7 @@ export default async function UpgradePage() {
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm mb-4">
             <Zap className="w-7 h-7 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-white mb-1">Crew Membership</h1>
+          <h1 className="text-2xl font-bold text-white mb-1">Membership</h1>
           <p className="text-primary-bg/80 text-sm">Full access to the Frequency community</p>
           <div className="mt-4 flex items-baseline justify-center gap-1">
             <span className="text-3xl font-black text-white line-through opacity-50">$10</span>
@@ -89,15 +87,7 @@ export default async function UpgradePage() {
 
         {/* Toggle */}
         <div className="px-6 pb-6">
-          {isLeadership ? (
-            <div className="rounded-xl bg-surface-elevated px-4 py-3 text-center">
-              <p className="text-sm font-medium text-muted">
-                You are a <span className="font-bold text-text capitalize">{role}</span>. Your role is managed by community leadership.
-              </p>
-            </div>
-          ) : (
-            <UpgradeToggle isCrew={isCrew} />
-          )}
+          <UpgradeToggle isMember={isMember} />
         </div>
       </div>
 
@@ -105,7 +95,7 @@ export default async function UpgradePage() {
       <div className="mt-8 text-center px-4">
         <p className="text-xs text-subtle leading-relaxed">
           When paid memberships launch, beta members will be offered exclusive
-          Founder pricing. You can switch between Member and Crew freely
+          Founder pricing. You can switch between Free and Member freely
           during the beta period.
         </p>
       </div>
