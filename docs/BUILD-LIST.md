@@ -176,7 +176,7 @@ from role), the role-based proxies are wrong and must move to the tier.
 
 | # | Item | Status |
 |---|---|---|
-| PB.2a | **Delete the 5 duplicate `Stat` components** → use `StatCard` (`circles`, `channels`, `practices/[id]`, `admin/qr/analytics`, `admin/qr/stats`) | 📋 quick win |
+| PB.2a | Dedup the `Stat` components. ✅ The identical *de-boxed* stat in `/circles` + `/channels` → shared `StatInline`. Remaining: `practices/[id]` (bordered+icon), `admin/qr/analytics` (has `delta`/`detail`/`link`), `admin/qr/stats` are distinct visuals — fold into `StatCard`/`StatInline` variants. | ⏳ |
 | PB.2b | Re-compose the quick wins onto templates: `/support`, `/growth`, `/crew/quests`, `/crew/store/ledger` (IndexTemplate) | 📋 quick win |
 | PB.2c | Re-compose the crew section + broadcast: `/crew` (Dashboard), `/broadcast` (Stream), `/crew/store`, achievements, challenges, journey, streaks | 📋 |
 | PB.2d | Re-compose the heavy detail pages: `/people/[handle]`, `/journeys/[slug]` (DetailTemplate) | 📋 |
