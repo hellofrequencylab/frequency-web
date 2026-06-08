@@ -2,8 +2,8 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2, Send, Lock } from 'lucide-react'
-import { setTicketFields, staffReply } from '@/app/(main)/admin/support/actions'
+import { Loader2, Send, Lock, Sparkles } from 'lucide-react'
+import { setTicketFields, staffReply, draftReply } from '@/app/(main)/admin/support/actions'
 import {
   TICKET_STATUSES, TICKET_PRIORITIES, STATUS_LABELS, PRIORITY_LABELS,
   type TicketStatus, type TicketPriority, type TicketParty,
@@ -29,6 +29,20 @@ export function AdminTicketControls({
   const [body, setBody] = useState('')
   const [internal, setInternal] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [drafting, startDraft] = useTransition()
+  const [aiDrafted, setAiDrafted] = useState(false)
+
+  function draft() {
+    if (drafting) return
+    setError(null)
+    startDraft(async () => {
+      const r = await draftReply(ticketId)
+      if ('error' in r) { setError(r.error); return }
+      setBody(r.data.draft)
+      setInternal(false)
+      setAiDrafted(true)
+    })
+  }
 
   function patch(p: { status?: TicketStatus; priority?: TicketPriority; assignedTo?: string | null }) {
     start(async () => {
@@ -88,14 +102,19 @@ export function AdminTicketControls({
         </div>
         <textarea
           value={body}
-          onChange={(e) => setBody(e.target.value)}
+          onChange={(e) => { setBody(e.target.value); setAiDrafted(false) }}
           onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) reply() }}
           rows={3}
           placeholder={internal ? 'A note only staff can see…' : 'Reply to the member…'}
           className="w-full resize-none rounded-lg border border-border bg-canvas px-3 py-2 text-sm leading-relaxed text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
         />
+        {aiDrafted && <p className="mt-1 text-2xs text-subtle">✨ AI draft — review and edit before sending.</p>}
         {error && <p className="mt-1 text-xs text-danger">{error}</p>}
-        <div className="mt-2 flex justify-end">
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <button type="button" onClick={draft} disabled={drafting || pending} title="Draft a reply with AI (you review before sending)" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50">
+            {drafting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+            AI draft
+          </button>
           <button type="button" onClick={reply} disabled={pending || !body.trim()} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50">
             {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
             {internal ? 'Add note' : 'Send reply'}
