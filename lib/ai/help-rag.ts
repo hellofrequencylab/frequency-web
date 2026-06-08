@@ -33,12 +33,41 @@ export interface HelpAnswer {
   deflected: boolean
 }
 
-interface Chunk {
+export interface HelpChunk {
   category: string
   slug: string
   heading: string
   content: string
   similarity: number
+}
+type Chunk = HelpChunk
+
+/**
+ * Retrieve the top help chunks for a query — embed + cosine match, NO logging and NO
+ * answer generation. The shared retrieval primitive: the member-facing RAG answer wraps
+ * it (with logging), and internal callers (e.g. the support-reply drafter) use it for
+ * grounding without polluting the help-gap demand signal. Returns [] on any failure.
+ */
+export async function retrieveHelpChunks(
+  query: string,
+  opts: { matchCount?: number; minSimilarity?: number } = {},
+): Promise<HelpChunk[]> {
+  const q = query.trim()
+  if (!q) return []
+  try {
+    const embedding = await embedText(q)
+    const admin = createAdminClient() as unknown as SupabaseClient
+    const { data } = await admin.rpc('match_help_chunks', {
+      query_embedding: `[${embedding.join(',')}]`,
+      match_count: opts.matchCount ?? MATCH_COUNT,
+      min_similarity: 0,
+    })
+    const chunks = (data as Chunk[] | null) ?? []
+    const min = opts.minSimilarity ?? 0
+    return min > 0 ? chunks.filter((c) => c.similarity >= min) : chunks
+  } catch {
+    return []
+  }
 }
 
 export const HELP_SYSTEM = `You are Vera, the resident guide for Frequency — a platform for real-world community built on local "circles" and in-person "practices". You are warm, direct, and brief; never gushy.
@@ -103,20 +132,8 @@ async function resolveHelpAnswer(q: string, profileId?: string | null): Promise<
   // Kill switch + budget cap. Fail closed to the deflect path.
   if (!(await aiAvailable()) || (await featureOverBudget(FEATURE))) return deflect([], 0)
 
-  // Retrieve.
-  let chunks: Chunk[] = []
-  try {
-    const embedding = await embedText(q)
-    const admin = createAdminClient() as unknown as SupabaseClient
-    const { data } = await admin.rpc('match_help_chunks', {
-      query_embedding: `[${embedding.join(',')}]`,
-      match_count: MATCH_COUNT,
-      min_similarity: 0,
-    })
-    chunks = (data as Chunk[] | null) ?? []
-  } catch {
-    return deflect([], 0)
-  }
+  // Retrieve (shared primitive — no logging here).
+  const chunks = await retrieveHelpChunks(q)
 
   const top = chunks[0]?.similarity ?? 0
   if (chunks.length === 0 || top < MIN_SIMILARITY) return deflect(chunks, top)
