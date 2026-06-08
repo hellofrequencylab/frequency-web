@@ -138,13 +138,21 @@ describe('columnsForHats', () => {
     expect(cols.has('crew')).toBe(true)
     expect(cols.has('host')).toBe(false)
   })
-  it('a mentor holds the whole stewardship ladder below it', () => {
-    const cols = columnsForHats(mentor)
+  it('a mentor holds the stewardship ladder below it — but NOT the paid column (decoupled)', () => {
+    const cols = columnsForHats(mentor) // free tier
     expect(cols.has('member')).toBe(true)
-    expect(cols.has('crew')).toBe(true)
     expect(cols.has('host')).toBe(true)
     expect(cols.has('guide')).toBe(true)
     expect(cols.has('mentor')).toBe(true)
+    expect(cols.has('crew')).toBe(false) // 'crew' = paid; this mentor is on the free tier
     expect(cols.has('admin')).toBe(false)
+  })
+
+  it('paid is the tier ONLY — a free-tier host is a steward but not "paid"', () => {
+    expect(columnsForHats({ loggedIn: true, role: 'host', tier: 'free' }).has('crew')).toBe(false)
+    expect(columnsForHats({ loggedIn: true, role: 'member', tier: 'member' }).has('crew')).toBe(true)
+    // …yet the steward still gets FULL on the steward surfaces, via the role not the tier:
+    expect(accessTo('qrStudio', { loggedIn: true, role: 'host', tier: 'free' })).toBe('full')
+    expect(accessTo('vault', { loggedIn: true, role: 'host', tier: 'free' })).toBe('full')
   })
 })
