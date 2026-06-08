@@ -1,4 +1,10 @@
+import type { Metadata } from 'next'
 import { FocusTemplate } from '@/components/templates'
+
+export const metadata: Metadata = {
+  title: 'Check Your Email',
+  robots: { index: false, follow: false },
+}
 
 export default function ConfirmPage() {
   return (
