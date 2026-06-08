@@ -3,7 +3,7 @@
 import { useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Zap, ArrowDown, Loader2 } from 'lucide-react'
-import { toggleCrewRole } from './actions'
+import { toggleMembership } from './actions'
 import { isError } from '@/lib/action-result'
 
 export function UpgradeToggle({ isCrew }: { isCrew: boolean }) {
@@ -12,7 +12,7 @@ export function UpgradeToggle({ isCrew }: { isCrew: boolean }) {
 
   function handleToggle() {
     startTransition(async () => {
-      const result = await toggleCrewRole()
+      const result = await toggleMembership()
       if (!isError(result)) {
         router.refresh()
       }
@@ -25,7 +25,7 @@ export function UpgradeToggle({ isCrew }: { isCrew: boolean }) {
         <div className="rounded-xl bg-success-bg/30 border border-success/50 px-4 py-3 text-center">
           <p className="text-sm font-semibold text-success flex items-center justify-center gap-2">
             <Zap className="w-4 h-4" />
-            You are a Crew member
+            You&apos;re part of the Crew
           </p>
         </div>
         <button
@@ -38,7 +38,7 @@ export function UpgradeToggle({ isCrew }: { isCrew: boolean }) {
           ) : (
             <ArrowDown className="w-4 h-4" />
           )}
-          Switch back to Member
+          Switch back to the free tier
         </button>
       </div>
     )
@@ -55,7 +55,7 @@ export function UpgradeToggle({ isCrew }: { isCrew: boolean }) {
       ) : (
         <Zap className="w-4 h-4" />
       )}
-      {isPending ? 'Updating...' : 'Upgrade to Crew'}
+      {isPending ? 'Updating...' : 'Join the Crew'}
     </button>
   )
 }

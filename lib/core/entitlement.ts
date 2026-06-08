@@ -1,37 +1,34 @@
-// Entitlement tier (the billing axis) — Free → Member (paid) → Supporter. Orthogonal
-// to every role (docs/ROLES.md › "Entitlement"). Framework-independent, like the rest
-// of lib/core. This is the single place that decides "what does this person pay for",
-// so the ✋→✅ gates in the access matrix have one source of truth.
+// Entitlement tier (the billing/membership axis) — Member (free) → Crew (paid) →
+// Supporter. Orthogonal to every role (docs/ROLES.md › "Entitlement"). Framework-
+// independent, like the rest of lib/core. The single place that decides "what does this
+// person pay for", so the ✋→✅ gates in the access matrix have one source of truth.
 //
-// TRANSITIONAL (P2.1): the real source is profiles.membership_tier (migration
-// 20260608040000) — additive + backfilled, but until it's applied and billing (P2.2)
-// lands, `paid` is proxied by a crew-or-above community role (today's
-// `isCrew = role !== 'member'`). `deriveTier` already prefers the explicit flag when
-// present, so once the column is live the read path passes it through unchanged.
+// "Everyone is part of the Crew on the paid tier — that's the membership point." The
+// real source is profiles.membership_tier (migration 20260608040000, applied + backfilled),
+// threaded through getCallerProfile → getViewerHats. Paid access is the TIER only; it is
+// fully decoupled from the community role (a free-tier Host is a steward, not "paid" —
+// they get their tools from the role, via the access matrix, not from membership).
 
-import { atLeastRole, type CommunityRole } from './roles'
 import type { EntitlementTier } from './access-matrix'
 
 export type { EntitlementTier }
+// `isPaid(tier)` is THE single "is this person paid?" predicate (defined next to the
+// matrix it feeds). Re-exported here so app code imports it from the entitlement seam.
+export { isPaid } from './access-matrix'
 
-export const ENTITLEMENT_TIERS: readonly EntitlementTier[] = ['free', 'member', 'supporter'] as const
+export const ENTITLEMENT_TIERS: readonly EntitlementTier[] = ['free', 'crew', 'supporter'] as const
 
 export const ENTITLEMENT_LABEL: Record<EntitlementTier, string> = {
-  free: 'Free',
-  member: 'Member',
+  free: 'Member', // the free participant — "come in as a member on the free tier"
+  crew: 'Crew', // the paid membership
   supporter: 'Supporter',
 }
 
 /**
- * Resolve a profile's entitlement tier. Prefers the explicit billing flag
- * (`membershipTier`) once the column is live; until then falls back to the crew-or-
- * above community-role proxy — so this is behavior-preserving today and a one-field
- * change when billing lands.
+ * Resolve a profile's entitlement tier from the billing flag. The column is live and
+ * backfilled, so this is just the source of truth + a safe default; kept as the single
+ * seam so any future billing logic (grace periods, comps) lives in one place.
  */
-export function deriveTier(input: {
-  role?: CommunityRole | null
-  membershipTier?: EntitlementTier | null
-}): EntitlementTier {
-  if (input.membershipTier) return input.membershipTier
-  return atLeastRole(input.role ?? null, 'crew') ? 'member' : 'free'
+export function deriveTier(membershipTier: EntitlementTier | null | undefined): EntitlementTier {
+  return membershipTier ?? 'free'
 }

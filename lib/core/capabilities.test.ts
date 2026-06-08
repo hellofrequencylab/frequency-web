@@ -58,11 +58,16 @@ describe('resolveCapabilities · circle', () => {
     expect(can(caps, 'circle.editSettings')).toBe(true)
   })
 
-  it('a crew active member can volunteer only when tasks are open', () => {
-    const open = resolveCapabilities({ profileId: 'cr', role: 'crew' }, { ...base, membership: { status: 'active' }, openTaskCount: 2 })
+  it('a PAID (Crew tier) active member can volunteer only when tasks are open', () => {
+    const open = resolveCapabilities({ profileId: 'cr', role: 'member', tier: 'crew' }, { ...base, membership: { status: 'active' }, openTaskCount: 2 })
     expect(can(open, 'task.volunteer')).toBe(true)
-    const none = resolveCapabilities({ profileId: 'cr', role: 'crew' }, { ...base, membership: { status: 'active' }, openTaskCount: 0 })
+    const none = resolveCapabilities({ profileId: 'cr', role: 'member', tier: 'crew' }, { ...base, membership: { status: 'active' }, openTaskCount: 0 })
     expect(can(none, 'task.volunteer')).toBe(false)
+  })
+
+  it('a FREE active member cannot volunteer (membership perk, gated on tier not role)', () => {
+    const free = resolveCapabilities({ profileId: 'fm', role: 'member', tier: 'free' }, { ...base, membership: { status: 'active' }, openTaskCount: 2 })
+    expect(can(free, 'task.volunteer')).toBe(false)
   })
 })
 

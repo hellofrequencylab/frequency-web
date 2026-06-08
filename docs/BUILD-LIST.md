@@ -33,6 +33,10 @@ site for everyone, function-gated per role* — and **(2) the money layer** (ent
 
 ## Progress log
 
+- **2026-06-08 ✅ PB (framework dialed)** — PB.1 access control unified (one `isPaid(tier)` predicate; beta-grant regression fixed). PB.2 page framework: genuine primitive-cobbling fixed (`StatInline` dedup; `/support`+`/growth` recomposed; `/crew`+`/broadcast` headers → `PageHeading`); the rest already compose the kit or are sanctioned-rich detail headers (PB.2d). Tails tracked: PB.1i (`isEndorsed`→tier via feed RPCs), PB.1f/g/h, remaining `Stat` variants.
+- **2026-06-08 ✅ model correction + audits** — Crew = the paid membership tier (migration `20260608050000`, values `free|crew|supporter`); ROLES.md vision rewritten. Two best-practice audits (access-control · page-framework) folded into track **PB** — no security holes, no `text-[Npx]`; main work = unify "is paid" to the tier + re-compose ~26 hand-rolled pages.
+- **2026-06-08 ✅ P2 (decouple, §11.2)** — paid is now the **tier only** (removed the role≥crew proxy from `columnsForHats`); stewards (host+) get full on steward surfaces via their role, not payment; `/upgrade` sets `membership_tier` (Crew = pure stewardship). Backfill means no current user loses access. *Follow-up policy: auto-comp leaders' membership on promotion?* PR #411.
+- **2026-06-08 ✅ P2.1 (live)** — `membership_tier` migration **applied** to the DB (backfilled: 10 paid / 1 free); read path flipped from the crew proxy to the real column (`lib/auth.ts` → `getViewerHats` → `deriveTier`). The entitlement is now real.
 - **2026-06-08 ⏳ P2.1 (foundation)** — `deriveTier` + `lib/core/entitlement.ts`; `getViewerHats` sets `tier`; migration `20260608040000_membership_tier.sql` authored (⚠️ apply pending). Behavior-preserving. PR #410.
 - **2026-06-08 ✅ P1.3 (rollout)** — centralized the scattered `['crew',…]` paid-proxy into `isPaidViewer()` across `/crew`, `/circles/[slug]`, `/events/[slug]`, `/codes`. One matrix-backed source. PR #410.
 - **2026-06-08 ✅ P1.3 (pilot)** — `lib/core/viewer-hats.ts` seam + Vault/Store wired to `surfaceAccess('vault')`. The unified-site pattern is established. PR #410.
@@ -68,7 +72,7 @@ site for everyone, function-gated per role* — and **(2) the money layer** (ent
 
 | # | Item | Status | Notes |
 |---|---|---|---|
-| 2.1 | Tier flag `free / member / supporter` | ⏳ | ✅ foundation: `deriveTier` centralizes the entitlement (`lib/core/entitlement.ts`); `getViewerHats` sets `tier`. ⏳ **migration `20260608040000_membership_tier.sql` authored — apply with `supabase db push`, regenerate types, then flip `deriveTier` to read the column.** Then: re-point game cash-in / `/upgrade`; Crew → pure stewardship. |
+| 2.1 | Tier flag `free / member / supporter` | ✅ | Migration applied (backfilled); `profiles.membership_tier` threaded `getCallerProfile → getViewerHats → deriveTier` — the ✋→✅ gate is now driven by the **real entitlement column**. Remaining for P2: re-point `/upgrade` to set the tier; Crew → pure stewardship; cash-in eligibility. |
 | 2.2 | Stripe Connect / payments module | 📋 | `create_checkout` · `process_payout` · `record_commission` — shared rail for billing + all partner money (DEVELOPMENT-MAP C2). |
 | 2.3 | Stripe membership checkout | 📋 | Replace the `/settings/billing` stub + `/upgrade` ($10 hardcoded → "Free") with a real flow. |
 | 2.4 | Supporter badge | 📋 | Pay-more tier → flair/badge (reuse the badge system). |
@@ -142,6 +146,47 @@ site for everyone, function-gated per role* — and **(2) the money layer** (ent
 Designed, sequenced after Stage C2: **D1 The Collective** (contributor verification → paid offerings → payout) · **D3 Affiliate** (referral → commission → payout ledger) · **D4 Donations & Grants** (Foundation rail) · **D5 Lab Spaces** (gym SaaS + Lab membership + rollup) · **Money foundation** (entity partition + `financial_transactions` ledger, ADR-029/032).
 
 ---
+
+## PB — Best-practice cleanup & hardening (2026-06-08 audits)
+
+> Two read-only audits (access-control architecture · page-framework consistency). Verdict:
+> **the architecture is well-layered and there are no security holes** — the gaps are *semantic
+> drift* (gating computed two ways) and *incomplete framework adoption* (cobbled pages).
+
+### PB.1 — Unify access control (one capability layer)
+
+The permission stack (matrix → per-scope resolver → staff matrix → nav grid) is sound; the issue
+is **"is paid / is steward" computed in divergent ways**. Now that Crew = the paid tier (decoupled
+from role), the role-based proxies are wrong and must move to the tier.
+
+| # | Item | Where | Status |
+|---|---|---|---|
+| PB.1a | Drop the role≥crew fallback in `deriveTier` | `lib/core/entitlement.ts` | ✅ done |
+| PB.1b | **Unify "is paid" → the tier** — `isPaid(tier)` is now the single predicate; gamification gates moved off `atLeastRole(role,'crew')` (capabilities task · zaps rate · entry-points · codes). Also fixed a regression: beta-grant now comps the Crew **tier**. | `capabilities.ts`, `zaps.ts`, `entry-points`/`codes` actions, `beta/actions.ts` | ✅ done |
+| PB.1c | Thread the tier into the per-scope resolver (`Viewer.tier`, fed by `load-capabilities`) | `load-capabilities.ts`, `capabilities.ts` | ✅ done |
+| PB.1d | `requireCrew()` — name is now correct (Crew = the paid tier); body checks `isPaid(tier)` | entry-points/codes | ✅ done |
+| PB.1e | Page-level `requireAdmin('janitor')` on `/admin/roles` (defense in depth for `assignRole`) | `/admin/roles` | ✅ already in place |
+| PB.1i | **`isEndorsed` display → tier** + retire the `community_role='crew'` value (migrate rows; drop the beta role-write) — needs `membership_tier` threaded through the feed author RPCs + profile/circle selects (`layout` training gate already moved to host+) | `season-ranks.ts` + feed/profile types | 📋 **remaining** |
+| PB.1f | Thread `profile_personas` through `getViewerHats` (unblocks P3 matrix columns) | `lib/core/viewer-hats.ts:37` | 📋 (with P3) |
+| PB.1g | Capability **reason** metadata ("upgrade to unlock" vs "host a circle to unlock") | resolver | 📋 nice-to-have |
+| PB.1h | Bring janitor-only admin surfaces (Vera/AI) under the matrix | `access-matrix.ts` | 📋 |
+
+### PB.2 — Page-framework re-composition (same framework on every page)
+
+**54% template adoption** (62/115 pages) — the rest hand-roll headers/layouts. Target 75%+.
+
+| # | Item | Status |
+|---|---|---|
+| PB.2a | Dedup the `Stat` components. ✅ The identical *de-boxed* stat in `/circles` + `/channels` → shared `StatInline`. Remaining: `practices/[id]` (bordered+icon), `admin/qr/analytics` (has `delta`/`detail`/`link`), `admin/qr/stats` are distinct visuals — fold into `StatCard`/`StatInline` variants. | ⏳ |
+| PB.2b | Quick wins → kit. ✅ `/support` + `/growth` recomposed (IndexTemplate + EmptyState). `/crew/quests` + `/crew/store/ledger` were **already** composing PageHeading + StatCard + EmptyState. | ✅ |
+| PB.2c | Crew section + broadcast headers → shared `PageHeading`. ✅ `/crew` + `/broadcast` (the two raw-`<h1>` offenders). achievements · challenges · journey · streaks **already** compose PageHeading/IndexTemplate — verified. | ✅ |
+| PB.2d | `/crew/store`, `/people/[handle]`, `/journeys/[slug]` — assessed: these have **intentionally rich detail headers** (Vault aside-card · avatar/rank identity · accent emoji-tile + pillar chips) that PAGE-FRAMEWORK explicitly sanctions ("Detail pages keep their richer context band"). They use the kit's type scale + primitives in their bodies. Forcing the generic templates would regress the visuals — **left as sanctioned custom, not recomposed.** | ✅ assessed |
+
+> **Audit recalibration:** the "46% hand-rolled" overcounted — many pages compose `PageHeading`/`StatCard`/`EmptyState` directly without the template *wrapper*, which is correct (e.g. where a back-link/eyebrow is needed). The real cobbling is pages that hand-roll the *primitives* (raw `<h1>`, bespoke empties/stats): `/support`, `/growth`, `/circles`+`/channels` (StatInline), `/crew`, `/broadcast` — now fixed — leaving PB.2d.
+
+*(Specialist surfaces — message threads, editors, QR/CRM tools, scan landings — stay custom by
+design; ~27 pages.) Token hygiene is good: **zero** `text-[Npx]`, only 3 acceptable hardcoded-hex
+specialist tools.*
 
 ## Source map — legacy lists folded in here
 

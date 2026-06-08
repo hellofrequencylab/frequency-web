@@ -1,28 +1,30 @@
 import { describe, it, expect } from 'vitest'
-import { deriveTier } from '@/lib/core/entitlement'
+import { deriveTier, isPaid } from '@/lib/core/entitlement'
 import { accessTo } from '@/lib/core/access-matrix'
 
 describe('deriveTier', () => {
-  it('proxies paid from a crew-or-above role until the flag lands', () => {
-    expect(deriveTier({ role: 'member' })).toBe('free')
-    expect(deriveTier({ role: 'crew' })).toBe('member')
-    expect(deriveTier({ role: 'host' })).toBe('member')
-    expect(deriveTier({ role: 'janitor' })).toBe('member')
-    expect(deriveTier({ role: null })).toBe('free')
-    expect(deriveTier({})).toBe('free')
+  it('returns the billing flag, defaulting to free', () => {
+    expect(deriveTier('free')).toBe('free')
+    expect(deriveTier('crew')).toBe('crew')
+    expect(deriveTier('supporter')).toBe('supporter')
+    expect(deriveTier(null)).toBe('free')
+    expect(deriveTier(undefined)).toBe('free')
   })
+})
 
-  it('prefers the explicit billing flag when present (the post-billing path)', () => {
-    expect(deriveTier({ role: 'member', membershipTier: 'member' })).toBe('member')
-    expect(deriveTier({ role: 'member', membershipTier: 'supporter' })).toBe('supporter')
-    // A free-tier flag wins even over a crew role (entitlement is orthogonal).
-    expect(deriveTier({ role: 'host', membershipTier: 'free' })).toBe('free')
+describe('isPaid', () => {
+  it('Crew and Supporter are paid; free is not', () => {
+    expect(isPaid('free')).toBe(false)
+    expect(isPaid('crew')).toBe(true)
+    expect(isPaid('supporter')).toBe(true)
+    expect(isPaid(null)).toBe(false)
   })
+})
 
-  it('feeds the access matrix so the ✋ gate tracks the tier', () => {
-    const free = { loggedIn: true, role: 'member' as const, tier: deriveTier({ role: 'member' }) }
-    const paid = { loggedIn: true, role: 'member' as const, tier: deriveTier({ role: 'member', membershipTier: 'member' }) }
-    expect(accessTo('vault', free)).toBe('limited')
-    expect(accessTo('vault', paid)).toBe('full')
+describe('entitlement feeds the access matrix (the ✋ gate tracks the tier)', () => {
+  it('free member is gated on the Vault; Crew unlocks it', () => {
+    expect(accessTo('vault', { loggedIn: true, role: 'member', tier: 'free' })).toBe('limited')
+    expect(accessTo('vault', { loggedIn: true, role: 'member', tier: 'crew' })).toBe('full')
+    expect(accessTo('vault', { loggedIn: true, role: 'member', tier: 'supporter' })).toBe('full')
   })
 })

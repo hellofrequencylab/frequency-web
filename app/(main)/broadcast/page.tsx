@@ -10,6 +10,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { EntityCard } from '@/components/cards/entity-card'
 import { SectionHeader } from '@/components/ui/section-header'
 import { ModuleCard } from '@/components/modules/module-card'
+import { PageHeading } from '@/components/templates/page-heading'
 
 // /broadcast is the Community Dashboard — the counterpart to the Quest Dashboard
 // (/crew), but for community life: what's being announced, what's coming up, and
@@ -147,18 +148,15 @@ export default async function BroadcastPage() {
 
   return (
     <div>
-      {/* ── Header ───────────────────────────────────────────── */}
-      <div className="mb-6 flex items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-text">Community</h1>
-          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted">
-            Everything happening around you — announcements, what’s coming up, and what’s new to join.
-          </p>
-        </div>
-        {(canCompose || role === 'janitor') && (
-          <BroadcastCompose circles={namedCircles} hubs={namedHubs} nexuses={namedNexuses} canGlobal={role === 'janitor'} />
-        )}
-      </div>
+      <PageHeading
+        title="Community"
+        description="Everything happening around you — announcements, what’s coming up, and what’s new to join."
+        actions={
+          (canCompose || role === 'janitor') ? (
+            <BroadcastCompose circles={namedCircles} hubs={namedHubs} nexuses={namedNexuses} canGlobal={role === 'janitor'} />
+          ) : undefined
+        }
+      />
 
       {/* ── Highlight hero: the latest broadcast, else the next event ── */}
       {latest ? (

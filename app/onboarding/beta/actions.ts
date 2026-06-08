@@ -61,14 +61,16 @@ async function tagPersona(profileId: string, personaSlug: string | null): Promis
   }
 }
 
-/** During the Beta, grant every new member Crew (full gamification). Only upgrades
- *  members — leaders (host+) and existing crew are untouched — and they can
- *  downgrade anytime via /upgrade. Role writes use the admin client (RLS). */
+/** During the Beta, comp every new member the paid **Crew tier** (full gamification) —
+ *  membership is the entitlement axis now, not the role. Only upgrades plain members;
+ *  they can downgrade anytime via /upgrade. (Also sets the legacy crew role for display
+ *  endorsement, which still reads the role — to retire once endorsement reads the tier,
+ *  PB.1 follow-up.) Writes use the admin client (RLS). */
 async function grantBetaCrew(authUserId: string) {
   if (!BETA_MEMBERS_GET_CREW) return
   await createAdminClient()
     .from('profiles')
-    .update({ community_role: 'crew' })
+    .update({ membership_tier: 'crew', community_role: 'crew' })
     .eq('auth_user_id', authUserId)
     .eq('community_role', 'member')
 }

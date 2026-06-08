@@ -3,7 +3,7 @@ title: Membership & the Vault
 description: What's free, what membership unlocks, and how the Vault works.
 category: membership
 order: 1
-updated: 2026-06-03
+updated: 2026-06-08
 audience: member
 featureKeys: [vault]
 status: published
@@ -28,4 +28,4 @@ When you cash in, your Vault converts to gems and a lifetime rank, and the live 
 
 ## During the beta
 
-Right now everything is **free for everyone**: all features are unlocked, and you can switch between Member and Crew freely from the upgrade page. Billing isn't turned on yet.
+Right now everything is **free for everyone**: all features are unlocked, and you can switch between the free tier and Crew freely from the upgrade page. Billing isn't turned on yet.
