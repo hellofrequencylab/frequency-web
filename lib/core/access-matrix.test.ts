@@ -105,10 +105,10 @@ describe('Platform — the Admin/Janitor world & the financials carve-out', () =
     expect(accessTo('settings', visitor)).toBe('full')
   })
 
-  it('Insight is staff/partner; stewardship is monotonic (mentor inherits host)', () => {
+  it('Insight: host gets a limited view, senior stewards get the deeper one (owner sheet)', () => {
     expect(accessTo('insight', freeMember)).toBe('none')
-    expect(accessTo('insight', host)).toBe('limited')
-    expect(accessTo('insight', mentor)).toBe('limited') // monotonic deviation, documented
+    expect(accessTo('insight', host)).toBe('limited') // basic circle-support view
+    expect(accessTo('insight', mentor)).toBe('full') // guide/mentor get deeper analytics
     expect(accessTo('insight', analystStaff)).toBe('full')
   })
 })
@@ -118,7 +118,7 @@ describe('most-open union across hats', () => {
     const both: Hats = { loggedIn: true, role: 'member', tier: 'free', personas: ['business'] }
     expect(accessTo('feed', both)).toBe('full') // member column
     expect(accessTo('businessCrm', both)).toBe('full') // business column
-    expect(accessTo('vault', both)).toBe('limited') // still free → still gated
+    expect(accessTo('vault', both)).toBe('full') // partner personas get the Vault (owner sheet)
   })
 
   it('janitor sees everything at full', () => {
