@@ -39,6 +39,12 @@ export type NavArea = {
    *  item — regardless of the trust-ladder `defaultAccess`. The business cockpit
    *  rides the staff axis (ADR-027), gated by capability not community role. */
   staffDomain?: StaffDomain
+  /** The surface this item maps to in lib/core/access-matrix.ts — the function-level
+   *  permission view (none/limited/full per the owner sheet). Documentation + the seam
+   *  for matrix-driven nav gating; `defaultAccess` is the live visibility gate today. */
+  surface?: string
+  /** Item is in the menu but its page isn't built yet — renders the Coming Soon stub. */
+  comingSoon?: boolean
 }
 
 // Order here IS the render order down the rail. FIVE worlds (IA plan, 2026-06-06):
@@ -55,50 +61,48 @@ export type NavArea = {
 // Structure / Studio / Platform) into two: **Studio** (host+/staff stewardship +
 // business) and **Platform** (janitor operator keys). Deeper page-level dashboard
 // merges (Quest sections, Network unification, Marketing→Growth) follow as §10.2+.
+// Order + sections + labels are the owner's Roles & Permissions sheet (2026-06-08): four
+// worlds — Community · The Quest · Studio · Platform. `surface` ties each item to the
+// access matrix (the function-level permission view); `defaultAccess` is the live nav
+// visibility gate. Items whose page isn't built yet carry `comingSoon`.
 export const NAV_AREAS: readonly NavArea[] = [
-  // ── Home → the two awareness surfaces, pinned headerless at the top ───────────
-  { key: 'feed',      href: '/feed',      label: 'Feed',       section: null, defaultAccess: 'member' },
-  { key: 'broadcast', href: '/broadcast', label: 'Around You', section: null, defaultAccess: 'member' },
+  // ── Community ────────────────────────────────────────────────────────────────
+  { key: 'feed',          href: '/feed',      label: 'Feed',         section: 'Community', defaultAccess: 'visitor', surface: 'feed' },
+  { key: 'broadcast',     href: '/broadcast', label: 'Around You',   section: 'Community', defaultAccess: 'visitor', surface: 'broadcast' },
+  { key: 'circles',       href: '/circles',   label: 'Circles',      section: 'Community', defaultAccess: 'visitor', surface: 'circles' },
+  { key: 'channels',      href: '/channels',  label: 'Channels',     section: 'Community', defaultAccess: 'visitor', surface: 'channels' },
+  { key: 'events',        href: '/events',    label: 'Events',       section: 'Community', defaultAccess: 'visitor', surface: 'events' },
+  { key: 'market',        href: '/market',    label: 'Marketplace',  section: 'Community', defaultAccess: 'visitor', surface: 'market' },
+  { key: 'messageBoards', href: '/messages',  label: 'Message Boards', section: 'Community', defaultAccess: 'member', surface: 'messageBoards' },
+  { key: 'people',        href: '/people',    label: 'People',       section: 'Community', defaultAccess: 'member',  surface: 'people' },
 
-  // ── Community → belong & gather (browse). Hubs/Nexuses stay contextual. ───────
-  { key: 'circles',  href: '/circles',  label: 'Circles',     section: 'Community', defaultAccess: 'visitor' },
-  { key: 'channels', href: '/channels', label: 'Channels',    section: 'Community', defaultAccess: 'visitor' },
-  { key: 'events',   href: '/events',   label: 'Events',      section: 'Community', defaultAccess: 'member'  },
-  { key: 'market',   href: '/market',   label: 'Marketplace', section: 'Community', defaultAccess: 'member'  },
-  { key: 'people',   href: '/people',   label: 'People',      section: 'Community', defaultAccess: 'member'  },
+  // ── The Quest → everyone plays; only the Vault (cash-in) is paid-gated ────────
+  { key: 'quest',     href: '/crew',       label: 'Dashboard', section: 'The Quest', defaultAccess: 'member', surface: 'quest' },
+  { key: 'journeys',  href: '/journeys',   label: 'Journeys',  section: 'The Quest', defaultAccess: 'member', surface: 'journeys' },
+  { key: 'practices', href: '/practices',  label: 'Practices', section: 'The Quest', defaultAccess: 'member', surface: 'practices' },
+  { key: 'library',   href: '/library',    label: 'Library',   section: 'The Quest', defaultAccess: 'member', surface: 'library' },
+  { key: 'vault',     href: '/crew/store', label: 'The Vault', section: 'The Quest', defaultAccess: 'crew', previewBelowAccess: true, surface: 'vault' },
 
-  // ── Practice → the North-Star engine (Library folds into Practices, §10.4). ───
-  { key: 'journeys',  href: '/journeys',  label: 'Journeys',  section: 'Practice', defaultAccess: 'member' },
-  { key: 'practices', href: '/practices', label: 'Practices', section: 'Practice', defaultAccess: 'member' },
-  { key: 'library',   href: '/library',   label: 'Library',   section: 'Practice', defaultAccess: 'member' },
+  // ── Studio → stewardship + the partner business block ────────────────────────
+  { key: 'admin-community', href: '/admin',         label: 'Overview',      section: 'Studio', defaultAccess: 'host', surface: 'studioOverview' },
+  { key: 'admin-support',   href: '/admin/support', label: 'Support',       section: 'Studio', defaultAccess: 'member', surface: 'support' },
+  { key: 'connections',     href: '/connections',   label: 'Connections',   section: 'Studio', defaultAccess: 'member', staffDomain: 'profiles', surface: 'personalCrm' },
+  { key: 'crm',             href: '/crm',           label: 'CRM Pipeline',  section: 'Studio', defaultAccess: 'admin', surface: 'businessCrm' },
+  { key: 'website',         href: '/coming-soon?feature=website',     label: 'Website',       section: 'Studio', defaultAccess: 'admin', surface: 'website', comingSoon: true },
+  { key: 'hook-network',    href: '/coming-soon?feature=hook',        label: 'Hook Network',  section: 'Studio', defaultAccess: 'admin', surface: 'hookNetwork', comingSoon: true },
+  { key: 'growth',          href: '/growth',        label: 'Growth Studio', section: 'Studio', defaultAccess: 'admin', staffDomain: 'marketing', surface: 'growthStudio' },
+  { key: 'earnings',        href: '/coming-soon?feature=finances',    label: 'Finances',      section: 'Studio', defaultAccess: 'admin', surface: 'earnings', comingSoon: true },
+  { key: 'admin-qr',        href: '/admin/qr',      label: 'QR Studio',     section: 'Studio', defaultAccess: 'member', previewBelowAccess: true, surface: 'qrStudio' },
 
-  // ── Quest → the game; the Dashboard absorbs the /crew/* sub-pages as sections
-  //    (§10.1). Crew-gated → preview for non-crew. ──────────────────────────────
-  { key: 'crew',  href: '/crew',       label: 'Quest', section: 'Quest', defaultAccess: 'crew', previewBelowAccess: true },
-  { key: 'store', href: '/crew/store', label: 'Store', section: 'Quest', defaultAccess: 'crew', previewBelowAccess: true },
-
-  // ── Messages → DMs + rooms (Friends folds in, §10). ──────────────────────────
-  { key: 'messages', href: '/messages', label: 'Messages', section: 'Messages', defaultAccess: 'member' },
-
-  // ── Studio → community stewardship + business (host+/staff). Four sections
-  //    collapsed to one; the launchpads (Overview, Growth) aggregate the rest. ───
-  { key: 'admin-community', href: '/admin',       label: 'Overview',  section: 'Studio', defaultAccess: 'host' },
-  { key: 'admin-support',   href: '/admin/support', label: 'Support', section: 'Studio', defaultAccess: 'host' },
-  { key: 'crm',             href: '/crm',         label: 'CRM',       section: 'Studio', defaultAccess: 'host' },
-  { key: 'connections',     href: '/connections', label: 'Profiles',  section: 'Studio', defaultAccess: 'host', staffDomain: 'profiles' },
-  { key: 'admin-qr',        href: '/admin/qr',    label: 'QR Studio', section: 'Studio', defaultAccess: 'host' },
-  { key: 'admin-structure', href: '/admin/hubs',  label: 'Hubs & Nexuses', section: 'Studio', defaultAccess: 'guide' },
-  // Growth Studio absorbs the old Marketing suite (IA §10.2): pages · onboarding ·
-  // acquisition · pipeline · the marketing channels. The standalone Marketing item
-  // retired; reachable by community admin+ OR a staff role with the 'marketing'
-  // capability — the same gate the suite used (lib/page-editor/guard.ts).
-  { key: 'growth',          href: '/growth',      label: 'Growth Studio', section: 'Studio', defaultAccess: 'admin', staffDomain: 'marketing' },
-
-  // ── Platform → sensitive operator keys (janitor). ────────────────────────────
-  { key: 'admin-insights',  href: '/admin/engagement', label: 'Insights', section: 'Platform', defaultAccess: 'janitor' },
-  { key: 'admin-vera',      href: '/admin/vera',       label: 'Vera',     section: 'Platform', defaultAccess: 'janitor' },
-  { key: 'admin-platform',  href: '/admin/members',    label: 'Members',  section: 'Platform', defaultAccess: 'janitor' },
-  { key: 'pages',           href: '/pages',            label: 'Pages',    section: 'Platform', defaultAccess: 'janitor' },
+  // ── Platform → operator keys ─────────────────────────────────────────────────
+  { key: 'status',         href: '/coming-soon?feature=status', label: 'Status',           section: 'Platform', defaultAccess: 'visitor', surface: 'status', comingSoon: true },
+  { key: 'admin-insights', href: '/admin/engagement', label: 'Insight',     section: 'Platform', defaultAccess: 'host', surface: 'insight' },
+  { key: 'admin-vera',     href: '/admin/vera',       label: 'Vera AI',     section: 'Platform', defaultAccess: 'host', surface: 'veraAi' },
+  { key: 'admin-structure', href: '/admin/hubs',      label: 'Hubs & Nexuses', section: 'Platform', defaultAccess: 'admin', surface: 'platformManage' },
+  { key: 'admin-platform', href: '/admin/members',    label: 'Memberships', section: 'Platform', defaultAccess: 'admin', surface: 'platformManage' },
+  { key: 'pages',          href: '/pages',            label: 'Pages',       section: 'Platform', defaultAccess: 'admin', surface: 'platformManage' },
+  { key: 'financials',     href: '/coming-soon?feature=financials', label: 'Financial Dashboard', section: 'Platform', defaultAccess: 'janitor', surface: 'financialDashboard', comingSoon: true },
+  { key: 'settings',       href: '/settings',         label: 'Settings',    section: 'Platform', defaultAccess: 'member', surface: 'settings' },
 ] as const
 
 /** Quick lookup of an area's baseline access by key. */
