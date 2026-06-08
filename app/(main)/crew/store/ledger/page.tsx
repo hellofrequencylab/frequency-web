@@ -5,7 +5,7 @@ import {
 import { getMyProfileId } from '@/lib/auth'
 import { getEarningLog, ledgerLabel, type LedgerEntry, type LedgerStreakType } from '@/lib/economy/ledger'
 import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
-import { PageHeading } from '@/components/templates/page-heading'
+import { DashboardTemplate } from '@/components/templates'
 import { SectionHeader } from '@/components/ui/section-header'
 import { StatCard } from '@/components/ui/stat-card'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -55,36 +55,35 @@ export default async function VaultLedgerPage() {
   }
 
   return (
-    <div>
-      <PageHeading
-        eyebrow="The Vault"
-        title="How you earned"
-        description="Every Gem and Zap you’ve banked, and your live streaks. Online care earns Gems; showing up in the real world earns Zaps."
-        back={{ href: '/crew/store', label: 'Vault Store' }}
-      />
-
-      {/* Headline totals */}
-      <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatCard label="Zaps · season" value={totals.seasonZaps.toLocaleString()} icon={Zap} />
-        <StatCard label="Gems · season" value={totals.seasonGems.toLocaleString()} icon={Gem} />
-        <StatCard label="Streak" value={`${totals.currentStreak}w`} icon={Flame} />
-        <StatCard
-          label="Lifetime rank"
-          value={
-            rank ? (
-              <span className="rank-badge text-sm leading-tight" style={seasonRankStyle(rank)}>
-                {RANK_LABELS[rank] ?? rank}
-              </span>
-            ) : (
-              '—'
-            )
-          }
-          icon={Trophy}
-        />
-      </div>
-
+    <DashboardTemplate
+      eyebrow="The Vault"
+      title="How you earned"
+      description="Every Gem and Zap you’ve banked, and your live streaks. Online care earns Gems; showing up in the real world earns Zaps."
+      back={{ href: '/crew/store', label: 'Vault Store' }}
+      width="default"
+      stats={
+        <>
+          <StatCard label="Zaps · season" value={totals.seasonZaps.toLocaleString()} icon={Zap} />
+          <StatCard label="Gems · season" value={totals.seasonGems.toLocaleString()} icon={Gem} />
+          <StatCard label="Streak" value={`${totals.currentStreak}w`} icon={Flame} />
+          <StatCard
+            label="Lifetime rank"
+            value={
+              rank ? (
+                <span className="rank-badge text-sm leading-tight" style={seasonRankStyle(rank)}>
+                  {RANK_LABELS[rank] ?? rank}
+                </span>
+              ) : (
+                '—'
+              )
+            }
+            icon={Trophy}
+          />
+        </>
+      }
+    >
       {/* Streaks */}
-      <section className="mb-8">
+      <section>
         <SectionHeader title="Streaks" />
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {STREAK_ORDER.map((type) => {
@@ -159,6 +158,6 @@ export default async function VaultLedgerPage() {
           </div>
         )}
       </section>
-    </div>
+    </DashboardTemplate>
   )
 }
