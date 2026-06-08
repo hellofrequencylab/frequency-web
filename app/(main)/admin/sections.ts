@@ -37,6 +37,7 @@ import {
   Power,
   FileText,
   BadgeCheck,
+  Lightbulb,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
@@ -132,6 +133,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     label: 'Insights',
     blurb: 'Read-only signal on what is working and what is jamming.',
     links: [
+      { href: '/admin/studio', label: 'AI Studio', desc: 'Ranked AI recommendations + one-click, reversible site changes.', Icon: Lightbulb, min: 'admin', staffDomain: 'insights' },
       { href: '/admin/engagement', label: 'Engagement', desc: 'Active members and the activation funnel.', Icon: Activity, min: 'janitor', staffDomain: 'insights', staffLevel: 'read' },
       { href: '/admin/intel', label: 'Marketing intel', desc: 'Real-time growth, demand, and leader signal.', Icon: Telescope, min: 'janitor', staffDomain: 'insights', staffLevel: 'read' },
       { href: '/admin/outcomes', label: 'Outcomes', desc: 'Where programs and Journeys stall.', Icon: Target, min: 'janitor', staffDomain: 'insights', staffLevel: 'read' },
