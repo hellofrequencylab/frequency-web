@@ -5558,3 +5558,42 @@ blocking *injected inline scripts* by removing `'unsafe-inline'` — requires ei
 rendering (nonces) or adopting experimental SRI; it's parked on that owner decision. The `connect-src`
 allowlist is now a maintenance surface: a new third-party fetch must be added here or it's blocked
 (the `report-uri` will surface it first).
+
+---
+
+## ADR-171 — Collapse the nine admin suites into three operator dashboards
+
+**Status:** Accepted · built (`app/(main)/admin/sections.ts` + launchpad + sub-nav). **Implements:** P7
+(navigation / IA). **Builds on:** ADR-153 (the suite model), the role/staff gating in `sections.ts`.
+
+**Context.** The admin IA had grown to **nine flat suites** (Spaces, Engage, Comms, Safety, Reach,
+People, Insights, Vera, System) telescoped by role. A janitor's Overview launchpad was nine equal
+sections with no higher structure, and the breadcrumb read `Admin › Suite` — the operator had to hold
+all nine in their head. The owner's directive: collapse them into **three dashboards — Community,
+Insights, Platform.**
+
+**Decision.** Add a **dashboard layer over the existing suites** in the single source of truth, without
+new routes or any permission change.
+- Each `AdminGroup` declares a `dashboard: 'community' | 'insights' | 'platform'`. `ADMIN_DASHBOARDS`
+  is the ordered catalog (label + blurb + icon); `visibleDashboards(role, staffRole)` rolls the
+  role-gated suites up under their dashboard and drops empty ones (a host sees only **Community**; a
+  janitor sees all three).
+- **Mapping:** Community = Spaces · Engage · Comms · Safety · Reach (the people-facing operating work);
+  Insights = Insights · Vera (read-only signal + Vera tuning); Platform = People · System (the roster
+  and the sensitive keys).
+- The Overview launchpad renders the three dashboards, each with its suites beneath; the sub-nav
+  breadcrumb roots in the suite's dashboard (`Admin › Community › Circles`).
+- Existing `/admin/*` routes, the role/staff gating, and `groupForPath`/`visibleGroups` are unchanged —
+  this is purely an organizing layer (reversible: a suite moves dashboards by editing one `dashboard`
+  tag).
+
+**Alternatives.** Three new dashboard routes (`/admin/community` …) that each re-host their suites
+(rejected for v1 — more surface area + a routing migration for an organizational change that the
+launchpad + breadcrumb already express). Hard-code the grouping in each consumer (rejected — the
+catalog is the one source of truth; consumers derive from it). Leave the nine flat (rejected — the
+owner directive + the operator-load problem).
+
+**Consequences.** The operator now reads three dashboards, not nine suites, with no behavior or
+permission change and the catalog still the single source of truth. The per-page sidebar console
+(ADR-153 layer 3) keeps its own page-context categories — a separate concern, intentionally not folded
+in. Remaining P7: the Network hub merge (`/people` + `/connections` + `/marketing/contacts`).
