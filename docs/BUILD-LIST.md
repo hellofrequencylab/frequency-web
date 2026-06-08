@@ -33,6 +33,7 @@ site for everyone, function-gated per role* — and **(2) the money layer** (ent
 
 ## Progress log
 
+- **2026-06-08 ⏳ P3.1 (Partners foundation)** — `profile_personas` table (applied) + `lib/personas.ts` reader threaded into `getViewerHats` (the matrix's partner columns now activate per active persona; closes PB.1f) + self-serve `/partners/join`. 43 core tests green.
 - **2026-06-08 ✅ Admin in the framework + view-as for Host+** — `AdminPage` promoted to a first-class `AdminTemplate` (composes the shared `PageHeading`); all 20 admin pages adopt it unchanged. The "view as a role under you" selector, previously janitor-only, now works for **every steward Host and above** (downgrade-only, scoped to roles beneath them) — `lib/view-as.ts` `canViewAs` + the control/action. (Owner directive: no separate "admin mode" — admin functions inline + role view.)
 - **2026-06-08 ✅ PB (framework dialed)** — PB.1 access control unified (one `isPaid(tier)` predicate; beta-grant regression fixed). PB.2 page framework: genuine primitive-cobbling fixed (`StatInline` dedup; `/support`+`/growth` recomposed; `/crew`+`/broadcast` headers → `PageHeading`); the rest already compose the kit or are sanctioned-rich detail headers (PB.2d). Tails tracked: PB.1i (`isEndorsed`→tier via feed RPCs), PB.1f/g/h, remaining `Stat` variants.
 - **2026-06-08 ✅ model correction + audits** — Crew = the paid membership tier (migration `20260608050000`, values `free|crew|supporter`); ROLES.md vision rewritten. Two best-practice audits (access-control · page-framework) folded into track **PB** — no security holes, no `text-[Npx]`; main work = unify "is paid" to the tier + re-compose ~26 hand-rolled pages.
@@ -88,7 +89,7 @@ site for everyone, function-gated per role* — and **(2) the money layer** (ent
 
 | # | Item | Status | Notes |
 |---|---|---|---|
-| 3.1 | `profile_personas` + per-persona dashboards | 📋 | The persona axis; nav/capabilities light up per active persona. |
+| 3.1 | `profile_personas` + per-persona dashboards | ⏳ | ✅ **foundation:** `profile_personas` migration (applied) + `lib/personas.ts` reader threaded into `getViewerHats` (matrix partner columns now activate per active persona) + self-serve `/partners/join` claim. **Remaining:** wire the partner surfaces (`/crm`, `/growth`, website builder, Hook) to read `accessTo()` + per-persona dashboards. |
 | 3.2 | Collaborator | 📋 | Featured Practices/Journeys directory + influencer/affiliate kickbacks + Earnings view. |
 | 3.3 | Practitioner | 📋 | Paywalled Programs + client gamification + private Channel/Circles (Frequency-branded) + Connect. |
 | 3.4 | Business | 📋 | Listing + network integration + loyalty + CRM + **website builder** (Studio › Website stub). |
@@ -172,7 +173,7 @@ from role), the role-based proxies are wrong and must move to the tier.
 | PB.1d | `requireCrew()` — name is now correct (Crew = the paid tier); body checks `isPaid(tier)` | entry-points/codes | ✅ done |
 | PB.1e | Page-level `requireAdmin('janitor')` on `/admin/roles` (defense in depth for `assignRole`) | `/admin/roles` | ✅ already in place |
 | PB.1i | **`isEndorsed` display → tier** + retire the `community_role='crew'` value (migrate rows; drop the beta role-write) — needs `membership_tier` threaded through the feed author RPCs + profile/circle selects (`layout` training gate already moved to host+) | `season-ranks.ts` + feed/profile types | 📋 **remaining** |
-| PB.1f | Thread `profile_personas` through `getViewerHats` (unblocks P3 matrix columns) | `lib/core/viewer-hats.ts:37` | 📋 (with P3) |
+| PB.1f | Thread `profile_personas` through `getViewerHats` | `lib/core/viewer-hats.ts` | ✅ done (P3.1) |
 | PB.1g | Capability **reason** metadata ("upgrade to unlock" vs "host a circle to unlock") | resolver | 📋 nice-to-have |
 | PB.1h | Bring janitor-only admin surfaces (Vera/AI) under the matrix | `access-matrix.ts` | 📋 |
 
