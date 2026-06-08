@@ -40,7 +40,9 @@ export default async function VaultLedgerPage() {
   if (!profileId) redirect('/sign-in')
 
   const { entries, streaks, totals } = await getEarningLog(profileId)
-  const rank = (totals.rank as SeasonRank | null) ?? null
+  // The Vault headline is the LOCKED lifetime peak (P2.6) — it survives season
+  // resets, unlike the season rank. Fall back to the season rank if unset.
+  const rank = (totals.lifetimeRank as SeasonRank | null) ?? (totals.rank as SeasonRank | null) ?? null
   const streakBy = new Map(streaks.map((s) => [s.type, s]))
 
   // Group the merged history into day buckets, preserving newest-first order.
@@ -67,7 +69,7 @@ export default async function VaultLedgerPage() {
         <StatCard label="Gems · season" value={totals.seasonGems.toLocaleString()} icon={Gem} />
         <StatCard label="Streak" value={`${totals.currentStreak}w`} icon={Flame} />
         <StatCard
-          label="Rank"
+          label="Lifetime rank"
           value={
             rank ? (
               <span className="rank-badge text-sm leading-tight" style={seasonRankStyle(rank)}>
