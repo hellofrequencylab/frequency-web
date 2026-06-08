@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ChevronRight, Users, MapPin } from 'lucide-react'
+import { Users, MapPin, ChevronLeft } from 'lucide-react'
 import { getPublicCircleById } from '@/lib/discover'
 import { SignInCta } from '@/components/discover/cards'
 import { RippleRings } from '@/components/marketing/vector-art'
+import { DetailTemplate } from '@/components/templates'
 import { SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
@@ -60,70 +61,67 @@ export default async function CirclePage({
         ])}
       />
 
-      {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-xs text-subtle mb-8">
-        <Link href="/discover" className="hover:text-text transition-colors">Discover</Link>
-        <ChevronRight className="w-3.5 h-3.5" />
-        <span className="text-muted">Circles</span>
-        <ChevronRight className="w-3.5 h-3.5" />
-        <span className="text-text font-medium truncate">{circle.name}</span>
-      </nav>
+      <Link
+        href="/discover/circles"
+        className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-muted transition-colors hover:text-text"
+      >
+        <ChevronLeft className="h-4 w-4" />
+        Circles
+      </Link>
 
-      {/* Header */}
-      <header className="mb-8">
-        <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
-          Find your people
-        </p>
-        <div className="flex items-start justify-between gap-3 mb-3">
-          <h1 className="font-display uppercase text-text text-4xl sm:text-5xl">{circle.name}</h1>
-          {circle.status === 'forming' && (
-            <span className="shrink-0 mt-2 text-xs px-2 py-1 rounded-md font-medium bg-warning-bg text-warning capitalize">
+      <DetailTemplate
+        title={circle.name}
+        subtitle={
+          <div className="flex flex-wrap items-center gap-4 text-sm text-muted">
+            <span className="inline-flex items-center gap-1.5">
+              <Users className="w-4 h-4" />
+              {circle.member_count} {circle.member_count === 1 ? 'member' : 'members'}
+            </span>
+            {circle.city && (
+              <span className="inline-flex items-center gap-1.5">
+                <MapPin className="w-4 h-4" />
+                {circle.city}
+              </span>
+            )}
+            {circle.channel_name && circle.channel_slug && (
+              <Link
+                href={`/discover/topics/${circle.channel_slug}`}
+                className="inline-flex items-center gap-1 text-primary-strong hover:underline"
+              >
+                {circle.channel_name}
+              </Link>
+            )}
+          </div>
+        }
+        badges={
+          circle.status === 'forming' ? (
+            <span className="text-xs px-2 py-1 rounded-md font-medium bg-warning-bg text-warning capitalize">
               forming
             </span>
-          )}
-        </div>
-        <div className="flex flex-wrap items-center gap-4 text-sm text-muted">
-          <span className="inline-flex items-center gap-1.5">
-            <Users className="w-4 h-4" />
-            {circle.member_count} {circle.member_count === 1 ? 'member' : 'members'}
-          </span>
-          {circle.city && (
-            <span className="inline-flex items-center gap-1.5">
-              <MapPin className="w-4 h-4" />
-              {circle.city}
-            </span>
-          )}
-          {circle.channel_name && circle.channel_slug && (
-            <Link
-              href={`/discover/topics/${circle.channel_slug}`}
-              className="inline-flex items-center gap-1 text-primary-strong hover:underline"
-            >
-              {circle.channel_name}
-            </Link>
-          )}
-        </div>
-      </header>
+          ) : undefined
+        }
+      >
+        {/* About */}
+        {circle.about ? (
+          <section className="mb-10">
+            <p className="text-lg text-muted leading-relaxed whitespace-pre-line">{circle.about}</p>
+          </section>
+        ) : (
+          <section className="mb-10">
+            <p className="text-lg text-muted leading-relaxed">
+              A small standing group of neighbors gathering in person around what they share.
+              Up to fifty people, close enough to walk to, small enough that the regulars learn
+              your name and notice the week you go missing.
+            </p>
+          </section>
+        )}
 
-      {/* About */}
-      {circle.about ? (
-        <section className="mb-10">
-          <p className="text-lg text-muted leading-relaxed whitespace-pre-line">{circle.about}</p>
-        </section>
-      ) : (
-        <section className="mb-10">
-          <p className="text-lg text-muted leading-relaxed">
-            A small standing group of neighbors gathering in person around what they share.
-            Up to fifty people, close enough to walk to, small enough that the regulars learn
-            your name and notice the week you go missing.
-          </p>
-        </section>
-      )}
-
-      <SignInCta
-        title="Sign in to join this circle"
-        body="Circles are small on purpose: up to 50 neighbors, no audition, two words to belong. Sign up free to request to join, see the standing times, and start showing up for the people who will keep a seat warm for you."
-        action="Sign in to join"
-      />
+        <SignInCta
+          title="Sign in to join this circle"
+          body="Circles are small on purpose: up to 50 neighbors, no audition, two words to belong. Sign up free to request to join, see the standing times, and start showing up for the people who will keep a seat warm for you."
+          action="Sign in to join"
+        />
+      </DetailTemplate>
     </div>
   )
 }

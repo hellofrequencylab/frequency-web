@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { QrCode } from 'lucide-react'
+import { FocusTemplate } from '@/components/templates'
 
 export const dynamic = 'force-static'
 
@@ -8,18 +9,21 @@ export const dynamic = 'force-static'
 export default function CodeUnavailablePage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-6 bg-canvas">
-      <div className="max-w-sm text-center">
-        <div className="w-14 h-14 mx-auto rounded-2xl bg-surface-elevated text-muted flex items-center justify-center">
-          <QrCode className="w-7 h-7" />
+      <FocusTemplate
+        title="This code isn’t active"
+        description="It may have expired or been retired. Check with whoever shared it."
+        width="narrow"
+        divider={false}
+      >
+        <div className="text-center">
+          <div className="w-14 h-14 mx-auto rounded-2xl bg-surface-elevated text-muted flex items-center justify-center">
+            <QrCode className="w-7 h-7" />
+          </div>
+          <Link href="/" className="inline-block mt-5 text-sm font-semibold text-primary hover:underline">
+            Go to Frequency →
+          </Link>
         </div>
-        <h1 className="text-xl font-bold text-text mt-4">This code isn’t active</h1>
-        <p className="text-sm text-muted mt-2">
-          It may have expired or been retired. Check with whoever shared it.
-        </p>
-        <Link href="/" className="inline-block mt-5 text-sm font-semibold text-primary hover:underline">
-          Go to Frequency →
-        </Link>
-      </div>
+      </FocusTemplate>
     </div>
   )
 }

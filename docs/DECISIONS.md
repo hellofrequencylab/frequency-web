@@ -5678,3 +5678,13 @@ this fixes).
 not layout work. The kit is the single source of truth for page structure; visual changes happen in one
 place and propagate. Rollout is mechanical now that preservation is off the table — the remaining work is
 volume, not judgment.
+
+**Exemption — public marketing landing pages.** The four `/discover` index pages (`/discover`,
+`/discover/circles`, `/discover/topics`, `/discover/events`) are explicitly exempt from this standard.
+They are full-bleed marketing surfaces built around `PhotoHero` (full-viewport image hero), `ZigZag`
+(editorial image/text splits), `Statement` (dark typographic beats), and `BetaCTA` (conversion section).
+These components are architecturally incompatible with `IndexTemplate` (would destroy the full-bleed
+design, create duplicate H1s on ISR-cached SEO pages, and lose structured marketing prose). They are
+treated as a distinct surface type — "marketing landing" — that follows the marketing-component grammar
+(`components/marketing/marketing-ui`) rather than the app-template grammar. Future marketing pages of
+the same type follow this pattern; any page that is NOT full-bleed marketing follows ADR-173.
