@@ -1,0 +1,41 @@
+# Code-quality gate (BUILD-LIST P8): typecheck + lint + tests on every PR to main.
+# The Vercel deploy build is the only other check and it does NOT run the test suite —
+# this does. No app secrets needed: tsc, eslint, and vitest don't touch the Supabase /
+# Stripe env (only `next build` does, which Vercel owns).
+name: ci
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+# Newer pushes to the same ref supersede in-flight runs.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Typecheck
+        run: pnpm exec tsc --noEmit
+      - name: Lint
+        run: pnpm lint
+      - name: Test
+        run: pnpm test
