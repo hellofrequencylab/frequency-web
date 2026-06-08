@@ -93,20 +93,24 @@ site for everyone, function-gated per role* — and **(2) the money layer** (ent
 | 3.4 | Business | 📋 | Listing + network integration + loyalty + CRM + **website builder** (Studio › Website stub). |
 | 3.5 | Organization + Hook federation | 🔴 | XL — white-label sub-communities; identity link + Hook membership rollover (§8.1); points rollup, idempotent+capped (§8.2); community federation / lead-funnel bubble (§8.3); isolated tenant admin (ADR-158). |
 
-## P4 — Platform completion (concrete stubs from the sweep)
+## P4 — Platform completion (verified 2026-06-08)
 
-| # | Item | Where | Status |
-|---|---|---|---|
-| 4.1 | Programs library — "coming soon" | `app/(main)/programs` | 📋 STUB |
-| 4.2 | Help-center articles — index/empty only | `app/(help)/help`, `content/help/*` | ⏳ |
-| 4.3 | Outreach member-send — disabled | `app/(main)/outreach` | 📋 |
-| 4.4 | Engagement physical sources (QR/NFC/geo/p2p) | `lib/engagement/events.ts` | 📋 |
-| 4.5 | Push notifications (P1.4) — default-off, unshipped | `lib/notification-preferences.ts` | ⏳ |
-| 4.6 | `/hubs` + `/nexuses` index pages | `app/(main)/hubs`, `/nexuses` | 📋 |
-| 4.7 | Founder task-assignment model — `openTaskCount` always 0 | `lib/core/load-capabilities.ts:87` | 📋 |
-| 4.8 | Library submission flow — review queue exists, no member submit | `app/(main)/library/review` | 📋 |
-| 4.9 | Nurture composer + Automations rule editor (stubs) | `marketing/*` | 📋 |
-| 4.10 | Analytics email metrics need Resend webhook; donor/partnership flow plumbing-only | `marketing/*`, `lib/attribution/channels.ts` | ⏳ |
+> **Verification pass corrected the sweep:** several "stubs" were false positives — the
+> sweep pattern-matched an `EmptyState`/`coming soon` *fallback branch* in code, but the
+> feature is actually built/populated. Real, code-completable gaps are few.
+
+| # | Item | Status |
+|---|---|---|
+| 4.1 | **Programs library** — ✅ **already built**: 4 frameworks live in `content/programs/`, page renders them (the "coming soon" is the empty-state fallback). Sweep false positive. | ✅ done |
+| 4.3 | **Outreach member-send** — ✅ **completed**: `sendOutreach` fans a steward's direct note to the members of the scope(s) they lead, via the email+push spine. | ✅ done |
+| 4.2 | Help-center articles — content exists for the major categories; expand coverage (content authoring). | ⏳ content |
+| 4.9 | Nurture/Automations — per the operator audit these are **wired** (Nurture complete; Automations email-only). Add SMS/push actions + segment builder. | ⏳ |
+| 4.8 | Library submission flow — review queue exists; add a member "propose to library" path. | 📋 |
+| 4.7 | Founder task-assignment model — `openTaskCount` always 0 pending the `crew_tasks` assignment model. | 📋 needs model |
+| 4.6 | `/hubs` + `/nexuses` index pages — **won't build**: the approved IA keeps Hubs/Nexuses **contextual** (reached via circle drill-down). Not a gap. | ✅ by design |
+| 4.4 | Engagement physical sources (QR/NFC/geo/p2p) | 🔴 needs device/verification infra |
+| 4.5 | Push notifications — needs **VAPID keys** + delivery config | 🔴 owner keys |
+| 4.10 | Email metrics need the **Resend webhook** configured; donor flow needs design | 🔴 owner config |
 
 ## P5 — Member · Practice · Operator depth (the feature backlog)
 
