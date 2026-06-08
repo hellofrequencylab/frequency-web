@@ -17,9 +17,14 @@ import { circleListSchema, breadcrumbSchema } from '@/lib/jsonld'
 export const revalidate = 3600
 
 // Pre-render the seeded topical channels at build time; others render on demand.
+// Falls back to [] when Supabase credentials are absent (CI / preview without env vars).
 export async function generateStaticParams() {
-  const channels = await getTopicalChannels()
-  return channels.map((c) => ({ slug: c.slug }))
+  try {
+    const channels = await getTopicalChannels()
+    return channels.map((c) => ({ slug: c.slug }))
+  } catch {
+    return []
+  }
 }
 
 export async function generateMetadata({
