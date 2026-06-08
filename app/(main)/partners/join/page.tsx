@@ -1,4 +1,6 @@
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { ArrowRight } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import { getPersonaStates, PARTNER_PERSONAS, PERSONA_META } from '@/lib/personas'
 import { IndexTemplate } from '@/components/templates'
@@ -35,7 +37,23 @@ export default async function PartnerProgramsPage() {
                   <p className="mt-1.5 text-sm leading-relaxed text-muted">{meta.unlocks}</p>
                 </div>
               </div>
-              <div className="mt-3 flex justify-end">
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                {active && meta.tools.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {meta.tools.map((t) => (
+                      <Link
+                        key={t.href}
+                        href={t.href}
+                        className="inline-flex items-center gap-1 rounded-lg bg-surface-elevated px-2.5 py-1 text-xs font-semibold text-text transition-colors hover:bg-primary-bg hover:text-primary-strong"
+                      >
+                        {t.label}
+                        <ArrowRight className="h-3 w-3" />
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <span />
+                )}
                 <PersonaToggle persona={p} active={active} />
               </div>
             </div>
