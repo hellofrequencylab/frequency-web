@@ -8,6 +8,7 @@ import { IndexTemplate } from '@/components/templates'
 import { PageContents } from '@/components/templates/page-contents'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
+import { StatInline } from '@/components/ui/stat-inline'
 import { CircleCard, type CircleCardData } from '@/components/circles/circle-card'
 import { CirclesToolbar } from '@/components/circles/circles-toolbar'
 import { demoModeEnabled } from '@/lib/platform-flags'
@@ -48,16 +49,6 @@ function toCardData(c: CircleRow): CircleCardData {
     member_count: c.member_count, member_cap: c.member_cap, status: c.status,
     context: contextFor(c), imageUrl: c.image_url, isDemo: c.is_demo,
   }
-}
-
-// De-boxed network stat — a value over a label, floating on the canvas (no card).
-function Stat({ value, label }: { value: number; label: string }) {
-  return (
-    <div>
-      <div className="text-xl font-bold leading-none tabular-nums text-text">{value.toLocaleString()}</div>
-      <div className="mt-1 text-xs text-subtle">{label}</div>
-    </div>
-  )
 }
 
 export default async function CirclesPage({
@@ -234,10 +225,10 @@ export default async function CirclesPage({
             from sm up it's the original stats-left · actions-right bar. */}
         <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-border bg-surface px-4 py-4 shadow-sm sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-x-6 sm:px-5">
           <div className="grid grid-cols-4 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-x-8 sm:gap-y-3">
-            <Stat value={stats.circles} label="Circles" />
-            <Stat value={stats.members} label="Members" />
-            <Stat value={stats.cities} label="Cities" />
-            <Stat value={stats.interests} label="Interests" />
+            <StatInline value={stats.circles} label="Circles" />
+            <StatInline value={stats.members} label="Members" />
+            <StatInline value={stats.cities} label="Cities" />
+            <StatInline value={stats.interests} label="Interests" />
           </div>
           <div className="flex flex-wrap items-center gap-3 border-t border-border pt-4 sm:border-0 sm:pt-0">
             {locatableCircles.length > 0 && <FindNearMeButton />}
