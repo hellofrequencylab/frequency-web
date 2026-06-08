@@ -5,6 +5,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { authorizeAction } from '@/lib/admin/guard'
+import { logAdminAction } from '@/lib/admin/audit'
 import {
   PARTNER_PERSONAS,
   canStaffTransition,
@@ -56,6 +57,9 @@ export async function transitionPersona(
     .eq('profile_id', profileId)
     .eq('persona', persona)
   if (error) return fail(error.message)
+
+  // Audit the verification decision (P8). Best-effort.
+  await logAdminAction({ actorId: caller!.id, action: `persona.${to}`, targetType: 'profile', targetId: profileId, detail: { persona, from } })
 
   // Personas feed the capability resolver — refresh the member's shell + this queue.
   revalidatePath('/', 'layout')
