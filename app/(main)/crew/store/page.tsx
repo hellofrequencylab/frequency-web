@@ -9,6 +9,7 @@ import { CrewPreviewBanner } from '@/components/crew/crew-preview-banner'
 import { CrewGate } from '@/components/crew/upgrade-lightbox'
 import { SectionHeader } from '@/components/ui/section-header'
 import { surfaceAccess } from '@/lib/core/viewer-hats'
+import { RANK_LABELS, seasonRankStyle, type SeasonRank } from '@/lib/season-ranks'
 
 export default async function StorePage() {
   const supabase = await createClient()
@@ -23,11 +24,15 @@ export default async function StorePage() {
   // your spendable Gem balance.
   const { data: prof } = await createAdminClient()
     .from('profiles')
-    .select('current_season_zaps, current_streak')
+    .select('current_season_zaps, current_streak, lifetime_rank')
     .eq('auth_user_id', user.id)
     .maybeSingle()
   const zaps = (prof?.current_season_zaps as number | null) ?? 0
   const streak = (prof?.current_streak as number | null) ?? 0
+  // The locked, never-resetting peak (P2.6) — the durable Vault endorsement. Shown to
+  // the member on their own Vault regardless of tier; 'ghost' = not yet ranked.
+  const lifetimeRank = (prof?.lifetime_rank as SeasonRank | null) ?? null
+  const hasLifetimeRank = !!lifetimeRank && lifetimeRank !== 'ghost'
   // Spending is the FULL Vault function; the matrix (access-matrix.ts) is the single
   // source of truth — today the crew-or-above proxy, the paid Member tier once P2 lands.
   // Limited access still browses everything (visible-but-locked + upgrade nudge).
@@ -65,6 +70,16 @@ export default async function StorePage() {
               <p className="text-3xl font-bold text-success leading-tight">{balance.toLocaleString()}</p>
             </div>
           </div>
+
+          {/* Lifetime rank — the locked peak that survives every season reset. */}
+          {hasLifetimeRank && (
+            <div className="mt-3 flex items-center justify-between rounded-xl bg-success-bg/50 px-3 py-2">
+              <span className="text-xs font-semibold uppercase tracking-wider text-signal">Lifetime rank</span>
+              <span className="rank-badge text-2xs font-bold leading-tight" style={seasonRankStyle(lifetimeRank!)}>
+                {RANK_LABELS[lifetimeRank!]}
+              </span>
+            </div>
+          )}
 
           {/* The winnings: what you've earned by showing up. */}
           <div className="mt-4 grid grid-cols-3 gap-2">

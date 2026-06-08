@@ -5269,3 +5269,37 @@ ADR-030). Outpost as a tenant tier (open — see ROLES.md).
 entitlement flag; `community_role` becomes a derived cache; the permission grid + NAV reads the
 union resolver; a phased migration (§11) keeps each step non-breaking. GLOSSARY/place-tree docs
 need the Outpost reframe.
+
+## ADR-164 — Lifetime rank: a locked, never-resetting peak alongside the seasonal rank
+
+**Status:** Accepted · built (migration `20260608060000_lifetime_rank.sql`). **Implements:** P2.6 /
+ADR-037 ("lock in a lifetime rank"). **Spec:** [ECONOMY-AND-JOURNEYS.md](ECONOMY-AND-JOURNEYS.md) §3.
+
+**Context.** Ranks were purely seasonal: `current_season_rank` advances with
+`current_season_zaps` and is wiped to `ghost` every `reset_season()`. The Vault model promises a
+*lifetime rank* you "lock in" — the durable endorsement that survives resets — but no column or
+logic existed for it. The season-end zaps→gems conversion already runs for everyone (the cash-in
+of value); the missing half was persisting the **peak rank** as a permanent credential.
+
+**Decision.** Add `profiles.lifetime_rank` (`season_rank_enum`, default `ghost`): a **monotonic
+peak** that only ever moves up.
+- The `season_rank_enum` is declared ascending (`ghost < runner < operative < agent < conduit <
+  luminary`), so `GREATEST()`/`max()` on the enum give "the higher rank" with no ordinal table.
+- `after_zap_transaction()` ratchets `lifetime_rank = GREATEST(lifetime_rank,
+  current_season_rank)` on every grant — it tracks the season peak automatically.
+- `reset_season()` locks `lifetime_rank` from each player's final season rank **before** wiping
+  the season columns (this captures manual **Luminary** promotions the auto-advance never sees),
+  and deliberately leaves `lifetime_rank` out of the reset, so it persists across seasons.
+- Backfilled from `GREATEST(current_season_rank, max(season_trophies.final_rank))`.
+- Surfaced on the member's own Vault (the Store widget + the "How you earned" ledger headline);
+  public endorsement still follows ADR-141 (`isEndorsed`, Crew+).
+
+**Alternatives.** Derive lifetime rank on read from `max(season_trophies.final_rank)` (rejected —
+misses the in-progress season and manual promotions, and pays the cost on every render). A
+separate `lifetime_rank_zaps` column for next-threshold display (deferred — the rank label is
+enough for now).
+
+**Consequences.** One additive column + two function bodies re-created (verbatim + the lifetime
+bump); no read-path break. Season rank and lifetime rank are now two distinct stats; the Vault
+headline reads the locked peak. `lib/season-ranks.ts` mirrors the enum order (`RANK_ORDER`,
+`higherRank`) so app code compares ranks without a DB round-trip.
