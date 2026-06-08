@@ -5473,3 +5473,45 @@ idempotent and auditable (`reward_grants` is the per-member receipt, readable by
 gems/zaps split is wired (v1 ships gem rules; zap rules drop in unchanged). Completes the PI track:
 capture (PI.1) → feature store (PI.2) → predictions (PI.3) → AI Studio (PI.4) → retroactive rewards
 (PI.5), all reading the same immutable history.
+
+---
+
+## ADR-169 — The unified send-gate: one verified decision for every outbound message
+
+**Status:** Accepted · built (`lib/comms/send-gate.ts` + `send-gate.test.ts`). **Implements:** the
+ADR-028 verification harness (P8 / BACKLOG §C/§D). **Builds on:** the consent ledger (ADR-069), the
+email suppression list (COMMS-CRM §2), notification preferences.
+
+**Context.** Three guardrails govern whether a member may be messaged — notification **preferences**
+(`shouldSend`, channel×category), the **consent** ledger (`hasConsent`), and the email **suppression**
+list (`isSuppressed`) — but each lived in its own module and was checked ad hoc at each send site (the
+nurture runner checked prefs + an unsubscribe flag; `sendRawEmail` checked suppression; campaigns
+checked consent). Scattered checks can't be verified, and **ADR-028 is explicit: no agent autonomy
+until a test harness around spine/consent/suppression exists.** A future autonomous send could route
+around a guardrail simply by forgetting to call it.
+
+**Decision.** Collapse the policy into **one pure decision plus a thin resolver**, exhaustively tested.
+- `evaluateSendGate(input) → { allowed, reason }` is **pure** over explicit state. Precedence, most
+  fundamental first: **suppression** (legal/deliverability — overrides all) → **consent** →
+  **preference** → **frequency cap**. One reason per decision, for audit clarity. The truth table *is*
+  the test (19 cases: each guardrail denies independently, precedence holds, the only path to `allowed`
+  is all-clear).
+- `consentScopeForCategory(category)` maps a category to the consent scope it needs — `lifecycle →
+  email_lifecycle`, `marketing → email_marketing`, community notifications (dispatches/events/mentions)
+  → none (the per-category preference toggle *is* their consent).
+- `resolveSendGate(profileId, channel, category, opts)` is the async seam an autonomous send routes
+  through: it gathers the live guardrail state from the existing readers and runs the pure gate.
+  **Fail-closed** — any read error denies the send.
+
+**Alternatives.** Keep checking the three readers at each call site (rejected — unverifiable, the exact
+gap ADR-028 forbids). A new DB table for a send-decision log (rejected — the decision is pure; the
+existing ledgers/audit already record what was sent). Bake frequency state into the gate's IO
+(rejected for v1 — cap + window are passed in, so the pure core stays deterministic and the counting
+source can vary per surface).
+
+**Consequences.** Agent/automated sends now have a single structural seam with a verified truth table —
+the ADR-028 unblocker for graduating agents past propose-only. The nurture runner is migrated onto it
+(its ad-hoc `shouldSend` check → `resolveSendGate`, a strict superset adding the lifecycle-consent and
+suppression checks). **Rollout:** remaining send sites (campaigns, winback, dispatch/event/mention
+notifications) migrate onto `resolveSendGate` incrementally; each is a behavior-preserving or
+strictly-safer swap. Frequency caps are now expressible (passed per send) where before there were none.
