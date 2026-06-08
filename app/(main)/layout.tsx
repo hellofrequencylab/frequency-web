@@ -67,9 +67,9 @@ export default async function MainLayout({
   const meta = profile.meta as { onboarding_completed?: boolean } | null
   if (BETA_INDUCTION_ACTIVE && !meta?.onboarding_completed) redirect('/onboarding')
 
-  // Effective role honours a janitor's "view as" override so the whole shell
-  // (nav + capabilities) previews the chosen role; realRole is the true role,
-  // used only to show the janitor control itself. See lib/view-as.ts.
+  // Effective role honours a steward's (host+) "view as" override so the whole shell
+  // (nav + capabilities) previews a role under them; realRole is the true role, used
+  // to show the view-as control + the roles below it. See lib/view-as.ts.
   const realRole = (profile.community_role ?? 'member') as CommunityRole
   const effectiveRole = await applyViewAs(realRole)
   // Janitor previewing the logged-out experience: server caps drop to member

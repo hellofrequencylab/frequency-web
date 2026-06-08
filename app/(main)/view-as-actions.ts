@@ -3,28 +3,32 @@
 import { cookies } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import { getRealCallerRole } from '@/lib/auth'
-import { VIEW_AS_COOKIE } from '@/lib/view-as'
-import { ROLE_HIERARCHY, type CommunityRole } from '@/lib/core/roles'
+import { VIEW_AS_COOKIE, canViewAs } from '@/lib/view-as'
+import { ROLE_HIERARCHY, roleRank, type CommunityRole } from '@/lib/core/roles'
 
-// Janitor-only "view as any role". Sets (or clears) the view-as cookie. The
-// effective-role resolution in lib/view-as.ts only honours the cookie when the
-// caller's REAL role is janitor, but we re-check here too (defence in depth) so a
-// non-janitor can never even write the cookie.
+// "View as a role under you" — Host and above. Sets (or clears) the view-as cookie.
+// The effective-role resolution in lib/view-as.ts only honours a target ranked BELOW
+// the caller's real role; we re-check here too (defence in depth) so the cookie can
+// only ever hold a valid downgrade.
 export async function setViewAsRole(role: CommunityRole | 'visitor' | null): Promise<void> {
   const realRole = await getRealCallerRole()
-  if (realRole !== 'janitor') return
+  if (!realRole || !canViewAs(realRole)) return
 
   const jar = await cookies()
-  // Clearing (back to self), or a no-op "view as janitor", removes the cookie.
-  // 'visitor' is a valid target; any other non-ladder value clears.
-  if (!role || role === 'janitor' || (role !== 'visitor' && !ROLE_HIERARCHY.includes(role))) {
+  // A valid target is 'visitor' (always a downgrade for a steward) or a ladder role
+  // ranked STRICTLY below the caller. Anything else — incl. self or a higher role —
+  // clears the override (back to your own view).
+  const isValidTarget =
+    role === 'visitor' ||
+    (!!role && ROLE_HIERARCHY.includes(role) && roleRank(role) < roleRank(realRole))
+  if (!isValidTarget) {
     jar.delete(VIEW_AS_COOKIE)
   } else {
-    jar.set(VIEW_AS_COOKIE, role, {
+    jar.set(VIEW_AS_COOKIE, role as string, {
       httpOnly: true,
       sameSite: 'lax',
       path: '/',
-      // Auto-expires so a janitor is never silently stuck impersonating.
+      // Auto-expires so a steward is never silently stuck previewing.
       maxAge: 60 * 60 * 8,
     })
   }
