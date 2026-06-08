@@ -23,6 +23,7 @@ export function DashboardTemplate({
   title,
   description,
   actions,
+  back,
   stats,
   width = 'wide',
   children,
@@ -31,6 +32,8 @@ export function DashboardTemplate({
   title: React.ReactNode
   description?: React.ReactNode
   actions?: React.ReactNode
+  /** Back-link for a nested dashboard sub-page. */
+  back?: { href: string; label: string }
   /** A row of <StatCard>s, laid out in a responsive grid above the body. */
   stats?: React.ReactNode
   width?: keyof typeof WIDTHS
@@ -38,7 +41,7 @@ export function DashboardTemplate({
 }) {
   return (
     <div className={`mx-auto w-full ${WIDTHS[width]}`}>
-      <PageHeading eyebrow={eyebrow} title={title} description={description} actions={actions} />
+      <PageHeading eyebrow={eyebrow} title={title} description={description} actions={actions} back={back} />
       {stats && (
         <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{stats}</div>
       )}
