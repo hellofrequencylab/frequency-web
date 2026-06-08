@@ -9,6 +9,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { atLeastRole } from '@/lib/core/roles'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { updateTicketFields, addStaffMessage, getTicketAdmin, type TicketUpdate } from '@/lib/support/store'
+import { TICKET_PRIORITIES, type TicketPriority } from '@/lib/support/types'
 import { aiAvailable, featureOverBudget, recordAiUsage } from '@/lib/ai/usage'
 import { completeText, AiUnavailableError } from '@/lib/ai/complete'
 import { retrieveHelpChunks } from '@/lib/ai/help-rag'
@@ -85,4 +86,58 @@ export async function draftReply(id: string): Promise<ActionResult<{ draft: stri
   // Deterministic fallback when AI is off / over budget — a warm acknowledgment skeleton.
   const fallback = `Hi — thanks for reaching out about "${ticket.subject}". A teammate is looking into this and will follow up shortly.\n\n— The Frequency team`
   return ok({ draft: fallback })
+}
+
+const TRIAGE_SYSTEM = `You triage support tickets for a community platform. Read the ticket and respond with EXACTLY one priority word — low, normal, high, or urgent — then " — " then a brief reason (one short clause). Examples of urgent: can't sign in, lost data, payment broken, safety. High: a blocking bug for one member. Normal: most questions/requests. Low: ideas/feedback. Output only that one line.`
+
+/** Pull a priority word + short reason from a free-text classification. */
+function parseTriage(text: string): { priority: TicketPriority; reason: string } {
+  const lower = text.toLowerCase()
+  const priority = (TICKET_PRIORITIES.find((p) => new RegExp(`\\b${p}\\b`).test(lower)) ?? 'normal') as TicketPriority
+  const reason = text.replace(/^[^—:-]*[—:-]\s*/, '').trim().slice(0, 160) || 'AI triage'
+  return { priority, reason }
+}
+
+// AI triage (the "virtual staff" seam, ADR-167): Claude classifies a ticket's priority,
+// then SETS it (host+ already gate the console). Returns the chosen priority + a one-line
+// reason. Budget-gated; a keyword heuristic backs it up when AI is off.
+export async function suggestTriage(id: string): Promise<ActionResult<{ priority: TicketPriority; reason: string }>> {
+  const agent = await requireAgent()
+  if (typeof agent === 'string') return fail(agent)
+  const ticket = await getTicketAdmin(id)
+  if (!ticket) return fail('Ticket not found.')
+
+  const firstMsg = ticket.messages.find((m) => !m.isInternal && m.authorKind === 'member')?.body ?? ''
+  let triage: { priority: TicketPriority; reason: string } | null = null
+
+  if ((await aiAvailable()) && !(await featureOverBudget('support-draft'))) {
+    try {
+      const res = await completeText({
+        system: TRIAGE_SYSTEM,
+        messages: [{ role: 'user', content: `TYPE: ${ticket.type}\nSUBJECT: ${ticket.subject}\n${firstMsg}` }],
+        tier: 'haiku',
+        maxTokens: 60,
+      })
+      await recordAiUsage({ feature: 'support-draft', model: res.tier, usage: res.usage, costUsd: res.costUsd, profileId: agent.id })
+      if (res.text) triage = parseTriage(res.text)
+    } catch (e) {
+      if (!(e instanceof AiUnavailableError)) { /* fall through */ }
+    }
+  }
+
+  // Heuristic fallback — scan for urgency signals.
+  if (!triage) {
+    const t = `${ticket.subject} ${firstMsg}`.toLowerCase()
+    const priority: TicketPriority = /\b(can.?t (sign|log) in|locked out|lost|broken|payment|charged|refund|urgent|asap|safety|harass)\b/.test(t)
+      ? 'high'
+      : ticket.type === 'idea' || ticket.type === 'feedback'
+        ? 'low'
+        : 'normal'
+    triage = { priority, reason: 'Heuristic triage (AI off)' }
+  }
+
+  await updateTicketFields(id, { priority: triage.priority })
+  revalidatePath(`/admin/support/${id}`)
+  revalidatePath('/admin/support')
+  return ok(triage)
 }
