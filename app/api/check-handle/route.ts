@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { rateLimitOk, clientIp, tooMany } from '@/lib/rate-limit'
 
 // Handle uniqueness check. Uses the handle_is_available SECURITY DEFINER RPC
 // (added in 20240204000000) so the caller's role doesn't matter. Anyone
@@ -9,6 +10,8 @@ import { createClient } from '@/lib/supabase/server'
 // handle when it re-checks. Without this, the user would see "taken" on
 // their own handle.
 export async function GET(request: Request) {
+  if (!(await rateLimitOk('check-handle', clientIp(request), 60, '60 s'))) return tooMany()
+
   const { searchParams } = new URL(request.url)
   const handle = searchParams.get('handle')
   const excludeUserId = searchParams.get('userId')
