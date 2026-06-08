@@ -26,7 +26,10 @@ export const PERSONA_META: Record<
     label: 'Collaborator', emoji: '📣',
     tagline: 'Influencers, authors, teachers, speakers with an audience',
     unlocks: 'A featured directory for your Practices & Journeys, plus the influencer program (affiliate kickbacks tied to your activity).',
-    tools: [], // featured directory + affiliate dashboard — building (P3.x)
+    tools: [
+      { label: 'Collaborators directory', href: '/partners/collaborators' },
+      { label: 'Create a Journey', href: '/journeys' },
+    ],
   },
   practitioner: {
     label: 'Practitioner', emoji: '🧘',
