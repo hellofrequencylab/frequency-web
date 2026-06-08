@@ -24,6 +24,8 @@ export async function GET(request: Request) {
   // Strip characters that would break a PostgREST or() filter; trim + cap length.
   const q = (searchParams.get('q') ?? '').replace(/[(),]/g, ' ').trim().slice(0, 80)
   if (q.length < 2) return NextResponse.json(EMPTY)
+  // Escape LIKE wildcards so user input is always treated as a literal substring.
+  const safeQ = q.replace(/[%_\\]/g, '\\$&')
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -37,21 +39,21 @@ export async function GET(request: Request) {
     admin
       .from('profiles')
       .select('id, display_name, handle, avatar_url, community_role, is_demo')
-      .or(`display_name.ilike.%${q}%,handle.ilike.%${q}%`)
+      .or(`display_name.ilike.%${safeQ}%,handle.ilike.%${safeQ}%`)
       .eq('is_active', true)
       .order('display_name')
       .limit(6),
     admin
       .from('posts')
       .select('id, body, created_at, is_demo, author:profiles!author_id ( display_name, handle, avatar_url )')
-      .ilike('body', `%${q}%`)
+      .ilike('body', `%${safeQ}%`)
       .is('hidden_at', null)
       .order('created_at', { ascending: false })
       .limit(6),
     admin
       .from('events')
       .select('id, title, slug, starts_at, location, is_cancelled, is_demo')
-      .or(`title.ilike.%${q}%,description.ilike.%${q}%`)
+      .or(`title.ilike.%${safeQ}%,description.ilike.%${safeQ}%`)
       .order('starts_at', { ascending: true })
       .limit(6),
     stewardId ? searchVisibleLeads(stewardId, q, { includeNetwork: true }) : Promise.resolve([]),

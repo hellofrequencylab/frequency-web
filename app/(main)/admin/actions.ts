@@ -712,14 +712,12 @@ export async function publishDispatch(id: string) {
           }
         }
 
-        if (await shouldSend(profile.id, 'push', 'dispatches')) {
-          await sendPushToProfile(profile.id, {
-            title: `📡 ${dispatch.title}`,
-            body:  excerpt || `New dispatch from ${authorName}`,
-            url:   `/broadcast/${dispatch.id}`,
-            tag:   `dispatch-${dispatch.id}`,
-          })
-        }
+        await sendPushToProfile(profile.id, {
+          title: `📡 ${dispatch.title}`,
+          body:  excerpt || `New dispatch from ${authorName}`,
+          url:   `/broadcast/${dispatch.id}`,
+          tag:   `dispatch-${dispatch.id}`,
+        }, 'dispatches')
       }
     } catch (err) {
       console.error('[publishDispatch] email fan-out failed:', err)
