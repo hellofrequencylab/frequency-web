@@ -77,6 +77,12 @@ on top of normal Community membership.
 | 🏪 **Business** | local businesses | business **listing** + network integration; **loyalty rewards**; **CRM**, **web builder**, deep business tools | payments + loyalty |
 | 🏢 **Organization** | nonprofits / orgs | a full suite tied to whoever's tagged with the org: their own **sub-community on Hook**, CRM, gamification, promotion | tenant billing |
 
+**Verification ladder (P2.7, ADR-165).** A claim is a *request*, not an instant unlock:
+`claimed` (pending review) → staff **verify** → `active` (suspend/reinstate as needed). A
+persona's tools light up only once **verified/active** — a `profiles`-domain operator (or
+janitor) runs the queue at `/admin/personas`. The per-persona **Stripe Connect** binding is
+the money gate at `active` (stubbed until Connect is configured).
+
 **Organization isolation rule.** An org runs its **own editable admin/staff roles inside its
 Hook tenant**. On the main Frequency site that admin **does not bleed over** — org people are
 Frequency participants *tied to* the org (an organizer is usually Crew, may also be Host/Guide/

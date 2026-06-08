@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { ArrowRight } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
-import { getPersonaStates, PARTNER_PERSONAS, PERSONA_META } from '@/lib/personas'
+import { getPersonaStates, PARTNER_PERSONAS, PERSONA_META, LIVE_PERSONA_STATES } from '@/lib/personas'
 import { IndexTemplate } from '@/components/templates'
 import { PersonaToggle } from './persona-toggle'
 
@@ -19,12 +19,15 @@ export default async function PartnerProgramsPage() {
   return (
     <IndexTemplate
       title="Partner programs"
-      description="Upgrade packages for what you do beyond membership. Pick any combination — each unlocks its own suite. Verification and billing for the money-moving programs come at launch."
+      description="Upgrade packages for what you do beyond membership. Claim any combination — the team verifies each before its tools go live. Billing for the money-moving programs comes at launch."
     >
       <div className="grid max-w-2xl grid-cols-1 gap-3">
         {PARTNER_PERSONAS.map((p) => {
           const meta = PERSONA_META[p]
-          const active = states[p] != null && states[p] !== 'suspended'
+          const state = states[p]
+          // Tools light up only once the persona is LIVE (verified/active) — a bare
+          // claim is pending review (P2.7).
+          const live = state != null && (LIVE_PERSONA_STATES as readonly string[]).includes(state)
           return (
             <div key={p} className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
               <div className="flex items-start gap-3">
@@ -38,7 +41,7 @@ export default async function PartnerProgramsPage() {
                 </div>
               </div>
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-                {active && meta.tools.length > 0 ? (
+                {live && meta.tools.length > 0 ? (
                   <div className="flex flex-wrap gap-1.5">
                     {meta.tools.map((t) => (
                       <Link
@@ -54,7 +57,7 @@ export default async function PartnerProgramsPage() {
                 ) : (
                   <span />
                 )}
-                <PersonaToggle persona={p} active={active} />
+                <PersonaToggle persona={p} state={state} />
               </div>
             </div>
           )
