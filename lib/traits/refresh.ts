@@ -5,7 +5,13 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { computeTraits, type ComputedTrait, type MemberStats } from './compute'
+import {
+  computeTraits,
+  computeBehavioralTraits,
+  type ComputedTrait,
+  type MemberStats,
+  type InteractionStats,
+} from './compute'
 
 interface StatsRow {
   profile_id: string
@@ -15,6 +21,17 @@ interface StatsRow {
   distinct_active_days_30: number | null
   verified_practices_7d: number | null
   event_count_30d: number | null
+}
+
+interface InteractionStatsRow {
+  profile_id: string
+  last_interaction_at: string | null
+  interaction_count: number | null
+  active_days: number | null
+  surfaces: number | null
+  dwell_ms: number | null
+  sessions: number | null
+  scroll_avg: number | null
 }
 
 function toRow(profileId: string, c: ComputedTrait, computedAt: string) {
@@ -52,6 +69,23 @@ export async function refreshMemberTraits(now: Date = new Date()): Promise<{ mem
       eventCount30d: r.event_count_30d ?? 0,
     }
     for (const c of computeTraits(stats, nowMs)) upserts.push(toRow(r.profile_id, c, computedAt))
+  }
+
+  // Behavioral feature store (PI.2) — fold the raw interaction firehose aggregates into
+  // the same member_traits projection. Best-effort: a missing RPC/empty firehose just
+  // skips this pass (the ledger traits above still upsert).
+  const { data: ix } = await db.rpc('member_interaction_stats', { _days: 30 })
+  for (const r of (ix ?? []) as InteractionStatsRow[]) {
+    const istats: InteractionStats = {
+      lastInteractionAt: r.last_interaction_at,
+      interactionCount30: r.interaction_count ?? 0,
+      interactionDays30: r.active_days ?? 0,
+      surfacesTouched30: r.surfaces ?? 0,
+      dwellMs30: r.dwell_ms ?? 0,
+      sessions30: r.sessions ?? 0,
+      scrollDepthAvg: r.scroll_avg ?? 0,
+    }
+    for (const c of computeBehavioralTraits(istats)) upserts.push(toRow(r.profile_id, c, computedAt))
   }
 
   if (upserts.length) {

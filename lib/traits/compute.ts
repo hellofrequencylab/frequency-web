@@ -79,6 +79,49 @@ export function rfmScore(stats: MemberStats, now: number): number {
   return rfmRecency(stats, now) * 10 + rfmFrequency(stats)
 }
 
+// ── Behavioral feature store (PI.2 / ADR-166) ────────────────────────────────
+// Derived from the raw interaction_events firehose (not the semantic ledger). The
+// durable per-member aggregate the AI + reward engine read. Pure; the refresh job
+// sources these from the member_interaction_stats RPC and upserts them as member_traits.
+
+export interface InteractionStats {
+  lastInteractionAt: string | null
+  interactionCount30: number
+  interactionDays30: number
+  surfacesTouched30: number
+  /** total dwell milliseconds over 30d */
+  dwellMs30: number
+  sessions30: number
+  /** average scroll-depth milestone, 0–100 */
+  scrollDepthAvg: number
+}
+
+export type EngagementDepth = 'idle' | 'shallow' | 'moderate' | 'deep'
+
+/** Composite behavioral band from how OFTEN (active days) and how LONG (dwell) a member
+ *  engages — a coarse feature the AI + reward rules read without re-deriving. */
+export function engagementDepth(s: InteractionStats): EngagementDepth {
+  if (s.interactionDays30 === 0) return 'idle'
+  const minutes = s.dwellMs30 / 60_000
+  if (s.interactionDays30 >= 8 && minutes >= 30) return 'deep'
+  if (s.interactionDays30 >= 3 || minutes >= 10) return 'moderate'
+  return 'shallow'
+}
+
+/** All registry-governed BEHAVIORAL traits for one member (the firehose feature store). */
+export function computeBehavioralTraits(s: InteractionStats): ComputedTrait[] {
+  return [
+    { key: 'interaction_count_30', type: 'number', value: s.interactionCount30 },
+    { key: 'interaction_days_30', type: 'number', value: s.interactionDays30 },
+    { key: 'surfaces_touched_30', type: 'number', value: s.surfacesTouched30 },
+    { key: 'dwell_minutes_30', type: 'number', value: Math.round(s.dwellMs30 / 60_000) },
+    { key: 'sessions_30', type: 'number', value: s.sessions30 },
+    { key: 'scroll_depth_avg', type: 'number', value: Math.round(s.scrollDepthAvg) },
+    { key: 'last_interaction_at', type: 'timestamp', value: s.lastInteractionAt },
+    { key: 'engagement_depth', type: 'enum', value: engagementDepth(s) },
+  ]
+}
+
 /** All registry-governed computed traits for one member. */
 export function computeTraits(stats: MemberStats, now: number): ComputedTrait[] {
   return [
