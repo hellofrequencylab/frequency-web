@@ -8,13 +8,14 @@ import {
   ROLE_LABEL,
   roleBadgeStyle,
 } from '@/lib/community-roles'
-import { ROLE_HIERARCHY } from '@/lib/core/roles'
+import { ROLE_HIERARCHY, atLeastRole, roleRank } from '@/lib/core/roles'
 import { setViewAsRole } from '@/app/(main)/view-as-actions'
 
-// Janitor-only "view as any role" control. It lives at the TOP of the left
-// profile dock's slide-up menu; picking a role downgrades the whole app (nav,
-// capabilities, server enforcement) to preview that role, and "Exit" restores
-// the janitor's own view. Rendered only when the REAL role is janitor.
+// "View as a role under you" control — for every steward HOST and above. It lives at
+// the TOP of the left profile dock's slide-up menu; picking a role below your own
+// downgrades the whole app (nav, capabilities, server enforcement) to preview what
+// that role sees, and "Exit" restores your own view. The list only shows roles at or
+// below your own — view-as is downgrade-only and can never escalate.
 //
 // The dock panel clips its children (`overflow-hidden`, for the rise/collapse
 // animation), so the role list is rendered through a portal and pinned above
@@ -65,7 +66,7 @@ export function ViewAsControl({
     }
   }, [open])
 
-  if (realRole !== 'janitor') return null
+  if (!atLeastRole(realRole, 'host')) return null
 
   const impersonating = asVisitor || currentRole !== realRole
 
@@ -116,7 +117,7 @@ export function ViewAsControl({
           <p className="px-3 py-1.5 text-3xs font-semibold uppercase tracking-wider text-subtle">
             View the app as
           </p>
-          {ROLE_HIERARCHY.map((r) => {
+          {ROLE_HIERARCHY.filter((r) => roleRank(r) <= roleRank(realRole)).map((r) => {
             const active = !asVisitor && r === currentRole
             const isSelf = r === realRole
             return (
@@ -154,7 +155,7 @@ export function ViewAsControl({
                 className="flex w-full items-center gap-2.5 px-3 py-2 text-sm font-medium text-signal-strong hover:bg-surface transition-colors"
               >
                 <X className="w-4 h-4" />
-                Exit view-as (back to Janitor)
+                Exit view-as (back to {ROLE_LABEL[realRole]})
               </button>
             </div>
           )}
