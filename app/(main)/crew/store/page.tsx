@@ -8,6 +8,7 @@ import { StoreGrid } from './store-grid'
 import { CrewPreviewBanner } from '@/components/crew/crew-preview-banner'
 import { CrewGate } from '@/components/crew/upgrade-lightbox'
 import { SectionHeader } from '@/components/ui/section-header'
+import { surfaceAccess } from '@/lib/core/viewer-hats'
 
 export default async function StorePage() {
   const supabase = await createClient()
@@ -22,14 +23,15 @@ export default async function StorePage() {
   // your spendable Gem balance.
   const { data: prof } = await createAdminClient()
     .from('profiles')
-    .select('current_season_zaps, current_streak, community_role')
+    .select('current_season_zaps, current_streak')
     .eq('auth_user_id', user.id)
     .maybeSingle()
   const zaps = (prof?.current_season_zaps as number | null) ?? 0
   const streak = (prof?.current_streak as number | null) ?? 0
-  const isCrew = ['crew', 'host', 'guide', 'mentor', 'janitor'].includes(
-    (prof?.community_role as string) ?? '',
-  )
+  // Spending is the FULL Vault function; the matrix (access-matrix.ts) is the single
+  // source of truth — today the crew-or-above proxy, the paid Member tier once P2 lands.
+  // Limited access still browses everything (visible-but-locked + upgrade nudge).
+  const canSpend = (await surfaceAccess('vault')) === 'full'
 
   const categories = [
     { key: 'cosmetic',    label: 'Profile Cosmetics',  desc: 'Borders, flair icons, and visual upgrades' },
@@ -40,7 +42,7 @@ export default async function StorePage() {
 
   return (
     <div>
-      {!isCrew && <CrewPreviewBanner />}
+      {!canSpend && <CrewPreviewBanner />}
 
       {/* Header: title left, the Vault (with all its winnings) pinned top-right.
           Mirrors the shared PageHeading grammar, with the Vault as a right rail. */}
@@ -127,7 +129,7 @@ export default async function StorePage() {
 
       {/* Store categories. Members can browse everything but can't spend —
           the grid renders muted and a click opens the upgrade lightbox. */}
-      <CrewGate locked={!isCrew}>
+      <CrewGate locked={!canSpend}>
         <div className="space-y-8">
           {categories.map(cat => {
             const catItems = items.filter(i => i.category === cat.key)
