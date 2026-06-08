@@ -11,6 +11,7 @@ import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { updateTicketFields, addStaffMessage, getTicketAdmin, type TicketUpdate } from '@/lib/support/store'
 import { aiAvailable, featureOverBudget, recordAiUsage } from '@/lib/ai/usage'
 import { completeText, AiUnavailableError } from '@/lib/ai/complete'
+import { retrieveHelpChunks } from '@/lib/ai/help-rag'
 
 async function requireAgent(): Promise<{ id: string } | string> {
   const me = await getCallerProfile()
@@ -38,12 +39,12 @@ export async function staffReply(id: string, body: string, isInternal: boolean):
   return ok()
 }
 
-const DRAFT_SYSTEM = `You are a member of the Frequency community team drafting a reply to a support ticket, for a human teammate to review and send. Be warm, concise, and specific to what the member asked. If you don't actually know a platform specific (a price, a setting, an exact step), do NOT invent it — say the team will look into it and follow up. Plain text, 2–5 sentences, a friendly sign-off. Output ONLY the reply.`
+const DRAFT_SYSTEM = `You are a member of the Frequency community team drafting a reply to a support ticket, for a human teammate to review and send. Be warm, concise, and specific to what the member asked. GROUND your answer in the HELP CONTEXT excerpts when they're relevant (use their facts; don't quote or link them). If the excerpts don't cover it and you don't actually know a platform specific (a price, a setting, an exact step), do NOT invent it — say the team will look into it and follow up. Plain text, 2–5 sentences, a friendly sign-off. Output ONLY the reply.`
 
 // Draft a suggested reply to a ticket with Claude (the "virtual staff" seam, ADR-167).
-// Host+ only. Drafts from the ticket thread; returns the text for the agent to edit and
-// send (never auto-sends). Budget-gated with a deterministic fallback. (Help-article
-// grounding is a follow-up — it needs a retrieval that doesn't log to the help-gap signal.)
+// Host+ only. Grounded in the ticket thread + retrieved help articles (via the non-logging
+// retrieval, so it doesn't pollute the help-gap signal); returns the text for the agent to
+// edit and SEND (never auto-sends). Budget-gated with a deterministic fallback.
 export async function draftReply(id: string): Promise<ActionResult<{ draft: string }>> {
   const agent = await requireAgent()
   if (typeof agent === 'string') return fail(agent)
@@ -52,16 +53,23 @@ export async function draftReply(id: string): Promise<ActionResult<{ draft: stri
   if (!ticket) return fail('Ticket not found.')
 
   // The member-visible conversation (drop internal notes), oldest first.
-  const convo = ticket.messages
-    .filter((m) => !m.isInternal)
+  const memberMsgs = ticket.messages.filter((m) => !m.isInternal)
+  const convo = memberMsgs
     .map((m) => `${m.authorKind === 'member' ? 'Member' : m.authorKind === 'staff' ? 'Team' : m.authorKind}: ${m.body}`)
     .join('\n')
 
   if ((await aiAvailable()) && !(await featureOverBudget('support-draft'))) {
     try {
+      // Ground in the help center: retrieve on the subject + the latest member message.
+      const lastMember = [...memberMsgs].reverse().find((m) => m.authorKind === 'member')?.body ?? ''
+      const chunks = await retrieveHelpChunks(`${ticket.subject}\n${lastMember}`, { matchCount: 5, minSimilarity: 0.3 })
+      const helpContext = chunks.length
+        ? `HELP CONTEXT (grounded excerpts):\n${chunks.map((c, i) => `[${i + 1}] ${c.category}/${c.slug}${c.heading ? ` — ${c.heading}` : ''}\n${c.content}`).join('\n\n')}`
+        : 'HELP CONTEXT: (no relevant help article found — don\'t guess platform specifics)'
+
       const res = await completeText({
         system: DRAFT_SYSTEM,
-        messages: [{ role: 'user', content: `TICKET (${ticket.type}): ${ticket.subject}\n\n${convo}` }],
+        messages: [{ role: 'user', content: `TICKET (${ticket.type}): ${ticket.subject}\n\n${convo}\n\n${helpContext}` }],
         tier: 'haiku',
         maxTokens: 320,
       })
