@@ -1,8 +1,11 @@
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { Zap, Check, MessageSquare, CalendarDays, Users, Star, Radio, BarChart3 } from 'lucide-react'
+import { Zap, Check, MessageSquare, CalendarDays, Users, Star, Radio, BarChart3, ArrowRight } from 'lucide-react'
 import { FocusTemplate } from '@/components/templates'
+import { billingEnabled } from '@/lib/billing/stripe'
 import { UpgradeToggle } from './upgrade-toggle'
+import { CheckoutButton } from './checkout-button'
 
 export default async function UpgradePage() {
   const supabase = await createClient()
@@ -20,6 +23,9 @@ export default async function UpgradePage() {
   // Membership is the entitlement axis (orthogonal to the community role). Paid = Crew.
   const tier = (profile.membership_tier ?? 'free') as string
   const isCrew = tier !== 'free'
+  // When Stripe billing is configured, /upgrade is a real checkout; otherwise it's the
+  // free beta toggle (P2.2 — the layer is dormant until keys + price IDs land).
+  const live = billingEnabled()
 
   const benefits = [
     { icon: MessageSquare, label: 'Full community feed access' },
@@ -87,7 +93,18 @@ export default async function UpgradePage() {
 
         {/* Toggle */}
         <div className="px-6 pb-6">
-          <UpgradeToggle isCrew={isCrew} />
+          {!live ? (
+            <UpgradeToggle isCrew={isCrew} />
+          ) : isCrew ? (
+            <Link
+              href="/settings/billing"
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+            >
+              Manage your membership <ArrowRight className="h-4 w-4" />
+            </Link>
+          ) : (
+            <CheckoutButton />
+          )}
         </div>
       </div>
 
