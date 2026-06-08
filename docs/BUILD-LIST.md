@@ -188,6 +188,17 @@ from role), the role-based proxies are wrong and must move to the tier.
 
 > **Audit recalibration:** the "46% hand-rolled" overcounted — many pages compose `PageHeading`/`StatCard`/`EmptyState` directly without the template *wrapper*, which is correct (e.g. where a back-link/eyebrow is needed). The real cobbling is pages that hand-roll the *primitives* (raw `<h1>`, bespoke empties/stats): `/support`, `/growth`, `/circles`+`/channels` (StatInline), `/crew`, `/broadcast` — now fixed — leaving PB.2d.
 
+### PB.2e — Full template-wrapping (2026-06-08 definitive audit)
+
+> Owner standard: **every interior page wraps one of the 5 templates** (slots = easy to assign/reorganize). Verified: the **framework is complete** (no missing slot). **64/152 pages** wrap a template today. The rest: sanctioned framework-exceptions (Admin `AdminPage` ·20 · marketing-ui ·12 · Puck editors · real-time DM/room threads · join/onboarding flows) **plus ~33 interior pages that still hand-roll a header** — the migration list:
+
+- **Wrap (trivial, PageHeading-only):** `/broadcast`→Stream · `/crew`→Dashboard · `/crew/quests`→Stream · `/crew/store`→Dashboard · `/crew/store/ledger`→Dashboard
+- **Member/crew:** `/crew/{achievements,challenges,leaderboard,streaks,journeys,journey,arcs}` → Dashboard/Index · `/people/[handle]`→Detail · `/connections`(+`[id]`,`shared/[id]`)→Index/Detail · `/support/[id]`→Detail
+- **Help:** `/help`, `/help/[category]`, `/help/[category]/[slug]`, `/help/changelog` → Index/Stream/Detail
+- **Discover:** `/discover`(+`/circles`,`/events`,`/topics` & their `[id]`/`[slug]`) → Index/Detail
+- **Focus/system:** `/sign-in`(+confirm) · `/privacy` · `/unsubscribe` · `/code-unavailable` · `/n/[nodeId]` · `/g/[slug]` → Focus
+- **Sanctioned exceptions (do NOT migrate):** `/admin/*` (AdminPage) · `(marketing)/*` · `/edit/[slug]`, `/journeys/[slug]`, `/practices/[id]/edit`, `/pages/sequences/[slug]/{build,edit}` (editors) · `/messages/[id]`, `/messages/r/[roomId]` (real-time) · `/join/[token]`, `/onboarding/*` (flows) · redirects/print.
+
 *(Specialist surfaces — message threads, editors, QR/CRM tools, scan landings — stay custom by
 design; ~27 pages.) Token hygiene is good: **zero** `text-[Npx]`, only 3 acceptable hardcoded-hex
 specialist tools.*
