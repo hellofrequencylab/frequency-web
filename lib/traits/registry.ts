@@ -7,13 +7,16 @@
 // in Postgres (member_tags for tags; member_traits for computed, Phase 2). Keeping
 // meaning in code is what keeps the catalog from rotting into a junk drawer.
 //
-// Two kinds:
-//   • tag       — declarative membership, asserted by a human/system, time + source
-//                 aware (web_beta, founder, host). Stored as member_tags rows.
-//   • computed  — derived from the engagement_events ledger on a schedule
-//                 (lifecycle, cohort, usage, WAM). Declared now; computed in Phase 2.
+// Three kinds:
+//   • tag        — declarative membership, asserted by a human/system, time + source
+//                  aware (web_beta, founder, host). Stored as member_tags rows.
+//   • computed   — derived from the engagement_events ledger + interaction firehose on a
+//                  schedule (lifecycle, cohort, usage, WAM, behavioral features).
+//   • predicted  — a forward-looking score/label inferred from the feature store
+//                  (churn risk, activation propensity, next-best-action). PI.3 / ADR-166;
+//                  heuristic today, model/Claude-graded later. Same storage + governance.
 
-export type TraitKind = 'tag' | 'computed'
+export type TraitKind = 'tag' | 'computed' | 'predicted'
 export type TraitType = 'boolean' | 'number' | 'string' | 'enum' | 'timestamp'
 export type TraitCategory = 'involvement' | 'lifecycle' | 'engagement' | 'gamification' | 'marketing'
 /** Privacy class drives retention + erase + export handling (privacy-by-design). */
@@ -368,6 +371,36 @@ export const TRAIT_REGISTRY: readonly TraitDef[] = [
     pii: 'none', freshness: 'nightly', retentionDays: null, owner: 'growth',
     values: ['idle', 'shallow', 'moderate', 'deep'],
     derivation: 'banded from interaction_days_30 + dwell_minutes_30',
+  },
+
+  // ── Predicted features (the prediction layer · PI.3 / ADR-166) ───────────────
+  // Forward-looking inferences from the feature store. Heuristic v1 (rules over the
+  // computed traits); a model/Claude-graded path slots in behind the same keys later.
+  {
+    key: 'churn_risk',
+    label: 'Churn risk',
+    description: 'Likelihood the member is drifting away (low / medium / high) — from recency, lifecycle, and engagement depth. Drives win-back prioritization.',
+    kind: 'predicted', category: 'lifecycle', type: 'enum',
+    pii: 'none', freshness: 'nightly', retentionDays: null, owner: 'growth',
+    values: ['low', 'medium', 'high'],
+    derivation: 'heuristic over lifecycle_stage + rfm + engagement_depth (PI.3)',
+  },
+  {
+    key: 'activation_propensity',
+    label: 'Activation propensity',
+    description: 'For not-yet-activated members, a 0–100 score of how likely they are to activate, from early-engagement signals. 100 once activated.',
+    kind: 'predicted', category: 'lifecycle', type: 'number',
+    pii: 'none', freshness: 'nightly', retentionDays: null, owner: 'growth',
+    derivation: 'heuristic over interaction days/surfaces/sessions + tenure (PI.3)',
+  },
+  {
+    key: 'next_best_action',
+    label: 'Next best action',
+    description: 'The single highest-leverage nudge for this member right now (reengage / activate / join_circle / deepen / invite / none) — what Vera or a campaign should prompt.',
+    kind: 'predicted', category: 'lifecycle', type: 'enum',
+    pii: 'none', freshness: 'nightly', retentionDays: null, owner: 'growth',
+    values: ['reengage', 'activate', 'join_circle', 'deepen', 'invite', 'none'],
+    derivation: 'priority ladder over lifecycle + activation + engagement_depth (PI.3)',
   },
 ] as const
 

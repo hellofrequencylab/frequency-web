@@ -122,6 +122,78 @@ export function computeBehavioralTraits(s: InteractionStats): ComputedTrait[] {
   ]
 }
 
+// ── Prediction layer (PI.3 / ADR-166) ───────────────────────────────────────
+// Forward-looking inferences over the feature store — heuristic v1 (rules over the
+// already-computed features), so a model/Claude-graded path can later slot in behind
+// the same keys. Pure; the refresh job feeds it the merged ledger + behavioral view.
+
+export type ChurnRisk = 'low' | 'medium' | 'high'
+export type NextBestAction = 'reengage' | 'activate' | 'join_circle' | 'deepen' | 'invite' | 'none'
+
+export interface PredictiveInputs {
+  lifecycle: LifecycleStage
+  rfmScore: number
+  activated: boolean
+  engagementDepth: EngagementDepth
+  interactionDays30: number
+  surfaces30: number
+  sessions30: number
+  tenureDays: number
+}
+
+/** Likelihood the member is drifting away. Recency/lifecycle dominate; shallow on-site
+ *  depth pushes a wobbly member up a band, deep engagement pulls them down. */
+export function churnRisk(p: PredictiveInputs): ChurnRisk {
+  if (p.lifecycle === 'dormant') return 'high'
+  if (p.lifecycle === 'at_risk') return p.engagementDepth === 'idle' || p.engagementDepth === 'shallow' ? 'high' : 'medium'
+  if (p.lifecycle === 'new') return p.engagementDepth === 'idle' ? 'medium' : 'low'
+  // engaged / activated
+  return p.engagementDepth === 'idle' ? 'medium' : 'low'
+}
+
+/** 0–100 propensity to activate (reach first verified practice). Already-activated → 100;
+ *  otherwise scaled from early-engagement breadth + return frequency. */
+export function activationPropensity(p: PredictiveInputs): number {
+  if (p.activated) return 100
+  const raw = p.interactionDays30 * 8 + p.surfaces30 * 4 + p.sessions30 * 3
+  // New joiners with no signal yet keep a small baseline so they're not written off.
+  const baseline = p.tenureDays <= 14 ? 10 : 0
+  return Math.max(0, Math.min(100, Math.round(raw + baseline)))
+}
+
+/** The single highest-leverage nudge right now — a priority ladder, most-urgent first. */
+export function nextBestAction(p: PredictiveInputs): NextBestAction {
+  if (p.lifecycle === 'dormant' || p.lifecycle === 'at_risk') return 'reengage'
+  if (!p.activated) return 'activate'
+  if (p.engagementDepth === 'deep') return 'invite' // a power user — ask them to bring people
+  if (p.surfaces30 <= 2) return 'deepen' // active but narrow — widen their use
+  if (p.rfmScore < 30) return 'join_circle' // present but light — anchor them in a circle
+  return 'none'
+}
+
+/** All registry-governed PREDICTED traits for one member (the prediction layer). */
+export function computePredictiveTraits(p: PredictiveInputs): ComputedTrait[] {
+  return [
+    { key: 'churn_risk', type: 'enum', value: churnRisk(p) },
+    { key: 'activation_propensity', type: 'number', value: activationPropensity(p) },
+    { key: 'next_best_action', type: 'enum', value: nextBestAction(p) },
+  ]
+}
+
+/** Build the prediction inputs from the two stat views + clock (the refresh seam). */
+export function predictiveInputs(stats: MemberStats, istats: InteractionStats, now: number): PredictiveInputs {
+  return {
+    lifecycle: lifecycleStage(stats, now),
+    rfmScore: rfmScore(stats, now),
+    activated: stats.firstVerifiedPracticeAt != null,
+    engagementDepth: engagementDepth(istats),
+    interactionDays30: istats.interactionDays30,
+    surfaces30: istats.surfacesTouched30,
+    sessions30: istats.sessions30,
+    tenureDays: Math.max(0, daysBetween(stats.createdAt, now)),
+  }
+}
+
 /** All registry-governed computed traits for one member. */
 export function computeTraits(stats: MemberStats, now: number): ComputedTrait[] {
   return [
