@@ -27,7 +27,7 @@ async function recentChanges(): Promise<ChangeRow[]> {
     .select('id, action_key, params, status, detail, created_at, actor:profiles!actor_id ( display_name )')
     .order('created_at', { ascending: false })
     .limit(20)
-  return ((data ?? []) as unknown as ChangeRow[]) ?? []
+  return (data ?? []) as unknown as ChangeRow[]
 }
 
 export default async function StudioPage() {
