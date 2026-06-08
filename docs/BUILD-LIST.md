@@ -27,6 +27,7 @@ site for everyone, function-gated per role* — and **(2) the money layer** (ent
 | **P6** | **Onboarding / Vera / AI / Capture** | Finish the last-mile activation items | M | ⏳ |
 | **P7** | **Navigation & IA** | Collapse sprawl into dashboards; data-driven nav | L | ⏳ |
 | **P8** | **Infra · Data · Security · Hardening** | Migrations, RLS Phase 2, CI gates, scale ladder | L | ⏳ |
+| **PI** | **Intelligence & Activation Engine** | Wide behavioral capture → feature store → AI site-improvement loop → retroactive rewards | XL | 📋 PI.1 is the *capture-now* piece |
 | **PM** | **Money verticals** (gated) | Collective · Affiliate · Donations · Lab Spaces | XL | 🔴 after PMF |
 
 **Outpost is parked** (owner direction) — tracked in ROLES.md/§11.5 but not scheduled.
@@ -153,6 +154,31 @@ site for everyone, function-gated per role* — and **(2) the money layer** (ent
 ## PM — Money verticals (gated on PMF + legal entity)
 
 Designed, sequenced after Stage C2: **D1 The Collective** (contributor verification → paid offerings → payout) · **D3 Affiliate** (referral → commission → payout ledger) · **D4 Donations & Grants** (Foundation rail) · **D5 Lab Spaces** (gym SaaS + Lab membership + rollup) · **Money foundation** (entity partition + `financial_transactions` ledger, ADR-029/032).
+
+## PI — Intelligence & Activation Engine (track everything → AI-guided improvement)
+
+> **Vision (owner):** *"Track everything a member does; have the AI studio recommend site changes
+> for better member engagement, and build future rewards based on past behaviors."* The full spec
+> is the **6th layer** of [MEMBER-DATA-PLATFORM.md](MEMBER-DATA-PLATFORM.md) (ADR-166). **We already
+> own the spine** — `engagement_events` (append-only, idempotent), `member_traits`/`member_tags`,
+> `segments`, the nightly rollup crons, `lib/experiments` (variant assignment + holdouts), the
+> consent ledger, and the Vera/Claude kernel (router, budget, kill switch). This track adds the
+> two things you **cannot retrofit** (raw width + immutable history), then *composes* the rest on
+> what exists.
+
+**The one rule that prevents re-developing later: capture wide and immutable NOW.** Every future
+metric, reward, or model must be a *read* over data we already banked — never a backfill we can't
+do. So PI.1 ships first, even before the AI can use it.
+
+| # | Item | Status | Notes |
+|---|---|---|---|
+| PI.1 | **Wide interaction capture (the fire-hose)** | 📋 | A first-party `interaction_events` stream feeding the SAME spine: one tiny client `observe()` beacon — **batched, sampled, consent-aware** (`analytics` scope, ADR-069) — capturing view · dwell · scroll-depth · click · search + **zero-result** · form-abandon · rage-click · nav-path, plus server context. Schema deliberately **wide + jsonb-extensible** so a new signal needs no migration. Keeps `engagement_events` for *semantic/business* events; this is the *raw behavioral* twin. **This is the capture-now piece — do it first.** |
+| PI.2 | **Member feature store (durable behavioral profile)** | 📋 | Extend `member_traits` into a richer per-member **feature vector** — recency/frequency/depth *per surface*, affinities, journey stage, session quality — the CLEAN aggregate the AI + rewards read (never the raw firehose). Add **per-surface/cohort rollups** for the site-level view. Reuses `lib/traits/compute.ts` + the nightly cron; add a near-real-time path for live signals. |
+| PI.3 | **Predictive traits** | 📋 | Computed **churn-risk · activation-propensity · next-best-action · LTV** scores as `kind: 'predicted'` traits (the slot `member_traits` was already shaped for). Heuristic first (RFM/recency-derived), graduating to model- or Claude-graded. Each is a registry-declared, privacy-classed variable like any trait. |
+| PI.4 | **AI Intelligence Studio (predict → recommend → experiment → measure)** | 📋 | Claude reads the **aggregates** (never raw PII firehose) to (a) explain what's happening, (b) predict per-member outcomes, and (c) emit **ranked, falsifiable site-change hypotheses**. Each recommendation **spawns an experiment** via the existing `lib/experiments` (variant + holdout), logs exposure through the same spine, and the loop **measures lift and reports back** — recommendations become measurable change, not prose. Extends the deterministic `admin/insights` "Engagement Read" with the live kernel; operator approves before anything ships (consent/guardrails, ADR-028/066). |
+| PI.5 | **Retroactive reward engine (future rewards from past behavior)** | 📋 | A **rule DSL** (predicate over historical `engagement_events` + the gem/zap ledgers + traits + segments) + a **batch evaluator** that grants **once, idempotently** against the immutable history — so a rule defined *today* can reward behavior from *last season*. Reuses the gem/zap ledgers' idempotency + `processGamificationEvent`; the append-only history is what makes it possible. Pairs with PI.1's "bank it all now." |
+
+**Sequencing:** PI.1 now (urgent, un-retrofittable) → PI.2 → PI.3/PI.5 in parallel (both read the feature store) → PI.4 last (it consumes all of the above). Most of PI.4–PI.5 is *composition* of existing primitives (experiments, segments, ledgers, AI kernel, idempotency); only PI.1–PI.2 need new data infra.
 
 ---
 
