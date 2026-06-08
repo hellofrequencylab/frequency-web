@@ -1,0 +1,97 @@
+<!-- @dsCard group="Iconography" viewport="700x620" name="The Quest — icon set" subtitle="Curated Lucide glyphs for the game: currencies, showing up, quest structure, rewards. Amber chip treatment; ranks in the rank spectrum." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>
+  body { margin: 0; padding: 24px; background: var(--color-surface); font-family: var(--font-sans); color: var(--color-text); }
+  .sec { margin-bottom: 22px; }
+  .sec:last-child { margin-bottom: 0; }
+  .glab { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--color-text-subtle); margin: 0 0 12px; }
+  .grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px 10px; }
+  .tile { text-align: center; }
+  .chip { width: 46px; height: 46px; margin: 0 auto; border-radius: var(--radius-xl); background: var(--color-primary-bg);
+    color: var(--color-primary-strong); display: flex; align-items: center; justify-content: center; }
+  .chip i { width: 22px; height: 22px; }
+  .nm { font-size: 12px; font-weight: 700; color: var(--color-text); margin-top: 7px; }
+  .id { font-family: var(--font-mono); font-size: 9.5px; color: var(--color-text-subtle); margin-top: 1px; }
+  /* rank ladder */
+  .ladder { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .rk { display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px 5px 9px; border-radius: var(--radius-full);
+    background: var(--color-surface-elevated); border: 1px solid var(--color-border); }
+  .rk .dot { width: 11px; height: 11px; border-radius: 50%; }
+  .rk span { font-size: 12px; font-weight: 700; }
+  .arrow { color: var(--color-border-strong); }
+</style>
+</head>
+<body>
+  <div class="sec">
+    <p class="glab">Currencies</p>
+    <div class="grid">
+      <div class="tile"><div class="chip"><i data-lucide="zap"></i></div><div class="nm">Zaps</div><div class="id">zap</div></div>
+      <div class="tile"><div class="chip"><i data-lucide="gem"></i></div><div class="nm">Gems</div><div class="id">gem</div></div>
+      <div class="tile"><div class="chip"><i data-lucide="vault"></i></div><div class="nm">The Vault</div><div class="id">vault</div></div>
+      <div class="tile"><div class="chip"><i data-lucide="store"></i></div><div class="nm">Store</div><div class="id">store</div></div>
+      <div class="tile"><div class="chip"><i data-lucide="receipt"></i></div><div class="nm">Earn log</div><div class="id">receipt</div></div>
+      <div class="tile"><div class="chip"><i data-lucide="gift"></i></div><div class="nm">Merch trade</div><div class="id">gift</div></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <p class="glab">Showing up · real-world (earns zaps)</p>
+    <div class="grid">
+      <div class="tile"><div class="chip"><i data-lucide="circle-check-big"></i></div><div class="nm">Verified practice</div><div class="id">circle-check-big</div></div>
+      <div class="tile"><div class="chip"><i data-lucide="footprints"></i></div><div class="nm">Check-in</div><div class="id">footprints</div></div>
+      <div class="tile"><div class="chip"><i data-lucide="qr-code"></i></div><div class="nm">QR node</div><div class="id">qr-code</div></div>
+      <div class="tile"><div class="chip"><i data-lucide="nfc"></i></div><div class="nm">NFC node</div><div class="id">nfc</div></div>
+      <div class="tile"><div class="chip"><i data-lucide="ghost"></i></div><div class="nm">Ghost node</div><div class="id">ghost</div></div>
+      <div class="tile"><div class="chip"><i data-lucide="user-plus"></i></div><div class="nm">Invite</div><div class="id">user-plus</div></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <p class="glab">Quest structure</p>
+    <div class="grid">
+      <div class="tile"><div class="chip"><i data-lucide="compass"></i></div><div class="nm">The Quest</div><div class="id">compass</div></div>
+      <div class="tile"><div class="chip"><i data-lucide="sun"></i></div><div class="nm">Season</div><div class="id">sun</div></div>
+      <div class="tile"><div class="chip"><i data-lucide="route"></i></div><div class="nm">Journey</div><div class="id">route</div></div>
+      <div class="tile"><div class="chip"><i data-lucide="waypoints"></i></div><div class="nm">Arc</div><div class="id">waypoints</div></div>
+      <div class="tile"><div class="chip"><i data-lucide="sparkles"></i></div><div class="nm">Practice</div><div class="id">sparkles</div></div>
+      <div class="tile"><div class="chip"><i data-lucide="flame"></i></div><div class="nm">Streak</div><div class="id">flame</div></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <p class="glab">Rewards &amp; status</p>
+    <div class="grid">
+      <div class="tile"><div class="chip"><i data-lucide="target"></i></div><div class="nm">Challenge</div><div class="id">target</div></div>
+      <div class="tile"><div class="chip"><i data-lucide="award"></i></div><div class="nm">Achievement</div><div class="id">award</div></div>
+      <div class="tile"><div class="chip"><i data-lucide="badge-check"></i></div><div class="nm">Endorsed</div><div class="id">badge-check</div></div>
+      <div class="tile"><div class="chip"><i data-lucide="trophy"></i></div><div class="nm">Season trophy</div><div class="id">trophy</div></div>
+      <div class="tile"><div class="chip"><i data-lucide="list-ordered"></i></div><div class="nm">Leaderboard</div><div class="id">list-ordered</div></div>
+      <div class="tile"><div class="chip"><i data-lucide="crown"></i></div><div class="nm">Luminary</div><div class="id">crown</div></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <p class="glab">Season rank ladder · the rank spectrum</p>
+    <div class="ladder">
+      <span class="rk"><span class="dot" style="background:var(--rank-stone)"></span><span style="color:var(--rank-stone-deep)">Ghost</span></span>
+      <i data-lucide="chevron-right" class="arrow" style="width:14px;height:14px"></i>
+      <span class="rk"><span class="dot" style="background:var(--rank-clay)"></span><span style="color:var(--rank-clay-deep)">Runner</span></span>
+      <i data-lucide="chevron-right" class="arrow" style="width:14px;height:14px"></i>
+      <span class="rk"><span class="dot" style="background:var(--rank-gold)"></span><span style="color:var(--rank-gold-deep)">Operative</span></span>
+      <i data-lucide="chevron-right" class="arrow" style="width:14px;height:14px"></i>
+      <span class="rk"><span class="dot" style="background:var(--rank-olive)"></span><span style="color:var(--rank-olive-deep)">Agent</span></span>
+      <i data-lucide="chevron-right" class="arrow" style="width:14px;height:14px"></i>
+      <span class="rk"><span class="dot" style="background:var(--rank-teal)"></span><span style="color:var(--rank-teal-deep)">Conduit</span></span>
+      <i data-lucide="chevron-right" class="arrow" style="width:14px;height:14px"></i>
+      <span class="rk"><span class="dot" style="background:var(--rank-indigo)"></span><span style="color:var(--rank-indigo-deep)">Luminary</span></span>
+    </div>
+  </div>
+
+  <script>lucide.createIcons();</script>
+</body>
+</html>
