@@ -118,7 +118,7 @@ site for everyone, function-gated per role* — and **(2) the money layer** (ent
 | 4.3 | **Outreach member-send** — ✅ **completed**: `sendOutreach` fans a steward's direct note to the members of the scope(s) they lead, via the email+push spine. | ✅ done |
 | 4.2 | Help-center articles — content exists for the major categories; expand coverage (content authoring). | ⏳ content |
 | 4.9 | Nurture/Automations — per the operator audit these are **wired** (Nurture complete; Automations email-only). Add SMS/push actions + segment builder. | ⏳ |
-| 4.8 | Library submission flow — review queue exists; add a member "propose to library" path. | 📋 |
+| 4.8 | Library submission flow — ✅ **completed**: members get a status-aware **"Propose to Library"** control on their own practice (`ProposeToLibraryButton` → `submitToLibrary` → `status='pending'` → the existing leadership review queue → approve flips it public). Journeys already publish via the builder's "Share to community". | ✅ done |
 | 4.7 | Founder task-assignment model — `openTaskCount` always 0 pending the `crew_tasks` assignment model. | 📋 needs model |
 | 4.6 | `/hubs` + `/nexuses` index pages — **won't build**: the approved IA keeps Hubs/Nexuses **contextual** (reached via circle drill-down). Not a gap. | ✅ by design |
 | 4.4 | Engagement physical sources (QR/NFC/geo/p2p) | 🔴 needs device/verification infra |
