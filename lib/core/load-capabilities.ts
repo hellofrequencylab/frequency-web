@@ -16,10 +16,15 @@ import {
   type Viewer,
 } from './capabilities'
 import { type CommunityRole } from './roles'
+import { deriveTier } from './entitlement'
 
 async function currentViewer(): Promise<Viewer> {
   const p = await getCallerProfile()
-  return { profileId: p?.id ?? null, role: (p?.community_role ?? 'member') as CommunityRole }
+  return {
+    profileId: p?.id ?? null,
+    role: (p?.community_role ?? 'member') as CommunityRole,
+    tier: deriveTier(p?.membershipTier),
+  }
 }
 
 /** App-level capabilities (e.g. admin.access for the Admin tab). */

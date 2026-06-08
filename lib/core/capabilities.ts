@@ -19,6 +19,7 @@
 // product as the inline-admin work (Phase 1) lands.
 
 import { type CommunityRole, atLeastRole } from './roles'
+import { isPaid, type EntitlementTier } from './access-matrix'
 
 export type Capability =
   // circle
@@ -72,6 +73,9 @@ export interface Viewer {
   profileId: string | null
   /** Global community role; 'member' for a signed-in user with no elevation. */
   role: CommunityRole
+  /** Billing entitlement tier. Paid (Crew/Supporter) unlocks the membership-gated
+   *  capabilities (e.g. task volunteering). Omitted ⇒ free. */
+  tier?: EntitlementTier | null
 }
 
 /**
@@ -120,9 +124,10 @@ export function resolveCapabilities(viewer: Viewer, scope: Scope): Set<Capabilit
         caps.add('circle.broadcast')
       }
 
-      // Crew+ active members can take on host-assigned tasks when any are open.
+      // Paid (Crew) active members can take on host-assigned tasks when any are open.
+      // Task volunteering is a membership perk → gate on the TIER, not the role.
       const openTasks = scope.openTaskCount ?? 0
-      if (activeMember && atLeastRole(role, 'crew') && openTasks > 0) {
+      if (activeMember && isPaid(viewer.tier) && openTasks > 0) {
         caps.add('task.volunteer')
         caps.add('task.claim')
       }

@@ -159,8 +159,9 @@ export default async function MainLayout({
   }
   // Role-advancement training (ADR-157 §7): if a promotion assigned training, Vera
   // points at it (takes precedence — it's the freshest thing they unlocked). Query
-  // gated to crew+ so the vast member majority never pays for it.
-  if (chores?.complete && atLeastRole(realRole, 'crew')) {
+  // gated to host+ (the management roles that receive training) so the member
+  // majority never pays for it.
+  if (chores?.complete && atLeastRole(realRole, 'host')) {
     const training = await getActiveTraining(profile.id)
     if (training) {
       coachNext = {
