@@ -45,6 +45,7 @@ import {
   roleBadgeStyle,
 } from '@/lib/community-roles'
 import { NAV_AREAS, meetsAccess, meetsStaff, type NavAccess } from '@/lib/nav-areas'
+import type { AccessLevel } from '@/lib/core/access-matrix'
 import type { StaffRole, StaffDomain } from '@/lib/staff'
 import type { ProfileIdentity } from '@/lib/types/profile'
 import { PrimaryNav } from '@/components/layout/primary-nav'
@@ -128,6 +129,24 @@ function effectiveAccess(
   permissions: Record<string, NavAccess> | undefined,
 ): NavAccess {
   return permissions?.[item.key] ?? item.defaultAccess
+}
+
+// Matrix-driven reachability (owner directive): a nav item shows if the viewer has ANY
+// access (limited or full) to its surface — for ANY hat (role / tier / persona / staff),
+// no matter where it sits in the menu. `navAccess` is the server-resolved access level
+// per key (lib/core/access-matrix via getViewerHats). Falls back to the role/staff ladder
+// when absent. Staff-domain unlocks always apply (finer than the matrix's coarse columns).
+function itemReachable(
+  item: MainNavItem,
+  role: CommunityRole | null,
+  staffRole: StaffRole | null,
+  permissions: Record<string, NavAccess> | undefined,
+  navAccess: Record<string, AccessLevel> | undefined,
+): boolean {
+  // Known nav items resolve via the matrix; dynamic extras (not in the map) keep the
+  // role/staff ladder so a missing key never hides a pinned/extra item.
+  if (navAccess && item.key in navAccess) return navAccess[item.key] !== 'none' || meetsStaff(item, staffRole)
+  return meetsAccess(effectiveAccess(item, permissions), role) || meetsStaff(item, staffRole)
 }
 
 interface Profile extends ProfileIdentity {
@@ -305,6 +324,7 @@ function AccountDropdown({
   gateRole,
   staffRole,
   permissions,
+  navAccess,
   isActive,
   themeLabel,
   ThemeIcon,
@@ -317,6 +337,7 @@ function AccountDropdown({
   gateRole: CommunityRole | null
   staffRole: StaffRole | null
   permissions?: Record<string, NavAccess>
+  navAccess?: Record<string, AccessLevel>
   isActive: (href: string) => boolean
   themeLabel: string
   ThemeIcon: React.ElementType
@@ -337,7 +358,7 @@ function AccountDropdown({
   // Mobile-only: the Manage groups the viewer can actually reach (telescoped), so
   // global admin lives in the initials menu on a phone (desktop keeps it in the rail).
   const hasManage = MANAGE_SECTIONS.some((s) =>
-    s.items.some((it) => meetsAccess(effectiveAccess(it, permissions), gateRole) || meetsStaff(it, staffRole)),
+    s.items.some((it) => itemReachable(it, gateRole, staffRole, permissions, navAccess)),
   )
 
   return (
@@ -417,6 +438,7 @@ function AccountDropdown({
                 role={gateRole}
                 staffRole={staffRole}
                 permissions={permissions}
+                navAccess={navAccess}
                 sections={MANAGE_SECTIONS}
                 onNavigate={() => setOpen(false)}
               />
@@ -536,6 +558,7 @@ function NavLinkList({
   extraSections,
   hideAppNav = false,
   permissions,
+  navAccess,
   staffRole = null,
   sections = NAV_SECTIONS,
   compact = false,
@@ -548,6 +571,8 @@ function NavLinkList({
   hideAppNav?: boolean
   /** Per-area access overrides (janitor-set); merged over code defaults. */
   permissions?: Record<string, NavAccess>
+  /** Server-resolved access matrix per nav key (matrix-driven visibility). */
+  navAccess?: Record<string, AccessLevel>
   /** Viewer's staff role (team_members axis); unlocks Studio independent of trust. */
   staffRole?: StaffRole | null
   /** Which area sections to render. Defaults to the full rail (NAV_SECTIONS). */
@@ -579,9 +604,7 @@ function NavLinkList({
         // group (header included) when nothing is reachable.
         const adminSection = TELESCOPE_SECTIONS.has(section.label ?? '')
         const visibleItems = adminSection
-          ? section.items.filter(
-              (it) => meetsAccess(effectiveAccess(it, permissions), role) || meetsStaff(it, staffRole),
-            )
+          ? section.items.filter((it) => itemReachable(it, role, staffRole, permissions, navAccess))
           : section.items
         if (visibleItems.length === 0) return null
         return (
@@ -598,7 +621,7 @@ function NavLinkList({
             const { href, label, Icon } = item
             // Member worlds always show (muting/preview below); admin sections were
             // pre-filtered to reachable items above.
-            const reachable = meetsAccess(effectiveAccess(item, permissions), role) || meetsStaff(item, staffRole)
+            const reachable = itemReachable(item, role, staffRole, permissions, navAccess)
 
             // Icon-only column (micro edge menu): one square per area, tooltip-labelled.
             if (compact) {
@@ -735,6 +758,7 @@ function MobileLeftDrawer({
   extraSections,
   hideAppNav = false,
   permissions,
+  navAccess,
   staffRole = null,
 }: {
   open: boolean
@@ -748,6 +772,7 @@ function MobileLeftDrawer({
   extraSections?: NavSection[]
   hideAppNav?: boolean
   permissions?: Record<string, NavAccess>
+  navAccess?: Record<string, AccessLevel>
   staffRole?: StaffRole | null
 }) {
   useEffect(() => {
@@ -842,7 +867,7 @@ function MobileLeftDrawer({
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-          <NavLinkList isActive={isActive} role={role} onNavigate={onClose} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} staffRole={staffRole} sections={MEMBER_SECTIONS} />
+          <NavLinkList isActive={isActive} role={role} onNavigate={onClose} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} sections={MEMBER_SECTIONS} />
         </nav>
 
         {/* Bottom close. Sits in the thumb zone */}
@@ -1085,6 +1110,7 @@ export default function AppShell({
   extraSections,
   hideAppNav = false,
   permissions,
+  navAccess,
   staffRole = null,
   demoMode = false,
   demoHidden = false,
@@ -1108,6 +1134,9 @@ export default function AppShell({
   hideAppNav?: boolean
   /** Per-area access overrides (janitor-set); merged over code defaults. */
   permissions?: Record<string, NavAccess>
+  /** Server-resolved access matrix per nav key — drives matrix-driven nav visibility
+   *  (an item shows if the viewer has any access to its surface). */
+  navAccess?: Record<string, AccessLevel>
   /** Viewer's staff role (team_members axis); unlocks Studio. Null under view-as. */
   staffRole?: StaffRole | null
   /** Global demo_mode is on (seeded beta content exists) → show the Beta toggle. */
@@ -1333,6 +1362,7 @@ export default function AppShell({
               gateRole={gateRole}
               staffRole={staffRole}
               permissions={permissions}
+              navAccess={navAccess}
               isActive={isActive}
               themeLabel={themeLabel}
               ThemeIcon={ThemeIcon}
@@ -1353,7 +1383,7 @@ export default function AppShell({
 
           {/* Community spaces + features + admin rail (the Broadcast bar lives up top) */}
           <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-            <NavLinkList isActive={isActive} role={gateRole} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} staffRole={staffRole} />
+            <NavLinkList isActive={isActive} role={gateRole} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} />
           </nav>
 
           {/* Upgrade to Crew. Non-paying members only; one-time pitch that
@@ -1442,6 +1472,7 @@ export default function AppShell({
                 extraSections={extraSections}
                 hideAppNav={hideAppNav}
                 permissions={permissions}
+                navAccess={navAccess}
                 staffRole={staffRole}
                 sections={MEMBER_SECTIONS}
                 compact
@@ -1456,6 +1487,7 @@ export default function AppShell({
                 extraSections={extraSections}
                 hideAppNav={hideAppNav}
                 permissions={permissions}
+                navAccess={navAccess}
                 staffRole={staffRole}
                 sections={MEMBER_SECTIONS}
               />
@@ -1529,6 +1561,7 @@ export default function AppShell({
         extraSections={extraSections}
         hideAppNav={hideAppNav}
         permissions={permissions}
+        navAccess={navAccess}
         staffRole={staffRole}
       />
 
