@@ -16,6 +16,14 @@ import { processGamificationEvent } from '@/lib/achievements'
 import { atLeastRole } from '@/lib/core/roles'
 import { assignTraining } from '@/lib/onboarding/training'
 import { authorizeAction } from '@/lib/admin/guard'
+import { getStaffMember } from '@/lib/staff'
+import { staffCan, type StaffDomain } from '@/lib/core/staff-roles'
+import {
+  getCircleCapabilities,
+  getHubCapabilities,
+  getNexusCapabilities,
+  getEventCapabilities,
+} from '@/lib/core/load-capabilities'
 
 // Role-ladder comparison — single source in lib/core/roles.
 const hasRole = atLeastRole
@@ -27,11 +35,44 @@ async function requireCommunityOps() {
   return authorizeAction(await getCallerProfile(), 'host', 'community')
 }
 
+// Scope-aware authorization for STRUCTURE/EVENT mutations (P1.2 security fix). A
+// plain steward may only mutate a scope they actually manage — `hasScopeCap` comes
+// from the per-scope resolver (host of THIS circle, guide/mentor of its parent, etc.,
+// see lib/core/capabilities.ts). Platform operators keep global reach: community
+// admin+ OR a staff role holding `staffDomain` (write). This closes the cross-scope
+// hole (a host of one circle editing another) without removing legitimate operator
+// access. Returns the non-null caller, like `authorizeAction`.
+async function requireScopedManage<T extends { community_role: CommunityRole }>(
+  caller: T | null,
+  hasScopeCap: boolean,
+  staffDomain: StaffDomain,
+): Promise<T> {
+  if (!caller) throw new Error('Unauthorized')
+  if (hasScopeCap) return caller // manages this specific scope
+  if (atLeastRole(caller.community_role, 'admin')) return caller // platform admin/janitor — global
+  const staff = await getStaffMember().catch(() => null)
+  if (staffCan(staff?.role ?? null, staffDomain, 'write')) return caller // staff operator — global
+  throw new Error('Unauthorized')
+}
+
 // ── Member management ─────────────────────────────────────────────────────────
 
 export async function assignRole(profileId: string, role: CommunityRole) {
+  // Role granting is a sensitive, platform-level action — NOT a steward power. The
+  // janitor-only /admin/roles UI is not the authority; this server action is a public
+  // endpoint and must gate itself (P1.2 — closes a privilege-escalation hole where a
+  // host could grant itself janitor by calling the action directly).
   const caller = await getCallerProfile()
-  if (!caller || !hasRole(caller.community_role, 'host')) throw new Error('Unauthorized')
+  const staff = await getStaffMember().catch(() => null)
+  const isSuper = !!caller && (hasRole(caller.community_role, 'janitor') || staff?.role === 'owner')
+  // Full granters (janitor / owner) OR a staff member with the 'roles' capability (admin).
+  if (!caller || (!isSuper && !staffCan(staff?.role ?? null, 'roles', 'write'))) {
+    throw new Error('Unauthorized')
+  }
+  // Only a super (janitor / owner) may grant the top tiers — an admin assigns roles BELOW it.
+  if (atLeastRole(role, 'admin') && !isSuper) {
+    throw new Error('Only an owner or janitor can grant admin or janitor.')
+  }
   const admin = createAdminClient()
   const { error } = await admin.from('profiles').update({ community_role: role }).eq('id', profileId)
   if (error) throw new Error(error.message)
@@ -215,7 +256,8 @@ export async function createCircle(fd: FormData) {
 }
 
 export async function updateCircle(id: string, fd: FormData) {
-  const caller = await requireCommunityOps()
+  const caps = await getCircleCapabilities(id)
+  const caller = await requireScopedManage(await getCallerProfile(), caps.has('circle.editSettings'), 'community')
   const admin = createAdminClient()
   const { error } = await admin.from('circles').update({
     name:       (fd.get('name') as string).trim(),
@@ -232,7 +274,8 @@ export async function updateCircle(id: string, fd: FormData) {
 }
 
 export async function archiveCircle(id: string) {
-  await requireCommunityOps()
+  const caps = await getCircleCapabilities(id)
+  await requireScopedManage(await getCallerProfile(), caps.has('circle.editSettings'), 'community')
   const admin = createAdminClient()
   const { error } = await admin.from('circles').update({ status: 'archived' }).eq('id', id)
   if (error) throw new Error(error.message)
@@ -396,7 +439,8 @@ export async function createHub(fd: FormData) {
 }
 
 export async function updateHub(id: string, fd: FormData) {
-  const caller = await authorizeAction(await getCallerProfile(), 'guide', 'structure')
+  const caps = await getHubCapabilities(id)
+  const caller = await requireScopedManage(await getCallerProfile(), caps.has('hub.manage'), 'structure')
   const admin = createAdminClient()
   const { error } = await admin.from('hubs').update({
     name:     (fd.get('name') as string).trim(),
@@ -431,7 +475,8 @@ export async function createNexus(fd: FormData) {
 }
 
 export async function updateNexus(id: string, fd: FormData) {
-  const caller = await authorizeAction(await getCallerProfile(), 'mentor', 'structure')
+  const caps = await getNexusCapabilities(id)
+  const caller = await requireScopedManage(await getCallerProfile(), caps.has('nexus.manage'), 'structure')
   const admin = createAdminClient()
   const { error } = await admin.from('nexuses').update({
     name:       (fd.get('name') as string).trim(),
@@ -710,7 +755,8 @@ export async function deleteDispatch(id: string) {
 // ── Events ────────────────────────────────────────────────────────────────────
 
 export async function toggleCancelEvent(id: string, cancel: boolean) {
-  await requireCommunityOps()
+  const caps = await getEventCapabilities(id)
+  await requireScopedManage(await getCallerProfile(), caps.has('event.editSettings'), 'community')
   const admin = createAdminClient()
   const { error } = await admin.from('events').update({ is_cancelled: cancel }).eq('id', id)
   if (error) throw new Error(error.message)
@@ -720,7 +766,8 @@ export async function toggleCancelEvent(id: string, cancel: boolean) {
 }
 
 export async function updateEventDetails(id: string, fd: FormData) {
-  await requireCommunityOps()
+  const caps = await getEventCapabilities(id)
+  await requireScopedManage(await getCallerProfile(), caps.has('event.editSettings'), 'community')
   const admin = createAdminClient()
   const startsAt = fd.get('starts_at') as string
   const endsAt   = fd.get('ends_at') as string
