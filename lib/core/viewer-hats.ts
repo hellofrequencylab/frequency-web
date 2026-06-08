@@ -12,6 +12,7 @@
 
 import { getCallerProfile } from '@/lib/auth'
 import { getStaffMember } from '@/lib/staff'
+import { getActivePersonas } from '@/lib/personas'
 import { deriveTier } from './entitlement'
 import {
   accessTo,
@@ -26,14 +27,17 @@ export async function getViewerHats(): Promise<Hats> {
   const profile = await getCallerProfile()
   if (!profile) return { loggedIn: false }
 
-  const staff = await getStaffMember().catch(() => null)
+  const [staff, personas] = await Promise.all([
+    getStaffMember().catch(() => null),
+    getActivePersonas(profile.id).catch(() => []),
+  ])
   return {
     loggedIn: true,
     role: profile.community_role,
     // Entitlement (membership) — the real billing flag, decoupled from the role.
     tier: deriveTier(profile.membershipTier),
-    // TODO(P3): read the caller's active profile_personas.
-    personas: null,
+    // Partner personas (P3) — each active persona lights its matrix columns.
+    personas,
     staff: staff?.role ?? null,
   }
 }
