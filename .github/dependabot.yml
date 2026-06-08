@@ -1,0 +1,28 @@
+# Dependency updates (BUILD-LIST P8 · security/quality). Keeps npm deps + GitHub
+# Actions patched. Minor/patch bumps are grouped into one weekly PR to cut noise;
+# majors come as individual PRs so they get a careful look (and the CI gate runs on
+# each, so a breaking bump is caught before merge).
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 8
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+    labels:
+      - dependencies
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    labels:
+      - dependencies
+      - github-actions
