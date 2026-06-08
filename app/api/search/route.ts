@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { connectionsOwnerId } from '@/lib/connections/access'
 import { searchVisibleLeads } from '@/lib/crm/people-search'
+import { rateLimitOk, clientIp, tooMany } from '@/lib/rate-limit'
 
 // Live search for the in-app search overlay (components/search/search-overlay.tsx).
 // Returns a small slice of people / posts / events / leads for a query as JSON, so
@@ -17,6 +18,8 @@ import { searchVisibleLeads } from '@/lib/crm/people-search'
 const EMPTY = { people: [], posts: [], events: [], leads: [] }
 
 export async function GET(request: Request) {
+  if (!(await rateLimitOk('search', clientIp(request), 60, '60 s'))) return tooMany()
+
   const { searchParams } = new URL(request.url)
   // Strip characters that would break a PostgREST or() filter; trim + cap length.
   const q = (searchParams.get('q') ?? '').replace(/[(),]/g, ' ').trim().slice(0, 80)
