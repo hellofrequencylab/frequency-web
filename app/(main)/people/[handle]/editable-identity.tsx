@@ -5,26 +5,21 @@ import { useRouter } from 'next/navigation'
 import { Pencil, Check, X } from 'lucide-react'
 import { updateOwnProfile } from './actions'
 
-// The profile identity block — name · @handle · badges · bio · meta. For the
-// owner it's inline-editable (name + bio) right on the profile, autosaving via
-// updateOwnProfile; everyone else sees it static. Photos/handle still live on
-// /settings/profile.
+// The profile bio block — inline-editable for the owner (name + bio autosave via
+// updateOwnProfile); everyone else just sees the bio. The name · @handle · badges
+// now live in the page's Detail header band (ADR-173), so this renders bio-only in
+// its resting state and only surfaces the name field while the owner is editing.
+// Photos/handle still live on /settings/profile.
 export function EditableIdentity({
   isOwner,
   displayName,
   handle,
   bio,
-  badges,
-  meta,
 }: {
   isOwner: boolean
   displayName: string
   handle: string
   bio: string
-  /** Role + rank chips (server-rendered). */
-  badges?: React.ReactNode
-  /** Region · joined · circles row (server-rendered). */
-  meta?: React.ReactNode
 }) {
   const router = useRouter()
   const [editing, setEditing] = useState(false)
@@ -54,7 +49,6 @@ export function EditableIdentity({
           autoFocus
         />
         <p className="text-sm text-muted">@{handle}</p>
-        {badges}
         <textarea
           value={bioVal}
           onChange={(e) => setBioVal(e.target.value)}
@@ -85,24 +79,23 @@ export function EditableIdentity({
     )
   }
 
+  // Resting state: bio only — the name/@handle/badges are in the Detail band above.
   return (
     <div>
-      <div className="flex items-center gap-2">
-        <h1 className="text-2xl font-bold leading-tight text-text">{displayName}</h1>
-        {isOwner && (
-          <button
-            onClick={() => setEditing(true)}
-            aria-label="Edit name and bio"
-            className="shrink-0 rounded-md p-1 text-subtle hover:text-primary-strong hover:bg-surface-elevated transition-colors"
-          >
-            <Pencil className="h-3.5 w-3.5" />
-          </button>
-        )}
-      </div>
-      <p className="mt-0.5 text-sm text-muted">@{handle}</p>
-      {badges && <div className="mt-2.5">{badges}</div>}
-      {bio && <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-text">{bio}</p>}
-      {meta}
+      {bio ? (
+        <p className="whitespace-pre-wrap text-sm leading-relaxed text-text">{bio}</p>
+      ) : isOwner ? (
+        <p className="text-sm italic text-subtle">Add a short bio so people know who you are.</p>
+      ) : null}
+      {isOwner && (
+        <button
+          onClick={() => setEditing(true)}
+          className="mt-3 inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-subtle transition-colors hover:bg-surface-elevated hover:text-primary-strong"
+        >
+          <Pencil className="h-3.5 w-3.5" />
+          Edit name &amp; bio
+        </button>
+      )}
     </div>
   )
 }

@@ -16,7 +16,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { ModuleCard } from '@/components/modules/module-card'
 import { CrewPreviewBanner } from '@/components/crew/crew-preview-banner'
 import { isPaidViewer } from '@/lib/core/viewer-hats'
-import { PageHeading } from '@/components/templates/page-heading'
+import { DashboardTemplate } from '@/components/templates'
 
 const TASK_TYPE_LABEL: Record<string, string> = {
   attendance:   'Attendance',
@@ -159,9 +159,9 @@ export default async function CrewPage() {
   const isCrewLead = profile.is_crew_lead ?? false
 
   return (
-    <div>
+    <>
       {!isCrew && <CrewPreviewBanner />}
-      <PageHeading
+      <DashboardTemplate
         title={
           <span className="inline-flex flex-wrap items-center gap-2">
             Crew Dashboard
@@ -180,10 +180,22 @@ export default async function CrewPage() {
             )}
           </>
         }
-      />
-
-      {/* ── Season banner + live countdown ──────────── */}
-      {season && (
+        stats={
+          <>
+            <StatCard label="Season rank" value={rankDef.label} icon={Star} href="/crew/achievements" />
+            <StatCard label="Zaps" value={currentSeasonZaps.toLocaleString()} icon={Zap} href="/crew/leaderboard" />
+            <StatCard label="Gems" value={lifetimeGems.toLocaleString()} icon={Gem} href="/crew/store" />
+            <StatCard
+              label="Tasks done"
+              value={String(completedTaskCount)}
+              icon={CheckCircle}
+              delta={tasksThisWeek > 0 ? { label: `+${tasksThisWeek} this week`, trend: 'up' } : undefined}
+            />
+          </>
+        }
+      >
+        {/* ── Season banner + live countdown ──────────── */}
+        {season && (
         <SeasonBanner
           seasonNumber={season.season_number}
           name={season.name}
@@ -196,7 +208,7 @@ export default async function CrewPage() {
       {/* ── Next best action — the one thing to do right now ── */}
       <Link
         href={nextAction.href}
-        className="mb-6 flex items-center gap-4 rounded-2xl border border-primary-bg bg-primary-bg/40 dark:bg-primary-bg/15 p-5 transition-colors hover:bg-primary-bg/60 dark:hover:bg-primary-bg/25"
+        className="flex items-center gap-4 rounded-2xl border border-primary-bg bg-primary-bg/40 dark:bg-primary-bg/15 p-5 transition-colors hover:bg-primary-bg/60 dark:hover:bg-primary-bg/25"
       >
         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-on-primary">
           <nextAction.Icon className="h-5 w-5" />
@@ -214,7 +226,7 @@ export default async function CrewPage() {
       {/* Your Journey — the active-journey progress tab (practices + their rewards). */}
       <Link
         href="/crew/journey"
-        className="mb-6 flex items-center gap-4 rounded-2xl bg-surface-elevated/60 p-5 transition-colors hover:bg-surface-elevated"
+        className="flex items-center gap-4 rounded-2xl bg-surface-elevated/60 p-5 transition-colors hover:bg-surface-elevated"
       >
         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-signal-bg text-signal-strong">
           <Compass className="h-5 w-5" />
@@ -230,7 +242,7 @@ export default async function CrewPage() {
       </Link>
 
       {/* ── Season Progress (full width, top) ────────── */}
-      <section className="mb-6">
+      <section>
         <SectionHeader title="Season progress" />
         <div className="rounded-2xl bg-surface-elevated/60 px-5 py-4">
           <div className="flex items-center justify-between mb-2">
@@ -291,25 +303,11 @@ export default async function CrewPage() {
         </div>
       </section>
 
-      {/* ── Main content: left column (stats + tasks) + right column (quick links + leaderboard) */}
+      {/* ── Main content: left column (tasks) + right column (quick links + leaderboard) */}
       <div className="flex flex-col lg:flex-row gap-6 items-start">
 
-        {/* Left: stats tight above tasks */}
+        {/* Left: tasks */}
         <div className="flex-1 min-w-0 space-y-6">
-
-          {/* 4 stat cards — shared StatCard; Tasks shows a live weekly delta, and
-              each tile drills down to its detail page. */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatCard label="Season rank" value={rankDef.label} icon={Star} href="/crew/achievements" />
-            <StatCard label="Zaps" value={currentSeasonZaps.toLocaleString()} icon={Zap} href="/crew/leaderboard" />
-            <StatCard label="Gems" value={lifetimeGems.toLocaleString()} icon={Gem} href="/crew/store" />
-            <StatCard
-              label="Tasks done"
-              value={String(completedTaskCount)}
-              icon={CheckCircle}
-              delta={tasksThisWeek > 0 ? { label: `+${tasksThisWeek} this week`, trend: 'up' } : undefined}
-            />
-          </div>
 
           {/* Tasks */}
           <section>
@@ -484,7 +482,8 @@ export default async function CrewPage() {
           )}
         </div>
       </div>
-    </div>
+      </DashboardTemplate>
+    </>
   )
 }
 
