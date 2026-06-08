@@ -3,7 +3,7 @@ title: Practices, choose, do, log
 description: Adopt a practice or follow your circle's, then log it each day to earn zaps and build your streak.
 category: getting-started
 order: 3
-updated: 2026-06-05
+updated: 2026-06-08
 audience: member
 featureKeys: [practices, gamification]
 status: published
@@ -63,7 +63,10 @@ make your own. Open one and hit **Claim & make it yours**:
    onto your list, and you earn zaps for claiming your first one.
 
 From there it is yours: edit it anytime, log it daily, and — if you want — share it back
-to the community library for others to find.
+to the community library for others to find. On your own practice you’ll see a **Propose
+to Library** button: tap it and your practice goes to the community leaders for a quick
+review. Once they approve it, it appears in the library for everyone (until then it shows
+as “In review”, and it stays private to you).
 
 ## What each practice shows
 
