@@ -5,6 +5,7 @@ import {
   getPublicCircles,
   getPublicEvents,
 } from "@/lib/discover";
+import { getAllArticles, getAllCategories } from "@/lib/help/content";
 
 // Dynamic sitemap. Static marketing routes plus every public, redaction-safe
 // /discover URL (topics, circles, events) pulled through the same column-safe
@@ -28,7 +29,36 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/discover/topics`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${SITE_URL}/sign-in`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
     { url: `${SITE_URL}/privacy`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${SITE_URL}/help`, lastModified: now, changeFrequency: "weekly", priority: 0.6 },
+    { url: `${SITE_URL}/help/changelog`, lastModified: now, changeFrequency: "weekly", priority: 0.5 },
   ];
+
+  // Help center entries — filesystem-based, safe at build time.
+  let helpRoutes: MetadataRoute.Sitemap = [];
+  try {
+    const [articles, categories] = await Promise.all([
+      getAllArticles(),
+      getAllCategories(),
+    ]);
+
+    const articleRoutes: MetadataRoute.Sitemap = articles.map((a) => ({
+      url: `${SITE_URL}/help/${a.category}/${a.slug}`,
+      lastModified: a.updated ? new Date(a.updated) : now,
+      changeFrequency: "weekly",
+      priority: 0.5,
+    }));
+
+    const categoryRoutes: MetadataRoute.Sitemap = categories.map((c) => ({
+      url: `${SITE_URL}/help/${c.slug}`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.4,
+    }));
+
+    helpRoutes = [...categoryRoutes, ...articleRoutes];
+  } catch {
+    // Fall back gracefully; help content missing shouldn't break the sitemap.
+  }
 
   // Best-effort dynamic entries — never let a data hiccup break the sitemap.
   let dynamicRoutes: MetadataRoute.Sitemap = [];
@@ -65,5 +95,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Fall back to static routes only.
   }
 
-  return [...staticRoutes, ...dynamicRoutes];
+  return [...staticRoutes, ...helpRoutes, ...dynamicRoutes];
 }
