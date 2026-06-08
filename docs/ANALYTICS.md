@@ -36,6 +36,25 @@ The helper is the *only* sanctioned way to record an analytics event; ad-hoc `gt
 disallowed so coverage stays complete and consistent. Both mirrors are inert unless the GA env vars
 are set in production.
 
+## Two streams: semantic events vs. the raw firehose (PI.1, [ADR-166](DECISIONS.md))
+
+`track()`/`engagement_events` is the **semantic** stream — named, reviewable, business-meaningful
+events (one row per join / RSVP / verified practice), the source of truth for dashboards and rewards.
+
+Alongside it runs the **raw interaction firehose** — `interaction_events`, the high-volume twin for
+the fine-grained behavioral signal the AI + reward engine read history from:
+
+- **Client buffer** `lib/analytics/observe.ts` — `observe(kind, props)` BATCHES events and flushes
+  in bulk via `sendBeacon` (interval · buffer-full · page-hide). Unlike `trackClient` (one POST per
+  event), this is built for volume.
+- **Auto-capture** `components/analytics/observe-provider.tsx` (mounts beside `PageViewTracker`):
+  view · dwell · scroll-depth milestones · rage-click · visibility. Explicit signals call `observe()`.
+- **Sink** `POST /api/observe` — batch, member-tied, **consent-gated** (`analytics` scope), service-
+  role bulk insert. The `kind` taxonomy is **open** (`lib/analytics/interaction-events.ts`): any safe
+  slug is accepted, so a new signal needs no migration. **Retention-bounded** — raw rows are purged
+  after `INTERACTION_RETENTION_DAYS` (90) by the nightly cron; the durable aggregate is the PI.2
+  rollups. Use this for *behavioral telemetry*; keep `track()` for *semantic events*.
+
 ## Event taxonomy (canonical)
 
 Every key action in the member journey emits a named event. Initial set:
