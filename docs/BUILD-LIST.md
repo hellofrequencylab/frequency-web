@@ -33,6 +33,7 @@ site for everyone, function-gated per role* — and **(2) the money layer** (ent
 
 ## Progress log
 
+- **2026-06-08 ✅ P1.3 (pilot)** — `lib/core/viewer-hats.ts` seam + Vault/Store wired to `surfaceAccess('vault')`. The unified-site pattern is established. PR #410.
 - **2026-06-08 ✅ P1.2** — Scope re-validation on structure/event mutations + `assignRole` escalation closed (`app/(main)/admin/actions.ts`). PR #410.
 - **2026-06-08 ✅ P1.1** — Access matrix encoded (`lib/core/access-matrix.ts`, 18 tests, tsc+eslint clean). PR #410.
 - **2026-06-08 ✅ docs** — Master list, ROLES.md access matrix + unified-site principle, ADR-163.
@@ -51,7 +52,7 @@ site for everyone, function-gated per role* — and **(2) the money layer** (ent
 |---|---|---|---|
 | **1.1** | Encode the matrix as one source of truth | ✅ | `lib/core/access-matrix.ts` — `accessTo(surface, hats) → none/limited/full`. Done. |
 | **1.2** | 🔴 **Security: re-validate scope on mutation** | ✅ | Structure/event mutations now re-resolve per-scope leadership (`requireScopedManage`); `assignRole` privilege-escalation closed (janitor/owner/staff-roles only). Done. |
-| **1.3** | Unified-site refactor (pilot one surface) | 📋 | A page reads `accessTo()` + reveals/hides controls by level; pick one surface (Vault or a circle page) as the pattern, then roll out. Collapses `/admin/*` into in-page controls (IA-RESTRUCTURE §10). |
+| **1.3** | Unified-site refactor | ⏳ | ✅ pilot: Vault/Store reads `surfaceAccess('vault')` via the `viewer-hats` seam (visible-but-locked + nudge). **Pattern established** — roll out to the rest of the ✋ surfaces (Studio Overview, Personal CRM, QR Studio) + collapse `/admin/*` into in-page controls (IA-RESTRUCTURE §10). |
 | **1.4** | Scoped stewardship (`stewardships` table) | 📋 | §11.1 — scoped (circle/hub/nexus) edges; derive + cache `community_level`; backfill from `community_role` + `circles.host_id`. |
 | **1.5** | Admin axis formalization | 📋 | §11.3 — move `admin`/`janitor` into `team_members`; add the **missing staff-domain unlocks** (Support→`/admin/support`, Members roster, Vera); migrate the manual `/admin/support` guard to `requireAdmin`. |
 | **1.6** | Unified capability resolver | 📋 | §11.6 — one resolver = union of Community edges ⊕ Entitlement ⊕ Partner personas ⊕ Admin matrix, with org-tenant isolation. Wraps `access-matrix` + `capabilities.ts`. |
