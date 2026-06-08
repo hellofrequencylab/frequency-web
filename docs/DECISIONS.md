@@ -5515,3 +5515,46 @@ the ADR-028 unblocker for graduating agents past propose-only. The nurture runne
 suppression checks). **Rollout:** remaining send sites (campaigns, winback, dispatch/event/mention
 notifications) migrate onto `resolveSendGate` incrementally; each is a behavior-preserving or
 strictly-safer swap. Frequency caps are now expressible (passed per send) where before there were none.
+
+---
+
+## ADR-170 — Enforce the Content-Security-Policy (static-preserving), keep inline-script as the last mile
+
+**Status:** Accepted · built (`next.config.ts`). **Implements:** P8 security (BACKLOG §C). **Supersedes:**
+the report-only CSP that shipped earlier in P8.
+
+**Context.** A report-only CSP had been emitting to `/api/csp-report` so we could learn the real source
+set before enforcing. The goal was to graduate to an **enforced** policy. The naive path — nonce-based
+CSP that drops `'unsafe-inline'` — is the strongest XSS defense, but the Next 16 guide is explicit that
+nonces **force every page to render dynamically** (no static generation, no ISR, no CDN edge-caching,
+incompatible with PPR). That directly contradicts this app's "speed is structural / static-by-default"
+architecture (PAGE-FRAMEWORK §5) — a real, site-wide performance and cost regression.
+
+**Decision.** Enforce **everything that can be enforced without going dynamic**, and treat dropping
+`'unsafe-inline'` as a separately-tracked last mile.
+- **Now enforced** (`Content-Security-Policy`, not report-only): `frame-ancestors 'self'` (clickjacking),
+  `base-uri 'self'` (`<base>` injection), `form-action 'self'` (form hijacking), `object-src 'none'`
+  (plugins), and a **verified `connect-src` allowlist** that is the data-exfiltration gate. The allowlist
+  was derived from a source-set audit: Supabase (REST + realtime WS), GA, Vercel insights/live, and the
+  three runtime third parties the report-only pass surfaced — **OpenFreeMap** tiles (maplibre),
+  **Photon** (address geocoding), **ipapi** (IP geo). Omitting any breaks maps/location search, so the
+  audit was load-bearing.
+- **`'unsafe-eval'` dropped in production** — a major XSS sink; React/Next only need it in dev (kept via
+  an `isDev` guard). `'wasm-unsafe-eval'` added for the resvg WASM rasterizer + maplibre.
+- **`script-src` keeps `'unsafe-inline'`.** Next's App Router emits inline RSC streaming scripts
+  (`self.__next_f.push(...)`) on every page; their content varies per page, so they can't be hashed, and
+  dropping inline without a nonce (dynamic) or experimental SRI would break hydration site-wide.
+- **`report-uri` stays on while enforcing** — any source we missed is reported, not silently shipped to
+  users blocked.
+
+**Alternatives.** Nonce-based CSP that drops `'unsafe-inline'` (rejected for now — forces whole-site
+dynamic rendering; an owner-level perf/cost tradeoff). Experimental `experimental.sri` hash-based CSP
+(deferred — keeps static rendering but is experimental and doesn't cover hand-written inline scripts).
+Stay report-only (rejected — never actually protects).
+
+**Consequences.** Clickjacking, base/form injection, plugin, eval, and cross-origin exfiltration are
+**blocked in production today**, with no rendering or performance regression. The remaining mile —
+blocking *injected inline scripts* by removing `'unsafe-inline'` — requires either accepting dynamic
+rendering (nonces) or adopting experimental SRI; it's parked on that owner decision. The `connect-src`
+allowlist is now a maintenance surface: a new third-party fetch must be added here or it's blocked
+(the `report-uri` will surface it first).
