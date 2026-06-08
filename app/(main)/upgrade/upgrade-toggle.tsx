@@ -6,7 +6,7 @@ import { Zap, ArrowDown, Loader2 } from 'lucide-react'
 import { toggleMembership } from './actions'
 import { isError } from '@/lib/action-result'
 
-export function UpgradeToggle({ isMember }: { isMember: boolean }) {
+export function UpgradeToggle({ isCrew }: { isCrew: boolean }) {
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
 
@@ -19,13 +19,13 @@ export function UpgradeToggle({ isMember }: { isMember: boolean }) {
     })
   }
 
-  if (isMember) {
+  if (isCrew) {
     return (
       <div className="space-y-3">
         <div className="rounded-xl bg-success-bg/30 border border-success/50 px-4 py-3 text-center">
           <p className="text-sm font-semibold text-success flex items-center justify-center gap-2">
             <Zap className="w-4 h-4" />
-            You&apos;re a Member
+            You&apos;re part of the Crew
           </p>
         </div>
         <button
@@ -38,7 +38,7 @@ export function UpgradeToggle({ isMember }: { isMember: boolean }) {
           ) : (
             <ArrowDown className="w-4 h-4" />
           )}
-          Switch back to Free
+          Switch back to the free tier
         </button>
       </div>
     )
@@ -55,7 +55,7 @@ export function UpgradeToggle({ isMember }: { isMember: boolean }) {
       ) : (
         <Zap className="w-4 h-4" />
       )}
-      {isPending ? 'Updating...' : 'Upgrade to Member'}
+      {isPending ? 'Updating...' : 'Join the Crew'}
     </button>
   )
 }

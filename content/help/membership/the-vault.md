@@ -28,4 +28,4 @@ When you cash in, your Vault converts to gems and a lifetime rank, and the live 
 
 ## During the beta
 
-Right now everything is **free for everyone**: all features are unlocked, and you can switch between Free and Member freely from the upgrade page. Billing isn't turned on yet.
+Right now everything is **free for everyone**: all features are unlocked, and you can switch between the free tier and Crew freely from the upgrade page. Billing isn't turned on yet.

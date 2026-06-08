@@ -11,7 +11,7 @@ import {
 // Hat helpers for readable cases.
 const visitor: Hats = { loggedIn: false }
 const freeMember: Hats = { loggedIn: true, role: 'member', tier: 'free' }
-const paidMember: Hats = { loggedIn: true, role: 'member', tier: 'member' }
+const paidMember: Hats = { loggedIn: true, role: 'member', tier: 'crew' }
 const supporter: Hats = { loggedIn: true, role: 'member', tier: 'supporter' }
 const host: Hats = { loggedIn: true, role: 'host', tier: 'free' }
 const mentor: Hats = { loggedIn: true, role: 'mentor', tier: 'free' }
@@ -150,7 +150,7 @@ describe('columnsForHats', () => {
 
   it('paid is the tier ONLY — a free-tier host is a steward but not "paid"', () => {
     expect(columnsForHats({ loggedIn: true, role: 'host', tier: 'free' }).has('crew')).toBe(false)
-    expect(columnsForHats({ loggedIn: true, role: 'member', tier: 'member' }).has('crew')).toBe(true)
+    expect(columnsForHats({ loggedIn: true, role: 'member', tier: 'crew' }).has('crew')).toBe(true)
     // …yet the steward still gets FULL on the steward surfaces, via the role not the tier:
     expect(accessTo('qrStudio', { loggedIn: true, role: 'host', tier: 'free' })).toBe('full')
     expect(accessTo('vault', { loggedIn: true, role: 'host', tier: 'free' })).toBe('full')
