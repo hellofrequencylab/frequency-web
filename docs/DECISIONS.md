@@ -5390,3 +5390,49 @@ primitives (experiments, segments, ledgers, the AI kernel, idempotency). The AI 
 changes**, not just member nudges, and every recommendation is measurable via the experiment loop.
 Privacy-by-design carries forward unchanged: consent-gated capture, registry-declared variables,
 retention crons, aggregate-only AI reads.
+
+## ADR-167 — AI Intelligence Studio: a recommendation engine + a governed, reversible site-change allow-list
+
+**Status:** Accepted · first increment built (migration `20260608100000_studio_site_changes.sql`).
+**Implements:** PI.4 / ADR-166. **Builds on:** ADR-028 (bounded tool surface), ADR-041 (AI kernel),
+ADR-067 (support system), ADR-069 (feature store).
+
+**Context.** Owner ask: *make AI site-improvement strong, tie it into the Support database with a
+back-end dashboard, and let Admin/Janitor apply limited site changes from the recommendations — a
+"virtual staff" that fields support and improves the site.* The pieces exist: the PI.1–PI.3 feature
+store + predictions, the `interaction_surface_stats` rollup, `support_tickets` + `ai_help_queries`
+(help gaps), the Claude kernel (`completeText`, budget, kill switch), and `platform_flags` with an
+auto-audited `platform_flag_events`. The danger is obvious — "AI + admin changing the backend" must
+not become an arbitrary-mutation hole.
+
+**Decision.** Build the **AI Intelligence Studio** (`/admin/studio`, Admin/Janitor) on the existing
+deterministic-insight grammar, with one hard safety rule.
+
+- **The safety rule — a governed allow-list.** The AI can recommend, and an operator can apply with
+  one click, but ONLY actions on a **code-declared registry** (`lib/studio/site-actions.ts`): each
+  is small, reversible, role-gated, and param-validated. A recommendation without a registered
+  `action` is advisory-only. The AI can never emit an arbitrary backend mutation — the worst it can
+  do is propose a registered, reversible, audited action that a human still has to click. v1 actions:
+  `reindex_help` (idempotent) and `set_flag` (allow-listed flags only: `ai_enabled`, `demo_mode`).
+- **Findings deterministic, narration optional.** Like the Engagement Read, the recommendations are
+  pure, grounded synthesis over the signal (`synthesizeRecommendations`, unit-tested); Claude only
+  narrates the summary, gated by `aiAvailable()` + budget, with a deterministic fallback. The model
+  never invents findings, numbers, or actions.
+- **Support is a first-class input.** Open/urgent tickets, the help-gap deflection list, rage-clicks
+  and shallow-scroll surfaces, and the churn-risk cohort all feed the recommendations — support pain
+  becomes a ranked, fixable signal, closing the "virtual staff" loop (support → recommendation →
+  applied fix that reduces future tickets).
+- **Everything is audited + revertible.** Every apply/revert writes `studio_site_changes` (who, what,
+  params, outcome); flag toggles also self-audit via `platform_flag_events`. Reversible actions get a
+  one-click Revert.
+
+**Alternatives.** Let the AI write arbitrary changes via a general tool surface (rejected — unsafe;
+violates ADR-028's bounded-surface doctrine). Auto-apply high-confidence recommendations (rejected for
+now — human-in-the-loop until there's a track record; the registry is built so auto-apply could later
+be opt-in per low-risk action). A separate analytics stack (rejected — reuse the feature store).
+
+**Consequences.** A new operator surface that turns banked behavior + support into ranked, applyable
+moves. The allow-list is the seam the "virtual staff" grows along: new safe actions (publish a help
+draft, promote a segment to a campaign, tune Vera copy) are added as registered, reversible entries —
+never as ad-hoc AI write access. Agentic support (Claude drafting ticket replies / fixes end-to-end)
+layers on top of this governed base in later increments.
