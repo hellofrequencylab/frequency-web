@@ -1,0 +1,163 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   DAWN — Frequency's semantic color layer.
+   Raw hex appears ONLY in this file. Everything else (components, cards, UI
+   kits) references the semantic custom properties below — never a hardcoded
+   hex. Light is the default; `.dark` mirrors the system on warm espresso.
+   Source of truth: app/globals.css in hellofrequencylab/frequency-web.
+   ───────────────────────────────────────────────────────────────────────── */
+
+:root {
+  color-scheme: light;
+
+  /* ── Surfaces ──────────────────────────────────────────────────────────
+     The in-app community canvas is light and airy. The warmer sand
+     (--color-marketing-canvas) stays for the public splash so the brand vibe
+     carries on the website while the app feels open. */
+  --color-canvas:            #FBF8F1;
+  --color-marketing-canvas:  #F2EAD9;
+  --color-surface:           #FFFFFF;
+  --color-surface-elevated:  #FAF6EC;
+
+  /* ── Borders (hairline, warm) ─────────────────────────────────────────── */
+  --color-border:            #E9E1D4;
+  --color-border-strong:     #D8CDBB;
+
+  /* ── Text (near-black warm ink → muted → subtle) ──────────────────────── */
+  --color-text:              #1E1A13;
+  --color-text-muted:        #6B6253;
+  --color-text-subtle:       #8F8675;
+
+  /* ── Ink. The cinematic dark band, drawn from Frequency's black wood-slat
+     interiors. Near-neutral warm, NOT brown. Load-bearing half of the bold
+     dark↔light contrast on marketing pages. */
+  --color-ink:               #141210;
+  --color-ink-elevated:      #211D17;
+  --color-ink-border:        #393227;
+  --color-on-ink:            #F3EEE3;
+  --color-on-ink-muted:      #B5A893;
+  --color-on-ink-subtle:     #857A66;
+
+  /* ── Brand · Primary (amber-gold) — the single chrome accent ──────────── */
+  --color-primary:           #E2912F;
+  --color-primary-hover:     #CE8023;
+  --color-primary-strong:    #9A5E12;
+  --color-primary-bg:        #FBEFD9;
+  --color-text-on-primary:   #FFFFFF;
+
+  /* ── Brand · Signal (emerald-teal) — the rare secondary. A deep, green-leaning
+     jewel teal: clearly separated in hue from the cyan robin's-egg Broadcast, and
+     cohesive with the teal success. "Pool water in shade." */
+  --color-signal:            #0F8E78;
+  --color-signal-strong:     #0A5C4D;
+  --color-signal-bg:         #D2EDE6;
+  --color-text-on-signal:    #04231E;
+
+  /* ── Brand · Broadcast (robin's-egg / Tiffany blue) — comms / dispatches /
+     onboarding ONLY. A bright cyan-blue that stays cool against the warm amber
+     lead; lighter + more cyan than Signal so the two never read the same.
+     Never general-purpose chrome. */
+  --color-broadcast:         #1EB6C5;
+  --color-broadcast-strong:  #0E808D;
+  --color-broadcast-bg:      #D8F2F5;
+  --color-text-on-broadcast: #FFFFFF;
+
+  /* ── Semantic states. NOTE: success is a TEAL, not a true green, so
+     "done / progress" reads cohesive with the brand signal. Green never
+     appears in marketing chrome. */
+  --color-success:           #11827A;
+  --color-success-bg:        #D7EFEA;
+  --color-warning:           #B07515;
+  --color-warning-bg:        #F6ECD8;
+  --color-danger:            #BA3B30;
+  --color-danger-bg:         #F7E4E1;
+  --color-info:              #2F6FB0;
+  --color-info-bg:           #E3EDF7;
+
+  /* ── Focus ─────────────────────────────────────────────────────────────── */
+  --color-focus-ring:        #E2912F;
+
+  /* ── Rank spectrum (The Quest season ranks). Primitives, same in both modes.
+     core = solid dot/fill · deep = text on light · bright = text on dark. */
+  --rank-stone:  #8A8073; --rank-stone-deep:  #4E4A40; --rank-stone-bright:  #CBC2B2;
+  --rank-clay:   #C26B45; --rank-clay-deep:   #7C3D22; --rank-clay-bright:   #E9A484;
+  --rank-gold:   #D69A3C; --rank-gold-deep:   #875A14; --rank-gold-bright:   #F0C173;
+  --rank-olive:  #8A9A5B; --rank-olive-deep:  #4F5A2E; --rank-olive-bright:  #C2CE96;
+  --rank-jade:   #3FA191; --rank-jade-deep:   #245A4E; --rank-jade-bright:   #88D6C5;
+  --rank-teal:   #1F9BA6; --rank-teal-deep:   #0F5C63; --rank-teal-bright:   #74D2DA;
+  --rank-slate:  #5B7CA6; --rank-slate-deep:  #324862; --rank-slate-bright:  #9FB6D4;
+  --rank-indigo: #7A77C4; --rank-indigo-deep: #444180; --rank-indigo-bright: #B3B0E4;
+  --rank-plum:   #9E6B9E; --rank-plum-deep:   #5C3A5C; --rank-plum-bright:   #CFA3CF;
+  --rank-rose:   #BD6A7E; --rank-rose-deep:   #743A48; --rank-rose-bright:   #E2A2B0;
+
+  /* ── Brand mark (engraved wordmark). Warm dark-sandy-brown fill + two-tone
+     emboss that makes the logo read as burnt-in. Drives `.brandmark`. */
+  --brand-mark:         #6E4A2A;
+  --brand-emboss-light: rgba(255, 248, 235, 0.85);
+  --brand-emboss-dark:  rgba(42, 24, 8, 0.50);
+  --brand-burn:         rgba(74, 40, 12, 0.45);
+  --brand-shine:        rgba(255, 244, 222, 0.65);
+  --brand-wash:         rgba(194, 88, 18, 0.62);
+}
+
+.dark {
+  color-scheme: dark;
+
+  /* Warmed toward dark wood — the reference spaces are espresso slats lit by
+     amber. A subtle golden-brown undertone (R>G>B widened) so surfaces read as
+     warm timber rather than neutral charcoal. */
+  --color-canvas:            #17120B;
+  --color-marketing-canvas:  #120E07;
+  --color-surface:           #211A10;
+  --color-surface-elevated:  #2B2415;
+
+  --color-border:            #3C3220;
+  --color-border-strong:     #50432B;
+
+  --color-text:              #EFE8DB;
+  --color-text-muted:        #A99C88;
+  --color-text-subtle:       #7E735F;
+
+  /* Ink runs even deeper than the dark canvas so the splash dark bands still
+     read as a deliberate, cinematic black in dark mode. */
+  --color-ink:               #0E0C09;
+  --color-ink-elevated:      #1A1611;
+  --color-ink-border:        #2F281F;
+  --color-on-ink:            #EFE8DB;
+  --color-on-ink-muted:      #A99C88;
+  --color-on-ink-subtle:     #7E735F;
+
+  --color-primary:           #F2B14E;
+  --color-primary-hover:     #F8C56F;
+  --color-primary-strong:    #F2B14E;
+  --color-primary-bg:        #30240F;
+  --color-text-on-primary:   #FFFFFF;
+
+  --color-signal:            #53CFAC;
+  --color-signal-strong:     #53CFAC;
+  --color-signal-bg:         #0C2C25;
+  --color-text-on-signal:    #04231E;
+
+  --color-broadcast:         #69D6E6;
+  --color-broadcast-strong:  #69D6E6;
+  --color-broadcast-bg:      #0F2A34;
+  --color-text-on-broadcast: #FFFFFF;
+
+  --color-success:           #5FD3BE;
+  --color-success-bg:        #103029;
+  --color-warning:           #F2B14E;
+  --color-warning-bg:        #2C2310;
+  --color-danger:            #F0857A;
+  --color-danger-bg:         #2E1714;
+  --color-info:              #6FA8DC;
+  --color-info-bg:           #15212E;
+
+  --color-focus-ring:        #F2B14E;
+  /* rank primitives inherited from :root */
+
+  --brand-mark:         #A2723F;
+  --brand-emboss-light: rgba(255, 226, 184, 0.22);
+  --brand-emboss-dark:  rgba(0, 0, 0, 0.66);
+  --brand-burn:         rgba(20, 9, 0, 0.60);
+  --brand-shine:        rgba(255, 230, 190, 0.42);
+  --brand-wash:         rgba(232, 134, 54, 0.55);
+}

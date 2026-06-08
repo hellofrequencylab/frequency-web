@@ -20,7 +20,7 @@ export const SEASON_RANKS = [
   { rank: 'ghost',     label: 'Ghost',     minZaps: 0,    order: 1, rankKey: 'stone'  as RankKey, color: 'bg-rank-stone',  text: 'text-rank-stone'  },
   { rank: 'runner',    label: 'Runner',    minZaps: 100,  order: 2, rankKey: 'jade'   as RankKey, color: 'bg-rank-jade',   text: 'text-rank-jade'   },
   { rank: 'operative', label: 'Operative', minZaps: 300,  order: 3, rankKey: 'teal'   as RankKey, color: 'bg-rank-teal',   text: 'text-rank-teal'   },
-  { rank: 'agent',     label: 'Agent',     minZaps: 750,  order: 4, rankKey: 'slate'  as RankKey, color: 'bg-rank-slate',  text: 'text-rank-slate'  },
+  { rank: 'agent',     label: 'Agent',     minZaps: 750,  order: 4, rankKey: 'olive'  as RankKey, color: 'bg-rank-olive',  text: 'text-rank-olive'  },
   { rank: 'conduit',   label: 'Conduit',   minZaps: 1500, order: 5, rankKey: 'indigo' as RankKey, color: 'bg-rank-indigo', text: 'text-rank-indigo' },
   { rank: 'luminary',  label: 'Luminary',  minZaps: 3000, order: 6, rankKey: 'gold'   as RankKey, color: 'bg-rank-gold',   text: 'text-rank-gold'   },
 ] as const
@@ -40,7 +40,7 @@ export const RANK_TO_KEY: Record<SeasonRank, RankKey> = {
   ghost:     'stone',
   runner:    'jade',
   operative: 'teal',
-  agent:     'slate',
+  agent:     'olive',
   conduit:   'indigo',
   luminary:  'gold',
 }
