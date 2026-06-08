@@ -5,20 +5,21 @@ import { usePathname } from 'next/navigation'
 import { ChevronRight } from 'lucide-react'
 import type { CommunityRole } from '@/lib/core/roles'
 import type { StaffRole } from '@/lib/core/staff-roles'
-import { groupForPath } from './sections'
+import { groupForPath, dashboardForGroup } from './sections'
 
-// Admin sub-nav (layer 2). The left rail carries the five admin categories; here
-// we render ONLY the active category's pages as a short tab strip — so neither
-// menu jams (the rail holds categories, this holds ≤7 leaves). The active
-// category is derived from the URL via groupForPath; switching categories happens
-// in the rail. Mirrors the marketing workspace sub-nav.
+// Admin sub-nav (layer 2). The left rail carries the admin suites; here we render
+// ONLY the active suite's pages as a short tab strip — so neither menu jams (the
+// rail holds suites, this holds ≤7 leaves). The active suite is derived from the
+// URL via groupForPath; switching suites happens in the rail. Mirrors the
+// marketing workspace sub-nav.
 //
-// The row also carries the wayfinding breadcrumb (Admin › Group) as a prefix, so
-// there's no separate stacked breadcrumb above it (it's suppressed site-side on
-// /admin) — the active tab supplies the current page, completing the trail.
+// The row carries the wayfinding breadcrumb (Admin › Dashboard › Suite) as a
+// prefix — rooted in the suite's operator dashboard (ADR-171) so the three-
+// dashboard IA reads in the trail — and the active tab supplies the current page.
 export function AdminSubNav({ role, staffRole = null }: { role: CommunityRole; staffRole?: StaffRole | null }) {
   const pathname = usePathname()
   const group = groupForPath(pathname, role, staffRole)
+  const dashboard = dashboardForGroup(group)
 
   return (
     <div className="sticky top-0 z-20 border-b border-border bg-surface/95 backdrop-blur-sm">
@@ -28,6 +29,10 @@ export function AdminSubNav({ role, staffRole = null }: { role: CommunityRole; s
             Admin
           </Link>
           <ChevronRight className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
+          <span className="hidden items-center gap-1.5 sm:inline-flex">
+            <span className="text-muted">{dashboard.label}</span>
+            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
+          </span>
           <span className="font-medium text-text">{group.label}</span>
           <ChevronRight className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
         </span>

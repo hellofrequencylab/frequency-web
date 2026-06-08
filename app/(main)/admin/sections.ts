@@ -4,12 +4,13 @@
 // feature is declared in exactly ONE place and can never be orphaned again.
 //
 // Each group is a **suite** (ADR-153): a full-page admin area whose links render
-// as the top-bar sub-nav tabs, and as a launchpad section. Nine domain suites,
-// telescoped by role — a host sees Spaces / Engage / Comms / Safety / Reach; a
-// guide/mentor adds the Hubs/Nexuses tabs; a janitor adds People / Insights / Vera
-// / System. Each manages the surfaces for the people under them (docs/GLOSSARY.md).
-// The per-page sidebar console links *back* into these suites (it no longer hosts
-// the heavy suites itself).
+// as the top-bar sub-nav tabs, and as a launchpad section. The nine suites roll up
+// into three operator **dashboards** (ADR-171) — Community / Insights / Platform —
+// telescoped by role: a host sees only Community (Spaces / Engage / Comms / Safety /
+// Reach); a guide/mentor adds the Hubs/Nexuses tabs; a janitor adds the Insights
+// (Insights / Vera) and Platform (People / System) dashboards. Each suite manages the
+// surfaces for the people under them (docs/GLOSSARY.md). The per-page sidebar console
+// links *back* into these suites (it no longer hosts the heavy suites itself).
 
 import {
   LayoutDashboard,
@@ -40,6 +41,8 @@ import {
   Lightbulb,
   Gift,
   ScrollText,
+  Globe,
+  Cog,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
@@ -63,19 +66,42 @@ export interface AdminLink {
   exact?: boolean
 }
 
+// The three operator dashboards a suite rolls up into (the owner's IA: collapse the
+// nine suites into Community / Insights / Platform). Each suite declares its home.
+export type DashboardKey = 'community' | 'insights' | 'platform'
+
 export interface AdminGroup {
   key: string
   label: string
   /** One-line framing for the group, shown as the launchpad section intro. */
   blurb: string
+  /** The operator dashboard this suite belongs to (ADR-171). */
+  dashboard: DashboardKey
   links: readonly AdminLink[]
 }
+
+export interface AdminDashboard {
+  key: DashboardKey
+  label: string
+  /** One-line framing, shown as the dashboard's section intro on the launchpad. */
+  blurb: string
+  Icon: LucideIcon
+}
+
+// The three dashboards, in display order. Community is the people-facing operating
+// work; Insights is the read-only signal + Vera tuning; Platform is the sensitive keys.
+export const ADMIN_DASHBOARDS: readonly AdminDashboard[] = [
+  { key: 'community', label: 'Community', blurb: 'Run your people and spaces — circles, the game, comms, safety, and reach.', Icon: Globe },
+  { key: 'insights', label: 'Insights', blurb: 'Read the signal and tune Vera — what’s working, what’s jamming, what to write next.', Icon: Telescope },
+  { key: 'platform', label: 'Platform', blurb: 'The roster and the sensitive keys — roles, audit, AI, demo, and public pages.', Icon: Cog },
+] as const
 
 export const ADMIN_GROUPS: readonly AdminGroup[] = [
   {
     key: 'spaces',
     label: 'Spaces',
     blurb: 'The circles, channels, and events you run — and the place tree they cluster into.',
+    dashboard: 'community',
     links: [
       { href: '/admin', label: 'Overview', desc: 'Your dashboard at a glance.', Icon: LayoutDashboard, min: 'host', staffDomain: 'community', exact: true },
       { href: '/admin/circles', label: 'Circles', desc: 'Create, edit, and archive circles.', Icon: CircleDot, min: 'host', staffDomain: 'community' },
@@ -89,6 +115,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     key: 'engage',
     label: 'Engage',
     blurb: 'The game that drives members to show up — seasons, tasks, and leader training.',
+    dashboard: 'community',
     links: [
       { href: '/admin/gamification', label: 'Gamification', desc: 'Achievements, seasons, rewards.', Icon: Trophy, min: 'host', staffDomain: 'community' },
       { href: '/admin/crew-tasks', label: 'Crew tasks', desc: 'Define and verify member tasks.', Icon: ClipboardList, min: 'host', staffDomain: 'community' },
@@ -100,6 +127,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     key: 'comms',
     label: 'Comms',
     blurb: 'Reach your people — broadcasts, posts, and polls.',
+    dashboard: 'community',
     links: [
       { href: '/admin/dispatches', label: 'Broadcasts', desc: 'Posts and polls to your people.', Icon: Megaphone, min: 'host', staffDomain: 'community' },
     ],
@@ -108,6 +136,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     key: 'safety',
     label: 'Safety',
     blurb: 'Keep the community healthy — reports and moderation.',
+    dashboard: 'community',
     links: [
       { href: '/admin/moderation', label: 'Moderation', desc: 'Review and resolve reports.', Icon: ShieldAlert, min: 'host', staffDomain: 'community' },
     ],
@@ -116,6 +145,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     key: 'reach',
     label: 'Reach',
     blurb: 'How people find and enter your spaces — every QR code and its scans.',
+    dashboard: 'community',
     links: [
       { href: '/admin/qr', label: 'QR Studio', desc: 'Generate, design, and manage all QR codes.', Icon: QrCode, min: 'host', staffDomain: 'qr' },
       { href: '/admin/qr/stats', label: 'QR stats', desc: 'Scans, locator map, and the full QR dashboard.', Icon: Activity, min: 'host', staffDomain: 'qr' },
@@ -125,6 +155,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     key: 'people',
     label: 'People',
     blurb: 'The roster and who can do what.',
+    dashboard: 'platform',
     links: [
       { href: '/admin/members', label: 'Members', desc: 'Roster, subscribers, and accounts.', Icon: Users, min: 'janitor' },
       { href: '/admin/roles', label: 'Roles', desc: 'Assign roles and the permission grid.', Icon: Shield, min: 'janitor' },
@@ -136,6 +167,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     key: 'insights',
     label: 'Insights',
     blurb: 'Read-only signal on what is working and what is jamming.',
+    dashboard: 'insights',
     links: [
       { href: '/admin/studio', label: 'AI Studio', desc: 'Ranked AI recommendations + one-click, reversible site changes.', Icon: Lightbulb, min: 'admin', staffDomain: 'insights' },
       { href: '/admin/engagement', label: 'Engagement', desc: 'Active members and the activation funnel.', Icon: Activity, min: 'janitor', staffDomain: 'insights', staffLevel: 'read' },
@@ -150,6 +182,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     key: 'vera',
     label: 'Vera',
     blurb: 'Tune the AI guide and see what she could not answer.',
+    dashboard: 'insights',
     links: [
       { href: '/admin/vera', label: 'Vera config', desc: 'Voice, responses, and induction copy.', Icon: Bot, min: 'janitor' },
       { href: '/admin/help-gaps', label: 'Help gaps', desc: 'Questions Vera deflected — the to-write list.', Icon: HelpCircle, min: 'janitor' },
@@ -159,6 +192,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     key: 'system',
     label: 'System',
     blurb: 'The sensitive platform keys — AI, demo content, and public pages.',
+    dashboard: 'platform',
     links: [
       { href: '/admin/ai', label: 'AI controls', desc: 'Turn AI on or off platform-wide; usage and audit.', Icon: Power, min: 'janitor' },
       { href: '/admin/demo', label: 'Demo Studio', desc: 'Generate, manage, and purge seeded demo content.', Icon: Sparkles, min: 'janitor' },
@@ -202,4 +236,28 @@ export function visibleGroups(role: CommunityRole, staffRole: StaffRole | null =
 /** Flat list of links a role may see — handy for breadcrumb/title lookups. */
 export function visibleLinks(role: CommunityRole, staffRole: StaffRole | null = null): AdminLink[] {
   return visibleGroups(role, staffRole).flatMap((g) => g.links)
+}
+
+/** A dashboard plus the suites under it that the viewer may see. */
+export interface VisibleDashboard extends AdminDashboard {
+  groups: AdminGroup[]
+}
+
+/** The role-gated admin catalog rolled up into the three operator dashboards
+ *  (ADR-171). Suites the viewer can't see drop out; a dashboard with no visible
+ *  suite drops out entirely (a host sees only Community; a janitor sees all three). */
+export function visibleDashboards(
+  role: CommunityRole,
+  staffRole: StaffRole | null = null,
+): VisibleDashboard[] {
+  const groups = visibleGroups(role, staffRole)
+  return ADMIN_DASHBOARDS.map((d) => ({
+    ...d,
+    groups: groups.filter((g) => g.dashboard === d.key),
+  })).filter((d) => d.groups.length > 0)
+}
+
+/** The dashboard a suite belongs to — for the sub-nav breadcrumb root. */
+export function dashboardForGroup(group: AdminGroup): AdminDashboard {
+  return ADMIN_DASHBOARDS.find((d) => d.key === group.dashboard) ?? ADMIN_DASHBOARDS[0]
 }
