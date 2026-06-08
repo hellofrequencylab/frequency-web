@@ -2,8 +2,8 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2, Send, Lock, Sparkles } from 'lucide-react'
-import { setTicketFields, staffReply, draftReply } from '@/app/(main)/admin/support/actions'
+import { Loader2, Send, Lock, Sparkles, Wand2 } from 'lucide-react'
+import { setTicketFields, staffReply, draftReply, suggestTriage } from '@/app/(main)/admin/support/actions'
 import {
   TICKET_STATUSES, TICKET_PRIORITIES, STATUS_LABELS, PRIORITY_LABELS,
   type TicketStatus, type TicketPriority, type TicketParty,
@@ -31,6 +31,19 @@ export function AdminTicketControls({
   const [error, setError] = useState<string | null>(null)
   const [drafting, startDraft] = useTransition()
   const [aiDrafted, setAiDrafted] = useState(false)
+  const [triaging, startTriage] = useTransition()
+  const [triageNote, setTriageNote] = useState<string | null>(null)
+
+  function triage() {
+    if (triaging) return
+    setError(null)
+    startTriage(async () => {
+      const r = await suggestTriage(ticketId)
+      if ('error' in r) { setError(r.error); return }
+      setTriageNote(`Priority → ${r.data.priority} · ${r.data.reason}`)
+      router.refresh()
+    })
+  }
 
   function draft() {
     if (drafting) return
@@ -69,6 +82,20 @@ export function AdminTicketControls({
 
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={triage}
+          disabled={triaging || pending}
+          title="Let AI classify this ticket's priority"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
+        >
+          {triaging ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
+          AI triage
+        </button>
+        {triageNote && <span className="text-2xs text-subtle">✨ {triageNote}</span>}
+      </div>
+
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <label className="block">
           <span className={lbl}>Status</span>
