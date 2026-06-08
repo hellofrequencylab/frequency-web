@@ -5,6 +5,8 @@ import { getCallerProfile } from '@/lib/auth'
 import { listMyTickets } from '@/lib/support/store'
 import { relativeTime } from '@/lib/utils'
 import { ReportButton } from '@/components/support/report-button'
+import { IndexTemplate } from '@/components/templates'
+import { EmptyState } from '@/components/ui/empty-state'
 import {
   TYPE_LABELS, STATUS_LABELS, statusChipClass, type SupportTicket,
 } from '@/lib/support/types'
@@ -19,38 +21,33 @@ export default async function SupportPage() {
   const tickets = await listMyTickets(me.id)
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-6">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-wide text-subtle">Support</p>
-          <h1 className="flex items-center gap-2 text-2xl font-bold text-text">
+    <div className="mx-auto w-full max-w-3xl">
+      <IndexTemplate
+        title={
+          <span className="inline-flex items-center gap-2">
             <LifeBuoy className="h-5 w-5 shrink-0 text-primary-strong" /> Your reports
-          </h1>
-          <p className="mt-1 text-sm text-muted">Bugs, questions and ideas you’ve sent — and where they stand.</p>
-        </div>
-        <ReportButton label="New report" />
-      </header>
-
-      {tickets.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border bg-surface px-4 py-12 text-center">
-          <LifeBuoy className="mx-auto h-8 w-8 text-subtle" aria-hidden />
-          <p className="mt-3 text-sm font-semibold text-text">No reports yet</p>
-          <p className="mx-auto mt-1 max-w-sm text-sm text-muted">
-            Hit a bug or have a question? Send a report and we’ll pick it up — you can track it here.
-          </p>
-          <div className="mt-4 flex justify-center">
-            <ReportButton label="Send your first report" />
-          </div>
-        </div>
-      ) : (
-        <ul className="space-y-2">
-          {tickets.map((t) => (
-            <li key={t.id}>
-              <TicketRow ticket={t} />
-            </li>
-          ))}
-        </ul>
-      )}
+          </span>
+        }
+        description="Bugs, questions and ideas you’ve sent — and where they stand."
+        action={<ReportButton label="New report" />}
+      >
+        {tickets.length === 0 ? (
+          <EmptyState
+            icon={LifeBuoy}
+            title="No reports yet"
+            description="Hit a bug or have a question? Send a report and we’ll pick it up — you can track it here."
+            action={<ReportButton label="Send your first report" />}
+          />
+        ) : (
+          <ul className="space-y-2">
+            {tickets.map((t) => (
+              <li key={t.id}>
+                <TicketRow ticket={t} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </IndexTemplate>
     </div>
   )
 }
