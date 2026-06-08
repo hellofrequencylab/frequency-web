@@ -4,6 +4,7 @@
 // anything. (RFC 8058 mailbox providers require this no-click behaviour.)
 
 import Link from 'next/link'
+import { FocusTemplate } from '@/components/templates'
 import { processUnsubscribe } from './actions'
 import { isError } from '@/lib/action-result'
 
@@ -24,9 +25,7 @@ export default async function UnsubscribePage({
   const { p, c, t } = await searchParams
 
   if (!p || !c || !t) {
-    return <Layout>
-      <Title>Missing unsubscribe details.</Title>
-      <Body>This link looks incomplete. If you got here from an email, please reply to it and we&apos;ll help.</Body>
+    return <Layout title="Missing unsubscribe details." description="This link looks incomplete. If you got here from an email, please reply to it and we'll help.">
       <ManageLink />
     </Layout>
   }
@@ -34,18 +33,14 @@ export default async function UnsubscribePage({
   const result = await processUnsubscribe({ profileId: p, category: c, token: t })
 
   if (isError(result)) {
-    return <Layout>
-      <Title>Couldn&apos;t process unsubscribe</Title>
-      <Body>{result.error}</Body>
+    return <Layout title="Couldn't process unsubscribe" description={result.error}>
       <ManageLink />
     </Layout>
   }
 
   const label = CATEGORY_LABELS[result.data.category] ?? result.data.category
 
-  return <Layout>
-    <Title>You&apos;re unsubscribed.</Title>
-    <Body>You&apos;ll no longer receive {label} from Frequency by email.</Body>
+  return <Layout title="You're unsubscribed." description={`You'll no longer receive ${label} from Frequency by email.`}>
     <Body>You can re-enable this any time, and adjust other notification types, from your settings.</Body>
     <ManageLink />
   </Layout>
@@ -53,7 +48,15 @@ export default async function UnsubscribePage({
 
 // ── Layout helpers ─────────────────────────────────────────────────────
 
-function Layout({ children }: { children: React.ReactNode }) {
+function Layout({
+  title,
+  description,
+  children,
+}: {
+  title: React.ReactNode
+  description?: React.ReactNode
+  children: React.ReactNode
+}) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 px-6 py-12">
       <div className="max-w-md w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm p-8">
@@ -63,14 +66,12 @@ function Layout({ children }: { children: React.ReactNode }) {
         >
           frequency
         </Link>
-        <div className="space-y-3">{children}</div>
+        <FocusTemplate title={title} description={description} width="narrow" divider={false}>
+          <div className="space-y-3">{children}</div>
+        </FocusTemplate>
       </div>
     </div>
   )
-}
-
-function Title({ children }: { children: React.ReactNode }) {
-  return <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">{children}</h1>
 }
 
 function Body({ children }: { children: React.ReactNode }) {

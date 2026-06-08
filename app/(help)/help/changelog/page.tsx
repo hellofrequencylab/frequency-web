@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { promises as fs } from 'fs'
 import path from 'path'
 import { HelpMarkdown } from '@/components/help/help-markdown'
+import { StreamTemplate } from '@/components/templates'
 
 // "What's new" renders the human-facing CHANGELOG (docs/CHANGELOG.md) directly,
 // so the public version history IS the changelog: one source, auto-updated on
@@ -21,9 +22,18 @@ export default async function ChangelogPage() {
     // fall back to the placeholder above
   }
 
+  // The shared header now carries the "What's new" title, so drop a leading H1
+  // from the markdown to avoid a duplicate heading.
+  const content = body.replace(/^#\s+.*(?:\r?\n)+/, '')
+
   return (
-    <article className="max-w-3xl">
-      <HelpMarkdown>{body}</HelpMarkdown>
-    </article>
+    <StreamTemplate
+      title="What's new"
+      description="Recent changes and improvements to Frequency."
+    >
+      <div className="max-w-3xl">
+        <HelpMarkdown>{content}</HelpMarkdown>
+      </div>
+    </StreamTemplate>
   )
 }
