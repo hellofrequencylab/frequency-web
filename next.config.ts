@@ -1,10 +1,30 @@
 import type { NextConfig } from "next";
 
-// Baseline security headers applied to every route. A strict Content-Security-
-// Policy is intentionally omitted for now: the inline theme script and JSON-LD
-// need nonces first (tracked on the hardening backlog). X-Frame-Options is
-// SAMEORIGIN (not DENY) so the Puck editor's same-origin preview iframe keeps
-// working while cross-origin clickjacking is still blocked.
+// A Content-Security-Policy in REPORT-ONLY mode (P8 hardening). It never blocks —
+// it only reports what an ENFORCED policy would catch (to /api/csp-report) — so we can
+// see the real source set (the inline theme script + JSON-LD need nonces before we can
+// enforce) and tighten toward `Content-Security-Policy` without breaking anything. The
+// `https:`/`data:` allowances for img/media are deliberately generous for this baseline.
+const cspReportOnly = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "object-src 'none'",
+  "frame-ancestors 'self'", // matches X-Frame-Options SAMEORIGIN (clickjacking)
+  "form-action 'self'",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://va.vercel-scripts.com https://*.vercel.live",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https:",
+  "font-src 'self' data:",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://vitals.vercel-insights.com https://*.vercel.live",
+  "frame-src 'self' https://*.vercel.live https://www.youtube.com https://player.vimeo.com",
+  "media-src 'self' blob: https:",
+  "worker-src 'self' blob:",
+  'report-uri /api/csp-report',
+].join('; ')
+
+// Baseline security headers applied to every route. X-Frame-Options is SAMEORIGIN (not
+// DENY) so the Puck editor's same-origin preview iframe keeps working while cross-origin
+// clickjacking is still blocked. CSP runs report-only until the inline scripts get nonces.
 const securityHeaders = [
   { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
   { key: 'X-Content-Type-Options', value: 'nosniff' },
@@ -12,6 +32,7 @@ const securityHeaders = [
   { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
   // Map uses the Geolocation API; camera/microphone are never used.
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(self)' },
+  { key: 'Content-Security-Policy-Report-Only', value: cspReportOnly },
 ]
 
 const nextConfig: NextConfig = {
