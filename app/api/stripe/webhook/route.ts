@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import type Stripe from 'stripe'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { stripe, STRIPE_WEBHOOK_SECRET, tierForPrice } from '@/lib/billing/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
 
@@ -27,6 +28,18 @@ export async function POST(req: Request) {
   }
 
   const admin = createAdminClient()
+
+  // Idempotency (P8): claim the event id before handling. A unique-violation means this
+  // event was already processed (a Stripe retry or in-tolerance replay) — ack without
+  // re-running. Any other claim error is transient → fall through and process anyway
+  // (re-processing is safe; the handlers set the tier to a fixed value).
+  const claim = await (admin as unknown as SupabaseClient)
+    .from('stripe_webhook_events')
+    .insert({ event_id: event.id, type: event.type })
+  if (claim.error?.code === '23505') {
+    return NextResponse.json({ received: true, duplicate: true })
+  }
+
   const setTier = async (profileId: string, tier: string, customerId?: string | null) => {
     const patch: { membership_tier: string; stripe_customer_id?: string } = { membership_tier: tier }
     if (customerId) patch.stripe_customer_id = customerId
