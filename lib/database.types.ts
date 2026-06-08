@@ -4022,6 +4022,7 @@ export type Database = {
           membership_tier: string
           stripe_customer_id: string | null
           current_season_rank: Database["public"]["Enums"]["season_rank_enum"]
+          lifetime_rank: Database["public"]["Enums"]["season_rank_enum"]
           current_season_zaps: number
           current_streak: number
           custom_title: string | null
@@ -4078,6 +4079,7 @@ export type Database = {
           stripe_customer_id?: string | null
           current_season_gems?: number
           current_season_rank?: Database["public"]["Enums"]["season_rank_enum"]
+          lifetime_rank?: Database["public"]["Enums"]["season_rank_enum"]
           current_season_zaps?: number
           current_streak?: number
           custom_title?: string | null
@@ -4134,6 +4136,7 @@ export type Database = {
           stripe_customer_id?: string | null
           current_season_gems?: number
           current_season_rank?: Database["public"]["Enums"]["season_rank_enum"]
+          lifetime_rank?: Database["public"]["Enums"]["season_rank_enum"]
           current_season_zaps?: number
           current_streak?: number
           custom_title?: string | null

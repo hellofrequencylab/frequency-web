@@ -51,6 +51,13 @@ how each gate reads: browse freely, muted, click → upgrade lightbox.
   personal or circle — the real-world doing), the biggest rewards living off the
   screen. Harder to earn, and for a Member **harder still** (a lower rate / level
   cap, §6); Member zaps accumulate but stay **inert**.
+- **Season rank vs. lifetime rank (ADR-164).** The **season rank** advances with this
+  season's zaps and resets to `ghost` at each `reset_season()`. The **lifetime rank** is a
+  separate, **locked peak** (`profiles.lifetime_rank`) that only ever moves up and survives
+  every reset — the durable credential you "lock in." The zap trigger ratchets it to the
+  season peak automatically; the season reset also locks it from the final rank (catching
+  manual Luminary promotions) before wiping the season. The member sees it on their own Vault
+  (the Store widget + the "how you earned" headline); public display still follows ADR-141.
 
 > **Categorization is canonical (ADR-139): online → Gems, real life → Zaps — and
 > it applies to the meta-layer too.** Achievements, season challenges, and Journeys

@@ -45,6 +45,25 @@ export const RANK_TO_KEY: Record<SeasonRank, RankKey> = {
   luminary:  'gold',
 }
 
+// Ascending rank order — MUST match the season_rank_enum declaration order in the
+// DB (ghost < runner < operative < agent < conduit < luminary). The lifetime-rank
+// machinery (migration 20260608060000) relies on this ordering via GREATEST()/max()
+// on the enum; this mirror lets app code compare ranks without a round-trip.
+export const RANK_ORDER: readonly SeasonRank[] = [
+  'ghost', 'runner', 'operative', 'agent', 'conduit', 'luminary',
+] as const
+
+/** Numeric position of a rank (0 = ghost). Unknown → 0. */
+export function rankIndex(rank: SeasonRank | string | null | undefined): number {
+  const i = RANK_ORDER.indexOf((rank ?? 'ghost') as SeasonRank)
+  return i < 0 ? 0 : i
+}
+
+/** The higher of two ranks — the same "monotonic peak" the lifetime_rank column holds. */
+export function higherRank(a: SeasonRank | null | undefined, b: SeasonRank | null | undefined): SeasonRank {
+  return rankIndex(a) >= rankIndex(b) ? ((a ?? 'ghost') as SeasonRank) : ((b ?? 'ghost') as SeasonRank)
+}
+
 // Inline-style helper — sets the three CSS vars the .rank-badge primitive
 // in globals.css reads from. Pass to a `style={...}` prop.
 export function rankBadgeStyle(rank: RankKey): React.CSSProperties {

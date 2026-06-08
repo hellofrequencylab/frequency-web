@@ -3,7 +3,7 @@ title: Season ranks
 description: How zaps move you up the ranks each season.
 category: the-game
 order: 2
-updated: 2026-06-03
+updated: 2026-06-08
 audience: member
 featureKeys: [ranks]
 status: published
@@ -27,5 +27,9 @@ The first five advance automatically as your zaps add up. Luminary is a recognit
 ## Seasons reset (your gems don't)
 
 A season runs for a stretch, then resets so everyone gets a fresh start. When it does, a share of your season zaps converts into **gems**: the durable, spendable currency that sticks with you. So the season is the "doing," and gems are what you keep.
+
+## Your lifetime rank is locked in
+
+Your season rank goes back to Ghost each reset, but the highest rank you've ever reached is saved as your **lifetime rank** — it only ever goes up, and it never resets. You'll see it on your Vault. The season is a fresh climb every time; your lifetime rank is the peak you've banked for good.
 
 Want to know what counts? See [Zaps & gems](/help/the-game/zaps-and-gems).

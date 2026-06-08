@@ -38,6 +38,8 @@ export interface EarningLog {
     currentStreak: number
     longestStreak: number
     rank: string | null
+    /** The locked, never-resetting peak rank (P2.6) — the durable Vault endorsement. */
+    lifetimeRank: string | null
   }
 }
 
@@ -73,7 +75,7 @@ export async function getEarningLog(profileId: string, limit = 80): Promise<Earn
     admin
       .from('profiles')
       .select(
-        'current_season_zaps, lifetime_zaps, current_season_gems, lifetime_gems, current_streak, longest_streak, current_season_rank',
+        'current_season_zaps, lifetime_zaps, current_season_gems, lifetime_gems, current_streak, longest_streak, current_season_rank, lifetime_rank',
       )
       .eq('id', profileId)
       .maybeSingle(),
@@ -119,6 +121,7 @@ export async function getEarningLog(profileId: string, limit = 80): Promise<Earn
     current_streak: number | null
     longest_streak: number | null
     current_season_rank: string | null
+    lifetime_rank: string | null
   } | null
 
   return {
@@ -132,6 +135,7 @@ export async function getEarningLog(profileId: string, limit = 80): Promise<Earn
       currentStreak: p?.current_streak ?? 0,
       longestStreak: p?.longest_streak ?? 0,
       rank: p?.current_season_rank ?? null,
+      lifetimeRank: p?.lifetime_rank ?? null,
     },
   }
 }
