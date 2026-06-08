@@ -9,6 +9,8 @@
 //   STRIPE_PRICE_CREW      — price_… for the paid membership (the "Crew" tier)
 //   STRIPE_PRICE_SUPPORTER — price_… for the Supporter tier (optional)
 //   NEXT_PUBLIC_APP_URL    — the public origin for success/cancel redirects
+// Optional inline-price amounts (cents) when no price id is set:
+//   STRIPE_MEMBERSHIP_AMOUNT (Crew, default 1000) · STRIPE_SUPPORTER_AMOUNT (default 2500)
 
 import Stripe from 'stripe'
 import type { EntitlementTier } from '@/lib/core/entitlement'
@@ -34,10 +36,15 @@ export function billingEnabled(): boolean {
   return !!stripe
 }
 
-/** Monthly membership amount in cents for the inline-price fallback (default $10). */
-export function membershipAmount(): number {
-  const n = Number(process.env.STRIPE_MEMBERSHIP_AMOUNT)
-  return Number.isFinite(n) && n > 0 ? Math.round(n) : 1000
+/** Monthly amount in cents for a tier's inline-price fallback. Crew defaults to $10;
+ *  Supporter is the pay-more tier (default $25). Overridable per-tier via env. */
+export function membershipAmount(tier: EntitlementTier = 'crew'): number {
+  const raw = tier === 'supporter'
+    ? process.env.STRIPE_SUPPORTER_AMOUNT
+    : process.env.STRIPE_MEMBERSHIP_AMOUNT
+  const n = Number(raw)
+  if (Number.isFinite(n) && n > 0) return Math.round(n)
+  return tier === 'supporter' ? 2500 : 1000
 }
 
 /** The tier a Stripe price id maps back to (for the webhook). */

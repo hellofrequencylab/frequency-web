@@ -33,6 +33,7 @@ site for everyone, function-gated per role* — and **(2) the money layer** (ent
 
 ## Progress log
 
+- **2026-06-08 ✅ P2.2–2.5 (Stripe membership + Supporter)** — the env-gated Stripe layer is the membership rail: `/upgrade` + `/settings/billing` are a real checkout/manage flow (inline price + success-redirect confirm + webhook), the ✋ gates already read the tier. **P2.4 Supporter** (this round): pay-more tier wired end-to-end — `STRIPE_SUPPORTER_AMOUNT` (default $25), a "Become a Supporter" CTA on `/upgrade`, tier-aware billing confirmation, and a reusable `SupporterBadge` endorsed on the profile header.
 - **2026-06-08 ⏳ P3.1 (Partners foundation)** — `profile_personas` table (applied) + `lib/personas.ts` reader threaded into `getViewerHats` (the matrix's partner columns now activate per active persona; closes PB.1f) + self-serve `/partners/join`. 43 core tests green.
 - **2026-06-08 ✅ Admin in the framework + view-as for Host+** — `AdminPage` promoted to a first-class `AdminTemplate` (composes the shared `PageHeading`); all 20 admin pages adopt it unchanged. The "view as a role under you" selector, previously janitor-only, now works for **every steward Host and above** (downgrade-only, scoped to roles beneath them) — `lib/view-as.ts` `canViewAs` + the control/action. (Owner directive: no separate "admin mode" — admin functions inline + role view.)
 - **2026-06-08 ✅ PB (framework dialed)** — PB.1 access control unified (one `isPaid(tier)` predicate; beta-grant regression fixed). PB.2 page framework: genuine primitive-cobbling fixed (`StatInline` dedup; `/support`+`/growth` recomposed; `/crew`+`/broadcast` headers → `PageHeading`); the rest already compose the kit or are sanctioned-rich detail headers (PB.2d). Tails tracked: PB.1i (`isEndorsed`→tier via feed RPCs), PB.1f/g/h, remaining `Stat` variants.
@@ -75,10 +76,10 @@ site for everyone, function-gated per role* — and **(2) the money layer** (ent
 | # | Item | Status | Notes |
 |---|---|---|---|
 | 2.1 | Tier flag `free / member / supporter` | ✅ | Migration applied (backfilled); `profiles.membership_tier` threaded `getCallerProfile → getViewerHats → deriveTier` — the ✋→✅ gate is now driven by the **real entitlement column**. Remaining for P2: re-point `/upgrade` to set the tier; Crew → pure stewardship; cash-in eligibility. |
-| 2.2 | Stripe Connect / payments module | 📋 | `create_checkout` · `process_payout` · `record_commission` — shared rail for billing + all partner money (DEVELOPMENT-MAP C2). |
-| 2.3 | Stripe membership checkout | 📋 | Replace the `/settings/billing` stub + `/upgrade` ($10 hardcoded → "Free") with a real flow. |
-| 2.4 | Supporter badge | 📋 | Pay-more tier → flair/badge (reuse the badge system). |
-| 2.5 | Wire the ✋ gates to the tier | 📋 | Vault · Studio Overview · Personal CRM · QR Studio read `accessTo()` + the tier. |
+| 2.2 | Stripe membership layer | ✅ | Env-gated (`billingEnabled()`); `lib/billing/{stripe,checkout}.ts` + webhook (`checkout.session.completed` / `subscription.updated\|deleted` → `membership_tier`). Inline `price_data` fallback (no price ID needed) + `confirmCheckout` success-redirect fallback (works pre-webhook). Partner payouts/commissions still pending (2.7). |
+| 2.3 | Stripe membership checkout | ✅ | Real `/upgrade` checkout + `/settings/billing` (manage/cancel via portal). Beta free toggle stays when keys absent. |
+| 2.4 | Supporter badge | ✅ | Pay-more tier live — `STRIPE_SUPPORTER_AMOUNT` (default $25) inline price; "Become a Supporter" CTA on `/upgrade`; reusable `SupporterBadge` endorsed on the profile header. |
+| 2.5 | Wire the ✋ gates to the tier | ✅ | Matrix-driven: `accessTo()` + `isPaid(tier)` gate Vault · Studio · Personal CRM · QR Studio (the ✋ cells read the real entitlement column). |
 | 2.6 | Freemium Vault + season cash-in | 📋 | Game accrues to persistent Vault; unlock = gems + lifetime rank; season `zaps → gems` conversion (sweep gap); entitlement sources (own/comp/Lab rollup/staff grant), ADR-037. |
 | 2.7 | Persona verification + Connect binding | 📋 | §11.4 — `profile_personas` state machine (claimed→verified→active→suspended) + per-persona Stripe account binding. |
 | 2.8 | Module registry + inter-entity Lab bridge | 📋 | Verticals self-declare (ADR-033); audited for-profit↔Foundation transfers (ADR-038). |
