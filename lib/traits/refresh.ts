@@ -8,10 +8,17 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import {
   computeTraits,
   computeBehavioralTraits,
+  computePredictiveTraits,
+  predictiveInputs,
   type ComputedTrait,
   type MemberStats,
   type InteractionStats,
 } from './compute'
+
+const ZERO_INTERACTION: InteractionStats = {
+  lastInteractionAt: null, interactionCount30: 0, interactionDays30: 0,
+  surfacesTouched30: 0, dwellMs30: 0, sessions30: 0, scrollDepthAvg: 0,
+}
 
 interface StatsRow {
   profile_id: string
@@ -59,33 +66,48 @@ export async function refreshMemberTraits(now: Date = new Date()): Promise<{ mem
   const nowMs = now.getTime()
   const upserts: ReturnType<typeof toRow>[] = []
 
-  for (const r of rows) {
-    const stats: MemberStats = {
-      createdAt: r.created_at ?? computedAt,
-      lastEventAt: r.last_event_at,
-      firstVerifiedPracticeAt: r.first_verified_practice_at,
-      distinctActiveDays30: r.distinct_active_days_30 ?? 0,
-      verifiedPractices7d: r.verified_practices_7d ?? 0,
-      eventCount30d: r.event_count_30d ?? 0,
-    }
-    for (const c of computeTraits(stats, nowMs)) upserts.push(toRow(r.profile_id, c, computedAt))
-  }
-
-  // Behavioral feature store (PI.2) — fold the raw interaction firehose aggregates into
-  // the same member_traits projection. Best-effort: a missing RPC/empty firehose just
-  // skips this pass (the ledger traits above still upsert).
+  // Merge the two stat views (ledger + interaction firehose) by member, so each member's
+  // ledger, behavioral, AND predicted traits are computed from one consistent picture.
   const { data: ix } = await db.rpc('member_interaction_stats', { _days: 30 })
-  for (const r of (ix ?? []) as InteractionStatsRow[]) {
-    const istats: InteractionStats = {
-      lastInteractionAt: r.last_interaction_at,
-      interactionCount30: r.interaction_count ?? 0,
-      interactionDays30: r.active_days ?? 0,
-      surfacesTouched30: r.surfaces ?? 0,
-      dwellMs30: r.dwell_ms ?? 0,
-      sessions30: r.sessions ?? 0,
-      scrollDepthAvg: r.scroll_avg ?? 0,
+  const engById = new Map(rows.map((r) => [r.profile_id, r]))
+  const ixById = new Map(((ix ?? []) as InteractionStatsRow[]).map((r) => [r.profile_id, r]))
+
+  const toInteractionStats = (r: InteractionStatsRow | undefined): InteractionStats =>
+    r
+      ? {
+          lastInteractionAt: r.last_interaction_at,
+          interactionCount30: r.interaction_count ?? 0,
+          interactionDays30: r.active_days ?? 0,
+          surfacesTouched30: r.surfaces ?? 0,
+          dwellMs30: r.dwell_ms ?? 0,
+          sessions30: r.sessions ?? 0,
+          scrollDepthAvg: r.scroll_avg ?? 0,
+        }
+      : ZERO_INTERACTION
+
+  const allIds = new Set<string>([...engById.keys(), ...ixById.keys()])
+  for (const id of allIds) {
+    const istats = toInteractionStats(ixById.get(id))
+    // Behavioral features (PI.2) — for anyone with or without interactions.
+    for (const c of computeBehavioralTraits(istats)) upserts.push(toRow(id, c, computedAt))
+
+    // Ledger + predicted traits need the canonical member view (created_at, lifecycle).
+    const er = engById.get(id)
+    if (er) {
+      const stats: MemberStats = {
+        createdAt: er.created_at ?? computedAt,
+        lastEventAt: er.last_event_at,
+        firstVerifiedPracticeAt: er.first_verified_practice_at,
+        distinctActiveDays30: er.distinct_active_days_30 ?? 0,
+        verifiedPractices7d: er.verified_practices_7d ?? 0,
+        eventCount30d: er.event_count_30d ?? 0,
+      }
+      for (const c of computeTraits(stats, nowMs)) upserts.push(toRow(id, c, computedAt))
+      // Prediction layer (PI.3) — heuristic over the merged feature view.
+      for (const c of computePredictiveTraits(predictiveInputs(stats, istats, nowMs))) {
+        upserts.push(toRow(id, c, computedAt))
+      }
     }
-    for (const c of computeBehavioralTraits(istats)) upserts.push(toRow(r.profile_id, c, computedAt))
   }
 
   if (upserts.length) {
