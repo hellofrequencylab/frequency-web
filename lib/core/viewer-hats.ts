@@ -30,10 +30,10 @@ export async function getViewerHats(): Promise<Hats> {
   return {
     loggedIn: true,
     role: profile.community_role,
-    // Entitlement, centralized in deriveTier. Transitional: the crew-or-above proxy
-    // until profiles.membership_tier (migration 20260608040000) is applied + billing
-    // (P2.2) lands — then pass `membershipTier: profile.membership_tier` here.
-    tier: deriveTier({ role: profile.community_role }),
+    // Entitlement, centralized in deriveTier. Reads the real billing flag
+    // (profiles.membership_tier, migration 20260608040000); deriveTier still falls
+    // back to the crew proxy if it's ever null, so this stays safe.
+    tier: deriveTier({ role: profile.community_role, membershipTier: profile.membershipTier }),
     // TODO(P3): read the caller's active profile_personas.
     personas: null,
     staff: staff?.role ?? null,

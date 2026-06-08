@@ -3,11 +3,11 @@
 // of lib/core. This is the single place that decides "what does this person pay for",
 // so the ✋→✅ gates in the access matrix have one source of truth.
 //
-// TRANSITIONAL (P2.1): the real source is profiles.membership_tier (migration
-// 20260608040000) — additive + backfilled, but until it's applied and billing (P2.2)
-// lands, `paid` is proxied by a crew-or-above community role (today's
-// `isCrew = role !== 'member'`). `deriveTier` already prefers the explicit flag when
-// present, so once the column is live the read path passes it through unchanged.
+// The real source is profiles.membership_tier (migration 20260608040000, applied) —
+// threaded through getCallerProfile → getViewerHats. `deriveTier` prefers that explicit
+// flag and falls back to the crew-or-above community-role proxy if it's ever absent, so
+// it stays safe for un-backfilled rows. Real upgrades (free → member → supporter) land
+// with billing (P2.2).
 
 import { atLeastRole, type CommunityRole } from './roles'
 import type { EntitlementTier } from './access-matrix'

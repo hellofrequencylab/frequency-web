@@ -19,6 +19,7 @@ import type { User } from '@supabase/supabase-js'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { applyViewAs } from '@/lib/view-as'
+import type { EntitlementTier } from '@/lib/core/entitlement'
 
 export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
 
@@ -38,7 +39,7 @@ export const getCachedUser = cache(async (): Promise<User | null> => {
  * to gate the view-as control itself. See lib/view-as.ts.
  */
 const resolveCaller = cache(
-  async (): Promise<{ id: string; community_role: CommunityRole; realRole: CommunityRole } | null> => {
+  async (): Promise<{ id: string; community_role: CommunityRole; realRole: CommunityRole; membershipTier: EntitlementTier } | null> => {
     const user = await getCachedUser()
     if (!user) return null
 
@@ -47,13 +48,19 @@ const resolveCaller = cache(
     const supabase = await createClient()
     const { data } = await supabase
       .from('profiles')
-      .select('id, community_role')
+      .select('id, community_role, membership_tier')
       .eq('auth_user_id', user.id)
       .maybeSingle()
 
     if (!data) return null
     const realRole = (data.community_role ?? 'member') as CommunityRole
-    return { id: data.id as string, community_role: await applyViewAs(realRole), realRole }
+    return {
+      id: data.id as string,
+      community_role: await applyViewAs(realRole),
+      realRole,
+      // Billing entitlement (orthogonal to role). The check constraint guarantees the union.
+      membershipTier: (data.membership_tier ?? 'free') as EntitlementTier,
+    }
   },
 )
 
@@ -61,7 +68,7 @@ const resolveCaller = cache(
  * The caller's profile id + effective community role, or null if not signed in /
  * no profile row. Use when an action needs to make a role-based authz decision.
  */
-export async function getCallerProfile(): Promise<{ id: string; community_role: CommunityRole } | null> {
+export async function getCallerProfile(): Promise<{ id: string; community_role: CommunityRole; membershipTier: EntitlementTier } | null> {
   return resolveCaller()
 }
 
