@@ -89,7 +89,7 @@ site for everyone, function-gated per role* — and **(2) the money layer** (ent
 
 | # | Item | Status | Notes |
 |---|---|---|---|
-| 3.1 | `profile_personas` + per-persona dashboards | ⏳ | ✅ **foundation:** `profile_personas` migration (applied) + `lib/personas.ts` reader threaded into `getViewerHats` (matrix partner columns now activate per active persona) + self-serve `/partners/join` claim. **Remaining:** wire the partner surfaces (`/crm`, `/growth`, website builder, Hook) to read `accessTo()` + per-persona dashboards. |
+| 3.1 | `profile_personas` + per-persona dashboards | ⏳ | ✅ **foundation:** `profile_personas` migration (applied) + `lib/personas.ts` reader threaded into `getViewerHats` (matrix partner columns now activate per active persona) + self-serve `/partners/join` claim. ✅ **3.2:** `/crm` + `/growth` open to Business/Org personas. ✅ **3.3:** Business/Org self-serve **directory listing** (`/partners/listing` → the `/partners` directory). ✅ **3.4:** Collaborator featured directory (`/partners/collaborators`). **Remaining (mostly need Stripe/infra):** website builder · Hook sub-community · Collaborator affiliate kickbacks · Practitioner paywalled Programs. |
 | 3.2 | Collaborator | 📋 | Featured Practices/Journeys directory + influencer/affiliate kickbacks + Earnings view. |
 | 3.3 | Practitioner | 📋 | Paywalled Programs + client gamification + private Channel/Circles (Frequency-branded) + Connect. |
 | 3.4 | Business | 📋 | Listing + network integration + loyalty + CRM + **website builder** (Studio › Website stub). |

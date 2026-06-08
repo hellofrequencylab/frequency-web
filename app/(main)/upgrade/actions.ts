@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createMembershipCheckout } from '@/lib/billing/checkout'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 // Membership is the ENTITLEMENT axis (profiles.membership_tier), orthogonal to the
@@ -36,4 +37,24 @@ export async function toggleMembership(): Promise<ActionResult<{ tier: string }>
 
   revalidatePath('/', 'layout')
   return ok({ tier: next })
+}
+
+// Real membership purchase — a Stripe Checkout session for the Crew tier (P2.2).
+// Returns the hosted-checkout URL; the webhook flips membership_tier on completion.
+// Only reachable when billing is configured (the page renders this path then).
+export async function startMembershipCheckout(): Promise<ActionResult<{ url: string }>> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return fail('Not signed in')
+
+  const { data: profile } = await createAdminClient()
+    .from('profiles')
+    .select('id')
+    .eq('auth_user_id', user.id)
+    .maybeSingle()
+  if (!profile) return fail('Profile not found')
+
+  const url = await createMembershipCheckout({ profileId: profile.id, email: user.email, tier: 'crew' })
+  if (!url) return fail('Billing isn’t available right now.')
+  return ok({ url })
 }

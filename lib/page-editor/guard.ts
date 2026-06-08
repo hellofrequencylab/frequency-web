@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getStaffMember, staffCan } from '@/lib/staff'
 import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
+import { canUseSurface } from '@/lib/core/viewer-hats'
 
 // Marketing-page management is gated to the `janitor` community role (the top
 // community admin), separate from the Studio staff system. One place so the
@@ -51,5 +52,8 @@ export async function canAccessGrowthStudio(): Promise<boolean> {
   if (atLeastRole(role, 'admin')) return true
 
   const staff = await getStaffMember().catch(() => null)
-  return !!staff && staffCan(staff.role, 'marketing', 'read')
+  if (staff && staffCan(staff.role, 'marketing', 'read')) return true
+
+  // Partner personas (P3): Business / Organization unlock Growth Studio via the matrix.
+  return canUseSurface('growthStudio')
 }

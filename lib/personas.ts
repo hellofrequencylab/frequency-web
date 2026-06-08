@@ -16,26 +16,46 @@ export const PARTNER_PERSONAS: readonly PartnerPersona[] = [
   'collaborator', 'practitioner', 'business', 'organization',
 ] as const
 
-export const PERSONA_META: Record<PartnerPersona, { label: string; emoji: string; tagline: string; unlocks: string }> = {
+export type PersonaTool = { label: string; href: string }
+
+export const PERSONA_META: Record<
+  PartnerPersona,
+  { label: string; emoji: string; tagline: string; unlocks: string; tools: PersonaTool[] }
+> = {
   collaborator: {
     label: 'Collaborator', emoji: '📣',
     tagline: 'Influencers, authors, teachers, speakers with an audience',
     unlocks: 'A featured directory for your Practices & Journeys, plus the influencer program (affiliate kickbacks tied to your activity).',
+    tools: [
+      { label: 'Collaborators directory', href: '/partners/collaborators' },
+      { label: 'Create a Journey', href: '/journeys' },
+    ],
   },
   practitioner: {
     label: 'Practitioner', emoji: '🧘',
     tagline: 'Healers, breathwork facilitators, yogis running their own network',
     unlocks: 'Host paywalled Programs + gamify your clients’ progress, with a private Channel & Circles under the Frequency brand.',
+    tools: [], // paywalled Programs + client gamification — building (P3.x)
   },
   business: {
     label: 'Business', emoji: '🏪',
     tagline: 'Local businesses',
     unlocks: 'A business listing + loyalty rewards + CRM + web builder.',
+    tools: [
+      { label: 'Your listing', href: '/partners/listing' },
+      { label: 'Business CRM', href: '/crm' },
+      { label: 'Growth Studio', href: '/growth' },
+    ],
   },
   organization: {
     label: 'Organization', emoji: '🏢',
     tagline: 'Nonprofits & organizations',
     unlocks: 'Your own sub-community on Hook + CRM + gamification + promotion.',
+    tools: [
+      { label: 'Your listing', href: '/partners/listing' },
+      { label: 'Business CRM', href: '/crm' },
+      { label: 'Growth Studio', href: '/growth' },
+    ],
   },
 }
 
