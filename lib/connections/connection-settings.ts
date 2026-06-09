@@ -68,6 +68,10 @@ export interface MyConnectionPrefs {
   ghostMode: boolean
   /** Whether the member has a home location set (without which proximity is inert). */
   hasHome: boolean
+  /** Live location sharing is on (location_mode = 'live'). */
+  liveMode: boolean
+  /** When the live position was last refreshed, if any. */
+  liveUpdatedAt: string | null
 }
 
 /** The caller's own connection/location preferences, or null if not signed in. */
@@ -77,7 +81,7 @@ export async function getMyConnectionPrefs(): Promise<MyConnectionPrefs | null> 
   const db = createAdminClient() as unknown as SupabaseClient
   const { data } = await db
     .from('profiles')
-    .select('directory_visible, discoverable_by, location_band, discovery_radius_m, ghost_mode, home_lat')
+    .select('directory_visible, discoverable_by, location_band, discovery_radius_m, ghost_mode, home_lat, location_mode, live_updated_at')
     .eq('id', me.id)
     .maybeSingle()
   const r = (data ?? {}) as Record<string, unknown>
@@ -88,6 +92,8 @@ export async function getMyConnectionPrefs(): Promise<MyConnectionPrefs | null> 
     discoveryRadiusM: Number(r.discovery_radius_m ?? 40000),
     ghostMode: !!r.ghost_mode,
     hasHome: r.home_lat != null,
+    liveMode: r.location_mode === 'live',
+    liveUpdatedAt: (r.live_updated_at as string | null) ?? null,
   }
 }
 
