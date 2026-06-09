@@ -22,6 +22,8 @@ import { Composer } from '@/components/feed/composer'
 import { FeedList } from '@/components/feed/feed-list'
 import { NewCircleCompose } from '@/components/compose/new-circle-compose'
 import { DetailTemplate } from '@/components/templates/detail-template'
+import { ChannelCover } from '@/components/channels/channel-cover'
+import { ModuleCard } from '@/components/modules/module-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import type { CircleBase } from '@/lib/types/circle'
 
@@ -156,6 +158,10 @@ export default async function ChannelPage({
         ← Channels
       </Link>
 
+      {/* Header band — opens on the channel's cover image when set, else a tasteful
+          gradient (channels aren't inline-editable, so this is display-only). */}
+      <ChannelCover imageUrl={channel.cover_image} name={channel.name} />
+
       {/* Unified Detail header (REDESIGN-INAPP Phase 1) — the category icon rides
           in the title node; description + counts as subtitle; tune-in / start a
           circle as the actions. */}
@@ -204,10 +210,13 @@ export default async function ChannelPage({
           ) : undefined
         }
       >
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* SINGLE main column — the page now rides the GLOBAL community rail, so the
+            channel's content (forum feed, then the Circles practicing it) stacks
+            here instead of a second in-body rail. */}
+        <div className="space-y-8">
 
-          {/* ── Main: forum feed ─────────────────────── */}
-          <div className="lg:col-span-2">
+          {/* ── Forum feed ───────────────────────────── */}
+          <section>
             <div className="mb-4">
               <h2 className="text-sm font-bold text-text">Forum</h2>
               <p className="text-xs text-muted leading-relaxed mt-0.5">
@@ -239,19 +248,13 @@ export default async function ChannelPage({
                   : 'No posts yet. Tune in to see and join the conversation.'
               }
             />
-          </div>
+          </section>
 
-          {/* ── Sidebar: Circles practicing this Channel ─ */}
-          <div>
-            <div className="mb-4">
-              <h2 className="text-sm font-bold text-text">
-                Circles practicing {channel.name}
-              </h2>
-              <p className="text-xs text-muted leading-relaxed mt-0.5">
-                Local crews who meet around this practice.
-              </p>
-            </div>
-
+          {/* ── Circles practicing this Channel, stacked below the feed ─ */}
+          <ModuleCard
+            title={`Circles practicing ${channel.name}`}
+            badge={circles.length > 0 ? String(circles.length) : undefined}
+          >
             {circles.length === 0 ? (
               <EmptyState
                 icon={CircleIcon}
@@ -268,7 +271,7 @@ export default async function ChannelPage({
                 }
               />
             ) : (
-              <div className="space-y-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {circles.map((c) => (
                   <Link
                     key={c.id}
@@ -312,7 +315,7 @@ export default async function ChannelPage({
               You can start one from the header above. No hub or nexus
               required yet, you&apos;ll be the first host.
             </p>
-          </div>
+          </ModuleCard>
         </div>
       </DetailTemplate>
     </div>

@@ -83,6 +83,7 @@ export function NotificationBell({ initialUnread }: { initialUnread: number }) {
       <button
         onClick={handleOpen}
         aria-label="Notifications"
+        title="Notifications"
         className="relative p-2 rounded-lg text-muted hover:text-text hover:bg-surface-elevated transition-colors"
       >
         <Bell className="w-5 h-5" />

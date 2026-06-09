@@ -120,13 +120,20 @@ export default async function ChannelsPage() {
 
   const unsorted = byDomain.get('__unsorted__') ?? []
 
-  // Table-of-contents entries — one per Channel (Domain), used by the sticky
-  // in-page nav at the top so members can jump between Channels on a long page.
-  const tocSections = sections.map(({ domain, topics }) => ({
-    id: `channel-${domain.slug}`,
-    label: domain.name,
-    count: topics.length,
-  }))
+  // Table-of-contents links — one chip per Channel (Domain) that jumps to its
+  // on-page section. We use the FILTER variant of PageContents (like Circles) so
+  // the network stats can ride at the bar's right with no divider rule. The "All"
+  // chip leads and is the resting/active state (this is a single long page, not a
+  // URL-filtered view, so nothing else is "active").
+  const tocLinks = [
+    { href: '#top', label: 'All', count: channelList.length, active: true },
+    ...sections.map(({ domain, topics }) => ({
+      href: `#channel-${domain.slug}`,
+      label: domain.name,
+      count: topics.length,
+      active: false,
+    })),
+  ]
 
   // At-a-glance stats across the whole taxonomy.
   const stats = {
@@ -135,6 +142,16 @@ export default async function ChannelsPage() {
     tunedIn: myChannelIds.size,
     circles: Object.values(circleCounts).reduce((s, n) => s + n, 0),
   }
+
+  // Network stats parked at the right of the table-of-contents bar (no divider).
+  const statStrip = (
+    <div className="flex items-center gap-x-6">
+      <StatInline value={stats.channels} label="Channels" />
+      <StatInline value={stats.interests} label="Interests" />
+      <StatInline value={stats.tunedIn} label="Tuned in" />
+      <StatInline value={stats.circles} label="Circles" />
+    </div>
+  )
 
   return (
     <IndexTemplate
@@ -153,12 +170,17 @@ export default async function ChannelsPage() {
       }
       action={canCreate ? <NewChannelCompose domains={domains} /> : undefined}
     >
-      {/* Table of contents — jump between Channels; tracks the active one on scroll. */}
-      <PageContents sections={tocSections} />
+      <span id="top" className="sr-only" />
 
-      <div className="grid grid-cols-1 gap-x-8 gap-y-8 lg:grid-cols-3">
+      {/* Table of contents — jump between Channels — with the network stats parked
+          at its right (no divider rule), mirroring the Circles list. */}
+      <PageContents links={tocLinks} divider={false} rightSlot={statStrip} />
+
+      {/* Two columns: the Channels flow on the left; the browse nav sits in a STABLE
+          right column so it's never orphaned at the bottom. */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_17rem]">
         {/* Left: the four Channels, each with its Interests beneath. */}
-        <div className="space-y-10 lg:col-span-2">
+        <div className="min-w-0 space-y-10">
           {sections.map(({ domain, topics }) => (
             <DomainSection
               key={domain.id}
@@ -194,18 +216,9 @@ export default async function ChannelsPage() {
           )}
         </div>
 
-        {/* Right: the interior menu — stats + the Channels list. */}
+        {/* Right: the browse nav — the Channels list, pinned at the top of its
+            column (the at-a-glance stats moved up beside the filter menu). */}
         <aside className="space-y-8">
-          <section>
-            <SectionHeader title="At a glance" />
-            <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-              <StatInline value={stats.channels} label="Channels" />
-              <StatInline value={stats.interests} label="Interests" />
-              <StatInline value={stats.tunedIn} label="Tuned in" />
-              <StatInline value={stats.circles} label="Circles" />
-            </div>
-          </section>
-
           <section>
             <SectionHeader title="Channels" count={sections.length} />
             <div className="space-y-0.5">
