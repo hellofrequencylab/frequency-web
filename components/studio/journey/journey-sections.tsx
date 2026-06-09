@@ -11,8 +11,7 @@ import { StudioField } from '../kit/studio-field'
 import { INTENSITY_TIERS, type IntensityTier } from '@/lib/journey-tiers'
 import { TIER_META } from '@/components/journey/tier-meta'
 import type { PlanStatus, PageWidgetConfig } from '@/lib/journey-plans'
-// TODO: swap for lib/journey-page-config.ts once it lands (page agent owns it).
-import { JOURNEY_WIDGETS, WIDGET_BY_ID } from './page-widgets-fallback'
+import { WIDGET_META, WIDGET_IDS, type WidgetId } from '@/lib/journey-page-config'
 
 // The net-new Studio editor sections for a Journey (docs/JOURNEYS.md §11): the
 // per-step intensity tier control, completion rules, rewards, page layout,
@@ -288,7 +287,7 @@ export function PageLayoutSection({
     >
       <ol className="space-y-1.5">
         {config.map((w, i) => {
-          const meta = WIDGET_BY_ID.get(w.id)
+          const meta = WIDGET_META[w.id as WidgetId]
           return (
             <li
               key={w.id}
@@ -301,7 +300,14 @@ export function PageLayoutSection({
             >
               <GripVertical className="h-4 w-4 shrink-0 cursor-grab text-subtle opacity-40 transition-opacity group-hover:opacity-100" />
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-semibold text-text">{meta?.label ?? w.id}</span>
+                <span className="flex items-center gap-1.5">
+                  <span className="truncate text-sm font-semibold text-text">{meta?.label ?? w.id}</span>
+                  {meta && (
+                    <span className="shrink-0 rounded-full bg-surface-elevated px-1.5 text-xs font-medium uppercase text-subtle">
+                      {meta.mode}
+                    </span>
+                  )}
+                </span>
                 {meta?.hint && <span className="block truncate text-xs text-muted">{meta.hint}</span>}
               </span>
               <div className="flex shrink-0 items-center">
@@ -326,8 +332,8 @@ export function PageLayoutSection({
         <p className="text-sm text-muted">No widgets available.</p>
       )}
       {/* Keep the catalog count honest even if config drifted. */}
-      {config.length > 0 && config.length !== JOURNEY_WIDGETS.length && (
-        <p className="mt-2 text-xs text-subtle">{JOURNEY_WIDGETS.length} blocks available.</p>
+      {config.length > 0 && config.length !== WIDGET_IDS.length && (
+        <p className="mt-2 text-xs text-subtle">{WIDGET_IDS.length} blocks available.</p>
       )}
     </StudioSection>
   )

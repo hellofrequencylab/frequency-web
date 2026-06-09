@@ -139,3 +139,58 @@ export function enabledWidgets(
 function isPlainObject(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v)
 }
+
+// ── Editor catalog ────────────────────────────────────────────────────────────
+// The Studio "Page layout" section renders from the SAME ids the page renders, so the
+// two can never drift (the old fallback catalog used ids the page silently dropped).
+
+/** Editor-facing label + one-line hint + which face each widget belongs to. */
+export const WIDGET_META: Record<WidgetId, { label: string; hint: string; mode: JourneyPageMode }> = {
+  'next-step': { label: 'Next step card', hint: 'The dominant log target — the current practice. (Always on.)', mode: 'active' },
+  'gamification': { label: 'Gamification panel', hint: 'Zaps · rank · streak · Gems at a glance. (Always on.)', mode: 'active' },
+  'progress': { label: 'Season progress', hint: 'Week N of 13 and qualifying weeks toward completion.', mode: 'active' },
+  'checklist': { label: 'Step checklist', hint: 'Every step with its on-track / behind state.', mode: 'active' },
+  'streak': { label: 'Streak & shields', hint: 'The daily streak and earned freeze shields.', mode: 'active' },
+  'companions': { label: 'Chorus companions', hint: 'Members of your circles on this Journey.', mode: 'active' },
+  'practice-guide': { label: 'Practice guide', hint: 'The author’s how-to / story (markdown), read while practising.', mode: 'active' },
+  'story': { label: 'The story', hint: 'The intro markdown — why this Journey exists.', mode: 'discovery' },
+  'path': { label: 'The path', hint: 'The ordered steps with cadence, note, and tier. (Always on.)', mode: 'discovery' },
+  'pillar-balance': { label: 'Pillar balance', hint: 'How the path spreads across the four Pillars.', mode: 'discovery' },
+  'social-proof': { label: 'Social proof', hint: 'How many people have adopted this Journey.', mode: 'discovery' },
+  'reward-preview': { label: 'Reward preview', hint: 'What completing the Journey pays out (Gems + badge).', mode: 'discovery' },
+  'completion-rule': { label: 'Completion rule', hint: 'The completion bar — N qualifying weeks of 13.', mode: 'discovery' },
+}
+
+/**
+ * The full, ordered widget catalog for the Studio editor (both faces), merging a stored
+ * config: stored order/flags first for known ids, then any remaining widgets in default order.
+ * Required widgets are forced on. Returns one PageWidgetConfig[] the editor edits and saves; the
+ * page's mode-specific normalizePageConfig() then filters it per face.
+ */
+export function editorPageConfig(stored: PageWidgetConfig[] | null | undefined): PageWidgetConfig[] {
+  const requiredAll = new Set<WidgetId>([...REQUIRED_WIDGETS.active, ...REQUIRED_WIDGETS.discovery])
+  const order: WidgetId[] = []
+  const seen = new Set<WidgetId>()
+  for (const e of stored ?? []) {
+    if (e && isWidgetId(e.id) && !seen.has(e.id)) {
+      order.push(e.id)
+      seen.add(e.id)
+    }
+  }
+  for (const id of [...DEFAULT_LAYOUT.active, ...DEFAULT_LAYOUT.discovery]) {
+    if (!seen.has(id)) {
+      order.push(id)
+      seen.add(id)
+    }
+  }
+  // First occurrence wins for the flag/settings too (mirrors the de-duped order above).
+  const storedById = new Map<WidgetId, PageWidgetConfig>()
+  for (const e of stored ?? []) {
+    if (e && isWidgetId(e.id) && !storedById.has(e.id)) storedById.set(e.id, e)
+  }
+  return order.map((id) => {
+    const e = storedById.get(id)
+    const enabled = requiredAll.has(id) ? true : e ? e.enabled !== false : true
+    return e?.settings ? { id, enabled, settings: e.settings } : { id, enabled }
+  })
+}
