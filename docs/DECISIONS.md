@@ -6033,7 +6033,7 @@ work was needed. Full map of the system in CONNECTION-LAYER.md.
 
 ## ADR-198: Intensity tiers — Spark / Current / Deep
 
-**Status:** Accepted · corroborated by `lib/journey-tiers.ts`, `supabase/migrations/20260609100000_practice_tiers.sql`, `…101000_intensity_tier_selection.sql`
+**Status:** Accepted · corroborated by `lib/journey-tiers.ts`, `supabase/migrations/20260609101000_practice_tiers.sql`, `…101500_intensity_tier_selection.sql`
 **Context:** The product differentiator: every practice ships three depths, human-calibrated by a circle Host rather than an algorithm — without complicating the economy.
 **Decision:** Tier **content** lives on `practice_tiers` (spark/current/deep per practice, authored once). Tier **selection** resolves most-specific-first: member override (`journey_plan_adoptions.tier_override`) → circle default (`circles.default_intensity_tier`, Host-set) → item default (`journey_plan_items.default_tier`) → `'current'`. Tier never affects Zap or streak math — only the practice content shown/done.
 **Consequences:** Hosts tune difficulty per room; members can override. A missing tier falls back to the practice description as "current." See [docs/JOURNEYS.md](JOURNEYS.md) §5.
