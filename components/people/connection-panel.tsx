@@ -3,6 +3,7 @@ import { startConversation } from '@/app/(main)/messages/actions'
 import { getMyOrbit, ORBIT_LABEL, resonanceContext, type OrbitMember } from '@/lib/connections/resonance'
 import { getConnectionSettings } from '@/lib/connections/connection-settings'
 import { relativeTime } from '@/lib/utils'
+import { RelationshipTimeline } from './relationship-timeline'
 
 // ── "How you're connected" (Connection Layer P2, ADR-186) ─────────────────────
 // The viewer's *private* read of their own tie to this member — the shared history
@@ -81,6 +82,10 @@ export async function ConnectionPanel({
             </div>
           )}
         </dl>
+
+        <div className="mt-3 border-t border-border pt-3">
+          <RelationshipTimeline otherId={profileId} />
+        </div>
 
         {drifted && (
           <div className="mt-3 border-t border-border pt-3">
