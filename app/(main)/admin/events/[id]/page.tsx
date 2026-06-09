@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { ArrowLeft, ExternalLink } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -9,11 +10,12 @@ import { EventEditClient } from './event-edit-client'
 export const dynamic = 'force-dynamic'
 
 async function loadEvent(id: string) {
-  const admin = createAdminClient()
+  // price_cents isn't in the generated types yet — untyped cast (repo convention).
+  const admin = createAdminClient() as unknown as SupabaseClient
   const { data } = await admin
     .from('events')
     .select(
-      `id, title, slug, description, location, starts_at, ends_at, is_cancelled,
+      `id, title, slug, description, location, starts_at, ends_at, is_cancelled, price_cents,
        host:profiles!host_id ( id, display_name, handle ),
        scope:circles!scope_id ( id, name )`,
     )
@@ -85,6 +87,7 @@ export default async function AdminEventEditPage({ params }: { params: Promise<{
           starts_at:    event.starts_at,
           ends_at:      event.ends_at,
           is_cancelled: event.is_cancelled,
+          price_cents:  (event as { price_cents?: number | null }).price_cents ?? null,
         }}
       />
     </div>

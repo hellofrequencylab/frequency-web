@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { atLeastRole } from '@/lib/core/roles'
@@ -71,12 +72,21 @@ export async function updateEvent(id: string, fd: FormData) {
   const admin   = createAdminClient()
   const startsAt = fd.get('starts_at') as string
   const endsAt   = fd.get('ends_at') as string
-  const { error } = await admin.from('events').update({
+
+  // Ticket price in dollars → cents (ADR-177). Blank/0 = free (no ticket, RSVP only).
+  // `price_cents` isn't in the generated types yet, so the update object is cast.
+  const priceRaw = (fd.get('price') as string)?.trim()
+  const priceNum = priceRaw ? Number(priceRaw) : 0
+  const priceCents = Number.isFinite(priceNum) && priceNum > 0 ? Math.round(priceNum * 100) : null
+
+  // price_cents isn't in the generated types yet — untyped cast (repo convention).
+  const { error } = await (admin as unknown as SupabaseClient).from('events').update({
     title:       (fd.get('title') as string).trim(),
     description: (fd.get('description') as string)?.trim() || null,
     location:    (fd.get('location') as string)?.trim() || null,
     starts_at:   startsAt ? new Date(startsAt).toISOString() : undefined,
     ends_at:     endsAt   ? new Date(endsAt).toISOString()   : null,
+    price_cents: priceCents,
   }).eq('id', id)
   if (error) throw new Error(error.message)
 
