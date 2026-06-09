@@ -139,7 +139,7 @@ export function QrGeneratorModule() {
             )}
           </Btn>
         </div>
-        <p className="text-subtle text-[11px]">Vector SVG · PNG 256–2048px · JPG · copy to clipboard.</p>
+        <p className="text-subtle text-2xs">Vector SVG · PNG 256–2048px · JPG · copy to clipboard.</p>
       </div>
     </div>
   )

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Suspense } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { CalendarDays, MapPin, Users } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -67,6 +68,27 @@ const SPOTS_OPTIONS: { value: string; label: string }[] = [
   { value: '1', label: 'Has open spots' },
 ]
 
+// Distance bands from the viewer's privacy-fuzzed home geocell (~1.1km grid,
+// ADR-186 — never an exact coordinate) to the HOSTING CIRCLE's location. Only
+// shown when the viewer has a home location set; events whose circle has no
+// coordinates are excluded while the facet is active.
+const NEAR_OPTIONS: { value: string; label: string }[] = [
+  { value: '10', label: 'Within 10 km' },
+  { value: '25', label: 'Within 25 km' },
+  { value: '50', label: 'Within 50 km' },
+]
+
+// Great-circle distance in km (haversine) — good enough for banded facets.
+function distanceKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const toRad = (d: number) => (d * Math.PI) / 180
+  const dLat = toRad(lat2 - lat1)
+  const dLng = toRad(lng2 - lng1)
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2
+  return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
 // Relative "when" — "Tomorrow at 3pm" / "Friday at 3pm" / "Jun 24 at 3pm".
 // `now` is passed in so this stays a pure helper (no clock read at render).
 function formatWhen(iso: string, now: Date) {
@@ -97,9 +119,9 @@ function DateBlock({ iso }: { iso: string }) {
 export default async function EventsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; energy?: string; spots?: string }>
+  searchParams: Promise<{ category?: string; energy?: string; spots?: string; near?: string }>
 }) {
-  const { category, energy, spots } = await searchParams
+  const { category, energy, spots, near } = await searchParams
   const admin = createAdminClient()
   const supabase = await createClient()
 
@@ -111,15 +133,20 @@ export default async function EventsPage({
   let isCrew = false
   let isHost = false
 
+  let myGeocell: { lat: number; lng: number } | null = null
+
   if (user) {
     const { data: profile } = await admin
       .from('profiles')
-      .select('id, community_role')
+      .select('id, community_role, home_geocell_lat, home_geocell_lng')
       .eq('auth_user_id', user.id)
       .maybeSingle()
 
     if (profile) {
       myProfileId = profile.id
+      if (profile.home_geocell_lat != null && profile.home_geocell_lng != null) {
+        myGeocell = { lat: Number(profile.home_geocell_lat), lng: Number(profile.home_geocell_lng) }
+      }
       isCrew = ['crew', 'host', 'guide', 'mentor', 'janitor'].includes(profile.community_role ?? '')
       isHost = ['host', 'guide', 'mentor', 'janitor'].includes(profile.community_role ?? '')
 
@@ -200,13 +227,17 @@ export default async function EventsPage({
   // Circle names for scope_ids.
   const circleIds = [...new Set(events.map((e) => e.scope_id))]
   const circleNames: Record<string, string> = {}
+  const circleCoords: Record<string, { lat: number; lng: number }> = {}
   if (circleIds.length > 0) {
     const { data: circles } = await admin
       .from('circles')
-      .select('id, name')
+      .select('id, name, latitude, longitude')
       .in('id', circleIds)
-    ;(circles ?? []).forEach((c: { id: string; name: string }) => {
+    ;(circles ?? []).forEach((c: { id: string; name: string; latitude: number | null; longitude: number | null }) => {
       circleNames[c.id] = c.name
+      if (c.latitude != null && c.longitude != null) {
+        circleCoords[c.id] = { lat: Number(c.latitude), lng: Number(c.longitude) }
+      }
     })
   }
 
@@ -243,58 +274,40 @@ export default async function EventsPage({
   const goingCount = (e: EventRow) => rsvpCounts[e.id] ?? 0
   const hasSpots = (e: EventRow) => e.capacity == null || goingCount(e) < e.capacity
 
+  // "Near me": viewer's fuzzed home geocell → hosting circle's coordinates,
+  // banded (NEAR_OPTIONS). Active only when both ends have a location.
+  const nearKm = near ? Number(near) : null
+  const withinBand = (e: EventRow) => {
+    if (!myGeocell || !nearKm) return true
+    const c = circleCoords[e.scope_id]
+    if (!c) return false // no circle location → can't honestly claim it's near
+    return distanceKm(myGeocell.lat, myGeocell.lng, c.lat, c.lng) <= nearKm
+  }
+
   const filteredEvents = events.filter((e) => {
     if (category && e.category !== category) return false
     if (energy && e.energy_tag !== energy) return false
     if (spots === '1' && !hasSpots(e)) return false
+    if (nearKm && !withinBand(e)) return false
     return true
   })
-  const filtering = !!(category || energy || spots)
+  const filtering = !!(category || energy || spots || nearKm)
 
   const goingEvents = filteredEvents.filter((e) => myRsvps.has(e.id))
 
-  // ── "For You" lane (signed-in, no active facet filter) ──────────────────────
-  // Hybrid interest+social+context ranking over the in-scope events. COLD-START
-  // RULE (EVENTS-SYSTEM §3/§4): never render an empty or random algorithmic feed.
-  // We only show the lane when the viewer has a USABLE signal — at least one event
-  // is personalized by real interest (embedding) or social proof (people they know
-  // going). Otherwise the existing soonest-first ordering carries the page.
-  let forYouEvents: EventRow[] = []
-  const forYouBlurbs: Record<string, string> = {}
-  if (myProfileId && !filtering && filteredEvents.length > 1) {
-    const byId = new Map(filteredEvents.map((e) => [e.id, e]))
-    const scored = await scoreEventsForViewer(
-      myProfileId,
-      filteredEvents.map((e) => e.id),
-    )
-    // Usable signal = real personalization, not just the always-present time/
-    // proximity floor. No signal → leave the lane empty (cold-start fallback).
-    const hasUsableSignal = scored.some((s) => s.interest > 0 || s.social > 0)
-    if (hasUsableSignal) {
-      forYouEvents = scored
-        .map((s) => byId.get(s.eventId))
-        .filter((e): e is EventRow => !!e)
-        .slice(0, 4)
-
-      // Optional warm blurbs — best-effort, parallel, degrade to nothing when AI
-      // is off / over budget / has no genuine overlap to speak to.
-      if (forYouEvents.length > 0 && (await aiAvailable())) {
-        const blurbs = await Promise.all(
-          forYouEvents.map((e) => eventBlurb(myProfileId!, e.id).catch(() => null)),
-        )
-        forYouEvents.forEach((e, i) => {
-          const b = blurbs[i]
-          if (b) forYouBlurbs[e.id] = b
-        })
-      }
-    }
-  }
+  // The "For You" lane is the page's one slow path (embedding scoring + optional
+  // AI blurbs) — it streams in behind <Suspense> below so the shell, stats, and
+  // event lists render immediately (PAGE-FRAMEWORK §5). Render it only when it
+  // could have content: signed-in, no facet active, more than one event.
+  const showForYou = !!myProfileId && !filtering && filteredEvents.length > 1
 
   const facetRow = (
     <div className="flex flex-wrap items-center gap-2">
       <FacetDropdown label="Category" paramKey="category" options={CATEGORY_OPTIONS} />
       <FacetDropdown label="Energy" paramKey="energy" options={ENERGY_OPTIONS} />
       <FacetDropdown label="Spots" paramKey="spots" options={SPOTS_OPTIONS} />
+      {/* Distance needs a home location on the profile — hidden without one. */}
+      {myGeocell && <FacetDropdown label="Distance" paramKey="near" options={NEAR_OPTIONS} />}
     </div>
   )
 
@@ -326,12 +339,11 @@ export default async function EventsPage({
         />
       </div>
 
-      {/* Table of contents — only meaningful once there's more than one section. */}
+      {/* Table of contents — only meaningful once there's more than one section.
+          (The streamed "For you" lane is progressive content and stays out of the
+          TOC so the shell never waits on it.) */}
       <PageContents
         sections={[
-          ...(forYouEvents.length > 0
-            ? [{ id: 'events-for-you', label: 'For you', count: forYouEvents.length }]
-            : []),
           ...(goingEvents.length > 0
             ? [{ id: 'events-going', label: "You're going", count: goingEvents.length }]
             : []),
@@ -340,27 +352,17 @@ export default async function EventsPage({
       />
 
       <div className="space-y-8">
-        {forYouEvents.length > 0 && (
-          <section id="events-for-you" className="scroll-mt-20">
-            <SectionHeader title="For you" count={forYouEvents.length} />
-            <p className="-mt-2 mb-3 text-xs text-muted">
-              Picked from your circles, the people you know, and what’s near you.
-            </p>
-            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-              {forYouEvents.map((event) => (
-                <EventCard
-                  key={event.id}
-                  event={event}
-                  circleName={circleNames[event.scope_id]}
-                  going={rsvpCounts[event.id] ?? 0}
-                  isGoing={myRsvps.has(event.id)}
-                  now={nowDate}
-                  canRsvp={!!myProfileId}
-                  blurb={forYouBlurbs[event.id]}
-                />
-              ))}
-            </div>
-          </section>
+        {showForYou && (
+          <Suspense fallback={<div className="h-40 animate-pulse rounded-2xl border border-border bg-surface-elevated/50" />}>
+            <ForYouLane
+              profileId={myProfileId!}
+              events={filteredEvents}
+              circleNames={circleNames}
+              rsvpCounts={rsvpCounts}
+              myRsvps={myRsvps}
+              now={nowDate}
+            />
+          </Suspense>
         )}
 
         {goingEvents.length > 0 && (
@@ -423,6 +425,72 @@ export default async function EventsPage({
         </section>
       </div>
     </IndexTemplate>
+  )
+}
+
+// ── "For You" lane (streamed behind Suspense — the page's one slow path) ──────
+// Hybrid interest+social+context ranking over the in-scope events. COLD-START
+// RULE (EVENTS-SYSTEM §3/§4): never render an empty or random algorithmic feed.
+// We only show the lane when the viewer has a USABLE signal — at least one event
+// is personalized by real interest (embedding) or social proof (people they know
+// going). Otherwise it renders nothing and soonest-first carries the page.
+async function ForYouLane({
+  profileId, events, circleNames, rsvpCounts, myRsvps, now,
+}: {
+  profileId: string
+  events: EventRow[]
+  circleNames: Record<string, string>
+  rsvpCounts: Record<string, number>
+  myRsvps: Set<string>
+  now: Date
+}) {
+  const byId = new Map(events.map((e) => [e.id, e]))
+  const scored = await scoreEventsForViewer(profileId, events.map((e) => e.id))
+  // Usable signal = real personalization, not just the always-present time/
+  // proximity floor. No signal → render nothing (cold-start fallback).
+  const hasUsableSignal = scored.some((s) => s.interest > 0 || s.social > 0)
+  if (!hasUsableSignal) return null
+
+  const forYouEvents = scored
+    .map((s) => byId.get(s.eventId))
+    .filter((e): e is EventRow => !!e)
+    .slice(0, 4)
+  if (forYouEvents.length === 0) return null
+
+  // Optional warm blurbs — best-effort, parallel, degrade to nothing when AI
+  // is off / over budget / has no genuine overlap to speak to.
+  const forYouBlurbs: Record<string, string> = {}
+  if (await aiAvailable()) {
+    const blurbs = await Promise.all(
+      forYouEvents.map((e) => eventBlurb(profileId, e.id).catch(() => null)),
+    )
+    forYouEvents.forEach((e, i) => {
+      const b = blurbs[i]
+      if (b) forYouBlurbs[e.id] = b
+    })
+  }
+
+  return (
+    <section id="events-for-you" className="scroll-mt-20">
+      <SectionHeader title="For you" count={forYouEvents.length} />
+      <p className="-mt-2 mb-3 text-xs text-muted">
+        Picked from your circles, the people you know, and what’s near you.
+      </p>
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        {forYouEvents.map((event) => (
+          <EventCard
+            key={event.id}
+            event={event}
+            circleName={circleNames[event.scope_id]}
+            going={rsvpCounts[event.id] ?? 0}
+            isGoing={myRsvps.has(event.id)}
+            now={now}
+            canRsvp
+            blurb={forYouBlurbs[event.id]}
+          />
+        ))}
+      </div>
+    </section>
   )
 }
 
