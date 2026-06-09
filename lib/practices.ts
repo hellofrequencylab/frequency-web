@@ -13,7 +13,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { recordEngagementEvent } from '@/lib/engagement/events'
 import { track } from '@/lib/analytics/track'
 import { awardZapsForAction } from '@/lib/zaps'
-import { recordStreakActivity } from '@/lib/achievements'
+import { recordStreakActivity, processGamificationEvent } from '@/lib/achievements'
 import { recordPracticeStreak } from '@/lib/practice-streak'
 import type { JourneyRewardResult } from '@/lib/journey-grants'
 
@@ -764,6 +764,10 @@ export async function logPractice(input: {
   // consecutive-day count, spends a freeze to bridge a slip, and pays milestone
   // rewards. Owns profiles.current_streak / longest_streak (lib/practice-streak.ts).
   await recordPracticeStreak(profileId).catch(() => {})
+  // Daily-streak achievement badges (practice_streak criteria) evaluate AFTER the
+  // streak advances so today's log counts. Best-effort — a badge check must never
+  // break the log (processGamificationEvent already swallows internally too).
+  await processGamificationEvent({ type: 'practice_log', profileId }).catch(() => {})
 
   // Journey rewards (ADR-200; docs/JOURNEYS.md §6): a fresh log may complete the day
   // (Full Day), the week (Weekly Rhythm), or the Journey itself. Best-effort + dynamic

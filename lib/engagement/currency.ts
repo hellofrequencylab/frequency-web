@@ -46,6 +46,7 @@ const ZAP_CRITERIA_TYPES = new Set<string>([
   'qr_scan',        // captured a code out in the world
   'node_capture',   // ghost-node / plaque capture
   'practice_verified', // logged a real-world practice (personal or circle)
+  'practice_streak',   // daily practice-streak milestone — real-world consistency
   'circle_start',   // founded a real circle
   'circle_activate',// activated a circle so it stands on its own
   // Meta milestones about the in-person ladder itself.
