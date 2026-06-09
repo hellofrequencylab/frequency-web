@@ -2,10 +2,11 @@
 
 import { useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { ChevronDown, Link2, Check, ExternalLink } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 import { PageQrManager } from '@/components/qr/page-qr-manager'
 import { meetsAccess } from '@/lib/nav-areas'
 import { CircleSettingsModule } from '@/components/admin/modules/circle-settings-module'
+import { CirclePracticeModule } from '@/components/admin/modules/circle-practice-module'
 import { HubSettingsModule } from '@/components/admin/modules/hub-settings-module'
 import { NexusSettingsModule } from '@/components/admin/modules/nexus-settings-module'
 import { EventSettingsModule } from '@/components/admin/modules/event-settings-module'
@@ -51,6 +52,13 @@ function settingsModuleFor(pathname: string) {
   return null
 }
 
+// The right-quadrant module (e.g. "This week's practice" on a circle). Sits opposite
+// the page settings in the bottom row of the panel.
+function practiceModuleFor(pathname: string) {
+  if (/^\/circles\/[^/]+/.test(pathname)) return <CirclePracticeModule />
+  return null
+}
+
 // Rendered by the page TEMPLATES, immediately under their header divider (the line
 // below the title), so the Settings control reads as a split on that line on every
 // page — fed by PageAdminProvider (no per-template prop threading). Self-hides when
@@ -72,6 +80,7 @@ export function PageAdminBar() {
 
   const shareable = isShareable(pathname)
   const settingsModule = settingsModuleFor(pathname)
+  const practiceModule = practiceModuleFor(pathname)
   // Operator page-content editing (ADR-180) on configured routes — admin+ only.
   const contentModule =
     (CONTENT_EDIT_ROUTES as readonly string[]).includes(pathname) && meetsAccess('admin', role)
@@ -79,7 +88,13 @@ export function PageAdminBar() {
       : null
 
   // Nothing to administer here — render nothing.
-  if (!shareable && !settingsModule && !contentModule) return null
+  if (!shareable && !settingsModule && !practiceModule && !contentModule) return null
+
+  // The bottom row: page settings (left) + practice / content (right). Only drawn
+  // when at least one of those modules exists.
+  const hasBottomRow = !!(settingsModule || practiceModule || contentModule)
+  const origin = typeof window !== 'undefined' ? window.location.origin : ''
+  const url = `${origin}${pathname}`
 
   return (
     <div className="-mt-3 mb-5 sm:mb-6">
@@ -96,74 +111,34 @@ export function PageAdminBar() {
         </button>
       </div>
 
-      {/* Panel — a clean WHITE surface that runs edge-to-edge to the content wrapper
-          (negative margins cancel the page padding). QR/share at the TOP, then the
-          page settings + content editor, stacked. */}
+      {/* Panel — a CONTAINED card within the content column (not edge-to-edge), with
+          generous inner padding. QR designer + share/codes across the TOP; the page
+          settings (left) and practice selector / content editor (right) below. */}
       <div
         className={`grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none ${
           open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
         }`}
       >
         <div className="overflow-hidden">
-          <div className="mt-2 -mx-6 border-y border-border bg-surface px-6 py-7 sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10">
-            <div className="space-y-8">
-              {shareable && <SharePanel pathname={pathname} />}
-              {settingsModule && (
-                <div>
-                  <p className="mb-3 text-2xs font-semibold uppercase tracking-wide text-subtle">Page settings</p>
-                  {settingsModule}
-                </div>
-              )}
-              {contentModule}
-            </div>
+          <div className="mt-2 rounded-2xl border border-border bg-surface p-5 sm:p-7">
+            {shareable && <PageQrManager pathname={pathname} url={url} />}
+
+            {shareable && hasBottomRow && <hr className="my-7 border-border" />}
+
+            {hasBottomRow && (
+              <div className="grid gap-x-10 gap-y-8 lg:grid-cols-2">
+                {settingsModule && (
+                  <div className="min-w-0">
+                    <p className="mb-3 text-2xs font-semibold uppercase tracking-wide text-subtle">Page settings</p>
+                    {settingsModule}
+                  </div>
+                )}
+                {practiceModule && <div className="min-w-0">{practiceModule}</div>}
+                {contentModule && <div className="min-w-0 lg:col-span-2">{contentModule}</div>}
+              </div>
+            )}
           </div>
         </div>
-      </div>
-    </div>
-  )
-}
-
-// Share kit for the current page. The managed QR folder (PageQrManager) lists +
-// creates persistent, retargetable codes filed under this page (ADR-179); the copy
-// link + open-in-new-tab convenience stays for a quick share without minting a code.
-function SharePanel({ pathname }: { pathname: string }) {
-  const [copied, setCopied] = useState(false)
-  const origin = typeof window !== 'undefined' ? window.location.origin : ''
-  const url = `${origin}${pathname}`
-
-  function copy() {
-    navigator.clipboard?.writeText(url).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
-    })
-  }
-
-  return (
-    <div className="min-w-0 space-y-4">
-      <PageQrManager pathname={pathname} url={url} />
-
-      <div className="border-t border-border pt-3">
-        <div className="flex items-center gap-2">
-          <code className="min-w-0 flex-1 truncate rounded-lg border border-border bg-surface-elevated/50 px-2.5 py-1.5 font-mono text-2xs text-muted" title={url}>
-            {url}
-          </code>
-          <button
-            type="button"
-            onClick={copy}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-2xs font-semibold text-text transition-colors hover:bg-surface-elevated"
-          >
-            {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Link2 className="h-3.5 w-3.5" />}
-            {copied ? 'Copied' : 'Copy'}
-          </button>
-        </div>
-        <a
-          href={pathname}
-          target="_blank"
-          rel="noreferrer"
-          className="mt-2 inline-flex items-center gap-1 text-2xs font-semibold text-primary-strong hover:underline"
-        >
-          <ExternalLink className="h-3 w-3" /> Open in a new tab
-        </a>
       </div>
     </div>
   )
