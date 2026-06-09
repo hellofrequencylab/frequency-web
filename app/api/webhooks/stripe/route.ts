@@ -1,9 +1,9 @@
-// Stripe webhook (Phase 1: Connect account sync). Verifies the signature with the
-// Stripe SDK, then routes events. Today it handles `account.updated` — the async
-// signal that a connected host finished (or progressed) onboarding — by mirroring
-// the Account's capability flags onto the owning profile. Subscription + payment
-// events for the four payout channels land in the `default` arm and are acked now;
-// later phases add their cases here.
+// Stripe webhook. Verifies the signature with the Stripe SDK, then routes events:
+//  - account.updated (Phase 1) — mirror a connected host's capability flags onto
+//    the owning profile as they progress through onboarding.
+//  - checkout.session.completed (Phase 2) — a payout-channel charge succeeded;
+//    record it (tips today; events/store/memberships add their handlers here).
+// Unhandled events are acked with 200 so Stripe stops retrying.
 //
 // Configure in the Stripe dashboard with this URL and set STRIPE_WEBHOOK_SECRET
 // (the "whsec_…" signing secret). The route reads the RAW body (req.text()) because
@@ -13,6 +13,7 @@ import type Stripe from 'stripe'
 import { NextResponse } from 'next/server'
 import { stripe, STRIPE_WEBHOOK_SECRET } from '@/lib/billing/stripe'
 import { persistAccount } from '@/lib/billing/connect'
+import { recordTipFromSession } from '@/lib/billing/tips'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,9 +40,15 @@ export async function POST(req: Request) {
       case 'account.updated':
         await persistAccount(event.data.object as Stripe.Account)
         break
+      case 'checkout.session.completed': {
+        // Route by the session's `kind` metadata. Tips today; other channels add
+        // their own kind here. recordTipFromSession no-ops on a non-tip session.
+        await recordTipFromSession(event.data.object as Stripe.Checkout.Session)
+        break
+      }
       default:
-        // Subscription/payment events for the payout channels are added in later
-        // phases. Acknowledge unknown events with 200 so Stripe stops retrying.
+        // Other payout-channel events are added in later phases. Acknowledge
+        // unknown events with 200 so Stripe stops retrying.
         break
     }
   } catch (err) {

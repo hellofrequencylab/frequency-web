@@ -49,7 +49,8 @@ registered at GoDaddy; point it at Vercel.
 | `CRON_SECRET` | cron auth (fail-closed: crons reject without it) | required or reminders/digests/scheduled publish silently stop |
 | `UNSUBSCRIBE_SECRET` | signed one-click unsubscribe tokens | email compliance |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | web push | push notifications |
-| `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | membership billing **+ Connect payouts** (ADR-175) | `sk_…` + `whsec_…`. One webhook endpoint, `https://frequencylocal.com/api/webhooks/stripe`, covers both checkout events and `account.updated` (Connect onboarding sync). `STRIPE_PRICE_CREW` optional (inline-price fallback). Develop in **test mode**; live needs platform identity verification |
+| `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | membership billing **+ Connect payouts** (ADR-175/176) | `sk_…` + `whsec_…`. One webhook endpoint, `https://frequencylocal.com/api/webhooks/stripe`, covers checkout events, `account.updated` (Connect onboarding sync), and `checkout.session.completed` (tips + future channels). `STRIPE_PRICE_CREW` optional (inline-price fallback). Develop in **test mode**; live needs platform identity verification |
+| `STRIPE_PLATFORM_FEE_PCT` | platform fee % on Connect payout channels (tips, etc.) | **optional** — defaults to `10`. Centralized in `lib/billing/fees.ts`; explicit `0` = no fee |
 | `ANTHROPIC_API_KEY` | Studio AI operator (win-back drafting) | **optional** — without it the proposer uses a deterministic template; the agent stays copilot-gated either way |
 | `COMPANY_POSTAL_ADDRESS` | physical mailing address in the scan-intro email footer (CAN-SPAM) | **🔴 not set yet** — required before turning on scan-intro friend invites (see urgent note below). One line, e.g. `Frequency™, PO Box 123, Encinitas, CA 92024` |
 
