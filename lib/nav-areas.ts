@@ -101,6 +101,7 @@ export const NAV_AREAS: readonly NavArea[] = [
   { key: 'admin-vera',     href: '/admin/vera',       label: 'Vera AI',     section: 'Platform', defaultAccess: 'host', surface: 'veraAi' },
   { key: 'admin-structure', href: '/admin/hubs',      label: 'Hubs & Nexuses', section: 'Platform', defaultAccess: 'admin', surface: 'platformManage' },
   { key: 'admin-platform', href: '/admin/members',    label: 'Memberships', section: 'Platform', defaultAccess: 'admin', surface: 'platformManage' },
+  { key: 'admin-connections', href: '/admin/connections', label: 'Connections', section: 'Platform', defaultAccess: 'admin', surface: 'platformManage' },
   { key: 'pages',          href: '/pages',            label: 'Pages',       section: 'Platform', defaultAccess: 'admin', surface: 'platformManage' },
   { key: 'financials',     href: '/coming-soon?feature=financials', label: 'Financial', section: 'Platform', defaultAccess: 'janitor', surface: 'financialDashboard', comingSoon: true },
   { key: 'settings',       href: '/settings',         label: 'Settings',    section: 'Platform', defaultAccess: 'member', surface: 'settings' },
