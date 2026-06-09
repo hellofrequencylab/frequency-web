@@ -51,6 +51,9 @@ export type AchievementCriteria =
   | { type: 'post_replies';   count: number }
   | { type: 'role_earned';    role: string }
   | { type: 'streak';         streak_type: StreakType; count: number }
+  // The DAILY practice streak (profiles.current_streak, lib/practice-streak.ts) —
+  // distinct from the weekly `streaks`-table types above.
+  | { type: 'practice_streak'; count: number }
   | { type: 'season_zaps';    count: number }
   | { type: 'rank_reached';   rank: string }
   | { type: 'task_complete';  count: number }
