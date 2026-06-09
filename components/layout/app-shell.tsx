@@ -1268,10 +1268,13 @@ export default function AppShell({
     theme === 'dark' ? 'Dark mode' : theme === 'light' ? 'Light mode' : 'System theme'
 
   return (
-    <div className="flex flex-col h-screen bg-canvas overflow-hidden">
+    // The document itself scrolls (not an inner pane) so the whole page renders in
+    // normal flow — full-page screenshot tools capture everything, and Next's native
+    // scroll restoration works. The header + side rails stay put via `sticky`.
+    <div className="flex min-h-screen flex-col bg-canvas">
 
       {/* ── Top bar ───────────────────────────────────────── */}
-      <header className="h-14 shrink-0 flex items-stretch bg-surface/90 backdrop-blur-sm border-b border-border z-30">
+      <header className="sticky top-0 h-14 shrink-0 flex items-stretch bg-surface/90 backdrop-blur-sm border-b border-border z-30">
 
         {/* Engraved, interactive wordmark. Leads the bar — on mobile the menu now
             lives in the bottom tab bar, so the wordmark anchors the top-left. */}
@@ -1387,10 +1390,10 @@ export default function AppShell({
       {/* DockRevealProvider runs the single shared scroll listener that rises
           both bottom docks together (left profile, right stats). */}
       <DockRevealProvider>
-      <div className="flex flex-1 min-h-0 overflow-hidden">
+      <div className="flex flex-1">
 
-        {/* Left nav */}
-        <aside className="hidden md:flex w-52 flex-col shrink-0 border-r border-border bg-surface/80 backdrop-blur-sm">
+        {/* Left nav — viewport-pinned beneath the header while the document scrolls. */}
+        <aside className="hidden md:flex w-52 flex-col shrink-0 self-start sticky top-14 h-[calc(100vh-3.5rem)] border-r border-border bg-surface/80 backdrop-blur-sm">
 
           {/* Community spaces + features + admin rail (the Broadcast bar lives up top) */}
           <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
@@ -1414,9 +1417,9 @@ export default function AppShell({
             scrolling back up brings the rail back. Normal flow, no sticky. */}
         <div
           data-feed-scroll
-          className="flex-1 min-w-0 overflow-y-auto pb-[calc(4rem_+_env(safe-area-inset-bottom))] md:pb-0"
+          className="flex-1 min-w-0 pb-[calc(4rem_+_env(safe-area-inset-bottom))] md:pb-0"
         >
-          <div className="flex items-stretch min-h-full">
+          <div className="flex items-stretch min-h-[calc(100vh-3.5rem)]">
 
             {/* Center column — an ambient dispatch ticker pinned on top, then the
                 page content. Navigation lives entirely in the single left rail

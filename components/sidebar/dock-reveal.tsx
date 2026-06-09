@@ -29,11 +29,15 @@ export function DockRevealProvider({ children }: { children: React.ReactNode }) 
   const [atBottom, setAtBottom] = useState(false)
 
   useEffect(() => {
-    const el = document.querySelector('[data-feed-scroll]') as HTMLElement | null
-    if (!el) return
+    // The document is the scroll container (the shell scrolls the page, not an inner
+    // pane), so we read the document scroller and listen on window.
+    const doc = () => document.scrollingElement ?? document.documentElement
 
-    let lastTop = el.scrollTop
-    const remaining = () => el.scrollHeight - el.scrollTop - el.clientHeight
+    let lastTop = doc().scrollTop
+    const remaining = () => {
+      const el = doc()
+      return el.scrollHeight - el.scrollTop - el.clientHeight
+    }
 
     const reveal = () => {
       if (remaining() <= REVEAL_NEAR) setAtBottom(true)
@@ -49,7 +53,7 @@ export function DockRevealProvider({ children }: { children: React.ReactNode }) 
     // scrollbar drag and momentum. An expand-driven layout shift leaves
     // scrollTop unchanged (delta ≈ 0), so it never re-triggers.
     const onScroll = () => {
-      const top = el.scrollTop
+      const top = doc().scrollTop
       const dy = top - lastTop
       lastTop = top
       if (dy > 0.5) reveal()
@@ -57,11 +61,11 @@ export function DockRevealProvider({ children }: { children: React.ReactNode }) 
       if (remaining() > FORCE_CLEAR) setAtBottom(false)
     }
 
-    el.addEventListener('wheel', onWheel, { passive: true })
-    el.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('wheel', onWheel, { passive: true })
+    window.addEventListener('scroll', onScroll, { passive: true })
     return () => {
-      el.removeEventListener('wheel', onWheel)
-      el.removeEventListener('scroll', onScroll)
+      window.removeEventListener('wheel', onWheel)
+      window.removeEventListener('scroll', onScroll)
     }
   }, [])
 

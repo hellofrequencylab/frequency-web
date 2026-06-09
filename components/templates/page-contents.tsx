@@ -113,7 +113,8 @@ function ScrollSpyBar({ sections }: { sections: PageContentsSection[] }) {
 
   useEffect(() => {
     if (sections.length === 0) return
-    const root = document.querySelector('[data-feed-scroll]') as HTMLElement | null
+    // The document is the scroll container now, so observe against the viewport.
+    const root = null
     const els = sections
       .map((s) => document.getElementById(s.id))
       .filter((el): el is HTMLElement => !!el)
