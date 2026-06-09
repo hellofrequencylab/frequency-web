@@ -2,10 +2,12 @@ import { describe, it, expect } from 'vitest'
 import {
   normalizePageConfig,
   enabledWidgets,
+  editorPageConfig,
   isWidgetId,
   DEFAULT_LAYOUT,
   REQUIRED_WIDGETS,
   WIDGET_IDS,
+  WIDGET_META,
   type WidgetId,
 } from './journey-page-config'
 import type { PageWidgetConfig } from './journey-plans'
@@ -137,5 +139,51 @@ describe('layout invariants', () => {
   it('every default + required id is a canonical widget id', () => {
     const all = [...DEFAULT_LAYOUT.active, ...DEFAULT_LAYOUT.discovery, ...REQUIRED_WIDGETS.active, ...REQUIRED_WIDGETS.discovery]
     for (const id of all) expect(WIDGET_IDS).toContain(id)
+  })
+})
+
+describe('editorPageConfig — the Studio editor catalog (both faces)', () => {
+  it('returns every canonical widget exactly once when stored is null', () => {
+    const out = editorPageConfig(null)
+    expect([...out.map((w) => w.id)].sort()).toEqual([...WIDGET_IDS].sort())
+    expect(new Set(out.map((w) => w.id)).size).toBe(WIDGET_IDS.length)
+  })
+
+  it('gives every widget editor metadata (label + hint + mode)', () => {
+    for (const id of WIDGET_IDS) {
+      expect(WIDGET_META[id]?.label.length ?? 0).toBeGreaterThan(0)
+      expect(['active', 'discovery']).toContain(WIDGET_META[id]?.mode)
+    }
+  })
+
+  it('honours stored order first, then appends the rest, no dupes', () => {
+    const out = editorPageConfig([
+      { id: 'story', enabled: true },
+      { id: 'streak', enabled: true },
+    ])
+    expect(out.slice(0, 2).map((w) => w.id)).toEqual(['story', 'streak'])
+    expect(out).toHaveLength(WIDGET_IDS.length)
+  })
+
+  it('forces required widgets enabled even when stored disables them', () => {
+    const out = editorPageConfig([
+      { id: 'next-step', enabled: false },
+      { id: 'path', enabled: false },
+    ])
+    const byId = new Map(out.map((w) => [w.id, w]))
+    for (const id of [...REQUIRED_WIDGETS.active, ...REQUIRED_WIDGETS.discovery]) {
+      expect(byId.get(id)?.enabled).toBe(true)
+    }
+  })
+
+  it('honours a non-required disabled flag and drops unknown / duplicate ids', () => {
+    const out = editorPageConfig([
+      { id: 'streak', enabled: false },
+      { id: 'bogus', enabled: true } as unknown as PageWidgetConfig,
+      { id: 'streak', enabled: true },
+    ])
+    expect(out.find((w) => w.id === 'streak')?.enabled).toBe(false) // first wins
+    expect(out.map((w) => w.id)).not.toContain('bogus')
+    expect(out).toHaveLength(WIDGET_IDS.length)
   })
 })
