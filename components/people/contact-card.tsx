@@ -5,6 +5,7 @@ import { getInitials } from '@/lib/utils'
 import { RoleBadge } from '@/lib/community-roles'
 import type { CommunityRole } from '@/lib/community-roles'
 import { DemoBadge } from '@/components/ui/demo-badge'
+import { BAND_LABEL, type ProximityBand } from '@/lib/connections/location'
 
 // Portrait contact card for the Community directory — a vertical, browse-first
 // card: a prominent centered avatar, then the name, @handle, a role badge and
@@ -20,6 +21,7 @@ export function ContactCard({
   location,
   online = false,
   isDemo = false,
+  band,
 }: {
   handle: string
   displayName: string
@@ -29,7 +31,11 @@ export function ContactCard({
   location?: string | null
   online?: boolean
   isDemo?: boolean
+  /** Coarse proximity band (privacy-safe) — renders a small chip, never a distance.
+   *  Omit (or 'unknown') to hide the chip. */
+  band?: ProximityBand
 }) {
+  const showBand = band != null && band !== 'unknown'
   return (
     <Link
       href={`/people/${handle}`}
@@ -64,6 +70,13 @@ export function ContactCard({
         {isDemo && <DemoBadge />}
       </div>
       <p className="mt-0.5 truncate text-xs text-subtle">@{handle}</p>
+
+      {showBand && (
+        <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong">
+          <MapPin className="h-2.5 w-2.5 shrink-0" />
+          {BAND_LABEL[band]}
+        </span>
+      )}
 
       <div className="mt-3 flex flex-col items-center gap-1.5">
         <RoleBadge role={role} className="text-3xs leading-tight" />
