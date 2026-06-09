@@ -31,7 +31,7 @@ import { ClaimCircle } from '@/components/circles/claim-circle'
 import { EditModeButton, StartEditingLink } from '@/components/admin/inline/edit-mode-button'
 import { InlineText } from '@/components/admin/inline/inline-text'
 import { updateCircleField, uploadCircleCover, removeCircleCover } from '../admin-actions'
-import { InlineCover } from '@/components/admin/inline/inline-cover'
+import { CircleCover } from '@/components/circles/circle-cover'
 
 type CircleDetail = {
   id: string
@@ -234,10 +234,10 @@ export default async function CirclePage({
         />
       )}
 
-      <InlineCover
-        value={circle.image_url}
-        alt={circle.name}
-        canEdit={canManage}
+      <CircleCover
+        imageUrl={circle.image_url}
+        name={circle.name}
+        canManage={canManage}
         upload={uploadCircleCover.bind(null, circle.id, slug)}
         remove={removeCircleCover.bind(null, circle.id, slug)}
       />
@@ -412,10 +412,44 @@ export default async function CirclePage({
           </div>
         )}
 
-        {/* ── Body. One border-t spans the row so the feed and the right
-                rail hang off the same line (mirrors Channels). Teaser-gated:
-                below-tier viewers preview, then it blurs (no-op until the gate
-                is switched on — see lib/teaser.ts). ──────── */}
+        {/* ── Host tools + circle health. Folded inline into the main column
+                (the page now rides the GLOBAL community rail — no in-body second
+                rail). Host-only, so they sit just under the practice block. ─── */}
+        {canManage && (
+          <div className="mb-6 grid grid-cols-1 gap-6 sm:grid-cols-2">
+            <ModuleCard title="Host tools">
+              <div className="flex items-center flex-wrap gap-2">
+                <HostInviteButton circleId={circle.id} />
+                <Link
+                  href={`/circles/${circle.slug}?edit=true`}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text hover:border-primary-bg dark:hover:border-primary transition-colors"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                  Edit info
+                </Link>
+              </div>
+              <div className="mt-2">
+                <HostInviteEmail circleId={circle.id} />
+              </div>
+            </ModuleCard>
+
+            {healthScore.totalZaps > 0 && (
+              <ModuleCard title="Circle health">
+                <div className="grid grid-cols-2 gap-2">
+                  <HealthStat label="Avg zaps" value={healthScore.avgZaps.toLocaleString()} Icon={Zap} />
+                  <HealthStat label="Total zaps" value={healthScore.totalZaps.toLocaleString()} Icon={TrendingUp} />
+                  <HealthStat label="Active streaks" value={String(healthScore.activeStreaks)} Icon={Flame} />
+                  <HealthStat label="Badges earned" value={String(healthScore.totalAchievements)} Icon={Activity} />
+                  <HealthStat label="New this week" value={String(healthScore.newThisWeek)} Icon={Users} />
+                </div>
+              </ModuleCard>
+            )}
+          </div>
+        )}
+
+        {/* ── Body. The feed and the circle's members/events sit stacked in the
+                single main column. Teaser-gated: below-tier viewers preview, then
+                it blurs (no-op until the gate is switched on — see lib/teaser.ts). */}
         <TeaserGate
           allowed={teaserAllowed({ role: isCrew ? 'crew' : 'member', hasAccess: isMember })}
           resourceKey={`circle:${circle.id}`}
@@ -423,161 +457,121 @@ export default async function CirclePage({
           title="Crew unlocks the full circle"
           body="Take a look around. Crew members can post, join the conversation, and connect with everyone here."
         >
-          <div className="border-t border-border pt-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="space-y-8 border-t border-border pt-6">
 
-              {/* ── Main: circle feed ────────────────────── */}
-              <div className="lg:col-span-2">
-                <div className="mb-4">
-                  <h2 className="text-sm font-bold text-text">Circle feed</h2>
-                  <p className="text-xs text-muted leading-relaxed mt-0.5">
-                    {canManage
-                      ? 'Post to your circle. Toggle Announce to broadcast to the wider hub.'
-                      : 'Share with everyone in this circle.'}
-                  </p>
-                </div>
-                {isMember ? (
-                  <Composer
-                    scopeId={circle.id}
-                    visibility="group"
-                    placeholder={`Share something with ${circle.name}…`}
-                    canAnnounce={canManage}
-                  />
-                ) : (
-                  myProfileId && (
-                    <div className="mb-4 rounded-2xl border border-dashed border-border bg-surface/60 px-4 py-3">
-                      <p className="text-xs text-muted leading-relaxed">
-                        Join this circle to post and follow it from your feed.
-                      </p>
-                    </div>
-                  )
-                )}
-                <FeedList
-                  circleIds={[circle.id]} showPublicLayer={false}
-                  myProfileId={myProfileId}
-                  viewerRole={canManage ? 'host' : isCrew ? 'crew' : 'member'}
-                  emptyMessage="No posts yet. Be the first to share something."
+            {/* ── Circle feed ──────────────────────────── */}
+            <section>
+              <div className="mb-4">
+                <h2 className="text-sm font-bold text-text">Circle feed</h2>
+                <p className="text-xs text-muted leading-relaxed mt-0.5">
+                  {canManage
+                    ? 'Post to your circle. Toggle Announce to broadcast to the wider hub.'
+                    : 'Share with everyone in this circle.'}
+                </p>
+              </div>
+              {isMember ? (
+                <Composer
+                  scopeId={circle.id}
+                  visibility="group"
+                  placeholder={`Share something with ${circle.name}…`}
+                  canAnnounce={canManage}
                 />
-              </div>
+              ) : (
+                myProfileId && (
+                  <div className="mb-4 rounded-2xl border border-dashed border-border bg-surface/60 px-4 py-3">
+                    <p className="text-xs text-muted leading-relaxed">
+                      Join this circle to post and follow it from your feed.
+                    </p>
+                  </div>
+                )
+              )}
+              <FeedList
+                circleIds={[circle.id]} showPublicLayer={false}
+                myProfileId={myProfileId}
+                viewerRole={canManage ? 'host' : isCrew ? 'crew' : 'member'}
+                emptyMessage="No posts yet. Be the first to share something."
+              />
+            </section>
 
-              {/* ── Right rail: host tools, members, events. Borderless modules
-                      (group, don't box). ─────────────────── */}
-              <div className="space-y-8">
+            {/* ── Circle events + members, stacked below the feed ─── */}
+            <ModuleCard title="Circle events">
+              <UpcomingEventsWidget scopeIds={[circle.id]} />
+            </ModuleCard>
 
-                {/* Host tools */}
-                {canManage && (
-                  <ModuleCard title="Host tools">
-                    <div className="flex items-center flex-wrap gap-2">
-                      <HostInviteButton circleId={circle.id} />
-                      <Link
-                        href={`/circles/${circle.slug}?edit=true`}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text hover:border-primary-bg dark:hover:border-primary transition-colors"
+            <ModuleCard title="Members" badge={String(sorted.length)}>
+              {sorted.length === 0 ? (
+                <p className="text-sm text-subtle">No members yet.</p>
+              ) : (
+                <div className="space-y-0.5">
+                  {sorted.map(({ profile, volunteer_role }) => {
+                    const memberIsHost = circle.host?.id === profile.id
+                    const isSelf = profile.id === myProfileId
+
+                    return (
+                      <div
+                        key={profile.id}
+                        className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-surface transition-colors -mx-3 group"
                       >
-                        <Pencil className="w-3.5 h-3.5" />
-                        Edit info
-                      </Link>
-                    </div>
-                    <div className="mt-2">
-                      <HostInviteEmail circleId={circle.id} />
-                    </div>
-                  </ModuleCard>
-                )}
+                        <Link
+                          href={`/people/${profile.handle}`}
+                          className="flex items-center gap-3 flex-1 min-w-0"
+                        >
+                          {profile.avatar_url ? (
+                            <Image
+                              src={profile.avatar_url}
+                              alt={profile.display_name}
+                              width={32}
+                              height={32}
+                              className="w-8 h-8 rounded-full object-cover shrink-0"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none">
+                              {getInitials(profile.display_name)}
+                            </div>
+                          )}
 
-                {/* Circle health (host+ only) */}
-                {canManage && healthScore.totalZaps > 0 && (
-                  <ModuleCard title="Circle health">
-                    <div className="grid grid-cols-2 gap-2">
-                      <HealthStat label="Avg zaps" value={healthScore.avgZaps.toLocaleString()} Icon={Zap} />
-                      <HealthStat label="Total zaps" value={healthScore.totalZaps.toLocaleString()} Icon={TrendingUp} />
-                      <HealthStat label="Active streaks" value={String(healthScore.activeStreaks)} Icon={Flame} />
-                      <HealthStat label="Badges earned" value={String(healthScore.totalAchievements)} Icon={Activity} />
-                      <HealthStat label="New this week" value={String(healthScore.newThisWeek)} Icon={Users} />
-                    </div>
-                  </ModuleCard>
-                )}
-
-                {/* Upcoming events */}
-                <ModuleCard title="Circle events">
-                  <UpcomingEventsWidget scopeIds={[circle.id]} />
-                </ModuleCard>
-
-                {/* Members */}
-                <ModuleCard title="Members" badge={String(sorted.length)}>
-                  {sorted.length === 0 ? (
-                    <p className="text-sm text-subtle">No members yet.</p>
-                  ) : (
-                    <div className="space-y-0.5">
-                      {sorted.map(({ profile, volunteer_role }) => {
-                        const memberIsHost = circle.host?.id === profile.id
-                        const isSelf = profile.id === myProfileId
-
-                        return (
-                          <div
-                            key={profile.id}
-                            className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-surface transition-colors -mx-3 group"
-                          >
-                            <Link
-                              href={`/people/${profile.handle}`}
-                              className="flex items-center gap-3 flex-1 min-w-0"
-                            >
-                              {profile.avatar_url ? (
-                                <Image
-                                  src={profile.avatar_url}
-                                  alt={profile.display_name}
-                                  width={32}
-                                  height={32}
-                                  className="w-8 h-8 rounded-full object-cover shrink-0"
-                                />
-                              ) : (
-                                <div className="w-8 h-8 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none">
-                                  {getInitials(profile.display_name)}
-                                </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-sm font-medium text-text truncate">
+                                {profile.display_name}
+                              </span>
+                              {memberIsHost && (
+                                <span className="text-xs px-1.5 py-0.5 rounded-md bg-success-bg text-success font-medium">
+                                  Host
+                                </span>
                               )}
-
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  <span className="text-sm font-medium text-text truncate">
-                                    {profile.display_name}
-                                  </span>
-                                  {memberIsHost && (
-                                    <span className="text-xs px-1.5 py-0.5 rounded-md bg-success-bg text-success font-medium">
-                                      Host
-                                    </span>
-                                  )}
-                                  {volunteer_role && !memberIsHost && (
-                                    <RoleBadge role={volunteer_role} className="text-xs leading-tight" />
-                                  )}
-                                  <ProfileFlair
-                                    rank={profile.current_season_rank}
-                                    streak={profile.current_streak}
-                                    endorsed={isEndorsed(profile.community_role)}
-                                    compact
-                                  />
-                                </div>
-                                <p className="text-xs text-subtle mt-0.5">@{profile.handle}</p>
-                              </div>
-                            </Link>
-
-                            {/* Message icon. Visible on hover, hidden for self */}
-                            {!isSelf && isMember && (
-                              <form action={startConversation.bind(null, profile.id)}>
-                                <button
-                                  type="submit"
-                                  title={`Message ${profile.display_name}`}
-                                  className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-subtle hover:text-primary-strong hover:bg-primary-bg transition-all"
-                                >
-                                  <MessageSquare className="w-4 h-4" />
-                                </button>
-                              </form>
-                            )}
+                              {volunteer_role && !memberIsHost && (
+                                <RoleBadge role={volunteer_role} className="text-xs leading-tight" />
+                              )}
+                              <ProfileFlair
+                                rank={profile.current_season_rank}
+                                streak={profile.current_streak}
+                                endorsed={isEndorsed(profile.community_role)}
+                                compact
+                              />
+                            </div>
+                            <p className="text-xs text-subtle mt-0.5">@{profile.handle}</p>
                           </div>
-                        )
-                      })}
-                    </div>
-                  )}
-                </ModuleCard>
-              </div>
-            </div>
+                        </Link>
+
+                        {/* Message icon. Visible on hover, hidden for self */}
+                        {!isSelf && isMember && (
+                          <form action={startConversation.bind(null, profile.id)}>
+                            <button
+                              type="submit"
+                              title={`Message ${profile.display_name}`}
+                              className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-subtle hover:text-primary-strong hover:bg-primary-bg transition-all"
+                            >
+                              <MessageSquare className="w-4 h-4" />
+                            </button>
+                          </form>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </ModuleCard>
           </div>
         </TeaserGate>
       </DetailTemplate>
