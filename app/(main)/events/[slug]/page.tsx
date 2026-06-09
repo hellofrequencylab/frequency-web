@@ -7,8 +7,7 @@ import { createClient } from '@/lib/supabase/server'
 import { toggleRSVP } from '../actions'
 import { EventCheckInButton } from './check-in-button'
 import { TicketButton } from './ticket-button'
-import { billingEnabled } from '@/lib/billing/stripe'
-import { getConnectStatus } from '@/lib/billing/connect'
+import { getConnectStatus, payoutsLive } from '@/lib/billing/connect'
 import { hasTicket, recordTicketFromSessionId } from '@/lib/billing/tickets'
 import { CrewGateButton } from '@/components/crew/upgrade-lightbox'
 import { ContextActions } from '@/components/context-actions'
@@ -174,7 +173,7 @@ export default async function EventDetailPage({
   let hostPayoutReady = false
   let ownsTicket = false
   if (isPaidEvent && event.host?.id) {
-    if (billingEnabled()) hostPayoutReady = (await getConnectStatus(event.host.id)).ready
+    if (await payoutsLive()) hostPayoutReady = (await getConnectStatus(event.host.id)).ready
     if (myProfileId) ownsTicket = await hasTicket(event.id, myProfileId)
   }
   if (ticketedCents !== null) ownsTicket = true

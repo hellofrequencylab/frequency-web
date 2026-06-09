@@ -12,7 +12,7 @@
 import type Stripe from 'stripe'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { stripe, appUrl } from './stripe'
-import { getConnectStatus } from './connect'
+import { getConnectStatus, payoutsLive } from './connect'
 import { platformFeeCents } from './fees'
 import { createAdminClient } from '@/lib/supabase/admin'
 
@@ -37,6 +37,7 @@ export async function createTipCheckout(opts: {
   amountCents: number
   message?: string | null
 }): Promise<TipResult> {
+  if (!(await payoutsLive())) return { error: 'Tipping isn’t turned on yet.' }
   if (!stripe) return { error: 'Tipping isn’t turned on yet.' }
 
   const amount = Math.round(opts.amountCents)

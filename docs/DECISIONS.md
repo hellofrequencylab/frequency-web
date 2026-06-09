@@ -5817,3 +5817,27 @@ that isn't its kind.
 control on the in-app event page (`/events/[slug]`) shows to a signed-in non-host when the host is payouts-ready
 and they haven't already bought; otherwise a "Ticket confirmed" / "not available yet" state. Free events are
 unchanged (RSVP only). Env-gated like all billing.
+
+## ADR-178 — Host payouts behind an operator flag (default OFF)
+
+**Status:** Accepted. The Connect payout marketplace (tips ADR-176, tickets ADR-177, future store/membership)
+ships dormant behind a single operator switch; the owner turns it on when ready.
+
+**Context.** The payout channels are built and merged, but the product decision is to launch *without* host/
+circle payments and enable them later. We need a backend switch — not a code change — to flip the whole
+marketplace on.
+
+**Decision.** A new platform flag `host_payouts_enabled` (default **FALSE**, fail-closed) joins the existing
+flag system (`lib/platform-flags.ts`, audited in `platform_flag_events`). A single gate
+`payoutsLive()` = `billingEnabled()` (Stripe key present) **AND** `hostPayoutsEnabledFlag()` is the one check
+every channel consults:
+- **Money functions** refuse when off: `createOnboardingLink`, `createTipCheckout`, `createTicketCheckout`.
+- **Surfaces hide** when off: the "Receive payments" card (`/settings/billing`), the "Tip" control
+  (`/people/[handle]`), and the "Get ticket" block (`/events/[slug]`) all gate on `payoutsLive()`.
+
+So even with live Stripe keys, nothing payment-related appears or runs until an operator flips the flag —
+defense in depth at both the UI and the charge-creation layer.
+
+**Operator surface.** `/admin/payments` (Platform › System, janitor-only) — a single toggle that writes the
+flag via `setPlatformFlag` (audited). Shows whether Stripe keys are also configured. Turning the flag on
+without keys leaves the marketplace dormant (the `billingEnabled()` half of the gate).
