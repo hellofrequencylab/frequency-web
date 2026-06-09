@@ -27,7 +27,7 @@ production. Applied all five (ADR-185). 🟢 **AI event-blurb prompt-injection**
 | 🟠 **P1** | **Public/unlisted event RLS** | `events.visibility` is decorative — enforce in RLS **before** standalone/public events ship (safe today: circle-only) | events RLS |
 | 🟠 **P1** | **Owner go-live configs** | Stripe Connect payouts (`host_payouts_enabled`), `RESEND_WEBHOOK_SECRET`, run Supabase advisors | owner / env |
 | ✅ ~~P2~~ | Journey intensity-tier UI (Spark/Current/Deep) | **Audit false positive** — already built + live (`TierControl` wired in `/journeys/[slug]`, `setMyJourneyTierAction`, `resolveTier` chain, 17 tests, 48 seeded tiers). The journeys-audit findings were read from JOURNEYS.md (marked "planned") but the code shipped them — **verify journey items against code before building** | done |
-| 🟡 **P2** | Circle-scoped challenges model | CircleQuestModule 3rd column is an empty state — the one genuinely net-new gap | `circle-quest-module` |
+| ✅ ~~P2~~ | Circle-scoped challenges model | Done — a host adopts a global `season_challenge` for the circle to do **together**; the CircleQuest Challenges column shows collective progress ("N of M members done") and members completing it credit the circle's Circle Field (collaborative, ADR-201). New `circle_challenge_adoptions` table (applied to prod) | `lib/circles/challenges.ts`, `circle-challenges`, `admin-actions.ts` |
 | ✅ ~~P2~~ | Practice backlinks ("used in these journeys/circles") | Done (#489) | `app/(main)/practices/[id]` |
 | ✅ ~~P2~~ | Plus-ones + "maybe" RSVP controls | Done (#489) | event RSVP form |
 | 🟡 **P2** | Library "Propose to Library" + `/admin/journeys` review queue | Publish flow + status field exist; no UI | journeys/practices |
