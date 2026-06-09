@@ -47,6 +47,10 @@
     {
       "path": "/api/cron/embed-room-messages",
       "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/embed-events",
+      "schedule": "*/30 * * * *"
     }
   ]
 }
