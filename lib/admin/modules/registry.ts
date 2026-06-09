@@ -10,7 +10,7 @@
 // render each module's Component. The catalog + filter are the durable seam.
 
 import type { LucideIcon } from 'lucide-react'
-import { Settings, Building2, Network, CalendarDays } from 'lucide-react'
+import { Settings, Building2, Network, CalendarDays, Hash, UserCog } from 'lucide-react'
 import type { Capability, Scope } from '@/lib/core/capabilities'
 
 /** The Scope union's discriminant — where a module can attach. */
@@ -101,6 +101,28 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     scopes: ['event'],
     requiredCapability: 'event.editSettings',
     slot: 'basics',
+    surface: 'sidebar',
+    order: 10,
+  },
+  {
+    id: 'channel.settings',
+    label: 'Channel settings',
+    desc: 'Name, description, category, and visibility — platform-curated, staff only.',
+    Icon: Hash,
+    scopes: ['channel'],
+    requiredCapability: 'channel.manage',
+    slot: 'basics',
+    surface: 'sidebar',
+    order: 10,
+  },
+  {
+    id: 'person.settings',
+    label: 'Person settings',
+    desc: 'Display name, handle, and bio — a moderation surface (janitor only).',
+    Icon: UserCog,
+    scopes: ['profile'],
+    requiredCapability: 'profile.edit',
+    slot: 'safety',
     surface: 'sidebar',
     order: 10,
   },
