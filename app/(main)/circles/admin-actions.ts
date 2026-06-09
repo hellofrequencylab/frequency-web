@@ -5,6 +5,11 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { getCircleCapabilities } from '@/lib/core/load-capabilities'
 import { listPublicPractices, getCircleActivePractice } from '@/lib/practices'
+import {
+  getCircleChallenges,
+  listAdoptableChallenges,
+  type CircleChallenge,
+} from '@/lib/circles/challenges'
 import { slugify } from '@/lib/utils'
 import type { Database } from '@/lib/database.types'
 
@@ -15,13 +20,13 @@ export interface CircleQuestItem {
   href: string
 }
 
-/** The Journeys, Practices, and Challenges this circle has adopted. Challenges aren't
- *  modelled per-circle yet (season_challenges are global), so that list is always
- *  empty — the module shows a graceful empty state rather than inventing data. */
+/** The Journeys, Practices, and Challenges this circle has adopted. Journeys and
+ *  practices are simple links; challenges carry the circle's collective progress
+ *  (the circle adopts a global season challenge to do together). */
 export interface CircleQuestAdoptions {
   journeys: CircleQuestItem[]
   practices: CircleQuestItem[]
-  challenges: CircleQuestItem[]
+  challenges: CircleChallenge[]
 }
 
 // The journey/practice link tables aren't in the generated Database types (fresh
@@ -37,7 +42,8 @@ function untyped(): SupabaseClient {
  *    practice (circle_practices → practices). The active one floats to the top.
  *  - JOURNEYS: journeys currently adopted by this circle's active members
  *    (journey_plan_adoptions ∩ memberships) — the only circle-scoped journey signal.
- *  - CHALLENGES: not modelled per-circle (season_challenges are global) → [].
+ *  - CHALLENGES: global season challenges the circle has adopted to do together
+ *    (circle_challenge_adoptions), each with the circle's collective progress.
  *  Caller gates on circle.editSettings. */
 async function getCircleQuestAdoptions(circleId: string): Promise<CircleQuestAdoptions> {
   const db = untyped()
@@ -91,9 +97,12 @@ async function getCircleQuestAdoptions(circleId: string): Promise<CircleQuestAdo
     return out
   })()
 
-  const [practices, journeys] = await Promise.all([practicesP, journeysP])
-  // Challenges aren't circle-scoped in the schema — leave empty (graceful degrade).
-  return { journeys, practices, challenges: [] }
+  const [practices, journeys, challenges] = await Promise.all([
+    practicesP,
+    journeysP,
+    getCircleChallenges(circleId),
+  ])
+  return { journeys, practices, challenges }
 }
 
 // Known rail block keys — the editor and the saved order are constrained to these.
@@ -135,11 +144,13 @@ export async function getCircleAdminData(slug: string) {
   if (!caps.has('circle.editSettings')) return null
 
   // Also load the practice picker data ("This week's practice" lives here now) plus
-  // the Circle Quest adoptions (journeys / practices / challenges) the module lists.
-  const [practice_library, activePractice, adoptions] = await Promise.all([
+  // the Circle Quest adoptions (journeys / practices / challenges) the module lists,
+  // and the global challenges the host could still adopt for the circle.
+  const [practice_library, activePractice, adoptions, adoptableChallenges] = await Promise.all([
     listPublicPractices(),
     getCircleActivePractice(circle.id),
     getCircleQuestAdoptions(circle.id),
+    listAdoptableChallenges(circle.id),
   ])
 
   return {
@@ -157,7 +168,65 @@ export async function getCircleAdminData(slug: string) {
     adoptedJourneys: adoptions.journeys,
     adoptedPractices: adoptions.practices,
     adoptedChallenges: adoptions.challenges,
+    adoptableChallenges,
   }
+}
+
+/** Adopt a global season challenge for this circle to do together. Re-checks
+ *  circle.editSettings (capabilities are law; the admin client bypasses RLS, so
+ *  THIS gate — not RLS — protects the write). Idempotent via the
+ *  (circle_id, challenge_id) unique constraint. */
+export async function adoptCircleChallenge(
+  circleId: string,
+  slug: string,
+  challengeId: string,
+): Promise<{ ok: true } | { error: string }> {
+  const caps = await getCircleCapabilities(circleId)
+  if (!caps.has('circle.editSettings')) return { error: 'Unauthorized' }
+  if (!challengeId) return { error: 'Pick a challenge.' }
+
+  // Resolve the acting host for attribution (best-effort; column is null-ok).
+  const { getMyProfileId } = await import('@/lib/auth')
+  const myProfileId = await getMyProfileId().catch(() => null)
+
+  const { error } = await (untyped() as unknown as {
+    from: (t: string) => {
+      upsert: (
+        v: Record<string, unknown>,
+        o: { onConflict: string; ignoreDuplicates: boolean },
+      ) => Promise<{ error: { message: string } | null }>
+    }
+  })
+    .from('circle_challenge_adoptions')
+    .upsert(
+      { circle_id: circleId, challenge_id: challengeId, adopted_by: myProfileId ?? null },
+      { onConflict: 'circle_id,challenge_id', ignoreDuplicates: true },
+    )
+  if (error) return { error: error.message }
+
+  revalidatePath(`/circles/${slug}`)
+  return { ok: true }
+}
+
+/** Drop a circle's adopted challenge. Per-member challenge_progress is untouched —
+ *  this only removes the circle framing. Re-checks circle.editSettings. */
+export async function dropCircleChallenge(
+  circleId: string,
+  slug: string,
+  challengeId: string,
+): Promise<{ ok: true } | { error: string }> {
+  const caps = await getCircleCapabilities(circleId)
+  if (!caps.has('circle.editSettings')) return { error: 'Unauthorized' }
+
+  const { error } = await untyped()
+    .from('circle_challenge_adoptions')
+    .delete()
+    .eq('circle_id', circleId)
+    .eq('challenge_id', challengeId)
+  if (error) return { error: error.message }
+
+  revalidatePath(`/circles/${slug}`)
+  return { ok: true }
 }
 
 /** Patch the day-to-day circle settings in place. Re-checks circle.editSettings
