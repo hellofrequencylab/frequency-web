@@ -5724,3 +5724,39 @@ assignable-member lookups) that are intentionally operator-scoped.
 **Pattern reminder (ADR-056).** For each surface: (1) confirm RLS policies exist; (2) replace `createAdminClient`
 with `createClient` in the owner-scoped path; (3) keep `createAdminClient` on any cross-actor or system path in
 the same module. Deploy order: migration first, then code.
+
+## ADR-175 — Stripe Connect payouts: one Express account per profile (Phase 1 foundation)
+
+**Status:** Accepted · applied (`supabase/migrations/20260609000000_connect_accounts.sql`). Phase 1 of a
+multi-phase Connect build; payout channels (memberships, events, tips, store) layer on in later phases.
+
+**Context.** The marketplace pays hosts/partners through four channels: paid circle memberships, event
+tickets, tips, and store sales. All four need the same plumbing — a connected account, hosted onboarding,
+capability tracking — so we build that foundation once. `profile_personas` (ADR-163) already stubbed a
+per-persona `stripe_account_id` as the `active`-state "money gate", which raised the core question: where
+does the connected account live?
+
+**Decision.** One Stripe **Express** connected account **per profile**, stored on `profiles`
+(`stripe_account_id` + mirrored `stripe_charges_enabled` / `stripe_payouts_enabled` / `stripe_details_submitted`).
+Rationale: a Stripe Express account is per individual/tax identity (one bank, one KYC), and all four channels
+pay the same human regardless of which hat (community host role or partner persona) earned the money. A plain
+circle host may hold **no** partner persona, so binding payouts to personas alone would lock them out of
+membership/event/tip earnings. The per-persona `profile_personas.stripe_account_id` stays **reserved** for the
+rare multi-legal-entity case (a separate LLC routing to its own account) and is not wired in this phase; a
+persona's `active` gate is satisfied by the owning profile being payouts-ready.
+
+**Who may onboard ("earners").** A community **host+** (runs paid circles/events) OR anyone holding a partner
+persona (a business/practitioner who sells or is tipped). Enforced in `canReceivePayouts()` and gated on both
+the server action and the settings card. A plain member with no persona never sees the card.
+
+**Plumbing.** `lib/billing/connect.ts` is the shared module: `getOrCreateConnectedAccount` (Express create,
+`metadata.profile_id` stamped for webhook resolution), `createOnboardingLink` (Account Link, returns to
+`/settings/billing?payouts=return`), `syncConnectedAccount` (on-return reconcile), `createDashboardLink`
+(Express login link), and the pure `toStatus` derivation (`ready` = charges AND payouts enabled). Capability
+flags are kept current two ways: synchronously on onboarding return, and asynchronously via the new
+`/api/webhooks/stripe` route handling `account.updated` (`persistAccount`). Columns are **service-role write
+only** — RLS needs no new policy (the existing self-read exposes them to the owner; nothing else writes them).
+
+**Env-gating.** Like the rest of billing (ADR P2.2), every function no-ops when `stripe` is unconfigured, so
+the card shows a "not turned on yet" state until keys land. Development proceeds entirely in Stripe **test
+mode**; going live only requires the platform's identity verification + live keys, no code change.
