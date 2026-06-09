@@ -12,10 +12,10 @@ import { NexusSettingsModule } from '@/components/admin/modules/nexus-settings-m
 import { EventSettingsModule } from '@/components/admin/modules/event-settings-module'
 import { PageContentModule } from '@/components/admin/modules/page-content-module'
 import { usePageAdmin } from '@/components/layout/page-admin-context'
+import { CONTENT_EDIT_ROUTES } from '@/lib/layout/editable-content'
 
-// Routes whose header content (title + description) is operator-editable from this
-// panel (ADR-180). Admin+ only; add a route here to make its chrome editable.
-const CONTENT_EDIT_ROUTES = ['/network'] as const
+// Header content (title + description) is operator-editable on the routes registered
+// in lib/layout/editable-content.ts (ADR-180). Admin+ only.
 
 // The on-page admin control. A small, right-aligned "Settings ▾" button sits above a
 // content-width hairline rule (matching the divider under a page title). Clicking it
