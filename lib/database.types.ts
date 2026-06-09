@@ -5268,139 +5268,6 @@ export type Database = {
           },
         ]
       }
-      quest_chains: {
-        Row: {
-          created_at: string
-          description: string
-          domain_id: string | null
-          icon: string
-          id: string
-          name: string
-          season: number | null
-          slug: string
-          sort_order: number
-          zaps_reward: number
-        }
-        Insert: {
-          created_at?: string
-          description: string
-          domain_id?: string | null
-          icon?: string
-          id?: string
-          name: string
-          season?: number | null
-          slug: string
-          sort_order?: number
-          zaps_reward?: number
-        }
-        Update: {
-          created_at?: string
-          description?: string
-          domain_id?: string | null
-          icon?: string
-          id?: string
-          name?: string
-          season?: number | null
-          slug?: string
-          sort_order?: number
-          zaps_reward?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "quest_chains_domain_id_fkey"
-            columns: ["domain_id"]
-            isOneToOne: false
-            referencedRelation: "domains"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      quest_progress: {
-        Row: {
-          chain_id: string
-          completed_at: string | null
-          current_step: number
-          id: string
-          profile_id: string
-          started_at: string
-          step_progress: number
-        }
-        Insert: {
-          chain_id: string
-          completed_at?: string | null
-          current_step?: number
-          id?: string
-          profile_id: string
-          started_at?: string
-          step_progress?: number
-        }
-        Update: {
-          chain_id?: string
-          completed_at?: string | null
-          current_step?: number
-          id?: string
-          profile_id?: string
-          started_at?: string
-          step_progress?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "quest_progress_chain_id_fkey"
-            columns: ["chain_id"]
-            isOneToOne: false
-            referencedRelation: "quest_chains"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "quest_progress_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      quest_steps: {
-        Row: {
-          chain_id: string
-          criteria: Json
-          description: string
-          id: string
-          name: string
-          step_order: number
-          target: number
-          zaps_reward: number
-        }
-        Insert: {
-          chain_id: string
-          criteria?: Json
-          description: string
-          id?: string
-          name: string
-          step_order: number
-          target?: number
-          zaps_reward?: number
-        }
-        Update: {
-          chain_id?: string
-          criteria?: Json
-          description?: string
-          id?: string
-          name?: string
-          step_order?: number
-          target?: number
-          zaps_reward?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "quest_steps_chain_id_fkey"
-            columns: ["chain_id"]
-            isOneToOne: false
-            referencedRelation: "quest_chains"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       quests: {
         Row: {
           accent: string | null
@@ -7393,6 +7260,7 @@ export type Database = {
           description: string
           ends_at: string
           id: string
+          price_cents: number
           slug: string
           starts_at: string
           title: string
@@ -7407,6 +7275,7 @@ export type Database = {
           description: string
           ends_at: string
           id: string
+          price_cents: number
           slug: string
           starts_at: string
           title: string
@@ -7436,16 +7305,6 @@ export type Database = {
           created_at: string
           id: string
           media_urls: string[]
-        }[]
-      }
-      quest_outcomes: {
-        Args: never
-        Returns: {
-          avg_stall_step: number
-          chain_id: string
-          completed: number
-          name: string
-          started: number
         }[]
       }
       record_qr_scan:

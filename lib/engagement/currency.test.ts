@@ -27,6 +27,10 @@ describe('currencyForCriteria', () => {
     }
   })
 
+  it('the daily practice streak pays zaps (real-world consistency)', () => {
+    expect(currencyForCriteria('practice_streak')).toBe('zaps')
+  })
+
   it('streaks split by what they track', () => {
     expect(currencyForCriteria('streak', { streakType: 'attendance' })).toBe('zaps')
     expect(currencyForCriteria('streak', { streakType: 'hosting' })).toBe('zaps')

@@ -44,6 +44,7 @@ export type GamificationEvent =
   | { type: 'event_host';     profileId: string }
   | { type: 'post_create';    profileId: string }
   | { type: 'circle_join';    profileId: string }
+  | { type: 'practice_log';   profileId: string }
   | { type: 'referral';       profileId: string }
   | { type: 'role_change';    profileId: string; role: string }
   | { type: 'streak_update';  profileId: string; streakType: StreakType; count: number }
@@ -229,6 +230,7 @@ function isRelevantEvent(criteria: AchievementCriteria, event: GamificationEvent
     case 'post_replies':   return event.type === 'post_create'
     case 'role_earned':    return event.type === 'role_change'
     case 'streak':         return event.type === 'streak_update'
+    case 'practice_streak': return event.type === 'practice_log'
     case 'season_zaps':    return event.type === 'task_complete'
     case 'rank_reached':   return event.type === 'rank_change' || event.type === 'task_complete'
     case 'task_complete':  return event.type === 'task_complete'
@@ -248,13 +250,15 @@ interface UserStats {
   currentRank: string
   communityRole: string
   streaks: Record<string, number>
+  /** The DAILY practice streak (profiles.current_streak — lib/practice-streak.ts). */
+  practiceStreak: number
 }
 
 async function getUserStats(admin: AdminClient, profileId: string): Promise<UserStats> {
   const [profile, memberships, rsvps, hostedEvents, posts, topPost, completions, streaks, inviteLinks] =
     await Promise.all([
       admin.from('profiles')
-        .select('current_season_zaps, current_season_rank, community_role')
+        .select('current_season_zaps, current_season_rank, community_role, current_streak')
         .eq('id', profileId)
         .maybeSingle(),
       admin.from('memberships')
@@ -299,7 +303,7 @@ async function getUserStats(admin: AdminClient, profileId: string): Promise<User
   )
 
   const p = profile.data as Pick<ProfileRow,
-    'current_season_zaps' | 'current_season_rank' | 'community_role'> | null
+    'current_season_zaps' | 'current_season_rank' | 'community_role' | 'current_streak'> | null
   const topPostRow = topPost.data as { reply_count: number | null } | null
 
   return {
@@ -314,6 +318,7 @@ async function getUserStats(admin: AdminClient, profileId: string): Promise<User
     currentRank: p?.current_season_rank ?? 'ghost',
     communityRole: p?.community_role ?? 'member',
     streaks: streakMap,
+    practiceStreak: p?.current_streak ?? 0,
   }
 }
 
@@ -353,6 +358,8 @@ function isCriteriaMet(
         return event.streakType === criteria.streak_type && event.count >= criteria.count
       }
       return (stats.streaks[criteria.streak_type] ?? 0) >= criteria.count
+    case 'practice_streak':
+      return stats.practiceStreak >= criteria.count
     default:
       return false
   }
