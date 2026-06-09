@@ -267,18 +267,14 @@ export async function hasTicket(eventId: string, profileId: string): Promise<boo
 }
 
 /** Bump a tier's `sold` by `delta` (service role). Re-reads then writes — low
- *  volume, and the webhook is the only concurrent writer per ticket, so a plain
- *  read-modify-write is sufficient. Never lets `sold` go below 0. */
+ *  volume. Atomic `sold = sold + delta` (clamped ≥ 0) via the adjust_ticket_sold
+ *  RPC, so concurrent webhooks can't lose an increment (audit M1). */
 async function adjustTierSold(ticketTypeId: string, delta: number): Promise<void> {
   if (!ticketTypeId || delta === 0) return
-  const { data } = await db()
-    .from('event_ticket_types')
-    .select('sold')
-    .eq('id', ticketTypeId)
-    .maybeSingle()
-  const current = (data as { sold?: number } | null)?.sold ?? 0
-  const next = Math.max(0, current + delta)
-  await db().from('event_ticket_types').update({ sold: next }).eq('id', ticketTypeId)
+  await (db() as unknown as SupabaseClient).rpc('adjust_ticket_sold', {
+    p_tier_id: ticketTypeId,
+    p_delta: delta,
+  })
 }
 
 /** Mark the ticket behind a completed Checkout session as succeeded (idempotent),
