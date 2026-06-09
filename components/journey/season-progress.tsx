@@ -60,7 +60,7 @@ function CircularArc({
       >
         {value}%
       </text>
-      <text x="50%" y="64%" textAnchor="middle" dominantBaseline="middle" className="fill-subtle text-[10px] font-medium">
+      <text x="50%" y="64%" textAnchor="middle" dominantBaseline="middle" className="fill-subtle text-3xs font-medium">
         complete
       </text>
     </svg>

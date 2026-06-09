@@ -34,6 +34,7 @@ type EventDetail = {
   ends_at: string | null
   is_cancelled: boolean
   price_cents: number | null
+  visibility: string | null
   scope_id: string
   scope_type: string
   recurrence_type: 'none' | 'daily' | 'weekly' | 'monthly'
@@ -91,7 +92,7 @@ export default async function EventDetailPage({
     .from('events')
     .select(
       `id, title, slug, description, location, starts_at, ends_at, is_cancelled, price_cents,
-       scope_id, scope_type, recurrence_type, recurrence_until, parent_event_id,
+       visibility, scope_id, scope_type, recurrence_type, recurrence_until, parent_event_id,
        host:profiles!host_id ( id, display_name, handle, avatar_url )`
     )
     .eq('slug', slug)
@@ -108,6 +109,29 @@ export default async function EventDetailPage({
 
   const eventCaps = await getEventCapabilities(event.id)
   const canManage = eventCaps.has('event.editSettings')
+
+  // Visibility gate (ADR-202). This page reads through the admin client, which
+  // bypasses RLS — so the same rules the RLS policy enforces are re-applied here:
+  // public/unlisted are link-readable; private is host/manager-only; circle_only
+  // requires active membership of the hosting circle. notFound() (not a 403) so a
+  // private slug doesn't confirm the event exists.
+  if (!canManage) {
+    const vis = event.visibility ?? 'circle_only'
+    if (vis === 'private') notFound()
+    if (vis === 'circle_only' && event.scope_type === 'circle') {
+      const { getMyProfileId } = await import('@/lib/auth')
+      const myId = await getMyProfileId()
+      if (!myId) notFound()
+      const { data: member } = await admin
+        .from('memberships')
+        .select('id')
+        .eq('profile_id', myId)
+        .eq('circle_id', event.scope_id)
+        .eq('status', 'active')
+        .maybeSingle()
+      if (!member) notFound()
+    }
+  }
 
   const { data: rawRsvps } = await admin
     .from('event_rsvps')

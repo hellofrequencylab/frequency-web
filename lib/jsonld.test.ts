@@ -24,6 +24,7 @@ function makeEvent(overrides: Partial<PublicEvent> = {}): PublicEvent {
     city: 'San Diego',
     circle_id: 'circle-1',
     circle_name: 'North County Circle',
+    price_cents: null,
     ...overrides,
   }
 }
@@ -101,6 +102,18 @@ describe('eventSchema', () => {
     expect(result.eventStatus).toBe('https://schema.org/EventScheduled')
     expect(result.eventAttendanceMode).toBe('https://schema.org/OfflineEventAttendanceMode')
     expect(result.isAccessibleForFree).toBe(true)
+  })
+
+  it('marks a free event free with a $0 offer', () => {
+    const result = eventSchema(makeEvent({ price_cents: null }))
+    expect(result.isAccessibleForFree).toBe(true)
+    expect(result.offers).toMatchObject({ '@type': 'Offer', price: '0.00', priceCurrency: 'USD' })
+  })
+
+  it('maps a ticketed event to a priced offer and not-free', () => {
+    const result = eventSchema(makeEvent({ price_cents: 2500 }))
+    expect(result.isAccessibleForFree).toBe(false)
+    expect(result.offers).toMatchObject({ '@type': 'Offer', price: '25.00', priceCurrency: 'USD' })
   })
 
   it('includes endDate when ends_at is provided', () => {
