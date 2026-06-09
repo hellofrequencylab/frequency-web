@@ -157,10 +157,10 @@ site for everyone, function-gated per role* — and **(2) the money layer** (ent
 |---|---|---|
 | 4.1 | **Programs library** — ✅ **already built**: 4 frameworks live in `content/programs/`, page renders them (the "coming soon" is the empty-state fallback). Sweep false positive. | ✅ done |
 | 4.3 | **Outreach member-send** — ✅ **completed**: `sendOutreach` fans a steward's direct note to the members of the scope(s) they lead, via the email+push spine. | ✅ done |
-| 4.2 | Help-center articles — content exists for the major categories; expand coverage (content authoring). | ⏳ content |
+| 4.2 | Help-center articles — ✅ **expanded 2026-06**: 7 new member articles (season challenges · achievements · leaderboard · Circle Field · gem store · partners · location privacy), each verified against the code, + 2 extensions. 32 articles across 7 categories. Further coverage = ongoing authoring. | ✅ expanded |
 | 4.9 | Nurture/Automations — per the operator audit these are **wired** (Nurture complete; Automations email-only). Add SMS/push actions + segment builder. | ⏳ |
 | 4.8 | Library submission flow — ✅ **completed**: members get a status-aware **"Propose to Library"** control on their own practice (`ProposeToLibraryButton` → `submitToLibrary` → `status='pending'` → the existing leadership review queue → approve flips it public). Journeys already publish via the builder's "Share to community". | ✅ done |
-| 4.7 | Founder task-assignment model — `openTaskCount` always 0 pending the `crew_tasks` assignment model. | 📋 needs model |
+| 4.7 | Founder task-assignment model — ✅ **done 2026-06 (ADR-205)**: circle-scoped claimable crew tasks (`circle_id`/`assigned_to`/`claimed_at`, applied to prod); real `openTaskCount` wired into `getCircleCapabilities`; race-safe claim; host panel + Crew-dashboard section. | ✅ done |
 | 4.6 | `/hubs` + `/nexuses` index pages — **won't build**: the approved IA keeps Hubs/Nexuses **contextual** (reached via circle drill-down). Not a gap. | ✅ by design |
 | 4.4 | Engagement physical sources (QR/NFC/geo/p2p) | 🔴 needs device/verification infra |
 | 4.5 | Push notifications — needs **VAPID keys** + delivery config | 🔴 owner keys |
@@ -168,7 +168,7 @@ site for everyone, function-gated per role* — and **(2) the money layer** (ent
 
 ## P5 — Member · Practice · Operator depth (the feature backlog)
 
-**Member & Community** (BACKLOG §G/§H, STUDIO-REVIEW): Network hub unification (`/people`+`/connections`+`/marketing/contacts`) · directory filters (topic/location/role) · friend suggestions · circle-discovery map layer · circle lineage + "nearly full → seed a new circle" flywheel · multi-topic circles · hub/nexus-scoped events · two-way message inbox · richer profile header + privacy-safe public profile schema · (later) Postgres sync-engine pilot.
+**Member & Community** (BACKLOG §G/§H, STUDIO-REVIEW): Network hub unification (`/people`+`/connections`+`/marketing/contacts`) · ✅ directory filters (topic/location/role — ADR-204, on `/network`) · ✅ friend suggestions ("People you may know", real signals only — ADR-204) · circle-discovery map layer · circle lineage + "nearly full → seed a new circle" flywheel · multi-topic circles · hub/nexus-scoped events · two-way message inbox · richer profile header + privacy-safe public profile schema · (later) Postgres sync-engine pilot.
 
 **Practice / Quest / Gamification** (BACKLOG §F): ✅ daily-streak achievement badges (2026-06 — `practice_streak` criteria over `profiles.current_streak`, evaluated on each log, pays zaps; 3 badges seeded: Week of Devotion 7d · Moon Cycle 30d · Hundred Days Deep 100d) · stage-driven disclosure (apply `stageIndex` to dashboard/profile/rails) · `practice.verified` host/peer verification + device attestation/P2P mutual-confirm · realtime reward feedback via Broadcast · Programs content depth (>4 frameworks) + program-as-template "Add to Circle" · community-library moderation + promote-to-tracked Journey · seasonal-Journey authoring surface + content (link to season + Pillar).
 
