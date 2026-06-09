@@ -1,7 +1,9 @@
 // Shared admin page guard. Replaces the ~12 lines of identical auth + role
 // boilerplate that every /admin/* page used to repeat: fetch the user, look up
-// the profile, check the role, notFound() otherwise. One call, one source of
-// truth, built on the request-cached getCallerProfile() (no extra round-trips).
+// the profile, check the role. A viewer without access is REDIRECTED home —
+// logged-out → '/' (marketing), insufficient role → '/feed' — never a 404 (a dead
+// end the viewer can't recover from). One call, one source of truth, built on the
+// request-cached getCallerProfile() (no extra round-trips).
 //
 //   export default async function Page() {
 //     const { profileId, role } = await requireAdmin('janitor')
@@ -11,7 +13,7 @@
 // Pages still own their data fetching — this only gates entry and hands back the
 // caller's profile id + effective role.
 
-import { notFound } from 'next/navigation'
+import { redirect } from 'next/navigation'
 import { getCallerProfile } from '@/lib/auth'
 import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
 import { getStaffMember } from '@/lib/staff'
@@ -29,19 +31,20 @@ export interface AdminContext {
  * ADR-127: pass `opts.staff` to ALSO admit a staff/operations role that holds that
  * capability domain (write) — an ADDITIVE, fail-closed union. With no `opts.staff`
  * the gate is community-only, exactly as before (so sensitive pages that don't opt
- * in — Roles, Members, AI, Platform — stay community-janitor only).
+ * in — Roles, Members, AI, Platform — stay community-janitor only). On denial the
+ * viewer is redirected home, not shown a 404.
  */
 export async function requireAdmin(
   min: CommunityRole = 'host',
   opts?: { staff?: StaffDomain; staffLevel?: Access },
 ): Promise<AdminContext> {
   const profile = await getCallerProfile()
-  if (!profile) notFound()
+  if (!profile) redirect('/')
   const staff = await getStaffMember().catch(() => null)
   const staffRole = staff?.role ?? null
   const okCommunity = atLeastRole(profile.community_role, min)
   const okStaff = opts?.staff ? staffCan(staffRole, opts.staff, opts.staffLevel ?? 'write') : false
-  if (!okCommunity && !okStaff) notFound()
+  if (!okCommunity && !okStaff) redirect('/feed')
   return { profileId: profile.id, role: profile.community_role, staffRole }
 }
 
@@ -49,10 +52,10 @@ export async function requireAdmin(
  *  one admin group. Each group/page still gates itself precisely below this. */
 export async function requireAdminFloor(): Promise<AdminContext> {
   const profile = await getCallerProfile()
-  if (!profile) notFound()
+  if (!profile) redirect('/')
   const staff = await getStaffMember().catch(() => null)
   const staffRole = staff?.role ?? null
-  if (!atLeastRole(profile.community_role, 'host') && !staffSeesAdmin(staffRole)) notFound()
+  if (!atLeastRole(profile.community_role, 'host') && !staffSeesAdmin(staffRole)) redirect('/feed')
   return { profileId: profile.id, role: profile.community_role, staffRole }
 }
 

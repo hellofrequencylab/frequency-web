@@ -37,6 +37,7 @@ type CircleDetail = {
   member_cap: number
   status: string
   is_demo: boolean
+  sidebar_order: string[] | null
   host: { id: string; display_name: string; handle: string; avatar_url: string | null } | null
   hub: {
     id: string
@@ -83,7 +84,7 @@ export default async function CirclePage({
   const { data: rawCircle } = await admin
     .from('circles')
     .select(
-      `id, name, slug, about, image_url, type, member_count, member_cap, status, is_demo,
+      `id, name, slug, about, image_url, type, member_count, member_cap, status, is_demo, sidebar_order,
        host:profiles!host_id ( id, display_name, handle, avatar_url ),
        hub:hubs!hub_id (
          id, name, slug,
@@ -207,6 +208,88 @@ export default async function CirclePage({
     .split(/[-_\s]+/)
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(' ')
+
+  // Right-rail blocks, keyed. Build only the blocks this viewer should see, then
+  // render them in circle.sidebar_order (host-chosen). Gating + content unchanged.
+  const railMap: Record<string, React.ReactNode> = {
+    members: (
+      <ModuleCard title="Members" badge={String(sorted.length)}>
+        <CircleMembersList
+          members={sorted}
+          hostId={circle.host?.id ?? null}
+          myProfileId={myProfileId}
+          isMember={isMember}
+        />
+      </ModuleCard>
+    ),
+  }
+
+  if (canManage && healthScore.totalZaps > 0) {
+    railMap.health = (
+      <ModuleCard title="Circle health">
+        <div className="grid grid-cols-2 gap-2">
+          <HealthStat label="Avg zaps" value={healthScore.avgZaps.toLocaleString()} Icon={Zap} />
+          <HealthStat label="Total zaps" value={healthScore.totalZaps.toLocaleString()} Icon={TrendingUp} />
+          <HealthStat label="Active streaks" value={String(healthScore.activeStreaks)} Icon={Flame} />
+          <HealthStat label="Badges earned" value={String(healthScore.totalAchievements)} Icon={Activity} />
+          <HealthStat label="New this week" value={String(healthScore.newThisWeek)} Icon={Users} />
+        </div>
+      </ModuleCard>
+    )
+  }
+
+  if (circlePractice || canManage) {
+    railMap.practice = (
+      <ModuleCard title="This week's practice">
+        {circlePractice ? (
+          <>
+            <p className="font-medium text-text">{circlePractice.title}</p>
+            {circlePractice.description && (
+              <p className="mt-0.5 text-sm text-muted">{circlePractice.description}</p>
+            )}
+            {isMember && (
+              <div className="mt-3">
+                <LogPracticeButton practiceId={circlePractice.id} circleId={circle.id} />
+              </div>
+            )}
+          </>
+        ) : (
+          <p className="text-sm text-muted">No practice set yet.</p>
+        )}
+      </ModuleCard>
+    )
+  }
+
+  railMap.events = (
+    <ModuleCard title="Upcoming events">
+      <UpcomingEventsWidget scopeIds={[circle.id]} />
+    </ModuleCard>
+  )
+
+  if (canManage) {
+    railMap.invite = (
+      <ModuleCard title="Invite a friend">
+        <p className="mb-3 text-xs leading-relaxed text-muted">
+          Bring someone into {circle.name}. (Edit the circle itself from
+          {' '}<span className="font-medium text-text">Settings</span> at the top.)
+        </p>
+        <HostInviteButton circleId={circle.id} />
+        <div className="mt-2">
+          <HostInviteEmail circleId={circle.id} />
+        </div>
+      </ModuleCard>
+    )
+  }
+
+  const DEFAULT_RAIL_ORDER = ['members', 'health', 'practice', 'events', 'invite']
+  const savedOrder = circle.sidebar_order ?? DEFAULT_RAIL_ORDER
+  // Saved order first (only keys present in the map), then any new map keys the
+  // saved order doesn't mention — so a freshly-added block never goes missing.
+  const railKeys = [
+    ...savedOrder.filter((k) => k in railMap),
+    ...Object.keys(railMap).filter((k) => !savedOrder.includes(k)),
+  ]
+  const railBlocks = railKeys.map((k) => <div key={k}>{railMap[k]}</div>)
 
   return (
     <div>
@@ -376,72 +459,11 @@ export default async function CirclePage({
             </TeaserGate>
           </div>
 
-          {/* RIGHT — the circle's info rail, top-to-bottom:
-                members · health (host) · practice · events · invite (host). */}
-          <aside className="space-y-8">
-            {/* Members */}
-            <ModuleCard title="Members" badge={String(sorted.length)}>
-              <CircleMembersList
-                members={sorted}
-                hostId={circle.host?.id ?? null}
-                myProfileId={myProfileId}
-                isMember={isMember}
-              />
-            </ModuleCard>
-
-            {/* Circle health (host) */}
-            {canManage && healthScore.totalZaps > 0 && (
-              <ModuleCard title="Circle health">
-                <div className="grid grid-cols-2 gap-2">
-                  <HealthStat label="Avg zaps" value={healthScore.avgZaps.toLocaleString()} Icon={Zap} />
-                  <HealthStat label="Total zaps" value={healthScore.totalZaps.toLocaleString()} Icon={TrendingUp} />
-                  <HealthStat label="Active streaks" value={String(healthScore.activeStreaks)} Icon={Flame} />
-                  <HealthStat label="Badges earned" value={String(healthScore.totalAchievements)} Icon={Activity} />
-                  <HealthStat label="New this week" value={String(healthScore.newThisWeek)} Icon={Users} />
-                </div>
-              </ModuleCard>
-            )}
-
-            {/* This week's practice */}
-            {(circlePractice || canManage) && (
-              <ModuleCard title="This week's practice">
-                {circlePractice ? (
-                  <>
-                    <p className="font-medium text-text">{circlePractice.title}</p>
-                    {circlePractice.description && (
-                      <p className="mt-0.5 text-sm text-muted">{circlePractice.description}</p>
-                    )}
-                    {isMember && (
-                      <div className="mt-3">
-                        <LogPracticeButton practiceId={circlePractice.id} circleId={circle.id} />
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <p className="text-sm text-muted">No practice set yet.</p>
-                )}
-              </ModuleCard>
-            )}
-
-            {/* Upcoming events */}
-            <ModuleCard title="Upcoming events">
-              <UpcomingEventsWidget scopeIds={[circle.id]} />
-            </ModuleCard>
-
-            {/* Invite a friend (host) — sits at the bottom of the rail. */}
-            {canManage && (
-              <ModuleCard title="Invite a friend">
-                <p className="mb-3 text-xs leading-relaxed text-muted">
-                  Bring someone into {circle.name}. (Edit the circle itself from
-                  {' '}<span className="font-medium text-text">Settings</span> at the top.)
-                </p>
-                <HostInviteButton circleId={circle.id} />
-                <div className="mt-2">
-                  <HostInviteEmail circleId={circle.id} />
-                </div>
-              </ModuleCard>
-            )}
-          </aside>
+          {/* RIGHT — the circle's info rail. Each block is keyed; the host can
+                reorder them via Settings (circle.sidebar_order). We render in saved
+                order, filtered to the blocks this viewer actually sees, then append
+                any new block missing from the saved order so it never disappears. */}
+          <aside className="space-y-8">{railBlocks}</aside>
         </div>
       </DetailTemplate>
     </div>
