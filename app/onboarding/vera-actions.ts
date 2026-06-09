@@ -1,5 +1,6 @@
 'use server'
 
+import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { aiEnabled } from '@/lib/ai'
 import { getMemberContext } from '@/lib/ai/memory'
@@ -37,8 +38,8 @@ export async function conciergeTurn(stage: string, memberText: string, history: 
     const [memberContext, supportSummary] = profileId
       ? await Promise.all([getMemberContext(profileId), supportSummaryForVera(profileId).catch(() => '')])
       : [null, '']
-    const live = await runVeraClaudeTurn({ history, memberText, memberContext, supportSummary })
-    if (live) return { message: live.reply, stage: 'chat', proposals: live.proposals, suggestions: [], done: false }
+    const live = await runVeraClaudeTurn({ history, memberText, memberContext, supportSummary, profileId })
+    if (live) return { message: live.reply, stage: 'chat', proposals: live.proposals, suggestions: live.suggestions, done: false }
   }
 
   // Deterministic fallback (also the path when AI is off / over budget).
@@ -61,7 +62,10 @@ export async function confirmProposal(tool: string, argsJson: string): Promise<{
   // handled here rather than in the lib executor.
   if (tool === 'join_circle') return joinCircleForMember(String(args.circle ?? ''))
 
-  return executeConfirmedTool(profileId, tool, args)
+  const result = await executeConfirmedTool(profileId, tool, args)
+  // A confirmed intro lands as a real feed post — show it on the next feed paint.
+  if (tool === 'draft_intro' && result.ok) revalidatePath('/feed')
+  return result
 }
 
 /** Resolve a circle (by slug, then name) and join the member via the canonical

@@ -28,6 +28,7 @@ Frequency helps you find people nearby — and you're always in control of how v
 - **Who can find me nearby**: no one, only your connections, or the whole community.
 - **Location precision**: the most anyone can see — hidden, your city, or a fuzzed neighborhood area (about a mile across).
 - **Discoverability radius**: how far away someone can be and still find you — your own slider, from a mile up to your whole region.
+- **Live location** (optional, off by default): share your *current* spot instead of your home city — handy when traveling. It's a one-time snapshot, not a tracker, and your precision setting still applies. Full details in [Your location & being found nearby](/help/connecting/your-location).
 
 ## Good to know
 

@@ -17,6 +17,8 @@ import { ModuleCard } from '@/components/modules/module-card'
 import { CrewPreviewBanner } from '@/components/crew/crew-preview-banner'
 import { isPaidViewer } from '@/lib/core/viewer-hats'
 import { DashboardTemplate } from '@/components/templates'
+import { CircleTasksSection } from './circle-tasks-section'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 const TASK_TYPE_LABEL: Record<string, string> = {
   attendance:   'Attendance',
@@ -77,11 +79,22 @@ export default async function CrewPage() {
     ? { title: 'Log today’s practice', desc: 'The one move that keeps your streak — and your circle — alive.', href: '/practices', label: 'Log it', Icon: Flame }
     : { title: 'Find your next gathering', desc: 'Showing up in person is where it gets real. See what your circles are running.', href: '/events', label: 'See events', Icon: CalendarDays }
 
-  // Available tasks
-  const { data: tasks } = await admin
+  // Available GLOBAL catalogue tasks (circle_id IS NULL). Circle-scoped tasks
+  // render in their own claim-aware section below. Untyped handle: circle_id
+  // isn't in database.types yet (repo convention; see lib/crew/circle-tasks.ts).
+  const { data: tasksData } = await (admin as unknown as SupabaseClient)
     .from('crew_tasks')
     .select('id, name, task_type, zaps_value, is_repeatable, requires_verification')
+    .is('circle_id', null)
     .order('zaps_value', { ascending: false })
+  const tasks = (tasksData ?? []) as Array<{
+    id: string
+    name: string
+    task_type: string
+    zaps_value: number
+    is_repeatable: boolean | null
+    requires_verification: boolean | null
+  }>
 
   // My completions (all-time, for task state)
   const { data: completions } = await admin
@@ -308,6 +321,17 @@ export default async function CrewPage() {
 
         {/* Left: tasks */}
         <div className="flex-1 min-w-0 space-y-6">
+
+          {/* Circle tasks — host-assigned, claimable (renders nothing when the
+              viewer's circle has none). */}
+          {membership?.circle_id && (
+            <CircleTasksSection
+              circleId={membership.circle_id}
+              circleName={circleName}
+              viewerProfileId={profile.id}
+              isCrew={isCrew}
+            />
+          )}
 
           {/* Tasks */}
           <section>
