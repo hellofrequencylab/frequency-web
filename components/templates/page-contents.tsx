@@ -32,27 +32,56 @@ function Count({ on, n }: { on: boolean; n: number }) {
   return <span className={`text-xs tabular-nums ${on ? 'text-on-primary/80' : 'text-subtle'}`}>{n}</span>
 }
 
-function Bar({ children, barRef }: { children: React.ReactNode; barRef?: React.Ref<HTMLDivElement> }) {
+function Bar({
+  children,
+  barRef,
+  rightSlot,
+  divider = true,
+}: {
+  children: React.ReactNode
+  barRef?: React.Ref<HTMLDivElement>
+  /** Optional content parked at the right of the bar (e.g. a stat strip). */
+  rightSlot?: React.ReactNode
+  /** The hairline under the bar; pass false to drop it. */
+  divider?: boolean
+}) {
   return (
     <nav
       aria-label="On this page"
-      className="sticky top-0 z-10 -mx-4 mb-6 border-b border-border bg-canvas/90 px-4 backdrop-blur-sm sm:-mx-6 sm:px-6"
+      className={`sticky top-0 z-10 -mx-4 mb-6 bg-canvas/90 px-4 backdrop-blur-sm sm:-mx-6 sm:px-6 ${
+        divider ? 'border-b border-border' : ''
+      }`}
     >
-      <div ref={barRef} className="flex gap-1.5 overflow-x-auto py-2.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {children}
+      <div className="flex items-center justify-between gap-4">
+        <div ref={barRef} className="flex gap-1.5 overflow-x-auto py-2.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {children}
+        </div>
+        {rightSlot && <div className="hidden shrink-0 sm:block">{rightSlot}</div>}
       </div>
     </nav>
   )
 }
 
-export function PageContents(props: { sections: PageContentsSection[] } | { links: PageContentsLink[] }) {
-  if ('links' in props) return <FilterBar links={props.links} />
+export function PageContents(
+  props:
+    | { sections: PageContentsSection[] }
+    | { links: PageContentsLink[]; rightSlot?: React.ReactNode; divider?: boolean },
+) {
+  if ('links' in props) return <FilterBar links={props.links} rightSlot={props.rightSlot} divider={props.divider} />
   return <ScrollSpyBar sections={props.sections} />
 }
 
 // ── Filter / drill-down mode ──────────────────────────────────────────────────
 
-function FilterBar({ links }: { links: PageContentsLink[] }) {
+function FilterBar({
+  links,
+  rightSlot,
+  divider,
+}: {
+  links: PageContentsLink[]
+  rightSlot?: React.ReactNode
+  divider?: boolean
+}) {
   const barRef = useRef<HTMLDivElement>(null)
 
   // Keep the active chip in view (e.g. after landing on a filtered URL).
@@ -61,10 +90,11 @@ function FilterBar({ links }: { links: PageContentsLink[] }) {
     active?.scrollIntoView({ block: 'nearest', inline: 'center' })
   }, [])
 
-  if (links.length < 2) return null
+  // Still render when there's a right slot (the stats) even with a single chip.
+  if (links.length < 2 && !rightSlot) return null
 
   return (
-    <Bar barRef={barRef}>
+    <Bar barRef={barRef} rightSlot={rightSlot} divider={divider}>
       {links.map((l) => (
         <Link key={l.href} href={l.href} aria-current={l.active ? 'page' : undefined} className={CHIP(l.active)}>
           {l.label}

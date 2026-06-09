@@ -61,7 +61,6 @@ export default async function CirclesPage({
   const { data: { user } } = await supabase.auth.getUser()
 
   let myCircleIds: string[] = []
-  let isAdmin = false
   if (user) {
     const { data: profile } = await supabase
       .from('profiles')
@@ -73,7 +72,6 @@ export default async function CirclesPage({
       current_season_zaps?: number; lifetime_gems?: number; current_streak?: number
     } | null
     if (p) {
-      isAdmin = ['host', 'guide', 'mentor', 'janitor'].includes(p.community_role ?? '')
       const { data: mems } = await supabase
         .from('memberships').select('circle_id').eq('profile_id', p.id).eq('status', 'active')
       myCircleIds = (mems ?? []).map((m) => m.circle_id as string)
@@ -192,9 +190,27 @@ export default async function CirclesPage({
       })),
   ]
 
+  const statStrip = (
+    <div className="flex items-center gap-x-6">
+      <StatInline value={stats.circles} label="Circles" />
+      <StatInline value={stats.members} label="Members" />
+      <StatInline value={stats.cities} label="Cities" />
+      <StatInline value={stats.interests} label="Interests" />
+    </div>
+  )
+
   return (
     <IndexTemplate
       title="Circles"
+      action={
+        user ? (
+          <NewCircleCompose
+            interests={interests}
+            buttonLabel="Start a circle"
+            buttonClass="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
+          />
+        ) : undefined
+      }
       description={
         <>
           {/* Mobile leads with a tight one-liner so the stats + actions surface
@@ -207,8 +223,9 @@ export default async function CirclesPage({
         </>
       }
     >
-      {/* Table of contents — filter circles by Channel (drill into each one). */}
-      <PageContents links={channelLinks} />
+      {/* Table of contents — filter circles by Channel — with the network stats
+          parked at its right (no divider rule). */}
+      <PageContents links={channelLinks} divider={false} rightSlot={statStrip} />
 
       {/* Reassurance — the introvert's worry, named and answered. Secondary copy,
           so it folds away on mobile to keep the header scannable. */}
@@ -218,32 +235,13 @@ export default async function CirclesPage({
       </p>
 
       <MapZone circles={locatableCircles}>
-        {/* Control bar: network stats + find-near-me / start / manage. On mobile it
-            stacks into a tidy card — a 4-up stat strip over a divided action row;
-            from sm up it's the original stats-left · actions-right bar. */}
-        <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-border bg-surface px-4 py-4 shadow-sm sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-x-6 sm:px-5">
-          <div className="grid grid-cols-4 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-x-8 sm:gap-y-3">
-            <StatInline value={stats.circles} label="Circles" />
-            <StatInline value={stats.members} label="Members" />
-            <StatInline value={stats.cities} label="Cities" />
-            <StatInline value={stats.interests} label="Interests" />
+        {/* Find-near-me opens the map; the stats moved up beside the filter menu and
+            "Start a circle" lives in the page header now. */}
+        {locatableCircles.length > 0 && (
+          <div className="mb-6">
+            <FindNearMeButton />
           </div>
-          <div className="flex flex-wrap items-center gap-3 border-t border-border pt-4 sm:border-0 sm:pt-0">
-            {locatableCircles.length > 0 && <FindNearMeButton />}
-            {user && (
-              <NewCircleCompose
-                interests={interests}
-                buttonLabel="Start a circle"
-                buttonClass="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
-              />
-            )}
-            {user && isAdmin && (
-              <Link href="/admin/circles" className="text-sm font-medium text-muted transition-colors hover:text-primary-strong">
-                Manage circles →
-              </Link>
-            )}
-          </div>
-        </div>
+        )}
 
         {/* Flywheel nudge — when circles are filling up, invite the next host. */}
         {user && nearlyFull.length > 0 && (
@@ -277,20 +275,36 @@ export default async function CirclesPage({
           <MapBanner />
         </div>
 
-        {/* Masonry: boxed circle cards fill the grid; the map is a 2-wide block
-            top-right and the nav sits in the right column under it.
-            grid-auto-flow:dense lets the cards flow into the gaps (and under the
-            nav). Rows size to content so the boxed cards sit flush. */}
-        <div className="grid auto-rows-min grid-cols-1 gap-6 [grid-auto-flow:row_dense] sm:grid-cols-2 lg:grid-cols-4">
-          {/* Map — top-right, 2 columns × one tall cell */}
-          {locatableCircles.length > 0 && (
-            <div className="h-72 sm:col-span-2 lg:col-start-3 lg:row-start-1">
-              <MapPreview />
-            </div>
-          )}
+        {/* Two columns: circles flow on the left; the browse nav sits in a STABLE
+            right column so it's never orphaned at the bottom. The map leads the
+            left column when there are locatable circles. */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_17rem]">
+          {/* Left — map (when present) over the circle grid */}
+          <div className="min-w-0 space-y-6">
+            {locatableCircles.length > 0 && (
+              <div className="h-72">
+                <MapPreview />
+              </div>
+            )}
 
-          {/* Navigation — right column, directly under the map */}
-          <div className="space-y-6 sm:col-span-2 lg:col-span-1 lg:col-start-4 lg:row-start-2 lg:row-span-2">
+            {combined.length === 0 ? (
+              <EmptyState
+                icon={Users}
+                title={filtering ? 'No circles match these filters' : 'No circles yet'}
+                description={filtering ? 'Try a wider search, or start the first one for this corner of the network.' : 'Be the first — start a circle for your neighborhood or an interest.'}
+                action={user ? <NewCircleCompose interests={interests} buttonLabel="Start a circle" /> : undefined}
+              />
+            ) : (
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                {combined.map((c) => (
+                  <CircleCard key={c.id} circle={toCardData(c)} isMember={myCircleIds.includes(c.id)} />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Right — the browse nav, pinned at the top of its column */}
+          <aside className="space-y-6">
             {interestChips.length > 0 && (
               <div>
                 <SectionHeader title="Browse by interest" />
@@ -336,23 +350,7 @@ export default async function CirclesPage({
                 </div>
               </div>
             )}
-          </div>
-
-          {/* Circles — yours first, then discover; they fill every other cell */}
-          {combined.length === 0 ? (
-            <div className="sm:col-span-2 lg:col-span-3 lg:row-start-1">
-              <EmptyState
-                icon={Users}
-                title={filtering ? 'No circles match these filters' : 'No circles yet'}
-                description={filtering ? 'Try a wider search, or start the first one for this corner of the network.' : 'Be the first — start a circle for your neighborhood or an interest.'}
-                action={user ? <NewCircleCompose interests={interests} buttonLabel="Start a circle" /> : undefined}
-              />
-            </div>
-          ) : (
-            combined.map((c) => (
-              <CircleCard key={c.id} circle={toCardData(c)} isMember={myCircleIds.includes(c.id)} />
-            ))
-          )}
+          </aside>
         </div>
       </MapZone>
     </IndexTemplate>
