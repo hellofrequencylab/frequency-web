@@ -13,6 +13,8 @@ import { awardZapsForAction } from '@/lib/zaps'
 import { recordEngagementEvent } from '@/lib/engagement/events'
 import { generateOccurrencesForAnchor, type RecurrenceType } from '@/lib/event-recurrence'
 import { getCapacityInfo, promoteFromWaitlist } from '@/lib/events/capacity'
+import { awardCircleFieldForCheckin } from '@/lib/events/circle-field'
+import { embedEvent } from '@/lib/events/embeddings'
 
 const VALID_RECURRENCE: RecurrenceType[] = ['none', 'daily', 'weekly', 'monthly']
 const VALID_VISIBILITY = ['public', 'unlisted', 'circle_only', 'private']
@@ -102,6 +104,11 @@ export async function createEvent(formData: FormData) {
     generateOccurrencesForAnchor(inserted.id).catch((e) =>
       console.error('[createEvent] occurrence generation:', e)
     )
+  }
+
+  // Embed the event for the matching engine (fire-and-forget; no-ops if AI off).
+  if (inserted) {
+    embedEvent(inserted.id).catch((e) => console.error('[events embed]', e))
   }
 
   processGamificationEvent({ type: 'event_host', profileId: myProfileId }).catch((e) => console.error('[events gamification]', e))
@@ -221,6 +228,8 @@ export async function checkInEvent(eventId: string): Promise<CheckInResult> {
     // never let a reward read break the check-in
   }
   await recordStreakActivity(myProfileId, 'attendance').catch((e) => console.error('[events gamification]', e))
+  // Collective gamification: credit the event's circle (no-op for non-circle events).
+  await awardCircleFieldForCheckin(eventId, myProfileId).catch((e) => console.error('[circle field]', e))
   return { ok: true, zapsAwarded }
 }
 

@@ -292,3 +292,26 @@ lowest-risk wins are **auto-calendar-on-RSVP**, **completing the 3-touch cadence
 > **Carried-over cleanup debt:** the events Index still awaits its queries inline (PAGE-FRAMEWORK §5
 > wants per-section `<Suspense>`); the detail page issues one redundant going-count read (kept so
 > capacity logic stays centralized in `lib/events/capacity.ts`).
+
+### 2026-06-09 — Wave 2 (shipped on this branch)
+- ✅ **Circle Field** (collective gamification): `circle_field_transactions` ledger + a trigger that
+  owns `circles.current_season_field` (mirrors the zaps ledger), `reset_season()` extended to zero
+  it, awarded on verified check-in for circle-scoped events, surfaced as a collaborative
+  ("our circle") standing gated by `circles.resonance_public`. Never ranks circles against each
+  other. (`20260610000000_circle_field.sql`, `lib/events/circle-field.ts`.)
+- ✅ **Ticket tiers + PWYC** (`20260610010000_event_ticket_types.sql`, `lib/billing/tickets.ts`):
+  tiers with `pricing_mode` (fixed/free/pwyc/sliding_scale/donation), server-side floor enforcement,
+  per-tier inventory (`sold`/`quantity`, never oversells), `member_only`. **Backward-compatible** —
+  events with a flat `price_cents` and no tiers behave exactly as before (implicit single fixed tier).
+  Reuses the ADR-177 destination-charge pipe + `application_fee`; gated by `payoutsLive()`.
+- ✅ **Refunds**: host `refundTicket` + `charge.refunded` webhook → status `refunded`, decrement
+  `sold`, free capacity. Refund uses `reverse_transfer: true` + `refund_application_fee: true`
+  (verified against Stripe Connect docs). *Known follow-up:* a `free` tier doesn't yet persist a
+  claim (free events still use the normal RSVP flow).
+- ✅ **Matching + AI blurbs** (`20260610020000_event_embeddings.sql`, `lib/events/embeddings.ts`,
+  `matching.ts`, `lib/ai/event-blurb.ts`, `api/cron/embed-events`): 384-d event embeddings + an
+  embed cron; hybrid score `0.45·interest + 0.35·social + 0.20·context`; a "For You" lane that only
+  renders with real signal (cold-start safe); Haiku "why you'd vibe" blurbs built from real overlap
+  only (per-day cache, read-only, degrade to null when AI is off).
+- ⏳ **Still parked:** SMS channel — blocked on the legal-entity + EIN decision (gates A2P 10DLC
+  registration *and* payouts). Free-tier claim persistence. Per-section `<Suspense>` on the Index.

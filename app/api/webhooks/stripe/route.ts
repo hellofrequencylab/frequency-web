@@ -3,6 +3,8 @@
 //    the owning profile as they progress through onboarding.
 //  - checkout.session.completed (Phase 2) — a payout-channel charge succeeded;
 //    record it (tips today; events/store/memberships add their handlers here).
+//  - charge.refunded (Phase 3) — a ticket was refunded; flip the ticket to
+//    `refunded` and free the tier's capacity (lib/billing/tickets.ts).
 // Unhandled events are acked with 200 so Stripe stops retrying.
 //
 // Configure in the Stripe dashboard with this URL and set STRIPE_WEBHOOK_SECRET
@@ -14,7 +16,7 @@ import { NextResponse } from 'next/server'
 import { stripe, STRIPE_WEBHOOK_SECRET } from '@/lib/billing/stripe'
 import { persistAccount } from '@/lib/billing/connect'
 import { recordTipFromSession } from '@/lib/billing/tips'
-import { recordTicketFromSession } from '@/lib/billing/tickets'
+import { recordTicketFromSession, recordTicketRefundFromCharge } from '@/lib/billing/tickets'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,6 +49,13 @@ export async function POST(req: Request) {
         const session = event.data.object as Stripe.Checkout.Session
         await recordTipFromSession(session)
         await recordTicketFromSession(session)
+        break
+      }
+      case 'charge.refunded': {
+        // A ticket charge was refunded (host action). Flip the ticket to
+        // `refunded` and decrement the tier's `sold`; no-ops if it isn't a
+        // ticket charge or was already recorded (idempotent).
+        await recordTicketRefundFromCharge(event.data.object as Stripe.Charge)
         break
       }
       default:

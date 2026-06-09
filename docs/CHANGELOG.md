@@ -23,6 +23,13 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
   and anyone from your circles), **add to your calendar in one tap** so gatherings actually
   happen, join a **waitlist** when an event is full and get **moved up automatically** when a
   spot opens, and **filter** the events library by kind of gathering, energy, or open spots.
+- **Pay your way for events**: hosts can offer **pay-what-you-can, sliding-scale, and donation**
+  tickets alongside fixed prices — and **refunds** are one tap. Money goes straight to the host.
+- **A "For You" lane for events**: when we have a sense of what resonates with you, the events
+  library suggests gatherings you'd vibe with — and tells you, warmly, *why*.
+- **Circle Field**: every time someone from your circle shows up to a gathering, your circle builds
+  **Field** together — a shared, collaborative measure of showing up (private to your circle unless
+  you choose to share it). It's never a competition between circles.
 - **Journeys, reimagined**: pick a season-long practice track and the app shows your **next
   step** — one tap to log it. Every practice now comes in three depths — **Spark** (5 min),
   **Current**, and **Deep** — and your circle Host can set the right depth for your group, or
