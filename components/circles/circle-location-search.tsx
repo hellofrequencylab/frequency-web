@@ -10,7 +10,15 @@ import { searchPlaces, type PlaceSuggestion } from '@/lib/geocode'
 // `place` in the URL; the server then renders the nearest REAL circles
 // (demo content is excluded by the circles_near RPC). Existing filters on the
 // page are preserved.
-export function CircleLocationSearch({ activePlace }: { activePlace?: string | null }) {
+export function CircleLocationSearch({
+  activePlace,
+  trailing,
+}: {
+  activePlace?: string | null
+  /** Extra action(s) pinned to the right of "Use my location", on the same
+   *  baseline — e.g. the page's "Online now" toggle. Keeps one aligned row. */
+  trailing?: React.ReactNode
+}) {
   const router = useRouter()
   const pathname = usePathname()
   const params = useSearchParams()
@@ -85,8 +93,9 @@ export function CircleLocationSearch({ activePlace }: { activePlace?: string | n
   }
 
   return (
+    <div className="flex flex-col gap-2">
     <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-      <div ref={boxRef} className="relative flex-1">
+      <div ref={boxRef} className="relative min-w-0 flex-1">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" />
         <input
           type="text"
@@ -127,25 +136,32 @@ export function CircleLocationSearch({ activePlace }: { activePlace?: string | n
         )}
       </div>
 
-      <button
-        type="button"
-        onClick={useMyLocation}
-        disabled={locating}
-        className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl border border-border bg-surface px-3.5 py-2.5 text-sm font-medium text-text transition-colors hover:border-primary hover:text-primary-strong disabled:opacity-60"
-      >
-        {locating ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
-        Use my location
-      </button>
-
-      {activePlace && (
+      {/* Action buttons — pinned right on the same baseline as the search field. */}
+      <div className="flex shrink-0 items-center gap-2">
         <button
           type="button"
-          onClick={clear}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-primary-bg px-3 py-1.5 text-xs font-semibold text-primary-strong transition-colors hover:bg-primary-bg/70"
+          onClick={useMyLocation}
+          disabled={locating}
+          className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl border border-border bg-surface px-3.5 py-2.5 text-sm font-medium text-text transition-colors hover:border-primary hover:text-primary-strong disabled:opacity-60"
         >
-          Near {activePlace}
-          <X className="h-3 w-3" />
+          {locating ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
+          Use my location
         </button>
+        {trailing}
+      </div>
+    </div>
+
+      {activePlace && (
+        <div>
+          <button
+            type="button"
+            onClick={clear}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-primary-bg px-3 py-1.5 text-xs font-semibold text-primary-strong transition-colors hover:bg-primary-bg/70"
+          >
+            Near {activePlace}
+            <X className="h-3 w-3" />
+          </button>
+        </div>
       )}
     </div>
   )
