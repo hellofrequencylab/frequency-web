@@ -5953,3 +5953,38 @@ a `supabase/migrations/` file, the deploy step runs `supabase migration list` (c
 gate in [START-HERE.md](START-HERE.md) / [CHECKLIST.md](CHECKLIST.md) so it doesn't recur; `DEVELOPMENT-MAP.md` records
 the per-migration "applied to prod" status as the running ledger. (The `/maintenance` skill's migration-drift check is
 the automated backstop.)
+
+## ADR-186 — Connection layer: proximity is a granted band, never an exposed coordinate
+
+**Status:** Accepted · in build (P1) · full plan in [CONNECTION-LAYER.md](CONNECTION-LAYER.md).
+
+**Context.** We're building member-to-member connection (a proximity directory, a Friends/CRM graph, the
+Orbits & Resonance engine, a Capture lead funnel). Location-based social/dating apps have repeatedly leaked
+members' *exact* positions through the distance number itself — the **trilateration** attack — even after
+"hide distance" was added (Check Point 2024; "Your Neighbors Are My Spies", arXiv 1604.07850). Crucially,
+Frequency does **not** yet expose any member-to-member location, so we can design the safe model from scratch
+rather than retrofit a fix.
+
+**Decision.** *Proximity is a feeling you grant, not a coordinate you expose.*
+1. **Coordinates never leave the DB.** Clients receive a coarse **band** (`here`/`nearby`/`your area`/`your
+   city`), never metres or lat/lng. No precise distance oracle exists to triangulate against.
+2. **Two fidelities per profile.** Precise `home_lat/lng` stays private (self + circle leaders); all
+   member-visible proximity is computed against a **fuzzed geocell** (`home_geocell_*`, generated round-2dp ≈
+   1.1 km). The `members_near` RPC ranks by the fuzzed cell and returns only the band — and a member whose
+   `location_band='city'` is never shown finer than city, regardless of true distance.
+3. **Per-user controls** (`profiles`): `directory_visible`, `discoverable_by` (nobody/connections/community),
+   `location_band` (hidden/city/neighborhood), `discovery_radius_m` (the member's *own* "be findable within N"
+   slider — not a filter on others, which is what leaks them), `ghost_mode` (one-tap vanish).
+4. **Per-platform controls** (`connection_settings`, admin-gated singleton): master feature toggles
+   (directory/proximity/maps/resonance/near-miss), default band, radius bounds, and the relational-reward
+   economics. Maps (P4) are venue-snapped + event-bound, default Ghost — presence is a public check-in, never a
+   home pin.
+5. **Anti-dystopia guardrails (hard):** Resonance is private (never a public ranking of humans); reward
+   *actions* (showing up, introducing, welcoming), never people-as-points; decay is a gentle, muteable gardener;
+   every reveal respects both parties' tiers.
+
+**Consequences.** Foundation migration `20260609060000_connection_layer_foundation` (applied to prod per ADR-185)
+adds the columns, the `connection_settings` singleton, and `members_near`. `lib/connections/*` holds the pure
+location vocabulary, the reads (platform + per-user + `membersNear`), and the actions (self-authorized prefs;
+admin-gated platform). Later phases (Friends unification, Resonance, CRM timeline, maps, Capture) inherit this
+model unchanged.
