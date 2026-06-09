@@ -5,13 +5,12 @@ import { usePathname } from 'next/navigation'
 import { ChevronDown, Link2, Check, ExternalLink } from 'lucide-react'
 import { PageQrManager } from '@/components/qr/page-qr-manager'
 import { meetsAccess } from '@/lib/nav-areas'
-import type { CommunityRole } from '@/lib/community-roles'
-import type { StaffRole } from '@/lib/staff'
 import { CircleSettingsModule } from '@/components/admin/modules/circle-settings-module'
 import { HubSettingsModule } from '@/components/admin/modules/hub-settings-module'
 import { NexusSettingsModule } from '@/components/admin/modules/nexus-settings-module'
 import { EventSettingsModule } from '@/components/admin/modules/event-settings-module'
 import { PageContentModule } from '@/components/admin/modules/page-content-module'
+import { usePageAdmin } from '@/components/layout/page-admin-context'
 
 // Routes whose header content (title + description) is operator-editable from this
 // panel (ADR-180). Admin+ only; add a route here to make its chrome editable.
@@ -52,13 +51,12 @@ function settingsModuleFor(pathname: string) {
   return null
 }
 
-export function PageAdminBar({
-  role,
-  staffRole,
-}: {
-  role: CommunityRole | null
-  staffRole: StaffRole | null
-}) {
+// Rendered by the page TEMPLATES, immediately under their header divider (the line
+// below the title), so the Settings control reads as a split on that line on every
+// page — fed by PageAdminProvider (no per-template prop threading). Self-hides when
+// the viewer isn't an operator or the page has nothing to administer.
+export function PageAdminBar() {
+  const { role, staffRole } = usePageAdmin()
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
 
@@ -80,50 +78,43 @@ export function PageAdminBar({
       ? <PageContentModule />
       : null
 
-  // Nothing to administer here — render nothing (no button, no rule).
+  // Nothing to administer here — render nothing.
   if (!shareable && !settingsModule && !contentModule) return null
 
   return (
-    <div className="mb-5 sm:mb-6">
-      {/* The divider rule with the Settings control parked at its right end — holds
-          regardless of content width (the rule flexes, the button stays right). The
-          page header sits above this; the settings section expands below it. */}
-      <div className="flex items-center gap-3">
-        <div className="h-px flex-1 bg-border" />
+    <div className="-mt-3 mb-5 sm:mb-6">
+      {/* Right-aligned "Settings ▾" sitting just under the page header's divider. */}
+      <div className="flex justify-end">
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
           aria-expanded={open}
-          className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-muted transition-colors hover:text-text"
+          className="inline-flex items-center gap-1 rounded-md px-1 py-0.5 text-xs font-semibold text-muted transition-colors hover:text-text"
         >
           Settings
           <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
         </button>
       </div>
 
-      {/* Settings section — expands under the rule; the page header stays at the top. */}
+      {/* Panel — a clean WHITE surface that runs edge-to-edge to the content wrapper
+          (negative margins cancel the page padding). QR/share at the TOP, then the
+          page settings + content editor, stacked. */}
       <div
         className={`grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none ${
           open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
         }`}
       >
         <div className="overflow-hidden">
-          {/* A clean white settings surface that runs edge-to-edge within the content
-              column (negative margins cancel the page padding). No nested cards. */}
-          <div className="mt-3 -mx-4 border-y border-border bg-surface px-4 py-6 sm:-mx-6 sm:px-6">
-            <div className={`grid gap-x-10 gap-y-8 ${shareable ? 'lg:grid-cols-[17rem_1fr]' : 'grid-cols-1'}`}>
+          <div className="mt-2 -mx-6 border-y border-border bg-surface px-6 py-7 sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10">
+            <div className="space-y-8">
               {shareable && <SharePanel pathname={pathname} />}
-              {(settingsModule || contentModule) && (
-                <div className="min-w-0 space-y-6">
-                  {settingsModule && (
-                    <div>
-                      <p className="mb-3 text-2xs font-semibold uppercase tracking-wide text-subtle">Page settings</p>
-                      {settingsModule}
-                    </div>
-                  )}
-                  {contentModule}
+              {settingsModule && (
+                <div>
+                  <p className="mb-3 text-2xs font-semibold uppercase tracking-wide text-subtle">Page settings</p>
+                  {settingsModule}
                 </div>
               )}
+              {contentModule}
             </div>
           </div>
         </div>

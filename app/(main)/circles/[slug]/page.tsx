@@ -1,14 +1,12 @@
 import { notFound } from 'next/navigation'
-import Image from 'next/image'
 import Link from 'next/link'
-import { Users, MessageSquare, Activity, TrendingUp, Zap, Flame, MapPin } from 'lucide-react'
+import { Users, Activity, TrendingUp, Zap, Flame, MapPin } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { leaveCircle, joinCircle } from '../actions'
 import { CrewGateButton } from '@/components/crew/upgrade-lightbox'
 import { TeaserGate } from '@/components/teaser-gate'
 import { teaserAllowed, TEASER_PREVIEW_SECONDS } from '@/lib/teaser'
-import { startConversation } from '@/app/(main)/messages/actions'
 import { Composer } from '@/components/feed/composer'
 import { FeedList } from '@/components/feed/feed-list'
 import { UpcomingEventsWidget } from '@/components/events/upcoming-widget'
@@ -16,17 +14,15 @@ import { HostInviteButton } from '@/components/circles/host-invite-button'
 import { HostInviteEmail } from '@/components/circles/host-invite-email'
 import { CollapsibleAbout } from '@/components/circles/collapsible-about'
 import { CircleHostMenu } from '@/components/circles/circle-host-menu'
+import { CircleMembersList } from '@/components/circles/circle-members-list'
 import { getCircleCapabilities } from '@/lib/core/load-capabilities'
 import { isPaidViewer } from '@/lib/core/viewer-hats'
 import { getCircleActivePractice, listPublicPractices } from '@/lib/practices'
 import { LogPracticeButton } from '@/components/practice/log-practice-button'
-import { SetCirclePractice } from '@/components/practice/set-circle-practice'
 import { DetailTemplate } from '@/components/templates/detail-template'
 import { ModuleCard } from '@/components/modules/module-card'
-import { getInitials, isoDaysAgo } from '@/lib/utils'
-import { ProfileFlair } from '@/components/profile-flair'
-import { isEndorsed } from '@/lib/season-ranks'
-import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
+import { isoDaysAgo } from '@/lib/utils'
+import { type CommunityRole } from '@/lib/community-roles'
 import { ClaimCircle } from '@/components/circles/claim-circle'
 import { CircleCover } from '@/components/circles/circle-cover'
 
@@ -335,9 +331,9 @@ export default async function CirclePage({
 
         {/* ── Two-column body (event / social-profile layout): the circle's
                 conversation on the left (2/3), its info rail on the right (1/3). */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          {/* LEFT — conversation + announcements, then the roster. */}
-          <div className="space-y-6 lg:col-span-2">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+          {/* LEFT — the circle's conversation + announcements. */}
+          <div className="lg:col-span-2">
             <TeaserGate
               allowed={teaserAllowed({ role: isCrew ? 'crew' : 'member', hasAccess: isMember })}
               resourceKey={`circle:${circle.id}`}
@@ -377,85 +373,35 @@ export default async function CirclePage({
                   emptyMessage="No posts yet. Be the first to share something."
                 />
               </section>
-
-              <ModuleCard title="Members" badge={String(sorted.length)}>
-                {sorted.length === 0 ? (
-                  <p className="text-sm text-subtle">No members yet.</p>
-                ) : (
-                  <div className="space-y-0.5">
-                    {sorted.map(({ profile, volunteer_role }) => {
-                      const memberIsHost = circle.host?.id === profile.id
-                      const isSelf = profile.id === myProfileId
-
-                      return (
-                        <div
-                          key={profile.id}
-                          className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-surface transition-colors -mx-3 group"
-                        >
-                          <Link
-                            href={`/people/${profile.handle}`}
-                            className="flex items-center gap-3 flex-1 min-w-0"
-                          >
-                            {profile.avatar_url ? (
-                              <Image
-                                src={profile.avatar_url}
-                                alt={profile.display_name}
-                                width={32}
-                                height={32}
-                                className="w-8 h-8 rounded-full object-cover shrink-0"
-                              />
-                            ) : (
-                              <div className="w-8 h-8 rounded-full bg-primary-bg text-primary-strong text-xs font-semibold flex items-center justify-center shrink-0 select-none">
-                                {getInitials(profile.display_name)}
-                              </div>
-                            )}
-
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="text-sm font-medium text-text truncate">
-                                  {profile.display_name}
-                                </span>
-                                {memberIsHost && (
-                                  <span className="text-xs px-1.5 py-0.5 rounded-md bg-success-bg text-success font-medium">
-                                    Host
-                                  </span>
-                                )}
-                                {volunteer_role && !memberIsHost && (
-                                  <RoleBadge role={volunteer_role} className="text-xs leading-tight" />
-                                )}
-                                <ProfileFlair
-                                  rank={profile.current_season_rank}
-                                  streak={profile.current_streak}
-                                  endorsed={isEndorsed(profile.community_role)}
-                                  compact
-                                />
-                              </div>
-                              <p className="text-xs text-subtle mt-0.5">@{profile.handle}</p>
-                            </div>
-                          </Link>
-
-                          {!isSelf && isMember && (
-                            <form action={startConversation.bind(null, profile.id)}>
-                              <button
-                                type="submit"
-                                title={`Message ${profile.display_name}`}
-                                className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-subtle hover:text-primary-strong hover:bg-primary-bg transition-all"
-                              >
-                                <MessageSquare className="w-4 h-4" />
-                              </button>
-                            </form>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </ModuleCard>
             </TeaserGate>
           </div>
 
-          {/* RIGHT — the circle's info rail: practice · invite · health · events. */}
-          <aside className="space-y-6">
+          {/* RIGHT — the circle's info rail, top-to-bottom:
+                members · health (host) · practice · events · invite (host). */}
+          <aside className="space-y-8">
+            {/* Members */}
+            <ModuleCard title="Members" badge={String(sorted.length)}>
+              <CircleMembersList
+                members={sorted}
+                hostId={circle.host?.id ?? null}
+                myProfileId={myProfileId}
+                isMember={isMember}
+              />
+            </ModuleCard>
+
+            {/* Circle health (host) */}
+            {canManage && healthScore.totalZaps > 0 && (
+              <ModuleCard title="Circle health">
+                <div className="grid grid-cols-2 gap-2">
+                  <HealthStat label="Avg zaps" value={healthScore.avgZaps.toLocaleString()} Icon={Zap} />
+                  <HealthStat label="Total zaps" value={healthScore.totalZaps.toLocaleString()} Icon={TrendingUp} />
+                  <HealthStat label="Active streaks" value={String(healthScore.activeStreaks)} Icon={Flame} />
+                  <HealthStat label="Badges earned" value={String(healthScore.totalAchievements)} Icon={Activity} />
+                  <HealthStat label="New this week" value={String(healthScore.newThisWeek)} Icon={Users} />
+                </div>
+              </ModuleCard>
+            )}
+
             {/* This week's practice */}
             {(circlePractice || canManage) && (
               <ModuleCard title="This week's practice">
@@ -474,19 +420,15 @@ export default async function CirclePage({
                 ) : (
                   <p className="text-sm text-muted">No practice set yet.</p>
                 )}
-                {canManage && (
-                  <div className="mt-3 border-t border-border pt-3">
-                    <SetCirclePractice
-                      circleId={circle.id}
-                      library={practiceLibrary}
-                      current={circlePractice?.id}
-                    />
-                  </div>
-                )}
               </ModuleCard>
             )}
 
-            {/* Invite a friend (host) */}
+            {/* Upcoming events */}
+            <ModuleCard title="Upcoming events">
+              <UpcomingEventsWidget scopeIds={[circle.id]} />
+            </ModuleCard>
+
+            {/* Invite a friend (host) — sits at the bottom of the rail. */}
             {canManage && (
               <ModuleCard title="Invite a friend">
                 <p className="mb-3 text-xs leading-relaxed text-muted">
@@ -499,24 +441,6 @@ export default async function CirclePage({
                 </div>
               </ModuleCard>
             )}
-
-            {/* Circle health (host) */}
-            {canManage && healthScore.totalZaps > 0 && (
-              <ModuleCard title="Circle health">
-                <div className="grid grid-cols-2 gap-2">
-                  <HealthStat label="Avg zaps" value={healthScore.avgZaps.toLocaleString()} Icon={Zap} />
-                  <HealthStat label="Total zaps" value={healthScore.totalZaps.toLocaleString()} Icon={TrendingUp} />
-                  <HealthStat label="Active streaks" value={String(healthScore.activeStreaks)} Icon={Flame} />
-                  <HealthStat label="Badges earned" value={String(healthScore.totalAchievements)} Icon={Activity} />
-                  <HealthStat label="New this week" value={String(healthScore.newThisWeek)} Icon={Users} />
-                </div>
-              </ModuleCard>
-            )}
-
-            {/* Upcoming events */}
-            <ModuleCard title="Upcoming events">
-              <UpcomingEventsWidget scopeIds={[circle.id]} />
-            </ModuleCard>
           </aside>
         </div>
       </DetailTemplate>
