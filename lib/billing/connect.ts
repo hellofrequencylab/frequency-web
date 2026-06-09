@@ -16,8 +16,17 @@
 
 import type Stripe from 'stripe'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { stripe, appUrl } from './stripe'
+import { stripe, appUrl, billingEnabled } from './stripe'
+import { hostPayoutsEnabledFlag } from '@/lib/platform-flags'
 import { createAdminClient } from '@/lib/supabase/admin'
+
+/** The single live-gate for every Connect payout channel: a configured Stripe key
+ *  AND the operator-controlled `host_payouts_enabled` flag (default OFF). Tips,
+ *  tickets, onboarding, and future channels all check this, so nothing goes live
+ *  until an operator flips the switch (ADR-178). */
+export async function payoutsLive(): Promise<boolean> {
+  return billingEnabled() && (await hostPayoutsEnabledFlag())
+}
 
 /** Payout-readiness for a profile, derived from the mirrored Stripe flags. */
 export interface ConnectStatus {
@@ -92,7 +101,7 @@ export async function getOrCreateConnectedAccount(profileId: string): Promise<st
 
 /** A fresh Stripe-hosted onboarding link for the profile's account (links expire). */
 export async function createOnboardingLink(profileId: string): Promise<string | null> {
-  if (!stripe) return null
+  if (!stripe || !(await payoutsLive())) return null
   const accountId = await getOrCreateConnectedAccount(profileId)
   if (!accountId) return null
   const link = await stripe.accountLinks.create({

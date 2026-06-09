@@ -22,8 +22,7 @@ import { atLeastRole } from '@/lib/core/roles'
 import { MemberSupportPanel } from '@/components/support/member-support-panel'
 import { ModerateProfileButton } from './moderate-profile-button'
 import { TipButton } from './tip-button'
-import { billingEnabled } from '@/lib/billing/stripe'
-import { getConnectStatus } from '@/lib/billing/connect'
+import { getConnectStatus, payoutsLive } from '@/lib/billing/connect'
 import { recordTipFromSessionId } from '@/lib/billing/tips'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EditableIdentity } from './editable-identity'
@@ -137,7 +136,7 @@ export default async function ProfilePage({
   // recipient is actually payouts-ready (and billing is live). The server decides;
   // the button never appears for someone who can't receive money.
   const canTipRecipient =
-    !!user && !isOwner && billingEnabled() && (await getConnectStatus(profileId)).ready
+    !!user && !isOwner && (await payoutsLive()) && (await getConnectStatus(profileId)).ready
 
   // Capability-gated moderator edit: profile.edit on a profile you don't own = janitor.
   const profileCaps = await getProfileCapabilities(profileId)

@@ -63,7 +63,7 @@ export const AREA_ICONS: Record<string, ElementType> = {
   website: Globe,
   'hook-network': Network,
   earnings: Coins,
-  status: Activity,
+  status: LayoutDashboard,
   financials: Banknote,
   settings: Settings,
   'admin-community': LayoutDashboard,

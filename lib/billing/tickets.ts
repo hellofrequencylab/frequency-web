@@ -11,7 +11,7 @@
 import type Stripe from 'stripe'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { stripe, appUrl } from './stripe'
-import { getConnectStatus } from './connect'
+import { getConnectStatus, payoutsLive } from './connect'
 import { platformFeeCents } from './fees'
 import { createAdminClient } from '@/lib/supabase/admin'
 
@@ -50,6 +50,7 @@ export async function createTicketCheckout(opts: {
   eventId: string
   qty?: number
 }): Promise<TicketResult> {
+  if (!(await payoutsLive())) return { error: 'Ticketing isn’t turned on yet.' }
   if (!stripe) return { error: 'Ticketing isn’t turned on yet.' }
   const qty = Math.min(Math.max(Math.floor(opts.qty ?? 1), 1), TICKET_MAX_QTY)
 

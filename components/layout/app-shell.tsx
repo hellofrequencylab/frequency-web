@@ -1418,7 +1418,7 @@ export default function AppShell({
                 {/* Inline page-admin layer — operators get an "Admin ▾" disclosure
                     with this page's admin functions. Suppressed on individual profile
                     pages (the QR/admin lives in Edit Profile there instead). */}
-                {canAdmin && !pathname.startsWith('/people/') && <PageAdminBar role={gateRole} staffRole={staffRole} />}
+                {canAdmin && <PageAdminBar role={gateRole} staffRole={staffRole} />}
                 {children}
               </main>
             </div>
