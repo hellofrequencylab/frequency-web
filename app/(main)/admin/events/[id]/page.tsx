@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { ArrowLeft, ExternalLink } from 'lucide-react'
@@ -31,7 +31,8 @@ export default async function AdminEventEditPage({ params }: { params: Promise<{
   // Verify the caller can edit this event before rendering the form.
   const [event, caps] = await Promise.all([loadEvent(id), getEventCapabilities(id)])
   if (!event) notFound()
-  if (!caps.has('event.editSettings')) notFound()
+  // Can't edit this event's settings — send them home rather than to a dead end.
+  if (!caps.has('event.editSettings')) redirect('/feed')
 
   // Supabase returns joined rows as arrays; the !fk hint collapses it to a single
   // object at runtime, but the generated types reflect the array shape.
