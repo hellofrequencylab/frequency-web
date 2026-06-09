@@ -19,6 +19,10 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **Events that bring people together**: see **who's going** before you RSVP (faces, the count,
+  and anyone from your circles), **add to your calendar in one tap** so gatherings actually
+  happen, join a **waitlist** when an event is full and get **moved up automatically** when a
+  spot opens, and **filter** the events library by kind of gathering, energy, or open spots.
 - **Journeys, reimagined**: pick a season-long practice track and the app shows your **next
   step** — one tap to log it. Every practice now comes in three depths — **Spark** (5 min),
   **Current**, and **Deep** — and your circle Host can set the right depth for your group, or

@@ -1,5 +1,6 @@
 'use server'
 
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
@@ -11,8 +12,11 @@ import { awardGems } from '@/lib/gems'
 import { awardZapsForAction } from '@/lib/zaps'
 import { recordEngagementEvent } from '@/lib/engagement/events'
 import { generateOccurrencesForAnchor, type RecurrenceType } from '@/lib/event-recurrence'
+import { getCapacityInfo, promoteFromWaitlist } from '@/lib/events/capacity'
 
 const VALID_RECURRENCE: RecurrenceType[] = ['none', 'daily', 'weekly', 'monthly']
+const VALID_VISIBILITY = ['public', 'unlisted', 'circle_only', 'private']
+const VALID_ENERGY = ['high_activation', 'grounding', 'social', 'ceremonial']
 
 export async function createEvent(formData: FormData) {
   const title = (formData.get('title') as string | null)?.trim()
@@ -30,6 +34,20 @@ export async function createEvent(formData: FormData) {
   const recurrenceUntil = recurrenceType !== 'none' && recurrenceUntilRaw
     ? new Date(recurrenceUntilRaw).toISOString()
     : null
+
+  // P0 fields (additive). Capacity is the only real scarcity signal; visibility
+  // defaults to circle_only to preserve the pre-P0 model.
+  const capacityRaw = (formData.get('capacity') as string | null)?.trim() || ''
+  const capacityParsed = capacityRaw ? parseInt(capacityRaw, 10) : NaN
+  const capacity = Number.isFinite(capacityParsed) && capacityParsed > 0 ? capacityParsed : null
+
+  const visibilityRaw = (formData.get('visibility') as string | null) || 'circle_only'
+  const visibility = VALID_VISIBILITY.includes(visibilityRaw) ? visibilityRaw : 'circle_only'
+
+  const category = (formData.get('category') as string | null)?.trim() || 'gathering'
+
+  const energyRaw = (formData.get('energyTag') as string | null) || ''
+  const energyTag = VALID_ENERGY.includes(energyRaw) ? energyRaw : null
 
   if (!title || !scopeId || !startsAt) return
 
@@ -51,19 +69,27 @@ export async function createEvent(formData: FormData) {
   }
 
   const supabase = await createClient()
-  const { data: inserted, error } = await supabase.from('events').insert({
-    title,
-    description,
-    location,
-    scope_id: scopeId,
-    scope_type: 'circle',   // always circle-scoped now
-    starts_at: new Date(startsAt).toISOString(),
-    ends_at: endsAt ? new Date(endsAt).toISOString() : null,
-    host_id: myProfileId,
-    slug,
-    recurrence_type: recurrenceType,
-    recurrence_until: recurrenceUntil,
-  }).select('id').single()
+  // Cast: capacity/visibility/category/energy_tag are newer than the generated
+  // DB types (lib/database.types.ts) — repo convention for not-yet-regenerated
+  // columns (see lib/billing/*).
+  const { data: inserted, error } = await (supabase as unknown as SupabaseClient)
+    .from('events').insert({
+      title,
+      description,
+      location,
+      scope_id: scopeId,
+      scope_type: 'circle',   // always circle-scoped now
+      starts_at: new Date(startsAt).toISOString(),
+      ends_at: endsAt ? new Date(endsAt).toISOString() : null,
+      host_id: myProfileId,
+      slug,
+      recurrence_type: recurrenceType,
+      recurrence_until: recurrenceUntil,
+      capacity,
+      visibility,
+      category,
+      energy_tag: energyTag,
+    }).select('id').single()
 
   if (error) {
     console.error('createEvent error', error)
@@ -103,34 +129,45 @@ export async function toggleRSVP(eventId: string) {
     .eq('profile_id', myProfileId)
     .maybeSingle()
 
-  if (existing) {
-    const newStatus = existing.status === 'going' ? 'not_going' : 'going'
-    await supabase
-      .from('event_rsvps')
-      .update({ status: newStatus })
-      .eq('id', existing.id)
+  // Side-effects for an intent-to-attend RSVP (only when truly 'going', never on
+  // waitlist). Gems are the first-RSVP web reward; attendance zaps come at
+  // check-in. We keep the streak/achievement tick that already lived here.
+  const onGoing = (firstTime: boolean) => {
+    processGamificationEvent({ type: 'event_attend', profileId: myProfileId }).catch((e) => console.error('[events gamification]', e))
+    recordStreakActivity(myProfileId, 'attendance').catch((e) => console.error('[events gamification]', e))
+    if (firstTime) {
+      // One row per (event, profile); the gem fires once on the first RSVP.
+      awardGems(myProfileId, 'event_rsvp').catch((e) => console.error('[events gamification]', e))
+    }
+  }
 
-    if (newStatus === 'going') {
-      processGamificationEvent({ type: 'event_attend', profileId: myProfileId }).catch((e) => console.error('[events gamification]', e))
-      recordStreakActivity(myProfileId, 'attendance').catch((e) => console.error('[events gamification]', e))
-      // No gems here: the `event_rsvp` gem has no daily cap, so awarding it on
-      // every not_going -> going flip let a user farm unlimited gems by
-      // toggling. Gems are granted once, on the first RSVP (the insert path
-      // below). Verified attendance zaps come at check-in (ROADMAP P2.13).
+  if (existing) {
+    if (existing.status === 'going' || existing.status === 'waitlist') {
+      // Withdraw. If we freed a confirmed seat, pull the next person off the
+      // waitlist (warm proof of momentum, never fake scarcity).
+      await supabase.from('event_rsvps').update({ status: 'not_going' }).eq('id', existing.id)
+      if (existing.status === 'going') {
+        await promoteFromWaitlist(eventId).catch((e) => { console.error('[events waitlist]', e); return null })
+      }
+    } else {
+      // Re-join: honour real capacity — waitlist only when genuinely full.
+      const { isFull } = await getCapacityInfo(eventId)
+      const next = isFull ? 'waitlist' : 'going'
+      await supabase.from('event_rsvps').update({ status: next }).eq('id', existing.id)
+      if (next === 'going') onGoing(false)
     }
   } else {
+    const { isFull } = await getCapacityInfo(eventId)
+    const next = isFull ? 'waitlist' : 'going'
     await supabase.from('event_rsvps').insert({
       event_id: eventId,
       profile_id: myProfileId,
-      status: 'going',
+      status: next,
     })
-    processGamificationEvent({ type: 'event_attend', profileId: myProfileId }).catch((e) => console.error('[events gamification]', e))
-    recordStreakActivity(myProfileId, 'attendance').catch((e) => console.error('[events gamification]', e))
-    // First RSVP only (one row per (event, profile), so this fires once).
-    awardGems(myProfileId, 'event_rsvp').catch((e) => console.error('[events gamification]', e))
+    if (next === 'going') onGoing(true)
   }
 
-  revalidatePath('/events')
+  revalidatePath('/events', 'layout')
   revalidatePath('/feed')
   revalidatePath('/circles', 'layout')
 }
