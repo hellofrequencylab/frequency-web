@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Zap, Users, Flame, Pencil, Repeat, Wand2, type LucideIcon } from 'lucide-react'
+import { Zap, Users, Flame, Pencil, Repeat, Wand2 } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import { getRankedPractice, getPracticeMemberState } from '@/lib/practices'
 import { getPillars, pillarsById } from '@/lib/pillars'
@@ -14,6 +14,7 @@ import { PillarBadge } from '@/components/practice/pillar-badge'
 import { ClaimPractice } from '@/components/practice/claim-practice'
 import { UsedInSection, UsedInSkeleton } from '@/components/practices/used-in-section'
 import { StaffEditButton } from '@/components/ui/staff-edit-button'
+import { StatCard } from '@/components/ui/stat-card'
 import { ProposeToLibraryButton } from '@/components/library/propose-to-library'
 import { forkPracticeAction } from '../actions'
 
@@ -43,18 +44,6 @@ function parseSteps(body: string | null): string[] {
     .map((l) => l.slice(2).trim())
     .filter(Boolean)
     .slice(0, 6)
-}
-
-function Stat({ icon: Icon, value, label }: { icon: LucideIcon; value: React.ReactNode; label: string }) {
-  return (
-    <div className="rounded-2xl border border-border bg-surface px-4 py-3">
-      <div className="flex items-center gap-1.5 text-warning">
-        <Icon className="h-4 w-4" aria-hidden />
-        <span className="text-sm font-bold text-text">{value}</span>
-      </div>
-      <p className="mt-0.5 text-xs text-subtle">{label}</p>
-    </div>
-  )
 }
 
 export default async function PracticeDetailPage({ params }: Params) {
@@ -113,10 +102,16 @@ export default async function PracticeDetailPage({ params }: Params) {
       )}
 
       <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Stat icon={Zap} value={practice.reward_note ?? `+${practice.reward_zaps ?? 12} zaps`} label="Reward per log" />
-        <Stat icon={Repeat} value={practice.cadence ?? 'Your call'} label="Cadence" />
-        <Stat icon={Users} value={practice.adopters} label="Practising now" />
-        <Stat icon={Flame} value={practice.logs_total} label="Times logged" />
+        <StatCard
+          bordered
+          size="sm"
+          icon={Zap}
+          label="Reward per log"
+          value={practice.reward_note ?? `+${practice.reward_zaps ?? 12} zaps`}
+        />
+        <StatCard bordered size="sm" icon={Repeat} label="Cadence" value={practice.cadence ?? 'Your call'} />
+        <StatCard bordered size="sm" icon={Users} label="Practising now" value={practice.adopters.toLocaleString()} />
+        <StatCard bordered size="sm" icon={Flame} label="Times logged" value={practice.logs_total.toLocaleString()} />
       </div>
 
       <div className="mb-6 flex flex-wrap items-center gap-2">

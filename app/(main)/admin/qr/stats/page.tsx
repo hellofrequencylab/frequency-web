@@ -2,6 +2,7 @@ import { ChartNoAxesColumn, MapPin, Users, Link2, Trophy, UserCircle, Megaphone,
 import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { AdminPage, AdminSection } from '@/components/admin/admin-page'
+import { StatCard } from '@/components/ui/stat-card'
 import { summarizeScans, summarizeLocations, type ScanRow, type ScanGeoRow } from '@/lib/qr/analytics'
 import { summarizeAcquisition, type AcquisitionRow } from '@/lib/qr/acquisition'
 import { Analytics, type AnalyticsData } from '../analytics'
@@ -93,10 +94,10 @@ export default async function QrStatsPage() {
     >
       {/* Funnel headline */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Stat icon={MapPin} label="Total scans" value={summary.total} />
-        <Stat icon={Users} label="Unique members" value={summary.unique} />
-        <Stat icon={UserCircle} label="Referral signups" value={referralSignups} />
-        <Stat icon={Trophy} label="Zaps gifted" value={gifts} />
+        <StatCard bordered icon={MapPin} label="Total scans" value={summary.total.toLocaleString()} />
+        <StatCard bordered icon={Users} label="Unique members" value={summary.unique.toLocaleString()} />
+        <StatCard bordered icon={UserCircle} label="Referral signups" value={referralSignups.toLocaleString()} />
+        <StatCard bordered icon={Trophy} label="Zaps gifted" value={gifts.toLocaleString()} />
       </div>
 
       {/* Locator map */}
@@ -120,11 +121,11 @@ export default async function QrStatsPage() {
       {/* Code inventory */}
       <AdminSection title="Code inventory" description="Everything live in the system.">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-          <Stat icon={Link2} label="Dynamic links" value={dynamicLinks} />
-          <Stat icon={MapPin} label="Check-in codes" value={nodeCount ?? 0} />
-          <Stat icon={UserCircle} label="Member codes" value={memberCodes} />
-          <Stat icon={Megaphone} label="Marketing funnels" value={marketing} />
-          <Stat icon={Trophy} label="Campaigns" value={campaignCount} />
+          <StatCard bordered icon={Link2} label="Dynamic links" value={dynamicLinks.toLocaleString()} />
+          <StatCard bordered icon={MapPin} label="Check-in codes" value={(nodeCount ?? 0).toLocaleString()} />
+          <StatCard bordered icon={UserCircle} label="Member codes" value={memberCodes.toLocaleString()} />
+          <StatCard bordered icon={Megaphone} label="Marketing funnels" value={marketing.toLocaleString()} />
+          <StatCard bordered icon={Trophy} label="Campaigns" value={campaignCount.toLocaleString()} />
         </div>
       </AdminSection>
 
@@ -139,9 +140,9 @@ export default async function QrStatsPage() {
         description="How members who signed up first arrived — by channel, source, and the specific code/poster."
       >
         <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <Stat icon={Compass} label="Attributed signups" value={acquisition.total} />
-          <Stat icon={Nfc} label="NFC taps" value={summary.byMedium.nfc} />
-          <Stat icon={MapPin} label="QR scans" value={summary.byMedium.qr} />
+          <StatCard bordered icon={Compass} label="Attributed signups" value={acquisition.total.toLocaleString()} />
+          <StatCard bordered icon={Nfc} label="NFC taps" value={summary.byMedium.nfc.toLocaleString()} />
+          <StatCard bordered icon={MapPin} label="QR scans" value={summary.byMedium.qr.toLocaleString()} />
         </div>
         {acquisition.total === 0 ? (
           <p className="py-4 text-sm text-muted">
@@ -203,25 +204,6 @@ function RankList({ title, rows }: { title: string; rows: { key: string; count: 
           ))}
         </ul>
       )}
-    </div>
-  )
-}
-
-function Stat({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: typeof MapPin
-  label: string
-  value: number
-}) {
-  return (
-    <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
-      <div className="flex items-center gap-1.5 text-xs font-medium text-subtle">
-        <Icon className="h-3.5 w-3.5" /> {label}
-      </div>
-      <p className="mt-1 text-2xl font-bold text-text">{value.toLocaleString()}</p>
     </div>
   )
 }
