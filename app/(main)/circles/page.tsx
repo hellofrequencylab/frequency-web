@@ -227,13 +227,6 @@ export default async function CirclesPage({
           parked at its right (no divider rule). */}
       <PageContents links={channelLinks} divider={false} rightSlot={statStrip} />
 
-      {/* Reassurance — the introvert's worry, named and answered. Secondary copy,
-          so it folds away on mobile to keep the header scannable. */}
-      <p className="mb-6 hidden max-w-2xl text-sm leading-relaxed text-muted sm:block">
-        Circles are small on purpose — most are just a handful of people. You don&rsquo;t have to know
-        anyone, and you don&rsquo;t have to say much. You just have to show up.
-      </p>
-
       <MapZone circles={locatableCircles}>
         {/* Find-near-me opens the map; the stats moved up beside the filter menu and
             "Start a circle" lives in the page header now. */}
