@@ -18,6 +18,7 @@ import {
 } from '@/lib/qr/codes'
 import { parseStyle, type QrStyle } from '@/lib/qr/style'
 import type { Json } from '@/lib/database.types'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 export interface LinkInput {
   title: string
@@ -174,6 +175,108 @@ export async function setLinkActive(id: string, active: boolean): Promise<Action
   const db = createAdminClient()
   const { error } = await db.from('qr_codes').update({ active }).eq('id', id)
   if (error) return fail('Could not update the code status.')
+  revalidatePath('/admin/qr')
+  return ok()
+}
+
+// ── Per-page QR folders (ADR-179) ────────────────────────────────────────────
+// A code "owned" by a page: created from that page's Settings panel, pointing back
+// at the page, and filed under `page_path` (its Studio folder). The column isn't in
+// the generated DB types yet, so reads/writes touching it go through an untyped cast
+// (repo convention).
+
+export interface PageQrInput {
+  /** The app route this code belongs to (its folder key), e.g. /circles/sunset-skate. */
+  pagePath: string
+  /** Absolute URL the code resolves to (the page itself). */
+  targetUrl: string
+  title: string
+  style: QrStyle
+}
+
+export interface PageQrCode {
+  id: string
+  slug: string
+  title: string
+  style: QrStyle
+  scan_count: number
+}
+
+/** Create a styled QR filed under a page's folder. Gated host+ OR staff 'qr'. */
+export async function createPageQr(
+  input: PageQrInput,
+): Promise<ActionResult<{ id: string; slug: string }>> {
+  const { profileId } = await requireAdmin('host', { staff: 'qr' })
+
+  const pagePath = input.pagePath.trim()
+  if (!pagePath.startsWith('/')) return fail('Pick a page to file this code under.')
+  const title = input.title.trim()
+  if (!title) return fail('Give the code a title.')
+  const target = input.targetUrl.trim()
+  if (!isValidTargetUrl(target)) return fail('That doesn’t look like a valid URL.')
+
+  const style = parseStyle(input.style) as unknown as Json
+  // Untyped client so we can write the not-yet-typed `page_path` column.
+  const db = createAdminClient() as unknown as SupabaseClient
+
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const slug = generateSlug()
+    const { data, error } = await db
+      .from('qr_codes')
+      .insert({
+        slug,
+        title,
+        destination_type: 'url',
+        target_url: target,
+        page_path: pagePath,
+        style,
+        created_by: profileId,
+      } as Record<string, unknown>)
+      .select('id, slug')
+      .single()
+    if (!error && data) {
+      revalidatePath('/admin/qr')
+      revalidatePath(pagePath)
+      return ok({ id: data.id as string, slug: data.slug as string })
+    }
+    if (error?.code === UNIQUE_VIOLATION) continue // generated collision — retry
+    return fail('Could not create the code.')
+  }
+  return fail('Could not generate a unique link — try again.')
+}
+
+/** This page's saved codes (its folder), newest first. Gated host+ OR staff 'qr'. */
+export async function listPageQrCodes(pagePath: string): Promise<ActionResult<PageQrCode[]>> {
+  await requireAdmin('host', { staff: 'qr' })
+  const path = pagePath.trim()
+  if (!path.startsWith('/')) return ok<PageQrCode[]>([])
+
+  const db = createAdminClient() as unknown as SupabaseClient
+  const { data, error } = await db
+    .from('qr_codes')
+    .select('id, slug, title, style, scan_count')
+    .eq('page_path', path)
+    .order('created_at', { ascending: false })
+  if (error) return fail('Could not load this page’s codes.')
+
+  const rows = (data ?? []) as Array<Record<string, unknown>>
+  return ok<PageQrCode[]>(
+    rows.map((r) => ({
+      id: r.id as string,
+      slug: r.slug as string,
+      title: (r.title as string) ?? '',
+      style: parseStyle(r.style),
+      scan_count: (r.scan_count as number) ?? 0,
+    })),
+  )
+}
+
+/** Delete a page-filed code. Gated host+ OR staff 'qr'. */
+export async function deletePageQr(id: string): Promise<ActionResult> {
+  await requireAdmin('host', { staff: 'qr' })
+  const db = createAdminClient()
+  const { error } = await db.from('qr_codes').delete().eq('id', id)
+  if (error) return fail('Could not delete the code.')
   revalidatePath('/admin/qr')
   return ok()
 }
