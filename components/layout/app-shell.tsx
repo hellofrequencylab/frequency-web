@@ -1300,6 +1300,7 @@ export default function AppShell({
           <button
             type="button"
             onClick={() => setSearchOpen(true)}
+            title="Search (⌘K)"
             className="hidden sm:flex items-center gap-2 rounded-full border border-border bg-surface-elevated/70 pl-3 pr-2 py-1.5 text-sm text-muted hover:text-text hover:border-border-strong hover:bg-surface-elevated transition-colors"
           >
             <Search className="w-4 h-4" />
@@ -1314,6 +1315,7 @@ export default function AppShell({
             type="button"
             onClick={() => setSearchOpen(true)}
             aria-label="Search"
+            title="Search"
             className="sm:hidden flex items-center justify-center w-8 h-8 rounded-full text-muted hover:text-text hover:bg-surface-elevated transition-colors"
           >
             <Search className="w-5 h-5" />
@@ -1326,6 +1328,7 @@ export default function AppShell({
             <Link
               href="/friends"
               aria-label="Friends"
+              title="Friends"
               className="hidden sm:flex items-center justify-center w-9 h-9 rounded-full text-muted hover:text-text hover:bg-surface-elevated transition-colors"
             >
               <Users className="w-5 h-5" />
@@ -1338,6 +1341,7 @@ export default function AppShell({
             <Link
               href="/messages"
               aria-label="Friends & messages"
+              title="Messages"
               className="sm:hidden flex items-center justify-center w-8 h-8 rounded-full text-muted hover:text-text hover:bg-surface-elevated transition-colors"
             >
               <Users className="w-5 h-5" />

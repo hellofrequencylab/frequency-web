@@ -11,6 +11,7 @@ describe('railFor — the single source of truth for page chrome', () => {
       '/people',
       '/people/ada', // profiles intentionally use the global rail
       '/circles/sunrise-sit', // circle detail uses the global community rail (like events)
+      '/channels/breathwork', // channel detail now uses the global rail too (folds its scope content inline)
       '/settings/profile', // the profile editor keeps the rail (ADR-117), unlike other /settings
       '/friends',
       '/messages', // the inbox keeps the rail
@@ -34,11 +35,12 @@ describe('railFor — the single source of truth for page chrome', () => {
     }
   })
 
-  it('suppresses the global rail on scoped entity-detail pages (they render their own)', () => {
-    // Channels still render their own in-body scope rail. Circle detail moved to the
-    // GLOBAL rail (folds its scope content into the main column, like events).
-    expect(railFor('/channels/breathwork')).toBe('scoped')
-    // the index itself is not scoped
+  it('has no scoped entity-detail pages — both Circle and Channel detail ride the global rail', () => {
+    // Nothing renders an in-body scope rail anymore: Circle and Channel detail both
+    // fold their scope content into the main column and use the GLOBAL rail (like
+    // events). The indexes are global too.
+    expect(railFor('/channels/breathwork')).toBe('global')
+    expect(railFor('/circles/sunrise-sit')).toBe('global')
     expect(railFor('/circles')).toBe('global')
     expect(railFor('/channels')).toBe('global')
   })
