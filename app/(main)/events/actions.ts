@@ -15,6 +15,9 @@ import { generateOccurrencesForAnchor, type RecurrenceType } from '@/lib/event-r
 import { getCapacityInfo, promoteFromWaitlist } from '@/lib/events/capacity'
 import { awardCircleFieldForCheckin } from '@/lib/events/circle-field'
 import { embedEvent } from '@/lib/events/embeddings'
+import { sendEventRsvpConfirmationEmail } from '@/lib/email'
+import { shouldSend } from '@/lib/notification-preferences'
+import { buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
 
 const VALID_RECURRENCE: RecurrenceType[] = ['none', 'daily', 'weekly', 'monthly']
 const VALID_VISIBILITY = ['public', 'unlisted', 'circle_only', 'private']
@@ -122,6 +125,87 @@ export async function createEvent(formData: FormData) {
   redirect(`/events/${slug}`)
 }
 
+// Same UTC rendering the reminder cron uses (app/api/cron/event-reminders) so the
+// "when" line reads identically across the RSVP confirmation and later reminders —
+// "Wed Jul 22 · 7:00 AM UTC". Timezone is explicit (we don't store per-profile TZ
+// yet) so it's never ambiguous.
+function formatEventWhen(iso: string): string {
+  return new Date(iso).toLocaleString('en-US', {
+    weekday: 'short', month: 'short', day: 'numeric',
+    hour: 'numeric', minute: '2-digit',
+    timeZone: 'UTC', timeZoneName: 'short',
+  }).replace(',', '').replace(' at ', ' · ')
+}
+
+// Best-effort, non-blocking RSVP confirmation email. Mirrors the reminder cron's
+// send path exactly: events-category email preference gate (`shouldSend`) +
+// suppression guard (inside sendRawEmail) + enqueueEmail outbox. Never throws into
+// the RSVP action — any failure is swallowed and logged. Only called on a real
+// transition into 'going'/'waitlist' (the action's own branches), so it can't
+// double-send on a repeat toggle within the same status.
+async function sendRsvpConfirmation(
+  eventId: string,
+  profileId: string,
+  status: 'going' | 'waitlist',
+): Promise<void> {
+  try {
+    if (!(await shouldSend(profileId, 'email', 'events'))) return
+
+    const admin = createAdminClient()
+
+    const { data: ev } = await admin
+      .from('events')
+      .select('title, starts_at, ends_at, location, slug, description, scope_id, scope_type, is_cancelled, host:profiles!host_id ( display_name )')
+      .eq('id', eventId)
+      .maybeSingle()
+    if (!ev || ev.is_cancelled) return
+
+    const { data: profile } = await admin
+      .from('profiles')
+      .select('display_name, auth_user_id')
+      .eq('id', profileId)
+      .maybeSingle()
+    if (!profile?.auth_user_id) return
+
+    const { data: { user } } = await admin.auth.admin.getUserById(profile.auth_user_id)
+    if (!user?.email) return
+
+    let circleName: string | null = null
+    if (ev.scope_type === 'circle' && ev.scope_id) {
+      const { data: c } = await admin.from('circles').select('name').eq('id', ev.scope_id).maybeSingle()
+      circleName = c?.name ?? null
+    }
+
+    const host = (ev as unknown as { host: { display_name: string | null } | null }).host
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
+    const eventUrl = `${appUrl}/events/${ev.slug}`
+
+    await sendEventRsvpConfirmationEmail({
+      to:                 user.email,
+      recipientName:      profile.display_name ?? 'there',
+      recipientProfileId: profileId,
+      eventTitle:         ev.title,
+      whenAbsolute:       formatEventWhen(ev.starts_at),
+      location:           ev.location,
+      hostName:           host?.display_name ?? null,
+      circleName,
+      eventUrl,
+      // Add-to-calendar reuses the same ICS route + Google URL builder the event
+      // page uses; only sent for confirmed seats.
+      icsUrl:             status === 'going' ? `${appUrl}/events/${ev.slug}/event.ics` : null,
+      googleCalUrl:       status === 'going'
+        ? buildGoogleCalendarUrl({
+            title: ev.title, startsAt: ev.starts_at, endsAt: ev.ends_at,
+            description: ev.description, location: ev.location,
+          })
+        : null,
+      status,
+    })
+  } catch (e) {
+    console.error('[events rsvp confirmation email]', e)
+  }
+}
+
 export async function toggleRSVP(eventId: string) {
   const myProfileId = await getMyProfileId()
   if (!myProfileId) return
@@ -162,6 +246,11 @@ export async function toggleRSVP(eventId: string) {
       const next = isFull ? 'waitlist' : 'going'
       await supabase.from('event_rsvps').update({ status: next }).eq('id', existing.id)
       if (next === 'going') onGoing(false)
+      // Fire-and-forget confirmation — never blocks/breaks the RSVP (best-effort,
+      // self-contained try-catch + pref/suppression gating inside the helper).
+      sendRsvpConfirmation(eventId, myProfileId, next).catch((e) =>
+        console.error('[events rsvp confirmation email]', e)
+      )
     }
   } else {
     const { isFull } = await getCapacityInfo(eventId)
@@ -172,6 +261,9 @@ export async function toggleRSVP(eventId: string) {
       status: next,
     })
     if (next === 'going') onGoing(true)
+    sendRsvpConfirmation(eventId, myProfileId, next).catch((e) =>
+      console.error('[events rsvp confirmation email]', e)
+    )
   }
 
   revalidatePath('/events', 'layout')

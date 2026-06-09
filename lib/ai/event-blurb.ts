@@ -120,17 +120,29 @@ export async function eventBlurb(profileId: string, eventId: string): Promise<st
       knownGoingCount = (going ?? []).length
     }
 
-    // Build the facts block — only what's true.
+    // Build the facts block — only what's true. User-controlled fields are
+    // sanitized before they enter the prompt: strip quotes/backticks/newlines and
+    // clamp length, so a crafted title/bio/circle name can't break out of the
+    // facts framing and inject instructions (defensive — Haiku output is already
+    // read-only + 1-sentence). See the prompt-injection note in DECISIONS.md.
+    const clean = (s: unknown, max = 120): string =>
+      String(s ?? '')
+        .replace(/[`"'\\]/g, ' ')
+        .replace(/[\r\n]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, max)
+
     const facts: string[] = []
-    facts.push(`Event title: ${event.title ?? '(untitled)'}.`)
-    if (event.category) facts.push(`Theme/category: ${event.category}.`)
-    if (event.energy_tag) facts.push(`Energy: ${ENERGY_PHRASE[event.energy_tag] ?? event.energy_tag}.`)
-    if (sharedCircleName) facts.push(`This is hosted by "${sharedCircleName}", a circle the member is already in.`)
+    facts.push(`Event title: ${clean(event.title, 100) || '(untitled)'}.`)
+    if (event.category) facts.push(`Theme/category: ${clean(event.category, 60)}.`)
+    if (event.energy_tag) facts.push(`Energy: ${ENERGY_PHRASE[event.energy_tag] ?? clean(event.energy_tag, 40)}.`)
+    if (sharedCircleName) facts.push(`This is hosted by "${clean(sharedCircleName, 80)}", a circle the member is already in.`)
     if (knownGoingCount > 0)
       facts.push(`${knownGoingCount} ${knownGoingCount === 1 ? 'person the member is connected to is' : 'people the member is connected to are'} going (do NOT name anyone).`)
-    const interests = (me?.entity_types ?? []).filter(Boolean).slice(0, 6)
+    const interests = (me?.entity_types ?? []).filter(Boolean).map((i) => clean(i, 40)).filter(Boolean).slice(0, 6)
     if (interests.length > 0) facts.push(`The member describes themselves as: ${interests.join(', ')}.`)
-    if (me?.bio) facts.push(`The member's bio: ${me.bio.slice(0, 240)}`)
+    if (me?.bio) facts.push(`The member's bio: ${clean(me.bio, 240)}`)
 
     // No genuine overlap at all (no shared circle, no known attendees, no energy/
     // theme, no member context) → don't invent one; cache null for the day.
