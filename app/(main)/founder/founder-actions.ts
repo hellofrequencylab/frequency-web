@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { awardGems } from '@/lib/gems'
 import { getFounderTasks, type FounderTaskKey } from '@/lib/onboarding/founder-tasks'
+import { FOUNDER_REWARD } from '@/lib/onboarding/founder-config'
 
 // Reward-on-first-occurrence + the badge (build item 1.4). Reconciliation, not a
 // new engine: each first-week task pays a small gem bonus the first time it's seen
@@ -12,9 +13,10 @@ import { getFounderTasks, type FounderTaskKey } from '@/lib/onboarding/founder-t
 // safe to call on every page view; the meta flags are the guard, the awards the
 // side effect (flag-first doctrine, matching the chores reward).
 
-const PER_TASK_GEMS = 5
-const COMPLETION_BONUS = 25
-const BADGE_SLUG = 'founders-first-week'
+// All tunable in lib/onboarding/founder-config.ts (the single edit point).
+const PER_TASK_GEMS = FOUNDER_REWARD.perTaskGems
+const COMPLETION_BONUS = FOUNDER_REWARD.completionBonus
+const BADGE_SLUG = FOUNDER_REWARD.badgeSlug
 
 async function callerProfileId(): Promise<string | null> {
   const supabase = await createClient()
