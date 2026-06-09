@@ -74,23 +74,23 @@ export function PageAdminBar({
 
   return (
     <div className="mb-5 sm:mb-6">
-      {/* Right-aligned control above the content-width rule. */}
-      <div className="flex items-center justify-end pb-2.5">
+      {/* The divider rule with the Settings control parked at its right end — holds
+          regardless of content width (the rule flexes, the button stays right). The
+          page header sits above this; the settings section expands below it. */}
+      <div className="flex items-center gap-3">
+        <div className="h-px flex-1 bg-border" />
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
           aria-expanded={open}
-          className="inline-flex items-center gap-1 text-xs font-semibold text-muted transition-colors hover:text-text"
+          className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-muted transition-colors hover:text-text"
         >
           Settings
           <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
         </button>
       </div>
 
-      {/* Content-width hairline rule (matches the page-title divider). */}
-      <div className="border-t border-border" />
-
-      {/* Interior panel — splits open within the content column and slides down. */}
+      {/* Settings section — expands under the rule; the page header stays at the top. */}
       <div
         className={`grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none ${
           open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'

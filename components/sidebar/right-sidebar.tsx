@@ -9,7 +9,7 @@ import { DemoNotice } from '@/components/sidebar/demo-notice'
 import { pageRailPanels } from '@/lib/layout/rail-panels'
 import {
   DispatchesPanel, EventsPanel, MembersPanel, LeaderboardPanel, WhoOnlinePanel, CirclesPanel,
-  ControlCenterPanel, PanelSkeleton,
+  NewCirclesPanel, ActiveNowPanel, ControlCenterPanel, PanelSkeleton,
 } from '@/components/sidebar/rail-panels'
 
 export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
@@ -117,7 +117,8 @@ async function PagePanels({ profileId, role }: RightSidebarProps) {
 
   // The members/events/broadcasts/circles panels need the viewer's circles; fetch once.
   const needsCircles =
-    keys.includes('events') || keys.includes('members') || keys.includes('dispatches') || keys.includes('circles')
+    keys.includes('events') || keys.includes('members') || keys.includes('dispatches') ||
+    keys.includes('circles') || keys.includes('newcircles')
   let circleIds: string[] = []
   if (needsCircles) {
     const { data } = await createAdminClient()
@@ -137,6 +138,8 @@ async function PagePanels({ profileId, role }: RightSidebarProps) {
           : key === 'members' ? <MembersPanel profileId={profileId} circleIds={circleIds} />
           : key === 'online' ? <WhoOnlinePanel profileId={profileId} />
           : key === 'circles' ? <CirclesPanel circleIds={circleIds} />
+          : key === 'newcircles' ? <NewCirclesPanel circleIds={circleIds} />
+          : key === 'activenow' ? <ActiveNowPanel profileId={profileId} />
           : key === 'leaderboard' ? (isCrew ? <LeaderboardPanel /> : null)
           : null
         return node ? <Suspense key={key} fallback={<PanelSkeleton />}>{node}</Suspense> : null
