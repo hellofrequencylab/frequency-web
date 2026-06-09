@@ -5,6 +5,7 @@ import {
   getConnectionSettings,
 } from '@/lib/connections/connection-settings'
 import { ConnectionPrefsForm } from '@/components/settings/connection-prefs-form'
+import { LiveLocationToggle } from '@/components/settings/live-location-toggle'
 
 export default async function ConnectionsSettingsPage() {
   // Both reads come from the connection-layer foundation (ADR-186): the caller's own
@@ -33,6 +34,9 @@ export default async function ConnectionsSettingsPage() {
           maxDiscoveryRadiusM: settings.maxDiscoveryRadiusM,
         }}
       />
+      <div className="mt-5">
+        <LiveLocationToggle initialLive={prefs.liveMode} liveUpdatedAt={prefs.liveUpdatedAt} />
+      </div>
     </FocusTemplate>
   )
 }
