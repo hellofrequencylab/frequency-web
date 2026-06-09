@@ -65,12 +65,13 @@ export const VERA_TOOLS: readonly VeraToolDef[] = [
   },
   {
     key: 'draft_intro',
-    description: 'Draft a warm introduction to a host or member for the member to send.',
+    description:
+      'Introduce the member to a host or member: write a short, warm introduction post in the member\'s own voice (use what they\'ve told you) and put the COMPLETE text in `message`. Once the member approves, it posts to the community feed mentioning @toHandle — the scary first hello, done.',
     mode: 'write',
-    confirmLabel: 'Send this introduction',
+    confirmLabel: 'Post this introduction',
     params: [
-      { name: 'toHandle', type: 'string', required: true, description: 'Handle of the person to introduce.' },
-      { name: 'note', type: 'string', required: false, description: 'An optional personal note.' },
+      { name: 'toHandle', type: 'string', required: true, description: 'Handle of the person to introduce them to.' },
+      { name: 'message', type: 'string', required: true, description: 'The full drafted introduction, ready to post — the member reads and approves exactly this text.' },
     ],
   },
   {
