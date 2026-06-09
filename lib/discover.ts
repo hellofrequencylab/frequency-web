@@ -25,6 +25,8 @@ export type PublicEvent = {
   city: string | null
   circle_id: string | null
   circle_name: string | null
+  /** Ticket price in cents; null/0 = free (drives the JSON-LD `offers` block). */
+  price_cents: number | null
 }
 
 export type PublicCircle = {

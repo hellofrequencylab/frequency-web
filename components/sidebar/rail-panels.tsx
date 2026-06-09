@@ -323,7 +323,7 @@ export async function ControlCenterPanel({ profileId }: { profileId: string }) {
               <span className="flex items-center justify-center gap-0.5 text-sm font-bold tabular-nums text-text">
                 <Zap className="h-3 w-3 text-primary" /> {zaps.toLocaleString()}
               </span>
-              <span className="text-[10px] font-medium uppercase tracking-wide text-subtle">Zaps</span>
+              <span className="text-3xs font-medium uppercase tracking-wide text-subtle">Zaps</span>
             </Link>
             <Link
               href="/crew/store"
@@ -332,7 +332,7 @@ export async function ControlCenterPanel({ profileId }: { profileId: string }) {
               <span className="flex items-center justify-center gap-0.5 text-sm font-bold tabular-nums text-text">
                 <Gem className="h-3 w-3 text-signal" /> {gems.toLocaleString()}
               </span>
-              <span className="text-[10px] font-medium uppercase tracking-wide text-subtle">Gems</span>
+              <span className="text-3xs font-medium uppercase tracking-wide text-subtle">Gems</span>
             </Link>
             <Link
               href="/crew/streaks"
@@ -341,7 +341,7 @@ export async function ControlCenterPanel({ profileId }: { profileId: string }) {
               <span className="flex items-center justify-center gap-0.5 text-sm font-bold tabular-nums text-text">
                 <Flame className={`h-3 w-3 ${streak > 0 ? 'text-primary-strong' : 'text-subtle'}`} /> {streak}
               </span>
-              <span className="text-[10px] font-medium uppercase tracking-wide text-subtle">Streak</span>
+              <span className="text-3xs font-medium uppercase tracking-wide text-subtle">Streak</span>
             </Link>
           </div>
 

@@ -20,20 +20,20 @@ production. Applied all five (ADR-185). 🟢 **AI event-blurb prompt-injection**
 
 | Pri | Item | Why | Where |
 |---|---|---|---|
-| 🔴 **P0** | **Regenerate `lib/database.types.ts`** | 10+ files use `as unknown as SupabaseClient` casts — hides real type errors, no CI gate | `supabase gen types` after the migrations above |
+| ✅ ~~P0~~ | **Regenerate `lib/database.types.ts`** | Done — regenerated from the live schema (all recent tables/columns now typed). The `as unknown as SupabaseClient` casts still compile and can be removed file-by-file as follow-up cleanup | `lib/database.types.ts` |
 | ✅ ~~P0~~ | **Journey reward fires** | Audit false positive — Full-Day/Rhythm/Journey-complete are **already** wired (ADR-200, `lib/journey-rewards.ts`, 10/10 tests). No work needed | done |
 | ✅ ~~P0~~ | **RSVP confirmation email** | Done — sends on going/waitlist via the durable outbox + prefs/suppression + calendar links | `events/actions.ts`, `lib/email.ts` |
 | ✅ ~~P0~~ | **Event cancel → bulk refund + notify** | Done — cancel refunds every succeeded ticket (idempotent `refundTicket`) + emails attendees; behind the host/admin gate + a first-cancel transition guard | `admin/events/actions.ts`, `lib/email.ts` |
-| 🟠 **P1** | **Public/unlisted event RLS** | `events.visibility` is decorative — enforce in RLS **before** standalone/public events ship (safe today: circle-only) | events RLS |
-| 🟠 **P1** | **Owner go-live configs** | Stripe Connect payouts (`host_payouts_enabled`), `RESEND_WEBHOOK_SECRET`, run Supabase advisors | owner / env |
+| ✅ ~~P1~~ | **Public/unlisted event RLS** | Done — visibility-aware SELECT policy (applied to prod) + app-level gate on the detail page + listable-only browse filter. ADR-202 | `20260612000000_events_visibility_rls.sql` |
+| 🟠 **P1** | **Owner go-live configs** | Remaining owner-side: Stripe Connect payouts (`host_payouts_enabled`), `RESEND_WEBHOOK_SECRET`, enable Auth leaked-password protection, review whether anonymous sign-ins should be off. **Advisors run 2026-06**: the one fixable security class (20 mutable-search_path functions) is pinned (applied to prod); remaining lints are INFO/by-design (service-role-write-only tables) or deferred perf tuning (RLS initplan ×59, permissive-policy consolidation ×92, FK indexes ×38 — all pre-launch noise) | owner / env |
 | ✅ ~~P2~~ | Journey intensity-tier UI (Spark/Current/Deep) | **Audit false positive** — already built + live (`TierControl` wired in `/journeys/[slug]`, `setMyJourneyTierAction`, `resolveTier` chain, 17 tests, 48 seeded tiers). The journeys-audit findings were read from JOURNEYS.md (marked "planned") but the code shipped them — **verify journey items against code before building** | done |
 | ✅ ~~P2~~ | Circle-scoped challenges model | Done — a host adopts a global `season_challenge` for the circle to do **together**; the CircleQuest Challenges column shows collective progress ("N of M members done") and members completing it credit the circle's Circle Field (collaborative, ADR-201). New `circle_challenge_adoptions` table (applied to prod) | `lib/circles/challenges.ts`, `circle-challenges`, `admin-actions.ts` |
 | ✅ ~~P2~~ | Practice backlinks ("used in these journeys/circles") | Done (#489) | `app/(main)/practices/[id]` |
 | ✅ ~~P2~~ | Plus-ones + "maybe" RSVP controls | Done (#489) | event RSVP form |
-| 🟡 **P2** | Library "Propose to Library" + `/admin/journeys` review queue | Publish flow + status field exist; no UI | journeys/practices |
-| 🟡 **P2** | Extend Settings panel to events/channels/people (PX.5) | Only circles have the full in-page editor | `page-admin-bar` |
-| 🟢 **P3** | Font-token cleanup (~6 `text-[Npx]`) | Token discipline | events ticket button · admin event edit · quests · library · CRM |
-| 🟢 **P3** | Per-section Suspense on `/events` · per-event OG image · `offers` in eventSchema · distance facet | FCP + SEO polish | events |
+| ✅ ~~P2~~ | Library "Propose to Library" + review queue | **Audit false positive** — fully shipped: `ProposeToLibraryButton` on owned practices/journeys, `/library/review` queue (Host/Guide+ gated, approve/reject), linked from the Library header with a pending-count badge | `/library/review` |
+| ✅ ~~P2~~ | Extend Settings panel to events/channels/people (PX.5) | Done — events/hubs/nexuses already had modules; added **ChannelSettingsModule** (staff-only, `channel.manage`) and **PersonSettingsModule** (janitor-only moderation surface) to the page admin dock | `page-admin-bar`, `admin/modules/*` |
+| ✅ ~~P3~~ | Font-token cleanup | Done — zero `text-[10/11px]` remain (bulk in #489; stragglers in QR module, season-progress, rail panels swept after) | — |
+| ✅ ~~P3~~ | Per-section Suspense on `/events` · per-event OG image · `offers` in eventSchema · distance facet | Done — "For You" lane streams behind `<Suspense>` (shell no longer waits on embeddings/AI); dynamic OG image at `/discover/events/[slug]/opengraph-image`; `offers` + honest `isAccessibleForFree` from `price_cents` (public RPCs updated, applied to prod); "Distance" facet from the viewer's fuzzed home geocell → hosting-circle coords (hidden without a home location) | events |
 | 🔵 **Deferred** | SMS reminders (EIN/Twilio/A2P) · post-event recap album (`event_posts` unused) · duo-streaks/reciprocity/bridge-badge metrics | Owner decisions / later waves | — |
 
 ## The headline

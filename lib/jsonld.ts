@@ -74,17 +74,27 @@ export function eventSchema(event: PublicEvent) {
     ...(event.ends_at ? { endDate: event.ends_at } : {}),
     eventStatus: 'https://schema.org/EventScheduled',
     eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
-    // Google lists `image` as required for Event rich results. No per-event image
-    // is exposed to the public RPC yet, so fall back to the site OG image. (A
-    // dynamic per-event OG image is tracked in docs/EVENTS-AUDIT.md.)
-    image: [abs('/opengraph-image')],
+    // Google lists `image` as required for Event rich results — the per-event
+    // dynamic OG image (app/discover/events/[slug]/opengraph-image.tsx), with
+    // the site image as a secondary.
+    image: [abs(`/discover/events/${event.slug}/opengraph-image`), abs('/opengraph-image')],
     ...(event.description ? { description: event.description } : {}),
     location,
     url: abs(`/discover/events/${event.slug}`),
     ...(event.circle_name
       ? { organizer: { '@type': 'Organization', name: event.circle_name } }
       : {}),
-    isAccessibleForFree: true,
+    // Pricing from the public RPC (price_cents; null/0 = free). The offer URL is
+    // the public event page — tickets are bought there after sign-in.
+    isAccessibleForFree: !(event.price_cents && event.price_cents > 0),
+    offers: {
+      '@type': 'Offer',
+      price: event.price_cents && event.price_cents > 0 ? (event.price_cents / 100).toFixed(2) : '0.00',
+      priceCurrency: 'USD',
+      availability: 'https://schema.org/InStock',
+      url: abs(`/discover/events/${event.slug}`),
+      validFrom: event.starts_at,
+    },
   }
 }
 
