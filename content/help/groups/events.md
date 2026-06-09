@@ -32,6 +32,17 @@ Events are the gatherings that make Frequency real: the in-person and online mee
 ## Finding events
 
 - Browse the events library and filter by **what kind of gathering** it is (ceremony, movement, learning, social, and more), by its **energy** (grounding vs. high-activation), or to show only events that still **have open spots**.
+- When we have a sense of what resonates with you, a **"For You"** lane suggests gatherings you'd vibe with — and tells you, warmly, *why*. If we don't have enough to go on yet, you'll just see what's soonest and nearest.
+
+## Tickets & paying
+
+- Many gatherings are free — just RSVP. Some are **ticketed**, and hosts can price them however fits: a set price, **pay-what-you-can**, a **sliding scale**, or a **donation**. Pick the amount that works for you (within any minimum the host sets).
+- Payment goes **straight to the host**. If plans change, hosts can **refund** a ticket.
+
+## Building Field together
+
+- When you show up to a gathering **with your circle**, your circle builds **Field** together — a shared measure of your circle showing up for each other. It grows every time a member attends.
+- It's **collaborative, not a competition** — circles are never ranked against each other. A circle's Field stays private to its members unless the circle chooses to share it.
 
 ## Tips
 
