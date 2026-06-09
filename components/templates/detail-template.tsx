@@ -13,6 +13,7 @@
 // the page, so this works in a server component.
 
 import Link from 'next/link'
+import { PageAdminBar } from '@/components/layout/page-admin-bar'
 
 export interface DetailTab {
   href: string
@@ -74,6 +75,9 @@ export function DetailTemplate({
           </nav>
         )}
       </header>
+
+      {/* The on-page "Settings" split sits on the line under the header. */}
+      <PageAdminBar />
 
       {/* Body — usually a Stream or Index */}
       {children}
