@@ -16,6 +16,7 @@ Events are the gatherings that make Frequency real: the in-person and online mee
 - Open an event to see the details and **RSVP** so the host knows you're coming.
 - The event page shows **who's already going** — faces, the count, and anyone from your circles — so you can see the room before you arrive.
 - Changed your plans? You can update your RSVP anytime.
+- When you RSVP, we **email you a confirmation** with the details and a one-tap calendar link (and a quick note if you land on the waitlist), then nudge you again as the date nears.
 - Your upcoming events surface in your feed so they don't sneak up on you.
 
 ## Capacity & waitlists
@@ -37,7 +38,7 @@ Events are the gatherings that make Frequency real: the in-person and online mee
 ## Tickets & paying
 
 - Many gatherings are free — just RSVP. Some are **ticketed**, and hosts can price them however fits: a set price, **pay-what-you-can**, a **sliding scale**, or a **donation**. Pick the amount that works for you (within any minimum the host sets).
-- Payment goes **straight to the host**. If plans change, hosts can **refund** a ticket.
+- Payment goes **straight to the host**. If plans change, hosts can **refund** a ticket — and if a host **cancels the event, everyone who paid is refunded automatically** and emailed to let you know.
 
 ## Building Field together
 
