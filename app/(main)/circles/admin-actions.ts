@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCircleCapabilities } from '@/lib/core/load-capabilities'
+import { listPublicPractices, getCircleActivePractice } from '@/lib/practices'
 import type { Database } from '@/lib/database.types'
 
 // In-place "Circle settings" admin module (EMBEDDED-ADMIN.md / ADR-133, Phase-2
@@ -26,7 +27,17 @@ export async function getCircleAdminData(slug: string) {
   const caps = await getCircleCapabilities(circle.id)
   if (!caps.has('circle.editSettings')) return null
 
-  return circle
+  // Also load the practice picker data ("This week's practice" lives here now).
+  const [practice_library, activePractice] = await Promise.all([
+    listPublicPractices(),
+    getCircleActivePractice(circle.id),
+  ])
+
+  return {
+    ...circle,
+    practice_library: practice_library.map((p) => ({ id: p.id, title: p.title })),
+    active_practice_id: activePractice?.id ?? null,
+  }
 }
 
 /** Patch the day-to-day circle settings in place. Re-checks circle.editSettings

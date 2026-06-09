@@ -7,6 +7,7 @@
 
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
+import { PageAdminBar } from '@/components/layout/page-admin-bar'
 
 export function PageHeading({
   eyebrow,
@@ -28,6 +29,7 @@ export function PageHeading({
   divider?: boolean
 }) {
   return (
+    <>
     <div className={`mb-5 sm:mb-6 ${divider ? 'border-b border-border pb-4 sm:pb-5' : ''}`}>
       {back && (
         <Link
@@ -56,5 +58,8 @@ export function PageHeading({
         {actions && <div className="shrink-0">{actions}</div>}
       </div>
     </div>
+    {/* The on-page "Settings" split sits on the line under the header. */}
+    <PageAdminBar />
+    </>
   )
 }
