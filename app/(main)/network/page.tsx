@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -29,6 +30,7 @@ import {
 import type { ProximityBand } from '@/lib/connections/location'
 import { resolvePageContent } from '@/lib/page-content'
 import { getInitials } from '@/lib/utils'
+import { ConnectionsPulse } from '@/components/connections/connections-pulse'
 
 type Profile = ProfileIdentity & {
   id: string
@@ -369,6 +371,16 @@ export default async function CommunityPage({
           </p>
         )}
       </div>
+
+      {/* "Connections this week" pulse (ADR-186, P5 + P3b) — the proactive nudge
+          that turns the directory into an agenda. Behind Suspense so its reads
+          never block the directory below (PAGE-FRAMEWORK §5); renders nothing
+          when there's nothing to surface (or the relevant toggles are off). */}
+      <Suspense fallback={null}>
+        <div className="mt-6">
+          <ConnectionsPulse />
+        </div>
+      </Suspense>
 
       {/* Two-column body: 2/3 listings · 1/3 sidebar. Shares the page gutter with
           the header / filter row above, so both halves line up against the divider. */}
