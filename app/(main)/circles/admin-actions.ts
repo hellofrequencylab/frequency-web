@@ -2,10 +2,99 @@
 
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { getCircleCapabilities } from '@/lib/core/load-capabilities'
 import { listPublicPractices, getCircleActivePractice } from '@/lib/practices'
 import { slugify } from '@/lib/utils'
 import type { Database } from '@/lib/database.types'
+
+/** A small {id, title, href} entry for one of the circle's adopted Quest items. */
+export interface CircleQuestItem {
+  id: string
+  title: string
+  href: string
+}
+
+/** The Journeys, Practices, and Challenges this circle has adopted. Challenges aren't
+ *  modelled per-circle yet (season_challenges are global), so that list is always
+ *  empty — the module shows a graceful empty state rather than inventing data. */
+export interface CircleQuestAdoptions {
+  journeys: CircleQuestItem[]
+  practices: CircleQuestItem[]
+  challenges: CircleQuestItem[]
+}
+
+// The journey/practice link tables aren't in the generated Database types (fresh
+// migrations), so we read them through an untyped admin handle — the repo convention
+// from lib/practices.ts / lib/journey-plans.ts. The capability gate in the caller is
+// the authority either way.
+function untyped(): SupabaseClient {
+  return createAdminClient() as unknown as SupabaseClient
+}
+
+/** Load what this circle has adopted, honestly sourced from the real schema:
+ *  - PRACTICES: every distinct practice the host has ever set as the circle's
+ *    practice (circle_practices → practices). The active one floats to the top.
+ *  - JOURNEYS: journeys currently adopted by this circle's active members
+ *    (journey_plan_adoptions ∩ memberships) — the only circle-scoped journey signal.
+ *  - CHALLENGES: not modelled per-circle (season_challenges are global) → [].
+ *  Caller gates on circle.editSettings. */
+async function getCircleQuestAdoptions(circleId: string): Promise<CircleQuestAdoptions> {
+  const db = untyped()
+
+  // Practices this circle has adopted (current + past), newest first; the active one
+  // is surfaced first. circle_practices may carry the same practice more than once
+  // over time, so de-dupe by practice id.
+  const practicesP = db
+    .from('circle_practices')
+    .select('active, created_at, practice:practices(id, title)')
+    .eq('circle_id', circleId)
+    .order('active', { ascending: false })
+    .order('created_at', { ascending: false })
+    .then(({ data }) => {
+      const rows =
+        (data as unknown as { active: boolean; practice: { id: string; title: string } | null }[] | null) ?? []
+      const seen = new Set<string>()
+      const out: CircleQuestItem[] = []
+      for (const r of rows) {
+        const p = r.practice
+        if (!p || seen.has(p.id)) continue
+        seen.add(p.id)
+        out.push({ id: p.id, title: p.title, href: `/practices/${p.id}` })
+      }
+      return out
+    })
+
+  // Journeys this circle is on = journeys its active members have actively adopted.
+  const journeysP = (async (): Promise<CircleQuestItem[]> => {
+    const { data: memberRows } = await db
+      .from('memberships')
+      .select('profile_id')
+      .eq('circle_id', circleId)
+      .eq('status', 'active')
+    const memberIds = [...new Set(((memberRows ?? []) as { profile_id: string }[]).map((m) => m.profile_id))]
+    if (memberIds.length === 0) return []
+
+    const { data: adoptionRows } = await db
+      .from('journey_plan_adoptions')
+      .select('plan:journey_plans(id, slug, title)')
+      .eq('active', true)
+      .in('profile_id', memberIds)
+    const seen = new Set<string>()
+    const out: CircleQuestItem[] = []
+    for (const r of (adoptionRows ?? []) as unknown as { plan: { id: string; slug: string; title: string } | null }[]) {
+      const plan = r.plan
+      if (!plan || seen.has(plan.id)) continue
+      seen.add(plan.id)
+      out.push({ id: plan.id, title: plan.title, href: `/journeys/${plan.slug}` })
+    }
+    return out
+  })()
+
+  const [practices, journeys] = await Promise.all([practicesP, journeysP])
+  // Challenges aren't circle-scoped in the schema — leave empty (graceful degrade).
+  return { journeys, practices, challenges: [] }
+}
 
 // Known rail block keys — the editor and the saved order are constrained to these.
 const SIDEBAR_KEYS = ['members', 'health', 'practice', 'events', 'invite'] as const
@@ -45,10 +134,12 @@ export async function getCircleAdminData(slug: string) {
   const caps = await getCircleCapabilities(circle.id)
   if (!caps.has('circle.editSettings')) return null
 
-  // Also load the practice picker data ("This week's practice" lives here now).
-  const [practice_library, activePractice] = await Promise.all([
+  // Also load the practice picker data ("This week's practice" lives here now) plus
+  // the Circle Quest adoptions (journeys / practices / challenges) the module lists.
+  const [practice_library, activePractice, adoptions] = await Promise.all([
     listPublicPractices(),
     getCircleActivePractice(circle.id),
+    getCircleQuestAdoptions(circle.id),
   ])
 
   return {
@@ -63,6 +154,9 @@ export async function getCircleAdminData(slug: string) {
     sidebar_order: (circle.sidebar_order ?? null) as string[] | null,
     practice_library: practice_library.map((p) => ({ id: p.id, title: p.title })),
     active_practice_id: activePractice?.id ?? null,
+    adoptedJourneys: adoptions.journeys,
+    adoptedPractices: adoptions.practices,
+    adoptedChallenges: adoptions.challenges,
   }
 }
 

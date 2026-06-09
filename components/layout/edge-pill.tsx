@@ -2,13 +2,13 @@
 
 import { useEffect, useState, type ReactNode } from 'react'
 
-// The two floating edge buttons — Vera (right) and Next Steps (left) — share THIS one
-// component so they're identical in size + behaviour on web and mobile:
-//   • collapsed (tucked to its edge) by default, but ALWAYS showing its icon + a sliver
-//     of the pill so it stays recognisable at rest;
-//   • WEB: mouse-over reveals it; a click then opens its panel;
+// The two edge TABS — Vera (right) and Next Steps (left) — share THIS one component
+// so they're identical in size + behaviour on web and mobile. Each is a tab tucked
+// flush into the screen margin (rounded only on its inner edge), not a floating pill:
+//   • collapsed it shows ONLY its icon, peeking from the edge;
+//   • WEB: mouse-over reveals the label; a click then opens its panel;
 //   • MOBILE: first tap reveals it; a second tap opens its panel;
-//   • when something's waiting, the pill does an OCCASIONAL WIGGLE (a brief shake every
+//   • when something's waiting, the tab does an OCCASIONAL WIGGLE (a brief shake every
 //     ~8–12s) instead of a constant glow — a quiet "psst", honoured for reduced motion.
 export function EdgePill({
   side,
@@ -84,11 +84,11 @@ export function EdgePill({
     }
   }
 
-  // At rest the launcher is a compact ICON-ONLY round button; hover/tap expands it
-  // into the labelled pill. (Owner ask: "only the icon showing".)
+  // A tab flush to the screen edge, rounded only on its inner side. At rest it shows
+  // ONLY its icon (a sliver peeking from the margin); hover/tap slides the label out.
   const skin = onLeft
-    ? 'left-3 border border-border bg-surface/90 text-broadcast-strong backdrop-blur-sm'
-    : 'right-3 bg-primary/90 text-on-primary'
+    ? 'left-0 rounded-r-2xl border-y border-r border-border bg-surface/95 text-broadcast-strong backdrop-blur-sm'
+    : 'right-0 rounded-l-2xl bg-primary/95 text-on-primary'
 
   return (
     <button
@@ -100,8 +100,8 @@ export function EdgePill({
       aria-haspopup="dialog"
       className={`fixed bottom-20 z-40 flex h-11 items-center justify-center text-sm font-semibold shadow-md transition-all duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] md:bottom-6 ${
         expanded
-          ? `gap-1.5 rounded-full px-4 ${onLeft ? 'flex-row-reverse' : ''}`
-          : 'w-11 rounded-full'
+          ? `gap-1.5 px-4 ${onLeft ? 'flex-row-reverse pl-3' : 'pr-3'}`
+          : 'w-9'
       } ${skin} ${wiggling ? 'edge-pill-wiggle' : ''}`}
     >
       {/* Self-contained wiggle keyframes — a small rotate/translate nudge that runs once

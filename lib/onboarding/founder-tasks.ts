@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getPracticeStreak } from '@/lib/practice-streak'
+import { FOUNDER_TASKS, type FounderTaskCopy, type FounderTaskKey } from '@/lib/onboarding/founder-config'
 
 // Founder's First Week — the "go deeper" layer past activation (BETA-ACTIVATION
 // §3–4, build item 1.4). Event-derived: each task is computed from the domain
@@ -8,14 +9,13 @@ import { getPracticeStreak } from '@/lib/practice-streak'
 // approach as getUserStats, so it can never disagree with the gamification engine.
 // No new engine: rewards ride the existing gem ledger, the badge the achievements
 // catalog (claimFounderRewards in app/(main)/founder/founder-actions.ts).
+//
+// The task COPY (labels / nudges / links) + the reward all live in one editable
+// place — lib/onboarding/founder-config.ts. This module only computes `done`.
 
-export type FounderTaskKey = 'post' | 'react' | 'friend' | 'second_circle' | 'rsvp' | 'streak3'
+export type { FounderTaskKey } from '@/lib/onboarding/founder-config'
 
-export interface FounderTask {
-  key: FounderTaskKey
-  label: string
-  nudge: string
-  href: string
+export interface FounderTask extends FounderTaskCopy {
   done: boolean
 }
 
@@ -50,50 +50,18 @@ export async function getFounderTasks(profileId: string): Promise<FounderTasks> 
 
   const meta = (profileRow.data?.meta ?? null) as { founder?: { rewarded?: FounderTaskKey[]; badge?: boolean } } | null
 
-  const tasks: FounderTask[] = [
-    {
-      key: 'post',
-      label: 'Say something',
-      nudge: 'Your first post — a hello, a question, a photo from today.',
-      href: '/feed',
-      done: (posts.count ?? 0) > 0,
-    },
-    {
-      key: 'react',
-      label: 'React to someone',
-      nudge: 'A heart or a +1 on a post. Let someone know you saw them.',
-      href: '/feed',
-      done: (reactions.count ?? 0) > 0,
-    },
-    {
-      key: 'friend',
-      label: 'Make a friend',
-      nudge: 'Connect with one person. The network starts with a single tie.',
-      href: '/people',
-      done: (friends.count ?? 0) > 0,
-    },
-    {
-      key: 'second_circle',
-      label: 'Join a second circle',
-      nudge: 'One circle is a foothold; two is a life. Find another room.',
-      href: '/circles',
-      done: (circles.count ?? 0) >= 2,
-    },
-    {
-      key: 'rsvp',
-      label: 'RSVP to something',
-      nudge: 'Say you’ll be there. Showing up in person is the whole point.',
-      href: '/events',
-      done: (rsvps.count ?? 0) > 0,
-    },
-    {
-      key: 'streak3',
-      label: 'Build a 3-day streak',
-      nudge: 'Log your practice three days running. Momentum is the reward.',
-      href: '/practices',
-      done: streak.current >= 3,
-    },
-  ]
+  // The source-of-truth signal proving each task done. Copy lives in the config; this
+  // is the only place that knows which DB fact each key maps to.
+  const doneByKey: Record<FounderTaskKey, boolean> = {
+    post: (posts.count ?? 0) > 0,
+    react: (reactions.count ?? 0) > 0,
+    friend: (friends.count ?? 0) > 0,
+    second_circle: (circles.count ?? 0) >= 2,
+    rsvp: (rsvps.count ?? 0) > 0,
+    streak3: streak.current >= 3,
+  }
+
+  const tasks: FounderTask[] = FOUNDER_TASKS.map((t) => ({ ...t, done: doneByKey[t.key] }))
 
   const doneCount = tasks.filter((t) => t.done).length
 

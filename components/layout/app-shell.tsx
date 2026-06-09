@@ -1242,6 +1242,10 @@ export default function AppShell({
     // sub-routes light up their own entry via the generic prefix rule below.
     if (href === '/crew')     return pathname === '/crew'
     if (href === '/search')   return pathname === '/search'
+    // /admin is the section root with many sub-routes that are their own rail items
+    // (QR Studio, Support, Insight, Vera, Hubs, Memberships). Match it EXACTLY so a
+    // sub-route lights up only its own entry, not Overview/Admin too.
+    if (href === '/admin')    return pathname === '/admin'
     return pathname === href || pathname.startsWith(href + '/')
   }
 
