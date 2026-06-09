@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { getMyProfileId } from '@/lib/auth'
+import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 import {
   createPlan,
@@ -13,13 +13,19 @@ import {
   reorderItems,
   publishPlan,
   setPlanVisibility,
+  setPlanStatus,
+  setPlanOfficial,
   adoptPlan,
   forkPlan,
   getPlan,
   planAuthorId,
   planMeta,
   type PlanVisibility,
+  type PlanStatus,
+  type PageWidgetConfig,
 } from '@/lib/journey-plans'
+import type { IntensityTier } from '@/lib/journey-tiers'
+import { getSeasonalQuests } from '@/lib/quests'
 
 // Server actions for the Journeys builder (ADR-096; free, ADR-152).
 // Building, editing, publishing to the community library, and adopting/forking
@@ -218,24 +224,141 @@ export async function reorderJourneySteps(planId: string, order: string[]): Prom
 export async function setJourneyStep(
   planId: string,
   practiceId: string,
-  patch: { note?: string | null; cadence?: string | null },
+  patch: { note?: string | null; cadence?: string | null; defaultTier?: IntensityTier },
 ): Promise<ActionResult> {
   if (!(await assertOwner(planId))) return fail('Not allowed.')
   await updateItem(planId, practiceId, patch)
   return ok()
 }
 
-/** Set visibility. Public = publish to the community library (free; stamps published_at). */
+/**
+ * Set visibility + drive the review workflow (docs/JOURNEYS.md §11–§12).
+ * Public = publish to the community library (free; stamps published_at):
+ *  - a member-built Journey goes to `status='pending'` (Guide+ review backlog),
+ *  - a Guide/Mentor's own Journey auto-approves (`status='approved'`).
+ * Private/Unlisted just sets visibility (no status change).
+ *
+ * Returns the resolved review state so the builder can show the right celebration
+ * ("live" vs "in review").
+ */
 export async function setJourneyVisibility(
   planId: string,
   visibility: PlanVisibility,
-): Promise<ActionResult> {
-  if (!(await assertOwner(planId))) return fail('Not allowed.')
+): Promise<ActionResult<{ status: PlanStatus }>> {
+  const caller = await getCallerProfile()
+  if (!caller) return fail('Not allowed.')
+  const author = await planAuthorId(planId)
+  if (!author || author !== caller.id) return fail('Not allowed.')
+
   if (visibility === 'public') {
     await publishPlan(planId)
-  } else {
-    await setPlanVisibility(planId, visibility)
+    // Mentor+ (guide/mentor) auto-approve; everyone else enters the review queue.
+    const status: PlanStatus = canMakeOfficial(caller.community_role) ? 'approved' : 'pending'
+    await setPlanStatus(planId, status)
+    revalidatePath('/journeys', 'layout')
+    return ok({ status })
   }
+
+  await setPlanVisibility(planId, visibility)
+  revalidatePath('/journeys', 'layout')
+  return ok({ status: 'draft' })
+}
+
+// --- New editor sections (docs/JOURNEYS.md §11) — all autosaved, JSON args -----
+// These extend the Studio builder with completion rules, rewards, the page-layout
+// widget config, the publishing review workflow, and the official program. Each
+// re-checks ownership (the client is never trusted); the official actions also
+// re-check the community role (only Guide/Mentor may flag a Journey official).
+
+/** True for the roles that may flag a Journey official + auto-approve on publish
+ *  (docs/JOURNEYS.md §12: `community_role IN ('guide','mentor')`). */
+function canMakeOfficial(role: string): boolean {
+  return role === 'guide' || role === 'mentor'
+}
+
+/** Per-step intensity default tier (Spark/Current/Deep) → updateItem defaultTier. */
+export async function setJourneyStepTier(
+  planId: string,
+  practiceId: string,
+  tier: IntensityTier,
+): Promise<ActionResult> {
+  if (!(await assertOwner(planId))) return fail('Not allowed.')
+  if (!practiceId) return fail('No step given.')
+  await updateItem(planId, practiceId, { defaultTier: tier })
+  return ok()
+}
+
+/** Completion-rules section: min practices/day, target weeks, season-locked. */
+export async function setJourneyCompletionRules(
+  planId: string,
+  patch: { minPracticesPerDay?: number; targetWeeks?: number; seasonLocked?: boolean },
+): Promise<ActionResult> {
+  if (!(await assertOwner(planId))) return fail('Not allowed.')
+  await updatePlan(planId, patch)
   revalidatePath('/journeys', 'layout')
   return ok()
+}
+
+/** Rewards section: completion Gems (10–100, clamped in updatePlan). */
+export async function setJourneyRewards(
+  planId: string,
+  completionGems: number,
+): Promise<ActionResult> {
+  if (!(await assertOwner(planId))) return fail('Not allowed.')
+  await updatePlan(planId, { completionGems })
+  revalidatePath('/journeys', 'layout')
+  return ok()
+}
+
+/** Page-layout section: the ordered widget toggle/reorder config. */
+export async function setJourneyPageConfig(
+  planId: string,
+  pageConfig: PageWidgetConfig[] | null,
+): Promise<ActionResult> {
+  if (!(await assertOwner(planId))) return fail('Not allowed.')
+  await updatePlan(planId, { pageConfig })
+  revalidatePath('/journeys', 'layout')
+  return ok()
+}
+
+/**
+ * Official section (Guide/Mentor only): toggle the official flag + link a Seasonal
+ * Quest. Re-checks the community role server-side — a member calling this is denied
+ * even if the toggle somehow rendered.
+ */
+export async function setJourneyOfficial(
+  planId: string,
+  opts: { official: boolean; questId?: string | null },
+): Promise<ActionResult> {
+  const caller = await getCallerProfile()
+  if (!caller) return fail('Not allowed.')
+  const author = await planAuthorId(planId)
+  if (!author || author !== caller.id) return fail('Not allowed.')
+  if (!canMakeOfficial(caller.community_role)) return fail('Only Guides and Mentors can flag a Journey official.')
+  await setPlanOfficial(planId, opts)
+  revalidatePath('/journeys', 'layout')
+  return ok()
+}
+
+/**
+ * Lazy context for the builder's role-gated Official section, fetched on mount so
+ * the editor works even before the page passes the new props. Returns whether the
+ * caller may make a Journey official + the assignable Seasonal Quests. Owner-checked.
+ * The plan's current official/quest/status come from the builder's own props.
+ */
+export async function loadJourneyOfficialContext(
+  planId: string,
+): Promise<ActionResult<{
+  canMakeOfficial: boolean
+  quests: { id: string; name: string; emoji: string | null }[]
+}>> {
+  const caller = await getCallerProfile()
+  if (!caller) return fail('Not allowed.')
+  const author = await planAuthorId(planId)
+  if (!author || author !== caller.id) return fail('Not allowed.')
+  const allowed = canMakeOfficial(caller.community_role)
+  const quests = allowed
+    ? (await getSeasonalQuests()).map((q) => ({ id: q.id, name: q.name, emoji: q.emoji }))
+    : []
+  return ok({ canMakeOfficial: allowed, quests })
 }

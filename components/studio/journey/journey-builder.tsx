@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Plus, X, GripVertical, ChevronUp, ChevronDown, Clock, Search, Sparkles,
@@ -15,8 +15,16 @@ import { SaveStatus, StudioFooter } from '../kit/studio-footer'
 import { accentColor, accentTint, DEFAULT_ACCENT } from '@/lib/studio/accents'
 import {
   saveJourneyMeta, addPracticeToJourney, removeJourneyStep, reorderJourneySteps,
-  setJourneyStep, setJourneyVisibility,
+  setJourneyStep, setJourneyVisibility, setJourneyStepTier, setJourneyCompletionRules,
+  setJourneyRewards, setJourneyPageConfig, setJourneyOfficial, loadJourneyOfficialContext,
 } from '@/app/(main)/journeys/actions'
+import type { IntensityTier } from '@/lib/journey-tiers'
+import type { PlanStatus, PageWidgetConfig } from '@/lib/journey-plans'
+import { normalizePageConfig } from './page-widgets-fallback'
+import {
+  TierPicker, CompletionRulesSection, RewardsSection, PageLayoutSection,
+  OfficialSection, StatusChip,
+} from './journey-sections'
 
 const CADENCES = ['Daily', 'A few times a week', 'Weekly', 'As needed']
 // Pillar → accent token, for the balance meter + per-step dot.
@@ -32,6 +40,9 @@ export interface BuilderItem {
   note: string | null
   cadence: string | null
   practiceCadence: string | null
+  /** The author's default intensity tier for this step (ADR-198). Optional for
+   *  backward-compat; defaults to 'current'. */
+  defaultTier?: IntensityTier
 }
 export interface AvailablePractice { id: string; title: string; description: string | null; domainId: string | null }
 export interface PillarLite { id: string; slug: string; name: string }
@@ -48,6 +59,25 @@ interface Props {
   initialItems: BuilderItem[]
   available: AvailablePractice[]
   pillars: PillarLite[]
+  // ── New editor sections (docs/JOURNEYS.md §11). All optional + defaulted so the
+  //    existing page invocation keeps working; the page can pass them once ready. ──
+  /** Review state of the plan (drives the publish workflow + status chip). */
+  initialStatus?: PlanStatus
+  /** Completion-rule fields. */
+  initialMinPracticesPerDay?: number
+  initialTargetWeeks?: number
+  initialSeasonLocked?: boolean
+  /** Reward field. */
+  initialCompletionGems?: number
+  /** Page-layout widget config (null → the hardcoded default). */
+  initialPageConfig?: PageWidgetConfig[] | null
+  /** Official-program state (only meaningful for Guide/Mentor authors). */
+  initialOfficial?: boolean
+  initialQuestId?: string | null
+  /** If the page already resolved the caller's role + quests, pass them to render
+   *  the Official section synchronously; otherwise the builder lazy-loads them. */
+  canMakeOfficial?: boolean
+  quests?: { id: string; name: string; emoji: string | null }[]
 }
 
 export function JourneyBuilder(props: Props) {
@@ -77,9 +107,42 @@ export function JourneyBuilder(props: Props) {
   const [pickerOpen, setPickerOpen] = useState(props.initialItems.length === 0)
   const [query, setQuery] = useState('')
 
-  // Visibility + celebration
+  // Visibility + publishing status + celebration
   const [visibility, setVisibility] = useState<Visibility>(props.initialVisibility)
-  const [celebrate, setCelebrate] = useState(false)
+  const [status, setStatus] = useState<PlanStatus>(props.initialStatus ?? 'draft')
+  const [celebrate, setCelebrate] = useState<null | 'live' | 'review'>(null)
+
+  // Completion rules
+  const [minPerDay, setMinPerDay] = useState(props.initialMinPracticesPerDay ?? 1)
+  const [targetWeeks, setTargetWeeks] = useState(props.initialTargetWeeks ?? 8)
+  const [seasonLocked, setSeasonLocked] = useState(props.initialSeasonLocked ?? false)
+
+  // Rewards
+  const [completionGems, setCompletionGems] = useState(props.initialCompletionGems ?? 30)
+
+  // Page layout (always a full, normalized catalog so the editor is stable)
+  const [pageConfig, setPageConfig] = useState<PageWidgetConfig[]>(
+    () => normalizePageConfig(props.initialPageConfig ?? null),
+  )
+
+  // Official program (Guide/Mentor only). Role + assignable quests come from the
+  // page when available, else lazy-loaded on mount (the page hasn't been updated
+  // to pass them yet — keeps the section working end-to-end regardless).
+  const [official, setOfficial] = useState(props.initialOfficial ?? false)
+  const [questId, setQuestId] = useState<string | null>(props.initialQuestId ?? null)
+  const [canMakeOfficial, setCanMakeOfficial] = useState(props.canMakeOfficial ?? false)
+  const [quests, setQuests] = useState(props.quests ?? [])
+
+  useEffect(() => {
+    if (props.canMakeOfficial !== undefined) return // page already resolved it
+    let live = true
+    void loadJourneyOfficialContext(props.planId).then((res) => {
+      if (!live || 'error' in res) return
+      setCanMakeOfficial(res.data.canMakeOfficial)
+      setQuests(res.data.quests)
+    })
+    return () => { live = false }
+  }, [props.planId, props.canMakeOfficial])
 
   // --- Item operations (optimistic; run() resyncs on failure) --------------
   const pillarById = new Map(props.pillars.map((p) => [p.id, p]))
@@ -105,15 +168,50 @@ export function JourneyBuilder(props: Props) {
     setItems((prev) => prev.map((i) => (i.practiceId === practiceId ? { ...i, ...patch } : i)))
     void run(() => setJourneyStep(props.planId, practiceId, patch))
   }
+  const setStepTier = (practiceId: string, tier: IntensityTier) => {
+    setItems((prev) => prev.map((i) => (i.practiceId === practiceId ? { ...i, defaultTier: tier } : i)))
+    void run(() => setJourneyStepTier(props.planId, practiceId, tier))
+  }
 
   const { itemProps, move, isDragging, isOver } = useSortable(items, (i) => i.practiceId, commitOrder)
 
   const changeVisibility = async (v: Visibility) => {
     const prev = visibility
     setVisibility(v)
-    const ok = await run(() => setJourneyVisibility(props.planId, v))
-    if (!ok) setVisibility(prev)
-    else if (v === 'public') { setCelebrate(true); setTimeout(() => setCelebrate(false), 2600) }
+    const res = await run(() => setJourneyVisibility(props.planId, v))
+    if (!res) { setVisibility(prev); return }
+    // setJourneyVisibility returns the resolved review state; reflect it + celebrate.
+    if (v === 'public') {
+      // Mentor+ auto-approves → "live"; member-built public → "in review".
+      const reviewed = canMakeOfficial
+      const next: PlanStatus = reviewed ? 'approved' : 'pending'
+      setStatus(next)
+      setCelebrate(reviewed ? 'live' : 'review')
+      setTimeout(() => setCelebrate(null), 3200)
+    } else {
+      setStatus('draft')
+    }
+  }
+
+  // --- New section handlers (each autosaves via run/queue) ------------------
+  const saveCompletion = (patch: { minPracticesPerDay?: number; targetWeeks?: number; seasonLocked?: boolean }) => {
+    if (patch.minPracticesPerDay !== undefined) setMinPerDay(patch.minPracticesPerDay)
+    if (patch.targetWeeks !== undefined) setTargetWeeks(patch.targetWeeks)
+    if (patch.seasonLocked !== undefined) setSeasonLocked(patch.seasonLocked)
+    void run(() => setJourneyCompletionRules(props.planId, patch))
+  }
+  const saveGems = (gems: number) => {
+    setCompletionGems(gems)
+    void run(() => setJourneyRewards(props.planId, gems))
+  }
+  const savePageConfig = (next: PageWidgetConfig[]) => {
+    setPageConfig(next)
+    void run(() => setJourneyPageConfig(props.planId, next))
+  }
+  const saveOfficial = (opts: { official: boolean; questId?: string | null }) => {
+    setOfficial(opts.official)
+    if (opts.questId !== undefined) setQuestId(opts.questId)
+    void run(() => setJourneyOfficial(props.planId, opts))
   }
 
   // --- Derived ------------------------------------------------------------
@@ -163,10 +261,16 @@ export function JourneyBuilder(props: Props) {
 
   return (
     <StudioWindow open onClose={close} eyebrow="Studio · Journey" footer={footer}>
-      {celebrate && (
+      {celebrate === 'live' && (
         <div className="mb-4 flex items-center gap-2 rounded-2xl border border-success/50 bg-success-bg px-4 py-3 text-sm font-medium text-success motion-safe:animate-in motion-safe:zoom-in-95">
           <PartyPopper className="h-5 w-5 shrink-0" />
           It’s live in the community library — anyone can adopt your journey now.
+        </div>
+      )}
+      {celebrate === 'review' && (
+        <div className="mb-4 flex items-center gap-2 rounded-2xl border border-warning/50 bg-warning-bg px-4 py-3 text-sm font-medium text-warning motion-safe:animate-in motion-safe:zoom-in-95">
+          <PartyPopper className="h-5 w-5 shrink-0" />
+          Submitted — a Guide will review it shortly, then it goes live in the library.
         </div>
       )}
 
@@ -315,6 +419,10 @@ export function JourneyBuilder(props: Props) {
                   {/* Per-step controls */}
                   {expanded === it.practiceId && (
                     <div className="mt-2 flex flex-wrap items-end gap-2 border-t border-border pt-2.5">
+                      <TierPicker
+                        value={it.defaultTier ?? 'current'}
+                        onChange={(t) => setStepTier(it.practiceId, t)}
+                      />
                       <StudioField label="Cadence">
                         <select
                           value={it.cadence ?? ''}
@@ -396,8 +504,36 @@ export function JourneyBuilder(props: Props) {
         </div>
       </div>
 
+      {/* ── Completion rules ─────────────────────────────────────── */}
+      <CompletionRulesSection
+        minPracticesPerDay={minPerDay}
+        targetWeeks={targetWeeks}
+        seasonLocked={seasonLocked}
+        onChange={saveCompletion}
+      />
+
+      {/* ── Rewards ──────────────────────────────────────────────── */}
+      <RewardsSection
+        completionGems={completionGems}
+        onChange={saveGems}
+        canOverrideZap={canMakeOfficial}
+      />
+
+      {/* ── Page layout ──────────────────────────────────────────── */}
+      <PageLayoutSection config={pageConfig} onChange={savePageConfig} />
+
+      {/* ── Official program (Guide/Mentor only) ─────────────────── */}
+      {canMakeOfficial && (
+        <OfficialSection
+          official={official}
+          questId={questId}
+          quests={quests}
+          onChange={saveOfficial}
+        />
+      )}
+
       {/* Visibility line */}
-      <div className="mt-6 flex items-center gap-2 border-t border-border pt-4 text-xs text-muted">
+      <div className="mt-6 flex flex-wrap items-center gap-2 border-t border-border pt-4 text-xs text-muted">
         <span className="font-semibold uppercase tracking-wide text-subtle">Who can see it</span>
         {([
           ['private', Lock, 'Just me'],
@@ -415,7 +551,10 @@ export function JourneyBuilder(props: Props) {
           </button>
         ))}
         {visibility === 'public' && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-success-bg px-2.5 py-1 text-success"><Globe className="h-3 w-3" /> In the community library</span>
+          <>
+            <span className="inline-flex items-center gap-1 rounded-full bg-success-bg px-2.5 py-1 text-success"><Globe className="h-3 w-3" /> In the community library</span>
+            {status !== 'approved' && <StatusChip status={status} />}
+          </>
         )}
       </div>
     </StudioWindow>

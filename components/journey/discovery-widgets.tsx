@@ -1,0 +1,244 @@
+import Link from 'next/link'
+import { Clock, Gem, Trophy, Users, Target, BookOpen } from 'lucide-react'
+import type { JourneyPlanItem } from '@/lib/journey-plans'
+import { planPillarMap } from '@/lib/journey-plans'
+import { accentColor, accentTint } from '@/lib/studio/accents'
+import { TIER_META } from '@/components/journey/tier-meta'
+import { SectionHeader } from '@/components/ui/section-header'
+import { EmptyState } from '@/components/ui/empty-state'
+import type { Pillar } from '@/lib/pillars'
+
+// Discovery-mode content blocks (docs/JOURNEYS.md §10) — the visitor / not-adopted face.
+// Each is a small Server Component the page composes per the normalized layout. Token colors
+// only; no hand-rolled headers (SectionHeader / EmptyState from the kit).
+
+const SEASON_WEEKS = 13
+
+function itemCadence(it: JourneyPlanItem): string | null {
+  return it.cadence ?? it.practice?.cadence ?? null
+}
+
+/** The Story — the intro markdown ("why this journey"). */
+export function StoryBlock({ intro }: { intro: string | null }) {
+  if (!intro) return null
+  return (
+    <section>
+      <SectionHeader title="The story" />
+      <div className="whitespace-pre-wrap rounded-2xl border border-border bg-surface p-5 text-sm leading-relaxed text-text">
+        {intro}
+      </div>
+    </section>
+  )
+}
+
+/** The Path — ordered steps with cadence, note, and the author's default tier. */
+export function PathBlock({
+  items,
+  pillarsById,
+  accent,
+}: {
+  items: JourneyPlanItem[]
+  pillarsById: Map<string, Pillar>
+  accent: string | null
+}) {
+  return (
+    <section>
+      <SectionHeader title="The path" count={items.length} />
+      {items.length === 0 ? (
+        <EmptyState icon={Target} title="No practices yet" description="This journey hasn’t mapped its steps." />
+      ) : (
+        <ol className="space-y-2">
+          {items.map((it, i) => {
+            const pid = it.domain_id ?? it.practice?.domain_id ?? null
+            const pillar = pid ? pillarsById.get(pid) : null
+            const cadence = itemCadence(it)
+            const tier = TIER_META[it.default_tier]
+            return (
+              <li key={it.id} className="rounded-2xl border border-border bg-surface px-4 py-3 shadow-sm">
+                <div className="flex min-w-0 items-start gap-3">
+                  <span
+                    className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold tabular-nums"
+                    style={{ backgroundColor: accentTint(accent, 16), color: accentColor(accent) }}
+                  >
+                    {i + 1}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-semibold text-text">{it.practice?.title ?? 'Practice'}</span>
+                      <span className="text-xs text-subtle" title={tier.blurb}>
+                        {tier.glyph} {tier.label}
+                      </span>
+                    </div>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted">
+                      {pillar && <span className="font-medium text-subtle">{pillar.name}</span>}
+                      {cadence && (
+                        <span className="inline-flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {cadence}
+                        </span>
+                      )}
+                    </div>
+                    {it.note && <p className="mt-1 text-xs leading-relaxed text-muted">{it.note}</p>}
+                  </div>
+                </div>
+              </li>
+            )
+          })}
+        </ol>
+      )}
+    </section>
+  )
+}
+
+/** The Pillar-balance meter (reuses planPillarMap). */
+export function PillarBalanceBlock({
+  items,
+  pillars,
+}: {
+  items: JourneyPlanItem[]
+  pillars: Pillar[]
+}) {
+  const coverage = new Map(planPillarMap(items).map((s) => [s.domainId, s.count]))
+  return (
+    <section>
+      <SectionHeader title="Pillar balance" />
+      <div className="flex flex-wrap gap-1.5">
+        {pillars.map((pl) => {
+          const n = coverage.get(pl.id) ?? 0
+          return (
+            <span
+              key={pl.slug}
+              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${
+                n > 0 ? 'bg-primary-bg text-primary-strong' : 'bg-surface-elevated text-subtle'
+              }`}
+            >
+              {pl.name} {n > 0 ? n : ''}
+            </span>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+
+/** Social proof — "N on this journey." */
+export function SocialProofBlock({ count }: { count: number }) {
+  if (count <= 0) return null
+  return (
+    <div className="inline-flex items-center gap-2 rounded-full bg-surface-elevated px-3 py-1.5 text-sm font-medium text-muted">
+      <Users className="h-4 w-4 text-subtle" />
+      {count} {count === 1 ? 'person' : 'people'} on this journey
+    </div>
+  )
+}
+
+/** Reward preview — the completion Gems + the permanent badge. */
+export function RewardPreviewBlock({ gems }: { gems: number }) {
+  return (
+    <section className="flex items-center gap-4 rounded-2xl border border-signal-bg bg-signal-bg/40 p-4">
+      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-signal-bg text-signal-strong">
+        <Trophy className="h-6 w-6" />
+      </span>
+      <div className="min-w-0">
+        <p className="text-sm font-bold text-text">Finish to earn</p>
+        <p className="mt-0.5 inline-flex items-center gap-1.5 text-sm text-muted">
+          <span className="inline-flex items-center gap-1 font-semibold text-signal-strong">
+            <Gem className="h-4 w-4" /> {gems} gems
+          </span>
+          · a permanent completion badge
+        </p>
+      </div>
+    </section>
+  )
+}
+
+/** The completion rule — bank target_weeks qualifying weeks of 13. */
+export function CompletionRuleBlock({ targetWeeks }: { targetWeeks: number }) {
+  return (
+    <section className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-elevated text-muted">
+        <Target className="h-5 w-5" />
+      </span>
+      <div className="min-w-0">
+        <p className="text-sm font-bold text-text">How you complete it</p>
+        <p className="mt-0.5 text-sm leading-relaxed text-muted">
+          Show up on a practice in <strong className="font-semibold text-text">{targetWeeks}</strong> of the season’s{' '}
+          {SEASON_WEEKS} weeks. Forgiving by design — a few hard weeks won’t end your run.
+        </p>
+      </div>
+    </section>
+  )
+}
+
+/** The practice guide — the intro markdown, read while practising (active mode). */
+export function PracticeGuideBlock({ intro }: { intro: string | null }) {
+  if (!intro) return null
+  return (
+    <section>
+      <SectionHeader title="Practice guide" action={<BookOpen className="h-4 w-4 text-subtle" />} />
+      <div className="whitespace-pre-wrap rounded-2xl border border-border bg-surface p-5 text-sm leading-relaxed text-text">
+        {intro}
+      </div>
+    </section>
+  )
+}
+
+/** Discovery CTA — Adopt / Remix. The forms post the existing editor-owned actions. */
+export function AdoptRemixBlock({
+  planId,
+  slug,
+  adopted,
+  canAdopt,
+  adoptAction,
+  forkAction,
+}: {
+  planId: string
+  slug: string
+  adopted: boolean
+  canAdopt: boolean
+  adoptAction: (formData: FormData) => void | Promise<void>
+  forkAction: (formData: FormData) => void | Promise<void>
+}) {
+  return (
+    <section className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="min-w-0 text-sm text-muted">
+          {adopted
+            ? 'You’ve adopted this journey — its practices are in your daily loop.'
+            : 'Adopt it to add these practices to your daily loop, or remix it into your own.'}
+        </p>
+        <div className="flex shrink-0 items-center gap-2">
+          {adopted ? (
+            <Link
+              href={`/journeys/${slug}`}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-success-bg px-4 py-2 text-sm font-semibold text-success"
+            >
+              <Trophy className="h-4 w-4" /> Adopted
+            </Link>
+          ) : (
+            <form action={adoptAction}>
+              <input type="hidden" name="planId" value={planId} />
+              <input type="hidden" name="slug" value={slug} />
+              <button
+                type="submit"
+                disabled={!canAdopt}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Adopt journey
+              </button>
+            </form>
+          )}
+          <form action={forkAction}>
+            <input type="hidden" name="planId" value={planId} />
+            <button
+              type="submit"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-border px-4 py-2 text-sm font-medium text-text transition-colors hover:border-primary hover:text-primary-strong"
+            >
+              Remix
+            </button>
+          </form>
+        </div>
+      </div>
+    </section>
+  )
+}
