@@ -6,7 +6,13 @@ import { Check } from 'lucide-react'
 import { AdminModuleCard } from '@/components/admin/admin-module-card'
 import { moduleById } from '@/lib/admin/modules/registry'
 import { fieldClasses, labelClasses } from '@/components/ui/field'
-import { getCircleAdminData, updateCircleSettings } from '@/app/(main)/circles/admin-actions'
+import { InlineCover } from '@/components/admin/inline/inline-cover'
+import {
+  getCircleAdminData,
+  updateCircleSettings,
+  uploadCircleCover,
+  removeCircleCover,
+} from '@/app/(main)/circles/admin-actions'
 
 // The Phase-2 pilot module (EMBEDDED-ADMIN.md / ADR-133): in-place "Circle
 // settings", rendered inside the page admin dock on a /circles/[slug] page. It
@@ -63,6 +69,18 @@ export function CircleSettingsModule() {
 
   return (
     <AdminModuleCard title={mod?.label ?? 'Circle settings'} Icon={mod?.Icon} desc={mod?.desc}>
+      {/* Cover image — edited here in Settings (no inline editing on the page). */}
+      <div className="mb-4 space-y-1">
+        <span className={fieldLabel}>Cover image</span>
+        <InlineCover
+          value={data.image_url ?? null}
+          alt={data.name}
+          canEdit
+          upload={uploadCircleCover.bind(null, data.id, data.slug)}
+          remove={removeCircleCover.bind(null, data.id, data.slug)}
+        />
+      </div>
+
       <form onSubmit={handleSubmit} className="space-y-3">
         <label className="block space-y-1">
           <span className={fieldLabel}>Name</span>

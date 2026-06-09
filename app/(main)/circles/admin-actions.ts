@@ -18,7 +18,7 @@ export async function getCircleAdminData(slug: string) {
   const admin = createAdminClient()
   const { data: circle } = await admin
     .from('circles')
-    .select('id, slug, name, about, type, member_cap, status')
+    .select('id, slug, name, about, type, member_cap, status, image_url')
     .eq('slug', slug)
     .maybeSingle()
   if (!circle) return null

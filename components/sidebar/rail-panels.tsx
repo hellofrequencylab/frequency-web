@@ -287,9 +287,9 @@ export async function ControlCenterPanel({ profileId }: { profileId: string }) {
       {/* Hero — the panel that has to stand out. A bordered, tinted block with a
           rank crest, live progress-to-next-rank bar, and the season scoreboard so
           the whole "where am I in the game" answer is scannable at a glance. */}
-      <div className="overflow-hidden rounded-xl border border-broadcast/40 bg-broadcast-bg/40 shadow-sm">
-        <div className="flex items-center justify-between gap-2 border-b border-broadcast/20 bg-broadcast-bg/40 px-3 py-2">
-          <span className="inline-flex items-center gap-1.5 text-2xs font-bold uppercase tracking-wide text-broadcast-strong">
+      <div className="overflow-hidden rounded-2xl border border-primary-bg bg-gradient-to-br from-primary-bg/60 via-warning-bg/40 to-surface shadow-sm">
+        <div className="flex items-center justify-between gap-2 border-b border-primary-bg/60 bg-primary-bg/40 px-3 py-2">
+          <span className="inline-flex items-center gap-1.5 text-2xs font-bold uppercase tracking-wide text-primary-strong">
             <Trophy className="h-3.5 w-3.5" /> Season standing
           </span>
           <span className="rank-badge text-2xs font-bold leading-tight" style={seasonRankStyle(rank)}>
@@ -298,39 +298,51 @@ export async function ControlCenterPanel({ profileId }: { profileId: string }) {
         </div>
 
         <div className="space-y-2.5 px-3 py-3">
-          {/* Rank progress to next tier */}
-          <div className="space-y-1.5">
+          {/* Rank progress to next tier → leaderboard */}
+          <Link
+            href="/crew/leaderboard"
+            className="block space-y-1.5 rounded-lg px-1.5 py-1 transition-colors hover:bg-primary-bg/60"
+          >
             <div className="flex items-center justify-between gap-2 text-2xs">
               <span className="font-semibold text-text">{next ? `Climbing to ${next.label}` : 'Top rank reached'}</span>
               <span className="tabular-nums text-subtle">
                 {next ? <>{(next.minZaps - zaps).toLocaleString()} ⚡ to go</> : 'Max'}
               </span>
             </div>
-            <div className="h-2 overflow-hidden rounded-full bg-surface-elevated">
+            <div className="h-2 overflow-hidden rounded-full bg-warning-bg/60">
               <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
             </div>
-          </div>
+          </Link>
 
-          {/* Season scoreboard — zaps · gems · streak */}
+          {/* Season scoreboard — zaps · gems · streak, each linking into the Quest dashboard */}
           <div className="grid grid-cols-3 gap-1.5">
-            <div className="rounded-lg bg-surface px-2 py-1.5 text-center">
+            <Link
+              href="/crew/leaderboard"
+              className="rounded-lg bg-primary-bg/40 px-2 py-1.5 text-center transition-colors hover:bg-primary-bg/60"
+            >
               <span className="flex items-center justify-center gap-0.5 text-sm font-bold tabular-nums text-text">
                 <Zap className="h-3 w-3 text-primary" /> {zaps.toLocaleString()}
               </span>
               <span className="text-[10px] font-medium uppercase tracking-wide text-subtle">Zaps</span>
-            </div>
-            <div className="rounded-lg bg-surface px-2 py-1.5 text-center">
+            </Link>
+            <Link
+              href="/crew/store"
+              className="rounded-lg bg-primary-bg/40 px-2 py-1.5 text-center transition-colors hover:bg-primary-bg/60"
+            >
               <span className="flex items-center justify-center gap-0.5 text-sm font-bold tabular-nums text-text">
                 <Gem className="h-3 w-3 text-signal" /> {gems.toLocaleString()}
               </span>
               <span className="text-[10px] font-medium uppercase tracking-wide text-subtle">Gems</span>
-            </div>
-            <div className="rounded-lg bg-surface px-2 py-1.5 text-center">
+            </Link>
+            <Link
+              href="/crew/streaks"
+              className="rounded-lg bg-primary-bg/40 px-2 py-1.5 text-center transition-colors hover:bg-primary-bg/60"
+            >
               <span className="flex items-center justify-center gap-0.5 text-sm font-bold tabular-nums text-text">
                 <Flame className={`h-3 w-3 ${streak > 0 ? 'text-primary-strong' : 'text-subtle'}`} /> {streak}
               </span>
               <span className="text-[10px] font-medium uppercase tracking-wide text-subtle">Streak</span>
-            </div>
+            </Link>
           </div>
 
           {streak > 0 && (
