@@ -1,13 +1,17 @@
-import { Zap, Map, BookOpen, Users } from 'lucide-react'
+import { Zap, BookOpen, Users } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminPage, AdminSection } from '@/components/admin/admin-page'
 import { StatCard } from '@/components/ui/stat-card'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Database } from '@/lib/database.types'
-import { NewQuestChainButton, EditQuestChainButton, DeleteQuestChainButton, OfficialToggle } from './quest-controls'
+import { OfficialToggle } from './quest-controls'
 
-type QuestChain = Database['public']['Tables']['quest_chains']['Row']
+// The Journeys admin surface. The legacy quest-chain engine this page once
+// managed is fully retired (ADR-152 Phase B3 — `journey_plans` is the single
+// Journey spine; the dropped quest_chains/steps/progress tables are gone from
+// prod), so what remains is the living half: the open Journey library, with the
+// staff "Official" curation toggle.
+
 // Supabase returns joined rows as arrays; use a loose intermediate type.
 interface JourneyPlanRow {
   id: string
@@ -36,16 +40,11 @@ export default async function AdminQuestsPage() {
   const typed = createAdminClient()
 
   const [
-    { data: chains },
-    { count: totalChains },
-    { count: totalProgress },
     { data: journeys },
     { count: totalJourneys },
     { count: officialCount },
+    { count: adoptionCount },
   ] = await Promise.all([
-    typed.from('quest_chains').select('*').order('sort_order', { ascending: true }).order('name', { ascending: true }),
-    typed.from('quest_chains').select('id', { count: 'exact', head: true }),
-    typed.from('quest_progress').select('id', { count: 'exact', head: true }),
     admin
       .from('journey_plans')
       .select('id, title, slug, visibility, official, adopt_count, created_at, author:profiles(display_name, handle)')
@@ -53,94 +52,25 @@ export default async function AdminQuestsPage() {
       .limit(100),
     typed.from('journey_plans').select('id', { count: 'exact', head: true }),
     typed.from('journey_plans').select('id', { count: 'exact', head: true }).eq('official', true),
+    typed.from('journey_plan_adoptions').select('id', { count: 'exact', head: true }).eq('active', true),
   ] as const)
 
-  const chainRows = (chains ?? []) as QuestChain[]
   const journeyRows = (journeys ?? []) as unknown as JourneyPlanRow[]
 
   return (
     <AdminPage
-      title="Quests"
+      title="Journeys"
       eyebrow="Engage"
-      description="Manage the gamified quest engine and the open journey library."
+      description="The open journey library — curate which journeys carry the Official mark."
       width="wide"
-      actions={<NewQuestChainButton />}
     >
       {/* Stats strip */}
       <AdminSection>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <StatCard label="Quest chains" value={totalChains ?? 0} icon={Map} />
-          <StatCard label="Members started" value={totalProgress ?? 0} icon={Users} />
+        <div className="grid grid-cols-3 gap-3">
           <StatCard label="Journey plans" value={totalJourneys ?? 0} icon={BookOpen} />
           <StatCard label="Official journeys" value={officialCount ?? 0} icon={Zap} />
+          <StatCard label="Active adoptions" value={adoptionCount ?? 0} icon={Users} />
         </div>
-      </AdminSection>
-
-      {/* Quest Chains */}
-      <AdminSection title={`Quest Chains (${chainRows.length})`}>
-        {chainRows.length === 0 ? (
-          <div className="rounded-2xl border border-border bg-surface py-16 text-center">
-            <Map className="mx-auto mb-3 h-8 w-8 text-subtle" />
-            <p className="text-sm font-medium text-text">No quest chains yet</p>
-            <p className="mt-1 text-xs text-muted">Create the first chain using the button above.</p>
-          </div>
-        ) : (
-          <div className="overflow-hidden rounded-2xl border border-border bg-surface">
-            {/* Header row (desktop) */}
-            <div className="hidden border-b border-border px-4 py-2 sm:grid sm:grid-cols-[1fr_80px_80px_90px_72px] sm:items-center sm:gap-4">
-              <span className="text-xs font-semibold uppercase tracking-wider text-subtle">Chain</span>
-              <span className="text-xs font-semibold uppercase tracking-wider text-subtle text-center">Season</span>
-              <span className="text-xs font-semibold uppercase tracking-wider text-subtle text-right">Zaps</span>
-              <span className="text-xs font-semibold uppercase tracking-wider text-subtle text-right">Sort</span>
-              <span className="sr-only">Actions</span>
-            </div>
-
-            <div className="divide-y divide-border/50">
-              {chainRows.map((chain) => (
-                <div
-                  key={chain.id}
-                  className="grid grid-cols-[1fr_auto] items-center gap-3 px-4 py-3 transition-colors hover:bg-surface-elevated sm:grid-cols-[1fr_80px_80px_90px_72px] sm:gap-4"
-                >
-                  {/* Name + slug */}
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-base leading-none" aria-hidden="true">
-                        {chain.icon}
-                      </span>
-                      <span className="truncate text-sm font-medium text-text">{chain.name}</span>
-                    </div>
-                    <span className="mt-0.5 block truncate text-xs text-subtle">{chain.slug}</span>
-                    {chain.description && (
-                      <span className="mt-0.5 block truncate text-xs text-muted">{chain.description}</span>
-                    )}
-                  </div>
-
-                  {/* Season */}
-                  <span className="hidden sm:block text-center text-sm tabular-nums text-muted">
-                    {chain.season ?? '—'}
-                  </span>
-
-                  {/* Zaps reward */}
-                  <span className="hidden sm:flex items-center justify-end gap-1 text-sm tabular-nums text-muted">
-                    <Zap className="h-3 w-3 shrink-0 text-primary" />
-                    {chain.zaps_reward}
-                  </span>
-
-                  {/* Sort order */}
-                  <span className="hidden sm:block text-right text-sm tabular-nums text-subtle">
-                    #{chain.sort_order}
-                  </span>
-
-                  {/* Actions */}
-                  <div className="flex items-center justify-end gap-1">
-                    <EditQuestChainButton chain={chain} />
-                    <DeleteQuestChainButton id={chain.id} name={chain.name} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </AdminSection>
 
       {/* Journey Library */}
@@ -187,7 +117,6 @@ export default async function AdminQuestsPage() {
                       </div>
                       <span className="mt-0.5 block truncate text-xs text-subtle">
                         {journey.adopt_count} adopted
-                        {journey.quest_id && ' · in quest'}
                       </span>
                     </div>
 
