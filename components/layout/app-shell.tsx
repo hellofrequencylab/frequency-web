@@ -1390,10 +1390,13 @@ export default function AppShell({
       {/* DockRevealProvider runs the single shared scroll listener that rises
           both bottom docks together (left profile, right stats). */}
       <DockRevealProvider>
-      <div className="flex flex-1">
+      {/* The left nav is FIXED to the viewport (never scrolls with the page, never
+          "catches up" at the bottom); the body is padded by its width so nothing
+          underlaps. The document still scrolls the main column. */}
+      <div className="flex flex-1 md:pl-52">
 
-        {/* Left nav — viewport-pinned beneath the header while the document scrolls. */}
-        <aside className="hidden md:flex w-52 flex-col shrink-0 self-start sticky top-14 h-[calc(100vh-3.5rem)] border-r border-border bg-surface/80 backdrop-blur-sm">
+        {/* Left nav — fixed under the header, with its own internal scroll. */}
+        <aside className="hidden md:flex w-52 flex-col fixed left-0 top-14 bottom-0 z-20 border-r border-border bg-surface/80 backdrop-blur-sm">
 
           {/* Community spaces + features + admin rail (the Broadcast bar lives up top) */}
           <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
