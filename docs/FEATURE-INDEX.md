@@ -58,8 +58,9 @@
 |---|---|---|---|
 | **Beta induction** | `/onboarding/beta?seq=` | The cinematic voiced induction (splash → oath → intro → identity → place → tour → enter) | BETA-INDUCTION |
 | **Audience sequences** | `/beta/[slug]` | Audience-targeted versions of the induction + cohort marketing tags | BETA-ACTIVATION |
-| **Vera's chores / coach** | overlay + Next-Steps pill | Activation full-stop, then the single next move; gems-nudged | BETA-ACTIVATION |
-| **Founder's First Week** | `/founder` | Six moves → Founder badge | ONBOARDING-BUILD-LIST |
+| **Vera's chores / coach** | overlay + Next-Steps pill | Activation full-stop, then the single next move; gems-nudged. Coach popup redesigned (`chores-overlay`, only "Don't show till tomorrow") | BETA-ACTIVATION |
+| **Onboarding edge tabs** | left/right margins | `edge-pill` tabs tucked into the margins, icon-only at rest | — |
+| **Founder's First Week** | `/founder` | Six moves → Founder badge. All config (reward · Vera copy · page copy · the six tasks) centralized in `lib/onboarding/founder-config.ts` (ADR-184) | ONBOARDING-BUILD-LIST |
 | **Daily check-in / streak** | header chip | Show-up streak with a header flame chip | — |
 | **Quest control center** | right rail (top) | Always-on next-step + rank/streak progress | — |
 | **Role training** | `/training` | Role-advancement curriculum on promotion (ADR-157) | — |
@@ -101,6 +102,10 @@
 | **Studio Overview** | `/admin` | The operator dashboard → all management surfaces | STUDIO |
 | **Support console** | `/admin/support` | Triage queue: status/priority/assign, replies, internal notes, CRM link | SUPPORT-TICKETS |
 | **Inline page admin** | "Admin ▾" accordion | Per-page admin dashboard (share QR + settings) in-page (ADR-160) | EMBEDDED-ADMIN |
+| **Page Settings panel** | "Settings ▾" on any page | The on-page operator editor (`page-admin-bar` via `PageAdminProvider`) — content · per-page QR · circle rail order, gated by capability (ADR-180/181) | EMBEDDED-ADMIN |
+| **Editable page content** | Settings panel → content | Operator-tunable header (title + description) per route; coded copy is the fallback. Site-wide via the `CONTENT_EDIT_ROUTES` registry (ADR-180/182) | — |
+| **QR per-page folders** | Settings panel + `/admin/qr` | Create a QR *from a page* (`PageQrManager`, compact StyleEditor) and find it foldered by route in QR Studio (ADR-179) | — |
+| **Circle Quest module** | circle Settings panel | The circle's "this week's practice" picker + its adopted journeys/practices/challenges (ADR-181) | — |
 | **Roles & permissions** | `/admin/roles` | The NAV_AREAS permission grid (trust ladder × staff axis). Being reworked into three systems — Community / Partners / Admin — + a Free/Member/Supporter entitlement | ROLES |
 | **Moderation** | `/admin/moderation` | Content/member moderation | — |
 | **Structure** | `/admin/hubs` · `/admin/circles` · `/admin/events` | Manage the community tree & entities | — |

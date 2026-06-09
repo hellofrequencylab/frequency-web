@@ -5871,3 +5871,85 @@ null below that, so the editor renders nothing; `savePageContent` re-checks — 
 `page-admin-bar` shows the Settings ▾ + content editor on routes listed in `CONTENT_EDIT_ROUTES` (first: `/network`).
 Public read RLS (it's chrome everyone sees); writes go through the service role after the admin check. Reusable —
 add a route to the list to make its header editable. `page_content` isn't in generated types yet → untyped cast.
+
+## ADR-181 — Circle right-rail block order is admin-arranged (+ permalink + Circle Quest)
+
+**Status:** Accepted · applied (`supabase/migrations/20260609050000_circle_sidebar_order.sql`).
+
+**Context.** A circle's right-rail blocks (members / health / practice / events / invite) shipped in a fixed coded
+order, and the page's permalink (slug) and adopted-content view were not editable in place. With the page Settings
+panel now on every page (ADR-180), these become natural in-panel operator controls.
+
+**Decision.** `circles.sidebar_order` (jsonb) holds the admin-chosen order of the rail blocks as an array of block
+keys; **NULL = the coded default**, and unknown/missing keys fall back to the default so the rail never breaks if the
+block set changes. A drag-and-drop `SidebarWidgetEditor` in the Settings panel writes it via `saveSidebarOrder`;
+`updateCirclePermalink` edits the slug — both gated on `circle.editSettings` (re-checked in the action, the authority).
+The old practice-only admin module is replaced by `CircleQuestModule`, which keeps the "This week's practice" picker
+**and** lists the journeys / practices / challenges the circle has adopted (challenges are wired but the model is
+currently empty — see BUILD-LIST extension opportunities). Self-loads via `getCircleAdminData`, which returns null
+unless the caller holds `circle.editSettings`, so a non-manager sees no chrome. `sidebar_order` isn't in generated
+types yet → untyped cast.
+
+## ADR-182 — Site-wide editable content via a route registry (the content-edit seam)
+
+**Status:** Accepted · the registry `lib/layout/editable-content.ts` (`CONTENT_EDIT_ROUTES`).
+
+**Context.** ADR-180 shipped operator-editable headers with one route wired (`/network`). The decision now is *how*
+the feature scales to the rest of the site without per-page edits or a header re-roll on each route.
+
+**Decision.** A **single registry** — `CONTENT_EDIT_ROUTES` in `lib/layout/editable-content.ts` — is the one list the
+shell consults. `page-admin-bar` shows the Settings ▾ + `PageContentModule` only on routes in the list (and only to
+admin+). To make a page's header editable you do exactly two things: add the route to `CONTENT_EDIT_ROUTES` **and**
+have the page read `resolvePageContent(route, fallback)`. The registry now covers **/network, /circles, /channels,
+/events, /market, /messages, /journeys, /practices, /library, /broadcast**. `/feed` is deliberately **excluded** — its
+header is a personalized greeting, not static chrome, so a single operator-set title would be wrong. Editing stays
+additive (coded copy is the fallback) and the gate lives in the action, not the registry — so the list is purely a
+surface-enable switch, safe to extend.
+
+## ADR-183 — Admin guard redirects unauthorized viewers home (not 404)
+
+**Status:** Accepted · corroborated by `lib/admin/guard.ts` (`requireAdmin` / `requireAdminFloor` → `redirect`).
+
+**Context.** The shared `/admin/*` guard previously answered an unauthorized viewer with `notFound()` — a dead end the
+viewer couldn't recover from, and indistinguishable (to them) from a broken link.
+
+**Decision.** `requireAdmin` / `requireAdminFloor` now **redirect** instead: a logged-out viewer → `'/'` (the marketing
+home, where they can sign in), an authenticated-but-insufficient-role viewer → `'/feed'` (back into the app). The
+authorization logic is unchanged (community ladder ⊕ staff-domain union, fail-closed); only the *denial response* moved
+from a 404 to a recoverable redirect. Paired nav fix: in `app-shell` `isActive`, the `/admin` root matches **exactly**
+(not by prefix), so a deep admin sub-route highlights only its own rail item rather than lighting the whole Platform
+group.
+
+## ADR-184 — Founder's First Week has a single config edit point
+
+**Status:** Accepted · corroborated by `lib/onboarding/founder-config.ts`; badge seeded by
+`supabase/migrations/20260606170000_founders_first_week_badge.sql`.
+
+**Context.** The Founder milestone's definition — reward gems/badge, Vera's coach copy, the `/founder` page copy, and the
+six tasks — was spread across `founder-tasks.ts`, `founder-actions.ts`, `layout.tsx`, and `founder/page.tsx`. Retuning it
+meant editing several files in lockstep, easy to get out of sync.
+
+**Decision.** `lib/onboarding/founder-config.ts` is **the single edit point**: `FOUNDER_REWARD` (per-task gems,
+completion bonus, `badgeSlug`/`badgeName`), `FOUNDER_COACH` (the Next-Steps popup copy), `FOUNDER_PAGE` (the persistent
+page title/description), and `FOUNDER_TASKS` (the six tasks' labels / nudges / links). The other files **read** from it:
+`founder-tasks.ts` maps each task key to the DB signal that proves it done, `founder-actions.ts` pays `FOUNDER_REWARD`
+and grants `FOUNDER_REWARD.badgeSlug`, `layout.tsx` renders `FOUNDER_COACH`, `founder/page.tsx` renders `FOUNDER_PAGE` +
+the tasks. The seeded badge slug must match `FOUNDER_REWARD.badgeSlug`. Pure refactor of where the copy/values live — no
+behavior change — making the milestone retunable in one place.
+
+## ADR-185 — Migrations must be applied to the live DB on merge (process)
+
+**Status:** Accepted (process) · prompted by the 2026-06-09 reconcile.
+
+**Context.** A batch of merged migrations had **not** been applied to the live database and were discovered and applied
+in one reconcile this session: `page_content`, `qr_page_folders`, `circle_sidebar_order`, `founders_first_week_badge`,
+`training_paths`, `connect_accounts`, `tips`, `event_tickets`. Code merged ahead of its schema means the affected
+features are silently broken in production until someone notices — the failure mode the untyped-cast pattern (used while
+a migration is pending) is meant to be *temporary*, not a standing state.
+
+**Decision.** A migration is **not done when merged — it is done when applied to the live DB**. On every merge that adds
+a `supabase/migrations/` file, the deploy step runs `supabase migration list` (confirm the new file is pending) →
+`supabase db push`, then regenerates types and drops the temporary untyped casts. This is captured as a standing deploy
+gate in [START-HERE.md](START-HERE.md) / [CHECKLIST.md](CHECKLIST.md) so it doesn't recur; `DEVELOPMENT-MAP.md` records
+the per-migration "applied to prod" status as the running ledger. (The `/maintenance` skill's migration-drift check is
+the automated backstop.)
