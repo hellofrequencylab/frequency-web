@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Link2, Plus, Pencil, Download, Copy, Check, ExternalLink, Info, Printer } from 'lucide-react'
+import { Link2, Plus, Pencil, Download, Copy, Check, ExternalLink, Info, Printer, Folder as FolderIcon, FolderOpen, ChevronRight } from 'lucide-react'
 import { groupedDestinations, isKnownDestination, SITE_DESTINATIONS } from '@/lib/qr/destinations'
 import { createLink, updateLink, setLinkActive, type LinkInput } from './link-actions'
 import { Field, Badge, toLocalInput, fromLocalInput } from './form-bits'
@@ -29,6 +29,8 @@ export interface StudioLink {
   active: boolean
   valid_until: string | null
   source_tag: string | null
+  /** The page route this code is filed under (its Studio folder), or null = unfiled. */
+  page_path: string | null
   scans: number
   unique: number
   style: QrStyle
@@ -89,6 +91,7 @@ export function DynamicLinks({
 }) {
   const [creating, setCreating] = useState(false)
   const partnerName = useMemo(() => new Map(partners.map((p) => [p.id, p.name])), [partners])
+  const folders = useMemo(() => groupIntoFolders(initialLinks), [initialLinks])
 
   return (
     <div className="space-y-6">
@@ -132,18 +135,100 @@ export function DynamicLinks({
             No dynamic links yet. Create one above — its destination stays editable after you print it.
           </p>
         )}
-        {initialLinks.map((link) => (
-          <LinkCard
-            key={link.id}
-            link={link}
-            nodes={nodes}
-            circles={circles}
-            events={events}
-            partners={partners}
-            partnerName={link.partner_id ? partnerName.get(link.partner_id) ?? null : null}
-          />
+        {folders.map((folder) => (
+          <Folder
+            key={folder.key}
+            label={folder.label}
+            count={folder.links.length}
+            unfiled={folder.unfiled}
+          >
+            {folder.links.map((link) => (
+              <LinkCard
+                key={link.id}
+                link={link}
+                nodes={nodes}
+                circles={circles}
+                events={events}
+                partners={partners}
+                partnerName={link.partner_id ? partnerName.get(link.partner_id) ?? null : null}
+              />
+            ))}
+          </Folder>
         ))}
       </div>
+    </div>
+  )
+}
+
+interface LinkFolder {
+  key: string
+  label: string
+  unfiled: boolean
+  links: StudioLink[]
+}
+
+// Group codes into per-page folders (ADR-179): one folder per distinct page_path,
+// plus an "Unfiled / general" group for free-standing Studio codes (no page_path).
+// Page folders sort alphabetically by route; the unfiled group sits last.
+function groupIntoFolders(links: StudioLink[]): LinkFolder[] {
+  const byPath = new Map<string, StudioLink[]>()
+  const unfiled: StudioLink[] = []
+  for (const link of links) {
+    if (link.page_path) {
+      const arr = byPath.get(link.page_path) ?? []
+      arr.push(link)
+      byPath.set(link.page_path, arr)
+    } else {
+      unfiled.push(link)
+    }
+  }
+  const folders: LinkFolder[] = [...byPath.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([path, ls]) => ({ key: path, label: path, unfiled: false, links: ls }))
+  if (unfiled.length) {
+    folders.push({ key: '__unfiled__', label: 'Unfiled / general', unfiled: true, links: unfiled })
+  }
+  return folders
+}
+
+function Folder({
+  label,
+  count,
+  unfiled,
+  children,
+}: {
+  label: string
+  count: number
+  unfiled: boolean
+  children: React.ReactNode
+}) {
+  // Page folders open by default (you came here to see them); the catch-all unfiled
+  // group starts collapsed to keep the page-owned folders front-and-centre.
+  const [open, setOpen] = useState(!unfiled)
+  return (
+    <div className="rounded-2xl border border-border bg-surface-elevated/30 shadow-sm">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-2 px-4 py-2.5 text-left"
+      >
+        <ChevronRight
+          className={`h-4 w-4 shrink-0 text-subtle transition-transform ${open ? 'rotate-90' : ''}`}
+        />
+        {open ? (
+          <FolderOpen className="h-4 w-4 shrink-0 text-primary-strong" />
+        ) : (
+          <FolderIcon className="h-4 w-4 shrink-0 text-subtle" />
+        )}
+        <span className="min-w-0 flex-1 truncate text-sm font-semibold text-text" title={label}>
+          {label}
+        </span>
+        <span className="shrink-0 text-xs text-muted">
+          {count} code{count === 1 ? '' : 's'}
+        </span>
+      </button>
+      {open && <div className="space-y-3 px-3 pb-3">{children}</div>}
     </div>
   )
 }
