@@ -21,9 +21,9 @@ production. Applied all five (ADR-185). 🟢 **AI event-blurb prompt-injection**
 | Pri | Item | Why | Where |
 |---|---|---|---|
 | 🔴 **P0** | **Regenerate `lib/database.types.ts`** | 10+ files use `as unknown as SupabaseClient` casts — hides real type errors, no CI gate | `supabase gen types` after the migrations above |
-| 🔴 **P0** | **Wire 3 missing Journey reward fires** | Full-Day +25 · Rhythm +50 · Journey-complete +30 gems are defined but never fire → journeys ship without their reward moments | `lib/rewards/*`, crew actions |
-| 🔴 **P0** | **RSVP confirmation email** | The highest-intent moment sends nothing (only 7d/24h/2h reminders exist) | `app/(main)/events/actions.ts` toggleRSVP |
-| 🔴 **P0** | **Event cancel → bulk refund + notify** | `cancelEvent` only flips a flag; paid attendees aren't refunded (trust/legal) | `app/(main)/admin/events/actions.ts` |
+| ✅ ~~P0~~ | **Journey reward fires** | Audit false positive — Full-Day/Rhythm/Journey-complete are **already** wired (ADR-200, `lib/journey-rewards.ts`, 10/10 tests). No work needed | done |
+| ✅ ~~P0~~ | **RSVP confirmation email** | Done — sends on going/waitlist via the durable outbox + prefs/suppression + calendar links | `events/actions.ts`, `lib/email.ts` |
+| ✅ ~~P0~~ | **Event cancel → bulk refund + notify** | Done — cancel refunds every succeeded ticket (idempotent `refundTicket`) + emails attendees; behind the host/admin gate + a first-cancel transition guard | `admin/events/actions.ts`, `lib/email.ts` |
 | 🟠 **P1** | **Public/unlisted event RLS** | `events.visibility` is decorative — enforce in RLS **before** standalone/public events ship (safe today: circle-only) | events RLS |
 | 🟠 **P1** | **Owner go-live configs** | Stripe Connect payouts (`host_payouts_enabled`), `RESEND_WEBHOOK_SECRET`, run Supabase advisors | owner / env |
 | 🟡 **P2** | Journey intensity-tier override UI (Spark/Current/Deep) | Schema seeded; member selector missing | `app/(main)/journeys/[slug]` |
