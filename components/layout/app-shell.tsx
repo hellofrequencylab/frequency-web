@@ -56,7 +56,7 @@ import { DemoToggle } from '@/components/layout/demo-toggle'
 import { DockRevealProvider } from '@/components/sidebar/dock-reveal'
 import { railFor } from '@/lib/layout/page-chrome'
 import { SearchOverlay } from '@/components/search/search-overlay'
-import { PageAdminBar } from '@/components/layout/page-admin-bar'
+import { PageAdminProvider } from '@/components/layout/page-admin-context'
 
 // The sidebar + community bar are built from NAV_AREAS (lib/nav-areas.ts — the
 // single source of truth shared with the permission grid). The whole menu is
@@ -1195,9 +1195,6 @@ export default function AppShell({
       else setLeftOpen(false)
     }
   }
-  // Page-specific admin now lives INLINE at the top of the content (PageAdminBar),
-  // not in a right-edge drawer — operators only.
-  const canAdmin = !hideAppNav && (meetsAccess('host', gateRole) || staffRole != null)
 
   // Close mobile drawer + edge menus when the route changes (covers back/forward).
   if (lastPath !== pathname) {
@@ -1423,13 +1420,15 @@ export default function AppShell({
                 scroll. */}
             <div className="flex-1 min-w-0 flex flex-col">
               {!hideAppNav && ticker}
-              <main className="flex-1 min-w-0 px-6 py-6" data-tour-anchor="content">
+              {/* More side buffer (px-8/lg:px-10) so content isn't tight against the
+                  rails. The page-admin "Settings" bar now renders INSIDE each page
+                  template's header (on the divider under the title), fed by this
+                  provider — not floating above the page. */}
+              <main className="flex-1 min-w-0 px-6 py-6 sm:px-8 lg:px-10" data-tour-anchor="content">
                 <Breadcrumbs />
-                {/* Inline page-admin layer — operators get an "Admin ▾" disclosure
-                    with this page's admin functions. Suppressed on individual profile
-                    pages (the QR/admin lives in Edit Profile there instead). */}
-                {canAdmin && <PageAdminBar role={gateRole} staffRole={staffRole} />}
-                {children}
+                <PageAdminProvider value={{ role: gateRole, staffRole }}>
+                  {children}
+                </PageAdminProvider>
               </main>
             </div>
 

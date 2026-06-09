@@ -3,10 +3,10 @@
 import { useEffect, useState, useTransition, type FormEvent } from 'react'
 import { usePathname } from 'next/navigation'
 import { Check } from 'lucide-react'
-import { AdminModuleCard } from '@/components/admin/admin-module-card'
 import { moduleById } from '@/lib/admin/modules/registry'
 import { fieldClasses, labelClasses } from '@/components/ui/field'
 import { InlineCover } from '@/components/admin/inline/inline-cover'
+import { SetCirclePractice } from '@/components/practice/set-circle-practice'
 import {
   getCircleAdminData,
   updateCircleSettings,
@@ -56,6 +56,7 @@ export function CircleSettingsModule() {
   if (!data) return null // not permitted / not found → no chrome
 
   const mod = moduleById('circle.settings')
+  const Icon = mod?.Icon
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -67,84 +68,109 @@ export function CircleSettingsModule() {
     })
   }
 
+  // No card chrome — the settings sit flush on the panel's white surface.
   return (
-    <AdminModuleCard title={mod?.label ?? 'Circle settings'} Icon={mod?.Icon} desc={mod?.desc}>
-      {/* Cover image — edited here in Settings (no inline editing on the page). */}
-      <div className="mb-4 space-y-1">
-        <span className={fieldLabel}>Cover image</span>
-        <InlineCover
-          value={data.image_url ?? null}
-          alt={data.name}
-          canEdit
-          upload={uploadCircleCover.bind(null, data.id, data.slug)}
-          remove={removeCircleCover.bind(null, data.id, data.slug)}
-        />
-      </div>
+    <div className="space-y-6">
+      <section>
+        <header className="mb-4 space-y-1">
+          <h3 className="flex items-center gap-2 text-sm font-bold text-text">
+            {Icon && <Icon className="h-4 w-4 shrink-0 text-primary-strong" />}
+            {mod?.label ?? 'Circle settings'}
+          </h3>
+          {mod?.desc && <p className="text-sm text-muted">{mod.desc}</p>}
+        </header>
 
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <label className="block space-y-1">
-          <span className={fieldLabel}>Name</span>
-          <input name="name" defaultValue={data.name} required disabled={pending} className={input} />
-        </label>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Cover image — edited here in Settings (no inline editing on the page). */}
+          <div className="space-y-1.5">
+            <span className={fieldLabel}>Cover image</span>
+            <InlineCover
+              value={data.image_url ?? null}
+              alt={data.name}
+              canEdit
+              upload={uploadCircleCover.bind(null, data.id, data.slug)}
+              remove={removeCircleCover.bind(null, data.id, data.slug)}
+            />
+          </div>
 
-        <label className="block space-y-1">
-          <span className={fieldLabel}>Description</span>
-          <textarea
-            name="about"
-            defaultValue={data.about ?? ''}
-            rows={2}
-            disabled={pending}
-            className={`${input} resize-none`}
-          />
-        </label>
-
-        <div className="grid grid-cols-2 gap-3">
-          <label className="block space-y-1">
-            <span className={fieldLabel}>Type</span>
-            <select name="type" defaultValue={data.type} disabled={pending} className={input}>
-              <option value="in-person">In-person</option>
-              <option value="online">Online</option>
-            </select>
+          <label className="block space-y-1.5">
+            <span className={fieldLabel}>Name</span>
+            <input name="name" defaultValue={data.name} required disabled={pending} className={input} />
           </label>
-          <label className="block space-y-1">
-            <span className={fieldLabel}>Member cap</span>
-            <input
-              name="member_cap"
-              type="number"
-              min={1}
-              max={500}
-              defaultValue={data.member_cap ?? 12}
+
+          <label className="block space-y-1.5">
+            <span className={fieldLabel}>Description</span>
+            <textarea
+              name="about"
+              defaultValue={data.about ?? ''}
+              rows={3}
               disabled={pending}
-              className={input}
+              className={`${input} resize-none`}
             />
           </label>
-        </div>
 
-        <label className="block space-y-1">
-          <span className={fieldLabel}>Status</span>
-          <select name="status" defaultValue={data.status} disabled={pending} className={input}>
-            <option value="forming">Forming</option>
-            <option value="active">Active</option>
-            <option value="paused">Paused</option>
-            <option value="archived">Archived</option>
-          </select>
-        </label>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block space-y-1.5">
+              <span className={fieldLabel}>Type</span>
+              <select name="type" defaultValue={data.type} disabled={pending} className={input}>
+                <option value="in-person">In-person</option>
+                <option value="online">Online</option>
+              </select>
+            </label>
+            <label className="block space-y-1.5">
+              <span className={fieldLabel}>Member cap</span>
+              <input
+                name="member_cap"
+                type="number"
+                min={1}
+                max={500}
+                defaultValue={data.member_cap ?? 12}
+                disabled={pending}
+                className={input}
+              />
+            </label>
+          </div>
 
-        <div className="flex items-center justify-end gap-2 pt-1">
-          {saved && (
-            <span className="flex items-center gap-1 text-xs font-medium text-primary-strong">
-              <Check className="h-3.5 w-3.5" /> Saved
-            </span>
-          )}
-          <button
-            type="submit"
-            disabled={pending}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
-          >
-            {pending ? 'Saving…' : 'Save'}
-          </button>
-        </div>
-      </form>
-    </AdminModuleCard>
+          <label className="block space-y-1.5">
+            <span className={fieldLabel}>Status</span>
+            <select name="status" defaultValue={data.status} disabled={pending} className={input}>
+              <option value="forming">Forming</option>
+              <option value="active">Active</option>
+              <option value="paused">Paused</option>
+              <option value="archived">Archived</option>
+            </select>
+          </label>
+
+          <div className="flex items-center justify-end gap-2 pt-1">
+            {saved && (
+              <span className="flex items-center gap-1 text-xs font-medium text-primary-strong">
+                <Check className="h-3.5 w-3.5" /> Saved
+              </span>
+            )}
+            <button
+              type="submit"
+              disabled={pending}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+            >
+              {pending ? 'Saving…' : 'Save'}
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <section className="border-t border-border pt-5">
+        <header className="mb-3 space-y-1">
+          <h3 className="text-sm font-bold text-text">This week&apos;s practice</h3>
+          <p className="text-sm text-muted">
+            Pick the practice your circle is focused on this week.
+          </p>
+        </header>
+        <SetCirclePractice
+          circleId={data.id}
+          library={data.practice_library}
+          current={data.active_practice_id ?? undefined}
+        />
+      </section>
+    </div>
   )
 }
