@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { FocusTemplate } from '@/components/templates'
+import { ReturnHome } from './return-home'
 
 export const metadata: Metadata = {
   title: 'Check Your Email',
@@ -39,6 +40,10 @@ export default function ConfirmPage() {
             </a>
             .
           </p>
+
+          <div className="pt-2">
+            <ReturnHome />
+          </div>
         </div>
       </FocusTemplate>
     </main>
