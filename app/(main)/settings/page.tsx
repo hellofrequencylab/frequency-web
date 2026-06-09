@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { Moon, Sun, Monitor, Check, User, Shield, Bell, CreditCard } from 'lucide-react'
+import { Moon, Sun, Monitor, Check, User, Shield, Bell, CreditCard, MapPin } from 'lucide-react'
 import { FocusTemplate } from '@/components/templates'
 import { SectionHeader } from '@/components/ui/section-header'
 
@@ -60,6 +60,7 @@ export default function SettingsPage() {
         <div className="space-y-3">
           <SettingLink href="/settings/profile" Icon={User} title="Edit profile" description="Display name, handle, bio, and photo" />
           <SettingLink href="/settings/account" Icon={Shield} title="Account & privacy" description="Blocked members, delete account" />
+          <SettingLink href="/settings/connections" Icon={MapPin} title="Connections & Location" description="Discovery, location precision, ghost mode" />
           <SettingLink href="/settings/notifications" Icon={Bell} title="Notifications" description="Email and push preferences" />
           <SettingLink href="/settings/billing" Icon={CreditCard} title="Billing" description="Membership and payment" />
         </div>

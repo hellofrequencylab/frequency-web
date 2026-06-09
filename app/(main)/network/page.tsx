@@ -21,6 +21,12 @@ import { viewerHidesDemo } from '@/lib/demo-preference'
 import type { ProfileIdentity } from '@/lib/types/profile'
 import { searchVisibleLeads, type LeadHit } from '@/lib/crm/people-search'
 import { connectionsOwnerId } from '@/lib/connections/access'
+import {
+  membersNear,
+  getMyConnectionPrefs,
+  getConnectionSettings,
+} from '@/lib/connections/connection-settings'
+import type { ProximityBand } from '@/lib/connections/location'
 import { resolvePageContent } from '@/lib/page-content'
 import { getInitials } from '@/lib/utils'
 
@@ -118,13 +124,53 @@ export default async function CommunityPage({
     }
   }
 
-  // Get viewer's display name for the Invite Member modal.
+  // Get viewer's display name (Invite modal) + home location (proximity ordering).
   const { data: viewer } = await admin
     .from('profiles')
-    .select('display_name')
+    .select('display_name, home_lat, home_lng')
     .eq('auth_user_id', user.id)
     .maybeSingle()
   const viewerName = (viewer?.display_name as string | undefined) ?? 'A friend'
+
+  // Proximity default ordering (ADR-186, privacy-safe). When proximity is enabled
+  // and we have a viewer location — the place they searched (`near`) OR their saved
+  // home — default the directory to NEARBY FIRST and tag each surfaced member with a
+  // coarse band ("Nearby", "Your area"). The members_near RPC returns a band only —
+  // never a distance — so we never invent one. Resolved here; applied to `filtered`
+  // (post-filter) below, so search / Online-now / scope all keep working.
+  const [connectionSettings, myPrefs] = await Promise.all([
+    getConnectionSettings(),
+    getMyConnectionPrefs(),
+  ])
+  let proxLat: number | null = null
+  let proxLng: number | null = null
+  if (nearParam) {
+    const [latStr, lngStr] = nearParam.split(',')
+    const la = Number(latStr)
+    const ln = Number(lngStr)
+    if (Number.isFinite(la) && Number.isFinite(ln)) {
+      proxLat = la
+      proxLng = ln
+    }
+  }
+  if (proxLat == null && viewer?.home_lat != null && viewer?.home_lng != null) {
+    proxLat = Number(viewer.home_lat)
+    proxLng = Number(viewer.home_lng)
+  }
+  const hasViewerLocation = proxLat != null && proxLng != null
+  // Band per profile id for the surfaced (nearby) members + the nearby ordering.
+  const bandByProfileId = new Map<string, ProximityBand>()
+  const nearbyOrder: string[] = []
+  if (connectionSettings.proximityEnabled && hasViewerLocation) {
+    const radius = myPrefs?.discoveryRadiusM ?? undefined
+    const near = await membersNear(proxLat!, proxLng!, radius)
+    for (const m of near) {
+      if (!bandByProfileId.has(m.profileId)) {
+        bandByProfileId.set(m.profileId, m.band)
+        nearbyOrder.push(m.profileId)
+      }
+    }
+  }
 
   // Non-member people the viewer is entitled to find: their own captures, plus
   // (as a steward) network-shared captures from stewards in their own locality.
@@ -198,6 +244,24 @@ export default async function CommunityPage({
     )
   }
 
+  // Nearby-first ordering (privacy-safe). Members the proximity RPC surfaced come
+  // first, in its fuzzed-cell rank (the RPC's order = its proximity/secondary sort);
+  // everyone else keeps the existing alphabetical directory order beneath them. Only
+  // reorders — it never adds or removes members, so all filters above stand. Inert
+  // (no-op) when the viewer has no location or proximity is off.
+  const proximityActive = bandByProfileId.size > 0
+  if (proximityActive) {
+    const rank = new Map(nearbyOrder.map((id, i) => [id, i]))
+    filtered = [...filtered].sort((a, b) => {
+      const ra = rank.get(a.id)
+      const rb = rank.get(b.id)
+      if (ra != null && rb != null) return ra - rb
+      if (ra != null) return -1
+      if (rb != null) return 1
+      return 0 // both non-nearby → keep prior (alphabetical) order
+    })
+  }
+
   // Sidebar data, computed from the data we already fetched.
   // "Online now" — members currently online (independent of the online filter,
   // so the rail still works while browsing everyone). Capped for a tidy rail.
@@ -269,29 +333,46 @@ export default async function CommunityPage({
       {/* Hub tabs — inline, under the header rule, on the page background. */}
       <CommunityTabs />
 
-      {/* Filter row: Use my location · Online now · Search a city… */}
-      <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
-        {/* City autocomplete + "Use my location" (its own client island). */}
-        <div className="min-w-0 flex-1">
-          <CircleLocationSearch activePlace={placeParam} />
-        </div>
-        {/* Online-now toggle — URL-driven, preserves the rest of the filters. */}
-        <Link
-          href={filterHref({ ...base, online: onlineFilter ? undefined : '1' })}
-          aria-pressed={!!onlineFilter}
-          className={`inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border px-3.5 py-2.5 text-sm font-medium transition-colors ${
-            onlineFilter
-              ? 'border-primary bg-primary text-on-primary'
-              : 'border-border bg-surface text-text hover:border-primary hover:text-primary-strong'
-          }`}
-        >
-          <span className={`h-1.5 w-1.5 rounded-full ${onlineFilter ? 'bg-on-primary' : 'bg-success'}`} />
-          Online now
-        </Link>
+      {/* Filter row — one aligned baseline against the divider above: the city
+          search grows on the left; the "Use my location" + "Online now" actions
+          pin to the right (the toggle rides in the search island's trailing slot
+          so they share the field's exact height). */}
+      <div className="mt-5">
+        <CircleLocationSearch
+          activePlace={placeParam}
+          trailing={
+            <Link
+              href={filterHref({ ...base, online: onlineFilter ? undefined : '1' })}
+              aria-pressed={!!onlineFilter}
+              className={`inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border px-3.5 py-2.5 text-sm font-medium transition-colors ${
+                onlineFilter
+                  ? 'border-primary bg-primary text-on-primary'
+                  : 'border-border bg-surface text-text hover:border-primary hover:text-primary-strong'
+              }`}
+            >
+              <span className={`h-1.5 w-1.5 rounded-full ${onlineFilter ? 'bg-on-primary' : 'bg-success'}`} />
+              Online now
+            </Link>
+          }
+        />
+        {/* No-location affordance — nudge the viewer to set a location so the
+            directory can lead with who's nearby. Subtle, on the page background. */}
+        {connectionSettings.proximityEnabled && !hasViewerLocation && (
+          <p className="mt-2 flex items-center gap-1.5 text-xs text-subtle">
+            <MapPin className="h-3.5 w-3.5 shrink-0 text-subtle" />
+            Set your location to see who&rsquo;s nearby.
+          </p>
+        )}
+        {proximityActive && (
+          <p className="mt-2 text-xs text-subtle">
+            Showing members near {placeParam ?? 'you'} first.
+          </p>
+        )}
       </div>
 
-      {/* Two-column body: 2/3 listings · 1/3 sidebar. */}
-      <div className="mt-6 grid gap-6 lg:grid-cols-3">
+      {/* Two-column body: 2/3 listings · 1/3 sidebar. Shares the page gutter with
+          the header / filter row above, so both halves line up against the divider. */}
+      <div className="mt-6 grid items-start gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           {/* Nearby real circles — only when a place is searched. Demo circles are
               excluded by the circles_near RPC, so this is "real circles only". */}
@@ -374,6 +455,7 @@ export default async function CommunityPage({
                   location={p.nexus_regions?.name ?? null}
                   online={isOnline(p.last_seen_at)}
                   isDemo={p.is_demo}
+                  band={bandByProfileId.get(p.id)}
                 />
               ))}
             </div>
