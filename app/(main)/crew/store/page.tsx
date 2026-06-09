@@ -2,7 +2,6 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Gem, Zap, Flame, Trophy, Receipt, ArrowRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { getStoreData } from './actions'
 import { StoreGrid } from './store-grid'
 import { CrewPreviewBanner } from '@/components/crew/crew-preview-banner'
@@ -24,7 +23,7 @@ export default async function StorePage() {
 
   // The Store now holds the Vault: everything you earn by showing up, alongside
   // your spendable Gem balance.
-  const { data: prof } = await createAdminClient()
+  const { data: prof } = await supabase
     .from('profiles')
     .select('current_season_zaps, current_streak, lifetime_rank')
     .eq('auth_user_id', user.id)
