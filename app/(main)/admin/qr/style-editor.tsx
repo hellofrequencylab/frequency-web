@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useRef } from 'react'
+import { useMemo, useRef, type ReactNode } from 'react'
 import { Palette, Upload, X, RotateCcw, TriangleAlert } from 'lucide-react'
 import {
   type QrStyle,
@@ -26,11 +26,21 @@ export function StyleEditor({
   onChange,
   previewUrl,
   variant = 'inline',
+  compact = false,
+  presetsFooter,
 }: {
   value: QrStyle
   onChange: (next: QrStyle) => void
   previewUrl: string
-  variant?: 'inline' | 'rail'
+  /** inline — bordered card (preview + presets + controls); rail — hero preview on
+   *  top; controls — JUST the design controls (no preview/presets), for when the
+   *  caller renders its own preview + presets alongside. */
+  variant?: 'inline' | 'rail' | 'controls'
+  /** Trim to the essentials (drops eye-color + gradient controls, shows the four
+   *  core presets) — used in the page Settings panel where space is tight. */
+  compact?: boolean
+  /** Slot rendered directly under the preset buttons (e.g. an "Archived codes" link). */
+  presetsFooter?: ReactNode
 }) {
   const fileRef = useRef<HTMLInputElement>(null)
   const svg = useMemo(() => renderStyledQrSvg(previewUrl, value, 240), [previewUrl, value])
@@ -50,18 +60,26 @@ export function StyleEditor({
     reader.readAsDataURL(file)
   }
 
+  // Compact mode shows the four core looks; the full set (incl. Forest / Gold) is
+  // kept in the data for member-code defaults and the Studio.
+  const visiblePresets = compact
+    ? STYLE_PRESETS.filter((p) => !['forest', 'gold'].includes(p.key))
+    : STYLE_PRESETS
   const presets = (
-    <div className="flex flex-wrap gap-1.5">
-      {STYLE_PRESETS.map((p) => (
-        <button
-          key={p.key}
-          type="button"
-          onClick={() => onChange({ ...p.style })}
-          className="rounded-full border border-border px-2.5 py-1 text-2xs font-medium text-muted transition-colors hover:border-primary hover:bg-primary-bg hover:text-primary-strong"
-        >
-          {p.label}
-        </button>
-      ))}
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-1.5">
+        {visiblePresets.map((p) => (
+          <button
+            key={p.key}
+            type="button"
+            onClick={() => onChange({ ...p.style })}
+            className="rounded-full border border-border px-2.5 py-1 text-2xs font-medium text-muted transition-colors hover:border-primary hover:bg-primary-bg hover:text-primary-strong"
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
+      {presetsFooter}
     </div>
   )
 
@@ -85,23 +103,25 @@ export function StyleEditor({
       <div className="flex flex-wrap gap-3">
         <Swatch label="Modules" value={value.fg} onChange={(c) => set('fg', c)} />
         <Swatch label="Background" value={value.bg} onChange={(c) => set('bg', c)} />
-        <label className="flex items-center gap-1.5">
-          <input
-            type="checkbox"
-            checked={!!value.eyeColor}
-            onChange={(e) => set('eyeColor', e.target.checked ? value.fg : null)}
-            className="accent-primary"
-          />
-          <span className="text-subtle">Eye color</span>
-          {value.eyeColor && (
+        {!compact && (
+          <label className="flex items-center gap-1.5">
             <input
-              type="color"
-              value={value.eyeColor}
-              onChange={(e) => set('eyeColor', e.target.value)}
-              className="h-5 w-6 rounded border border-border bg-transparent p-0"
+              type="checkbox"
+              checked={!!value.eyeColor}
+              onChange={(e) => set('eyeColor', e.target.checked ? value.fg : null)}
+              className="accent-primary"
             />
-          )}
-        </label>
+            <span className="text-subtle">Eye color</span>
+            {value.eyeColor && (
+              <input
+                type="color"
+                value={value.eyeColor}
+                onChange={(e) => set('eyeColor', e.target.value)}
+                className="h-5 w-6 rounded border border-border bg-transparent p-0"
+              />
+            )}
+          </label>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-3">
@@ -139,6 +159,7 @@ export function StyleEditor({
       </div>
 
       {/* Gradient */}
+      {!compact && (
       <div>
         <label className="flex items-center gap-1.5">
           <input
@@ -177,6 +198,7 @@ export function StyleEditor({
           </div>
         )}
       </div>
+      )}
 
       {/* Logo */}
       <div className="flex flex-wrap items-center gap-2">
@@ -251,6 +273,21 @@ export function StyleEditor({
       </button>
     </div>
   )
+
+  // ── Controls-only — design controls with no preview/presets (the caller renders
+  //    its own, e.g. the Studio generator's left column). ───────────────────────
+  if (variant === 'controls') {
+    return (
+      <div>
+        <div className="mb-2 flex items-center gap-1.5">
+          <Palette className="h-3.5 w-3.5 text-primary-strong" />
+          <h4 className="text-2xs font-semibold uppercase tracking-wider text-text">Design</h4>
+        </div>
+        {controls}
+        {warningsBox}
+      </div>
+    )
+  }
 
   // ── Rail layout — hero preview on top, presets, then stacked controls ────────
   if (variant === 'rail') {

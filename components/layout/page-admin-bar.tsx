@@ -6,7 +6,7 @@ import { ChevronDown } from 'lucide-react'
 import { PageQrManager } from '@/components/qr/page-qr-manager'
 import { meetsAccess } from '@/lib/nav-areas'
 import { CircleSettingsModule } from '@/components/admin/modules/circle-settings-module'
-import { CirclePracticeModule } from '@/components/admin/modules/circle-practice-module'
+import { CircleQuestModule } from '@/components/admin/modules/circle-quest-module'
 import { HubSettingsModule } from '@/components/admin/modules/hub-settings-module'
 import { NexusSettingsModule } from '@/components/admin/modules/nexus-settings-module'
 import { EventSettingsModule } from '@/components/admin/modules/event-settings-module'
@@ -52,10 +52,10 @@ function settingsModuleFor(pathname: string) {
   return null
 }
 
-// The right-quadrant module (e.g. "This week's practice" on a circle). Sits opposite
-// the page settings in the bottom row of the panel.
-function practiceModuleFor(pathname: string) {
-  if (/^\/circles\/[^/]+/.test(pathname)) return <CirclePracticeModule />
+// The right-quadrant module (e.g. "Circle Quest" on a circle). Sits opposite the
+// page settings in the bottom row of the panel.
+function questModuleFor(pathname: string) {
+  if (/^\/circles\/[^/]+/.test(pathname)) return <CircleQuestModule />
   return null
 }
 
@@ -80,7 +80,7 @@ export function PageAdminBar() {
 
   const shareable = isShareable(pathname)
   const settingsModule = settingsModuleFor(pathname)
-  const practiceModule = practiceModuleFor(pathname)
+  const questModule = questModuleFor(pathname)
   // Operator page-content editing (ADR-180) on configured routes — admin+ only.
   const contentModule =
     (CONTENT_EDIT_ROUTES as readonly string[]).includes(pathname) && meetsAccess('admin', role)
@@ -88,11 +88,11 @@ export function PageAdminBar() {
       : null
 
   // Nothing to administer here — render nothing.
-  if (!shareable && !settingsModule && !practiceModule && !contentModule) return null
+  if (!shareable && !settingsModule && !questModule && !contentModule) return null
 
-  // The bottom row: page settings (left) + practice / content (right). Only drawn
+  // The bottom row: page settings (left) + quest / content (right). Only drawn
   // when at least one of those modules exists.
-  const hasBottomRow = !!(settingsModule || practiceModule || contentModule)
+  const hasBottomRow = !!(settingsModule || questModule || contentModule)
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
   const url = `${origin}${pathname}`
 
@@ -120,20 +120,20 @@ export function PageAdminBar() {
         }`}
       >
         <div className="overflow-hidden">
-          <div className="mt-2 rounded-2xl border border-border bg-surface p-5 sm:p-7">
+          <div className="mt-2 space-y-5 rounded-2xl border border-border bg-surface p-4 sm:p-6">
             {shareable && <PageQrManager pathname={pathname} url={url} />}
 
-            {shareable && hasBottomRow && <hr className="my-7 border-border" />}
+            {shareable && hasBottomRow && <hr className="border-border" />}
 
             {hasBottomRow && (
-              <div className="grid gap-x-10 gap-y-8 lg:grid-cols-2">
+              <div className="grid gap-x-8 gap-y-6 lg:grid-cols-2">
                 {settingsModule && (
                   <div className="min-w-0">
                     <p className="mb-3 text-2xs font-semibold uppercase tracking-wide text-subtle">Page settings</p>
                     {settingsModule}
                   </div>
                 )}
-                {practiceModule && <div className="min-w-0">{practiceModule}</div>}
+                {questModule && <div className="min-w-0">{questModule}</div>}
                 {contentModule && <div className="min-w-0 lg:col-span-2">{contentModule}</div>}
               </div>
             )}

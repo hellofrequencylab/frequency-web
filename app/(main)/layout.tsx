@@ -35,6 +35,7 @@ import { InviteLauncher } from '@/components/invite/invite-launcher'
 import { DailyCheckIn } from '@/components/daily-check-in'
 import { getProfileChores } from '@/lib/onboarding/profile-chores'
 import { getFounderTasks } from '@/lib/onboarding/founder-tasks'
+import { FOUNDER_COACH } from '@/lib/onboarding/founder-config'
 import { getActiveTraining } from '@/lib/onboarding/training'
 import { atLeastRole } from '@/lib/core/roles'
 
@@ -175,11 +176,11 @@ export default async function MainLayout({
   if (chores?.complete && !coachNext && !(await getFounderTasks(profile.id)).complete) {
     coachNext = {
       key: 'log', // synthetic step — the overlay renders by copy/href, not key
-      label: 'Founder’s First Week',
-      headline: 'Your Founder’s First Week',
-      blurb: 'You’re activated — now the fun part. Six moves to become a Founder, and a badge when you finish.',
-      href: '/founder',
-      cta: 'See your tasks',
+      label: FOUNDER_COACH.headline,
+      headline: FOUNDER_COACH.headline,
+      blurb: FOUNDER_COACH.blurb,
+      href: FOUNDER_COACH.href,
+      cta: FOUNDER_COACH.cta,
       done: false,
     }
   }
