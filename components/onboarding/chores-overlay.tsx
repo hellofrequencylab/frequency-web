@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
-import { Sparkles, Check, X, ArrowRight, ListChecks, PartyPopper, Gem } from 'lucide-react'
+import { Sparkles, Check, X, ArrowRight, ListChecks, PartyPopper, Gem, Rocket } from 'lucide-react'
 import type { ProfileChores } from '@/lib/onboarding/profile-chores'
 import type { OnboardingStep } from '@/lib/onboarding/status'
 import { claimChoresReward } from '@/app/(main)/feed/chores-actions'
@@ -188,31 +188,33 @@ export function ChoresOverlay({
             </div>
           ) : coach ? (
             /* ── Beat 3: the coach — one next move, warmly ───────────────────── */
-            <div className="flex flex-col px-7 pb-7 pt-9 text-center">
-              <span className="mx-auto inline-flex items-center gap-1.5 rounded-full bg-broadcast-bg px-3 py-1 text-xs font-semibold uppercase tracking-wide text-broadcast-strong">
+            <div className="flex flex-col items-center px-7 pb-7 pt-9 text-center">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-broadcast-bg px-3 py-1 text-2xs font-semibold uppercase tracking-wide text-broadcast-strong">
                 <Sparkles className="h-3.5 w-3.5" aria-hidden /> Vera
               </span>
-              <h2 id="chores-title" className="mt-3 text-xl font-bold leading-tight text-text">{nextAction!.headline}</h2>
-              <p className="mt-2 max-w-sm self-center text-pretty text-[15px] leading-relaxed text-muted">{nextAction!.blurb}</p>
-              <p className="mt-3 inline-flex items-center justify-center gap-1.5 self-center rounded-full bg-signal-bg px-3 py-1 text-xs font-semibold text-signal">
+              <span className="mt-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-broadcast-bg text-broadcast-strong">
+                <Rocket className="h-7 w-7" aria-hidden />
+              </span>
+              <h2 id="chores-title" className="mt-4 text-2xl font-bold leading-tight text-text">{nextAction!.headline}</h2>
+              <p className="mt-2 max-w-sm text-pretty text-[15px] leading-relaxed text-muted">{nextAction!.blurb}</p>
+              <p className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-signal-bg px-3 py-1.5 text-xs font-semibold text-signal">
                 <Gem className="h-3.5 w-3.5" aria-hidden /> Every step earns gems — and brings your people closer
               </p>
               <Link
                 href={nextAction!.href}
                 onClick={close}
-                className="mt-5 inline-flex items-center gap-2 self-center rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
               >
                 {nextAction!.cta} <ArrowRight className="h-4 w-4" aria-hidden />
               </Link>
-              <p className="mt-3 text-xs text-subtle">You’re almost there — just a couple more moves and you’re fully set up.</p>
-              <div className="mt-2 flex items-center justify-center gap-5">
-                <button type="button" onClick={close} className="text-xs font-medium text-subtle transition-colors hover:text-muted">
-                  Maybe later
-                </button>
-                <button type="button" onClick={snoozeTomorrow} className="text-xs font-medium text-subtle transition-colors hover:text-muted">
-                  Don’t show till tomorrow
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={snoozeTomorrow}
+                className="mt-4 text-xs font-medium text-subtle transition-colors hover:text-muted"
+              >
+                Don’t show till tomorrow
+              </button>
+              <p className="mt-1.5 text-2xs text-subtle/70">Finish all your tasks and I’ll see myself out.</p>
             </div>
           ) : (
             /* ── Beat 1: chores first ────────────────────────────────────────── */

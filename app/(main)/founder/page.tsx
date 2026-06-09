@@ -4,6 +4,7 @@ import { Check, ArrowRight, Rocket, Trophy } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { FocusTemplate } from '@/components/templates'
 import { getFounderTasks } from '@/lib/onboarding/founder-tasks'
+import { FOUNDER_PAGE } from '@/lib/onboarding/founder-config'
 import { FounderClaim } from './founder-claim'
 
 export const dynamic = 'force-dynamic'
@@ -23,10 +24,7 @@ export default async function FounderPage() {
   const fw = await getFounderTasks(profile.id)
 
   return (
-    <FocusTemplate
-      title="Founder's First Week"
-      description="Six moves that turn a sign-up into a Founder. Do them in any order — finish the set to earn the badge."
-    >
+    <FocusTemplate title={FOUNDER_PAGE.title} description={FOUNDER_PAGE.description}>
       <FounderClaim />
 
       {/* Progress + badge state */}
