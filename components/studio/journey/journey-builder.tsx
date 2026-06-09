@@ -20,7 +20,7 @@ import {
 } from '@/app/(main)/journeys/actions'
 import type { IntensityTier } from '@/lib/journey-tiers'
 import type { PlanStatus, PageWidgetConfig } from '@/lib/journey-plans'
-import { normalizePageConfig } from './page-widgets-fallback'
+import { editorPageConfig } from '@/lib/journey-page-config'
 import {
   TierPicker, CompletionRulesSection, RewardsSection, PageLayoutSection,
   OfficialSection, StatusChip,
@@ -122,7 +122,7 @@ export function JourneyBuilder(props: Props) {
 
   // Page layout (always a full, normalized catalog so the editor is stable)
   const [pageConfig, setPageConfig] = useState<PageWidgetConfig[]>(
-    () => normalizePageConfig(props.initialPageConfig ?? null),
+    () => editorPageConfig(props.initialPageConfig ?? null),
   )
 
   // Official program (Guide/Mentor only). Role + assignable quests come from the

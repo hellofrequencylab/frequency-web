@@ -65,6 +65,16 @@ these tables mean.
 > `season_challenges`/achievements. ⏳ **Physical drop deferred** — the `quest_outcomes()`
 > analytics RPC (`lib/analytics/outcomes.ts`) still reads them; retire that + regen types first.
 
+> **Journey intensity + completion (ADR-197–200).** `practice_tiers` holds the three depths
+> (Spark/Current/Deep) per practice (RLS: as visible as the practice); tier *selection* lives on
+> `journey_plan_items.default_tier`, `circles.default_intensity_tier` (Host-set), and
+> `journey_plan_adoptions.tier_override` (member) — resolved member→circle→item→`current`.
+> `journey_plans` gains `status` (review), `page_config` (JSONB widget layout),
+> `min_practices_per_day`, `target_weeks`, `season_locked`, `completion_gems`. Completion is
+> **derived** from `practice_logs` against the season's fixed 91-day / 13-week buckets
+> (`lib/journey-arc.ts`) — no progress table; bonuses (Full Day / Weekly Rhythm / completion) fire
+> once via `reward_grants` (`lib/journey-grants.ts`). Full spec: [JOURNEYS.md](JOURNEYS.md).
+
 > **`seasons`** gives seasons a first-class identity (`season_number`, `name`,
 > `theme`, `starts_at`/`ends_at`, `status`; one `active` at a time). `reset_season()`
 > reads the active season for trophy numbering, then closes it and opens the next.
