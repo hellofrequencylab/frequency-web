@@ -12,6 +12,7 @@ import { CircleCard, type CircleCardData } from '@/components/circles/circle-car
 import { CirclesToolbar } from '@/components/circles/circles-toolbar'
 import { demoModeEnabled } from '@/lib/platform-flags'
 import { viewerHidesDemo } from '@/lib/demo-preference'
+import { resolvePageContent } from '@/lib/page-content'
 import type { CircleBase } from '@/lib/types/circle'
 
 type CircleRow = CircleBase & {
@@ -57,6 +58,13 @@ export default async function CirclesPage({
 }) {
   const { type, interest, sort = 'nearest', q, channel } = await searchParams
   const supabase = await createClient()
+
+  // Operator-editable page header (ADR-180) — falls back to these defaults.
+  const { title: pageTitle, description: pageDescription } = await resolvePageContent('/circles', {
+    title: 'Circles',
+    description:
+      'This is where it gets real. Find a circle near you, dive into something you love, or start your own — because showing up, week after week, is how strangers become your people.',
+  })
 
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -201,7 +209,7 @@ export default async function CirclesPage({
 
   return (
     <IndexTemplate
-      title="Circles"
+      title={pageTitle}
       action={
         user ? (
           <NewCircleCompose
@@ -214,12 +222,10 @@ export default async function CirclesPage({
       description={
         <>
           {/* Mobile leads with a tight one-liner so the stats + actions surface
-              without scrolling past a wall of copy; desktop keeps the full pitch. */}
+              without scrolling past a wall of copy; desktop keeps the operator-
+              editable full pitch. */}
           <span className="sm:hidden">Find a circle near you, or start your own.</span>
-          <span className="hidden sm:inline">
-            This is where it gets real. Find a circle near you, dive into something you love, or
-            start your own — because showing up, week after week, is how strangers become your people.
-          </span>
+          <span className="hidden sm:inline">{pageDescription}</span>
         </>
       }
     >

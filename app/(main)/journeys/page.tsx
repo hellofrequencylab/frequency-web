@@ -10,6 +10,7 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { accentColor, accentTint } from '@/lib/studio/accents'
 import { NewJourneyButton } from '@/components/studio/journey/new-journey-button'
+import { resolvePageContent } from '@/lib/page-content'
 
 export const metadata: Metadata = {
   title: 'Journeys',
@@ -65,10 +66,16 @@ export default async function JourneysPage() {
   ])
   const community = library.filter((p) => p.author_id !== profileId)
 
+  // Operator-editable page header (ADR-180) — falls back to these defaults.
+  const { title, description } = await resolvePageContent('/journeys', {
+    title: 'Journeys',
+    description: 'Build a journey from the practices you love — a life-development track across Mind, Body, Spirit, and Expression. Keep it for yourself, or share it to the open library for anyone to adopt.',
+  })
+
   return (
     <IndexTemplate
-      title="Journeys"
-      description="Build a journey from the practices you love — a life-development track across Mind, Body, Spirit, and Expression. Keep it for yourself, or share it to the open library for anyone to adopt."
+      title={title}
+      description={description}
       action={<NewJourneyButton />}
     >
       <div className="max-w-2xl space-y-8">

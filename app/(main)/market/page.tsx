@@ -7,6 +7,7 @@ import { IndexTemplate } from '@/components/templates/index-template'
 import { EmptyState } from '@/components/ui/empty-state'
 import { NewListingButton } from '@/components/studio/market/new-listing-button'
 import { MarketGrid, type GridListing } from '@/components/market/market-grid'
+import { resolvePageContent } from '@/lib/page-content'
 
 export const metadata: Metadata = {
   title: 'Marketplace',
@@ -17,6 +18,12 @@ export const dynamic = 'force-dynamic'
 export default async function MarketPage({ searchParams }: { searchParams: Promise<{ kind?: string }> }) {
   const { kind } = await searchParams
   const activeKind = LISTING_KINDS.some((k) => k.key === kind) ? (kind as ListingKind) : null
+
+  // Operator-editable page header (ADR-180) — falls back to these defaults.
+  const { title, description } = await resolvePageContent('/market', {
+    title: 'Marketplace',
+    description: 'Swap, give, lend, and find things with people near you. No fees, no in-app payment — just neighbors helping out. Arrange the handoff offline.',
+  })
   const [profileId, listings] = await Promise.all([
     getMyProfileId(),
     listListings({ kind: activeKind }),
@@ -38,8 +45,8 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
 
   return (
     <IndexTemplate
-      title="Marketplace"
-      description="Swap, give, lend, and find things with people near you. No fees, no in-app payment — just neighbors helping out. Arrange the handoff offline."
+      title={title}
+      description={description}
       action={profileId ? <NewListingButton /> : undefined}
     >
       {/* Kind filter */}

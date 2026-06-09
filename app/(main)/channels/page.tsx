@@ -13,6 +13,7 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { StatInline } from '@/components/ui/stat-inline'
 import { EmptyState } from '@/components/ui/empty-state'
 import { EntityCard } from '@/components/cards/entity-card'
+import { resolvePageContent } from '@/lib/page-content'
 
 type TopicalChannel = {
   id: string
@@ -52,6 +53,13 @@ const CATEGORY_ICON: Record<string, LucideIcon> = {
 export default async function ChannelsPage() {
   const admin = createAdminClient()
   const supabase = await createClient()
+
+  // Operator-editable page header (ADR-180) — falls back to these defaults.
+  const { title: pageTitle, description: pageDescription } = await resolvePageContent('/channels', {
+    title: 'Channels',
+    description:
+      'The four Channels — Mind, Body, Spirit, and Expression — are how Frequency is organized. Interests live inside them: global topics anyone can tune into, each carrying a practice that Circles run locally. Pick a Channel, find your Interest, then go do it with people near you.',
+  })
 
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -155,17 +163,13 @@ export default async function ChannelsPage() {
 
   return (
     <IndexTemplate
-      title="Channels"
+      title={pageTitle}
       description={
         <>
           {/* Mobile leads with a tight line so the Channels surface without scrolling
-              past a wall of copy; desktop keeps the full explainer. */}
+              past a wall of copy; desktop keeps the operator-editable full explainer. */}
           <span className="sm:hidden">Four Channels — Mind, Body, Spirit, Expression — and the Interests inside them.</span>
-          <span className="hidden sm:inline">
-            The four Channels — Mind, Body, Spirit, and Expression — are how Frequency is organized.
-            Interests live inside them: global topics anyone can tune into, each carrying a practice
-            that Circles run locally. Pick a Channel, find your Interest, then go do it with people near you.
-          </span>
+          <span className="hidden sm:inline">{pageDescription}</span>
         </>
       }
       action={canCreate ? <NewChannelCompose domains={domains} /> : undefined}
