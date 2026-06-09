@@ -3,7 +3,7 @@ title: Friends
 description: Send and accept friend requests, invite new people, and why they matter for messaging.
 category: connecting
 order: 2
-updated: 2026-06-06
+updated: 2026-06-09
 audience: member
 featureKeys: [friends]
 status: published
@@ -14,8 +14,14 @@ Friends are your direct connections on Frequency. Adding someone is also the key
 ## How it works
 
 - **Send a request** from someone's profile. They'll see it as an incoming request.
-- **Accept or decline** requests sent to you. Your friends page shows incoming, outgoing, and accepted connections.
+- **Accept or decline** requests sent to you. Your **Friends** page shows incoming, outgoing, and accepted connections — with a **People · Contacts** switch (People is your friends; Contacts is your personal rolodex of people you've met).
 - Once you're friends, you can start a [direct message or group thread](/help/connecting/messages) together.
+
+## Your orbit
+
+Frequency keeps your relationships alive instead of letting them pile up as a dead list. Your friends are grouped by how close you are right now — your **inner, middle, and outer orbit** — based on the real things you share, like circles you're both in and events you've both shown up to. When a friendship has drifted to your outer orbit, you'll see a gentle **"say hi"** nudge. None of this is a score anyone else can see — it's just your own private way of remembering who to reconnect with.
+
+You may also see **"People you keep crossing paths with"** — folks who share your circles or events but you haven't connected with yet. One tap sends them a request. (Your steward can turn these features on or off for the community.)
 
 ## Invite people in
 
