@@ -5,7 +5,7 @@ import { ArrowLeft, ExternalLink } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
-import { EventEditClient } from './event-edit-client'
+import { EventEditClient, type TierEditRow } from './event-edit-client'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,12 +24,27 @@ async function loadEvent(id: string) {
   return data ?? null
 }
 
+// Ticket tiers for the editor (EVENTS-SYSTEM §2.2). `event_ticket_types` isn't in
+// the generated types yet — untyped cast (repo convention). `sold` is read-only here.
+async function loadTiers(eventId: string) {
+  const admin = createAdminClient() as unknown as SupabaseClient
+  const { data } = await admin
+    .from('event_ticket_types')
+    .select(
+      'id, name, description, pricing_mode, price_cents, min_cents, suggested_cents, quantity, sold, member_only, sort_order, active',
+    )
+    .eq('event_id', eventId)
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: true })
+  return (data ?? []) as unknown as TierEditRow[]
+}
+
 export default async function AdminEventEditPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   await requireAdmin('host', { staff: 'community' })
 
   // Verify the caller can edit this event before rendering the form.
-  const [event, caps] = await Promise.all([loadEvent(id), getEventCapabilities(id)])
+  const [event, caps, tiers] = await Promise.all([loadEvent(id), getEventCapabilities(id), loadTiers(id)])
   if (!event) notFound()
   // Can't edit this event's settings — send them home rather than to a dead end.
   if (!caps.has('event.editSettings')) redirect('/feed')
@@ -77,7 +92,7 @@ export default async function AdminEventEditPage({ params }: { params: Promise<{
         </div>
       </div>
 
-      {/* Edit form + cancel/reinstate */}
+      {/* Edit form + cancel/reinstate + ticket tiers */}
       <EventEditClient
         event={{
           id:           event.id,
@@ -90,6 +105,7 @@ export default async function AdminEventEditPage({ params }: { params: Promise<{
           is_cancelled: event.is_cancelled,
           price_cents:  (event as { price_cents?: number | null }).price_cents ?? null,
         }}
+        tiers={tiers}
       />
     </div>
   )

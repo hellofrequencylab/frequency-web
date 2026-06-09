@@ -16,6 +16,9 @@ import { RsvpButton } from '@/components/events/rsvp-button'
 import { demoModeEnabled } from '@/lib/platform-flags'
 import { viewerHidesDemo } from '@/lib/demo-preference'
 import { resolvePageContent } from '@/lib/page-content'
+import { scoreEventsForViewer } from '@/lib/events/matching'
+import { eventBlurb } from '@/lib/ai/event-blurb'
+import { aiAvailable } from '@/lib/ai/usage'
 
 type EventRow = {
   id: string
@@ -247,6 +250,43 @@ export default async function EventsPage({
 
   const goingEvents = filteredEvents.filter((e) => myRsvps.has(e.id))
 
+  // ── "For You" lane (signed-in, no active facet filter) ──────────────────────
+  // Hybrid interest+social+context ranking over the in-scope events. COLD-START
+  // RULE (EVENTS-SYSTEM §3/§4): never render an empty or random algorithmic feed.
+  // We only show the lane when the viewer has a USABLE signal — at least one event
+  // is personalized by real interest (embedding) or social proof (people they know
+  // going). Otherwise the existing soonest-first ordering carries the page.
+  let forYouEvents: EventRow[] = []
+  const forYouBlurbs: Record<string, string> = {}
+  if (myProfileId && !filtering && filteredEvents.length > 1) {
+    const byId = new Map(filteredEvents.map((e) => [e.id, e]))
+    const scored = await scoreEventsForViewer(
+      myProfileId,
+      filteredEvents.map((e) => e.id),
+    )
+    // Usable signal = real personalization, not just the always-present time/
+    // proximity floor. No signal → leave the lane empty (cold-start fallback).
+    const hasUsableSignal = scored.some((s) => s.interest > 0 || s.social > 0)
+    if (hasUsableSignal) {
+      forYouEvents = scored
+        .map((s) => byId.get(s.eventId))
+        .filter((e): e is EventRow => !!e)
+        .slice(0, 4)
+
+      // Optional warm blurbs — best-effort, parallel, degrade to nothing when AI
+      // is off / over budget / has no genuine overlap to speak to.
+      if (forYouEvents.length > 0 && (await aiAvailable())) {
+        const blurbs = await Promise.all(
+          forYouEvents.map((e) => eventBlurb(myProfileId!, e.id).catch(() => null)),
+        )
+        forYouEvents.forEach((e, i) => {
+          const b = blurbs[i]
+          if (b) forYouBlurbs[e.id] = b
+        })
+      }
+    }
+  }
+
   const facetRow = (
     <div className="flex flex-wrap items-center gap-2">
       <FacetDropdown label="Category" paramKey="category" options={CATEGORY_OPTIONS} />
@@ -286,6 +326,9 @@ export default async function EventsPage({
       {/* Table of contents — only meaningful once there's more than one section. */}
       <PageContents
         sections={[
+          ...(forYouEvents.length > 0
+            ? [{ id: 'events-for-you', label: 'For you', count: forYouEvents.length }]
+            : []),
           ...(goingEvents.length > 0
             ? [{ id: 'events-going', label: "You're going", count: goingEvents.length }]
             : []),
@@ -294,6 +337,29 @@ export default async function EventsPage({
       />
 
       <div className="space-y-8">
+        {forYouEvents.length > 0 && (
+          <section id="events-for-you" className="scroll-mt-20">
+            <SectionHeader title="For you" count={forYouEvents.length} />
+            <p className="-mt-2 mb-3 text-xs text-muted">
+              Picked from your circles, the people you know, and what’s near you.
+            </p>
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+              {forYouEvents.map((event) => (
+                <EventCard
+                  key={event.id}
+                  event={event}
+                  circleName={circleNames[event.scope_id]}
+                  going={rsvpCounts[event.id] ?? 0}
+                  isGoing={myRsvps.has(event.id)}
+                  now={nowDate}
+                  canRsvp={!!myProfileId}
+                  blurb={forYouBlurbs[event.id]}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
         {goingEvents.length > 0 && (
           <section id="events-going" className="scroll-mt-20">
             <SectionHeader title="You're going" count={goingEvents.length} />
@@ -383,7 +449,7 @@ function WarmBadge({ capacity, going }: { capacity: number | null; going: number
 }
 
 function EventCard({
-  event, circleName, going, isGoing, now, canRsvp,
+  event, circleName, going, isGoing, now, canRsvp, blurb,
 }: {
   event: EventRow
   circleName?: string
@@ -391,6 +457,8 @@ function EventCard({
   isGoing: boolean
   now: Date
   canRsvp: boolean
+  /** Optional AI "why you'd vibe" line — only set on the "For you" lane. */
+  blurb?: string
 }) {
   const warm = <WarmBadge capacity={event.capacity} going={going} />
   return (
@@ -398,6 +466,7 @@ function EventCard({
       href={`/events/${event.slug}`}
       anchor={<DateBlock iso={event.starts_at} />}
       title={event.title}
+      description={blurb}
       badge={
         (event.is_demo || warm) ? (
           <span className="flex shrink-0 items-center gap-1.5">

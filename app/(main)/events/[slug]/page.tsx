@@ -1,3 +1,4 @@
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -6,7 +7,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { toggleRSVP } from '../actions'
 import { EventCheckInButton } from './check-in-button'
-import { TicketButton } from './ticket-button'
+import { TicketButton, RefundTicketButton, type TicketTierView } from './ticket-button'
 import { getConnectStatus, payoutsLive } from '@/lib/billing/connect'
 import { hasTicket, recordTicketFromSessionId } from '@/lib/billing/tickets'
 import { getCapacityInfo } from '@/lib/events/capacity'
@@ -190,11 +191,61 @@ export default async function EventDetailPage({
     }
   }
 
-  // Ticketing (ADR-177): a priced event needs a payouts-ready host. Show the buy
-  // control to a signed-in non-host who hasn't already bought; otherwise a
-  // "ticket confirmed" state. The whole block hides for free events.
-  const priceCents = event.price_cents ?? 0
-  const isPaidEvent = priceCents > 0
+  // Ticketing (ADR-177 + tiers, EVENTS-SYSTEM §2.2): a priced event needs a
+  // payouts-ready host. An event sells tickets when it has either a flat
+  // `events.price_cents` OR one or more active ticket tiers. Tiers add named
+  // pricing modes (fixed/free/pwyc/sliding_scale/donation) + inventory. The whole
+  // block hides for free events with no priced tiers.
+  //
+  // `event_ticket_types` isn't in the generated types yet — untyped cast (repo
+  // convention, same as price_cents above).
+  type TierRow = {
+    id: string
+    name: string
+    description: string | null
+    pricing_mode: TicketTierView['pricingMode']
+    price_cents: number | null
+    min_cents: number | null
+    suggested_cents: number | null
+    quantity: number | null
+    sold: number
+    member_only: boolean
+  }
+  const { data: rawTiers } = await (admin as unknown as SupabaseClient)
+    .from('event_ticket_types')
+    .select(
+      'id, name, description, pricing_mode, price_cents, min_cents, suggested_cents, quantity, sold, member_only, active, sort_order, created_at',
+    )
+    .eq('event_id', event.id)
+    .eq('active', true)
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: true })
+  const tierRows = ((rawTiers ?? []) as unknown as (TierRow & { active: boolean })[]).filter(
+    (t) => t.active,
+  )
+
+  const tiers: TicketTierView[] = tierRows.map((t) => {
+    const spotsLeft = t.quantity == null ? null : Math.max(0, t.quantity - (t.sold ?? 0))
+    return {
+      id: t.id,
+      name: t.name,
+      description: t.description,
+      pricingMode: t.pricing_mode,
+      priceCents: t.price_cents,
+      minCents: t.min_cents,
+      suggestedCents: t.suggested_cents,
+      spotsLeft,
+      soldOut: spotsLeft != null && spotsLeft <= 0,
+      memberOnly: t.member_only,
+    }
+  })
+  const hasTiers = tiers.length > 0
+
+  const flatPriceCents = event.price_cents ?? 0
+  // The event "sells tickets" when it has active tiers (paid or free-claim) OR a
+  // flat price. Tiers win when present; otherwise fall back to the flat price
+  // (backward compat — an implicit single fixed tier).
+  const isPaidEvent = hasTiers || flatPriceCents > 0
   let hostPayoutReady = false
   let ownsTicket = false
   if (isPaidEvent && event.host?.id) {
@@ -202,7 +253,28 @@ export default async function EventDetailPage({
     if (myProfileId) ownsTicket = await hasTicket(event.id, myProfileId)
   }
   if (ticketedCents !== null) ownsTicket = true
-  const priceLabel = `$${(priceCents / 100).toFixed(2)}`
+  const priceLabel = `$${(flatPriceCents / 100).toFixed(2)}`
+
+  // Host sales + refunds (EVENTS-SYSTEM §7). The host (anyone who can manage this
+  // event) sees the succeeded tickets and can refund them. RLS lets the host read
+  // tickets for their events, but we keep the admin client for the buyer join.
+  type SoldTicketRow = {
+    id: string
+    amount_cents: number
+    qty: number
+    status: string
+    buyer: { display_name: string | null; handle: string | null } | null
+  }
+  let soldTickets: SoldTicketRow[] = []
+  if (canManage && isPaidEvent) {
+    const { data: rawSold } = await (admin as unknown as SupabaseClient)
+      .from('event_tickets')
+      .select('id, amount_cents, qty, status, buyer:profiles!buyer_profile_id ( display_name, handle )')
+      .eq('event_id', event.id)
+      .eq('status', 'succeeded')
+      .order('succeeded_at', { ascending: false })
+    soldTickets = (rawSold ?? []) as unknown as SoldTicketRow[]
+  }
 
   const isPast = new Date(event.starts_at) < new Date()
   // RSVP stays changeable until the event actually ENDS (not merely starts), so a
@@ -370,12 +442,14 @@ export default async function EventDetailPage({
           </div>
         )}
 
-        {/* ── Ticket (paid events, ADR-177) ── */}
+        {/* ── Ticket (paid events, ADR-177 + tiers §2.2) ── */}
         {isPaidEvent && !event.is_cancelled && (
           <div className="mb-6 rounded-2xl border border-border bg-surface p-4">
             <div className="flex items-center gap-2">
               <Ticket className="h-4 w-4 text-primary" />
-              <span className="text-sm font-bold text-text">{priceLabel} ticket</span>
+              <span className="text-sm font-bold text-text">
+                {hasTiers ? (tiers.length === 1 ? 'Ticket' : 'Tickets') : `${priceLabel} ticket`}
+              </span>
             </div>
             <div className="mt-3">
               {ownsTicket ? (
@@ -384,16 +458,54 @@ export default async function EventDetailPage({
                 </p>
               ) : hasEnded ? (
                 <p className="text-sm text-muted">Ticket sales have closed.</p>
+              ) : hasTiers && tiers.every((t) => t.soldOut) ? (
+                <p className="text-sm text-muted">Sold out.</p>
               ) : !myProfileId ? (
                 <p className="text-sm text-muted">Sign in to get your ticket.</p>
               ) : isHost ? (
                 <p className="text-sm text-muted">You’re hosting — no ticket needed.</p>
               ) : hostPayoutReady ? (
-                <TicketButton eventId={event.id} priceLabel={priceLabel} />
+                <TicketButton
+                  eventId={event.id}
+                  priceLabel={priceLabel}
+                  tiers={hasTiers ? tiers : undefined}
+                />
               ) : (
                 <p className="text-sm text-muted">Tickets aren’t available for this event yet.</p>
               )}
             </div>
+          </div>
+        )}
+
+        {/* ── Host: sold tickets + refunds (EVENTS-SYSTEM §7) ── */}
+        {canManage && isPaidEvent && (
+          <div className="mb-6 rounded-2xl border border-border bg-surface p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-subtle">
+              Sales <span className="ml-1 font-normal normal-case text-muted">{soldTickets.length} sold</span>
+            </p>
+            {soldTickets.length === 0 ? (
+              <p className="mt-2 text-sm text-subtle">No tickets sold yet.</p>
+            ) : (
+              <ul className="mt-3 space-y-1.5">
+                {soldTickets.map((t) => (
+                  <li key={t.id} className="flex items-center justify-between gap-3 text-sm">
+                    <span className="min-w-0 truncate text-text">
+                      {t.buyer?.display_name ?? 'A member'}
+                      <span className="ml-2 text-subtle">
+                        ${(t.amount_cents / 100).toFixed(2)}
+                        {t.qty > 1 ? ` · ${t.qty}×` : ''}
+                      </span>
+                    </span>
+                    <RefundTicketButton
+                      ticketId={t.id}
+                      eventId={event.id}
+                      slug={event.slug}
+                      amountLabel={`$${(t.amount_cents / 100).toFixed(2)}`}
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         )}
 
