@@ -14,12 +14,31 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { adoptPractice } from '@/lib/practices'
+import { resolveTier, type IntensityTier } from '@/lib/journey-tiers'
+import { currentSeasonWeek, qualifyingWeeks, DEFAULT_TARGET_WEEKS } from '@/lib/journey-arc'
 
 function db(): SupabaseClient {
   return createAdminClient() as unknown as SupabaseClient
 }
 
 export type PlanVisibility = 'private' | 'unlisted' | 'public'
+export type PlanStatus = 'draft' | 'pending' | 'approved' | 'rejected'
+
+/** A single Journey-page widget descriptor stored in journey_plans.page_config. The
+ *  canonical widget ids + default layout live in lib/journey-page-config.ts. */
+export interface PageWidgetConfig {
+  id: string
+  enabled: boolean
+  settings?: Record<string, unknown>
+}
+
+/** The content for one intensity tier of a practice (from practice_tiers; ADR-198). */
+export interface PracticeTierContent {
+  tier: IntensityTier
+  title: string | null
+  body: string | null
+  est_minutes: number | null
+}
 
 export interface JourneyPlan {
   id: string
@@ -42,6 +61,22 @@ export interface JourneyPlan {
   created_at: string
   updated_at: string
   published_at: string | null
+  /** Seasonal Quest this Journey is official under (null = open-library Journey). */
+  quest_id: string | null
+  /** Official season Journey (Guide/Mentor flagged). */
+  official: boolean
+  /** Review state (default 'approved' grandfathers existing plans; ADR-197). */
+  status: PlanStatus
+  /** Per-Journey page layout (ordered widgets). Null = the hardcoded default. */
+  page_config: PageWidgetConfig[] | null
+  /** A day qualifies toward completion at ≥ this many logs of the plan's practices. */
+  min_practices_per_day: number
+  /** Qualifying weeks needed to complete (default 8 of 13). */
+  target_weeks: number
+  /** Official plans lock to their quest's season; library plans can be evergreen. */
+  season_locked: boolean
+  /** Gems granted on completion (default 30). */
+  completion_gems: number
 }
 
 export interface JourneyPlanItem {
@@ -53,16 +88,29 @@ export interface JourneyPlanItem {
   note: string | null
   /** Per-journey cadence override (ADR-096). Null = the practice's own cadence. */
   cadence: string | null
-  practice: { id: string; title: string; description: string | null; domain_id: string | null; cadence: string | null } | null
+  /** The author's default intensity tier for this step (ADR-198). */
+  default_tier: IntensityTier
+  practice:
+    | {
+        id: string
+        title: string
+        description: string | null
+        domain_id: string | null
+        cadence: string | null
+        tiers?: PracticeTierContent[] | null
+      }
+    | null
 }
 
 const PLAN_COLS =
   'id, slug, title, summary, intro, emoji, accent, author_id, visibility, fork_of, ' +
-  'forked_count, adopt_count, cover_image, created_at, updated_at, published_at'
+  'forked_count, adopt_count, cover_image, created_at, updated_at, published_at, ' +
+  'quest_id, official, status, page_config, min_practices_per_day, target_weeks, season_locked, completion_gems'
 
 const ITEM_COLS =
-  'id, plan_id, practice_id, domain_id, sort_order, note, cadence, ' +
-  'practice:practices(id, title, description, domain_id, cadence)'
+  'id, plan_id, practice_id, domain_id, sort_order, note, cadence, default_tier, ' +
+  'practice:practices(id, title, description, domain_id, cadence, ' +
+  'tiers:practice_tiers(tier, title, body, est_minutes))'
 
 /** A url-safe slug from the title + a short random suffix (slugs are unique). */
 function slugify(title: string): string {
@@ -184,19 +232,53 @@ export async function addItem(input: {
   await client.from('journey_plans').update(touch()).eq('id', input.planId)
 }
 
-/** Update a single item's per-journey controls (note + cadence override). */
+/** Update a single item's per-journey controls (note, cadence override, default tier). */
 export async function updateItem(
   planId: string,
   practiceId: string,
-  patch: { note?: string | null; cadence?: string | null },
+  patch: { note?: string | null; cadence?: string | null; defaultTier?: IntensityTier },
 ): Promise<void> {
   const client = db()
   const update: Record<string, unknown> = {}
   if (patch.note !== undefined) update.note = patch.note?.trim() || null
   if (patch.cadence !== undefined) update.cadence = patch.cadence?.trim() || null
+  if (patch.defaultTier !== undefined) update.default_tier = patch.defaultTier
   if (Object.keys(update).length === 0) return
   await client.from('journey_plan_items').update(update).eq('plan_id', planId).eq('practice_id', practiceId)
   await client.from('journey_plans').update(touch()).eq('id', planId)
+}
+
+/** Set a circle's default intensity tier — the Host control (ADR-198). Null clears it. */
+export async function setCircleTier(circleId: string, tier: IntensityTier | null): Promise<void> {
+  await db().from('circles').update({ default_intensity_tier: tier }).eq('id', circleId)
+}
+
+/** Set a member's per-Journey tier override (ADR-198). Null clears it (inherit the chain). */
+export async function setAdoptionTier(
+  profileId: string,
+  planId: string,
+  tier: IntensityTier | null,
+): Promise<void> {
+  await db()
+    .from('journey_plan_adoptions')
+    .update({ tier_override: tier })
+    .eq('profile_id', profileId)
+    .eq('plan_id', planId)
+}
+
+/** Set a plan's review status (draft/pending/approved/rejected). Caller enforces authz. */
+export async function setPlanStatus(planId: string, status: PlanStatus): Promise<void> {
+  await db().from('journey_plans').update({ status, ...touch() }).eq('id', planId)
+}
+
+/** Flag a plan official + link it to a Seasonal Quest. Guide/Mentor only — caller enforces. */
+export async function setPlanOfficial(
+  planId: string,
+  opts: { official: boolean; questId?: string | null },
+): Promise<void> {
+  const update: Record<string, unknown> = { official: opts.official }
+  if (opts.questId !== undefined) update.quest_id = opts.questId || null
+  await db().from('journey_plans').update({ ...update, ...touch() }).eq('id', planId)
 }
 
 /** Edit a plan's own fields (identity + intro). Caller enforces ownership. */
@@ -209,6 +291,12 @@ export async function updatePlan(
     emoji?: string | null
     accent?: string | null
     coverImage?: string | null
+    status?: PlanStatus
+    minPracticesPerDay?: number
+    targetWeeks?: number
+    seasonLocked?: boolean
+    completionGems?: number
+    pageConfig?: PageWidgetConfig[] | null
   },
 ): Promise<void> {
   const update: Record<string, unknown> = {}
@@ -218,6 +306,16 @@ export async function updatePlan(
   if (patch.emoji !== undefined) update.emoji = patch.emoji?.trim().slice(0, 16) || null
   if (patch.accent !== undefined) update.accent = patch.accent?.trim().slice(0, 24) || null
   if (patch.coverImage !== undefined) update.cover_image = patch.coverImage?.trim().slice(0, 500) || null
+  // Completion rules + page layout (ADR-197). Clamped to their schema bounds.
+  if (patch.status !== undefined) update.status = patch.status
+  if (patch.minPracticesPerDay !== undefined)
+    update.min_practices_per_day = Math.min(4, Math.max(1, Math.round(patch.minPracticesPerDay)))
+  if (patch.targetWeeks !== undefined)
+    update.target_weeks = Math.min(13, Math.max(1, Math.round(patch.targetWeeks)))
+  if (patch.seasonLocked !== undefined) update.season_locked = patch.seasonLocked
+  if (patch.completionGems !== undefined)
+    update.completion_gems = Math.min(100, Math.max(0, Math.round(patch.completionGems)))
+  if (patch.pageConfig !== undefined) update.page_config = patch.pageConfig
   if (Object.keys(update).length === 0) return
   await db().from('journey_plans').update({ ...update, ...touch() }).eq('id', planId)
 }
@@ -382,12 +480,16 @@ export function planPillarMap(items: JourneyPlanItem[]): PlanPillarSlice[] {
 // --- Active-journey progress (no schema; derived from the practice log) --------
 
 export interface JourneyProgressItem extends JourneyPlanItem {
-  /** Distinct days this practice was logged in the last 7 days. */
+  /** Distinct days this practice was logged in the last 7 days (the Rhythm clock). */
   loggedThisWeek: number
   /** Weekly target parsed from the item's (or practice's) cadence (1–7). */
   target: number
-  /** Cadence met this week → the step counts as done. */
+  /** Cadence met this week → the step counts as on track. */
   met: boolean
+  /** The intensity tier this viewer sees, resolved member→circle→item→current (ADR-198). */
+  resolvedTier: IntensityTier
+  /** Content for the resolved tier (falls back to the 'current' tier, then null). */
+  tierContent: PracticeTierContent | null
 }
 
 export interface JourneyProgress {
@@ -401,6 +503,23 @@ export interface JourneyProgress {
   /** Members of the viewer's circles also on this journey (0 unless requested via
    *  { withCompanions }). The "doing it with your circle" signal (Path A). */
   circleCompanions: number
+  // --- Arc clock (season completion; docs/JOURNEYS.md §3–§4) ---
+  /** The season-window start (YYYY-MM-DD): the quest's season for official plans, else the
+   *  member's adoption date for evergreen plans. Null if it can't be resolved. */
+  anchorStart: string | null
+  /** Stable token for this plan's season cycle, used in reward idempotency keys. */
+  seasonToken: string | number
+  /** The current 1-based season week (1–13), or null outside the window. */
+  seasonWeek: number | null
+  /** Distinct qualifying weeks banked so far (a day qualifies at ≥ min_practices_per_day
+   *  distinct logs of this plan's practices). */
+  qualifyingWeeks: number
+  /** Weeks needed to complete (plan.target_weeks, default 8). */
+  targetWeeks: number
+  /** qualifyingWeeks ≥ targetWeeks. */
+  complete: boolean
+  /** Whole season weeks left in the window (max(0, 13 − seasonWeek)). */
+  weeksRemaining: number
 }
 
 /** Parse a free-text cadence ("Daily", "3x a week", "Weekly", …) into a weekly
@@ -425,35 +544,82 @@ export function weeklyTargetFromCadence(cadence: string | null): number {
  *  so logging a journey's practice advances it AND earns the rewards. */
 export async function getActiveJourneyProgress(
   profileId: string,
-  opts: { withCompanions?: boolean } = {},
+  opts: { withCompanions?: boolean; circleId?: string | null } = {},
 ): Promise<JourneyProgress[]> {
   const client = db()
 
   const { data: adoptionRows } = await client
     .from('journey_plan_adoptions')
-    .select(`created_at, plan:journey_plans(${PLAN_COLS})`)
+    .select(`created_at, tier_override, plan:journey_plans(${PLAN_COLS})`)
     .eq('profile_id', profileId)
     .eq('active', true)
     .order('created_at', { ascending: false })
-  const plans = ((adoptionRows ?? []) as unknown as { plan: JourneyPlan | null }[])
-    .map((a) => a.plan)
-    .filter((p): p is JourneyPlan => !!p)
+  const adoptions = ((adoptionRows ?? []) as unknown as {
+    created_at: string | null
+    tier_override: IntensityTier | null
+    plan: JourneyPlan | null
+  }[]).filter((a) => !!a.plan)
+  const plans = adoptions.map((a) => a.plan as JourneyPlan)
   if (plans.length === 0) return []
+  const adoptedAtByPlan = new Map(adoptions.map((a) => [(a.plan as JourneyPlan).id, a.created_at]))
+  const tierOverrideByPlan = new Map(adoptions.map((a) => [(a.plan as JourneyPlan).id, a.tier_override]))
 
-  // Logs in the last 7 days → distinct days per practice (the cadence signal).
-  // Logging is once per practice per day, so a row count per practice == days logged.
+  // Resolve season anchors for official plans: quest → season number → starts_at.
+  const seasonByQuest = new Map<string, number>()
+  const seasonStartByNumber = new Map<number, string>()
+  const questIds = [...new Set(plans.map((p) => p.quest_id).filter((q): q is string => !!q))]
+  if (questIds.length > 0) {
+    const { data: questRows } = await client.from('quests').select('id, season').in('id', questIds)
+    for (const q of (questRows ?? []) as { id: string; season: number | null }[]) {
+      if (q.season != null) seasonByQuest.set(q.id, q.season)
+    }
+    const seasonNos = [...new Set([...seasonByQuest.values()])]
+    if (seasonNos.length > 0) {
+      const { data: seasonRows } = await client
+        .from('seasons')
+        .select('season_number, starts_at')
+        .in('season_number', seasonNos)
+      for (const s of (seasonRows ?? []) as { season_number: number; starts_at: string | null }[]) {
+        if (s.starts_at) seasonStartByNumber.set(s.season_number, s.starts_at)
+      }
+    }
+  }
+  const anchorByPlan = new Map<string, SeasonAnchor>()
+  for (const p of plans) {
+    anchorByPlan.set(
+      p.id,
+      resolveAnchor(p, adoptedAtByPlan.get(p.id) ?? null, seasonStartByNumber, seasonByQuest),
+    )
+  }
+
+  // The viewer's circle default tier (only when a circle context is supplied).
+  let circleDefaultTier: IntensityTier | null = null
+  if (opts.circleId) {
+    const { data: c } = await client
+      .from('circles')
+      .select('default_intensity_tier')
+      .eq('id', opts.circleId)
+      .maybeSingle()
+    circleDefaultTier =
+      (c as { default_intensity_tier: IntensityTier | null } | null)?.default_intensity_tier ?? null
+  }
+
+  // One log read powers both clocks: the widest window we need is the earliest plan anchor,
+  // but never less than the last 7 days (the Rhythm clock).
+  const today = new Date().toISOString().slice(0, 10)
   const weekAgo = new Date()
   weekAgo.setDate(weekAgo.getDate() - 6) // inclusive 7-day window: today + 6 prior
-  const since = weekAgo.toISOString().slice(0, 10)
+  const sevenAgo = weekAgo.toISOString().slice(0, 10)
+  let minDate = sevenAgo
+  for (const a of anchorByPlan.values()) if (a.start && a.start < minDate) minDate = a.start
   const { data: logRows } = await client
     .from('practice_logs')
     .select('practice_id, logged_for')
     .eq('profile_id', profileId)
-    .gte('logged_for', since)
-  const daysByPractice = new Map<string, number>()
-  for (const r of (logRows ?? []) as { practice_id: string | null }[]) {
-    if (r.practice_id) daysByPractice.set(r.practice_id, (daysByPractice.get(r.practice_id) ?? 0) + 1)
-  }
+    .gte('logged_for', minDate)
+  const logs = ((logRows ?? []) as { practice_id: string | null; logged_for: string }[]).filter(
+    (r): r is { practice_id: string; logged_for: string } => !!r.practice_id,
+  )
 
   const { data: itemRows } = await client
     .from('journey_plan_items')
@@ -465,9 +631,8 @@ export async function getActiveJourneyProgress(
     .order('sort_order', { ascending: true })
   const allItems = (itemRows ?? []) as unknown as JourneyPlanItem[]
 
-  // Path A — "doing it with your circle": members of the viewer's active circles
-  // who also hold an active adoption of each plan (distinct profiles, self excluded).
-  // Opt-in (the feed home line skips this to stay light).
+  // Path A — "doing it with your circle": members of the viewer's active circles who also
+  // hold an active adoption of each plan (distinct profiles, self excluded). Opt-in.
   const companionsByPlan = new Map<string, number>()
   if (opts.withCompanions) {
     const { data: myMemberships } = await client
@@ -502,13 +667,53 @@ export async function getActiveJourneyProgress(
   }
 
   return plans.map((plan) => {
-    const items: JourneyProgressItem[] = allItems
-      .filter((it) => it.plan_id === plan.id)
-      .map((it) => {
-        const target = weeklyTargetFromCadence(it.cadence ?? it.practice?.cadence ?? null)
-        const loggedThisWeek = daysByPractice.get(it.practice_id) ?? 0
-        return { ...it, loggedThisWeek, target, met: loggedThisWeek >= target }
-      })
+    const planItems = allItems.filter((it) => it.plan_id === plan.id)
+    const planPracticeIds = new Set(planItems.map((it) => it.practice_id))
+    const anchor = anchorByPlan.get(plan.id) as SeasonAnchor
+    const tierOverride = tierOverrideByPlan.get(plan.id) ?? null
+
+    // Rhythm clock — distinct days per practice in the last 7 days.
+    const daysByPractice = new Map<string, number>()
+    for (const r of logs) {
+      if (planPracticeIds.has(r.practice_id) && r.logged_for >= sevenAgo) {
+        daysByPractice.set(r.practice_id, (daysByPractice.get(r.practice_id) ?? 0) + 1)
+      }
+    }
+
+    const items: JourneyProgressItem[] = planItems.map((it) => {
+      const target = weeklyTargetFromCadence(it.cadence ?? it.practice?.cadence ?? null)
+      const loggedThisWeek = daysByPractice.get(it.practice_id) ?? 0
+      const resolvedTier = resolveTier(tierOverride, circleDefaultTier, it.default_tier)
+      const tiers = it.practice?.tiers ?? []
+      const tierContent =
+        tiers.find((t) => t.tier === resolvedTier) ?? tiers.find((t) => t.tier === 'current') ?? null
+      return { ...it, loggedThisWeek, target, met: loggedThisWeek >= target, resolvedTier, tierContent }
+    })
+
+    // Arc clock — qualifying weeks within the plan's 91-day season window. A day qualifies
+    // at ≥ min_practices_per_day distinct logs of THIS plan's practices.
+    let qualWeeks = 0
+    let seasonWeek: number | null = null
+    let weeksRemaining = 0
+    if (anchor.start) {
+      const distinctByDay = new Map<string, Set<string>>()
+      for (const r of logs) {
+        if (planPracticeIds.has(r.practice_id) && r.logged_for >= anchor.start) {
+          const set = distinctByDay.get(r.logged_for) ?? new Set<string>()
+          set.add(r.practice_id)
+          distinctByDay.set(r.logged_for, set)
+        }
+      }
+      const minPerDay = plan.min_practices_per_day ?? 1
+      const qualifyingDays = [...distinctByDay.entries()]
+        .filter(([, s]) => s.size >= minPerDay)
+        .map(([d]) => d)
+      qualWeeks = qualifyingWeeks(qualifyingDays, anchor.start)
+      seasonWeek = currentSeasonWeek(today, anchor.start)
+      weeksRemaining = seasonWeek != null ? Math.max(0, 13 - seasonWeek) : 0
+    }
+    const targetWeeks = plan.target_weeks ?? DEFAULT_TARGET_WEEKS
+
     const done = items.filter((it) => it.met).length
     const total = items.length
     return {
@@ -519,6 +724,65 @@ export async function getActiveJourneyProgress(
       percent: total > 0 ? Math.round((done / total) * 100) : 0,
       nextItem: items.find((it) => !it.met) ?? null,
       circleCompanions: companionsByPlan.get(plan.id) ?? 0,
+      anchorStart: anchor.start,
+      seasonToken: anchor.token,
+      seasonWeek,
+      qualifyingWeeks: qualWeeks,
+      targetWeeks,
+      complete: qualWeeks >= targetWeeks,
+      weeksRemaining,
     }
   })
+}
+
+interface SeasonAnchor {
+  /** YYYY-MM-DD window start, or null if it can't be resolved. */
+  start: string | null
+  /** Stable token for the reward idempotency keys (season number, or an evergreen token). */
+  token: string | number
+}
+
+/** Resolve a plan's season window: official plans anchor to their quest's season start;
+ *  evergreen/library plans anchor to the member's adoption date (a rolling 13-week window). */
+function resolveAnchor(
+  plan: JourneyPlan,
+  adoptedAt: string | null,
+  seasonStartByNumber: Map<number, string>,
+  seasonByQuest: Map<string, number>,
+): SeasonAnchor {
+  if (plan.quest_id) {
+    const seasonNo = seasonByQuest.get(plan.quest_id)
+    const start = seasonNo != null ? seasonStartByNumber.get(seasonNo) ?? null : null
+    if (start) return { start: start.slice(0, 10), token: seasonNo as number }
+  }
+  const start = adoptedAt ? adoptedAt.slice(0, 10) : null
+  return { start, token: start ? `ev:${start}` : `ev:${plan.id}` }
+}
+
+/** Everything the Journey page needs for one plan by slug: the plan + items (discovery), plus
+ *  the viewer's live progress when they've adopted it (active mode). Null if the plan is gone. */
+export interface JourneyView {
+  plan: JourneyPlan
+  items: JourneyPlanItem[]
+  adopted: boolean
+  progress: JourneyProgress | null
+}
+
+export async function getJourneyView(
+  profileId: string | null,
+  slug: string,
+  opts: { circleId?: string | null } = {},
+): Promise<JourneyView | null> {
+  const base = await getPlan(slug)
+  if (!base) return null
+  let adopted = false
+  let progress: JourneyProgress | null = null
+  if (profileId) {
+    adopted = await isPlanAdopted(profileId, base.plan.id)
+    if (adopted) {
+      const all = await getActiveJourneyProgress(profileId, { withCompanions: true, circleId: opts.circleId })
+      progress = all.find((p) => p.plan.id === base.plan.id) ?? null
+    }
+  }
+  return { plan: base.plan, items: base.items, adopted, progress }
 }

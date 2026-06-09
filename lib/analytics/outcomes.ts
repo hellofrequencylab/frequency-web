@@ -1,8 +1,15 @@
 // Program/game outcome analytics (ADR-070 Phase C). Completion + stall points per
-// challenge / Arc (the multi-step feature), plus circle health — "what's working /
-// what isn't." Reads the
-// outcome RPCs (named via their definition tables) + circles directly. Server-only;
-// pure rate math is unit-tested. RPCs/circles cast (repo convention).
+// challenge, plus circle health — "what's working / what isn't." Reads the
+// challenge_outcomes RPC + circles directly. Server-only; pure rate math is
+// unit-tested. RPCs/circles cast (repo convention).
+//
+// Journey-completion retirement (ADR-152 Phase B3 / JOURNEYS.md §13 item 8):
+// the legacy `quest_outcomes()` RPC — which read the now-retired
+// quest_chains/steps/progress engine — is no longer called. `quests` is kept on
+// the report shape (always empty) so existing consumers keep compiling and the
+// Journeys section renders its empty state. Per-Journey completion analytics for
+// the journey_plans spine (qualifying-weeks ≥ target) are derived from
+// practice_logs and will land on this surface in a follow-up.
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -49,11 +56,8 @@ export function fillRate(count: number, cap: number | null): number | null {
 
 export async function getOutcomeReport(): Promise<OutcomeReport> {
   const db = createAdminClient() as unknown as SupabaseClient
-  const [chRes, qRes, circlesRes] = await Promise.all([
+  const [chRes, circlesRes] = await Promise.all([
     db.rpc('challenge_outcomes'),
-    // RPC kept as 'quest_outcomes' — the function still exists under that name;
-    // renaming it to arc_* is a deferred follow-up (see THE-QUEST.md).
-    db.rpc('quest_outcomes'),
     db.from('circles').select('name, member_count, member_cap, status, is_demo').eq('is_demo', false),
   ])
 
@@ -65,13 +69,11 @@ export async function getOutcomeReport(): Promise<OutcomeReport> {
     rate: completionRate(Number(r.started), Number(r.completed)),
   }))
 
-  const quests = ((qRes.data ?? []) as Array<{ name: string; started: number; completed: number; avg_stall_step: number | null }>).map((r) => ({
-    name: r.name,
-    started: Number(r.started),
-    completed: Number(r.completed),
-    rate: completionRate(Number(r.started), Number(r.completed)),
-    avgStallStep: r.avg_stall_step !== null ? Number(r.avg_stall_step) : null,
-  }))
+  // The legacy quest_outcomes() RPC + its quest_chains/steps/progress engine are
+  // retired (ADR-152 Phase B3). No quest-chain completion data remains, so the
+  // Journeys section is intentionally empty until journey_plans-derived completion
+  // analytics land. Shape preserved for consumers.
+  const quests: QuestOutcome[] = []
 
   const circleRows = (circlesRes.data ?? []) as Array<{ name: string; member_count: number | null; member_cap: number | null; status: string | null }>
   const circles = circleRows
