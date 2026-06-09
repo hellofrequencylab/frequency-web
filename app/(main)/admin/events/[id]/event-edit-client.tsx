@@ -351,12 +351,12 @@ function TierManager({
                   <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-text">
                     {t.name}
                     {t.member_only && (
-                      <span className="rounded-md bg-surface-elevated px-1.5 py-0.5 text-[11px] font-medium text-muted">
+                      <span className="rounded-md bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-muted">
                         Members
                       </span>
                     )}
                     {!t.active && (
-                      <span className="rounded-md bg-surface-elevated px-1.5 py-0.5 text-[11px] font-medium text-subtle">
+                      <span className="rounded-md bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-subtle">
                         Retired
                       </span>
                     )}

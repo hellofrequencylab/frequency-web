@@ -3,7 +3,7 @@ title: Practices, choose, do, log
 description: Adopt a practice or follow your circle's, then log it each day to earn zaps and build your streak.
 category: getting-started
 order: 3
-updated: 2026-06-08
+updated: 2026-06-09
 audience: member
 featureKeys: [practices, gamification]
 status: published
@@ -78,6 +78,10 @@ it has been logged.
 Each practice also has a category (movement, holistic health, spirituality, creative,
 human relating, business support) and a cadence hint (daily, weekly, as needed). The
 library is browsable by what you are drawn to.
+
+If a practice is part of any **journeys** or is being run by any **circles**, the page
+shows a **"Used in"** section linking to them — a quick way to find a journey built
+around it or a circle already practising it together.
 
 ## Find your way around the library
 
