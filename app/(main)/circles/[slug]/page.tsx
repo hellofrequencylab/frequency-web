@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Users, MessageSquare, Activity, TrendingUp, Zap, Flame, Pencil, MapPin } from 'lucide-react'
+import { Users, MessageSquare, Activity, TrendingUp, Zap, Flame, MapPin } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { leaveCircle, joinCircle } from '../actions'
@@ -28,9 +28,6 @@ import { ProfileFlair } from '@/components/profile-flair'
 import { isEndorsed } from '@/lib/season-ranks'
 import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
 import { ClaimCircle } from '@/components/circles/claim-circle'
-import { EditModeButton, StartEditingLink } from '@/components/admin/inline/edit-mode-button'
-import { InlineText } from '@/components/admin/inline/inline-text'
-import { updateCircleField, uploadCircleCover, removeCircleCover } from '../admin-actions'
 import { CircleCover } from '@/components/circles/circle-cover'
 
 type CircleDetail = {
@@ -234,28 +231,12 @@ export default async function CirclePage({
         />
       )}
 
-      <CircleCover
-        imageUrl={circle.image_url}
-        name={circle.name}
-        canManage={canManage}
-        upload={uploadCircleCover.bind(null, circle.id, slug)}
-        remove={removeCircleCover.bind(null, circle.id, slug)}
-      />
+      <CircleCover imageUrl={circle.image_url} name={circle.name} />
 
-      {/* Unified Detail header (REDESIGN-INAPP Phase 1): title + status/type
-          badges, member/host + capacity below, capability-gated actions right. */}
+      {/* Unified Detail header: title + status/type badges, member/host + capacity
+          below, capability-gated actions right. Editing is in the Settings panel. */}
       <DetailTemplate
-        title={
-          canManage ? (
-            <InlineText
-              value={circle.name}
-              save={updateCircleField.bind(null, circle.id, circle.slug, 'name')}
-              inputClassName="w-full rounded-lg border border-border-strong bg-surface px-2 py-0.5 text-xl sm:text-2xl font-bold text-text outline-none focus:ring-2 focus:ring-border-strong/30"
-            />
-          ) : (
-            circle.name
-          )
-        }
+        title={circle.name}
         badges={
           <>
             <span className={`text-xs px-1.5 py-0.5 rounded-md font-medium ${statusPill.cls}`}>
@@ -314,8 +295,6 @@ export default async function CirclePage({
         }
         actions={
           <>
-            {canManage && <EditModeButton />}
-
             {canManage && <CircleHostMenu circleId={circle.id} />}
 
             {isMember && !isHost && (
@@ -355,26 +334,11 @@ export default async function CirclePage({
         }
       >
         {/* ── About (boxless, collapsible) ───────────── */}
-        {canManage ? (
-          <div className="mb-6">
-            <InlineText
-              value={circle.about}
-              multiline
-              placeholder="Add a description for your circle…"
-              save={updateCircleField.bind(null, circle.id, circle.slug, 'about')}
-            >
-              {circle.about ? (
-                <CollapsibleAbout text={circle.about} />
-              ) : (
-                <StartEditingLink label="+ Add a description for your circle" />
-              )}
-            </InlineText>
-          </div>
-        ) : circle.about ? (
+        {circle.about && (
           <div className="mb-6">
             <CollapsibleAbout text={circle.about} />
           </div>
-        ) : null}
+        )}
 
         {/* ── This week's practice (host-assigned). Members log it for
                 practice.verified + zaps; hosts set/change it. ──────────── */}
@@ -418,15 +382,11 @@ export default async function CirclePage({
         {canManage && (
           <div className="mb-6 grid grid-cols-1 gap-6 sm:grid-cols-2">
             <ModuleCard title="Host tools">
+              <p className="mb-2 text-xs leading-relaxed text-muted">
+                Edit this circle&rsquo;s name, cover, and details from <span className="font-medium text-text">Settings</span> at the top of the page.
+              </p>
               <div className="flex items-center flex-wrap gap-2">
                 <HostInviteButton circleId={circle.id} />
-                <Link
-                  href={`/circles/${circle.slug}?edit=true`}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text hover:border-primary-bg dark:hover:border-primary transition-colors"
-                >
-                  <Pencil className="w-3.5 h-3.5" />
-                  Edit info
-                </Link>
               </div>
               <div className="mt-2">
                 <HostInviteEmail circleId={circle.id} />
