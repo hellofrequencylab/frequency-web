@@ -10,6 +10,8 @@ import { CircleQuestModule } from '@/components/admin/modules/circle-quest-modul
 import { HubSettingsModule } from '@/components/admin/modules/hub-settings-module'
 import { NexusSettingsModule } from '@/components/admin/modules/nexus-settings-module'
 import { EventSettingsModule } from '@/components/admin/modules/event-settings-module'
+import { ChannelSettingsModule } from '@/components/admin/modules/channel-settings-module'
+import { PersonSettingsModule } from '@/components/admin/modules/person-settings-module'
 import { PageContentModule } from '@/components/admin/modules/page-content-module'
 import { usePageAdmin } from '@/components/layout/page-admin-context'
 import { CONTENT_EDIT_ROUTES } from '@/lib/layout/editable-content'
@@ -49,6 +51,8 @@ function settingsModuleFor(pathname: string) {
   if (/^\/hubs\/[^/]+/.test(pathname)) return <HubSettingsModule />
   if (/^\/nexuses\/[^/]+/.test(pathname)) return <NexusSettingsModule />
   if (/^\/events\/[^/]+/.test(pathname)) return <EventSettingsModule />
+  if (/^\/channels\/[^/]+/.test(pathname)) return <ChannelSettingsModule />
+  if (/^\/people\/[^/]+/.test(pathname)) return <PersonSettingsModule />
   return null
 }
 

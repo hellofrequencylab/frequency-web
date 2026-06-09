@@ -31,6 +31,8 @@ export type Capability =
   | 'circle.broadcast'
   // event
   | 'event.editSettings'
+  // topical channel (platform-curated — staff only)
+  | 'channel.manage'
   // tasks (crew engagement inside a circle)
   | 'task.volunteer'
   | 'task.claim'
@@ -57,6 +59,7 @@ export type Scope =
       viewerManagesParent?: boolean
     }
   | { kind: 'profile'; ownerId: string }
+  | { kind: 'channel'; channelId: string }
   | { kind: 'hub'; hubId: string; guideId?: string | null; viewerManagesParent?: boolean }
   | { kind: 'nexus'; nexusId: string; mentorId?: string | null }
   | {
@@ -131,6 +134,12 @@ export function resolveCapabilities(viewer: Viewer, scope: Scope): Set<Capabilit
         caps.add('task.volunteer')
         caps.add('task.claim')
       }
+      break
+    }
+
+    case 'channel': {
+      // Topical channels are platform-curated (no per-channel owner) — staff only.
+      if (isStaff) caps.add('channel.manage')
       break
     }
 
