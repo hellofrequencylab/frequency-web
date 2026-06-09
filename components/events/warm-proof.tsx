@@ -24,6 +24,7 @@ export function WarmProof({
   going,
   fromYourCircles = 0,
   maybe = 0,
+  guests = 0,
   faces = [],
   nearFull = false,
   spotsLeft = null,
@@ -34,6 +35,8 @@ export function WarmProof({
   fromYourCircles?: number
   /** 'maybe' RSVP count. */
   maybe?: number
+  /** Plus-ones guests across going attendees (informational headcount). */
+  guests?: number
   /** Up to a handful of going attendees for the avatar pile (in join order). */
   faces?: WarmProofAttendee[]
   /** Page-decided: capacity is real AND genuinely close to full. */
@@ -58,6 +61,7 @@ export function WarmProof({
 
   // Build the warm line from real numbers only — each clause appears just once it's true.
   const parts: string[] = []
+  if (guests > 0) parts.push(`${guests} ${guests === 1 ? 'guest' : 'guests'}`)
   if (fromYourCircles > 0) parts.push(`${fromYourCircles} from your circles`)
   if (maybe > 0) parts.push(`${maybe} maybe`)
 

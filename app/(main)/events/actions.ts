@@ -271,6 +271,134 @@ export async function toggleRSVP(eventId: string) {
   revalidatePath('/circles', 'layout')
 }
 
+// Explicit RSVP intent (going / maybe / not_going). Unlike `toggleRSVP` (which
+// flips between attend/withdraw), this lets a member move directly between the
+// three states the UI offers — Going, Interested (maybe), and stepping out.
+// Self-authorized: only ever touches the caller's own RSVP row.
+//
+//   • 'going'      → honours real capacity (full ⇒ 'waitlist'); fires the
+//                    confirmation email + the going side-effects, exactly like
+//                    toggleRSVP. Never double-sends within the same status.
+//   • 'maybe'      → soft interest. Does NOT consume capacity and NEVER emails.
+//                    If the member was holding a confirmed seat, leaving it frees
+//                    it, so we promote the next person off the waitlist.
+//   • 'not_going'  → withdraw. Frees a seat + promotes from waitlist if needed.
+export async function setRsvpStatus(eventId: string, intent: 'going' | 'maybe' | 'not_going') {
+  const myProfileId = await getMyProfileId()
+  if (!myProfileId) return
+
+  const admin = createAdminClient()
+  const supabase = await createClient()
+
+  const { data: existing } = await admin
+    .from('event_rsvps')
+    .select('id, status')
+    .eq('event_id', eventId)
+    .eq('profile_id', myProfileId)
+    .maybeSingle()
+
+  const prevStatus = existing?.status ?? 'not_going'
+  // A confirmed seat is freed when we move OUT of 'going' (to maybe/not_going).
+  const heldSeat = prevStatus === 'going'
+
+  // Side-effects for a true intent-to-attend (mirrors toggleRSVP's onGoing).
+  const onGoing = (firstTime: boolean) => {
+    processGamificationEvent({ type: 'event_attend', profileId: myProfileId }).catch((e) => console.error('[events gamification]', e))
+    recordStreakActivity(myProfileId, 'attendance').catch((e) => console.error('[events gamification]', e))
+    if (firstTime) {
+      awardGems(myProfileId, 'event_rsvp').catch((e) => console.error('[events gamification]', e))
+    }
+  }
+
+  if (intent === 'going') {
+    // No-op if already confirmed (going/waitlist) — avoids a redundant email.
+    if (prevStatus !== 'going' && prevStatus !== 'waitlist') {
+      const { isFull } = await getCapacityInfo(eventId)
+      const next = isFull ? 'waitlist' : 'going'
+      if (existing) {
+        await supabase.from('event_rsvps').update({ status: next }).eq('id', existing.id)
+      } else {
+        await supabase.from('event_rsvps').insert({
+          event_id: eventId,
+          profile_id: myProfileId,
+          status: next,
+        })
+      }
+      if (next === 'going') onGoing(!existing)
+      sendRsvpConfirmation(eventId, myProfileId, next).catch((e) =>
+        console.error('[events rsvp confirmation email]', e)
+      )
+    }
+  } else {
+    // maybe / not_going: a soft state, no email, no capacity consumed.
+    // `plus_ones` isn't in the generated DB types yet → untyped cast (repo
+    // convention for not-yet-regenerated columns; see lib/events/capacity.ts).
+    const db = supabase as unknown as SupabaseClient
+    if (existing) {
+      if (existing.status !== intent) {
+        // plus_ones only mean anything for a confirmed seat — clear on stepping back.
+        await db
+          .from('event_rsvps')
+          .update({ status: intent, plus_ones: 0 })
+          .eq('id', existing.id)
+      }
+    } else {
+      await db.from('event_rsvps').insert({
+        event_id: eventId,
+        profile_id: myProfileId,
+        status: intent,
+        plus_ones: 0,
+      })
+    }
+    // Freed a confirmed seat → pull the next person off the waitlist.
+    if (heldSeat) {
+      await promoteFromWaitlist(eventId).catch((e) => { console.error('[events waitlist]', e); return null })
+    }
+  }
+
+  revalidatePath('/events', 'layout')
+  revalidatePath('/feed')
+  revalidatePath('/circles', 'layout')
+}
+
+// Capacity-neutral headcount the host cares about: how many guests a confirmed
+// attendee is bringing. Self-authorized (only the caller's own row), clamped to
+// [0, MAX_PLUS_ONES], and only meaningful for a 'going' RSVP — we no-op otherwise
+// so it can't inflate a maybe/waitlist row. Does NOT consume seats (the capacity
+// trigger counts 'going' rows, not plus_ones) and never emails.
+const MAX_PLUS_ONES = 5
+
+export async function setRsvpPlusOnes(eventId: string, plusOnes: number) {
+  const myProfileId = await getMyProfileId()
+  if (!myProfileId) return
+
+  const n = Number.isFinite(plusOnes) ? Math.max(0, Math.min(MAX_PLUS_ONES, Math.trunc(plusOnes))) : 0
+
+  const admin = createAdminClient()
+  const supabase = await createClient()
+
+  const { data: existing } = await admin
+    .from('event_rsvps')
+    .select('id, status')
+    .eq('event_id', eventId)
+    .eq('profile_id', myProfileId)
+    .maybeSingle()
+
+  // Only a confirmed attendee can bring guests — guard rather than create rows.
+  if (!existing || existing.status !== 'going') return
+
+  // `plus_ones` isn't in the generated DB types yet → untyped cast (repo
+  // convention for not-yet-regenerated columns; see lib/events/capacity.ts).
+  await (supabase as unknown as SupabaseClient)
+    .from('event_rsvps')
+    .update({ plus_ones: n })
+    .eq('id', existing.id)
+
+  revalidatePath('/events', 'layout')
+  revalidatePath('/feed')
+  revalidatePath('/circles', 'layout')
+}
+
 export interface CheckInResult {
   ok: boolean
   alreadyCheckedIn?: boolean
