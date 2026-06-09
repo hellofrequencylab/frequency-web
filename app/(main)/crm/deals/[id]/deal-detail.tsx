@@ -192,7 +192,7 @@ export function DealDetail({
                 {deal.owner.avatar_url ? (
                   <Image src={deal.owner.avatar_url} alt="" width={20} height={20} className="h-5 w-5 rounded-full object-cover" />
                 ) : (
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary-bg text-[9px] font-semibold text-primary-strong">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary-bg text-3xs font-semibold text-primary-strong">
                     {getInitials(deal.owner.display_name)}
                   </span>
                 )}
