@@ -12,7 +12,7 @@ import { CircleCard, type CircleCardData } from '@/components/circles/circle-car
 import { CirclesToolbar } from '@/components/circles/circles-toolbar'
 import { demoModeEnabled } from '@/lib/platform-flags'
 import { viewerHidesDemo } from '@/lib/demo-preference'
-import { resolvePageContent } from '@/lib/page-content'
+import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 import type { CircleBase } from '@/lib/types/circle'
 
 type CircleRow = CircleBase & {
@@ -51,6 +51,19 @@ function toCardData(c: CircleRow): CircleCardData {
   }
 }
 
+// Coded defaults for the operator-editable content (ADR-180) — shared by the
+// page header and the SEO metadata below.
+const CONTENT_FALLBACK = {
+  title: 'Circles',
+  description:
+    'This is where it gets real. Find a circle near you, dive into something you love, or start your own — because showing up, week after week, is how strangers become your people.',
+}
+
+// Operator-set title/description also drive <title> + og/twitter cards (PX.2).
+export function generateMetadata() {
+  return pageContentMetadata('/circles', CONTENT_FALLBACK)
+}
+
 export default async function CirclesPage({
   searchParams,
 }: {
@@ -59,12 +72,9 @@ export default async function CirclesPage({
   const { type, interest, sort = 'nearest', q, channel } = await searchParams
   const supabase = await createClient()
 
-  // Operator-editable page header (ADR-180) — falls back to these defaults.
-  const { title: pageTitle, description: pageDescription } = await resolvePageContent('/circles', {
-    title: 'Circles',
-    description:
-      'This is where it gets real. Find a circle near you, dive into something you love, or start your own — because showing up, week after week, is how strangers become your people.',
-  })
+  // Operator-editable page header (ADR-180) — falls back to the coded defaults.
+  const { title: pageTitle, description: pageDescription, heroImage, ctaLabel, ctaHref } =
+    await resolvePageContent('/circles', CONTENT_FALLBACK)
 
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -211,12 +221,25 @@ export default async function CirclesPage({
     <IndexTemplate
       title={pageTitle}
       action={
-        user ? (
-          <NewCircleCompose
-            interests={interests}
-            buttonLabel="Start a circle"
-            buttonClass="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
-          />
+        (user || (ctaLabel && ctaHref)) ? (
+          <div className="flex items-center gap-2">
+            {user && (
+              <NewCircleCompose
+                interests={interests}
+                buttonLabel="Start a circle"
+                buttonClass="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
+              />
+            )}
+            {/* Operator-set CTA (PX.1) — shows only when both label + link are set. */}
+            {ctaLabel && ctaHref && (
+              <a
+                href={ctaHref}
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
+              >
+                {ctaLabel}
+              </a>
+            )}
+          </div>
         ) : undefined
       }
       description={
@@ -229,6 +252,16 @@ export default async function CirclesPage({
         </>
       }
     >
+      {/* Operator-set hero banner (PX.1) — renders only when set. */}
+      {heroImage && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={heroImage}
+          alt=""
+          className="mb-6 h-44 w-full rounded-2xl border border-border object-cover sm:h-56"
+        />
+      )}
+
       {/* Table of contents — filter circles by Channel — with the network stats
           parked at its right (no divider rule). */}
       <PageContents links={channelLinks} divider={false} rightSlot={statStrip} />

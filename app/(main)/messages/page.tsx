@@ -13,7 +13,7 @@ import { CrewLeadQuickAction } from '@/components/messages/crew-lead-quick-actio
 import { IndexTemplate } from '@/components/templates/index-template'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
-import { resolvePageContent } from '@/lib/page-content'
+import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 import type { ProfileIdentity } from '@/lib/types/profile'
 
 type Profile = ProfileIdentity & {
@@ -55,6 +55,18 @@ const FILTERS: { value: Filter; label: string }[] = [
 ]
 
 const ACTIVE_WINDOW_MS = 30 * 60 * 1000
+
+// Coded defaults for the operator-editable content (ADR-180) — shared by the
+// page header and the SEO metadata below.
+const CONTENT_FALLBACK = {
+  title: 'Messages',
+  description: 'Every conversation in one place. Direct messages, and rooms — your private group chats and the open community channels.',
+}
+
+// Operator-set title/description also drive <title> + og/twitter cards (PX.2).
+export function generateMetadata() {
+  return pageContentMetadata('/messages', CONTENT_FALLBACK)
+}
 
 export default async function MessagesPage({
   searchParams,
@@ -265,13 +277,11 @@ export default async function MessagesPage({
 
   const totalUnread = conversations.reduce((sum, c) => sum + c.unreadCount, 0)
 
-  // Operator-editable page header (ADR-180) — falls back to these defaults. The
-  // unread badge stays dynamic; only the static title text + description flow
+  // Operator-editable page header (ADR-180) — falls back to the coded defaults.
+  // The unread badge stays dynamic; only the static title text + description flow
   // through resolvePageContent.
-  const { title: pageTitle, description: pageDescription } = await resolvePageContent('/messages', {
-    title: 'Messages',
-    description: 'Every conversation in one place. Direct messages, and rooms — your private group chats and the open community channels.',
-  })
+  const { title: pageTitle, description: pageDescription, ctaLabel, ctaHref } =
+    await resolvePageContent('/messages', CONTENT_FALLBACK)
 
   // Segmented filter — lives in the "Your threads" section header.
   const filterTabs = (
@@ -307,6 +317,15 @@ export default async function MessagesPage({
         <div className="flex flex-wrap items-center justify-end gap-2">
           <CrewLeadQuickAction />
           {canCreateRoom && <NewRoomCompose />}
+          {/* Operator-set CTA (PX.1) — shows only when both label + link are set. */}
+          {ctaLabel && ctaHref && (
+            <a
+              href={ctaHref}
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
+            >
+              {ctaLabel}
+            </a>
+          )}
         </div>
       }
     >
