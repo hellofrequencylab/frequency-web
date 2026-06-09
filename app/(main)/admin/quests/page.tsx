@@ -180,7 +180,7 @@ export default async function AdminQuestsPage() {
                         )}
                         <span className="truncate text-sm font-medium text-text">{journey.title}</span>
                         {journey.official && (
-                          <span className="shrink-0 rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                          <span className="shrink-0 rounded-md bg-primary/10 px-1.5 py-0.5 text-2xs font-semibold text-primary">
                             Official
                           </span>
                         )}

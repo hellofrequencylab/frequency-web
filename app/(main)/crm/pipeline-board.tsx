@@ -153,7 +153,7 @@ function Avatar({ person }: { person: PersonLite }) {
   return person.avatar_url ? (
     <Image src={person.avatar_url} alt={person.display_name} width={20} height={20} className="h-5 w-5 rounded-full object-cover" />
   ) : (
-    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary-bg text-[9px] font-semibold text-primary-strong select-none">
+    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary-bg text-3xs font-semibold text-primary-strong select-none">
       {getInitials(person.display_name)}
     </span>
   )
