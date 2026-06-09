@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { CalendarDays, MapPin, Users } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
@@ -10,6 +11,7 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { EntityCard } from '@/components/cards/entity-card'
 import { DemoBadge } from '@/components/ui/demo-badge'
+import { FacetDropdown } from '@/components/ui/facet-dropdown'
 import { RsvpButton } from '@/components/events/rsvp-button'
 import { demoModeEnabled } from '@/lib/platform-flags'
 import { viewerHidesDemo } from '@/lib/demo-preference'
@@ -26,8 +28,41 @@ type EventRow = {
   is_demo: boolean
   scope_id: string
   scope_type: string
+  // P0 taxonomy + capacity (newer than the generated DB types — read via the
+  // untyped-client cast, the repo convention for not-yet-regenerated columns).
+  category: string | null
+  energy_tag: string | null
+  capacity: number | null
   host: { id: string; display_name: string; handle: string } | null
 }
+
+// Library taxonomy (events.category) — the discovery facet, Eventbrite-style.
+const CATEGORY_OPTIONS: { value: string; label: string }[] = [
+  { value: 'ceremony', label: 'Ceremony' },
+  { value: 'movement', label: 'Movement' },
+  { value: 'circle_ritual', label: 'Circle ritual' },
+  { value: 'learning', label: 'Learning' },
+  { value: 'social', label: 'Social' },
+  { value: 'service', label: 'Service' },
+  { value: 'external_meetup', label: 'External meetup' },
+  { value: 'retreat', label: 'Retreat' },
+  { value: 'online', label: 'Online' },
+  { value: 'gathering', label: 'Gathering' },
+]
+
+// Nervous-system framing (events.energy_tag) — matches the DB check constraint.
+const ENERGY_OPTIONS: { value: string; label: string }[] = [
+  { value: 'grounding', label: 'Grounding' },
+  { value: 'high_activation', label: 'High activation' },
+  { value: 'social', label: 'Social' },
+  { value: 'ceremonial', label: 'Ceremonial' },
+]
+
+// "Has spots" — the only real scarcity signal: capacity IS NULL (unlimited) OR
+// fewer 'going' than capacity. One option toggles the facet on/off via the URL.
+const SPOTS_OPTIONS: { value: string; label: string }[] = [
+  { value: '1', label: 'Has open spots' },
+]
 
 // Relative "when" — "Tomorrow at 3pm" / "Friday at 3pm" / "Jun 24 at 3pm".
 // `now` is passed in so this stays a pure helper (no clock read at render).
@@ -56,7 +91,12 @@ function DateBlock({ iso }: { iso: string }) {
   )
 }
 
-export default async function EventsPage() {
+export default async function EventsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ category?: string; energy?: string; spots?: string }>
+}) {
+  const { category, energy, spots } = await searchParams
   const admin = createAdminClient()
   const supabase = await createClient()
 
@@ -129,11 +169,14 @@ export default async function EventsPage() {
   const now = nowDate.toISOString()
   const future = new Date(nowDate.getTime() + 60 * 24 * 60 * 60 * 1000).toISOString()
 
-  let eventsQuery = admin
+  // category / energy_tag / capacity are newer than the generated DB types — read
+  // them through an untyped client (repo convention for not-yet-regenerated
+  // columns; see lib/billing/* and lib/events/capacity.ts).
+  let eventsQuery = (admin as unknown as SupabaseClient)
     .from('events')
     .select(
       `id, title, slug, location, starts_at, ends_at, is_cancelled, is_demo,
-       scope_id, scope_type,
+       scope_id, scope_type, category, energy_tag, capacity,
        host:profiles!host_id ( id, display_name, handle )`
     )
     .in('scope_id', myCircleIds)
@@ -187,7 +230,30 @@ export default async function EventsPage() {
     }
   }
 
-  const goingEvents = events.filter((e) => myRsvps.has(e.id))
+  // ── Facets (applied server-side; URL-driven so the view stays shareable) ────
+  // category + energy match a column directly; "spots" is the only real scarcity
+  // signal — capacity null (unlimited) OR going-count < capacity. We never filter
+  // *out* low counts as scarcity, and never surface a low/zero count as pressure.
+  const goingCount = (e: EventRow) => rsvpCounts[e.id] ?? 0
+  const hasSpots = (e: EventRow) => e.capacity == null || goingCount(e) < e.capacity
+
+  const filteredEvents = events.filter((e) => {
+    if (category && e.category !== category) return false
+    if (energy && e.energy_tag !== energy) return false
+    if (spots === '1' && !hasSpots(e)) return false
+    return true
+  })
+  const filtering = !!(category || energy || spots)
+
+  const goingEvents = filteredEvents.filter((e) => myRsvps.has(e.id))
+
+  const facetRow = (
+    <div className="flex flex-wrap items-center gap-2">
+      <FacetDropdown label="Category" paramKey="category" options={CATEGORY_OPTIONS} />
+      <FacetDropdown label="Energy" paramKey="energy" options={ENERGY_OPTIONS} />
+      <FacetDropdown label="Spots" paramKey="spots" options={SPOTS_OPTIONS} />
+    </div>
+  )
 
   return (
     <IndexTemplate
@@ -205,6 +271,7 @@ export default async function EventsPage() {
           </div>
         ) : undefined
       }
+      toolbar={facetRow}
     >
       <div className="mb-6">
         <StatStrip
@@ -222,7 +289,7 @@ export default async function EventsPage() {
           ...(goingEvents.length > 0
             ? [{ id: 'events-going', label: "You're going", count: goingEvents.length }]
             : []),
-          { id: 'events-upcoming', label: goingEvents.length > 0 ? 'Coming up' : 'Upcoming', count: events.length },
+          { id: 'events-upcoming', label: goingEvents.length > 0 ? 'Coming up' : 'Upcoming', count: filteredEvents.length },
         ]}
       />
 
@@ -247,14 +314,22 @@ export default async function EventsPage() {
         )}
 
         <section id="events-upcoming" className="scroll-mt-20">
-          <SectionHeader title={goingEvents.length > 0 ? 'Coming up' : 'Upcoming events'} count={events.length} />
-          {events.length === 0 ? (
+          <SectionHeader title={goingEvents.length > 0 ? 'Coming up' : 'Upcoming events'} count={filteredEvents.length} />
+          {filteredEvents.length === 0 ? (
             <EmptyState
               icon={CalendarDays}
-              title="Nothing on the calendar yet"
-              description="No events in the next 60 days. When your circles plan something, it lands here."
+              title={filtering ? 'No events match these filters' : 'Nothing on the calendar yet'}
+              description={
+                filtering
+                  ? 'Try a different category or energy, or clear the filters to see everything coming up.'
+                  : 'No events in the next 60 days. When your circles plan something, it lands here.'
+              }
               action={
-                isCrew ? (
+                filtering ? (
+                  <Link href="/events" className="text-sm font-semibold text-primary-strong hover:underline">
+                    Clear filters
+                  </Link>
+                ) : isCrew ? (
                   <Link href="/events/new" className="text-sm font-semibold text-primary-strong hover:underline">
                     Create the first one
                   </Link>
@@ -263,7 +338,7 @@ export default async function EventsPage() {
             />
           ) : (
             <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-              {events.map((event) => (
+              {filteredEvents.map((event) => (
                 <EventCard
                   key={event.id}
                   event={event}
@@ -282,6 +357,31 @@ export default async function EventsPage() {
   )
 }
 
+// Warm, never-FOMO scarcity badge. Capacity is the ONLY real scarcity signal
+// (events.capacity; null = unlimited). We surface care/momentum, never pressure:
+//   • "Waitlist" when genuinely full (going ≥ capacity)
+//   • "Filling up" ONLY when near-full — spots left > 0 AND ≤ 20% of capacity
+// No low/zero counts, no countdowns, no fake urgency (EVENTS-SYSTEM §4, Law 1).
+function WarmBadge({ capacity, going }: { capacity: number | null; going: number }) {
+  if (capacity == null) return null
+  const spotsLeft = Math.max(0, capacity - going)
+  if (spotsLeft === 0) {
+    return (
+      <span className="shrink-0 rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
+        Waitlist
+      </span>
+    )
+  }
+  if (spotsLeft <= capacity * 0.2) {
+    return (
+      <span className="shrink-0 rounded-full bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong">
+        Filling up
+      </span>
+    )
+  }
+  return null
+}
+
 function EventCard({
   event, circleName, going, isGoing, now, canRsvp,
 }: {
@@ -292,12 +392,20 @@ function EventCard({
   now: Date
   canRsvp: boolean
 }) {
+  const warm = <WarmBadge capacity={event.capacity} going={going} />
   return (
     <EntityCard
       href={`/events/${event.slug}`}
       anchor={<DateBlock iso={event.starts_at} />}
       title={event.title}
-      badge={event.is_demo ? <DemoBadge /> : undefined}
+      badge={
+        (event.is_demo || warm) ? (
+          <span className="flex shrink-0 items-center gap-1.5">
+            {event.is_demo && <DemoBadge />}
+            {warm}
+          </span>
+        ) : undefined
+      }
       context={formatWhen(event.starts_at, now)}
       meta={
         <>
