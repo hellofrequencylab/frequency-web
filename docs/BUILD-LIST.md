@@ -7,6 +7,35 @@
 > Legend: ✅ done · ⏳ partial / in flight · 📋 specced, not built · 🔴 blocked / gated.
 > Spec detail still lives in the per-topic docs; this is the **order of operations**.
 
+## 🔎 Full-site audit — 2026-06-09 (post events / journeys / circles)
+
+Four-agent sweep (incompleteness · security · journeys/events/circles completeness · UI/linkage).
+**Verdict: ~85–90% launch-ready. No broken routes, no orphans, no critical security holes.** Two
+items were fixed during the audit; the rest is the prioritized list below.
+
+**Fixed this pass:** 🟢 **Events migrations applied to prod** — `events` capacity/visibility, `event_ticket_types`,
+`circle_field_transactions`, `event_embeddings`, the `adjust_ticket_sold` RPC + capacity trigger were
+**not live** (only the journey migration was), so the whole events ticketing/Circle-Field system was broken in
+production. Applied all five (ADR-185). 🟢 **AI event-blurb prompt-injection** hardened (user fields sanitized).
+
+| Pri | Item | Why | Where |
+|---|---|---|---|
+| 🔴 **P0** | **Regenerate `lib/database.types.ts`** | 10+ files use `as unknown as SupabaseClient` casts — hides real type errors, no CI gate | `supabase gen types` after the migrations above |
+| 🔴 **P0** | **Wire 3 missing Journey reward fires** | Full-Day +25 · Rhythm +50 · Journey-complete +30 gems are defined but never fire → journeys ship without their reward moments | `lib/rewards/*`, crew actions |
+| 🔴 **P0** | **RSVP confirmation email** | The highest-intent moment sends nothing (only 7d/24h/2h reminders exist) | `app/(main)/events/actions.ts` toggleRSVP |
+| 🔴 **P0** | **Event cancel → bulk refund + notify** | `cancelEvent` only flips a flag; paid attendees aren't refunded (trust/legal) | `app/(main)/admin/events/actions.ts` |
+| 🟠 **P1** | **Public/unlisted event RLS** | `events.visibility` is decorative — enforce in RLS **before** standalone/public events ship (safe today: circle-only) | events RLS |
+| 🟠 **P1** | **Owner go-live configs** | Stripe Connect payouts (`host_payouts_enabled`), `RESEND_WEBHOOK_SECRET`, run Supabase advisors | owner / env |
+| 🟡 **P2** | Journey intensity-tier override UI (Spark/Current/Deep) | Schema seeded; member selector missing | `app/(main)/journeys/[slug]` |
+| 🟡 **P2** | Circle-scoped challenges model | CircleQuestModule 3rd column is an empty state | `circle-quest-module` |
+| 🟡 **P2** | Practice backlinks ("used in these journeys/circles") | One-directional links today | `app/(main)/practices/[id]` |
+| 🟡 **P2** | Plus-ones + "maybe" RSVP controls | Columns exist, no UI | event RSVP form |
+| 🟡 **P2** | Library "Propose to Library" + `/admin/journeys` review queue | Publish flow + status field exist; no UI | journeys/practices |
+| 🟡 **P2** | Extend Settings panel to events/channels/people (PX.5) | Only circles have the full in-page editor | `page-admin-bar` |
+| 🟢 **P3** | Font-token cleanup (~6 `text-[Npx]`) | Token discipline | events ticket button · admin event edit · quests · library · CRM |
+| 🟢 **P3** | Per-section Suspense on `/events` · per-event OG image · `offers` in eventSchema · distance facet | FCP + SEO polish | events |
+| 🔵 **Deferred** | SMS reminders (EIN/Twilio/A2P) · post-event recap album (`event_posts` unused) · duo-streaks/reciprocity/bridge-badge metrics | Owner decisions / later waves | — |
+
 ## The headline
 
 The platform is **substantially built** — member surfaces, the practice engine + gamification,
