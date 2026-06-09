@@ -5988,3 +5988,30 @@ adds the columns, the `connection_settings` singleton, and `members_near`. `lib/
 location vocabulary, the reads (platform + per-user + `membersNear`), and the actions (self-authorized prefs;
 admin-gated platform). Later phases (Friends unification, Resonance, CRM timeline, maps, Capture) inherit this
 model unchanged.
+
+## ADR-187 — Connection metrics suite + security hardening (Connection Layer P6)
+
+**Status:** Accepted · 2026-06-09 · extends ADR-186.
+
+**Context.** The Connection Layer (ADR-186) shipped P1–P5 (privacy directory, Orbits & Resonance, Introductions,
+Welcomes, the "this week" pulse). The remaining design called for the "clever metrics" layer, and a full security
+audit of the new surface area before declaring it done.
+
+**Decision — metrics.** Two SECURITY DEFINER RPCs complete the suite (migration `20260609100000_connection_metrics`):
+`your_impact()` (caller-scoped — people you brought in via captured contacts that became members, their activation
+velocity, and the catalyst count: how many went on to connect) and `circle_momentum(circle)` (aggregate counts only —
+members, new members this week, new ties formed *between* members this week, upcoming events). Surfaced as a private
+"Your impact" card on Friends and a "Momentum" vital-signs block on circle pages. Reciprocity, duo/pod streaks, and
+bridge badges are **deferred** (message-direction plumbing / pairwise streak engine / betweenness — genuinely complex,
+lower ROI) and documented as such rather than half-built.
+
+**Decision — security (audit follow-up).** Verified good: coordinates never leave the DB; every RPC is caller-scoped
+via `auth.uid()` with pinned `search_path`; new tables are RLS service-role-write; gem rewards are server-derived and
+flag-first idempotent; map popups are XSS-escaped. Two hardening fixes applied: (1) `recordWelcome` now requires a
+*shared active circle* with the newcomer (was newcomer-window only) — closes a gem-farming path where any recent
+newcomer platform-wide could be welcomed; (2) `createIntroduction` validates both ids are UUIDs (defence for direct
+calls) and is rate-capped at 20/hour (abuse + friendship-graph probing guard).
+
+**Consequences.** The Connection Layer is feature-complete across P1–P6 with the privacy model intact. The Capture lead
+funnel was already built (ADR-099: one-time, consent-tracked scan-intro email + magic-link + AI scan), so no new email
+work was needed. Full map of the system in CONNECTION-LAYER.md.

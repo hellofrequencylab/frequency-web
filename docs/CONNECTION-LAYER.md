@@ -59,15 +59,34 @@ in your physical orbit you've never met) and rewards **introductions** that beco
 | **P4** | Venue-snapped maps (circle pages) · Capture scan + magic-link funnel (already built, ADR-099) | ✅ |
 | **P5** | "Connections this week" pulse (reconnect · near-misses · welcome newcomers) on the directory | ✅ |
 
-**Deferred niceties (not blocking):** duo/pod streaks · member live-location pins on the venue
-map (gated on live-location opt-in) · per-group momentum metrics.
+**Deferred niceties (not blocking):** duo/pod streaks · bridge badges (betweenness) ·
+member live-location pins on the venue map (gated on live-location opt-in) · reciprocity
+balance (needs message-direction plumbing). Each is genuinely complex/lower-ROI; documented
+here rather than half-built.
 
-## Metrics (P3) — the clever layer
+## Metrics suite — the clever layer (status + where it lives)
 
-**Connections:** Resonance · Near-Miss Index · Reciprocity balance · First-meeting provenance.
-**Lead funnel:** Capture→Activation velocity · Referral lineage · Catalyst coefficient.
-**Aggregation:** "See this week" · near-misses-here · newcomers-needing-welcome · group momentum.
-**Gamification:** Introductions-that-became-real · duo/pod streaks · welcomes · bridge badges.
+| Metric | Status | Backed by |
+|---|---|---|
+| **Resonance** (co-presence × recency) | ✅ | `my_orbit` RPC · `lib/connections/resonance.ts` |
+| **Near-Miss Index** | ✅ | `near_misses` RPC |
+| **First-meeting provenance** | ✅ | `friendships.how_met` / `met_at` · the timeline |
+| **Capture→Activation velocity** | ✅ | `your_impact` RPC (`avg_days_to_activate`) |
+| **Referral lineage** ("brought in") | ✅ | `your_impact` (`brought` / `activated`) |
+| **Catalyst coefficient** | ✅ | `your_impact` (`catalysts`) |
+| **Group momentum** | ✅ | `circle_momentum` RPC |
+| **"See this week" aggregation** | ✅ | `lib/connections/pulse.ts` |
+| **Introductions-that-became-real** | ✅ | `introductions` + `claimIntroductionRewards` |
+| **Welcomes** | ✅ | `welcomes` + `recordWelcome` |
+| Reciprocity · duo-streaks · bridge badges | 📋 | deferred (see above) |
+
+## Security posture (audited 2026-06-09)
+
+Coordinates never leave the DB (verified); every SECURITY DEFINER RPC is caller-scoped via
+`auth.uid()` with a pinned `search_path`; new tables are RLS service-role-write; gem rewards
+are server-derived + flag-first idempotent; map popups are XSS-escaped. Hardening applied:
+`recordWelcome` requires a shared circle (no farming); `createIntroduction` validates UUIDs
+and is rate-capped (20/hr). See ADR-187.
 
 ## Existing primitives we extend (not rebuild)
 

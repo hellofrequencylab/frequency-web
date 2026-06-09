@@ -20,7 +20,10 @@
 | **People** | `/people` · `/people/[handle]` | Member directory + public profiles (gamification, achievements, timeline) | — |
 | **Hubs & Nexuses** | `/hubs` · `/nexuses` | The geographic/organizational tree circles live in | SCALE-ARCHITECTURE |
 | **Messages** | `/messages` | DMs + group rooms (friends-gated) | — |
-| **Friends** | `/friends` | Friend requests; the key that unlocks messaging | — |
+| **Friends** | `/friends` | The unified "my people" home — People mode (Orbits & Resonance, reconnect nudges, near-misses, introductions, Your Impact) + Contacts mode (the CRM rolodex) | CONNECTION-LAYER |
+| **Community directory** | `/network` | Proximity-banded member directory (nearby + engaged) + the "Connections this week" pulse | CONNECTION-LAYER |
+| **Connections & Location** | `/settings/connections` | Per-user privacy: ghost mode, discoverability, location precision, findability radius | CONNECTION-LAYER |
+| **Connections (admin)** | `/admin/connections` | Platform master toggles (directory/proximity/maps/resonance/near-miss), radius bounds, reward economics | CONNECTION-LAYER |
 | **Search** | `/search` · ⌘K | Live cross-entity search overlay | — |
 | **Discover** | `/discover` | Public browse layer (topics, etc.) | DISCOVER-LAYER |
 
