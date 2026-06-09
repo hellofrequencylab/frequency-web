@@ -46,9 +46,11 @@ const FOCUS_PATTERNS: RegExp[] = [
 ]
 
 // SCOPED — entity-detail sections that render their own in-body scope rail
-// (members / events / health for THIS circle or channel). One path segment past
-// the section keeps the index (/circles) on the global rail.
-const SCOPED_PREFIXES = ['/circles/', '/channels/']
+// (members / events / health for THIS channel). One path segment past the section
+// keeps the index on the global rail. Circle detail pages now use the GLOBAL rail
+// (like events): their scope content (host tools / health / practice) lives inline
+// in the main column, and the community rail frames them on the right.
+const SCOPED_PREFIXES = ['/channels/']
 
 export function railFor(pathname: string): Rail {
   // The profile editor keeps the standard community rail even though it lives under
