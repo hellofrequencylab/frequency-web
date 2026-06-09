@@ -36,8 +36,12 @@ function proposalLabel(p: ProposedToolCall): string {
       return `Join ${String(a.circle ?? 'this circle')}?`
     case 'set_profile_field':
       return `Update your ${String(a.field ?? 'profile')} to “${String(a.value ?? '')}”?`
-    case 'draft_intro':
-      return `Send an intro to @${String(a.toHandle ?? '')}?`
+    case 'draft_intro': {
+      const msg = String(a.message ?? '').trim()
+      return msg
+        ? `Post this intro to @${String(a.toHandle ?? '')}? “${msg}”`
+        : `Post an intro to @${String(a.toHandle ?? '')}?`
+    }
     default:
       return `Remember: “${String(a.fact ?? a.value ?? '')}”`
   }
@@ -110,7 +114,7 @@ export function VeraChat({ opening }: { opening: VeraOpeningSeed }) {
             <p className="text-xs text-muted">{proposalLabel(p)}</p>
             <div className="mt-2 flex gap-2">
               <button type="button" onClick={() => allow(p)} className="inline-flex items-center gap-1.5 rounded-lg bg-success-bg px-3 py-1.5 text-xs font-semibold text-success hover:opacity-80">
-                <Check className="h-3.5 w-3.5" /> {p.tool === 'join_circle' ? 'Join' : 'Allow'}
+                <Check className="h-3.5 w-3.5" /> {p.tool === 'join_circle' ? 'Join' : p.tool === 'draft_intro' ? 'Post' : 'Allow'}
               </button>
               <button type="button" onClick={() => setProposals((ps) => ps.filter((x) => x !== p))} className="inline-flex items-center gap-1.5 rounded-lg bg-surface px-3 py-1.5 text-xs font-medium text-muted hover:text-danger">
                 <X className="h-3.5 w-3.5" /> Skip

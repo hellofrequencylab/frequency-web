@@ -17,6 +17,8 @@ import {
 } from './capabilities'
 import { type CommunityRole } from './roles'
 import { deriveTier } from './entitlement'
+import { isPaid } from './access-matrix'
+import { countOpenCircleTasks } from '@/lib/crew/circle-tasks'
 
 async function currentViewer(): Promise<Viewer> {
   const p = await getCallerProfile()
@@ -84,13 +86,24 @@ export async function getCircleCapabilities(
     }
   }
 
+  // Open (unclaimed) circle-scoped crew tasks — the input that lights up
+  // task.volunteer / task.claim in the resolver. Only paid active members can
+  // ever receive those capabilities, so skip the count for everyone else
+  // (anon/free viewers are the bulk of page views).
+  let openTaskCount = opts?.openTaskCount
+  if (openTaskCount === undefined) {
+    openTaskCount =
+      viewer.profileId && isPaid(viewer.tier) && membership?.status === 'active'
+        ? await countOpenCircleTasks(circleId)
+        : 0
+  }
+
   return resolveCapabilities(viewer, {
     kind: 'circle',
     circleId,
     hostId: circle?.host_id ?? null,
     membership,
-    // TODO: derive from the task-assignment table once that model is confirmed.
-    openTaskCount: opts?.openTaskCount ?? 0,
+    openTaskCount,
     viewerManagesParent,
   })
 }

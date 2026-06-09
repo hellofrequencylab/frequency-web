@@ -15,6 +15,8 @@ import { DirectorySearch } from '@/components/ui/directory-search'
 import { SectionHeader } from '@/components/ui/section-header'
 import { CommunityTabs } from '@/components/network/community-tabs'
 import { ContactCard } from '@/components/people/contact-card'
+import { DirectoryFacets } from '@/components/people/directory-facets'
+import { PeopleSuggestions } from '@/components/people/people-suggestions'
 import { OnlineMembersCard, CommunityStatsCard } from '@/components/people/community-sidebar'
 import { formatDistance } from '@/lib/geocode'
 import { demoModeEnabled } from '@/lib/platform-flags'
@@ -37,6 +39,7 @@ type Profile = ProfileIdentity & {
   community_role: CommunityRole
   last_seen_at: string | null
   is_demo: boolean
+  entity_types: string[] | null
   nexus_regions: { name: string } | null
 }
 
@@ -49,6 +52,9 @@ type Filters = {
   city?: string
   region?: string
   online?: string
+  /** Directory facets (P5): a shared entity_types tag and a community-role rung. */
+  topic?: string
+  role?: string
   /** Free-text name/handle search. */
   q?: string
   /** "lat,lng" set by the geolocation / city-autocomplete search. */
@@ -73,6 +79,8 @@ export default async function CommunityPage({
     city: cityFilter,
     region: regionFilter,
     online: onlineFilter,
+    topic: topicFilter,
+    role: roleFilter,
     q: qFilter,
     near: nearParam,
     place: placeParam,
@@ -185,7 +193,7 @@ export default async function CommunityPage({
 
   let query = admin
     .from('profiles')
-    .select('id, display_name, handle, avatar_url, community_role, last_seen_at, is_demo, nexus_regions!nexus_region_id ( name )')
+    .select('id, display_name, handle, avatar_url, community_role, last_seen_at, is_demo, entity_types, nexus_regions!nexus_region_id ( name )')
     .eq('is_active', true)
     .eq('is_system', false) // hide system accounts (e.g. @moderation) from the directory
     .order('display_name', { ascending: true })
@@ -237,6 +245,9 @@ export default async function CommunityPage({
   if (regionFilter) filtered = filtered.filter((p) => p.nexus_regions?.name === regionFilter)
   if (circleMemberIds) filtered = filtered.filter((p) => circleMemberIds!.has(p.id))
   if (onlineFilter) filtered = filtered.filter((p) => isOnline(p.last_seen_at))
+  // P5 facets — a shared topic tag (entity_types) and a community-role rung.
+  if (topicFilter) filtered = filtered.filter((p) => (p.entity_types ?? []).includes(topicFilter))
+  if (roleFilter) filtered = filtered.filter((p) => (p.community_role ?? 'member') === roleFilter)
   if (qFilter?.trim()) {
     const needle = qFilter.trim().toLowerCase()
     filtered = filtered.filter(
@@ -299,6 +310,8 @@ export default async function CommunityPage({
     if (params.city) p.set('city', params.city)
     if (params.region) p.set('region', params.region)
     if (params.online) p.set('online', params.online)
+    if (params.topic) p.set('topic', params.topic)
+    if (params.role) p.set('role', params.role)
     if (params.q) p.set('q', params.q)
     if (params.near) p.set('near', params.near)
     if (params.place) p.set('place', params.place)
@@ -313,10 +326,19 @@ export default async function CommunityPage({
     city: cityFilter,
     region: regionFilter,
     online: onlineFilter,
+    topic: topicFilter,
+    role: roleFilter,
     q: qFilter,
     near: nearParam,
     place: placeParam,
   }
+
+  // Any directory filter active? Suggestions are a browse-mode lane only — they
+  // step aside the moment the member is actually narrowing the directory.
+  const filtering = !!(
+    circleFilter || cityFilter || regionFilter || onlineFilter ||
+    topicFilter || roleFilter || qFilter?.trim() || nearParam
+  )
 
   return (
     <div>
@@ -369,6 +391,10 @@ export default async function CommunityPage({
             </Link>
           }
         />
+        {/* Directory facets (P5) — Topic / City / Role, options derived from the
+            real data on the page; each dropdown hides itself when there's
+            nothing to filter by (components/people/directory-facets). */}
+        <DirectoryFacets profiles={typedProfiles} circles={circleList} className="mt-3" />
         {/* No-location affordance — nudge the viewer to set a location so the
             directory can lead with who's nearby. Subtle, on the page background. */}
         {connectionSettings.proximityEnabled && !hasViewerLocation && (
@@ -443,6 +469,17 @@ export default async function CommunityPage({
                 ))}
               </div>
             </div>
+          )}
+
+          {/* People you may know (P5) — members the viewer isn't connected to,
+              ranked by real signals only (shared circles, mutual connections).
+              Browse mode only (steps aside while filtering); renders nothing
+              when there's no genuine suggestion; streamed behind Suspense so the
+              graph queries never block the directory (PAGE-FRAMEWORK §5). */}
+          {!filtering && (
+            <Suspense fallback={null}>
+              <PeopleSuggestions authUserId={user.id} />
+            </Suspense>
           )}
 
           {/* Portrait contact cards */}

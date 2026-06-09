@@ -12,14 +12,19 @@ import type Anthropic from '@anthropic-ai/sdk'
 import type { ContentBlock } from '@anthropic-ai/sdk/resources/messages'
 import { getAnthropic, aiEnabled } from '@/lib/ai'
 import { MODELS } from '@/lib/ai/models'
+import { estimateCostUsd, type TokenUsage } from '@/lib/ai/budget'
+import { aiAvailable, featureOverBudget, recordAiUsage } from '@/lib/ai/usage'
 import type { MemberContext } from '@/lib/ai/memory'
 import { VERA_TOOLS, requiresConfirmation, validateToolCall, type VeraToolDef } from './tools'
 import { executeReadTool } from './read-tools'
 import { getVeraConfig, type VeraConfig } from './config'
 import type { ProposedToolCall } from './concierge'
 
+const FEATURE = 'vera-chat'
 const MAX_ROUNDS = 3
 const MAX_TOKENS = 800
+const MAX_CHIPS = 3
+const MAX_CHIP_CHARS = 60
 
 export interface VeraMessage {
   role: 'user' | 'assistant'
@@ -29,6 +34,30 @@ export interface VeraMessage {
 export interface VeraClaudeResult {
   reply: string
   proposals: ProposedToolCall[]
+  /** 1–3 quick-reply chips for the next turn (ONBOARDING-BUILD-LIST §1.5). */
+  suggestions: string[]
+}
+
+/** Pure: pull the trailing `CHIPS: a | b | c` line(s) out of a reply into quick-reply
+ *  chips (trimmed, deduped, capped at ${MAX_CHIPS}); the reply keeps only the prose.
+ *  A model that skips the line simply yields no chips. Unit-tested. */
+export function extractSuggestions(raw: string): { reply: string; suggestions: string[] } {
+  const suggestions: string[] = []
+  const kept: string[] = []
+  for (const line of raw.split('\n')) {
+    const m = line.match(/^\s*CHIPS:\s*(.*)$/i)
+    if (!m) {
+      kept.push(line)
+      continue
+    }
+    for (const part of m[1].split('|')) {
+      const s = part.replace(/["'•]+/g, '').replace(/\s+/g, ' ').trim()
+      if (!s || s.length > MAX_CHIP_CHARS) continue
+      if (suggestions.some((x) => x.toLowerCase() === s.toLowerCase())) continue
+      suggestions.push(s)
+    }
+  }
+  return { reply: kept.join('\n').trim(), suggestions: suggestions.slice(0, MAX_CHIPS) }
 }
 
 /** Pure: the bounded tool surface as Anthropic tool definitions. Unit-tested. */
@@ -96,23 +125,32 @@ Working with your tools:
 - Use suggest_circle / find_host to point at real options and real people — never a vague "look around." Name the circle, name the host.
 - When a circle clearly fits, propose join_circle with its exact slug (from suggest_circle) — actually getting them in is a real win. It's a proposal; they confirm.
 - When they share something durable (an interest, a goal, where they live), call remember_fact so you carry it forward. Use set_profile_field only for their own profile, as a light offer (e.g. a one-line bio); for a photo, point them to /settings/profile. These are PROPOSALS — they don't run until the member approves, so it's warm, never pushy, to offer.
+- When find_host names someone (or they want to say hi to a specific person), offer to break the ice: propose draft_intro with the COMPLETE hello already written in their voice — short, warm, true to what they've shared, in the "message" param. They read and approve it before it posts to the feed, so the scary first hello is done for them.
 - Always make what you mention reachable: name the circle, host, practice, or page and offer the tap. Never leave a feature as a bare mention they have to go hunt for.
+
+Quick replies: end EVERY reply with one final line in exactly this format — CHIPS: first option | second option — giving 1 to 3 short things the member might naturally say next, in THEIR voice (e.g. CHIPS: Find me a circle | Yes, introduce me | I'll explore first). Keep each under about six words. That line is stripped out and shown as tappable chips, so never refer to it in your prose, and never leave it off — a turn without chips dead-ends the conversation.
 
 Read the room on tone: gentle if they're nervous, playful (volley, never mean) if they're a smartass — but always on their side, always quietly moving them toward each other and toward their best expression.${grounding}${support}${register}${style}${length}${greeting}`
 }
 
-/** One live Vera turn. Null ⇒ kernel unavailable (caller falls back to deterministic). */
+/** One live Vera turn. Null ⇒ kernel unavailable / kill switch off / over budget
+ *  (caller falls back to the deterministic concierge). */
 export async function runVeraClaudeTurn(input: {
   history: VeraMessage[]
   memberText: string
   memberContext?: MemberContext | null
   /** Short plain-text summary of the member's recent support tickets (ADR-159). */
   supportSummary?: string
+  /** For the usage ledger (ADR-041/067). */
+  profileId?: string | null
 }): Promise<VeraClaudeResult | null> {
   const client = getAnthropic()
   if (!client || !aiEnabled()) return null
 
   try {
+    // Operator kill switch + per-feature daily cap — degrade to deterministic.
+    if (!(await aiAvailable()) || (await featureOverBudget(FEATURE))) return null
+
     const cfg = await getVeraConfig()
     const model = MODELS[cfg.tier]
     const system = buildSystemPrompt(input.memberContext, cfg, input.supportSummary)
@@ -123,10 +161,13 @@ export async function runVeraClaudeTurn(input: {
     ]
 
     const proposals: ProposedToolCall[] = []
+    const usage: TokenUsage = { inputTokens: 0, outputTokens: 0 }
     let reply = ''
 
     for (let round = 0; round < MAX_ROUNDS; round++) {
       const resp = await client.messages.create({ model, max_tokens: MAX_TOKENS, system, tools, messages })
+      usage.inputTokens += resp.usage.input_tokens
+      usage.outputTokens += resp.usage.output_tokens
       const { text, toolCalls } = parseAssistantContent(resp.content)
       if (text) reply = text
       if (toolCalls.length === 0) break
@@ -156,7 +197,18 @@ export async function runVeraClaudeTurn(input: {
       messages.push({ role: 'user', content: results })
     }
 
-    return { reply: reply || 'I’m here — what are you hoping to find?', proposals }
+    // Ledger entry (best-effort, never blocks the reply).
+    void recordAiUsage({
+      feature: FEATURE,
+      model,
+      usage,
+      costUsd: estimateCostUsd(cfg.tier, usage),
+      profileId: input.profileId ?? null,
+    })
+
+    // Peel the quick-reply chips off the prose (ONBOARDING-BUILD-LIST §1.5).
+    const { reply: prose, suggestions } = extractSuggestions(reply)
+    return { reply: prose || 'I’m here — what are you hoping to find?', proposals, suggestions }
   } catch {
     return null // any kernel failure ⇒ deterministic fallback
   }

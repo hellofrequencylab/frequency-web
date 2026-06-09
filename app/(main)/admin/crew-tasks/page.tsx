@@ -3,18 +3,26 @@ import { requireAdmin } from '@/lib/admin/guard'
 import { AdminPage } from '@/components/admin/admin-page'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { CrewTasksClient } from './crew-tasks-client'
+import { CircleTasksPanel, type HostedCircleTasks } from './circle-tasks-panel'
 import { NewTaskCompose } from '@/components/compose/new-task-compose'
+import { SectionHeader } from '@/components/ui/section-header'
+import { listCircleTasks } from '@/lib/crew/circle-tasks'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 
 export default async function AdminCrewTasksPage() {
-  await requireAdmin('host', { staff: 'community' })
+  const { profileId } = await requireAdmin('host', { staff: 'community' })
 
   const admin = createAdminClient()
 
   const [tasksRes, pendingRes] = await Promise.all([
-    admin
+    // Global catalogue only (circle_id IS NULL) — circle-scoped tasks live in
+    // the per-circle panel below. Untyped handle: circle_id isn't in
+    // database.types yet (repo convention; see lib/crew/circle-tasks.ts).
+    (admin as unknown as SupabaseClient)
       .from('crew_tasks')
       .select('id, name, task_type, zaps_value, is_repeatable, requires_verification')
+      .is('circle_id', null)
       .order('task_type')
       .order('zaps_value', { ascending: false }),
     admin
@@ -55,6 +63,22 @@ export default async function AdminCrewTasksPage() {
     c.task ? verificationTaskIds.has(c.task.id) : false
   )
 
+  // Circle-task assignment (P4.7): circles the caller hosts, each with its
+  // scoped tasks. Writes are re-gated per circle (circle.assignTask) in the
+  // server actions — this listing is affordance only.
+  const { data: hostedRows } = await admin
+    .from('circles')
+    .select('id, name')
+    .eq('host_id', profileId)
+    .order('name')
+  const hostedCircles: HostedCircleTasks[] = await Promise.all(
+    (hostedRows ?? []).map(async (c) => ({
+      id: c.id,
+      name: c.name,
+      tasks: await listCircleTasks(c.id),
+    })),
+  )
+
   const tasks = (tasksRes.data ?? []).map((t) => ({
     id: t.id,
     name: t.name,
@@ -74,11 +98,23 @@ export default async function AdminCrewTasksPage() {
     >
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main content */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 space-y-8">
           <CrewTasksClient
             tasks={tasks}
             pendingVerifications={filteredPending}
           />
+
+          {/* Circle tasks — host-assigned, one claimer at a time */}
+          {hostedCircles.length > 0 && (
+            <div>
+              <SectionHeader title="Circle tasks" />
+              <p className="mb-3 -mt-2 text-xs text-subtle">
+                Tasks scoped to a circle you host. One Crew member claims a task at a time;
+                they complete it on their Crew dashboard. Release a claim to re-open a stalled task.
+              </p>
+              <CircleTasksPanel circles={hostedCircles} />
+            </div>
+          )}
         </div>
 
         {/* Sidebar */}
