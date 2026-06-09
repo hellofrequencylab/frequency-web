@@ -1,17 +1,12 @@
-import dynamic from 'next/dynamic'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getConnectionSettings } from '@/lib/connections/connection-settings'
 import { ModuleCard } from '@/components/modules/module-card'
+import { GroupMapClient } from './group-map-client'
 import type { GroupMapEvent, GroupMapVenue } from './group-map'
 
-// maplibre must not run on the server — load the map client-side only (matches
-// circles-map.tsx). The wrapper itself is an async RSC.
-const GroupMap = dynamic(() => import('./group-map'), {
-  ssr: false,
-  loading: () => (
-    <div className="h-[320px] w-full animate-pulse rounded-2xl border border-border bg-surface-elevated" />
-  ),
-})
+// The map (maplibre, client-only) is loaded via the GroupMapClient wrapper, since a
+// `next/dynamic({ ssr: false })` is only allowed in a Client Component. This wrapper
+// itself is an async RSC that fetches data + gates on the admin maps toggle.
 
 export type GroupMapCircle = {
   id: string
@@ -92,7 +87,7 @@ export async function GroupMapSection({ circle }: { circle: GroupMapCircle }) {
       <p className="mb-2 px-1 text-xs leading-relaxed text-muted">
         Where this circle meets.
       </p>
-      <GroupMap venue={venue} events={events} />
+      <GroupMapClient venue={venue} events={events} />
     </ModuleCard>
   )
 }

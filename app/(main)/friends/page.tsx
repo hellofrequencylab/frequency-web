@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import { Suspense } from 'react'
 import Link from 'next/link'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { Plus } from 'lucide-react'
@@ -23,6 +24,7 @@ import { ContactsList } from './contacts-list'
 import { AcceptDeclineButtons, CancelOutgoingButton } from './friend-row-actions'
 import { IntroduceForm } from './introduce-form'
 import { IntroductionsInbox } from './introductions-inbox'
+import { YourImpact } from '@/components/connections/your-impact'
 
 const GRID = 'grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3'
 
@@ -182,6 +184,12 @@ async function PeopleMode({
         forYou={introductions.forYou}
         rewardGems={settings.rewardIntroduction}
       />
+
+      {/* Your roots — the member's own private lead-funnel impact (ADR-186, P6).
+          Suspense fallback={null} so it never blocks the page. */}
+      <Suspense fallback={null}>
+        <YourImpact />
+      </Suspense>
     </div>
   )
 }

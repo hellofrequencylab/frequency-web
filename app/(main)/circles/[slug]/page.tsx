@@ -27,6 +27,7 @@ import { type CommunityRole } from '@/lib/community-roles'
 import { ClaimCircle } from '@/components/circles/claim-circle'
 import { CircleCover } from '@/components/circles/circle-cover'
 import { GroupMapSection } from '@/components/connections/group-map-section'
+import { CircleMomentum } from '@/components/connections/circle-momentum'
 
 type CircleDetail = {
   id: string
@@ -291,6 +292,14 @@ export default async function CirclePage({
     </Suspense>
   )
 
+  // Circle vital signs — aggregate momentum counts (ADR-186, P6). Self-gates to
+  // nothing when there's no signal; Suspense fallback={null} so it never blocks.
+  railMap.momentum = (
+    <Suspense fallback={null}>
+      <CircleMomentum circleId={circle.id} />
+    </Suspense>
+  )
+
   if (canManage) {
     railMap.invite = (
       <ModuleCard title="Invite a friend">
@@ -306,7 +315,7 @@ export default async function CirclePage({
     )
   }
 
-  const DEFAULT_RAIL_ORDER = ['members', 'health', 'practice', 'events', 'map', 'invite']
+  const DEFAULT_RAIL_ORDER = ['members', 'health', 'momentum', 'practice', 'events', 'map', 'invite']
   const savedOrder = circle.sidebar_order ?? DEFAULT_RAIL_ORDER
   // Saved order first (only keys present in the map), then any new map keys the
   // saved order doesn't mention — so a freshly-added block never goes missing.
