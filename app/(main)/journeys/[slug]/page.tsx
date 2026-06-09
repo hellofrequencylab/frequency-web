@@ -1,10 +1,11 @@
 import Link from 'next/link'
 import { Suspense } from 'react'
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { Globe, Lock, Link2, Pencil, Sparkles } from 'lucide-react'
 import { DetailTemplate } from '@/components/templates'
 import { getCallerProfile } from '@/lib/auth'
-import { getJourneyView } from '@/lib/journey-plans'
+import { getJourneyView, getPlan } from '@/lib/journey-plans'
 import { listPublicPractices } from '@/lib/practices'
 import { getPillars, pillarsById as indexPillars } from '@/lib/pillars'
 import { accentColor, accentTint } from '@/lib/studio/accents'
@@ -45,6 +46,37 @@ const VISIBILITY = {
   unlisted: { Icon: Link2, label: 'Unlisted' },
   private: { Icon: Lock, label: 'Private' },
 } as const
+
+// Per-Journey metadata — a real title, summary, and share card for the tab, history, and any
+// shared link (and ready for a public Journey route). Private plans stay generic.
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}): Promise<Metadata> {
+  const { slug } = await params
+  const loaded = await getPlan(slug)
+  if (!loaded || loaded.plan.visibility === 'private') return { title: 'Journey · Frequency' }
+  const { plan } = loaded
+  const title = `${plan.emoji ? `${plan.emoji} ` : ''}${plan.title}`
+  const description =
+    plan.summary ?? 'A seasonal set of practices to move through — on your own or with your circle.'
+  return {
+    title,
+    description,
+    openGraph: {
+      title: plan.title,
+      description,
+      type: 'article',
+      ...(plan.cover_image ? { images: [{ url: plan.cover_image }] } : {}),
+    },
+    twitter: {
+      card: plan.cover_image ? 'summary_large_image' : 'summary',
+      title: plan.title,
+      description,
+    },
+  }
+}
 
 export default async function JourneyPlanPage({
   params,
