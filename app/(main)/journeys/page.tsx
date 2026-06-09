@@ -1,4 +1,3 @@
-import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Map, Users, Lock, Globe, Link2, Sparkles, Compass, ArrowRight } from 'lucide-react'
@@ -10,11 +9,21 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { accentColor, accentTint } from '@/lib/studio/accents'
 import { NewJourneyButton } from '@/components/studio/journey/new-journey-button'
-import { resolvePageContent } from '@/lib/page-content'
+import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 
-export const metadata: Metadata = {
+// Coded defaults for the operator-editable header content (ADR-180).
+const CONTENT_FALLBACK = {
   title: 'Journeys',
-  description: 'Build a journey from the practices you love and share it with the community.',
+  description: 'Build a journey from the practices you love — a life-development track across Mind, Body, Spirit, and Expression. Keep it for yourself, or share it to the open library for anyone to adopt.',
+}
+
+// Operator-set title/description also drive <title> + og/twitter cards (PX.2);
+// the fallback strings are the page's previous static metadata, unchanged.
+export function generateMetadata() {
+  return pageContentMetadata('/journeys', {
+    title: 'Journeys',
+    description: 'Build a journey from the practices you love and share it with the community.',
+  })
 }
 
 function PlanCard({ plan, mine }: { plan: JourneyPlan; mine: boolean }) {
@@ -66,18 +75,39 @@ export default async function JourneysPage() {
   ])
   const community = library.filter((p) => p.author_id !== profileId)
 
-  // Operator-editable page header (ADR-180) — falls back to these defaults.
-  const { title, description } = await resolvePageContent('/journeys', {
-    title: 'Journeys',
-    description: 'Build a journey from the practices you love — a life-development track across Mind, Body, Spirit, and Expression. Keep it for yourself, or share it to the open library for anyone to adopt.',
-  })
+  // Operator-editable page header (ADR-180) — falls back to the coded defaults.
+  const { title, description, heroImage, ctaLabel, ctaHref } =
+    await resolvePageContent('/journeys', CONTENT_FALLBACK)
 
   return (
     <IndexTemplate
       title={title}
       description={description}
-      action={<NewJourneyButton />}
+      action={
+        <div className="flex items-center gap-2">
+          <NewJourneyButton />
+          {/* Operator-set CTA (PX.1) — shows only when both label + link are set. */}
+          {ctaLabel && ctaHref && (
+            <a
+              href={ctaHref}
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
+            >
+              {ctaLabel}
+            </a>
+          )}
+        </div>
+      }
     >
+      {/* Operator-set hero banner (PX.1) — renders only when set. */}
+      {heroImage && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={heroImage}
+          alt=""
+          className="mb-6 h-44 w-full max-w-2xl rounded-2xl border border-border object-cover sm:h-56"
+        />
+      )}
+
       <div className="max-w-2xl space-y-8">
         {/* Launch CTA — opens the Studio window in place. */}
         <section>

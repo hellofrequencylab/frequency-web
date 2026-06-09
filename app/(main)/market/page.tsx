@@ -1,4 +1,3 @@
-import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Store } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
@@ -7,11 +6,21 @@ import { IndexTemplate } from '@/components/templates/index-template'
 import { EmptyState } from '@/components/ui/empty-state'
 import { NewListingButton } from '@/components/studio/market/new-listing-button'
 import { MarketGrid, type GridListing } from '@/components/market/market-grid'
-import { resolvePageContent } from '@/lib/page-content'
+import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 
-export const metadata: Metadata = {
+// Coded defaults for the operator-editable header content (ADR-180).
+const CONTENT_FALLBACK = {
   title: 'Marketplace',
-  description: 'Swap, give, lend, and find things with people near you — no fees, just neighbors.',
+  description: 'Swap, give, lend, and find things with people near you. No fees, no in-app payment — just neighbors helping out. Arrange the handoff offline.',
+}
+
+// Operator-set title/description also drive <title> + og/twitter cards (PX.2);
+// the fallback strings are the page's previous static metadata, unchanged.
+export function generateMetadata() {
+  return pageContentMetadata('/market', {
+    title: 'Marketplace',
+    description: 'Swap, give, lend, and find things with people near you — no fees, just neighbors.',
+  })
 }
 export const dynamic = 'force-dynamic'
 
@@ -19,11 +28,8 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
   const { kind } = await searchParams
   const activeKind = LISTING_KINDS.some((k) => k.key === kind) ? (kind as ListingKind) : null
 
-  // Operator-editable page header (ADR-180) — falls back to these defaults.
-  const { title, description } = await resolvePageContent('/market', {
-    title: 'Marketplace',
-    description: 'Swap, give, lend, and find things with people near you. No fees, no in-app payment — just neighbors helping out. Arrange the handoff offline.',
-  })
+  // Operator-editable page header (ADR-180) — falls back to the coded defaults.
+  const { title, description, ctaLabel, ctaHref } = await resolvePageContent('/market', CONTENT_FALLBACK)
   const [profileId, listings] = await Promise.all([
     getMyProfileId(),
     listListings({ kind: activeKind }),
@@ -47,7 +53,22 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
     <IndexTemplate
       title={title}
       description={description}
-      action={profileId ? <NewListingButton /> : undefined}
+      action={
+        (profileId || (ctaLabel && ctaHref)) ? (
+          <div className="flex items-center gap-2">
+            {profileId && <NewListingButton />}
+            {/* Operator-set CTA (PX.1) — shows only when both label + link are set. */}
+            {ctaLabel && ctaHref && (
+              <a
+                href={ctaHref}
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
+              >
+                {ctaLabel}
+              </a>
+            )}
+          </div>
+        ) : undefined
+      }
     >
       {/* Kind filter */}
       <div className="mb-5 flex flex-wrap gap-2">

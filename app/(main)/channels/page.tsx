@@ -13,7 +13,20 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { StatInline } from '@/components/ui/stat-inline'
 import { EmptyState } from '@/components/ui/empty-state'
 import { EntityCard } from '@/components/cards/entity-card'
-import { resolvePageContent } from '@/lib/page-content'
+import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
+
+// Coded defaults for the operator-editable content (ADR-180) — shared by the
+// page header and the SEO metadata below.
+const CONTENT_FALLBACK = {
+  title: 'Channels',
+  description:
+    'The four Channels — Mind, Body, Spirit, and Expression — are how Frequency is organized. Interests live inside them: global topics anyone can tune into, each carrying a practice that Circles run locally. Pick a Channel, find your Interest, then go do it with people near you.',
+}
+
+// Operator-set title/description also drive <title> + og/twitter cards (PX.2).
+export function generateMetadata() {
+  return pageContentMetadata('/channels', CONTENT_FALLBACK)
+}
 
 type TopicalChannel = {
   id: string
@@ -54,12 +67,9 @@ export default async function ChannelsPage() {
   const admin = createAdminClient()
   const supabase = await createClient()
 
-  // Operator-editable page header (ADR-180) — falls back to these defaults.
-  const { title: pageTitle, description: pageDescription } = await resolvePageContent('/channels', {
-    title: 'Channels',
-    description:
-      'The four Channels — Mind, Body, Spirit, and Expression — are how Frequency is organized. Interests live inside them: global topics anyone can tune into, each carrying a practice that Circles run locally. Pick a Channel, find your Interest, then go do it with people near you.',
-  })
+  // Operator-editable page header (ADR-180) — falls back to the coded defaults.
+  const { title: pageTitle, description: pageDescription, ctaLabel, ctaHref } =
+    await resolvePageContent('/channels', CONTENT_FALLBACK)
 
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -172,7 +182,22 @@ export default async function ChannelsPage() {
           <span className="hidden sm:inline">{pageDescription}</span>
         </>
       }
-      action={canCreate ? <NewChannelCompose domains={domains} /> : undefined}
+      action={
+        (canCreate || (ctaLabel && ctaHref)) ? (
+          <div className="flex items-center gap-2">
+            {canCreate && <NewChannelCompose domains={domains} />}
+            {/* Operator-set CTA (PX.1) — shows only when both label + link are set. */}
+            {ctaLabel && ctaHref && (
+              <a
+                href={ctaHref}
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
+              >
+                {ctaLabel}
+              </a>
+            )}
+          </div>
+        ) : undefined
+      }
     >
       <span id="top" className="sr-only" />
 

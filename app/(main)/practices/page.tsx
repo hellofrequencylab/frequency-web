@@ -1,4 +1,3 @@
-import type { Metadata } from 'next'
 import Link from 'next/link'
 import {
   Flame, Sparkles, Library, Zap, Pencil, Wand2, Users, Search,
@@ -30,11 +29,21 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { demoModeEnabled } from '@/lib/platform-flags'
 import { viewerHidesDemo } from '@/lib/demo-preference'
-import { resolvePageContent } from '@/lib/page-content'
+import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 
-export const metadata: Metadata = {
+// Coded defaults for the operator-editable header content (ADR-180).
+const CONTENT_FALLBACK = {
   title: 'Practices',
-  description: 'Browse the community practice library — adopt one and log it to build your streak.',
+  description: 'This is where the points come from — a growing community library. Adopt or claim a practice, then log it every day to earn zaps, climb the ranks, and keep your streak alive.',
+}
+
+// Operator-set title/description also drive <title> + og/twitter cards (PX.2);
+// the fallback strings are the page's previous static metadata, unchanged.
+export function generateMetadata() {
+  return pageContentMetadata('/practices', {
+    title: 'Practices',
+    description: 'Browse the community practice library — adopt one and log it to build your streak.',
+  })
 }
 
 const PAGE_SIZE = 24
@@ -196,17 +205,30 @@ export default async function PracticesPage({
   const from = (page - 1) * PAGE_SIZE
   const hasFilters = !!(qParam || activePillar || activeSub || sp.tag)
 
-  // Operator-editable page header (ADR-180) — falls back to these defaults.
-  const { title, description } = await resolvePageContent('/practices', {
-    title: 'Practices',
-    description: 'This is where the points come from — a growing community library. Adopt or claim a practice, then log it every day to earn zaps, climb the ranks, and keep your streak alive.',
-  })
+  // Operator-editable page header (ADR-180) — falls back to the coded defaults.
+  const { title, description, heroImage, ctaLabel, ctaHref } =
+    await resolvePageContent('/practices', CONTENT_FALLBACK)
 
   return (
     <IndexTemplate
       title={title}
       description={description}
-      action={profileId ? <NewPracticeButton /> : undefined}
+      action={
+        (profileId || (ctaLabel && ctaHref)) ? (
+          <div className="flex items-center gap-2">
+            {profileId && <NewPracticeButton />}
+            {/* Operator-set CTA (PX.1) — shows only when both label + link are set. */}
+            {ctaLabel && ctaHref && (
+              <a
+                href={ctaHref}
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
+              >
+                {ctaLabel}
+              </a>
+            )}
+          </div>
+        ) : undefined
+      }
       toolbar={
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           {/* Search (GET form — shareable, no client JS) */}
@@ -244,6 +266,16 @@ export default async function PracticesPage({
         </div>
       }
     >
+      {/* Operator-set hero banner (PX.1) — renders only when set. */}
+      {heroImage && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={heroImage}
+          alt=""
+          className="mb-6 h-44 w-full rounded-2xl border border-border object-cover sm:h-56"
+        />
+      )}
+
       <StatStrip
         items={[
           { value: mine.length, label: 'Your practices' },
