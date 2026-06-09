@@ -19,6 +19,7 @@ import {
   setPracticeFlags,
   deletePractice,
   type PracticeEdit,
+  type LogPracticeResult,
 } from '@/lib/practices'
 import { personalizePractice, type PracticeSuggestion } from '@/lib/ai/practice-wizard'
 import { awardZapsForAction } from '@/lib/zaps'
@@ -29,7 +30,7 @@ import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
 export async function logPracticeAction(
   practiceId: string,
   circleId?: string | null,
-): Promise<ActionResult<{ logged: boolean; zapsAwarded: number }>> {
+): Promise<ActionResult<LogPracticeResult>> {
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Not signed in')
   const res = await logPractice({ profileId, practiceId, circleId: circleId ?? null })

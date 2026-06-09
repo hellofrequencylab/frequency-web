@@ -30,6 +30,8 @@ import { EditableIdentity } from './editable-identity'
 import { DemoBadge } from '@/components/ui/demo-badge'
 import { SupporterBadge } from '@/components/supporter-badge'
 import { DetailTemplate } from '@/components/templates'
+import { getMemberSignature } from '@/lib/frequency-signature-data'
+import { FrequencySignature } from '@/components/profile/frequency-signature'
 
 const RANK_TIERS = [
   { name: 'Ghost',    min: 0,    cls: 'bg-surface-elevated text-muted',     bar: 'bg-border-strong' },
@@ -167,11 +169,14 @@ export default async function ProfilePage({
     isBlocked = await hasBlocked(myProfileId, profileId)
   }
 
-  const [zapsResult, completionsCountResult, postsCountResult, circlesResult] = await Promise.all([
+  const [zapsResult, completionsCountResult, postsCountResult, circlesResult, signature] = await Promise.all([
     admin.from('crew_completions').select('zaps_earned').eq('profile_id', profileId),
     admin.from('crew_completions').select('id', { count: 'exact', head: true }).eq('profile_id', profileId),
     admin.from('posts').select('id', { count: 'exact', head: true }).eq('author_id', profileId).is('parent_id', null).is('hidden_at', null),
     admin.from('memberships').select('circles!circle_id ( id, name, slug )').eq('profile_id', profileId).eq('status', 'active'),
+    // The Frequency Signature — the member's practice spread across the four Pillars
+    // (docs/JOURNEYS.md §9.2), the identity centerpiece below.
+    getMemberSignature(profileId),
   ])
 
   const totalZaps = (zapsResult.data ?? []).reduce((sum: number, r: { zaps_earned: number }) => sum + (r.zaps_earned ?? 0), 0)
@@ -362,6 +367,17 @@ export default async function ProfilePage({
             </div>
           </div>
         </div>
+      </div>
+
+      {/* ── Frequency Signature — the member's evolving visual identity across the
+          four Pillars (Mind/Body/Spirit/Expression), the profile centerpiece (JOURNEYS §9.2). ── */}
+      <div className="mb-6">
+        <SectionHeader title="Frequency Signature" />
+        <FrequencySignature
+          signature={signature}
+          variant="full"
+          name={isOwner ? undefined : firstName}
+        />
       </div>
 
       {/* ── How you're connected — the viewer's private read of their own tie (ADR-186) ── */}

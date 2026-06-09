@@ -114,6 +114,18 @@ pays gems. The single source of truth is `currencyForCriteria` /
   official (nested under a Quest via `quest_id`) or member-built (open library) — with progress
   derived from the practice log (ADR-144). All free. *(The legacy `quest_chains`/`quest_steps`/
   `quest_progress` action-chain engine is retired in code and dormant, pending a table drop.)*
+- **Intensity tiers (Spark / Current / Deep)** — every practice ships three depths
+  (`practice_tiers`). The selected tier resolves member override (`journey_plan_adoptions.tier_override`)
+  → circle default (`circles.default_intensity_tier`, Host-set) → item default
+  (`journey_plan_items.default_tier`) → `'current'`. Tier never changes zap/streak math (ADR-198).
+- **Two-clock completion** — the rolling **Rhythm clock** (cadence/streak) and the fixed **Arc
+  clock** (a season = 91 days = 13×7 buckets). A Journey completes at ≥ `target_weeks` (default 8)
+  qualifying weeks of 13; derived from `practice_logs`, no progress table (`lib/journey-arc.ts`,
+  ADR-197). Bonuses (Full Day / Weekly Rhythm / completion) fire via `reward_grants` (ADR-200).
+- **Chorus** — circle co-op completion: ≥3 active circle members on the same Journey
+  (`lib/journey-chorus.ts`, ADR-199). Distinct from the Connection Layer's **Resonance** (ADR-186).
+- **Frequency Signature** — a member's four-Pillar practice balance, a derived profile identity
+  (`lib/frequency-signature.ts`).
 - **Achievements / streaks** — `achievements`, `user_achievements`, `streaks`,
   `challenge_progress`, `season_challenges`, `season_trophies`.
 

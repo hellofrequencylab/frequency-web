@@ -15,6 +15,7 @@ import { track } from '@/lib/analytics/track'
 import { awardZapsForAction } from '@/lib/zaps'
 import { recordStreakActivity } from '@/lib/achievements'
 import { recordPracticeStreak } from '@/lib/practice-streak'
+import type { JourneyRewardResult } from '@/lib/journey-grants'
 
 function db(): SupabaseClient {
   return createAdminClient() as unknown as SupabaseClient
@@ -617,6 +618,8 @@ export interface LogPracticeResult {
   /** false = already logged this practice today (idempotent). */
   logged: boolean
   zapsAwarded: number
+  /** Journey bonuses this log unlocked (Full Day / Weekly Rhythm / completion), for the toast. */
+  journey?: JourneyRewardResult
 }
 
 /**
@@ -679,5 +682,16 @@ export async function logPractice(input: {
   // rewards. Owns profiles.current_streak / longest_streak (lib/practice-streak.ts).
   await recordPracticeStreak(profileId).catch(() => {})
 
-  return { logged: true, zapsAwarded }
+  // Journey rewards (ADR-200; docs/JOURNEYS.md §6): a fresh log may complete the day
+  // (Full Day), the week (Weekly Rhythm), or the Journey itself. Best-effort + dynamic
+  // import — neither a reward failure nor the journey layer may break the practice log.
+  let journey: JourneyRewardResult | undefined
+  try {
+    const { fireJourneyRewardsForLog } = await import('@/lib/journey-grants')
+    journey = await fireJourneyRewardsForLog(profileId, day)
+  } catch {
+    // never let journey reward firing break the log
+  }
+
+  return { logged: true, zapsAwarded, journey }
 }
