@@ -70,8 +70,9 @@ mobile.
 1. [IA-STRATEGY](docs/IA-STRATEGY.md) — information architecture: Circle + Interest
    as the only member-facing words; Hubs/Nexuses contextual; in-person designator;
    role + milestone "wake-up" gating. (Labs/demand-proving are out of website scope.)
-2. [PAGE-FRAMEWORK](docs/PAGE-FRAMEWORK.md) — one shell, 3 page templates
-   (Stream / Index / Detail), composable modules + slots. *(Reads "widget" =
+2. [PAGE-FRAMEWORK](docs/PAGE-FRAMEWORK.md) — one shell, 5 page templates
+   (Stream / Index / Detail / Dashboard / Focus), composable modules + slots, and
+   the on-page operator **Settings panel** (ADR-180/182). *(Reads "widget" =
    module card UI — see its terminology note.)*
 3. [SCALE-ARCHITECTURE](docs/SCALE-ARCHITECTURE.md) — the 5-layer lock-in-resistant
    model, RSC/PPR rendering, Postgres scaling seams, future-proofing.
@@ -87,6 +88,9 @@ mobile.
    (governs **Phase 6**).
 
 ### Executable plan
+- [**BUILD-LIST**](docs/BUILD-LIST.md) — **the master list.** The single, prioritized,
+  execute-from list for the whole platform (consolidates the scattered roadmaps);
+  the priority ladder + the PX extension-opportunities track live here.
 - [**OVERVIEW**](docs/OVERVIEW.md) — **north star.** The whole picture: IA,
   page framework, gamification, and the lock-in-resistant architecture.
 - [**START-HERE**](docs/START-HERE.md) — **go-live runbook.** Ordered steps to apply

@@ -14,6 +14,25 @@
 > history; the live plan is [DEVELOPMENT-MAP.md](DEVELOPMENT-MAP.md). Still genuinely owner-only:
 > Studio access grant, the Resend webhook secret, and the domain/env cutover ([LAUNCH.md](LAUNCH.md)).
 
+## 🔁 Standing deploy gate — apply migrations on every merge (ADR-185)
+
+> ⚠️ A migration is **done only when applied to the live DB**, not when merged. Code that merges
+> ahead of its schema leaves the feature silently broken in prod (and the temporary untyped-cast
+> pattern becomes a standing liability instead of a brief one). On the **2026-06-09** reconcile, a
+> batch had merged without being applied and was applied in one pass: `page_content`,
+> `qr_page_folders`, `circle_sidebar_order`, `founders_first_week_badge`, `training_paths`,
+> `connect_accounts`, `tips`, `event_tickets`.
+
+On every merge that adds a `supabase/migrations/` file, run — and don't call the change shipped until you have:
+
+- [ ] `supabase migration list` — confirm the new file shows **pending**.
+- [ ] `supabase db push` — apply it; confirm `migration list` now shows it applied.
+- [ ] Regenerate types (`supabase gen types typescript --linked > lib/database.types.ts`) and drop the
+      temporary `as unknown as …` / untyped-client casts the pending migration required.
+- [ ] Record the "applied to prod" status against the item in [DEVELOPMENT-MAP.md](DEVELOPMENT-MAP.md).
+
+The `/maintenance` skill's migration-drift check (repo vs applied) is the automated backstop.
+
 ## 🔴 Blocking — do first
 - [x] **Review + apply the new migrations** — ✅ all applied to prod (verified
       `supabase migration list`). `npx supabase migration list` →
