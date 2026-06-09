@@ -94,8 +94,11 @@ export function CircleLocationSearch({
 
   return (
     <div className="flex flex-col gap-2">
-    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-      <div ref={boxRef} className="relative min-w-0 flex-1">
+    {/* Mirrors the body's 2/3 + 1/3 grid: the search field fills the left two columns
+        (so it ends at the member-grid edge) and the actions sit in the third column,
+        aligned with the right rail. */}
+    <div className="grid grid-cols-1 gap-2 lg:grid-cols-3 lg:items-center lg:gap-6">
+      <div ref={boxRef} className="relative min-w-0 lg:col-span-2">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" />
         <input
           type="text"
