@@ -153,13 +153,13 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
   return (
     <div className="flex flex-1 flex-col">
       <div className="flex-1 space-y-8 px-3 py-6">
-        {/* Standing panel — the always-on Quest control center, pinned to the TOP:
-            next onboarding step (+ gems nudge), rank progress, streak. */}
+        {/* Site-wide demo notice — pinned ABOVE the Quest box when demo content is
+            present (it self-hides otherwise). */}
+        <DemoNotice />
+        {/* Quest control center: next onboarding step (+ gems nudge), rank, streak. */}
         <Suspense fallback={<PanelSkeleton />}>
           <ControlCenterPanel profileId={profileId} />
         </Suspense>
-        {/* Standing panel — site-wide demo notice. */}
-        <DemoNotice />
         {/* Page panels — stats specific to this route. */}
         <Suspense fallback={<PanelSkeleton />}>
           <PagePanels profileId={profileId} role={role} />

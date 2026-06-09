@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -29,6 +30,7 @@ import {
 import type { ProximityBand } from '@/lib/connections/location'
 import { resolvePageContent } from '@/lib/page-content'
 import { getInitials } from '@/lib/utils'
+import { ConnectionsPulse } from '@/components/connections/connections-pulse'
 
 type Profile = ProfileIdentity & {
   id: string
@@ -330,6 +332,18 @@ export default async function CommunityPage({
         actions={<InviteMemberCompose inviterName={viewerName} />}
       />
 
+      {/* Community size — total worldwide + nearby (when proximity is on). */}
+      <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-muted">
+        <span>
+          <span className="font-bold text-text">{typedProfiles.length}</span> Members Worldwide
+        </span>
+        {connectionSettings.proximityEnabled && bandByProfileId.size > 0 && (
+          <span>
+            <span className="font-bold text-text">{bandByProfileId.size}</span> Members Near You
+          </span>
+        )}
+      </div>
+
       {/* Hub tabs — inline, under the header rule, on the page background. */}
       <CommunityTabs />
 
@@ -431,11 +445,6 @@ export default async function CommunityPage({
             </div>
           )}
 
-          {/* Member count */}
-          <p className="mb-4 text-xs text-subtle">
-            {filtered.length} member{filtered.length !== 1 ? 's' : ''}
-          </p>
-
           {/* Portrait contact cards */}
           {filtered.length === 0 ? (
             <EmptyState
@@ -462,7 +471,8 @@ export default async function CommunityPage({
           )}
         </div>
 
-        {/* Right rail: name search (moved here) · online now · stats. */}
+        {/* Right rail: name search · online now · stats, then the connect-with-others
+            pulse below them. The pulse (P5/P3b) is Suspense-wrapped so it never blocks. */}
         <aside className="flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start">
           <div>
             <label className="mb-2 block text-sm font-bold tracking-tight text-text">
@@ -476,6 +486,9 @@ export default async function CommunityPage({
             topPlace={topPlace}
             topPlaceCount={topPlaceCount}
           />
+          <Suspense fallback={null}>
+            <ConnectionsPulse />
+          </Suspense>
         </aside>
       </div>
     </div>

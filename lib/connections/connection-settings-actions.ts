@@ -63,6 +63,43 @@ export async function saveMyConnectionPrefs(input: MyPrefsInput): Promise<Action
   return ok()
 }
 
+/** Turn live-location sharing on (capturing the device position once) or off. Live
+ *  coordinates are stored separately from the private home location and are still only
+ *  ever exposed at the member's chosen band — never as exact coordinates (ADR-186). */
+export async function setLiveLocation(input: {
+  enabled: boolean
+  lat?: number
+  lng?: number
+}): Promise<ActionResult> {
+  const me = await getCallerProfile()
+  if (!me) return fail('Sign in to change your settings.')
+  const db = createAdminClient() as unknown as SupabaseClient
+
+  if (!input.enabled) {
+    const { error } = await db
+      .from('profiles')
+      .update({ location_mode: 'home', live_lat: null, live_lng: null, live_updated_at: null })
+      .eq('id', me.id)
+    if (error) return fail(error.message)
+    revalidatePath('/settings/connections')
+    return ok()
+  }
+
+  const lat = Number(input.lat)
+  const lng = Number(input.lng)
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+    return fail('Couldn’t read a valid location from your device.')
+  }
+  const { error } = await db
+    .from('profiles')
+    .update({ location_mode: 'live', live_lat: lat, live_lng: lng, live_updated_at: new Date().toISOString() })
+    .eq('id', me.id)
+  if (error) return fail(error.message)
+  revalidatePath('/settings/connections')
+  revalidatePath('/network')
+  return ok()
+}
+
 interface SettingsInput {
   directoryEnabled?: boolean
   proximityEnabled?: boolean
