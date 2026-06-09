@@ -97,15 +97,15 @@ export function PageAdminBar({
         }`}
       >
         <div className="overflow-hidden">
-          <div className="mt-3 rounded-xl border border-border bg-surface-elevated/30 p-4">
-            <div className="grid gap-4 lg:grid-cols-[19rem_1fr]">
+          {/* A clean white settings surface that runs edge-to-edge within the content
+              column (negative margins cancel the page padding). No nested cards. */}
+          <div className="mt-3 -mx-4 border-y border-border bg-surface px-4 py-6 sm:-mx-6 sm:px-6">
+            <div className="grid gap-x-10 gap-y-8 lg:grid-cols-[17rem_1fr]">
               {shareable && <SharePanel pathname={pathname} />}
               {settingsModule && (
                 <div className="min-w-0">
-                  <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">Page settings</p>
-                  <div className="rounded-xl border border-border bg-surface p-3">
-                    {settingsModule}
-                  </div>
+                  <p className="mb-3 text-2xs font-semibold uppercase tracking-wide text-subtle">Page settings</p>
+                  {settingsModule}
                 </div>
               )}
             </div>
@@ -133,13 +133,13 @@ function SharePanel({ pathname }: { pathname: string }) {
   }
 
   return (
-    <div className="rounded-xl border border-border bg-surface p-4">
-      <p className="mb-2 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
+    <div className="min-w-0">
+      <p className="mb-3 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
         <QrCode className="h-3.5 w-3.5" /> Share this page
       </p>
-      <div className="flex items-center justify-center rounded-lg border border-border bg-white p-2">
+      <div className="flex items-center justify-center rounded-xl border border-border bg-white p-3">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={qrSrc} alt="QR code for this page" width={144} height={144} className="h-36 w-36" />
+        <img src={qrSrc} alt="QR code for this page" width={160} height={160} className="h-40 w-40" />
       </div>
       <div className="mt-3 flex items-center gap-2">
         <code className="min-w-0 flex-1 truncate rounded-lg border border-border bg-surface-elevated/50 px-2.5 py-1.5 font-mono text-2xs text-muted" title={url}>
