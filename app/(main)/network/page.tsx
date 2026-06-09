@@ -372,16 +372,6 @@ export default async function CommunityPage({
         )}
       </div>
 
-      {/* "Connections this week" pulse (ADR-186, P5 + P3b) — the proactive nudge
-          that turns the directory into an agenda. Behind Suspense so its reads
-          never block the directory below (PAGE-FRAMEWORK §5); renders nothing
-          when there's nothing to surface (or the relevant toggles are off). */}
-      <Suspense fallback={null}>
-        <div className="mt-6">
-          <ConnectionsPulse />
-        </div>
-      </Suspense>
-
       {/* Two-column body: 2/3 listings · 1/3 sidebar. Shares the page gutter with
           the header / filter row above, so both halves line up against the divider. */}
       <div className="mt-6 grid items-start gap-6 lg:grid-cols-3">
@@ -474,8 +464,12 @@ export default async function CommunityPage({
           )}
         </div>
 
-        {/* Right rail: name search (moved here) · online now · stats. */}
+        {/* Right rail: connect-with-others pulse · name search · online now · stats.
+            The pulse (P5/P3b) lives here in the column; Suspense so it never blocks. */}
         <aside className="flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start">
+          <Suspense fallback={null}>
+            <ConnectionsPulse />
+          </Suspense>
           <div>
             <label className="mb-2 block text-sm font-bold tracking-tight text-text">
               Search members
