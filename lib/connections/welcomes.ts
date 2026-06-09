@@ -65,6 +65,27 @@ export async function recordWelcome(newcomerId: string): Promise<WelcomeResult> 
     return { awarded: false, gems: 0, error: 'That member isn’t a recent newcomer.' }
   }
 
+  // Must actually share an active circle with the newcomer — mirrors welcome_targets,
+  // so the reward can't be farmed on strangers across the whole platform.
+  const { data: theirCircles } = await db
+    .from('memberships')
+    .select('circle_id')
+    .eq('profile_id', newcomerId)
+    .eq('status', 'active')
+  const circleIds = (theirCircles ?? []).map((r) => (r as { circle_id: string }).circle_id)
+  if (circleIds.length === 0) {
+    return { awarded: false, gems: 0, error: 'You don’t share a circle with them.' }
+  }
+  const { count: shared } = await db
+    .from('memberships')
+    .select('circle_id', { count: 'exact', head: true })
+    .eq('profile_id', me.id)
+    .eq('status', 'active')
+    .in('circle_id', circleIds)
+  if (!shared) {
+    return { awarded: false, gems: 0, error: 'You don’t share a circle with them.' }
+  }
+
   // Insert-first; the unique constraint makes a repeat a harmless no-op (already welcomed).
   const { error: insErr } = await db
     .from('welcomes')

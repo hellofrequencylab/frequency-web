@@ -15,6 +15,10 @@ import { getConnectionSettings } from '@/lib/connections/connection-settings'
 
 type Db = SupabaseClient
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+// Cap introductions per hour — abuse / graph-probing guard.
+const HOURLY_CAP = 20
+
 /** Are these two profiles accepted friends with each other? */
 async function acceptedFriends(db: Db, x: string, y: string): Promise<boolean> {
   const { data } = await db
@@ -35,10 +39,22 @@ export async function createIntroduction(
 ): Promise<ActionResult> {
   const me = await getCallerProfile()
   if (!me) return fail('Sign in to make an introduction.')
+  // Validate the ids are real UUIDs before they reach any query (defence in depth —
+  // the action can be called directly, not just via the picker).
+  if (!UUID_RE.test(personAId) || !UUID_RE.test(personBId)) return fail('Invalid selection.')
   if (personAId === personBId) return fail('Pick two different people.')
   if (personAId === me.id || personBId === me.id) return fail('Introduce two other people.')
 
   const db = createAdminClient() as unknown as Db
+
+  // Rate limit: cap introductions per hour (abuse + friendship-graph probing guard).
+  const { count: recent } = await db
+    .from('introductions')
+    .select('id', { count: 'exact', head: true })
+    .eq('introducer_id', me.id)
+    .gte('created_at', new Date(Date.now() - 3600_000).toISOString())
+  if ((recent ?? 0) >= HOURLY_CAP) return fail('That’s a lot of introductions for one hour — give it a moment.')
+
   const [knowA, knowB] = await Promise.all([
     acceptedFriends(db, me.id, personAId),
     acceptedFriends(db, me.id, personBId),
