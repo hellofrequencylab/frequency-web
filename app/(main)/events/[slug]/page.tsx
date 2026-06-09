@@ -1,11 +1,15 @@
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { CalendarDays, MapPin, Users, ExternalLink, Check } from 'lucide-react'
+import { CalendarDays, MapPin, Users, ExternalLink, Check, Ticket } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { toggleRSVP } from '../actions'
 import { EventCheckInButton } from './check-in-button'
+import { TicketButton } from './ticket-button'
+import { billingEnabled } from '@/lib/billing/stripe'
+import { getConnectStatus } from '@/lib/billing/connect'
+import { hasTicket, recordTicketFromSessionId } from '@/lib/billing/tickets'
 import { CrewGateButton } from '@/components/crew/upgrade-lightbox'
 import { ContextActions } from '@/components/context-actions'
 import { DetailTemplate } from '@/components/templates/detail-template'
@@ -25,6 +29,7 @@ type EventDetail = {
   starts_at: string
   ends_at: string | null
   is_cancelled: boolean
+  price_cents: number | null
   scope_id: string
   scope_type: string
   recurrence_type: 'none' | 'daily' | 'weekly' | 'monthly'
@@ -84,17 +89,20 @@ function googleCalendarUrl(event: EventDetail) {
 
 export default async function EventDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>
+  searchParams: Promise<{ ticket?: string; session_id?: string }>
 }) {
   const { slug } = await params
+  const { ticket, session_id } = await searchParams
   const admin = createAdminClient()
   const supabase = await createClient()
 
   const { data: rawEvent } = await admin
     .from('events')
     .select(
-      `id, title, slug, description, location, starts_at, ends_at, is_cancelled,
+      `id, title, slug, description, location, starts_at, ends_at, is_cancelled, price_cents,
        scope_id, scope_type, recurrence_type, recurrence_until, parent_event_id,
        host:profiles!host_id ( id, display_name, handle, avatar_url )`
     )
@@ -103,6 +111,12 @@ export default async function EventDetailPage({
 
   if (!rawEvent) notFound()
   const event = rawEvent as unknown as EventDetail
+
+  // Webhook-independent reconcile when Stripe redirects back from a paid ticket.
+  let ticketedCents: number | null = null
+  if (ticket === 'success' && session_id) {
+    ticketedCents = await recordTicketFromSessionId(session_id)
+  }
 
   const eventCaps = await getEventCapabilities(event.id)
   const canManage = eventCaps.has('event.editSettings')
@@ -152,6 +166,20 @@ export default async function EventDetailPage({
     }
   }
 
+  // Ticketing (ADR-177): a priced event needs a payouts-ready host. Show the buy
+  // control to a signed-in non-host who hasn't already bought; otherwise a
+  // "ticket confirmed" state. The whole block hides for free events.
+  const priceCents = event.price_cents ?? 0
+  const isPaidEvent = priceCents > 0
+  let hostPayoutReady = false
+  let ownsTicket = false
+  if (isPaidEvent && event.host?.id) {
+    if (billingEnabled()) hostPayoutReady = (await getConnectStatus(event.host.id)).ready
+    if (myProfileId) ownsTicket = await hasTicket(event.id, myProfileId)
+  }
+  if (ticketedCents !== null) ownsTicket = true
+  const priceLabel = `$${(priceCents / 100).toFixed(2)}`
+
   const isPast = new Date(event.starts_at) < new Date()
   // RSVP stays changeable until the event actually ENDS (not merely starts), so a
   // member can still un-RSVP during a live session. Falls back to starts_at when
@@ -184,6 +212,13 @@ export default async function EventDetailPage({
       {event.is_cancelled && (
         <div className="mb-4 rounded-2xl bg-danger-bg border border-danger px-3 py-2">
           <p className="text-sm font-medium text-danger">This event has been cancelled.</p>
+        </div>
+      )}
+
+      {ticketedCents !== null && (
+        <div className="mb-4 inline-flex items-center gap-2 rounded-2xl border border-success bg-success-bg/40 px-4 py-2.5 text-sm font-semibold text-success">
+          <Ticket className="h-4 w-4" />
+          You’re in — ${(ticketedCents / 100).toFixed(2)} ticket confirmed. See you there.
         </div>
       )}
 
@@ -273,6 +308,33 @@ export default async function EventDetailPage({
           </div>
         }
       >
+        {/* ── Ticket (paid events, ADR-177) ── */}
+        {isPaidEvent && !event.is_cancelled && (
+          <div className="mb-6 rounded-2xl border border-border bg-surface p-4">
+            <div className="flex items-center gap-2">
+              <Ticket className="h-4 w-4 text-primary" />
+              <span className="text-sm font-bold text-text">{priceLabel} ticket</span>
+            </div>
+            <div className="mt-3">
+              {ownsTicket ? (
+                <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-success">
+                  <Check className="h-4 w-4" /> Ticket confirmed
+                </p>
+              ) : hasEnded ? (
+                <p className="text-sm text-muted">Ticket sales have closed.</p>
+              ) : !myProfileId ? (
+                <p className="text-sm text-muted">Sign in to get your ticket.</p>
+              ) : isHost ? (
+                <p className="text-sm text-muted">You’re hosting — no ticket needed.</p>
+              ) : hostPayoutReady ? (
+                <TicketButton eventId={event.id} priceLabel={priceLabel} />
+              ) : (
+                <p className="text-sm text-muted">Tickets aren’t available for this event yet.</p>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* ── Actions: RSVP while upcoming, then Check in at event time ── */}
         {!event.is_cancelled && myProfileId && (
           <div className="mb-6">
