@@ -11,6 +11,7 @@ import { EntityCard } from '@/components/cards/entity-card'
 import { SectionHeader } from '@/components/ui/section-header'
 import { ModuleCard } from '@/components/modules/module-card'
 import { StreamTemplate } from '@/components/templates'
+import { resolvePageContent } from '@/lib/page-content'
 
 // /broadcast is the Community Dashboard — the counterpart to the Quest Dashboard
 // (/crew), but for community life: what's being announced, what's coming up, and
@@ -146,10 +147,16 @@ export default async function BroadcastPage() {
   const latest = dispatches[0]
   const nextEvent = upcomingEvents[0]
 
+  // Operator-editable page header (ADR-180) — falls back to these defaults.
+  const { title, description } = await resolvePageContent('/broadcast', {
+    title: 'Community',
+    description: 'Everything happening around you — announcements, what’s coming up, and what’s new to join.',
+  })
+
   return (
     <StreamTemplate
-      title="Community"
-      description="Everything happening around you — announcements, what’s coming up, and what’s new to join."
+      title={title}
+      description={description}
       action={
         (canCompose || role === 'janitor') ? (
           <BroadcastCompose circles={namedCircles} hubs={namedHubs} nexuses={namedNexuses} canGlobal={role === 'janitor'} />

@@ -13,6 +13,7 @@ import { DemoBadge } from '@/components/ui/demo-badge'
 import { RsvpButton } from '@/components/events/rsvp-button'
 import { demoModeEnabled } from '@/lib/platform-flags'
 import { viewerHidesDemo } from '@/lib/demo-preference'
+import { resolvePageContent } from '@/lib/page-content'
 
 type EventRow = {
   id: string
@@ -97,12 +98,16 @@ export default async function EventsPage() {
     }
   }
 
-  const description =
-    'Group rides, gatherings, and meetups your circles are running near you. RSVP to see who’s coming, show up, and earn zaps for every one you make.'
+  // Operator-editable page header (ADR-180) — falls back to these defaults.
+  const { title: pageTitle, description: pageDescription } = await resolvePageContent('/events', {
+    title: 'Events',
+    description:
+      'Group rides, gatherings, and meetups your circles are running near you. RSVP to see who’s coming, show up, and earn zaps for every one you make.',
+  })
 
   if (myCircleIds.length === 0) {
     return (
-      <IndexTemplate title="Events" description={description}>
+      <IndexTemplate title={pageTitle} description={pageDescription}>
         <EmptyState
           icon={CalendarDays}
           title="No events on your radar yet"
@@ -186,8 +191,8 @@ export default async function EventsPage() {
 
   return (
     <IndexTemplate
-      title="Events"
-      description={description}
+      title={pageTitle}
+      description={pageDescription}
       action={
         (isCrew || isHost) ? (
           <div className="flex items-center gap-3">

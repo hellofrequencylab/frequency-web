@@ -7,6 +7,7 @@ import { IndexTemplate } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
 import { getInitials } from '@/lib/utils'
 import { getLibrary, getMyRatings, pendingReviewCount, typeLabel, hrefFor, type ContentType, type LibraryItem } from '@/lib/library'
+import { resolvePageContent } from '@/lib/page-content'
 import { RateButton, AdoptButton, SubmitProgramForm } from './interactive'
 
 export const dynamic = 'force-dynamic'
@@ -44,10 +45,16 @@ export default async function LibraryPage({
 
   const q = (t: string) => (t === 'all' ? '/library' : `/library?type=${t}`)
 
+  // Operator-editable page header (ADR-180) — falls back to these defaults.
+  const { title, description } = await resolvePageContent('/library', {
+    title: 'Library',
+    description: "The community's best practices, programs, and journeys — created by members, approved by leadership, ranked by what's actually working.",
+  })
+
   return (
     <IndexTemplate
-      title="Library"
-      description="The community's best practices, programs, and journeys — created by members, approved by leadership, ranked by what's actually working."
+      title={title}
+      description={description}
       action={
         isApprover ? (
           <Link

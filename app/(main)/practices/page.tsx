@@ -30,6 +30,7 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { demoModeEnabled } from '@/lib/platform-flags'
 import { viewerHidesDemo } from '@/lib/demo-preference'
+import { resolvePageContent } from '@/lib/page-content'
 
 export const metadata: Metadata = {
   title: 'Practices',
@@ -195,10 +196,16 @@ export default async function PracticesPage({
   const from = (page - 1) * PAGE_SIZE
   const hasFilters = !!(qParam || activePillar || activeSub || sp.tag)
 
+  // Operator-editable page header (ADR-180) — falls back to these defaults.
+  const { title, description } = await resolvePageContent('/practices', {
+    title: 'Practices',
+    description: 'This is where the points come from — a growing community library. Adopt or claim a practice, then log it every day to earn zaps, climb the ranks, and keep your streak alive.',
+  })
+
   return (
     <IndexTemplate
-      title="Practices"
-      description="This is where the points come from — a growing community library. Adopt or claim a practice, then log it every day to earn zaps, climb the ranks, and keep your streak alive."
+      title={title}
+      description={description}
       action={profileId ? <NewPracticeButton /> : undefined}
       toolbar={
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

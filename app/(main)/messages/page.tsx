@@ -13,6 +13,7 @@ import { CrewLeadQuickAction } from '@/components/messages/crew-lead-quick-actio
 import { IndexTemplate } from '@/components/templates/index-template'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
+import { resolvePageContent } from '@/lib/page-content'
 import type { ProfileIdentity } from '@/lib/types/profile'
 
 type Profile = ProfileIdentity & {
@@ -264,6 +265,14 @@ export default async function MessagesPage({
 
   const totalUnread = conversations.reduce((sum, c) => sum + c.unreadCount, 0)
 
+  // Operator-editable page header (ADR-180) — falls back to these defaults. The
+  // unread badge stays dynamic; only the static title text + description flow
+  // through resolvePageContent.
+  const { title: pageTitle, description: pageDescription } = await resolvePageContent('/messages', {
+    title: 'Messages',
+    description: 'Every conversation in one place. Direct messages, and rooms — your private group chats and the open community channels.',
+  })
+
   // Segmented filter — lives in the "Your threads" section header.
   const filterTabs = (
     <div className="flex items-center gap-0.5 rounded-lg bg-surface-elevated p-0.5">
@@ -285,7 +294,7 @@ export default async function MessagesPage({
     <IndexTemplate
       title={
         <span className="flex items-center gap-2">
-          Messages
+          {pageTitle}
           {totalUnread > 0 && (
             <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-bold text-on-primary">
               {totalUnread > 9 ? '9+' : totalUnread}
@@ -293,7 +302,7 @@ export default async function MessagesPage({
           )}
         </span>
       }
-      description="Every conversation in one place. Direct messages, and rooms — your private group chats and the open community channels."
+      description={pageDescription}
       action={
         <div className="flex flex-wrap items-center justify-end gap-2">
           <CrewLeadQuickAction />
