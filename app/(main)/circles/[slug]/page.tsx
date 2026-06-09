@@ -28,6 +28,7 @@ import { ClaimCircle } from '@/components/circles/claim-circle'
 import { CircleCover } from '@/components/circles/circle-cover'
 import { GroupMapSection } from '@/components/connections/group-map-section'
 import { CircleMomentum } from '@/components/connections/circle-momentum'
+import { CircleFieldStanding } from '@/components/circles/circle-field-standing'
 
 type CircleDetail = {
   id: string
@@ -40,6 +41,7 @@ type CircleDetail = {
   member_cap: number
   status: string
   is_demo: boolean
+  resonance_public: boolean
   sidebar_order: string[] | null
   latitude: number | null
   longitude: number | null
@@ -91,7 +93,7 @@ export default async function CirclePage({
   const { data: rawCircle } = await admin
     .from('circles')
     .select(
-      `id, name, slug, about, image_url, type, member_count, member_cap, status, is_demo, sidebar_order,
+      `id, name, slug, about, image_url, type, member_count, member_cap, status, is_demo, resonance_public, sidebar_order,
        latitude, longitude, neighborhood, city,
        host:profiles!host_id ( id, display_name, handle, avatar_url ),
        hub:hubs!hub_id (
@@ -300,6 +302,19 @@ export default async function CirclePage({
     </Suspense>
   )
 
+  // Circle Field — the circle's collective seasonal standing (EVENTS-SYSTEM §6.2).
+  // Members always see it; non-members only when the circle opted in to a public
+  // standing (resonance_public). Collaborative, never an inter-circle ranking. The
+  // widget self-hides until the circle has gathered Field; Suspense keeps it off
+  // the shell's critical path.
+  if (isMember || circle.resonance_public) {
+    railMap.field = (
+      <Suspense fallback={null}>
+        <CircleFieldStanding circleId={circle.id} circleName={circle.name} />
+      </Suspense>
+    )
+  }
+
   if (canManage) {
     railMap.invite = (
       <ModuleCard title="Invite a friend">
@@ -315,7 +330,7 @@ export default async function CirclePage({
     )
   }
 
-  const DEFAULT_RAIL_ORDER = ['members', 'health', 'momentum', 'practice', 'events', 'map', 'invite']
+  const DEFAULT_RAIL_ORDER = ['members', 'health', 'momentum', 'field', 'practice', 'events', 'map', 'invite']
   const savedOrder = circle.sidebar_order ?? DEFAULT_RAIL_ORDER
   // Saved order first (only keys present in the map), then any new map keys the
   // saved order doesn't mention — so a freshly-added block never goes missing.
