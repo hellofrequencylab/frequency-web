@@ -5760,3 +5760,34 @@ only** — RLS needs no new policy (the existing self-read exposes them to the o
 **Env-gating.** Like the rest of billing (ADR P2.2), every function no-ops when `stripe` is unconfigured, so
 the card shows a "not turned on yet" state until keys land. Development proceeds entirely in Stripe **test
 mode**; going live only requires the platform's identity verification + live keys, no code change.
+
+## ADR-176 — Tips: the first payout channel (destination charge on the Connect foundation)
+
+**Status:** Accepted · applied (`supabase/migrations/20260609010000_tips.sql`). Phase 2 of the Connect build
+(ADR-175 = Phase 1 foundation); events / store / memberships are the remaining channels.
+
+**Context.** With the per-profile connected account in place (ADR-175), the first channel to ship is **tips** —
+the simplest money movement (one-off, no catalog, no recurrence), which proves the whole destination-charge
+pipe end to end before the more complex channels build on it.
+
+**Money model — destination charge.** A signed-in member tips a host/partner. The **platform** creates a
+one-off Stripe Checkout payment (`mode: 'payment'`), keeps an **application fee**, and **transfers the rest**
+to the recipient's connected account via `payment_intent_data.transfer_data.destination` +
+`application_fee_amount`. The platform fee is `STRIPE_PLATFORM_FEE_PCT` (default **10%**), centralized in
+`lib/billing/fees.ts` so every channel shares one fee rule. Fee cents are **floored** so the recipient is
+never short-changed by rounding; a blank env is "unset → 10%" while an explicit `0` is a deliberate 0% fee.
+
+**Real money ≠ points.** Tips are recorded in a new `tips` table, **deliberately separate** from the gems/zaps
+ledger (`lib/economy/ledger.ts`), which tracks in-platform points only. `tips` is **service-role write only**
+(the checkout creator + the webhook); RLS lets a member read tips they sent or received.
+
+**Lifecycle.** `createTipCheckout` validates (amount in $1–$500, not self-tip, recipient is **payouts-ready**),
+records a `pending` row keyed by the Checkout session id, and returns the hosted URL. Success is captured two
+ways, idempotently: the `checkout.session.completed` webhook (`recordTipFromSession`, routed by the session's
+`kind: 'tip'` metadata) **and** a reconcile on the success redirect (`recordTipFromSessionId`), so a tip is
+never lost if the webhook isn't wired yet — the same belt-and-suspenders the membership checkout uses.
+
+**Surface.** A "Tip" control on the host's profile (`/people/[handle]`), shown to a signed-in non-owner **only
+when the recipient is payouts-ready** (`getConnectStatus(...).ready` + `billingEnabled()`). Preset chips
+($3/$5/$10) + custom amount + optional note; a thank-you banner renders on return. Like all billing, the whole
+channel no-ops until Stripe keys land and the recipient has onboarded.

@@ -14,13 +14,17 @@ import { isEndorsed } from '@/lib/season-ranks'
 import { FriendButton, type FriendState } from './friend-button'
 import { BlockButton } from './block-button'
 import { hasBlocked } from '@/lib/blocking'
-import { MessageSquare, CalendarDays, Zap, Gem, Users, MapPin, Settings, Trophy, Star, Flame, Contact } from 'lucide-react'
+import { MessageSquare, CalendarDays, Zap, Gem, Users, MapPin, Settings, Trophy, Star, Flame, Contact, Heart } from 'lucide-react'
 import { parseVcard } from '@/lib/vcard'
 import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
 import { getProfileCapabilities } from '@/lib/core/load-capabilities'
 import { atLeastRole } from '@/lib/core/roles'
 import { MemberSupportPanel } from '@/components/support/member-support-panel'
 import { ModerateProfileButton } from './moderate-profile-button'
+import { TipButton } from './tip-button'
+import { billingEnabled } from '@/lib/billing/stripe'
+import { getConnectStatus } from '@/lib/billing/connect'
+import { recordTipFromSessionId } from '@/lib/billing/tips'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EditableIdentity } from './editable-identity'
 import { DemoBadge } from '@/components/ui/demo-badge'
@@ -54,11 +58,18 @@ export default async function ProfilePage({
   searchParams,
 }: {
   params: Promise<{ handle: string }>
-  searchParams: Promise<{ tab?: string }>
+  searchParams: Promise<{ tab?: string; tip?: string; session_id?: string }>
 }) {
   const { handle } = await params
-  const { tab } = await searchParams
+  const { tab, tip, session_id } = await searchParams
   const activeTab: ProfileTab = tab === 'posts' ? 'posts' : 'activity'
+
+  // Webhook-independent reconcile: when Stripe redirects back from a paid tip,
+  // record it here (the webhook also does, idempotently) and show a thank-you.
+  let tippedCents: number | null = null
+  if (tip === 'success' && session_id) {
+    tippedCents = await recordTipFromSessionId(session_id)
+  }
 
   const admin = createAdminClient()
   const { data: profile } = await admin
@@ -121,6 +132,12 @@ export default async function ProfilePage({
   }
 
   const profileId = profile.id as string
+
+  // Tips (ADR-176): show the Tip control to a signed-in non-owner only when the
+  // recipient is actually payouts-ready (and billing is live). The server decides;
+  // the button never appears for someone who can't receive money.
+  const canTipRecipient =
+    !!user && !isOwner && billingEnabled() && (await getConnectStatus(profileId)).ready
 
   // Capability-gated moderator edit: profile.edit on a profile you don't own = janitor.
   const profileCaps = await getProfileCapabilities(profileId)
@@ -268,6 +285,9 @@ export default async function ProfilePage({
                 </button>
               </form>
             )}
+            {!isBlocked && canTipRecipient && (
+              <TipButton toProfileId={profileId} recipientName={firstName} />
+            )}
             {!isOwner && <BlockButton profileId={profileId} blocked={isBlocked} />}
             {canModerateProfile && (
               <ModerateProfileButton
@@ -280,6 +300,13 @@ export default async function ProfilePage({
         ) : null
       }
     >
+      {tippedCents !== null && (
+        <div className="mb-4 inline-flex items-center gap-2 rounded-xl border border-primary-bg bg-primary-bg/40 px-4 py-2.5 text-sm font-semibold text-primary-strong">
+          <Heart className="h-4 w-4" />
+          Thank you — your ${(tippedCents / 100).toFixed(2)} tip to {firstName} is on its way.
+        </div>
+      )}
+
       {/* ── Cover image + bio + gamification (the identity hero, now in the body) ─── */}
       <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden mb-6">
         {/* Cover — the member's header image when set, else the default gradient. */}
