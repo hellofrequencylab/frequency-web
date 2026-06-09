@@ -332,6 +332,18 @@ export default async function CommunityPage({
         actions={<InviteMemberCompose inviterName={viewerName} />}
       />
 
+      {/* Community size — total worldwide + nearby (when proximity is on). */}
+      <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-muted">
+        <span>
+          <span className="font-bold text-text">{typedProfiles.length}</span> Members Worldwide
+        </span>
+        {connectionSettings.proximityEnabled && bandByProfileId.size > 0 && (
+          <span>
+            <span className="font-bold text-text">{bandByProfileId.size}</span> Members Near You
+          </span>
+        )}
+      </div>
+
       {/* Hub tabs — inline, under the header rule, on the page background. */}
       <CommunityTabs />
 
@@ -433,11 +445,6 @@ export default async function CommunityPage({
             </div>
           )}
 
-          {/* Member count */}
-          <p className="mb-4 text-xs text-subtle">
-            {filtered.length} member{filtered.length !== 1 ? 's' : ''}
-          </p>
-
           {/* Portrait contact cards */}
           {filtered.length === 0 ? (
             <EmptyState
@@ -464,12 +471,9 @@ export default async function CommunityPage({
           )}
         </div>
 
-        {/* Right rail: connect-with-others pulse · name search · online now · stats.
-            The pulse (P5/P3b) lives here in the column; Suspense so it never blocks. */}
+        {/* Right rail: name search · online now · stats, then the connect-with-others
+            pulse below them. The pulse (P5/P3b) is Suspense-wrapped so it never blocks. */}
         <aside className="flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start">
-          <Suspense fallback={null}>
-            <ConnectionsPulse />
-          </Suspense>
           <div>
             <label className="mb-2 block text-sm font-bold tracking-tight text-text">
               Search members
@@ -482,6 +486,9 @@ export default async function CommunityPage({
             topPlace={topPlace}
             topPlaceCount={topPlaceCount}
           />
+          <Suspense fallback={null}>
+            <ConnectionsPulse />
+          </Suspense>
         </aside>
       </div>
     </div>
