@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Zap, Users, Flame, Pencil, Repeat, Wand2, type LucideIcon } from 'lucide-react'
@@ -11,6 +12,7 @@ import { LogPracticeButton } from '@/components/practice/log-practice-button'
 import { AdoptPracticeButton } from '@/components/practice/adopt-practice-button'
 import { PillarBadge } from '@/components/practice/pillar-badge'
 import { ClaimPractice } from '@/components/practice/claim-practice'
+import { UsedInSection, UsedInSkeleton } from '@/components/practices/used-in-section'
 import { StaffEditButton } from '@/components/ui/staff-edit-button'
 import { ProposeToLibraryButton } from '@/components/library/propose-to-library'
 import { forkPracticeAction } from '../actions'
@@ -176,6 +178,14 @@ export default async function PracticeDetailPage({ params }: Params) {
           ))}
         </div>
       )}
+
+      {/* "Used in" — the journeys + circles running this practice (the inverse of
+          journey_plan_items / circle_practices). Behind <Suspense> so its two
+          joined reads never block the page; it renders nothing when both lists
+          are empty (visibility enforced in getPracticeBacklinks). */}
+      <Suspense fallback={<UsedInSkeleton />}>
+        <UsedInSection practiceId={practice.id} />
+      </Suspense>
     </DetailTemplate>
   )
 }
