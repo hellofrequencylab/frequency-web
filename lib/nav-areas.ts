@@ -74,7 +74,7 @@ export const NAV_AREAS: readonly NavArea[] = [
   { key: 'events',        href: '/events',    label: 'Events',       section: 'Community', defaultAccess: 'visitor', surface: 'events' },
   { key: 'market',        href: '/market',    label: 'Marketplace',  section: 'Community', defaultAccess: 'visitor', surface: 'market' },
   { key: 'messageBoards', href: '/messages',  label: 'Message Boards', section: 'Community', defaultAccess: 'member', surface: 'messageBoards' },
-  { key: 'people',        href: '/network',   label: 'Network',      section: 'Community', defaultAccess: 'member',  surface: 'people' },
+  { key: 'people',        href: '/network',   label: 'Community',    section: 'Community', defaultAccess: 'member',  surface: 'people' },
 
   // ── The Quest → everyone plays; only the Vault (cash-in) is paid-gated ────────
   { key: 'quest',     href: '/crew',       label: 'Dashboard', section: 'The Quest', defaultAccess: 'member', surface: 'quest' },

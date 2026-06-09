@@ -5841,3 +5841,33 @@ defense in depth at both the UI and the charge-creation layer.
 **Operator surface.** `/admin/payments` (Platform › System, janitor-only) — a single toggle that writes the
 flag via `setPlatformFlag` (audited). Shows whether Stripe keys are also configured. Turning the flag on
 without keys leaves the marketplace dormant (the `billingEnabled()` half of the gate).
+
+## ADR-179 — Per-page QR folders (a code can belong to a page)
+
+**Status:** Accepted · applied (`supabase/migrations/20260609030000_qr_page_folders.sql`).
+
+**Context.** The visual QR editor (`lib/qr/style.ts` + `render-styled.ts` + `admin/qr/style-editor.tsx`) already
+existed. What was missing: a way to create a QR *from a page* and find it again, grouped by that page.
+
+**Decision.** `qr_codes.page_path` is the folder key — the route a QR belongs to (NULL = a free-standing Studio
+code). On a page's Settings panel, `PageQrManager` lists that page's codes and creates new ones via the existing
+`StyleEditor` (`createPageQr`: `target_url` = the page URL, `page_path` = the route, plus the designed style),
+gated host+ OR staff `qr`. QR Studio (`dynamic-links`) groups codes into collapsible per-page folders + an
+"Unfiled / general" group. So: on a page you manage its own codes; in the Studio you create for any link and
+manage everything, foldered. `page_path` isn't in generated types yet → untyped-client cast.
+
+## ADR-180 — Operator-editable page content (title + description) per route
+
+**Status:** Accepted · applied (`supabase/migrations/20260609040000_page_content.sql`).
+
+**Context.** Coded app pages had hardcoded headers. Operators wanted to tune a page's title/description in place
+without a deploy — role-specific.
+
+**Decision.** A `page_content` table keyed by `route` holds an optional `title` + `description`. A coded page
+reads it via `resolvePageContent(route, fallback)` (`lib/page-content.ts`, request-cached) and **falls back to
+its coded default** when unset, so editing is purely additive and a page never breaks on an empty store. Editing
+lives in the page's Settings panel via `PageContentModule`, gated **admin+** (`getEditablePageContent` returns
+null below that, so the editor renders nothing; `savePageContent` re-checks — the action is the authority).
+`page-admin-bar` shows the Settings ▾ + content editor on routes listed in `CONTENT_EDIT_ROUTES` (first: `/network`).
+Public read RLS (it's chrome everyone sees); writes go through the service role after the admin check. Reusable —
+add a route to the list to make its header editable. `page_content` isn't in generated types yet → untyped cast.
