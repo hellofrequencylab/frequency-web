@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { Users, Activity, TrendingUp, Zap, Flame, MapPin } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -25,6 +26,8 @@ import { isoDaysAgo } from '@/lib/utils'
 import { type CommunityRole } from '@/lib/community-roles'
 import { ClaimCircle } from '@/components/circles/claim-circle'
 import { CircleCover } from '@/components/circles/circle-cover'
+import { GroupMapSection } from '@/components/connections/group-map-section'
+import { CircleMomentum } from '@/components/connections/circle-momentum'
 
 type CircleDetail = {
   id: string
@@ -38,6 +41,10 @@ type CircleDetail = {
   status: string
   is_demo: boolean
   sidebar_order: string[] | null
+  latitude: number | null
+  longitude: number | null
+  neighborhood: string | null
+  city: string | null
   host: { id: string; display_name: string; handle: string; avatar_url: string | null } | null
   hub: {
     id: string
@@ -85,6 +92,7 @@ export default async function CirclePage({
     .from('circles')
     .select(
       `id, name, slug, about, image_url, type, member_count, member_cap, status, is_demo, sidebar_order,
+       latitude, longitude, neighborhood, city,
        host:profiles!host_id ( id, display_name, handle, avatar_url ),
        hub:hubs!hub_id (
          id, name, slug,
@@ -266,6 +274,32 @@ export default async function CirclePage({
     </ModuleCard>
   )
 
+  // Live venue map (ADR-186, Connection Layer P4). Self-gates on the admin maps
+  // toggle + a public circle location, and only plots PUBLIC venue coordinates —
+  // never a member's home. Suspense fallback={null} so it never blocks the page.
+  railMap.map = (
+    <Suspense fallback={null}>
+      <GroupMapSection
+        circle={{
+          id: circle.id,
+          name: circle.name,
+          latitude: circle.latitude,
+          longitude: circle.longitude,
+          neighborhood: circle.neighborhood,
+          city: circle.city,
+        }}
+      />
+    </Suspense>
+  )
+
+  // Circle vital signs — aggregate momentum counts (ADR-186, P6). Self-gates to
+  // nothing when there's no signal; Suspense fallback={null} so it never blocks.
+  railMap.momentum = (
+    <Suspense fallback={null}>
+      <CircleMomentum circleId={circle.id} />
+    </Suspense>
+  )
+
   if (canManage) {
     railMap.invite = (
       <ModuleCard title="Invite a friend">
@@ -281,7 +315,7 @@ export default async function CirclePage({
     )
   }
 
-  const DEFAULT_RAIL_ORDER = ['members', 'health', 'practice', 'events', 'invite']
+  const DEFAULT_RAIL_ORDER = ['members', 'health', 'momentum', 'practice', 'events', 'map', 'invite']
   const savedOrder = circle.sidebar_order ?? DEFAULT_RAIL_ORDER
   // Saved order first (only keys present in the map), then any new map keys the
   // saved order doesn't mention — so a freshly-added block never goes missing.
