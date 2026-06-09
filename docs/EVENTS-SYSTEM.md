@@ -265,3 +265,30 @@ greenfield framing and the single-account / single-currency / new-check-in-table
 real work is **extend + wire**, with one net-new high-stakes subsystem (SMS). The highest-leverage,
 lowest-risk wins are **auto-calendar-on-RSVP**, **completing the 3-touch cadence**, and
 **ticket tiers/PWYC on the Connect pipe** — all small deltas on top of live infrastructure.
+
+---
+
+## Implementation log
+
+### 2026-06-09 — P0 core-loop (shipped on this branch)
+- ✅ **Schema** (`20260609230000_events_p0_capacity_visibility.sql`): `events.capacity` /
+  `visibility` / `category` / `energy_tag`; `event_rsvps.plus_ones` / `waitlist` status /
+  `reminder_7d_sent_at`; `circles.resonance_public`. Additive, backward-compatible; RLS unchanged.
+- ✅ **Capacity + waitlist** (`lib/events/capacity.ts`, `events/actions.ts`): real capacity is the
+  only scarcity signal; full events route to a waitlist; freeing a seat auto-promotes the oldest
+  waitlister.
+- ✅ **Warm proof + one-tap calendar** (`components/events/warm-proof.tsx`, `add-to-calendar.tsx`,
+  `[slug]/page.tsx`, `rsvp-button.tsx`): who's-going block with real counts (never low-as-scarcity),
+  add-to-calendar promoted at the moment of RSVP (the implementation-intentions lever).
+- ✅ **3-touch reminder cadence** (`api/cron/event-reminders`): added the ~1-week touch
+  (7d → 24h → 2h), gentle/blameless copy, same idempotency + preference gating.
+- ✅ **Library facets** (`events/page.tsx`): category · energy · has-spots; warm "filling up" /
+  "waitlist" badges only when genuine.
+- ✅ **Create flow** (`new/event-form.tsx`): capacity/visibility/category/energy fields on the kit +
+  DAWN token cleanup.
+- ⏳ **Next:** Circle Field roll-up + public-opt-in; ticket tiers/PWYC + refunds/cancellation;
+  event embeddings + "For You" matching + AI blurbs; SMS channel (A2P 10DLC/TCPA).
+
+> **Carried-over cleanup debt:** the events Index still awaits its queries inline (PAGE-FRAMEWORK §5
+> wants per-section `<Suspense>`); the detail page issues one redundant going-count read (kept so
+> capacity logic stays centralized in `lib/events/capacity.ts`).
