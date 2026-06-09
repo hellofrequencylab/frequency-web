@@ -43,6 +43,25 @@ export const aiEnabledFlag = cache(async (): Promise<boolean> => {
   }
 })
 
+// Host payouts master switch (platform_flags.host_payouts_enabled) — gates the
+// Connect marketplace (tips, event tickets, future store/membership payouts).
+// Defaults to FALSE on any read failure: payments stay OFF until an operator turns
+// them on, so the channels never go live by accident. The live gate is
+// `payoutsLive()` (this flag AND a configured Stripe key).
+export const hostPayoutsEnabledFlag = cache(async (): Promise<boolean> => {
+  try {
+    const admin = createAdminClient()
+    const { data } = await admin
+      .from('platform_flags')
+      .select('value')
+      .eq('key', 'host_payouts_enabled')
+      .maybeSingle()
+    return data?.value ?? false
+  } catch {
+    return false
+  }
+})
+
 export interface FlagEvent {
   id: string
   flagKey: string

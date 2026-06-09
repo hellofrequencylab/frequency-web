@@ -5,7 +5,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { billingEnabled } from '@/lib/billing/stripe'
 import { confirmCheckout } from '@/lib/billing/checkout'
-import { getConnectStatus, syncConnectedAccount, type ConnectStatus } from '@/lib/billing/connect'
+import { getConnectStatus, syncConnectedAccount, payoutsLive, type ConnectStatus } from '@/lib/billing/connect'
 import { ENTITLEMENT_LABEL, type EntitlementTier } from '@/lib/core/entitlement'
 import { FocusTemplate } from '@/components/templates'
 import { ManageBillingButton } from './manage-button'
@@ -43,7 +43,7 @@ export default async function BillingPage({
   // Payouts (ADR-175): show the Connect card to earners only. On return from the
   // hosted onboarding (?payouts=return) reconcile the account synchronously so the
   // card reflects reality immediately — the account.updated webhook also does this.
-  const showPayouts = await canReceivePayouts(me.id, me.community_role)
+  const showPayouts = (await payoutsLive()) && (await canReceivePayouts(me.id, me.community_role))
   let payout: ConnectStatus | null = null
   if (showPayouts) {
     payout = params.payouts === 'return' ? await syncConnectedAccount(me.id) : await getConnectStatus(me.id)

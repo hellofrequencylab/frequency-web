@@ -46,6 +46,7 @@ import {
   LifeBuoy,
   ShoppingBag,
   Map,
+  CreditCard,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
@@ -201,6 +202,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     dashboard: 'platform',
     links: [
       { href: '/admin/ai', label: 'AI controls', desc: 'Turn AI on or off platform-wide; usage and audit.', Icon: Power, min: 'janitor' },
+      { href: '/admin/payments', label: 'Payments', desc: 'Turn host payouts (tips, tickets, sales) on or off.', Icon: CreditCard, min: 'janitor' },
       { href: '/admin/demo', label: 'Demo Studio', desc: 'Generate, manage, and purge seeded demo content.', Icon: Sparkles, min: 'janitor' },
       { href: '/pages', label: 'Pages', desc: 'Edit public pages and content blocks.', Icon: FileText, min: 'janitor' },
     ],

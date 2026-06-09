@@ -2,18 +2,50 @@
 
 import { useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { Shield, ChevronDown, QrCode, Link2, Check, ExternalLink } from 'lucide-react'
+import { ChevronDown, QrCode, Link2, Check, ExternalLink } from 'lucide-react'
 import { meetsAccess } from '@/lib/nav-areas'
 import type { CommunityRole } from '@/lib/community-roles'
 import type { StaffRole } from '@/lib/staff'
-import { AdminConsole } from '@/components/admin/sidebar/admin-console'
+import { CircleSettingsModule } from '@/components/admin/modules/circle-settings-module'
+import { HubSettingsModule } from '@/components/admin/modules/hub-settings-module'
+import { NexusSettingsModule } from '@/components/admin/modules/nexus-settings-module'
+import { EventSettingsModule } from '@/components/admin/modules/event-settings-module'
 
-// The on-page admin layer (IA restructure → accordion redesign). A slim "Admin ▾"
-// bar sits at the top of every operator-visible page; clicking it does NOT open a
-// dropdown — it splits the page open IN PLACE (full content width, an interior
-// bracket) and slides down to reveal the page's admin DASHBOARD: a share kit
-// (QR + link) and the page-aware settings/quick-links console. Operators stay on the
-// page. Collapsed by default; auto-collapses on navigation.
+// The on-page admin control. A small, right-aligned "Settings ▾" button sits above a
+// content-width hairline rule (matching the divider under a page title). Clicking it
+// opens an interior panel — within the content column, not edge-to-edge — that holds
+// ONLY this page's relevant admin: a share kit (QR + link) on shareable entity pages,
+// and the page-specific settings module (circle / hub / nexus / event). If a page has
+// neither, the whole control renders nothing. Collapsed by default; auto-collapses on
+// navigation.
+
+// Entity detail routes that carry a slug segment (not the bare list route) — these are
+// the shareable pages that get a QR/link kit.
+const SHAREABLE_PREFIXES = [
+  'events',
+  'circles',
+  'channels',
+  'people',
+  'hubs',
+  'nexuses',
+] as const
+
+function isShareable(pathname: string): boolean {
+  const m = pathname.match(/^\/([^/]+)\/([^/]+)/)
+  if (!m) return false
+  return (SHAREABLE_PREFIXES as readonly string[]).includes(m[1])
+}
+
+// The page-specific settings module, if this path has one. Modules self-resolve from
+// the pathname (same as admin-console.tsx), so they take no props.
+function settingsModuleFor(pathname: string) {
+  if (/^\/circles\/[^/]+/.test(pathname)) return <CircleSettingsModule />
+  if (/^\/hubs\/[^/]+/.test(pathname)) return <HubSettingsModule />
+  if (/^\/nexuses\/[^/]+/.test(pathname)) return <NexusSettingsModule />
+  if (/^\/events\/[^/]+/.test(pathname)) return <EventSettingsModule />
+  return null
+}
+
 export function PageAdminBar({
   role,
   staffRole,
@@ -34,41 +66,48 @@ export function PageAdminBar({
   const isStaff = staffRole != null
   if (!(meetsAccess('host', role) || isStaff)) return null
 
-  return (
-    <div className="mb-4">
-      {/* Accordion trigger */}
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        className={`flex w-full items-center gap-2 border border-border px-3 py-2 text-xs font-semibold transition-colors ${
-          open
-            ? 'rounded-t-xl border-b-0 bg-surface-elevated/60 text-text'
-            : 'rounded-xl bg-surface-elevated/40 text-muted hover:text-text'
-        }`}
-      >
-        <Shield className="h-3.5 w-3.5 shrink-0 text-primary-strong" />
-        Admin
-        <span className="font-normal text-subtle">· tools for this page</span>
-        <ChevronDown className={`ml-auto h-4 w-4 transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
-      </button>
+  const shareable = isShareable(pathname)
+  const settingsModule = settingsModuleFor(pathname)
 
-      {/* Accordion body — splits open full-width within the page and slides down. */}
+  // Nothing to administer here — render nothing (no button, no rule).
+  if (!shareable && !settingsModule) return null
+
+  return (
+    <div className="mb-5 sm:mb-6">
+      {/* Right-aligned control above the content-width rule. */}
+      <div className="flex items-center justify-end pb-2.5">
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          className="inline-flex items-center gap-1 text-xs font-semibold text-muted transition-colors hover:text-text"
+        >
+          Settings
+          <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
+        </button>
+      </div>
+
+      {/* Content-width hairline rule (matches the page-title divider). */}
+      <div className="border-t border-border" />
+
+      {/* Interior panel — splits open within the content column and slides down. */}
       <div
         className={`grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none ${
           open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
         }`}
       >
         <div className="overflow-hidden">
-          <div className="rounded-b-xl border border-t-0 border-border bg-surface-elevated/30 p-4">
+          <div className="mt-3 rounded-xl border border-border bg-surface-elevated/30 p-4">
             <div className="grid gap-4 lg:grid-cols-[19rem_1fr]">
-              <SharePanel pathname={pathname} />
-              <div className="min-w-0">
-                <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">Page settings &amp; tools</p>
-                <div className="flex max-h-[55vh] flex-col overflow-hidden rounded-xl border border-border bg-surface">
-                  <AdminConsole role={role} staffRole={staffRole} onNavigate={() => setOpen(false)} />
+              {shareable && <SharePanel pathname={pathname} />}
+              {settingsModule && (
+                <div className="min-w-0">
+                  <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">Page settings</p>
+                  <div className="rounded-xl border border-border bg-surface p-3">
+                    {settingsModule}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
