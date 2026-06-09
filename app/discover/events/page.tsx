@@ -25,6 +25,11 @@ export const metadata: Metadata = {
     description: 'Browse upcoming real-world events across the Frequency community.',
     url: '/discover/events',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: `Upcoming events · ${SITE_NAME}`,
+    description: 'Browse upcoming real-world events across the Frequency community.',
+  },
 }
 
 export const revalidate = 3600

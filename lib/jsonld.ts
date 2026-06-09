@@ -74,6 +74,10 @@ export function eventSchema(event: PublicEvent) {
     ...(event.ends_at ? { endDate: event.ends_at } : {}),
     eventStatus: 'https://schema.org/EventScheduled',
     eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+    // Google lists `image` as required for Event rich results. No per-event image
+    // is exposed to the public RPC yet, so fall back to the site OG image. (A
+    // dynamic per-event OG image is tracked in docs/EVENTS-AUDIT.md.)
+    image: [abs('/opengraph-image')],
     ...(event.description ? { description: event.description } : {}),
     location,
     url: abs(`/discover/events/${event.slug}`),
