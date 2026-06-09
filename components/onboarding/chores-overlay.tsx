@@ -103,10 +103,14 @@ export function ChoresOverlay({
   // ── Persistent entry: a slim pill (bottom-LEFT, clear of the Vera launcher) so
   //    the current nudge is reachable any time. Hidden on the reward beat (it
   //    auto-opens) and once everything's done. ─────────────────────────────────
-  // Next Steps — left-edge pill: present only while tasks remain (disappears when
-  // done), collapsed until hover (web) / tap (mobile), then a click opens the overlay.
-  // Pulses a blue glow while there's something waiting.
-  const showPill = !open && (!chores.complete || coach)
+  // Next Steps — left-edge pill: present ONLY while there's real work to do —
+  //   • chores still outstanding (chores not complete AND at least one left), or
+  //   • the coach beat (a remaining "next move").
+  // When the Next Steps are complete (no chores left, no coach step), it renders
+  // nothing — the tab disappears. Collapsed until hover (web) / tap (mobile), then a
+  // click opens the overlay; an occasional wiggle signals it's waiting.
+  const hasChoresLeft = !chores.complete && left > 0
+  const showPill = !open && (hasChoresLeft || coach)
   const pill = showPill ? (
     <EdgePill
       side="left"
