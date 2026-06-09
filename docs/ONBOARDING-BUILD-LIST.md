@@ -27,9 +27,9 @@ Two levers, in order: **(0) flip the switches that let real testers in today**, 
 | **1.2** | Vera's "chores" — profile + first-post, matriarch full-stop | Create a profile + seed content | M | ✅ shipped |
 | **1.3** | Vera coach "next best action" — folded into the chores surface | Excitement + direction | S | ✅ shipped |
 | **1.4** | "Founder's First Week" tasks + badge | Create content | M | ✅ shipped |
-| **1.5** | Live-loop suggestion chips | Guided depth | S | ⏳ |
+| **1.5** | Live-loop suggestion chips | Guided depth | S | ✅ 2026-06 (ADR-203 — CHIPS line + extractSuggestions; all three chat surfaces) |
 | **2.1** | Welcome community post | Arrive *greeted* | S–M | 📋 |
-| **2.2** | Finish `draft_intro` (no-op today) | Warm intros land | S–M | ⏳ |
+| **2.2** | Finish `draft_intro` (no-op today) | Warm intros land | S–M | ✅ 2026-06 (ADR-203 — tool carries the full message; confirm posts a sanitized @mention intro via the composer path) |
 | **2.3** | Memory batch summarization cron | Vera stays fresh | M | 📋 |
 | **2.4** | Warm up seeded demo content (§S9) + demo box → action links (§S4) | First scroll feels alive | M | 📋 |
 | **3.x** | Proactive Vera (encouragement/accountability, host copilot) | Day-2 retention | M–L | 🔴 gated |
