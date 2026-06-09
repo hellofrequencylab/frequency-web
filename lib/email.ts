@@ -252,6 +252,142 @@ export async function sendEventReminderEmail(params: {
 }
 
 
+// ── Event RSVP confirmation email ──────────────────────────────────────────────
+// Sent the moment a member RSVPs (the 3-touch reminder cron only fires later, so
+// without this an RSVP got NO acknowledgement). Reuses the same enqueueEmail
+// outbox, events-category unsubscribe headers, suppression guard (in sendRawEmail)
+// and template shell as the reminder emails — only the copy + calendar links
+// differ. Two variants: 'going' (you're in, with add-to-calendar) and 'waitlist'
+// (a short, warm "you're on the list" note).
+
+export async function sendEventRsvpConfirmationEmail(params: {
+  to:                 string
+  recipientName:      string
+  recipientProfileId: string
+  eventTitle:         string
+  whenAbsolute:       string
+  location:           string | null
+  hostName:           string | null
+  circleName:         string | null
+  eventUrl:           string
+  icsUrl:             string | null
+  googleCalUrl:       string | null
+  status:             'going' | 'waitlist'
+}) {
+  const {
+    to, recipientName, recipientProfileId, eventTitle, whenAbsolute, location,
+    hostName, circleName, eventUrl, icsUrl, googleCalUrl, status,
+  } = params
+
+  const subject = status === 'going'
+    ? `✅ You're going — ${eventTitle}`
+    : `📝 You're on the waitlist — ${eventTitle}`
+
+  const unsubscribeUrl = buildUnsubscribeUrl({
+    baseUrl:   BASE_URL,
+    profileId: recipientProfileId,
+    category:  'events',
+  })
+
+  await enqueueEmail({
+    to,
+    subject,
+    headers: listUnsubscribeHeaders(unsubscribeUrl),
+    html: rsvpConfirmationHtml({
+      recipientName, eventTitle, whenAbsolute, location, hostName, circleName,
+      eventUrl, icsUrl, googleCalUrl, status, unsubscribeUrl,
+    }),
+    text: rsvpConfirmationText({
+      recipientName, eventTitle, whenAbsolute, location, hostName, circleName,
+      eventUrl, icsUrl, googleCalUrl, status, unsubscribeUrl,
+    }),
+  })
+}
+
+
+// ── Event cancellation email ──────────────────────────────────────────────────
+// Sent when a host/admin cancels an event. Two variants, gated by `refunded`:
+//   • refunded=true  → the attendee paid; their ticket has been refunded.
+//   • refunded=false → free RSVP; the gathering simply won't happen.
+// Same outbox + events-category unsubscribe plumbing as the reminder emails, so
+// it respects email_events prefs and suppression like every other event send.
+
+export async function sendEventCancelledEmail(params: {
+  to:                 string
+  recipientName:      string
+  recipientProfileId: string
+  eventTitle:         string
+  whenAbsolute:       string
+  eventUrl:           string
+  refunded:           boolean
+}) {
+  const { to, recipientName, recipientProfileId, eventTitle, whenAbsolute, eventUrl, refunded } = params
+
+  const unsubscribeUrl = buildUnsubscribeUrl({
+    baseUrl:   BASE_URL,
+    profileId: recipientProfileId,
+    category:  'events',
+  })
+
+  await enqueueEmail({
+    to,
+    subject: `Cancelled: ${eventTitle}`,
+    headers: listUnsubscribeHeaders(unsubscribeUrl),
+    html:    eventCancelledHtml({ recipientName, eventTitle, whenAbsolute, eventUrl, refunded, unsubscribeUrl }),
+    text:    eventCancelledText({ recipientName, eventTitle, whenAbsolute, eventUrl, refunded, unsubscribeUrl }),
+  })
+}
+
+function eventCancelledHtml({ recipientName, eventTitle, whenAbsolute, eventUrl, refunded, unsubscribeUrl }: {
+  recipientName: string; eventTitle: string; whenAbsolute: string; eventUrl: string; refunded: boolean; unsubscribeUrl: string
+}): string {
+  const refundLine = refunded
+    ? `<p style="${pStyle}"><strong>You've been fully refunded.</strong> The charge for your ticket has been reversed — it can take a few business days to land back on your original payment method.</p>`
+    : ''
+  return emailShell(`
+    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#b91c1c;margin:28px 0 8px;">
+      Event cancelled
+    </p>
+    <h1 style="${h1Style}">${escapeHtml(eventTitle)}</h1>
+    <p style="${pStyle}">
+      Hi ${escapeHtml(recipientName)} — we're sorry to share that this event has been cancelled
+      and won't be going ahead.
+    </p>
+    <p style="${pStyle}">
+      <strong>${escapeHtml(whenAbsolute)}</strong>
+    </p>
+    ${refundLine}
+    <a href="${eventUrl}" style="${btnStyle}">View event →</a>
+    <hr style="${dividerStyle}">
+    <p style="font-size:13px;color:#999;">
+      You're receiving this because you RSVP'd or held a ticket.
+      <a href="${BASE_URL}/settings/notifications" style="color:#999;">Manage preferences</a>
+      · <a href="${unsubscribeUrl}" style="color:#999;">Unsubscribe from event emails</a>.
+    </p>
+  `)
+}
+
+function eventCancelledText({ recipientName, eventTitle, whenAbsolute, eventUrl, refunded, unsubscribeUrl }: {
+  recipientName: string; eventTitle: string; whenAbsolute: string; eventUrl: string; refunded: boolean; unsubscribeUrl: string
+}): string {
+  const refundLine = refunded
+    ? `\nYou've been fully refunded. The charge for your ticket has been reversed — it can take a few business days to land back on your original payment method.\n`
+    : ''
+  return `Event cancelled: ${eventTitle}
+
+Hi ${recipientName} — we're sorry to share that this event has been cancelled and won't be going ahead.
+
+When: ${whenAbsolute}
+${refundLine}
+View event: ${eventUrl}
+
+You're receiving this because you RSVP'd or held a ticket.
+Manage preferences: ${BASE_URL}/settings/notifications
+Unsubscribe from event emails: ${unsubscribeUrl}
+`
+}
+
+
 // ── Dispatch notification email ────────────────────────────────────────────────
 
 export async function sendDispatchNotificationEmail(params: {
@@ -654,6 +790,110 @@ You're receiving this because you RSVP'd.
 Manage preferences: ${BASE_URL}/settings/notifications
 Unsubscribe from event reminders: ${unsubscribeUrl}
 `
+}
+
+
+// Event RSVP confirmation ───────────────────────────────────────────────────────
+
+function rsvpHostLine(hostName: string | null, circleName: string | null): string {
+  if (hostName && circleName) return `Hosted by ${escapeHtml(hostName)} · ${escapeHtml(circleName)}`
+  if (circleName)             return `Hosted by ${escapeHtml(circleName)}`
+  if (hostName)               return `Hosted by ${escapeHtml(hostName)}`
+  return ''
+}
+
+function rsvpConfirmationHtml({
+  recipientName, eventTitle, whenAbsolute, location, hostName, circleName,
+  eventUrl, icsUrl, googleCalUrl, status, unsubscribeUrl,
+}: {
+  recipientName: string; eventTitle: string; whenAbsolute: string; location: string | null
+  hostName: string | null; circleName: string | null; eventUrl: string
+  icsUrl: string | null; googleCalUrl: string | null
+  status: 'going' | 'waitlist'; unsubscribeUrl: string
+}): string {
+  const eyebrow = status === 'going' ? "You're going" : "You're on the waitlist"
+  const intro = status === 'going'
+    ? `Hi ${escapeHtml(recipientName)} — you're confirmed. We'll see you there, and we'll send a reminder as it gets close.`
+    : `Hi ${escapeHtml(recipientName)} — this one's full, so you're on the waitlist. If a spot opens up we'll move you in automatically and let you know. No action needed.`
+  const hostLine = rsvpHostLine(hostName, circleName)
+
+  // Add-to-calendar only for confirmed seats — pointless on a waitlist hold.
+  const calendarBlock = status === 'going' && (icsUrl || googleCalUrl) ? `
+    <p style="font-size:13px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#999;margin:24px 0 8px;">
+      Add to your calendar
+    </p>
+    <p style="margin:0 0 8px;">
+      ${googleCalUrl ? `<a href="${googleCalUrl}" style="display:inline-block;background:#f3f4f6;color:#1a1a1a;font-size:14px;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:8px;margin:0 8px 8px 0;">Google Calendar</a>` : ''}
+      ${icsUrl ? `<a href="${icsUrl}" style="display:inline-block;background:#f3f4f6;color:#1a1a1a;font-size:14px;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:8px;margin:0 8px 8px 0;">Apple / Outlook (.ics)</a>` : ''}
+    </p>
+  ` : ''
+
+  return emailShell(`
+    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#4f46e5;margin:28px 0 8px;">
+      ${eyebrow}
+    </p>
+    <h1 style="${h1Style}">${escapeHtml(eventTitle)}</h1>
+    <p style="${pStyle}">${intro}</p>
+    <p style="${pStyle}">
+      <strong>${escapeHtml(whenAbsolute)}</strong>${location ? `<br><span style="color:#777;">${escapeHtml(location)}</span>` : ''}
+      ${hostLine ? `<br><span style="color:#777;">${hostLine}</span>` : ''}
+    </p>
+    ${calendarBlock}
+    <a href="${eventUrl}" style="${btnStyle}">View event →</a>
+    <hr style="${dividerStyle}">
+    <p style="font-size:13px;color:#999;">
+      You're receiving this because you RSVP'd to attend. Plans change, and that's okay —
+      <a href="${eventUrl}" style="color:#999;">update your RSVP</a> any time.
+      <a href="${BASE_URL}/settings/notifications" style="color:#999;">Manage preferences</a>
+      · <a href="${unsubscribeUrl}" style="color:#999;">Unsubscribe from event reminders</a>.
+    </p>
+  `)
+}
+
+function rsvpConfirmationText({
+  recipientName, eventTitle, whenAbsolute, location, hostName, circleName,
+  eventUrl, icsUrl, googleCalUrl, status, unsubscribeUrl,
+}: {
+  recipientName: string; eventTitle: string; whenAbsolute: string; location: string | null
+  hostName: string | null; circleName: string | null; eventUrl: string
+  icsUrl: string | null; googleCalUrl: string | null
+  status: 'going' | 'waitlist'; unsubscribeUrl: string
+}): string {
+  const eyebrow = status === 'going' ? "You're going" : "You're on the waitlist"
+  const intro = status === 'going'
+    ? `Hi ${recipientName} — you're confirmed. We'll see you there, and we'll send a reminder as it gets close.`
+    : `Hi ${recipientName} — this one's full, so you're on the waitlist. If a spot opens up we'll move you in automatically and let you know. No action needed.`
+
+  const hostPlain =
+    hostName && circleName ? `Hosted by ${hostName} · ${circleName}` :
+    circleName             ? `Hosted by ${circleName}` :
+    hostName               ? `Hosted by ${hostName}` : ''
+
+  const lines: string[] = [
+    `${eyebrow}: ${eventTitle}`,
+    '',
+    intro,
+    '',
+    `When: ${whenAbsolute}`,
+  ]
+  if (location)  lines.push(`Where: ${location}`)
+  if (hostPlain) lines.push(hostPlain)
+  lines.push('', `View event: ${eventUrl}`)
+
+  if (status === 'going' && (googleCalUrl || icsUrl)) {
+    lines.push('', 'Add to your calendar:')
+    if (googleCalUrl) lines.push(`  Google Calendar: ${googleCalUrl}`)
+    if (icsUrl)       lines.push(`  Apple / Outlook (.ics): ${icsUrl}`)
+  }
+
+  lines.push(
+    '',
+    "Plans change, and that's okay — update your RSVP any time.",
+    `Manage preferences: ${BASE_URL}/settings/notifications`,
+    `Unsubscribe from event reminders: ${unsubscribeUrl}`,
+  )
+
+  return lines.join('\n') + '\n'
 }
 
 
