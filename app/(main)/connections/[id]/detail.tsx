@@ -22,7 +22,7 @@ function fmtDate(s: string | null): string {
   return new Date(s).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-export function Detail({ initial }: { initial: ContactDetail }) {
+export function Detail({ initial, timeline }: { initial: ContactDetail; timeline?: React.ReactNode }) {
   const router = useRouter()
   const { contact, notes, tags, avatarUrl } = initial
   const [pending, start] = useTransition()
@@ -147,6 +147,10 @@ export function Detail({ initial }: { initial: ContactDetail }) {
           </dl>
         </Section>
       )}
+
+      {/* Shared history — only when this capture is a linked member and resonance
+          is enabled (the timeline node is built server-side in page.tsx). */}
+      {timeline && <section className="rounded-2xl border border-border/70 bg-surface/60 p-5">{timeline}</section>}
 
       {/* Tags */}
       <Section title="Tags">

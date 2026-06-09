@@ -6,6 +6,10 @@ import { createClient } from '@/lib/supabase/server'
 import { bucketFriendships, type FriendshipRpcRow, type FriendEntry } from '@/lib/friendships-map'
 import { getMyOrbit, getNearMisses } from '@/lib/connections/resonance'
 import { getConnectionSettings } from '@/lib/connections/connection-settings'
+import {
+  claimIntroductionRewards,
+  listMyIntroductions,
+} from '@/lib/connections/introductions'
 import { contactsOwnerId } from '@/lib/connections/access'
 import { listContacts } from '@/lib/connections/store'
 import { IndexTemplate } from '@/components/templates/index-template'
@@ -17,6 +21,8 @@ import { OrbitGroups, PlainFriendList } from './orbit-list'
 import { NearMissesSection } from './near-misses'
 import { ContactsList } from './contacts-list'
 import { AcceptDeclineButtons, CancelOutgoingButton } from './friend-row-actions'
+import { IntroduceForm } from './introduce-form'
+import { IntroductionsInbox } from './introductions-inbox'
 
 const GRID = 'grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3'
 
@@ -94,16 +100,37 @@ async function PeopleMode({
 }) {
   const settings = await getConnectionSettings()
 
+  // Reconcile any pending introductions whose two people are now friends and pay the
+  // introducer (idempotent — safe on every load). Surfaces a warm banner when it pays.
+  const reward = await claimIntroductionRewards()
+
   // The orbit (co-presence-weighted, ACCEPTED only) drives the friends list when
   // resonance is on; otherwise we fall back to the plain my_friendships list so the
-  // surface never depends on a disabled feature.
-  const [orbit, nearMisses] = await Promise.all([
-    settings.resonanceEnabled ? getMyOrbit() : Promise.resolve([]),
+  // surface never depends on a disabled feature. We always load the orbit (cheap RPC)
+  // for the introduce-form friend picker, regardless of the resonance toggle.
+  const [orbit, nearMisses, introductions] = await Promise.all([
+    getMyOrbit(),
     settings.nearMissEnabled ? getNearMisses() : Promise.resolve([]),
+    listMyIntroductions(),
   ])
+
+  const friendOptions = orbit.map((m) => ({
+    id: m.profileId,
+    displayName: m.displayName,
+    handle: m.handle,
+  }))
 
   return (
     <div className="space-y-8">
+      {reward.rewarded > 0 && (
+        <div className="rounded-2xl border border-success bg-success-bg px-5 py-4">
+          <p className="text-sm font-semibold text-success">
+            Your introduction stuck — +{reward.gems} gems for bringing two people together 🎉
+          </p>
+        </div>
+      )}
+
+      <IntroduceForm friends={friendOptions} rewardGems={settings.rewardIntroduction} />
       {incoming.length > 0 && (
         <section>
           <SectionHeader title="Incoming requests" count={incoming.length} />
@@ -149,6 +176,12 @@ async function PeopleMode({
       )}
 
       {settings.nearMissEnabled && <NearMissesSection people={nearMisses} />}
+
+      <IntroductionsInbox
+        made={introductions.made}
+        forYou={introductions.forYou}
+        rewardGems={settings.rewardIntroduction}
+      />
     </div>
   )
 }
