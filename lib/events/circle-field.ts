@@ -22,6 +22,11 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 /** Fixed Circle Field credit per verified check-in to a circle event (per spec). */
 export const CIRCLE_FIELD_AWARD = 10
 
+/** Fixed Circle Field credit when a member completes a challenge the circle has
+ *  adopted together (collaborative — see 20260611000000_circle_challenge_adoptions).
+ *  A completed challenge is more effort than a single check-in, so it credits more. */
+export const CIRCLE_FIELD_CHALLENGE_AWARD = 25
+
 function db(): SupabaseClient {
   return createAdminClient() as unknown as SupabaseClient
 }
@@ -66,6 +71,64 @@ export async function awardCircleFieldForCheckin(
   } catch (e) {
     // Swallow — a Circle Field credit is never allowed to break a check-in.
     console.error('[circle-field] unexpected error:', e)
+  }
+}
+
+/**
+ * Credit Circle Field when `profileId` completes `challengeId`, for every circle
+ * they are an active member of that has ADOPTED that challenge together
+ * (circle_challenge_adoptions). This is the collaborative roll-up of the existing
+ * per-member challenge engine: a member finishing a shared challenge advances the
+ * whole circle's Field, exactly like showing up to a circle event does.
+ *
+ * Naturally exactly-once: the caller (advanceChallenges in lib/achievements.ts)
+ * only invokes this on the genuine first completion (completed_at flips once, then
+ * the engine short-circuits). Best-effort and never throws — a Field credit must
+ * never break gamification processing.
+ */
+export async function awardCircleFieldForChallengeCompletion(
+  challengeId: string,
+  profileId: string,
+): Promise<void> {
+  try {
+    const admin = db()
+
+    // Circles that have taken on this challenge together…
+    const { data: adoptedRows } = await admin
+      .from('circle_challenge_adoptions')
+      .select('circle_id')
+      .eq('challenge_id', challengeId)
+    const adoptedCircleIds = [
+      ...new Set(((adoptedRows ?? []) as { circle_id: string }[]).map((r) => r.circle_id)),
+    ]
+    if (adoptedCircleIds.length === 0) return
+
+    // …filtered to the ones this member is actually an active part of.
+    const { data: memberRows } = await admin
+      .from('memberships')
+      .select('circle_id')
+      .eq('profile_id', profileId)
+      .eq('status', 'active')
+      .in('circle_id', adoptedCircleIds)
+    const circleIds = [
+      ...new Set(((memberRows ?? []) as { circle_id: string }[]).map((r) => r.circle_id)),
+    ]
+    if (circleIds.length === 0) return
+
+    const { error: insertError } = await admin
+      .from('circle_field_transactions')
+      .insert(
+        circleIds.map((circle_id) => ({
+          circle_id,
+          event_id: null,
+          profile_id: profileId,
+          amount: CIRCLE_FIELD_CHALLENGE_AWARD,
+        })),
+      )
+
+    if (insertError) console.error('[circle-field] challenge credit failed:', insertError.message)
+  } catch (e) {
+    console.error('[circle-field] unexpected error (challenge):', e)
   }
 }
 

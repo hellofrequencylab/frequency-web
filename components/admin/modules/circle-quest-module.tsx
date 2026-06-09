@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { SetCirclePractice } from '@/components/practice/set-circle-practice'
+import { CircleChallenges } from '@/components/admin/modules/circle-challenges'
 import { getCircleAdminData } from '@/app/(main)/circles/admin-actions'
 import type { CircleQuestItem } from '@/app/(main)/circles/admin-actions'
 
@@ -64,7 +65,12 @@ export function CircleQuestModule() {
 
       <QuestList label="Journeys" items={data.adoptedJourneys} empty="No journeys adopted yet" />
       <QuestList label="Practices" items={data.adoptedPractices} empty="No practices adopted yet" />
-      <QuestList label="Challenges" items={data.adoptedChallenges} empty="No challenges adopted yet" />
+      <CircleChallenges
+        circleId={data.id}
+        slug={data.slug}
+        adopted={data.adoptedChallenges}
+        adoptable={data.adoptableChallenges}
+      />
     </section>
   )
 }
