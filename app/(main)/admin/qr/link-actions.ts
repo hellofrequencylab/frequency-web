@@ -17,6 +17,7 @@ import {
   type DestinationType,
 } from '@/lib/qr/codes'
 import { parseStyle, type QrStyle } from '@/lib/qr/style'
+import { summarizePageScans, type ScanRow } from '@/lib/qr/analytics'
 import type { Json } from '@/lib/database.types'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
@@ -269,6 +270,67 @@ export async function listPageQrCodes(pagePath: string): Promise<ActionResult<Pa
       scan_count: (r.scan_count as number) ?? 0,
     })),
   )
+}
+
+// What the Settings panel shows for this page's scan activity (PX.3): the Studio's
+// `qr_scans` rollup (summarizePageScans) scoped to the page's folder.
+export interface PageQrScanStats {
+  /** How many codes are filed under this page. */
+  codeCount: number
+  total: number
+  unique: number
+  lastScanAt: string | null
+  /** The page's most-scanned code — its top source/placement. */
+  topCode: { title: string; slug: string; total: number } | null
+}
+
+const EMPTY_PAGE_QR_STATS: PageQrScanStats = {
+  codeCount: 0,
+  total: 0,
+  unique: 0,
+  lastScanAt: null,
+  topCode: null,
+}
+
+/** Scan rollup for this page's codes (its folder). Gated host+ OR staff 'qr'. */
+export async function getPageQrScanStats(pagePath: string): Promise<ActionResult<PageQrScanStats>> {
+  await requireAdmin('host', { staff: 'qr' })
+  const path = pagePath.trim()
+  if (!path.startsWith('/')) return ok(EMPTY_PAGE_QR_STATS)
+
+  // Untyped client: filtering on the not-yet-typed `page_path` column (ADR-179).
+  const db = createAdminClient() as unknown as SupabaseClient
+  const { data: codes, error } = await db
+    .from('qr_codes')
+    .select('id, slug, title')
+    .eq('page_path', path)
+  if (error) return fail('Could not load this page’s scan stats.')
+  if (!codes || codes.length === 0) return ok(EMPTY_PAGE_QR_STATS)
+
+  const { data: scans, error: scanError } = await db
+    .from('qr_scans')
+    .select('qr_code_id, profile_id, scanned_at')
+    .in('qr_code_id', codes.map((c) => c.id as string))
+  if (scanError) return fail('Could not load this page’s scan stats.')
+
+  const summary = summarizePageScans((scans ?? []) as ScanRow[])
+  const top = summary.topCode
+    ? codes.find((c) => (c.id as string) === summary.topCode?.codeId) ?? null
+    : null
+  return ok<PageQrScanStats>({
+    codeCount: codes.length,
+    total: summary.total,
+    unique: summary.unique,
+    lastScanAt: summary.lastScanAt,
+    topCode:
+      top && summary.topCode
+        ? {
+            title: (top.title as string) ?? '',
+            slug: (top.slug as string) ?? '',
+            total: summary.topCode.total,
+          }
+        : null,
+  })
 }
 
 /** Delete a page-filed code. Gated host+ OR staff 'qr'. */

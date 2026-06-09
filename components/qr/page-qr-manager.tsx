@@ -1,27 +1,42 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useCallback, useEffect, useState, useTransition } from 'react'
 import Link from 'next/link'
-import { Link2, Check, ExternalLink, Archive, Palette } from 'lucide-react'
+import { Link2, Check, ExternalLink, Archive, Palette, ScanLine } from 'lucide-react'
 import { StyleEditor } from '@/app/(main)/admin/qr/style-editor'
-import { createPageQr } from '@/app/(main)/admin/qr/link-actions'
+import {
+  createPageQr,
+  getPageQrScanStats,
+  type PageQrScanStats,
+} from '@/app/(main)/admin/qr/link-actions'
 import { DEFAULT_STYLE, type QrStyle } from '@/lib/qr/style'
 import { isError } from '@/lib/action-result'
+import { relativeTime } from '@/lib/utils'
 
 // The on-page QR creator (ADR-179) — the COMPACT variant that lives in a page's
 // Settings panel. The creator (title + a trimmed visual editor) takes the left 2/3;
-// the share link sits in the right 1/3, in line with the title. Every saved code is
-// a real managed code filed under this page's route; the full list + retired codes
-// live in QR Studio (the "Archived codes" link), so we don't repeat them here.
+// the share link + this page's scan activity (PX.3 — the Studio's qr_scans rollup
+// scoped to this folder) sit in the right 1/3. Every saved code is a real managed
+// code filed under this page's route; the full list + retired codes live in QR
+// Studio (the "Archived codes" link), so we don't repeat them here.
 export function PageQrManager({ pathname, url }: { pathname: string; url: string }) {
   const [title, setTitle] = useState('')
   const [style, setStyle] = useState<QrStyle>({ ...DEFAULT_STYLE })
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
   const [pending, start] = useTransition()
+  const [stats, setStats] = useState<PageQrScanStats | null>(null)
 
   // QR Studio, scoped to this page's folder (its archive of generated + retired codes).
   const archiveHref = `/admin/qr?folder=${encodeURIComponent(pathname)}`
+
+  const loadStats = useCallback(() => {
+    getPageQrScanStats(pathname).then((r) => {
+      if (!isError(r)) setStats(r.data)
+    })
+  }, [pathname])
+
+  useEffect(loadStats, [loadStats])
 
   function save() {
     const t = title.trim() || `QR — ${pathname}`
@@ -35,6 +50,7 @@ export function PageQrManager({ pathname, url }: { pathname: string; url: string
       setStyle({ ...DEFAULT_STYLE })
       setSaved(true)
       setTimeout(() => setSaved(false), 1800)
+      loadStats() // a new code changes the folder's code count
     })
   }
 
@@ -87,13 +103,77 @@ export function PageQrManager({ pathname, url }: { pathname: string; url: string
         </button>
       </div>
 
-      {/* RIGHT 1/3 — share, aligned to the title row */}
-      <div className="space-y-2">
-        <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
-          <Link2 className="h-3.5 w-3.5" /> Share code
-        </p>
-        <ShareCode url={url} pathname={pathname} />
+      {/* RIGHT 1/3 — share + scan activity, aligned to the title row */}
+      <div className="space-y-5">
+        <div className="space-y-2">
+          <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
+            <Link2 className="h-3.5 w-3.5" /> Share code
+          </p>
+          <ShareCode url={url} pathname={pathname} />
+        </div>
+
+        <div className="space-y-2">
+          <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
+            <ScanLine className="h-3.5 w-3.5" /> Scan activity
+          </p>
+          <ScanActivity stats={stats} archiveHref={archiveHref} />
+        </div>
       </div>
+    </div>
+  )
+}
+
+// This page's scan rollup (PX.3) — total / last scan / top code for the codes filed
+// under this route, small enough to read at a glance. Numbers come from the same
+// `qr_scans` aggregation QR Studio uses (summarizePageScans), scoped to `page_path`.
+function ScanActivity({ stats, archiveHref }: { stats: PageQrScanStats | null; archiveHref: string }) {
+  if (stats === null) {
+    return <p className="px-0.5 text-2xs text-subtle">Loading scan activity…</p>
+  }
+  if (stats.codeCount === 0) {
+    return (
+      <p className="px-0.5 text-2xs text-subtle">
+        No codes saved for this page yet — save one and its scans show up here.
+      </p>
+    )
+  }
+  return (
+    <div className="space-y-1.5">
+      <StatRow
+        label="Total scans"
+        value={`${stats.total.toLocaleString()}${stats.unique > 0 ? ` · ${stats.unique} members` : ''}`}
+      />
+      <StatRow label="Last scan" value={stats.lastScanAt ? relativeTime(stats.lastScanAt) : '—'} />
+      <StatRow
+        label="Top code"
+        value={
+          stats.topCode ? (
+            <span className="inline-flex max-w-full items-baseline gap-1">
+              <span className="truncate" title={stats.topCode.title || `/q/${stats.topCode.slug}`}>
+                {stats.topCode.title || `/q/${stats.topCode.slug}`}
+              </span>
+              <span className="shrink-0 font-normal text-subtle">({stats.topCode.total})</span>
+            </span>
+          ) : (
+            '—'
+          )
+        }
+      />
+      <p className="px-0.5 pt-0.5 text-2xs text-subtle">
+        {stats.codeCount === 1 ? '1 code' : `${stats.codeCount} codes`} filed under this page ·{' '}
+        <Link href={archiveHref} className="font-medium underline-offset-2 hover:underline">
+          open in Studio
+        </Link>
+      </p>
+    </div>
+  )
+}
+
+function StatRow({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-2 rounded-lg border border-border bg-surface-elevated/50 px-2.5 py-1.5 text-2xs">
+      <span className="shrink-0 text-subtle">{label}</span>
+      <span className="min-w-0 truncate text-right font-semibold text-text">{value}</span>
     </div>
   )
 }
