@@ -50,6 +50,14 @@ export function NotificationBell({ initialUnread }: { initialUnread: number }) {
   function handleOpen() {
     if (!open) {
       setOpen(true)
+      // Opening the panel counts as "checked" — clear the unread badge immediately
+      // and persist it (markAllRead), so notifications turn off once they're seen.
+      if (unread > 0) {
+        setUnread(0)
+        startTransition(async () => {
+          await markAllRead()
+        })
+      }
       if (!loaded) {
         startTransition(async () => {
           const items = await getMyNotifications()

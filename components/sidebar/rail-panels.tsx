@@ -1,10 +1,10 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { MapPin, Megaphone, Zap, Gem, Flame, Compass, ArrowRight, Users } from 'lucide-react'
+import { MapPin, Megaphone, Zap, Gem, Flame, Compass, ArrowRight, Users, Trophy, Sparkles } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getInitials, relativeTime } from '@/lib/utils'
 import { RANK_LABELS, seasonRankStyle, rankForZaps, SEASON_RANKS, type SeasonRank } from '@/lib/season-ranks'
-import { isOnline, ONLINE_MS } from '@/lib/presence'
+import { isOnline, ONLINE_MS, RECENT_MS } from '@/lib/presence'
 import { getRecentDispatchesForProfile } from '@/lib/dispatches'
 import { getOnboardingStatus } from '@/lib/onboarding/status'
 import { WidgetCard } from '@/components/modules/module-card'
@@ -262,10 +262,17 @@ export async function LeaderboardPanel() {
 export async function ControlCenterPanel({ profileId }: { profileId: string }) {
   const [status, prof] = await Promise.all([
     getOnboardingStatus(profileId).catch(() => null),
-    createAdminClient().from('profiles').select('current_season_zaps, current_streak').eq('id', profileId).maybeSingle(),
+    createAdminClient()
+      .from('profiles')
+      .select('current_season_zaps, current_season_gems, current_streak')
+      .eq('id', profileId)
+      .maybeSingle(),
   ])
-  const p = prof.data as { current_season_zaps?: number; current_streak?: number } | null
+  const p = prof.data as {
+    current_season_zaps?: number; current_season_gems?: number; current_streak?: number
+  } | null
   const zaps = p?.current_season_zaps ?? 0
+  const gems = p?.current_season_gems ?? 0
   const streak = p?.current_streak ?? 0
   const rank = rankForZaps(zaps)
   const idx = SEASON_RANKS.findIndex((r) => r.rank === rank)
@@ -277,10 +284,68 @@ export async function ControlCenterPanel({ profileId }: { profileId: string }) {
 
   return (
     <WidgetCard title="Your Quest">
+      {/* Hero — the panel that has to stand out. A bordered, tinted block with a
+          rank crest, live progress-to-next-rank bar, and the season scoreboard so
+          the whole "where am I in the game" answer is scannable at a glance. */}
+      <div className="overflow-hidden rounded-xl border border-broadcast/40 bg-broadcast-bg/40 shadow-sm">
+        <div className="flex items-center justify-between gap-2 border-b border-broadcast/20 bg-broadcast-bg/40 px-3 py-2">
+          <span className="inline-flex items-center gap-1.5 text-2xs font-bold uppercase tracking-wide text-broadcast-strong">
+            <Trophy className="h-3.5 w-3.5" /> Season standing
+          </span>
+          <span className="rank-badge text-2xs font-bold leading-tight" style={seasonRankStyle(rank)}>
+            {RANK_LABELS[rank] ?? rank}
+          </span>
+        </div>
+
+        <div className="space-y-2.5 px-3 py-3">
+          {/* Rank progress to next tier */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between gap-2 text-2xs">
+              <span className="font-semibold text-text">{next ? `Climbing to ${next.label}` : 'Top rank reached'}</span>
+              <span className="tabular-nums text-subtle">
+                {next ? <>{(next.minZaps - zaps).toLocaleString()} ⚡ to go</> : 'Max'}
+              </span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-surface-elevated">
+              <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+            </div>
+          </div>
+
+          {/* Season scoreboard — zaps · gems · streak */}
+          <div className="grid grid-cols-3 gap-1.5">
+            <div className="rounded-lg bg-surface px-2 py-1.5 text-center">
+              <span className="flex items-center justify-center gap-0.5 text-sm font-bold tabular-nums text-text">
+                <Zap className="h-3 w-3 text-primary" /> {zaps.toLocaleString()}
+              </span>
+              <span className="text-[10px] font-medium uppercase tracking-wide text-subtle">Zaps</span>
+            </div>
+            <div className="rounded-lg bg-surface px-2 py-1.5 text-center">
+              <span className="flex items-center justify-center gap-0.5 text-sm font-bold tabular-nums text-text">
+                <Gem className="h-3 w-3 text-signal" /> {gems.toLocaleString()}
+              </span>
+              <span className="text-[10px] font-medium uppercase tracking-wide text-subtle">Gems</span>
+            </div>
+            <div className="rounded-lg bg-surface px-2 py-1.5 text-center">
+              <span className="flex items-center justify-center gap-0.5 text-sm font-bold tabular-nums text-text">
+                <Flame className={`h-3 w-3 ${streak > 0 ? 'text-primary-strong' : 'text-subtle'}`} /> {streak}
+              </span>
+              <span className="text-[10px] font-medium uppercase tracking-wide text-subtle">Streak</span>
+            </div>
+          </div>
+
+          {streak > 0 && (
+            <p className="flex items-center gap-1 text-2xs font-semibold text-primary-strong">
+              <Flame className="h-3 w-3" /> {streak}-day streak — keep it alive
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Next step — the actionable nudge sits below the standing hero. */}
       {nextStep ? (
         <Link
           href={nextStep.href}
-          className="group block rounded-xl border border-broadcast/30 bg-broadcast-bg/30 p-3 transition-colors hover:bg-broadcast-bg/50"
+          className="group mt-2.5 block rounded-xl border border-broadcast/30 bg-broadcast-bg/30 p-3 transition-colors hover:bg-broadcast-bg/50"
         >
           <p className="flex items-center justify-between text-2xs font-semibold uppercase tracking-wide text-broadcast-strong">
             <span className="inline-flex items-center gap-1"><Compass className="h-3 w-3" /> Next step</span>
@@ -298,7 +363,7 @@ export async function ControlCenterPanel({ profileId }: { profileId: string }) {
           </p>
         </Link>
       ) : (
-        <p className="rounded-xl bg-surface-elevated/50 px-3 py-2.5 text-xs text-muted">
+        <p className="mt-2.5 rounded-xl bg-surface-elevated/50 px-3 py-2.5 text-xs text-muted">
           You’re all set up — keep your streak alive and climb the ranks.
         </p>
       )}
@@ -319,26 +384,6 @@ export async function ControlCenterPanel({ profileId }: { profileId: string }) {
           ))}
         </div>
       )}
-
-      {/* Rank progress + streak */}
-      <div className="mt-3 space-y-1.5 px-1">
-        <div className="flex items-center justify-between gap-2 text-2xs">
-          <span className="rank-badge font-bold leading-tight" style={seasonRankStyle(rank)}>
-            {RANK_LABELS[rank] ?? rank}
-          </span>
-          <span className="text-subtle">
-            {next ? <>{(next.minZaps - zaps).toLocaleString()} ⚡ to {next.label}</> : 'Max rank'}
-          </span>
-        </div>
-        <div className="h-1.5 overflow-hidden rounded-full bg-surface-elevated">
-          <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
-        </div>
-        {streak > 0 && (
-          <p className="flex items-center gap-1 text-2xs font-semibold text-primary-strong">
-            <Flame className="h-3 w-3" /> {streak}-day streak — keep it going
-          </p>
-        )}
-      </div>
     </WidgetCard>
   )
 }
@@ -422,6 +467,122 @@ export async function CirclesPanel({ circleIds }: { circleIds: string[] }) {
       <div className="px-1 pt-3">
         <Link href="/circles" className="text-[13px] font-semibold text-primary-strong hover:text-primary-hover transition-colors">
           Browse all circles →
+        </Link>
+      </div>
+    </WidgetCard>
+  )
+}
+
+// ── Newest circles (just launched) ────────────────────────────────────────────
+// Fresh community surface area — circles created recently that the viewer hasn't
+// joined yet. Cheap query (mirrors CirclesPanel) ordered by created_at.
+export async function NewCirclesPanel({ circleIds }: { circleIds: string[] }) {
+  const admin = createAdminClient()
+  const { data } = await admin
+    .from('circles')
+    .select('id, name, slug, neighborhood, member_count, created_at')
+    .eq('is_demo', false)
+    .eq('status', 'active')
+    .not('created_at', 'is', null)
+    .order('created_at', { ascending: false })
+    .limit(12)
+  const rows = ((data ?? []) as {
+    id: string; name: string; slug: string; neighborhood: string | null
+    member_count: number | null; created_at: string | null
+  }[])
+    .filter((c) => !circleIds.includes(c.id))
+    .slice(0, 4)
+  if (rows.length === 0) return null
+
+  return (
+    <WidgetCard title="Newest circles" badge="New">
+      <div className="space-y-0.5">
+        {rows.map((c) => (
+          <Link
+            key={c.id}
+            href={`/circles/${c.slug}`}
+            className="flex items-center gap-3 rounded-lg px-1 py-2 transition-colors hover:bg-surface-elevated"
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-signal-bg text-signal-strong">
+              <Sparkles className="h-4 w-4" aria-hidden />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-text">{c.name}</p>
+              <p className="text-xs text-subtle">
+                {c.neighborhood ? `${c.neighborhood} · ` : ''}
+                {c.created_at ? `started ${relativeTime(c.created_at)}` : `${(c.member_count ?? 0).toLocaleString()} members`}
+              </p>
+            </div>
+          </Link>
+        ))}
+      </div>
+      <div className="px-1 pt-3">
+        <Link href="/circles" className="text-[13px] font-semibold text-primary-strong hover:text-primary-hover transition-colors">
+          Browse all circles →
+        </Link>
+      </div>
+    </WidgetCard>
+  )
+}
+
+// ── Active now (recent members, with last-seen) ───────────────────────────────
+// A richer presence read than the avatar-only WhoOnlinePanel: names + a live
+// "online"/"active <relative>" line so the rail surfaces who's actually around.
+export async function ActiveNowPanel({ profileId }: { profileId: string }) {
+  const admin = createAdminClient()
+  const cutoff = new Date(new Date().getTime() - RECENT_MS).toISOString()
+  const { data } = await admin
+    .from('profiles')
+    .select('id, display_name, handle, avatar_url, last_seen_at')
+    .gte('last_seen_at', cutoff)
+    .neq('id', profileId)
+    .eq('is_active', true)
+    .eq('is_system', false)
+    .order('last_seen_at', { ascending: false })
+    .limit(6)
+  const people = (data ?? []) as {
+    id: string; display_name: string; handle: string; avatar_url: string | null; last_seen_at: string | null
+  }[]
+  if (people.length === 0) return null
+
+  const onlineCount = people.filter((p) => isOnline(p.last_seen_at)).length
+
+  return (
+    <WidgetCard title="Active now" badge={onlineCount > 0 ? `${onlineCount} online` : undefined}>
+      <div className="space-y-0.5">
+        {people.map((p) => {
+          const online = isOnline(p.last_seen_at)
+          return (
+            <Link
+              key={p.id}
+              href={`/people/${p.handle}`}
+              className="flex items-center gap-3 px-1 py-2 rounded-lg hover:bg-surface-elevated transition-colors"
+            >
+              <div className="relative shrink-0">
+                {p.avatar_url ? (
+                  <Image src={p.avatar_url} alt={p.display_name} width={32} height={32} className="h-8 w-8 rounded-full object-cover" />
+                ) : (
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-border-strong text-xs font-bold text-muted dark:text-subtle select-none">
+                    {getInitials(p.display_name ?? '')}
+                  </div>
+                )}
+                {online && (
+                  <span aria-label="Online now" className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-success ring-2 ring-surface" />
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-text">{p.display_name}</p>
+                <p className="text-xs text-subtle">
+                  {online ? 'Online now' : p.last_seen_at ? `active ${relativeTime(p.last_seen_at)}` : 'recently active'}
+                </p>
+              </div>
+            </Link>
+          )
+        })}
+      </div>
+      <div className="px-1 pt-3">
+        <Link href="/people" className="text-[13px] font-semibold text-primary-strong hover:text-primary-hover transition-colors">
+          See who’s around →
         </Link>
       </div>
     </WidgetCard>
