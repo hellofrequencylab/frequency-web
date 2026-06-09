@@ -14,6 +14,7 @@ type EventData = {
   starts_at: string
   ends_at: string | null
   is_cancelled: boolean | null
+  price_cents: number | null
 }
 
 const input = 'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'
@@ -132,6 +133,28 @@ export function EventEditClient({ event }: { event: EventData }) {
               className={input}
             />
           </div>
+        </div>
+
+        <div>
+          <label className={lbl}>
+            Ticket price <span className="font-normal text-subtle">(USD — leave blank for a free event)</span>
+          </label>
+          <div className="flex items-center gap-1.5">
+            <span className="text-sm text-subtle">$</span>
+            <input
+              name="price"
+              type="number"
+              min="0"
+              step="0.01"
+              defaultValue={event.price_cents ? (event.price_cents / 100).toFixed(2) : ''}
+              placeholder="0.00"
+              disabled={isPending}
+              className={input}
+            />
+          </div>
+          <p className="mt-1 text-xs text-subtle">
+            Paid events require the host to have payouts set up. Frequency takes a small platform fee.
+          </p>
         </div>
 
         {error && (

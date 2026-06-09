@@ -14,6 +14,7 @@ import { NextResponse } from 'next/server'
 import { stripe, STRIPE_WEBHOOK_SECRET } from '@/lib/billing/stripe'
 import { persistAccount } from '@/lib/billing/connect'
 import { recordTipFromSession } from '@/lib/billing/tips'
+import { recordTicketFromSession } from '@/lib/billing/tickets'
 
 export const dynamic = 'force-dynamic'
 
@@ -41,9 +42,11 @@ export async function POST(req: Request) {
         await persistAccount(event.data.object as Stripe.Account)
         break
       case 'checkout.session.completed': {
-        // Route by the session's `kind` metadata. Tips today; other channels add
-        // their own kind here. recordTipFromSession no-ops on a non-tip session.
-        await recordTipFromSession(event.data.object as Stripe.Checkout.Session)
+        // Route by the session's `kind` metadata; each recorder no-ops on a
+        // session that isn't its kind (tip / ticket; more channels add handlers).
+        const session = event.data.object as Stripe.Checkout.Session
+        await recordTipFromSession(session)
+        await recordTicketFromSession(session)
         break
       }
       default:

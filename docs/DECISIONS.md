@@ -5791,3 +5791,29 @@ never lost if the webhook isn't wired yet — the same belt-and-suspenders the m
 when the recipient is payouts-ready** (`getConnectStatus(...).ready` + `billingEnabled()`). Preset chips
 ($3/$5/$10) + custom amount + optional note; a thank-you banner renders on return. Like all billing, the whole
 channel no-ops until Stripe keys land and the recipient has onboarded.
+
+## ADR-177 — Event tickets: second payout channel (priced events on the Connect foundation)
+
+**Status:** Accepted · applied (`supabase/migrations/20260609020000_event_tickets.sql`). Phase 3 of the Connect
+build; reuses the tips money model (ADR-176) for a new entity. Store + memberships remain.
+
+**Context.** Events already exist with a `host_id` (the payout recipient) but no price. The second payout
+channel lets a host **charge for a ticket**, reusing the exact one-off destination-charge pipe tips proved.
+
+**Money model.** Adds `events.price_cents` (NULL/0 = free, RSVP only). Buying a ticket creates a Stripe
+`mode: 'payment'` Checkout with `transfer_data.destination` = the **event host's** connected account +
+`application_fee_amount` (shared `lib/billing/fees.ts`). Purchases land in a new `event_tickets` table
+(service-role write only; RLS lets the **buyer** read their own tickets and the **host** read tickets sold for
+their events). `qty` supported (1–10); `ticketTotalCents` is the pure gross derivation.
+
+**Lifecycle (identical shape to tips).** `createTicketCheckout` validates (event priced, not cancelled, not
+ended, host is **payouts-ready**, buyer isn't the host), records a `pending` row keyed by session id, returns
+the hosted URL. Success is idempotent two ways: the `checkout.session.completed` webhook
+(`recordTicketFromSession`, routed by `kind: 'ticket'`) and the success-redirect reconcile
+(`recordTicketFromSessionId`). The webhook now calls each channel's recorder in turn; each no-ops on a session
+that isn't its kind.
+
+**Surfaces.** Host sets the price in the admin event editor (`/admin/events/[id]`). A "Get ticket — $X"
+control on the in-app event page (`/events/[slug]`) shows to a signed-in non-host when the host is payouts-ready
+and they haven't already bought; otherwise a "Ticket confirmed" / "not available yet" state. Free events are
+unchanged (RSVP only). Env-gated like all billing.
