@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { CalendarDays, MapPin, Users, ExternalLink, Check, Ticket } from 'lucide-react'
+import { CalendarDays, MapPin, Users, Check, Ticket, Clock } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { toggleRSVP } from '../actions'
@@ -9,6 +9,7 @@ import { EventCheckInButton } from './check-in-button'
 import { TicketButton } from './ticket-button'
 import { getConnectStatus, payoutsLive } from '@/lib/billing/connect'
 import { hasTicket, recordTicketFromSessionId } from '@/lib/billing/tickets'
+import { getCapacityInfo } from '@/lib/events/capacity'
 import { CrewGateButton } from '@/components/crew/upgrade-lightbox'
 import { ContextActions } from '@/components/context-actions'
 import { DetailTemplate } from '@/components/templates/detail-template'
@@ -18,6 +19,8 @@ import { getEventCapabilities } from '@/lib/core/load-capabilities'
 import { isPaidViewer } from '@/lib/core/viewer-hats'
 import { updateEventField } from '../admin-actions'
 import { getInitials } from '@/lib/utils'
+import { WarmProof } from '@/components/events/warm-proof'
+import { AddToCalendar, buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
 
 type EventDetail = {
   id: string
@@ -69,23 +72,6 @@ function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 }
 
-function googleCalendarUrl(event: EventDetail) {
-  const fmt = (iso: string) =>
-    new Date(iso).toISOString().replace(/[-:]/g, '').replace('.000', '')
-  const start = fmt(event.starts_at)
-  const end = event.ends_at
-    ? fmt(event.ends_at)
-    : fmt(new Date(new Date(event.starts_at).getTime() + 60 * 60 * 1000).toISOString())
-  const params = new URLSearchParams({
-    action: 'TEMPLATE',
-    text: event.title,
-    dates: `${start}/${end}`,
-    ...(event.description ? { details: event.description } : {}),
-    ...(event.location ? { location: event.location } : {}),
-  })
-  return `https://calendar.google.com/calendar/render?${params}`
-}
-
 export default async function EventDetailPage({
   params,
   searchParams,
@@ -128,6 +114,11 @@ export default async function EventDetailPage({
 
   const rsvps = (rawRsvps ?? []) as unknown as RSVPRow[]
   const goingRsvps = rsvps.filter((r) => r.status === 'going')
+  const maybeCount = rsvps.filter((r) => r.status === 'maybe').length
+
+  // Real capacity / waitlist info (lib/events/capacity) — drives the waitlist CTA
+  // and the "filling up" line. Never invented.
+  const capacityInfo = await getCapacityInfo(event.id)
 
   // Resolve scope name. Circle
   let scopeName: string | null = null
@@ -147,6 +138,8 @@ export default async function EventDetailPage({
   let isHost = false
   let isCrew = false
   let myRole: 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor' = 'member'
+  // Warm proof: going attendees who share an active circle with the viewer.
+  let fromYourCircles = 0
 
   if (user) {
     const { data: profile } = await admin
@@ -162,6 +155,38 @@ export default async function EventDetailPage({
       isCrew = await isPaidViewer()
       const myRsvp = rsvps.find((r) => r.profile.id === myProfileId)
       myRsvpStatus = myRsvp?.status ?? null
+
+      // "From your circles" = going attendees (excluding me) who share at least
+      // one active circle with me. Two cheap membership reads + a set overlap;
+      // mirrors the shared-circle pattern in lib/connections/welcomes.ts. This
+      // is warm proof, never scarcity — it's only ever additive.
+      const otherGoingIds = goingRsvps
+        .map((r) => r.profile.id)
+        .filter((id) => id !== myProfileId)
+      if (otherGoingIds.length > 0) {
+        const [mineRes, theirsRes] = await Promise.all([
+          admin
+            .from('memberships')
+            .select('circle_id')
+            .eq('profile_id', myProfileId)
+            .eq('status', 'active'),
+          admin
+            .from('memberships')
+            .select('profile_id, circle_id')
+            .in('profile_id', otherGoingIds)
+            .eq('status', 'active'),
+        ])
+        const myCircleIds = new Set(
+          (mineRes.data ?? []).map((m) => (m as { circle_id: string }).circle_id)
+        )
+        if (myCircleIds.size > 0) {
+          const sharers = new Set<string>()
+          for (const m of (theirsRes.data ?? []) as { profile_id: string; circle_id: string }[]) {
+            if (myCircleIds.has(m.circle_id)) sharers.add(m.profile_id)
+          }
+          fromYourCircles = sharers.size
+        }
+      }
     }
   }
 
@@ -186,6 +211,26 @@ export default async function EventDetailPage({
   const hasEnded = new Date(event.ends_at ?? event.starts_at) < new Date()
 
   const isGoing = myRsvpStatus === 'going'
+  const isWaitlisted = myRsvpStatus === 'waitlist'
+
+  // "Filling up" only when GENUINELY near-full: real capacity, seats remain, and
+  // ≤20% of capacity is left (EVENTS-SYSTEM §4, Law 1 — care, never manufactured
+  // urgency). Min 1 so a tiny capacity still qualifies on its last seat.
+  const nearFull =
+    capacityInfo.capacity != null &&
+    capacityInfo.spotsLeft != null &&
+    capacityInfo.spotsLeft > 0 &&
+    capacityInfo.spotsLeft <= Math.max(1, Math.ceil(capacityInfo.capacity * 0.2))
+
+  // Calendar links (built once; reused by the AddToCalendar control).
+  const icsHref = `/events/${event.slug}/event.ics`
+  const googleUrl = buildGoogleCalendarUrl({
+    title: event.title,
+    startsAt: event.starts_at,
+    endsAt: event.ends_at,
+    description: event.description,
+    location: event.location,
+  })
 
   // Practice check-in availability + whether the viewer already checked in.
   const canCheckIn = !!myProfileId && isGoing && isPast && !event.is_cancelled
@@ -307,6 +352,24 @@ export default async function EventDetailPage({
           </div>
         }
       >
+        {/* ── Warm proof (EVENTS-SYSTEM §4, Law 1): real, never-low counts ── */}
+        {!event.is_cancelled && (
+          <div className="mb-6">
+            <WarmProof
+              going={goingRsvps.length}
+              fromYourCircles={fromYourCircles}
+              maybe={maybeCount}
+              faces={goingRsvps.map(({ profile }) => ({
+                id: profile.id,
+                displayName: profile.display_name,
+                avatarUrl: profile.avatar_url,
+              }))}
+              nearFull={nearFull}
+              spotsLeft={capacityInfo.spotsLeft}
+            />
+          </div>
+        )}
+
         {/* ── Ticket (paid events, ADR-177) ── */}
         {isPaidEvent && !event.is_cancelled && (
           <div className="mb-6 rounded-2xl border border-border bg-surface p-4">
@@ -338,44 +401,61 @@ export default async function EventDetailPage({
         {!event.is_cancelled && myProfileId && (
           <div className="mb-6">
             {!isPast ? (
-              /* Upcoming: RSVP toggle + add-to-calendar */
-              <div className="flex items-center gap-3 flex-wrap">
-                <CrewGateButton
-                  isCrew={isCrew}
-                  label={isGoing ? '✓ Going' : "RSVP: I'm going"}
-                  buttonClassName="rounded-lg px-4 py-2 text-sm font-semibold transition-colors inline-flex items-center gap-1.5 bg-primary text-on-primary hover:bg-primary-hover"
-                >
-                  <form action={toggleRSVP.bind(null, event.id)}>
-                    <button
-                      type="submit"
-                      className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-                        isGoing
-                          ? 'bg-success-bg text-success hover:bg-danger-bg hover:text-danger'
-                          : 'bg-primary text-on-primary hover:bg-primary-hover'
-                      }`}
+              /* Upcoming: RSVP / waitlist toggle + one-tap add-to-calendar */
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 flex-wrap">
+                  {isWaitlisted ? (
+                    /* Already waitlisted — calm "tap to leave" state, never pressure. */
+                    <form action={toggleRSVP.bind(null, event.id)}>
+                      <button
+                        type="submit"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-4 py-2 text-sm font-semibold text-muted transition-colors hover:border-danger hover:text-danger"
+                      >
+                        <Clock className="w-4 h-4" />
+                        On waitlist · tap to leave
+                      </button>
+                    </form>
+                  ) : (
+                    <CrewGateButton
+                      isCrew={isCrew}
+                      label={isGoing ? '✓ Going' : capacityInfo.isFull ? 'Join waitlist' : "RSVP: I'm going"}
+                      buttonClassName="rounded-lg px-4 py-2 text-sm font-semibold transition-colors inline-flex items-center gap-1.5 bg-primary text-on-primary hover:bg-primary-hover"
                     >
-                      {isGoing ? '✓ Going (click to undo)' : "RSVP: I'm going"}
-                    </button>
-                  </form>
-                </CrewGateButton>
+                      <form action={toggleRSVP.bind(null, event.id)}>
+                        <button
+                          type="submit"
+                          className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
+                            isGoing
+                              ? 'bg-success-bg text-success hover:bg-danger-bg hover:text-danger'
+                              : 'bg-primary text-on-primary hover:bg-primary-hover'
+                          }`}
+                        >
+                          {isGoing ? (
+                            "✓ Going (click to undo)"
+                          ) : capacityInfo.isFull ? (
+                            <><Clock className="w-4 h-4" />Join waitlist</>
+                          ) : (
+                            "RSVP: I'm going"
+                          )}
+                        </button>
+                      </form>
+                    </CrewGateButton>
+                  )}
 
-                <a
-                  href={googleCalendarUrl(event)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted hover:border-border-strong hover:bg-surface transition-colors"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  Add to Google Calendar
-                </a>
-                <a
-                  href={`/events/${event.slug}/event.ics`}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted hover:border-border-strong hover:bg-surface transition-colors"
-                  title="Apple Calendar, Outlook, and any iCal-compatible app"
-                >
-                  <CalendarDays className="w-3.5 h-3.5" />
-                  Add to Calendar (.ics)
-                </a>
+                  {/* Compact add-to-calendar always available; emphasised below once going. */}
+                  {!isGoing && <AddToCalendar icsHref={icsHref} googleUrl={googleUrl} />}
+                </div>
+
+                {/* Highest-ROI lever: surface a prominent calendar add right after a
+                    'going' RSVP (implementation intentions, EVENTS-SYSTEM §4). */}
+                {isGoing && (
+                  <div className="rounded-2xl border border-border bg-surface px-4 py-3">
+                    <p className="mb-2 text-xs font-medium text-muted">
+                      You’re going — lock it in so you don’t miss it.
+                    </p>
+                    <AddToCalendar icsHref={icsHref} googleUrl={googleUrl} emphasis />
+                  </div>
+                )}
               </div>
             ) : isGoing ? (
               /* Event time, going: Check in is the primary action; Cancel RSVP is a quiet link */
@@ -400,21 +480,38 @@ export default async function EventDetailPage({
                 )}
               </div>
             ) : !hasEnded ? (
-              /* Event started, not going yet: still allow joining */
-              <CrewGateButton
-                isCrew={isCrew}
-                label="RSVP: I'm going"
-                buttonClassName="rounded-lg px-4 py-2 text-sm font-semibold transition-colors inline-flex items-center gap-1.5 bg-primary text-on-primary hover:bg-primary-hover"
-              >
+              /* Event started, not 'going' yet. Waitlisted → calm "tap to leave";
+                 otherwise still allow joining (waitlist if the event is full). */
+              isWaitlisted ? (
                 <form action={toggleRSVP.bind(null, event.id)}>
                   <button
                     type="submit"
-                    className="rounded-lg px-4 py-2 text-sm font-semibold transition-colors bg-primary text-on-primary hover:bg-primary-hover"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-4 py-2 text-sm font-semibold text-muted transition-colors hover:border-danger hover:text-danger"
                   >
-                    RSVP: I&apos;m going
+                    <Clock className="w-4 h-4" />
+                    On waitlist · tap to leave
                   </button>
                 </form>
-              </CrewGateButton>
+              ) : (
+                <CrewGateButton
+                  isCrew={isCrew}
+                  label={capacityInfo.isFull ? 'Join waitlist' : "RSVP: I'm going"}
+                  buttonClassName="rounded-lg px-4 py-2 text-sm font-semibold transition-colors inline-flex items-center gap-1.5 bg-primary text-on-primary hover:bg-primary-hover"
+                >
+                  <form action={toggleRSVP.bind(null, event.id)}>
+                    <button
+                      type="submit"
+                      className="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-colors bg-primary text-on-primary hover:bg-primary-hover"
+                    >
+                      {capacityInfo.isFull ? (
+                        <><Clock className="w-4 h-4" />Join waitlist</>
+                      ) : (
+                        "RSVP: I'm going"
+                      )}
+                    </button>
+                  </form>
+                </CrewGateButton>
+              )
             ) : null}
           </div>
         )}
