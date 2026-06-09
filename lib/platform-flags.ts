@@ -43,6 +43,23 @@ export const aiEnabledFlag = cache(async (): Promise<boolean> => {
   }
 })
 
+// Whether any seeded demo content actually exists right now (an `is_demo` row in
+// the headline tables). The Beta demo toggle is pointless when there's nothing to
+// hide/show, so the header hides it when this is false. Cheap existence probes;
+// defaults TRUE on error so a transient DB hiccup never wrongly hides the control.
+export const demoContentExists = cache(async (): Promise<boolean> => {
+  try {
+    const admin = createAdminClient()
+    const [profiles, circles] = await Promise.all([
+      admin.from('profiles').select('id', { head: true, count: 'exact' }).eq('is_demo', true),
+      admin.from('circles').select('id', { head: true, count: 'exact' }).eq('is_demo', true),
+    ])
+    return (profiles.count ?? 0) > 0 || (circles.count ?? 0) > 0
+  } catch {
+    return true
+  }
+})
+
 // Host payouts master switch (platform_flags.host_payouts_enabled) — gates the
 // Connect marketplace (tips, event tickets, future store/membership payouts).
 // Defaults to FALSE on any read failure: payments stay OFF until an operator turns

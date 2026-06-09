@@ -5,7 +5,9 @@
 // panels, edit the map here — that is the whole API (mirrors page-chrome.ts for the
 // rail's CONTENT the way page-chrome decides the rail's PRESENCE).
 
-export type PanelKey = 'dispatches' | 'events' | 'members' | 'leaderboard' | 'online' | 'circles'
+export type PanelKey =
+  | 'dispatches' | 'events' | 'members' | 'leaderboard' | 'online' | 'circles'
+  | 'newcircles' | 'activenow'
 
 // Ordered, longest-prefix-wins. The first matching rule supplies the page panels.
 const RULES: { test: (p: string) => boolean; panels: PanelKey[] }[] = [
@@ -13,8 +15,8 @@ const RULES: { test: (p: string) => boolean; panels: PanelKey[] }[] = [
   { test: (p) => p === '/crew' || p.startsWith('/crew/'), panels: ['leaderboard', 'online'] },
   // Events — what's coming up, who's going, and circles to find more.
   { test: (p) => p === '/events' || p.startsWith('/events/'), panels: ['events', 'online', 'circles'] },
-  // Circles — discover more circles + who's active + what's on.
-  { test: (p) => p === '/circles' || p.startsWith('/circles/') || p.startsWith('/hubs') || p.startsWith('/nexuses'), panels: ['circles', 'online', 'events'] },
+  // Circles — discover more circles (incl. just-launched ones) + who's active + what's on.
+  { test: (p) => p === '/circles' || p.startsWith('/circles/') || p.startsWith('/hubs') || p.startsWith('/nexuses'), panels: ['circles', 'newcircles', 'activenow', 'events'] },
   // People-led browse — who's online + circles to join + what's on.
   {
     test: (p) => ['/channels', '/people', '/market'].some((s) => p === s || p.startsWith(s + '/')),
@@ -25,8 +27,9 @@ const RULES: { test: (p: string) => boolean; panels: PanelKey[] }[] = [
     test: (p) => ['/journeys', '/practices', '/library'].some((s) => p === s || p.startsWith(s + '/')),
     panels: ['leaderboard', 'online'],
   },
-  // Home (feed / Around You) — the community pulse: broadcasts · who's online · board.
-  { test: (p) => p === '/feed' || p === '/broadcast' || p.startsWith('/broadcast/'), panels: ['dispatches', 'online', 'leaderboard'] },
+  // Home (feed / Around You) — the community pulse: broadcasts · who's active ·
+  // board · the newest circles to discover.
+  { test: (p) => p === '/feed' || p === '/broadcast' || p.startsWith('/broadcast/'), panels: ['dispatches', 'activenow', 'leaderboard', 'newcircles'] },
 ]
 
 // The baseline for any page not matched above: the community pulse.

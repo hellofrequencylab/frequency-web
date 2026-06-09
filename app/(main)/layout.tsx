@@ -21,7 +21,7 @@ import { PageViewTracker } from '@/components/analytics/track-provider'
 import { ObserveProvider } from '@/components/analytics/observe-provider'
 import { GaConsentGate } from '@/components/analytics/ga-consent-gate'
 import { hasConsent } from '@/lib/consent/consent'
-import { demoModeEnabled } from '@/lib/platform-flags'
+import { demoModeEnabled, demoContentExists } from '@/lib/platform-flags'
 import { viewerHidesDemo } from '@/lib/demo-preference'
 import { getSearchIndex } from '@/lib/help/content'
 import { TourProvider } from '@/components/onboarding/tour-provider'
@@ -155,8 +155,13 @@ export default async function MainLayout({
   const analyticsConsent = await hasConsent(profile.id, 'analytics')
 
   // Beta-content toggle: only offered when seeded demo content actually exists
-  // (global demo_mode on); reflects the member's own hide/show cookie.
-  const [demoMode, demoHidden] = await Promise.all([demoModeEnabled(), viewerHidesDemo()])
+  // (global demo_mode on AND at least one is_demo row); reflects the member's own
+  // hide/show cookie.
+  const [demoMode, demoHidden, hasDemoContent] = await Promise.all([
+    demoModeEnabled(),
+    viewerHidesDemo(),
+    demoContentExists(),
+  ])
 
   // Vera's "chores" — the matriarch full-stop (BETA-ACTIVATION §2). Beta-only (the
   // oath justifies the friction); retires once everything's done + rewarded. Off at
@@ -218,6 +223,7 @@ export default async function MainLayout({
       staffRole={staffRole}
       demoMode={demoMode}
       demoHidden={demoHidden}
+      hasDemoContent={hasDemoContent}
     >
       <GaConsentGate disabled={!analyticsConsent} />
       {children}

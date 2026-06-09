@@ -1114,6 +1114,7 @@ export default function AppShell({
   staffRole = null,
   demoMode = false,
   demoHidden = false,
+  hasDemoContent = true,
 }: {
   profile: Profile
   /** True DB role, ignoring any view-as override. Defaults to the (effective)
@@ -1143,6 +1144,8 @@ export default function AppShell({
   demoMode?: boolean
   /** This viewer has hidden beta content for themselves (drives the toggle state). */
   demoHidden?: boolean
+  /** Whether any seeded demo content actually exists — the toggle hides when none. */
+  hasDemoContent?: boolean
 }) {
   const pathname = usePathname()
   const role = (profile.community_role ?? 'member') as CommunityRole
@@ -1291,7 +1294,7 @@ export default function AppShell({
 
           {/* Demo-content toggle — sits to the LEFT of Search (desktop). Members
               hide/show seeded demo content for themselves; sized to match Search. */}
-          {demoMode && <DemoToggle initialHidden={demoHidden} />}
+          {demoMode && hasDemoContent && <DemoToggle initialHidden={demoHidden} />}
 
           {/* Search pill — opens the live overlay. Desktop */}
           <button
@@ -1339,15 +1342,18 @@ export default function AppShell({
             >
               <Users className="w-5 h-5" />
             </Link>
-            {/* Daily check-in streak — always-visible so it's worth chasing. */}
+            {/* Daily check-in streak — links to your Quest dashboard (where streaks,
+                rank, and rewards live), so the badge is a doorway, not just a number. */}
             {Number((profile.meta as { daily_checkin_streak?: number } | null)?.daily_checkin_streak ?? 0) >= 1 && (
-              <span
-                className="hidden sm:inline-flex items-center gap-1 rounded-full bg-primary-bg px-2 py-1 text-xs font-bold text-primary-strong"
-                title="Daily check-in streak — show up tomorrow to keep it going"
+              <Link
+                href="/crew"
+                aria-label="Your streak — open your Quest dashboard"
+                className="hidden sm:inline-flex items-center gap-1 rounded-full bg-primary-bg px-2 py-1 text-xs font-bold text-primary-strong transition-colors hover:bg-primary-bg/70"
+                title="Daily check-in streak — tap to open your Quest dashboard"
               >
                 <Flame className="w-3.5 h-3.5" />
                 {Number((profile.meta as { daily_checkin_streak?: number } | null)?.daily_checkin_streak ?? 0)}
-              </span>
+              </Link>
             )}
             <NotificationBell initialUnread={unreadCount} />
           </div>
