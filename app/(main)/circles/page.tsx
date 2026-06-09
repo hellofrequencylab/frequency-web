@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import { Users, Compass, Sparkles } from 'lucide-react'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { NewCircleCompose } from '@/components/compose/new-circle-compose'
 import { MapZone, MapPreview, MapBanner, FindNearMeButton } from '@/components/circles/circles-map'
@@ -57,7 +56,6 @@ export default async function CirclesPage({
   searchParams: Promise<{ type?: string; interest?: string; sort?: string; q?: string; channel?: string }>
 }) {
   const { type, interest, sort = 'nearest', q, channel } = await searchParams
-  const admin = createAdminClient()
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -65,7 +63,7 @@ export default async function CirclesPage({
   let myCircleIds: string[] = []
   let isAdmin = false
   if (user) {
-    const { data: profile } = await admin
+    const { data: profile } = await supabase
       .from('profiles')
       .select('id, community_role, current_season_zaps, lifetime_gems, current_streak')
       .eq('auth_user_id', user.id)
@@ -76,13 +74,13 @@ export default async function CirclesPage({
     } | null
     if (p) {
       isAdmin = ['host', 'guide', 'mentor', 'janitor'].includes(p.community_role ?? '')
-      const { data: mems } = await admin
+      const { data: mems } = await supabase
         .from('memberships').select('circle_id').eq('profile_id', p.id).eq('status', 'active')
       myCircleIds = (mems ?? []).map((m) => m.circle_id as string)
     }
   }
 
-  let circlesQuery = admin
+  let circlesQuery = supabase
     .from('circles')
     .select(
       `id, name, slug, about, type, member_count, member_cap, status, created_at,
@@ -101,13 +99,13 @@ export default async function CirclesPage({
 
   const all = (rawCircles ?? []) as unknown as CircleRow[]
 
-  const { data: interestRows } = await admin
+  const { data: interestRows } = await supabase
     .from('topical_channels').select('id, name, category').order('name')
   const interests = (interestRows ?? []) as { id: string; name: string; category: string }[]
 
   // Channels (Domains) drive the table-of-contents filter: group circles by the
   // Channel their practice belongs to, so tapping one drills into that Channel.
-  const { data: domainRows } = await admin
+  const { data: domainRows } = await supabase
     .from('domains').select('id, slug, name, display_order').eq('is_active', true)
     .order('display_order', { ascending: true })
   const domains = (domainRows ?? []) as { id: string; slug: string; name: string; display_order: number }[]
