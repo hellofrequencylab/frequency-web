@@ -84,17 +84,11 @@ export function EdgePill({
     }
   }
 
-  // Collapsed peek leaves the icon + a sliver of the pill on-screen (≈3.4rem) so the
-  // launcher is always recognisable; expanding slides the full label into view.
-  const peek = expanded
-    ? 'translate-x-0'
-    : onLeft
-      ? '-translate-x-[calc(100%-3.4rem)]'
-      : 'translate-x-[calc(100%-3.4rem)]'
-
+  // At rest the launcher is a compact ICON-ONLY round button; hover/tap expands it
+  // into the labelled pill. (Owner ask: "only the icon showing".)
   const skin = onLeft
-    ? 'left-0 rounded-r-full border border-l-0 border-border bg-surface/90 text-broadcast-strong backdrop-blur-sm'
-    : 'right-0 rounded-l-full bg-primary/90 text-on-primary'
+    ? 'left-3 border border-border bg-surface/90 text-broadcast-strong backdrop-blur-sm'
+    : 'right-3 bg-primary/90 text-on-primary'
 
   return (
     <button
@@ -104,9 +98,11 @@ export function EdgePill({
       onClick={handleClick}
       aria-label={ariaLabel}
       aria-haspopup="dialog"
-      className={`fixed bottom-20 z-40 flex items-center gap-1.5 py-2 text-sm font-semibold shadow-sm transition-transform duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] md:bottom-6 ${
-        onLeft ? 'flex-row-reverse pl-4 pr-3.5' : 'pl-3.5 pr-4'
-      } ${skin} ${peek} ${wiggling ? 'edge-pill-wiggle' : ''}`}
+      className={`fixed bottom-20 z-40 flex h-11 items-center justify-center text-sm font-semibold shadow-md transition-all duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] md:bottom-6 ${
+        expanded
+          ? `gap-1.5 rounded-full px-4 ${onLeft ? 'flex-row-reverse' : ''}`
+          : 'w-11 rounded-full'
+      } ${skin} ${wiggling ? 'edge-pill-wiggle' : ''}`}
     >
       {/* Self-contained wiggle keyframes — a small rotate/translate nudge that runs once
           per fired interval. No-op under prefers-reduced-motion. */}
@@ -124,7 +120,7 @@ export function EdgePill({
         }
       `}</style>
       <span className="relative shrink-0">{icon}</span>
-      <span className="relative whitespace-nowrap">{label}</span>
+      {expanded && <span className="relative whitespace-nowrap">{label}</span>}
     </button>
   )
 }
