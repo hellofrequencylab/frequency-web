@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { ArrowLeft, ExternalLink, KanbanSquare, User } from 'lucide-react'
 import { getCallerProfile } from '@/lib/auth'
 import { atLeastRole } from '@/lib/core/roles'
@@ -17,7 +17,8 @@ export const dynamic = 'force-dynamic'
 export default async function AdminSupportTicketPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const me = await getCallerProfile()
-  if (!me || !atLeastRole(me.community_role, 'host')) notFound()
+  if (!me) redirect('/')
+  if (!atLeastRole(me.community_role, 'host')) redirect('/feed')
 
   const ticket = await getTicketAdmin(id)
   if (!ticket) notFound()

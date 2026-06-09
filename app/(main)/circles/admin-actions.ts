@@ -4,7 +4,11 @@ import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCircleCapabilities } from '@/lib/core/load-capabilities'
 import { listPublicPractices, getCircleActivePractice } from '@/lib/practices'
+import { slugify } from '@/lib/utils'
 import type { Database } from '@/lib/database.types'
+
+// Known rail block keys — the editor and the saved order are constrained to these.
+const SIDEBAR_KEYS = ['members', 'health', 'practice', 'events', 'invite'] as const
 
 // In-place "Circle settings" admin module (EMBEDDED-ADMIN.md / ADR-133, Phase-2
 // pilot). Both the read and the write re-resolve the per-circle capability set via
@@ -17,9 +21,23 @@ import type { Database } from '@/lib/database.types'
  *  (so the module renders no chrome for someone who can't manage this circle). */
 export async function getCircleAdminData(slug: string) {
   const admin = createAdminClient()
-  const { data: circle } = await admin
+  // sidebar_order isn't in the generated types yet (added by a fresh migration) —
+  // read it via the untyped client and project it onto the typed select.
+  const { data: circle } = await (admin as unknown as {
+    from: (t: string) => {
+      select: (s: string) => {
+        eq: (c: string, v: string) => {
+          maybeSingle: () => Promise<{
+            data:
+              | (Database['public']['Tables']['circles']['Row'] & { sidebar_order: string[] | null })
+              | null
+          }>
+        }
+      }
+    }
+  })
     .from('circles')
-    .select('id, slug, name, about, type, member_cap, status, image_url')
+    .select('id, slug, name, about, type, member_cap, status, image_url, sidebar_order')
     .eq('slug', slug)
     .maybeSingle()
   if (!circle) return null
@@ -34,7 +52,15 @@ export async function getCircleAdminData(slug: string) {
   ])
 
   return {
-    ...circle,
+    id: circle.id,
+    slug: circle.slug,
+    name: circle.name,
+    about: circle.about,
+    type: circle.type,
+    member_cap: circle.member_cap,
+    status: circle.status,
+    image_url: circle.image_url,
+    sidebar_order: (circle.sidebar_order ?? null) as string[] | null,
     practice_library: practice_library.map((p) => ({ id: p.id, title: p.title })),
     active_practice_id: activePractice?.id ?? null,
   }
@@ -134,4 +160,77 @@ export async function removeCircleCover(id: string, slug: string) {
 
   revalidatePath(`/circles/${slug}`)
   revalidatePath('/circles')
+}
+
+// The admin client is typed against generated types that don't yet know about
+// circles.sidebar_order (a fresh migration). Cast to an untyped update surface so we
+// can write the new column without a type error — the capability gate above is the
+// authority either way.
+type UntypedUpdate = {
+  from: (t: string) => {
+    update: (v: Record<string, unknown>) => {
+      eq: (c: string, val: string) => Promise<{ error: { message: string } | null }>
+    }
+  }
+}
+
+/** Persist the host-chosen order of the right-rail blocks. Re-checks
+ *  circle.editSettings; rejects anything that isn't an array of known block keys. */
+export async function saveSidebarOrder(id: string, slug: string, order: string[]) {
+  const caps = await getCircleCapabilities(id)
+  if (!caps.has('circle.editSettings')) throw new Error('Unauthorized')
+
+  if (
+    !Array.isArray(order) ||
+    order.some((k) => typeof k !== 'string' || !SIDEBAR_KEYS.includes(k as (typeof SIDEBAR_KEYS)[number]))
+  ) {
+    throw new Error('Invalid sidebar order')
+  }
+
+  const admin = createAdminClient()
+  const { error } = await (admin as unknown as UntypedUpdate)
+    .from('circles')
+    .update({ sidebar_order: order })
+    .eq('id', id)
+  if (error) throw new Error(error.message)
+
+  revalidatePath(`/circles/${slug}`)
+}
+
+/** Rename a circle's permalink. Slugifies the input, rejects empty, and ensures the
+ *  new slug is unique across circles before writing. Returns the new slug so the
+ *  client can redirect the page. Re-checks circle.editSettings. */
+export async function updateCirclePermalink(
+  id: string,
+  slug: string,
+  newSlug: string,
+): Promise<{ slug: string } | { error: string }> {
+  const caps = await getCircleCapabilities(id)
+  if (!caps.has('circle.editSettings')) return { error: 'Unauthorized' }
+
+  const next = slugify(newSlug ?? '')
+  if (!next) return { error: 'Permalink cannot be empty.' }
+
+  const admin = createAdminClient()
+
+  if (next !== slug) {
+    const { data: clash } = await admin
+      .from('circles')
+      .select('id')
+      .eq('slug', next)
+      .neq('id', id)
+      .maybeSingle()
+    if (clash) return { error: 'That permalink is already taken.' }
+  }
+
+  const { error } = await (admin as unknown as UntypedUpdate)
+    .from('circles')
+    .update({ slug: next })
+    .eq('id', id)
+  if (error) return { error: error.message }
+
+  revalidatePath(`/circles/${slug}`)
+  revalidatePath(`/circles/${next}`)
+  revalidatePath('/circles')
+  return { slug: next }
 }

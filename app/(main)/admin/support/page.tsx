@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { redirect } from 'next/navigation'
 import { LifeBuoy } from 'lucide-react'
 import { getCallerProfile } from '@/lib/auth'
 import { atLeastRole } from '@/lib/core/roles'
@@ -31,7 +31,8 @@ export default async function AdminSupportPage({
   searchParams: Promise<{ status?: string; type?: string; q?: string }>
 }) {
   const me = await getCallerProfile()
-  if (!me || !atLeastRole(me.community_role, 'host')) notFound()
+  if (!me) redirect('/')
+  if (!atLeastRole(me.community_role, 'host')) redirect('/feed')
 
   const { status = 'open_all', type, q } = await searchParams
   const [tickets, counts] = await Promise.all([
