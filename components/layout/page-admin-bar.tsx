@@ -11,6 +11,11 @@ import { CircleSettingsModule } from '@/components/admin/modules/circle-settings
 import { HubSettingsModule } from '@/components/admin/modules/hub-settings-module'
 import { NexusSettingsModule } from '@/components/admin/modules/nexus-settings-module'
 import { EventSettingsModule } from '@/components/admin/modules/event-settings-module'
+import { PageContentModule } from '@/components/admin/modules/page-content-module'
+
+// Routes whose header content (title + description) is operator-editable from this
+// panel (ADR-180). Admin+ only; add a route here to make its chrome editable.
+const CONTENT_EDIT_ROUTES = ['/network'] as const
 
 // The on-page admin control. A small, right-aligned "Settings ▾" button sits above a
 // content-width hairline rule (matching the divider under a page title). Clicking it
@@ -69,9 +74,14 @@ export function PageAdminBar({
 
   const shareable = isShareable(pathname)
   const settingsModule = settingsModuleFor(pathname)
+  // Operator page-content editing (ADR-180) on configured routes — admin+ only.
+  const contentModule =
+    (CONTENT_EDIT_ROUTES as readonly string[]).includes(pathname) && meetsAccess('admin', role)
+      ? <PageContentModule />
+      : null
 
   // Nothing to administer here — render nothing (no button, no rule).
-  if (!shareable && !settingsModule) return null
+  if (!shareable && !settingsModule && !contentModule) return null
 
   return (
     <div className="mb-5 sm:mb-6">
@@ -101,12 +111,17 @@ export function PageAdminBar({
           {/* A clean white settings surface that runs edge-to-edge within the content
               column (negative margins cancel the page padding). No nested cards. */}
           <div className="mt-3 -mx-4 border-y border-border bg-surface px-4 py-6 sm:-mx-6 sm:px-6">
-            <div className="grid gap-x-10 gap-y-8 lg:grid-cols-[17rem_1fr]">
+            <div className={`grid gap-x-10 gap-y-8 ${shareable ? 'lg:grid-cols-[17rem_1fr]' : 'grid-cols-1'}`}>
               {shareable && <SharePanel pathname={pathname} />}
-              {settingsModule && (
-                <div className="min-w-0">
-                  <p className="mb-3 text-2xs font-semibold uppercase tracking-wide text-subtle">Page settings</p>
-                  {settingsModule}
+              {(settingsModule || contentModule) && (
+                <div className="min-w-0 space-y-6">
+                  {settingsModule && (
+                    <div>
+                      <p className="mb-3 text-2xs font-semibold uppercase tracking-wide text-subtle">Page settings</p>
+                      {settingsModule}
+                    </div>
+                  )}
+                  {contentModule}
                 </div>
               )}
             </div>

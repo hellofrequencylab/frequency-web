@@ -1,0 +1,79 @@
+import Link from 'next/link'
+import Image from 'next/image'
+import { MapPin } from 'lucide-react'
+import { getInitials } from '@/lib/utils'
+import { RoleBadge } from '@/lib/community-roles'
+import type { CommunityRole } from '@/lib/community-roles'
+import { DemoBadge } from '@/components/ui/demo-badge'
+
+// Portrait contact card for the Community directory — a vertical, browse-first
+// card: a prominent centered avatar, then the name, @handle, a role badge and
+// (optionally) a location. Reads as a "person tile" you scan a grid of, vs. the
+// landscape <PersonCard> rows used in dense lists.
+//
+// Presentational + server-friendly (no hooks). The whole card is the link.
+export function ContactCard({
+  handle,
+  displayName,
+  avatarUrl,
+  role,
+  location,
+  online = false,
+  isDemo = false,
+}: {
+  handle: string
+  displayName: string
+  avatarUrl?: string | null
+  role: CommunityRole
+  /** Region / city line under the role badge. */
+  location?: string | null
+  online?: boolean
+  isDemo?: boolean
+}) {
+  return (
+    <Link
+      href={`/people/${handle}`}
+      className={`group flex h-full flex-col items-center rounded-2xl border border-border bg-surface p-5 text-center shadow-sm transition-all hover:border-primary-bg hover:shadow-md motion-reduce:transition-none ${
+        isDemo ? 'opacity-[0.72]' : ''
+      }`}
+    >
+      <div className={`relative ${isDemo ? 'grayscale-[0.5]' : ''}`}>
+        {avatarUrl ? (
+          <Image
+            src={avatarUrl}
+            alt={displayName}
+            width={72}
+            height={72}
+            className="h-18 w-18 rounded-full object-cover ring-2 ring-surface-elevated"
+          />
+        ) : (
+          <div className="flex h-18 w-18 items-center justify-center rounded-full bg-primary-bg text-xl font-semibold text-primary-strong select-none ring-2 ring-surface-elevated">
+            {getInitials(displayName)}
+          </div>
+        )}
+        {online && (
+          <span
+            aria-label="Online now"
+            className="absolute bottom-0.5 right-0.5 h-3 w-3 rounded-full bg-success ring-2 ring-surface"
+          />
+        )}
+      </div>
+
+      <div className="mt-3 flex items-center gap-1.5">
+        <h3 className="truncate text-sm font-bold leading-tight text-text">{displayName}</h3>
+        {isDemo && <DemoBadge />}
+      </div>
+      <p className="mt-0.5 truncate text-xs text-subtle">@{handle}</p>
+
+      <div className="mt-3 flex flex-col items-center gap-1.5">
+        <RoleBadge role={role} className="text-3xs leading-tight" />
+        {location && (
+          <span className="inline-flex items-center gap-1 text-xs text-muted">
+            <MapPin className="h-3 w-3 shrink-0 text-subtle" />
+            <span className="truncate">{location}</span>
+          </span>
+        )}
+      </div>
+    </Link>
+  )
+}
