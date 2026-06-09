@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { ChevronDown, QrCode, Link2, Check, ExternalLink } from 'lucide-react'
+import { ChevronDown, Link2, Check, ExternalLink } from 'lucide-react'
+import { PageQrManager } from '@/components/qr/page-qr-manager'
 import { meetsAccess } from '@/lib/nav-areas'
 import type { CommunityRole } from '@/lib/community-roles'
 import type { StaffRole } from '@/lib/staff'
@@ -116,14 +117,13 @@ export function PageAdminBar({
   )
 }
 
-// Share kit for the current page — a QR + the link, generated on the fly. The QR
-// route is auth-guarded + same-site-only; operators are signed in, so the same-origin
-// <img> request carries the session.
+// Share kit for the current page. The managed QR folder (PageQrManager) lists +
+// creates persistent, retargetable codes filed under this page (ADR-179); the copy
+// link + open-in-new-tab convenience stays for a quick share without minting a code.
 function SharePanel({ pathname }: { pathname: string }) {
   const [copied, setCopied] = useState(false)
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
   const url = `${origin}${pathname}`
-  const qrSrc = `/api/qr?text=${encodeURIComponent(pathname)}&format=png&size=512`
 
   function copy() {
     navigator.clipboard?.writeText(url).then(() => {
@@ -133,35 +133,32 @@ function SharePanel({ pathname }: { pathname: string }) {
   }
 
   return (
-    <div className="min-w-0">
-      <p className="mb-3 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
-        <QrCode className="h-3.5 w-3.5" /> Share this page
-      </p>
-      <div className="flex items-center justify-center rounded-xl border border-border bg-white p-3">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={qrSrc} alt="QR code for this page" width={160} height={160} className="h-40 w-40" />
-      </div>
-      <div className="mt-3 flex items-center gap-2">
-        <code className="min-w-0 flex-1 truncate rounded-lg border border-border bg-surface-elevated/50 px-2.5 py-1.5 font-mono text-2xs text-muted" title={url}>
-          {url}
-        </code>
-        <button
-          type="button"
-          onClick={copy}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-2xs font-semibold text-text transition-colors hover:bg-surface-elevated"
+    <div className="min-w-0 space-y-4">
+      <PageQrManager pathname={pathname} url={url} />
+
+      <div className="border-t border-border pt-3">
+        <div className="flex items-center gap-2">
+          <code className="min-w-0 flex-1 truncate rounded-lg border border-border bg-surface-elevated/50 px-2.5 py-1.5 font-mono text-2xs text-muted" title={url}>
+            {url}
+          </code>
+          <button
+            type="button"
+            onClick={copy}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-2xs font-semibold text-text transition-colors hover:bg-surface-elevated"
+          >
+            {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Link2 className="h-3.5 w-3.5" />}
+            {copied ? 'Copied' : 'Copy'}
+          </button>
+        </div>
+        <a
+          href={pathname}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-2 inline-flex items-center gap-1 text-2xs font-semibold text-primary-strong hover:underline"
         >
-          {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Link2 className="h-3.5 w-3.5" />}
-          {copied ? 'Copied' : 'Copy'}
-        </button>
+          <ExternalLink className="h-3 w-3" /> Open in a new tab
+        </a>
       </div>
-      <a
-        href={pathname}
-        target="_blank"
-        rel="noreferrer"
-        className="mt-2 inline-flex items-center gap-1 text-2xs font-semibold text-primary-strong hover:underline"
-      >
-        <ExternalLink className="h-3 w-3" /> Open in a new tab
-      </a>
     </div>
   )
 }
