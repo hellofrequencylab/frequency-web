@@ -40,7 +40,7 @@ export default async function LibraryReviewPage() {
                 {p.summary && <p className="mt-0.5 line-clamp-2 text-sm text-muted">{p.summary}</p>}
                 {p.author && (
                   <div className="mt-2 flex items-center gap-1.5 text-xs text-subtle">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary-bg text-[9px] font-semibold text-primary-strong">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary-bg text-3xs font-semibold text-primary-strong">
                       {getInitials(p.author.display_name)}
                     </span>
                     by {p.author.display_name}

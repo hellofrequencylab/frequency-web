@@ -13,8 +13,9 @@ Events are the gatherings that make Frequency real: the in-person and online mee
 
 ## RSVPing
 
-- Open an event to see the details and **RSVP** so the host knows you're coming.
-- The event page shows **who's already going** — faces, the count, and anyone from your circles — so you can see the room before you arrive.
+- Open an event to see the details and **RSVP** so the host knows you're coming. Not sure yet? Mark yourself **Interested** instead — it signals you're curious without claiming a spot.
+- Bringing people? On a "going" RSVP you can add **+1, +2 guests** so the host has an accurate headcount.
+- The event page shows **who's already going** — faces, the count, your guests, and anyone from your circles — so you can see the room before you arrive.
 - Changed your plans? You can update your RSVP anytime.
 - When you RSVP, we **email you a confirmation** with the details and a one-tap calendar link (and a quick note if you land on the waitlist), then nudge you again as the date nears.
 - Your upcoming events surface in your feed so they don't sneak up on you.

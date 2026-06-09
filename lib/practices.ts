@@ -338,6 +338,89 @@ export async function getRankedPractice(id: string): Promise<RankedPractice | nu
   }
 }
 
+// --- Backlinks: "Used in" (journeys + circles that reference this practice) ---
+//
+// The link from a practice to the journeys/circles that use it (the inverse of
+// journey_plan_items.practice_id / circle_practices.practice_id). Visibility is
+// mirrored from the public surfaces so a backlink never leaks private content:
+//   · journeys — only visibility = 'public' (the open-library rule; listPublicPlans)
+//   · circles  — only non-archived; demo circles hidden unless demo mode is on AND
+//     the viewer hasn't opted out (mirrors app/(main)/circles/page.tsx)
+
+export interface PracticeJourneyLink {
+  slug: string
+  title: string
+  /** Times this journey has been adopted (the library's popularity signal). */
+  adoptCount: number
+}
+
+export interface PracticeCircleLink {
+  slug: string
+  name: string
+  /** Active members in the circle. */
+  memberCount: number
+}
+
+export interface PracticeBacklinks {
+  journeys: PracticeJourneyLink[]
+  circles: PracticeCircleLink[]
+}
+
+/**
+ * The journeys and circles that USE this practice, filtered to what the viewer
+ * may see. `hideDemo` hides demo circles (pass the resolved demo preference from
+ * the page). Two small joined reads; safe to call behind a <Suspense>.
+ */
+export async function getPracticeBacklinks(
+  practiceId: string,
+  opts: { hideDemo?: boolean } = {},
+): Promise<PracticeBacklinks> {
+  const client = db()
+
+  // Journeys: journey_plan_items → public plans only. Distinct on slug (a plan
+  // can't list a practice twice, but be defensive about duplicate item rows).
+  const journeysP = client
+    .from('journey_plan_items')
+    .select('plan:journey_plans!inner(slug, title, adopt_count, visibility)')
+    .eq('practice_id', practiceId)
+    .eq('plan.visibility', 'public')
+
+  // Circles: circle_practices (active assignment) → non-archived circles.
+  let circlesQ = client
+    .from('circle_practices')
+    .select('circle:circles!inner(slug, name, member_count, status, is_demo)')
+    .eq('practice_id', practiceId)
+    .eq('active', true)
+    .neq('circle.status', 'archived')
+  if (opts.hideDemo) circlesQ = circlesQ.eq('circle.is_demo', false)
+
+  const [journeysRes, circlesRes] = await Promise.all([journeysP, circlesQ])
+
+  const journeyRows =
+    (journeysRes.data as { plan: { slug: string; title: string; adopt_count: number } | null }[] | null) ?? []
+  const seenJourney = new Set<string>()
+  const journeys: PracticeJourneyLink[] = []
+  for (const r of journeyRows) {
+    if (!r.plan || seenJourney.has(r.plan.slug)) continue
+    seenJourney.add(r.plan.slug)
+    journeys.push({ slug: r.plan.slug, title: r.plan.title, adoptCount: r.plan.adopt_count ?? 0 })
+  }
+  journeys.sort((a, b) => b.adoptCount - a.adoptCount || a.title.localeCompare(b.title))
+
+  const circleRows =
+    (circlesRes.data as { circle: { slug: string; name: string; member_count: number } | null }[] | null) ?? []
+  const seenCircle = new Set<string>()
+  const circles: PracticeCircleLink[] = []
+  for (const r of circleRows) {
+    if (!r.circle || seenCircle.has(r.circle.slug)) continue
+    seenCircle.add(r.circle.slug)
+    circles.push({ slug: r.circle.slug, name: r.circle.name, memberCount: r.circle.member_count ?? 0 })
+  }
+  circles.sort((a, b) => b.memberCount - a.memberCount || a.name.localeCompare(b.name))
+
+  return { journeys, circles }
+}
+
 /** Whether a member has adopted a practice + already logged it today (detail CTAs). */
 export async function getPracticeMemberState(
   profileId: string,

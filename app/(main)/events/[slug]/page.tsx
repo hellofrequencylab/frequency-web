@@ -21,6 +21,7 @@ import { isPaidViewer } from '@/lib/core/viewer-hats'
 import { updateEventField } from '../admin-actions'
 import { getInitials } from '@/lib/utils'
 import { WarmProof } from '@/components/events/warm-proof'
+import { RsvpControls } from '@/components/events/rsvp-controls'
 import { AddToCalendar, buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
 
 type EventDetail = {
@@ -55,6 +56,7 @@ const RECURRENCE_LABEL: Record<string, string> = {
 type RSVPRow = {
   id: string
   status: string
+  plus_ones: number
   profile: {
     id: string
     display_name: string
@@ -109,13 +111,16 @@ export default async function EventDetailPage({
 
   const { data: rawRsvps } = await admin
     .from('event_rsvps')
-    .select('id, status, profile:profiles!profile_id ( id, display_name, handle, avatar_url )')
+    .select('id, status, plus_ones, profile:profiles!profile_id ( id, display_name, handle, avatar_url )')
     .eq('event_id', event.id)
     .order('created_at', { ascending: true })
 
   const rsvps = (rawRsvps ?? []) as unknown as RSVPRow[]
   const goingRsvps = rsvps.filter((r) => r.status === 'going')
   const maybeCount = rsvps.filter((r) => r.status === 'maybe').length
+  // Plus-ones are an informational headcount for the host (they do NOT consume
+  // capacity — the trigger counts 'going' rows). Sum across confirmed attendees.
+  const guestCount = goingRsvps.reduce((sum, r) => sum + Math.max(0, r.plus_ones ?? 0), 0)
 
   // Real capacity / waitlist info (lib/events/capacity) — drives the waitlist CTA
   // and the "filling up" line. Never invented.
@@ -136,6 +141,7 @@ export default async function EventDetailPage({
 
   let myProfileId: string | null = null
   let myRsvpStatus: string | null = null
+  let myPlusOnes = 0
   let isHost = false
   let isCrew = false
   let myRole: 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor' = 'member'
@@ -156,6 +162,7 @@ export default async function EventDetailPage({
       isCrew = await isPaidViewer()
       const myRsvp = rsvps.find((r) => r.profile.id === myProfileId)
       myRsvpStatus = myRsvp?.status ?? null
+      myPlusOnes = myRsvp?.plus_ones ?? 0
 
       // "From your circles" = going attendees (excluding me) who share at least
       // one active circle with me. Two cheap membership reads + a set overlap;
@@ -431,6 +438,7 @@ export default async function EventDetailPage({
               going={goingRsvps.length}
               fromYourCircles={fromYourCircles}
               maybe={maybeCount}
+              guests={guestCount}
               faces={goingRsvps.map(({ profile }) => ({
                 id: profile.id,
                 displayName: profile.display_name,
@@ -513,46 +521,22 @@ export default async function EventDetailPage({
         {!event.is_cancelled && myProfileId && (
           <div className="mb-6">
             {!isPast ? (
-              /* Upcoming: RSVP / waitlist toggle + one-tap add-to-calendar */
+              /* Upcoming: Going / Interested / waitlist controls + guests stepper
+                 + one-tap add-to-calendar. */
               <div className="space-y-3">
                 <div className="flex items-center gap-3 flex-wrap">
-                  {isWaitlisted ? (
-                    /* Already waitlisted — calm "tap to leave" state, never pressure. */
-                    <form action={toggleRSVP.bind(null, event.id)}>
-                      <button
-                        type="submit"
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-4 py-2 text-sm font-semibold text-muted transition-colors hover:border-danger hover:text-danger"
-                      >
-                        <Clock className="w-4 h-4" />
-                        On waitlist · tap to leave
-                      </button>
-                    </form>
-                  ) : (
-                    <CrewGateButton
-                      isCrew={isCrew}
-                      label={isGoing ? '✓ Going' : capacityInfo.isFull ? 'Join waitlist' : "RSVP: I'm going"}
-                      buttonClassName="rounded-lg px-4 py-2 text-sm font-semibold transition-colors inline-flex items-center gap-1.5 bg-primary text-on-primary hover:bg-primary-hover"
-                    >
-                      <form action={toggleRSVP.bind(null, event.id)}>
-                        <button
-                          type="submit"
-                          className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-                            isGoing
-                              ? 'bg-success-bg text-success hover:bg-danger-bg hover:text-danger'
-                              : 'bg-primary text-on-primary hover:bg-primary-hover'
-                          }`}
-                        >
-                          {isGoing ? (
-                            "✓ Going (click to undo)"
-                          ) : capacityInfo.isFull ? (
-                            <><Clock className="w-4 h-4" />Join waitlist</>
-                          ) : (
-                            "RSVP: I'm going"
-                          )}
-                        </button>
-                      </form>
-                    </CrewGateButton>
-                  )}
+                  <CrewGateButton
+                    isCrew={isCrew}
+                    label={isGoing ? '✓ Going' : capacityInfo.isFull ? 'Join waitlist' : "RSVP: I'm going"}
+                    buttonClassName="rounded-lg px-4 py-2 text-sm font-semibold transition-colors inline-flex items-center gap-1.5 bg-primary text-on-primary hover:bg-primary-hover"
+                  >
+                    <RsvpControls
+                      eventId={event.id}
+                      status={myRsvpStatus as 'going' | 'maybe' | 'waitlist' | 'not_going' | null}
+                      plusOnes={myPlusOnes}
+                      isFull={capacityInfo.isFull}
+                    />
+                  </CrewGateButton>
 
                   {/* Compact add-to-calendar always available; emphasised below once going. */}
                   {!isGoing && <AddToCalendar icsHref={icsHref} googleUrl={googleUrl} />}
@@ -658,7 +642,9 @@ export default async function EventDetailPage({
         <section>
           <h2 className="text-sm font-bold text-text mb-3">
             Attendees
-            <span className="ml-2 text-xs font-normal text-subtle">{goingRsvps.length} going</span>
+            <span className="ml-2 text-xs font-normal text-subtle">
+              {goingRsvps.length} going{guestCount > 0 ? ` · ${guestCount} ${guestCount === 1 ? 'guest' : 'guests'}` : ''}
+            </span>
           </h2>
 
           {goingRsvps.length === 0 ? (
