@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { QrCode, ChartNoAxesColumn } from 'lucide-react'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { AdminPage } from '@/components/admin/admin-page'
@@ -41,6 +42,18 @@ export default async function QrStudioPage() {
       db.from('qr_scans').select('qr_code_id, profile_id, scanned_at, medium'),
       db.from('partners').select('id, name').order('name'),
     ])
+
+  // Per-page folder key (ADR-179). `page_path` isn't in the generated DB types yet,
+  // so read it through an untyped client and join it back by id.
+  const { data: folderRows } = await (db as unknown as SupabaseClient)
+    .from('qr_codes')
+    .select('id, page_path')
+  const pagePathById = new Map<string, string | null>(
+    ((folderRows ?? []) as Array<{ id: string; page_path: string | null }>).map((r) => [
+      r.id,
+      r.page_path,
+    ]),
+  )
 
   // ── Check-in codes (nodes) ──────────────────────────────────────────────────
   const captureCounts = new Map<string, number>()
@@ -129,6 +142,7 @@ export default async function QrStudioPage() {
         active: l.active,
         valid_until: l.valid_until,
         source_tag: l.source_tag,
+        page_path: pagePathById.get(l.id) ?? null,
         scans: l.scan_count,
         unique: stat?.unique ?? 0,
         style,
