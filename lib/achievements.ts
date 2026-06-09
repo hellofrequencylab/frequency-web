@@ -8,6 +8,7 @@ import { STREAK_CONFIG } from '@/lib/gamification'
 import { awardGems } from '@/lib/gems'
 import { awardZaps } from '@/lib/zaps'
 import { currencyForCriteria, type EngagementCurrency } from '@/lib/engagement/currency'
+import { awardCircleFieldForChallengeCompletion } from '@/lib/events/circle-field'
 import type { Database } from '@/lib/database.types'
 
 type AdminClient = ReturnType<typeof createAdminClient>
@@ -431,6 +432,9 @@ async function advanceChallenges(admin: AdminClient, event: GamificationEvent) {
       await grantReward(event.profileId, currency, challenge.zaps_reward ?? 0, 'challenge_complete', {
         challenge: challenge.id,
       })
+      // Collaborative roll-up: if any circle this member belongs to has adopted
+      // this challenge together, credit that circle's Circle Field. Best-effort.
+      await awardCircleFieldForChallengeCompletion(challenge.id, event.profileId)
       await checkAllChallengesComplete(admin, event.profileId)
     }
   }
