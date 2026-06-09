@@ -20,6 +20,7 @@ import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
 import { getProfileCapabilities } from '@/lib/core/load-capabilities'
 import { atLeastRole } from '@/lib/core/roles'
 import { MemberSupportPanel } from '@/components/support/member-support-panel'
+import { ConnectionPanel } from '@/components/people/connection-panel'
 import { ModerateProfileButton } from './moderate-profile-button'
 import { TipButton } from './tip-button'
 import { getConnectStatus, payoutsLive } from '@/lib/billing/connect'
@@ -362,6 +363,15 @@ export default async function ProfilePage({
           </div>
         </div>
       </div>
+
+      {/* ── How you're connected — the viewer's private read of their own tie (ADR-186) ── */}
+      {!isOwner && !!user && !isBlocked && (
+        <ConnectionPanel
+          profileId={profileId}
+          firstName={firstName}
+          friendAction={friendState.kind === 'none' ? <FriendButton targetProfileId={profileId} state={friendState} /> : undefined}
+        />
+      )}
 
       {/* ── Staff-only: this member's support history, wired into the console ── */}
       {!isOwner && atLeastRole(myRole, 'host') && <MemberSupportPanel profileId={profileId} />}
