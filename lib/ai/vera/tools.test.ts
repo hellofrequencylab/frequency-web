@@ -47,4 +47,11 @@ describe('validateToolCall', () => {
     expect(validateToolCall('find_host', { topic: 123 }).ok).toBe(false)
     expect(validateToolCall('suggest_circle', { bogus: 'x' }).ok).toBe(false)
   })
+
+  it('draft_intro requires the full drafted message (ONBOARDING-BUILD-LIST §2.2)', () => {
+    expect(validateToolCall('draft_intro', { toHandle: 'maya', message: 'Hey @maya — new here, would love to say hi.' }).ok).toBe(true)
+    const missing = validateToolCall('draft_intro', { toHandle: 'maya' })
+    expect(missing.ok).toBe(false)
+    expect(missing.errors.join(' ')).toContain('message')
+  })
 })

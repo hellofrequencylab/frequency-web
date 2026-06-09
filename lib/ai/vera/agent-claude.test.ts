@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { ContentBlock } from '@anthropic-ai/sdk/resources/messages'
-import { toAnthropicTools, parseAssistantContent } from './agent-claude'
+import { toAnthropicTools, parseAssistantContent, extractSuggestions } from './agent-claude'
 import { VERA_TOOLS } from './tools'
 
 describe('toAnthropicTools', () => {
@@ -34,5 +34,35 @@ describe('parseAssistantContent', () => {
     const { text, toolCalls } = parseAssistantContent([{ type: 'text', text: 'All set.' }] as unknown as ContentBlock[])
     expect(text).toBe('All set.')
     expect(toolCalls).toHaveLength(0)
+  })
+})
+
+describe('extractSuggestions (live-loop chips, ONBOARDING-BUILD-LIST §1.5)', () => {
+  it('peels a trailing CHIPS line into quick replies and keeps the prose', () => {
+    const { reply, suggestions } = extractSuggestions(
+      'Glad you made it. The Sunset Runners meet Tuesdays.\nCHIPS: Find me a circle | Yes, introduce me',
+    )
+    expect(reply).toBe('Glad you made it. The Sunset Runners meet Tuesdays.')
+    expect(suggestions).toEqual(['Find me a circle', 'Yes, introduce me'])
+  })
+
+  it('caps at 3, dedupes case-insensitively, drops empties and over-long options', () => {
+    const long = 'x'.repeat(80)
+    const { suggestions } = extractSuggestions(
+      `Hey.\nchips: One | one | | ${long} | Two | Three | Four`,
+    )
+    expect(suggestions).toEqual(['One', 'Two', 'Three'])
+  })
+
+  it('yields no chips (and the untouched reply) when the model skips the line', () => {
+    const { reply, suggestions } = extractSuggestions('Just a reply.')
+    expect(reply).toBe('Just a reply.')
+    expect(suggestions).toEqual([])
+  })
+
+  it('strips a mid-text CHIPS line without losing surrounding prose', () => {
+    const { reply, suggestions } = extractSuggestions('Line one.\nCHIPS: Tap me\nLine two.')
+    expect(reply).toBe('Line one.\nLine two.')
+    expect(suggestions).toEqual(['Tap me'])
   })
 })
