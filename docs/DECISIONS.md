@@ -6015,3 +6015,39 @@ calls) and is rate-capped at 20/hour (abuse + friendship-graph probing guard).
 **Consequences.** The Connection Layer is feature-complete across P1–P6 with the privacy model intact. The Capture lead
 funnel was already built (ADR-099: one-time, consent-tracked scan-intro email + magic-link + AI scan), so no new email
 work was needed. Full map of the system in CONNECTION-LAYER.md.
+
+## ADR-196: `journey_plans` is the single Journey spine
+
+**Status:** Accepted · corroborated by `lib/journey-plans.ts`, `supabase/migrations/20260609103000_seed_official_seasonal_journeys.sql`, `…104000_retire_quest_chains_engine.sql`
+(ADR-188–195 unused — these Journey ADRs were numbered to match the code/migration comments written alongside them.)
+**Context:** Two Journey-shaped systems coexisted — `journey_plans` (the member library, ADR-087/152) and the dormant `quest_chains/steps/progress` engine, which still held auto-seeded pillar-journey placeholders. Two systems means two progress engines and duplicated official content.
+**Decision:** `journey_plans` is the one spine. Official seasonal Journeys are `journey_plans` rows with `official=true` + `quest_id`. The 4 Domain Journeys are seeded as `journey_plans` (`official-<season>-<domain>`); the `quest_chains` engine is dropped (migration **staged, not applied** — `app/(main)/admin/quests/*` still reads those tables and must be retired with it + `database.types.ts` regenerated).
+**Consequences:** One data model, one progress engine (`getActiveJourneyProgress`). See [docs/JOURNEYS.md](JOURNEYS.md) §2/§13.
+
+## ADR-197: Two-clock time model — rolling Rhythm + fixed 91-day Arc; completion = 8 of 13
+
+**Status:** Accepted · corroborated by `lib/journey-arc.ts`, `getActiveJourneyProgress` in `lib/journey-plans.ts`
+**Context:** A 13-week season aligned to a solstice doesn't start on a calendar-week boundary, which breaks naïve weekly counting. One definition of "week" can't serve both cadence/streaks and season completion.
+**Decision:** Two clocks. The **Rhythm clock** is a rolling 7-day window (cadence targets, streak, weekly-rhythm bonus). The **Arc clock** is fixed season-week buckets: a season is exactly 91 days = 13×7, `bucket = floor((logged_for − season.starts_at)/7)`. Completion = ≥ `target_weeks` (default 8) distinct qualifying weeks of 13, a qualifying week being one with ≥1 day at ≥ `min_practices_per_day` logs. Derived entirely from `practice_logs` — no progress table.
+**Consequences:** Daily/streak mechanics never align to 13; only completion + the Act arc read fixed buckets. Official plans anchor to their quest's season; evergreen plans to the adoption date. See [docs/JOURNEYS.md](JOURNEYS.md) §3–§4.
+
+## ADR-198: Intensity tiers — Spark / Current / Deep
+
+**Status:** Accepted · corroborated by `lib/journey-tiers.ts`, `supabase/migrations/20260609101000_practice_tiers.sql`, `…101500_intensity_tier_selection.sql`
+**Context:** The product differentiator: every practice ships three depths, human-calibrated by a circle Host rather than an algorithm — without complicating the economy.
+**Decision:** Tier **content** lives on `practice_tiers` (spark/current/deep per practice, authored once). Tier **selection** resolves most-specific-first: member override (`journey_plan_adoptions.tier_override`) → circle default (`circles.default_intensity_tier`, Host-set) → item default (`journey_plan_items.default_tier`) → `'current'`. Tier never affects Zap or streak math — only the practice content shown/done.
+**Consequences:** Hosts tune difficulty per room; members can override. A missing tier falls back to the practice description as "current." See [docs/JOURNEYS.md](JOURNEYS.md) §5.
+
+## ADR-199: Chorus — circle co-op completion
+
+**Status:** Accepted · corroborated by `lib/journey-chorus.ts`, `components/journey/chorus-strip.tsx`
+**Context:** Practice is a community signal and circles/hosts/memberships already exist; no habit app has co-op completion. "Resonance" was already taken by the Connection Layer (ADR-186), so the mechanic is named **Chorus**.
+**Decision:** When ≥3 active members of a circle share an active adoption of the same Journey they form a **Chorus** — derived (memberships ⨝ adoptions): a shared signal, a weekly bonus when ≥3 keep rhythm, and a shared trophy on group completion. Grants ride `reward_grants` for exactly-once; an optional `circle_choruses` row is a Phase-2 display nicety.
+**Consequences:** Drives the Circle Journey Alignment metric (>40%). v1 ships the lightweight companions strip; the full shared meter is later. See [docs/JOURNEYS.md](JOURNEYS.md) §9.1.
+
+## ADR-200: Journey reward firing — Full Day / Weekly Rhythm / completion
+
+**Status:** Accepted · corroborated by `lib/journey-rewards.ts`, `lib/journey-grants.ts`, the `logPractice` hook in `lib/practices.ts`
+**Context:** The felt loop needs same-day, weekly, and season payoffs that fire exactly once and never break the practice log.
+**Decision:** A successful log fires, best-effort: **Full Day** (+25 Zaps, all due steps logged today), **Weekly Rhythm** (+50 Zaps, all steps on track this bucket), **Journey completion** (`completion_gems`, default 30 Gems). Each is keyed in `reward_grants` (claim-then-pay, the ADR-168 idempotency pattern); currency follows ADR-139 (consistency → Zaps, completion → Gems). Firing is a dynamically-imported, try/caught call from `logPractice` so it can never block the log.
+**Consequences:** Bonuses are exactly-once per member per key; the standard +12 per-log Zap stays on the existing loop. See [docs/JOURNEYS.md](JOURNEYS.md) §6.

@@ -19,6 +19,14 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **Journeys, reimagined**: pick a season-long practice track and the app shows your **next
+  step** — one tap to log it. Every practice now comes in three depths — **Spark** (5 min),
+  **Current**, and **Deep** — and your circle Host can set the right depth for your group, or
+  you can choose your own. Keep your rhythm and you earn a **Full Day** bonus, a **Weekly
+  Rhythm** bonus, and — at 8 of the season's 13 weeks — you complete the Journey for Gems and a
+  permanent badge. When three or more of your circle are on the same Journey, you form a
+  **Chorus** and travel it together. Your profile now carries a **Frequency Signature** — a
+  living shape of how your practice spreads across Mind, Body, Spirit, and Expression.
 - **Local Marketplace**: a no-fee place to swap, give away, lend, or find things with
   neighbors. Browse by type, sort by **Near me** to see what's closest to you, post a
   listing with photos, and edit it anytime. No payment ever happens in the app — you

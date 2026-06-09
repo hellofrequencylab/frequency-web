@@ -1,21 +1,50 @@
 import Link from 'next/link'
+import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, Globe, Lock, Link2, CheckCircle, Heart, GitFork, Clock, Pencil, Users } from 'lucide-react'
+import { Globe, Lock, Link2, Pencil, Sparkles } from 'lucide-react'
 import { DetailTemplate } from '@/components/templates'
 import { getCallerProfile } from '@/lib/auth'
-import { getPlan, planPillarMap, isPlanAdopted, type JourneyPlanItem } from '@/lib/journey-plans'
+import { getJourneyView } from '@/lib/journey-plans'
 import { listPublicPractices } from '@/lib/practices'
-import { getPillars, pillarsById, type Pillar } from '@/lib/pillars'
-import { PillarBadge } from '@/components/practice/pillar-badge'
+import { getPillars, pillarsById as indexPillars } from '@/lib/pillars'
 import { accentColor, accentTint } from '@/lib/studio/accents'
 import { JourneyBuilder, type BuilderItem } from '@/components/studio/journey/journey-builder'
 import { adoptPlanAction, forkPlanAction } from '../actions'
+import { enabledWidgets, type WidgetId } from '@/lib/journey-page-config'
+import { NextStepCard } from '@/components/journey/next-step-card'
+import { SeasonProgress } from '@/components/journey/season-progress'
+import { StepChecklist, type ChecklistRow } from '@/components/journey/step-checklist'
+import { ChorusStrip } from '@/components/journey/chorus-strip'
+import { TierControl } from '@/components/journey/tier-control'
+import { GamificationPanel } from '@/components/journey/gamification-panel'
+import { StreakStrip } from '@/components/journey/streak-strip'
+import { JourneyCelebrationStage } from '@/components/journey/journey-celebration'
+import {
+  StoryBlock,
+  PathBlock,
+  PillarBalanceBlock,
+  SocialProofBlock,
+  RewardPreviewBlock,
+  CompletionRuleBlock,
+  PracticeGuideBlock,
+  AdoptRemixBlock,
+} from '@/components/journey/discovery-widgets'
 
 export const dynamic = 'force-dynamic'
 
-function itemCadence(it: JourneyPlanItem): string | null {
-  return it.cadence ?? it.practice?.cadence ?? null
-}
+// The one Journey page (docs/JOURNEYS.md §10). It flips between three faces:
+//   • AUTHOR    → the Studio <JourneyBuilder> (kept exactly as-is).
+//   • DISCOVERY → not adopted / visitor: the story, the path, pillar balance, social proof,
+//                 reward + completion rule, adopt/remix CTA.
+//   • ACTIVE    → adopted: the Next-Step card, season progress, checklist, gamification +
+//                 streak (behind Suspense — never blocks the shell), chorus, tier control.
+// Both modes compose widgets in the order resolved by normalizePageConfig(page_config, mode).
+
+const VISIBILITY = {
+  public: { Icon: Globe, label: 'Public' },
+  unlisted: { Icon: Link2, label: 'Unlisted' },
+  private: { Icon: Lock, label: 'Private' },
+} as const
 
 export default async function JourneyPlanPage({
   params,
@@ -26,21 +55,21 @@ export default async function JourneyPlanPage({
 }) {
   const { slug } = await params
   const { preview } = await searchParams
-  const [caller, loaded, library, pillars] = await Promise.all([
-    getCallerProfile(),
-    getPlan(slug),
-    listPublicPractices(),
-    getPillars(),
-  ])
-  if (!loaded) notFound()
-  const { plan, items } = loaded
+  const caller = await getCallerProfile()
   const profileId = caller?.id ?? null
+
+  // Single data load for the read-only page (the contract). The author branch needs the
+  // practice library + pillars too, so it loads those alongside.
+  const view = await getJourneyView(profileId, slug)
+  if (!view) notFound()
+  const { plan, items, adopted, progress } = view
 
   const isAuthor = !!profileId && plan.author_id === profileId
   if (!isAuthor && plan.visibility === 'private') notFound()
 
-  // ── Author → the Studio builder (the live editing window). ────────────────
+  // ── AUTHOR → the Studio builder (left exactly as it was). ─────────────────
   if (isAuthor && !preview) {
+    const [library, pillars] = await Promise.all([listPublicPractices(), getPillars()])
     const builderItems: BuilderItem[] = items.map((it) => ({
       practiceId: it.practice_id,
       title: it.practice?.title ?? 'Practice',
@@ -71,141 +100,233 @@ export default async function JourneyPlanPage({
     )
   }
 
-  // ── Everyone else (and author preview) → the read-only journey. ───────────
-  const adopted = !isAuthor && profileId ? await isPlanAdopted(profileId, plan.id) : false
-  const byId = pillarsById(pillars)
-  const coverage = new Map(planPillarMap(items).map((s) => [s.domainId, s.count]))
+  const pillars = await getPillars()
+  const byId = indexPillars(pillars)
+  const vis = VISIBILITY[plan.visibility]
+  const accent = plan.accent
+
+  const isActive = adopted && !!progress
+
+  // The widget order for the active mode comes from the plan's page_config (or the default).
+  const activeWidgets = enabledWidgets(plan.page_config, 'active').map((w) => w.id)
+  const discoveryWidgets = enabledWidgets(plan.page_config, 'discovery').map((w) => w.id)
+
+  const header = (
+    <DetailTemplate
+      title={
+        <span className="inline-flex items-center gap-3 align-middle">
+          <span
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-2xl"
+            style={{ backgroundColor: accentTint(accent, 16), color: accentColor(accent) }}
+          >
+            {plan.emoji || '🧭'}
+          </span>
+          <span className="min-w-0 break-words">{plan.title}</span>
+        </span>
+      }
+      subtitle={plan.summary ? <span className="leading-relaxed">{plan.summary}</span> : undefined}
+      badges={
+        <span className="inline-flex flex-wrap items-center gap-1.5">
+          {plan.official && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-2 py-0.5 text-xs font-semibold text-primary-strong">
+              <Sparkles className="h-3 w-3" /> Official
+            </span>
+          )}
+          <span className="inline-flex items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5 text-xs font-medium text-muted">
+            <vis.Icon className="h-3 w-3" /> {vis.label}
+          </span>
+        </span>
+      }
+    >
+      {isActive && progress ? (
+        <ActiveMode
+          widgets={activeWidgets}
+          plan={plan}
+          progress={progress}
+          profileId={profileId as string}
+          pillars={pillars}
+        />
+      ) : (
+        <DiscoveryMode
+          widgets={discoveryWidgets}
+          plan={plan}
+          items={items}
+          pillars={pillars}
+          pillarsById={byId}
+          adopted={adopted}
+          isAuthor={isAuthor}
+        />
+      )}
+    </DetailTemplate>
+  )
 
   return (
     <div className="mx-auto w-full max-w-2xl">
-      <Link href="/journeys" className="mb-4 inline-flex items-center gap-1.5 text-sm text-subtle transition-colors hover:text-text">
-        <ArrowLeft className="h-4 w-4" /> Journeys
-      </Link>
+      <JourneyCelebrationStage />
 
       {isAuthor && preview && (
         <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface px-4 py-2.5">
           <span className="text-sm text-muted">Preview — how others see your journey.</span>
-          <Link href={`/journeys/${plan.slug}`} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover">
+          <Link
+            href={`/journeys/${plan.slug}`}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+          >
             <Pencil className="h-3.5 w-3.5" /> Back to editing
           </Link>
         </div>
       )}
 
-      <DetailTemplate
-        title={
-          <span className="inline-flex items-center gap-3 align-middle">
-            <span
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-2xl"
-              style={{ backgroundColor: accentTint(plan.accent, 16), color: accentColor(plan.accent) }}
-            >
-              {plan.emoji || '🧭'}
-            </span>
-            <span className="min-w-0 break-words">{plan.title}</span>
-          </span>
-        }
-        subtitle={
-          (plan.summary || plan.adopt_count > 0) ? (
-            <span className="flex flex-col gap-1">
-              {plan.summary && <span className="leading-relaxed">{plan.summary}</span>}
-              {plan.adopt_count > 0 && (
-                <span className="inline-flex items-center gap-1 text-xs text-subtle">
-                  <Users className="h-3 w-3" /> {plan.adopt_count} {plan.adopt_count === 1 ? 'person on this path' : 'people on this path'}
-                </span>
-              )}
-            </span>
-          ) : undefined
-        }
-        badges={
-          <span className="inline-flex items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5 text-xs font-medium text-muted">
-            {plan.visibility === 'public' ? <Globe className="h-3 w-3" /> : plan.visibility === 'unlisted' ? <Link2 className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
-            {plan.visibility === 'public' ? 'Public' : plan.visibility === 'unlisted' ? 'Unlisted' : 'Private'}
-          </span>
-        }
-      >
-      {/* Pillar coverage */}
-      <div className="flex flex-wrap gap-1.5">
-        {pillars.map((pl) => {
-          const n = coverage.get(pl.id) ?? 0
-          return (
-            <span key={pl.slug} className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${n > 0 ? 'bg-primary-bg text-primary-strong' : 'bg-surface-elevated text-subtle'}`}>
-              {pl.name} {n > 0 ? n : ''}
-            </span>
-          )
-        })}
-      </div>
+      {header}
+    </div>
+  )
+}
 
-      {/* Intro / story */}
-      {plan.intro && (
-        <div className="mt-5 whitespace-pre-wrap rounded-2xl border border-border bg-surface p-5 text-sm leading-relaxed text-text">
-          {plan.intro}
-        </div>
-      )}
+// ── Active mode — composed per the resolved widget order ──────────────────────
+function ActiveMode({
+  widgets,
+  plan,
+  progress,
+  profileId,
+  pillars,
+}: {
+  widgets: WidgetId[]
+  plan: import('@/lib/journey-plans').JourneyPlan
+  progress: import('@/lib/journey-plans').JourneyProgress
+  profileId: string
+  pillars: import('@/lib/pillars').Pillar[]
+}) {
+  const accent = plan.accent
+  const checklistRows: ChecklistRow[] = progress.items.map((it) => ({
+    key: it.id,
+    practiceId: it.practice?.id ?? null,
+    title: it.tierContent?.title ?? it.practice?.title ?? 'Practice',
+    cadence: it.cadence ?? it.practice?.cadence ?? null,
+    target: it.target,
+    loggedThisWeek: it.loggedThisWeek,
+    met: it.met,
+    resolvedTier: it.resolvedTier,
+  }))
+  const resolvedTier = progress.items[0]?.resolvedTier ?? 'current'
 
-      {/* The path */}
-      <section className="mt-6">
-        <h2 className="mb-2 px-1 text-sm font-bold text-text">The path · {items.length} {items.length === 1 ? 'step' : 'steps'}</h2>
-        {items.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border bg-surface px-5 py-6 text-center text-sm text-muted">This journey has no practices yet.</div>
-        ) : (
-          <ol className="space-y-2">
-            {items.map((it, i) => {
-              const pid = it.domain_id ?? it.practice?.domain_id ?? null
-              const pillar = pid ? byId.get(pid) : null
-              const cadence = itemCadence(it)
-              return (
-                <li key={it.id} className="rounded-2xl border border-border bg-surface px-4 py-3 shadow-sm">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-xs font-bold tabular-nums text-subtle">{i + 1}</span>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="truncate text-sm font-semibold text-text">{it.practice?.title ?? 'Practice'}</span>
-                        {pillar ? <PillarBadge name={(pillar as Pillar).name} /> : null}
-                      </div>
-                      <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted">
-                        {cadence && <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{cadence}</span>}
-                        {it.note && <span className="line-clamp-1">· {it.note}</span>}
-                      </div>
-                    </div>
-                  </div>
-                </li>
-              )
-            })}
-          </ol>
-        )}
-      </section>
+  const node = (id: WidgetId): React.ReactNode => {
+    switch (id) {
+      case 'next-step':
+        return <NextStepCard progress={progress} accent={accent} />
+      case 'progress':
+        return <SeasonProgress progress={progress} accent={accent} />
+      case 'checklist':
+        return checklistRows.length > 0 ? (
+          <section>
+            <h2 className="mb-3 text-sm font-bold tracking-tight text-text">The full path</h2>
+            <StepChecklist rows={checklistRows} planTitle={plan.title} />
+          </section>
+        ) : null
+      case 'gamification':
+        return (
+          <Suspense fallback={<PanelSkeleton rows={1} />}>
+            <GamificationPanel profileId={profileId} />
+          </Suspense>
+        )
+      case 'streak':
+        return (
+          <Suspense fallback={<PanelSkeleton rows={1} />}>
+            <StreakStrip profileId={profileId} />
+          </Suspense>
+        )
+      case 'companions':
+        return <ChorusStrip companions={progress.circleCompanions} />
+      case 'practice-guide':
+        return <PracticeGuideBlock intro={plan.intro} />
+      default:
+        return null
+    }
+  }
 
-      {/* Non-author: adopt / remix */}
+  return (
+    <div className="space-y-5">
+      {widgets.map((id) => {
+        const el = node(id)
+        return el ? <div key={id}>{el}</div> : null
+      })}
+
+      {/* The member tier-override control — always available in active mode (not a layout
+          widget; it's a per-member setting that travels with the page, not the plan). */}
+      <TierControl planId={plan.id} slug={plan.slug} resolvedTier={resolvedTier} />
+
+      <p className="text-center text-xs text-subtle">
+        Pillars: {pillars.filter((p) => progress.items.some((it) => (it.domain_id ?? it.practice?.domain_id) === p.id)).map((p) => p.name).join(' · ') || '—'}
+      </p>
+    </div>
+  )
+}
+
+// ── Discovery mode — composed per the resolved widget order ───────────────────
+function DiscoveryMode({
+  widgets,
+  plan,
+  items,
+  pillars,
+  pillarsById,
+  adopted,
+  isAuthor,
+}: {
+  widgets: WidgetId[]
+  plan: import('@/lib/journey-plans').JourneyPlan
+  items: import('@/lib/journey-plans').JourneyPlanItem[]
+  pillars: import('@/lib/pillars').Pillar[]
+  pillarsById: Map<string, import('@/lib/pillars').Pillar>
+  adopted: boolean
+  isAuthor: boolean
+}) {
+  const accent = plan.accent
+
+  const node = (id: WidgetId): React.ReactNode => {
+    switch (id) {
+      case 'story':
+        return <StoryBlock intro={plan.intro} />
+      case 'path':
+        return <PathBlock items={items} pillarsById={pillarsById} accent={accent} />
+      case 'pillar-balance':
+        return <PillarBalanceBlock items={items} pillars={pillars} />
+      case 'social-proof':
+        return <SocialProofBlock count={plan.adopt_count} />
+      case 'reward-preview':
+        return <RewardPreviewBlock gems={plan.completion_gems} />
+      case 'completion-rule':
+        return <CompletionRuleBlock targetWeeks={plan.target_weeks} />
+      default:
+        return null
+    }
+  }
+
+  return (
+    <div className="space-y-5">
+      {widgets.map((id) => {
+        const el = node(id)
+        return el ? <div key={id}>{el}</div> : null
+      })}
+
+      {/* Adopt / Remix — the discovery CTA (shown to everyone but the author's own editor). */}
       {!isAuthor && (
-        <section className="mt-6 rounded-2xl border border-border bg-surface p-4 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm text-muted">
-              {adopted
-                ? 'You’ve adopted this journey — its practices are in your daily loop.'
-                : 'Adopt it to add these practices to your daily loop, or remix it into your own.'}
-            </p>
-            <div className="flex shrink-0 items-center gap-2">
-              {adopted ? (
-                <span className="inline-flex items-center gap-1.5 rounded-xl bg-success-bg px-4 py-2 text-sm font-semibold text-success"><CheckCircle className="h-4 w-4" /> Adopted</span>
-              ) : (
-                <form action={adoptPlanAction}>
-                  <input type="hidden" name="planId" value={plan.id} />
-                  <input type="hidden" name="slug" value={plan.slug} />
-                  <button type="submit" disabled={items.length === 0} className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50">
-                    <Heart className="h-4 w-4" /> Adopt
-                  </button>
-                </form>
-              )}
-              <form action={forkPlanAction}>
-                <input type="hidden" name="planId" value={plan.id} />
-                <button type="submit" className="inline-flex items-center gap-1.5 rounded-xl border border-border px-4 py-2 text-sm font-medium text-text transition-colors hover:border-primary hover:text-primary-strong">
-                  <GitFork className="h-4 w-4" /> Remix
-                </button>
-              </form>
-            </div>
-          </div>
-        </section>
+        <AdoptRemixBlock
+          planId={plan.id}
+          slug={plan.slug}
+          adopted={adopted}
+          canAdopt={items.length > 0}
+          adoptAction={adoptPlanAction}
+          forkAction={forkPlanAction}
+        />
       )}
-      </DetailTemplate>
+    </div>
+  )
+}
+
+function PanelSkeleton({ rows }: { rows: number }) {
+  return (
+    <div className="space-y-2.5" aria-hidden>
+      {Array.from({ length: rows }, (_, i) => (
+        <div key={i} className="h-20 animate-pulse rounded-2xl bg-surface-elevated/60" />
+      ))}
     </div>
   )
 }
