@@ -1,11 +1,28 @@
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { contactsOwnerId } from '@/lib/connections/access'
 import { getContact } from '@/lib/connections/store'
+import { getConnectionSettings } from '@/lib/connections/connection-settings'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { RelationshipTimeline } from '@/components/people/relationship-timeline'
 import { Detail } from './detail'
 
 export const dynamic = 'force-dynamic'
+
+/** The member this capture was linked to, if any. `linked_profile_id` isn't on the
+ *  store's NetworkContact projection, so read it directly here (owner-scoped). */
+async function linkedProfileId(ownerId: string, contactId: string): Promise<string | null> {
+  const db = createAdminClient() as unknown as SupabaseClient
+  const { data } = await db
+    .from('network_contacts')
+    .select('linked_profile_id')
+    .eq('id', contactId)
+    .eq('owner_id', ownerId)
+    .maybeSingle()
+  return ((data as { linked_profile_id?: string | null } | null)?.linked_profile_id) ?? null
+}
 
 export default async function ProfileDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const ownerId = await contactsOwnerId()
@@ -15,6 +32,18 @@ export default async function ProfileDetailPage({ params }: { params: Promise<{ 
   const data = await getContact(ownerId, id)
   if (!data) notFound()
 
+  // If this captured person became a member, show the caller's private shared
+  // history with them (gated behind resonance, like the rest of P3). A non-member
+  // contact has no Frequency event history, so we skip it entirely.
+  const [settings, linkedId] = await Promise.all([
+    getConnectionSettings(),
+    linkedProfileId(ownerId, id),
+  ])
+  const timeline =
+    settings.resonanceEnabled && linkedId ? (
+      <RelationshipTimeline otherId={linkedId} title={`Your history with ${data.contact.displayName ?? 'them'}`} />
+    ) : undefined
+
   return (
     <div className="mx-auto max-w-2xl">
       <Link
@@ -23,7 +52,7 @@ export default async function ProfileDetailPage({ params }: { params: Promise<{ 
       >
         <ArrowLeft className="h-4 w-4" /> Profiles
       </Link>
-      <Detail initial={data} />
+      <Detail initial={data} timeline={timeline} />
     </div>
   )
 }
