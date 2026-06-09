@@ -23,6 +23,14 @@ Frequency keeps your relationships alive instead of letting them pile up as a de
 
 You may also see **"People you keep crossing paths with"** — folks who share your circles or events but you haven't connected with yet. One tap sends them a request. (Your steward can turn these features on or off for the community.)
 
+## Introduce two friends
+
+Know two people who should meet? On your Friends page, **introduce them** — pick two of your friends and add a line about why they'd click. They'll each see that you thought of them, and when they connect, **you earn gems** for bringing two people together. Your Friends page also keeps a little inbox of the introductions you've made and the ones made for you. It's the most valuable thing you can do here: knitting the community together, one introduction at a time.
+
+## A shared history, remembered for you
+
+When you open a friend's profile, Frequency shows **how you're connected** — when you met, when you became friends, and the events you've both shown up to — built automatically from what you actually do together, so you never have to write any of it down. It's your own private memory of the relationship.
+
 ## Invite people in
 
 Use **Invite friends** — from your account menu or the top of your Friends page — to bring new people to Frequency. You'll get a personal invite link and a QR code you can copy, share, or show in person. When someone joins through your link, you're connected automatically and you earn zaps for the introduction.
