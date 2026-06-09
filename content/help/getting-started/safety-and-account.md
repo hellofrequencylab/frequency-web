@@ -3,13 +3,17 @@ title: Blocking and deleting your account
 description: How to block another member and how to permanently delete your account.
 category: getting-started
 order: 4
-updated: 2026-05-31
+updated: 2026-06-09
 audience: member
 featureKeys: [blocking, account]
 status: published
 ---
 
 You are in control of who can reach you and of your account.
+
+## Your location is always private
+
+Frequency **never shares your exact location**. When the app helps people find others nearby, it only ever shows a fuzzed area (about a mile across) or your city — never a precise spot on a map. You decide who can find you nearby, how precise that is, and how far away they can be, all under **Settings → Connections & Location** (see [Your settings](/help/getting-started/your-settings)). Turn on **Ghost mode** any time to disappear from proximity and maps completely.
 
 ## Block a member
 
