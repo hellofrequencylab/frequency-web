@@ -315,3 +315,14 @@ lowest-risk wins are **auto-calendar-on-RSVP**, **completing the 3-touch cadence
   only (per-day cache, read-only, degrade to null when AI is off).
 - ⏳ **Still parked:** SMS channel — blocked on the legal-entity + EIN decision (gates A2P 10DLC
   registration *and* payouts). Free-tier claim persistence. Per-section `<Suspense>` on the Index.
+
+### 2026-06-09 — Audit + hardening
+Full verification sweep — see [`EVENTS-AUDIT.md`](EVENTS-AUDIT.md) for the complete status checklist,
+security/SEO findings, founder action items, and process suggestions.
+- ✅ **Security hardening** (`20260610030000_events_security_hardening.sql`): atomic ticket inventory
+  (`adjust_ticket_sold`), DB-level RSVP capacity guard (closes the client-side waitlist bypass), 2 FK
+  indexes.
+- ✅ **SEO/AIO** (public `/discover/events/*` only): Twitter cards, `Event` schema `image`, breadcrumb
+  path fix, meta-description truncation. (In-app `/events/*` stays robots-disallowed by design.)
+- ◑ **Honest gaps remain:** confirmation-on-RSVP email, cancel→bulk-refund, `event_posts`/`event_media`/
+  `event_cohosts`, discovery polish, and SMS — tracked in EVENTS-AUDIT §3 with founder items in §5.

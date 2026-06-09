@@ -22,19 +22,23 @@ export async function generateMetadata({
   if (!event) return { title: 'Event not found' }
 
   const where = event.city ? ` in ${event.city}` : ''
-  const description =
+  const full =
     event.description ??
     `${event.title}: a Frequency community event${where}. Sign in to RSVP.`
+  // Search snippets truncate around 155 chars — keep the meta description tight.
+  const description = full.length > 155 ? `${full.slice(0, 152).trimEnd()}…` : full
+  const ogTitle = `${event.title} · ${SITE_NAME}`
   return {
     title: event.title,
     description,
     alternates: { canonical: `/discover/events/${event.slug}` },
     openGraph: {
-      title: `${event.title} · ${SITE_NAME}`,
+      title: ogTitle,
       description,
       url: `/discover/events/${event.slug}`,
       type: 'article',
     },
+    twitter: { card: 'summary_large_image', title: ogTitle, description },
   }
 }
 
@@ -61,7 +65,7 @@ export default async function EventPage({
           eventSchema(event),
           breadcrumbSchema([
             { name: 'Discover', path: '/discover' },
-            { name: 'Events', path: '/discover' },
+            { name: 'Events', path: '/discover/events' },
             { name: event.title, path: `/discover/events/${event.slug}` },
           ]),
         ]}
