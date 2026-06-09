@@ -34,6 +34,7 @@ Events are the gatherings that make Frequency real: the in-person and online mee
 ## Finding events
 
 - Browse the events library and filter by **what kind of gathering** it is (ceremony, movement, learning, social, and more), by its **energy** (grounding vs. high-activation), or to show only events that still **have open spots**.
+- Set a home location on your profile and you can also filter by **distance** — show only gatherings hosted within 10, 25, or 50 km of you. (We use your approximate neighborhood, never your exact address.)
 - When we have a sense of what resonates with you, a **"For You"** lane suggests gatherings you'd vibe with — and tells you, warmly, *why*. If we don't have enough to go on yet, you'll just see what's soonest and nearest.
 
 ## Tickets & paying
