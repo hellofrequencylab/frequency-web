@@ -183,6 +183,9 @@ export default async function EventsPage({
        host:profiles!host_id ( id, display_name, handle )`
     )
     .in('scope_id', myCircleIds)
+    // Browse shows only listable events: unlisted is link-only, private is
+    // host-only (RLS enforces access; THIS enforces non-listing — ADR-202).
+    .in('visibility', ['public', 'circle_only'])
     .eq('is_cancelled', false)
     .gte('starts_at', now)
     .lte('starts_at', future)
