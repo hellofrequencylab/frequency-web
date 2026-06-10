@@ -371,6 +371,13 @@ export default async function EventsPage({
                 Manage
               </Link>
             )}
+            {/* Captured-poster drafts (the Poster Events flow) — every member
+                can capture a town poster, so the link rides with sign-in. */}
+            {myProfileId && (
+              <Link href="/events/drafts" className="text-sm font-medium text-muted transition-colors hover:text-primary-strong">
+                My drafts
+              </Link>
+            )}
             {/* Subscribe-to-calendar affordance (Events B-4) — signed-in members
                 only; renders nothing for visitors. */}
             {myProfileId && <CalendarSubscribe />}
