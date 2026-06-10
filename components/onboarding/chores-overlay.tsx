@@ -34,18 +34,20 @@ export function ChoresOverlay({
   const [open, setOpen] = useState(false)
   const [claimed, setClaimed] = useState<{ amount: number } | null>(null)
   // "Don't show till tomorrow" snooze — hides BOTH the overlay and the Next Steps
-  // tab until the snooze expires. Read from localStorage on mount (client-only).
-  const [snoozedUntil, setSnoozedUntil] = useState(0)
+  // tab until the snooze expires. A plain boolean (computed in an effect / the
+  // snooze handler, never in render) so we don't read the clock during render.
+  const [snoozed, setSnoozed] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
 
   const reward = chores.complete && !chores.rewarded
   const coach = chores.complete && chores.rewarded && !!nextAction
 
-  // Hydrate the snooze from storage once on mount (avoids SSR/client mismatch).
+  // Hydrate the snooze from storage once on mount (client-only; the clock read
+  // stays out of render).
   useEffect(() => {
-    setSnoozedUntil(Number(localStorage.getItem(SNOOZE_KEY) ?? 0))
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSnoozed(Date.now() < Number(localStorage.getItem(SNOOZE_KEY) ?? 0))
   }, [])
-  const snoozed = Date.now() < snoozedUntil
 
   // Auto-open: the reward beat always fires (she pays up once); the chores and
   // coach beats nudge on a pace (once per session, ≥1h since last seen).
@@ -76,10 +78,9 @@ export function ChoresOverlay({
 
   const snoozeTomorrow = useCallback(() => {
     setOpen(false)
-    const until = Date.now() + 24 * 60 * 60 * 1000
-    setSnoozedUntil(until) // hide the Next Steps tab immediately, until tomorrow
+    setSnoozed(true) // hide the Next Steps tab immediately, until tomorrow
     try {
-      localStorage.setItem(SNOOZE_KEY, String(until))
+      localStorage.setItem(SNOOZE_KEY, String(Date.now() + 24 * 60 * 60 * 1000))
       sessionStorage.setItem(SESSION_KEY, '1')
     } catch {}
   }, [])
