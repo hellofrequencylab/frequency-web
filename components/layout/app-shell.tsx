@@ -36,6 +36,7 @@ import {
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { NotificationBell } from '@/components/layout/notification-bell'
+import { HoverTip } from '@/components/ui/hover-tip'
 import { MessagesPopover } from '@/components/messages/messages-popover'
 import { Breadcrumbs } from '@/components/layout/breadcrumbs'
 import { ViewAsControl } from '@/components/layout/view-as-control'
@@ -1300,6 +1301,20 @@ export default function AppShell({
               hide/show seeded demo content for themselves; sized to match Search. */}
           {demoMode && hasDemoContent && <DemoToggle initialHidden={demoHidden} />}
 
+          {/* Report a bug — Beta only (shown while demo mode is on). Opens the same
+              support sheet as the account menu's "Report a bug", via the shared event. */}
+          {demoMode && (
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent('open-support', { detail: { type: 'bug' } }))}
+              title="Report a bug"
+              className="hidden sm:flex items-center gap-1.5 rounded-full border border-warning/40 bg-warning-bg/40 px-3 py-1.5 text-sm font-medium text-warning hover:bg-warning-bg/70 transition-colors"
+            >
+              <Bug className="w-4 h-4" />
+              <span className="hidden md:inline">Report a bug</span>
+            </button>
+          )}
+
           {/* Search pill — opens the live overlay. Desktop */}
           <button
             type="button"
@@ -1329,18 +1344,19 @@ export default function AppShell({
               Mobile: friends + messages fold into ONE silhouette icon → Messages. */}
           <div className="flex items-center gap-1 sm:ml-1 sm:pl-1.5 sm:border-l sm:border-border">
             {/* Friends — desktop only (mobile merges it into the combined icon) */}
-            <Link
-              href="/friends"
-              aria-label="Friends"
-              title="Friends"
-              className="hidden sm:flex items-center justify-center w-9 h-9 rounded-full text-muted hover:text-text hover:bg-surface-elevated transition-colors"
-            >
-              <Users className="w-5 h-5" />
-            </Link>
+            <HoverTip label="Friends" className="hidden sm:inline-flex">
+              <Link
+                href="/friends"
+                aria-label="Friends"
+                className="flex items-center justify-center w-9 h-9 rounded-full text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+              >
+                <Users className="w-5 h-5" />
+              </Link>
+            </HoverTip>
             {/* Messages — desktop popover */}
-            <div className="hidden sm:block">
+            <HoverTip label="Messages" className="hidden sm:inline-flex">
               <MessagesPopover />
-            </div>
+            </HoverTip>
             {/* Mobile: friends + messages combined into one silhouette icon → Messages */}
             <Link
               href="/messages"
@@ -1353,17 +1369,20 @@ export default function AppShell({
             {/* Daily check-in streak — links to your Quest dashboard (where streaks,
                 rank, and rewards live), so the badge is a doorway, not just a number. */}
             {Number((profile.meta as { daily_checkin_streak?: number } | null)?.daily_checkin_streak ?? 0) >= 1 && (
-              <Link
-                href="/crew"
-                aria-label="Your streak — open your Quest dashboard"
-                className="hidden sm:inline-flex items-center gap-1 rounded-full bg-primary-bg px-2 py-1 text-xs font-bold text-primary-strong transition-colors hover:bg-primary-bg/70"
-                title="Daily check-in streak — tap to open your Quest dashboard"
-              >
-                <Flame className="w-3.5 h-3.5" />
-                {Number((profile.meta as { daily_checkin_streak?: number } | null)?.daily_checkin_streak ?? 0)}
-              </Link>
+              <HoverTip label="Daily streak. Open your Quest dashboard" className="hidden sm:inline-flex">
+                <Link
+                  href="/crew"
+                  aria-label="Your streak — open your Quest dashboard"
+                  className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-2 py-1 text-xs font-bold text-primary-strong transition-colors hover:bg-primary-bg/70"
+                >
+                  <Flame className="w-3.5 h-3.5" />
+                  {Number((profile.meta as { daily_checkin_streak?: number } | null)?.daily_checkin_streak ?? 0)}
+                </Link>
+              </HoverTip>
             )}
-            <NotificationBell initialUnread={unreadCount} />
+            <HoverTip label="Notifications">
+              <NotificationBell initialUnread={unreadCount} />
+            </HoverTip>
           </div>
 
           {/* Account group — set off by its own divider. (Quick-capture removed from
@@ -1390,39 +1409,28 @@ export default function AppShell({
       {/* DockRevealProvider runs the single shared scroll listener that rises
           both bottom docks together (left profile, right stats). */}
       <DockRevealProvider>
-      {/* The left nav is FIXED to the viewport (never scrolls with the page, never
-          "catches up" at the bottom); the body is padded by its width so nothing
-          underlaps. The document still scrolls the main column. */}
-      <div className="flex flex-1 md:pl-52">
-
-        {/* Left nav — fixed under the header, with its own internal scroll. */}
-        <aside className="hidden md:flex w-52 flex-col fixed left-0 top-14 bottom-0 z-20 border-r border-border bg-surface/80 backdrop-blur-sm">
-
-          {/* Community spaces + features + admin rail (the Broadcast bar lives up top) */}
-          <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-            <NavLinkList isActive={isActive} role={gateRole} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} />
-          </nav>
-
-          {/* Upgrade to Crew. Non-paying members only; one-time pitch that
-              collapses to a slim "Upgrade" tab above the profile card. */}
-          {!hideAppNav && role === 'member' && <UpgradeCrew />}
-
-          {/* Profile card. Public identity anchor.
-              Avatar · name · role badge → public profile · member settings.
-              Rises to show quick actions when the feed scroll hits the bottom. */}
-          <ProfileCard profile={profile} role={role} realRole={effectiveRealRole} profileHref={profileHref} previewVisitor={previewVisitor} />
-        </aside>
-
-        {/* Center + right column — ONE shared scroll container (no per-column
-            scroll boxes). The feed and the rail live in the same scroll and
-            move together: the rail scrolls up with the feed, and once the rail
-            runs out the feed keeps going (right side just shows the divider);
-            scrolling back up brings the rail back. Normal flow, no sticky. */}
+      {/* Both rails now live IN normal flow inside the one shared page scroll, so the
+          LEFT nav scrolls up with the content exactly like the right rail (its profile
+          card sits at the bottom of the column and rides up with the page). */}
+      <div className="flex flex-1">
         <div
           data-feed-scroll
           className="flex-1 min-w-0 pb-[calc(4rem_+_env(safe-area-inset-bottom))] md:pb-0"
         >
           <div className="flex items-stretch min-h-[calc(100vh-3.5rem)]">
+
+            {/* Left nav — in-flow column (no longer fixed); scrolls with the page,
+                matching the right rail. */}
+            <aside className="hidden md:flex w-52 shrink-0 flex-col border-r border-border bg-surface/80 backdrop-blur-sm">
+              {/* Community spaces + features + admin rail (the Broadcast bar lives up top) */}
+              <nav className="flex-1 px-3 py-3 space-y-0.5">
+                <NavLinkList isActive={isActive} role={gateRole} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} />
+              </nav>
+              {/* Upgrade to Crew. Non-paying members only; collapses to a slim tab. */}
+              {!hideAppNav && role === 'member' && <UpgradeCrew />}
+              {/* Profile card — public identity anchor; rides up with the page scroll. */}
+              <ProfileCard profile={profile} role={role} realRole={effectiveRealRole} profileHref={profileHref} previewVisitor={previewVisitor} />
+            </aside>
 
             {/* Center column — an ambient dispatch ticker pinned on top, then the
                 page content. Navigation lives entirely in the single left rail

@@ -15,7 +15,6 @@ import { buildVeraOpening, buildWelcomeSlides } from '@/lib/onboarding/vera-welc
 import { getPracticesToLogToday } from '@/lib/practices'
 import { getMemberProgress } from '@/lib/member-progress'
 import { getMemberPillarBalance } from '@/lib/pillars'
-import { StageStrip } from '@/components/progress/stage-strip'
 import { StageCelebration } from '@/components/progress/stage-celebration'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
@@ -124,7 +123,6 @@ export default async function FeedPage({
   const onboarding = progress?.onboarding ?? null
   const practiceStreak = progress?.streakState ?? null
   const stageIndex = progress?.stage.index ?? 0
-  const nextGateLabel = progress?.nextGates.find((g) => !g.met)?.label ?? null
 
   // Pillar balance for the graduated board — only surfaced once the member is
   // Established (stage 3), so fetch it only then.
@@ -179,16 +177,6 @@ export default async function FeedPage({
           stageIndex={progress.newlyUnlocked.index}
           stageLabel={progress.newlyUnlocked.label}
           tagline={progress.newlyUnlocked.tagline}
-        />
-      )}
-
-      {onboarding?.complete && progress && (
-        <StageStrip
-          stageIndex={progress.stage.index}
-          stageLabel={progress.stage.label}
-          tagline={progress.stage.tagline}
-          nextStageLabel={progress.next?.label ?? null}
-          nextGateLabel={nextGateLabel}
         />
       )}
 
