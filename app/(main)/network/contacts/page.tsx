@@ -52,18 +52,29 @@ export default async function ConnectionsPage({
 
   return (
     <div className="mx-auto max-w-5xl">
+      {/* Mobile header is COMPACT: the sticky hub tab directly above already reads
+          "My Contacts" with the icon, so the H1 drops the icon and the description
+          shrinks to one line. sm+ keeps the full header. */}
       <IndexTemplate
         title={
           <span className="flex items-center gap-2">
-            <Contact className="h-5 w-5 text-primary-strong" />
+            <Contact className="hidden h-5 w-5 text-primary-strong sm:block" />
             My Contacts
           </span>
         }
-        description="People you’ve met. Scanned from a card or poster, or added by hand. Private to you unless you promote them to your network."
+        description={
+          <>
+            <span className="sm:hidden">People you&rsquo;ve met, private to you.</span>
+            <span className="hidden sm:inline">
+              People you&rsquo;ve met. Scanned from a card or poster, or added by hand. Private to
+              you unless you promote them to your network.
+            </span>
+          </>
+        }
         action={
           <Link
             href="/connections/new"
-            className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover sm:px-3.5 sm:py-2"
           >
             <Plus className="h-4 w-4" /> New profile
           </Link>
