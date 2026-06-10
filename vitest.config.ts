@@ -10,6 +10,8 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['**/*.test.ts'],
-    exclude: ['node_modules/**', '.next/**'],
+    // `**/node_modules/**` (not just top-level) and `.claude/**` keep nested
+    // installs and agent worktrees (.claude/worktrees/*) out of the run.
+    exclude: ['**/node_modules/**', '.next/**', '.claude/**'],
   },
 })

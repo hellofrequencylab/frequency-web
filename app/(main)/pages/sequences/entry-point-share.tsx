@@ -10,7 +10,9 @@ type Mode = 'splash' | 'induction'
 // for whichever you picked. Both QR variants are pre-rendered server-side (same
 // path as the rest of the QR surfaces) and swapped here with zero round-trips; the
 // downloads stream from /api/qr (signed-in, same-site-link guarded). The choice is
-// remembered per browser so the card opens where you left it.
+// remembered per browser so the card opens where you left it. DB-built versions
+// have no public splash page, so they omit splashPath/splashQr and the kit locks
+// to the induction link.
 export function EntryPointShare({
   slug,
   audience,
@@ -22,15 +24,17 @@ export function EntryPointShare({
 }: {
   slug: string
   audience: string
-  splashPath: string
+  /** Omit for sequences without a public splash page (DB-built versions). */
+  splashPath?: string
   inductionPath: string
   /** Pre-rendered inline QR SVGs (server-side renderQrSvg). */
-  splashQr: string
+  splashQr?: string
   inductionQr: string
   /** Canonical site origin (lib/site.ts SITE_URL) — what the QR also encodes. */
   siteOrigin: string
 }) {
-  const [mode, setMode] = useState<Mode>('splash')
+  const hasSplash = !!splashPath && !!splashQr
+  const [mode, setMode] = useState<Mode>(hasSplash ? 'splash' : 'induction')
   const [copied, setCopied] = useState(false)
   // The QR + admin options stay COLLAPSED on open — the card leads with the splash
   // preview, not a wall of controls. Closed = a one-line share menu (copy the link);
@@ -42,20 +46,21 @@ export function EntryPointShare({
   // hydration mismatch) and we don't setState synchronously inside the effect.
   const storeKey = `fq_beta_entry_${slug}`
   useEffect(() => {
+    if (!hasSplash) return // induction-only: nothing to restore
     const saved = localStorage.getItem(storeKey)
     if (saved !== 'splash' && saved !== 'induction') return
     const id = requestAnimationFrame(() => setMode(saved))
     return () => cancelAnimationFrame(id)
-  }, [storeKey])
+  }, [storeKey, hasSplash])
 
   function pick(next: Mode) {
     setMode(next)
     try { localStorage.setItem(storeKey, next) } catch { /* private mode — fine */ }
   }
 
-  const path = mode === 'splash' ? splashPath : inductionPath
+  const path = mode === 'splash' && hasSplash ? splashPath! : inductionPath
   const shareUrl = `${siteOrigin}${path}`
-  const qr = mode === 'splash' ? splashQr : inductionQr
+  const qr = mode === 'splash' && hasSplash ? splashQr! : inductionQr
   const qrApi = `/api/qr?text=${encodeURIComponent(path)}`
   const fileName = `beta-${slug}-${mode}`
 
@@ -135,18 +140,24 @@ export function EntryPointShare({
 
       {/* Controls */}
       <div className="flex min-w-0 flex-1 flex-col gap-3">
-        <div>
-          <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">Incoming point</p>
-          <div className="inline-flex rounded-lg border border-border bg-surface-elevated p-0.5">
-            {tab('splash', 'Splash page')}
-            {tab('induction', 'Skip to induction')}
+        {hasSplash ? (
+          <div>
+            <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">Incoming point</p>
+            <div className="inline-flex rounded-lg border border-border bg-surface-elevated p-0.5">
+              {tab('splash', 'Splash page')}
+              {tab('induction', 'Skip to induction')}
+            </div>
+            <p className="mt-1.5 text-2xs leading-snug text-subtle">
+              {mode === 'splash'
+                ? 'Lands on the audience splash, then into the induction.'
+                : 'Drops straight into the voiced induction, no splash.'}
+            </p>
           </div>
-          <p className="mt-1.5 text-2xs leading-snug text-subtle">
-            {mode === 'splash'
-              ? 'Lands on the audience splash, then into the induction.'
-              : 'Drops straight into the voiced induction, no splash.'}
+        ) : (
+          <p className="text-2xs leading-snug text-subtle">
+            Drops straight into the voiced induction. The link and QR are safe to share and print.
           </p>
-        </div>
+        )}
 
         {/* Shareable link */}
         <div className="flex items-center gap-2">

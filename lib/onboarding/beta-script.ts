@@ -81,7 +81,9 @@ export const VERA = {
   },
   intro: {
     eyebrow: 'Welcome, Founder',
-    heading: "You're not a user. You're a Founder.",
+    // Headings support a light accent markup in the induction: a word wrapped in
+    // *asterisks* renders in the brand accent (same convention as splash statements).
+    heading: "You're not a user. You're a *Founder.*",
     body: 'Everyone else waits until it’s polished. You’re here while it’s raw, shaping the room they’ll all walk into. Let’s build something worth belonging to.',
     cta: "Let's go",
   },

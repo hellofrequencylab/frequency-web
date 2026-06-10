@@ -282,8 +282,8 @@ A **cinematic, <90-second sequence** (not a form) that turns a signup into a **F
 It deliberately gates on **"The Oath"**, 3 checkboxes: *"I agree to break things on this
 website," "I agree to submit bug reports," "I agree to be a Frequency Web Founder."*
 Framing: *"This isn't a product yet. It's a promise."* Entry paths are tagged forever
-(early-adopter / personal-invite / founding-partner) so the founding cohort stays
-segmentable.
+(the default flow plus audience versions built at /pages/sequences) so the founding
+cohort stays segmentable.
 
 ### The demo system (why the community looks alive)
 A self-cleaning layer of clearly-marked "Beta demo" content (members/circles/posts/events)

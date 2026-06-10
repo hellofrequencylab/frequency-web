@@ -3,9 +3,6 @@
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { getVeraConfig } from '@/lib/ai/vera/config'
-import { VERA, BETA_OATHS } from '@/lib/onboarding/beta-script'
-import { DEFAULT_SEQUENCE } from '@/lib/onboarding/beta-sequences'
 import { resolveSequence } from '@/lib/onboarding/resolve-sequence'
 import { isPersonaId, type PersonaId } from '@/lib/onboarding/personas'
 import BetaInduction from './induction'
@@ -18,28 +15,16 @@ export default async function BetaInductionPage({
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  // The audience sequence (early-adopter / personal / founding-partner) drives the
-  // copy. Operator overrides from /admin/vera still apply to the DEFAULT sequence
-  // (that's what they were authored against); audience sequences use their own copy.
+  // The sequence drives the copy. No ?seq (or ?seq=beta-default) = the base VERA
+  // flow, fully merged with the owner's edits: resolveSequence layers the coded
+  // copy, the legacy /admin/vera induction tweaks, and the `beta-default` override
+  // saved by the /pages/splash editor. DB-built versions resolve the same way.
   const { seq: seqSlug, persona: personaSlug } = await searchParams
-  // Resolve from code + DB (owner edits + wizard-built versions render here, ADR-162).
   const seq = await resolveSequence(seqSlug)
   // Who they said they are in the lead flow (ADR-125) — pre-selects the Welcome-beat
   // picker, branches the tour reel, and is stamped on the member at completion.
   const persona: PersonaId | undefined = isPersonaId(personaSlug) ? personaSlug : undefined
-  const isDefault = seq.slug === DEFAULT_SEQUENCE
-  const ind = (await getVeraConfig()).induction
-  const copy = isDefault
-    ? {
-        vera: {
-          ...seq.vera,
-          oath: { ...seq.vera.oath, heading: ind.oathHeading, body: ind.oathBody },
-          intro: { ...seq.vera.intro, heading: ind.introHeading, body: ind.introBody },
-        } as typeof VERA,
-        oaths: BETA_OATHS.map((o, i) => ({ id: o.id, label: ind.oathLabels[i] || o.label })),
-        heardAbout: ind.heardAbout.length ? ind.heardAbout : seq.heardAbout,
-      }
-    : { vera: seq.vera, oaths: seq.oaths, heardAbout: seq.heardAbout }
+  const copy = { vera: seq.vera, oaths: seq.oaths, heardAbout: seq.heardAbout }
 
   // Signed-out visitors run the WHOLE cinematic induction with no login wall
   // (ADR-082): "Join the Beta" opens the sequence immediately. Sign-in is
