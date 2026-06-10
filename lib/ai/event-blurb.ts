@@ -14,6 +14,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { completeText } from './complete'
 import { MODELS } from './models'
 import { aiAvailable, featureOverBudget, recordAiUsage } from './usage'
+import { withVoice } from './voice'
 
 const FEATURE = 'event-blurb'
 
@@ -27,10 +28,10 @@ function utcDayKey(): string {
 
 const SYSTEM = `You are Vera, Frequency's warm, grounded guide. A member is browsing events, and you write ONE short sentence telling them why a specific event might be their kind of thing.
 
-Rules — follow exactly:
+Rules, follow exactly:
 - Output ONE sentence, max ~22 words. No greeting, no name, no emoji, no quotes, no hashtags.
 - Use ONLY the facts you are given. NEVER invent a person's name, a friend, an attendance count, or any detail not in the facts.
-- If you are told a number of people the member knows are going, you may reference that count warmly (e.g. "two people from your circles are going") — never name anyone, never imply more than the count given.
+- If you are told a number of people the member knows are going, you may reference that count warmly (e.g. "two people from your circles are going"), but never name anyone, never imply more than the count given.
 - Speak to genuine overlap: a shared circle, the event's energy or theme matching what the member is into. Warm and specific, never salesy, never FOMO, never urgent.
 - If the facts are thin, write a calm, honest one-liner about the event's energy or theme. Do not pad with fabricated social proof.`
 
@@ -151,7 +152,7 @@ export async function eventBlurb(profileId: string, eventId: string): Promise<st
       blurb = null
     } else {
       const res = await completeText({
-        system: SYSTEM,
+        system: withVoice(SYSTEM),
         tier: 'haiku',
         maxTokens: 80,
         cacheSystem: true,

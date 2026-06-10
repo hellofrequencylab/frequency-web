@@ -309,7 +309,7 @@ export default async function ProfilePage({
       {tippedCents !== null && (
         <div className="mb-4 inline-flex items-center gap-2 rounded-xl border border-primary-bg bg-primary-bg/40 px-4 py-2.5 text-sm font-semibold text-primary-strong">
           <Heart className="h-4 w-4" />
-          Thank you — your ${(tippedCents / 100).toFixed(2)} tip to {firstName} is on its way.
+          Thank you. Your ${(tippedCents / 100).toFixed(2)} tip to {firstName} is on its way.
         </div>
       )}
 
@@ -461,7 +461,7 @@ function AchievementChip({
   const showProgress = !earned && !milestone
   return (
     <span
-      title={earned ? `${label} — earned` : showProgress ? `${label} — ${current}/${target}` : label}
+      title={earned ? `${label} (earned)` : showProgress ? `${label} (${current}/${target})` : label}
       className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
         earned ? 'bg-warning-bg text-primary' : 'border border-border text-muted'
       }`}

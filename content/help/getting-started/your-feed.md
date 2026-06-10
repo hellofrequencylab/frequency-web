@@ -3,7 +3,7 @@ title: Your feed
 description: What you see on the home feed and where it comes from.
 category: getting-started
 order: 11
-updated: 2026-06-06
+updated: 2026-06-10
 audience: member
 featureKeys: [feed]
 status: published
@@ -17,7 +17,7 @@ Your feed is home: the running stream of what's happening in the circles you're 
 - **Events and broadcasts**: upcoming gatherings and announcements from your hosts.
 - **Moments worth noticing**, like a welcome when someone new joins.
 
-Switch to the **Story** view for the day-by-day record of what the community actually lived — the feed as a journal, not a scroll. Your own captured moments collect in [your journal](/journal) too.
+Switch to the **Story** view for the day-by-day record of what the community actually lived: the feed as a journal, not a scroll. Your own captured moments collect in [your journal](/journal) too.
 
 ## Making it yours
 

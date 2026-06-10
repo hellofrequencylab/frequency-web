@@ -46,12 +46,12 @@ export function CirclesToolbar({ interests }: { interests: Interest[] }) {
     <div className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className="flex-1">
-          <DirectorySearch placeholder="Search circles by name, place, or interest…" />
+          <DirectorySearch placeholder="Search circles by name, place, or Channel…" />
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
           <FacetDropdown
-            label="Interest"
+            label="Channel"
             paramKey="interest"
             align="right"
             options={interests.map((i) => ({ value: i.id, label: i.name }))}

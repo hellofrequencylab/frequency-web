@@ -21,7 +21,7 @@ import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 const CONTENT_FALLBACK = {
   title: 'Channels',
   description:
-    'The four Channels — Mind, Body, Spirit, and Expression — are how Frequency is organized. Interests live inside them: global topics anyone can tune into, each carrying a practice that Circles run locally. Pick a Channel, find your Interest, then go do it with people near you.',
+    'The four Pillars (Mind, Body, Spirit, and Expression) are how Frequency is organized. Channels live inside them: global topics anyone can tune into, each carrying a practice that Circles run locally. Pick a Pillar, find your Channel, then go do it with people near you.',
 }
 
 // Operator-set title/description also drive <title> + og/twitter cards (PX.2).
@@ -165,8 +165,8 @@ export default async function ChannelsPage() {
   // Network stats parked at the right of the table-of-contents bar (no divider).
   const statStrip = (
     <div className="flex items-center gap-x-6">
-      <StatInline value={stats.channels} label="Channels" />
-      <StatInline value={stats.interests} label="Interests" />
+      <StatInline value={stats.channels} label="Pillars" />
+      <StatInline value={stats.interests} label="Channels" />
       <StatInline value={stats.tunedIn} label="Tuned in" />
       <StatInline value={stats.circles} label="Circles" />
     </div>
@@ -179,7 +179,7 @@ export default async function ChannelsPage() {
         <>
           {/* Mobile leads with a tight line so the Channels surface without scrolling
               past a wall of copy; desktop keeps the operator-editable full explainer. */}
-          <span className="sm:hidden">Four Channels — Mind, Body, Spirit, Expression — and the Interests inside them.</span>
+          <span className="sm:hidden">Four Pillars (Mind, Body, Spirit, Expression) and the Channels inside them.</span>
           <span className="hidden sm:inline">{pageDescription}</span>
         </>
       }
@@ -209,7 +209,7 @@ export default async function ChannelsPage() {
       {/* Two columns: the Channels flow on the left; the browse nav sits in a STABLE
           right column so it's never orphaned at the bottom. */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_17rem]">
-        {/* Left: the four Channels, each with its Interests beneath. */}
+        {/* Left: the four Pillars, each with its Channels beneath. */}
         <div className="min-w-0 space-y-10">
           {sections.map(({ domain, topics }) => (
             <DomainSection
@@ -228,7 +228,7 @@ export default async function ChannelsPage() {
               <div className="mb-3">
                 <h2 className="text-lg font-bold tracking-tight text-text">Unsorted</h2>
                 <p className="mt-0.5 text-sm text-muted leading-relaxed">
-                  Interests not yet sorted into a Channel.
+                  Channels not yet sorted into a Pillar.
                 </p>
               </div>
               <TopicGrid
@@ -242,7 +242,7 @@ export default async function ChannelsPage() {
           )}
 
           {sections.length === 0 && unsorted.length === 0 && (
-            <EmptyState icon={Radio} title="No Channels yet" description="Interests will appear here once they're set up." />
+            <EmptyState icon={Radio} title="No Channels yet" description="Channels will appear here once they're set up." />
           )}
         </div>
 
@@ -250,7 +250,7 @@ export default async function ChannelsPage() {
             column (the at-a-glance stats moved up beside the filter menu). */}
         <aside className="space-y-8">
           <section>
-            <SectionHeader title="Channels" count={sections.length} />
+            <SectionHeader title="Pillars" count={sections.length} />
             <div className="space-y-0.5">
               {sections.map(({ domain, topics }) => (
                 <a
@@ -312,7 +312,7 @@ function DomainSection({
           {tunedIn.length > 0 && <SectionHeader title="Explore more" count={explore.length} />}
           {explore.length === 0 ? (
             tunedIn.length > 0 ? (
-              <EmptyState icon={Radio} title="You're tuned into everything here" description={`You're following every Interest in ${domain.name}. Find a circle practicing one near you.`} />
+              <EmptyState icon={Radio} title="You're tuned into everything here" description={`You're following every Channel in ${domain.name}. Find a circle practicing one near you.`} />
             ) : null
           ) : (
             <TopicGrid

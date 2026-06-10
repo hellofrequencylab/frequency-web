@@ -72,13 +72,13 @@ export default async function DiscoverTopicsPage() {
         <div className="relative max-w-4xl mx-auto">
           <div className="mb-9 text-center max-w-2xl mx-auto">
             <SectionHeading
-              eyebrow="The interests"
+              eyebrow="The Channels"
               title={<>Two words that find your <span className="text-primary">people</span></>}
               kicker="The first conversation starts halfway in."
             />
             <p className="mt-5 text-lg text-muted leading-relaxed">
-              Frequency is organized into four Channels, and Interests live inside them.
-              Every Interest is a doorway: name the thing you already practice and you skip
+              Frequency is organized into four Pillars, and Channels live inside them.
+              Every Channel is a doorway: name the thing you already practice and you skip
               the small talk entirely, landing in a room of people who lit up the same way
               you did when they found it. Choose one to see the circles gathering around it
               near you.
@@ -128,7 +128,7 @@ export default async function DiscoverTopicsPage() {
       >
         <p>
           You don&apos;t arrive sure of anything. You walk toward the one that feels warm:
-          breathwork, surfing, sound, strength. The interest is the thread, but it&apos;s not
+          breathwork, surfing, sound, strength. The Channel is the thread, but it&apos;s not
           the point. The point is who it connects you to.
         </p>
         <p>

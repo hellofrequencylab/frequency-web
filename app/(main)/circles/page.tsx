@@ -214,7 +214,7 @@ export default async function CirclesPage({
       <StatInline value={stats.circles} label="Circles" />
       <StatInline value={stats.members} label="Members" />
       <StatInline value={stats.cities} label="Cities" />
-      <StatInline value={stats.interests} label="Interests" />
+      <StatInline value={stats.interests} label="Channels" />
     </div>
   )
 
@@ -324,7 +324,7 @@ export default async function CirclesPage({
               <EmptyState
                 icon={Users}
                 title={filtering ? 'No circles match these filters' : 'No circles yet'}
-                description={filtering ? 'Try a wider search, or start the first one for this corner of the network.' : 'Be the first — start a circle for your neighborhood or an interest.'}
+                description={filtering ? 'Try a wider search, or start the first one for this corner of the network.' : 'Be the first to start a circle for your neighborhood or a Channel.'}
                 action={user ? <NewCircleCompose interests={interests} buttonLabel="Start a circle" /> : undefined}
               />
             ) : (
@@ -340,7 +340,7 @@ export default async function CirclesPage({
           <aside className="space-y-6">
             {interestChips.length > 0 && (
               <div>
-                <SectionHeader title="Browse by interest" />
+                <SectionHeader title="Browse by Channel" />
                 <div className="space-y-0.5">
                   {interestChips.map((i) => {
                     const active = interest === i.id

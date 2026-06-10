@@ -82,8 +82,8 @@ export function NewChannelCompose({ pillars = [] }: { pillars?: PillarOption[] }
       >
         <div className="px-6 py-5 space-y-5">
           <p className="text-sm text-muted leading-relaxed">
-            Interests are global topics anyone can tune into, sorted under a
-            Channel. Pick a name, the Channel it belongs to, a category, and a
+            Channels are global topics anyone can tune into, sorted under a
+            Pillar. Pick a name, the Pillar it belongs to, a category, and a
             short description of what people will find inside.
           </p>
 
@@ -104,7 +104,7 @@ export function NewChannelCompose({ pillars = [] }: { pillars?: PillarOption[] }
           {pillars.length > 0 && (
             <div>
               <label htmlFor="ch-domain" className={cmLabel}>
-                Channel <span className="text-subtle font-normal">(optional)</span>
+                Pillar <span className="text-subtle font-normal">(optional)</span>
               </label>
               <select
                 id="ch-domain"
@@ -118,7 +118,7 @@ export function NewChannelCompose({ pillars = [] }: { pillars?: PillarOption[] }
                 ))}
               </select>
               <p className="mt-1 text-2xs text-subtle">
-                The Channel (Mind, Body, Spirit, Expression) this Interest sits under.
+                The Pillar (Mind, Body, Spirit, Expression) this Channel sits under.
               </p>
             </div>
           )}

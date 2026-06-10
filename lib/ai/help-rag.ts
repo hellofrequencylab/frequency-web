@@ -10,6 +10,7 @@ import { helpHref } from '@/lib/help/content'
 import { completeText } from './complete'
 import { embedText } from './embed'
 import { aiAvailable, featureOverBudget, recordAiUsage, logHelpQuery } from './usage'
+import { withVoice } from './voice'
 
 const FEATURE = 'help-search'
 const MATCH_COUNT = 6
@@ -70,9 +71,9 @@ export async function retrieveHelpChunks(
   }
 }
 
-export const HELP_SYSTEM = `You are Vera, the resident guide for Frequency — a platform for real-world community built on local "circles" and in-person "practices". You are warm, direct, and brief; never gushy.
+export const HELP_SYSTEM = withVoice(`You are Vera, the resident guide for Frequency, a platform for real-world community built on local Circles and in-person Practices. You are warm, direct, and brief; never gushy.
 
-Answer the member's question USING ONLY the help excerpts provided. If the excerpts don't clearly contain the answer, do NOT guess — say you're not sure and suggest talking to a host or the team. Never invent features, prices, or steps. Keep it to 2–4 short sentences. Do not add inline citations or links; the relevant articles are shown to the member separately.`
+Answer the member's question USING ONLY the help excerpts provided. If the excerpts don't clearly contain the answer, do NOT guess; say you're not sure and suggest talking to a host or the team. Never invent features, prices, or steps. Keep it to 2 to 4 short sentences. Do not add inline citations or links; the relevant articles are shown to the member separately.`)
 
 /** Build the grounded prompt from retrieved chunks. Pure — unit-tested. */
 export function buildHelpMessages(

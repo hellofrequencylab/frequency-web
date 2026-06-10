@@ -45,7 +45,15 @@
   toward a Lab. Circles meet in homes/public spaces — never Outposts.
 - **Frequency Lab** = standalone for-profit venue; when a Lab exists in a Nexus, the
   Outpost HQ lives there.
-- **Channels** = the topical forum feature ONLY. Verb: **"tune in."**
+- **Channels** = the topical forum feature ONLY (the `topical_channels` table): the
+  seven topics — Spirituality, Movement, Holistic Health, Human Relating, Activism,
+  Creative, Business Support. Verb: **"tune in."** A Channel sorts under a Pillar via
+  `topical_channels.pillar_id`. **"Interest" / "Interests" is RETIRED as a member-facing
+  word for these** (it was a synonym for the topical Channels) — say **Channel**.
+- **Pillars vs Channels (locked, June 2026):** the FOUR (Mind / Body / Spirit /
+  Expression) are **Pillars**, never "Channels" and never "Domains". The SEVEN topics
+  are **Channels**, never "Interests". Two distinct layers: Pillar > Channel > Circle.
+  Copy that calls the four "channels" or the seven "interests" is wrong and is corrected.
 
 ## Roles — two independent axes (+ billing as a third)
 
@@ -85,10 +93,6 @@ Depth/Range/Altitude · deshi/sempai/sensei · "points"
 These contain a retired *word* but are NOT the retired *term*; intentionally kept, and the
 Phase-6 zero-hits grep carves them out:
 
-- **"Hundred Days Deep"** — the 100-day practice-streak badge proper name (seeded to prod,
-  migration `20260612030000`). "Deep" is plain English here (depth of devotion), not the
-  retired Spark/Current/**Deep** tier. ⚠️ Owner decision: keep, or rename the badge (needs a
-  copy choice + data migration).
 - **Persisted identifiers** kept to avoid data harm: the `'field'` circle-rail key in saved
   `sidebar_order`, and the `journey.chorus:` reward-grant idempotency prefix — renaming
   either orphans saved prefs / re-fires grants (commented in code).

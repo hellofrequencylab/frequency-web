@@ -112,7 +112,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     links: [
       { href: '/admin', label: 'Overview', desc: 'Your dashboard at a glance.', Icon: LayoutDashboard, min: 'host', staffDomain: 'community', exact: true },
       { href: '/admin/circles', label: 'Circles', desc: 'Create, edit, and archive circles.', Icon: CircleDot, min: 'host', staffDomain: 'community' },
-      { href: '/admin/channels', label: 'Channels', desc: 'Interest and event channels.', Icon: Radio, min: 'host', staffDomain: 'community' },
+      { href: '/admin/channels', label: 'Channels', desc: 'Topical and event channels.', Icon: Radio, min: 'host', staffDomain: 'community' },
       { href: '/admin/events', label: 'Events', desc: 'Gatherings across your circles.', Icon: CalendarDays, min: 'host', staffDomain: 'community' },
       { href: '/admin/hubs', label: 'Hubs', desc: 'Clusters of circles in an area.', Icon: Building2, min: 'guide', staffDomain: 'structure' },
       { href: '/admin/nexuses', label: 'Nexuses', desc: 'Regions that hold hubs.', Icon: Network, min: 'mentor', staffDomain: 'structure' },
