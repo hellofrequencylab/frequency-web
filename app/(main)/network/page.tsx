@@ -376,20 +376,21 @@ export default async function CommunityPage({
         }
       />
 
-      {/* Community size — total worldwide + nearby (when proximity is on). */}
-      <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-muted">
-        <span>
-          <span className="font-bold text-text">{typedProfiles.length}</span> Members Worldwide
-        </span>
-        {connectionSettings.proximityEnabled && bandByProfileId.size > 0 && (
+      {/* Hub tabs + community size on one line: tabs left, member counts pinned
+          right against the same baseline rule. */}
+      <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-1 border-b border-border">
+        <CommunityTabs />
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pb-2.5 text-sm text-muted">
           <span>
-            <span className="font-bold text-text">{bandByProfileId.size}</span> Members Near You
+            <span className="font-bold text-text">{typedProfiles.length}</span> Members Worldwide
           </span>
-        )}
+          {connectionSettings.proximityEnabled && bandByProfileId.size > 0 && (
+            <span>
+              <span className="font-bold text-text">{bandByProfileId.size}</span> Members Near You
+            </span>
+          )}
+        </div>
       </div>
-
-      {/* Hub tabs — inline, under the header rule, on the page background. */}
-      <CommunityTabs />
 
       {/* Filter row — one aligned baseline against the divider above: the city
           search grows on the left; the "Use my location" + "Online now" actions
