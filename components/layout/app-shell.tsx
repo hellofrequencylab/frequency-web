@@ -1375,13 +1375,15 @@ export default function AppShell({
         >
           <div className="flex items-stretch min-h-[calc(100vh-3.5rem)]">
 
-            {/* Left nav — in-flow column; the NAV scrolls up with the page (matching
-                the right rail), while the profile card is pinned to the bottom-left
-                viewport (rendered fixed, below). The extra bottom padding keeps the
-                last nav items clear of the pinned footer. */}
+            {/* Left nav — NEVER scrolls out of view. Pinned under the header
+                (sticky top-14) with its window ending exactly where the fixed
+                bottom-left profile box begins (the 8rem in the max-h), so the
+                menu's bottom always sits against that box while the content
+                column scrolls past. A menu taller than the window scrolls
+                INTERNALLY instead of riding the page. */}
             <aside className="hidden md:flex w-52 shrink-0 flex-col border-r border-border bg-surface/80 backdrop-blur-sm">
               {/* Community spaces + features + admin rail (the Broadcast bar lives up top) */}
-              <nav className="flex-1 px-3 pt-3 pb-32 space-y-0.5">
+              <nav className="sticky top-14 max-h-[calc(100vh-3.5rem-8rem)] self-start overflow-y-auto px-3 py-3 space-y-0.5">
                 <NavLinkList isActive={isActive} role={gateRole} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} />
               </nav>
             </aside>
