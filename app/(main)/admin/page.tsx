@@ -35,8 +35,8 @@ export default async function AdminPageView() {
 
   return (
     <AdminPage
-      title="Overview"
-      eyebrow="Community"
+      title="Admin home"
+      eyebrow="Overview"
       description={description}
       actions={<AdminCreateMenu role={role} />}
     >
@@ -61,7 +61,7 @@ export default async function AdminPageView() {
         </div>
       </AdminSection>
 
-      <AdminSection title="Jump to" description="Everything you can manage, grouped by area.">
+      <AdminSection title="Jump to" description="Your three operator domains. Pick one to dive in.">
         <AdminLaunchpad role={role} webRole={webRole} staffRole={staffRole} />
       </AdminSection>
 

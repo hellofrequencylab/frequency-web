@@ -32,6 +32,9 @@ import {
   Coins,
   Banknote,
   Settings,
+  Gamepad2,
+  SlidersHorizontal,
+  TrendingUp,
 } from 'lucide-react'
 
 // Maps each NAV_AREAS key (lib/nav-areas.ts — the framework-free source of truth)
@@ -67,6 +70,10 @@ export const AREA_ICONS: Record<string, ElementType> = {
   financials: Banknote,
   settings: Settings,
   'admin-community': LayoutDashboard,
+  'admin-home': LayoutDashboard,
+  'admin-programs': Gamepad2,
+  'admin-operations': SlidersHorizontal,
+  'admin-growth': TrendingUp,
   'admin-support': LifeBuoy,
   'admin-structure': Building2,
   'admin-insights': Activity,

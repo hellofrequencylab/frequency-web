@@ -1,16 +1,24 @@
 // Single source of truth for the admin IA — the grouped catalog of every admin
-// surface, the role each one needs, and where it lives. Both the admin nav
-// (sub-nav.tsx) and the Overview launchpad (page.tsx) render from this, so a
-// feature is declared in exactly ONE place and can never be orphaned again.
+// surface, the role each one needs, and where it lives. The admin nav
+// (sub-nav.tsx), the three domain dashboards (programs/operations/growth), the
+// Home overview (page.tsx), and the in-context console (admin-console.tsx) all
+// render from this, so a feature is declared in exactly ONE place and can never be
+// orphaned again.
 //
-// Each group is a **suite** (ADR-153): a full-page admin area whose links render
-// as the top-bar sub-nav tabs, and as a launchpad section. The nine suites roll up
-// into three operator **dashboards** (ADR-171) — Community / Insights / Platform —
-// telescoped by role: a host sees only Community (Spaces / Engage / Comms / Safety /
-// Reach); a guide/mentor adds the Hubs/Nexuses tabs; a janitor adds the Insights
-// (Insights / Vera) and Platform (People / System) dashboards. Each suite manages the
-// surfaces for the people under them (docs/GLOSSARY.md). The per-page sidebar console
-// links *back* into these suites (it no longer hosts the heavy suites itself).
+// REORG (Phase 1, ADR pending): the nine scattered suites collapse into THREE
+// durable operator domains plus a Home —
+//   • Programs    — the game: content, seasons, rewards, crews, leader training.
+//   • Operations  — run the site: community, people, trust & safety, system keys.
+//   • Growth      — grow it: funnels, onboarding, pipeline, campaigns, expansion.
+// Each domain has its OWN dashboard route (/admin/{key}) with KPI stat cards on top
+// and "areas of focus" cards underneath. The top bar no longer reshuffles per page:
+// it switches between Home / Programs / Operations / Growth, with the active domain
+// derived from the URL via `domainForPath`.
+//
+// Every link keeps its EXACT current href, icon, and per-link role/staff gate —
+// only the grouping changed. Operations sub-groups its area cards under titled
+// sections via the optional `section` field (Community / People / Trust & safety /
+// Site & system); the other domains render one flat grid.
 
 import {
   LayoutDashboard,
@@ -41,12 +49,18 @@ import {
   Lightbulb,
   Gift,
   ScrollText,
-  Globe,
-  Cog,
   LifeBuoy,
   ShoppingBag,
   Map,
   CreditCard,
+  Gamepad2,
+  SlidersHorizontal,
+  TrendingUp,
+  Rocket,
+  Layers,
+  Contact,
+  ContactRound,
+  Briefcase,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { atLeastRole, isStaff, isJanitor, type CommunityRole, type WebRole } from '@/lib/core/roles'
@@ -55,162 +69,161 @@ import { staffCan, type StaffDomain, type StaffRole, type Access } from '@/lib/c
 export interface AdminLink {
   href: string
   label: string
-  /** One-line purpose — shown on the Overview launchpad card. */
+  /** One-line purpose — shown on the dashboard area card. */
   desc: string
   Icon: LucideIcon
   /** Lowest role that may use this surface. TWO AXES (ADR-208): a community rung
    *  (host/guide/mentor) gates on the trust ladder; 'admin'/'janitor' gate on the
    *  STAFF axis (web_role) — 'admin' admits admin+janitor, 'janitor' admits janitor
-   *  only. `meetsMin` below resolves which axis applies. */
+   *  only. `linkMeetsMin` below resolves which axis applies. */
   min: CommunityRole
   /** Staff capability domain (ADR-127) that ALSO unlocks this surface — fail-closed:
-   *  omit it and the link stays community-role-only (sensitive pages do this). */
+   *  omit it and the link stays primary-axis-only (sensitive pages do this). */
   staffDomain?: StaffDomain
   /** Capability level the staff domain needs (default 'write'). Read-only surfaces
    *  (Insights) use 'read' so read-only roles (e.g. Analyst) can see them. */
   staffLevel?: Access
-  /** Active only on an exact path match (the Overview root). */
+  /** Active only on an exact path match (a domain root). */
   exact?: boolean
+  /** Titled sub-section a dashboard groups this card under (Operations uses this). */
+  section?: string
 }
 
-// The three operator dashboards a suite rolls up into (the owner's IA: collapse the
-// nine suites into Community / Insights / Platform). Each suite declares its home.
-export type DashboardKey = 'community' | 'insights' | 'platform'
+// The three operator domains. Each `key` doubles as its dashboard route slug
+// ('programs' → /admin/programs). Programs/Operations floor at community host (+
+// the community staff domain); Growth floors at host / marketing staff. Individual
+// links keep their own (often stricter, janitor) gates.
+export type DomainKey = 'programs' | 'operations' | 'growth'
 
 export interface AdminGroup {
-  key: string
+  key: DomainKey
   label: string
-  /** One-line framing for the group, shown as the launchpad section intro. */
+  /** One-line framing for the domain — its dashboard header + the Home card. */
   blurb: string
-  /** The operator dashboard this suite belongs to (ADR-171). */
-  dashboard: DashboardKey
+  /** Where the domain dashboard lives. */
+  href: string
+  Icon: LucideIcon
+  /** The domain dashboard's primary-axis floor (staff axis still admits per-link). */
+  min: CommunityRole
+  /** Optional staff capability domain that also clears the dashboard floor. */
+  staffDomain?: StaffDomain
   links: readonly AdminLink[]
 }
 
-export interface AdminDashboard {
-  key: DashboardKey
-  label: string
-  /** One-line framing, shown as the dashboard's section intro on the launchpad. */
-  blurb: string
-  Icon: LucideIcon
-}
-
-// The three dashboards, in display order. Community is the people-facing operating
-// work; Insights is the read-only signal + Vera tuning; Platform is the sensitive keys.
-export const ADMIN_DASHBOARDS: readonly AdminDashboard[] = [
-  { key: 'community', label: 'Community', blurb: 'Run your people and spaces. Circles, the game, comms, safety, and reach.', Icon: Globe },
-  { key: 'insights', label: 'Insights', blurb: 'Read the signal and tune Vera. What’s working, what’s jamming, what to write next.', Icon: Telescope },
-  { key: 'platform', label: 'Platform', blurb: 'The roster and the sensitive keys. Roles, audit, AI, demo, and public pages.', Icon: Cog },
-] as const
-
 export const ADMIN_GROUPS: readonly AdminGroup[] = [
   {
-    key: 'spaces',
-    label: 'Spaces',
-    blurb: 'The circles, channels, and events you run, plus the place tree they cluster into.',
-    dashboard: 'community',
+    key: 'programs',
+    label: 'Programs',
+    blurb: 'The game. Content, seasons, rewards, and the crews that run them.',
+    href: '/admin/programs',
+    Icon: Gamepad2,
+    min: 'host',
+    staffDomain: 'community',
     links: [
-      { href: '/admin', label: 'Overview', desc: 'Your dashboard at a glance.', Icon: LayoutDashboard, min: 'host', staffDomain: 'community', exact: true },
-      { href: '/admin/circles', label: 'Circles', desc: 'Create, edit, and archive circles.', Icon: CircleDot, min: 'host', staffDomain: 'community' },
-      { href: '/admin/channels', label: 'Channels', desc: 'Topical and event channels.', Icon: Radio, min: 'host', staffDomain: 'community' },
-      { href: '/admin/events', label: 'Events', desc: 'Gatherings across your circles.', Icon: CalendarDays, min: 'host', staffDomain: 'community' },
-      { href: '/admin/hubs', label: 'Hubs', desc: 'Clusters of circles in an area.', Icon: Building2, min: 'guide', staffDomain: 'structure' },
-      { href: '/admin/nexuses', label: 'Nexuses', desc: 'Regions that hold hubs.', Icon: Network, min: 'mentor', staffDomain: 'structure' },
-    ],
-  },
-  {
-    key: 'engage',
-    label: 'Engage',
-    blurb: 'The game that drives members to show up. Seasons, tasks, and leader training.',
-    dashboard: 'community',
-    links: [
-      { href: '/admin/gamification', label: 'Gamification', desc: 'Achievements, seasons, rewards.', Icon: Trophy, min: 'host', staffDomain: 'community' },
+      { href: '/admin/content', label: 'Content suite', desc: 'Curate the Quest. Seasons, Journeys, Practices, Challenges.', Icon: Map, min: 'host', staffDomain: 'community' },
+      { href: '/admin/content/seasons', label: 'Seasons', desc: 'Season identity, theme, and lifecycle.', Icon: CalendarDays, min: 'host', staffDomain: 'community' },
+      { href: '/admin/content/journeys', label: 'Journeys', desc: 'Curate and publish official journeys.', Icon: BookOpen, min: 'host', staffDomain: 'community' },
+      { href: '/admin/content/practices', label: 'Practices', desc: 'The practice catalog and its adopters.', Icon: Sparkles, min: 'host', staffDomain: 'community' },
+      { href: '/admin/content/challenges', label: 'Challenges', desc: 'Define challenges and watch completion.', Icon: Target, min: 'host', staffDomain: 'community' },
+      { href: '/admin/content/tips', label: 'Creator tips', desc: 'Tips and prompts for content creators.', Icon: Lightbulb, min: 'host', staffDomain: 'community' },
+      { href: '/admin/gamification', label: 'Gamification & rewards', desc: 'Achievements, seasons, rewards.', Icon: Trophy, min: 'host', staffDomain: 'community' },
       { href: '/admin/store', label: 'Store', desc: 'Manage gem store items and catalog.', Icon: ShoppingBag, min: 'host', staffDomain: 'community' },
-      { href: '/admin/content', label: 'Content', desc: 'Curate the Quest. Seasons, Journeys, Practices, Challenges.', Icon: Map, min: 'host', staffDomain: 'community' },
-      { href: '/admin/crew-tasks', label: 'Crew tasks', desc: 'Define and verify member tasks.', Icon: ClipboardList, min: 'host', staffDomain: 'community' },
       { href: '/admin/rewards', label: 'Retroactive rewards', desc: 'Reward past behavior. Define a rule, grant once.', Icon: Gift, min: 'admin' },
+      { href: '/admin/crew-tasks', label: 'Crew tasks', desc: 'Define and verify member tasks.', Icon: ClipboardList, min: 'host', staffDomain: 'community' },
       { href: '/programs', label: 'Leader training', desc: 'Materials to start and run a circle.', Icon: BookOpen, min: 'host', staffDomain: 'community' },
-    ],
-  },
-  {
-    key: 'comms',
-    label: 'Comms',
-    blurb: 'Reach your people. Broadcasts, posts, and polls.',
-    dashboard: 'community',
-    links: [
-      { href: '/admin/dispatches', label: 'Broadcasts', desc: 'Posts and polls to your people.', Icon: Megaphone, min: 'host', staffDomain: 'community' },
-    ],
-  },
-  {
-    key: 'safety',
-    label: 'Safety',
-    blurb: 'Keep the community healthy. Reports, moderation, and member support.',
-    dashboard: 'community',
-    links: [
-      { href: '/admin/moderation', label: 'Moderation', desc: 'Review and resolve reports.', Icon: ShieldAlert, min: 'host', staffDomain: 'community' },
-      { href: '/admin/support', label: 'Support', desc: 'Member support tickets and help requests.', Icon: LifeBuoy, min: 'host', staffDomain: 'members' },
-    ],
-  },
-  {
-    key: 'reach',
-    label: 'Reach',
-    blurb: 'How people find and enter your spaces. Every QR code and its scans.',
-    dashboard: 'community',
-    links: [
-      { href: '/admin/qr', label: 'QR Studio', desc: 'Generate, design, and manage all QR codes.', Icon: QrCode, min: 'host', staffDomain: 'qr' },
-      { href: '/admin/qr/stats', label: 'QR stats', desc: 'Scans, locator map, and the full QR dashboard.', Icon: Activity, min: 'host', staffDomain: 'qr' },
-    ],
-  },
-  {
-    key: 'people',
-    label: 'People',
-    blurb: 'The roster and who can do what.',
-    dashboard: 'platform',
-    links: [
-      { href: '/admin/members', label: 'Members', desc: 'Roster, subscribers, and accounts.', Icon: Users, min: 'janitor' },
-      { href: '/admin/roles', label: 'Roles', desc: 'Assign roles and the permission grid.', Icon: Shield, min: 'janitor' },
-      { href: '/admin/personas', label: 'Partner verification', desc: 'Vet and verify partner persona claims.', Icon: BadgeCheck, min: 'janitor', staffDomain: 'profiles' },
-      { href: '/admin/audit', label: 'Audit log', desc: 'Sensitive admin actions. The security trail.', Icon: ScrollText, min: 'admin' },
-    ],
-  },
-  {
-    key: 'insights',
-    label: 'Insights',
-    blurb: 'Read-only signal on what is working and what is jamming.',
-    dashboard: 'insights',
-    links: [
-      { href: '/admin/studio', label: 'AI Studio', desc: 'Ranked AI recommendations + one-click, reversible site changes.', Icon: Lightbulb, min: 'admin', staffDomain: 'insights' },
-      { href: '/admin/engagement', label: 'Engagement', desc: 'Active members and the activation funnel.', Icon: Activity, min: 'janitor', staffDomain: 'insights', staffLevel: 'read' },
-      { href: '/admin/intel', label: 'Marketing intel', desc: 'Real-time growth, demand, and leader signal.', Icon: Telescope, min: 'janitor', staffDomain: 'insights', staffLevel: 'read' },
       { href: '/admin/outcomes', label: 'Outcomes', desc: 'Where programs and Journeys stall.', Icon: Target, min: 'janitor', staffDomain: 'insights', staffLevel: 'read' },
-      { href: '/admin/expansion', label: 'Expansion signal', desc: 'Where density justifies the next Lab.', Icon: Radar, min: 'janitor', staffDomain: 'insights', staffLevel: 'read' },
-      { href: '/admin/insights', label: 'AI read', desc: 'A narrative of what to do next.', Icon: Sparkles, min: 'janitor', staffDomain: 'insights', staffLevel: 'read' },
+    ],
+  },
+  {
+    key: 'operations',
+    label: 'Operations',
+    blurb: 'Run the site. Community, people, trust and safety, and the platform keys.',
+    href: '/admin/operations',
+    Icon: SlidersHorizontal,
+    min: 'host',
+    staffDomain: 'community',
+    links: [
+      // ── Community ──
+      { href: '/admin/circles', label: 'Circles', desc: 'Create, edit, and archive circles.', Icon: CircleDot, min: 'host', staffDomain: 'community', section: 'Community' },
+      { href: '/admin/channels', label: 'Channels', desc: 'Topical and event channels.', Icon: Radio, min: 'host', staffDomain: 'community', section: 'Community' },
+      { href: '/admin/events', label: 'Events', desc: 'Gatherings across your circles.', Icon: CalendarDays, min: 'host', staffDomain: 'community', section: 'Community' },
+      { href: '/admin/hubs', label: 'Hubs', desc: 'Clusters of circles in an area.', Icon: Building2, min: 'guide', staffDomain: 'structure', section: 'Community' },
+      { href: '/admin/nexuses', label: 'Nexuses', desc: 'Regions that hold hubs.', Icon: Network, min: 'mentor', staffDomain: 'structure', section: 'Community' },
+      { href: '/admin/dispatches', label: 'Broadcasts', desc: 'Posts and polls to your people.', Icon: Megaphone, min: 'host', staffDomain: 'community', section: 'Community' },
+      // ── People ──
+      { href: '/admin/members', label: 'Members', desc: 'Roster, subscribers, and accounts.', Icon: Users, min: 'janitor', section: 'People' },
+      { href: '/admin/roles', label: 'Roles & permissions', desc: 'Assign roles and the permission grid.', Icon: Shield, min: 'janitor', section: 'People' },
+      { href: '/admin/personas', label: 'Partner verification', desc: 'Vet and verify partner persona claims.', Icon: BadgeCheck, min: 'janitor', staffDomain: 'profiles', section: 'People' },
+      // ── Trust & safety ──
+      { href: '/admin/moderation', label: 'Moderation', desc: 'Review and resolve reports.', Icon: ShieldAlert, min: 'host', staffDomain: 'community', section: 'Trust & safety' },
+      { href: '/admin/support', label: 'Support', desc: 'Member support tickets and help requests.', Icon: LifeBuoy, min: 'host', staffDomain: 'members', section: 'Trust & safety' },
+      { href: '/admin/ai', label: 'AI controls', desc: 'Turn AI on or off platform-wide; usage and audit.', Icon: Power, min: 'janitor', staffDomain: 'platform', section: 'Trust & safety' },
+      { href: '/admin/audit', label: 'Audit log', desc: 'Sensitive admin actions. The security trail.', Icon: ScrollText, min: 'admin', section: 'Trust & safety' },
+      // ── Site & system ──
+      { href: '/pages', label: 'Pages', desc: 'Edit public pages and content blocks.', Icon: FileText, min: 'janitor', section: 'Site & system' },
+      { href: '/admin/qr', label: 'QR Studio', desc: 'Generate, design, and manage all QR codes.', Icon: QrCode, min: 'host', staffDomain: 'qr', section: 'Site & system' },
+      { href: '/admin/vera', label: 'Vera config', desc: 'Voice, responses, and induction copy.', Icon: Bot, min: 'janitor', staffDomain: 'insights', section: 'Site & system' },
+      { href: '/admin/help-gaps', label: 'Help gaps', desc: 'Questions Vera deflected. The to-write list.', Icon: HelpCircle, min: 'janitor', section: 'Site & system' },
+      { href: '/admin/demo', label: 'Demo Studio', desc: 'Generate, manage, and purge seeded demo content.', Icon: Sparkles, min: 'janitor', section: 'Site & system' },
+      { href: '/admin/payments', label: 'Payments', desc: 'Turn host payouts (tips, tickets, sales) on or off.', Icon: CreditCard, min: 'janitor', section: 'Site & system' },
+    ],
+  },
+  {
+    key: 'growth',
+    label: 'Growth',
+    blurb: 'Grow it. Funnels, onboarding, pipeline, campaigns, and the expansion signal.',
+    href: '/admin/growth',
+    Icon: TrendingUp,
+    min: 'host',
+    staffDomain: 'marketing',
+    links: [
+      { href: '/admin/intel', label: 'Lead funnels & marketing intel', desc: 'Real-time growth, demand, and leader signal.', Icon: Telescope, min: 'janitor', staffDomain: 'insights', staffLevel: 'read' },
+      { href: '/pages/splash', label: 'Onboarding splash', desc: 'The first-run splash members land on.', Icon: Rocket, min: 'janitor' },
+      { href: '/pages/sequences', label: 'Splash pages', desc: 'Sequenced splash pages and flows.', Icon: Layers, min: 'janitor' },
+      { href: '/crm', label: 'CRM pipeline', desc: 'Deals, stages, and follow-ups.', Icon: Contact, min: 'host', staffDomain: 'marketing' },
+      { href: '/connections', label: 'Profiles & contacts', desc: 'People, contacts, and relationships.', Icon: ContactRound, min: 'host', staffDomain: 'profiles' },
+      { href: '/marketing', label: 'Marketing campaigns', desc: 'Campaigns across your channels.', Icon: Briefcase, min: 'host', staffDomain: 'marketing' },
+      { href: '/entry-points', label: 'Entry points', desc: 'Where people first enter your spaces.', Icon: QrCode, min: 'host', staffDomain: 'marketing' },
       { href: '/admin/segments', label: 'Segments', desc: 'Saved audiences by tag and trait.', Icon: PieChart, min: 'janitor', staffDomain: 'insights', staffLevel: 'read' },
-    ],
-  },
-  {
-    key: 'vera',
-    label: 'Vera',
-    blurb: 'Tune the AI guide and see what she could not answer.',
-    dashboard: 'insights',
-    links: [
-      { href: '/admin/vera', label: 'Vera config', desc: 'Voice, responses, and induction copy.', Icon: Bot, min: 'janitor', staffDomain: 'insights' },
-      { href: '/admin/help-gaps', label: 'Help gaps', desc: 'Questions Vera deflected. The to-write list.', Icon: HelpCircle, min: 'janitor' },
-    ],
-  },
-  {
-    key: 'system',
-    label: 'System',
-    blurb: 'The sensitive platform keys. AI, demo content, and public pages.',
-    dashboard: 'platform',
-    links: [
-      { href: '/admin/ai', label: 'AI controls', desc: 'Turn AI on or off platform-wide; usage and audit.', Icon: Power, min: 'janitor', staffDomain: 'platform' },
-      { href: '/admin/payments', label: 'Payments', desc: 'Turn host payouts (tips, tickets, sales) on or off.', Icon: CreditCard, min: 'janitor' },
-      { href: '/admin/demo', label: 'Demo Studio', desc: 'Generate, manage, and purge seeded demo content.', Icon: Sparkles, min: 'janitor' },
-      { href: '/pages', label: 'Pages', desc: 'Edit public pages and content blocks.', Icon: FileText, min: 'janitor' },
+      { href: '/admin/engagement', label: 'Engagement', desc: 'Active members and the activation funnel.', Icon: Activity, min: 'janitor', staffDomain: 'insights', staffLevel: 'read' },
+      { href: '/admin/expansion', label: 'Expansion signal', desc: 'Where density justifies the next Lab.', Icon: Radar, min: 'janitor', staffDomain: 'insights', staffLevel: 'read' },
+      { href: '/admin/studio', label: 'AI Studio', desc: 'Ranked AI recommendations and one-click, reversible changes.', Icon: Lightbulb, min: 'admin', staffDomain: 'insights' },
+      { href: '/admin/insights', label: 'AI read', desc: 'A narrative of what to do next.', Icon: Sparkles, min: 'janitor', staffDomain: 'insights', staffLevel: 'read' },
     ],
   },
 ] as const
+
+// ── Home pseudo-entry ─────────────────────────────────────────────────────────
+// /admin is the exec dashboard that fans out to the three domains. It is not a
+// domain (no area cards of its own), so it lives outside ADMIN_GROUPS but is part of
+// the stable top switcher + the rail.
+
+export interface AdminDestination {
+  key: string
+  label: string
+  href: string
+  Icon: LucideIcon
+  /** Exact-match active rule (Home only). */
+  exact?: boolean
+}
+
+export const ADMIN_HOME: AdminDestination = {
+  key: 'home',
+  label: 'Home',
+  href: '/admin',
+  Icon: LayoutDashboard,
+  exact: true,
+}
+
+/** The four stable top-switcher / rail destinations: Home + the three domains. */
+export function adminDestinations(): AdminDestination[] {
+  return [
+    ADMIN_HOME,
+    ...ADMIN_GROUPS.map((g) => ({ key: g.key, label: g.label, href: g.href, Icon: g.Icon })),
+  ]
+}
+
+// ── Gating ────────────────────────────────────────────────────────────────────
 
 /**
  * Does a link's `min` admit the viewer? TWO AXES (ADR-208): 'admin'/'janitor' read
@@ -224,35 +237,34 @@ function linkMeetsMin(min: CommunityRole, role: CommunityRole, webRole: WebRole)
   return atLeastRole(role, min)
 }
 
-/** The suite that owns a path — by longest matching link href (so `/admin/hubs`
- *  resolves to Spaces, `/admin/qr/stats` to Reach, etc.). Drives the suite's
- *  top-bar sub-nav tabs (layer 2) from the current URL. Falls back to the first
- *  visible suite. */
-export function groupForPath(
-  pathname: string,
+/** True if a viewer may use a link — its `min` axis (community ladder OR staff axis,
+ *  ADR-208) grants it, OR (ADR-127) the team_members staff role holds its `staffDomain`. */
+export function canUseLink(
+  link: AdminLink,
   role: CommunityRole,
   webRole: WebRole = 'none',
   staffRole: StaffRole | null = null,
-): AdminGroup {
-  const groups = visibleGroups(role, webRole, staffRole)
-  let best: AdminGroup | null = null
-  let bestLen = -1
-  for (const g of groups) {
-    for (const l of g.links) {
-      const match = l.exact ? pathname === l.href : pathname === l.href || pathname.startsWith(`${l.href}/`)
-      if (match && l.href.length > bestLen) {
-        best = g
-        bestLen = l.href.length
-      }
-    }
-  }
-  return best ?? groups[0]
+): boolean {
+  return (
+    linkMeetsMin(link.min, role, webRole) ||
+    (!!link.staffDomain && staffCan(staffRole, link.staffDomain, link.staffLevel ?? 'write'))
+  )
 }
 
-/** The groups (with only the links) a given viewer may see. Empty groups drop out.
- *  A link shows if its `min` axis grants it — the community ladder OR the STAFF axis
- *  (web_role, ADR-208) — OR (ADR-127) the caller's team_members staff role holds the
- *  link's `staffDomain` (write). */
+/** True if a viewer may enter a domain dashboard (primary-axis floor OR its staff domain). */
+export function canSeeGroup(
+  group: AdminGroup,
+  role: CommunityRole,
+  webRole: WebRole = 'none',
+  staffRole: StaffRole | null = null,
+): boolean {
+  return (
+    linkMeetsMin(group.min, role, webRole) ||
+    (!!group.staffDomain && staffCan(staffRole, group.staffDomain, 'read'))
+  )
+}
+
+/** The groups (with only the links a viewer may see). Empty groups drop out. */
 export function visibleGroups(
   role: CommunityRole,
   webRole: WebRole = 'none',
@@ -260,15 +272,12 @@ export function visibleGroups(
 ): AdminGroup[] {
   return ADMIN_GROUPS.map((g) => ({
     ...g,
-    links: g.links.filter(
-      (l) =>
-        linkMeetsMin(l.min, role, webRole) ||
-        (!!l.staffDomain && staffCan(staffRole, l.staffDomain, l.staffLevel ?? 'write')),
-    ),
+    links: g.links.filter((l) => canUseLink(l, role, webRole, staffRole)),
   })).filter((g) => g.links.length > 0)
 }
 
-/** Flat list of links a viewer may see — handy for breadcrumb/title lookups. */
+/** Flat list of links a viewer may see — handy for breadcrumb/title lookups + the
+ *  in-context console (admin-console.tsx buckets these by href). */
 export function visibleLinks(
   role: CommunityRole,
   webRole: WebRole = 'none',
@@ -277,27 +286,68 @@ export function visibleLinks(
   return visibleGroups(role, webRole, staffRole).flatMap((g) => g.links)
 }
 
-/** A dashboard plus the suites under it that the viewer may see. */
-export interface VisibleDashboard extends AdminDashboard {
-  groups: AdminGroup[]
-}
-
-/** The role-gated admin catalog rolled up into the three operator dashboards
- *  (ADR-171). Suites the viewer can't see drop out; a dashboard with no visible
- *  suite drops out entirely (a host sees only Community; a janitor sees all three). */
-export function visibleDashboards(
+/** The links of one domain a viewer may see, in declaration order (dashboard cards). */
+export function groupLinks(
+  key: DomainKey,
   role: CommunityRole,
   webRole: WebRole = 'none',
   staffRole: StaffRole | null = null,
-): VisibleDashboard[] {
-  const groups = visibleGroups(role, webRole, staffRole)
-  return ADMIN_DASHBOARDS.map((d) => ({
-    ...d,
-    groups: groups.filter((g) => g.dashboard === d.key),
-  })).filter((d) => d.groups.length > 0)
+): AdminLink[] {
+  const g = ADMIN_GROUPS.find((x) => x.key === key)
+  if (!g) return []
+  return g.links.filter((l) => canUseLink(l, role, webRole, staffRole))
 }
 
-/** The dashboard a suite belongs to — for the sub-nav breadcrumb root. */
-export function dashboardForGroup(group: AdminGroup): AdminDashboard {
-  return ADMIN_DASHBOARDS.find((d) => d.key === group.dashboard) ?? ADMIN_DASHBOARDS[0]
+/** Operations-style grouping: a domain's role-visible links bucketed by their
+ *  `section` (declaration order preserved within and across sections). Links with no
+ *  `section` collapse into a single unlabeled bucket. */
+export function groupSections(
+  key: DomainKey,
+  role: CommunityRole,
+  webRole: WebRole = 'none',
+  staffRole: StaffRole | null = null,
+): { section: string; links: AdminLink[] }[] {
+  const out: { section: string; links: AdminLink[] }[] = []
+  for (const l of groupLinks(key, role, webRole, staffRole)) {
+    const s = l.section ?? ''
+    const last = out[out.length - 1]
+    if (last && last.section === s) last.links.push(l)
+    else out.push({ section: s, links: [l] })
+  }
+  return out
+}
+
+// ── Path → domain resolution (drives the stable top switcher's active state) ───
+
+// Every domain-owned href (and external route) → its domain key, built once from
+// ADMIN_GROUPS so the switcher highlights the right domain for any /admin/* page AND
+// the external routes (/programs, /crm, /pages, …). Longest hrefs first so the most
+// specific prefix wins.
+const HREF_TO_DOMAIN: ReadonlyArray<{ href: string; key: DomainKey }> = ADMIN_GROUPS
+  .flatMap((g) => g.links.map((l) => ({ href: l.href, key: g.key })))
+  .concat(ADMIN_GROUPS.map((g) => ({ href: g.href, key: g.key })))
+  .sort((a, b) => b.href.length - a.href.length)
+
+/** The domain a path belongs to, or null for Home (/admin) and anything unowned. */
+export function domainForPath(pathname: string): AdminGroup | null {
+  if (pathname === '/admin') return null
+  for (const { href, key } of HREF_TO_DOMAIN) {
+    if (pathname === href || pathname.startsWith(`${href}/`)) {
+      return ADMIN_GROUPS.find((g) => g.key === key) ?? null
+    }
+  }
+  return null
+}
+
+/** The label of the current page within a domain (the breadcrumb tail), or null
+ *  when the path is a domain root / unowned. */
+export function pageLabelForPath(pathname: string): string | null {
+  let best: { label: string; len: number } | null = null
+  for (const g of ADMIN_GROUPS) {
+    for (const l of g.links) {
+      const match = l.href === pathname || pathname.startsWith(`${l.href}/`)
+      if (match && (!best || l.href.length > best.len)) best = { label: l.label, len: l.href.length }
+    }
+  }
+  return best?.label ?? null
 }
