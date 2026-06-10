@@ -114,7 +114,7 @@ const NAV_SECTIONS = buildSections([...NAV_AREAS])
 // — so a member never sees empty admin headers and a host isn't shown greyed-out
 // janitor tools. Member worlds (Community, The Quest) still mute/preview instead,
 // as aspirational surfaces.
-const TELESCOPE_SECTIONS = new Set(['Steward', 'Structure', 'Studio', 'Platform'])
+const TELESCOPE_SECTIONS = new Set(['Steward', 'Structure', 'Admin', 'Studio', 'Platform'])
 
 // Split the rail for mobile: the member worlds vs the axis-gated Manage groups. On
 // a phone the member worlds stay in the drawer / edge menus while Manage moves to
