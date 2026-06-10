@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
 import Link from 'next/link'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { Plus } from 'lucide-react'
+import { Plus, MessageSquare } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { bucketFriendships, type FriendshipRpcRow, type FriendEntry } from '@/lib/friendships-map'
 import { getMyOrbit, getNearMisses } from '@/lib/connections/resonance'
@@ -68,16 +68,25 @@ export default async function FriendsPage({
         title="Friends"
         description="Your people and your contacts in one place. Connections you’ve made, and the rolodex of everyone you’ve met."
         action={
-          mode === 'contacts' ? (
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Messages lives here on mobile (the header keeps one Friends icon). */}
             <Link
-              href="/connections/new"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+              href="/messages"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3.5 py-2 text-sm font-semibold text-text transition-colors hover:border-border-strong"
             >
-              <Plus className="h-4 w-4" /> Capture
+              <MessageSquare className="h-4 w-4" /> Messages
             </Link>
-          ) : (
-            <InviteButton label="Invite friends · earn Zaps" />
-          )
+            {mode === 'contacts' ? (
+              <Link
+                href="/connections/new"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+              >
+                <Plus className="h-4 w-4" /> Capture
+              </Link>
+            ) : (
+              <InviteButton label="Invite friends · earn Zaps" />
+            )}
+          </div>
         }
         toolbar={<ModeSwitch mode={mode} />}
       >
