@@ -37,6 +37,37 @@ prompt-injection** hardened (user fields sanitized).
 | ✅ ~~P3~~ | Per-section Suspense on `/events` · per-event OG image · `offers` in eventSchema · distance facet | Done — "For You" lane streams behind `<Suspense>` (shell no longer waits on embeddings/AI); dynamic OG image at `/discover/events/[slug]/opengraph-image`; `offers` + honest `isAccessibleForFree` from `price_cents` (public RPCs updated, applied to prod); "Distance" facet from the viewer's fuzzed home geocell → hosting-circle coords (hidden without a home location) | events |
 | 🔵 **Deferred** | SMS reminders (EIN/Twilio/A2P) · post-event recap album (`event_posts` unused) · duo-streaks/reciprocity/bridge-badge metrics | Owner decisions / later waves | — |
 
+## 🔎 Full-site sweep — 2026-06-10 (post naming-canon · journeys-icons · economy-CRUD · contacts-merge)
+
+Three-lens sweep (security/dead-ends · SEO/AIO · infra/migration-drift) after the day's ships
+(#497, #503, #506, #508, #511, #514, #515, #516). **Verdict: clean. No broken routes, no orphans,
+no critical security holes.** Owner/config items (Stripe Connect, VAPID, Resend webhook, the auth
+leaked-password toggle, anonymous-sign-ins decision) are tracked elsewhere and deliberately **omitted
+here** — this is the *buildable* backlog only.
+
+**Shipped today:** ✅ Reward-economy **add/edit/delete** CRUD in `/admin/gamification` (#514) · ✅ Journeys
+**lucide icon faces** (no emoji) + cleaner index (#511) · ✅ Network **member-counts on the tab row** +
+**My Contacts** header standardized (#515) · ✅ **Contact ↔ Community merge** — detect/alert/merge +
+private profile card (#516, migration `20260610060000`).
+
+**Buildable backlog the sweep surfaced** (ranked; owner-config excluded):
+
+| Pri | Item | Why | Where |
+|---|---|---|---|
+| **P-SEO.1** | **Enrich `public/llms.txt`** with a first-party **Frequency Stats** block (WAM, circle count, top practices, return-rate) | CONTENT-VOICE §8c — original data is the AIO citation lever; `llms.txt` is currently bare | `public/llms.txt` (+ a tiny stats read) |
+| **P-SEO.2** | **Public `/discover/practices`** (list + detail, HowTo/Article JSON-LD) | Practices are high-intent search terms (breathwork, meditation…) with **no public mirror** — the one missing discover surface | new route + `public_practices()` RPC |
+| **P-SEO.3** | **Dynamic OG images** for marketing pillars + discover detail (`/the-lab`, `/the-community`, `/the-quest`, `/discover/circles/[id]`, `/discover/journeys/[slug]`) | Only 1/23 public routes has a content OG image; the rest fall back to the generic root card | reuse the event OG template |
+| **P-SEO.4** | **Schema gaps:** Circle schema on `/discover/circles/[id]`, Person on event organizer, Article/Course on journeys | Rich-result + AIO coverage; Event/HowTo/ItemList already strong | `lib/jsonld.ts` |
+| **P-SEO.5** | **Seeker-track article layer** (5 pain-first pillar pieces, FAQ schema, internal links) | CONTENT-VOICE §7a clusters specced, none published — the primary organic-discovery channel | `/help/*` or new `/blog` |
+| **P-SEC.1** | **RLS perf debt:** wrap `auth.uid()` → `(select auth.uid())` (advisor `auth_rls_initplan` ×59) + consolidate `multiple_permissive_policies` (×92) | Per-row re-eval at scale; pre-launch noise but a clean, mechanical migration | RLS policies |
+| **P-SEC.2** | **Index hygiene:** add covering indexes for `unindexed_foreign_keys` (×39); review/drop `unused_index` (×130, carefully) | Advisor perf; FK indexes are safe wins | migration |
+| **P-SEC.3** | **Rate-limit `requestBetaAccess`** (open signup, no throttle) + tighten `public_bucket_allows_listing` on avatars/posts/event-media/site-media | Abuse surface; object-name enumeration | `beta/actions.ts`, bucket policy |
+| **P-SEC.4** | **CSP report-only → enforce** (nonces) · remove `as unknown as SupabaseClient` casts now types are regenerated · purge retired `'crew'` role refs (`@deprecated`) | Hardening + tech-debt the regen unblocked | `csp`, lib casts, `roles.ts` |
+
+> Migration note: prod's `schema_migrations` versions are stamped at apply-time (MCP) so they differ
+> from the repo filenames (e.g. canon batch `20260613*` files ↔ `20260610*` applied), but **every repo
+> migration is applied by name** — no unapplied drift. Cosmetic; a `migration repair` would re-align.
+
 ## The headline
 
 The platform is **substantially built** — member surfaces, the practice engine + gamification,
@@ -65,6 +96,23 @@ site for everyone, function-gated per role* — and **(2) the money layer** (ent
 
 ## Progress log
 
+- **2026-06-10 ✅ Contact ↔ Community merge** — a logged contact (`network_contacts`) and the member
+  profile that is the same human are now reconciled: detect by hard signal (email / phone, via the
+  `find_contact_matches` SECURITY DEFINER RPC, migration `20260610060000`), alert on `/network/contacts`
+  with Merge/Dismiss, link via `linked_profile_id` (your logged fields + notes untouched; the live
+  profile fills the card; an **On Frequency** badge shows), and surface a **private contact card** on the
+  member's profile that only the owner who merged sees. `lib/connections/matching.ts` + UI islands. (#516)
+- **2026-06-10 ✅ Reward-economy CRUD** — `/admin/gamification` reward editor gained **add + delete**
+  (was edit-only): define a new `action_type` (normalized, dup-guarded), remove one (ledger rows
+  untouched). Gate moved to the staff axis `isJanitor(webRole)` (ADR-208). Changes stay live-immediately
+  (the award engines read `zap_config`/`gem_config` at grant time). (#514)
+- **2026-06-10 ✅ Journeys: lucide icon faces + cleaner index** — retired the freeform emoji "face" for a
+  curated 24-icon lucide set (`lib/studio/journey-icons.ts`); the key rides the existing `emoji` column,
+  `JOURNEY_ICON_MAP` resolves legacy emoji so existing journeys keep a face with no backfill. Studio
+  identity kit (`IconAccentFace`/`IconGrid`), builder + launcher, index + detail all render the icon;
+  two side-by-side entry cards on the index. (#511)
+- **2026-06-10 ✅ Network header pass** — Community member counts moved onto the tab row; `/network/contacts`
+  title standardized to **My Contacts** with a Contact icon (matching the Community header). (#515)
 - **2026-06-13 ✅ Naming Canon 2026 (ADR-208)** — locked the platform vocabulary in
   [`NAMING.md`](NAMING.md) (the single source of truth) and aligned the schema to canon: **Pillars**
   (`pillars`, `topical_channels.pillar_id`), depth tiers **Initiate/Adept/Master**
