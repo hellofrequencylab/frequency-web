@@ -164,6 +164,8 @@ export default async function FeedPage({
         title={greeting}
         description={hasCircle ? 'What your people are up to today.' : "What's happening around you."}
         action={<CreateMenu role={myRole} />}
+        // Create is compact, so it rides beside the greeting on mobile too.
+        inlineAction
       >
 
       {/* Hero slot. Onboarding incomplete → the persistent teal guide sits up top and

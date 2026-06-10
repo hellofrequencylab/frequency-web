@@ -18,6 +18,7 @@ export function StreamTemplate({
   back,
   composer,
   sort,
+  inlineAction = false,
   children,
 }: {
   /** Small contextual line above the title (e.g. today's date). Adds weight to thin headers. */
@@ -32,6 +33,8 @@ export function StreamTemplate({
   composer?: React.ReactNode
   /** Sort/filter control shown on the header row (right side). Use when there's no `action`. */
   sort?: React.ReactNode
+  /** Keep a COMPACT action beside the title on mobile (PageHeading.inlineActions). */
+  inlineAction?: boolean
   children: React.ReactNode
 }) {
   return (
@@ -42,6 +45,7 @@ export function StreamTemplate({
         description={description}
         actions={action ?? sort}
         back={back}
+        inlineActions={inlineAction}
       />
       {composer && <div className="mb-6">{composer}</div>}
       {children}
