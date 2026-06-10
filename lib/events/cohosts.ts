@@ -1,13 +1,12 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 // Event cohosts (slice B-2). A host can add/remove cohosts; cohosts are displayed
 // on the event page. `isEventCohost` is the reusable gate other slices will wire
 // into event capability checks later.
 //
-// event_cohosts isn't in the generated DB types yet (added by migration
-// 20260613100000), so we read through the `as unknown as SupabaseClient` cast —
-// the repo convention for not-yet-regenerated tables (see event_ticket_types).
+// event_cohosts is in the generated DB types (added by migration
+// 20260613100000 and regenerated into lib/database.types.ts), so the admin client
+// is used directly and these reads are fully typed.
 
 export type Cohost = {
   id: string
@@ -26,7 +25,7 @@ export type Cohost = {
 export async function isEventCohost(eventId: string, profileId: string): Promise<boolean> {
   if (!eventId || !profileId) return false
   const admin = createAdminClient()
-  const { data } = await (admin as unknown as SupabaseClient)
+  const { data } = await admin
     .from('event_cohosts')
     .select('id')
     .eq('event_id', eventId)
@@ -42,7 +41,7 @@ export async function isEventCohost(eventId: string, profileId: string): Promise
 export async function listCohosts(eventId: string): Promise<Cohost[]> {
   if (!eventId) return []
   const admin = createAdminClient()
-  const { data } = await (admin as unknown as SupabaseClient)
+  const { data } = await admin
     .from('event_cohosts')
     .select(
       'id, profile:profiles!profile_id ( id, display_name, handle, avatar_url )',

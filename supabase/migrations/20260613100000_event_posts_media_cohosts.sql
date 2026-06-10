@@ -71,20 +71,9 @@ as $$
   );
 $$;
 
--- ── Helper: is this profile a cohost of the event? ───────────────────────────
--- Used by the cohosts lib for later reuse (lib/events/cohosts.ts). SECURITY
--- DEFINER + pinned search_path; takes an explicit profile id (not the caller).
-create or replace function public.is_event_cohost(p_event_id uuid, p_profile_id uuid)
-returns boolean
-language sql stable security definer
-set search_path = public
-as $$
-  select exists (
-    select 1 from public.event_cohosts c
-    where c.event_id = p_event_id
-      and c.profile_id = p_profile_id
-  );
-$$;
+-- NOTE: is_event_cohost() is defined AFTER event_cohosts below — a SQL function
+-- body referencing the table is validated at creation time (check_function_bodies),
+-- so the table must exist first.
 
 -- ── event_posts ──────────────────────────────────────────────────────────────
 create table if not exists public.event_posts (
@@ -133,6 +122,22 @@ create index if not exists event_cohosts_event_idx
   on public.event_cohosts (event_id);
 create index if not exists event_cohosts_profile_idx
   on public.event_cohosts (profile_id);
+
+-- ── Helper: is this profile a cohost of the event? ───────────────────────────
+-- Used by the cohosts lib for later reuse (lib/events/cohosts.ts). SECURITY
+-- DEFINER + pinned search_path; takes an explicit profile id (not the caller).
+-- Defined here (after event_cohosts) so its body validates at creation time.
+create or replace function public.is_event_cohost(p_event_id uuid, p_profile_id uuid)
+returns boolean
+language sql stable security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.event_cohosts c
+    where c.event_id = p_event_id
+      and c.profile_id = p_profile_id
+  );
+$$;
 
 -- =============================================================================
 -- RLS
