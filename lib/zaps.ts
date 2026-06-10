@@ -59,6 +59,11 @@ export const ZAP_AMOUNTS = {
   // few per member) + the activate bonus when a member you brought in shows up.
   entry_point_created: 20,
   referral_activated: 25,
+  // Poster events: publishing a town event you captured from a poster (the base,
+  // before the honesty multiplier in lib/events/poster-quality.ts) + the bonus
+  // paid to the poster when an organizer claims it. Both are real-world/outreach.
+  event_posted: 20,
+  event_claim_bonus: 30,
 } as const
 
 export type ZapAction = keyof typeof ZAP_AMOUNTS
