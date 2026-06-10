@@ -7,6 +7,7 @@ import { PageQrManager } from '@/components/qr/page-qr-manager'
 import { meetsAccess } from '@/lib/nav-areas'
 import { CircleSettingsModule } from '@/components/admin/modules/circle-settings-module'
 import { CircleQuestModule } from '@/components/admin/modules/circle-quest-module'
+import { CircleRailModule } from '@/components/admin/modules/circle-rail-module'
 import { HubSettingsModule } from '@/components/admin/modules/hub-settings-module'
 import { NexusSettingsModule } from '@/components/admin/modules/nexus-settings-module'
 import { EventSettingsModule } from '@/components/admin/modules/event-settings-module'
@@ -83,6 +84,7 @@ export function PageAdminBar() {
   if (!(meetsAccess('host', role) || isStaff)) return null
 
   const shareable = isShareable(pathname)
+  const isCircle = /^\/circles\/[^/]+/.test(pathname)
   const settingsModule = settingsModuleFor(pathname)
   const questModule = questModuleFor(pathname)
   // Operator page-content editing (ADR-180) on configured routes — admin+ only.
@@ -129,7 +131,26 @@ export function PageAdminBar() {
 
             {shareable && hasBottomRow && <hr className="border-border" />}
 
-            {hasBottomRow && (
+            {hasBottomRow && isCircle && (
+              <div className="space-y-6">
+                {/* Circle settings — full width across the top. */}
+                {settingsModule && (
+                  <div className="min-w-0">
+                    <p className="mb-3 text-2xs font-semibold uppercase tracking-wide text-subtle">Page settings</p>
+                    {settingsModule}
+                  </div>
+                )}
+                {/* Quest (2/3) + rail layout (1/3) below. */}
+                <div className="gap-y-6 lg:grid lg:grid-cols-3 lg:gap-x-8">
+                  {questModule && <div className="min-w-0 lg:col-span-2">{questModule}</div>}
+                  <div className="min-w-0 lg:col-span-1">
+                    <CircleRailModule />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {hasBottomRow && !isCircle && (
               <div className="grid gap-x-8 gap-y-6 lg:grid-cols-2">
                 {settingsModule && (
                   <div className="min-w-0">
