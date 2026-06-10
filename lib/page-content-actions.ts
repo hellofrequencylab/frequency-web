@@ -99,3 +99,63 @@ export async function savePageContent(route: string, fd: FormData): Promise<Acti
   revalidatePath(route)
   return ok()
 }
+
+// Hero image: upload to the public `site-media` bucket and persist hero_image for
+// the route, or clear it. Both admin-gate (MIN_ROLE) and validate the route against
+// the editable registry. Mirrors uploadCircleCover in circles/admin-actions.ts but
+// keyed on the page route rather than a circle id.
+export async function uploadPageHero(
+  route: string,
+  fd: FormData,
+): Promise<{ url: string } | { error: string }> {
+  const me = await getCallerProfile()
+  if (!me || !atLeastRole(me.community_role, MIN_ROLE)) return { error: 'Not allowed.' }
+  if (!isEditableRoute(route)) return { error: 'That page isn’t editable.' }
+
+  const file = fd.get('file')
+  if (!(file instanceof File) || file.size === 0) return { error: 'No file selected.' }
+  if (file.size > 8 * 1024 * 1024) return { error: 'Image must be under 8MB.' }
+
+  const db = createAdminClient() as unknown as SupabaseClient
+  const slug = route.replace(/^\/+|\/+$/g, '').replace(/[^a-z0-9]+/gi, '-').toLowerCase() || 'home'
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '')
+  const path = `page-hero/${slug}/${Date.now()}.${ext}`
+  const bytes = new Uint8Array(await file.arrayBuffer())
+
+  const { error: upErr } = await db.storage
+    .from('site-media')
+    .upload(path, bytes, { contentType: file.type || 'image/jpeg', upsert: false })
+  if (upErr) return { error: upErr.message }
+
+  const { data: pub } = db.storage.from('site-media').getPublicUrl(path)
+  const { error: dbErr } = await db.from('page_content').upsert({
+    route,
+    hero_image: pub.publicUrl,
+    updated_by: me.id,
+    updated_at: new Date().toISOString(),
+  })
+  if (dbErr) return { error: dbErr.message }
+
+  revalidatePath(route)
+  return { url: pub.publicUrl }
+}
+
+/** Clear a route's hero image. Admin-gated; mirrors removeCircleCover. */
+export async function removePageHero(route: string): Promise<void> {
+  const me = await getCallerProfile()
+  if (!me || !atLeastRole(me.community_role, MIN_ROLE)) throw new Error('Not allowed.')
+  if (!isEditableRoute(route)) throw new Error('That page isn’t editable.')
+
+  const db = createAdminClient() as unknown as SupabaseClient
+  const { error } = await db
+    .from('page_content')
+    .upsert({
+      route,
+      hero_image: null,
+      updated_by: me.id,
+      updated_at: new Date().toISOString(),
+    })
+  if (error) throw new Error(error.message)
+
+  revalidatePath(route)
+}
