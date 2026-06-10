@@ -6,6 +6,7 @@
 
 import { SITE_URL, SITE_NAME, SITE_DESCRIPTION } from '@/lib/site'
 import type { PublicCircle, PublicEvent, TopicalChannel } from '@/lib/discover'
+import type { JourneyPlan, JourneyPlanItem } from '@/lib/journey-plans'
 
 const abs = (path: string) => `${SITE_URL}${path.startsWith('/') ? path : `/${path}`}`
 
@@ -141,6 +142,57 @@ export function topicListSchema(channels: TopicalChannel[], listName: string) {
       position: i + 1,
       url: abs(`/discover/topics/${c.slug}`),
       name: c.name,
+    })),
+  }
+}
+
+// ── Journey (HowTo) ───────────────────────────────────────────────────────────
+// A published library Journey maps cleanly onto schema.org/HowTo: an ordered set
+// of repeatable steps (Practices) that build toward an outcome. HowTo is the
+// answer-engine lever for guides (CONTENT-VOICE §8b) — one of the few types AI
+// Overviews lift step-by-step. Each step deep-links back to the public Journey
+// page; no member data is exposed (steps are the author's public Practice list).
+
+export function journeySchema(plan: JourneyPlan, items: JourneyPlanItem[]) {
+  const url = abs(`/discover/journeys/${plan.slug}`)
+  // Estimated total time from the default (Adept) tier of each step, when known.
+  const totalMinutes = items.reduce((sum, it) => {
+    const tiers = it.practice?.tiers ?? []
+    const tier = tiers.find((t) => t.tier === 'adept') ?? tiers[0]
+    return sum + (tier?.est_minutes ?? 0)
+  }, 0)
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'HowTo',
+    name: plan.title,
+    ...(plan.summary ? { description: plan.summary } : {}),
+    image: [abs('/opengraph-image')],
+    url,
+    ...(totalMinutes > 0 ? { totalTime: `PT${totalMinutes}M` } : {}),
+    step: items.map((it, i) => ({
+      '@type': 'HowToStep',
+      position: i + 1,
+      name: it.practice?.title ?? `Step ${i + 1}`,
+      text: it.note ?? it.practice?.description ?? it.practice?.title ?? `Step ${i + 1}`,
+      url: `${url}#step-${i + 1}`,
+    })),
+  }
+}
+
+// ── ItemList (Journey listing) ────────────────────────────────────────────────
+
+export function journeyListSchema(plans: JourneyPlan[], listName: string) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: listName,
+    numberOfItems: plans.length,
+    itemListElement: plans.map((p, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      url: abs(`/discover/journeys/${p.slug}`),
+      name: p.title,
     })),
   }
 }

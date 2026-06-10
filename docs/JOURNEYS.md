@@ -303,6 +303,18 @@ global) · season context · practice guide · related journeys · community act
 **swipe-to-log** on checklist rows; **circular progress arc** (not a bar); story collapses to
 "Read more"; no right rail (widgets stack, per `page_config`).
 
+**Public discovery surface (SEO/AEO).** `/discover/journeys` (index) and
+`/discover/journeys/[slug]` (detail) are the only PUBLIC, indexable Journey pages — anon, in the
+`app/discover` route group, `revalidate = 3600`, listed in the sitemap and the Discover nav. They
+reuse the same discovery widgets the in-app page composes (Story / Path / Pillar balance /
+Completion rule / Reward preview) and replace the adopt/remix actions with a sign-in CTA. Each
+detail page emits **`HowTo` JSON-LD** (the answer-engine lever for guides, CONTENT-VOICE §8b): the
+ordered Practices become `HowToStep`s, with the default (Adept) tier minutes summing to
+`totalTime`. Reads go through `getPublicJourney` / `listPublicJourneys` (`lib/journey-plans.ts`),
+which use the module's admin handle guarded in code to `visibility = 'public'` AND
+`status != 'rejected'` — no SECURITY DEFINER RPC is needed because a published library Journey
+carries no private/location data (ADR-209).
+
 ---
 
 ## 11. The editor (extend `JourneyBuilder`)

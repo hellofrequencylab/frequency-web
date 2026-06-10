@@ -6,6 +6,7 @@ import {
   getPublicCircles,
   getPublicEvents,
 } from "@/lib/discover";
+import { listPublicJourneys } from "@/lib/journey-plans";
 import { createPublicClient } from "@/lib/supabase/public";
 import { getAllArticles, getAllCategories } from "@/lib/help/content";
 
@@ -47,6 +48,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/discover`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
     { url: `${SITE_URL}/discover/circles`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
     { url: `${SITE_URL}/discover/events`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
+    { url: `${SITE_URL}/discover/journeys`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
     { url: `${SITE_URL}/discover/topics`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${SITE_URL}/sign-in`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
     { url: `${SITE_URL}/privacy`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
@@ -85,10 +87,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let dynamicRoutes: MetadataRoute.Sitemap = [];
   let organizerRoutes: MetadataRoute.Sitemap = [];
   try {
-    const [channels, circles, events, organizers] = await Promise.all([
+    const [channels, circles, events, journeys, organizers] = await Promise.all([
       getTopicalChannels(),
       getPublicCircles(200),
       getPublicEvents(200),
+      listPublicJourneys(),
       getOrganizerRoutes(now),
     ]);
     organizerRoutes = organizers;
@@ -114,7 +117,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.6,
     }));
 
-    dynamicRoutes = [...topicRoutes, ...circleRoutes, ...eventRoutes];
+    const journeyRoutes: MetadataRoute.Sitemap = journeys.map((j) => ({
+      url: `${SITE_URL}/discover/journeys/${j.slug}`,
+      lastModified: j.updated_at ? new Date(j.updated_at) : now,
+      changeFrequency: "weekly",
+      priority: 0.6,
+    }));
+
+    dynamicRoutes = [...topicRoutes, ...circleRoutes, ...eventRoutes, ...journeyRoutes];
   } catch {
     // Fall back to static routes only.
   }
