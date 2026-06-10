@@ -1,6 +1,7 @@
 'use client'
 
 import { ScanLine, Users, TrendingUp, Nfc } from 'lucide-react'
+import { StatCard } from '@/components/ui/stat-card'
 
 export interface AnalyticsData {
   total: number
@@ -18,10 +19,10 @@ export function Analytics({ data }: { data: AnalyticsData }) {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Stat icon={ScanLine} label="Total scans" value={data.total} />
-        <Stat icon={Users} label="Unique members" value={data.unique} />
-        <Stat icon={Nfc} label="NFC taps" value={data.nfc} />
-        <Stat icon={TrendingUp} label="Last 30 days" value={windowTotal} />
+        <StatCard bordered icon={ScanLine} label="Total scans" value={data.total.toLocaleString()} />
+        <StatCard bordered icon={Users} label="Unique members" value={data.unique.toLocaleString()} />
+        <StatCard bordered icon={Nfc} label="NFC taps" value={data.nfc.toLocaleString()} />
+        <StatCard bordered icon={TrendingUp} label="Last 30 days" value={windowTotal.toLocaleString()} />
       </div>
 
       <section className="rounded-2xl border border-border bg-surface shadow-sm p-4">
@@ -73,25 +74,6 @@ export function Analytics({ data }: { data: AnalyticsData }) {
           </table>
         )}
       </section>
-    </div>
-  )
-}
-
-function Stat({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: typeof ScanLine
-  label: string
-  value: number
-}) {
-  return (
-    <div className="rounded-2xl border border-border bg-surface shadow-sm p-4">
-      <div className="flex items-center gap-1.5 text-xs font-medium text-subtle">
-        <Icon className="w-3.5 h-3.5" /> {label}
-      </div>
-      <p className="mt-1 text-2xl font-bold text-text">{value.toLocaleString()}</p>
     </div>
   )
 }

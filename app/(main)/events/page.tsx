@@ -16,7 +16,7 @@ import { FacetDropdown } from '@/components/ui/facet-dropdown'
 import { RsvpButton } from '@/components/events/rsvp-button'
 import { demoModeEnabled } from '@/lib/platform-flags'
 import { viewerHidesDemo } from '@/lib/demo-preference'
-import { resolvePageContent } from '@/lib/page-content'
+import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 import { scoreEventsForViewer } from '@/lib/events/matching'
 import { eventBlurb } from '@/lib/ai/event-blurb'
 import { aiAvailable } from '@/lib/ai/usage'
@@ -116,6 +116,19 @@ function DateBlock({ iso }: { iso: string }) {
   )
 }
 
+// Coded defaults for the operator-editable content (ADR-180) — shared by the
+// page header and the SEO metadata below.
+const CONTENT_FALLBACK = {
+  title: 'Events',
+  description:
+    'Group rides, gatherings, and meetups your circles are running near you. RSVP to see who’s coming, show up, and earn zaps for every one you make.',
+}
+
+// Operator-set title/description also drive <title> + og/twitter cards (PX.2).
+export function generateMetadata() {
+  return pageContentMetadata('/events', CONTENT_FALLBACK)
+}
+
 export default async function EventsPage({
   searchParams,
 }: {
@@ -138,7 +151,7 @@ export default async function EventsPage({
   if (user) {
     const { data: profile } = await admin
       .from('profiles')
-      .select('id, community_role, home_geocell_lat, home_geocell_lng')
+      .select('id, community_role, membership_tier, home_geocell_lat, home_geocell_lng')
       .eq('auth_user_id', user.id)
       .maybeSingle()
 
@@ -147,8 +160,11 @@ export default async function EventsPage({
       if (profile.home_geocell_lat != null && profile.home_geocell_lng != null) {
         myGeocell = { lat: Number(profile.home_geocell_lat), lng: Number(profile.home_geocell_lng) }
       }
-      isCrew = ['crew', 'host', 'guide', 'mentor', 'janitor'].includes(profile.community_role ?? '')
-      isHost = ['host', 'guide', 'mentor', 'janitor'].includes(profile.community_role ?? '')
+      // Event composing = paid (Crew/Supporter TIER) or a steward — PB.1/ADR-207.
+      isCrew =
+        ['crew', 'supporter'].includes((profile as { membership_tier?: string | null }).membership_tier ?? '') ||
+        ['host', 'guide', 'mentor', 'admin', 'janitor'].includes(profile.community_role ?? '')
+      isHost = ['host', 'guide', 'mentor', 'admin', 'janitor'].includes(profile.community_role ?? '')
 
       const { data: memberships } = await admin
         .from('memberships')
@@ -168,16 +184,24 @@ export default async function EventsPage({
     }
   }
 
-  // Operator-editable page header (ADR-180) — falls back to these defaults.
-  const { title: pageTitle, description: pageDescription } = await resolvePageContent('/events', {
-    title: 'Events',
-    description:
-      'Group rides, gatherings, and meetups your circles are running near you. RSVP to see who’s coming, show up, and earn zaps for every one you make.',
-  })
+  // Operator-editable page header (ADR-180) — falls back to the coded defaults.
+  const { title: pageTitle, description: pageDescription, heroImage, ctaLabel, ctaHref } =
+    await resolvePageContent('/events', CONTENT_FALLBACK)
+
+  // Operator-set CTA (PX.1) — shows only when both label + link are set.
+  const operatorCta =
+    ctaLabel && ctaHref ? (
+      <a
+        href={ctaHref}
+        className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
+      >
+        {ctaLabel}
+      </a>
+    ) : null
 
   if (myCircleIds.length === 0) {
     return (
-      <IndexTemplate title={pageTitle} description={pageDescription}>
+      <IndexTemplate title={pageTitle} description={pageDescription} action={operatorCta ?? undefined}>
         <EmptyState
           icon={CalendarDays}
           title="No events on your radar yet"
@@ -316,7 +340,7 @@ export default async function EventsPage({
       title={pageTitle}
       description={pageDescription}
       action={
-        (isCrew || isHost) ? (
+        (isCrew || isHost || operatorCta) ? (
           <div className="flex items-center gap-3">
             {isHost && (
               <Link href="/admin/events" className="text-sm font-medium text-muted transition-colors hover:text-primary-strong">
@@ -324,11 +348,22 @@ export default async function EventsPage({
               </Link>
             )}
             {isCrew && <EventCompose groups={myCircles} />}
+            {operatorCta}
           </div>
         ) : undefined
       }
       toolbar={facetRow}
     >
+      {/* Operator-set hero banner (PX.1) — renders only when set. */}
+      {heroImage && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={heroImage}
+          alt=""
+          className="mb-6 h-44 w-full rounded-2xl border border-border object-cover sm:h-56"
+        />
+      )}
+
       <div className="mb-6">
         <StatStrip
           items={[

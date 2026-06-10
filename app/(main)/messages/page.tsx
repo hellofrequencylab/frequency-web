@@ -13,7 +13,7 @@ import { CrewLeadQuickAction } from '@/components/messages/crew-lead-quick-actio
 import { IndexTemplate } from '@/components/templates/index-template'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
-import { resolvePageContent } from '@/lib/page-content'
+import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 import type { ProfileIdentity } from '@/lib/types/profile'
 
 type Profile = ProfileIdentity & {
@@ -44,8 +44,10 @@ type ThreadItem =
   | { kind: 'room'; id: string; lastActivity: string | null; room: RoomRow }
   | { kind: 'dm'; id: string; lastActivity: string | null; conv: ConversationRow }
 
-type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
-const CREW_PLUS: CommunityRole[] = ['crew', 'host', 'guide', 'mentor', 'janitor']
+// Room creation = paid (Crew/Supporter TIER) or a steward (host+). Crew is the
+// paid tier, not a role (PB.1/ADR-207).
+const STEWARD_ROLES = ['host', 'guide', 'mentor', 'admin', 'janitor']
+const PAID_TIERS = ['crew', 'supporter']
 
 type Filter = 'all' | 'rooms' | 'dms'
 const FILTERS: { value: Filter; label: string }[] = [
@@ -55,6 +57,18 @@ const FILTERS: { value: Filter; label: string }[] = [
 ]
 
 const ACTIVE_WINDOW_MS = 30 * 60 * 1000
+
+// Coded defaults for the operator-editable content (ADR-180) — shared by the
+// page header and the SEO metadata below.
+const CONTENT_FALLBACK = {
+  title: 'Messages',
+  description: 'Every conversation in one place. Direct messages, and rooms — your private group chats and the open community channels.',
+}
+
+// Operator-set title/description also drive <title> + og/twitter cards (PX.2).
+export function generateMetadata() {
+  return pageContentMetadata('/messages', CONTENT_FALLBACK)
+}
 
 export default async function MessagesPage({
   searchParams,
@@ -75,13 +89,15 @@ export default async function MessagesPage({
   // cross-region viewers, come from the message_peer_profiles DEFINER RPC.
   const { data: myProfile } = await supabase
     .from('profiles')
-    .select('id, community_role')
+    .select('id, community_role, membership_tier')
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
   if (!myProfile) redirect('/onboarding')
   const myProfileId = myProfile.id as string
-  const canCreateRoom = CREW_PLUS.includes(myProfile.community_role as CommunityRole)
+  const canCreateRoom =
+    PAID_TIERS.includes((myProfile as { membership_tier?: string | null }).membership_tier ?? '') ||
+    STEWARD_ROLES.includes(myProfile.community_role ?? '')
 
   // Public profile fields for everyone I share a DM / room with (caller-scoped).
   const { data: peerRows } = await (supabase as unknown as SupabaseClient).rpc('message_peer_profiles')
@@ -265,13 +281,11 @@ export default async function MessagesPage({
 
   const totalUnread = conversations.reduce((sum, c) => sum + c.unreadCount, 0)
 
-  // Operator-editable page header (ADR-180) — falls back to these defaults. The
-  // unread badge stays dynamic; only the static title text + description flow
+  // Operator-editable page header (ADR-180) — falls back to the coded defaults.
+  // The unread badge stays dynamic; only the static title text + description flow
   // through resolvePageContent.
-  const { title: pageTitle, description: pageDescription } = await resolvePageContent('/messages', {
-    title: 'Messages',
-    description: 'Every conversation in one place. Direct messages, and rooms — your private group chats and the open community channels.',
-  })
+  const { title: pageTitle, description: pageDescription, ctaLabel, ctaHref } =
+    await resolvePageContent('/messages', CONTENT_FALLBACK)
 
   // Segmented filter — lives in the "Your threads" section header.
   const filterTabs = (
@@ -307,6 +321,15 @@ export default async function MessagesPage({
         <div className="flex flex-wrap items-center justify-end gap-2">
           <CrewLeadQuickAction />
           {canCreateRoom && <NewRoomCompose />}
+          {/* Operator-set CTA (PX.1) — shows only when both label + link are set. */}
+          {ctaLabel && ctaHref && (
+            <a
+              href={ctaHref}
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
+            >
+              {ctaLabel}
+            </a>
+          )}
         </div>
       }
     >

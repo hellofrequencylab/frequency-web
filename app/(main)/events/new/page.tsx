@@ -15,14 +15,16 @@ export default async function NewEventPage() {
   const admin = createAdminClient()
   const { data: profile } = await admin
     .from('profiles')
-    .select('id, community_role')
+    .select('id, community_role, membership_tier')
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
   if (!profile) notFound()
 
-  const crewRoles = ['crew', 'host', 'guide', 'mentor', 'janitor']
-  if (!crewRoles.includes(profile.community_role ?? '')) notFound()
+  // Paid (Crew/Supporter TIER) or stewards may create events — PB.1/ADR-207.
+  const paid = ['crew', 'supporter'].includes((profile as { membership_tier?: string | null }).membership_tier ?? '')
+  const steward = ['host', 'guide', 'mentor', 'admin', 'janitor'].includes(profile.community_role ?? '')
+  if (!paid && !steward) notFound()
 
   // Fetch circles the user is a member of (scope for events)
   const { data: memberships } = await admin

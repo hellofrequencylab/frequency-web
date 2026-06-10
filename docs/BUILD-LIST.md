@@ -238,13 +238,13 @@ do. So PI.1 ships first, even before the AI can use it.
 
 | # | Extension | Builds on | Status | Notes |
 |---|---|---|---|---|
-| PX.1 | **Content editor → hero/CTA, not just title+description** | `page_content` (ADR-180) + Settings panel | 📋 | Add optional `hero_image` / `cta_label` / `cta_href` columns + module fields; pages keep the coded fallback. The header is editable; the rest of the chrome should be too. |
-| PX.2 | **Editable content → SEO metadata** | `resolvePageContent` (ADR-180/182) | 📋 | Feed the operator-set title/description into the route's `generateMetadata` (og/twitter + `<title>`), so an in-place edit also tunes search/share cards — no second editor. |
-| PX.3 | **Per-page QR analytics in the Settings panel** | `qr_codes.page_path` (ADR-179) + existing `qr_scans` rollups | 📋 | Surface scan counts / last-scan / top source for *this page's* codes inside `PageQrManager` (the data already exists in QR Studio — just scope it to `page_path`). Closes the create→measure loop on-page. |
-| PX.4 | **Fill the Circle Quest challenge model** | `CircleQuestModule` (ADR-181) | 📋 | The module lists adopted challenges but the challenge model is currently empty. Define circle-scoped challenges (adopt/assign + completion signal) so the third column populates. |
-| PX.5 | **Settings panel → remaining entity types** | `page-admin-bar` / `PageAdminProvider` | 📋 | Apply the per-page Settings pattern to **events** (`/events/[slug]`), **channels**, and **people** detail pages — each with its own capability-gated modules (e.g. event rail order, channel content). One registry + one provider already exist. |
-| PX.6 | **Circle rail order pattern → other rail-bearing pages** | `circles.sidebar_order` (ADR-181) | 📋 | Generalize the `SidebarWidgetEditor` to any page whose right rail has reorderable blocks (the rail registry from PAGE-FRAMEWORK §4), instead of a circle-only column. |
-| PX.7 | **Founder-config pattern → other milestones** | `founder-config.ts` (ADR-184) | 📋 | The "single config edit point" shape (reward + copy + steps in one module the code reads) is reusable for any future milestone/quest; lift it into a small convention so each new milestone is one config file, not four edits. |
+| PX.1 | **Content editor → hero/CTA, not just title+description** | `page_content` (ADR-180) + Settings panel | ✅ done (ADR-206) | Add optional `hero_image` / `cta_label` / `cta_href` columns + module fields; pages keep the coded fallback. The header is editable; the rest of the chrome should be too. |
+| PX.2 | **Editable content → SEO metadata** | `resolvePageContent` (ADR-180/182) | ✅ done (ADR-206) | Feed the operator-set title/description into the route's `generateMetadata` (og/twitter + `<title>`), so an in-place edit also tunes search/share cards — no second editor. |
+| PX.3 | **Per-page QR analytics in the Settings panel** | `qr_codes.page_path` (ADR-179) + existing `qr_scans` rollups | ✅ done | Surface scan counts / last-scan / top source for *this page's* codes inside `PageQrManager` (the data already exists in QR Studio — just scope it to `page_path`). Closes the create→measure loop on-page. |
+| PX.4 | **Fill the Circle Quest challenge model** | `CircleQuestModule` (ADR-181) | ✅ done | Shipped as the circle-challenge adoption model (ADR-201): hosts adopt a global season challenge, the column shows collective progress, completions credit Circle Field. |
+| PX.5 | **Settings panel → remaining entity types** | `page-admin-bar` / `PageAdminProvider` | ✅ done | Events already had a module; channels (`channel.manage`, staff) + people (janitor moderation) modules added — see the audit-table PX.5 row. |
+| PX.6 | **Circle rail order pattern → other rail-bearing pages** | `circles.sidebar_order` (ADR-181) | 🔵 deferred | **Assessed 2026-06: no second consumer.** Circles are the only entity with a per-entity reorderable rail; every other route uses the global/scoped rail with fixed blocks. Generalizing now is speculative infra — revisit when a second rail-bearing entity needs ordering. |
+| PX.7 | **Founder-config pattern → other milestones** | `founder-config.ts` (ADR-184) | ✅ convention | **Codified 2026-06:** any new milestone/quest ships as ONE config module (reward + copy + steps) that the code reads — `founder-config.ts` is the reference shape; circle-challenge constants (`CIRCLE_FIELD_CHALLENGE_AWARD`) and tier metadata (`tier-meta.ts`) already follow it. Enforced by review, not tooling. |
 
 ---
 
@@ -267,10 +267,10 @@ from role), the role-based proxies are wrong and must move to the tier.
 | PB.1c | Thread the tier into the per-scope resolver (`Viewer.tier`, fed by `load-capabilities`) | `load-capabilities.ts`, `capabilities.ts` | ✅ done |
 | PB.1d | `requireCrew()` — name is now correct (Crew = the paid tier); body checks `isPaid(tier)` | entry-points/codes | ✅ done |
 | PB.1e | Page-level `requireAdmin('janitor')` on `/admin/roles` (defense in depth for `assignRole`) | `/admin/roles` | ✅ already in place |
-| PB.1i | **`isEndorsed` display → tier** + retire the `community_role='crew'` value (migrate rows; drop the beta role-write) — needs `membership_tier` threaded through the feed author RPCs + profile/circle selects (`layout` training gate already moved to host+) | `season-ranks.ts` + feed/profile types | 📋 **remaining** |
+| PB.1i | **`isEndorsed` display → tier** + retire the `community_role='crew'` value | `season-ranks.ts` + feed/profile types | ✅ done (ADR-207, migration applied — incl. the role-as-paid read floor: entry-points · messages rooms · events composing · Vault nav · demo generators) |
 | PB.1f | Thread `profile_personas` through `getViewerHats` | `lib/core/viewer-hats.ts` | ✅ done (P3.1) |
-| PB.1g | Capability **reason** metadata ("upgrade to unlock" vs "host a circle to unlock") | resolver | 📋 nice-to-have |
-| PB.1h | Bring janitor-only admin surfaces (Vera/AI) under the matrix | `access-matrix.ts` | 📋 |
+| PB.1g | Capability **reason** metadata | resolver | ✅ done — additive `capabilityGaps()` (needs-membership/paid-tier/role), 8 tests (ADR-207) |
+| PB.1h | Bring janitor-only admin surfaces (Vera/AI) under the matrix | `access-matrix.ts` | ✅ done — Vera → `insights`, AI → `platform` staffDomains (ADR-207) |
 
 ### PB.2 — Page-framework re-composition (same framework on every page)
 
@@ -278,7 +278,7 @@ from role), the role-based proxies are wrong and must move to the tier.
 
 | # | Item | Status |
 |---|---|---|
-| PB.2a | Dedup the `Stat` components. ✅ The identical *de-boxed* stat in `/circles` + `/channels` → shared `StatInline`. Remaining: `practices/[id]` (bordered+icon), `admin/qr/analytics` (has `delta`/`detail`/`link`), `admin/qr/stats` are distinct visuals — fold into `StatCard`/`StatInline` variants. | ⏳ |
+| PB.2a | Dedup the `Stat` components. ✅ done — `StatCard` gained `bordered`/`detail`/`size='sm'`; the bespoke stats in `practices/[id]`, `admin/qr/analytics`, `admin/qr/stats` are deleted in favor of the kit. | ✅ |
 | PB.2b | Quick wins → kit. ✅ `/support` + `/growth` recomposed (IndexTemplate + EmptyState). `/crew/quests` + `/crew/store/ledger` were **already** composing PageHeading + StatCard + EmptyState. | ✅ |
 | PB.2c | Crew section + broadcast headers → shared `PageHeading`. ✅ `/crew` + `/broadcast` (the two raw-`<h1>` offenders). achievements · challenges · journey · streaks **already** compose PageHeading/IndexTemplate — verified. | ✅ |
 | PB.2d | `/crew/store`, `/people/[handle]`, `/journeys/[slug]` — assessed: these have **intentionally rich detail headers** (Vault aside-card · avatar/rank identity · accent emoji-tile + pillar chips) that PAGE-FRAMEWORK explicitly sanctions ("Detail pages keep their richer context band"). They use the kit's type scale + primitives in their bodies. Forcing the generic templates would regress the visuals — **left as sanctioned custom, not recomposed.** | ✅ assessed |
@@ -287,7 +287,7 @@ from role), the role-based proxies are wrong and must move to the tier.
 
 ### PB.2e — Full template-wrapping (2026-06-08 definitive audit)
 
-> Owner standard: **every interior page wraps one of the 5 templates** (slots = easy to assign/reorganize). Verified: the **framework is complete** (no missing slot). **64/152 pages** wrap a template today. The rest: sanctioned framework-exceptions (Admin `AdminPage` ·20 · marketing-ui ·12 · Puck editors · real-time DM/room threads · join/onboarding flows) **plus ~33 interior pages that still hand-roll a header** — the migration list:
+> Owner standard: **every interior page wraps one of the 5 templates** (slots = easy to assign/reorganize). Verified: the **framework is complete** (no missing slot). ✅ **2026-06-09 re-verified page-by-page: the migration list below is DONE** — a prior wave ("Standardized internal-page system, Wave 1") wrapped every listed interior page; two agents confirmed each file (crew/broadcast/connections/support chunk + help/discover/system chunk) with zero edits needed. Remaining custom pages are all sanctioned exceptions: discover index pages + `/sign-in` (full-bleed marketing-ui heroes), Admin (on `AdminTemplate`), editors, real-time threads, join/onboarding flows, redirects. Historical migration list kept below for reference:
 
 - **Wrap (trivial, PageHeading-only):** `/broadcast`→Stream · `/crew`→Dashboard · `/crew/quests`→Stream · `/crew/store`→Dashboard · `/crew/store/ledger`→Dashboard
 - **Member/crew:** `/crew/{achievements,challenges,leaderboard,streaks,journeys,journey,arcs}` → Dashboard/Index · `/people/[handle]`→Detail · `/connections`(+`[id]`,`shared/[id]`)→Index/Detail · `/support/[id]`→Detail

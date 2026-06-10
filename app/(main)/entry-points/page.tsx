@@ -17,6 +17,7 @@ import { renderStyledQrSvg } from '@/lib/qr/render-styled'
 import { listMyEntryPoints } from '@/lib/entry-points/store'
 import { entryDestinationGroups } from '@/lib/entry-points/destinations'
 import { crewEntryTemplates } from '@/lib/entry-points/template-settings'
+import { isPaid } from '@/lib/core/entitlement'
 import { EntryPointsManager, type EntryCard } from './entry-points-client'
 
 export const dynamic = 'force-dynamic'
@@ -25,8 +26,9 @@ export default async function EntryPointsPage() {
   const me = await getCallerProfile()
   if (!me) redirect('/sign-in?next=/entry-points')
 
-  // Not crew yet — a friendly upsell, not a wall.
-  if (!atLeastRole(me.community_role, 'crew')) {
+  // Not paid yet — a friendly upsell, not a wall. Crew = the paid TIER (PB.1 /
+  // ADR-207); stewards (host+) pass on role.
+  if (!isPaid(me.membershipTier) && !atLeastRole(me.community_role, 'host')) {
     return (
       <DashboardTemplate eyebrow="Entry points" title="Bring people in" width="default">
         <div className="rounded-2xl border border-border bg-surface p-8 text-center shadow-sm">

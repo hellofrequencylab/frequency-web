@@ -191,9 +191,10 @@ export default async function ProfilePage({
   const rank = getRank(totalZaps)
   const nextRank = getNextRank(totalZaps)
   const progress = nextRank ? Math.min(100, Math.round(((totalZaps - rank.min) / (nextRank.min - rank.min)) * 100)) : 100
-  // Rank is *endorsed* (shown publicly) only for Crew+; a free member earns it but
-  // it stays in their own Vault, not on their public profile (ADR-141). Inert in Beta.
-  const rankEndorsed = isEndorsed(role)
+  // Rank is *endorsed* (shown publicly) only on the paid tier (Crew/Supporter); a
+  // free member earns it but it stays in their own Vault, not on their public
+  // profile (ADR-141, PB.1i: tier, not role). Inert in Beta (everyone is comped Crew).
+  const rankEndorsed = isEndorsed(profile.membership_tier)
   // Supporter is the pay-more entitlement tier (orthogonal to role/rank) — endorse it
   // publicly with the thank-you badge (P2.4).
   const isSupporter = profile.membership_tier === 'supporter'

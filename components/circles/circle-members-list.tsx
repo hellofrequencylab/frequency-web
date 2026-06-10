@@ -22,6 +22,8 @@ type MemberProfile = {
   handle: string
   avatar_url: string | null
   community_role: CommunityRole
+  /** Entitlement tier — drives endorsement (PB.1i: flair keys off the tier, not the role). */
+  membership_tier: string | null
   current_season_rank: string | null
   current_streak: number
 }
@@ -97,7 +99,7 @@ export function CircleMembersList({
                     <ProfileFlair
                       rank={profile.current_season_rank}
                       streak={profile.current_streak}
-                      endorsed={isEndorsed(profile.community_role)}
+                      endorsed={isEndorsed(profile.membership_tier)}
                       compact
                     />
                   </div>

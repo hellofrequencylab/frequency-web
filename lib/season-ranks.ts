@@ -10,7 +10,7 @@
 // components/layout/app-shell.tsx) apexes on `plum` instead, so the human
 // ladder stays visually distinct from the play ladders.
 
-import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
+import { isPaid, type EntitlementTier } from '@/lib/core/entitlement'
 
 export type RankKey =
   | 'stone' | 'clay' | 'gold' | 'olive' | 'jade'
@@ -85,13 +85,17 @@ export function getRankDef(rank: SeasonRank) {
 /**
  * Whether a member's rank (and other status endorsements — cosmetics, custom
  * titles, Journey badges as they ship) render on PUBLIC surfaces (their profile,
- * people cards, post flair). Everyone *earns*; only Crew+ are *endorsed*
- * (ECONOMY-AND-JOURNEYS §4, ADR-141). A free member's earned rank stays visible
- * to themselves in their own Vault/dashboard, but not to others. Inert in Beta,
- * where everyone is Crew. Pass the DISPLAYED profile's role, not the viewer's.
+ * people cards, post flair). Everyone *earns*; only the PAID tier (Crew or
+ * Supporter) is *endorsed* (ECONOMY-AND-JOURNEYS §4, ADR-141). A free member's
+ * earned rank stays visible to themselves in their own Vault/dashboard, but not
+ * to others. Inert in Beta, where every member is comped the Crew tier.
+ *
+ * PB.1i: endorsement keys off `profiles.membership_tier` (the entitlement axis),
+ * NOT the community role — the legacy `community_role='crew'` value is retired
+ * (migration 20260612060000). Pass the DISPLAYED profile's tier, not the viewer's.
  */
-export function isEndorsed(role: CommunityRole | string | null | undefined): boolean {
-  return atLeastRole((role ?? null) as CommunityRole | null, 'crew')
+export function isEndorsed(tier: EntitlementTier | string | null | undefined): boolean {
+  return isPaid((tier ?? null) as EntitlementTier | null)
 }
 
 /** The rank a given season-zaps total actually earns (highest tier whose

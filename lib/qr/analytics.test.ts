@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { summarizeScans, summarizeLocations, type ScanRow } from './analytics'
+import { summarizeScans, summarizeLocations, summarizePageScans, type ScanRow } from './analytics'
 
 describe('summarizeLocations', () => {
   it('clusters nearby coords, counts, sorts desc, and drops rows without coords', () => {
@@ -73,5 +73,25 @@ describe('summarizeScans', () => {
     )
     expect(s.byMedium).toEqual({ qr: 3, nfc: 1 })
     expect(s.byMedium.qr + s.byMedium.nfc).toBe(s.total)
+  })
+})
+
+describe('summarizePageScans', () => {
+  it('rolls a page folder up to total / unique / last scan / top code', () => {
+    const s = summarizePageScans([
+      scan('a', 'p1', 3),
+      scan('a', 'p1', 2), // same member — 1 unique
+      scan('b', 'p2', 1),
+      scan('b', null, 0), // most recent + anonymous
+      scan('b', 'p2', 5),
+    ])
+    expect(s.total).toBe(5)
+    expect(s.unique).toBe(2)
+    expect(s.lastScanAt).toBe(scan('b', null, 0).scanned_at)
+    expect(s.topCode).toEqual({ codeId: 'b', total: 3, unique: 1 })
+  })
+
+  it('returns the empty shape for an unscanned folder', () => {
+    expect(summarizePageScans([])).toEqual({ total: 0, unique: 0, lastScanAt: null, topCode: null })
   })
 })

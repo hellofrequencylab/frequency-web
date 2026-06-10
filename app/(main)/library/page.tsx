@@ -7,10 +7,22 @@ import { IndexTemplate } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
 import { getInitials } from '@/lib/utils'
 import { getLibrary, getMyRatings, pendingReviewCount, typeLabel, hrefFor, type ContentType, type LibraryItem } from '@/lib/library'
-import { resolvePageContent } from '@/lib/page-content'
+import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 import { RateButton, AdoptButton, SubmitProgramForm } from './interactive'
 
 export const dynamic = 'force-dynamic'
+
+// Coded defaults for the operator-editable content (ADR-180) — shared by the
+// page header and the SEO metadata below.
+const CONTENT_FALLBACK = {
+  title: 'Library',
+  description: "The community's best practices, programs, and journeys — created by members, approved by leadership, ranked by what's actually working.",
+}
+
+// Operator-set title/description also drive <title> + og/twitter cards (PX.2).
+export function generateMetadata() {
+  return pageContentMetadata('/library', CONTENT_FALLBACK)
+}
 
 const TYPES: { key: ContentType | 'all'; label: string }[] = [
   { key: 'all', label: 'All' },
@@ -45,25 +57,35 @@ export default async function LibraryPage({
 
   const q = (t: string) => (t === 'all' ? '/library' : `/library?type=${t}`)
 
-  // Operator-editable page header (ADR-180) — falls back to these defaults.
-  const { title, description } = await resolvePageContent('/library', {
-    title: 'Library',
-    description: "The community's best practices, programs, and journeys — created by members, approved by leadership, ranked by what's actually working.",
-  })
+  // Operator-editable page header (ADR-180) — falls back to the coded defaults.
+  const { title, description, ctaLabel, ctaHref } = await resolvePageContent('/library', CONTENT_FALLBACK)
 
   return (
     <IndexTemplate
       title={title}
       description={description}
       action={
-        isApprover ? (
-          <Link
-            href="/library/review"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
-          >
-            <ShieldCheck className="h-4 w-4" /> Review queue
-            {pending > 0 && <span className="rounded-full bg-primary px-1.5 text-xs font-bold text-on-primary">{pending}</span>}
-          </Link>
+        (isApprover || (ctaLabel && ctaHref)) ? (
+          <div className="flex items-center gap-2">
+            {isApprover && (
+              <Link
+                href="/library/review"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+              >
+                <ShieldCheck className="h-4 w-4" /> Review queue
+                {pending > 0 && <span className="rounded-full bg-primary px-1.5 text-xs font-bold text-on-primary">{pending}</span>}
+              </Link>
+            )}
+            {/* Operator-set CTA (PX.1) — shows only when both label + link are set. */}
+            {ctaLabel && ctaHref && (
+              <a
+                href={ctaHref}
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
+              >
+                {ctaLabel}
+              </a>
+            )}
+          </div>
         ) : undefined
       }
       toolbar={

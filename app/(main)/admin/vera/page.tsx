@@ -5,14 +5,17 @@ import { AdminPage, AdminSection } from '@/components/admin/admin-page'
 import { getVeraAdminData } from './load-vera'
 import { VeraConfigForm } from './vera-config-form'
 
-// Janitor-only: tune Vera — her style + live responses + the induction/funnel copy,
-// no deploy needed (AI-VERA.md). Writes vera_config; read live by the loop + induction.
+// Tune Vera — her style + live responses + the induction/funnel copy, no deploy
+// needed (AI-VERA.md). Writes vera_config; read live by the loop + induction.
 // This is also the AI control room: the operator Agent (which proposes actions for
 // approval) lives here now, lifted out of the deep Marketing menu (IA restructure).
+// Gate (PB.1h): community janitor OR a staff role with the `insights` domain
+// (write) — the same staffDomain pattern as the rest of the Insights dashboard,
+// mirrored by this page's entry in app/(main)/admin/sections.ts.
 export const dynamic = 'force-dynamic'
 
 export default async function VeraAdminPage() {
-  await requireAdmin('janitor')
+  await requireAdmin('janitor', { staff: 'insights' })
   const { cfg, featured } = await getVeraAdminData()
 
   return (
