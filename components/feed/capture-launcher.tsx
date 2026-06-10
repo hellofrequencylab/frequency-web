@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { X, BookOpen, ScanLine, Compass, ArrowRight } from 'lucide-react'
+import { X, BookOpen, ScanLine, Compass, ArrowRight, MapPin, CalendarCheck, Ghost } from 'lucide-react'
 import { CaptureBox } from './capture-box'
 
 type Mode = 'post' | 'note' | 'photo' | 'contact'
@@ -113,7 +113,48 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
               <span className="h-px flex-1 bg-border" />
             </div>
 
-            <CaptureBox key={mode} scopeId={scopeId} visibility="public" defaultMode={mode} />
+            {/* The blip — this page is about logging real life, not posting online. */}
+            <p className="mb-3 px-1 text-xs leading-relaxed text-muted">
+              This is your log of real life: who you met, where you showed up, what actually
+              happened. Catch it while it&rsquo;s fresh.
+            </p>
+
+            <CaptureBox
+              key={mode}
+              scopeId={scopeId}
+              visibility="public"
+              defaultMode={mode}
+              placeholder="What happened out there?"
+            />
+
+            {/* Coming soon — the next real-world capture types, visible but inert so
+                members can see where this surface is headed. */}
+            <div className="mt-4">
+              <p className="mb-2 px-1 text-2xs font-semibold uppercase tracking-wide text-subtle">Coming soon</p>
+              <div className="grid grid-cols-1 gap-2">
+                {[
+                  { Icon: MapPin, label: 'Local check-in' },
+                  { Icon: CalendarCheck, label: 'Event check-in' },
+                  { Icon: Ghost, label: 'Capture a Ghost Node' },
+                ].map(({ Icon, label }) => (
+                  <button
+                    key={label}
+                    type="button"
+                    disabled
+                    aria-disabled
+                    className="flex cursor-not-allowed items-center gap-3 rounded-2xl border border-dashed border-border bg-surface/50 p-3 text-left opacity-60"
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface-elevated text-subtle">
+                      <Icon className="h-5 w-5" aria-hidden />
+                    </span>
+                    <span className="min-w-0 flex-1 text-sm font-semibold text-muted">{label}</span>
+                    <span className="shrink-0 rounded-full bg-surface-elevated px-2 py-0.5 text-3xs font-semibold uppercase tracking-wide text-subtle">
+                      Soon
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
 
             <Link
               href="/journal"
