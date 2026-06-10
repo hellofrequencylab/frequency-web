@@ -38,7 +38,7 @@ export function ListingForm({ initial }: { initial: Partial<Record<keyof Listing
       const r = await saveListing(form)
       if (isError(r)) setResult({ ok: false, text: r.error })
       else {
-        setResult({ ok: true, text: 'Listing published — members can find you in the directory.' })
+        setResult({ ok: true, text: 'Listing published. Members can find you in the directory.' })
         router.refresh()
       }
     })

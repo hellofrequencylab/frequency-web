@@ -99,7 +99,7 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-bold text-text">Scan a card or poster</span>
                 <span className="block text-xs leading-relaxed text-muted">
-                  Point your camera at a business card, a flyer, or a Frequency code — capture a new
+                  Point your camera at a business card, a flyer, or a Frequency code to capture a new
                   contact or a node you found in the wild.
                 </span>
               </span>

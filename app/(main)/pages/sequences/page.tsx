@@ -45,7 +45,7 @@ export default async function BetaSequencesPage() {
     <AdminPage
       title="Onboarding sequences"
       eyebrow="Pages"
-      description="Audience-targeted splash pages that feed the founder induction. Pick an entry point, then share its link or QR — everyone who joins through it runs that voiced flow and gets its marketing tag."
+      description="Audience-targeted splash pages that feed the founder induction. Pick an entry point, then share its link or QR. Everyone who joins through it runs that voiced flow and gets its marketing tag."
       width="default"
       actions={
         <Link
@@ -63,7 +63,7 @@ export default async function BetaSequencesPage() {
         <div className="rounded-2xl border border-border bg-surface p-5">
           <form action={createSequenceVersion} className="flex flex-wrap items-end gap-2">
             <label className="min-w-0 flex-1">
-              <span className="mb-1 block text-xs font-semibold text-subtle">New version — audience name</span>
+              <span className="mb-1 block text-xs font-semibold text-subtle">New version: audience name</span>
               <input
                 name="audience"
                 required
@@ -136,7 +136,7 @@ export default async function BetaSequencesPage() {
                         <CheckCircle2 className="h-3.5 w-3.5" /> Registered
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-xs font-medium text-warning" title="Not in lib/traits/registry.ts — tagging will be skipped">
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-warning" title="Not in lib/traits/registry.ts, so tagging will be skipped">
                         <AlertTriangle className="h-3.5 w-3.5" /> Unregistered
                       </span>
                     )}
@@ -211,12 +211,12 @@ export default async function BetaSequencesPage() {
 
       <AdminSection title="How it works">
         <ol className="space-y-2 rounded-2xl border border-border bg-surface p-5 text-sm text-muted">
-          <li><span className="font-semibold text-text">1. Pick the entry point, then share.</span> Per sequence, choose the <span className="font-semibold text-text">incoming point</span> — the public splash (<code className="rounded bg-surface-elevated px-1 py-0.5 font-mono text-xs">/beta/&lt;slug&gt;</code>) or straight into the induction (<code className="rounded bg-surface-elevated px-1 py-0.5 font-mono text-xs">/onboarding/beta?seq=&lt;slug&gt;</code>) — then copy its link or download the QR (PNG/SVG) for a video description, a DM, a partner email, or printed signage.</li>
+          <li><span className="font-semibold text-text">1. Pick the entry point, then share.</span> Per sequence, choose the <span className="font-semibold text-text">incoming point</span>: the public splash (<code className="rounded bg-surface-elevated px-1 py-0.5 font-mono text-xs">/beta/&lt;slug&gt;</code>) or straight into the induction (<code className="rounded bg-surface-elevated px-1 py-0.5 font-mono text-xs">/onboarding/beta?seq=&lt;slug&gt;</code>). Then copy its link or download the QR (PNG/SVG) for a video description, a DM, a partner email, or printed signage.</li>
           <li><span className="font-semibold text-text">2. They run the matching flow.</span> The CTA carries the audience into the induction (<code className="rounded bg-surface-elevated px-1 py-0.5 font-mono text-xs">?seq=</code>), which speaks in that sequence’s voice. A cookie keeps it through sign-in.</li>
-          <li><span className="font-semibold text-text">3. The cohort is tagged.</span> On completion the member is stamped with the sequence’s marketing tag, so you can segment the founding cohort by entry path forever — see <Link href="/admin/segments" className="text-primary-strong hover:underline">Segments</Link>.</li>
+          <li><span className="font-semibold text-text">3. The cohort is tagged.</span> On completion the member is stamped with the sequence’s marketing tag, so you can segment the founding cohort by entry path forever. See <Link href="/admin/segments" className="text-primary-strong hover:underline">Segments</Link>.</li>
         </ol>
         <p className="text-xs text-subtle">
-          Links + QRs encode the canonical site URL (<code className="font-mono">{SITE_URL.replace(/^https?:\/\//, '')}</code>), so they’re safe to print and share before launch. For codes with scan analytics or a swappable destination, use the <Link href="/admin/qr" className="text-primary-strong hover:underline">QR Studio</Link> instead. Copy lives in <code className="font-mono">lib/onboarding/beta-sequences.ts</code> (source of truth); editing it in-app is the next step — for now, sequences ship in code and are reviewed in PRs.
+          Links + QRs encode the canonical site URL (<code className="font-mono">{SITE_URL.replace(/^https?:\/\//, '')}</code>), so they’re safe to print and share before launch. For codes with scan analytics or a swappable destination, use the <Link href="/admin/qr" className="text-primary-strong hover:underline">QR Studio</Link> instead. Copy lives in <code className="font-mono">lib/onboarding/beta-sequences.ts</code> (source of truth); editing it in-app is the next step. For now, sequences ship in code and are reviewed in PRs.
         </p>
       </AdminSection>
     </AdminPage>

@@ -184,7 +184,7 @@ export function ConnectionPrefsForm({ initial }: { initial: ConnectionPrefsIniti
         {/* Location precision */}
         <Fieldset
           legend="Location precision others see"
-          hint="We never share your exact spot — only a coarse area."
+          hint="We never share your exact spot, only a coarse area."
         >
           <div className="rounded-2xl border border-border bg-surface shadow-sm divide-y divide-border/80 dark:divide-border/50 overflow-hidden">
             {LOCATION_BAND_OPTIONS.map(({ value, label, hint }) => {
@@ -249,7 +249,7 @@ export function ConnectionPrefsForm({ initial }: { initial: ConnectionPrefsIniti
       <div className="flex items-start gap-2.5 rounded-xl border border-border bg-surface-elevated px-4 py-3">
         <ShieldAlert className="w-4 h-4 text-muted shrink-0 mt-0.5" />
         <p className="text-xs text-muted">
-          Frequency never shares your exact location — others only see a fuzzed area or your city.
+          Frequency never shares your exact location. Others only see a fuzzed area or your city.
         </p>
       </div>
 
@@ -262,7 +262,7 @@ export function ConnectionPrefsForm({ initial }: { initial: ConnectionPrefsIniti
           </span>
         ) : state === 'error' ? (
           <span className="text-red-600 dark:text-red-400">
-            Couldn&apos;t save{errorMsg ? ` — ${errorMsg}` : ''}.
+            Couldn&apos;t save{errorMsg ? ` (${errorMsg})` : ''}.
           </span>
         ) : (
           <span className="text-muted">Changes save instantly.</span>

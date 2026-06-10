@@ -49,7 +49,7 @@ export async function createSequence(persona: string): Promise<ActionResult<{ id
     step_order: 1,
     delay_hours: 0,
     subject: `Welcome to Frequency`,
-    body: `Hi — thanks for raising your hand as someone who ${p.pitch.toLowerCase()}.\n\nFrequency is your local community; here's what to do next to get the most out of it. We'll send a couple more notes over the coming days.`,
+    body: `Hi. Thanks for raising your hand as someone who ${p.pitch.toLowerCase()}.\n\nFrequency is your local community; here's what to do next to get the most out of it. We'll send a couple more notes over the coming days.`,
     enabled: true,
   })
 

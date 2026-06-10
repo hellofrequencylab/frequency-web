@@ -44,7 +44,7 @@ function eventDate(iso: string): string {
 // page header and the SEO metadata below.
 const CONTENT_FALLBACK = {
   title: 'Community',
-  description: 'Everything happening around you — announcements, what’s coming up, and what’s new to join.',
+  description: 'Everything happening around you: announcements, what’s coming up, and what’s new to join.',
 }
 
 // Operator-set title/description also drive <title> + og/twitter cards (PX.2).

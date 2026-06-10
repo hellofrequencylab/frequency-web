@@ -90,7 +90,7 @@ export async function ConnectionPanel({
         {drifted && (
           <div className="mt-3 border-t border-border pt-3">
             <p className="mb-2 flex items-center gap-1.5 text-2xs text-subtle">
-              <Clock className="h-3.5 w-3.5" /> It’s been a while — say hi?
+              <Clock className="h-3.5 w-3.5" /> It’s been a while. Say hi?
             </p>
             <form action={startConversation.bind(null, profileId)}>
               <button

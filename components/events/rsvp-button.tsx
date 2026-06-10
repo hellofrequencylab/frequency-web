@@ -60,7 +60,7 @@ export function RsvpButton({
     <form action={toggleRSVP.bind(null, eventId)}>
       <button
         type="submit"
-        aria-label={isGoing ? 'Cancel RSVP' : 'RSVP — I’m going'}
+        aria-label={isGoing ? 'Cancel RSVP' : 'RSVP, I’m going'}
         className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
           isGoing
             ? 'bg-success-bg text-success hover:bg-danger-bg hover:text-danger'

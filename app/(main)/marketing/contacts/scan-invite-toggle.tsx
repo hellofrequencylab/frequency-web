@@ -25,7 +25,7 @@ export function ScanInviteToggle({ enabled }: { enabled: boolean }) {
         <p className="text-sm font-medium text-text">Scan-intro emails</p>
         <p className="text-xs text-muted">
           One-time personal intro to people a steward scans into their CRM.{' '}
-          {enabled ? 'On.' : 'Off — nothing sends.'} Needs <code>RESEND_API_KEY</code> set.
+          {enabled ? 'On.' : 'Off. Nothing sends.'} Needs <code>RESEND_API_KEY</code> set.
         </p>
       </div>
       {pending && <Loader2 className="h-4 w-4 animate-spin text-subtle" />}

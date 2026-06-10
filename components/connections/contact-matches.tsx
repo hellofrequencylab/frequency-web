@@ -25,7 +25,7 @@ export function ContactMatches({ suggestions }: { suggestions: ContactMatchSugge
         </h2>
       </div>
       <p className="mb-3 text-sm text-muted">
-        These look like the same person as a member. Merge to pull their live profile onto the card — your notes stay private to you.
+        These look like the same person as a member. Merge to pull their live profile onto the card. Your notes stay private to you.
       </p>
       <ul className="space-y-2">
         {items.map((s) => (

@@ -19,7 +19,7 @@ export default async function AiControlsPage() {
       title="AI controls"
       icon={Power}
       eyebrow="Platform"
-      description="The master switch for every AI surface — Vera, win-back drafts, help search, and the Profile Creator harvest. Flipping it off makes all of them fall back to their deterministic, non-AI behaviour."
+      description="The master switch for every AI surface (Vera, win-back drafts, help search, and the Profile Creator harvest). Flipping it off makes all of them fall back to their deterministic, non-AI behaviour."
     >
       <AiControlsView data={data} />
     </AdminPage>

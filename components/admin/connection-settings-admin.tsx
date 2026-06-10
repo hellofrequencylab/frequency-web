@@ -80,21 +80,21 @@ export function ConnectionSettingsAdmin({ settings }: { settings: ConnectionSett
           />
           <Toggle
             label="Maps"
-            hint="Venue-snapped member maps — coming in a later phase."
+            hint="Venue-snapped member maps (coming in a later phase)."
             checked={form.mapsEnabled}
             disabled={pending}
             onChange={(v) => set('mapsEnabled', v)}
           />
           <Toggle
             label="Resonance"
-            hint="Orbits & Resonance, the relationship game — later phase."
+            hint="Orbits & Resonance, the relationship game (later phase)."
             checked={form.resonanceEnabled}
             disabled={pending}
             onChange={(v) => set('resonanceEnabled', v)}
           />
           <Toggle
             label="Near-miss"
-            hint="“You crossed paths” nudges — later phase."
+            hint="“You crossed paths” nudges (later phase)."
             checked={form.nearMissEnabled}
             disabled={pending}
             onChange={(v) => set('nearMissEnabled', v)}

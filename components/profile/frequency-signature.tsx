@@ -61,7 +61,7 @@ export function FrequencySignature({ signature, variant = 'full', name, classNam
       return (
         <span
           className={`inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-elevated px-2.5 py-1 text-2xs font-medium text-subtle ${className ?? ''}`}
-          title="No Frequency Signature yet — log practices across the Pillars to form one"
+          title="No Frequency Signature yet. Log practices across the Pillars to form one"
         >
           <Compass className="h-3 w-3" /> No signature yet
         </span>
@@ -75,7 +75,7 @@ export function FrequencySignature({ signature, variant = 'full', name, classNam
         <p className="text-sm font-semibold text-text">No Frequency Signature yet</p>
         <p className="mx-auto mt-1 max-w-sm text-sm text-muted">
           {name ? `${name} hasn't` : 'You haven’t'} logged any practice yet. A signature takes
-          shape across the four Pillars—Mind, Body, Spirit, and Expression—as the practice
+          shape across the four Pillars (Mind, Body, Spirit, and Expression) as the practice
           spreads.
         </p>
       </div>

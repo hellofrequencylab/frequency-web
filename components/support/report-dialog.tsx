@@ -137,7 +137,7 @@ export function ReportDialog({
                 <Check className="h-5 w-5" />
               </span>
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-text">Thanks — we’re on it.</p>
+                <p className="text-sm font-semibold text-text">Thanks. We’re on it.</p>
                 <p className="text-xs text-muted">Your report is logged as ticket #{done.ref}. We’ll reply in your support history.</p>
               </div>
             </div>
@@ -153,7 +153,7 @@ export function ReportDialog({
         ) : (
           <>
             <p className="mb-3 text-xs leading-relaxed text-muted">
-              Found a bug or stuck on something? Tell us what happened — we capture the page details
+              Found a bug or stuck on something? Tell us what happened. We capture the page details
               automatically, and you can drop in a screenshot.
             </p>
 
@@ -202,7 +202,7 @@ export function ReportDialog({
 
             {/* Screenshot */}
             <div className="mt-3">
-              <span className="mb-1 block text-xs font-medium text-subtle">Screenshot <span className="font-normal text-subtle">· optional — paste or attach</span></span>
+              <span className="mb-1 block text-xs font-medium text-subtle">Screenshot <span className="font-normal text-subtle">· optional, paste or attach</span></span>
               {shot ? (
                 <div className="relative overflow-hidden rounded-xl border border-border">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -257,7 +257,7 @@ export function ReportDialog({
                   <span className="text-2xs font-bold uppercase tracking-wide">Vera</span>
                 </div>
                 <p className="text-sm leading-relaxed text-text">
-                  {vera.answer ?? "I couldn’t find a sure answer in the help center — go ahead and send it to the team."}
+                  {vera.answer ?? "I couldn’t find a sure answer in the help center. Go ahead and send it to the team."}
                 </p>
                 {vera.citations.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-1.5">
@@ -270,7 +270,7 @@ export function ReportDialog({
                 )}
                 {vera.answer && (
                   <button type="button" onClick={onClose} className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-success-bg/50 px-3 py-1.5 text-xs font-semibold text-success transition-colors hover:bg-success-bg/70">
-                    <Check className="h-3.5 w-3.5" /> That solved it — close
+                    <Check className="h-3.5 w-3.5" /> That solved it, close
                   </button>
                 )}
               </div>

@@ -84,7 +84,7 @@ export function CaptureBox({
       autoImage={mode === 'photo'}
       forceAnnouncement={mode === 'dispatch'}
       bottomSlot={featureRow}
-      placeholder={mode === 'note' ? 'Jot a note — what happened, what you noticed…' : placeholder}
+      placeholder={mode === 'note' ? 'Jot a note: what happened, what you noticed…' : placeholder}
       submitLabel="Capture"
     />
   )

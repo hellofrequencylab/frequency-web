@@ -56,7 +56,7 @@ export default async function GiftPage({ params }: { params: Promise<{ slug: str
 
         <div className="mt-6 flex justify-center">
           {isSelf ? (
-            <p className="text-sm text-muted">This is your own code — share it for others to gift you a zap.</p>
+            <p className="text-sm text-muted">This is your own code. Share it for others to gift you a Zap.</p>
           ) : (
             <GiftButton slug={slug} />
           )}

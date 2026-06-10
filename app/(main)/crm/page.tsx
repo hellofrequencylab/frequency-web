@@ -27,7 +27,7 @@ export default async function CrmPage() {
     <DashboardTemplate
       eyebrow="CRM"
       title="Pipeline"
-      description="Your sales pipeline over the unified contact book — track opportunities from first touch to won, with tasks and analytics."
+      description="Your sales pipeline over the unified contact book. Track opportunities from first touch to won, with tasks and analytics."
       width="wide"
     >
       <CrmTabs />
@@ -37,7 +37,7 @@ export default async function CrmPage() {
         <StatCard label="Open deals" value={metrics.openCount.toLocaleString()} icon={Briefcase} />
         <StatCard label="Open pipeline" value={formatMoney(metrics.openValue)} icon={DollarSign} />
         <StatCard label="Won" value={formatMoney(metrics.wonValue)} icon={Trophy} />
-        <StatCard label="Win rate" value={metrics.winRatePct === null ? '—' : `${metrics.winRatePct}%`} icon={Percent} />
+        <StatCard label="Win rate" value={metrics.winRatePct === null ? '–' : `${metrics.winRatePct}%`} icon={Percent} />
         <StatCard label="Tasks due" value={metrics.tasksDue.toLocaleString()} icon={CheckSquare} />
       </div>
 

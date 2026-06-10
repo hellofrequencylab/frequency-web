@@ -7,8 +7,8 @@ import { inviteContactToJoin, type InviteToJoinResult } from './actions'
 const REASON_MSG: Record<string, string> = {
   disabled: 'Scan-intro emails are off. Turn the switch on (top of Contacts) to send.',
   no_email: 'No email on file for this person.',
-  no_invite_path: 'No invite path — this contact wasn’t captured by a steward, so there’s no personal intro to send.',
-  already_invited: 'Already invited — we only send the intro once.',
+  no_invite_path: 'No invite path. This contact wasn’t captured by a steward, so there’s no personal intro to send.',
+  already_invited: 'Already invited. We only send the intro once.',
   unsubscribed: 'This person unsubscribed, so we won’t email them.',
   no_referral: 'The capturing steward has no referral link yet.',
   error: 'Something went wrong sending the invite.',

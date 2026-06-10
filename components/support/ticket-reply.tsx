@@ -32,7 +32,7 @@ export function TicketReply({ ticketId, disabled = false }: { ticketId: string; 
           onChange={(e) => setBody(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) send() }}
           rows={2}
-          placeholder={disabled ? 'This ticket is closed — reopen it by replying.' : 'Add a reply…'}
+          placeholder={disabled ? 'This ticket is closed. Reopen it by replying.' : 'Add a reply…'}
           className="flex-1 resize-none rounded-xl border border-border bg-surface px-3 py-2 text-sm leading-relaxed text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
         />
         <button

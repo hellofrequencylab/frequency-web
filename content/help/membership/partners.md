@@ -1,6 +1,6 @@
 ---
 title: Partners & member offers
-description: Local businesses that back the community. Find them, walk in, and unlock offers.
+description: Local businesses that back the community. Find them, walk in, and claim offers.
 category: membership
 order: 3
 updated: 2026-06-10
@@ -26,7 +26,7 @@ Open any partner to see who they are: a description, their address and website, 
 (the good part) their current **member offers**. Each offer spells out exactly
 what members get and on what terms, so there's nothing to negotiate at the counter.
 
-## Unlocking an offer
+## Claiming an offer
 
 Offers are claimed **in person**, on purpose. Partners support real-world
 community, so the perk lives in the real world too:
@@ -34,7 +34,7 @@ community, so the perk lives in the real world too:
 1. Show up at the partner's location.
 2. **Tap their plaque** (NFC) with your phone, or **scan their code** with your
    camera. No special app needed.
-3. The offer unlocks at the counter, and you pick up **Zaps** for showing up.
+3. You claim the offer at the counter and pick up **Zaps** for showing up.
 
 See [QR codes & checking in](/help/the-game/qr-check-ins) for how scanning works in
 general. Partner codes reward you with the offer rather than a verified practice.

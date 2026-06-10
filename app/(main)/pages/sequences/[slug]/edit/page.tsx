@@ -23,7 +23,7 @@ export default async function EditSequencePage({ params }: { params: Promise<{ s
       <Link href="/pages/sequences" className="inline-flex items-center gap-1.5 text-xs font-semibold text-subtle hover:text-text">
         <ArrowLeft className="h-3.5 w-3.5" /> Sequences
       </Link>
-      <h1 className="mt-3 text-2xl font-bold tracking-tight text-text">Edit splash — {seq.audience}</h1>
+      <h1 className="mt-3 text-2xl font-bold tracking-tight text-text">Edit splash: {seq.audience}</h1>
       <p className="mt-1 text-sm text-muted">
         Publishes to <code className="rounded bg-surface-elevated px-1 py-0.5 text-xs">/beta/{slug}</code> immediately.
         The voiced induction copy stays code-managed.

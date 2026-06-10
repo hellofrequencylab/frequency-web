@@ -42,7 +42,7 @@ export default async function HelpGapsPage() {
     <AdminPage
       title="Help gaps"
       eyebrow="Vera"
-      description="What members asked Vera that she couldn’t confidently answer in the last 30 days — the to-write list for the help center."
+      description="What members asked Vera that she couldn’t confidently answer in the last 30 days. The to-write list for the help center."
     >
       <AdminSection>
         <div className="grid grid-cols-2 gap-3 sm:max-w-md">
@@ -59,7 +59,7 @@ export default async function HelpGapsPage() {
           </p>
         ) : gaps.length === 0 ? (
           <p className="rounded-2xl border border-success-bg bg-success-bg/20 p-5 text-sm text-text">
-            ✅ Nothing deflected — Vera answered everything from the help center.
+            ✅ Nothing deflected. Vera answered everything from the help center.
           </p>
         ) : (
           <ul className="divide-y divide-border rounded-2xl border border-border bg-surface">

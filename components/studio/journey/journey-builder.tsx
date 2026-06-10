@@ -264,13 +264,13 @@ export function JourneyBuilder(props: Props) {
       {celebrate === 'live' && (
         <div className="mb-4 flex items-center gap-2 rounded-2xl border border-success/50 bg-success-bg px-4 py-3 text-sm font-medium text-success motion-safe:animate-in motion-safe:zoom-in-95">
           <PartyPopper className="h-5 w-5 shrink-0" />
-          It’s live in the community library — anyone can adopt your journey now.
+          It’s live in the community library. Anyone can adopt your Journey now.
         </div>
       )}
       {celebrate === 'review' && (
         <div className="mb-4 flex items-center gap-2 rounded-2xl border border-warning/50 bg-warning-bg px-4 py-3 text-sm font-medium text-warning motion-safe:animate-in motion-safe:zoom-in-95">
           <PartyPopper className="h-5 w-5 shrink-0" />
-          Submitted — a Guide will review it shortly, then it goes live in the library.
+          Submitted. A Guide will review it shortly, then it goes live in the library.
         </div>
       )}
 
@@ -293,7 +293,7 @@ export function JourneyBuilder(props: Props) {
             value={title}
             onChange={(e) => { setTitle(e.target.value); queueSave({ title: e.target.value }) }}
             maxLength={120}
-            placeholder="Name your journey"
+            placeholder="Name your Journey"
             className="w-full bg-transparent text-2xl font-bold text-text outline-none placeholder:text-subtle"
           />
           <input
@@ -314,7 +314,7 @@ export function JourneyBuilder(props: Props) {
             onChange={(e) => { setIntro(e.target.value); queueSave({ intro: e.target.value }) }}
             rows={4}
             maxLength={8000}
-            placeholder="The why, the how, what you'll get from it. Write as much or as little as you like — a line for a simple practice, a full curriculum for a course."
+            placeholder="The why, the how, what you'll get from it. Write as much or as little as you like. A line for a simple practice, a full curriculum for a course."
             className="w-full resize-y rounded-2xl border border-border bg-surface px-3.5 py-3 text-sm leading-relaxed text-text outline-none focus:border-primary"
           />
         ) : (
@@ -362,7 +362,7 @@ export function JourneyBuilder(props: Props) {
           <div className="rounded-2xl border border-dashed border-border bg-surface/60 px-5 py-8 text-center">
             <Sparkles className="mx-auto mb-2 h-6 w-6 text-subtle" />
             <p className="text-sm font-medium text-text">Build your path</p>
-            <p className="mx-auto mt-1 max-w-xs text-sm text-muted">Add the practices that make up this journey — drag to order them into the flow you want.</p>
+            <p className="mx-auto mt-1 max-w-xs text-sm text-muted">Add the practices that make up this Journey, then drag to order them into the flow you want.</p>
           </div>
         ) : (
           <ol className="space-y-2">

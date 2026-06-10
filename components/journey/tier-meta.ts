@@ -14,9 +14,9 @@ export interface TierMeta {
 }
 
 export const TIER_META: Record<IntensityTier, TierMeta> = {
-  initiate: { tier: 'initiate', label: 'Initiate', glyph: '⚡', blurb: 'Minimum viable — the worst-day version.' },
+  initiate: { tier: 'initiate', label: 'Initiate', glyph: '⚡', blurb: 'Minimum viable. The worst-day version.' },
   adept: { tier: 'adept', label: 'Adept', glyph: '🌊', blurb: 'Standard. The default depth.' },
-  master: { tier: 'master', label: 'Master', glyph: '🏔️', blurb: 'Full expression — the deepest take.' },
+  master: { tier: 'master', label: 'Master', glyph: '🏔️', blurb: 'Full expression. The deepest take.' },
 }
 
 export const TIER_ORDER: readonly IntensityTier[] = ['initiate', 'adept', 'master']

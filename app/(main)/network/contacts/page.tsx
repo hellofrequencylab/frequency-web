@@ -59,7 +59,7 @@ export default async function ConnectionsPage({
             My Contacts
           </span>
         }
-        description="People you’ve met — scanned from a card or poster, or added by hand. Private to you unless you promote them to your network."
+        description="People you’ve met. Scanned from a card or poster, or added by hand. Private to you unless you promote them to your network."
         action={
           <Link
             href="/connections/new"

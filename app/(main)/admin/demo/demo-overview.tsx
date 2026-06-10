@@ -59,7 +59,7 @@ export function DemoOverview({
           </div>
           <p className="mt-1 text-sm text-muted">
             {on
-              ? 'Visible across the directory, circles, events, and feeds — the ⚡ marks it as sample content.'
+              ? 'Visible across the directory, circles, events, and feeds. The ⚡ marks it as sample content.'
               : 'The rows still exist. Flip back on any time, or purge them for good in the Danger zone below.'}
           </p>
         </div>

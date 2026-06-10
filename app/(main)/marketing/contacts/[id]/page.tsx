@@ -33,7 +33,7 @@ const KIND_ICON: Record<JourneyKind, typeof User> = {
 }
 
 function fmtDate(iso: string | null): string {
-  if (!iso) return '—'
+  if (!iso) return '–'
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
@@ -68,7 +68,7 @@ export default async function ContactStatsPage({ params }: { params: Promise<{ i
   const phases = groupByPhase(journey)
 
   const name = contact.displayName || member?.displayName || contact.email
-  const channel = member?.acquisition?.channel ?? contact.acquisition?.channel ?? contact.source ?? '—'
+  const channel = member?.acquisition?.channel ?? contact.acquisition?.channel ?? contact.source ?? '–'
   const interactions = person.scans.length + person.events.length
 
   return (
@@ -138,7 +138,7 @@ export default async function ContactStatsPage({ params }: { params: Promise<{ i
               </div>
             ) : (
               <p className="mt-2 text-sm text-muted">
-                Not a member yet — they have no login or public profile, which is why search by username doesn’t find them.
+                Not a member yet. They have no login or public profile, which is why search by username doesn’t find them.
                 Use <span className="font-medium text-text">Invite to join</span> above.
               </p>
             )}
@@ -150,7 +150,7 @@ export default async function ContactStatsPage({ params }: { params: Promise<{ i
               <Mail className="h-3.5 w-3.5" /> CRM contact
             </p>
             <p className="mt-2 text-sm text-text">{contact.email}</p>
-            <p className="text-sm text-muted">Source: {contact.source ?? '—'} · Consent: {contact.consentState}</p>
+            <p className="text-sm text-muted">Source: {contact.source ?? '–'} · Consent: {contact.consentState}</p>
             {person.deals.length > 0 && (
               <p className="mt-1 inline-flex items-center gap-1 text-xs text-subtle">
                 <Briefcase className="h-3 w-3" /> {person.deals.length} deal{person.deals.length !== 1 ? 's' : ''}

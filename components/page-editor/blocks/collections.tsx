@@ -588,7 +588,7 @@ export const collectionsComponents: Record<string, ComponentConfig> = {
           value: { type: 'text', label: 'Value (e.g. 10k+)' },
           label: { type: 'text', label: 'Label (e.g. Members)' },
         },
-        getItemSummary: (item: StatItem) => item.value ? `${item.value} — ${item.label ?? ''}` : 'Stat',
+        getItemSummary: (item: StatItem) => item.value ? `${item.value} · ${item.label ?? ''}` : 'Stat',
       },
       ...blockFields(),
     },

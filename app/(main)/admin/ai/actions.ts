@@ -27,6 +27,6 @@ export async function reindexHelp(): Promise<ActionResult<ReindexResult>> {
     revalidatePath('/admin/ai')
     return ok(result)
   } catch (e) {
-    return fail(e instanceof Error ? e.message : 'Reindex failed — check the embed function + AI budget.')
+    return fail(e instanceof Error ? e.message : 'Reindex failed. Check the embed function + AI budget.')
   }
 }

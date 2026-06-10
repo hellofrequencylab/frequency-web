@@ -49,7 +49,7 @@ personal code, and it does double duty.
 
 ## Partner codes
 
-Some codes belong to local **partners**. Scanning one unlocks that partner's
+Some codes belong to local **partners**. Scanning one opens that partner's
 current member offer at the counter. Partner codes reward you with the offer
 rather than a verified practice.
 

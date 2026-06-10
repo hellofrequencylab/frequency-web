@@ -27,7 +27,7 @@ export interface MemberProfileCode {
 
 export function MemberProfileCodes({ codes }: { codes: MemberProfileCode[] }) {
   if (codes.length === 0) {
-    return <p className="text-sm text-muted py-4">No member profile codes yet — they’re minted on a member’s first visit to their codes page.</p>
+    return <p className="text-sm text-muted py-4">No member profile codes yet. They’re minted on a member’s first visit to their codes page.</p>
   }
   return (
     <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">

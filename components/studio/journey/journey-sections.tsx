@@ -213,7 +213,7 @@ export function CompletionRulesSection({
           checked={seasonLocked}
           onChange={(v) => onChange({ seasonLocked: v })}
           label="Season-locked"
-          description="On: anchors to the season (official path). Off: evergreen — a rolling 13-week window from each member’s adoption."
+          description="On: anchors to the season (official path). Off: evergreen, a rolling 13-week window from each member’s adoption."
         />
       </div>
     </StudioSection>
@@ -259,7 +259,7 @@ export function RewardsSection({
       {canOverrideZap && (
         <p className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-dashed border-border px-3 py-2 text-xs text-muted">
           <Zap className="h-3.5 w-3.5 text-warning" />
-          Per-practice Zap overrides are set on each practice (Mentor/Admin) — coming to this editor.
+          Per-practice Zap overrides are set on each practice (Mentor/Admin). Coming to this editor.
         </p>
       )}
     </StudioSection>
@@ -356,7 +356,7 @@ export function OfficialSection({
     <StudioSection
       title="Official program"
       icon={ShieldCheck}
-      hint="Guides & Mentors only — promote this into a season’s official Quest."
+      hint="Guides & Mentors only. Promote this into a season’s official Quest."
     >
       <div className="space-y-3">
         <Toggle

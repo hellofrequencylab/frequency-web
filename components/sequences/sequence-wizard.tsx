@@ -133,9 +133,9 @@ export function SequenceWizard({ slug, initial, isCustom }: { slug: string; init
 
           {cur.id === 'meta' && (
             <>
-              <div><label className={lbl}>Audience <span className="font-normal text-subtle/70">— admin/analytics label</span></label>
+              <div><label className={lbl}>Audience <span className="font-normal text-subtle/70">· admin/analytics label</span></label>
                 <input className={field} value={seq.audience} onChange={(e) => setTop('audience', e.target.value)} /></div>
-              <div><label className={lbl}>Marketing tag <span className="font-normal text-subtle/70">— stamped on members who arrive here</span></label>
+              <div><label className={lbl}>Marketing tag <span className="font-normal text-subtle/70">· stamped on members who arrive here</span></label>
                 <input className={field} value={seq.marketingTag} onChange={(e) => setTop('marketingTag', e.target.value)} /></div>
               <p className="rounded-lg bg-surface-elevated/50 px-3 py-2 text-2xs text-subtle">Slug: <code className="font-mono text-muted">{slug}</code> · Link: <code className="font-mono text-muted">/onboarding/beta?seq={slug}</code></p>
             </>
@@ -146,7 +146,7 @@ export function SequenceWizard({ slug, initial, isCustom }: { slug: string; init
               <div><label className={lbl}>Eyebrow</label><input className={field} value={seq.splash.eyebrow} onChange={(e) => setSplash('eyebrow', e.target.value)} /></div>
               <div><label className={lbl}>Headline</label><input className={field} value={seq.splash.headline} onChange={(e) => setSplash('headline', e.target.value)} /></div>
               <div><label className={lbl}>Body</label><textarea className={`${field} resize-y`} rows={3} value={seq.splash.body} onChange={(e) => setSplash('body', e.target.value)} /></div>
-              <div><label className={lbl}>Statement <span className="font-normal text-subtle/70">— wrap the accent word in *asterisks*</span></label><input className={field} value={seq.splash.statement} onChange={(e) => setSplash('statement', e.target.value)} /></div>
+              <div><label className={lbl}>Statement <span className="font-normal text-subtle/70">· wrap the accent word in *asterisks*</span></label><input className={field} value={seq.splash.statement} onChange={(e) => setSplash('statement', e.target.value)} /></div>
               <div><label className={lbl}>CTA label</label><input className={field} value={seq.splash.cta} onChange={(e) => setSplash('cta', e.target.value)} /></div>
               <div>
                 <label className={lbl}>Hero image</label>
@@ -180,7 +180,7 @@ export function SequenceWizard({ slug, initial, isCustom }: { slug: string; init
           )}
 
           {cur.id === 'heard' && (
-            <div><label className={lbl}>“How did you hear?” options <span className="font-normal text-subtle/70">— one per line</span></label>
+            <div><label className={lbl}>“How did you hear?” options <span className="font-normal text-subtle/70">· one per line</span></label>
               <textarea className={`${field} resize-y`} rows={7} value={seq.heardAbout.join('\n')} onChange={(e) => setHeard(e.target.value)} /></div>
           )}
 
@@ -224,7 +224,7 @@ export function SequenceWizard({ slug, initial, isCustom }: { slug: string; init
             </a>
           </div>
           <StepPreview step={cur.id} seq={seq} />
-          {isCustom && <p className="mt-2 text-2xs text-subtle">Custom version — edit any beat and re-publish; the slug + link stay the same.</p>}
+          {isCustom && <p className="mt-2 text-2xs text-subtle">Custom version. Edit any beat and re-publish; the slug + link stay the same.</p>}
         </div>
       </div>
     </div>

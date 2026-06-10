@@ -28,7 +28,7 @@ export interface MemberStage {
 export const MEMBER_STAGES: MemberStage[] = [
   { key: 'newcomer',     index: 0, label: 'Newcomer',          tagline: 'Get set up and find your footing.' },
   { key: 'finding_feet', index: 1, label: 'Finding your feet', tagline: 'Build the daily habit, one practice at a time.' },
-  { key: 'regular',      index: 2, label: 'Regular',           tagline: 'Deepen it — follow a Journey and lean into your circle.' },
+  { key: 'regular',      index: 2, label: 'Regular',           tagline: 'Deepen it. Follow a Journey and show up for your circle.' },
   { key: 'established',  index: 3, label: 'Established',        tagline: 'Round it out across the four pillars.' },
   { key: 'anchor',       index: 4, label: 'Anchor',            tagline: 'You hold the room. Bring others into it.' },
 ]

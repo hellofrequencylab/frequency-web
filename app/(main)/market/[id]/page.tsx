@@ -51,7 +51,7 @@ export default async function ListingPage({ params }: { params: Promise<{ id: st
           <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
             {listing.images.map((src, i) => (
               // eslint-disable-next-line @next/next/no-img-element
-              <img key={i} src={src} alt={`${listing.title} — ${i + 1}`} className="aspect-square w-full rounded-xl border border-border object-cover" />
+              <img key={i} src={src} alt={`${listing.title}, photo ${i + 1}`} className="aspect-square w-full rounded-xl border border-border object-cover" />
             ))}
           </div>
         )}
@@ -86,7 +86,7 @@ export default async function ListingPage({ params }: { params: Promise<{ id: st
       </div>
 
       {!isOwner && (
-        <p className="mt-3 px-1 text-xs text-subtle">No payment happens in the app — message {listing.author?.display_name.split(' ')[0] ?? 'the poster'} to arrange it offline.</p>
+        <p className="mt-3 px-1 text-xs text-subtle">No payment happens in the app. Message {listing.author?.display_name.split(' ')[0] ?? 'the poster'} to arrange it offline.</p>
       )}
 
       {isOwner && (

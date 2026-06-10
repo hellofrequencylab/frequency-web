@@ -130,7 +130,7 @@ export function ClaimPractice({ templateId, fallback }: { templateId: string; fa
             {step === 1 ? (
               <div className="space-y-4">
                 <p className="text-sm text-muted">
-                  Tell Vera what you are after and she will shape this practice around you — or skip and tweak it yourself.
+                  Tell Vera what you’re after and she’ll shape this practice around you, or skip and tweak it yourself.
                 </p>
                 <div>
                   <label className={LABEL} htmlFor="goal">What do you want from this?</label>
@@ -164,7 +164,7 @@ export function ClaimPractice({ templateId, fallback }: { templateId: string; fa
                     }}
                     className="text-sm font-medium text-subtle hover:text-text"
                   >
-                    Skip — I&apos;ll do it myself
+                    Skip, I&apos;ll do it myself
                   </button>
                   <button
                     onClick={askVera}
@@ -180,7 +180,7 @@ export function ClaimPractice({ templateId, fallback }: { templateId: string; fa
               <div className="space-y-4">
                 {veraUsed && (
                   <p className="flex items-center gap-1.5 rounded-lg bg-primary-bg px-3 py-2 text-xs font-medium text-primary-strong">
-                    <Sparkles className="h-3.5 w-3.5" /> Vera tailored this to you — edit anything before you claim it.
+                    <Sparkles className="h-3.5 w-3.5" /> Vera tailored this to you. Edit anything before you claim it.
                   </p>
                 )}
                 <div>

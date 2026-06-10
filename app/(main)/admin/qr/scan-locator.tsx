@@ -13,7 +13,7 @@ export function ScanLocator({ locations }: { locations: ScanLocation[] }) {
   if (locations.length === 0) {
     return (
       <div className="flex h-80 items-center justify-center rounded-2xl border border-border bg-surface-elevated px-6 text-center text-sm text-muted">
-        No located scans yet — points appear here as your codes get scanned out in the world (coarse,
+        No located scans yet. Points appear here as your codes get scanned out in the world (coarse,
         city-level; no precise location is collected).
       </div>
     )

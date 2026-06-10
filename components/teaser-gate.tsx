@@ -39,8 +39,8 @@ export function TeaserGate({
   allowed,
   resourceKey,
   previewSeconds = 30,
-  title = 'Upgrade to unlock the full experience',
-  body = 'Members can take a look around. Crew members get to dive in — join circles, RSVP to events, post, and connect.',
+  title = 'Upgrade for the full experience',
+  body = 'Members can take a look around. Crew members join Circles, RSVP to events, post, and connect.',
   children,
 }: {
   allowed: boolean
@@ -162,7 +162,7 @@ export function TeaserGate({
           className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-on-primary shadow-lg transition-colors hover:bg-primary-hover"
         >
           <Lock className="h-4 w-4" />
-          Upgrade to unlock
+          Upgrade to join in
         </button>
       )}
     </div>

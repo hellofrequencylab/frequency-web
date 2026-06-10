@@ -129,7 +129,7 @@ function CampaignForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =
         <label className="block">
           <span className="mb-1 block text-xs font-medium text-subtle">Default goal (optional)</span>
           <select value={goal} onChange={(e) => setGoal(e.target.value)} className={field}>
-            <option value="">— none —</option>
+            <option value="">None</option>
             {listEntryTemplates().map((t) => (
               <option key={t.id} value={t.id}>{t.label}</option>
             ))}

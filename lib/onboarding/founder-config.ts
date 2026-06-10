@@ -49,7 +49,7 @@ export const FOUNDER_COACH = {
   eyebrow: 'Vera',
   headline: "Your Founder's First Week",
   blurb:
-    "You're activated — now the fun part. Six moves to become a Founder, and a badge when you finish.",
+    "You're activated. Now the fun part: six moves to become a Founder, and a badge when you finish.",
   cta: 'See your tasks',
   href: '/founder',
 } as const
@@ -58,7 +58,7 @@ export const FOUNDER_COACH = {
 export const FOUNDER_PAGE = {
   title: "Founder's First Week",
   description:
-    'Six moves that turn a sign-up into a Founder. Do them in any order — finish the set to earn the badge.',
+    'Six moves that turn a sign-up into a Founder. Do them in any order. Finish the set to earn the badge.',
 } as const
 
 // ── The six tasks ─────────────────────────────────────────────────────────────
@@ -66,7 +66,7 @@ export const FOUNDER_TASKS: readonly FounderTaskCopy[] = [
   {
     key: 'post',
     label: 'Say something',
-    nudge: 'Your first post — a hello, a question, a photo from today.',
+    nudge: 'Your first post: a hello, a question, a photo from today.',
     href: '/feed',
   },
   {
