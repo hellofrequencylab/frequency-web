@@ -4,6 +4,7 @@ import {
   currentSeasonWeek,
   qualifyingWeeks,
   isJourneyComplete,
+  seasonAct,
   SEASON_DAYS,
   SEASON_WEEKS,
   DEFAULT_TARGET_WEEKS,
@@ -73,5 +74,21 @@ describe('isJourneyComplete', () => {
   it('honors a custom target', () => {
     expect(isJourneyComplete(6, 6)).toBe(true)
     expect(isJourneyComplete(5, 6)).toBe(false)
+  })
+})
+
+describe('seasonAct', () => {
+  it('maps the 13 weeks to the three Acts (Open / Deepen / Land)', () => {
+    expect(seasonAct(1)?.act).toBe(1)
+    expect(seasonAct(4)?.name).toBe('Open')
+    expect(seasonAct(5)?.act).toBe(2)
+    expect(seasonAct(9)?.name).toBe('Deepen')
+    expect(seasonAct(10)?.act).toBe(3)
+    expect(seasonAct(13)?.name).toBe('Land')
+  })
+  it('is null off-season', () => {
+    expect(seasonAct(null)).toBeNull()
+    expect(seasonAct(0)).toBeNull()
+    expect(seasonAct(SEASON_WEEKS + 1)).toBeNull()
   })
 })
