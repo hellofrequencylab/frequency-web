@@ -30,7 +30,7 @@ import {
   getConnectionSettings,
 } from '@/lib/connections/connection-settings'
 import type { ProximityBand } from '@/lib/connections/location'
-import { resolvePageContent } from '@/lib/page-content'
+import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 import { getInitials } from '@/lib/utils'
 import { ConnectionsPulse } from '@/components/connections/connections-pulse'
 
@@ -65,6 +65,18 @@ type Filters = {
 
 type NearbyCircle = CircleCardData & { distanceLabel: string }
 
+// Coded defaults for the operator-editable content (ADR-180) — shared by the
+// page header and the SEO metadata below.
+const CONTENT_FALLBACK = {
+  title: 'Community',
+  description: 'Everyone in the community. Browse, find someone interesting, say hi.',
+}
+
+// Operator-set title/description also drive <title> + og/twitter cards (PX.2).
+export function generateMetadata() {
+  return pageContentMetadata('/network', CONTENT_FALLBACK)
+}
+
 export default async function CommunityPage({
   searchParams,
 }: {
@@ -88,11 +100,8 @@ export default async function CommunityPage({
 
   const admin = createAdminClient()
 
-  // Operator-editable page header (ADR-180) — falls back to these defaults.
-  const { title, description } = await resolvePageContent('/network', {
-    title: 'Community',
-    description: 'Everyone in the community. Browse, find someone interesting, say hi.',
-  })
+  // Operator-editable page header (ADR-180) — falls back to the coded defaults.
+  const { title, description, ctaLabel, ctaHref } = await resolvePageContent('/network', CONTENT_FALLBACK)
 
   // Geolocation / city-autocomplete search → nearest REAL circles (the
   // circles_near RPC hard-excludes demo content). Only runs when a place is set.
@@ -351,7 +360,20 @@ export default async function CommunityPage({
           </span>
         }
         description={description}
-        actions={<InviteMemberCompose inviterName={viewerName} />}
+        actions={
+          <div className="flex items-center gap-2">
+            {/* Operator-set CTA (PX.1) — shows only when both label + link are set. */}
+            {ctaLabel && ctaHref && (
+              <a
+                href={ctaHref}
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
+              >
+                {ctaLabel}
+              </a>
+            )}
+            <InviteMemberCompose inviterName={viewerName} />
+          </div>
+        }
       />
 
       {/* Community size — total worldwide + nearby (when proximity is on). */}

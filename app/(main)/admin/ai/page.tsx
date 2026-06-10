@@ -6,8 +6,12 @@ import { AiControlsView } from './ai-controls-view'
 
 export const dynamic = 'force-dynamic'
 
+// Gate (PB.1h): community janitor OR a staff role holding the `platform` domain
+// (write — Owner/Admin staff only; ADR-127), matching this page's entry in
+// app/(main)/admin/sections.ts. The kill switch stays out of reach of the
+// functional departments.
 export default async function AiControlsPage() {
-  await requireAdmin('janitor')
+  await requireAdmin('janitor', { staff: 'platform' })
   const data = await getAiControlsData()
 
   return (

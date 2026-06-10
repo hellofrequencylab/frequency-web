@@ -62,17 +62,18 @@ async function tagPersona(profileId: string, personaSlug: string | null): Promis
 }
 
 /** During the Beta, comp every new member the paid **Crew tier** (full gamification) —
- *  membership is the entitlement axis now, not the role. Only upgrades plain members;
- *  they can downgrade anytime via /upgrade. (Also sets the legacy crew role for display
- *  endorsement, which still reads the role — to retire once endorsement reads the tier,
- *  PB.1 follow-up.) Writes use the admin client (RLS). */
+ *  membership is the entitlement axis, the ONLY thing this touches. The legacy
+ *  `community_role='crew'` write is gone (PB.1i): endorsement/display now reads the
+ *  tier (lib/season-ranks `isEndorsed`), and the role value is retired by migration
+ *  20260612060000. Only upgrades free-tier members; they can downgrade anytime via
+ *  /upgrade. Writes use the admin client (RLS). */
 async function grantBetaCrew(authUserId: string) {
   if (!BETA_MEMBERS_GET_CREW) return
   await createAdminClient()
     .from('profiles')
-    .update({ membership_tier: 'crew', community_role: 'crew' })
+    .update({ membership_tier: 'crew' })
     .eq('auth_user_id', authUserId)
-    .eq('community_role', 'member')
+    .eq('membership_tier', 'free')
 }
 
 type Meta = Record<string, Json>

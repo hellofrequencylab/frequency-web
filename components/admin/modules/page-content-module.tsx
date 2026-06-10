@@ -5,16 +5,18 @@ import { usePathname } from 'next/navigation'
 import { Check, Pencil } from 'lucide-react'
 import { AdminModuleCard } from '@/components/admin/admin-module-card'
 import { fieldClasses, labelClasses } from '@/components/ui/field'
-import { getEditablePageContent, savePageContent } from '@/lib/page-content-actions'
+import { getEditablePageContent, savePageContent, type EditablePageContent } from '@/lib/page-content-actions'
 import { isError } from '@/lib/action-result'
 
-// Edit a page's header content (title + description) in place from its Settings
-// panel (ADR-180). Role-gated server-side: getEditablePageContent returns null for
-// anyone below admin, so the editor renders nothing for them. Blank fields clear
-// the override and the page falls back to its coded default.
+// Edit a page's content in place from its Settings panel (ADR-180): the header
+// title + description (which also drive the page's SEO metadata), plus an optional
+// hero image and call-to-action (PX.1). Role-gated server-side:
+// getEditablePageContent returns null for anyone below admin, so the editor
+// renders nothing for them. Blank fields clear the override and the page falls
+// back to its coded default.
 export function PageContentModule() {
   const pathname = usePathname()
-  const [data, setData] = useState<{ title: string; description: string } | null>(null)
+  const [data, setData] = useState<EditablePageContent | null>(null)
   const [loading, setLoading] = useState(true)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -53,7 +55,7 @@ export function PageContentModule() {
   }
 
   return (
-    <AdminModuleCard title="Page content" Icon={Pencil} desc="Edit this page's title and description.">
+    <AdminModuleCard title="Page content" Icon={Pencil} desc="Edit this page's title, description, hero, and call-to-action.">
       <form onSubmit={submit} className="space-y-3">
         <label className="block space-y-1">
           <span className={labelClasses}>Title</span>
@@ -70,7 +72,42 @@ export function PageContentModule() {
             placeholder="Default description"
           />
         </label>
-        <p className="text-2xs text-subtle">Leave a field blank to use the page&rsquo;s built-in default.</p>
+        <label className="block space-y-1">
+          <span className={labelClasses}>Hero image URL</span>
+          <input
+            name="hero_image"
+            defaultValue={data.heroImage}
+            disabled={pending}
+            className={fieldClasses}
+            placeholder="https://… or /path (blank = no hero)"
+          />
+        </label>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <label className="block space-y-1">
+            <span className={labelClasses}>CTA label</span>
+            <input
+              name="cta_label"
+              defaultValue={data.ctaLabel}
+              disabled={pending}
+              className={fieldClasses}
+              placeholder="e.g. Join the next event"
+            />
+          </label>
+          <label className="block space-y-1">
+            <span className={labelClasses}>CTA link</span>
+            <input
+              name="cta_href"
+              defaultValue={data.ctaHref}
+              disabled={pending}
+              className={fieldClasses}
+              placeholder="/events or https://…"
+            />
+          </label>
+        </div>
+        <p className="text-2xs text-subtle">
+          Leave a field blank to use the page&rsquo;s built-in default. The CTA button shows only when
+          both its label and link are set.
+        </p>
         {error && <p className="text-sm text-danger">{error}</p>}
         <div className="flex items-center justify-end gap-2 pt-1">
           {saved && (

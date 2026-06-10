@@ -7,7 +7,8 @@ import { getCallerProfile, getMyProfileId, type CommunityRole } from '@/lib/auth
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { searchRoom, type RoomSearchHit } from '@/lib/ai/room-search'
 
-const CREW_PLUS: CommunityRole[] = ['crew', 'host', 'guide', 'mentor', 'janitor']
+// Room creation = paid (Crew/Supporter TIER) or a steward (host+) — PB.1/ADR-207.
+const STEWARD_ROLES: CommunityRole[] = ['host', 'guide', 'mentor', 'admin', 'janitor'] as CommunityRole[]
 
 type RoomVisibility = 'public' | 'private' | 'circle' | 'hub' | 'nexus' | 'outpost'
 
@@ -27,7 +28,8 @@ export async function searchRoomAction(
 export async function createRoom(fd: FormData): Promise<ActionResult<{ id: string }>> {
   const caller = await getCallerProfile()
   if (!caller) return fail('Not signed in')
-  if (!CREW_PLUS.includes(caller.community_role)) {
+  const paid = caller.membershipTier === 'crew' || caller.membershipTier === 'supporter'
+  if (!paid && !STEWARD_ROLES.includes(caller.community_role)) {
     return fail('Crew membership required to create rooms')
   }
 

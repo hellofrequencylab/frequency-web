@@ -75,6 +75,8 @@ type MemberRow = {
     handle: string
     avatar_url: string | null
     community_role: CommunityRole
+    /** Entitlement tier — drives endorsement (PB.1i: flair keys off the tier, not the role). */
+    membership_tier: string | null
     current_season_rank: string | null
     current_streak: number
     achievement_count: number
@@ -119,7 +121,7 @@ export default async function CirclePage({
     .from('memberships')
     .select(
       `id, volunteer_role, joined_at,
-       profile:profiles!profile_id ( id, display_name, handle, avatar_url, community_role, current_season_rank, current_streak, achievement_count )`
+       profile:profiles!profile_id ( id, display_name, handle, avatar_url, community_role, membership_tier, current_season_rank, current_streak, achievement_count )`
     )
     .eq('circle_id', circle.id)
     .eq('status', 'active')

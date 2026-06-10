@@ -132,16 +132,17 @@ export interface AssignableMember {
   role: string
 }
 
-/** Active crew-and-above members an operator can assign an entry point to. */
+/** Active members an operator can assign an entry point to: paid (Crew/Supporter
+ *  tier) or stewards (host+). Crew = the paid TIER, not a role (PB.1/ADR-207). */
 export async function listAssignableMembers(limit = 200): Promise<AssignableMember[]> {
-  const crewPlus = ROLE_HIERARCHY.slice(ROLE_HIERARCHY.indexOf('crew')) as readonly string[]
+  const hostPlus = ROLE_HIERARCHY.slice(ROLE_HIERARCHY.indexOf('host')) as readonly string[]
   const db = createAdminClient() as unknown as SupabaseClient
   const { data } = await db
     .from('profiles')
     .select('id, display_name, community_role')
     .eq('is_active', true)
     .eq('is_system', false)
-    .in('community_role', crewPlus as string[])
+    .or(`membership_tier.in.(crew,supporter),community_role.in.(${hostPlus.join(',')})`)
     .order('display_name', { ascending: true })
     .limit(limit)
   return ((data as { id: string; display_name: string; community_role: string }[] | null) ?? []).map((p) => ({
@@ -151,17 +152,20 @@ export async function listAssignableMembers(limit = 200): Promise<AssignableMemb
   }))
 }
 
-/** True when `profileId` is an active crew-and-above member (assignable). */
+/** True when `profileId` is assignable: active and paid (tier) or a steward (host+). */
 export async function isAssignableMember(profileId: string): Promise<boolean> {
-  const crewPlus = ROLE_HIERARCHY.slice(ROLE_HIERARCHY.indexOf('crew')) as readonly string[]
+  const hostPlus = ROLE_HIERARCHY.slice(ROLE_HIERARCHY.indexOf('host')) as readonly string[]
   const db = createAdminClient() as unknown as SupabaseClient
   const { data } = await db
     .from('profiles')
-    .select('community_role, is_active, is_system')
+    .select('community_role, membership_tier, is_active, is_system')
     .eq('id', profileId)
     .maybeSingle()
-  const p = data as { community_role: string; is_active: boolean; is_system: boolean } | null
-  return !!p && p.is_active && !p.is_system && crewPlus.includes(p.community_role)
+  const p = data as { community_role: string; membership_tier: string | null; is_active: boolean; is_system: boolean } | null
+  return (
+    !!p && p.is_active && !p.is_system &&
+    (['crew', 'supporter'].includes(p.membership_tier ?? '') || hostPlus.includes(p.community_role))
+  )
 }
 
 /** One entry point by id, only if `ownerId` owns it. */

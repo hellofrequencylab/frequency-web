@@ -81,7 +81,7 @@ export const NAV_AREAS: readonly NavArea[] = [
   { key: 'journeys',  href: '/journeys',   label: 'Journeys',  section: 'The Quest', defaultAccess: 'member', surface: 'journeys' },
   { key: 'practices', href: '/practices',  label: 'Practices', section: 'The Quest', defaultAccess: 'member', surface: 'practices' },
   { key: 'library',   href: '/library',    label: 'Library',   section: 'The Quest', defaultAccess: 'member', surface: 'library' },
-  { key: 'vault',     href: '/crew/store', label: 'The Vault', section: 'The Quest', defaultAccess: 'crew', previewBelowAccess: true, surface: 'vault' },
+  { key: 'vault',     href: '/crew/store', label: 'The Vault', section: 'The Quest', defaultAccess: 'member', previewBelowAccess: true, surface: 'vault' },
 
   // ── Studio → stewardship + the partner business block ────────────────────────
   { key: 'admin-community', href: '/admin',         label: 'Overview',      section: 'Studio', defaultAccess: 'host', surface: 'studioOverview' },

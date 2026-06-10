@@ -111,3 +111,37 @@ export function summarizeScans(scans: ScanRow[], days = 30, now = new Date()): S
     ),
   }
 }
+
+// ── Per-page rollup (PX.3) ────────────────────────────────────────────────────
+// The Settings-panel summary for one page's codes (qr_codes.page_path, ADR-179):
+// the same scan rows the Studio dashboards aggregate, scoped to a folder and
+// reduced to the three numbers an operator scans in place.
+
+export interface PageScanSummary {
+  total: number
+  /** Distinct signed-in scanners across this page's codes. */
+  unique: number
+  /** ISO timestamp of the most recent scan, or null when unscanned. */
+  lastScanAt: string | null
+  /** The page's most-scanned code (its top "source": each code = one placement). */
+  topCode: CodeScanStat | null
+}
+
+/** Roll one page's scans up to total / last-scan / top code. Pure (no DB). */
+export function summarizePageScans(scans: ScanRow[]): PageScanSummary {
+  const s = summarizeScans(scans, 1) // daily series unused here; keep it cheap
+  let lastScanAt: string | null = null
+  let lastTs = -Infinity
+  for (const r of scans) {
+    const ts = Date.parse(r.scanned_at)
+    if (Number.isFinite(ts) && ts > lastTs) {
+      lastTs = ts
+      lastScanAt = r.scanned_at
+    }
+  }
+  let topCode: CodeScanStat | null = null
+  for (const c of s.perCode.values()) {
+    if (!topCode || c.total > topCode.total) topCode = c
+  }
+  return { total: s.total, unique: s.unique, lastScanAt, topCode }
+}
