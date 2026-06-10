@@ -5,7 +5,6 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { HierarchyBreadcrumb } from '@/components/hierarchy/breadcrumb'
 import { StatusBadge } from '@/components/groups/status-badge'
 import { DetailTemplate } from '@/components/templates/detail-template'
-import { EditModeButton } from '@/components/admin/inline/edit-mode-button'
 import { InlineText } from '@/components/admin/inline/inline-text'
 import { getHubCapabilities } from '@/lib/core/load-capabilities'
 import { updateHubField } from '../admin-actions'
@@ -112,11 +111,6 @@ export default async function HubPage({
           )
         }
         badges={<StatusBadge status={hub.status} />}
-        actions={
-          <>
-            {canManage && <EditModeButton />}
-          </>
-        }
         subtitle={
           <>
             {hub.guide && (

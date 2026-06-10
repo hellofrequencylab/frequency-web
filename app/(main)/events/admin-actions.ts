@@ -6,14 +6,14 @@ import { getEventCapabilities } from '@/lib/core/load-capabilities'
 
 // In-place "Event settings" admin module (EMBEDDED-ADMIN.md / ADR-133). Read +
 // write both re-resolve event.editSettings server-side (the dock's role gate is UX;
-// this is the authority — the admin client bypasses RLS). Cancel/reinstate stays in
-// the full admin editor; this patches the day-to-day fields only.
+// this is the authority — the admin client bypasses RLS). Cancel/reinstate lives
+// here too (the header kebab is gone; Settings is the one host surface).
 
 export async function getEventAdminData(slug: string) {
   const admin = createAdminClient()
   const { data: event } = await admin
     .from('events')
-    .select('id, slug, title, description, location, starts_at, ends_at')
+    .select('id, slug, title, description, location, starts_at, ends_at, is_cancelled')
     .eq('slug', slug)
     .maybeSingle()
   if (!event) return null
@@ -22,6 +22,21 @@ export async function getEventAdminData(slug: string) {
   if (!caps.has('event.editSettings')) return null
 
   return event
+}
+
+/** Cancel or reinstate the event — the host control that used to live in the
+ *  header kebab. Same capability gate as the rest of this module. */
+export async function setEventCancelled(id: string, slug: string, cancelled: boolean) {
+  const caps = await getEventCapabilities(id)
+  if (!caps.has('event.editSettings')) throw new Error('Unauthorized')
+
+  const admin = createAdminClient()
+  const { error } = await admin.from('events').update({ is_cancelled: cancelled }).eq('id', id)
+  if (error) throw new Error(error.message)
+
+  revalidatePath(`/events/${slug}`)
+  revalidatePath('/events')
+  revalidatePath('/feed')
 }
 
 export async function updateEventSettings(id: string, slug: string, fd: FormData) {
