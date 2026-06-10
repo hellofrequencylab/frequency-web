@@ -15,6 +15,7 @@ import type {
   ContactNote,
   ContactTag,
   ContactSocials,
+  ContactDetails,
   ContactSource,
   ContactStatus,
   Visibility,
@@ -24,7 +25,7 @@ import type {
 
 const BUCKET = 'network-contacts'
 const COLS =
-  'id, owner_id, visibility, source, status, display_name, email, phone, title, company, city, website, socials, avatar_path, linked_profile_id, created_at, updated_at'
+  'id, owner_id, visibility, source, status, display_name, email, phone, title, company, city, website, socials, avatar_path, details, card_front_path, card_back_path, logo_path, linked_profile_id, created_at, updated_at'
 
 const db = () => createAdminClient() as unknown as SupabaseClient
 const emptyToNull = (v: string | null | undefined): string | null => {
@@ -48,6 +49,10 @@ function mapContact(r: Record<string, unknown>): NetworkContact {
     website: (r.website as string) ?? null,
     socials: (r.socials as ContactSocials) ?? {},
     avatarPath: (r.avatar_path as string) ?? null,
+    details: (r.details as ContactDetails) ?? {},
+    cardFrontPath: (r.card_front_path as string) ?? null,
+    cardBackPath: (r.card_back_path as string) ?? null,
+    logoPath: (r.logo_path as string) ?? null,
     linkedProfileId: (r.linked_profile_id as string) ?? null,
     createdAt: (r.created_at as string) ?? null,
     updatedAt: (r.updated_at as string) ?? null,
@@ -108,6 +113,10 @@ export interface CreateContactInput {
   website?: string
   socials?: ContactSocials
   avatarPath?: string | null
+  details?: ContactDetails
+  cardFrontPath?: string | null
+  cardBackPath?: string | null
+  logoPath?: string | null
   extraction?: unknown
 }
 
@@ -127,6 +136,10 @@ export async function createContact(ownerId: string, input: CreateContactInput):
       website: emptyToNull(input.website),
       socials: input.socials ?? {},
       avatar_path: input.avatarPath ?? null,
+      details: input.details ?? {},
+      card_front_path: input.cardFrontPath ?? null,
+      card_back_path: input.cardBackPath ?? null,
+      logo_path: input.logoPath ?? null,
       extraction: input.extraction ?? {},
     })
     .select('id')
@@ -147,6 +160,10 @@ export interface UpdateContactPatch {
   visibility?: Visibility
   status?: ContactStatus
   avatarPath?: string | null
+  details?: ContactDetails
+  cardFrontPath?: string | null
+  cardBackPath?: string | null
+  logoPath?: string | null
 }
 
 export async function updateContact(
@@ -166,6 +183,10 @@ export async function updateContact(
   if (patch.visibility !== undefined) u.visibility = patch.visibility
   if (patch.status !== undefined) u.status = patch.status
   if (patch.avatarPath !== undefined) u.avatar_path = patch.avatarPath
+  if (patch.details !== undefined) u.details = patch.details
+  if (patch.cardFrontPath !== undefined) u.card_front_path = patch.cardFrontPath
+  if (patch.cardBackPath !== undefined) u.card_back_path = patch.cardBackPath
+  if (patch.logoPath !== undefined) u.logo_path = patch.logoPath
   const { error } = await db().from('network_contacts').update(u).eq('id', id).eq('owner_id', ownerId)
   return !error
 }
@@ -211,6 +232,10 @@ export interface ContactDetail {
   notes: ContactNote[]
   tags: ContactTag[]
   avatarUrl: string | null
+  /** Signed URLs for the kept card images and logo (null when not on file). */
+  cardFrontUrl: string | null
+  cardBackUrl: string | null
+  logoUrl: string | null
 }
 
 export async function getContact(ownerId: string, id: string): Promise<ContactDetail | null> {
@@ -223,7 +248,7 @@ export async function getContact(ownerId: string, id: string): Promise<ContactDe
   if (!data) return null
   const contact = mapContact(data as Record<string, unknown>)
 
-  const [notesRes, tagsRes, avatarUrl] = await Promise.all([
+  const [notesRes, tagsRes, avatarUrl, cardFrontUrl, cardBackUrl, logoUrl] = await Promise.all([
     db()
       .from('network_contact_notes')
       .select('id, body, kind, author_id, created_at')
@@ -235,6 +260,9 @@ export async function getContact(ownerId: string, id: string): Promise<ContactDe
       .eq('contact_id', id)
       .order('created_at', { ascending: true }),
     signedUrl(contact.avatarPath),
+    signedUrl(contact.cardFrontPath),
+    signedUrl(contact.cardBackPath),
+    signedUrl(contact.logoPath),
   ])
 
   const notes: ContactNote[] = ((notesRes.data ?? []) as Record<string, unknown>[]).map((n) => ({
@@ -250,7 +278,7 @@ export async function getContact(ownerId: string, id: string): Promise<ContactDe
     source: (t.source as TagSource) ?? 'manual',
     createdAt: (t.created_at as string) ?? null,
   }))
-  return { contact, notes, tags, avatarUrl }
+  return { contact, notes, tags, avatarUrl, cardFrontUrl, cardBackUrl, logoUrl }
 }
 
 // ── Network-shared discovery (non-owner read) ────────────────────────────────

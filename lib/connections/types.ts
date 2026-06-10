@@ -16,6 +16,61 @@ export interface FaceBox {
   h: number
 }
 
+// Shared capture vocabulary, reused from the Poster Events engine so the two
+// scanners speak one language (corners for deskew, an honest quality read, and
+// low/high confidence flags on hard-to-read rows).
+export type { CornerPoint, CaptureQuality, FieldConfidence } from '@/lib/events/types'
+import type { CornerPoint, CaptureQuality, FieldConfidence } from '@/lib/events/types'
+
+/** Four normalized (0..1) card corners in order
+ *  [top-left, top-right, bottom-right, bottom-left] for one card side. */
+export type CardCorners = [CornerPoint, CornerPoint, CornerPoint, CornerPoint]
+
+/** One phone number printed on the card (label e.g. "mobile", "office"). */
+export interface ContactPhone {
+  label: string
+  number: string
+  confidence?: FieldConfidence
+}
+
+/** One email address printed on the card. */
+export interface ContactEmail {
+  label: string
+  address: string
+  confidence?: FieldConfidence
+}
+
+/** A link printed on the card. */
+export interface ContactLink {
+  label: string
+  url: string
+  kind: 'website' | 'booking' | 'portfolio' | 'other'
+  confidence?: FieldConfidence
+}
+
+/** A catch-all label/value pair for anything that does not fit the other slots. */
+export interface ContactOtherDetail {
+  label: string
+  value: string
+  confidence?: FieldConfidence
+}
+
+/** The rich, flexible harvest of everything printed on the card. Every field is
+ *  optional and omitted when empty. Persisted as the network_contacts.details
+ *  JSONB column. Mirrors the events EventDetails contract. */
+export interface ContactDetails {
+  phones?: ContactPhone[]
+  emails?: ContactEmail[]
+  addresses?: string[]
+  services?: string[]
+  certifications?: string[]
+  hours?: string
+  links?: ContactLink[]
+  other?: ContactOtherDetail[]
+  /** A top-level read on how confidently the card could be parsed at all. */
+  confidence?: FieldConfidence
+}
+
 export interface ContactSocials {
   instagram?: string
   linkedin?: string
@@ -37,6 +92,16 @@ export interface ExtractedContact {
   tags: string[]
   connectionNote: string
   photo: { found: boolean; box: FaceBox | null; imageIndex: number }
+  /** The company logo region, for the avatar fallback and the org image. */
+  logo: { found: boolean; box: FaceBox | null; imageIndex: number }
+  /** Per-image card corners, aligned to the input images (entry i belongs to
+   *  image i). null where the model cannot see all four corners of that side.
+   *  Lets the client deskew EACH card side before keeping it. */
+  corners: (CardCorners | null)[]
+  /** The model's honest read on capture quality (legibility / glare / skew). */
+  quality: CaptureQuality
+  /** The rich, flexible harvest of everything printed on the card. */
+  details: ContactDetails
 }
 
 /** A stored network contact (the CRM record). */
@@ -55,6 +120,13 @@ export interface NetworkContact {
   website: string | null
   socials: ContactSocials
   avatarPath: string | null
+  /** The rich, flexible details harvested from the card ({} when none). */
+  details: ContactDetails
+  /** Deskewed card images on file, keys in the private network-contacts bucket. */
+  cardFrontPath: string | null
+  cardBackPath: string | null
+  /** Cropped company logo, key in the private network-contacts bucket. */
+  logoPath: string | null
   /** The member profile this contact has been merged with (null = not linked). */
   linkedProfileId: string | null
   createdAt: string | null
