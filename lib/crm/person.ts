@@ -8,7 +8,7 @@
 // operator sees ONE grouped record and the path the person took through the system.
 //
 // Server-only: service-role (the crm/network tables aren't in the generated types),
-// gated upstream by the /marketing layout (community admin/janitor or Studio staff).
+// gated upstream by the /admin/marketing layout (staff web_role or Studio staff).
 // Grouping is by email at READ time, so it works even before the stitch migration
 // backfills the FK links.
 

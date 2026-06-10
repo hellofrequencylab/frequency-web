@@ -18,7 +18,7 @@ import type { LucideIcon } from 'lucide-react'
 // Presentational + server-friendly (no hooks).
 //
 //   <StatCard label="Weekly active" value={142} icon={Users}
-//             delta={{ label: '+8 this week', trend: 'up' }} href="/marketing/analytics" />
+//             delta={{ label: '+8 this week', trend: 'up' }} href="/admin/marketing/analytics" />
 //   <StatCard bordered label="Total scans" value="1,204" icon={ScanLine}
 //             detail="across 12 codes" />
 
