@@ -190,8 +190,8 @@ export default async function MarketingIntelPage() {
         description="Where tune-ins and joins outrun the circles available. The gaps are what to seed next."
       >
         <Table
-          head={['Channel', 'Interest', 'Tune-ins', 'Circles', 'Members']}
-          rows={intel.demand.map((d) => [d.domain, d.interest, d.tune_ins, d.circles, d.members])}
+          head={['Pillar', 'Interest', 'Tune-ins', 'Circles', 'Members']}
+          rows={intel.demand.map((d) => [d.pillar, d.interest, d.tune_ins, d.circles, d.members])}
         />
       </AdminSection>
 

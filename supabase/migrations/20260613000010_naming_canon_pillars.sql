@@ -92,7 +92,10 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON public.pillars TO service_role;
 COMMENT ON TABLE public.pillars IS
   'The 4 Pillars (Mind / Body / Spirit / Expression) — the top game-taxonomy layer (NAMING.md, ADR-208; was public.domains). Topical Channels sort UNDERNEATH a Pillar via topical_channels.pillar_id. A Pillar is NEVER a Channel: Channels are the topical-forum feature; Pillars are the taxonomy above them.';
 
-create or replace function public.mkt_interest_demand()
+-- Renaming the first OUT param (domain→pillar) changes the row type, which
+-- CREATE OR REPLACE cannot do — drop then recreate.
+drop function if exists public.mkt_interest_demand();
+create function public.mkt_interest_demand()
 returns table (pillar text, interest text, interest_slug text, tune_ins bigint, circles bigint, members bigint)
 language sql stable security definer set search_path to 'public' as $$
   select coalesce(d.name, 'Unsorted'), tc.name, tc.slug,
