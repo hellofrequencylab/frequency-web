@@ -33,7 +33,7 @@ alter table public.events
   add column if not exists posted_by_profile_id   uuid        references public.profiles (id) on delete set null,
   add column if not exists poster_path            text,
   add column if not exists source                 text        not null default 'manual',
-  add column if not exists domain_id              uuid        references public.domains (id) on delete set null,
+  add column if not exists domain_id              uuid        references public.pillars (id) on delete set null,
   add column if not exists claim_token            text,
   add column if not exists claimed_at             timestamptz,
   add column if not exists organizer_name         text,
