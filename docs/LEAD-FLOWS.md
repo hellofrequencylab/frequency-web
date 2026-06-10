@@ -82,11 +82,13 @@ written by `app/onboarding/beta/actions.ts` (`writeBetaInduction` + the returnin
 
 ## How it relates to beta sequences
 
-Beta **sequences** (`early-adopter` / `personal` / `founding-partner`) still exist and still
-tag cohorts — they skin the induction copy by *which link you clicked*. **Persona is an
-orthogonal axis**: it's what the visitor *told* us they are. A member can have both a
-`beta_*` cohort tag and a `persona_*` tag. Lead flows generalize the *sequence-splash* idea
-(an assignable entry surface) but ask the question instead of guessing.
+Beta **sequences** still exist and still tag cohorts — they skin the induction copy by
+*which link you clicked*. They are now DB-built versions managed at `/pages/sequences`
+plus the reserved `beta-default` base flow (the three code templates retired; see the
+onboarding-splash overhaul ADR). **Persona is an orthogonal axis**: it's what the
+visitor *told* us they are. A member can have both a `beta_*` cohort tag and a
+`persona_*` tag. Lead flows generalize the *sequence-splash* idea (an assignable entry
+surface) but ask the question instead of guessing.
 
 ---
 

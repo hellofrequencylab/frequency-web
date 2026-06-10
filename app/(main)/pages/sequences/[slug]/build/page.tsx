@@ -1,9 +1,10 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminPage } from '@/components/admin/admin-page'
 import { resolveSequence } from '@/lib/onboarding/resolve-sequence'
-import { listSequences } from '@/lib/onboarding/beta-sequences'
+import { listSequences, DEFAULT_SEQUENCE } from '@/lib/onboarding/beta-sequences'
 import { SequenceWizard } from '@/components/sequences/sequence-wizard'
 
 export const dynamic = 'force-dynamic'
@@ -13,6 +14,8 @@ export const dynamic = 'force-dynamic'
 export default async function BuildSequencePage({ params }: { params: Promise<{ slug: string }> }) {
   await requireAdmin('janitor')
   const { slug } = await params
+  // The default flow has its own live-preview editor; never build it as a version.
+  if (slug === DEFAULT_SEQUENCE) redirect('/pages/splash')
   const sequence = await resolveSequence(slug)
   const isCustom = !listSequences().some((s) => s.slug === slug)
 

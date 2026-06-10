@@ -43,6 +43,9 @@ function channelFromHeardAbout(heard: string | null | undefined): AcquisitionCha
 
 function channelFromSequence(seq: string | null | undefined): AcquisitionChannel | null {
   if (!seq) return null
+  // The base flow (`beta-default`) carries no channel signal; legacy slugs keep
+  // their historic meaning (early-adopter was the video on-ramp).
+  if (seq === 'beta-default') return null
   return seq === 'early-adopter' ? 'video' : 'referral'
 }
 

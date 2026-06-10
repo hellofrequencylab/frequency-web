@@ -27,31 +27,37 @@ It is the **mandatory opening sequence**: `app/(main)/layout.tsx` routes any sig
 to the non-blocking model at launch; no loop since `/onboarding` is outside the `(main)` layout).
 At launch: flip the flag, delete `app/onboarding/beta/` + `components/onboarding/renders/`.
 
-## Sequences — one template, audience-targeted copy ([ADR-094](DECISIONS.md))
+## Sequences — one template, audience-targeted copy ([ADR-094](DECISIONS.md) → splash overhaul ADR)
 
 The induction is **audience-parameterized**: same cinematic engine, swappable voice.
-A *sequence* (`lib/onboarding/beta-sequences.ts`) bundles a public **splash**, the
-induction's **voiced copy** (`VeraCopy`), and a durable **marketing tag**:
+A *sequence* bundles a **splash**, the induction's **voiced copy** (`VeraCopy`), and
+a durable **marketing tag**. The three code-shipped launch templates
+(`early-adopter` / `personal` / `founding-partner`) are **retired**; the model now:
 
-| Slug | Audience | Tag (registry) | Splash |
+| Slug | What it is | Authored where | Entry |
 |---|---|---|---|
-| `early-adopter` *(default)* | Followers from Daniel's video | `beta_early_adopter` | `/beta/early-adopter` |
-| `personal` | Daniel's hand-invites "into the dream" | `beta_personal` | `/beta/personal` |
-| `founding-partner` | Collaborators + businesses ("Founder energy") | `beta_founding_partner` | `/beta/founding-partner` |
+| `beta-default` *(reserved)* | The base VERA flow — what `/onboarding/beta` runs with no `?seq` (tag `beta_early_adopter`, cohort continuity) | `/pages/splash` live-preview editor → `sequence_overrides` | `/onboarding/beta` |
+| any other slug | A DB-built **version** for a specific audience | `/pages/sequences` wizard → `sequence_overrides` | `/onboarding/beta?seq=<slug>` |
 
-**How it flows.** The splash CTA carries the audience into the induction via `?seq=`;
+`resolveSequence(null \| '' \| 'beta-default')` returns the coded VERA script merged
+with the legacy `/admin/vera` induction tweaks and then the `beta-default` override
+(the editor's saved copy wins). The public `/beta/<slug>` splash route 404s while
+`BETA_SEQUENCES` is empty (DB versions enter straight at the induction link).
+
+**How it flows.** The link carries the audience into the induction via `?seq=`;
 a 30-day `fq_beta_seq` cookie keeps it across the deferred sign-in round-trip. On
 completion `writeBetaInduction` records `meta.beta.sequence` and stamps the cohort's
-marketing tag (best-effort; never blocks). Tags are governed — declared in
-`lib/traits/registry.ts` (snake_case), and `assignTag` refuses unregistered keys so
-the founding cohort stays segmentable by entry path **forever**, even after this flow
-is deleted at launch.
+marketing tag (resolved through the DB layer, best-effort; never blocks). Tags are
+governed — declared in `lib/traits/registry.ts` (snake_case), and `assignTag` refuses
+unregistered keys so the founding cohort stays segmentable by entry path **forever**,
+even after this flow is deleted at launch.
 
-**Authoring.** Copy lives in code (reviewed in PRs); a janitor-only **splash-page
-creator** at `/admin/beta-sequences` lists + previews every sequence (copy, tag,
-shareable link). Operator overrides from `/admin/vera` still apply to the **default**
-sequence only (that's what they were authored against). Editing copy in-app (DB-backed
-override, vera_config pattern) is the noted follow-on.
+**Authoring.** The default flow's copy is edited in the janitor-only **Beta splash**
+editor at `/pages/splash` (left: every beat's strings + the three oath labels; right:
+the REAL `<BetaInduction>` rendered live in preview mode). Audience versions are
+built beat-by-beat at `/pages/sequences` (the "Splash pages" manager). Beat headings
+support a light accent markup: a word wrapped in `*asterisks*` renders in the brand
+accent.
 
 ## Look & feel — a cinematic sequence, not a form
 
@@ -166,9 +172,12 @@ ADR-047 funnel when the analytics surface lands.
 | `app/onboarding/beta/induction.tsx` | Client flow — Oath gate + 6 beats (`preview` prop mocks the auth-dependent calls) |
 | `app/onboarding/beta/actions.ts` | `acceptBetaOath`, `completeBetaInduction`; reads `?seq` cookie → records `meta.beta.sequence` + stamps the cohort tag |
 | `lib/onboarding/beta-script.ts` | Vera's scripted copy, `BETA_OATHS`, `BETA_INDUCTION_ACTIVE` flag, the `VeraCopy` type |
-| `lib/onboarding/beta-sequences.ts` | The 3 audience sequences (splash + copy + marketing tag) |
-| `app/(marketing)/beta/[slug]/page.tsx` | Public per-audience splash (`/beta/<slug>`) |
-| `app/(main)/admin/beta-sequences/page.tsx` | Janitor splash-page creator — lists + previews sequences |
+| `lib/onboarding/beta-sequences.ts` | The `BetaSequence` shape + the reserved `beta-default` base (code sequences record now empty) |
+| `lib/onboarding/resolve-sequence.ts` | Merges code base + vera_config + `sequence_overrides` (server-only) |
+| `app/(marketing)/beta/[slug]/page.tsx` | Public per-audience splash for CODE sequences (404s while none ship) |
+| `app/(main)/pages/splash/` | **Beta splash** — live-preview editor for the default flow (`beta-default` override) |
+| `app/(main)/pages/sequences/` | **Splash pages** manager — DB versions: create, build, share link + QR |
+| `app/(main)/pages/home/` | Home SEO editor (title + meta description via ADR-180 page_content) |
 | `components/onboarding/renders/{feed,circles,events}-render.tsx` | Disposable section renders |
 | `app/onboarding/page.tsx` | Redirects to `/onboarding/beta` while the flag is on |
 
@@ -176,6 +185,7 @@ ADR-047 funnel when the analytics surface lands.
 
 1. Set `BETA_INDUCTION_ACTIVE = false` (or delete the flag + the redirect in `app/onboarding/page.tsx`).
 2. Delete `app/onboarding/beta/`, `components/onboarding/renders/`, `lib/onboarding/beta-sequences.ts`,
-   `app/(marketing)/beta/[slug]/`, and `app/(main)/admin/beta-sequences/`.
+   `lib/onboarding/resolve-sequence.ts`, `lib/onboarding/sequence-overrides.ts`,
+   `app/(marketing)/beta/[slug]/`, `app/(main)/pages/splash/`, and `app/(main)/pages/sequences/`.
 3. Keep `meta.beta.*` data and the `beta_*` cohort **tags** (harmless, durable history — the whole
    point of tagging at the door); the launch onboarding ignores the rest.

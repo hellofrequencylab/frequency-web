@@ -47,7 +47,10 @@ export interface AcquisitionRecord {
 /** Map a beta sequence slug to its acquisition channel (fallback when no fq_attr). */
 function channelFromSequence(seq: string | undefined): AcquisitionChannel | null {
   if (!seq) return null
-  // The early-adopter sequence is the video on-ramp; the others are person-driven.
+  // The base flow (`beta-default`, every plain /onboarding/beta visit) carries no
+  // channel signal of its own — fall through to the other signals / 'direct'.
+  if (seq === 'beta-default') return null
+  // Legacy slugs: early-adopter was the video on-ramp; the others were person-driven.
   return seq === 'early-adopter' ? 'video' : 'referral'
 }
 

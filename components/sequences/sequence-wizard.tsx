@@ -97,7 +97,10 @@ export function SequenceWizard({ slug, initial, isCustom }: { slug: string; init
   const liveHref = `/onboarding/beta?seq=${encodeURIComponent(slug)}`
   const beatField = (beat: Beat, f: string, label: string, area = false) => (
     <div>
-      <label className={lbl}>{label}</label>
+      <label className={lbl}>
+        {label}
+        {f === 'heading' && <span className="ml-1.5 font-normal text-subtle/70">· wrap a word in *asterisks* for the accent color</span>}
+      </label>
       {area
         ? <textarea className={`${field} resize-y`} rows={3} value={(seq.vera[beat] as Record<string, string>)[f] ?? ''} onChange={(e) => setBeat(beat, f, e.target.value)} />
         : <input className={field} value={(seq.vera[beat] as Record<string, string>)[f] ?? ''} onChange={(e) => setBeat(beat, f, e.target.value)} />}
@@ -256,7 +259,7 @@ function StepPreview({ step, seq }: { step: StepId; seq: BetaSequence }) {
       <Card>
         <div className="p-6 text-center">
           <p className="text-[0.65rem] font-semibold uppercase tracking-widest text-primary-strong">{seq.vera.oath.eyebrow}</p>
-          <p className="mt-2 text-2xl font-bold leading-tight text-text">{seq.vera.oath.heading}</p>
+          <p className="mt-2 text-2xl font-bold leading-tight text-text">{withAccents(seq.vera.oath.heading)}</p>
           <div className="mx-auto mt-4 max-w-sm space-y-2 text-left">
             {seq.oaths.map((o) => (
               <div key={o.id} className="flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3">
@@ -299,7 +302,7 @@ function StepPreview({ step, seq }: { step: StepId; seq: BetaSequence }) {
     <Card>
       <div className="p-8 text-center">
         {beat.eyebrow && <p className="text-[0.65rem] font-semibold uppercase tracking-widest text-primary-strong">{beat.eyebrow}</p>}
-        <p className="mt-2 text-3xl font-bold leading-tight text-text">{beat.heading}</p>
+        <p className="mt-2 text-3xl font-bold leading-tight text-text">{withAccents(beat.heading)}</p>
         <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-muted">{beat.body}</p>
         {beat.cta && <CtaBtn>{beat.cta}</CtaBtn>}
       </div>
