@@ -279,7 +279,9 @@ unfarmable) and claimed once through `reward_grants`:
   refer, complete a task, scan a code; ADR-139). Because Zaps drive rank, the variance is tied to
   genuine in-person participation (never idle luck) and kept modest against the base award (common
   3-6 / rare 12 / gleam 25, rate 0.18). Hooked once at `processGamificationEvent`; granted through
-  `awardZaps` so rank advances normally; visible in the Vault Zap ledger.
+  `awardZaps` so rank advances normally; surfaced as a **toast** (a global `SurpriseToaster` reads
+  recent grants via `/api/surprises/recent`, since these acts fire-and-forget) and in the Vault Zap
+  ledger.
 
 The odds stay secret by design (no operator page). Still ahead: the Act-2 mid-season twist and the
 season-launch moment below.
