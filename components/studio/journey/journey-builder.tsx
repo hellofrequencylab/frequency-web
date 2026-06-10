@@ -9,7 +9,7 @@ import {
 import { StudioWindow } from '../studio-window'
 import { useStudioDraft } from '../kit/use-studio-draft'
 import { useSortable } from '../kit/use-sortable'
-import { EmojiAccentFace, AccentPicker, EmojiGrid } from '../kit/studio-identity'
+import { IconAccentFace, AccentPicker, IconGrid } from '../kit/studio-identity'
 import { StudioField, StudioSectionLabel } from '../kit/studio-field'
 import { SaveStatus, StudioFooter } from '../kit/studio-footer'
 import { accentColor, accentTint, DEFAULT_ACCENT } from '@/lib/studio/accents'
@@ -92,14 +92,14 @@ export function JourneyBuilder(props: Props) {
   const onError = useCallback(() => router.refresh(), [router])
   const { saveState, error, run, queueSave } = useStudioDraft({ save, onError })
 
-  // Identity
-  const [emoji, setEmoji] = useState(props.initialEmoji ?? '')
+  // Identity — `icon` is a journey-icon key, stored in the plan's `emoji` column.
+  const [icon, setIcon] = useState(props.initialEmoji ?? 'compass')
   const [accent, setAccent] = useState(props.initialAccent ?? DEFAULT_ACCENT)
   const [title, setTitle] = useState(props.initialTitle)
   const [summary, setSummary] = useState(props.initialSummary ?? '')
   const [intro, setIntro] = useState(props.initialIntro ?? '')
   const [showIntro, setShowIntro] = useState(!!props.initialIntro)
-  const [emojiOpen, setEmojiOpen] = useState(false)
+  const [iconOpen, setIconOpen] = useState(false)
 
   // Path
   const [items, setItems] = useState<BuilderItem[]>(props.initialItems)
@@ -277,19 +277,10 @@ export function JourneyBuilder(props: Props) {
       {/* ── Identity ─────────────────────────────────────────────── */}
       <div className="flex items-start gap-3">
         <div className="relative shrink-0">
-          <EmojiAccentFace emoji={emoji} accent={accent} size="lg" onClick={() => setEmojiOpen((v) => !v)} />
-          {emojiOpen && (
+          <IconAccentFace icon={icon} accent={accent} size="lg" onClick={() => setIconOpen((v) => !v)} />
+          {iconOpen && (
             <div className="absolute left-0 top-[4.5rem] z-10 w-64 rounded-2xl border border-border bg-surface p-3 shadow-xl">
-              <EmojiGrid value={emoji} size="sm" onPick={(e) => { setEmoji(e); setEmojiOpen(false); queueSave({ emoji: e }) }} />
-              <div className="mt-2 flex items-center gap-2 border-t border-border pt-2">
-                <input
-                  value={emoji}
-                  onChange={(e) => { const v = e.target.value.slice(0, 4); setEmoji(v); queueSave({ emoji: v }) }}
-                  placeholder="or type one"
-                  className="w-full rounded-lg border border-border bg-surface px-2 py-1 text-sm"
-                />
-                <button type="button" onClick={() => { setEmoji(''); setEmojiOpen(false); queueSave({ emoji: '' }) }} className="text-xs text-subtle hover:text-text">Clear</button>
-              </div>
+              <IconGrid value={icon} size="sm" onPick={(k) => { setIcon(k); setIconOpen(false); queueSave({ emoji: k }) }} />
             </div>
           )}
           <div className="mt-2 flex justify-center">
