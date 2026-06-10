@@ -23,6 +23,10 @@ import { getInitials } from '@/lib/utils'
 import { WarmProof } from '@/components/events/warm-proof'
 import { RsvpControls } from '@/components/events/rsvp-controls'
 import { AddToCalendar, buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
+import { EventActivity, type ActivityPost } from '@/components/events/event-activity'
+import { RecapAlbum, type RecapPhoto } from '@/components/events/recap-album'
+import { CohostManager, type CohostView } from '@/components/events/cohost-manager'
+import { listCohosts } from '@/lib/events/cohosts'
 
 type EventDetail = {
   id: string
@@ -345,6 +349,58 @@ export default async function EventDetailPage({
       .eq('idempotency_key', `event_checkin:${event.id}:${myProfileId}`)
       .maybeSingle()
     alreadyCheckedIn = !!ci
+  }
+
+  // ── Post-event social loop (slice B-2, EVENTS-SYSTEM §2.5) ──────────────────
+  // Activity feed (always), recap album (after the event ends), and cohosts.
+  // All read through the admin client (same as the rest of this page); writes
+  // re-authorize in social-actions.ts. event_posts/event_media aren't in the
+  // generated types yet → untyped cast (repo convention).
+  const cohosts = (await listCohosts(event.id)) as CohostView[]
+  const isCohost = myProfileId != null && cohosts.some((c) => c.profileId === myProfileId)
+  // Who may add a comment / photo: the host, a cohost, or anyone holding an RSVP.
+  const isGuest = myRsvpStatus === 'going' || myRsvpStatus === 'maybe' || myRsvpStatus === 'waitlist'
+  const canContribute = !!myProfileId && (isHost || isCohost || isGuest)
+
+  type RawActivityPost = {
+    id: string
+    body: string | null
+    image_url: string | null
+    created_at: string
+    author: { id: string; display_name: string; handle: string; avatar_url: string | null } | null
+  }
+  const { data: rawActivity } = await (admin as unknown as SupabaseClient)
+    .from('event_posts')
+    .select('id, body, image_url, created_at, author:profiles!profile_id ( id, display_name, handle, avatar_url )')
+    .eq('event_id', event.id)
+    .order('created_at', { ascending: false })
+    .limit(100)
+  const activityPosts: ActivityPost[] = ((rawActivity ?? []) as unknown as RawActivityPost[]).map((p) => ({
+    id: p.id,
+    body: p.body ?? '',
+    imageUrl: p.image_url,
+    createdAt: p.created_at,
+    author: p.author
+      ? { id: p.author.id, displayName: p.author.display_name, handle: p.author.handle, avatarUrl: p.author.avatar_url }
+      : null,
+  }))
+
+  // Recap album only matters once the event is over.
+  let recapPhotos: RecapPhoto[] = []
+  if (hasEnded) {
+    type RawMedia = { id: string; image_url: string; caption: string | null; profile_id: string }
+    const { data: rawMedia } = await (admin as unknown as SupabaseClient)
+      .from('event_media')
+      .select('id, image_url, caption, profile_id')
+      .eq('event_id', event.id)
+      .order('created_at', { ascending: false })
+      .limit(200)
+    recapPhotos = ((rawMedia ?? []) as unknown as RawMedia[]).map((m) => ({
+      id: m.id,
+      imageUrl: m.image_url,
+      caption: m.caption,
+      profileId: m.profile_id,
+    }))
   }
 
   return (
@@ -701,6 +757,45 @@ export default async function EventDetailPage({
             </p>
           )}
         </section>
+
+        {/* ── Cohosts (slice B-2): displayed to everyone; the host manages them ── */}
+        {(cohosts.length > 0 || isHost) && (
+          <div className="mt-8">
+            <CohostManager
+              eventId={event.id}
+              slug={event.slug}
+              cohosts={cohosts}
+              canManage={isHost}
+            />
+          </div>
+        )}
+
+        {/* ── Activity feed (slice B-2): alive before AND after the event ──────── */}
+        <div className="mt-8">
+          <EventActivity
+            eventId={event.id}
+            slug={event.slug}
+            posts={activityPosts}
+            canPost={canContribute}
+            canModerate={isHost}
+            myProfileId={myProfileId}
+            isPast={isPast}
+          />
+        </div>
+
+        {/* ── Recap album (slice B-2): shows once the event has ended ──────────── */}
+        {hasEnded && (
+          <div className="mt-8">
+            <RecapAlbum
+              eventId={event.id}
+              slug={event.slug}
+              photos={recapPhotos}
+              canUpload={canContribute}
+              canModerate={isHost}
+              myProfileId={myProfileId}
+            />
+          </div>
+        )}
       </DetailTemplate>
     </div>
   )
