@@ -25,10 +25,11 @@ describe('railFor — the single source of truth for page chrome', () => {
       '/crew',
       // Operator / steward DASHBOARDS keep the uniform slim stats rail like the rest
       // of the app (page-chrome.ts §FOCUS_PREFIXES note — a consistent right column
-      // site-wide; the rail is a thin strip, so no double-rail cost).
-      '/marketing',
-      '/marketing/analytics',
-      '/crm',
+      // site-wide; the rail is a thin strip, so no double-rail cost). CRM + Marketing
+      // moved under /admin (Phase 3) but still ride the global right rail there.
+      '/admin/marketing',
+      '/admin/marketing/analytics',
+      '/admin/crm',
       '/outreach',
     ]) {
       expect(railFor(p), p).toBe('global')
@@ -74,7 +75,7 @@ describe('leftRailFor — the global member left rail vs. the admin workspace', 
       '/events',
       '/crew',
       '/settings',
-      '/marketing',
+      '/outreach',
       '/administrators', // a non-admin path that merely shares the prefix text
     ]) {
       expect(leftRailFor(p), p).toBe('global')
@@ -90,6 +91,9 @@ describe('leftRailFor — the global member left rail vs. the admin workspace', 
       '/admin/circles',
       '/admin/qr',
       '/admin/members',
+      '/admin/crm', // CRM moved under admin (Phase 3)
+      '/admin/marketing', // Marketing moved under admin (Phase 3)
+      '/admin/marketing/analytics',
     ]) {
       expect(leftRailFor(p), p).toBe('none')
     }

@@ -180,9 +180,9 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
       { href: '/admin/intel', label: 'Lead funnels & marketing intel', desc: 'Real-time growth, demand, and leader signal.', Icon: Telescope, min: 'janitor', staffDomain: 'insights', staffLevel: 'read' },
       { href: '/pages/splash', label: 'Onboarding splash', desc: 'The first-run splash members land on.', Icon: Rocket, min: 'janitor' },
       { href: '/pages/sequences', label: 'Splash pages', desc: 'Sequenced splash pages and flows.', Icon: Layers, min: 'janitor' },
-      { href: '/crm', label: 'CRM pipeline', desc: 'Deals, stages, and follow-ups.', Icon: Contact, min: 'host', staffDomain: 'marketing' },
+      { href: '/admin/crm', label: 'CRM pipeline', desc: 'Deals, stages, and follow-ups.', Icon: Contact, min: 'host', staffDomain: 'marketing' },
       { href: '/connections', label: 'Profiles & contacts', desc: 'People, contacts, and relationships.', Icon: ContactRound, min: 'host', staffDomain: 'profiles' },
-      { href: '/marketing', label: 'Marketing campaigns', desc: 'Campaigns across your channels.', Icon: Briefcase, min: 'host', staffDomain: 'marketing' },
+      { href: '/admin/marketing', label: 'Marketing campaigns', desc: 'Campaigns across your channels.', Icon: Briefcase, min: 'host', staffDomain: 'marketing' },
       { href: '/entry-points', label: 'Entry points', desc: 'Where people first enter your spaces.', Icon: QrCode, min: 'host', staffDomain: 'marketing' },
       { href: '/admin/segments', label: 'Segments', desc: 'Saved audiences by tag and trait.', Icon: PieChart, min: 'janitor', staffDomain: 'insights', staffLevel: 'read' },
       { href: '/admin/engagement', label: 'Engagement', desc: 'Active members and the activation funnel.', Icon: Activity, min: 'janitor', staffDomain: 'insights', staffLevel: 'read' },
@@ -321,7 +321,7 @@ export function groupSections(
 
 // Every domain-owned href (and external route) → its domain key, built once from
 // ADMIN_GROUPS so the switcher highlights the right domain for any /admin/* page AND
-// the external routes (/programs, /crm, /pages, …). Longest hrefs first so the most
+// the external routes (/programs, /pages, …). Longest hrefs first so the most
 // specific prefix wins.
 const HREF_TO_DOMAIN: ReadonlyArray<{ href: string; key: DomainKey }> = ADMIN_GROUPS
   .flatMap((g) => g.links.map((l) => ({ href: l.href, key: g.key })))
