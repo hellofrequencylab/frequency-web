@@ -26,6 +26,7 @@ export const DISCOVER_NAV: NavLink[] = [
   { label: "Discover", href: "/discover", desc: "Everything happening near you" },
   { label: "Circles", href: "/discover/circles", desc: "Small groups around an interest" },
   { label: "Events", href: "/discover/events", desc: "Gatherings you can show up to" },
+  { label: "Journeys", href: "/discover/journeys", desc: "Guided practices for a season" },
   { label: "Interests", href: "/discover/topics", desc: "Browse by what you practice" },
 ];
 

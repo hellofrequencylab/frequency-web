@@ -148,6 +148,38 @@ export async function listPublicPlans(): Promise<JourneyPlan[]> {
   return (data as JourneyPlan[] | null) ?? []
 }
 
+// --- Public (anon) discover reads ------------------------------------------
+// The /discover/journeys route is the only PUBLIC, indexable Journey surface.
+// Events/circles redact through SECURITY DEFINER RPCs because they carry precise
+// location; a published library Journey carries no private data, so these reads
+// go through the same admin handle the rest of this module uses, guarded in code
+// to PUBLISHED, non-rejected plans only. Service-role key stays server-side.
+
+/** Indexable library Journeys for the anon discover index — published and not
+ *  rejected, most-adopted first. (Mirrors listPublicPlans but excludes rejected
+ *  plans, which shouldn't be promoted on a crawlable surface.) */
+export async function listPublicJourneys(): Promise<JourneyPlan[]> {
+  const { data } = await db()
+    .from('journey_plans')
+    .select(PLAN_COLS)
+    .eq('visibility', 'public')
+    .neq('status', 'rejected')
+    .order('adopt_count', { ascending: false })
+    .order('published_at', { ascending: false })
+  return (data as JourneyPlan[] | null) ?? []
+}
+
+/** One PUBLIC Journey + its items for the anon discover detail page. Null unless
+ *  the plan is published to the open library and not rejected. */
+export async function getPublicJourney(
+  slug: string,
+): Promise<{ plan: JourneyPlan; items: JourneyPlanItem[] } | null> {
+  const base = await getPlan(slug)
+  if (!base) return null
+  if (base.plan.visibility !== 'public' || base.plan.status === 'rejected') return null
+  return base
+}
+
 /** A plan + its ordered items (with each practice). Null if not found. */
 export async function getPlan(
   slug: string,
