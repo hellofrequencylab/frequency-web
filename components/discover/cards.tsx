@@ -1,9 +1,10 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowRight, Users, MapPin, CalendarDays } from 'lucide-react'
+import { ArrowRight, Users, MapPin, CalendarDays, Map as MapIcon } from 'lucide-react'
 import { getInitials, relativeTime } from '@/lib/utils'
 import { eventDateBadge, formatEventDate } from '@/lib/discover'
 import type { PublicCircle, PublicEvent, PublicPost, TopicalChannel } from '@/lib/discover'
+import type { JourneyPlan } from '@/lib/journey-plans'
 import { Button, Card } from '@/components/marketing/marketing-ui'
 import { communityHref } from '@/lib/community-href'
 
@@ -101,6 +102,48 @@ export function EventRow({ event, isAuthed = false }: { event: PublicEvent; isAu
           </p>
         </div>
         <ArrowRight className="w-4 h-4 text-primary-strong shrink-0" />
+      </Card>
+    </Link>
+  )
+}
+
+// ── Journey card ──────────────────────────────────────────────────────────────
+// A published library Journey on the public discover browse. Links straight to
+// the public detail page (no auth wall) — the whole point is an indexable,
+// shareable surface. Adopting happens after sign-in, on the detail page.
+
+export function JourneyCard({ journey }: { journey: JourneyPlan }) {
+  return (
+    <Link href={`/discover/journeys/${journey.slug}`} className="group block h-full">
+      <Card tone="feature" className="h-full p-5 hover:border-border-strong transition-colors flex flex-col">
+        <div className="flex items-start gap-3 mb-2">
+          {journey.emoji ? (
+            <span className="text-2xl leading-none shrink-0" aria-hidden>
+              {journey.emoji}
+            </span>
+          ) : (
+            <span className="shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
+              <MapIcon className="w-4 h-4" />
+            </span>
+          )}
+          <h3 className="text-base font-bold text-text group-hover:text-primary-strong transition-colors">
+            {journey.title}
+          </h3>
+        </div>
+        {journey.summary && (
+          <p className="text-sm text-muted leading-relaxed line-clamp-3 flex-1">{journey.summary}</p>
+        )}
+        <div className="flex items-center gap-4 text-xs text-subtle mt-4">
+          {journey.adopt_count > 0 && (
+            <span className="inline-flex items-center gap-1">
+              <Users className="w-3.5 h-3.5" />
+              {journey.adopt_count} on this Journey
+            </span>
+          )}
+          {journey.official && (
+            <span className="ml-auto font-medium text-primary-strong">Official</span>
+          )}
+        </div>
       </Card>
     </Link>
   )
