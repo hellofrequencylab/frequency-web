@@ -28,6 +28,9 @@ function notifHref(n: NotificationItem): string {
   if (n.reference_type === 'post' && n.reference_id) return `/feed`
   if (n.reference_type === 'dispatch' && n.reference_id) return `/broadcast/${n.reference_id}`
   if (n.reference_type === 'support_ticket' && n.reference_id) return `/support/${n.reference_id}`
+  // Posted-event notes (event_claimed / event_removed) reference the event by id;
+  // the events index is the stable landing spot.
+  if (n.reference_type === 'event') return '/events'
   return '/feed'
 }
 
