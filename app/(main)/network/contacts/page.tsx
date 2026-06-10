@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { Plus, ScanText, Lock, Globe, MapPin, Search } from 'lucide-react'
+import { Plus, ScanText, Lock, Globe, MapPin, Search, Contact } from 'lucide-react'
 import { contactsOwnerId } from '@/lib/connections/access'
 import { listContacts } from '@/lib/connections/store'
 import { getInitials } from '@/lib/utils'
@@ -48,7 +48,12 @@ export default async function ConnectionsPage({
   return (
     <div className="mx-auto max-w-5xl">
       <IndexTemplate
-        title="Profiles"
+        title={
+          <span className="flex items-center gap-2">
+            <Contact className="h-5 w-5 text-primary-strong" />
+            My Contacts
+          </span>
+        }
         description="People you’ve met — scanned from a card or poster, or added by hand. Private to you unless you promote them to your network."
         action={
           <Link
