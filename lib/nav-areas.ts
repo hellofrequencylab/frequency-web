@@ -83,9 +83,16 @@ export const NAV_AREAS: readonly NavArea[] = [
   { key: 'library',   href: '/library',    label: 'Library',   section: 'The Quest', defaultAccess: 'member', surface: 'library' },
   { key: 'vault',     href: '/crew/store', label: 'The Vault', section: 'The Quest', defaultAccess: 'member', previewBelowAccess: true, surface: 'vault' },
 
-  // ── Studio → stewardship + the partner business block ────────────────────────
-  { key: 'admin-community', href: '/admin',         label: 'Overview',      section: 'Studio', defaultAccess: 'host', surface: 'studioOverview' },
-  { key: 'admin-support',   href: '/admin/support', label: 'Support',       section: 'Studio', defaultAccess: 'member', surface: 'support' },
+  // ── Admin → the operator world, collapsed to Home + the three domains ─────────
+  // REORG (Phase 1): the scattered admin overview / operator entries collapse into
+  // FOUR stable rail items. Their feature pages (Members, QR, Vera, Hubs, Pages, …)
+  // still exist and are reached through the domain dashboards, not the rail.
+  { key: 'admin-home',       href: '/admin',            label: 'Home',        section: 'Admin', defaultAccess: 'host', surface: 'studioOverview' },
+  { key: 'admin-programs',   href: '/admin/programs',   label: 'Programs',    section: 'Admin', defaultAccess: 'host', staffDomain: 'community', surface: 'status' },
+  { key: 'admin-operations', href: '/admin/operations', label: 'Operations',  section: 'Admin', defaultAccess: 'host', staffDomain: 'community', surface: 'platformManage' },
+  { key: 'admin-growth',     href: '/admin/growth',     label: 'Growth',      section: 'Admin', defaultAccess: 'host', staffDomain: 'marketing', surface: 'growthStudio' },
+
+  // ── Studio → the partner business block (non-admin operator surfaces) ─────────
   // Personal contacts (surface 'personalCrm') folded into the Network hub's
   // "My Contacts" tab (ADR-172) — reached via Community › Network, not a Studio entry.
   { key: 'crm',             href: '/crm',           label: 'CRM Pipeline',  section: 'Studio', defaultAccess: 'admin', surface: 'businessCrm' },
@@ -94,17 +101,9 @@ export const NAV_AREAS: readonly NavArea[] = [
   { key: 'growth',          href: '/growth',        label: 'Growth Studio', section: 'Studio', defaultAccess: 'admin', staffDomain: 'marketing', surface: 'growthStudio' },
   { key: 'earnings',        href: '/coming-soon?feature=finances',    label: 'Finances',      section: 'Studio', defaultAccess: 'admin', surface: 'earnings', comingSoon: true },
   { key: 'admin-qr',        href: '/admin/qr',      label: 'QR Studio',     section: 'Studio', defaultAccess: 'member', previewBelowAccess: true, surface: 'qrStudio' },
+  { key: 'settings',        href: '/settings',      label: 'Settings',      section: 'Studio', defaultAccess: 'member', surface: 'settings' },
 
-  // ── Platform → operator keys ─────────────────────────────────────────────────
-  { key: 'status',         href: '/admin',            label: 'Admin',       section: 'Platform', defaultAccess: 'host', surface: 'status' },
-  { key: 'admin-insights', href: '/admin/engagement', label: 'Insight',     section: 'Platform', defaultAccess: 'host', surface: 'insight' },
-  { key: 'admin-vera',     href: '/admin/vera',       label: 'Vera AI',     section: 'Platform', defaultAccess: 'host', surface: 'veraAi' },
-  { key: 'admin-structure', href: '/admin/hubs',      label: 'Hubs & Nexuses', section: 'Platform', defaultAccess: 'admin', surface: 'platformManage' },
-  { key: 'admin-platform', href: '/admin/members',    label: 'Memberships', section: 'Platform', defaultAccess: 'admin', surface: 'platformManage' },
-  { key: 'admin-connections', href: '/admin/connections', label: 'Connections', section: 'Platform', defaultAccess: 'admin', surface: 'platformManage' },
-  { key: 'pages',          href: '/pages',            label: 'Pages',       section: 'Platform', defaultAccess: 'admin', surface: 'platformManage' },
   { key: 'financials',     href: '/coming-soon?feature=financials', label: 'Financial', section: 'Platform', defaultAccess: 'janitor', surface: 'financialDashboard', comingSoon: true },
-  { key: 'settings',       href: '/settings',         label: 'Settings',    section: 'Platform', defaultAccess: 'member', surface: 'settings' },
 ] as const
 
 /** Quick lookup of an area's baseline access by key. */
