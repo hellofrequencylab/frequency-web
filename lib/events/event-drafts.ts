@@ -127,7 +127,7 @@ async function resolveRegionScopeId(profileId: string): Promise<string | null> {
 /** Resolve a DomainSlug to its domains.id, or null. */
 async function resolveDomainId(domain: DomainSlug | null): Promise<string | null> {
   if (!domain) return null
-  const { data } = await db().from('domains').select('id').eq('slug', domain).maybeSingle()
+  const { data } = await db().from('pillars').select('id').eq('slug', domain).maybeSingle()
   return (data as { id?: string } | null)?.id ?? null
 }
 
