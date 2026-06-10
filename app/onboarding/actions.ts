@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { sendWelcomeEmail } from '@/lib/email'
 import { sanitizeProfileInput } from '@/lib/profile-input'
 import { applyReferralAttribution, applyEntryPointConversion } from '@/lib/qr/referral'
+import { ensureMemberCodes } from '@/lib/qr/member-codes'
 import { persistAcquisition } from '@/lib/attribution/acquisition'
 
 export async function completeOnboarding(data: {
@@ -71,6 +72,14 @@ export async function completeOnboarding(data: {
     await applyReferralAttribution(updated.id)
     await applyEntryPointConversion(updated.id).catch(() => {})
     await persistAcquisition(updated.id).catch(() => {})
+    // Every account gets its QR code the moment it has a handle (owner directive).
+    // First pass writes the new handle; a repeat pass keeps the existing one.
+    // Fire-and-forget: a provisioning hiccup never blocks onboarding — the invite
+    // and /codes surfaces lazily re-provision as the fallback.
+    const memberHandle = onboarded ? (cur?.handle ?? handle) : handle
+    if (memberHandle) {
+      ensureMemberCodes(updated.id, memberHandle).catch((e) => console.error('[member-codes]', e))
+    }
   }
 
   // Fire welcome email. Non-blocking, never throws
