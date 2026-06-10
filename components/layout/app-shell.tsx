@@ -1295,7 +1295,7 @@ export default function AppShell({
         {/* Right cluster: search · [messages · notifications] · account.
             Three groups, each set off by a hairline so the icons read as one
             tidy block of community actions and the account stays distinct. */}
-        <div className="flex flex-1 items-center justify-end gap-1 px-2.5 md:gap-2 md:px-4">
+        <div className="flex flex-1 items-center justify-end gap-1 pl-2.5 md:gap-2 md:pl-4">
 
           {/* Demo-content toggle — sits to the LEFT of Search (desktop). Members
               hide/show seeded demo content for themselves; sized to match Search. */}
@@ -1340,9 +1340,12 @@ export default function AppShell({
             <Search className="w-5 h-5" />
           </button>
 
-          {/* Community actions. Desktop: friends + messages + notifications.
-              Mobile: friends + messages fold into ONE silhouette icon → Messages. */}
-          <div className="flex items-center gap-1 sm:ml-1 sm:pl-1.5 sm:border-l sm:border-border">
+          {/* Right action block. On lg+ it's exactly the right rail's width (w-72) and
+              sits flush to the viewport's right edge, so its LEADING divider (the "|"
+              between Search and these actions) lines up with the right column's left
+              border. Below lg (no right rail) it's a natural-width right-aligned cluster. */}
+          <div className="flex items-center justify-end gap-1 sm:ml-1 sm:border-l sm:border-border sm:pl-1.5 md:gap-2 lg:ml-0 lg:w-72 lg:justify-start lg:pl-3 lg:pr-4">
+            {/* Community actions: friends · messages · notifications · daily streak. */}
             {/* Friends — desktop only (mobile merges it into the combined icon) */}
             <HoverTip label="Friends" className="hidden sm:inline-flex">
               <Link
@@ -1366,13 +1369,17 @@ export default function AppShell({
             >
               <Users className="w-5 h-5" />
             </Link>
-            {/* Daily check-in streak — links to your Quest dashboard (where streaks,
-                rank, and rewards live), so the badge is a doorway, not just a number. */}
+            {/* Notifications — sits before the streak (swapped per request); shown on
+                all sizes, tooltip on hover. */}
+            <HoverTip label="Notifications">
+              <NotificationBell initialUnread={unreadCount} />
+            </HoverTip>
+            {/* Daily check-in streak — links to your Quest dashboard. */}
             {Number((profile.meta as { daily_checkin_streak?: number } | null)?.daily_checkin_streak ?? 0) >= 1 && (
-              <HoverTip label="Daily streak. Open your Quest dashboard" className="hidden sm:inline-flex">
+              <HoverTip label="Daily Streak" className="hidden sm:inline-flex">
                 <Link
                   href="/crew"
-                  aria-label="Your streak — open your Quest dashboard"
+                  aria-label="Daily Streak — open your Quest dashboard"
                   className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-2 py-1 text-xs font-bold text-primary-strong transition-colors hover:bg-primary-bg/70"
                 >
                   <Flame className="w-3.5 h-3.5" />
@@ -1380,27 +1387,23 @@ export default function AppShell({
                 </Link>
               </HoverTip>
             )}
-            <HoverTip label="Notifications">
-              <NotificationBell initialUnread={unreadCount} />
-            </HoverTip>
-          </div>
 
-          {/* Account group — set off by its own divider. (Quick-capture removed from
-              the header — Capture lives in the centre of the bottom nav on mobile.) */}
-          <div className="flex items-center gap-1 ml-1 pl-1.5 border-l border-border md:gap-2 md:pl-2">
-            <AccountDropdown
-              profile={profile}
-              profileHref={profileHref}
-              role={role}
-              gateRole={gateRole}
-              staffRole={staffRole}
-              permissions={permissions}
-              navAccess={navAccess}
-              isActive={isActive}
-              themeLabel={themeLabel}
-              ThemeIcon={ThemeIcon}
-              cycleTheme={cycleTheme}
-            />
+            {/* Account — its own divider, pushed to the far right of the block on lg+. */}
+            <div className="flex items-center gap-1 ml-1 pl-1.5 border-l border-border md:gap-2 md:pl-2 lg:ml-auto">
+              <AccountDropdown
+                profile={profile}
+                profileHref={profileHref}
+                role={role}
+                gateRole={gateRole}
+                staffRole={staffRole}
+                permissions={permissions}
+                navAccess={navAccess}
+                isActive={isActive}
+                themeLabel={themeLabel}
+                ThemeIcon={ThemeIcon}
+                cycleTheme={cycleTheme}
+              />
+            </div>
           </div>
         </div>
       </header>

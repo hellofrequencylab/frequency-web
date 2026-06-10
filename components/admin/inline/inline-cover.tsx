@@ -17,15 +17,19 @@ export function InlineCover({
   canEdit = false,
   upload,
   remove,
+  forceEdit = false,
 }: {
   value: string | null
   alt: string
   canEdit?: boolean
   upload?: (fd: FormData) => Promise<{ url: string } | { error: string }>
   remove?: () => Promise<void>
+  /** Show the edit controls without requiring page Edit Mode — for surfaces that
+   *  are themselves an explicit editor (e.g. the Settings panel hero). */
+  forceEdit?: boolean
 }) {
   const { editing } = useEditMode()
-  const showEdit = editing && canEdit
+  const showEdit = (editing || forceEdit) && canEdit
   const [url, setUrl] = useState(value)
   const [err, setErr] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()

@@ -88,6 +88,14 @@ export function PageQrManager({ pathname, url }: { pathname: string; url: string
               <Archive className="h-3 w-3" /> Archived codes
             </Link>
           }
+          // Two-column compact designer: design controls on the left, the preset
+          // buttons column on the right (the editor keeps the preview up top).
+          renderCompact={({ controls, presets }) => (
+            <div className="mt-4 sm:grid sm:grid-cols-[1fr_auto] sm:gap-4">
+              <div>{controls}</div>
+              <div className="mt-4 sm:mt-0">{presets}</div>
+            </div>
+          )}
         />
 
         {error && <p className="text-2xs text-danger">{error}</p>}
