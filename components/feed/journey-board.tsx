@@ -87,6 +87,50 @@ export function JourneyBoard({
   const p = streakProgress(streak)
   const hasReminders = practices.length > 0
 
+  // Closed position: one slim row (about a third of the open board) — the flame,
+  // the count, a thin progress bar, and the expand control. Everything else waits
+  // behind the chevron.
+  if (collapsed) {
+    return (
+      <div className="mb-6 overflow-hidden rounded-2xl border border-primary-bg bg-primary-bg/30">
+        <div className="flex items-center gap-2.5 px-3 py-2">
+          <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface text-primary-strong shadow-sm">
+            <Flame className="h-3 w-3" />
+          </span>
+          <p className="shrink-0 text-sm font-bold leading-tight text-text">
+            {streak > 0 ? `${streak} day streak` : 'Your journey'}
+          </p>
+          {freezeTokens > 0 && (
+            <span
+              title={`${freezeTokens} streak freeze${freezeTokens === 1 ? '' : 's'} banked, bridges a missed day`}
+              className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-signal-bg/50 px-1.5 py-0.5 text-3xs font-semibold text-signal-strong"
+            >
+              <Snowflake className="h-3 w-3" />{freezeTokens}
+            </span>
+          )}
+          {atRisk && !willFreezeProtect && (
+            <span className="hidden truncate text-xs text-muted sm:inline">Log one practice today to keep it.</span>
+          )}
+          <div className="h-1.5 min-w-8 flex-1 overflow-hidden rounded-full bg-surface">
+            <div
+              className="h-full rounded-full bg-primary transition-[width] duration-500"
+              style={{ width: `${p.pct}%` }}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={toggle}
+            aria-label="Expand"
+            aria-expanded={false}
+            className="shrink-0 rounded-md p-1 text-subtle transition-colors hover:bg-surface hover:text-text"
+          >
+            <ChevronDown className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="mb-6 overflow-hidden rounded-2xl border border-primary-bg bg-primary-bg/30">
       {/* Hero band: streak + a warm, un-gamified line. */}
@@ -126,15 +170,15 @@ export function JourneyBoard({
           <button
             type="button"
             onClick={toggle}
-            aria-label={collapsed ? 'Expand' : 'Collapse'}
-            aria-expanded={!collapsed}
+            aria-label="Collapse"
+            aria-expanded
             className="shrink-0 rounded-md p-1 text-subtle transition-colors hover:bg-surface hover:text-text"
           >
-            <ChevronDown className={`h-4 w-4 transition-transform ${collapsed ? '' : 'rotate-180'}`} />
+            <ChevronDown className="h-4 w-4 rotate-180" />
           </button>
         </div>
 
-        {/* Streak progress — slim bar always; milestone pips when expanded. */}
+        {/* Streak progress — slim bar + milestone pips. */}
         <div className="mt-3">
           <div className="h-2 w-full overflow-hidden rounded-full bg-surface">
             <div
@@ -142,29 +186,27 @@ export function JourneyBoard({
               style={{ width: `${p.pct}%` }}
             />
           </div>
-          {!collapsed && (
-            <div className="mt-2.5 flex items-center justify-between gap-1">
-              {STREAK_MILESTONES.map((m) => {
-                const hit = m.day <= streak
-                const isNext = p.next?.day === m.day
-                return (
-                  <span
-                    key={m.day}
-                    title={`${m.label} · ${m.day} days`}
-                    className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-3xs font-bold transition-colors ${
-                      hit
-                        ? 'bg-primary text-on-primary'
-                        : isNext
-                          ? 'bg-surface text-primary-strong ring-2 ring-primary'
-                          : 'bg-surface text-subtle'
-                    }`}
-                  >
-                    {hit ? <Check className="h-3 w-3" strokeWidth={3} /> : m.day}
-                  </span>
-                )
-              })}
-            </div>
-          )}
+          <div className="mt-2.5 flex items-center justify-between gap-1">
+            {STREAK_MILESTONES.map((m) => {
+              const hit = m.day <= streak
+              const isNext = p.next?.day === m.day
+              return (
+                <span
+                  key={m.day}
+                  title={`${m.label} · ${m.day} days`}
+                  className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-3xs font-bold transition-colors ${
+                    hit
+                      ? 'bg-primary text-on-primary'
+                      : isNext
+                        ? 'bg-surface text-primary-strong ring-2 ring-primary'
+                        : 'bg-surface text-subtle'
+                  }`}
+                >
+                  {hit ? <Check className="h-3 w-3" strokeWidth={3} /> : m.day}
+                </span>
+              )
+            })}
+          </div>
         </div>
       </div>
 
@@ -216,7 +258,7 @@ export function JourneyBoard({
 
       {/* Pillar balance — a calm read of where your practice sits across the four
           Pillars. Coverage, not a score. */}
-      {!collapsed && stageIndex >= 3 && pillarBalance && pillarBalance.length > 0 && (
+      {stageIndex >= 3 && pillarBalance && pillarBalance.length > 0 && (
         <div className="mt-3 border-t border-primary-bg px-4 pt-3">
           <p className="mb-1.5 text-2xs font-medium text-subtle">Your pillars</p>
           <div className="flex gap-1.5">
@@ -239,7 +281,7 @@ export function JourneyBoard({
 
       {/* Resource center — a few warm doors back into the place. Held back until a
           member is past the very first days so the board stays focused early on. */}
-      {!collapsed && stageIndex >= 2 && (
+      {stageIndex >= 2 && (
         <div className="mt-3 flex items-center gap-1.5 border-t border-primary-bg bg-surface/40 px-3 py-2.5">
           <Compass className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
           <span className="mr-0.5 text-xs font-medium text-subtle">Keep exploring</span>
