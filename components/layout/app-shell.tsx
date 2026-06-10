@@ -851,7 +851,7 @@ function MobileLeftDrawer({
             aria-label="Open rewards dashboard"
             className="mt-2.5 flex items-center justify-center gap-5 rounded-lg bg-surface-elevated py-2 hover:bg-border-strong transition-colors"
           >
-            <span className="flex items-center gap-1.5" title="Bolts (this season)">
+            <span className="flex items-center gap-1.5" title="Zaps (this season)">
               <Zap className="w-4 h-4 text-primary" strokeWidth={2.5} />
               <span className="text-sm font-bold text-text tabular-nums">
                 {(profile.current_season_zaps ?? 0).toLocaleString()}
@@ -1535,8 +1535,8 @@ export default function AppShell({
               </Link>
               <Link
                 href="/crew"
-                aria-label="Bolts this season"
-                title="Bolts this season"
+                aria-label="Zaps this season"
+                title="Zaps this season"
                 onClick={closeEdges}
                 className="flex flex-col items-center gap-0.5 rounded-xl px-1 py-1.5 text-muted transition-colors hover:bg-surface-elevated"
               >

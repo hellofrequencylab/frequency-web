@@ -121,9 +121,9 @@ export function Segmented<T extends string | number>({
 
 // Lucide stand-ins for the tier glyphs (⚡🌊🏔️) — keeps the Studio idiom (lucide,
 // not emoji) while labels + tooltips come from the shared TIER_META so they never drift.
-const TIER_ICON: Record<IntensityTier, LucideIcon> = { spark: Zap, current: Waves, deep: Mountain }
+const TIER_ICON: Record<IntensityTier, LucideIcon> = { initiate: Zap, adept: Waves, master: Mountain }
 
-/** The Spark/Current/Deep default-tier picker shown inside an expanded step. */
+/** The Initiate/Adept/Master default-tier picker shown inside an expanded step. */
 export function TierPicker({
   value,
   onChange,

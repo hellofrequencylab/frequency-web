@@ -276,7 +276,7 @@ function canMakeOfficial(role: string): boolean {
   return role === 'guide' || role === 'mentor'
 }
 
-/** Per-step intensity default tier (Spark/Current/Deep) → updateItem defaultTier. */
+/** Per-step intensity default tier (Initiate/Adept/Master) → updateItem defaultTier. */
 export async function setJourneyStepTier(
   planId: string,
   practiceId: string,
