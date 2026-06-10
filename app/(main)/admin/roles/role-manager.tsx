@@ -5,7 +5,7 @@ import { Search, Zap, ArrowUp } from 'lucide-react'
 import { assignRole } from '@/app/(main)/admin/actions'
 import { ROLE_HIERARCHY, type CommunityRole } from '@/lib/core/roles'
 import { ROLE_LABEL, roleBadgeStyle } from '@/lib/community-roles'
-import { ROLE_META, nextRole } from '@/lib/roles-meta'
+import { nextRole } from '@/lib/roles-meta'
 import { getInitials } from '@/lib/utils'
 
 export type RoleMember = {
@@ -96,7 +96,7 @@ export function RoleManager({ members }: { members: RoleMember[] }) {
                 <div className="flex items-center gap-2">
                   <span className="truncate text-sm font-medium text-text">{m.displayName}</span>
                   <span className="rank-badge text-xs font-bold leading-tight" style={roleBadgeStyle(m.role)}>
-                    {ROLE_META[m.role].emoji} {ROLE_LABEL[m.role]}
+                    {ROLE_LABEL[m.role]}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-subtle">

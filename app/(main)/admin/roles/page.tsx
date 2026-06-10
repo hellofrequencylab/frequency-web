@@ -74,11 +74,15 @@ export default async function AdminRolesPage() {
     >
       {/* Role roster */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {ROLE_HIERARCHY.map((r) => (
+        {ROLE_HIERARCHY.map((r) => {
+          const RoleIcon = ROLE_META[r].Icon
+          return (
           <div key={r} className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="text-xl leading-none">{ROLE_META[r].emoji}</span>
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-surface-elevated text-muted">
+                  <RoleIcon className="h-4 w-4" />
+                </span>
                 <span className="rank-badge text-xs font-bold leading-tight" style={roleBadgeStyle(r)}>
                   {ROLE_LABEL[r]}
                 </span>
@@ -87,7 +91,8 @@ export default async function AdminRolesPage() {
             </div>
             <p className="mt-2 text-xs leading-relaxed text-muted">{ROLE_META[r].blurb}</p>
           </div>
-        ))}
+          )
+        })}
       </div>
 
       <RoleManager members={members} />
