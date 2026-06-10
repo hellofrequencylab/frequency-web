@@ -14,6 +14,10 @@ export function HoverTip({
   children: ReactNode
   /** Which side the bubble sits on. Default below (header icons). */
   side?: 'bottom' | 'top'
+  /** Wrapper classes. When provided, the caller OWNS the display utility
+   *  (e.g. `hidden sm:inline-flex`) — we must not also emit `inline-flex`,
+   *  because conflicting display utilities resolve by stylesheet order, not
+   *  class order, and the tip would leak through `hidden` on mobile. */
   className?: string
 }) {
   const pos =
@@ -21,7 +25,7 @@ export function HoverTip({
       ? 'bottom-full mb-1.5 group-hover/tt:-translate-y-0 translate-y-1'
       : 'top-full mt-1.5 group-hover/tt:translate-y-0 -translate-y-1'
   return (
-    <span className={`group/tt relative inline-flex ${className ?? ''}`}>
+    <span className={`group/tt relative ${className ?? 'inline-flex'}`}>
       {children}
       <span
         role="tooltip"
