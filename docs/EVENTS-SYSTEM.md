@@ -318,6 +318,21 @@ lowest-risk wins are **auto-calendar-on-RSVP**, **completing the 3-touch cadence
 - ⏳ **Still parked:** SMS channel — blocked on the legal-entity + EIN decision (gates A2P 10DLC
   registration *and* payouts). Free-tier claim persistence. Per-section `<Suspense>` on the Index.
 
+### 2026-06-10 — Post-event social · host tooling · discovery (B-2/B-3/B-4, merged)
+- ✅ **Post-event social loop** (PR #498): `event_posts` activity feed, `event_media` recap album,
+  `event_cohosts` (+ an `event-media` storage bucket), rendered on the event detail page.
+- ✅ **Host tooling** (PR #499): `cancelEvent` now bulk-refunds every succeeded ticket and notifies
+  all guests; `event_blasts` consent-gated host broadcast (in-app/push/email) with a real per-event
+  mute (`event_rsvps.muted`); a Manage screen (CSV export, waitlist controls, host-marked check-in
+  sharing the self check-in idempotency key). Cohosts can manage (`isEventCohost` in the editor gate).
+- ✅ **Discovery polish** (PR #500): per-member ICS subscription feeds (`event_calendar_follows`),
+  public crawlable organizer profiles (JSON-LD), maplibre map view, connector suggestions.
+- 🔧 **Ops to make live (not yet done):** apply migrations `20260613100000` / `110000` / `120000`
+  (and confirm the earlier event migrations are applied), then regenerate `database.types.ts` (after
+  which the `as unknown as SupabaseClient` casts can be removed); run Supabase advisors.
+- 🟢 **CI note:** the file-picker blob preview is rendered via `next/image` to avoid a CodeQL
+  `js/xss-through-dom` false positive on the raw `<img>` sink.
+
 ### 2026-06-09 — Audit + hardening
 Full verification sweep — see [`EVENTS-AUDIT.md`](EVENTS-AUDIT.md) for the complete status checklist,
 security/SEO findings, founder action items, and process suggestions.
