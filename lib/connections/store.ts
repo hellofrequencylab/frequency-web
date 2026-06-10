@@ -24,7 +24,7 @@ import type {
 
 const BUCKET = 'network-contacts'
 const COLS =
-  'id, owner_id, visibility, source, status, display_name, email, phone, title, company, city, website, socials, avatar_path, created_at, updated_at'
+  'id, owner_id, visibility, source, status, display_name, email, phone, title, company, city, website, socials, avatar_path, linked_profile_id, created_at, updated_at'
 
 const db = () => createAdminClient() as unknown as SupabaseClient
 const emptyToNull = (v: string | null | undefined): string | null => {
@@ -48,6 +48,7 @@ function mapContact(r: Record<string, unknown>): NetworkContact {
     website: (r.website as string) ?? null,
     socials: (r.socials as ContactSocials) ?? {},
     avatarPath: (r.avatar_path as string) ?? null,
+    linkedProfileId: (r.linked_profile_id as string) ?? null,
     createdAt: (r.created_at as string) ?? null,
     updatedAt: (r.updated_at as string) ?? null,
   }
