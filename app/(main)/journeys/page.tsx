@@ -14,7 +14,7 @@ import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 // Coded defaults for the operator-editable header content (ADR-180).
 const CONTENT_FALLBACK = {
   title: 'Journeys',
-  description: 'Build a journey from the practices you love — a life-development track across Mind, Body, Spirit, and Expression. Keep it for yourself, or share it to the open library for anyone to adopt.',
+  description: 'Build a journey from the practices you love: a life-development track across Mind, Body, Spirit, and Expression. Keep it for yourself, or share it to the open library for anyone to adopt.',
 }
 
 // Operator-set title/description also drive <title> + og/twitter cards (PX.2);
@@ -117,7 +117,7 @@ export default async function JourneysPage() {
                 <Sparkles className="h-4 w-4 text-primary-strong" /> Start a journey
               </h2>
               <p className="mt-0.5 text-sm text-muted">
-                From a single daily practice to a full course — give it a face, add your practices, and share how you show up.
+                From a single daily practice to a full course. Give it a face, add your practices, and share how you show up.
               </p>
             </div>
             <div className="shrink-0">
@@ -138,7 +138,7 @@ export default async function JourneysPage() {
             <div className="min-w-0 flex-1">
               <h2 className="text-sm font-bold text-text">Quests</h2>
               <p className="mt-0.5 text-sm text-muted">
-                The season’s official Quests — guided tracks of practices, free to start, with rewards as you go.
+                The season’s official Quests: guided tracks of practices, free to start, with rewards as you go.
               </p>
             </div>
             <ArrowRight className="h-4 w-4 shrink-0 text-subtle transition-colors group-hover:text-primary-strong" />

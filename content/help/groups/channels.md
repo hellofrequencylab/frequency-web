@@ -3,7 +3,7 @@ title: Channels
 description: The topics every circle is organized around.
 category: groups
 order: 2
-updated: 2026-06-03
+updated: 2026-06-10
 audience: member
 featureKeys: [channels]
 status: published
@@ -31,7 +31,7 @@ The current channels are:
 
 ## The open room
 
-- Every channel has one **open room** — a live chat for the whole topic, even if you're not in a related circle.
+- Every channel has one **open room**, a live chat for the whole topic, even if you're not in a related circle.
 - Anyone can read it; **tune into the channel to post**. Open it from the **Open room** button on the channel, or from your [Messages](/help/connecting/messages) (you'll see the rooms for channels you're tuned into).
 
 Channels are curated by the platform team, so the list stays focused and meaningful.

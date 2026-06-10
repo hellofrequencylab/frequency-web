@@ -286,7 +286,7 @@ export default async function FeedPage({
 
         {sort === 'story' && (
           <p className="-mt-1 mb-4 px-1 text-xs text-muted">
-            A record of what the community lived — not a scroll to consume.
+            A record of what the community lived, not a scroll to consume.
           </p>
         )}
 
@@ -297,7 +297,7 @@ export default async function FeedPage({
           nearby={hasHome && homeLat != null && homeLng != null ? { lat: homeLat, lng: homeLng, radiusM: feedRadiusM } : null}
           emptyMessage={hasCircle
             ? 'Your circle’s quiet right now. Share what’s on your mind.'
-            : 'Find your people to fill this up — or share something with the community.'}
+            : 'Find your people to fill this up, or share something with the community.'}
         />
       </section>
       </StreamTemplate>

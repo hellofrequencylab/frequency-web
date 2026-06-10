@@ -4,8 +4,9 @@ description: A simple framework for gathering a few people around what you love,
 audience: member
 duration: A first-week starter
 order: 1
+updated: 2026-06-10
 header_image: https://picsum.photos/seed/program-start-your-first-circle/1200/400
-reward: Starting your circle earns +50 zaps, and activating it with its first practice another +40.
+reward: Starting your circle earns +50 Zaps, and activating it with its first practice another +40.
 ---
 
 You do not need to be an expert, a teacher, or a leader to start a circle. You just
@@ -20,7 +21,7 @@ evening run, then tea" is a better circle than "wellness."
 
 ## 2. Name it and claim a place
 
-Create your circle, give it a clear name, set your Interest, and pick where and when
+Create your circle, give it a clear name, set your Channel, and pick where and when
 you will meet. Even a rough time and a public spot is enough to begin. A standing time
 is the single biggest thing that makes a circle real.
 

@@ -27,7 +27,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   partners: 'Partners',
   people: 'Directory',
   discover: 'Discover',
-  topics: 'Interests',
+  topics: 'Topics',
   'the-lab': 'The Lab',
   'the-community': 'The Community',
   'the-quest': 'The Quest',

@@ -5,7 +5,7 @@ audience: host
 duration: 8 min read
 order: 4
 header_image: https://picsum.photos/seed/program-keep-your-circle-alive/1200/400
-reward: Every member who accepts your invite earns +30 zaps, and each practice you log keeps your streak and zaps climbing.
+reward: Every member who accepts your invite earns +30 Zaps, and each practice you log keeps your streak and Zaps climbing.
 ---
 
 Every circle has slow stretches: a holiday, a hard season, a few thin gatherings. A
