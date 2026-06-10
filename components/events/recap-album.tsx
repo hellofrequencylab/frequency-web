@@ -5,7 +5,6 @@ import Image from 'next/image'
 import { ImagePlus, X, Trash2 } from 'lucide-react'
 import { uploadEventMedia, deleteEventMedia } from '@/app/(main)/events/[slug]/social-actions'
 import { createClient } from '@/lib/supabase/client'
-import { blobPreviewSrc } from '@/lib/events/blob-preview'
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024 // 10 MB
 
@@ -111,11 +110,16 @@ export function RecapAlbum({
         <div className="mb-4 rounded-2xl border border-border bg-surface p-3">
           {imagePreview ? (
             <div className="relative inline-block">
-              {/* Local blob preview of the file being uploaded — a transient
-                  object URL the Next image optimizer can't touch, so a plain
-                  <img> is correct here. */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={blobPreviewSrc(imagePreview)} alt="Upload preview" className="max-h-48 rounded-xl border border-border object-cover" />
+              {/* Local blob preview of the file being uploaded; next/image with
+                  `unoptimized` passes the object URL straight through. */}
+              <Image
+                src={imagePreview}
+                alt="Upload preview"
+                width={192}
+                height={192}
+                unoptimized
+                className="max-h-48 w-auto rounded-xl border border-border object-cover"
+              />
               <button
                 type="button"
                 onClick={clearImage}
