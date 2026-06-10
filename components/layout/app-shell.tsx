@@ -1419,17 +1419,15 @@ export default function AppShell({
         >
           <div className="flex items-stretch min-h-[calc(100vh-3.5rem)]">
 
-            {/* Left nav — in-flow column (no longer fixed); scrolls with the page,
-                matching the right rail. */}
+            {/* Left nav — in-flow column; the NAV scrolls up with the page (matching
+                the right rail), while the profile card is pinned to the bottom-left
+                viewport (rendered fixed, below). The extra bottom padding keeps the
+                last nav items clear of the pinned footer. */}
             <aside className="hidden md:flex w-52 shrink-0 flex-col border-r border-border bg-surface/80 backdrop-blur-sm">
               {/* Community spaces + features + admin rail (the Broadcast bar lives up top) */}
-              <nav className="flex-1 px-3 py-3 space-y-0.5">
+              <nav className="flex-1 px-3 pt-3 pb-32 space-y-0.5">
                 <NavLinkList isActive={isActive} role={gateRole} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} />
               </nav>
-              {/* Upgrade to Crew. Non-paying members only; collapses to a slim tab. */}
-              {!hideAppNav && role === 'member' && <UpgradeCrew />}
-              {/* Profile card — public identity anchor; rides up with the page scroll. */}
-              <ProfileCard profile={profile} role={role} realRole={effectiveRealRole} profileHref={profileHref} previewVisitor={previewVisitor} />
             </aside>
 
             {/* Center column — an ambient dispatch ticker pinned on top, then the
@@ -1461,6 +1459,14 @@ export default function AppShell({
               </aside>
             )}
           </div>
+        </div>
+
+        {/* Pinned bottom-left footer — the Upgrade tab + profile card stay fixed to
+            the viewport while the nav above scrolls with the page. Desktop only;
+            matches the left rail's width + chrome. */}
+        <div className="hidden md:flex fixed bottom-0 left-0 z-20 w-52 flex-col border-r border-t border-border bg-surface/95 backdrop-blur-sm">
+          {!hideAppNav && role === 'member' && <UpgradeCrew />}
+          <ProfileCard profile={profile} role={role} realRole={effectiveRealRole} profileHref={profileHref} previewVisitor={previewVisitor} />
         </div>
       </div>
       </DockRevealProvider>
