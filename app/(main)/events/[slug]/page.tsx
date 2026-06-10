@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { CalendarDays, MapPin, Users, Check, Ticket, Clock } from 'lucide-react'
+import { CalendarDays, MapPin, Users, Check, Ticket, Clock, Zap } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { toggleRSVP } from '../actions'
@@ -26,6 +26,9 @@ import { EventActivity, type ActivityPost } from '@/components/events/event-acti
 import { RecapAlbum, type RecapPhoto } from '@/components/events/recap-album'
 import { CohostManager, type CohostView } from '@/components/events/cohost-manager'
 import { listCohosts } from '@/lib/events/cohosts'
+import { PosterDetails } from '@/components/events/poster-details'
+import { posterSignedUrlMap } from '@/lib/events/poster-media'
+import { detailsMediaPaths, type EventDetailsWithMedia } from '@/lib/events/details-media'
 
 type EventDetail = {
   id: string
@@ -84,10 +87,10 @@ export default async function EventDetailPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ ticket?: string; session_id?: string }>
+  searchParams: Promise<{ ticket?: string; session_id?: string; claimed?: string }>
 }) {
   const { slug } = await params
-  const { ticket, session_id } = await searchParams
+  const { ticket, session_id, claimed } = await searchParams
   const admin = createAdminClient()
   const supabase = await createClient()
 
@@ -103,6 +106,41 @@ export default async function EventDetailPage({
 
   if (!rawEvent) notFound()
   const event = rawEvent as unknown as EventDetail
+
+  // ── Poster Events fields (newer than the generated types → untyped read,
+  // repo convention). Drives the "Posted by" credit, the unclaimed-organizer
+  // note, and the flexible poster details below the description. ──────────────
+  type PosterMeta = {
+    posted_by_profile_id: string | null
+    claimed_at: string | null
+    organizer_name: string | null
+    details: EventDetailsWithMedia | null
+    poster_path: string | null
+  }
+  const { data: rawPosterMeta } = await (admin as unknown as SupabaseClient)
+    .from('events')
+    .select('posted_by_profile_id, claimed_at, organizer_name, details, poster_path')
+    .eq('id', event.id)
+    .maybeSingle()
+  const posterMeta = (rawPosterMeta ?? null) as PosterMeta | null
+  const postedById = posterMeta?.posted_by_profile_id ?? null
+  const isPostedEvent = !!postedById
+
+  // The credit: whoever put the event on the map, when they aren't the host.
+  let postedBy: { display_name: string; handle: string } | null = null
+  if (postedById && postedById !== (event.host?.id ?? null)) {
+    const { data: posterProfile } = await admin
+      .from('profiles')
+      .select('display_name, handle')
+      .eq('id', postedById)
+      .maybeSingle()
+    postedBy = (posterProfile as { display_name: string; handle: string } | null) ?? null
+  }
+
+  // The flexible poster harvest + signed URLs for its crops (one batched call).
+  const posterDetails: EventDetailsWithMedia =
+    posterMeta?.details && typeof posterMeta.details === 'object' ? posterMeta.details : {}
+  const posterCropUrls = Object.fromEntries(await posterSignedUrlMap(detailsMediaPaths(posterDetails)))
 
   // Webhook-independent reconcile when Stripe redirects back from a paid ticket.
   let ticketedCents: number | null = null
@@ -408,6 +446,13 @@ export default async function EventDetailPage({
         </div>
       )}
 
+      {claimed === '1' && isHost && (
+        <div className="mb-4 inline-flex items-center gap-2 rounded-2xl border border-success bg-success-bg/40 px-4 py-2.5 text-sm font-semibold text-success">
+          <Check className="h-4 w-4" />
+          It is yours. You are the host now, so you can edit anything on this page.
+        </div>
+      )}
+
       {ticketedCents !== null && (
         <div className="mb-4 inline-flex items-center gap-2 rounded-2xl border border-success bg-success-bg/40 px-4 py-2.5 text-sm font-semibold text-success">
           <Ticket className="h-4 w-4" />
@@ -477,12 +522,31 @@ export default async function EventDetailPage({
               </div>
             )}
 
-            {event.host && (
+            {event.host ? (
               <p>
                 Hosted by{' '}
                 <Link href={`/people/${event.host.handle}`} className="text-primary-strong hover:underline">
                   {event.host.display_name}
                 </Link>
+              </p>
+            ) : isPostedEvent ? (
+              /* A posted town event nobody has claimed yet — quiet, honest. */
+              <p className="text-subtle">
+                {posterMeta?.organizer_name ? `By ${posterMeta.organizer_name} · ` : ''}
+                Organizer not on Frequency yet
+              </p>
+            ) : null}
+
+            {/* The Zap credit: whoever put this event on the map. */}
+            {postedBy && (
+              <p className="flex items-center gap-2">
+                <Zap className="w-4 h-4 text-primary shrink-0" />
+                <span>
+                  Posted by{' '}
+                  <Link href={`/people/${postedBy.handle}`} className="text-primary-strong hover:underline">
+                    {postedBy.display_name}
+                  </Link>
+                </span>
               </p>
             )}
           </div>
@@ -694,6 +758,11 @@ export default async function EventDetailPage({
             </p>
           </div>
         ) : null}
+
+        {/* ── Poster details (captured events): lineup, schedule, features,
+            tickets, links, sponsors, gallery, other — each only when the
+            poster carried it. ───────────────────────────────────────────── */}
+        <PosterDetails details={posterDetails} signedUrls={posterCropUrls} />
 
         {/* ── Attendees ──────────────────────────────── */}
         <section>

@@ -271,6 +271,45 @@ lowest-risk wins are **auto-calendar-on-RSVP**, **completing the 3-touch cadence
 
 ## Implementation log
 
+### 2026-06-10 — Poster Events capture UI (branch `poster-event-ui`, on top of the engine)
+- ✅ **Capture flow** (`app/(main)/events/scan/` — page + `creator.tsx` + `actions.ts`):
+  upload/camera → on-device downscale (~1024 longest side, jpeg) → private-bucket upload
+  (`{authUserId}/{uuid}.jpg`, same as the card scanner) → ONE vision call (`scanPoster`, gated by
+  `aiAvailable()` + `featureOverBudget('event-poster-scan')`, paths owner-asserted, temp shots
+  deleted, first shot kept as `poster_path`) → quality gate (the model's retake note + Retake /
+  "Use it anyway") → client-side perspective deskew from `corners[4]` (pure canvas inverse-mapped
+  homography, `lib/events/homography.ts`, + light auto-contrast; before/after toggle) → cover +
+  lineup + gallery crops cut client-side from the squared image and uploaded → draft editor.
+- ✅ **Crop-path convention** (`lib/events/details-media.ts`, ADR-215): crop paths ride in a
+  parallel `details.media` object (`coverPath`, `lineup[i]`, `gallery[i]` keyed by row index);
+  re-derived from row order on every save so indices never drift; re-validated server-side
+  (owner-folder paths only).
+- ✅ **Draft editor** (`app/(main)/events/drafts/[id]/`): primary fields (stacked datetime inputs
+  on phones), flexible per-section rows (Lineup/Schedule/Features/Tickets/Links/Sponsors/Other,
+  render-when-present, add-row + add-section, amber "Check this" chip on `confidence:'low'` rows),
+  cover + lineup thumbnails via signed URLs, explicit Save, then the ownership question on publish
+  ("This is my event" → host; "I found this event" → posted + claim token) with the outreach
+  prompt (claim link + prewritten copy-button message) after a posted publish.
+- ✅ **Drafts list** (`app/(main)/events/drafts/page.tsx`): the member's captured events as cards
+  (cover thumb, date, status: Draft / Awaiting claim / Live / Claimed / Removed) with edit +
+  two-tap delete (draft rows only; storage crops cleaned up). Linked from the events header
+  ("My drafts") and the capture flow.
+- ✅ **Claim landing** (`app/events/claim/[token]/` — PUBLIC, outside the (main) shell like
+  `/join/[token]` so a signed-out organizer can see it): resolves the published unclaimed event by
+  token (404 otherwise), event preview + poster credit, sign-in CTA preserving the return path,
+  one-tap `claimEventAction` → event page with a success note (`?claimed=1`).
+- ✅ **Event page** (`events/[slug]/page.tsx` + `components/events/poster-details.tsx`): "Posted
+  by" credit (lucide `Zap`, `text-primary`) whenever `posted_by_profile_id` differs from the host,
+  "Organizer not on Frequency yet" where the host normally appears on unclaimed posted events, and
+  the flexible details sections below the description (Lineup grid with crop thumbs → Schedule →
+  Features chips → printed-pricing block → Links (`rel=noreferrer`) → Sponsors credit line →
+  Gallery strip → Other definition list) — fully content-driven.
+- ✅ **Capture overlay** (`components/feed/capture-launcher.tsx`): poster row's "Soon" chip
+  removed; a compact "Capture an event poster" row (CalendarPlus) under the hero links to
+  `/events/scan`. Rail chrome registered in `lib/layout/page-chrome.ts` (scan/drafts = Focus).
+- ⏳ **Next:** Vera observer for capture nudges (separate PR); `assistEventFromText` manual-entry
+  assist surface; admin remove/clawback UI for posted events.
+
 ### 2026-06-09 — P0 core-loop (shipped on this branch)
 - ✅ **Schema** (`20260609230000_events_p0_capacity_visibility.sql`): `events.capacity` /
   `visibility` / `category` / `energy_tag`; `event_rsvps.plus_ones` / `waitlist` status /
