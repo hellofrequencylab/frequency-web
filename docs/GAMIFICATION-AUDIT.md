@@ -62,7 +62,7 @@ chain in the currency of its real-world steps.
 | Gap | Resolution | Status |
 |---|---|---|
 | Journey **join-gating** | `quest_progress` = joined; `advanceQuests` only advances started chains; new `startQuest` action + a real `/crew/quests` browse/join page | ✅ done |
-| **Pillar column** on `quest_chains` | `domain_id → domains`, backfilled on the 4 seasonal Journeys; page groups by Pillar | ✅ done |
+| **Pillar column** on the legacy action-chain engine (dropped, ADR-152) | Pillar foreign key, backfilled on the 4 seasonal Journeys; page groups by Pillar | ✅ done |
 | Member **zap-rate multiplier** | `MEMBER_ZAP_RATE` (0.5) in `awardZaps`; gated on `BETA_MEMBERS_GET_CREW` so it's inert in Beta, live at Launch | ✅ done |
 | Store **gems balance** | Spendable = `lifetime_gems − Σ gems_spent`, enforced in `getStoreData` + `redeemItem` | ✅ done |
 | Starter **content** | 2 bonus micro-journeys + 7 system-curated library practices across the Pillars | ✅ seeded |

@@ -6,11 +6,10 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { OfficialToggle } from './quest-controls'
 
-// The Journeys admin surface. The legacy quest-chain engine this page once
+// The Journeys admin surface. The legacy action-chain engine this page once
 // managed is fully retired (ADR-152 Phase B3 — `journey_plans` is the single
-// Journey spine; the dropped quest_chains/steps/progress tables are gone from
-// prod), so what remains is the living half: the open Journey library, with the
-// staff "Official" curation toggle.
+// Journey spine; the dropped engine is gone from prod), so what remains is the
+// living half: the open Journey library, with the staff "Official" curation toggle.
 
 // Supabase returns joined rows as arrays; use a loose intermediate type.
 interface JourneyPlanRow {

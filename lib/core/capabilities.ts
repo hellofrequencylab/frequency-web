@@ -18,7 +18,7 @@
 // (host_id === me, the host+ admin gate, crew-can-take-tasks). Tune against
 // product as the inline-admin work (Phase 1) lands.
 
-import { type CommunityRole, type WebRole, atLeastRole, isStaff as webIsStaff, isJanitor as webIsJanitor } from './roles'
+import { type CommunityRole, type WebRole, isStaff as webIsStaff, isJanitor as webIsJanitor } from './roles'
 import { isPaid, type EntitlementTier } from './access-matrix'
 
 export type Capability =
@@ -93,7 +93,7 @@ export interface Viewer {
  */
 export function resolveCapabilities(viewer: Viewer, scope: Scope): Set<Capability> {
   const caps = new Set<Capability>()
-  const { profileId, role } = viewer
+  const { profileId } = viewer
   // The STAFF axis (web_role, ADR-208) — INDEPENDENT of the community ladder.
   // 'janitor' = Executive Admin (crown jewels); staff = admin OR janitor (admin
   // shares the operational keys, so it manages any circle/event alongside janitor).

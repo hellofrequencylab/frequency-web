@@ -17,7 +17,7 @@ these tables mean.
 `invite_links`
 
 **Pillars (game taxonomy)**
-`pillars` (Mind / Body / Spirit / Expression — renamed from `domains`, migration
+`pillars` (Mind / Body / Spirit / Expression — renamed 2026, see docs/NAMING.md; migration
 `20260613000010`; **never** called Channels). FKs that point at it keep the column name
 `domain_id` for now (`practices.domain_id`, `journey_plan_items.domain_id`,
 `journey_plans.domain_id`, …) — those column renames are deferred to Wave 3.
@@ -74,13 +74,13 @@ You" lane — ADR entries 2026-06)
 > seeds the active season's Quest + one official Journey per Pillar (≤3 of that Pillar's practices
 > each). **Everything is free** (ADR-150/152).
 >
-> **`quest_chains` / `quest_steps` / `quest_progress`** — the legacy action-chain engine —
-> are **fully retired AND dropped** (ADR-152 Phase B3, migration `20260609104000`, applied
+> The **legacy action-chain engine** (dropped, ADR-152)
+> is **fully retired AND dropped** (ADR-152 Phase B3, migration `20260609104000`, applied
 > 2026-06): the tables and the `quest_outcomes()` RPC no longer exist; `/admin/quests` is the
 > Journey-Library manager. The mechanic lives on in `season_challenges`/achievements.
 
 > **Journey intensity + completion (ADR-197–200).** `practice_tiers` holds the three depths
-> (`tier ∈ initiate|adept|master`, renamed from spark/current/deep in migration `20260613000020`)
+> (`tier ∈ initiate|adept|master`, renamed 2026 — see docs/NAMING.md; migration `20260613000020`)
 > per practice (RLS: as visible as the practice); tier *selection* lives on
 > `journey_plan_items.default_tier`, `circles.default_intensity_tier` (Host-set), and
 > `journey_plan_adoptions.tier_override` (member) — resolved member→circle→item→`adept`
@@ -188,7 +188,7 @@ You" lane — ADR entries 2026-06)
 `stripe_webhook_events` (replay/idempotency claim), `connection_settings` (ADR-186),
 `admin_audit_log` (crown-jewel action log), `platform_flags`, `platform_flag_events`,
 `area_permissions`, `page_content` (operator-editable headers/SEO/hero/CTA —
-ADR-180/206), `pages` + `domains` + `sequence_overrides` (page editor), `team_members`,
+ADR-180/206), `pages` + `pillars` + `sequence_overrides` (page editor), `team_members`,
 `email_events`, `email_suppressions`, `notification_queue` (durable outbox),
 `profile_personas` (partner hats — P3.1), `conversation_room_migration`
 
@@ -233,9 +233,9 @@ Cosmetic (`profile_border/flair/theme`), presence (`last_seen_at`), and moderati
 | Enum | Values |
 |---|---|
 | `community_role` | `member`, `crew`, `host`, `guide`, `mentor` (+ `admin`, `janitor` — **deprecated no-ops**, kept for enum-order stability; staff authority moved to `web_role`) |
-| `season_rank_enum` | `ghost`, `echo`, `signal`, `beacon`, `conduit`, `luminary` (echo/signal/beacon replace runner/operative/agent — migration `20260613000030`; declaration order is load-bearing for `lifetime_rank`) |
+| `season_rank_enum` | `ghost`, `echo`, `signal`, `beacon`, `conduit`, `luminary` (renamed 2026 — see docs/NAMING.md; migration `20260613000030`; declaration order is load-bearing for `lifetime_rank`) |
 | `web_role` | `none`, `admin`, `janitor` (`text` + CHECK, not a PG enum — migration `20260613000050`) |
-| `practice_tiers.tier` | `initiate`, `adept`, `master` (`text` + CHECK; replaces spark/current/deep — migration `20260613000020`) |
+| `practice_tiers.tier` | `initiate`, `adept`, `master` (`text` + CHECK; renamed 2026 — see docs/NAMING.md; migration `20260613000020`) |
 | `circle_type` | `in-person`, `online` |
 | `group_status` | `forming`, `active`, `inactive`, `archived` |
 | `channel_content_type` | `group`, `event`, `thread` |

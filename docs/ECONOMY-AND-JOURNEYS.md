@@ -64,7 +64,7 @@ how each gate reads: browse freely, muted, click → upgrade lightbox.
   manual Luminary promotions) before wiping the season. The member sees it on their own Vault
   (the Store widget + the "how you earned" headline); public display still follows ADR-141.
   Ranks are `ghost → echo → signal → beacon → conduit → luminary` (`season_rank_enum`;
-  echo/signal/beacon replace the retired runner/operative/agent — migration `20260613000030`).
+  renamed 2026 — see docs/NAMING.md; migration `20260613000030`).
 - **Season-end Zap → Gem rollover — `ZAP_TO_GEM_RATES` (the rank ladder).** At season end,
   `reset_season()` rolls a **rank-based share** of `current_season_zaps` into Gems via one named
   config, **`ZAP_TO_GEM_RATES`** in the economy lib — the higher your final rank, the better the
@@ -130,8 +130,8 @@ Rewards split into **earned** vs **endorsed**:
 > Crew gates are rank-endorsement (ADR-141) and Gem spend (Store), not Journeys.
 
 A **Journey** is a curated, multi-step **practice track** — a coaching package with a
-narrative arc. *(This section's old engine references — `arc_chains`/`arc_steps`, later
-`quest_chains` — are obsolete; the spine is now `journey_plans` and the chain engine is
+narrative arc. *(This section's old engine — the legacy action-chain engine (dropped,
+ADR-152) — is obsolete; the spine is now `journey_plans` and the chain engine is
 dropped. See [JOURNEYS.md](JOURNEYS.md).)*
 
 - **Seasonal issuance.** Each season ships **4 primary tracks — one per Pillar**
@@ -182,7 +182,7 @@ you can only *do* as Crew.
 3. ✅ **Journey gating** — `/crew/quests` browse; **Start** gated to Crew (CrewGate);
    preview banner (ADR-140).
 4. ✅ **Seasonal journeys** — official Journeys are seeded one per Pillar for the active season
-   (ADR-139/140; the spine is now `journey_plans`, the old `quest_chains` engine is dropped).
+   (ADR-139/140; the spine is now `journey_plans`, the legacy action-chain engine is dropped, ADR-152).
    Authoring surface still pending.
 5. ✅ **DIY journey builder** — the **Studio** window: pick practices → a personal journey,
    with emoji/accent identity, a markdown intro, drag-reorder steps, per-step cadence/note, a

@@ -25,14 +25,14 @@ Everything is **free** (ADR-150/152); only the Store (Gem spend) and the public 
 | **Practice** | The atomic real-world act a member does + logs. The North-Star act. | `practices`, `practice_logs` (`lib/practices.ts`) |
 | **Zaps** ⚡ | In-person / external currency. Season XP that drives ranks. Resets each season. | `lib/zaps.ts`, `current_season_zaps`, `lifetime_zaps` |
 | **Gems** 💎 | On-platform currency + the Zap rollover. The spendable one (store, merch). Durable. | `lib/gems.ts`, `gem_transactions`, `store_*` |
-| **Season Ranks** | ghost → echo → signal → beacon → conduit → luminary (echo/signal/beacon replace runner/operative/agent) | `current_season_rank` (`season_rank_enum`) |
+| **Season Ranks** | ghost → echo → signal → beacon → conduit → luminary (renamed 2026 — see docs/NAMING.md) | `current_season_rank` (`season_rank_enum`) |
 | **Practice depth tiers** | Initiate / Adept / Master (default Adept). Tier never changes zap/streak math. | `practice_tiers.tier` |
 | **Challenges** | Community-wide seasonal goals (everyone wins together). | `season_challenges`, `challenge_progress` |
 | **Achievements** | Permanent unlock badges. | `achievements`, `user_achievements` |
 | **Streaks** | Daily practice streak (the headline) + weekly rhythms. | `profiles.current_streak` + `streaks` (`lib/practice-streak.ts`) |
 | **Pillars** | Mind / Body / Spirit / Expression — the lens Journeys are organised by. Never called Channels. | `pillars`; `journey_plan_items.domain_id` (column rename deferred to Wave 3) |
-| **Co-op** | ≥3 active circle members on the same Journey (was "Chorus"). Distinct from Resonance. | `lib/journey-chorus.ts` |
-| **Circle Current** | A circle's collective, non-competitive seasonal standing (was "Circle Field"). | `circles.season_current`, `circle_current_transactions` |
+| **Co-op** | ≥3 active circle members on the same Journey (renamed 2026 — see docs/NAMING.md). Distinct from Resonance. | `lib/journey-coop.ts` |
+| **Circle Current** | A circle's collective, non-competitive seasonal standing (renamed 2026 — see docs/NAMING.md). | `circles.season_current`, `circle_current_transactions` |
 
 Journey **progress** is derived from the practice log (ADR-144) — logging a Journey's
 practices advances it and earns the practice loop's zaps/streak; there is no separate tracker.
@@ -47,7 +47,7 @@ concept; ADR-152 split them again. **ADR-208 / [`NAMING.md`](NAMING.md) lock the
 
 ## Legacy engine retirement — done (ADR-152 Phase B3)
 
-The old action-chain engine (`quest_chains` / `quest_steps` / `quest_progress` — steps like
+The legacy action-chain engine (dropped, ADR-152 — steps like
 "attend an event / make a post / refer someone", advanced by `advanceQuests`) is **fully retired
 and dropped**: `advanceQuests`, the action-chain reads, and `startQuest` are gone; the tables and
 the `quest_outcomes()` RPC no longer exist (migration `20260609104000`); `/crew/quests` renders

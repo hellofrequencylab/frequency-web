@@ -88,8 +88,8 @@ a fresh climb.
 > the open library; a **practice** is the atomic real-world act you do. Everything is
 > free. **The Quest** is the brand for the year-round game (never in schema); a `quests`
 > row always means the season instance ("Seasonal Quest" is retired phrasing). Always say
-> **Zaps/Gems**, never "points". *(Retired & gone: the `quest_chains` action-chain "Arc"
-> engine, and the deshi/sempai/sensei rank naming — do not reintroduce.)*
+> **Zaps/Gems**, never "points". *(Retired & gone: the legacy action-chain "Arc"
+> engine (dropped, ADR-152), and the retired ceremonial rank naming — do not reintroduce.)*
 
 **Two currencies, split by where the activity happens. The rule is canonical
 (ADR-139): _anything online → Gems; anything in real life → Zaps_** — and it
@@ -109,8 +109,8 @@ pays gems. The single source of truth is `currencyForCriteria` /
   business/NFC programs, and **every practice log** (personal or circle — the
   real-world doing). Season XP that drives **season ranks**:
   `ghost → echo → signal → beacon → conduit → luminary` (the `season_rank_enum`
-  values after migration `20260613000030`; `echo/signal/beacon` replace the retired
-  `runner/operative/agent`). Auto-advance at the unchanged thresholds
+  values after migration `20260613000030`; renamed 2026 — see docs/NAMING.md).
+  Auto-advance at the unchanged thresholds
   0 / 100 / 300 / 750 / 1500; luminary is a manual admin promotion gated on
   `season_challenges_complete` (the 3000 double gate). `awardZaps()` (`lib/zaps.ts`).
 - **Twin ledgers + the Vault log.** Both currencies write **one row per grant**
@@ -129,10 +129,10 @@ pays gems. The single source of truth is `currencyForCriteria` /
   and [THE-QUEST.md](THE-QUEST.md)). A **Quest** (`quests`) is a season's official, free
   container of Journeys; a **Journey** (`journey_plans` + `journey_plan_items`) is a set of
   practices — official (nested under a Quest via `quest_id`) or member-built (open library) —
-  with progress derived from the practice log (ADR-144). All free. *(The legacy `quest_chains`/
-  `quest_steps`/`quest_progress` action-chain engine is retired **and dropped**.)*
+  with progress derived from the practice log (ADR-144). All free. *(The legacy action-chain
+  engine is retired **and dropped**, ADR-152.)*
 - **Pillars** — Mind / Body / Spirit / Expression, the taxonomy Journeys are organised by
-  (table `pillars`, migration `20260613000010`; "Domains" is retired). Pillars are **never**
+  (table `pillars`, migration `20260613000010`; renamed 2026 — see docs/NAMING.md). Pillars are **never**
   called Channels (Channels = the topical forum feature only).
 - **Practice depth tiers — Initiate / Adept / Master** — every practice ships three depths
   (`practice_tiers.tier ∈ initiate|adept|master`). The selected tier resolves member override
@@ -146,10 +146,10 @@ pays gems. The single source of truth is `currencyForCriteria` /
   (`lib/journey-arc.ts`, ADR-197). Bonuses (Full Day / Weekly Rhythm / completion) fire via
   `reward_grants` (ADR-200).
 - **Co-op** — circle co-op completion: ≥3 active circle members on the same Journey
-  (`lib/journey-chorus.ts`, ADR-199; "Chorus" renamed → Co-op, ADR-208). **Distinct from
+  (`lib/journey-coop.ts`, ADR-199; renamed 2026 — see docs/NAMING.md). **Distinct from
   Resonance** — Resonance is the Connection-Layer tie strength (ADR-186), a separate concept.
 - **Circle Current** — a circle's collective, non-competitive seasonal standing (replaces
-  "Circle Field"; internal column `circles.season_current`, ledger `circle_current_transactions`
+  the prior term, renamed 2026 — see docs/NAMING.md; internal column `circles.season_current`, ledger `circle_current_transactions`
   — migration `20260613000040`). See [EVENTS-SYSTEM.md](EVENTS-SYSTEM.md).
 - **Frequency Signature** — a member's four-Pillar practice balance, a derived profile identity
   (`lib/frequency-signature.ts`).

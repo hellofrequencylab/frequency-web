@@ -80,8 +80,8 @@ Legend: ✅ exists, reuse as-is · 🔧 exists, extend · 🆕 genuinely new · 
 
 - **Rank ladder names are wrong.** The brainstorm's martial-arts ladder is **retired** — do not
   reintroduce it (NAMING.md §Retired). The live, canon ladder (`season_rank_enum`,
-  `lib/season-ranks.ts`) is **ghost → echo → signal → beacon → conduit → luminary** (echo/signal/
-  beacon replace the old runner/operative/agent — migration `20260613000030`), thresholds owned by
+  `lib/season-ranks.ts`) is **ghost → echo → signal → beacon → conduit → luminary** (renamed
+  2026 — see docs/NAMING.md; migration `20260613000030`), thresholds owned by
   the `after_zap_transaction` trigger, 13-week seasonal reset via `reset_season()`. Use the canon names.
 - **`user_id` → `profile_id`.** Everything keys on `profiles(id)`; `auth.uid()` maps via
   `profiles.auth_user_id`. The brainstorm's column names and RLS predicates assume the wrong shape.

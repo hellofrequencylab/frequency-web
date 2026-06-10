@@ -18,7 +18,7 @@ Frequency connects neighborhoods into real-world community. Members find their p
 - Interest (Topic): a specific interest inside a Channel, for example running, sound baths, supper clubs.
 - Circle: a small standing local group around an Interest.
 - The Lab: the physical third space; the first is in North County San Diego.
-- The Quest: the seasonal game. Zaps are the in-person currency that drive season ranks (ghost, runner, operative, agent, conduit, luminary); Gems are the durable on-platform currency; Arcs are multi-step seasonal journeys.
+- The Quest: the seasonal game. Zaps are the in-person currency that drive season ranks (ghost, echo, signal, beacon, conduit, luminary); Gems are the durable on-platform currency; Arcs are multi-step seasonal journeys.
 
 ## Facts
 - Free during the beta. No card required. Founder pricing is locked for life. Leave anytime.

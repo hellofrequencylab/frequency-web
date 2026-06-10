@@ -54,7 +54,7 @@ The model is settled (ADR-152) and the briefs re-confirm it. Player-facing vocab
 
 **Spine decision (locked).** `journey_plans` is the **single** Journey spine. Official seasonal
 Journeys are `journey_plans` rows with `official = true` + `quest_id` set. The legacy
-`quest_chains/steps/progress` engine is **fully retired and dropped** (ADR-152 Phase B3, migration
+action-chain engine is **fully retired and dropped** (ADR-152 Phase B3, migration
 `20260609104000`) — the tables and the `quest_outcomes()` RPC no longer exist. There is no second
 Journey system.
 
@@ -236,7 +236,7 @@ a handful per season — genuinely rare.
 ## 9. Signature bets — "world's never seen" (go-big redesign)
 
 The briefs are the floor. These three are the ceiling, chosen because they exploit substrate we
-already have (circles, hosts, memberships, domains, `reward_grants`, `is_secret`) for maximum
+already have (circles, hosts, memberships, pillars, `reward_grants`, `is_secret`) for maximum
 novelty at low cost.
 
 ### 9.1 Co-op — circle co-op completion (the headline)
@@ -351,11 +351,11 @@ kill the motivation to publish.
 `quests`, `seasons`, `practices` (incl. `domain_id`, `cadence`, `reward_zaps`), `practice_logs`,
 `season_challenges`/`challenge_progress`, `achievements`/`user_achievements`, `streaks`
 (`freeze_tokens`), `season_trophies`, `reward_grants`, full Zap/Gem ledgers + triggers, `circles`/
-`memberships`, `pillars` (renamed from `domains`, migration `20260613000010`).
+`memberships`, `pillars` (renamed 2026, see docs/NAMING.md; migration `20260613000010`).
 
 **Net-new migrations:**
-1. `practice_tiers` — Initiate/Adept/Master content per practice (tier text renamed from
-   spark/current/deep in migration `20260613000020`).
+1. `practice_tiers` — Initiate/Adept/Master content per practice (tier text renamed
+   2026 — see docs/NAMING.md; migration `20260613000020`).
 2. `journey_plan_items.default_tier` (default `'adept'`).
 3. `circles.default_intensity_tier`.
 4. `journey_plan_adoptions.tier_override`.
@@ -363,7 +363,7 @@ kill the motivation to publish.
    `season_locked`, `completion_gems`.
 6. `seasons`: ensure `starts_at` set + 91-day `ends_at` convention.
 7. *(Phase 2)* `circle_coops` — co-op formation/trophy record.
-8. **Done (ADR-152 Phase B3):** `quest_chains/steps/progress` + the `quest_outcomes()` RPC
+8. **Done (ADR-152 Phase B3):** the legacy action-chain engine + the `quest_outcomes()` RPC
    are dropped (migration `20260609104000`); `database.types.ts` regenerated.
 
 **Code:** surface the existing-but-unread columns (`quest_id`, `official`, `status`,
@@ -404,7 +404,7 @@ Sequenced so a playable, addicting loop lands first; "everything in the briefs" 
 | **P1 — The loop feels good** | Fire Full Day / Rhythm / Completion (idempotent); celebration surfaces (toast, full-screen completion, perfect-week); Next Step card + swipe-to-log + circular arc. | The dopamine loop is the product. |
 | **P2 — Intensity tiers** | `practice_tiers` content; circle Host default-tier control; member override; tier display on the page + editor. | The differentiator, end-to-end. |
 | **P3 — Active page + widgets** | `/journeys/[slug]` Active mode; `page_config` widget system + editor "Page layout" section; defaults. | The full briefed page. |
-| **P4 — Official program + review** | `status` workflow; official flag + `quest_id` linkage; seed the 4 Pillar Journeys (one per Pillar) for the active season. *(quest_chains retirement already done — mig `20260609104000`.)* | Season-1 official content. |
+| **P4 — Official program + review** | `status` workflow; official flag + `quest_id` linkage; seed the 4 Pillar Journeys (one per Pillar) for the active season. *(legacy action-chain engine retirement already done — mig `20260609104000`.)* | Season-1 official content. |
 | **P5 — Signature bets** | Co-op · Frequency Signature · variable/secret rewards · season-drop moment. | Go-big, on top of a proven loop. |
 | **P6 — Notifications** | Daily next-step prompt at local morning (timezone-aware): "[Journey]: [Practice]. [time]." | Fogg prompt — Ability already high. |
 
@@ -426,7 +426,7 @@ applied** (another agent is live; `DECISIONS.md` is an append file). Apply on th
 - **`content/help/the-game/`** — member articles for tiers, completion, Co-op (P2/P5).
 - **`DECISIONS.md`** — these ADRs are now **appended** (read them verbatim in their era;
   naming superseded by ADR-208). Canon names, for reference:
-  - **ADR-196** — `journey_plans` is the single Journey spine; `quest_chains` retirement (now done).
+  - **ADR-196** — `journey_plans` is the single Journey spine; legacy action-chain engine retirement (now done, ADR-152).
   - **ADR-197** — Two-clock time model: rolling **rhythm clock** + fixed 91-day **quest clock**
     buckets; completion = 8 of 13, derived from `practice_logs` (no progress schema).
   - **ADR-198** — Depth tiers: content on `practice_tiers`; selection resolves

@@ -17,9 +17,9 @@ const CATEGORIES: Array<{ value: string; label: string }> = [
   { value: 'business-support', label: 'Business Support' },
 ]
 
-type DomainOption = { id: string; name: string }
+type PillarOption = { id: string; name: string }
 
-export function NewChannelCompose({ domains = [] }: { domains?: DomainOption[] }) {
+export function NewChannelCompose({ pillars = [] }: { pillars?: PillarOption[] }) {
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -101,7 +101,7 @@ export function NewChannelCompose({ domains = [] }: { domains?: DomainOption[] }
             />
           </div>
 
-          {domains.length > 0 && (
+          {pillars.length > 0 && (
             <div>
               <label htmlFor="ch-domain" className={cmLabel}>
                 Channel <span className="text-subtle font-normal">(optional)</span>
@@ -113,7 +113,7 @@ export function NewChannelCompose({ domains = [] }: { domains?: DomainOption[] }
                 className={cmInput}
               >
                 <option value="">Unsorted (assign later)</option>
-                {domains.map((d) => (
+                {pillars.map((d) => (
                   <option key={d.id} value={d.id}>{d.name}</option>
                 ))}
               </select>
