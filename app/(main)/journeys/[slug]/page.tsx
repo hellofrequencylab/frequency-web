@@ -15,7 +15,7 @@ import { enabledWidgets, type WidgetId } from '@/lib/journey-page-config'
 import { NextStepCard } from '@/components/journey/next-step-card'
 import { SeasonProgress } from '@/components/journey/season-progress'
 import { StepChecklist, type ChecklistRow } from '@/components/journey/step-checklist'
-import { CoopStrip } from '@/components/journey/coop-strip'
+import { CoopMeter } from '@/components/journey/coop-meter'
 import { TierControl } from '@/components/journey/tier-control'
 import { GamificationPanel } from '@/components/journey/gamification-panel'
 import { StreakStrip } from '@/components/journey/streak-strip'
@@ -266,7 +266,11 @@ function ActiveMode({
           </Suspense>
         )
       case 'companions':
-        return <CoopStrip companions={progress.circleCompanions} />
+        return (
+          <Suspense fallback={<PanelSkeleton rows={1} />}>
+            <CoopMeter profileId={profileId} planId={plan.id} fallbackCompanions={progress.circleCompanions} />
+          </Suspense>
+        )
       case 'practice-guide':
         return <PracticeGuideBlock intro={plan.intro} />
       default:
