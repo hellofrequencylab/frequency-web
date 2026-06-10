@@ -210,3 +210,33 @@ export function faqSchema(qas: { q: string; a: string }[]) {
     })),
   }
 }
+
+// ── Help article ──────────────────────────────────────────────────────────────
+// Help-center articles are answer-engine targets for "how do I…" questions.
+// Article schema signals an authoritative, dated source so engines (and Google's
+// rich results) can cite them. Publisher is the Organization; we keep it lean.
+
+export function articleSchema(article: {
+  title: string
+  description: string
+  path: string
+  updated?: string | null
+}) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: article.title,
+    description: article.description,
+    url: abs(article.path),
+    mainEntityOfPage: { '@type': 'WebPage', '@id': abs(article.path) },
+    ...(article.updated ? { dateModified: article.updated } : {}),
+    author: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL },
+    publisher: {
+      '@type': 'Organization',
+      name: SITE_NAME,
+      url: SITE_URL,
+      logo: { '@type': 'ImageObject', url: abs('/icons/icon-192.png') },
+    },
+  }
+}
+

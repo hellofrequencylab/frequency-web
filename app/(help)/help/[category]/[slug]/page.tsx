@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation'
 import { getAllArticles, getArticle, helpHref } from '@/lib/help/content'
 import { HelpMarkdown } from '@/components/help/help-markdown'
 import { DetailTemplate } from '@/components/templates'
+import { JsonLd } from '@/components/json-ld'
+import { articleSchema, breadcrumbSchema } from '@/lib/jsonld'
 
 type Params = { params: Promise<{ category: string; slug: string }> }
 
@@ -35,6 +37,22 @@ export default async function HelpArticlePage({ params }: Params) {
   const next = idx < cat.articles.length - 1 ? cat.articles[idx + 1] : null
 
   return (
+    <>
+    <JsonLd
+      data={[
+        articleSchema({
+          title: article.title,
+          description: article.description,
+          path: helpHref(cat.slug, article.slug),
+          updated: article.updated,
+        }),
+        breadcrumbSchema([
+          { name: 'Help', path: '/help' },
+          { name: cat.title, path: `/help/${cat.slug}` },
+          { name: article.title, path: helpHref(cat.slug, article.slug) },
+        ]),
+      ]}
+    />
     <DetailTemplate
       title={article.title}
       subtitle={
@@ -80,5 +98,6 @@ export default async function HelpArticlePage({ params }: Params) {
         </nav>
       </div>
     </DetailTemplate>
+    </>
   )
 }
