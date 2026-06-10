@@ -1254,10 +1254,20 @@ export default function AppShell({
           </div>
         )}
 
+        {/* Mobile demo toggle — tiny bolt + switch, dead centre of the tight
+            header (the pill variant lives in the right cluster on sm+). */}
+        {demoMode && hasDemoContent && (
+          <div className="absolute inset-y-0 left-1/2 flex -translate-x-1/2 items-center sm:hidden">
+            <DemoToggle initialHidden={demoHidden} variant="mini" />
+          </div>
+        )}
+
         {/* Right cluster: search · [messages · notifications] · account.
             Three groups, each set off by a hairline so the icons read as one
-            tidy block of community actions and the account stays distinct. */}
-        <div className="flex flex-1 items-center justify-end gap-1 pl-2.5 md:gap-2 md:pl-4">
+            tidy block of community actions and the account stays distinct.
+            pr keeps the avatar off the screen edge below lg (the lg block is
+            flush-right by design for the rail alignment). */}
+        <div className="flex flex-1 items-center justify-end gap-1 pl-2.5 pr-2 md:gap-2 md:pl-4 lg:pr-0">
 
           {/* Demo-content toggle — sits to the LEFT of Search (desktop). Members
               hide/show seeded demo content for themselves; sized to match Search. */}
