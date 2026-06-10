@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { X, BookOpen, ScanLine, Compass, ArrowRight, MapPin, CalendarCheck, Ghost } from 'lucide-react'
+import { X, BookOpen, ScanLine, Compass, ArrowRight, MapPin, CalendarCheck, CalendarPlus, ContactRound, Ghost } from 'lucide-react'
 import { CaptureBox } from './capture-box'
 
 type Mode = 'post' | 'note' | 'photo' | 'contact'
@@ -66,7 +66,7 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
           >
             {/* Header — quest-framed: this is the player catching something real from
                 the world, an expression of the Quest they're on. */}
-            <div className="mb-3 flex items-start justify-between gap-2 px-1 pt-[max(0px,env(safe-area-inset-top))]">
+            <div className="mb-3 flex shrink-0 items-start justify-between gap-2 px-1 pt-[max(0px,env(safe-area-inset-top))]">
               <div className="flex items-center gap-2.5">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-bg text-primary-strong">
                   <Compass className="h-5 w-5" aria-hidden />
@@ -86,35 +86,46 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
               </button>
             </div>
 
-            {/* The reader — the headline action, up top. Point your camera at a card,
-                poster, or a Frequency code to capture a person or a node from the world. */}
+            {/* The reader — the hero of this surface. Point your camera at a business
+                card or an event poster; each row spells out the real-world outcome. */}
             <Link
               href="/connections/new"
               onClick={close}
-              className="group mb-4 flex items-center gap-3 overflow-hidden rounded-2xl border border-primary/30 bg-primary-bg/40 p-4 transition-colors hover:border-primary/60 hover:bg-primary-bg/60"
+              className="group mb-4 flex shrink-0 items-center gap-4 overflow-hidden rounded-2xl border border-primary/40 bg-primary-bg/60 p-5 transition-colors hover:border-primary/60 hover:bg-primary-bg/80"
             >
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary text-on-primary shadow-pop">
-                <ScanLine className="h-6 w-6" aria-hidden />
+              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary text-on-primary shadow-pop">
+                <ScanLine className="h-7 w-7" aria-hidden />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-sm font-bold text-text">Scan a card or poster</span>
-                <span className="block text-xs leading-relaxed text-muted">
-                  Point your camera at a business card, a flyer, or a Frequency code to capture a new
-                  contact or a node you found in the wild.
+                <span className="block text-base font-bold text-text">Capture a card or poster</span>
+                <span className="mt-1.5 flex items-start gap-1.5">
+                  <ContactRound className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary-strong" aria-hidden />
+                  <span className="min-w-0 flex-1 text-xs leading-relaxed text-muted">
+                    Business card: snaps straight into your contacts, details filled in.
+                  </span>
+                </span>
+                <span className="mt-1 flex items-start gap-1.5">
+                  <CalendarPlus className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary-strong" aria-hidden />
+                  <span className="min-w-0 flex-1 text-xs leading-relaxed text-muted">
+                    Event poster: becomes an event draft for local events.
+                  </span>
+                  <span className="shrink-0 rounded-full bg-surface-elevated px-1.5 text-3xs uppercase text-subtle">
+                    Soon
+                  </span>
                 </span>
               </span>
               <ArrowRight className="h-4 w-4 shrink-0 text-primary-strong transition-transform group-hover:translate-x-0.5" aria-hidden />
             </Link>
 
             {/* …or capture by hand */}
-            <div className="mb-3 flex items-center gap-3">
+            <div className="mb-3 flex shrink-0 items-center gap-3">
               <span className="h-px flex-1 bg-border" />
               <span className="text-2xs font-semibold uppercase tracking-wide text-subtle">or capture by hand</span>
               <span className="h-px flex-1 bg-border" />
             </div>
 
             {/* The blip — this page is about logging real life, not posting online. */}
-            <p className="mb-3 px-1 text-xs leading-relaxed text-muted">
+            <p className="mb-3 shrink-0 px-1 text-xs leading-relaxed text-muted">
               This is your log of real life: who you met, where you showed up, what actually
               happened. Catch it while it&rsquo;s fresh.
             </p>
@@ -129,7 +140,7 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
 
             {/* Coming soon — the next real-world capture types, visible but inert so
                 members can see where this surface is headed. */}
-            <div className="mt-4">
+            <div className="mt-4 shrink-0">
               <p className="mb-2 px-1 text-2xs font-semibold uppercase tracking-wide text-subtle">Coming soon</p>
               <div className="grid grid-cols-1 gap-2">
                 {[
@@ -159,7 +170,7 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
             <Link
               href="/journal"
               onClick={close}
-              className="mt-3 flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+              className="mt-3 flex shrink-0 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
             >
               <BookOpen className="h-3.5 w-3.5" aria-hidden /> View your journal
             </Link>
