@@ -798,5 +798,23 @@ export async function logPractice(input: {
     // never let co-op reward firing break the log
   }
 
+  // Surprises (ADR-210): a variable, unannounced bonus on the daily loop — at most
+  // once per day, gems-only so a lucky roll never distorts season rank. Best-effort
+  // + dynamic import; merged into the same toast as the journey/co-op bonuses.
+  try {
+    const { fireSurpriseForLog } = await import('@/lib/surprises')
+    const surprise = await fireSurpriseForLog(profileId, day)
+    if (surprise) {
+      const base = journey ?? { bonuses: [], zaps: 0, gems: 0 }
+      journey = {
+        bonuses: [...base.bonuses, { label: surprise.label, kind: 'gems', amount: surprise.amount }],
+        zaps: base.zaps,
+        gems: base.gems + surprise.amount,
+      }
+    }
+  } catch {
+    // never let a surprise break the log
+  }
+
   return { logged: true, zapsAwarded, journey }
 }
