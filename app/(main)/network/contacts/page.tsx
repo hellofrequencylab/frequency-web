@@ -1,12 +1,14 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { Plus, ScanText, Lock, Globe, MapPin, Search, Contact } from 'lucide-react'
+import { Plus, ScanText, Lock, Globe, MapPin, Search, Contact, UserRoundCheck } from 'lucide-react'
 import { contactsOwnerId } from '@/lib/connections/access'
 import { listContacts } from '@/lib/connections/store'
+import { findContactMatches } from '@/lib/connections/matching'
 import { getInitials } from '@/lib/utils'
 import { IndexTemplate } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
 import { EntityCard } from '@/components/cards/entity-card'
+import { ContactMatches } from '@/components/connections/contact-matches'
 import type { ContactStatus, NetworkContactListItem } from '@/lib/connections/types'
 
 export const dynamic = 'force-dynamic'
@@ -42,7 +44,10 @@ export default async function ConnectionsPage({
   const status: StatusFilter = (STATUS_TABS.find((s) => s.key === rawStatus)?.key ?? 'all') as StatusFilter
   const q = (rawQ ?? '').trim().toLowerCase()
 
-  const all = await listContacts(ownerId)
+  const [all, suggestions] = await Promise.all([
+    listContacts(ownerId),
+    findContactMatches(ownerId),
+  ])
   const rows = all.filter((c) => matches(c, status, q))
 
   return (
@@ -98,6 +103,7 @@ export default async function ConnectionsPage({
           </div>
         }
       >
+      <ContactMatches suggestions={suggestions} />
       {rows.length === 0 ? (
         <EmptyState
           icon={ScanText}
@@ -144,6 +150,11 @@ export default async function ConnectionsPage({
                 }
                 meta={
                   <>
+                    {c.linkedProfileId && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-success-bg px-2 py-0.5 font-medium text-success">
+                        <UserRoundCheck className="h-3 w-3" /> On Frequency
+                      </span>
+                    )}
                     {c.tags.slice(0, 3).map((t) => (
                       <span key={t} className="rounded-full bg-primary-bg px-2 py-0.5 font-medium text-primary-strong">{t}</span>
                     ))}
