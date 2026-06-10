@@ -39,7 +39,7 @@ free vs. member is covered in [Membership & the Vault](/help/membership/the-vaul
   short. No surprises.
 
 Anyone can **browse** the whole store; **spending** is the game-membership benefit.
-During the beta everything is unlocked for everyone.
+During the beta everything is open to everyone.
 
 ## "How you earned": your ledger
 

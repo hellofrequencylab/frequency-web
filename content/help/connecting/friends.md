@@ -9,7 +9,7 @@ featureKeys: [friends]
 status: published
 ---
 
-Friends are your direct connections on Frequency. Adding someone is also the key that unlocks private messaging with them.
+Friends are your direct connections on Frequency. Adding someone also opens private messaging with them.
 
 ## How it works
 
