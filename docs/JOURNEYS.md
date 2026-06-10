@@ -269,13 +269,20 @@ Surprise the player. **Secret achievements** (already supported) that no one kne
 a **mid-season Act 2 twist**; occasional bonus multipliers on a perfect week. The unpredictable
 reward (Pokémon Go's "rare spawn" delight) that keeps the loop alive.
 
-**Shipped — Surprises (ADR-210):** the variable-bonus piece is live (`lib/surprises.ts`). On any
-practice log there is a chance (≈ once every ~4-5 active days) of an **unannounced bonus**, at most
-once per UTC day, paid in **Gems only** so a lucky roll never distorts the season Zap/rank ladder.
-Both timing *and* size are random (common 6-12 / rare 25 / gleam 50). The roll is a pure
-deterministic function of `(member, day)` — idempotent and unfarmable — claimed once through
-`reward_grants` and surfaced in the existing log toast. The odds stay secret by design (no operator
-page). Still ahead: the Act-2 mid-season twist and the season-launch moment below.
+**Shipped — Surprises (ADR-210):** the variable-bonus piece is live (`lib/surprises.ts`), in two
+flavors, each at most once per UTC day, both pure-deterministic per `(member, day)` (idempotent +
+unfarmable) and claimed once through `reward_grants`:
+- **Gems** on any practice log (≈ once every ~4-5 active days) — the personal daily loop. Gems are
+  cosmetic/spendable, so a lucky roll never touches the season ladder. Sizes common 6-12 / rare 25 /
+  gleam 50; surfaced in the existing log toast.
+- **Zaps** on *appropriate behavior* — the real-world / community acts that earn Zaps (attend, host,
+  refer, complete a task, scan a code; ADR-139). Because Zaps drive rank, the variance is tied to
+  genuine in-person participation (never idle luck) and kept modest against the base award (common
+  3-6 / rare 12 / gleam 25, rate 0.18). Hooked once at `processGamificationEvent`; granted through
+  `awardZaps` so rank advances normally; visible in the Vault Zap ledger.
+
+The odds stay secret by design (no operator page). Still ahead: the Act-2 mid-season twist and the
+season-launch moment below.
 
 *Supporting texture from the briefs: the **season-launch moment** (an event, not an update —
 the Fortnite reference) and the **live reward track** visible from day one.*

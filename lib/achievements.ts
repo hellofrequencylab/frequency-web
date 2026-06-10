@@ -68,6 +68,15 @@ export async function processGamificationEvent(
   try {
     const newAchievements = await evaluateAchievements(admin, event)
     await advanceChallenges(admin, event)
+    // Zap Surprise (ADR-210): a variable, unannounced bonus on appropriate real-world
+    // acts (attend / host / refer / task / scan). No-op for other event types and at
+    // most once per day; isolated so a surprise can never affect the achievement flow.
+    try {
+      const { fireZapSurpriseForAct } = await import('@/lib/surprises')
+      await fireZapSurpriseForAct(event.profileId, event.type)
+    } catch {
+      // never let a surprise break gamification processing
+    }
     return newAchievements
   } catch (err) {
     console.error('[gamification] event processing failed:', err)
