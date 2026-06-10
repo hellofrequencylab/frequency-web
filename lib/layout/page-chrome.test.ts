@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { railFor } from './page-chrome'
+import { railFor, leftRailFor } from './page-chrome'
 
 describe('railFor — the single source of truth for page chrome', () => {
   it('keeps the global rail on browse / stream / index pages', () => {
@@ -62,5 +62,42 @@ describe('railFor — the single source of truth for page chrome', () => {
     ]) {
       expect(railFor(p), p).toBe('none')
     }
+  })
+})
+
+describe('leftRailFor — the global member left rail vs. the admin workspace', () => {
+  it('keeps the member left rail everywhere outside the admin workspace', () => {
+    for (const p of [
+      '/feed',
+      '/circles',
+      '/channels',
+      '/events',
+      '/crew',
+      '/settings',
+      '/marketing',
+      '/administrators', // a non-admin path that merely shares the prefix text
+    ]) {
+      expect(leftRailFor(p), p).toBe('global')
+    }
+  })
+
+  it('swaps the member left rail for the admin sidebar under /admin/*', () => {
+    for (const p of [
+      '/admin',
+      '/admin/programs',
+      '/admin/operations',
+      '/admin/growth',
+      '/admin/circles',
+      '/admin/qr',
+      '/admin/members',
+    ]) {
+      expect(leftRailFor(p), p).toBe('none')
+    }
+  })
+
+  it('does not move the right rail for admin (that is governed separately)', () => {
+    // The admin workspace drops the member LEFT rail but the right rail is unchanged:
+    // /admin still resolves through railFor like any global page.
+    expect(railFor('/admin')).toBe('global')
   })
 })
