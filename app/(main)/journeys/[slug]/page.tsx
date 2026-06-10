@@ -16,6 +16,7 @@ import { NextStepCard } from '@/components/journey/next-step-card'
 import { SeasonProgress } from '@/components/journey/season-progress'
 import { StepChecklist, type ChecklistRow } from '@/components/journey/step-checklist'
 import { CoopMeter } from '@/components/journey/coop-meter'
+import { SeasonContext } from '@/components/journey/season-context'
 import { TierControl } from '@/components/journey/tier-control'
 import { GamificationPanel } from '@/components/journey/gamification-panel'
 import { StreakStrip } from '@/components/journey/streak-strip'
@@ -110,6 +111,7 @@ export default async function JourneyPlanPage({
       note: it.note,
       cadence: it.cadence,
       practiceCadence: it.practice?.cadence ?? null,
+      defaultTier: it.default_tier,
     }))
     const available = library
       .filter((p) => p.is_public)
@@ -128,6 +130,14 @@ export default async function JourneyPlanPage({
         initialItems={builderItems}
         available={available}
         pillars={pillars.map((p) => ({ id: p.id, slug: p.slug, name: p.name }))}
+        initialStatus={plan.status}
+        initialMinPracticesPerDay={plan.min_practices_per_day}
+        initialTargetWeeks={plan.target_weeks}
+        initialSeasonLocked={plan.season_locked}
+        initialCompletionGems={plan.completion_gems}
+        initialPageConfig={plan.page_config}
+        initialOfficial={plan.official}
+        initialQuestId={plan.quest_id}
       />
     )
   }
@@ -273,6 +283,12 @@ function ActiveMode({
         )
       case 'practice-guide':
         return <PracticeGuideBlock intro={plan.intro} />
+      case 'season-context':
+        return (
+          <Suspense fallback={<PanelSkeleton rows={1} />}>
+            <SeasonContext questId={plan.quest_id} seasonWeek={progress.seasonWeek} />
+          </Suspense>
+        )
       default:
         return null
     }
