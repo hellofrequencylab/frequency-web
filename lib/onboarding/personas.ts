@@ -9,12 +9,16 @@
 // Client-safe (no server imports). The marketing tag for each persona MUST be
 // registered in lib/traits/registry.ts (assignTag throws on unknown keys).
 
+import type { LucideIcon } from 'lucide-react'
+import { User, Wrench, Store, Handshake, Lightbulb } from 'lucide-react'
 import { REEL, type ReelSlide } from '@/lib/onboarding/beta-script'
 
 export type PersonaId = 'visitor' | 'practitioner' | 'partner' | 'builder' | 'investor'
 
-/** Display order in the picker — Visitor first (the default), then the offerings. */
-export const PERSONA_ORDER: PersonaId[] = ['visitor', 'practitioner', 'partner', 'builder', 'investor']
+/** Display order in the picker — Visitor first (the default), then the offerings.
+ *  Lab champion (investor) is retired from the picker (its definition stays for any
+ *  historical deep link / tagged member); it is not surfaced as a choice. */
+export const PERSONA_ORDER: PersonaId[] = ['visitor', 'practitioner', 'partner', 'builder']
 
 export const DEFAULT_PERSONA: PersonaId = 'visitor'
 
@@ -36,6 +40,8 @@ export interface Persona {
   label: string
   /** First-person identity line in the picker ("I have something to offer"). */
   pitch: string
+  /** Lucide icon shown on the picker card (replaces the old emoji; site icons only). */
+  Icon: LucideIcon
   emoji: string
   /** Stamped on the member at induction — register it in lib/traits/registry.ts. */
   marketingTag: string
@@ -51,6 +57,7 @@ const VISITOR: Persona = {
   id: 'visitor',
   label: 'Just here to belong',
   pitch: 'I want to find my people',
+  Icon: User,
   emoji: '🧍',
   marketingTag: 'persona_visitor',
   // The visitor sees the original product reel (feed · circles · events) verbatim.
@@ -72,6 +79,7 @@ const PRACTITIONER: Persona = {
   id: 'practitioner',
   label: 'Practitioner',
   pitch: 'I have something to offer',
+  Icon: Wrench,
   emoji: '🛠️',
   marketingTag: 'persona_practitioner',
   reel: [
@@ -96,6 +104,7 @@ const PARTNER: Persona = {
   id: 'partner',
   label: 'Partner business',
   pitch: 'I run a local spot',
+  Icon: Store,
   emoji: '🏪',
   marketingTag: 'persona_partner',
   reel: [
@@ -120,6 +129,7 @@ const BUILDER: Persona = {
   id: 'builder',
   label: 'Community builder',
   pitch: 'I want to help build it',
+  Icon: Handshake,
   emoji: '🤝',
   marketingTag: 'persona_builder',
   reel: [
@@ -144,6 +154,7 @@ const INVESTOR: Persona = {
   id: 'investor',
   label: 'Lab champion',
   pitch: 'I want a Frequency Lab in my town',
+  Icon: Lightbulb,
   emoji: '💡',
   marketingTag: 'persona_investor',
   reel: [

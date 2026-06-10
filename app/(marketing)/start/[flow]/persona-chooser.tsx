@@ -81,9 +81,11 @@ export function PersonaChooser({
                 active ? 'border-primary bg-primary/10' : 'border-border bg-surface hover:border-primary/40'
               }`}
             >
-              <span className="text-2xl leading-none" aria-hidden>{p.emoji}</span>
+              <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${active ? 'bg-primary text-on-primary' : 'bg-primary-bg text-primary-strong'}`} aria-hidden>
+                <p.Icon className="h-5 w-5" />
+              </span>
               <span>
-                <span className={`block text-base font-bold ${active ? 'text-text' : 'text-text'}`}>{p.label}</span>
+                <span className="block text-base font-bold text-text">{p.label}</span>
                 <span className="mt-0.5 block text-sm text-muted">{p.pitch}</span>
               </span>
             </button>
