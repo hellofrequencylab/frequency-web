@@ -162,7 +162,7 @@ export async function assignEventHost(eventId: string, profileId: string): Promi
   // when the pairing would have been a valid claim. Any trust-read failure
   // withholds the bonus rather than risk paying a farmed claim.
   let claimValid = false
-  let claimReason: string | null = 'no_poster'
+  let claimReason: string | null = null
   try {
     const trust = await isValidClaim(posterId, profileId)
     claimValid = trust.valid
