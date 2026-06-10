@@ -6,7 +6,7 @@ import { Check } from 'lucide-react'
 import { AdminModuleCard } from '@/components/admin/admin-module-card'
 import { moduleById } from '@/lib/admin/modules/registry'
 import { fieldClasses, labelClasses } from '@/components/ui/field'
-import { getEventAdminData, updateEventSettings } from '@/app/(main)/events/admin-actions'
+import { getEventAdminData, updateEventSettings, setEventCancelled } from '@/app/(main)/events/admin-actions'
 
 // In-place "Event settings" module (EMBEDDED-ADMIN.md / ADR-133). Renders inside
 // the page admin dock on /events/[slug], and renders nothing unless the server
@@ -116,19 +116,40 @@ export function EventSettingsModule() {
           </label>
         </div>
 
-        <div className="flex items-center justify-end gap-2 pt-1">
-          {saved && (
-            <span className="flex items-center gap-1 text-xs font-medium text-primary-strong">
-              <Check className="h-3.5 w-3.5" /> Saved
-            </span>
-          )}
+        <div className="flex items-center justify-between gap-2 pt-1">
+          {/* Cancel / reinstate — moved here from the header kebab so Settings is
+              the one host surface. Same server-side capability gate. */}
           <button
-            type="submit"
+            type="button"
             disabled={pending}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+            onClick={() =>
+              startTransition(async () => {
+                await setEventCancelled(data!.id, data!.slug, !data!.is_cancelled)
+                setData((d) => (d ? { ...d, is_cancelled: !d.is_cancelled } : d))
+              })
+            }
+            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors disabled:opacity-40 ${
+              data.is_cancelled
+                ? 'border-border bg-surface text-text hover:border-border-strong'
+                : 'border-danger/40 bg-surface text-danger hover:bg-danger-bg'
+            }`}
           >
-            {pending ? 'Saving…' : 'Save'}
+            {data.is_cancelled ? 'Reinstate event' : 'Cancel event'}
           </button>
+          <span className="flex items-center gap-2">
+            {saved && (
+              <span className="flex items-center gap-1 text-xs font-medium text-primary-strong">
+                <Check className="h-3.5 w-3.5" /> Saved
+              </span>
+            )}
+            <button
+              type="submit"
+              disabled={pending}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+            >
+              {pending ? 'Saving…' : 'Save'}
+            </button>
+          </span>
         </div>
       </form>
     </AdminModuleCard>

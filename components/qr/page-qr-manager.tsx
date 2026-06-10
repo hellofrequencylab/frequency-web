@@ -1,8 +1,8 @@
 'use client'
 
-import { useCallback, useEffect, useState, useTransition } from 'react'
+import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
-import { Link2, Check, ExternalLink, Archive, Palette, ScanLine } from 'lucide-react'
+import { Link2, Check, ExternalLink, Archive, Palette, ScanLine, QrCode } from 'lucide-react'
 import { StyleEditor } from '@/app/(main)/admin/qr/style-editor'
 import {
   createPageQr,
@@ -10,6 +10,7 @@ import {
   type PageQrScanStats,
 } from '@/app/(main)/admin/qr/link-actions'
 import { DEFAULT_STYLE, type QrStyle } from '@/lib/qr/style'
+import { renderStyledQrSvg } from '@/lib/qr/render-styled'
 import { isError } from '@/lib/action-result'
 import { relativeTime } from '@/lib/utils'
 
@@ -126,6 +127,36 @@ export function PageQrManager({ pathname, url }: { pathname: string; url: string
           </p>
           <ScanActivity stats={stats} archiveHref={archiveHref} />
         </div>
+      </div>
+    </div>
+  )
+}
+
+// The member-facing SHARE kit — the page's QR code + share link, nothing editable.
+// What everyone below the page's managers sees when they open "Share" (the
+// designer + scan stats above are host/admin territory).
+export function PageShareKit({ pathname, url }: { pathname: string; url: string }) {
+  const svg = useMemo(() => renderStyledQrSvg(url, DEFAULT_STYLE, 240), [url])
+  return (
+    <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-8">
+      <div className="shrink-0">
+        <p className="mb-2 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
+          <QrCode className="h-3.5 w-3.5" /> Scan to open
+        </p>
+        <div
+          aria-label="QR code for this page"
+          className="mx-auto aspect-square w-40 rounded-xl border border-border bg-white p-2 shadow-sm [&>svg]:h-full [&>svg]:w-full"
+          dangerouslySetInnerHTML={{ __html: svg }}
+        />
+      </div>
+      <div className="w-full min-w-0 space-y-2 sm:max-w-xs">
+        <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
+          <Link2 className="h-3.5 w-3.5" /> Share link
+        </p>
+        <ShareCode url={url} pathname={pathname} />
+        <p className="text-2xs text-subtle">
+          Anyone with the link or the code lands right on this page.
+        </p>
       </div>
     </div>
   )

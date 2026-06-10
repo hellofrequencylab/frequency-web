@@ -12,9 +12,8 @@ import { getConnectStatus, payoutsLive } from '@/lib/billing/connect'
 import { hasTicket, recordTicketFromSessionId } from '@/lib/billing/tickets'
 import { getCapacityInfo } from '@/lib/events/capacity'
 import { CrewGateButton } from '@/components/crew/upgrade-lightbox'
-import { ContextActions } from '@/components/context-actions'
 import { DetailTemplate } from '@/components/templates/detail-template'
-import { EditModeButton, StartEditingLink } from '@/components/admin/inline/edit-mode-button'
+import { StartEditingLink } from '@/components/admin/inline/edit-mode-button'
 import { InlineText } from '@/components/admin/inline/inline-text'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
 import { isPaidViewer } from '@/lib/core/viewer-hats'
@@ -172,7 +171,6 @@ export default async function EventDetailPage({
   let myPlusOnes = 0
   let isHost = false
   let isCrew = false
-  let myRole: 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor' = 'member'
   // Warm proof: going attendees who share an active circle with the viewer.
   let fromYourCircles = 0
 
@@ -185,7 +183,6 @@ export default async function EventDetailPage({
 
     if (profile) {
       myProfileId = profile.id
-      myRole = (profile.community_role ?? 'member') as typeof myRole
       isHost = event.host?.id === myProfileId
       isCrew = await isPaidViewer()
       const myRsvp = rsvps.find((r) => r.profile.id === myProfileId)
@@ -405,13 +402,6 @@ export default async function EventDetailPage({
 
   return (
     <div>
-      <Link
-        href="/events"
-        className="inline-flex items-center gap-1 text-xs text-subtle hover:text-muted mb-3 transition-colors"
-      >
-        ← Events
-      </Link>
-
       {event.is_cancelled && (
         <div className="mb-4 rounded-2xl bg-danger-bg border border-danger px-3 py-2">
           <p className="text-sm font-medium text-danger">This event has been cancelled.</p>
@@ -426,7 +416,9 @@ export default async function EventDetailPage({
       )}
 
       {/* Unified Detail header (REDESIGN-INAPP Phase 1): title + the when/where/
-          host meta as subtitle; the host/admin kebab as the action. */}
+          host meta as subtitle. No header Edit/kebab — editing, cancel/reinstate,
+          and the QR all live in the Settings panel under the title (one
+          affordance, permission-gated). */}
       <DetailTemplate
         title={
           canManage ? (
@@ -438,21 +430,6 @@ export default async function EventDetailPage({
           ) : (
             event.title
           )
-        }
-        actions={
-          <>
-            {canManage && <EditModeButton />}
-            <ContextActions
-              role={myRole}
-              context={{
-                type: 'event',
-                id: event.id,
-                slug: event.slug,
-                isHost,
-                isCancelled: event.is_cancelled,
-              }}
-            />
-          </>
         }
         subtitle={
           <div className="space-y-1.5">

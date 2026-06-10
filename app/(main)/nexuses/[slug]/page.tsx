@@ -5,7 +5,6 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { HierarchyBreadcrumb } from '@/components/hierarchy/breadcrumb'
 import { StatusBadge } from '@/components/groups/status-badge'
 import { DetailTemplate } from '@/components/templates/detail-template'
-import { EditModeButton } from '@/components/admin/inline/edit-mode-button'
 import { InlineText } from '@/components/admin/inline/inline-text'
 import { getNexusCapabilities } from '@/lib/core/load-capabilities'
 import { updateNexusField } from '../admin-actions'
@@ -110,11 +109,6 @@ export default async function NexusPage({
           )
         }
         badges={<StatusBadge status={nexus.status} />}
-        actions={
-          <>
-            {canManage && <EditModeButton />}
-          </>
-        }
         subtitle={
           <>
             {nexus.mentor && (
