@@ -53,4 +53,4 @@ city or an event. Scan them to fill the progress bar; each code counts once. See
 Circle hosts can **adopt a challenge for the whole circle**: the same goal, taken
 on together. Your personal progress still counts as yours, and every time someone
 in the circle finishes an adopted challenge, the circle's shared
-[Current](/help/groups/circle-field) builds. Same game, played side by side.
+[Current](/help/groups/circle-current) builds. Same game, played side by side.
