@@ -14,6 +14,10 @@ import { EntityCard } from '@/components/cards/entity-card'
 import { DemoBadge } from '@/components/ui/demo-badge'
 import { FacetDropdown } from '@/components/ui/facet-dropdown'
 import { RsvpButton } from '@/components/events/rsvp-button'
+import { EventsMapToggle } from '@/components/events/events-map-client'
+import type { EventMapPin } from '@/components/events/events-map'
+import { CalendarSubscribe } from '@/components/events/calendar-subscribe'
+import { EventConnectors } from '@/components/events/event-connectors'
 import { demoModeEnabled } from '@/lib/platform-flags'
 import { viewerHidesDemo } from '@/lib/demo-preference'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
@@ -319,6 +323,26 @@ export default async function EventsPage({
 
   const goingEvents = filteredEvents.filter((e) => myRsvps.has(e.id))
 
+  // ── Map pins (Events B-4) ───────────────────────────────────────────────────
+  // Plot each in-person event at its HOSTING CIRCLE'S public coordinates — the
+  // same public point the circle venue map uses — never the exact event venue
+  // (ADR-186). Online events and ones whose circle has no coordinates aren't
+  // pinned. The toggle hides itself when there's nothing to map.
+  const mapPins: EventMapPin[] = filteredEvents
+    .filter((e) => e.category !== 'online' && !!circleCoords[e.scope_id])
+    .map((e) => {
+      const c = circleCoords[e.scope_id]
+      return {
+        id: e.id,
+        slug: e.slug,
+        title: e.title,
+        whenLabel: formatWhen(e.starts_at, nowDate),
+        cityLabel: circleNames[e.scope_id] ?? null,
+        lat: c.lat,
+        lng: c.lng,
+      }
+    })
+
   // The "For You" lane is the page's one slow path (embedding scoring + optional
   // AI blurbs) — it streams in behind <Suspense> below so the shell, stats, and
   // event lists render immediately (PAGE-FRAMEWORK §5). Render it only when it
@@ -340,13 +364,16 @@ export default async function EventsPage({
       title={pageTitle}
       description={pageDescription}
       action={
-        (isCrew || isHost || operatorCta) ? (
+        (myProfileId || isCrew || isHost || operatorCta) ? (
           <div className="flex items-center gap-3">
             {isHost && (
               <Link href="/admin/events" className="text-sm font-medium text-muted transition-colors hover:text-primary-strong">
                 Manage
               </Link>
             )}
+            {/* Subscribe-to-calendar affordance (Events B-4) — signed-in members
+                only; renders nothing for visitors. */}
+            {myProfileId && <CalendarSubscribe />}
             {isCrew && <EventCompose groups={myCircles} />}
             {operatorCta}
           </div>
@@ -400,6 +427,16 @@ export default async function EventsPage({
           </Suspense>
         )}
 
+        {/* Connector suggestions (Events B-4) — fellow attendees who share a
+            Channel with you and aren't connected yet. Its own slow read, so it
+            streams behind Suspense and renders nothing unless there's a real
+            suggestion (EventConnectors returns null otherwise). */}
+        {myProfileId && filteredEvents.length > 0 && (
+          <Suspense fallback={null}>
+            <EventConnectors viewerProfileId={myProfileId} eventIds={filteredEvents.map((e) => e.id)} />
+          </Suspense>
+        )}
+
         {goingEvents.length > 0 && (
           <section id="events-going" className="scroll-mt-20">
             <SectionHeader title="You're going" count={goingEvents.length} />
@@ -443,19 +480,23 @@ export default async function EventsPage({
               }
             />
           ) : (
-            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-              {filteredEvents.map((event) => (
-                <EventCard
-                  key={event.id}
-                  event={event}
-                  circleName={circleNames[event.scope_id]}
-                  going={rsvpCounts[event.id] ?? 0}
-                  isGoing={myRsvps.has(event.id)}
-                  now={nowDate}
-                  canRsvp={!!myProfileId}
-                />
-              ))}
-            </div>
+            // Map/list toggle (Events B-4): the list is the default; the map is a
+            // lazily-mounted client island plotting in-person events at city level.
+            <EventsMapToggle pins={mapPins}>
+              <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                {filteredEvents.map((event) => (
+                  <EventCard
+                    key={event.id}
+                    event={event}
+                    circleName={circleNames[event.scope_id]}
+                    going={rsvpCounts[event.id] ?? 0}
+                    isGoing={myRsvps.has(event.id)}
+                    now={nowDate}
+                    canRsvp={!!myProfileId}
+                  />
+                ))}
+              </div>
+            </EventsMapToggle>
           )}
         </section>
       </div>
