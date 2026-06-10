@@ -41,6 +41,8 @@ const FOCUS_PREFIXES = [
 const FOCUS_PATTERNS: RegExp[] = [
   /^\/messages\/.+/, // a DM or room thread (the /messages inbox keeps the rail)
   /^\/events\/new$/, // create an event
+  /^\/events\/scan$/, // capture an event poster (scan-confirm flow)
+  /^\/events\/drafts(\/.+)?$/, // captured-event drafts + the draft editor
   /^\/practices\/[^/]+\/edit$/, // edit a practice
   /^\/connections\/.+/, // a contact editor / new contact (the index keeps the rail)
 ]

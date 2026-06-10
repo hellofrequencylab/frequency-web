@@ -109,11 +109,21 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
                   <span className="min-w-0 flex-1 text-xs leading-relaxed text-muted">
                     Event poster: becomes an event draft for local events.
                   </span>
-                  <span className="shrink-0 rounded-full bg-surface-elevated px-1.5 text-3xs uppercase text-subtle">
-                    Soon
-                  </span>
                 </span>
               </span>
+              <ArrowRight className="h-4 w-4 shrink-0 text-primary-strong transition-transform group-hover:translate-x-0.5" aria-hidden />
+            </Link>
+
+            {/* Poster capture has its own flow — a compact row straight to it. */}
+            <Link
+              href="/events/scan"
+              onClick={close}
+              className="group -mt-2 mb-4 flex shrink-0 items-center gap-3 rounded-2xl border border-border bg-surface p-3 transition-colors hover:border-primary/40 hover:bg-primary-bg/40"
+            >
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
+                <CalendarPlus className="h-5 w-5" aria-hidden />
+              </span>
+              <span className="min-w-0 flex-1 text-sm font-semibold text-text">Capture an event poster</span>
               <ArrowRight className="h-4 w-4 shrink-0 text-primary-strong transition-transform group-hover:translate-x-0.5" aria-hidden />
             </Link>
 
