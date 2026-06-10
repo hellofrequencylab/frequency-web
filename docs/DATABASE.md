@@ -32,7 +32,9 @@ these tables mean.
 `room_messages`
 
 **Events**
-`events`, `event_rsvps`
+`events`, `event_rsvps`, `event_tickets`, `event_ticket_types`, `event_embeddings`,
+`event_blurb_cache` (ticketing per EVENTS-SYSTEM; embeddings/blurbs power the "For
+You" lane — ADR entries 2026-06)
 
 **Moderation & safety**
 `reports`, `blocked_users`
@@ -45,9 +47,14 @@ these tables mean.
 
 **Gamification**
 `achievements`, `user_achievements`, `streaks`, `challenge_progress`,
-`arc_chains`, `arc_steps`, `arc_progress`, `season_challenges`,
-`season_trophies`, `seasons`, `crew_tasks`, `crew_completions`, `gem_config`,
-`gem_transactions`, `zap_config`, `zap_transactions`, `store_items`, `store_redemptions`
+`season_challenges`, `challenge_qr_codes`, `season_trophies`, `seasons`, `quests`,
+`crew_tasks` (+ `circle_id`/`assigned_to`/`claimed_at` — ADR-205), `crew_completions`,
+`gem_config`, `gem_transactions`, `zap_config`, `zap_transactions`, `store_items`,
+`store_redemptions`, `reward_grants` (idempotent claim-then-pay — ADR-168/200)
+
+**Circle Field & circle challenges (collaborative)**
+`circle_field_transactions` (append-only ledger; trigger owns `circles.current_season_field`),
+`circle_challenge_adoptions` (a circle adopts a global challenge together — ADR-201)
 
 > **`quests`** (ADR-152, Phase B1) is the **Seasonal Quest** container — the canonical
 > hierarchy is **The Quest → Seasonal Quest → Journeys → Practices**. A `quests` row is a
@@ -57,13 +64,10 @@ these tables mean.
 > B1 migration seeds the active season's Quest + one official Journey per Pillar (≤3 of that
 > Pillar's practices each). **Everything is free** (ADR-150/152).
 >
-> **`quest_chains` / `quest_steps` / `quest_progress`** are the **legacy** action-chain engine
-> (attend/post/refer steps; renamed arc_*→journey_*→quest_* over time). **🔴 Retired in code
-> (ADR-152 Phase B3):** `advanceQuests`, the `/crew/quests` action-chain reads, and `startQuest`
-> are removed — `/crew/quests` now renders `quests` → their `journey_plans`, and the sidebar reads
-> the active Journey. The tables are **dormant** (no writes); the mechanic lives on in
-> `season_challenges`/achievements. ⏳ **Physical drop deferred** — the `quest_outcomes()`
-> analytics RPC (`lib/analytics/outcomes.ts`) still reads them; retire that + regen types first.
+> **`quest_chains` / `quest_steps` / `quest_progress`** — the legacy action-chain engine —
+> are **fully retired AND dropped** (ADR-152 Phase B3, migration `20260609104000`, applied
+> 2026-06): the tables and the `quest_outcomes()` RPC no longer exist; `/admin/quests` is the
+> Journey-Library manager. The mechanic lives on in `season_challenges`/achievements.
 
 > **Journey intensity + completion (ADR-197–200).** `practice_tiers` holds the three depths
 > (Spark/Current/Deep) per practice (RLS: as visible as the practice); tier *selection* lives on
@@ -113,8 +117,13 @@ these tables mean.
 > normalized city. `lib/analytics/density.ts` scores each city into a 0–100 Lab-readiness
 > (🌱 Seed → ⏳ Growing → ✅ Ready, + ⚠️ capacity-crunch); surfaced at `/admin/expansion`.
 
+**Journeys**
+`journey_plans`, `journey_plan_items`, `journey_plan_adoptions`, `practice_tiers`
+(Spark/Current/Deep — ADR-197/198; spec in JOURNEYS.md)
+
 **Practices (North Star)**
-`practices`, `circle_practices`, `member_practices`, `practice_logs`
+`practices`, `circle_practices`, `member_practices`, `practice_logs`,
+`practice_tags`, `practice_tag_defs`, `practice_subcategories`, `circle_topics`
 
 > A **practice** is what a member does. A host sets a circle's current practice
 > (`circle_practices`, one active per circle) or a member adopts their own
@@ -150,9 +159,34 @@ these tables mean.
 > the code-registry template is enabled). These tables are **service-role only** (no
 > client RLS policies), like `contacts` / `qr_codes`.
 
-> **CRM & marketing** tables (`contacts`, `campaigns`, `automations`, `segments`,
-> `member_tags`, `member_traits`, …) are specified in `docs/COMMS-CRM-ARCHITECTURE.md`
-> and `docs/NETWORK-CRM.md` — the source of truth for that domain.
+**Partners & captures (in-person earning)**
+`partners`, `partner_offers`, `partner_redemptions`, `nodes`, `captures`
+
+**Engagement & intelligence (PI.1–PI.5)**
+`engagement_events` (semantic), `interaction_events` (wide firehose, 90-day purge),
+`member_traits`, `member_tags`, `segments`, `ai_usage`, `ai_help_queries`,
+`ai_member_context`, `vera_config`, `consent_records`, `agent_actions`,
+`studio_site_changes` (audited one-click site actions — ADR-167)
+
+**Support & onboarding**
+`support_tickets`, `support_ticket_messages`, `help_chunks` (help-RAG index),
+`welcomes`, `introductions`, `training_paths` (role training — ADR-157), `tips`
+
+**Money & platform plumbing**
+`stripe_webhook_events` (replay/idempotency claim), `connection_settings` (ADR-186),
+`admin_audit_log` (crown-jewel action log), `platform_flags`, `platform_flag_events`,
+`area_permissions`, `page_content` (operator-editable headers/SEO/hero/CTA —
+ADR-180/206), `pages` + `domains` + `sequence_overrides` (page editor), `team_members`,
+`email_events`, `email_suppressions`, `notification_queue` (durable outbox),
+`profile_personas` (partner hats — P3.1), `conversation_room_migration`
+
+> **CRM & marketing** tables (`contacts`, `campaigns`, `automation_rules`, `segments`,
+> `member_tags`, `member_traits`, `network_contacts`, `network_contact_notes`,
+> `network_contact_tags`, `crm_stages`, `crm_deals`, `crm_activities`) are specified in
+> `docs/COMMS-CRM-ARCHITECTURE.md` and `docs/NETWORK-CRM.md` — the source of truth for
+> that domain.
+
+> *(`spatial_ref_sys` is PostGIS's reference table — not ours, no RLS by design.)*
 
 ## The `profiles` table — universal entity record
 
