@@ -49,6 +49,8 @@ const ZAP_CRITERIA_TYPES = new Set<string>([
   'practice_streak',   // daily practice-streak milestone — real-world consistency
   'circle_start',   // founded a real circle
   'circle_activate',// activated a circle so it stands on its own
+  'event_posted',     // published a town event captured from a poster — outreach
+  'event_claim_bonus',// an organizer claimed an event you posted — outreach that lands
   // Meta milestones about the in-person ladder itself.
   'season_zaps',
   'rank_reached',
