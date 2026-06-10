@@ -135,7 +135,7 @@ export function AdminTicketControls({
           placeholder={internal ? 'A note only staff can see…' : 'Reply to the member…'}
           className="w-full resize-none rounded-lg border border-border bg-canvas px-3 py-2 text-sm leading-relaxed text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
         />
-        {aiDrafted && <p className="mt-1 text-2xs text-subtle">✨ AI draft — review and edit before sending.</p>}
+        {aiDrafted && <p className="mt-1 text-2xs text-subtle">✨ AI draft. Review and edit before sending.</p>}
         {error && <p className="mt-1 text-xs text-danger">{error}</p>}
         <div className="mt-2 flex items-center justify-between gap-2">
           <button type="button" onClick={draft} disabled={drafting || pending} title="Draft a reply with AI (you review before sending)" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50">

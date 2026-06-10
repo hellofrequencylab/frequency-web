@@ -39,10 +39,10 @@ export function ReindexHelpButton({ embeddedChunks, onReindexed }: { embeddedChu
     <div className="rounded-2xl border border-border bg-surface p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-sm font-bold text-text">Ask Vera — help index</p>
+          <p className="text-sm font-bold text-text">Ask Vera help index</p>
           <p className="mt-0.5 text-sm text-muted">
             {empty ? (
-              <span className="text-danger">Empty — “Ask Vera” can’t answer until this is built. Click to index the help center.</span>
+              <span className="text-danger">Empty. “Ask Vera” can’t answer until this is built. Click to index the help center.</span>
             ) : (
               <>{embeddedChunks.toLocaleString()} chunks embedded. Re-run after editing help articles (only changes re-embed).</>
             )}

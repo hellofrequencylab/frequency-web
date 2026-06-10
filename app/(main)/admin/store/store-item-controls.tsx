@@ -43,7 +43,7 @@ export function ActiveToggle({ id, isActive }: { id: string; isActive: boolean }
     <button
       onClick={handleToggle}
       disabled={pending}
-      title={optimistic ? 'Active — click to deactivate' : 'Inactive — click to activate'}
+      title={optimistic ? 'Active. Click to deactivate' : 'Inactive. Click to activate'}
       className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:opacity-60 ${
         optimistic ? 'bg-success' : 'bg-border-strong'
       }`}
@@ -313,7 +313,7 @@ export function EditItemButton({ item }: { item: StoreItem }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="w-full max-w-lg rounded-2xl border border-border bg-surface shadow-2xl">
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-              <h2 className="text-sm font-semibold text-text">Edit — {item.name}</h2>
+              <h2 className="text-sm font-semibold text-text">Edit {item.name}</h2>
               <button
                 onClick={() => setOpen(false)}
                 className="rounded p-1 text-subtle hover:text-muted transition-colors"

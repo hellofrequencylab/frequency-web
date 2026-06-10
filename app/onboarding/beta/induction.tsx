@@ -475,7 +475,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                 {/* Persona fork — first, who are you? Pre-selected if they came in
                     through a lead flow; changeable here. Branches the tour reel and
                     is stamped on the member so the site + Vera can tailor later. */}
-                <p className="mt-9 text-sm font-bold uppercase tracking-[0.25em] text-primary-strong">First — who are you?</p>
+                <p className="mt-9 text-sm font-bold uppercase tracking-[0.25em] text-primary-strong">First, who are you?</p>
                 <div className="mx-auto mt-4 grid max-w-2xl gap-3 sm:grid-cols-2">
                   {listPersonas().map((p) => {
                     const active = persona === p.id

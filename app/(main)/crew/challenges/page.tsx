@@ -80,15 +80,15 @@ export default async function ChallengesPage() {
           <StatCard label="In progress" value={inProgress} icon={Flame} />
           <StatCard
             label="To Luminary"
-            value={allDone ? 'Unlocked' : `${remaining} left`}
+            value={allDone ? 'Earned' : `${remaining} left`}
             icon={Trophy}
-            delta={allDone ? { label: 'Rank unlocked', trend: 'up' } : undefined}
+            delta={allDone ? { label: 'Rank earned', trend: 'up' } : undefined}
           />
         </div>
 
         {allDone && (
           <p className="mt-4 flex items-center justify-center gap-1.5 text-sm font-semibold text-signal-strong">
-            <Trophy className="h-4 w-4" /> All challenges complete — Luminary rank unlocked!
+            <Trophy className="h-4 w-4" /> All challenges complete. Luminary rank earned!
           </p>
         )}
       </section>

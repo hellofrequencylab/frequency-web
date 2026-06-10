@@ -22,7 +22,7 @@ export default async function InsightsPage() {
     <AdminPage
       title="Engagement Read"
       eyebrow="Insights"
-      description="What’s working, what’s jamming, and what to do — read off the live signal."
+      description="What’s working, what’s jamming, and what to do. Read off the live signal."
     >
       <AdminSection>
         <div className="rounded-2xl border border-border bg-surface p-4">
@@ -31,7 +31,7 @@ export default async function InsightsPage() {
       </AdminSection>
 
       {read.insights.length === 0 ? (
-        <p className="text-sm text-muted">No signal to read yet — check back once members are active.</p>
+        <p className="text-sm text-muted">No signal to read yet. Check back once members are active.</p>
       ) : (
         <div className="space-y-3">
           {read.insights.map((i) => {

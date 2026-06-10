@@ -35,7 +35,7 @@ export function NewListingButton({ className }: { className?: string }) {
     const pos = await getBrowserPosition()
     setLocating(false)
     if (pos) setCoords(pos)
-    else setError('Couldn’t get your location — you can still set a neighborhood/city.')
+    else setError('Couldn’t get your location. You can still set a neighborhood/city.')
   }
 
   const create = () => {
@@ -60,7 +60,7 @@ export function NewListingButton({ className }: { className?: string }) {
       eyebrow="Studio · New listing"
       footer={
         <StudioFooter
-          left={<span className="text-xs text-subtle">{error ? <span className="text-danger">{error}</span> : 'Free to post — no payment, just neighbors helping out.'}</span>}
+          left={<span className="text-xs text-subtle">{error ? <span className="text-danger">{error}</span> : 'Free to post. No payment, just neighbors helping out.'}</span>}
         >
           <button
             type="button"
@@ -91,7 +91,7 @@ export function NewListingButton({ className }: { className?: string }) {
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             maxLength={40}
-            placeholder="Category (e.g. furniture, tools, lessons) — optional"
+            placeholder="Optional category (e.g. furniture, tools, lessons)"
             className="mt-1 w-full bg-transparent text-sm text-muted outline-none placeholder:text-subtle"
           />
         </div>
@@ -140,7 +140,7 @@ export function NewListingButton({ className }: { className?: string }) {
         </StudioField>
       </div>
 
-      <p className="mt-3 text-xs text-subtle">No money changes hands in the app — arrange that offline. Be kind; this is mutual support, not a storefront.</p>
+      <p className="mt-3 text-xs text-subtle">No money changes hands in the app. Arrange that offline. Be kind; this is mutual support, not a storefront.</p>
     </StudioLaunchButton>
   )
 }

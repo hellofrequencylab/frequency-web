@@ -28,14 +28,14 @@ export default async function SupportPage() {
             <LifeBuoy className="h-5 w-5 shrink-0 text-primary-strong" /> Your reports
           </span>
         }
-        description="Bugs, questions and ideas you’ve sent — and where they stand."
+        description="Bugs, questions and ideas you’ve sent, and where they stand."
         action={<ReportButton label="New report" />}
       >
         {tickets.length === 0 ? (
           <EmptyState
             icon={LifeBuoy}
             title="No reports yet"
-            description="Hit a bug or have a question? Send a report and we’ll pick it up — you can track it here."
+            description="Hit a bug or have a question? Send a report and we’ll pick it up. You can track it here."
             action={<ReportButton label="Send your first report" />}
           />
         ) : (

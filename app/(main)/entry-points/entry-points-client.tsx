@@ -97,7 +97,7 @@ export function EntryPointsManager({
       <section className="space-y-3">
         {cards.length === 0 && !creating && (
           <p className="rounded-2xl border border-dashed border-border bg-surface px-4 py-8 text-center text-sm text-muted">
-            No entry points yet. Start one above — it takes about a minute.
+            No entry points yet. Start one above. It takes about a minute.
           </p>
         )}
         {cards.map((card) => (

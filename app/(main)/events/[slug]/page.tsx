@@ -421,7 +421,7 @@ export default async function EventDetailPage({
       {ticketedCents !== null && (
         <div className="mb-4 inline-flex items-center gap-2 rounded-2xl border border-success bg-success-bg/40 px-4 py-2.5 text-sm font-semibold text-success">
           <Ticket className="h-4 w-4" />
-          You’re in — ${(ticketedCents / 100).toFixed(2)} ticket confirmed. See you there.
+          You’re in. ${(ticketedCents / 100).toFixed(2)} ticket confirmed. See you there.
         </div>
       )}
 
@@ -551,7 +551,7 @@ export default async function EventDetailPage({
               ) : !myProfileId ? (
                 <p className="text-sm text-muted">Sign in to get your ticket.</p>
               ) : isHost ? (
-                <p className="text-sm text-muted">You’re hosting — no ticket needed.</p>
+                <p className="text-sm text-muted">You’re hosting. No ticket needed.</p>
               ) : hostPayoutReady ? (
                 <TicketButton
                   eventId={event.id}
@@ -627,7 +627,7 @@ export default async function EventDetailPage({
                 {isGoing && (
                   <div className="rounded-2xl border border-border bg-surface px-4 py-3">
                     <p className="mb-2 text-xs font-medium text-muted">
-                      You’re going — lock it in so you don’t miss it.
+                      You’re going. Lock it in so you don’t miss it.
                     </p>
                     <AddToCalendar icsHref={icsHref} googleUrl={googleUrl} emphasis />
                   </div>

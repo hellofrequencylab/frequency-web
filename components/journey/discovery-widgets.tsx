@@ -163,7 +163,7 @@ export function CompletionRuleBlock({ targetWeeks }: { targetWeeks: number }) {
         <p className="text-sm font-bold text-text">How you complete it</p>
         <p className="mt-0.5 text-sm leading-relaxed text-muted">
           Show up on a practice in <strong className="font-semibold text-text">{targetWeeks}</strong> of the season’s{' '}
-          {SEASON_WEEKS} weeks. Forgiving by design — a few hard weeks won’t end your run.
+          {SEASON_WEEKS} weeks. Forgiving by design. A few hard weeks won’t end your run.
         </p>
       </div>
     </section>
@@ -204,7 +204,7 @@ export function AdoptRemixBlock({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="min-w-0 text-sm text-muted">
           {adopted
-            ? 'You’ve adopted this journey — its practices are in your daily loop.'
+            ? 'You’ve adopted this Journey. Its practices are in your daily loop.'
             : 'Adopt it to add these practices to your daily loop, or remix it into your own.'}
         </p>
         <div className="flex shrink-0 items-center gap-2">

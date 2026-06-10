@@ -59,8 +59,8 @@ export default async function BillingPage({
         <div className="mb-4 inline-flex items-center gap-2 rounded-xl border border-success/50 bg-success-bg/30 px-4 py-2.5 text-sm font-semibold text-success">
           <Check className="h-4 w-4" />{' '}
           {justUpgradedTo === 'supporter'
-            ? 'You’re in — thank you for supporting Frequency.'
-            : 'You’re in — welcome to the Crew.'}
+            ? 'You’re in. Thank you for supporting Frequency.'
+            : 'You’re in. Welcome to the Crew.'}
         </div>
       )}
 
@@ -74,7 +74,7 @@ export default async function BillingPage({
         <div className="mt-4">
           {!live ? (
             <p className="text-sm leading-relaxed text-muted">
-              Paid memberships aren’t turned on yet — everything is free during the beta. You can
+              Paid memberships aren’t turned on yet. Everything is free during the beta. You can
               switch tiers on the{' '}
               <Link href="/upgrade" className="font-medium text-primary-strong hover:underline">
                 membership page
@@ -103,7 +103,7 @@ export default async function BillingPage({
 
           {!live ? (
             <p className="mt-2 text-sm leading-relaxed text-muted">
-              Payouts aren’t turned on yet — they go live with the rest of billing. You’ll set up
+              Payouts aren’t turned on yet. They go live with the rest of billing. You’ll set up
               where your earnings land here.
             </p>
           ) : payout.ready ? (
@@ -123,7 +123,7 @@ export default async function BillingPage({
             <>
               <p className="mt-1 text-lg font-bold text-text">Almost there</p>
               <p className="mt-1 text-sm leading-relaxed text-muted">
-                Stripe is reviewing your details. This usually clears quickly — check back, or open
+                Stripe is reviewing your details. This usually clears quickly. Check back, or open
                 your dashboard to finish anything outstanding.
               </p>
               <div className="mt-4">

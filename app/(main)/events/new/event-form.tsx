@@ -205,7 +205,7 @@ export function EventForm({ groups }: { groups: Group[] }) {
         {recurrenceType !== 'none' && (
           <div className="mt-3 space-y-1.5">
             <Label className="text-text">
-              Ends on <span className="text-subtle">(optional — leave blank for indefinite)</span>
+              Ends on <span className="text-subtle">(optional, leave blank for indefinite)</span>
             </Label>
             <Input
               type="date"
@@ -286,7 +286,7 @@ export function EventForm({ groups }: { groups: Group[] }) {
           ))}
         </select>
         <p className="mt-1.5 text-2xs text-muted">
-          How the event tends to land on the nervous system — used to suggest the right events to the right people.
+          Whether the event tends to calm people down or fire them up. Used to suggest the right events to the right people.
         </p>
       </div>
 

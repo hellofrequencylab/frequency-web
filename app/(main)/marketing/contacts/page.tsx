@@ -64,7 +64,7 @@ export default async function ContactsPage({
     <DashboardTemplate
       eyebrow="Marketing"
       title="Contacts"
-      description="The unified CRM record for leads, customers, and members. Email is the join key; members auto-link on signup. Click anyone to see their User Stats — every record about them, grouped, and the path they took through the system."
+      description="The unified CRM record for leads, customers, and members. Email is the join key; members auto-link on signup. Click anyone to see their User Stats: every record about them, grouped, and the path they took through the system."
       width="wide"
     >
       <div className="max-w-md">

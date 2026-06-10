@@ -39,7 +39,7 @@ export function PageQrManager({ pathname, url }: { pathname: string; url: string
   useEffect(loadStats, [loadStats])
 
   function save() {
-    const t = title.trim() || `QR — ${pathname}`
+    const t = title.trim() || `QR for ${pathname}`
     start(async () => {
       const r = await createPageQr({ pagePath: pathname, targetUrl: url, title: t, style })
       if (isError(r)) {
@@ -70,7 +70,7 @@ export function PageQrManager({ pathname, url }: { pathname: string; url: string
               setTitle(e.target.value)
               setError(null)
             }}
-            placeholder="e.g. Flyer — front desk"
+            placeholder="e.g. Front desk flyer"
             className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-xs text-text"
           />
         </label>
@@ -141,7 +141,7 @@ function ScanActivity({ stats, archiveHref }: { stats: PageQrScanStats | null; a
   if (stats.codeCount === 0) {
     return (
       <p className="px-0.5 text-2xs text-subtle">
-        No codes saved for this page yet — save one and its scans show up here.
+        No codes saved for this page yet. Save one and its scans show up here.
       </p>
     )
   }
@@ -151,7 +151,7 @@ function ScanActivity({ stats, archiveHref }: { stats: PageQrScanStats | null; a
         label="Total scans"
         value={`${stats.total.toLocaleString()}${stats.unique > 0 ? ` · ${stats.unique} members` : ''}`}
       />
-      <StatRow label="Last scan" value={stats.lastScanAt ? relativeTime(stats.lastScanAt) : '—'} />
+      <StatRow label="Last scan" value={stats.lastScanAt ? relativeTime(stats.lastScanAt) : '–'} />
       <StatRow
         label="Top code"
         value={
@@ -163,7 +163,7 @@ function ScanActivity({ stats, archiveHref }: { stats: PageQrScanStats | null; a
               <span className="shrink-0 font-normal text-subtle">({stats.topCode.total})</span>
             </span>
           ) : (
-            '—'
+            '–'
           )
         }
       />

@@ -62,7 +62,7 @@ export async function generateMetadata({
   const { plan } = loaded
   const title = plan.title
   const description =
-    plan.summary ?? 'A seasonal set of practices to move through — on your own or with your circle.'
+    plan.summary ?? 'A seasonal set of practices to move through, on your own or with your Circle.'
   return {
     title,
     description,
@@ -210,7 +210,7 @@ export default async function JourneyPlanPage({
 
       {isAuthor && preview && (
         <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface px-4 py-2.5">
-          <span className="text-sm text-muted">Preview — how others see your journey.</span>
+          <span className="text-sm text-muted">Preview. How others see your Journey.</span>
           <Link
             href={`/journeys/${plan.slug}`}
             className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
@@ -308,7 +308,7 @@ function ActiveMode({
       <TierControl planId={plan.id} slug={plan.slug} resolvedTier={resolvedTier} />
 
       <p className="text-center text-xs text-subtle">
-        Pillars: {pillars.filter((p) => progress.items.some((it) => (it.domain_id ?? it.practice?.domain_id) === p.id)).map((p) => p.name).join(' · ') || '—'}
+        Pillars: {pillars.filter((p) => progress.items.some((it) => (it.domain_id ?? it.practice?.domain_id) === p.id)).map((p) => p.name).join(' · ') || 'none yet'}
       </p>
     </div>
   )

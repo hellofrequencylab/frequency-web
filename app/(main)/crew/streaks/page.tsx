@@ -92,7 +92,7 @@ export default async function StreaksPage() {
                 <span className="ml-1 text-xs text-subtle">best</span>
               </div>
               <div className="h-6 w-px bg-border-strong" />
-              <div className="flex items-center gap-1" title="Streak freezes — each bridges one missed day automatically">
+              <div className="flex items-center gap-1" title="Streak freezes: each bridges one missed day automatically">
                 <Snowflake className="h-3.5 w-3.5 text-signal-strong" />
                 <span className="text-sm font-semibold text-signal tabular-nums">{practice.freezeTokens}</span>
                 <span className="text-xs text-subtle">{practice.freezeTokens === 1 ? 'freeze' : 'freezes'}</span>
@@ -211,7 +211,7 @@ export default async function StreaksPage() {
             <p className="mt-1 text-xs leading-relaxed text-signal-strong">
               You bank a freeze token when you reach the Week, Month, Century and Year
               milestones (up to two at a time). If you miss a single day, a freeze is
-              spent automatically the next time you log — so one slip never erases the
+              spent automatically the next time you log, so one slip never erases the
               momentum you’ve built. Miss two days in a row and the streak resets.
             </p>
           </div>

@@ -55,7 +55,7 @@ export function VcardEditor({
         </label>
       </div>
       <p className="mt-0.5 text-xs text-muted">
-        Choose what your profile code shares — only the fields you fill in are included.
+        Choose what your profile code shares. Only the fields you fill in are included.
       </p>
 
       {form.enabled && (

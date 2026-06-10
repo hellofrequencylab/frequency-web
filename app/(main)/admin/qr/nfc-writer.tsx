@@ -43,14 +43,14 @@ export function NfcWriter({
       const writer = new Ctor()
       await writer.write({ records: [{ recordType: 'url', data: withMedium(url, tagMedium) }] })
       setState('done')
-      setMessage('Tag written — give it a tap to test.')
+      setMessage('Tag written. Give it a tap to test.')
       setTimeout(() => {
         setState('idle')
         setMessage(null)
       }, 4000)
     } catch (e) {
       setState('error')
-      setMessage(e instanceof Error && e.name === 'NotAllowedError' ? 'Permission denied.' : 'Write failed — try again.')
+      setMessage(e instanceof Error && e.name === 'NotAllowedError' ? 'Permission denied.' : 'Write failed. Try again.')
       setTimeout(() => {
         setState('idle')
         setMessage(null)

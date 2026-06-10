@@ -98,7 +98,7 @@ export function VeraLauncher({ index }: { index: HelpSearchEntry[] }) {
               </span>
               <div className="min-w-0 flex-1">
                 <p id="vera-launcher-title" className="text-sm font-bold text-text">Vera</p>
-                <p className="truncate text-xs text-subtle">Your companion here — ask anything, or find your way.</p>
+                <p className="truncate text-xs text-subtle">Your companion here. Ask anything, or find your way.</p>
               </div>
               <button type="button" onClick={close} aria-label="Close" className="rounded-lg p-1 text-muted transition-colors hover:text-text">
                 <X className="h-4 w-4" aria-hidden />
@@ -147,7 +147,7 @@ export function VeraLauncher({ index }: { index: HelpSearchEntry[] }) {
                 {showInstant && (
                   <ul className="mt-2 divide-y divide-border overflow-hidden rounded-lg border border-border">
                     {results.length === 0 ? (
-                      <li className="px-3 py-2 text-sm text-muted">No matches — ask Vera in Chat.</li>
+                      <li className="px-3 py-2 text-sm text-muted">No matches. Ask Vera in Chat.</li>
                     ) : (
                       results.map((r) => (
                         <li key={r.href}>

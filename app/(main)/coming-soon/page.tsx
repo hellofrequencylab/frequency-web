@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'
 const FEATURES: Record<string, { title: string; blurb: string }> = {
   website: { title: 'Website', blurb: 'A hosted website builder for partner businesses and organizations.' },
   hook: { title: 'Hook Network', blurb: 'A private sub-community network for organizations, on Hook.' },
-  finances: { title: 'Finances', blurb: 'Earnings & commissions for partners — payouts and statements.' },
+  finances: { title: 'Finances', blurb: 'Earnings & commissions for partners: payouts and statements.' },
   financials: { title: 'Financial Dashboard', blurb: 'The platform financial dashboard (owner / Janitor).' },
   status: { title: 'Status', blurb: 'A live platform status dashboard.' },
 }

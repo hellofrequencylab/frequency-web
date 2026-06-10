@@ -49,7 +49,7 @@ export function IntroduceForm({ friends, rewardGems }: { friends: FriendOption[]
       <div className="rounded-2xl border border-border bg-surface-elevated px-5 py-4">
         <p className="text-sm font-semibold text-text">Know two people who should meet?</p>
         <p className="mt-1 text-sm text-muted">
-          Once you have at least two friends, you can introduce them here — and earn gems when they
+          Once you have at least two friends, you can introduce them here and earn Gems when they
           connect.
         </p>
       </div>
@@ -65,8 +65,8 @@ export function IntroduceForm({ friends, rewardGems }: { friends: FriendOption[]
         <div className="min-w-0">
           <p className="text-sm font-semibold text-text">Know two people who should meet?</p>
           <p className="mt-0.5 text-sm text-muted">
-            Introduce them — and earn{' '}
-            <span className="font-semibold text-text">{rewardGems} gems</span> when they connect.
+            Introduce them and earn{' '}
+            <span className="font-semibold text-text">{rewardGems} Gems</span> when they connect.
           </p>
         </div>
       </div>
@@ -127,7 +127,7 @@ export function IntroduceForm({ friends, rewardGems }: { friends: FriendOption[]
           }}
           rows={2}
           maxLength={500}
-          placeholder="A line on what they have in common — it’ll be shown to them."
+          placeholder="A line on what they have in common. It’ll be shown to them."
           className="w-full resize-none rounded-xl border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none"
         />
       </label>
@@ -136,7 +136,7 @@ export function IntroduceForm({ friends, rewardGems }: { friends: FriendOption[]
       {done && (
         <p className="mt-3 flex items-center gap-1.5 text-sm font-medium text-success">
           <Check className="h-4 w-4" />
-          Introduction sent — you’ll earn gems when they connect.
+          Introduction sent. You’ll earn Gems when they connect.
         </p>
       )}
 

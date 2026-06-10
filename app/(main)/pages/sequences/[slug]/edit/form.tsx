@@ -91,7 +91,7 @@ export function SequenceSplashForm({ slug, splash }: { slug: string; splash: Seq
           <div key={f.key}>
             <label className={label}>
               {f.label}
-              {f.hint && <span className="ml-1.5 font-normal text-subtle/70">— {f.hint}</span>}
+              {f.hint && <span className="ml-1.5 font-normal text-subtle/70">({f.hint})</span>}
             </label>
             {f.area ? (
               <textarea className={`${input} resize-y`} rows={3} value={values[f.key]} onChange={(e) => set(f.key, e.target.value)} />
@@ -104,7 +104,7 @@ export function SequenceSplashForm({ slug, splash }: { slug: string; splash: Seq
         {/* Hero image — paste a path/URL or upload a file. */}
         <div>
           <label className={label}>
-            Hero image <span className="ml-1.5 font-normal text-subtle/70">— upload, or paste a public/ path or URL</span>
+            Hero image <span className="ml-1.5 font-normal text-subtle/70">(upload, or paste a public/ path or URL)</span>
           </label>
           <div className="flex items-center gap-2">
             <input className={input} value={values.image} onChange={(e) => set('image', e.target.value)} placeholder="/images/site/…" />

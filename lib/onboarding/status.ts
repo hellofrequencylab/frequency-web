@@ -60,7 +60,7 @@ export async function getOnboardingStatus(profileId: string): Promise<Onboarding
       key: 'circle',
       label: 'Join or start a circle',
       headline: 'Find your first circle',
-      blurb: 'Circles are where Frequency actually happens — join one and your feed comes alive.',
+      blurb: 'Circles are where Frequency actually happens. Join one and your feed comes alive.',
       href: '/circles',
       cta: 'Browse circles',
       done: (membershipRes.data ?? []).length > 0,

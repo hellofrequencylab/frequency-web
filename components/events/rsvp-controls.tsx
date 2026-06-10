@@ -106,7 +106,7 @@ export function RsvpControls({
       {(isGoing || isWaitlisted) && (
         <p className="text-2xs text-subtle">
           {isWaitlisted
-            ? 'You’re on the waitlist — tap Going to step out. We’ll let you in if a spot opens.'
+            ? 'You’re on the waitlist. Tap Going to step out. We’ll let you in if a spot opens.'
             : 'Tap Going again to undo.'}
         </p>
       )}

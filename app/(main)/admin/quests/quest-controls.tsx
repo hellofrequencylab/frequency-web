@@ -28,7 +28,7 @@ export function OfficialToggle({ id, isOfficial }: { id: string; isOfficial: boo
     <button
       onClick={handleToggle}
       disabled={pending}
-      title={optimistic ? 'Official — click to remove' : 'Not official — click to mark official'}
+      title={optimistic ? 'Official. Click to remove' : 'Not official. Click to mark official'}
       className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:opacity-60 ${
         optimistic ? 'bg-success' : 'bg-border-strong'
       }`}

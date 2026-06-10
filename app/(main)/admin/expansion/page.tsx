@@ -62,7 +62,7 @@ function Table({ places }: { places: DensityPlace[] }) {
               <td className="px-3 py-2 text-right font-semibold tabular-nums text-text">{p.score}</td>
               <td className="px-3 py-2 text-right tabular-nums text-muted">{p.circles}</td>
               <td className="px-3 py-2 text-right tabular-nums text-muted">{p.circle_members}</td>
-              <td className="px-3 py-2 text-right tabular-nums text-muted">{p.capacity > 0 ? pct(p.saturation) : '—'}</td>
+              <td className="px-3 py-2 text-right tabular-nums text-muted">{p.capacity > 0 ? pct(p.saturation) : '–'}</td>
               <td className="px-3 py-2 text-right tabular-nums text-muted">{p.residents}</td>
               <td className="px-3 py-2 text-right tabular-nums text-muted">{p.new_residents_30d}</td>
               <td className="px-3 py-2 text-right tabular-nums text-muted">{p.unmet}</td>
@@ -86,7 +86,7 @@ export default async function ExpansionPage() {
       title="Expansion signal"
       icon={Radar}
       eyebrow="Insights"
-      description="Where local community density is crossing the threshold that justifies a Lab — a physical third space. Deterministic signal off the place-tree; the same data is the grant-funder and growth story."
+      description="Where local community density is crossing the threshold that justifies a Lab (a physical third space). Deterministic signal off the place-tree; the same data is the grant-funder and growth story."
       width="wide"
     >
       <AdminSection>
@@ -105,7 +105,7 @@ export default async function ExpansionPage() {
 
       <AdminSection
         title="Lab-ready now"
-        description="These cities cleared the readiness threshold — circles are filling and the population is there. This is where to scout a third space next."
+        description="These cities cleared the readiness threshold. Circles are filling and the population is there. This is where to scout a third space next."
       >
         {ready.length > 0 ? (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -120,7 +120,7 @@ export default async function ExpansionPage() {
                   {p.unmet > 0 && ` ${p.unmet} more residents not yet in a circle.`}
                 </p>
                 {p.capacityCrunch && (
-                  <p className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-warning">⚠️ Circles are full — people are being turned away.</p>
+                  <p className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-warning">⚠️ Circles are full. People are being turned away.</p>
                 )}
               </div>
             ))}
@@ -129,14 +129,14 @@ export default async function ExpansionPage() {
           <p className="text-sm text-muted">
             No city has crossed the threshold yet.{' '}
             {next
-              ? <>Closest is <span className="font-semibold text-text">{next.city}</span> (score {next.score} of {READY_SCORE}) — keep seeding circles and members there.</>
+              ? <>Closest is <span className="font-semibold text-text">{next.city}</span> (score {next.score} of {READY_SCORE}). Keep seeding circles and members there.</>
               : 'Density appears here as members and circles take root in a place.'}
           </p>
         )}
       </AdminSection>
 
       <AdminSection
-        title="All cities — readiness"
+        title="All cities by readiness"
         description="Ranked by a 0–100 readiness score. The ladder: 🌱 Seed → ⏳ Growing → ✅ Ready. ⚠️ full means existing circles are at capacity."
       >
         <Table places={places} />
@@ -147,7 +147,7 @@ export default async function ExpansionPage() {
           A deterministic blend of three grounded signals: how full existing circles are
           (45%), the local population on the platform (35%, maxing at {READY_MEMBERS} residents),
           and how fast that population is growing (20%). A place with people but no circles caps at
-          ⏳ Growing — seed a circle first, not a building. ✅ Ready (score ≥ {READY_SCORE}) means
+          ⏳ Growing. Seed a circle first, not a building. ✅ Ready (score ≥ {READY_SCORE}) means
           circles are filling <em>and</em> the population is there to fill a third space.
         </p>
       </AdminSection>

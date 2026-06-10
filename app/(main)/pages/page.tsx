@@ -27,7 +27,7 @@ export default async function PagesDirectory() {
   return (
     <IndexTemplate
       title="Pages"
-      description="Edit your public-facing pages — the marketing splash pages and the audience-targeted onboarding sequences. Changes go live when you publish. The member app isn't affected."
+      description="Edit your public-facing pages: the marketing splash pages and the audience-targeted onboarding sequences. Changes go live when you publish. The member app isn't affected."
     >
       <SectionHeader title="Marketing pages" />
       <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-x-auto max-w-3xl">

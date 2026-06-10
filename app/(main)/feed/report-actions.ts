@@ -165,7 +165,7 @@ export async function reviewReport(
 // ── Member-targeted actions ────────────────────────────────────────────────
 
 const DEFAULT_WARN_TEMPLATE = (reason: string | null) =>
-  `Hi — a moderator has reviewed a recent report concerning your activity ` +
+  `Hi. A moderator has reviewed a recent report concerning your activity ` +
   `on Frequency${reason ? ` (${reason})` : ''}. ` +
   `Please review our community guidelines. Continued issues may lead to a ` +
   `suspension. If you think this was a mistake, reply to this message and a ` +
@@ -192,7 +192,7 @@ export async function warnMember(
     .maybeSingle()
 
   if (!system) {
-    return fail('System moderation profile missing — re-run migration 20240207.')
+    return fail('System moderation profile missing. Re-run migration 20240207.')
   }
 
   // Reuse an existing 1:1 DM between the system profile and the member

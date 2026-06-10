@@ -175,13 +175,13 @@ function CircleTaskRow({ task }: { task: CircleTask }) {
               {task.claimedAt && <> · {new Date(task.claimedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</>}
             </>
           ) : (
-            <><Hand className="w-3 h-3" /> Open — waiting for a member to claim it</>
+            <><Hand className="w-3 h-3" /> Open, waiting for a member to claim it</>
           )}
           {error && <span className="text-danger">{error}</span>}
         </p>
       </div>
 
-      <span className="text-sm font-bold text-primary-strong shrink-0">+{task.zapsValue} zaps</span>
+      <span className="text-sm font-bold text-primary-strong shrink-0">+{task.zapsValue} Zaps</span>
 
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
         {task.assignedTo && (

@@ -41,7 +41,7 @@ export function StageStrip({
       <p className="mt-1.5 text-xs text-muted">{tagline}</p>
       {nextStageLabel && nextGateLabel && (
         <p className="mt-1 text-2xs text-subtle">
-          Next up — <span className="font-medium text-muted">{nextStageLabel}</span>: {nextGateLabel}
+          Next up, <span className="font-medium text-muted">{nextStageLabel}</span>: {nextGateLabel}
         </p>
       )}
     </div>

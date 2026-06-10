@@ -428,7 +428,7 @@ export function ProfileForm({
               setHome({ lat: p.lat, lng: p.lng, label: p.label })
             }}
           />
-          <p className="mt-1 text-xs text-subtle">Pick from the suggestions — it also sets your location so we can surface circles and events near you.</p>
+          <p className="mt-1 text-xs text-subtle">Pick from the suggestions. It also sets your location so we can surface circles and events near you.</p>
         </div>
 
         <div>

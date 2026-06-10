@@ -11,7 +11,7 @@ import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 // Coded defaults for the operator-editable header content (ADR-180).
 const CONTENT_FALLBACK = {
   title: 'Marketplace',
-  description: 'Swap, give, lend, and find things with people near you. No fees, no in-app payment — just neighbors helping out. Arrange the handoff offline.',
+  description: 'Swap, give, lend, and find things with people near you. No fees, no in-app payment, just neighbors helping out. Arrange the handoff offline.',
 }
 
 // Operator-set title/description also drive <title> + og/twitter cards (PX.2);
@@ -19,7 +19,7 @@ const CONTENT_FALLBACK = {
 export function generateMetadata() {
   return pageContentMetadata('/market', {
     title: 'Marketplace',
-    description: 'Swap, give, lend, and find things with people near you — no fees, just neighbors.',
+    description: 'Swap, give, lend, and find things with people near you. No fees, just neighbors.',
   })
 }
 export const dynamic = 'force-dynamic'
@@ -88,7 +88,7 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
         <EmptyState
           icon={Store}
           title={activeKind ? 'Nothing here yet' : 'The marketplace is just getting started'}
-          description={profileId ? 'Post the first listing — offer something, give it away, or ask for what you need.' : 'Sign in to post and respond to listings.'}
+          description={profileId ? 'Post the first listing. Offer something, give it away, or ask for what you need.' : 'Sign in to post and respond to listings.'}
         />
       ) : (
         <MarketGrid listings={grid} />

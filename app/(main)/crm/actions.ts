@@ -77,7 +77,7 @@ export async function createDealForProfile(profileId: string, name: string): Pro
   const { data } = await db()
     .from('crm_deals')
     .insert({
-      title: `${name || 'New'} — opportunity`,
+      title: `${name || 'New'} opportunity`,
       contact_name: name || null,
       profile_id: profileId,
       stage_id: stageId,

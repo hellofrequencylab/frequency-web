@@ -22,14 +22,14 @@ export interface MemberCodeCard {
 
 const META: Record<MemberCodePurpose, { blurb: string; Icon: typeof Users }> = {
   connect: {
-    blurb: 'Your one personal code. Others scan it to land on your profile and connect — and anyone who joins Frequency after scanning is credited to you.',
+    blurb: 'Your one personal code. Others scan it to land on your profile and connect. Anyone who joins Frequency after scanning is credited to you.',
     Icon: UserPlus,
   },
   referral: {
-    blurb: 'Your outreach code. People who scan and join are credited to you — you both earn zaps.',
+    blurb: 'Your outreach code. People who scan and join are credited to you, and you both earn Zaps.',
     Icon: Users,
   },
-  gift_zap: { blurb: 'Friends scan to send you a zap toward The Quest.', Icon: Zap },
+  gift_zap: { blurb: 'Friends scan to send you a Zap toward The Quest.', Icon: Zap },
 }
 
 export function MemberCodes({

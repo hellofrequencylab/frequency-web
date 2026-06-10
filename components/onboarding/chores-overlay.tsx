@@ -133,7 +133,7 @@ export function ChoresOverlay({
       icon={coach ? <Sparkles className="h-5 w-5" aria-hidden /> : <ListChecks className="h-5 w-5" aria-hidden />}
       waiting
       onOpen={() => setOpen(true)}
-      ariaLabel={coach ? 'Vera — your next move (earn gems)' : `Vera’s chores — ${left} left, earn gems`}
+      ariaLabel={coach ? 'Vera, your next move (earn Gems)' : `Vera’s chores (${left} left, earn Gems)`}
     />
   ) : null
 
@@ -174,11 +174,11 @@ export function ChoresOverlay({
               <h2 id="chores-title" className="mt-4 text-2xl font-bold text-text">There. Lived-in.</h2>
               <p className="mt-2 max-w-sm text-pretty text-[15px] leading-relaxed text-muted">
                 Place looks like someone actually lives here now. Knew you had it in you.
-                {nextAction ? ' One more nudge and I’ll leave you be —' : ' Off you go — go meet your people.'}
+                {nextAction ? ' One more nudge and I’ll leave you be.' : ' Off you go. Go meet your people.'}
               </p>
               {claimed && (
                 <p className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-signal-bg px-3 py-1.5 text-sm font-bold text-signal">
-                  <Gem className="h-4 w-4" aria-hidden /> +{claimed.amount} gems
+                  <Gem className="h-4 w-4" aria-hidden /> +{claimed.amount} Gems
                 </p>
               )}
               {nextAction ? (
@@ -211,7 +211,7 @@ export function ChoresOverlay({
               <h2 id="chores-title" className="mt-4 text-2xl font-bold leading-tight text-text">{nextAction!.headline}</h2>
               <p className="mt-2 max-w-sm text-pretty text-[15px] leading-relaxed text-muted">{nextAction!.blurb}</p>
               <p className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-signal-bg px-3 py-1.5 text-xs font-semibold text-signal">
-                <Gem className="h-3.5 w-3.5" aria-hidden /> Every step earns gems — and brings your people closer
+                <Gem className="h-3.5 w-3.5" aria-hidden /> Every step earns Gems and brings your people closer
               </p>
               <Link
                 href={nextAction!.href}
@@ -238,8 +238,8 @@ export function ChoresOverlay({
                 </span>
                 <h2 id="chores-title" className="mt-3 text-xl font-bold leading-tight text-text">Chores first.</h2>
                 <p className="mt-1 text-sm leading-snug text-muted">
-                  You signed up to <em>build</em>, not to lurk. {left} {left === 1 ? 'thing' : 'things'} out of place —
-                  let’s get your corner of this place in order. Won’t take a minute.
+                  You signed up to <em>build</em>, not to lurk. {left} {left === 1 ? 'thing' : 'things'} out of place.
+                  Let’s get your corner of this place in order. Won’t take a minute.
                 </p>
                 <div className="mt-3 flex items-center gap-2">
                   <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-broadcast-bg">
@@ -280,10 +280,10 @@ export function ChoresOverlay({
 
               <div className="shrink-0 border-t border-border px-6 py-3 text-center">
                 <button type="button" onClick={close} className="text-xs font-medium text-subtle transition-colors hover:text-muted">
-                  Fine — in a minute.
+                  Fine, in a minute.
                 </button>
                 <p className="mt-1 text-2xs text-subtle/70">
-                  (I’ve “locked” your screen. Dramatic, I know — the ✕ still works. I’m not a monster.)
+                  (I’ve “locked” your screen. Dramatic, I know. The ✕ still works. I’m not a monster.)
                 </p>
               </div>
             </div>

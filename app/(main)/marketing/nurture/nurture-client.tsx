@@ -84,7 +84,7 @@ function PersonaCard({ row }: { row: PersonaRow }) {
           <p className="mt-0.5 truncate text-xs text-muted">
             {seq
               ? <>{seq.steps.length} step{seq.steps.length === 1 ? '' : 's'} · <span className="font-semibold text-text">{seq.active}</span> in sequence · {seq.completed} completed</>
-              : <>“{row.pitch}” — no sequence yet</>}
+              : <>“{row.pitch}” (no sequence yet)</>}
           </p>
         </button>
 

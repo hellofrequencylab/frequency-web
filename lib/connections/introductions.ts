@@ -53,7 +53,7 @@ export async function createIntroduction(
     .select('id', { count: 'exact', head: true })
     .eq('introducer_id', me.id)
     .gte('created_at', new Date(Date.now() - 3600_000).toISOString())
-  if ((recent ?? 0) >= HOURLY_CAP) return fail('That’s a lot of introductions for one hour — give it a moment.')
+  if ((recent ?? 0) >= HOURLY_CAP) return fail('That’s a lot of introductions for one hour. Give it a moment.')
 
   const [knowA, knowB] = await Promise.all([
     acceptedFriends(db, me.id, personAId),

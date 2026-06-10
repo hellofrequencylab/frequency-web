@@ -242,7 +242,7 @@ export default async function QrStudioPage() {
       return {
         id: r.id,
         profileId: r.owner_profile_id!,
-        handle: o?.handle ?? '—',
+        handle: o?.handle ?? '–',
         displayName: o?.display_name ?? '',
         url,
         scans: r.scan_count,
@@ -256,7 +256,7 @@ export default async function QrStudioPage() {
   const circleBySlug = new Map((circleRows ?? []).map((c) => [c.slug, c.name]))
   const eventBySlug = new Map((eventRows ?? []).map((e) => [e.slug, e.title]))
   function targetLabel(path: string | null): string {
-    if (!path) return '—'
+    if (!path) return '–'
     const circle = path.match(/^\/circles\/([\w-]+)$/)
     if (circle) return circleBySlug.get(circle[1]) ?? path
     const event = path.match(/^\/events\/([\w-]+)$/)
@@ -274,7 +274,7 @@ export default async function QrStudioPage() {
         title: r.title || `/q/${r.slug}`,
         slug: r.slug,
         url,
-        handle: o?.handle ?? '—',
+        handle: o?.handle ?? '–',
         displayName: o?.display_name ?? '',
         targetLabel: targetLabel(r.target_url),
         scans: r.scan_count,
@@ -290,7 +290,7 @@ export default async function QrStudioPage() {
       icon={QrCode}
       eyebrow="Platform"
       width="wide"
-      description="Generate, design, and track every code — member profile codes, dynamic links, check-in codes, and campaigns. Codes are dynamic; edit or retire them without reprinting."
+      description="Generate, design, and track every code. Member profile codes, dynamic links, check-in codes, and campaigns. Codes are dynamic; edit or retire them without reprinting."
       actions={
         <Link
           href="/admin/qr/stats"

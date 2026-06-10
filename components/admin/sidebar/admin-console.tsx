@@ -275,7 +275,7 @@ export function AdminConsole({
             {active.module && <div className="px-1 py-1">{active.module}</div>}
             {active.suiteHref && (
               <p className="px-2.5 pt-0.5 text-2xs text-subtle">
-                Manage in the full <span className="font-medium text-muted">{active.label}</span> suite — these open its tabs:
+                Manage in the full <span className="font-medium text-muted">{active.label}</span> suite. These open its tabs:
               </p>
             )}
             {active.items.map(renderItem)}

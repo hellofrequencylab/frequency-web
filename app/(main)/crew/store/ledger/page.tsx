@@ -74,7 +74,7 @@ export default async function VaultLedgerPage() {
                   {RANK_LABELS[rank] ?? rank}
                 </span>
               ) : (
-                '—'
+                '–'
               )
             }
             icon={Trophy}
@@ -115,7 +115,7 @@ export default async function VaultLedgerPage() {
           <EmptyState
             icon={Receipt}
             title="No activity yet"
-            description="Log a practice, RSVP to a gathering, or share a post — every reward you bank shows up here, with how you earned it."
+            description="Log a practice, RSVP to a gathering, or share a post. Every reward you bank shows up here, with how you earned it."
           />
         ) : (
           <div className="space-y-6">

@@ -40,7 +40,7 @@ export async function staffReply(id: string, body: string, isInternal: boolean):
   return ok()
 }
 
-const DRAFT_SYSTEM = `You are a member of the Frequency community team drafting a reply to a support ticket, for a human teammate to review and send. Be warm, concise, and specific to what the member asked. GROUND your answer in the HELP CONTEXT excerpts when they're relevant (use their facts; don't quote or link them). If the excerpts don't cover it and you don't actually know a platform specific (a price, a setting, an exact step), do NOT invent it — say the team will look into it and follow up. Plain text, 2–5 sentences, a friendly sign-off. Output ONLY the reply.`
+const DRAFT_SYSTEM = `You are a member of the Frequency community team drafting a reply to a support ticket, for a human teammate to review and send. Be warm, concise, and specific to what the member asked. GROUND your answer in the HELP CONTEXT excerpts when they're relevant (use their facts; don't quote or link them). If the excerpts don't cover it and you don't actually know a platform specific (a price, a setting, an exact step), do NOT invent it — say the team will look into it and follow up. Plain text, 2–5 sentences, a friendly sign-off. Never use an em dash in the reply; use a period or comma instead. Output ONLY the reply.`
 
 // Draft a suggested reply to a ticket with Claude (the "virtual staff" seam, ADR-167).
 // Host+ only. Grounded in the ticket thread + retrieved help articles (via the non-logging
@@ -84,7 +84,7 @@ export async function draftReply(id: string): Promise<ActionResult<{ draft: stri
   }
 
   // Deterministic fallback when AI is off / over budget — a warm acknowledgment skeleton.
-  const fallback = `Hi — thanks for reaching out about "${ticket.subject}". A teammate is looking into this and will follow up shortly.\n\n— The Frequency team`
+  const fallback = `Hi, thanks for reaching out about "${ticket.subject}". A teammate is looking into this and will follow up shortly.\n\nThe Frequency team`
   return ok({ draft: fallback })
 }
 

@@ -97,7 +97,7 @@ export function PracticePrompt({
               {atRisk
                 ? 'Log today to keep your streak alive.'
                 : loggedToday && p.next
-                  ? `Logged today — ${p.toNext} ${p.toNext === 1 ? 'day' : 'days'} to your ${p.next.day}-day badge`
+                  ? `Logged today. ${p.toNext} ${p.toNext === 1 ? 'day' : 'days'} to your ${p.next.day}-day badge`
                   : p.maxed
                     ? 'Every badge earned. Legend.'
                     : p.next

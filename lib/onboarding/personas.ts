@@ -59,7 +59,7 @@ const VISITOR: Persona = {
     headline: 'Find your people.',
     shows: [
       'A local circle built around what you love',
-      'Real gatherings, in person — not another feed',
+      'Real gatherings, in person, not another feed',
       'A say in what the community becomes',
     ],
     learnMoreHref: '/the-community',
@@ -76,7 +76,7 @@ const PRACTITIONER: Persona = {
   marketingTag: 'persona_practitioner',
   reel: [
     { kind: 'render', render: 'feed', title: 'Host your programs', line: 'Spin up a program in minutes and fill it with the people nearby who want exactly what you do.' },
-    { kind: 'render', render: 'circles', title: 'Build a following', line: 'Turn one-off attendees into a circle that comes back — your people, your craft, your cadence.' },
+    { kind: 'render', render: 'circles', title: 'Build a following', line: 'Turn one-off attendees into a circle that comes back: your people, your craft, your cadence.' },
     { kind: 'render', render: 'events', title: 'The worldwide marketplace', line: 'List your sessions and offerings on a marketplace that reaches seekers far past your zip code.' },
   ],
   track: {
@@ -99,7 +99,7 @@ const PARTNER: Persona = {
   emoji: '🏪',
   marketingTag: 'persona_partner',
   reel: [
-    { kind: 'render', render: 'feed', title: 'Reward your regulars', line: 'A loyalty program that turns first-timers into regulars — points, perks, and real reasons to come back.' },
+    { kind: 'render', render: 'feed', title: 'Reward your regulars', line: 'A loyalty program that turns first-timers into regulars: perks, rewards, and real reasons to come back.' },
     { kind: 'render', render: 'circles', title: 'Gamified foot traffic', line: 'Quests and challenges that send the community through your doors, not past them.' },
     { kind: 'render', render: 'events', title: 'Show up on the map', line: 'Get discovered by everyone nearby looking for somewhere real to go tonight.' },
   ],
@@ -147,7 +147,7 @@ const INVESTOR: Persona = {
   emoji: '💡',
   marketingTag: 'persona_investor',
   reel: [
-    { kind: 'render', render: 'events', title: 'A Lab in your town', line: 'Bring Frequency’s home base — The Lab — to your city, and anchor a real community around it.' },
+    { kind: 'render', render: 'events', title: 'A Lab in your town', line: 'Bring Frequency’s home base, The Lab, to your city, and anchor a real community around it.' },
     { kind: 'render', render: 'circles', title: 'Ground-floor partner', line: 'Shape where this goes with a real voice, early access, and your name on the foundation.' },
     { kind: 'render', render: 'feed', title: 'Build the movement', line: 'Back the places and gatherings that make local community real again.' },
   ],
@@ -156,7 +156,7 @@ const INVESTOR: Persona = {
     shows: [
       'A Frequency Lab anchored in your city',
       'A real voice in where this goes',
-      'Ground-floor partner — your name on the foundation',
+      'Ground-floor partner, your name on the foundation',
     ],
     learnMoreHref: '/the-lab',
     learnMoreLabel: 'See the Lab',

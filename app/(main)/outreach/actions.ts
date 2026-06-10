@@ -65,7 +65,7 @@ export async function sendOutreach(message: string): Promise<ActionResult<{ sent
 
   const admin = createAdminClient()
   const scopes = await ownedScopes(admin, caller.community_role, caller.id)
-  if (!scopes.length) return fail('You don’t lead a circle, hub, or region yet — nobody to reach.')
+  if (!scopes.length) return fail('You don’t lead a circle, hub, or region yet, so there’s nobody to reach.')
 
   // Unique recipients across every scope you lead, minus yourself.
   const ids = new Set<string>()
