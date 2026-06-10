@@ -92,8 +92,11 @@ export function EventSettingsModule() {
           <input name="location" defaultValue={data.location ?? ''} disabled={pending} className={input} />
         </label>
 
-        <div className="grid grid-cols-2 gap-3">
-          <label className="block space-y-1">
+        {/* Stacked on phones: two datetime-local inputs side by side exceed a
+            phone-width panel (their intrinsic min-width can't shrink), which
+            forced the whole Settings panel to overflow sideways. */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <label className="block min-w-0 space-y-1">
             <span className={fieldLabel}>Starts</span>
             <input
               name="starts_at"
@@ -101,17 +104,17 @@ export function EventSettingsModule() {
               defaultValue={toLocalInput(data.starts_at)}
               required
               disabled={pending}
-              className={input}
+              className={`${input} min-w-0`}
             />
           </label>
-          <label className="block space-y-1">
+          <label className="block min-w-0 space-y-1">
             <span className={fieldLabel}>Ends</span>
             <input
               name="ends_at"
               type="datetime-local"
               defaultValue={toLocalInput(data.ends_at)}
               disabled={pending}
-              className={input}
+              className={`${input} min-w-0`}
             />
           </label>
         </div>
