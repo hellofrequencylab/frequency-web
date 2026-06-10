@@ -33,10 +33,21 @@ export function ChoresOverlay({
 }) {
   const [open, setOpen] = useState(false)
   const [claimed, setClaimed] = useState<{ amount: number } | null>(null)
+  // "Don't show till tomorrow" snooze — hides BOTH the overlay and the Next Steps
+  // tab until the snooze expires. A plain boolean (computed in an effect / the
+  // snooze handler, never in render) so we don't read the clock during render.
+  const [snoozed, setSnoozed] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
 
   const reward = chores.complete && !chores.rewarded
   const coach = chores.complete && chores.rewarded && !!nextAction
+
+  // Hydrate the snooze from storage once on mount (client-only; the clock read
+  // stays out of render).
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSnoozed(Date.now() < Number(localStorage.getItem(SNOOZE_KEY) ?? 0))
+  }, [])
 
   // Auto-open: the reward beat always fires (she pays up once); the chores and
   // coach beats nudge on a pace (once per session, ≥1h since last seen).
@@ -67,6 +78,7 @@ export function ChoresOverlay({
 
   const snoozeTomorrow = useCallback(() => {
     setOpen(false)
+    setSnoozed(true) // hide the Next Steps tab immediately, until tomorrow
     try {
       localStorage.setItem(SNOOZE_KEY, String(Date.now() + 24 * 60 * 60 * 1000))
       sessionStorage.setItem(SESSION_KEY, '1')
@@ -110,7 +122,8 @@ export function ChoresOverlay({
   // nothing — the tab disappears. Collapsed until hover (web) / tap (mobile), then a
   // click opens the overlay; an occasional wiggle signals it's waiting.
   const hasChoresLeft = !chores.complete && left > 0
-  const showPill = !open && (hasChoresLeft || coach)
+  // Hidden while snoozed ("Don't show till tomorrow") — the tab disappears until then.
+  const showPill = !open && !snoozed && (hasChoresLeft || coach)
   const pill = showPill ? (
     <EdgePill
       side="left"

@@ -87,8 +87,8 @@ export function EdgePill({
   // A tab flush to the screen edge, rounded only on its inner side. At rest it shows
   // ONLY its icon (a sliver peeking from the margin); hover/tap slides the label out.
   const skin = onLeft
-    ? 'left-0 rounded-r-2xl border-y border-r border-border bg-surface/95 text-broadcast-strong backdrop-blur-sm'
-    : 'right-0 rounded-l-2xl bg-primary/95 text-on-primary'
+    ? 'left-0 rounded-r-full border-y border-r border-border bg-surface/95 text-broadcast-strong backdrop-blur-sm'
+    : 'right-0 rounded-l-full bg-primary/95 text-on-primary'
 
   return (
     <button
