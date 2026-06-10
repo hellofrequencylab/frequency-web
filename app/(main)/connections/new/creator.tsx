@@ -2,10 +2,12 @@
 
 import { useRef, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ScanText, Pencil, Camera, Upload, Sparkles, Loader2, Check, X, User, ChevronDown, Mail } from 'lucide-react'
+import { ScanText, Pencil, Camera, Upload, Sparkles, Loader2, Check, X, User, ChevronDown, Mail, RefreshCcw } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { squareCropRect, dedupeTags, normalizeTag } from '@/lib/connections/normalize'
-import type { ExtractedContact, ContactSource, Visibility } from '@/lib/connections/types'
+import { squareCropRect, dedupeTags, normalizeTag, hasAnyDetails } from '@/lib/connections/normalize'
+import { deskewCardCanvas } from '@/lib/connections/deskew'
+import { DetailsEditor } from '@/components/connections/contact-details-fields'
+import type { ExtractedContact, ContactDetails, ContactSource, Visibility } from '@/lib/connections/types'
 import { scanCard, veraAssist, createProfile } from '../actions'
 
 const BUCKET = 'network-contacts'
@@ -25,12 +27,13 @@ type FormState = {
   x: string
   connectionNote: string
   tags: string[]
+  details: ContactDetails
   visibility: Visibility
 }
 
 const EMPTY: FormState = {
   displayName: '', title: '', company: '', email: '', phone: '', city: '', website: '',
-  instagram: '', linkedin: '', x: '', connectionNote: '', tags: [], visibility: 'private',
+  instagram: '', linkedin: '', x: '', connectionNote: '', tags: [], details: {}, visibility: 'private',
 }
 
 // ── canvas helpers ───────────────────────────────────────────────────────────
@@ -74,6 +77,20 @@ function centerRect(w: number, h: number) {
   const size = Math.min(w, h)
   return { sx: Math.round((w - size) / 2), sy: Math.round((h - size) / 2), size }
 }
+/** The kept card image for one side: deskewed flat when the model located the
+ *  corners, otherwise the original downscaled to ~1024 and jpeg-compressed. */
+async function keeperCardBlob(file: File, corners: ExtractedContact['corners'][number]): Promise<Blob> {
+  if (corners) {
+    try {
+      const img = await fileToImage(file)
+      const canvas = deskewCardCanvas(img, corners, 1024)
+      if (canvas) return canvasToJpeg(canvas, 0.85)
+    } catch {
+      /* fall through to the plain downscale */
+    }
+  }
+  return resizeForOcr(file, 1024, 0.85)
+}
 
 function mergeExtraction(prev: FormState, e: ExtractedContact): FormState {
   const fill = (cur: string, val: string) => (cur.trim() ? cur : val)
@@ -91,7 +108,13 @@ function mergeExtraction(prev: FormState, e: ExtractedContact): FormState {
     x: fill(prev.x, e.socials.x ?? ''),
     connectionNote: fill(prev.connectionNote, e.connectionNote),
     tags: dedupeTags([...prev.tags, ...e.tags]),
+    details: hasAnyDetails(prev.details) ? prev.details : e.details,
   }
+}
+
+/** True when the model's quality read warrants a retake prompt. */
+function poorCapture(e: ExtractedContact): boolean {
+  return !e.quality.legible || e.quality.glare || e.quality.skew
 }
 
 export function Creator({ userId }: { userId: string }) {
@@ -103,11 +126,23 @@ export function Creator({ userId }: { userId: string }) {
   const [source, setSource] = useState<ContactSource>('manual')
   const [extraction, setExtraction] = useState<unknown>(undefined)
 
-  const [scanFiles, setScanFiles] = useState<File[]>([])
-  const [scanThumbs, setScanThumbs] = useState<string[]>([])
+  // Card sides: explicit front + optional back, plus extra shots of the contact.
+  const [frontFile, setFrontFile] = useState<File | null>(null)
+  const [frontThumb, setFrontThumb] = useState<string | null>(null)
+  const [backFile, setBackFile] = useState<File | null>(null)
+  const [backThumb, setBackThumb] = useState<string | null>(null)
+  const [extraFiles, setExtraFiles] = useState<File[]>([])
+  const [extraThumbs, setExtraThumbs] = useState<string[]>([])
+
+  // A scan whose capture quality looked poor, held until Retake / Use it anyway.
+  const [pendingScan, setPendingScan] = useState<ExtractedContact | null>(null)
 
   const [avatarPath, setAvatarPath] = useState<string | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  const [logoPath, setLogoPath] = useState<string | null>(null)
+  const [logoPreview, setLogoPreview] = useState<string | null>(null)
+  const [cardFrontPath, setCardFrontPath] = useState<string | null>(null)
+  const [cardBackPath, setCardBackPath] = useState<string | null>(null)
 
   const [assistText, setAssistText] = useState('')
   const [tagDraft, setTagDraft] = useState('')
@@ -119,8 +154,9 @@ export function Creator({ userId }: { userId: string }) {
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState<{ kind: 'ok' | 'warn' | 'err'; text: string } | null>(null)
 
-  const cameraRef = useRef<HTMLInputElement>(null)
-  const galleryRef = useRef<HTMLInputElement>(null)
+  const frontRef = useRef<HTMLInputElement>(null)
+  const backRef = useRef<HTMLInputElement>(null)
+  const extraRef = useRef<HTMLInputElement>(null)
   const photoRef = useRef<HTMLInputElement>(null)
 
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setForm((p) => ({ ...p, [k]: v }))
@@ -141,46 +177,81 @@ export function Creator({ userId }: { userId: string }) {
     })
   }
 
-  async function uploadBlob(blob: Blob): Promise<string> {
-    const path = `${userId}/${crypto.randomUUID()}.jpg`
-    const { error } = await supabase.storage.from(BUCKET).upload(path, blob, { contentType: 'image/jpeg' })
+  async function uploadBlob(blob: Blob, path?: string): Promise<string> {
+    const key = path ?? `${userId}/${crypto.randomUUID()}.jpg`
+    const { error } = await supabase.storage
+      .from(BUCKET)
+      .upload(key, blob, { contentType: 'image/jpeg', upsert: true })
     if (error) throw new Error(error.message)
-    return path
+    return key
   }
 
-  function addScanFiles(list: FileList | null) {
+  /** The ordered scan list the model sees: front, back (when set), extras. */
+  function orderedScanFiles(): File[] {
+    return [
+      ...(frontFile ? [frontFile] : []),
+      ...(backFile ? [backFile] : []),
+      ...extraFiles,
+    ].slice(0, 6)
+  }
+
+  function setSide(side: 'front' | 'back', file: File | null) {
+    const setFile = side === 'front' ? setFrontFile : setBackFile
+    const setThumb = side === 'front' ? setFrontThumb : setBackThumb
+    setThumb((prev) => {
+      if (prev) URL.revokeObjectURL(prev)
+      return file ? URL.createObjectURL(file) : null
+    })
+    setFile(file)
+    setPendingScan(null)
+    setMsg(null)
+    const ref = side === 'front' ? frontRef : backRef
+    if (ref.current) ref.current.value = ''
+  }
+
+  function addExtraFiles(list: FileList | null) {
     const incoming = list ? Array.from(list) : []
     if (incoming.length) {
-      setScanFiles((prev) => [...prev, ...incoming].slice(0, 6))
-      setScanThumbs((prev) => [...prev, ...incoming.map((f) => URL.createObjectURL(f))].slice(0, 6))
+      setExtraFiles((prev) => [...prev, ...incoming].slice(0, 4))
+      setExtraThumbs((prev) => [...prev, ...incoming.map((f) => URL.createObjectURL(f))].slice(0, 4))
+      setPendingScan(null)
       setMsg(null)
     }
-    if (cameraRef.current) cameraRef.current.value = ''
-    if (galleryRef.current) galleryRef.current.value = ''
+    if (extraRef.current) extraRef.current.value = ''
   }
 
-  function removeScanFile(i: number) {
-    setScanThumbs((prev) => {
+  function removeExtraFile(i: number) {
+    setExtraThumbs((prev) => {
       const url = prev[i]
       if (url) URL.revokeObjectURL(url)
       return prev.filter((_, idx) => idx !== i)
     })
-    setScanFiles((prev) => prev.filter((_, idx) => idx !== i))
+    setExtraFiles((prev) => prev.filter((_, idx) => idx !== i))
+  }
+
+  function clearScanFiles() {
+    setSide('front', null)
+    setSide('back', null)
+    setExtraThumbs((prev) => { prev.forEach((u) => URL.revokeObjectURL(u)); return [] })
+    setExtraFiles([])
   }
 
   async function runScan() {
-    if (!scanFiles.length || scanning) return
+    const files = orderedScanFiles()
+    if (!files.length || scanning) return
     setScanning(true)
+    setPendingScan(null)
     setMsg(null)
     try {
-      // Upload a resized copy of each image; order preserved so the model's
-      // photo.imageIndex lines up with the list (front, back, …).
+      // Upload a downscaled, jpeg-compressed temp of each image; order preserved
+      // so the model's imageIndex/corners line up (front, back, extras). The
+      // server deletes these temps after extraction; the keepers upload below.
       const paths: string[] = []
-      for (const f of scanFiles) {
+      for (const f of files) {
         const ocr = await resizeForOcr(f)
         paths.push(await uploadBlob(ocr))
       }
-      const res = await scanCard(paths)
+      const res = await scanCard(paths, { hasBack: !!backFile })
       if (!res.ok) {
         setSource('card_scan')
         setTab('manual')
@@ -193,26 +264,76 @@ export function Creator({ userId }: { userId: string }) {
         })
         return
       }
-      setForm((p) => mergeExtraction(p, res.extraction))
-      setExtraction(res.extraction)
-      setSource('card_scan')
-      // Cut a profile photo out of whichever image holds the portrait.
-      try {
-        const photo = res.extraction.photo
-        const idx = photo.found && photo.imageIndex < scanFiles.length ? photo.imageIndex : -1
-        if (idx >= 0) {
-          const cropped = await cropFromBox(scanFiles[idx], photo.box)
-          const ap = await uploadBlob(cropped)
-          setAvatarPath(ap)
-          setAvatarPreview(URL.createObjectURL(cropped))
-        }
-      } catch {
-        /* photo is optional — proceed without it */
+      // Quality gate: when the model flags the capture, pause for a retake
+      // before committing the result. The steward can still use it anyway.
+      if (poorCapture(res.extraction)) {
+        setPendingScan(res.extraction)
+        return
       }
-      setTab('manual')
-      setMsg({ kind: 'ok', text: 'Scanned. Review the details and save.' })
+      await applyScan(res.extraction, files)
     } catch (err) {
       setMsg({ kind: 'err', text: err instanceof Error ? err.message : 'Something went wrong.' })
+    } finally {
+      setScanning(false)
+    }
+  }
+
+  /** Commit a scan: prefill the form, keep the deskewed card on file, and cut
+   *  the avatar (face first, logo as the fallback) plus the logo crop. */
+  async function applyScan(extraction: ExtractedContact, files: File[]) {
+    setForm((p) => mergeExtraction(p, extraction))
+    setExtraction(extraction)
+    setSource('card_scan')
+    setPendingScan(null)
+
+    // Keep the card on file: deskew each side when its corners came back, then
+    // upload the keepers to stable paths ({userId}/{uuid}-front/-back.jpg).
+    try {
+      if (frontFile) {
+        const keepId = crypto.randomUUID()
+        const frontBlob = await keeperCardBlob(frontFile, extraction.corners[0] ?? null)
+        setCardFrontPath(await uploadBlob(frontBlob, `${userId}/${keepId}-front.jpg`))
+        if (backFile) {
+          const backBlob = await keeperCardBlob(backFile, extraction.corners[1] ?? null)
+          setCardBackPath(await uploadBlob(backBlob, `${userId}/${keepId}-back.jpg`))
+        }
+      }
+    } catch {
+      /* the card image is optional — proceed without it */
+    }
+
+    // Avatar priority: face crop, then logo crop, else initials (no upload).
+    // When both exist the face becomes the avatar and the logo is kept too.
+    try {
+      const { photo, logo } = extraction
+      const faceIdx = photo.found && photo.imageIndex < files.length ? photo.imageIndex : -1
+      const logoIdx = logo.found && logo.imageIndex < files.length ? logo.imageIndex : -1
+
+      let logoBlob: Blob | null = null
+      if (logoIdx >= 0) {
+        logoBlob = await cropFromBox(files[logoIdx], logo.box)
+        setLogoPath(await uploadBlob(logoBlob))
+        setLogoPreview(URL.createObjectURL(logoBlob))
+      }
+      const avatarBlob =
+        faceIdx >= 0 ? await cropFromBox(files[faceIdx], photo.box) : logoBlob
+      if (avatarBlob) {
+        setAvatarPath(await uploadBlob(avatarBlob))
+        setAvatarPreview(URL.createObjectURL(avatarBlob))
+      }
+    } catch {
+      /* photo and logo are optional — proceed without them */
+    }
+
+    setTab('manual')
+    setMsg({ kind: 'ok', text: 'Scanned. Review the details and save.' })
+  }
+
+  async function useAnyway() {
+    if (!pendingScan || scanning) return
+    setScanning(true)
+    try {
+      await applyScan(pendingScan, orderedScanFiles())
     } finally {
       setScanning(false)
     }
@@ -281,6 +402,10 @@ export function Creator({ userId }: { userId: string }) {
       tags: form.tags,
       connectionNote: form.connectionNote,
       avatarPath,
+      details: form.details,
+      cardFrontPath,
+      cardBackPath,
+      logoPath,
       visibility: form.visibility,
       extraction,
       sendInvite: sendInvite && !!form.email.trim(),
@@ -313,47 +438,84 @@ export function Creator({ userId }: { userId: string }) {
 
       {tab === 'scan' ? (
         <div className="space-y-3">
-          <div className="rounded-2xl border border-dashed border-border-strong bg-surface p-6 text-center">
+          <div className="rounded-2xl border border-dashed border-border-strong bg-surface p-5 text-center">
             <ScanText className="mx-auto h-8 w-8 text-primary-strong" />
-            <p className="mt-3 text-sm font-medium text-text">Snap a card, poster, or a few photos</p>
+            <p className="mt-3 text-sm font-medium text-text">Snap the card, front and back</p>
             <p className="mt-1 text-xs text-subtle">
-              Add both sides of a card and any extra shots. Vera reads them all together, drafts a
-              note and tags, and cuts out a profile photo.
+              Get the whole card in frame, squared up, no glare. Vera reads both sides, keeps the
+              card on your file, harvests every detail, and cuts out a profile photo.
             </p>
-            <div className="mt-4 flex flex-wrap justify-center gap-2">
-              <button
-                type="button"
-                onClick={() => cameraRef.current?.click()}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
-              >
-                <Camera className="h-4 w-4" /> Take a photo
-              </button>
-              <button
-                type="button"
-                onClick={() => galleryRef.current?.click()}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-border-strong px-4 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
-              >
-                <Upload className="h-4 w-4" /> Upload images
-              </button>
+
+            {/* Explicit front + back slots (back optional). */}
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <CardSlot
+                label="Front of card"
+                hint="Required"
+                thumb={frontThumb}
+                onPick={() => frontRef.current?.click()}
+                onClear={frontFile ? () => setSide('front', null) : undefined}
+              />
+              <CardSlot
+                label="Back of card"
+                hint="Optional"
+                thumb={backThumb}
+                onPick={() => backRef.current?.click()}
+                onClear={backFile ? () => setSide('back', null) : undefined}
+              />
             </div>
+
+            <button
+              type="button"
+              onClick={() => extraRef.current?.click()}
+              className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-primary-strong hover:underline"
+            >
+              <Upload className="h-3.5 w-3.5" /> Add extra shots (a flyer, their booth, them)
+            </button>
           </div>
 
-          {scanFiles.length > 0 && (
+          {extraFiles.length > 0 && (
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-              {scanThumbs.map((src, i) => (
+              {extraThumbs.map((src, i) => (
                 <div key={src} className="relative aspect-square overflow-hidden rounded-lg border border-border bg-surface-elevated">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={src} alt={`Image ${i + 1}`} className="h-full w-full object-cover" />
+                  <img src={src} alt={`Extra image ${i + 1}`} className="h-full w-full object-cover" />
                   <button
                     type="button"
-                    onClick={() => removeScanFile(i)}
-                    aria-label={`Remove image ${i + 1}`}
+                    onClick={() => removeExtraFile(i)}
+                    aria-label={`Remove extra image ${i + 1}`}
                     className="absolute right-1 top-1 rounded-full bg-black/55 p-0.5 text-white transition-colors hover:bg-black/70"
                   >
                     <X className="h-3 w-3" />
                   </button>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Quality gate: the model flagged the capture; offer a retake. */}
+          {pendingScan && (
+            <div className="rounded-xl border border-warning/40 bg-warning-bg p-3">
+              <p className="text-sm font-medium text-warning">
+                {pendingScan.quality.note || 'That capture looks hard to read.'}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setPendingScan(null); clearScanFiles() }}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                >
+                  <Camera className="h-3.5 w-3.5" /> Retake
+                </button>
+                <button
+                  type="button"
+                  onClick={useAnyway}
+                  disabled={scanning}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-xs font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-40"
+                >
+                  {scanning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                  Use it anyway
+                </button>
+              </div>
             </div>
           )}
 
@@ -364,20 +526,17 @@ export function Creator({ userId }: { userId: string }) {
             <button
               type="button"
               onClick={runScan}
-              disabled={scanning || scanFiles.length === 0}
+              disabled={scanning || !frontFile}
               className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
             >
-              {scanning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-              {scanning
-                ? 'Reading…'
-                : scanFiles.length === 0
-                  ? 'Scan'
-                  : `Scan ${scanFiles.length} image${scanFiles.length === 1 ? '' : 's'}`}
+              {scanning ? <Loader2 className="h-4 w-4 animate-spin" /> : pendingScan ? <RefreshCcw className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
+              {scanning ? 'Reading…' : pendingScan ? 'Scan again' : 'Scan'}
             </button>
           </div>
 
-          <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => addScanFiles(e.target.files)} />
-          <input ref={galleryRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => addScanFiles(e.target.files)} />
+          <input ref={frontRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) setSide('front', f) }} />
+          <input ref={backRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) setSide('back', f) }} />
+          <input ref={extraRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => addExtraFiles(e.target.files)} />
         </div>
       ) : (
         <div className="space-y-5">
@@ -440,6 +599,13 @@ export function Creator({ userId }: { userId: string }) {
               )}
               <p className="text-xs text-subtle">Private. Stored just for you.</p>
             </div>
+            {logoPreview && (
+              <div className="ml-auto flex flex-col items-center gap-1">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={logoPreview} alt="" className="h-12 w-12 shrink-0 rounded-lg border border-border object-cover" />
+                <span className="text-xs text-subtle">Logo</span>
+              </div>
+            )}
             <input
               ref={photoRef}
               type="file"
@@ -462,6 +628,12 @@ export function Creator({ userId }: { userId: string }) {
             <Field label="Website"><input className={input} value={form.website} onChange={(e) => set('website', e.target.value)} placeholder="studio.com" /></Field>
             <Field label="Instagram"><input className={input} value={form.instagram} onChange={(e) => set('instagram', e.target.value)} placeholder="@handle" /></Field>
             <Field label="LinkedIn"><input className={input} value={form.linkedin} onChange={(e) => set('linkedin', e.target.value)} placeholder="linkedin.com/in/…" /></Field>
+          </div>
+
+          {/* Everything harvested from the card, as editable rows. */}
+          <div className="rounded-2xl border border-border bg-surface-elevated/40 p-4">
+            <p className="mb-3 text-sm font-semibold text-text">From the card</p>
+            <DetailsEditor value={form.details} onChange={(d) => set('details', d)} />
           </div>
 
           {/* Tags */}
@@ -532,6 +704,53 @@ export function Creator({ userId }: { userId: string }) {
             {saving ? 'Saving…' : 'Save profile'}
           </button>
         </div>
+      )}
+    </div>
+  )
+}
+
+/** One card-side slot: tap to pick, shows the chosen shot, clearable. */
+function CardSlot({
+  label, hint, thumb, onPick, onClear,
+}: {
+  label: string
+  hint: string
+  thumb: string | null
+  onPick: () => void
+  onClear?: () => void
+}) {
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={onPick}
+        className="flex aspect-[8/5] w-full flex-col items-center justify-center gap-1 overflow-hidden rounded-xl border border-border-strong bg-surface-elevated/40 text-center transition-colors hover:bg-surface-elevated"
+      >
+        {thumb ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={thumb} alt={label} className="h-full w-full object-cover" />
+        ) : (
+          <>
+            <Camera className="h-5 w-5 text-subtle" />
+            <span className="text-xs font-medium text-text">{label}</span>
+            <span className="text-xs text-subtle">{hint}</span>
+          </>
+        )}
+      </button>
+      {thumb && (
+        <span className="pointer-events-none absolute bottom-1 left-1 rounded bg-black/55 px-1.5 py-0.5 text-xs font-medium text-white">
+          {label}
+        </span>
+      )}
+      {thumb && onClear && (
+        <button
+          type="button"
+          onClick={onClear}
+          aria-label={`Remove ${label.toLowerCase()}`}
+          className="absolute right-1 top-1 rounded-full bg-black/55 p-0.5 text-white transition-colors hover:bg-black/70"
+        >
+          <X className="h-3 w-3" />
+        </button>
       )}
     </div>
   )
