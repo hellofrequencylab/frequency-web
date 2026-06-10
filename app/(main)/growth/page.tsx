@@ -62,7 +62,7 @@ export default async function GrowthStudioPage() {
     <div className="mx-auto w-full max-w-4xl">
       <IndexTemplate
         title="Growth Studio"
-        description="One place to manage how people find, join, and move through Frequency — pages, onboarding, acquisition, and your pipeline."
+        description="One place to manage how people find, join, and move through Frequency. Pages, onboarding, acquisition, and your pipeline."
       >
       <div className="space-y-7">
         {GROUPS.map((group) => (

@@ -327,7 +327,7 @@ export function NodeForm({
         }))
         setError(null)
       },
-      () => setError('Could not read your location — enter coordinates manually.'),
+      () => setError('Could not read your location. Enter coordinates manually.'),
       { enableHighAccuracy: true, timeout: 8000 },
     )
   }
@@ -428,7 +428,7 @@ export function NodeForm({
             min={1}
             value={form.maxClaims ?? ''}
             onChange={(e) => set('maxClaims', e.target.value === '' ? null : Number(e.target.value))}
-            placeholder="Unlimited — e.g. 50 for first-50-win"
+            placeholder="Unlimited (e.g. 50 for first-50-win)"
             className="w-full rounded-md border border-border bg-canvas px-2.5 py-1.5 text-sm text-text"
           />
         </Field>
@@ -436,7 +436,7 @@ export function NodeForm({
 
       {form.partner_id && (
         <p className="text-xs text-muted">
-          Partner codes unlock the partner&apos;s active offer on scan and log a redemption (they
+          Partner codes open the partner&apos;s active offer on scan and log a redemption (they
           don&apos;t award a verified practice).
         </p>
       )}
@@ -500,7 +500,7 @@ export function NodeForm({
           onChange={(e) => set('requireSignature', e.target.checked)}
           className="accent-primary"
         />
-        Require a signed code (anti-spoof) — only the printed/written code can claim
+        Require a signed code (anti-spoof). Only the printed/written code can claim
       </label>
 
       {!hideEditor && (

@@ -60,7 +60,7 @@ export default async function AdminQuestsPage() {
     <AdminPage
       title="Journeys"
       eyebrow="Engage"
-      description="The open journey library — curate which journeys carry the Official mark."
+      description="The open Journey library. Curate which Journeys carry the Official mark."
       width="wide"
     >
       {/* Stats strip */}

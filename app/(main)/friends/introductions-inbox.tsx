@@ -128,7 +128,7 @@ export function IntroductionsInbox({
           <EmptyState
             icon={HeartHandshake}
             title="No introductions yet"
-            description="When you introduce two friends above, they’ll show up here — and you’ll earn gems when they connect."
+            description="When you introduce two friends above, they’ll show up here. You’ll earn Gems when they connect."
           />
         ) : (
           <ul className="space-y-3">

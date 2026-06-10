@@ -29,10 +29,10 @@ export function UpgradeLightbox({ open, onClose }: { open: boolean; onClose: () 
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-bg text-primary-strong">
           <Zap className="h-6 w-6" />
         </div>
-        <h2 className="mt-4 text-xl font-bold text-text">Unlock the full game</h2>
+        <h2 className="mt-4 text-xl font-bold text-text">Play the full game</h2>
         <p className="mt-2 text-sm leading-relaxed text-muted">
-          Crew members earn zaps and gems, climb the ranks, and spend in the store. Upgrade to start
-          playing — you keep everything you have.
+          Crew members earn Zaps and Gems, climb the ranks, and spend in the Vault Store. Upgrade to
+          start playing. You keep everything you have.
         </p>
         <Link
           href="/upgrade"

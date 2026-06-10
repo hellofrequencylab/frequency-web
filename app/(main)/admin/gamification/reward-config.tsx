@@ -32,7 +32,7 @@ export function RewardConfig({ zaps, gems }: { zaps: RewardRow[]; gems: RewardRo
       <div className="border-b border-border px-4 py-3">
         <h2 className="text-sm font-bold text-text">Reward economy</h2>
         <p className="mt-0.5 text-xs text-muted">
-          Tune what each action is worth, add new ones, or remove them. Changes go live immediately — no redeploy.
+          Tune what each action is worth, add new ones, or remove them. Changes go live immediately, no redeploy.
         </p>
       </div>
       <div className="grid grid-cols-1 divide-y divide-border lg:grid-cols-2 lg:divide-x lg:divide-y-0">

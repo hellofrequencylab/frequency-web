@@ -130,7 +130,7 @@ export function StudioWizard({ channels }: { channels: Channel[] }) {
             </button>
           ))}
         </div>
-        <label className="flex flex-col gap-1 text-xs text-muted">Local flavor words (comma-separated — used as place/vibe variables)
+        <label className="flex flex-col gap-1 text-xs text-muted">Local flavor words (comma-separated, used as place/vibe variables)
           <input value={flavor} onChange={(e) => setFlavor(e.target.value)} placeholder="e.g. Barton Springs, tacos, greenbelt, East Side" className={field} /></label>
       </section>
 
@@ -141,7 +141,7 @@ export function StudioWizard({ channels }: { channels: Channel[] }) {
           <input type="checkbox" checked={aiPolish} onChange={(e) => setAiPolish(e.target.checked)}
             className="mt-0.5 h-4 w-4 shrink-0 accent-primary" />
           <span className="text-sm text-muted">
-            <span className="font-semibold text-text">Demographic-aware (AI)</span> — one quick model call reads the
+            <span className="font-semibold text-text">Demographic-aware (AI)</span>. One quick model call reads the
             place and channels to draw names, local activities, and journey titles that fit the area; templates expand
             it into every row. Off uses the built-in pools. Falls back automatically if AI is unavailable.
           </span>
@@ -159,13 +159,13 @@ export function StudioWizard({ channels }: { channels: Channel[] }) {
         </div>
         {preview && (
           <div className="mt-3 space-y-3 text-sm">
-            <p className="text-muted">A <b className="text-text">{preview.hub.name}</b> hub led by Guide <b className="text-text">{preview.hub.guide}</b>, over <b className="text-text">{preview.totals.circles}</b> circles with their hosts — <b className="text-text">{preview.totals.people}</b> people, <b className="text-text">{preview.totals.posts}</b> circle posts + <b className="text-text">{preview.totals.replies}</b> replies, <b className="text-text">{preview.totals.walls}</b> wall/feed posts, <b className="text-text">{preview.totals.friendships}</b> friendships, <b className="text-text">{preview.totals.events}</b> events, <b className="text-text">{preview.totals.dispatches}</b> dispatches, <b className="text-text">{preview.totals.journeys}</b> journeys, <b className="text-text">{preview.totals.connections}</b> cross-circle links — plus RSVPs, reactions, practice logs &amp; achievements.</p>
+            <p className="text-muted">A <b className="text-text">{preview.hub.name}</b> hub led by Guide <b className="text-text">{preview.hub.guide}</b>, over <b className="text-text">{preview.totals.circles}</b> circles with their hosts. <b className="text-text">{preview.totals.people}</b> people, <b className="text-text">{preview.totals.posts}</b> circle posts + <b className="text-text">{preview.totals.replies}</b> replies, <b className="text-text">{preview.totals.walls}</b> wall/feed posts, <b className="text-text">{preview.totals.friendships}</b> friendships, <b className="text-text">{preview.totals.events}</b> events, <b className="text-text">{preview.totals.dispatches}</b> dispatches, <b className="text-text">{preview.totals.journeys}</b> journeys, <b className="text-text">{preview.totals.connections}</b> cross-circle links, plus RSVPs, reactions, practice logs &amp; achievements.</p>
             <div className="flex flex-wrap gap-1.5">
               {preview.circles.map((c, i) => <span key={i} className="rounded-full bg-surface-elevated px-2 py-0.5 text-xs text-subtle">{c.name} · {c.members}</span>)}
             </div>
             <div className="rounded-xl border border-border bg-canvas p-3">
               <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-subtle">Sample people</p>
-              {preview.samplePeople.map((p, i) => <p key={i} className="text-text">{p.name} <span className="text-subtle">@{p.handle} · {p.rank}</span> — <span className="text-muted">{p.bio}</span></p>)}
+              {preview.samplePeople.map((p, i) => <p key={i} className="text-text">{p.name} <span className="text-subtle">@{p.handle} · {p.rank}</span> · <span className="text-muted">{p.bio}</span></p>)}
             </div>
             {preview.sampleThread && (
               <div className="rounded-xl border border-border bg-canvas p-3">

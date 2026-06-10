@@ -17,7 +17,7 @@ export default async function AdminPaymentsPage() {
     <AdminPage
       title="Payments"
       eyebrow="Platform"
-      description="Turn the host-payout marketplace on or off — tips, paid event tickets, and store/membership sales."
+      description="Turn the host-payout marketplace on or off. Tips, paid event tickets, and store/membership sales."
     >
       <AdminSection>
         <PayoutsToggle enabled={enabled} stripeConfigured={stripeConfigured} />

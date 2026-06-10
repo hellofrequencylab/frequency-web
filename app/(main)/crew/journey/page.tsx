@@ -49,7 +49,7 @@ export default async function JourneyPage() {
   return (
     <IndexTemplate
       title="Your Journey"
-      description="Your season's practices across Mind · Body · Spirit · Expression — keep each one on its cadence this week. Logging is the one move that advances your journey and earns the rank, streak, and gems."
+      description="Your season's practices across Mind · Body · Spirit · Expression. Keep each one on its cadence this week. Logging is the one move that advances your Journey and earns the rank, streak, and Gems."
     >
       {/* Gamification panel — the practice log is what drives these. */}
       <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -72,7 +72,7 @@ export default async function JourneyPage() {
         <EmptyState
           icon={Compass}
           title="You haven't started a Journey yet"
-          description="Journeys are seasonal sets of practices you move through — solo or with your circle. Adopt one to fill your days with something for each part of a whole life."
+          description="Journeys are seasonal sets of practices you move through, solo or with your circle. Adopt one to fill your days with something for each part of a whole life."
           action={
             <Link
               href="/journeys"

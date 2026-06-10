@@ -21,7 +21,7 @@ export default async function PartnersPage() {
   return (
     <IndexTemplate
       title="Partners"
-      description="Local businesses that back the community. Walk in, tap their plaque or scan a code to unlock a members-only offer — and pick up zaps while you’re at it."
+      description="Local businesses that back the community. Walk in, tap their plaque or scan a code to claim a members-only offer, and pick up Zaps while you’re at it."
     >
       {partners.length > 0 && (
         <div className="mb-6">

@@ -104,7 +104,7 @@ export const VERA = {
   enter: {
     eyebrow: 'Last step',
     heading: 'Hey, Founder!',
-    body: 'One thing before you explore: let’s find your people. Vera, your guide, already knows what you’re into — she’ll point you to a circle worth joining, then step aside.',
+    body: 'One thing before you explore: let’s find your people. Vera, your guide, already knows what you’re into. She’ll point you to a circle worth joining, then step aside.',
     cta: 'Meet Vera',
   },
 } as const

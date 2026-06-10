@@ -22,7 +22,7 @@ export function ContactsList({ contacts }: { contacts: NetworkContactListItem[] 
       <EmptyState
         icon={ScanText}
         title="No contacts yet"
-        description="Scan a business card or poster to harvest someone’s details in seconds — even if they’re not on Frequency yet."
+        description="Scan a business card or poster to harvest someone’s details in seconds, even if they’re not on Frequency yet."
         action={
           <Link
             href="/connections/new"

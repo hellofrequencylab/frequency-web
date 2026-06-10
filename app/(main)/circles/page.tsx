@@ -57,7 +57,7 @@ function toCardData(c: CircleRow): CircleCardData {
 const CONTENT_FALLBACK = {
   title: 'Circles',
   description:
-    'This is where it gets real. Find a circle near you, dive into something you love, or start your own — because showing up, week after week, is how strangers become your people.',
+    'This is where it gets real. Find a circle near you, dive into something you love, or start your own. Showing up, week after week, is how strangers become your people.',
 }
 
 // Operator-set title/description also drive <title> + og/twitter cards (PX.2).
@@ -288,7 +288,7 @@ export default async function CirclesPage({
                   {nearlyFull.length} {nearlyFull.length === 1 ? 'circle is' : 'circles are'} filling up
                 </p>
                 <p className="text-sm text-muted">
-                  A full circle is a good problem — it means the next one&rsquo;s ready to start. Open the
+                  A full circle is a good problem. It means the next one&rsquo;s ready to start. Open the
                   door for the people still looking for their room.
                 </p>
               </div>

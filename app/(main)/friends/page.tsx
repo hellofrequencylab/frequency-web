@@ -66,7 +66,7 @@ export default async function FriendsPage({
     <div className="mx-auto max-w-5xl">
       <IndexTemplate
         title="Friends"
-        description="Your people and your contacts in one place — connections you’ve made, and the rolodex of everyone you’ve met."
+        description="Your people and your contacts in one place. Connections you’ve made, and the rolodex of everyone you’ve met."
         action={
           mode === 'contacts' ? (
             <Link
@@ -76,7 +76,7 @@ export default async function FriendsPage({
               <Plus className="h-4 w-4" /> Capture
             </Link>
           ) : (
-            <InviteButton label="Invite friends · earn zaps" />
+            <InviteButton label="Invite friends · earn Zaps" />
           )
         }
         toolbar={<ModeSwitch mode={mode} />}
@@ -127,7 +127,7 @@ async function PeopleMode({
       {reward.rewarded > 0 && (
         <div className="rounded-2xl border border-success bg-success-bg px-5 py-4">
           <p className="text-sm font-semibold text-success">
-            Your introduction stuck — +{reward.gems} gems for bringing two people together 🎉
+            Your introduction stuck. +{reward.gems} Gems for bringing two people together 🎉
           </p>
         </div>
       )}

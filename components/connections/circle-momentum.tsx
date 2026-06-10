@@ -27,7 +27,7 @@ export async function CircleMomentum({ circleId }: { circleId: string }) {
   }
 
   const warming = m.newMembers7d > 0 || m.newTies7d > 0
-  const caption = warming ? 'Warming up this week.' : 'Quiet this week — a good time to gather.'
+  const caption = warming ? 'Warming up this week.' : 'Quiet this week. A good time to gather.'
 
   return (
     <ModuleCard title="Momentum">

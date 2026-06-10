@@ -53,7 +53,7 @@ function PublishButton({ slug }: { slug: string }) {
       type="button"
       onClick={handlePublish}
       disabled={!active || status === 'publishing'}
-      title={dirty ? 'Publish your changes — they go live immediately' : 'No changes to publish'}
+      title={dirty ? 'Publish your changes. They go live immediately' : 'No changes to publish'}
       className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-sm font-semibold transition-colors ${
         active
           ? 'bg-primary text-on-primary shadow-sm hover:bg-primary-hover'
@@ -96,7 +96,7 @@ function UnpublishButton({ slug }: { slug: string }) {
       type="button"
       onClick={handleUnpublish}
       disabled={status === 'working'}
-      title="Take the editor version offline — the public page reverts to the coded design"
+      title="Take the editor version offline. The public page reverts to the coded design"
       className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-[#a33] hover:text-[#7a1f1f]"
     >
       {status === 'working' ? 'Unpublishing…' : status === 'error' ? 'Retry unpublish' : 'Unpublish'}

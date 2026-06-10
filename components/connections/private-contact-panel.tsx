@@ -46,7 +46,7 @@ export function PrivateContactPanel({ card, memberName }: { card: LinkedContactC
         </Link>
       </div>
       <p className="mb-3 text-xs text-muted">
-        From your contact book — only you can see this. The details you logged for {memberName}.
+        From your contact book. Only you can see this. The details you logged for {memberName}.
       </p>
 
       <dl className="space-y-1.5">

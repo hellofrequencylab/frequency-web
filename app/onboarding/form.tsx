@@ -260,7 +260,7 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
               home.
             </h2>
             <p className="mt-5 max-w-sm leading-relaxed text-white/75">
-              You found the room. A few quick things and you&rsquo;re part of it &mdash; a real
+              You found the room. A few quick things and you&rsquo;re part of it. A real
               place to belong, with people near you.
             </p>
           </div>

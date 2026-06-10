@@ -23,7 +23,7 @@ export interface ConciergeReply {
 }
 
 const GREETING =
-  "Hey — you found us. I keep this place running. What brought you here? And don't say 'just looking,' nobody types a URL for fun."
+  "Hey, you found us. I keep this place running. What brought you here? And don't say 'just looking,' nobody types a URL for fun."
 
 /** The next concierge beat. Pure: (stage, what the member just said) → reply +
  *  proposed writes. Unit-tested. */
@@ -42,7 +42,7 @@ export function conciergeReply(stage: ConciergeStage, memberText: string): Conci
 
     case 'learn':
       return {
-        message: `Got it.${said ? " I'll remember that." : ''} Here's where you find your people — pick a circle that doesn't scare you. Showing up is the whole thing.`,
+        message: `Got it.${said ? " I'll remember that." : ''} Here's where you find your people. Pick a circle that doesn't scare you; showing up is the whole thing.`,
         stage: 'orient',
         // Capture what they came for, to confirm into memory (propose-and-confirm).
         proposals: said ? [{ tool: 'remember_fact', args: { fact: said, category: 'goals' } }] : [],
@@ -52,7 +52,7 @@ export function conciergeReply(stage: ConciergeStage, memberText: string): Conci
 
     case 'orient':
       return {
-        message: "The easiest way in is just turning up — to a circle or a gathering. Want me to point you at a host who runs one?",
+        message: "The easiest way in is just turning up, to a circle or a gathering. Want me to point you at a host who runs one?",
         stage: 'handoff',
         proposals: [],
         suggestions: ['Yes, introduce me', "I'll explore first"],
@@ -61,7 +61,7 @@ export function conciergeReply(stage: ConciergeStage, memberText: string): Conci
 
     case 'handoff':
       return {
-        message: "Good. You don't have to have it figured out — most folks here didn't either. I'll be around when you need me.",
+        message: "Good. You don't have to have it figured out. Most folks here didn't either. I'll be around when you need me.",
         stage: 'done',
         proposals: [],
         suggestions: [],

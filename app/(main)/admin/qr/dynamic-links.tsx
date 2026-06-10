@@ -101,7 +101,7 @@ export function DynamicLinks({
             <div>
               <h2 className="text-sm font-bold text-text">New dynamic link</h2>
               <p className="text-xs text-muted mt-0.5">
-                A short <code className="text-text">/q/…</code> code you can retarget anytime — point it at any
+                A short <code className="text-text">/q/…</code> code you can retarget anytime. Point it at any
                 URL or an existing check-in code.
               </p>
             </div>
@@ -132,7 +132,7 @@ export function DynamicLinks({
       <div className="space-y-3">
         {initialLinks.length === 0 && (
           <p className="text-sm text-muted py-6 text-center">
-            No dynamic links yet. Create one above — its destination stays editable after you print it.
+            No dynamic links yet. Create one above. Its destination stays editable after you print it.
           </p>
         )}
         {folders.map((folder) => (
@@ -276,7 +276,7 @@ function LinkCard({
         ? `Join circle: ${link.dest_label ?? 'circle'}`
         : link.destination_type === 'event'
           ? `Check in: ${link.dest_label ?? 'event'}`
-          : link.target_url ?? '—'
+          : link.target_url ?? '–'
 
   return (
     <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">

@@ -49,7 +49,7 @@ export function GrowNetwork({ circles, channels }: { circles: DemoCircle[]; chan
         {/* Add members to an existing circle */}
         <div className="rounded-2xl border border-border bg-surface p-5">
           <p className="text-sm font-semibold text-text">Top up a circle</p>
-          <p className="mt-0.5 text-sm text-muted">Add members to an existing demo circle — each brings a post, reactions, a streak, and a practice.</p>
+          <p className="mt-0.5 text-sm text-muted">Add members to an existing demo circle. Each brings a post, reactions, a streak, and a practice.</p>
           <div className="mt-4 flex flex-wrap items-end gap-2">
             <label className="flex flex-col gap-1 text-xs text-muted">
               Add members to

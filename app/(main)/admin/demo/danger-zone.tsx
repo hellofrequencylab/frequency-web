@@ -81,7 +81,7 @@ export function DangerZone({
           <div>
             <p className="text-sm font-semibold text-text">Destructive actions</p>
             <p className="mt-0.5 text-sm text-muted">
-              Type <span className="font-mono font-semibold text-danger">DELETE</span> to unlock the actions below. These can’t be undone.
+              Type <span className="font-mono font-semibold text-danger">DELETE</span> to enable the actions below. These can’t be undone.
             </p>
           </div>
         </div>
@@ -103,7 +103,7 @@ export function DangerZone({
           <MapPin className="h-4 w-4 text-danger" />
           <p className="text-sm font-semibold text-text">Purge an area</p>
         </div>
-        <p className="mb-3 text-sm text-muted">Deletes demo content within a radius of a point — for clearing one town once it’s gone real.</p>
+        <p className="mb-3 text-sm text-muted">Deletes demo content within a radius of a point. For clearing one town once it’s gone real.</p>
         <LocationAutocomplete
           value={areaName}
           placeholder="Search a city or town…"

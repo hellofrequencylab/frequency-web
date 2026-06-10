@@ -54,7 +54,7 @@ export default async function AdminDemoPage() {
     <AdminPage
       title="Demo Studio"
       icon={Sparkles}
-      description="Generate a believable community for any area, then manage or purge it — all tagged demo (⚡), previewable, and reversible."
+      description="Generate a believable community for any area, then manage or purge it. All tagged demo (⚡), previewable, and reversible."
       width="default"
     >
       {/* Overview — at-a-glance state + the one global show/hide switch */}
@@ -69,7 +69,7 @@ export default async function AdminDemoPage() {
 
       <AdminSection
         title="Grow the network"
-        description="Top up a circle or spin up a new one — each arrives fully populated. Non-destructive."
+        description="Top up a circle or spin up a new one. Each arrives fully populated. Non-destructive."
       >
         <GrowNetwork circles={demoCircles} channels={channels} />
       </AdminSection>

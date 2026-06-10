@@ -7,7 +7,7 @@ import type { Metadata } from 'next'
 import BetaInduction from '../induction'
 
 export const metadata: Metadata = {
-  title: 'Beta induction — preview',
+  title: 'Beta induction (preview)',
   robots: { index: false, follow: false },
 }
 

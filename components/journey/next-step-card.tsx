@@ -99,7 +99,7 @@ export function NextStepCard({
 
       {allOnTrack && (
         <p className="mt-3 text-center text-xs text-muted">
-          Every step is on track this week — beautifully done.
+          Every step is on track this week. Beautifully done.
         </p>
       )}
     </section>

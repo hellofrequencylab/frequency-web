@@ -26,7 +26,7 @@ export default async function VeraOnboardingPage() {
         <div>
           <h1 className="mb-1 text-xl font-bold text-text">Settling in</h1>
           <p className="text-sm text-muted">
-            Vera keeps this place running. She&rsquo;ll help you find your people — and get out of your way.
+            Vera keeps this place running. She&rsquo;ll help you find your people, then get out of your way.
           </p>
         </div>
         <Link

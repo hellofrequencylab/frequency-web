@@ -34,7 +34,7 @@ export async function executeConfirmedTool(
   if (!v.ok) return { ok: false, error: v.errors.join(' ') }
 
   if (MEMORY_TOOLS.has(tool) && !(await hasConsent(profileId, 'ai_memory'))) {
-    return { ok: false, error: 'Vera-memory consent is off — nothing was saved.' }
+    return { ok: false, error: 'Vera-memory consent is off, so nothing was saved.' }
   }
 
   switch (tool) {
@@ -88,7 +88,7 @@ async function postIntro(
     .eq('handle', handle)
     .maybeSingle()
   if (!target) return { ok: false, error: `Couldn't find anyone with the handle @${handle}.` }
-  if (target.id === profileId) return { ok: false, error: 'That’s you — pick someone to be introduced to.' }
+  if (target.id === profileId) return { ok: false, error: 'That’s you. Pick someone to be introduced to.' }
 
   // Make sure the hello actually reaches them: mention them if the draft didn't.
   const body = new RegExp(`@${handle}\\b`, 'i').test(message) ? message : `@${target.handle} ${message}`
@@ -104,7 +104,7 @@ async function postIntro(
     })
     .select('id')
     .single()
-  if (error || !post) return { ok: false, error: 'The post didn’t go through — try again in a moment.' }
+  if (error || !post) return { ok: false, error: 'The post didn’t go through. Try again in a moment.' }
 
   // Mention bookkeeping + in-app notification (best-effort, mirrors fanOutMentions).
   try {

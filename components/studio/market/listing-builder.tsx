@@ -84,7 +84,7 @@ export function ListingBuilder(props: ListingBuilderProps) {
             value={category}
             onChange={(e) => { setCategory(e.target.value); queueSave({ category: e.target.value || null }) }}
             maxLength={40}
-            placeholder="Category — optional"
+            placeholder="Category (optional)"
             className="mt-1 w-full bg-transparent text-sm text-muted outline-none placeholder:text-subtle"
           />
         </div>

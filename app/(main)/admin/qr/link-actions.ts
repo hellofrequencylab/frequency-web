@@ -146,7 +146,7 @@ export async function createLink(input: LinkInput): Promise<ActionResult<{ id: s
     }
     return fail('Could not create the code.')
   }
-  return fail('Could not generate a unique link — try again.')
+  return fail('Could not generate a unique link. Try again.')
 }
 
 export async function updateLink(id: string, input: LinkInput): Promise<ActionResult> {
@@ -243,7 +243,7 @@ export async function createPageQr(
     if (error?.code === UNIQUE_VIOLATION) continue // generated collision — retry
     return fail('Could not create the code.')
   }
-  return fail('Could not generate a unique link — try again.')
+  return fail('Could not generate a unique link. Try again.')
 }
 
 /** This page's saved codes (its folder), newest first. Gated host+ OR staff 'qr'. */

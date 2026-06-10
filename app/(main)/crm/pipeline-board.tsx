@@ -210,7 +210,7 @@ function DealCard({
         >
           <ChevronLeft className="h-3.5 w-3.5" />
         </button>
-        <span className="text-3xs uppercase tracking-wide text-subtle">{stages[idx]?.name ?? '—'}</span>
+        <span className="text-3xs uppercase tracking-wide text-subtle">{stages[idx]?.name ?? '–'}</span>
         <button
           type="button"
           disabled={!next || pending}

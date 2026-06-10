@@ -347,7 +347,7 @@ export async function ControlCenterPanel({ profileId }: { profileId: string }) {
 
           {streak > 0 && (
             <p className="flex items-center gap-1 text-2xs font-semibold text-primary-strong">
-              <Flame className="h-3 w-3" /> {streak}-day streak — keep it alive
+              <Flame className="h-3 w-3" /> {streak}-day streak, keep it alive
             </p>
           )}
         </div>
@@ -367,7 +367,7 @@ export async function ControlCenterPanel({ profileId }: { profileId: string }) {
           <p className="mt-0.5 line-clamp-2 text-xs text-muted">{nextStep.blurb}</p>
           <p className="mt-2 flex items-center justify-between">
             <span className="inline-flex items-center gap-1 text-2xs font-semibold text-signal">
-              <Gem className="h-3 w-3" /> Earn gems for finishing
+              <Gem className="h-3 w-3" /> Earn Gems for finishing
             </span>
             <span className="inline-flex items-center gap-0.5 text-2xs font-semibold text-broadcast-strong">
               {nextStep.cta} <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
@@ -376,7 +376,7 @@ export async function ControlCenterPanel({ profileId }: { profileId: string }) {
         </Link>
       ) : (
         <p className="mt-2.5 rounded-xl bg-surface-elevated/50 px-3 py-2.5 text-xs text-muted">
-          You’re all set up — keep your streak alive and climb the ranks.
+          You’re all set up. Keep your streak alive and climb the ranks.
         </p>
       )}
 

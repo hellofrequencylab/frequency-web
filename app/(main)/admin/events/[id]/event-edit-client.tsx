@@ -171,7 +171,7 @@ export function EventEditClient({ event, tiers }: { event: EventData; tiers: Tie
 
         <div>
           <label className={lbl}>
-            Ticket price <span className="font-normal text-subtle">(USD — leave blank for a free event)</span>
+            Ticket price <span className="font-normal text-subtle">(USD, leave blank for a free event)</span>
           </label>
           <div className="flex items-center gap-1.5">
             <span className="text-sm text-subtle">$</span>

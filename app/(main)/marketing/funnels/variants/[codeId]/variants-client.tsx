@@ -15,7 +15,7 @@ const pct = (rate: number) => `${(rate * 100).toFixed(1)}%`
 function DestinationSelect({ value, onChange, groups }: { value: string; onChange: (v: string) => void; groups: DestinationGroup[] }) {
   return (
     <select value={value} onChange={(e) => onChange(e.target.value)} className={field}>
-      <option value="">— pick a destination —</option>
+      <option value="">Pick a destination…</option>
       {groups.map((g) => (
         <optgroup key={g.group} label={g.group}>
           {g.items.map((o) => (
@@ -46,7 +46,7 @@ export function VariantManager({
   return (
     <div className="space-y-6">
       <p className="rounded-xl bg-surface-elevated/50 px-4 py-2.5 text-xs text-muted">
-        <span className="font-semibold text-text">Control (default):</span> {control || '—'} · shown when no active variant wins the split.
+        <span className="font-semibold text-text">Control (default):</span> {control || '–'} · shown when no active variant wins the split.
       </p>
 
       <section className="space-y-3">

@@ -55,7 +55,7 @@ export function InviteLauncher() {
     if (!data) return
     if (navigator.share) {
       try {
-        await navigator.share({ title: 'Join me on Frequency', text: 'Come build community with me on Frequency —', url: data.url })
+        await navigator.share({ title: 'Join me on Frequency', text: 'Come build community with me on Frequency:', url: data.url })
       } catch { /* user cancelled — fine */ }
     } else {
       copy()
@@ -91,7 +91,7 @@ export function InviteLauncher() {
             <Zap className="h-5 w-5" />
           </span>
           <p className="text-sm leading-snug text-text">
-            Earn <span className="font-bold text-primary-strong">40 <Zap className="inline h-3.5 w-3.5 fill-current" /></span> for every friend who joins through your link — and you’ll be connected automatically.
+            Earn <span className="font-bold text-primary-strong">40 <Zap className="inline h-3.5 w-3.5 fill-current" /></span> for every friend who joins through your link, and you’ll be connected automatically.
           </p>
         </div>
 

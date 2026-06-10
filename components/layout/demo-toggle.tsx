@@ -29,7 +29,7 @@ export function DemoToggle({ initialHidden }: { initialHidden: boolean }) {
       role="switch"
       aria-checked={on}
       aria-label="Demo content"
-      title={on ? 'Demo content is showing — click to hide' : 'Demo content is hidden — click to show'}
+      title={on ? 'Demo content is showing. Click to hide' : 'Demo content is hidden. Click to show'}
       className="hidden items-center gap-1.5 rounded-full border border-border bg-surface-elevated/70 py-1.5 pl-3 pr-1.5 text-sm font-semibold text-muted transition-colors hover:border-border-strong hover:text-text sm:inline-flex"
     >
       <Zap className={`h-4 w-4 ${on ? 'fill-warning text-warning' : 'text-subtle'}`} aria-hidden />

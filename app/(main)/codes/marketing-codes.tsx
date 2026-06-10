@@ -47,7 +47,7 @@ export function MarketingCodes({
             <Megaphone className="w-4 h-4 text-primary-strong" /> Marketing codes
           </h2>
           <p className="text-xs text-muted mt-0.5">
-            Your funnel codes — point one at a circle or event you&apos;re promoting and track the
+            Your funnel codes. Point one at a circle or event you&apos;re promoting and track the
             scans. {cards.length}/{limit} used.
           </p>
         </div>
@@ -64,7 +64,7 @@ export function MarketingCodes({
       <div className="p-4 space-y-4">
         {targets.length === 0 && (
           <p className="text-xs text-muted">
-            Join a circle or host an event first — then you can point a code at it.
+            Join a circle or host an event first, then you can point a code at it.
           </p>
         )}
 

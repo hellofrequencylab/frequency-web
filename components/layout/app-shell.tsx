@@ -667,7 +667,7 @@ function NavLinkList({
                   key={href}
                   href={href}
                   onClick={onNavigate}
-                  title="Preview — upgrade to Crew to engage"
+                  title="Preview. Upgrade to Crew to engage"
                   className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                     active ? 'bg-surface-elevated text-muted' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
                   }`}
@@ -1379,7 +1379,7 @@ export default function AppShell({
               <HoverTip label="Daily Streak" className="hidden sm:inline-flex">
                 <Link
                   href="/crew"
-                  aria-label="Daily Streak — open your Quest dashboard"
+                  aria-label="Daily Streak. Open your Quest dashboard"
                   className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-2 py-1 text-xs font-bold text-primary-strong transition-colors hover:bg-primary-bg/70"
                 >
                   <Flame className="w-3.5 h-3.5" />

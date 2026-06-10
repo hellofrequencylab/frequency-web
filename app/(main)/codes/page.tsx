@@ -66,7 +66,7 @@ export default async function CodesPage() {
     <FocusTemplate
       width="wide"
       title={<span className="flex items-center gap-2"><QrCode className="h-5 w-5 text-primary-strong" /> Your codes</span>}
-      description="Your personal QR codes — share them in person or in your outreach. Design each one, and watch the scans add up."
+      description="Your personal QR codes. Share them in person or in your outreach. Design each one, and watch the scans add up."
     >
       <div className="space-y-6">
         <MemberCodes cards={cards} referralCount={referralCount ?? 0} walletEnabled={isGoogleWalletConfigured()} />
@@ -80,8 +80,8 @@ export default async function CodesPage() {
             <ScanLine className="w-4 h-4 text-primary-strong" /> Scanning a code
           </h2>
           <p className="mt-1 text-sm text-muted">
-            Point your phone&apos;s camera at any Frequency QR — on a poster, plaque, or someone&apos;s
-            screen — to connect, join, or send a zap.
+            Point your phone&apos;s camera at any Frequency QR (on a poster, plaque, or someone&apos;s
+            screen) to connect, join, or send a Zap.
           </p>
         </div>
       </div>

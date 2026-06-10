@@ -25,7 +25,7 @@ export default async function PartnerListingPage() {
   return (
     <FocusTemplate
       title="Your listing"
-      description="How your business shows up in the member directory — walk-ins find you here and unlock a members-only offer."
+      description="How your business shows up in the member directory. Walk-ins find you here and claim a members-only offer."
       back={{ href: '/partners/join', label: 'Partner programs' }}
       width="wide"
     >

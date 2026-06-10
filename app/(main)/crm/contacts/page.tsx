@@ -141,7 +141,7 @@ export default async function CrmContactsPage() {
       title="Contacts"
       description={
         <>
-          The people in <strong className="text-text">{scopeLabel(role)}</strong> — message them, open their profile, or start a pipeline deal. Only what members choose to share.
+          The people in <strong className="text-text">{scopeLabel(role)}</strong>. Message them, open their profile, or start a pipeline deal. Only what members choose to share.
         </>
       }
       width="wide"

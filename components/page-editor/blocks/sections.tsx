@@ -566,7 +566,7 @@ export const sectionsComponents: Record<string, ComponentConfig> = {
     },
     defaultProps: {
       variant: 'pull',
-      quote: 'The best communities don\'t just talk — they make.',
+      quote: 'The best communities don\'t just talk, they make.',
       accentWord: 'make',
       attribution: 'Community member',
       role: '',

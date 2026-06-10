@@ -90,7 +90,7 @@ export default async function QrStatsPage() {
       icon={ChartNoAxesColumn}
       eyebrow="Platform"
       width="wide"
-      description="Every function of the QR system at a glance — scans, where they happen, the funnel they drive, and the live code inventory."
+      description="Every function of the QR system at a glance. Scans, where they happen, the funnel they drive, and the live code inventory."
     >
       {/* Funnel headline */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -101,7 +101,7 @@ export default async function QrStatsPage() {
       </div>
 
       {/* Locator map */}
-      <AdminSection title="Where codes get scanned" description="Coarse, city-level (IP-derived) — no precise location is collected.">
+      <AdminSection title="Where codes get scanned" description="Coarse, city-level (IP-derived). No precise location is collected.">
         <ScanLocator locations={locations} />
         {locations.length > 0 && (
           <ul className="mt-3 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
@@ -137,7 +137,7 @@ export default async function QrStatsPage() {
       {/* Acquisition — how signups arrived */}
       <AdminSection
         title="Acquisition"
-        description="How members who signed up first arrived — by channel, source, and the specific code/poster."
+        description="How members who signed up first arrived, by channel, source, and the specific code/poster."
       >
         <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
           <StatCard bordered icon={Compass} label="Attributed signups" value={acquisition.total.toLocaleString()} />
@@ -146,7 +146,7 @@ export default async function QrStatsPage() {
         </div>
         {acquisition.total === 0 ? (
           <p className="py-4 text-sm text-muted">
-            No attributed signups yet — they appear here once members arrive via a tagged code.
+            No attributed signups yet. They appear here once members arrive via a tagged code.
           </p>
         ) : (
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -154,7 +154,7 @@ export default async function QrStatsPage() {
             <RankList title="By source / campaign" rows={acquisition.bySource} />
             <div className="lg:col-span-2 rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
               <div className="border-b border-border px-4 py-3">
-                <h3 className="text-sm font-bold text-text">Top codes — scan → signup</h3>
+                <h3 className="text-sm font-bold text-text">Top codes (scan → signup)</h3>
               </div>
               {topAcqCodes.length === 0 ? (
                 <p className="p-4 text-xs text-muted">No code-attributed signups yet.</p>
@@ -174,7 +174,7 @@ export default async function QrStatsPage() {
                         <td className="px-4 py-2 font-medium text-text">/q/{c.slug}</td>
                         <td className="px-4 py-2 text-right text-muted">{c.scans}</td>
                         <td className="px-4 py-2 text-right font-semibold text-text">{c.signups}</td>
-                        <td className="px-4 py-2 text-right text-muted">{c.rate == null ? '—' : `${c.rate}%`}</td>
+                        <td className="px-4 py-2 text-right text-muted">{c.rate == null ? '–' : `${c.rate}%`}</td>
                       </tr>
                     ))}
                   </tbody>

@@ -22,7 +22,7 @@ export default async function VeraAdminPage() {
     <AdminPage
       title="Manage Vera"
       eyebrow="Vera"
-      description="Tune Vera’s voice, her live responses, and the founder-induction copy — saved instantly, no deploy."
+      description="Tune Vera’s voice, her live responses, and the founder-induction copy. Saved instantly, no deploy."
       width="narrow"
     >
       <AdminSection title="AI operator">

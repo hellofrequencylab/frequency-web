@@ -18,9 +18,9 @@ export default async function BuildSequencePage({ params }: { params: Promise<{ 
 
   return (
     <AdminPage
-      title={`Build induction — ${sequence.audience}`}
+      title={`Build induction: ${sequence.audience}`}
       eyebrow="Pages · Sequences"
-      description="One screen per beat of the real /onboarding/beta induction. Edit the copy, watch the preview, then save & publish — it goes live at its own link."
+      description="One screen per beat of the real /onboarding/beta induction. Edit the copy, watch the preview, then save & publish. It goes live at its own link."
       width="wide"
       actions={
         <Link href="/pages/sequences" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text">

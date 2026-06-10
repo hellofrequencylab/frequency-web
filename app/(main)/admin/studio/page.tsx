@@ -41,7 +41,7 @@ export default async function StudioPage() {
       title="AI Intelligence Studio"
       icon={Lightbulb}
       eyebrow="Insights"
-      description="What the platform’s behavior, support, and help signals say to change — ranked, with evidence. Applyable fixes are one click and fully reversible."
+      description="What the platform’s behavior, support, and help signals say to change, ranked, with evidence. Applyable fixes are one click and fully reversible."
     >
       {/* The read — Claude narrates the summary when AI is on, else a deterministic line. */}
       <div className="rounded-2xl border border-primary-bg/60 bg-primary-bg/20 p-4">
@@ -62,7 +62,7 @@ export default async function StudioPage() {
         </div>
       </AdminSection>
 
-      <AdminSection title="Change log" description="Every governed change applied here — who, what, and the result.">
+      <AdminSection title="Change log" description="Every governed change applied here. Who, what, and the result.">
         {changes.length === 0 ? (
           <EmptyState icon={History} title="No changes yet" description="Applied recommendations will be logged here, with one-click revert for reversible ones." />
         ) : (

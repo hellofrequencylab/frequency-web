@@ -11,7 +11,7 @@ export function CrewPreviewBanner() {
         <Sparkles className="h-4 w-4 shrink-0 text-primary-strong" />
         <span>
           <span className="font-semibold">You&rsquo;re previewing the Quest.</span>{' '}
-          Look around all you like — upgrade to Crew to earn, spend, and climb.
+          Look around all you like. Upgrade to Crew to earn, spend, and climb.
         </span>
       </p>
       <Link
