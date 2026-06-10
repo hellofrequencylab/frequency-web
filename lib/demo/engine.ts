@@ -65,7 +65,7 @@ type Channel = {
   activities: string[]
   bio: string[]
   intro: string[]      // ghost / newcomer
-  regular: string[]    // runner / operative
+  regular: string[]    // echo / signal
   host: string[]       // conduit / luminary
   reply: string[]
   event: string[]
@@ -183,21 +183,21 @@ const EVENT_DESC = [
 // Rank bands (ghost -> luminary) — economy values per rank.
 const BAND = {
   ghost:     { z: [5, 95],     g: [5, 60],     s: [0, 3],   a: [1, 4] },
-  runner:    { z: [100, 290],  g: [50, 150],   s: [2, 8],   a: [4, 7] },
-  operative: { z: [300, 740],  g: [150, 400],  s: [5, 14],  a: [7, 11] },
-  agent:     { z: [750, 1450], g: [400, 800],  s: [10, 20], a: [11, 16] },
+  echo:      { z: [100, 290],  g: [50, 150],   s: [2, 8],   a: [4, 7] },
+  signal:    { z: [300, 740],  g: [150, 400],  s: [5, 14],  a: [7, 11] },
+  beacon:    { z: [750, 1450], g: [400, 800],  s: [10, 20], a: [11, 16] },
   conduit:   { z: [1500, 2100],g: [800, 1400], s: [16, 30], a: [16, 22] },
   luminary:  { z: [2200, 3200],g: [1500, 2500],s: [30, 52], a: [22, 28] },
 } as const
 type Rank = keyof typeof BAND
-// A believable roster: 1 host (conduit), a couple crew (agent), a long low tail.
+// A believable roster: 1 host (conduit), a couple crew (beacon), a long low tail.
 function rosterRanks(r: Rand, size: number): Rank[] {
   const ranks: Rank[] = ['conduit'] // host
-  if (size > 8) ranks.push('agent')
-  if (size > 14) ranks.push('agent')
+  if (size > 8) ranks.push('beacon')
+  if (size > 14) ranks.push('beacon')
   while (ranks.length < size) {
     const roll = r()
-    ranks.push(roll < 0.45 ? 'ghost' : roll < 0.78 ? 'runner' : 'operative')
+    ranks.push(roll < 0.45 ? 'ghost' : roll < 0.78 ? 'echo' : 'signal')
   }
   return ranks
 }
@@ -255,8 +255,8 @@ export type AreaPlan = {
 
 function tenureForRank(r: Rand, rank: Rank): number {
   const map: Record<Rank, [number, number]> = {
-    ghost: [0, 4], runner: [4, 16], operative: [12, 30],
-    agent: [24, 44], conduit: [36, 52], luminary: [44, 52],
+    ghost: [0, 4], echo: [4, 16], signal: [12, 30],
+    beacon: [24, 44], conduit: [36, 52], luminary: [44, 52],
   }
   return int(r, ...map[rank])
 }
@@ -299,7 +299,7 @@ export function buildPlan(spec: AreaSpec, palette?: Palette | null): AreaPlan {
     const people: PersonPlan[] = ranks.map((rank, i) => {
       const first = pick(r, firstPool), last = pick(r, lastPool)
       const handle = uniqHandle(first, last)
-      const role: PersonPlan['role'] = i === 0 ? 'host' : rank === 'agent' && i <= 2 ? 'crew' : 'member'
+      const role: PersonPlan['role'] = i === 0 ? 'host' : rank === 'beacon' && i <= 2 ? 'crew' : 'member'
       const b = BAND[rank]
       return {
         key: `${slug}:${i}`, name: `${first} ${last}`, handle, rank, role,

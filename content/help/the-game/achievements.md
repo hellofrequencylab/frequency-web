@@ -3,7 +3,7 @@ title: Achievements & badges
 description: The permanent badges you collect for showing up — tiers, categories, and the secret ones.
 category: the-game
 order: 7
-updated: 2026-06-09
+updated: 2026-06-10
 audience: member
 featureKeys: [achievements, gamification]
 status: published
@@ -32,7 +32,7 @@ A few examples of the kind of thing that earns one:
 - **The Welcomer** — be the first to welcome 5 new members
 - **Storyteller** — share 10 posts
 - **Warming Up** — keep a 3-week attendance rhythm going
-- **Runner Unlocked** — reach your first season rank
+- **Echo Unlocked** — reach your first season rank
 
 ## Categories and tiers
 

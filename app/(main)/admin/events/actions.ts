@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
-import { atLeastRole } from '@/lib/core/roles'
+import { isStaff } from '@/lib/core/roles'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
 import { authorizeAction } from '@/lib/admin/guard'
 import { slugify } from '@/lib/utils'
@@ -24,7 +24,7 @@ async function requireEventEditor(eventId: string) {
   const [caller, caps] = await Promise.all([getCallerProfile(), getEventCapabilities(eventId)])
   if (!caller) throw new Error('Unauthorized')
   if (caps.has('event.editSettings')) return caller
-  if (atLeastRole(caller.community_role, 'admin')) return caller
+  if (isStaff(caller.webRole)) return caller // platform staff (web_role, ADR-208) — global reach
   throw new Error('Unauthorized')
 }
 

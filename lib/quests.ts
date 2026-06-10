@@ -1,4 +1,4 @@
-// Seasonal Quests — the read layer for The Quest → Seasonal Quest → Journeys →
+// Quests — the read layer for The Quest → Quest (season) → Journeys →
 // Practices hierarchy (ADR-152). A Quest is a season's official, free container of
 // Journeys; each Journey (journey_plans, official + quest_id set) is a set of
 // practices. The surfaces render Quests → their Journeys → (the existing Journey
@@ -49,7 +49,7 @@ interface JourneyRow {
   journey_plan_items: { count: number }[] | null
 }
 
-/** Active Seasonal Quests, each with its official Journeys (slug/title/identity +
+/** Active Quests, each with its official Journeys (slug/title/identity +
  *  practice count). Empty array if the B1 migration isn't applied yet. */
 export async function getSeasonalQuests(): Promise<SeasonalQuestView[]> {
   const db = createAdminClient() as unknown as SupabaseClient

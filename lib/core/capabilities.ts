@@ -18,7 +18,7 @@
 // (host_id === me, the host+ admin gate, crew-can-take-tasks). Tune against
 // product as the inline-admin work (Phase 1) lands.
 
-import { type CommunityRole, atLeastRole } from './roles'
+import { type CommunityRole, type WebRole, atLeastRole, isStaff as webIsStaff, isJanitor as webIsJanitor } from './roles'
 import { isPaid, type EntitlementTier } from './access-matrix'
 
 export type Capability =
@@ -74,8 +74,14 @@ export type Scope =
 export interface Viewer {
   /** profiles.id, or null when anonymous. */
   profileId: string | null
-  /** Global community role; 'member' for a signed-in user with no elevation. */
+  /** Community TRUST role on the aspirational ladder (member < crew < host <
+   *  guide < mentor); 'member' for a signed-in user with no elevation. Gates
+   *  circle/hub/nexus leadership and the paid-tier perks. NOT the staff axis. */
   role: CommunityRole
+  /** Operational STAFF axis (web_role, ADR-208): 'none' | 'admin' | 'janitor'.
+   *  Independent of `role`. Drives admin.access, channel.manage, profile.edit by
+   *  a janitor, and the staff override on circle/event leadership. Omitted ⇒ 'none'. */
+  webRole?: WebRole | null
   /** Billing entitlement tier. Paid (Crew/Supporter) unlocks the membership-gated
    *  capabilities (e.g. task volunteering). Omitted ⇒ free. */
   tier?: EntitlementTier | null
@@ -88,16 +94,17 @@ export interface Viewer {
 export function resolveCapabilities(viewer: Viewer, scope: Scope): Set<Capability> {
   const caps = new Set<Capability>()
   const { profileId, role } = viewer
-  const isJanitor = role === 'janitor'
-  // Platform staff = admin or janitor. Admin sits just below janitor on the ladder
-  // and shares its operational keys (it lacks only the most sensitive ones), so it
-  // manages any circle alongside janitor.
-  const isStaff = atLeastRole(role, 'admin')
+  // The STAFF axis (web_role, ADR-208) — INDEPENDENT of the community ladder.
+  // 'janitor' = Executive Admin (crown jewels); staff = admin OR janitor (admin
+  // shares the operational keys, so it manages any circle/event alongside janitor).
+  const isJanitor = webIsJanitor(viewer.webRole)
+  const isStaff = webIsStaff(viewer.webRole)
 
   switch (scope.kind) {
     case 'global': {
-      // Host+ can reach the Admin tab; janitor gets deep admin everywhere.
-      if (atLeastRole(role, 'host')) caps.add('admin.access')
+      // Staff (admin/janitor) reach the Admin tab. Admin entry is the STAFF axis,
+      // not the community ladder (host+ stewardship lives in per-scope caps below).
+      if (isStaff) caps.add('admin.access')
       break
     }
 
@@ -230,10 +237,16 @@ export function capabilityGaps(
     attribute(resolveCapabilities(viewerPaid, scopeAsMember), 'needs-paid-tier')
   }
 
-  // Rung 3 — role standing (probed at the top rung: anything still missing that a
-  // janitor would hold is role-gated).
-  if (viewer.role !== 'janitor') {
-    attribute(resolveCapabilities({ ...viewerPaid, role: 'janitor' }, scopeAsMember), 'needs-role')
+  // Rung 3 — elevated standing (probed at the top rung: anything still missing that
+  // a mentor + janitor would hold is "role"-gated). 'needs-role' covers BOTH axes —
+  // community stewardship (e.g. circle.editSettings) and STAFF (e.g. admin.access,
+  // profile.edit-by-janitor) — since the upsell layer treats both as "you need
+  // standing you don't have". Probe the apex of each axis together.
+  if (viewer.role !== 'mentor' || !webIsJanitor(viewer.webRole)) {
+    attribute(
+      resolveCapabilities({ ...viewerPaid, role: 'mentor', webRole: 'janitor' }, scopeAsMember),
+      'needs-role',
+    )
   }
 
   return gaps

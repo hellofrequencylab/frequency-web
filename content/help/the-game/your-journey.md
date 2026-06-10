@@ -3,7 +3,7 @@ title: Your Journey
 description: Adopt a seasonal set of practices, choose your depth, and follow your progress to completion.
 category: the-game
 order: 4
-updated: 2026-06-09
+updated: 2026-06-10
 audience: member
 featureKeys: [practices, crew]
 status: published
@@ -24,9 +24,9 @@ know — there's no separate tracker to keep. Adopting is always free.
 Every practice comes in three depths, so the same Journey works on your best week and
 your hardest one:
 
-- **Spark** — the 5–10 minute version. Low friction, for a hard day or a fresh start.
-- **Current** — the standard form (the default).
-- **Deep** — the full expression: longer, or with facilitation.
+- **Initiate** — the 5–10 minute version. Low friction, for a hard day or a fresh start.
+- **Adept** — the standard form (the default).
+- **Master** — the full expression: longer, or with facilitation.
 
 Your circle **Host** can set the right depth for the whole circle, and you can always
 set your own. Changing depth never changes the zaps or streak you earn — only what you
@@ -40,7 +40,7 @@ Open **Your Journey** from your dashboard to see the whole thing at a glance:
   swipe a practice to log it.
 - An ordered checklist shows each step's rhythm. A step is **on track** once you've kept
   its cadence this week — a daily practice wants most days, a weekly one just once.
-- A progress ring shows the season arc: **8 qualifying weeks of the 13** completes the
+- A progress ring shows your progress through the season: **8 qualifying weeks of the 13** completes the
   Journey. A qualifying week is any week you practised at least once — so a few hard
   weeks won't end you.
 - A panel up top shows what the work earns: your season **zaps and rank**, your
@@ -60,6 +60,6 @@ when you arrive.
 
 If people in your circle have adopted the same Journey, you'll see them traveling it
 with you — and when **three or more** of you are on the same Journey, you form a
-**Chorus** and keep each other's rhythm. Journeys are made to be shared — the practice
+**Co-op** and keep each other's rhythm. Journeys are made to be shared — the practice
 is better with company.
 </content>

@@ -61,7 +61,7 @@ export interface JourneyPlan {
   created_at: string
   updated_at: string
   published_at: string | null
-  /** Seasonal Quest this Journey is official under (null = open-library Journey). */
+  /** Quest this Journey is official under (null = open-library Journey). */
   quest_id: string | null
   /** Official season Journey (Guide/Mentor flagged). */
   official: boolean
@@ -271,7 +271,7 @@ export async function setPlanStatus(planId: string, status: PlanStatus): Promise
   await db().from('journey_plans').update({ status, ...touch() }).eq('id', planId)
 }
 
-/** Flag a plan official + link it to a Seasonal Quest. Guide/Mentor only — caller enforces. */
+/** Flag a plan official + link it to a Quest. Guide/Mentor only — caller enforces. */
 export async function setPlanOfficial(
   planId: string,
   opts: { official: boolean; questId?: string | null },

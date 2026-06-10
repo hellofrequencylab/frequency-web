@@ -126,7 +126,7 @@ export default async function JourneysPage() {
           </div>
         </section>
 
-        {/* Seasonal Quests — the official containers that group Journeys for the season. */}
+        {/* Quests — the official containers that group Journeys for the season. */}
         <section>
           <Link
             href="/crew/quests"
@@ -136,7 +136,7 @@ export default async function JourneysPage() {
               <Compass className="h-5 w-5" />
             </span>
             <div className="min-w-0 flex-1">
-              <h2 className="text-sm font-bold text-text">Seasonal Quests</h2>
+              <h2 className="text-sm font-bold text-text">Quests</h2>
               <p className="mt-0.5 text-sm text-muted">
                 The season’s official Quests — guided tracks of practices, free to start, with rewards as you go.
               </p>

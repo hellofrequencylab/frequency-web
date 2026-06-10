@@ -114,7 +114,7 @@ export default async function VaultLedgerPage() {
         {groups.length === 0 ? (
           <EmptyState
             icon={Receipt}
-            title="No points yet"
+            title="No activity yet"
             description="Log a practice, RSVP to a gathering, or share a post — every reward you bank shows up here, with how you earned it."
           />
         ) : (

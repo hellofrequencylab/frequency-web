@@ -84,7 +84,7 @@ export default async function StorePage() {
               className={`flex items-center gap-2 rounded-xl bg-success-bg/50 px-3 py-2.5 text-signal-strong transition-colors hover:bg-success-bg ${hasLifetimeRank ? 'mt-3' : ''}`}
             >
               <Receipt className="h-4 w-4 shrink-0" />
-              <span className="flex-1 text-xs font-semibold">How you earned — points &amp; streaks log</span>
+              <span className="flex-1 text-xs font-semibold">How you earned — zaps &amp; gems log</span>
               <ArrowRight className="h-3.5 w-3.5 shrink-0" />
             </Link>
 

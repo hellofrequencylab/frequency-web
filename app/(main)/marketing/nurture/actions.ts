@@ -8,7 +8,7 @@
 import { revalidatePath } from 'next/cache'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { getCallerProfile } from '@/lib/auth'
-import { atLeastRole } from '@/lib/core/roles'
+import { isStaff } from '@/lib/core/roles'
 import { getStaffMember } from '@/lib/staff'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
@@ -18,7 +18,7 @@ import { validateStepInput } from '@/lib/nurture/schedule'
 async function requireMarketer(): Promise<{ id: string } | string> {
   const me = await getCallerProfile()
   if (!me) return 'Sign in first.'
-  if (atLeastRole(me.community_role, 'admin')) return { id: me.id }
+  if (isStaff(me.webRole)) return { id: me.id }
   const staff = await getStaffMember().catch(() => null)
   if (staff) return { id: me.id }
   return 'Marketing access required.'

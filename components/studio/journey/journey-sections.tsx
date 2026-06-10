@@ -366,7 +366,7 @@ export function OfficialSection({
           description="Marks this as part of the canonical, free seasonal program."
         />
         {official && (
-          <StudioField label="Seasonal Quest">
+          <StudioField label="Quest">
             <select
               value={questId ?? ''}
               onChange={(e) => onChange({ official: true, questId: e.target.value || null })}
@@ -383,7 +383,7 @@ export function OfficialSection({
         )}
         {official && quests.length === 0 && (
           <p className="inline-flex items-center gap-1.5 text-xs text-muted">
-            <AlertCircle className="h-3.5 w-3.5" /> No active Seasonal Quests to assign yet.
+            <AlertCircle className="h-3.5 w-3.5" /> No active Quests to assign yet.
           </p>
         )}
       </div>

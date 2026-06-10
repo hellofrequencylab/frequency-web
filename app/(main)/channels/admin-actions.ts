@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
-import { atLeastRole } from '@/lib/core/roles'
+import { isStaff } from '@/lib/core/roles'
 
 // In-place "Channel settings" admin module (EMBEDDED-ADMIN.md / ADR-133, PX.5).
 // Topical channels are PLATFORM-CURATED — there is no per-channel host, so both
@@ -14,7 +14,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 async function isChannelManager(): Promise<boolean> {
   const caller = await getCallerProfile()
-  return !!caller && atLeastRole(caller.community_role, 'admin')
+  return !!caller && isStaff(caller.webRole)
 }
 
 /** Load the editable fields of a topical channel, but only for staff (admin+).

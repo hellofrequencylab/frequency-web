@@ -47,7 +47,7 @@ export default async function QuestsPage() {
         <EmptyState
           icon={MapIcon}
           title="No quests yet"
-          description="Seasonal Quests appear here when the season opens."
+          description="Quests appear here when the season opens."
         />
       ) : (
         <div className="space-y-10">

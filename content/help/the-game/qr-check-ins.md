@@ -3,13 +3,13 @@ title: QR codes & checking in
 description: Scan a Frequency code to earn, and share your own code to connect.
 category: the-game
 order: 3
-updated: 2026-06-05
+updated: 2026-06-10
 audience: member
 featureKeys: [codes]
 status: published
 ---
 
-Frequency codes turn showing up in the real world into points. Scan one to check
+Frequency codes turn showing up in the real world into zaps. Scan one to check
 in and earn; share your own code so people you meet can find you.
 
 ## Scanning a code to earn

@@ -15,7 +15,7 @@ import { enabledWidgets, type WidgetId } from '@/lib/journey-page-config'
 import { NextStepCard } from '@/components/journey/next-step-card'
 import { SeasonProgress } from '@/components/journey/season-progress'
 import { StepChecklist, type ChecklistRow } from '@/components/journey/step-checklist'
-import { ChorusStrip } from '@/components/journey/chorus-strip'
+import { CoopStrip } from '@/components/journey/coop-strip'
 import { TierControl } from '@/components/journey/tier-control'
 import { GamificationPanel } from '@/components/journey/gamification-panel'
 import { StreakStrip } from '@/components/journey/streak-strip'
@@ -38,7 +38,7 @@ export const dynamic = 'force-dynamic'
 //   • DISCOVERY → not adopted / visitor: the story, the path, pillar balance, social proof,
 //                 reward + completion rule, adopt/remix CTA.
 //   • ACTIVE    → adopted: the Next-Step card, season progress, checklist, gamification +
-//                 streak (behind Suspense — never blocks the shell), chorus, tier control.
+//                 streak (behind Suspense — never blocks the shell), co-op, tier control.
 // Both modes compose widgets in the order resolved by normalizePageConfig(page_config, mode).
 
 const VISIBILITY = {
@@ -238,7 +238,7 @@ function ActiveMode({
     met: it.met,
     resolvedTier: it.resolvedTier,
   }))
-  const resolvedTier = progress.items[0]?.resolvedTier ?? 'current'
+  const resolvedTier = progress.items[0]?.resolvedTier ?? 'adept'
 
   const node = (id: WidgetId): React.ReactNode => {
     switch (id) {
@@ -266,7 +266,7 @@ function ActiveMode({
           </Suspense>
         )
       case 'companions':
-        return <ChorusStrip companions={progress.circleCompanions} />
+        return <CoopStrip companions={progress.circleCompanions} />
       case 'practice-guide':
         return <PracticeGuideBlock intro={plan.intro} />
       default:

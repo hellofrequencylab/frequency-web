@@ -4,15 +4,16 @@ import { revalidatePath } from 'next/cache'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
-import { atLeastRole } from '@/lib/core/roles'
+import { isJanitor } from '@/lib/core/roles'
 import { buildPlan, previewPlan, commitPlan, type AreaSpec } from '@/lib/demo/engine'
 import { getDemographicPalette } from '@/lib/demo/ai-palette'
 import { deletePlansByAuthors } from '@/lib/journey-plans'
 import { runDecay, type DecayReport } from '@/lib/demo/decay'
 
+// Crown-jewel gate: the STAFF axis (web_role janitor, ADR-208).
 async function requireJanitor() {
   const caller = await getCallerProfile()
-  if (!caller || !atLeastRole(caller.community_role, 'janitor')) throw new Error('Unauthorized')
+  if (!caller || !isJanitor(caller.webRole)) throw new Error('Unauthorized')
 }
 
 // Build the plan, fetching a demographic AI palette first when requested (and

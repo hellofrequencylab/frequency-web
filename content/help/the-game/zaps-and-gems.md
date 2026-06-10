@@ -3,7 +3,7 @@ title: Zaps and gems explained
 description: The two currencies, how you earn them, and what they are for.
 category: the-game
 order: 1
-updated: 2026-06-05
+updated: 2026-06-10
 audience: member
 featureKeys: [gamification, zaps, gems]
 status: published
@@ -18,7 +18,7 @@ You earn **zaps** for getting out into the world: going to in-person gatherings,
 inviting someone new, hosting, and capturing physical spots around your city. Zaps
 are your seasonal score, and as you earn them you climb the season ranks:
 
-- ghost, then runner, then operative, then agent, then conduit, then luminary.
+- ghost, then echo, then signal, then beacon, then conduit, then luminary.
 
 Roughly what things are worth — the biggest rewards live off the screen:
 
@@ -45,7 +45,7 @@ welcome a newcomer (**8**), RSVP or join a circle (**5**), a post (**3**), a rep
 
 ## See exactly how you earned
 
-Your Vault keeps a running **points & streaks log** — open it from the Vault
+Your Vault keeps a running **zaps, gems & streaks log** — open it from the Vault
 ("How you earned") to see every gem and zap you've banked, what earned it, and
 when, plus your live streaks. The simple rule behind it: **anything you do online
 earns gems; anything you do in the real world earns zaps.** That holds everywhere —

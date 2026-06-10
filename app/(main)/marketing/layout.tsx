@@ -1,8 +1,9 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { getStaffMember, staffCan } from '@/lib/staff'
-import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
+import { isStaff, asWebRole } from '@/lib/core/roles'
 import { MarketingSubNav } from './sub-nav'
 
 // The Marketing workspace lives INSIDE the normal app frame (full left nav + top
@@ -14,15 +15,16 @@ export default async function MarketingLayout({ children }: { children: React.Re
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) notFound()
 
-  const admin = createAdminClient()
+  // Staff access is the web_role axis now (ADR-208). web_role isn't in the stale
+  // generated types yet, so read it through the untyped cast (repo convention).
+  const admin = createAdminClient() as unknown as SupabaseClient
   const { data: profile } = await admin
     .from('profiles')
-    .select('community_role')
+    .select('web_role')
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
-  const role = ((profile?.community_role as CommunityRole) ?? 'member')
-  if (!atLeastRole(role, 'admin')) {
+  if (!isStaff(asWebRole((profile as { web_role?: string } | null)?.web_role))) {
     const staff = await getStaffMember().catch(() => null)
     if (!staff || !staffCan(staff.role, 'marketing', 'read')) notFound()
   }
