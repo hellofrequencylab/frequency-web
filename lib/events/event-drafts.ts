@@ -375,6 +375,79 @@ export async function publishEventDraft(
   return { slug: draft.slug ?? '', claimToken, zapsAwarded }
 }
 
+// ── Poster notifications ─────────────────────────────────────────────────────
+// The poster hears about the two moments that matter after they publish: an
+// organizer CLAIMED their event (the handshake landed) or staff REMOVED it (and
+// the Zaps came back). Best-effort by design: a notification hiccup must never
+// break a claim or a removal, so failures log and the caller moves on.
+
+/** Insert a notification to the poster unless an identical one already exists
+ *  for this recipient + type + event (idempotent-ish: re-running a claim or a
+ *  removal never double-notifies). Never throws. */
+async function insertPosterNotification(
+  posterId: string,
+  type: 'event_claimed' | 'event_removed',
+  eventId: string,
+  body: string,
+): Promise<void> {
+  try {
+    const admin = db()
+    const { data: existing } = await admin
+      .from('notifications')
+      .select('id')
+      .eq('recipient_id', posterId)
+      .eq('type', type)
+      .eq('reference_id', eventId)
+      .limit(1)
+      .maybeSingle()
+    if (existing) return
+    const { error } = await admin.from('notifications').insert({
+      recipient_id: posterId,
+      actor_id: null,
+      type,
+      reference_type: 'event',
+      reference_id: eventId,
+      body,
+    })
+    if (error) console.error('[poster-events] notify failed', { type, eventId, error: error.message })
+  } catch (err) {
+    console.error('[poster-events] notify threw', { type, eventId, err })
+  }
+}
+
+/** Tell the poster their posted event was claimed (organizer handshake or admin
+ *  assign). Exported so the admin assign-host path sends the exact same note.
+ *  `bonusPaid` appends the claim-bonus line for a VALID claim only. */
+export async function notifyPosterEventClaimed(
+  posterId: string,
+  eventId: string,
+  title: string | null,
+  bonusPaid: boolean,
+): Promise<void> {
+  const name = (title ?? '').trim() || 'your posted event'
+  const body =
+    `The organizer claimed ${name}. Your posted event is now theirs to run.` +
+    (bonusPaid ? ' You earned the claim bonus.' : '')
+  await insertPosterNotification(posterId, 'event_claimed', eventId, body)
+}
+
+/** Tell the poster their posted event was removed, and (when a clawback ran)
+ *  that the posting Zaps came back off their balance. */
+async function notifyPosterEventRemoved(
+  posterId: string,
+  eventId: string,
+  title: string | null,
+  reason: string,
+  clawedBack: number,
+): Promise<void> {
+  const name = (title ?? '').trim() || 'Your posted event'
+  const cleanReason = reason.replace(/[.\s]+$/, '')
+  const body =
+    `${name} was removed: ${cleanReason}.` +
+    (clawedBack > 0 ? ' The Zaps from posting it were returned.' : '')
+  await insertPosterNotification(posterId, 'event_removed', eventId, body)
+}
+
 // ── Claim ────────────────────────────────────────────────────────────────────
 
 export interface ClaimResult {
@@ -398,7 +471,7 @@ export async function claimEvent(
 
   const { data } = await admin
     .from('events')
-    .select('id, slug, host_id, claimed_at, removed_at, scope_type, scope_id, posted_by_profile_id, status')
+    .select('id, title, slug, host_id, claimed_at, removed_at, scope_type, scope_id, posted_by_profile_id, status')
     .eq('claim_token', token)
     .eq('status', 'published')
     .maybeSingle()
@@ -452,6 +525,7 @@ export async function claimEvent(
 
   // Reward the POSTER (not the claimer), exactly-once on event_claim_bonus:<id>,
   // ONLY for a valid claim.
+  let bonusPaid = false
   if (posterId && claimValid) {
     try {
       const { recorded } = await recordEngagementEvent({
@@ -462,9 +536,17 @@ export async function claimEvent(
         context: { eventId, kind: 'event_claim_bonus', claimerProfileId },
       })
       if (recorded) await awardZapsForAction(posterId, 'event_claim_bonus')
+      bonusPaid = true
     } catch {
       /* bonus is best-effort */
     }
+  }
+
+  // Tell the poster the handshake landed (skip self-claims: no news to deliver).
+  // Best-effort + idempotent inside the helper; a notify failure never fails the
+  // claim itself.
+  if (posterId && posterId !== claimerProfileId) {
+    await notifyPosterEventClaimed(posterId, eventId, (ev.title as string) ?? null, bonusPaid)
   }
 
   // Log the claim itself on the ledger (separate key from the bonus). Record
@@ -503,10 +585,15 @@ export async function reportRemoveEvent(eventId: string, reason: string): Promis
 
   const { data } = await admin
     .from('events')
-    .select('id, posted_by_profile_id, removed_at')
+    .select('id, title, posted_by_profile_id, removed_at')
     .eq('id', eventId)
     .maybeSingle()
-  const ev = data as { id: string; posted_by_profile_id: string | null; removed_at: string | null } | null
+  const ev = data as {
+    id: string
+    title: string | null
+    posted_by_profile_id: string | null
+    removed_at: string | null
+  } | null
   if (!ev) return { removed: false, clawedBack: 0 }
 
   const alreadyRemoved = !!ev.removed_at
@@ -549,6 +636,10 @@ export async function reportRemoveEvent(eventId: string, reason: string): Promis
     } catch {
       /* clawback is best-effort; removal still stands */
     }
+
+    // Tell the poster what happened (and that the posting Zaps came back, when
+    // they did). Best-effort + idempotent inside the helper.
+    await notifyPosterEventRemoved(posterId, eventId, ev.title, cleanReason, clawedBack)
   }
 
   return { removed: true, clawedBack }
