@@ -269,7 +269,15 @@ Surprise the player. **Secret achievements** (already supported) that no one kne
 a **mid-season Act 2 twist**; occasional bonus multipliers on a perfect week. The unpredictable
 reward (Pokémon Go's "rare spawn" delight) that keeps the loop alive.
 
-*Supporting texture from the briefs: the **season-drop launch moment** (an event, not an update —
+**Shipped — Surprises (ADR-210):** the variable-bonus piece is live (`lib/surprises.ts`). On any
+practice log there is a chance (≈ once every ~4-5 active days) of an **unannounced bonus**, at most
+once per UTC day, paid in **Gems only** so a lucky roll never distorts the season Zap/rank ladder.
+Both timing *and* size are random (common 6-12 / rare 25 / gleam 50). The roll is a pure
+deterministic function of `(member, day)` — idempotent and unfarmable — claimed once through
+`reward_grants` and surfaced in the existing log toast. The odds stay secret by design (no operator
+page). Still ahead: the Act-2 mid-season twist and the season-launch moment below.
+
+*Supporting texture from the briefs: the **season-launch moment** (an event, not an update —
 the Fortnite reference) and the **live reward track** visible from day one.*
 
 ---
