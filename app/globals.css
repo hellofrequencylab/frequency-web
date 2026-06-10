@@ -101,6 +101,33 @@
   --brand-wash:         rgba(194, 88, 18, 0.62);
 }
 
+/* Always-light lock. The cinematic beta induction is a branded cream experience
+   that must hold its light palette even when the visitor's app/OS is in dark mode
+   (a dark induction reads as "broken"). Re-asserts the light surface/text/border
+   tokens for its subtree; placing it on a wrapper wins over the inherited .dark
+   values via the custom-property cascade. */
+.theme-light-lock {
+  color-scheme: light;
+  --color-canvas:            #FBF8F1;
+  --color-marketing-canvas:  #F2EAD9;
+  --color-surface:           #FFFFFF;
+  --color-surface-elevated:  #FAF6EC;
+  --color-border:            #E9E1D4;
+  --color-border-strong:     #D8CDBB;
+  --color-text:              #1E1A13;
+  --color-text-muted:        #6B6253;
+  --color-text-subtle:       #8F8675;
+  --color-primary:           #E2912F;
+  --color-primary-hover:     #CE8023;
+  --color-primary-strong:    #9A5E12;
+  --color-primary-bg:        #FBEFD9;
+  --color-text-on-primary:   #FFFFFF;
+  --color-success:           #11827A;
+  --color-success-bg:        #D7EFEA;
+  --color-danger:            #BA3B30;
+  --color-danger-bg:         #F7E4E1;
+}
+
 .dark {
   color-scheme: dark;
 

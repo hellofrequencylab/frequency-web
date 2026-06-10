@@ -390,7 +390,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
   const isLastSlide = reelIndex >= reel.length - 1
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-marketing-canvas">
+    <main className="theme-light-lock relative min-h-screen overflow-hidden bg-marketing-canvas">
       {/* Soft warm glow (Hook-style), centered behind the content. */}
       <div aria-hidden className="pointer-events-none fixed left-1/2 top-1/2 h-[720px] w-[720px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary opacity-[0.09] blur-[160px]" />
 
@@ -502,7 +502,9 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                         aria-pressed={active}
                         className={`flex items-start gap-3 rounded-2xl border px-4 py-4 text-left transition-colors ${active ? 'border-primary bg-primary/10' : 'border-border bg-surface hover:border-primary/40'}`}
                       >
-                        <span className="text-2xl leading-none" aria-hidden>{p.emoji}</span>
+                        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${active ? 'bg-primary text-on-primary' : 'bg-primary-bg text-primary-strong'}`} aria-hidden>
+                          <p.Icon className="h-5 w-5" />
+                        </span>
                         <span>
                           <span className="block text-base font-bold text-text">{p.label}</span>
                           <span className="mt-0.5 block text-sm text-muted">{p.pitch}</span>
