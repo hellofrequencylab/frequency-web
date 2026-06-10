@@ -33,10 +33,19 @@ export function ChoresOverlay({
 }) {
   const [open, setOpen] = useState(false)
   const [claimed, setClaimed] = useState<{ amount: number } | null>(null)
+  // "Don't show till tomorrow" snooze — hides BOTH the overlay and the Next Steps
+  // tab until the snooze expires. Read from localStorage on mount (client-only).
+  const [snoozedUntil, setSnoozedUntil] = useState(0)
   const cardRef = useRef<HTMLDivElement>(null)
 
   const reward = chores.complete && !chores.rewarded
   const coach = chores.complete && chores.rewarded && !!nextAction
+
+  // Hydrate the snooze from storage once on mount (avoids SSR/client mismatch).
+  useEffect(() => {
+    setSnoozedUntil(Number(localStorage.getItem(SNOOZE_KEY) ?? 0))
+  }, [])
+  const snoozed = Date.now() < snoozedUntil
 
   // Auto-open: the reward beat always fires (she pays up once); the chores and
   // coach beats nudge on a pace (once per session, ≥1h since last seen).
@@ -67,8 +76,10 @@ export function ChoresOverlay({
 
   const snoozeTomorrow = useCallback(() => {
     setOpen(false)
+    const until = Date.now() + 24 * 60 * 60 * 1000
+    setSnoozedUntil(until) // hide the Next Steps tab immediately, until tomorrow
     try {
-      localStorage.setItem(SNOOZE_KEY, String(Date.now() + 24 * 60 * 60 * 1000))
+      localStorage.setItem(SNOOZE_KEY, String(until))
       sessionStorage.setItem(SESSION_KEY, '1')
     } catch {}
   }, [])
@@ -110,7 +121,8 @@ export function ChoresOverlay({
   // nothing — the tab disappears. Collapsed until hover (web) / tap (mobile), then a
   // click opens the overlay; an occasional wiggle signals it's waiting.
   const hasChoresLeft = !chores.complete && left > 0
-  const showPill = !open && (hasChoresLeft || coach)
+  // Hidden while snoozed ("Don't show till tomorrow") — the tab disappears until then.
+  const showPill = !open && !snoozed && (hasChoresLeft || coach)
   const pill = showPill ? (
     <EdgePill
       side="left"
