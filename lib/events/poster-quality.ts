@@ -15,6 +15,13 @@
 // The reward floor is the live event_posted amount (zap_config, else the
 // ZAP_AMOUNTS fallback) times the multiplier, rounded. The daily_cap on
 // event_posted is enforced separately by awardZapsForAction.
+//
+// Anti-claim-farming: ENGAGEMENT is the dominant signal and the claim
+// contribution is CAPPED. "engaged" counts events with a REAL RSVP from an
+// ESTABLISHED member (membership/practice history, not just an RSVP), plus a
+// capped lift from VALID claims only (claims that passed lib/events/claim-trust).
+// A ring of reciprocal/sockpuppet claims therefore moves the band ZERO. The band
+// thresholds/multipliers below are unchanged; they just read the hardened counts.
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -81,11 +88,24 @@ export function scorePosterCounts(counts: PosterCounts): PosterQuality {
 
 /**
  * Read a poster's published, posted-on-behalf events and count how they did.
+ *
  * "Posted" = published events this profile posted that they do not host
  * themselves (source='poster_scan' OR host_id distinct from posted_by) — the
- * outreach posts, not their own hosted events. "Engaged" = at least one RSVP, or
- * claimed, or removed-but-was-engaged is NOT counted (removed is its own signal).
- * "Claimed" = an organizer took it over. "Removed" = staff pulled it (spam/abuse).
+ * outreach posts, not their own hosted events.
+ *
+ * The hardened signals (anti-claim-farming):
+ *   • ENGAGEMENT is the dominant signal: an event counts as "engaged" when it
+ *     drew a REAL RSVP from an ESTABLISHED member (a 'going' RSVP by someone
+ *     other than the poster who has community history beyond this one RSVP),
+ *     OR when it was VALIDLY claimed (a claim that passed the trust gate, not a
+ *     reciprocal/sockpuppet claim).
+ *   • CLAIMED counts ONLY valid claims, and its contribution to "engaged" is
+ *     CAPPED so a ring of fake claims cannot lift the band: claims can raise
+ *     "engaged" only up to the count already earned by real RSVPs plus one.
+ *     A poster with zero real RSVPs gets at most one engaged event from claims,
+ *     so a fake-claim ring moves the band ZERO.
+ *   • "Removed" = staff pulled it (spam/abuse); its own punitive signal.
+ *
  * Shared by getPosterQuality + the clawback path so the definitions never drift.
  */
 export async function getPosterCounts(profileId: string): Promise<PosterCounts> {
@@ -108,31 +128,106 @@ export async function getPosterCounts(profileId: string): Promise<PosterCounts> 
 
   const posted = rows.length
   const ids = rows.map((e) => String(e.id))
-  let claimed = 0
   let removed = 0
   for (const e of rows) {
-    if (e.claimed_at) claimed += 1
     if (e.removed_at) removed += 1
   }
 
-  // Engaged = has at least one RSVP, OR was claimed. Claimed events are engaged
-  // by definition (an organizer took them over). Count RSVP'd event ids once.
-  const rsvpIds = new Set<string>()
+  // Which of these events have a REAL RSVP from an established member? A 'going'
+  // RSVP by anyone other than the poster, whose author has community history
+  // beyond this RSVP, counts. (A brand-new account whose ONLY footprint is RSVPs
+  // to this poster's events is treated as not-yet-established and ignored.)
+  const realRsvpEventIds = new Set<string>()
   if (ids.length) {
     const { data: rsvps } = await admin
       .from('event_rsvps')
-      .select('event_id')
+      .select('event_id, profile_id, status')
       .in('event_id', ids)
-    for (const r of (rsvps ?? []) as { event_id: string }[]) {
-      rsvpIds.add(String(r.event_id))
+      .eq('status', 'going')
+    const rsvpRows = ((rsvps ?? []) as { event_id: string; profile_id: string }[]).filter(
+      (r) => r.profile_id && r.profile_id !== profileId,
+    )
+    const rsvperIds = Array.from(new Set(rsvpRows.map((r) => String(r.profile_id))))
+    const established = await establishedMembers(rsvperIds)
+    for (const r of rsvpRows) {
+      if (established.has(String(r.profile_id))) realRsvpEventIds.add(String(r.event_id))
     }
   }
-  let engaged = 0
+
+  // Which claims were VALID (passed the trust gate at claim time)? Read the
+  // event_claimed ledger rows and trust their recorded `valid` flag. Only valid
+  // claims count toward claimed / engaged.
+  const validClaimEventIds = await validClaimedEventIds(ids)
+  let claimed = 0
   for (const e of rows) {
-    if (rsvpIds.has(String(e.id)) || e.claimed_at) engaged += 1
+    if (e.claimed_at && validClaimEventIds.has(String(e.id))) claimed += 1
   }
 
+  // Engagement = events with a real RSVP. Claims add to engaged but are CAPPED:
+  // they can lift engaged only to (realEngaged + 1), so a fake-claim ring with no
+  // real RSVPs yields at most one engaged event and never moves the band.
+  let realEngaged = 0
+  for (const e of rows) {
+    if (realRsvpEventIds.has(String(e.id))) realEngaged += 1
+  }
+  let claimEngaged = 0
+  for (const e of rows) {
+    // A validly-claimed event with no real RSVP can add engagement, capped.
+    if (validClaimEventIds.has(String(e.id)) && !realRsvpEventIds.has(String(e.id))) claimEngaged += 1
+  }
+  const cappedClaimEngaged = Math.min(claimEngaged, realEngaged + 1)
+  const engaged = realEngaged + cappedClaimEngaged
+
   return { posted, engaged, claimed, removed }
+}
+
+/** Of these profile ids, which have community history beyond a single event
+ *  RSVP? A member counts as established with any membership OR practice log. We
+ *  deliberately do NOT count event RSVPs here, so a sockpuppet that only RSVPs to
+ *  the poster's events never reads as established. */
+async function establishedMembers(profileIds: string[]): Promise<Set<string>> {
+  const out = new Set<string>()
+  if (!profileIds.length) return out
+  const admin = db()
+
+  const { data: members } = await admin
+    .from('memberships')
+    .select('profile_id')
+    .in('profile_id', profileIds)
+  for (const m of (members ?? []) as { profile_id: string }[]) {
+    if (m.profile_id) out.add(String(m.profile_id))
+  }
+
+  const { data: logs } = await admin
+    .from('practice_logs')
+    .select('profile_id')
+    .in('profile_id', profileIds)
+  for (const l of (logs ?? []) as { profile_id: string }[]) {
+    if (l.profile_id) out.add(String(l.profile_id))
+  }
+
+  return out
+}
+
+/** Of these event ids, which had a VALID claim recorded on the ledger. A claim
+ *  is logged under event_claimed:<id> with a `valid` flag set by the claim trust
+ *  gate; only valid claims count toward quality. */
+async function validClaimedEventIds(eventIds: string[]): Promise<Set<string>> {
+  const out = new Set<string>()
+  if (!eventIds.length) return out
+  const keys = eventIds.map((id) => `event_claimed:${id}`)
+  const { data } = await db()
+    .from('engagement_events')
+    .select('idempotency_key, context')
+    .in('idempotency_key', keys)
+  for (const row of (data ?? []) as { idempotency_key: string; context?: { valid?: boolean; eventId?: string } }[]) {
+    const ctx = row.context ?? {}
+    if (ctx.valid === true) {
+      const id = ctx.eventId ?? String(row.idempotency_key).replace(/^event_claimed:/, '')
+      out.add(String(id))
+    }
+  }
+  return out
 }
 
 /** The poster's honesty band + multiplier + the counts behind it. */

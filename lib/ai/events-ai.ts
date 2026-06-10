@@ -84,6 +84,122 @@ const EXTRACTION_TOOL: Anthropic.Tool = {
           },
         },
       },
+      corners: {
+        type: 'array',
+        description:
+          'The four corners of the poster within the image, each normalized 0..1, in order [top-left, top-right, bottom-right, bottom-left]. Provide these only when you can clearly locate all four; omit otherwise. They let the app straighten a tilted photo.',
+        items: {
+          type: 'object',
+          properties: { x: { type: 'number' }, y: { type: 'number' } },
+        },
+      },
+      quality: {
+        type: 'object',
+        description: 'Your honest read on the capture quality of the photo.',
+        properties: {
+          legible: { type: 'boolean', description: 'True if the text is clear enough to read.' },
+          glare: { type: 'boolean', description: 'True if glare or reflection blocks part of the poster.' },
+          skew: { type: 'boolean', description: 'True if the poster is tilted or photographed at a steep angle.' },
+          note: {
+            type: 'string',
+            description:
+              'A short, plain retake tip when the capture is poor (for example "Some glare on the top. Try again without the flash."). Leave empty when the photo is fine. No em dashes, no emojis.',
+          },
+        },
+      },
+      details: {
+        type: 'object',
+        description:
+          'Everything else printed on the poster, captured into a flexible structure. Every field is optional. Omit a field when the poster has nothing for it. Never invent anything that is not printed.',
+        properties: {
+          lineup: {
+            type: 'array',
+            description: 'The bands, speakers, djs, performers, or hosts named on the poster.',
+            items: {
+              type: 'object',
+              properties: {
+                name: { type: 'string' },
+                role: { type: 'string', enum: ['band', 'speaker', 'dj', 'performer', 'host', 'other'] },
+                note: { type: 'string' },
+                imageBox: {
+                  type: 'object',
+                  description: 'Normalized 0..1 crop box of this act\'s photo on the poster, when one is shown.',
+                  properties: { x: { type: 'number' }, y: { type: 'number' }, w: { type: 'number' }, h: { type: 'number' } },
+                },
+                confidence: { type: 'string', enum: ['high', 'low'], description: 'low when the poster is hard to read here.' },
+              },
+            },
+          },
+          schedule: {
+            type: 'array',
+            description: 'Printed set times or a run of show.',
+            items: {
+              type: 'object',
+              properties: {
+                time: { type: 'string' },
+                title: { type: 'string' },
+                note: { type: 'string' },
+                confidence: { type: 'string', enum: ['high', 'low'] },
+              },
+            },
+          },
+          features: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Amenities or highlights, for example "all ages", "food trucks", "sober space".',
+          },
+          tickets: {
+            type: 'array',
+            description: 'Ticket tiers printed on the poster.',
+            items: {
+              type: 'object',
+              properties: {
+                label: { type: 'string' },
+                priceCents: { type: 'number', description: 'Whole cents (e.g. 1500 for $15), or omit when not printed.' },
+                note: { type: 'string' },
+                confidence: { type: 'string', enum: ['high', 'low'] },
+              },
+            },
+          },
+          links: {
+            type: 'array',
+            description: 'URLs or handles printed on the poster.',
+            items: {
+              type: 'object',
+              properties: {
+                label: { type: 'string' },
+                url: { type: 'string' },
+                kind: { type: 'string', enum: ['tickets', 'rsvp', 'website', 'instagram', 'other'] },
+              },
+            },
+          },
+          sponsors: { type: 'array', items: { type: 'string' }, description: 'Sponsor or partner names printed on the poster.' },
+          imageRegions: {
+            type: 'array',
+            description: 'Other croppable image regions for a gallery (logos, photos, artwork), beyond the cover.',
+            items: {
+              type: 'object',
+              properties: {
+                box: {
+                  type: 'object',
+                  properties: { x: { type: 'number' }, y: { type: 'number' }, w: { type: 'number' }, h: { type: 'number' } },
+                },
+                kind: { type: 'string', enum: ['logo', 'photo', 'art'] },
+                note: { type: 'string' },
+              },
+            },
+          },
+          other: {
+            type: 'array',
+            description: 'A catch-all for anything that does not fit the slots above, for example {"label":"age","value":"21+"} or {"label":"dress code","value":"all white"}.',
+            items: {
+              type: 'object',
+              properties: { label: { type: 'string' }, value: { type: 'string' } },
+            },
+          },
+          confidence: { type: 'string', enum: ['high', 'low'], description: 'low when the poster as a whole is hard to read.' },
+        },
+      },
     },
     required: [],
   },
@@ -99,7 +215,10 @@ Read every detail you can and call the save_event tool. Rules:
 - price: if the poster says free, set isFree=true. If a paid price is printed, set priceCents in whole cents (e.g. 1500 for $15).
 - domain: classify into one of mind, body, spirit, expression.
 - tags: 3 to 6 short lowercase descriptors drawn from the poster.
-- cover: if a strong image region appears on a poster (artwork, photo, the main graphic), set found=true, imageIndex to which image it is in (0-based, in the order given), and box to the normalized bounding box (x,y top-left, w,h size, each 0..1) around the best cover region. If there is no usable image region, set found=false.`
+- cover: if a strong image region appears on a poster (artwork, photo, the main graphic), set found=true, imageIndex to which image it is in (0-based, in the order given), and box to the normalized bounding box (x,y top-left, w,h size, each 0..1) around the best cover region. If there is no usable image region, set found=false.
+- corners: when you can clearly see all four corners of the poster in the photo, give them as four normalized points (each 0..1) in order top-left, top-right, bottom-right, bottom-left. This lets the app straighten a tilted shot. Omit corners when they are cropped off or unclear.
+- quality: report honestly. Set legible=false when text is too blurry or small to read, glare=true when a reflection blocks part of the poster, skew=true when it is photographed at a steep angle. When the capture is poor, add a short plain retake note (for example "The bottom is cut off. Try a straight-on shot of the whole poster."). Leave the note empty when the photo is fine. No em dashes, no emojis.
+- details: harvest everything else printed on the poster into the details fields. Identify the lineup (bands, speakers, djs, performers, hosts) and, when a photo of an act is shown, give its imageBox crop region. Capture set times (schedule), amenities and highlights (features), ticket tiers (tickets), links and handles (links), sponsors, any other croppable image regions for a gallery (imageRegions), and put anything else in other as label/value pairs. Mark a row confidence=low when the poster is hard to read there. Never invent a detail that is not on the poster.`
 
 const ASSIST_SYSTEM = `You are Vera, Frequency's assistant. A community member is typing a quick note about an event they want to post, and wants it tidied into an event draft.
 
@@ -109,7 +228,8 @@ Turn their free text into structured details and call the save_event tool. Rules
 - starts_at and ends_at: ISO 8601 when the text gives a date. If only a month and day are given, use the next future occurrence.
 - domain: classify into one of mind, body, spirit, expression.
 - tags: 3 to 6 short lowercase descriptors drawn from what they wrote.
-- There is no image, so set cover.found=false.`
+- details: capture any extra structure the text gives into the details fields: a lineup (bands, speakers, performers, hosts), set times (schedule), amenities (features), ticket tiers (tickets), links (links), sponsors, and anything else as other label/value pairs. Do not invent details they did not mention.
+- There is no image, so set cover.found=false and omit corners, imageBox, and imageRegions (those need a photo).`
 
 async function runExtraction(opts: {
   tier: ModelTier
