@@ -47,6 +47,24 @@ Events are the gatherings that make Frequency real: the in-person and online mee
 - When you show up to a gathering **with your circle**, your circle builds **Current** together: a shared measure of your circle showing up for each other. It builds every time a member attends.
 - It's **collaborative, not a competition**. Circles are never ranked against each other. A circle's Current stays private to its members unless the circle chooses to share it.
 
+## Chat and photos
+
+- Every event has a little **activity feed**. Say hi before the day, ask a question, or thank the host after. RSVP to join in.
+- Once it's over, drop your photos in the shared **recap album** so the whole group keeps the memory.
+
+## Subscribe and discover
+
+- **Subscribe to your events as a calendar.** Add one link to Google or Apple Calendar and your RSVPs show up automatically, no re-checking.
+- **Organizer pages** gather everything a host runs at one link, so you can follow the people whose gatherings you like.
+- Switch the library to **map view** to see what's happening near you (we use your approximate neighborhood, never an exact address).
+- We'll quietly point out **people you might click with**: folks going to the same event who share a Channel with you and aren't connected yet.
+
+## For hosts
+
+- **Announce to your guests.** Send a note to everyone who's coming, across in-app, push, and email. Anyone who muted the event or turned off event notifications is skipped.
+- **Manage screen.** See your whole guest list, export it, move people off the waitlist, and check people in at the door. You reach it from the event's editor.
+- **Cohosts.** Add a cohost and they can help run the event right alongside you.
+
 ## Tips
 
 - New to a circle? An event is the easiest way in: say you're coming, then just show up.

@@ -155,3 +155,18 @@ guards. Everything built is reachable; the only dormant items are the `plus_ones
 - `app/discover/events/[slug]/page.tsx`, `app/discover/events/page.tsx` — Twitter cards, breadcrumb
   fix, description truncation.
 - `tsc` + `eslint` clean; 605 tests pass (3 pre-existing `stripe`-dep env failures, unrelated).
+
+## 2026-06-10 update — B-2/B-3/B-4 merged
+
+The §3 gap list is largely closed. Shipped via PRs #498/#499/#500:
+- **#1 confirmation-on-RSVP, #7 maybe/plus-ones** — closed by interim work before this batch.
+- **#2 cancel → bulk-refund → notify** — ✅ (PR #499): `cancelEvent` refunds all succeeded tickets
+  and emails guests.
+- **#4 activity feed / recap album / cohosts** — ✅ (PR #498).
+- **#6 discovery polish** (ICS subscription, organizer profiles, map, connectors) — ✅ (PR #500).
+- Host **blast composer** + **Manage screen** + **host-marked check-in** — ✅ (PR #499).
+
+Canonical remaining list: SMS (§5, EIN-blocked) · free-tier claim persistence · `<Suspense>` on the
+Index · §11 metrics instrumentation · drop the `as unknown as SupabaseClient` casts. **Ops still
+pending: apply migrations `20260613100000/110000/120000`, regenerate `database.types.ts`, run
+Supabase advisors.**

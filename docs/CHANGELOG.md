@@ -30,6 +30,14 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 - **Circle Current**: every time someone from your circle shows up to a gathering, your circle builds
   **Circle Current** together — a shared, collaborative measure of showing up (private to your circle
   unless you choose to share it). It's never a competition between circles.
+- **Event chat and photos**: every event has an **activity feed** to talk before the day, and a
+  shared **recap album** for photos after. Add a **cohost** to help you run it.
+- **Host tools for events**: **announce** to your guests across in-app, push, and email (with a real
+  per-event mute), see and **export** your guest list, work the **waitlist**, and **check people in**
+  at the door. If you cancel an event, every paid guest is **refunded automatically**.
+- **Subscribe and discover**: **subscribe** to your events as a live calendar in Google or Apple
+  Calendar, follow an **organizer's page**, switch the library to a **map**, and get a gentle nudge
+  toward **people going who share a Channel** with you.
 - **Journeys, reimagined**: pick a season-long practice track and the app shows your **next
   step** — one tap to log it. Every practice now comes in three depths — **Initiate** (5 min),
   **Adept**, and **Master** — and your circle Host can set the right depth for your group, or
