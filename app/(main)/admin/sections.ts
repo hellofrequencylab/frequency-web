@@ -126,7 +126,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     links: [
       { href: '/admin/gamification', label: 'Gamification', desc: 'Achievements, seasons, rewards.', Icon: Trophy, min: 'host', staffDomain: 'community' },
       { href: '/admin/store', label: 'Store', desc: 'Manage gem store items and catalog.', Icon: ShoppingBag, min: 'host', staffDomain: 'community' },
-      { href: '/admin/quests', label: 'Journeys', desc: 'The open Journey library. Official curation.', Icon: Map, min: 'host', staffDomain: 'community' },
+      { href: '/admin/content', label: 'Content', desc: 'Curate the Quest. Seasons, Journeys, Practices, Challenges.', Icon: Map, min: 'host', staffDomain: 'community' },
       { href: '/admin/crew-tasks', label: 'Crew tasks', desc: 'Define and verify member tasks.', Icon: ClipboardList, min: 'host', staffDomain: 'community' },
       { href: '/admin/rewards', label: 'Retroactive rewards', desc: 'Reward past behavior. Define a rule, grant once.', Icon: Gift, min: 'admin' },
       { href: '/programs', label: 'Leader training', desc: 'Materials to start and run a circle.', Icon: BookOpen, min: 'host', staffDomain: 'community' },
