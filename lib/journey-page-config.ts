@@ -28,6 +28,7 @@ export const WIDGET_IDS = [
   'streak', // streak + earned shields strip
   'companions', // the Co-op / circle-companions (Resonance teaser) strip
   'practice-guide', // the practice guide (markdown intro), read while practising
+  'season-context', // season name + theme + the current Act (Open / Deepen / Land)
   // Discovery-mode (visitor / not-adopted) blocks
   'story', // the Story — intro markdown ("why this journey")
   'path', // The Path — ordered steps with cadence + note + tier
@@ -58,7 +59,7 @@ export const REQUIRED_WIDGETS: Record<JourneyPageMode, readonly WidgetId[]> = {
  *  active mode leads with the Next-Step card, then progress, checklist, the rest; discovery
  *  leads with the story and the path. Every id present here is enabled by default. */
 export const DEFAULT_LAYOUT: Record<JourneyPageMode, readonly WidgetId[]> = {
-  active: ['next-step', 'progress', 'checklist', 'gamification', 'streak', 'companions', 'practice-guide'],
+  active: ['next-step', 'progress', 'season-context', 'checklist', 'gamification', 'streak', 'companions', 'practice-guide'],
   discovery: ['story', 'path', 'pillar-balance', 'social-proof', 'reward-preview', 'completion-rule'],
 }
 
@@ -153,6 +154,7 @@ export const WIDGET_META: Record<WidgetId, { label: string; hint: string; mode: 
   'streak': { label: 'Streak & shields', hint: 'The daily streak and earned freeze shields.', mode: 'active' },
   'companions': { label: 'Co-op companions', hint: 'Members of your circles on this Journey.', mode: 'active' },
   'practice-guide': { label: 'Practice guide', hint: 'The author’s how-to / story (markdown), read while practising.', mode: 'active' },
+  'season-context': { label: 'Season context', hint: 'The season, its theme, and the current Act.', mode: 'active' },
   'story': { label: 'The story', hint: 'The intro markdown — why this Journey exists.', mode: 'discovery' },
   'path': { label: 'The path', hint: 'The ordered steps with cadence, note, and tier. (Always on.)', mode: 'discovery' },
   'pillar-balance': { label: 'Pillar balance', hint: 'How the path spreads across the four Pillars.', mode: 'discovery' },

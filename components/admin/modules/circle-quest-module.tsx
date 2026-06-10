@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { SetCirclePractice } from '@/components/practice/set-circle-practice'
+import { SetCircleTier } from '@/components/journey/set-circle-tier'
 import { CircleChallenges } from '@/components/admin/modules/circle-challenges'
 import { getCircleAdminData } from '@/app/(main)/circles/admin-actions'
 import type { CircleQuestItem } from '@/app/(main)/circles/admin-actions'
@@ -61,6 +62,12 @@ export function CircleQuestModule() {
           library={data.practice_library}
           current={data.active_practice_id ?? undefined}
         />
+      </div>
+
+      {/* Host-set default practice depth for this circle's members (docs/JOURNEYS.md §5). */}
+      <div className="space-y-2">
+        <SectionLabel>Default depth for this circle</SectionLabel>
+        <SetCircleTier circleId={data.id} current={data.default_intensity_tier} />
       </div>
 
       <QuestList label="Journeys" items={data.adoptedJourneys} empty="No journeys adopted yet" />

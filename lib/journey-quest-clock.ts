@@ -59,3 +59,19 @@ export function isJourneyComplete(
 ): boolean {
   return weeksQualified >= targetWeeks
 }
+
+/** The season's three narrative Acts over the 13 weeks (docs/JOURNEYS.md §3): Open (1–4),
+ *  Deepen (5–9), Land (10–13). Member-facing copy says "season"/"Act", never "quest clock". */
+export interface SeasonActInfo {
+  act: 1 | 2 | 3
+  name: 'Open' | 'Deepen' | 'Land'
+  weeks: string
+}
+
+/** The Act for a 1-based season week (1..13), or null when off-season. */
+export function seasonAct(seasonWeek: number | null | undefined): SeasonActInfo | null {
+  if (seasonWeek == null || seasonWeek < 1 || seasonWeek > SEASON_WEEKS) return null
+  if (seasonWeek <= 4) return { act: 1, name: 'Open', weeks: '1–4' }
+  if (seasonWeek <= 9) return { act: 2, name: 'Deepen', weeks: '5–9' }
+  return { act: 3, name: 'Land', weeks: '10–13' }
+}
