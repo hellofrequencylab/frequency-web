@@ -1,11 +1,32 @@
 import type { MetadataRoute } from "next";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { SITE_URL } from "@/lib/site";
 import {
   getTopicalChannels,
   getPublicCircles,
   getPublicEvents,
 } from "@/lib/discover";
+import { createPublicClient } from "@/lib/supabase/public";
 import { getAllArticles, getAllCategories } from "@/lib/help/content";
+
+// Organizer profiles (/discover/events/organizer/[handle]) — one URL per host with
+// at least one upcoming public/unlisted event. Reads the redaction-safe RPC, which
+// never enumerates hosts of circle_only/private events (Events B-4).
+async function getOrganizerRoutes(now: Date): Promise<MetadataRoute.Sitemap> {
+  try {
+    const supabase = createPublicClient() as unknown as SupabaseClient;
+    const { data } = await supabase.rpc("public_organizer_handles", { _limit: 500 });
+    if (!Array.isArray(data)) return [];
+    return (data as { handle: string; next_starts: string | null }[]).map((h) => ({
+      url: `${SITE_URL}/discover/events/organizer/${h.handle}`,
+      lastModified: h.next_starts ? new Date(h.next_starts) : now,
+      changeFrequency: "weekly" as const,
+      priority: 0.6,
+    }));
+  } catch {
+    return [];
+  }
+}
 
 // Dynamic sitemap. Static marketing routes plus every public, redaction-safe
 // /discover URL (topics, circles, events) pulled through the same column-safe
@@ -62,12 +83,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // Best-effort dynamic entries — never let a data hiccup break the sitemap.
   let dynamicRoutes: MetadataRoute.Sitemap = [];
+  let organizerRoutes: MetadataRoute.Sitemap = [];
   try {
-    const [channels, circles, events] = await Promise.all([
+    const [channels, circles, events, organizers] = await Promise.all([
       getTopicalChannels(),
       getPublicCircles(200),
       getPublicEvents(200),
+      getOrganizerRoutes(now),
     ]);
+    organizerRoutes = organizers;
 
     const topicRoutes: MetadataRoute.Sitemap = channels.map((c) => ({
       url: `${SITE_URL}/discover/topics/${c.slug}`,
@@ -95,5 +119,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Fall back to static routes only.
   }
 
-  return [...staticRoutes, ...helpRoutes, ...dynamicRoutes];
+  return [...staticRoutes, ...helpRoutes, ...dynamicRoutes, ...organizerRoutes];
 }
