@@ -32,6 +32,8 @@ import { SupporterBadge } from '@/components/supporter-badge'
 import { DetailTemplate } from '@/components/templates'
 import { getMemberSignature } from '@/lib/frequency-signature-data'
 import { FrequencySignature } from '@/components/profile/frequency-signature'
+import { getLinkedContactForProfile } from '@/lib/connections/matching'
+import { PrivateContactPanel } from '@/components/connections/private-contact-panel'
 
 const RANK_TIERS = [
   { name: 'Ghost',    min: 0,    cls: 'bg-surface-elevated text-muted',     bar: 'bg-border-strong' },
@@ -203,6 +205,13 @@ export default async function ProfilePage({
   // reach (the celebration hook from the Progress spec), not just dimmed-out.
   // Earned float to the top; among the rest, the closest comes first.
   const firstName = (profile.display_name as string).trim().split(/\s+/)[0]
+
+  // The viewer's OWN merged contact card for this member (docs/NETWORK-CRM.md) —
+  // private to them, shown only when a signed-in non-owner has linked a personal
+  // contact to this profile. It's their own logged data, surfaced where it helps.
+  const myLinkedContact =
+    myProfileId && !isOwner ? await getLinkedContactForProfile(myProfileId, profileId) : null
+
   const rewards = [
     { icon: Star, label: 'Early Adopter', description: 'Here from the beginning', current: 1, target: 1, milestone: true },
     { icon: MessageSquare, label: 'First Post', description: 'Said your first hello', current: postCount, target: 1 },
@@ -380,6 +389,10 @@ export default async function ProfilePage({
           name={isOwner ? undefined : firstName}
         />
       </div>
+
+      {/* ── Your private contact card — only the viewer who merged their own
+          personal contact with this member sees this (their own logged data). ── */}
+      {myLinkedContact && <PrivateContactPanel card={myLinkedContact} memberName={firstName} />}
 
       {/* ── How you're connected — the viewer's private read of their own tie (ADR-186) ── */}
       {!isOwner && !!user && !isBlocked && (

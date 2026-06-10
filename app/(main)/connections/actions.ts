@@ -7,6 +7,7 @@ import { aiAvailable, featureOverBudget } from '@/lib/ai/usage'
 import { scanCardImage, assistFromText } from '@/lib/ai/connections-ai'
 import { dedupeTags, normalizeTag } from '@/lib/connections/normalize'
 import * as store from '@/lib/connections/store'
+import { mergeContactProfile, dismissContactMatch, unmergeContact } from '@/lib/connections/matching'
 import { syncScanToCrm } from '@/lib/connections/crm-sync'
 import { maybeSendScanIntro } from '@/lib/connections/invite'
 import type {
@@ -221,5 +222,32 @@ export async function addTag(contactId: string, tag: string): Promise<void> {
 export async function removeTag(contactId: string, tagId: string): Promise<void> {
   const ownerId = await requireOwner()
   await store.deleteTag(ownerId, tagId)
+  revalidatePath(`/connections/${contactId}`)
+}
+
+// ── Contact ↔ Community merge ─────────────────────────────────────────────────
+
+/** Merge a contact with the member profile it matches (links them; keeps your
+ *  original logged fields + notes). Owner-scoped. */
+export async function mergeWithMember(contactId: string, profileId: string): Promise<boolean> {
+  const ownerId = await requireOwner()
+  const ok = await mergeContactProfile(ownerId, contactId, profileId)
+  revalidatePath('/network/contacts')
+  revalidatePath(`/connections/${contactId}`)
+  return ok
+}
+
+/** Dismiss the "this contact is a member" suggestion so it stops surfacing. */
+export async function dismissMatch(contactId: string): Promise<void> {
+  const ownerId = await requireOwner()
+  await dismissContactMatch(ownerId, contactId)
+  revalidatePath('/network/contacts')
+}
+
+/** Undo a merge — unlink the contact from the member profile. */
+export async function unmergeFromMember(contactId: string): Promise<void> {
+  const ownerId = await requireOwner()
+  await unmergeContact(ownerId, contactId)
+  revalidatePath('/network/contacts')
   revalidatePath(`/connections/${contactId}`)
 }

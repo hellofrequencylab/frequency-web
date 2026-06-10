@@ -22,6 +22,15 @@ The directory is how you find members and circles: by topic, and by place.
 - Start typing a city or town and it autocompletes, then shows circles near that place. You can also search around your own location.
 - You control all of this under **Settings → Connections & Location**: who can find you, how precise it is, and your own findability radius (see [Your settings](/help/getting-started/your-settings)).
 
+## My Contacts
+
+My Contacts is your own private address book: people you have met and logged, scanned from a card or a poster, or added by hand. Only you can see them.
+
+- When someone in your contacts turns out to be a member too, Frequency spots it (by a matching email or phone) and shows a **merge** prompt at the top of My Contacts.
+- **Merge** links the two. Their live member profile fills in the card, and the details you logged plus your notes stay exactly as you wrote them. A merged contact gets an **On Frequency** tag.
+- The private details you logged also show up on that member's profile, in a card only you can see. Nobody else knows you kept a contact for them.
+- If it is not the same person, **Dismiss** the prompt and it stays quiet.
+
 ## A note on privacy
 
 **Frequency never shares anyone's exact location.** You only ever see a member as a fuzzed area (about a mile across) or their city, never precise coordinates or a pin on a map, and the same is true of how you appear to others. You decide your own visibility, and **Ghost mode** hides you from proximity entirely whenever you want. So you can find who's nearby without anyone being pinpointed.
