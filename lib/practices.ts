@@ -780,5 +780,23 @@ export async function logPractice(input: {
     // never let journey reward firing break the log
   }
 
+  // Co-op rewards (ADR-199): a fresh log may push the member's circle Co-op into rhythm for the
+  // week, or over the line to a shared completion. Best-effort + dynamic import; merged into the
+  // journey result for the toast.
+  try {
+    const { fireCoopRewardsForLog } = await import('@/lib/journey-coop-rewards')
+    const coop = await fireCoopRewardsForLog(profileId, day)
+    if (coop.bonuses.length > 0) {
+      const base = journey ?? { bonuses: [], zaps: 0, gems: 0 }
+      journey = {
+        bonuses: [...base.bonuses, ...coop.bonuses],
+        zaps: base.zaps + coop.zaps,
+        gems: base.gems + coop.gems,
+      }
+    }
+  } catch {
+    // never let co-op reward firing break the log
+  }
+
   return { logged: true, zapsAwarded, journey }
 }
