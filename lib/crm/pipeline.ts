@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 // CRM pipeline data layer (ADR-102). The crm_* tables aren't in the generated DB
 // types yet, so every read/write goes through an untyped client cast (the same
 // pattern used across lib/studio + lib/page-editor). Service-role only — callers
-// gate on host+ (see app/(main)/crm/actions.ts requireCrm()).
+// gate on host+ (see app/(main)/admin/crm/actions.ts requireCrm()).
 
 function db() {
   return createAdminClient() as unknown as SupabaseClient

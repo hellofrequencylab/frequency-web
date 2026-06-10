@@ -1194,7 +1194,6 @@ export default function AppShell({
   }, [])
 
   function isActive(href: string) {
-    if (href === '/marketing') return pathname === '/marketing'
     if (href === '/feed')     return pathname === '/feed'
     if (href === '/circles')  return pathname === '/circles' || pathname.startsWith('/circles/') || pathname.startsWith('/hubs/') || pathname.startsWith('/nexuses/')
     if (href === '/channels') return pathname === '/channels' || pathname.startsWith('/channels/')
