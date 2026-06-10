@@ -44,8 +44,10 @@ type ThreadItem =
   | { kind: 'room'; id: string; lastActivity: string | null; room: RoomRow }
   | { kind: 'dm'; id: string; lastActivity: string | null; conv: ConversationRow }
 
-type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
-const CREW_PLUS: CommunityRole[] = ['crew', 'host', 'guide', 'mentor', 'janitor']
+// Room creation = paid (Crew/Supporter TIER) or a steward (host+). Crew is the
+// paid tier, not a role (PB.1/ADR-207).
+const STEWARD_ROLES = ['host', 'guide', 'mentor', 'admin', 'janitor']
+const PAID_TIERS = ['crew', 'supporter']
 
 type Filter = 'all' | 'rooms' | 'dms'
 const FILTERS: { value: Filter; label: string }[] = [
@@ -87,13 +89,15 @@ export default async function MessagesPage({
   // cross-region viewers, come from the message_peer_profiles DEFINER RPC.
   const { data: myProfile } = await supabase
     .from('profiles')
-    .select('id, community_role')
+    .select('id, community_role, membership_tier')
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
   if (!myProfile) redirect('/onboarding')
   const myProfileId = myProfile.id as string
-  const canCreateRoom = CREW_PLUS.includes(myProfile.community_role as CommunityRole)
+  const canCreateRoom =
+    PAID_TIERS.includes((myProfile as { membership_tier?: string | null }).membership_tier ?? '') ||
+    STEWARD_ROLES.includes(myProfile.community_role ?? '')
 
   // Public profile fields for everyone I share a DM / room with (caller-scoped).
   const { data: peerRows } = await (supabase as unknown as SupabaseClient).rpc('message_peer_profiles')

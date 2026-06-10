@@ -15,7 +15,8 @@ type ReplyAuthor = {
   display_name: string
   handle: string
   avatar_url: string | null
-  community_role: string
+  /** Entitlement tier — drives endorsement (PB.1i: flair keys off the tier, not the role). */
+  membership_tier: string | null
   current_season_rank?: string | null
   current_streak?: number
   achievement_count?: number
@@ -128,7 +129,7 @@ export function PostReplies({
                       <ProfileFlair
                         rank={r.author.current_season_rank}
                         streak={r.author.current_streak}
-                        endorsed={isEndorsed(r.author.community_role)}
+                        endorsed={isEndorsed(r.author.membership_tier)}
                         compact
                       />
                     )}

@@ -8,6 +8,12 @@
 
 export type CommunityRole =
   | 'member'
+  /** @deprecated The 'crew' ROLE value is retired (PB.1i, migration 20260612060000):
+   *  paid standing lives on `profiles.membership_tier` (the 'crew' TIER), no code
+   *  path writes the role value anymore, and existing rows were migrated to 'member'.
+   *  The rung stays in the type + ladder because it mirrors the Postgres
+   *  `community_role` enum (dropping a PG enum value is disruptive) — it is a
+   *  no-op rung: no rows hold it and the access matrix skips it. */
   | 'crew'
   | 'host'
   | 'guide'
@@ -16,6 +22,8 @@ export type CommunityRole =
   | 'janitor'
 
 // Ascending privilege: member < crew < host < guide < mentor < admin < janitor.
+// 'crew' is a DEPRECATED no-op rung (see above), kept only for enum-order parity
+// with the DB; the paid "Crew" concept is the entitlement TIER (entitlement.ts).
 // 'admin' sits just below janitor — nearly the same keys, minus the most
 // sensitive (role assignment, member management, the permission grid).
 export const ROLE_HIERARCHY: readonly CommunityRole[] = [

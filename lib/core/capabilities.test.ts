@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { resolveCapabilities, can, type Scope } from '@/lib/core/capabilities'
+import { resolveCapabilities, capabilityGaps, can, type Scope } from '@/lib/core/capabilities'
 import { atLeastRole } from '@/lib/core/roles'
 
 describe('atLeastRole', () => {
@@ -68,6 +68,78 @@ describe('resolveCapabilities · circle', () => {
   it('a FREE active member cannot volunteer (membership perk, gated on tier not role)', () => {
     const free = resolveCapabilities({ profileId: 'fm', role: 'member', tier: 'free' }, { ...base, membership: { status: 'active' }, openTaskCount: 2 })
     expect(can(free, 'task.volunteer')).toBe(false)
+  })
+})
+
+describe('capabilityGaps (PB.1g — why is a capability absent?)', () => {
+  const circle: Scope = { kind: 'circle', circleId: 'c1', hostId: 'host1', openTaskCount: 2 }
+
+  it('a FREE active member is one upgrade away from task.volunteer', () => {
+    const gaps = capabilityGaps(
+      { profileId: 'fm', role: 'member', tier: 'free' },
+      { ...circle, membership: { status: 'active' } },
+    )
+    expect(gaps['task.volunteer']).toBe('needs-paid-tier')
+    expect(gaps['task.claim']).toBe('needs-paid-tier')
+  })
+
+  it('a PAID non-member needs to join the circle first', () => {
+    const gaps = capabilityGaps({ profileId: 'cr', role: 'member', tier: 'crew' }, circle)
+    expect(gaps['circle.post']).toBe('needs-membership')
+    expect(gaps['task.volunteer']).toBe('needs-membership')
+  })
+
+  it('a FREE non-member: posting needs membership; volunteering needs the tier on top', () => {
+    const gaps = capabilityGaps({ profileId: 'fm', role: 'member', tier: 'free' }, circle)
+    expect(gaps['circle.post']).toBe('needs-membership')
+    expect(gaps['task.volunteer']).toBe('needs-paid-tier')
+  })
+
+  it('management capabilities are role-gated', () => {
+    const gaps = capabilityGaps(
+      { profileId: 'fm', role: 'member', tier: 'free' },
+      { ...circle, membership: { status: 'active' } },
+    )
+    expect(gaps['circle.editSettings']).toBe('needs-role')
+    expect(gaps['circle.moderate']).toBe('needs-role')
+  })
+
+  it('global admin.access for a member is a role gap', () => {
+    const gaps = capabilityGaps({ profileId: 'm', role: 'member' }, { kind: 'global' })
+    expect(gaps['admin.access']).toBe('needs-role')
+  })
+
+  it('reports nothing for capabilities the viewer already holds', () => {
+    const viewer = { profileId: 'cr', role: 'member' as const, tier: 'crew' as const }
+    const scope: Scope = { ...circle, membership: { status: 'active' } }
+    const gaps = capabilityGaps(viewer, scope)
+    expect(gaps['circle.post']).toBeUndefined()
+    expect(gaps['task.volunteer']).toBeUndefined()
+  })
+
+  it('no gap when there is nothing to unlock (zero open tasks)', () => {
+    const gaps = capabilityGaps(
+      { profileId: 'fm', role: 'member', tier: 'free' },
+      { kind: 'circle', circleId: 'c1', hostId: 'host1', openTaskCount: 0, membership: { status: 'active' } },
+    )
+    expect(gaps['task.volunteer']).toBeUndefined()
+  })
+
+  it('unreachable capabilities get no entry (another member’s profile.edit needs ownership, not a rung)', () => {
+    // A janitor probe WOULD unlock profile.edit (moderation), so it reads as a
+    // role gap; but for an anonymous viewer nothing on the ladder helps.
+    const anon = capabilityGaps({ profileId: null, role: 'member' }, { kind: 'profile', ownerId: 'p1' })
+    expect(anon['profile.edit']).toBeUndefined()
+    const member = capabilityGaps({ profileId: 'p2', role: 'member' }, { kind: 'profile', ownerId: 'p1' })
+    expect(member['profile.edit']).toBe('needs-role')
+  })
+
+  it('does not disturb the resolver (same inputs still resolve identically)', () => {
+    const viewer = { profileId: 'fm', role: 'member' as const, tier: 'free' as const }
+    const scope: Scope = { ...circle, membership: { status: 'active' } }
+    const before = [...resolveCapabilities(viewer, scope)].sort()
+    capabilityGaps(viewer, scope)
+    expect([...resolveCapabilities(viewer, scope)].sort()).toEqual(before)
   })
 })
 
