@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Loader2, ArrowRight } from 'lucide-react'
 import { StudioLaunchButton } from '../kit/studio-launch-button'
-import { EmojiAccentFace, AccentPicker, EmojiGrid } from '../kit/studio-identity'
+import { IconAccentFace, AccentPicker, IconGrid } from '../kit/studio-identity'
 import { StudioFooter } from '../kit/studio-footer'
 import { StudioSectionLabel } from '../kit/studio-field'
 import { DEFAULT_ACCENT, type AccentKey } from '@/lib/studio/accents'
@@ -16,7 +16,7 @@ import { createJourney } from '@/app/(main)/journeys/actions'
 // entities once their builders land (docs/STUDIO.md §2).
 export function NewJourneyButton({ className }: { className?: string }) {
   const router = useRouter()
-  const [emoji, setEmoji] = useState('🧭')
+  const [icon, setIcon] = useState('compass')
   const [accent, setAccent] = useState<AccentKey>(DEFAULT_ACCENT)
   const [title, setTitle] = useState('')
   const [summary, setSummary] = useState('')
@@ -27,7 +27,7 @@ export function NewJourneyButton({ className }: { className?: string }) {
     if (!title.trim()) { setError('Give your journey a name to begin.'); return }
     start(async () => {
       setError(null)
-      const res = await createJourney({ title, summary, emoji, accent })
+      const res = await createJourney({ title, summary, emoji: icon, accent })
       if (isError(res)) { setError(res.error); return }
       router.push(`/journeys/${res.data.slug}`)
     })
@@ -63,7 +63,7 @@ export function NewJourneyButton({ className }: { className?: string }) {
       </p>
 
       <div className="mt-5 flex items-start gap-3">
-        <EmojiAccentFace emoji={emoji} accent={accent} size="lg" />
+        <IconAccentFace icon={icon} accent={accent} size="lg" />
         <div className="min-w-0 flex-1">
           <input
             autoFocus
@@ -86,7 +86,7 @@ export function NewJourneyButton({ className }: { className?: string }) {
 
       <div className="mt-5">
         <StudioSectionLabel className="mb-1.5">Pick a face</StudioSectionLabel>
-        <EmojiGrid value={emoji} onPick={setEmoji} />
+        <IconGrid value={icon} onPick={setIcon} />
       </div>
 
       <div className="mt-4">

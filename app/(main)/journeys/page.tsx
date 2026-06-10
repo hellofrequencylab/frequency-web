@@ -8,6 +8,7 @@ import { IndexTemplate } from '@/components/templates/index-template'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { accentColor, accentTint } from '@/lib/studio/accents'
+import { JOURNEY_ICON_MAP, DefaultJourneyIcon } from '@/lib/studio/journey-icons'
 import { NewJourneyButton } from '@/components/studio/journey/new-journey-button'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 
@@ -26,26 +27,28 @@ export function generateMetadata() {
   })
 }
 
+function PlanFace({ plan }: { plan: JourneyPlan }) {
+  if (plan.cover_image) {
+    return (
+      <Image src={plan.cover_image} alt={plan.title} width={44} height={44} className="h-11 w-11 rounded-2xl object-cover" />
+    )
+  }
+  const Icon = JOURNEY_ICON_MAP[plan.emoji ?? ''] ?? DefaultJourneyIcon
+  return (
+    <div
+      className="flex h-11 w-11 items-center justify-center rounded-2xl"
+      style={{ backgroundColor: accentTint(plan.accent, 16), color: accentColor(plan.accent) }}
+    >
+      <Icon className="h-5 w-5" />
+    </div>
+  )
+}
+
 function PlanCard({ plan, mine }: { plan: JourneyPlan; mine: boolean }) {
   return (
     <EntityCard
       href={`/journeys/${plan.slug}`}
-      anchor={
-        plan.emoji ? (
-          <div
-            className="flex h-11 w-11 items-center justify-center rounded-2xl text-xl"
-            style={{ backgroundColor: accentTint(plan.accent, 16), color: accentColor(plan.accent) }}
-          >
-            {plan.emoji}
-          </div>
-        ) : plan.cover_image ? (
-          <Image src={plan.cover_image} alt={plan.title} width={44} height={44} className="h-11 w-11 rounded-2xl object-cover" />
-        ) : (
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-bg text-primary-strong">
-            <Map className="h-5 w-5" />
-          </div>
-        )
-      }
+      anchor={<PlanFace plan={plan} />}
       title={plan.title}
       badge={
         mine ? (
@@ -104,44 +107,48 @@ export default async function JourneysPage() {
         <img
           src={heroImage}
           alt=""
-          className="mb-6 h-44 w-full max-w-2xl rounded-2xl border border-border object-cover sm:h-56"
+          className="mb-6 h-44 w-full max-w-4xl rounded-2xl border border-border object-cover sm:h-56"
         />
       )}
 
-      <div className="max-w-2xl space-y-8">
-        {/* Launch CTA — opens the Studio window in place. */}
-        <section>
-          <div className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-gradient-to-br from-primary-bg/50 to-signal-bg/40 p-5 shadow-sm">
+      <div className="max-w-4xl space-y-10">
+        {/* Two ways in: build your own, or follow the season's official Quests. */}
+        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {/* Launch CTA — opens the Studio window in place. */}
+          <div className="flex flex-col justify-between gap-4 rounded-2xl border border-border bg-gradient-to-br from-primary-bg/50 to-signal-bg/40 p-5 shadow-sm">
             <div className="min-w-0">
               <h2 className="flex items-center gap-1.5 text-base font-bold text-text">
                 <Sparkles className="h-4 w-4 text-primary-strong" /> Start a journey
               </h2>
-              <p className="mt-0.5 text-sm text-muted">
+              <p className="mt-1 text-sm text-muted">
                 From a single daily practice to a full course. Give it a face, add your practices, and share how you show up.
               </p>
             </div>
-            <div className="shrink-0">
+            <div>
               <NewJourneyButton />
             </div>
           </div>
-        </section>
 
-        {/* Quests — the official containers that group Journeys for the season. */}
-        <section>
+          {/* Quests — the official containers that group Journeys for the season. */}
           <Link
             href="/crew/quests"
-            className="group flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm transition-colors hover:border-primary"
+            className="group flex flex-col justify-between gap-4 rounded-2xl border border-border bg-surface p-5 shadow-sm transition-colors hover:border-primary"
           >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
-              <Compass className="h-5 w-5" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <h2 className="text-sm font-bold text-text">Quests</h2>
-              <p className="mt-0.5 text-sm text-muted">
+            <div className="min-w-0">
+              <h2 className="flex items-center gap-1.5 text-base font-bold text-text">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
+                  <Compass className="h-4 w-4" />
+                </span>
+                Explore Quests
+              </h2>
+              <p className="mt-1 text-sm text-muted">
                 The season’s official Quests: guided tracks of practices, free to start, with rewards as you go.
               </p>
             </div>
-            <ArrowRight className="h-4 w-4 shrink-0 text-subtle transition-colors group-hover:text-primary-strong" />
+            <span className="inline-flex items-center gap-1 text-sm font-semibold text-primary-strong">
+              See this season’s Quests
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            </span>
           </Link>
         </section>
 

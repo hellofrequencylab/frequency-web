@@ -1,41 +1,44 @@
 'use client'
 
-import { Smile } from 'lucide-react'
 import { STUDIO_ACCENTS, accentColor, accentTint } from '@/lib/studio/accents'
+import { JOURNEY_ICONS, JOURNEY_ICON_MAP, DefaultJourneyIcon } from '@/lib/studio/journey-icons'
 
-// Identity atoms (kit): the "give it a face" pieces every builder shares — an
-// emoji tile tinted by the accent, the accent dot row, and the emoji grid. Used by
-// the journey builder + launcher today; circle/practice next. docs/STUDIO.md §2.
+// Identity atoms (kit): the "give it a face" pieces every builder shares — an icon
+// tile tinted by the accent, the accent dot row, and the icon grid. The face is a
+// representative lucide icon (not an emoji) so every entity stays on the design
+// system. Used by the journey builder + launcher today; circle/practice next.
+// docs/STUDIO.md §2.
 
-export const EMOJI_CHOICES = [
-  '🧭','🌱','🔥','🧘','🏃','💪','📓','📖','🌊','☀️','🌙','✨',
-  '🎯','🫀','🧠','🎨','🎸','🛠️','🤝','🕊️','💧','🏔️','🌀','💫',
-]
-
-/** The emoji tile, tinted by accent. Pass `onClick` to make it a picker trigger. */
-export function EmojiAccentFace({
-  emoji,
+/** The icon tile, tinted by accent. Pass `onClick` to make it a picker trigger.
+ *  `icon` is a journey-icon key (or a legacy emoji), resolved to its lucide glyph. */
+export function IconAccentFace({
+  icon,
   accent,
   size = 'lg',
   onClick,
 }: {
-  emoji: string | null | undefined
+  icon: string | null | undefined
   accent: string | null | undefined
   size?: 'lg' | 'md'
   onClick?: () => void
 }) {
-  const dim = size === 'lg' ? 'h-16 w-16 text-3xl' : 'h-11 w-11 text-xl'
-  const fallback = <Smile className={size === 'lg' ? 'h-7 w-7' : 'h-5 w-5'} />
+  const Icon = JOURNEY_ICON_MAP[icon ?? ''] ?? DefaultJourneyIcon
+  const dim = size === 'lg' ? 'h-16 w-16' : 'h-11 w-11'
+  const glyph = size === 'lg' ? 'h-7 w-7' : 'h-5 w-5'
   const style = { backgroundColor: accentTint(accent, 16), color: accentColor(accent) }
   const cls = `flex ${dim} shrink-0 items-center justify-center rounded-2xl`
   if (onClick) {
     return (
-      <button type="button" onClick={onClick} aria-label="Choose an emoji" className={`${cls} transition-transform hover:scale-105`} style={style}>
-        {emoji || fallback}
+      <button type="button" onClick={onClick} aria-label="Choose an icon" className={`${cls} transition-transform hover:scale-105`} style={style}>
+        <Icon className={glyph} />
       </button>
     )
   }
-  return <div className={cls} style={style}>{emoji || fallback}</div>
+  return (
+    <div className={cls} style={style}>
+      <Icon className={glyph} />
+    </div>
+  )
 }
 
 /** The accent dot row. */
@@ -65,27 +68,31 @@ export function AccentPicker({
   )
 }
 
-/** A grid of emoji choices (the picker body). `sm` fits a popover; `md` a panel. */
-export function EmojiGrid({
+/** A grid of icon choices (the picker body). `sm` fits a popover; `md` a panel.
+ *  Each cell stores its icon key. */
+export function IconGrid({
   value,
   onPick,
   size = 'md',
 }: {
   value?: string | null
-  onPick: (emoji: string) => void
+  onPick: (key: string) => void
   size?: 'sm' | 'md'
 }) {
-  const cell = size === 'sm' ? 'h-7 w-7 text-lg' : 'h-9 w-9 text-xl'
+  const cell = size === 'sm' ? 'h-7 w-7' : 'h-9 w-9'
+  const glyph = size === 'sm' ? 'h-4 w-4' : 'h-5 w-5'
   return (
     <div className="grid grid-cols-8 gap-1">
-      {EMOJI_CHOICES.map((e) => (
+      {JOURNEY_ICONS.map(({ key, label, Icon }) => (
         <button
-          key={e}
+          key={key}
           type="button"
-          onClick={() => onPick(e)}
-          className={`flex ${cell} items-center justify-center rounded-xl transition-transform hover:scale-110 ${value === e ? 'ring-2 ring-primary' : 'hover:bg-surface-elevated'}`}
+          onClick={() => onPick(key)}
+          aria-label={label}
+          title={label}
+          className={`flex ${cell} items-center justify-center rounded-xl transition-transform hover:scale-110 ${value === key ? 'text-primary-strong ring-2 ring-primary' : 'text-muted hover:bg-surface-elevated hover:text-text'}`}
         >
-          {e}
+          <Icon className={glyph} />
         </button>
       ))}
     </div>

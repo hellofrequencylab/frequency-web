@@ -9,6 +9,7 @@ import { getJourneyView, getPlan } from '@/lib/journey-plans'
 import { listPublicPractices } from '@/lib/practices'
 import { getPillars, pillarsById as indexPillars } from '@/lib/pillars'
 import { accentColor, accentTint } from '@/lib/studio/accents'
+import { JOURNEY_ICON_MAP, DefaultJourneyIcon } from '@/lib/studio/journey-icons'
 import { JourneyBuilder, type BuilderItem } from '@/components/studio/journey/journey-builder'
 import { adoptPlanAction, forkPlanAction } from '../actions'
 import { enabledWidgets, type WidgetId } from '@/lib/journey-page-config'
@@ -59,7 +60,7 @@ export async function generateMetadata({
   const loaded = await getPlan(slug)
   if (!loaded || loaded.plan.visibility === 'private') return { title: 'Journey · Frequency' }
   const { plan } = loaded
-  const title = `${plan.emoji ? `${plan.emoji} ` : ''}${plan.title}`
+  const title = plan.title
   const description =
     plan.summary ?? 'A seasonal set of practices to move through — on your own or with your circle.'
   return {
@@ -146,6 +147,7 @@ export default async function JourneyPlanPage({
   const byId = indexPillars(pillars)
   const vis = VISIBILITY[plan.visibility]
   const accent = plan.accent
+  const PlanIcon = JOURNEY_ICON_MAP[plan.emoji ?? ''] ?? DefaultJourneyIcon
 
   const isActive = adopted && !!progress
 
@@ -158,10 +160,10 @@ export default async function JourneyPlanPage({
       title={
         <span className="inline-flex items-center gap-3 align-middle">
           <span
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-2xl"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl"
             style={{ backgroundColor: accentTint(accent, 16), color: accentColor(accent) }}
           >
-            {plan.emoji || '🧭'}
+            <PlanIcon className="h-6 w-6" />
           </span>
           <span className="min-w-0 break-words">{plan.title}</span>
         </span>
