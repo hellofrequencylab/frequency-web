@@ -28,6 +28,7 @@ export function StyleEditor({
   variant = 'inline',
   compact = false,
   presetsFooter,
+  renderCompact,
 }: {
   value: QrStyle
   onChange: (next: QrStyle) => void
@@ -41,6 +42,10 @@ export function StyleEditor({
   compact?: boolean
   /** Slot rendered directly under the preset buttons (e.g. an "Archived codes" link). */
   presetsFooter?: ReactNode
+  /** Compact-only: the caller lays out the design controls and presets (the editor
+   *  keeps the preview on top, then hands back these two nodes to arrange — e.g. as
+   *  a two-column controls-left / presets-right row). */
+  renderCompact?: (parts: { controls: ReactNode; presets: ReactNode }) => ReactNode
 }) {
   const fileRef = useRef<HTMLInputElement>(null)
   const svg = useMemo(() => renderStyledQrSvg(previewUrl, value, 240), [previewUrl, value])
@@ -137,7 +142,7 @@ export function StyleEditor({
           onChange={(v) => set('moduleShape', v as ModuleShape)}
         />
         <Select
-          label="Eye frame"
+          label=""
           value={value.eyeShape}
           options={[
             ['square', 'Square'],
@@ -313,6 +318,37 @@ export function StyleEditor({
     )
   }
 
+  // ── Compact layout — preview on top, then a two-column row with the design
+  //    controls on the left and the preset buttons stacked on the right. The split
+  //    row composition is driven by the caller (page-qr-manager) so it can place
+  //    the create/save actions below; we expose the pieces via `renderCompact`. ──
+  if (compact && renderCompact) {
+    return (
+      <div className="rounded-xl border border-border bg-canvas/50 p-4">
+        <div className="flex items-center gap-1.5 mb-3">
+          <Palette className="w-4 h-4 text-primary-strong" />
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-text">Design</h4>
+        </div>
+
+        {/* Live preview (top) */}
+        <div
+          className="w-40 h-40 mx-auto rounded-lg border border-border bg-white p-1.5 [&>svg]:w-full [&>svg]:h-full"
+          dangerouslySetInnerHTML={{ __html: svg }}
+        />
+
+        {renderCompact({
+          controls,
+          presets: (
+            <>
+              {presets}
+              {warningsBox}
+            </>
+          ),
+        })}
+      </div>
+    )
+  }
+
   // ── Inline layout (default) — compact bordered card in an item's edit form ───
   return (
     <div className="rounded-xl border border-border bg-canvas/50 p-4">
@@ -374,7 +410,7 @@ function Select({
 }) {
   return (
     <label className="flex items-center gap-1.5">
-      <span className="text-subtle">{label}</span>
+      {label && <span className="text-subtle">{label}</span>}
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}

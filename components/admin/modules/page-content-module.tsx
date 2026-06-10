@@ -4,8 +4,15 @@ import { useEffect, useState, useTransition, type FormEvent } from 'react'
 import { usePathname } from 'next/navigation'
 import { Check, Pencil } from 'lucide-react'
 import { AdminModuleCard } from '@/components/admin/admin-module-card'
+import { InlineCover } from '@/components/admin/inline/inline-cover'
 import { fieldClasses, labelClasses } from '@/components/ui/field'
-import { getEditablePageContent, savePageContent, type EditablePageContent } from '@/lib/page-content-actions'
+import {
+  getEditablePageContent,
+  savePageContent,
+  uploadPageHero,
+  removePageHero,
+  type EditablePageContent,
+} from '@/lib/page-content-actions'
 import { isError } from '@/lib/action-result'
 
 // Edit a page's content in place from its Settings panel (ADR-180): the header
@@ -57,10 +64,13 @@ export function PageContentModule() {
   return (
     <AdminModuleCard title="Page content" Icon={Pencil} desc="Edit this page's title, description, hero, and call-to-action.">
       <form onSubmit={submit} className="space-y-3">
-        <label className="block space-y-1">
-          <span className={labelClasses}>Title</span>
-          <input name="title" defaultValue={data.title} disabled={pending} className={fieldClasses} placeholder="Default title" />
-        </label>
+        <div className="block space-y-1">
+          <span className={labelClasses}>Headline (not editable)</span>
+          <p className="rounded-lg border border-border bg-surface-elevated/50 px-3 py-2 text-sm text-muted">
+            {data.title || 'Default headline'}
+          </p>
+          <input type="hidden" name="title" value={data.title} />
+        </div>
         <label className="block space-y-1">
           <span className={labelClasses}>Description</span>
           <textarea
@@ -72,16 +82,17 @@ export function PageContentModule() {
             placeholder="Default description"
           />
         </label>
-        <label className="block space-y-1">
-          <span className={labelClasses}>Hero image URL</span>
-          <input
-            name="hero_image"
-            defaultValue={data.heroImage}
-            disabled={pending}
-            className={fieldClasses}
-            placeholder="https://… or /path (blank = no hero)"
+        <div className="block space-y-1">
+          <span className={labelClasses}>Hero image</span>
+          <InlineCover
+            value={data.heroImage || null}
+            alt="Page hero image"
+            canEdit
+            forceEdit
+            upload={uploadPageHero.bind(null, pathname)}
+            remove={removePageHero.bind(null, pathname)}
           />
-        </label>
+        </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <label className="block space-y-1">
             <span className={labelClasses}>CTA label</span>
