@@ -1,6 +1,5 @@
 'use server'
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
@@ -10,9 +9,9 @@ import { isEventCohost } from '@/lib/events/cohosts'
 // recap album (event_media), and cohosts (event_cohosts).
 //
 // The admin client bypasses RLS, so every action re-checks authorization here
-// server-side (same posture as app/(main)/feed/actions.ts). New tables aren't in
-// lib/database.types.ts yet → `as unknown as SupabaseClient` cast (repo
-// convention for not-yet-regenerated tables).
+// server-side (same posture as app/(main)/feed/actions.ts). event_posts,
+// event_media, and event_cohosts are in lib/database.types.ts now, so the admin
+// client is used directly and these reads/writes are fully typed.
 
 const MAX_BODY = 2000
 const MAX_CAPTION = 280
@@ -79,7 +78,7 @@ export async function createEventPost(
   const admin = createAdminClient()
   if (!(await isOnEvent(admin, eventId, profileId))) return
 
-  const { error } = await (admin as unknown as SupabaseClient)
+  const { error } = await admin
     .from('event_posts')
     .insert({
       event_id: eventId,
@@ -101,7 +100,7 @@ export async function deleteEventPost(postId: string, slug: string) {
 
   const admin = createAdminClient()
 
-  const { data: post } = await (admin as unknown as SupabaseClient)
+  const { data: post } = await admin
     .from('event_posts')
     .select('id, event_id, profile_id')
     .eq('id', postId)
@@ -113,7 +112,7 @@ export async function deleteEventPost(postId: string, slug: string) {
     post.profile_id === profileId || (await isEventHost(admin, post.event_id, profileId))
   if (!canDelete) return
 
-  await (admin as unknown as SupabaseClient).from('event_posts').delete().eq('id', postId)
+  await admin.from('event_posts').delete().eq('id', postId)
   revalidateEvent(slug)
 }
 
@@ -135,7 +134,7 @@ export async function uploadEventMedia(
   const admin = createAdminClient()
   if (!(await isOnEvent(admin, eventId, profileId))) return
 
-  const { error } = await (admin as unknown as SupabaseClient)
+  const { error } = await admin
     .from('event_media')
     .insert({
       event_id: eventId,
@@ -157,7 +156,7 @@ export async function deleteEventMedia(mediaId: string, slug: string) {
 
   const admin = createAdminClient()
 
-  const { data: media } = await (admin as unknown as SupabaseClient)
+  const { data: media } = await admin
     .from('event_media')
     .select('id, event_id, profile_id')
     .eq('id', mediaId)
@@ -168,7 +167,7 @@ export async function deleteEventMedia(mediaId: string, slug: string) {
     media.profile_id === profileId || (await isEventHost(admin, media.event_id, profileId))
   if (!canDelete) return
 
-  await (admin as unknown as SupabaseClient).from('event_media').delete().eq('id', mediaId)
+  await admin.from('event_media').delete().eq('id', mediaId)
   revalidateEvent(slug)
 }
 
@@ -193,7 +192,7 @@ export async function addCohost(eventId: string, slug: string, handle: string) {
   if (!target || target.id === profileId) return
 
   // Unique (event_id, profile_id) — ignore a duplicate add.
-  const { error } = await (admin as unknown as SupabaseClient)
+  const { error } = await admin
     .from('event_cohosts')
     .insert({
       event_id: eventId,
@@ -215,7 +214,7 @@ export async function removeCohost(eventId: string, slug: string, cohostProfileI
   const admin = createAdminClient()
   if (!(await isEventHost(admin, eventId, profileId))) return
 
-  await (admin as unknown as SupabaseClient)
+  await admin
     .from('event_cohosts')
     .delete()
     .eq('event_id', eventId)
