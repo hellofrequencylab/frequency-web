@@ -7,6 +7,8 @@ import { getContact } from '@/lib/connections/store'
 import { getConnectionSettings } from '@/lib/connections/connection-settings'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { RelationshipTimeline } from '@/components/people/relationship-timeline'
+import { LinkMemberCard } from '@/components/connections/link-member-card'
+import { getProfileSummaries } from '@/lib/connections/matching'
 import { Detail } from './detail'
 
 export const dynamic = 'force-dynamic'
@@ -44,6 +46,9 @@ export default async function ProfileDetailPage({ params }: { params: Promise<{ 
       <RelationshipTimeline otherId={linkedId} title={`Your history with ${data.contact.displayName ?? 'them'}`} />
     ) : undefined
 
+  // The linked member's public identity (for the On Frequency card), if linked.
+  const linked = linkedId ? (await getProfileSummaries([linkedId])).get(linkedId) ?? null : null
+
   return (
     <div className="mx-auto max-w-2xl">
       <Link
@@ -53,6 +58,9 @@ export default async function ProfileDetailPage({ params }: { params: Promise<{ 
         <ArrowLeft className="h-4 w-4" /> Profiles
       </Link>
       <Detail initial={data} timeline={timeline} />
+      {/* Manual contact ↔ member link — the path for when the auto detector can't
+          fire (card email differs from signup email, no phone on the profile). */}
+      <LinkMemberCard contactId={id} contactName={data.contact.displayName} linked={linked} />
     </div>
   )
 }

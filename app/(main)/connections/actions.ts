@@ -251,3 +251,27 @@ export async function unmergeFromMember(contactId: string): Promise<void> {
   revalidatePath('/network/contacts')
   revalidatePath(`/connections/${contactId}`)
 }
+
+/** Search members to link a contact to — the MANUAL path for when the auto
+ *  detector can't fire (card email and signup email differ, no phone on the
+ *  profile). Owner-gated; returns only public identity fields of active, real
+ *  members. */
+export async function searchMembersToLink(
+  q: string,
+): Promise<{ id: string; displayName: string | null; handle: string | null; avatarUrl: string | null }[]> {
+  const ownerId = await requireOwner()
+  const term = q.trim().replace(/[%,()]/g, '')
+  if (term.length < 2) return []
+  const { createAdminClient } = await import('@/lib/supabase/admin')
+  const { data } = await createAdminClient()
+    .from('profiles')
+    .select('id, display_name, handle, avatar_url')
+    .eq('is_active', true)
+    .eq('is_demo', false)
+    .neq('id', ownerId)
+    .or(`display_name.ilike.%${term}%,handle.ilike.%${term}%`)
+    .limit(8)
+  return ((data ?? []) as { id: string; display_name: string | null; handle: string | null; avatar_url: string | null }[]).map(
+    (p) => ({ id: p.id, displayName: p.display_name, handle: p.handle, avatarUrl: p.avatar_url }),
+  )
+}
