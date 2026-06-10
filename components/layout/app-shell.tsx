@@ -989,17 +989,13 @@ function MobileTabBar({
   )
 }
 
-// ── Mobile edge menus (left = primary nav · right = stats/streaks) ────────────
-// Both sides share the SAME format/width/styles:
-//   • an ALWAYS-visible, darker tab tight to the screen edge (the content has a
-//     small gutter so the tab never touches it);
-//   • tap the tab → the menu slides open and STAYS open until you click outside
-//     (the shared backdrop), select a link (route change), or scroll;
-//   • a Micro / Full size selector at the bottom (shared per-device setting).
-// Both MICRO icon columns can be open together; only ONE FULL menu shows at a time
-// — expanding one slides the opposite closed (the shell owns that coordination).
-// The panel is always mounted and slides on a transform, so open/close animates.
-// Mobile only — desktop uses the real rails.
+// ── Mobile edge menu (right = stats/streaks) ──────────────────────────────────
+// A sliding panel opened ONLY by the bottom tab bar's arrow (no mid-screen edge
+// tab — one trigger, one menu). It stays open until you tap outside (the shared
+// backdrop), select a link (route change), scroll, or open the opposite drawer
+// (the shell closes one side when the other opens). A Micro / Full size selector
+// sits at the bottom (per-device setting). The panel is always mounted and slides
+// on a transform, so open/close animates. Mobile only — desktop uses the real rails.
 
 export type RailSize = 'micro' | 'full'
 
@@ -1009,7 +1005,6 @@ function EdgeMenu({
   size,
   onSizeChange,
   open,
-  onOpen,
   micro,
   children,
 }: {
@@ -1018,14 +1013,12 @@ function EdgeMenu({
   size: RailSize
   onSizeChange: (s: RailSize) => void
   open: boolean
-  onOpen: () => void
   /** The collapsed body — a single icon column. */
   micro: React.ReactNode
   /** The expanded body — full, content-appropriate. */
   children: React.ReactNode
 }) {
   const onLeft = side === 'left'
-  const Chevron = onLeft ? ChevronRight : ChevronLeft
   const widthClass =
     size === 'micro' ? 'w-16' : onLeft ? 'w-64 max-w-[80vw]' : 'w-[88vw] max-w-sm'
   // Closed → slid fully off its own edge; open → flush. Transitions both ways.
@@ -1033,20 +1026,6 @@ function EdgeMenu({
 
   return (
     <>
-      {/* Always-visible tab — same surface as the post box, tucked a little farther
-          off the edge (more buffer to content). Rests dimmed in a ghost state and
-          brightens on touch; fades fully out while the menu is open. */}
-      <button
-        type="button"
-        onClick={onOpen}
-        aria-label={ariaLabel}
-        className={`md:hidden fixed top-1/2 z-30 flex h-[36vh] w-5 -translate-y-1/2 items-center justify-center border-y border-border bg-surface text-muted shadow-sm transition-opacity duration-300 ease-in-out ${
-          onLeft ? 'left-0 -translate-x-1.5 rounded-r-lg border-r' : 'right-0 translate-x-1.5 rounded-l-lg border-l'
-        } ${open ? 'opacity-0 pointer-events-none' : 'opacity-40 hover:opacity-100 focus-visible:opacity-100 active:opacity-100'}`}
-      >
-        <Chevron className="h-4 w-4" strokeWidth={2} />
-      </button>
-
       {/* Panel — always mounted, slides in/out (and animates its width on resize).
           Soft easing both ways. */}
       <aside
@@ -1159,26 +1138,14 @@ export default function AppShell({
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [lastPath, setLastPath] = useState(pathname)
 
-  // Mobile edge menus — both share one Micro/Full size preference (per device).
-  // Both MICRO icon columns can be open at once; only ONE FULL menu shows at a
-  // time. Open state lives here (per side) so opening/expanding one full menu can
-  // slide the opposite closed.
+  // Mobile right edge menu (stats) — opened only from the bottom tab bar's arrow.
+  // Micro/Full size preference is per device. The left side is the nav DRAWER
+  // (drawerOpen, also bottom-bar triggered); the shell keeps the two mutually
+  // exclusive — opening one closes the other.
   const [railSize, setRailSize] = useState<RailSize>('micro')
-  const [leftOpen, setLeftOpen] = useState(false)
   const [rightOpen, setRightOpen] = useState(false)
-  const anyEdgeOpen = leftOpen || rightOpen
   function closeEdges() {
-    setLeftOpen(false)
     setRightOpen(false)
-  }
-  function openEdge(side: 'left' | 'right') {
-    if (side === 'left') {
-      setLeftOpen(true)
-      if (railSize === 'full') setRightOpen(false) // one full menu at a time
-    } else {
-      setRightOpen(true)
-      if (railSize === 'full') setLeftOpen(false)
-    }
   }
   useEffect(() => {
     // One-time hydration of client-only prefs: server + first client render both see
@@ -1187,26 +1154,21 @@ export default function AppShell({
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (localStorage.getItem('freq-rail-size') === 'full') setRailSize('full')
   }, [])
-  function changeRailSize(s: RailSize, side: 'left' | 'right') {
+  function changeRailSize(s: RailSize) {
     localStorage.setItem('freq-rail-size', s)
     setRailSize(s)
-    // Expanding one edge to full slides the opposite closed (one full at a time).
-    if (s === 'full') {
-      if (side === 'left') setRightOpen(false)
-      else setLeftOpen(false)
-    }
   }
 
-  // Close mobile drawer + edge menus when the route changes (covers back/forward).
+  // Close mobile drawer + edge menu when the route changes (covers back/forward).
   if (lastPath !== pathname) {
     setLastPath(pathname)
     if (drawerOpen) setDrawerOpen(false)
-    if (leftOpen || rightOpen) closeEdges()
+    if (rightOpen) closeEdges()
   }
 
-  // Scrolling the feed closes any open edge menu.
+  // Scrolling the feed closes the open edge menu.
   useEffect(() => {
-    if (!anyEdgeOpen) return
+    if (!rightOpen) return
     const el = document.querySelector('[data-feed-scroll]') as HTMLElement | null
     if (!el) return
     let lastTop = el.scrollTop
@@ -1216,7 +1178,7 @@ export default function AppShell({
     }
     el.addEventListener('scroll', onScroll, { passive: true })
     return () => el.removeEventListener('scroll', onScroll)
-  }, [anyEdgeOpen])
+  }, [rightOpen])
 
   // ⌘K / Ctrl+K → open the live search overlay
   const [searchOpen, setSearchOpen] = useState(false)
@@ -1346,12 +1308,12 @@ export default function AppShell({
               border. Below lg (no right rail) it's a natural-width right-aligned cluster. */}
           <div className="flex items-center justify-end gap-1 sm:ml-1 sm:border-l sm:border-border sm:pl-1.5 md:gap-2 lg:ml-0 lg:w-72 lg:justify-start lg:pl-3 lg:pr-4">
             {/* Community actions: friends · messages · notifications · daily streak. */}
-            {/* Friends — desktop only (mobile merges it into the combined icon) */}
-            <HoverTip label="Friends" className="hidden sm:inline-flex">
+            {/* Friends — all sizes (mobile reaches Messages via the button on /friends). */}
+            <HoverTip label="Friends">
               <Link
                 href="/friends"
                 aria-label="Friends"
-                className="flex items-center justify-center w-9 h-9 rounded-full text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+                className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full text-muted hover:text-text hover:bg-surface-elevated transition-colors"
               >
                 <Users className="w-5 h-5" />
               </Link>
@@ -1360,15 +1322,6 @@ export default function AppShell({
             <HoverTip label="Messages" className="hidden sm:inline-flex">
               <MessagesPopover />
             </HoverTip>
-            {/* Mobile: friends + messages combined into one silhouette icon → Messages */}
-            <Link
-              href="/messages"
-              aria-label="Friends & messages"
-              title="Messages"
-              className="sm:hidden flex items-center justify-center w-8 h-8 rounded-full text-muted hover:text-text hover:bg-surface-elevated transition-colors"
-            >
-              <Users className="w-5 h-5" />
-            </Link>
             {/* Notifications — sits before the streak (swapped per request); shown on
                 all sizes, tooltip on hover. */}
             <HoverTip label="Notifications">
@@ -1480,65 +1433,25 @@ export default function AppShell({
       {/* Page-specific admin now lives inline at the top of the content
           (PageAdminBar in <main>), replacing the old right-edge admin drawer. */}
 
-      {/* ── Mobile edge menus — always-visible tabs; left = the PRIMARY nav,
-            right = stats / streaks / gamification. Both micro icon columns can be
-            open together; only one full menu shows at a time. ── */}
-      {!hideAppNav && (
+      {/* ── Mobile right edge menu — stats / streaks / gamification, opened only
+            from the bottom tab bar's right arrow. The left side is the nav drawer
+            (also bottom-bar triggered); one side open closes the other. ── */}
+      {!hideAppNav && statsPanel && (
         <>
-          {/* Shared, fading backdrop — a tap anywhere outside closes both edges. */}
+          {/* Fading backdrop — a tap anywhere outside closes the menu. */}
           <div
             aria-hidden
             onClick={closeEdges}
             className={`md:hidden fixed inset-0 z-30 bg-black/10 transition-opacity duration-300 ease-in-out ${
-              anyEdgeOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              rightOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
             }`}
           />
           <EdgeMenu
-            side="left"
-            ariaLabel="Menu"
+            side="right"
+            ariaLabel="Streaks & stats"
             size={railSize}
-            onSizeChange={(s) => changeRailSize(s, 'left')}
-            open={leftOpen}
-            onOpen={() => openEdge('left')}
-            micro={
-              <NavLinkList
-                isActive={isActive}
-                role={gateRole}
-                onNavigate={closeEdges}
-                extraSections={extraSections}
-                hideAppNav={hideAppNav}
-                permissions={permissions}
-                navAccess={navAccess}
-                staffRole={staffRole}
-                sections={MEMBER_SECTIONS}
-                compact
-              />
-            }
-          >
-            <nav className="p-2">
-              <NavLinkList
-                isActive={isActive}
-                role={gateRole}
-                onNavigate={closeEdges}
-                extraSections={extraSections}
-                hideAppNav={hideAppNav}
-                permissions={permissions}
-                navAccess={navAccess}
-                staffRole={staffRole}
-                sections={MEMBER_SECTIONS}
-              />
-            </nav>
-          </EdgeMenu>
-        </>
-      )}
-      {!hideAppNav && statsPanel && (
-        <EdgeMenu
-          side="right"
-          ariaLabel="Streaks & stats"
-          size={railSize}
-          onSizeChange={(s) => changeRailSize(s, 'right')}
-          open={rightOpen}
-          onOpen={() => openEdge('right')}
+            onSizeChange={changeRailSize}
+            open={rightOpen}
           micro={
             <div className="flex flex-col items-center gap-1.5 p-2">
               <Link
@@ -1578,12 +1491,27 @@ export default function AppShell({
           }
         >
           <div className="p-3">{statsPanel}</div>
-        </EdgeMenu>
+          </EdgeMenu>
+        </>
       )}
 
       {/* ── Mobile bottom tab bar ─────────────────────────── */}
-      {/* Feed · Circles · Channels · Events · Menu (opens the full drawer). */}
-      <MobileTabBar isActive={isActive} onOpenMenu={() => setDrawerOpen((o) => !o)} onOpenStats={() => setRightOpen((o) => !o)} menuOpen={drawerOpen} statsOpen={rightOpen} hideAppNav={hideAppNav} />
+      {/* Feed · Circles · Channels · Events · Menu/stats arrows. Opening one side
+          closes the other — never both drawers at once. */}
+      <MobileTabBar
+        isActive={isActive}
+        onOpenMenu={() => {
+          setDrawerOpen((o) => !o)
+          setRightOpen(false)
+        }}
+        onOpenStats={() => {
+          setRightOpen((o) => !o)
+          setDrawerOpen(false)
+        }}
+        menuOpen={drawerOpen}
+        statsOpen={rightOpen}
+        hideAppNav={hideAppNav}
+      />
 
       {/* ── Mobile left drawer (the full menu) ────────────── */}
       <MobileLeftDrawer

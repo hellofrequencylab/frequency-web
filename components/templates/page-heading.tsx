@@ -40,10 +40,12 @@ export function PageHeading({
           {back.label}
         </Link>
       )}
-      {/* Title left, action top-right — one balanced row at every width. The title
+      {/* Mobile: title + description get the full width and the action drops BELOW
+          them (a wide button beside a phone-width title crushes the text into a
+          sliver). sm+: title left, action top-right — one balanced row; the title
           block is min-w-0 so a long title WRAPS rather than crushing the action,
           and the action is shrink-0 so it always keeps its place on the right. */}
-      <div className="flex flex-row items-start justify-between gap-3 sm:gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div className="min-w-0">
           {eyebrow && (
             <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-primary-strong">
