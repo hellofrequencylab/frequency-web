@@ -25,7 +25,10 @@ into the wider network.
 - `source` — `card_scan` · `poster` · `manual` · `import` (the "many inputs").
 - `status` — `new` · `active` · `archived` (routing/sorting).
 - Harvested fields: `display_name, email, phone, title, company, city, website, socials(jsonb)`.
+- `details(jsonb)` — the rich, flexible harvest of everything printed on the card: phones, emails, addresses, services, certifications, hours, links, other (all optional, validated by `coerceContactDetails`; mirrors `events.details`). Added by `20260614000000_contact_card_media.sql` (ADR-215).
 - `avatar_path` — a key in the **private** `network-contacts` bucket (never a public URL; rendered via signed URL).
+- `card_front_path` / `card_back_path` — the **deskewed card itself**, kept on file (private bucket, signed URLs). The client perspective-warps each side from the model's per-image corners (`lib/connections/deskew.ts`) before uploading the keepers to `{auth_uid}/{uuid}-front.jpg` / `-back.jpg`.
+- `logo_path` — the cropped company logo (avatar fallback when there is no face; shown beside the company on the detail page).
 - `extraction(jsonb)` — the raw AI harvest (audit / re-derive).
 - `linked_profile_id` / `linked_contact_id` — the promotion hooks (scaffolded; own review).
 
@@ -35,16 +38,21 @@ into the wider network.
 ## Gating & privacy
 
 - **RLS:** owner CRUD on own rows; only `visibility='network'` rows are readable beyond the owner; notes/tags inherit the parent's ownership.
-- **Storage:** the `network-contacts` bucket is `public=false`. Owner-folder RLS (`{auth_uid}/…`); the app mints short-lived **signed URLs** server-side to display. Original scans are deleted after extraction — only the cropped avatar is kept.
+- **Storage:** the `network-contacts` bucket is `public=false`. Owner-folder RLS (`{auth_uid}/…`); the app mints short-lived **signed URLs** server-side to display. The temp OCR uploads are deleted after extraction; what stays on file is the cropped avatar, the cropped logo, and the deskewed card front/back the client uploads as keepers (ADR-215). Card images and `details` never appear in the network-shared view (`getSharedContact`), only on the owner's detail page.
 - **Tool access (`lib/connections/access.ts`):** stewards (host+) **or** Studio staff (`team_members`). Records stay owner-scoped regardless of who has the tool.
 - App enforces owner scoping in code on every query (admin handle) **and** via RLS as a backstop.
 
 ## The flow
 
 ```
-Scan tab:   capture/upload → client resizes → upload to private bucket
-            → scanCard(path) → Sonnet vision (save_contact tool) → fields + note + tags + face box
-            → client crops avatar on <canvas> from the box → upload cropped → prefill form → review → save
+Scan tab:   FRONT slot (+ optional BACK, + extra shots) → client resizes → upload temps
+            → scanCard(paths, {hasBack}) → ONE Sonnet vision call (save_contact tool)
+              → fields + note + tags + face box + logo box + per-image corners + quality + details
+            → quality gate (retake note + "Use it anyway") when not legible / glare / skew
+            → client deskews each side from its corners (canvas homography + light auto-contrast)
+              and uploads the keepers ({uid}/{uuid}-front.jpg / -back.jpg)
+            → avatar crop priority: face → logo → initials (logo also kept to logo_path)
+            → prefill form (incl. editable details rows) → review → save
 Manual tab: free text → veraAssist(text) → Haiku → same structured shape → prefill → review → save
             (Vera assist is optional; the form works fully by hand)
 ```
@@ -62,9 +70,11 @@ Both AI paths **degrade to plain manual entry** when AI is off, over budget, or 
 
 | Area | Path |
 |---|---|
-| Schema | `supabase/migrations/20260606000000_network_contacts.sql` |
+| Schema | `supabase/migrations/20260606000000_network_contacts.sql`, `20260614000000_contact_card_media.sql` |
 | Types | `lib/connections/types.ts` |
 | Pure helpers (+ tests) | `lib/connections/normalize.ts`, `normalize.test.ts` |
+| Deskew (+ tests) | `lib/connections/deskew.ts`, `deskew.test.ts` |
+| Details editor/view | `components/connections/contact-details-fields.tsx` |
 | Store (owner-scoped, server-only) | `lib/connections/store.ts` |
 | Access gate | `lib/connections/access.ts` |
 | AI harvest | `lib/ai/connections-ai.ts` |
@@ -79,6 +89,7 @@ Both AI paths **degrade to plain manual entry** when AI is off, over budget, or 
 1. ✅ **Migration applied** (`20260606000000_network_contacts.sql`) to the `Frequency Community` project — 3 tables, RLS (owner-scoped), and the private `network-contacts` bucket. Verified: RLS on all 3, 6 table policies + 4 storage policies, bucket `public=false`. Security advisors: no new issues (only the project-wide `auth_allow_anonymous_sign_ins` WARN that every `auth.uid()` policy carries).
 2. **Regenerate `lib/database.types.ts`** — *deferred to integration/merge-time* to avoid pulling other in-flight branches' prod schema into this feature branch. The store works today via the untyped admin handle (repo convention).
 3. ✅ **AI harvest enabled** — `platform_flags.ai_enabled = true` (flipped + logged in `platform_flag_events`). Janitors can toggle it from **Admin → Platform → AI controls** (`/admin/ai`); the env still also needs `ANTHROPIC_API_KEY`. See [AI-CONTROLS.md](AI-CONTROLS.md).
+4. ⏳ **Apply `20260614000000_contact_card_media.sql`** (additive, idempotent: `details` jsonb + `card_front_path` / `card_back_path` / `logo_path` on `network_contacts`). The detail/list reads select the new columns, so deploy the migration with (or before) the code.
 
 > **Rollback** (additive, clean): `drop table public.network_contact_tags, public.network_contact_notes, public.network_contacts cascade;` then `delete from storage.buckets where id='network-contacts';` and drop the four `network-contacts: owner *` policies on `storage.objects`.
 
